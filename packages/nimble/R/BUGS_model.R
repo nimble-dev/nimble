@@ -150,6 +150,26 @@ Details: The return value is a character vector with an element for each node in
                                       return(subExpr)
                                   },
 
+                                  isMultivariate = function(nodes) {
+                                      '
+Determines whether one or more nodes represent multivariate nodes
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a logical vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
+'
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE)
+                                      multi <- sapply(nodeNames, function(node) getDistributionInfo(getDistribution(node))$types$value$nDim > 0)
+                                      ##multi <- rep(FALSE, length(nodeNames))
+                                      ##for(i in seq_along(nodeNames)) {
+                                      ##    nodeExpanded <- expandNodeNames(nodeNames[i], returnScalarComponents = TRUE)
+                                      ##    if(length(nodeExpanded) > 1) multi[i] <- TRUE
+                                      ##}
+                                      return(multi)
+                                  },
+
                                   isDiscrete = function(nodes) {
                                                                           '
 Determines whether one or more nodes represent discrete random variables
@@ -921,8 +941,8 @@ Details: The newly created model object will be identical to the original model 
                                           if(check) newlyCreatedModel$check()
                                           return(newlyCreatedModel)
                                       }
-                                      if(is.null(data)) data <- origData
-                                      if(is.null(inits)) inits <- origInits
+                                      if(is.null(data)) data <- if( inherits(origData, 'uninitializedField') ) list() else origData
+                                      if(is.null(inits)) inits <- if( inherits(origInits, 'uninitializedField') ) list() else origInits
                                       modelDef$newModel(data = data, inits = inits, modelName = modelName, check = check)
                                   }
                               )
@@ -1187,9 +1207,13 @@ makeBUGSclassFields <- function(vars, varDims) {
 ## This uses the activeBindingTemplate and plugs in the 3 needed names
 makeBUGSactiveBindingDef <- function(envVarName, varVarName, rowVarName, dims) {
     if(length(dims) == 0) dims <- 1
-    if(prod(dims) == 1)
-        template <- activeBindingTemplateLength1NonScalar
-    else
+    if(prod(dims) == 1) {
+        if(length(dims) > 1) {
+            template <- activeBindingTemplateLength1NonScalar
+        } else {
+            template <- activeBindingTemplateLength1Vector
+        }
+    } else
         template <- activeBindingTemplate
 
     eval( substitute( substitute(aBT, list(ENVNAME = as.name(envVarName), VARNAME = as.name(varVarName), ROWNAME = as.name(rowVarName), DIMNAME = dims)), list(aBT = template) ) )
@@ -1201,6 +1225,16 @@ activeBindingTemplateLength1NonScalar <- quote( function(value) {
     if(missing(value)) return(if(is.na(ROWNAME)) ENVNAME[[VARNAME]] else ENVNAME[[VARNAME]][[ROWNAME]]) ## commas will get inserted after ROWNAME
     else {
         value <- array(value, dim = DIMNAME)
+        if(is.na(ROWNAME)) ENVNAME[[VARNAME]] <- value
+        else ENVNAME[[VARNAME]][[ROWNAME]] <- value
+        return(invisible(value))
+    }
+})
+
+activeBindingTemplateLength1Vector <- quote( function(value) {
+    if(missing(value)) return(if(is.na(ROWNAME)) ENVNAME[[VARNAME]] else ENVNAME[[VARNAME]][[ROWNAME]]) ## commas will get inserted after ROWNAME
+    else {
+        value <- value[1]
         if(is.na(ROWNAME)) ENVNAME[[VARNAME]] <- value
         else ENVNAME[[VARNAME]][[ROWNAME]] <- value
         return(invisible(value))

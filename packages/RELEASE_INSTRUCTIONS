@@ -2,6 +2,8 @@ make sure NEWS is updated with info on changes in latest release
 
 update DESCRIPTION and INSTALL with current version number
 
+update LICENSE with current year
+
 for version on nimble website, remove FLIBS from src/Makevars.in
 for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
 
@@ -16,12 +18,12 @@ R CMD INSTALL nimble_${VERSION}.tar.gz
 
 R CMD build nimble
 R CMD check --as-cran nimble_${VERSION}.tar.gz
-# officially this should be done on a development build of R, such as in a BCE or docker instance; for Chris, easiest to do via installing R-devel on SCF
+# officially this should be done on a development build of R, but now can be done formally using rhub (see below), so doing on your own machine in a release version of R just serves as a first pass
 
 run tests:
 in particular check exact results vs previous versions (ignore differences in compilation log info)
 doing this test by test because of DLL unloading issue
-types="compareMCMCs copy declare distributions dsl_dists filtering getBound getDistributionInfo getParam getDependencies math mcem mcmc models setData size trunc user"
+types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists filtering getBound getDependencies getDistributionInfo getParam math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList numericTypes setData size trunc types user"
 for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
 done
@@ -38,9 +40,7 @@ test cross-machine on Macs and on Windows
 
 can test using rhub:
 
-library(rhub)
-check()
-check_with_sanitizers()
+Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel')); check_with_sanitizers()" >> rhub.out
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
@@ -82,6 +82,7 @@ reactivate Google Analyticator by clicking on 'activate' on Plugins -> Installed
 *****************
 
 make sure to merge devel into master branch and create a branch for the new version
+before doing so add final test-results-v$VERSION to repo to provide baseline for future releases
 git checkout master
 git merge devel
 git commit -am'merged new version onto master'

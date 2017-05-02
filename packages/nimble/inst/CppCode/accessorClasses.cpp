@@ -1232,20 +1232,21 @@ SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
     if(ncol != 0) {PRINTF("Warning from populateIndexedNodeInfoTable: nrow == 0 but ncol != 0.");}
     UNPROTECT(1);
     return(R_NilValue);
-  }
-
-  if(!isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
-  if(isInteger(StableContents)) {
-    int *contentsPtr = INTEGER(StableContents);
-    tablePtr->reserve(nrow);
-    for(int i = 0; i < nrow; i++) {
-      tablePtr->push_back(indexedNodeInfo(contentsPtr + i, ncol, nrow));
-    }
   } else {
-    double *contentsPtrd = REAL(StableContents);
-    tablePtr->reserve(nrow);
-    for(int i = 0; i < nrow; i++) {
-      tablePtr->push_back(indexedNodeInfo(contentsPtrd + i, ncol, nrow));
+
+    if(!isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
+    if(isInteger(StableContents)) {
+      int *contentsPtr = INTEGER(StableContents);
+      tablePtr->reserve(nrow);
+      for(int i = 0; i < nrow; i++) {
+	tablePtr->push_back(indexedNodeInfo(contentsPtr + i, ncol, nrow));
+      }
+    } else {
+      double *contentsPtrd = REAL(StableContents);
+      tablePtr->reserve(nrow);
+      for(int i = 0; i < nrow; i++) {
+	tablePtr->push_back(indexedNodeInfo(contentsPtrd + i, ncol, nrow));
+      }
     }
   }
   //  std::cout<<"done with size "<<tablePtr->size()<<"\n";

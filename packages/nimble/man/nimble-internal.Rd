@@ -5,6 +5,8 @@
 \alias{BUGScontextClass-Class}
 \alias{BUGSsingleContextClass-Class}
 \alias{CmultiNimbleFunctionClass-Class}
+\alias{CmultiNimbleListClass-Class}
+\alias{CmultiNimbleObjClass-Class}
 \alias{conjugacyClass-Class}
 \alias{conjugacyRelationshipsClass-Class}
 \alias{cppBUGSmodelClass-Class}
@@ -13,12 +15,15 @@
 \alias{cppHfileClass-Class}
 \alias{cppModelValuesClass-Class}
 \alias{cppNamedObjectsClass-Class}
+\alias{cppNimbleClassClass-Class}
 \alias{cppNimbleFunctionClass-Class}
+\alias{cppNimbleListClass-Class}
 \alias{cppProjectClass-Class}
 \alias{cppVirtualNimbleFunctionClass-Class}
 \alias{dependentClass-Class}
 \alias{distClass-Class}
 \alias{distributionsClass-Class}
+\alias{eigenize_nimbleNullaryClass-Class}
 \alias{exprClass-Class}
 \alias{exprTypeInfoClass-Class}
 \alias{indexedNodeInfoTableClass-Class}
@@ -30,7 +35,9 @@
 \alias{mvInfoClass-Class}
 \alias{nfCompilationInfoClass-Class}
 \alias{nimbleGraphClass-Class}
+\alias{nimbleListDefClass-Class}
 \alias{nimbleProjectClass-Class}
+\alias{nlCompilationInfoClass-Class}
 \alias{posteriorClass-Class}
 \alias{RCfunctionCompileClass-Class}
 \alias{RCfunInfoClass-Class}

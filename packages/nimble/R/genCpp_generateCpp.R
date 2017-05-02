@@ -14,6 +14,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(eigProxyCallsExternalUnary, 'cppOutputEigExternalUnaryFunction'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
+                    makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
                     list(
                         eigenCast = 'cppOutputEigenCast',
                         fill = 'cppOutputEigMemberFunctionNoTranslate',
@@ -169,9 +170,18 @@ cppOutputChainedCall <- function(code, symTab) {
 }
 
 cppNewNimbleList <- function(code, symTab) {
-  listType <- symTab$getSymbolObject(code$caller$args[[1]]$name)$templateArgs
-  if(is.null(listType)) listType <-  symTab$getSymbolObject(code$caller$args[[1]]$name, inherits = TRUE)$templateArgs
-  paste0("new ", listType)
+    ## This won't work for something like A$B <- nl$new()
+    ## because the first arg of the caller is A$B, not a simple name
+    ## But the generator info is embedded in sizeExprs
+      ##listType <- symTab$getSymbolObject(code$caller$args[[1]]$name)$templateArgs
+  ##if(is.null(listType)) listType <-  symTab$getSymbolObject(code$caller$args[[1]]$name, inherits = TRUE)$templateArgs
+    listType <- code$sizeExprs$nlProc$cppDef$name
+    paste0("new ", listType)
+}
+
+cppNimbleListReturningOperator <- function(code, symTab) {
+  code$name <- nimbleListReturningFunctionList[[code$name]]$cppName
+  cppOutputCallAsIs(code, symTab)
 }
 
 cppOutputFor <- function(code, symTab) {

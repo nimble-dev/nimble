@@ -97,20 +97,6 @@ CmodelValues <- setRefClass(
             blankAns <<- componentExtptrs
             for(comp in varNames) 
                 componentExtptrs[[comp]] <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, extptr, comp))
-                
-            ## .nodePtrs_byGID <<- new('numberedObjects')
-            ## GID_map <<- makeMV_GID_Map(.self)
-            ## if(length(sizes) > 0){
-            ## 	varLengths <- sapply(sizes, prod)
-            ## 	totLength <- sum(varLengths)
-            ##     	.nodePtrs_byGID$resize(totLength)
-            ## 	index = 1
-            ## 	for(i in seq_along(varNames)){
-            ##     	  	vName <- varNames[i]
-            ##     	  	.Call('populateNumberedObject_withSingleModelValuesAccessors', extptr, vName, as.integer(expandNodeNames(vName, returnType = 'ids')), as.integer(1) , .nodePtrs_byGID$.ptr)
-            ## 		index = index + varLengths[i]
-            ## 	}
-            ## }
         },
         resize = function(rows){	
         	for(ptr in componentExtptrs)
@@ -129,50 +115,50 @@ setMethod('[', 'CmodelValues',
               if(missing(j) ) 
                   j = 1:cGetNRow(x)
               if(length(i) == 1){
-              	ptr = x$componentExtptrs[[i]]
-              	if(is.null(ptr) ) 
-              		stop(paste('variable', i, ' not found in modelValues') ) 
-              	if(length(j) == 1){
-              		output = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVElement, ptr, as.integer(j)) )
-              		return(output) 
-              		}
-              	output = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVElementAsList, ptr, as.integer(j)) )
-              	return(output)
-              	}
-             output <- list() 	
-             for(cmp in i)
-             	output[[cmp]] <- x[cmp, j]
-          return(output)
+                  ptr = x$componentExtptrs[[i]]
+                  if(is.null(ptr) ) 
+                      stop(paste('variable', i, ' not found in modelValues') ) 
+                  if(length(j) == 1){
+                      output = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVElement, ptr, as.integer(j)) )
+                      return(output) 
+                  }
+                  output = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVElementAsList, ptr, as.integer(j)) )
+                  return(output)
+              }
+              output <- list() 	
+              for(cmp in i)
+                  output[[cmp]] <- x[cmp, j]
+              return(output)
           }
           )
 
 setMethod('[<-', 'CmodelValues',
-			function(x, i, j, value){
-				if(missing(i) ) 
-					i = x$varNames
-				if(missing(j) ) 
-					j = 1:getsize(x)
-				if(length(i) == 1){
-	              	ptr = x$componentExtptrs[[i]]
-	              	if(is.null(ptr) ) 
-	              		stop(paste('variable', i, ' not found in modelValues') ) 
-					if(length(j) == 1){
-						storage.mode(value) <- 'numeric'
-						eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElement, ptr, as.integer(j), value ))
-						return(x)
-					}
-				for(jj in j)
-					storage.mode(value[[jj]]) <- 'numeric'
-				eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElementFromList, ptr, value, as.integer(j)) )
-				return(x)
-				}
-			cmpNames = names(value)
-			if( !all(cmpNames %in% x$varNames) ) 
-				stop('Warning: names of modelValue elements do not match')
-			for(n in cmpNames)
-				x[n, j] <- value[[n]]
-			return(x)
-			})
+          function(x, i, j, value){
+              if(missing(i) ) 
+                  i = x$varNames
+              if(missing(j) ) 
+                  j = 1:getsize(x)
+              if(length(i) == 1){
+                  ptr = x$componentExtptrs[[i]]
+                  if(is.null(ptr) ) 
+                      stop(paste('variable', i, ' not found in modelValues') ) 
+                  if(length(j) == 1){
+                      storage.mode(value) <- 'numeric'
+                      eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElement, ptr, as.integer(j), value ))
+                      return(x)
+                  }
+                  for(jj in j)
+                      storage.mode(value[[jj]]) <- 'numeric'
+                  eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElementFromList, ptr, value, as.integer(j)) )
+                  return(x)
+              }
+              cmpNames = names(value)
+              if( !all(cmpNames %in% x$varNames) ) 
+                  stop('Warning: names of modelValue elements do not match')
+              for(n in cmpNames)
+                  x[n, j] <- value[[n]]
+              return(x)
+          })
 
 
 setMethod('[[', 'CmodelValues',

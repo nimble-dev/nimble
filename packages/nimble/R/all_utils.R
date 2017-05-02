@@ -1,3 +1,5 @@
+
+
 double <- function(ndim, dims) {}
 
 labelFunctionCreator <- function(lead, start = 1) {
@@ -33,6 +35,8 @@ dimOrLength <- function(obj, scalarize = FALSE) {
 #' @return a vector of sizes in each dimension
 #'
 #' @author NIMBLE development team
+#'
+#' @aliases dim
 #'
 #' @examples
 #' x <- rnorm(4)

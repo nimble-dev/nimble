@@ -35,8 +35,6 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 #		rgamma_keywordInfo
 #		d_dist_keywordInfo
 #		qp_dist_keywordInfo
-#   nimEigen_keywordInfo
-#   nimSvd_keywordInfo
 #		nimOptim_keywordInfo
 #		values_keywordInfo
 #		calculate_keywordInfo
@@ -138,36 +136,30 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 ## 	}
 ## 	)
 
-nimEigen_keywordInfo <- keywordInfoClass(
-  keyword = "nimEigen",
+
+nimbleListReturningFunction_keywordInfo <- keywordInfoClass(
+  keyword = 'multiple',
   processor = function(code, nfProc){
-    nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
-    if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
-      nlEigenRefClass$addEigenListInfo(nfProc)
+    nlGen <-   nimbleListReturningFunctionList[[deparse(code[[1]])]]$nlGen
+    nlClassName <- nl.getListDef(nlGen)$className
+    if(!(nlClassName %in% nfProc$getSymbolTable()$getSymbolNames())){
+      nlList <- nlGen$new() 
+      nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+      ### below, we add a nlg to the symbolTable for use in sizeprocessing.  Nothing is added to neededTypes as it's assumed that 
+      ### class def'n exists in nimble provided c++ code and does not need to be generated.
+      symObj <- symbolNimbleListGenerator(name = nlClassName, nlProc = nlp)
+      nfProc$setupSymTab$addSymbol(symObj)
     }
-    code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
+    ## special processing for second argument of nimSvd
+    if(deparse(code[[1]]) == 'nimSvd'){
+      code[[3]] <- switch(tolower(code[[3]]),
+                          none = 0,
+                          thin = 1,
+                          full = 2)
+    }
     return(code)
   }
 )
-
-nimSvd_keywordInfo <- keywordInfoClass(
-  keyword = "nimSvd",
-  processor = function(code, nfProc){
-
-    nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
-    if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
-      nlEigenRefClass$addEigenListInfo(nfProc)
-    }
-    code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
-    code[[3]] <- switch(tolower(code[[3]]),
-                        none = 0,
-                        thin = 1,
-                        full = 2)
-    if(is.null(code[[3]])) stop('vectors argument to svd() must be one of "none", "thin", or "full"')
-    return(code)
-  }
-)
-
 
 nimOptim_keywordInfo <- keywordInfoClass(
 	keyword = 'nimOptim',
@@ -708,94 +700,98 @@ modelMemberFun_keywordInfo <- keywordInfoClass(
     })
 
 dollarSign_keywordInfo <- keywordInfoClass(
-  keyword = '$',
-  processor = function(code, nfProc){
-    if(is.null(nfProc)) stop("No legal use of dollar sign in nimbleFunction with no setup code")
-    #	First thing we need to do is remove 'run', for backward compatibility, i.e.
-    #   replace myNimbleFunction$run() -> myNimbleFunction() or
-    #	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
-    #   Probably a better way to handle this
-    if(code[[3]] == 'run'){
-      newRunCode <- code[[2]]
-      return(newRunCode)
+    keyword = '$',
+    processor = function(code, nfProc){
+        if(is.null(nfProc)) stop("No legal use of dollar sign in nimbleFunction with no setup code")
+        
+        ##        possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
+        callerCode <- code[[2]]
+
+        doubleBracketCase <- FALSE
+        if(length(callerCode) > 1) {
+            if(deparse(callerCode[[1]] == '[[')) {
+                doubleBracketCase <- TRUE
+                symObj <- getSymObj_recurse(callerCode[[2]], nfProc$setupSymTab)
+            }
+        }
+        if(!doubleBracketCase)
+            symObj <- getSymObj_recurse(callerCode, nfProc$setupSymTab)
+
+        class <- class(symObj)[1] ## symObj is allowed to be NULL       
+
+                                        #	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
+        if(length(callerCode) > 1){
+            if(callerCode[[1]] == '$'){ ## nested NL or NF case
+                callerCode <- processKeyword(callerCode, nfProc)
+            }
+        }
+                                        #       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
+                                        #       May be a better way to do this
+        
+
+        if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
+            nl_fieldName <-as.character(code[[3]])
+            newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
+            return(newRunCode)				
+        }
+        if(class == 'symbolNimbleFunctionList'){
+             nf_fieldName <-as.character(code[[3]])
+            newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = callerCode, METHODNAME = nf_fieldName))
+            return(newRunCode)
+        }
+        if(class == 'symbolModel'){
+            singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
+            accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
+            addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
+            return(as.name(accessName))
+        }
+        if(class == 'symbolNimbleFunction'){
+            
+                                        #	Code is of the form myNimbleFunction$myMethod
+                                        #   or myNimbleFunction$myVar
+            
+            
+                                        #	Note that we have cut off '()' in the case of myMethod, so we must inspect the
+                                        #   nested symbol for myMethod to determine whether it is a method or variable
+            
+            ##nf_charName <- as.character(callerCode)
+            nf_fieldName <-as.character(code[[3]])
+            objectSymbol = symObj$nfProc$setupSymTab$getSymbolObject(nf_fieldName)
+            if(class(objectSymbol)[[1]] == 'symbolMemberFunction'){
+                newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = callerCode, METHODNAME = nf_fieldName))				
+                return(newRunCode)
+            }
+            else {
+                                        # I *assume* that if its not a member function, it should be treated with 
+                                        # nfVar
+                newRunCode <- substitute(nfVar(NIMBLEFXN, VARNAME), list(NIMBLEFXN = callerCode, VARNAME = nf_fieldName))
+                return(newRunCode)
+            }
+        }
+        if(class == 'symbolNimbleList'){
+                                        #	Code is of the form 
+                                        #  myNimbleList$myVar
+            ##nl_charName <- as.character(callerCode) ## won't work with nesting
+            nl_fieldName <-as.character(code[[3]])
+            ##newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+            newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
+            return(newRunCode)
+        }
+        if(class == 'symbolNimbleFunctionList'){
+            
+                                        #	Code is of the form myNimbleFunctionList[[i]]$foo	(foo should be a method)
+                                        #	At this point, we cannot access variables of a nimble function list, ie
+                                        #	myNimbleFunctionList[[i]]$myVariable is not allowed
+                                        #	If we add this functionality, we will need to look up what foo as we do
+                                        #	for the nimbleFunction case above
+            
+            nf_name <-code[[2]]
+            nf_fieldName <- as.character(code[[3]])
+            newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = nf_name, METHODNAME = nf_fieldName))
+            return(newRunCode)				
+        }
+                                        # stop(paste('in keywordProcessing of "$", type not recognized. Code = ', code) )
     }
-    possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
-    callerCode <- code[[2]]
-    #	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
-    
-    if(length(callerCode) > 1){
-      if(callerCode[[1]] == '$'){ ## nested NL case
-        callerCode <- processKeyword(callerCode, nfProc)
-      }
-      else if (! (deparse(callerCode[[1]]) %in% c('nimEigen', 'nimSvd', 'makeNewNimbleListObject'))) {
-        callerCode <- callerCode[[2]]
-      }
-    }
-    #       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
-    #       May be a better way to do this
-    
-    class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
-    
-    if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
-      nl_fieldName <-as.character(code[[3]])
-      newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
-      return(newRunCode)				
-    }
-    if(class == 'symbolNimPtrList'){
-      return(code)
-    }
-    if(class == 'symbolModel'){
-      singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
-      accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
-      addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
-      return(as.name(accessName))
-    }
-		if(class == 'symbolNimbleFunction'){
-			
-			#	Code is of the form myNimbleFunction$myMethod
-			#   or myNimbleFunction$myVar
-				
-			
-			#	Note that we have cut off '()' in the case of myMethod, so we must inspect the
-			#   nested symbol for myMethod to determine whether it is a method or variable
-						
-			nf_charName <- as.character(callerCode)
-			nf_fieldName <-as.character(code[[3]])
-			objectSymbol = nfProc$setupSymTab$symbols[[nf_charName]]$nfProc$setupSymTab$symbols[[nf_fieldName]]
-			if(class(objectSymbol)[[1]] == 'symbolMemberFunction'){
-				newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = as.name(nf_charName), METHODNAME = nf_fieldName))				
-				return(newRunCode)
-			}
-			else {
-				# I *assume* that if its not a member function, it should be treated with 
-				# nfVar
-				newRunCode <- substitute(nfVar(NIMBLEFXN, VARNAME), list(NIMBLEFXN = as.name(nf_charName), VARNAME = nf_fieldName))
-				return(newRunCode)
-			}
-		}
-		if(class == 'symbolNimbleList'){
-		  #	Code is of the form 
-		  #  myNimbleList$myVar
-		  nl_charName <- as.character(callerCode)
-		  nl_fieldName <-as.character(code[[3]])
-		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
-		  return(newRunCode)
-		}
-		if(class == 'symbolNimbleFunctionList'){
-				
-				#	Code is of the form myNimbleFunctionList[[i]]$foo	(foo should be a method)
-				#	At this point, we cannot access variables of a nimble function list, ie
-				#	myNimbleFunctionList[[i]]$myVariable is not allowed
-				#	If we add this functionality, we will need to look up what foo as we do
-				#	for the nimbleFunction case above
-								
-				nf_name <-code[[2]]
-				nf_fieldName <- as.character(code[[3]])
-				newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = nf_name, METHODNAME = nf_fieldName))
-				return(newRunCode)				
-		}
-			 # stop(paste('in keywordProcessing of "$", type not recognized. Code = ', code) )
-	}
 )
     
 singleBracket_keywordInfo <- keywordInfoClass(
@@ -833,6 +829,8 @@ length_char_keywordInfo <- keywordInfoClass(
         return(code)
     })
 
+
+
 #	KeywordList
 keywordList <- new.env()
 keywordList[['nimSeq']] <- nimSeq_keywordInfo
@@ -847,8 +845,8 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
-keywordList[['nimEigen']] <- nimEigen_keywordInfo
-keywordList[['nimSvd']] <- nimSvd_keywordInfo
+keywordList[['nimEigen']] <- nimbleListReturningFunction_keywordInfo
+keywordList[['nimSvd']] <- nimbleListReturningFunction_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
@@ -898,6 +896,7 @@ keywordListModelMemberFuns[['getBound']] <- modelMemberFun_keywordInfo
 
 
 matchFunctions <- new.env()
+matchFunctions[['setSize']] <- function(var, ..., copy = TRUE, fillZeros = TRUE){} ## setSize, but load order is later
 matchFunctions[['nimC']] <- nimC
 matchFunctions[['nimRep']] <- function(x, times = 1, length.out, each = 1) {}
 matchFunctions[['nimSeq']] <- nimSeq
@@ -1365,69 +1364,126 @@ addNecessarySetupCode <- function(name, argList, template, nfProc, allowToCpp = 
     }
 }
 
+getSymObj_recurse <- function(code, symTab, recurse = FALSE) { #code will be like a$b$c with expectation all are NF or NL
+    if(length(code) > 1) {
+        if(deparse(code[[1]]) != '$') return(NULL) ## This is valid if we have makeNewNimbleListObject(...)$member or foo()$member ## stop(paste0('Problem (i) working through ', deparse(code)), .call = FALSE)
+        firstArg <- code[[2]]
+        memberName <- deparse(code[[3]])
+        symTab <- getSymObj_recurse(firstArg, symTab, recurse = TRUE) ## when recursing, return the symTab
+    } else {
+        memberName <- deparse(code)
+    }
+    symObject <- if(is.null(symTab)) NULL else symTab$getSymbolObject(memberName)
+    if(recurse) {
+        if(inherits(symObject, 'symbolNimbleFunction')) return(symObject$nfProc$setupSymTab)
+        if(inherits(symObject, 'symbolNimbleList')) return(symObject$nlProc$symTab) ## can only be known if it was created in setup code
+        if(is.null(symObject)) return(NULL) ## will assume to be nimbleList, only kind of nested data structure that could be of unknown type right now
+    } else {
+        return(symObject)
+    }
+    stop(paste0('Problem (ii) working through ', deparse(code)), .call = FALSE)
+}
+
 symTypeFromSymTab <- function(codeName, symTab, options = character(0) ){
-	if(is.language(codeName))
-		codeName <- as.character(codeName)
-	if(length(codeName) > 1)
-		return('NULL')
-	class <- class(symTab$symbols[[codeName]])[1]
-	if(length(options) == 0)
-		return(class)
-	if(!(class %in% options))
-		return(NULL)  ## nimbleList that was not constructed in setup code 
-	                ## stop(paste('invalid class for object ', codeName, 'class provided = ', class) )
-	return(class)
+    if(is.language(codeName))
+        codeName <- as.character(codeName)
+    if(length(codeName) > 1)
+        return('NULL')
+    class <- class(symTab$symbols[[codeName]])[1]
+    if(length(options) == 0)
+        return(class)
+    if(!(class %in% options))
+        return(NULL)  ## nimbleList that was not constructed in setup code 
+    ## stop(paste('invalid class for object ', codeName, 'class provided = ', class) )
+    return(class)
 }
 
 isSymbolType <- function(symTab, varName, symType)
 	inherits(symTab$symbols[[varName]], symType)
 
 matchAndFill.call <- function(def, call){
-  theseFormals <- formals(def)
-  formalNames <- names(theseFormals) # formalArgs are the arguments that are defined, i.e. does NOT include anything that is from the args "..."
-  theseFormals <- theseFormals[nchar(theseFormals) > 0]
-  matchedCall <- match.call(def, call) # problem with match.call for our needs is it omits formals that were not provided
-  missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
-  for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
-    name <- names(theseFormals)[ind]
-    matchedCall[[name]] <- theseFormals[[name]]    
-  }
+    ##   matchAndFill.call(function(a = 1, ..., b = 2){}, quote(foo(b = 1, 2, 3))) ## I don't like the behavior on this but it's due to match.call
+    theseFormals <- formals(def)
+    formalNames <- names(theseFormals) # formalArgs are the arguments that are defined, i.e. does NOT include anything that is from the args "..."
+    theseFormals <- theseFormals[nchar(theseFormals) > 0]
+    matchedCall <- match.call(def, call) # problem with match.call for our needs is it omits formals that were not provided
+    missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
+    for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
+        name <- names(theseFormals)[ind]
+        matchedCall[[name]] <- theseFormals[[name]]    
+    }
     
-  newCall <- matchedCall[1]
+    newCall <- matchedCall[1]
 
-  for(thisArgName in formalNames){					# This is to get the order of the arguments correctly, including anything omitted
-  	thisArg <- matchedCall[[thisArgName]]
-	if(!is.null(thisArg))
-	  	newCall[[thisArgName]] <- thisArg
-  }
-  
-##  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
- 		# i.e. are there any "..." args? if so, adds them on in the end
-  		# Note: this will preserve arguments EVEN if no '...' is declared, i.e.
-  		# dnorm(jnk = 3, x= 10) will turn into dnorm(x = 10, mean = 0, sd = 1, log = FALSE, jnk = 3)
-##  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
-
-##  for(thisArg in informalArgNames)
-##  	newCall[[thisArg]] <- matchedCall[[thisArg]]
-
-  ## this fixes the handling of additional *unnamed* arguments that may come in through '...' in the def
-  ## It does not appear to be the case (as claimed in older comment above) that extra arguments (like jnk) will be
-  ## tacked on even without a '...' in the def
-  if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL
-
-  indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
-
-  for(thisIndex in indexAdditionalArgs) {
-      thisName <- names(matchedCall)[thisIndex+1]
-      if(thisName=="")
-          newCall[[thisIndex + 1]] <- matchedCall[[thisIndex + 1]]
-      else {
-          newCall[[thisName]] <- matchedCall[[thisName]]
-      }
-  }
-      
-  return(newCall)
+    if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL
+    indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
+    
+    for(thisArgName in formalNames){					# This is to get the order of the arguments correctly and to insert unmatched arguemnts to ... location if appropriate
+        if(thisArgName == '...') {
+            for(thisIndex in indexAdditionalArgs) {
+                thisName <- names(matchedCall)[thisIndex+1]
+                if(thisName=="")
+                    newCall[[length(newCall) + 1]] <- matchedCall[[thisIndex + 1]]
+                else {
+                    newCall[[thisName]] <- matchedCall[[thisName]]
+                }
+            }
+        } else {        
+            thisArg <- matchedCall[[thisArgName]]
+            if(!is.null(thisArg))
+                newCall[[thisArgName]] <- thisArg
+        }
+    }
+    
+    return(newCall)
 }
+
+## matchAndFill.call <- function(def, call){
+##   theseFormals <- formals(def)
+##   formalNames <- names(theseFormals) # formalArgs are the arguments that are defined, i.e. does NOT include anything that is from the args "..."
+##   theseFormals <- theseFormals[nchar(theseFormals) > 0]
+##   matchedCall <- match.call(def, call) # problem with match.call for our needs is it omits formals that were not provided
+##   missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
+##   for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
+##     name <- names(theseFormals)[ind]
+##     matchedCall[[name]] <- theseFormals[[name]]    
+##   }
+    
+##   newCall <- matchedCall[1]
+
+##   for(thisArgName in formalNames){					# This is to get the order of the arguments correctly, including anything omitted
+##   	thisArg <- matchedCall[[thisArgName]]
+## 	if(!is.null(thisArg))
+## 	  	newCall[[thisArgName]] <- thisArg
+##   }
+  
+## ##  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
+##  		# i.e. are there any "..." args? if so, adds them on in the end
+##   		# Note: this will preserve arguments EVEN if no '...' is declared, i.e.
+##   		# dnorm(jnk = 3, x= 10) will turn into dnorm(x = 10, mean = 0, sd = 1, log = FALSE, jnk = 3)
+## ##  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
+
+## ##  for(thisArg in informalArgNames)
+## ##  	newCall[[thisArg]] <- matchedCall[[thisArg]]
+
+##   ## this fixes the handling of additional *unnamed* arguments that may come in through '...' in the def
+##   ## It does not appear to be the case (as claimed in older comment above) that extra arguments (like jnk) will be
+##   ## tacked on even without a '...' in the def
+##   if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL
+
+##   indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
+
+##   for(thisIndex in indexAdditionalArgs) {
+##       thisName <- names(matchedCall)[thisIndex+1]
+##       if(thisName=="")
+##           newCall[[thisIndex + 1]] <- matchedCall[[thisIndex + 1]]
+##       else {
+##           newCall[[thisName]] <- matchedCall[[thisName]]
+##       }
+##   }
+      
+##   return(newCall)
+## }
 
 ## pasteExpr <- function(expr1, expr2)
 ## 	parse(text=paste0(as.character(expr1), as.character(expr2) ) )[[1]]
@@ -1446,83 +1502,110 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
     return(allNDims)
 }
 
+## from a$b(), goal is to get symbolObject for a
+## from a$b$c(), goal is to get symbolObject for b
 matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b(c) as one unit so the member function template for b can be looked up
     dollarSignPart <- code[[1]] ## we already checked that code[[1]][[1]] is '$' before calling this function
-    nfPart <- dollarSignPart[[2]]
-    if(length(nfPart) != 1) { ## It could be a nimbleFunctionList with nfl[[i]]$member(a)
-        nfNestedPart <- nfPart[[1]]
-        if(length(nfNestedPart) != 1) stop(paste0("Cannot handle this expression: ", deparse(code)))
-        if(deparse(nfNestedPart) != '[[') stop(paste0("Cannot handle this expression: ", deparse(code)))
-        nfListName <- deparse(nfPart[[2]])
-        memFunName <- deparse(dollarSignPart[[3]])
-        if(is.null(nfProc)) stop(paste0("Cannot handle what looks like a nimbleFunctionList usage unless it was created in setup code: ", deparse(code)), call. = FALSE)
-        
-        if(nfProc$setupSymTab$symbolExists(nfListName)) { ## look in symbol table
-            symObj <- nfProc$setupSymTab$getSymbolObject(nfListName)
-            if(symObj$type == 'nimbleFunctionList') {
-                thisBaseClass <- symObj$baseClass
-                thisFunctionMatch <- environment(symObj$baseClass)$methodList[[memFunName]]$template
-                return(matchAndFill.call(thisFunctionMatch, code ) )
-            } else stop(paste0("Syntax looks like a nimbleFunctionList member function, but the object isn\'t the right type: ", deparse(code)), call. = FALSE)
-        } else stop(paste0("Syntax looks like a nimbleFunctionList member function, but we can\'t find it in setup: ", deparse(code)), call. = FALSE)
-    }
-    ## must be nfObj$member(args)
-    nfName <- as.character(nfPart) ## nfObj
-    memFunName <- deparse(dollarSignPart[[3]])
-    if((exists(nfName, where = globalenv())) && ((is.nlGenerator(eval(nfPart))) &&
-                                                 !(nfProc$setupSymTab$symbolExists(nfName)))){
-      nlList <- eval(nfPart)$new()
-      nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
-      className <- nlList$nimbleListDef$className
-      newSym <- symbolNimbleList(name = nfName, type = 'symbolNimbleList', nlProc = nlp)
-      if(!(className %in% names(nfProc$neededTypes))) nfProc$neededTypes[[className]] <- newSym
-      addSym <- symbolNimbleListGenerator(name = nfName, type = 'symbolNimbleListGenerator', nlProc = nlp)
-      nfProc$setupSymTab$addSymbol(addSym)
-    }
-    if(nfProc$setupSymTab$symbolExists(nfName)) { ## first look in symbolTable
-        symObj <- nfProc$setupSymTab$getSymbolObject(nfName)
-        if(symObj$type == 'nimbleFunction') {
-            thisRCfunProc <- if(memFunName == 'run') symObj$nfProc$RCfunProcs[["operator()"]] else symObj$nfProc$RCfunProcs[[memFunName]] 
-            if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
-            thisFunctionMatch <- thisRCfunProc$RCfun$template
-            return(matchAndFill.call(thisFunctionMatch, code ) )
-        } 
-        else if(inherits(symObj, 'symbolModel')) {
-                thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
-                if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code)))
-                return(matchAndFill.call(thisFunctionMatch, code) )
-        } 
-        else if(inherits(symObj, 'symbolNimbleListGenerator')){
-          if(memFunName == "new"){
-            listElements <- symObj$nlProc$symTab$getSymbolObjects()
-            if(!is.null(code[[listElements[[1]]$name]])) code[[listElements[[1]]$name]] <- matchKeywords_recurse(code[[listElements[[1]]$name]], nfProc)
-            elementName <- deparse(code[[listElements[[1]]$name]])
-            if(elementName == "NULL") elementName <- ""  ## replace null values with empty char string, will be picked up in processSpecificCalls
-            argValues <- paste0(listElements[[1]]$name, " = ", elementName) ## add the first element here, no leading comma
-            for(i in seq_along(listElements)[-1]){  ## skip the first element
-              if(!is.null(code[[listElements[[i]]$name]])) code[[listElements[[i]]$name]] <- matchKeywords_recurse(code[[listElements[[i]]$name]], nfProc)
-              elementName <- deparse(code[[listElements[[i]]$name]])
-              if(elementName == "NULL") elementName <- ""
-              argValues <- paste0(argValues, ", ", listElements[[i]]$name, " = ", elementName)
+    leftSide <- dollarSignPart[[2]]  ## could have further recursing needed. at the moment, nimbleFunction list can only appear at the end of nesting (member data are not part of inheritance)
+    rightSide <- dollarSignPart[[3]]
+    memFunName <- deparse(rightSide)
+    nestedLeftSide <- FALSE
+
+    ## Step 1: Find the symbol object for whatever is on left-hand side of $
+    ## This may involve recursion
+    ## Only case where the symbol object can be missing (NULL) is nimbleListDef$new() if nimbleListDef if from global env
+    if(length(leftSide) != 1) {
+        if(deparse(leftSide[[1]])=='$') {
+            symObj <- getSymObj_recurse(leftSide, nfProc$setupSymTab)
+            nestedLeftSide <- TRUE
+        } else {
+            nfNestedCall <- leftSide[[1]]
+            if(length(nfNestedCall) != 1) stop(paste0("Cannot handle this expression: ", deparse(code)))
+            if(deparse(nfNestedCall) != '[[') stop(paste0("Cannot handle this expression: ", deparse(code)))
+            leftLeftSide <- leftSide[[2]]
+            if(length(leftLeftSide) != 1) {
+                if(deparse(leftLeftSide[[1]]) == '$') { ##a$b[[i]]$foo()
+                    symObj <- getSymObj_recurse(leftLeftSide, nfProc$setupSymTab)
+                    nestedLeftSide <- TRUE
+                } else stop('Problem processing something like a$b[[i]]$foo()')
+            } else {
+                nfListName <- deparse(leftSide[[2]])
+                if(nfProc$setupSymTab$symbolExists(nfListName)) { ## look in symbol table
+                    symObj <- nfProc$setupSymTab$getSymbolObject(nfListName)
+                }
             }
-            nlCall <- paste0("makeNewNimbleListObject(", nfName, ", ", argValues, ")")
-            return(parse(text = nlCall, keep.source = FALSE)[[1]])
-          }
+            
         }
-        else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
+    } else {
+        symTab <- nfProc$setupSymTab
+        symObj <- symTab$getSymbolObject(deparse(leftSide))
     }
-    ## then look in R
-    if(exists(nfName)) {
-       stop(paste0("Cannot use a specialized nimbleFunction that is not in setup code (it can be an argument to setup or created in setup): ", deparse(code)), call. = FALSE)
+    
+    if(deparse(rightSide)=='new') { ## this is unique because in non-nested mode, this can be looking for a nlDef in global environment (or possibly elsewhere, but not dealt with)
+        ## symObj can be null here
+        if(is.null(symObj)) {
+            if(nestedLeftSide) stop('Cannot find nested nimbleList definition')
+            nlGenName <- deparse(leftSide)
+            if(exists(nlGenName, where = globalenv())) {
+                possibleNLgen <- get(nlGenName, envir = globalenv())
+
+                if(is.nlGenerator(possibleNLgen)) {
+                    nlList <- possibleNLgen$new() ## why do we need to instantiate this every time instead of only if it hasn't been done?
+                    nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+                    className <- nlList$nimbleListDef$className
+                    nfName <- deparse(leftSide)
+                    newSym <- symbolNimbleList(name = nfName,  nlProc = nlp)
+                    if(!(className %in% names(nfProc$neededTypes))) nfProc$neededTypes[[className]] <- newSym
+                    symObj <- symbolNimbleListGenerator(name = nfName, nlProc = nlp)
+                    nfProc$setupSymTab$addSymbol(symObj)
+                }
+            }
+        }
     }
+
+    if(is.null(symObj)) stop('Problem looking up object')
+    
+    if(symObj$type == 'nimbleFunction') {
+        ##            thisRCfunProc <- if(memFunName == 'run') symObj$nfProc$RCfunProcs[["operator()"]] else symObj$nfProc$RCfunProcs[[memFunName]]
+        thisRCfunProc <- symObj$nfProc$RCfunProcs[[memFunName]] 
+        if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
+        thisFunctionMatch <- thisRCfunProc$RCfun$template
+        return(matchAndFill.call(thisFunctionMatch, code ) )
+    } 
+    if(inherits(symObj, 'symbolModel')) {
+        if(nestedLeftSide) stop('Access to a model cannot be nested.')
+        thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
+        if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code)))
+        return(matchAndFill.call(thisFunctionMatch, code) )
+    }
+    if(inherits(symObj, 'symbolNimbleFunctionList')) {
+        thisBaseClass <- symObj$baseClass
+        thisFunctionMatch <- environment(symObj$baseClass)$methodList[[memFunName]]$template
+        return(matchAndFill.call(thisFunctionMatch, code ) )
+    }
+    if(inherits(symObj, 'symbolNimbleListGenerator')){
+        if(nestedLeftSide) stop('Problem with something like X$nimbleListDef$new().') 
+        if(memFunName == "new"){
+            thisFunctionMatch <- symObj$nlProc$templateWithBlankFirstArg ## function( , var1, var2, etc.) 
+            ##names(thisFunctionMatch)[2] <- '.LEFTSIDE' ## function(.LEFTSIDE, var1, var2, etc.), build into templateWithBlankFirstArg
+            for(i in seq_along(code[-1])) code[[i+1]] <- matchKeywords_recurse(code[[i+1]], nfProc)
+            code[[ length(code) + 1]] <- leftSide      ## add '.LEFTSIDE = leftSide' arg to code
+            names(code)[length(code)] <- '.LEFTSIDE'
+            code[[1]] <- as.name('makeNewNimbleListObject') ## modify first arg of code to be desired name of call
+            return(matchAndFill.call(thisFunctionMatch, code ) ) ## should create makeNewNimbleListObject( nimbleListCallMaybeNested, var1, var2, etc.)
+        }
+    }
+    stop(paste0("Cannot handle this expression: ", deparse(code))) 
 }
+
 
 matchKeywordCode <- function(code, nfProc){
     callName <- as.character(code[[1]])
     thisFunctionMatch <- matchFunctions[[ callName ]]
     ## see if this is a member function of an nf object
     if(!is.null(nfProc)) {
-        modCallName <- if(callName == "run") "operator()" else callName
+        ##modCallName <- if(callName == "run") "operator()" else callName
+        modCallName <- callName
         if(nfProc$setupSymTab$symbolExists(modCallName)) {
             symObj <- nfProc$setupSymTab$getSymbolObject(modCallName)
             if(class(symObj) == "symbolMemberFunction") {

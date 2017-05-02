@@ -7,20 +7,21 @@
 
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
+  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+    "SEXP_2_NimArr<1, double> called for SEXP that is not a numeric or logical: actual type %s\n",
+    type2str(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
-  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(nn);
   if(isReal(Sn)) {
-     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
+     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());
   } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      for(int i = 0; i < nn; ++i) {
-	ans(i) = static_cast<double>(iSn[i]);
-      }
-    } else {
-      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
+    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+      "could not handle input of type %s to SEXP_2_NimArr<1, double>\n",
+      type2str(TYPEOF(Sn)));
+    int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+    for(int i = 0; i < nn; ++i) {
+      ans(i) = static_cast<double>(iSn[i]);
     }
   }
 }
@@ -28,23 +29,24 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
 // Actually this is identical to above so could be done without specialization
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
+  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+    "SEXP_2_NimArr<1, int> called for SEXP that is not a numeric or logical: actual type %s\n",
+    type2str(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
-  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(nn);
   if(isReal(Sn)) {
-     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
+     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());
   } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      for(int i = 0; i < nn; ++i) {
-	ans(i) = static_cast<double>(iSn[i]);
-      }
-    } else {
-      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
+    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+      "could not handle input of type %s to SEXP_2_NimArr<1, int>\n",
+      type2str(TYPEOF(Sn)));
+    int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+    for(int i = 0; i < nn; ++i) {
+      ans(i) = static_cast<double>(iSn[i]);
     }
   }
-} 
+}
 
 /*EIGEN_EIGEN class functions below */
 SEXP  EIGEN_EIGENCLASS_R::copyToSEXP (  )  {
@@ -136,24 +138,29 @@ void  EIGEN_EIGENCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
  }
 
 SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {
-	NimArr<2, double> x;
-	bool valuesOnly;
-	SEXP_2_NimArr<2>(S_x, x);
-	valuesOnly = SEXP_2_bool(S_valuesOnly);
-	Eigen::Map<Eigen::MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
-    EIGEN_EIGENCLASS_R C_eigenClass = *EIGEN_EIGEN_R(Eig_x, valuesOnly);
-	C_eigenClass.RObjectPointer = returnList;
-	C_eigenClass.copyToSEXP();
-    return(returnList);
+  int* dims = INTEGER(getAttrib(S_x, R_DimSymbol));
+  if(!isMatrix(S_x) || dims[0] != dims[1])
+    RBREAK("Error (C_nimEigen): 'x' must be a square matrix.\n");
+  NimArr<2, double> x;
+  bool valuesOnly;
+  SEXP_2_NimArr<2>(S_x, x);
+  valuesOnly = SEXP_2_bool(S_valuesOnly);
+  Eigen::Map<Eigen::MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
+  EIGEN_EIGENCLASS_R C_eigenClass = *EIGEN_EIGEN_R(Eig_x, valuesOnly);
+  C_eigenClass.RObjectPointer = returnList;
+  C_eigenClass.copyToSEXP();
+  return(returnList);
 }
 
- SEXP C_nimSvd(SEXP S_x, SEXP S_vectors, SEXP returnList) {
- 	NimArr<2, double> x;
- 	int vectors = SEXP_2_int(S_vectors, 0, 0);
- 	SEXP_2_NimArr<2>(S_x, x);
- 	Eigen::Map<Eigen::MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
- 	EIGEN_SVDCLASS_R C_svdClass = *EIGEN_SVD_R(Eig_x, vectors);
- 	C_svdClass.RObjectPointer = returnList;
- 	C_svdClass.copyToSEXP();
-     return(C_svdClass.RObjectPointer);
+SEXP C_nimSvd(SEXP S_x, SEXP S_vectors, SEXP returnList) {
+  if(!isMatrix(S_x))
+    RBREAK("Error (C_nimSvd): 'x' must be a matrix.\n");
+  NimArr<2, double> x;
+  int vectors = SEXP_2_int(S_vectors, 0, 0);
+  SEXP_2_NimArr<2>(S_x, x);
+  Eigen::Map<Eigen::MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
+  EIGEN_SVDCLASS_R C_svdClass = *EIGEN_SVD_R(Eig_x, vectors);
+  C_svdClass.RObjectPointer = returnList;
+  C_svdClass.copyToSEXP();
+  return(C_svdClass.RObjectPointer);
 }

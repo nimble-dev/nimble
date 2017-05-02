@@ -11,6 +11,9 @@ using std::string;
 
 //using namespace std;
 
+// A utility function that will return floor(x) unless x is within numerical imprecision of an integer, in which case it will return round(x)
+int floorOrEquivalent(double x);
+
 int rFunLength(int Arg);
 int rFunLength(double Arg);
 int rFunLength(bool Arg);
@@ -22,9 +25,18 @@ class nimbleTimerClass_ {
   double endNimbleTimer() { return(((double)(clock() - t_start))/CLOCKS_PER_SEC); }
 };
 
+#if defined(__GNUG__) || defined(__clang__)
+#  define NIM_LIKELY(x) __builtin_expect(!!(x), 1)
+#  define NIM_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#  define NIM_LIKELY(x) (x)
+#  define NIM_UNLIKELY(x) (x)
+#endif
+
 #define PRINTF Rprintf
 #define NIMERROR error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
+#define NIM_ASSERT(cond, ...) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " __VA_ARGS__); }}
 
 // code copied from nmath.h - useful utilities 
 # define MATHLIB_ERROR(fmt,x)		error(fmt,x);

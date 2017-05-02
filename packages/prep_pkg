@@ -151,6 +151,7 @@ keep <- exportNames %in% funs
 
 exportText <- namespace[keep]
 
+additionalExports <- c(additionalExports, 'nimbleType')  # nimbleType needed it is being exported only as a class as it is officially a refClass not a function
 exportTextAdd <- paste0("export(", additionalExports, ")")
 exportText <- c(exportTextAdd, exportText)
 

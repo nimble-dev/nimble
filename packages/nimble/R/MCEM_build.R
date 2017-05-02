@@ -21,7 +21,7 @@ calc_asympVar = nimbleFunction(
         }
       }
       #as per Caffo, calculate both Q functions using the same samples from the latent variables
-      svals[r]  <- calc_E_llk(theta, oldTheta, 1) 
+      svals[r]  <- calc_E_llk$run(theta, oldTheta, 1) 
     }
     svalsSD <- sd(svals)
     svalsVar <- svalsSD^2

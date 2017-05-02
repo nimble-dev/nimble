@@ -55,6 +55,7 @@ test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot 
             expect_equal(compilerFailed, expectCompilerFailed))
 
   if(compilerFailed) {
+      if(expectCompilerFailed) message('COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.')
       return();
   }
   
@@ -624,9 +625,9 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
       return(c(mean = mean(vals), sd = sd(vals), quantile(vals, .025), quantile(vals, .975)))
 
     if(doCpp) {
-      if(verbose) {
-        try(print(apply(C_samples[, , drop = FALSE], 2, summarize_posterior)))
-      }
+      # if(verbose) {
+      #   try(print(apply(C_samples[, , drop = FALSE], 2, summarize_posterior)))
+      # }
     }
   }
 
@@ -661,7 +662,6 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         latentSampLength <- length(latentNames)
         latentDim <- latentSampLength/dim(C_weights)[2]
         samplesToWeightsMatch[latentIndices] <- rep(1:dim(C_weights)[2], each = latentDim )
-
       }
       for(metric in names(results)) {
         if(!metric %in% c('mean', 'median', 'sd', 'var', 'cov', 'll'))
@@ -717,6 +717,9 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         }
       }
     }
+  }
+  if(verbose) {
+    try(print(apply(as.matrix(C_samples), 2, summarize_posterior)))  ## print summaries of equally weighted samples
   }
   if(returnSamples) {
     if(exists('CmvSample'))

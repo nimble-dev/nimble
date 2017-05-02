@@ -8,6 +8,21 @@
 #include<cstdlib>
 #include "dists.h"
 
+
+// a utility function used by nimSeq and generated size expressions to determine the length of a sequence
+template<typename fromT, typename toT, typename byT>
+  int calcSeqLength(fromT from, toT to, byT by) { // we need this function because of imprecision issues
+  double doubleLength = (static_cast<double>(to) - static_cast<double>(from))/static_cast<double>(by);
+  return(1 + floorOrEquivalent(doubleLength));
+}
+
+// a utility function used to determine missing nrow or ncol for a matrix
+template<typename totLenT, typename knownDimT>
+  int calcMissingMatrixSize(totLenT totLen, knownDimT knownDim) {
+  double doubleLength = (static_cast<double>(totLen) - 1.) / static_cast<double>(knownDim);
+  return(1 + floorOrEquivalent(doubleLength));
+}
+
 // put the call to arg.size() in a struct so we can proxy it with "1" for a scalar type
 // wrap access to Eigen's traits::..::LinearAccessBit so we can proxy it with true for a scalar type (double, int, bool)
 template<typename T>
@@ -84,11 +99,11 @@ struct nimble_eigen_coeff_impl<true, result_type, eigenType, Index> {
 template<typename result_type, typename eigenType, typename Index>
 struct nimble_eigen_coeff_impl<false, result_type, eigenType, Index> {
   static result_type getCoeff(const eigenType &Arg, Index i) {
-    std::ldiv_t divRes = div(i, Arg.rows());
+    std::div_t divRes = div(static_cast<int>(i), static_cast<int>(Arg.rows())); // some compilers don't like seeing div(long, int)
     return Arg.coeff(divRes.rem, floor(divRes.quot));
   }
   static result_type getDiagCoeff(const eigenType &Arg, Index i) {
-    std::ldiv_t divRes = div(i, Arg.rows());
+    std::div_t divRes = div(static_cast<int>(i), static_cast<int>(Arg.rows()));
     return Arg.coeff(divRes.rem, floor(divRes.quot));
   }
 };
@@ -134,7 +149,7 @@ template<typename DerivedIndex, typename DerivedSource>
     result_type operator()(DerivedIndex i) const //Eigen::DenseIndex
   {
     //    std::cout<<"IN 1\n";
-    std::ldiv_t divRes = div(i, dim1);
+    std::div_t divRes = div(static_cast<int>(i), dim1);
     // iRow = divRes.rem
     // iCol = floor(divRes.quot)
     if(divRes.rem == floor(divRes.quot)) { // on diagonal
@@ -502,7 +517,8 @@ public:
   from(fromIn),
     by(byIn) {
       //    printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n");
-      length_out = 1 + static_cast<int>(floor(static_cast<double>(toIn) - static_cast<double>(from)) / static_cast<double>(byIn));
+      length_out = calcSeqLength(fromIn, toIn, byIn);
+      //      length_out = 1 + static_cast<int>(floor(static_cast<double>(toIn) - static_cast<double>(from)) / static_cast<double>(byIn));
     };
   
   typedef typename Eigen::internal::traits<DerivedOut>::Index Index;
@@ -696,7 +712,7 @@ public:
   template<typename fromType>
   void fill(const fromType &from) {
     Scalar val = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::nimbleUseLinearAccess), Scalar, fromType, IndexType >::getCoeff(from, 0);
-    printf("In from\n");
+    //printf("In from\n");
     for(int i = 0 ; i  < totSize; i++) {
       coeffRef(i) = val;
     }
@@ -704,7 +720,7 @@ public:
   // this will only work for Eigen types 
   typedef typename Eigen::internal::traits<DerivedTarget>::Scalar Scalar;
   Scalar &coeffRef(IndexType i) const {
-    std::ldiv_t divRes = div(i, dim1);
+    std::div_t divRes = div(static_cast<int>(i), dim1);
     return target.coeffRef(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::nimbleUseLinearAccess), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, divRes.rem)-1,
 			   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, floor(divRes.quot))-1);
 
@@ -745,7 +761,7 @@ class nonseqIndexedClass {
   result_type operator()(IndexObj i) const //Eigen::DenseIndex
   {
     //std::cout<<"IN 1\n";
-    std::ldiv_t divRes = div(i, dim1);
+    std::div_t divRes = div(static_cast<int>(i), dim1);
     return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::nimbleUseLinearAccess), result_type, DerivedI1, IndexObj >::getCoeff(index1, divRes.rem) - 1,
 		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::nimbleUseLinearAccess), result_type, DerivedI2, IndexObj >::getCoeff(index2, floor(divRes.quot)) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
     //index1(divRes.rem)-1, index2(floor(divRes.quot))-1);
@@ -782,7 +798,7 @@ struct nonseqIndexed_impl {
 
 #define nimNonseqIndexedd nonseqIndexed_impl<MatrixXd>::nonseqIndexed
 #define nimNonseqIndexedi nonseqIndexed_impl<MatrixXi>::nonseqIndexed
-#define nimNonseqIndexedb nonseqIndexed_imple<MatrixXb>::nonseqIndexed
+#define nimNonseqIndexedb nonseqIndexed_impl<MatrixXb>::nonseqIndexed
 
 // get first element or length.  used for lengths of return values of recycling rule r functions needed for sizeExprs
 
@@ -805,7 +821,7 @@ struct nimble_eigen_coeff_mod_impl<true, result_type, eigenType, Index> {
 template<typename result_type, typename eigenType, typename Index>
 struct nimble_eigen_coeff_mod_impl<false, result_type, eigenType, Index> {
   static result_type getCoeff(const eigenType &Arg, Index i, unsigned int size) {
-    std::ldiv_t divRes = div(i % size, Arg.rows());
+    std::div_t divRes = div(static_cast<int>(i % size), static_cast<int>(Arg.rows()));
     return Arg.coeff(divRes.rem, floor(divRes.quot));
   }  
 };
@@ -1410,38 +1426,50 @@ template<typename Index, typename DerivedInput>
   const DerivedInput &input;
   int dim1, dim2, totalLength, inputLength, inputRows;
   bool init; // would be a bit silly to call with init = FALSE, but it is allowed to simplify code generation
+  bool recycle;
   typedef double result_type;
- newMatrixClass(const DerivedInput &inputIn, bool initIn, int rowsIn, int colsIn) :
+ newMatrixClass(const DerivedInput &inputIn, bool initIn, bool recycleIn, int rowsIn, int colsIn) :
   input(inputIn),
-    init(initIn) {
-    inputLength = nimble_size_impl<DerivedInput>::getSize(input);
-    inputRows = nimble_size_impl<DerivedInput>::getRows(input);
-    bool rowsProvided = rowsIn > 0;
-    bool colsProvided = colsIn > 0;
-    if(!rowsProvided) {
-      if(!colsProvided) {
-	dim1 = inputLength;
-	dim2 = 1;
+    init(initIn),
+    recycle(recycleIn) {
+      inputLength = nimble_size_impl<DerivedInput>::getSize(input);
+      inputRows = nimble_size_impl<DerivedInput>::getRows(input);
+      bool rowsProvided = rowsIn > 0;
+      bool colsProvided = colsIn > 0;
+      if(!rowsProvided) {
+	if(!colsProvided) {
+	  dim1 = inputLength;
+	  dim2 = 1;
+	} else {
+	  dim2 = colsIn;
+	  dim1 = floor((double(inputLength)-1) / double(colsIn)) + 1;
+	}
       } else {
-	dim2 = colsIn;
-	dim1 = floor((double(inputLength)-1) / double(colsIn)) + 1;
+	if(!colsProvided) {
+	  dim1 = rowsIn;
+	  dim2 = floor((double(inputLength)-1) / double(rowsIn)) + 1;
+	} else {
+	  dim1 = rowsIn;
+	  dim2 = colsIn;
+	}
       }
-    } else {
-      if(!colsProvided) {
-	dim1 = rowsIn;
-	dim2 = floor((double(inputLength)-1) / double(rowsIn)) + 1;
-      } else {
-	dim1 = rowsIn;
-	dim2 = colsIn;
-      }
+      totalLength = dim1 * dim2;
     }
-    totalLength = dim1 * dim2;
-  }
   result_type operator()(Index i) const 
   {
-    if(init)
-      return nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedInput>::nimbleUseLinearAccess), result_type, DerivedInput, Index >::getCoeff(input, i, inputLength);
-    return 0;
+    if(init) {
+      if(recycle) {
+	return nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedInput>::nimbleUseLinearAccess), result_type, DerivedInput, Index >::getCoeff(input, i, inputLength);
+      } else {
+	if(static_cast<int>(i) < inputLength) {
+	  return nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedInput>::nimbleUseLinearAccess), result_type, DerivedInput, Index >::getCoeff(input, i);
+	} else {
+	  return 0;
+	}
+      }
+    } else {
+      return 0;
+    }
   }
 
   result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
@@ -1465,8 +1493,8 @@ template<typename returnDerived>
 struct newMatrix_impl {
   typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
   template<typename DerivedObj>
-  static CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived > newMatrix(const DerivedObj &s, bool initIn, int nRowIn, int nColIn) {
-    newMatrixClass<IndexReturn, DerivedObj > obj(s, initIn, nRowIn, nColIn);
+  static CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived > newMatrix(const DerivedObj &s, bool initIn, bool recycle, int nRowIn, int nColIn) {
+    newMatrixClass<IndexReturn, DerivedObj > obj(s, initIn, recycle, nRowIn, nColIn);
     return(CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived >(obj.dim1, obj.dim2, obj));
   }
 };

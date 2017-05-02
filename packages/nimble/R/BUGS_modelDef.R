@@ -584,36 +584,39 @@ modelDefClass$methods(reparameterizeDists = function() {
         if(!(distName %in% getAllDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
         distRule <- getDistributionInfo(distName)
         numArgs <- length(distRule$reqdArgs)
-        if(numArgs==0) next; ## a user-defined distribution might have 0 arguments
         newValueExpr <- quote(dist())       ## set up a parse tree for the new value expression
         newValueExpr[[1]] <- as.name(distName)     ## add in the distribution name
-        newValueExpr[1 + (1:numArgs)] <- rep(NA, numArgs)      ## fill in the new parse tree with required arguments
-        names(newValueExpr)[1 + (1:numArgs)] <- distRule$reqdArgs    ## add names for the arguments
-
-        params <- if(length(valueExpr) > 1) as.list(valueExpr[-1]) else structure(list(), names = character()) ## extract the original distribution parameters
-        
-        if(identical(sort(names(params)), sort(distRule$reqdArgs))) {
+        if(numArgs==0) { ## a user-defined distribution might have 0 arguments
+          nonReqdArgExprs <- NULL
+          boundExprs <- BUGSdecl$boundExprs
+        } else {   
+          newValueExpr[1 + (1:numArgs)] <- rep(NA, numArgs)      ## fill in the new parse tree with required arguments
+          names(newValueExpr)[1 + (1:numArgs)] <- distRule$reqdArgs    ## add names for the arguments
+          
+          params <- if(length(valueExpr) > 1) as.list(valueExpr[-1]) else structure(list(), names = character()) ## extract the original distribution parameters
+          
+          if(identical(sort(names(params)), sort(distRule$reqdArgs))) {
             matchedAlt <- 0
-        } else {
+          } else {
             matchedAlt <- NULL; count <- 0
             while(is.null(matchedAlt) && count < distRule$numAlts) {
-                count <- count + 1
-                if(identical(sort(unique(distRule$alts[[count]])), sort(unique(names(params)))))
-                    matchedAlt <- count
+              count <- count + 1
+              if(identical(sort(unique(distRule$alts[[count]])), sort(unique(names(params)))))
+                matchedAlt <- count
             }
             if(is.null(matchedAlt)) stop(paste0('bad parameters for distribution ', deparse(valueExpr), '. (No available re-parameterization found.)'), call. = FALSE)
-        }
-        nonReqdArgs <- names(params)[!(names(params) %in% distRule$reqdArgs)]
-        for(iArg in 1:numArgs) {   ## loop over the required arguments
+          }
+          nonReqdArgs <- names(params)[!(names(params) %in% distRule$reqdArgs)]
+          for(iArg in 1:numArgs) {   ## loop over the required arguments
             reqdArgName <- distRule$reqdArgs[iArg]
             ## if it was supplied, copy the supplied expression "as is"
             if(reqdArgName %in% names(params)) {
-                newValueExpr[[iArg + 1]] <- params[[reqdArgName]];
-                next
+              newValueExpr[[iArg + 1]] <- params[[reqdArgName]];
+              next
             }
             if(!matchedAlt) error("Something wrong - looking for alternative parameterization but supplied args are same as required args: ", deparse(valueExpr))
             if(!reqdArgName %in% names(distRule$exprs[[matchedAlt]]))
-                stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', deparse(valueExpr), '.')
+              stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', deparse(valueExpr), '.')
             transformedParameterPT <- distRule$exprs[[matchedAlt]][[reqdArgName]]
             ## fixing issue of pathological-case model variable names, e.g.,
             ## y ~ dnorm(0, tau = sd)
@@ -621,46 +624,47 @@ modelDefClass$methods(reparameterizeDists = function() {
             ##for(nm in c(nonReqdArgs, distRule$reqdArgs))
             namesToSubstitute <- intersect(c(nonReqdArgs, distRule$reqdArgs), all.vars(transformedParameterPT))
             for(nm in namesToSubstitute) {
-                ## loop thru possible non-canonical parameters in the expression for the canonical parameter
-                if(is.null(params[[nm]])) stop('this shouldn\'t happen -- something wrong with my understanding of parameter transformations')
-                transformedParameterPT <- parseTreeSubstitute(pt = transformedParameterPT, pattern = as.name(nm), replacement = params[[nm]])
+              ## loop thru possible non-canonical parameters in the expression for the canonical parameter
+              if(is.null(params[[nm]])) stop('this shouldn\'t happen -- something wrong with my understanding of parameter transformations')
+              transformedParameterPT <- parseTreeSubstitute(pt = transformedParameterPT, pattern = as.name(nm), replacement = params[[nm]])
             }
             newValueExpr[[iArg + 1]] <- transformedParameterPT
-        }
-
-        # evaluate boundExprs in context of model
-        boundExprs <- BUGSdecl$boundExprs
-        reqdParams <- as.list(newValueExpr[-1])
-        for(iBound in 1:2) {
+          }
+          
+                                        # evaluate boundExprs in context of model
+          boundExprs <- BUGSdecl$boundExprs
+          reqdParams <- as.list(newValueExpr[-1])
+          for(iBound in 1:2) {
             if(!is.numeric(boundExprs[[iBound]])) {
                                         # only expecting boundExprs to be functions of reqdArgs
-                if(length(intersect(nonReqdArgs, all.vars(boundExprs[[iBound]]))))
-                    stop("Expecting expressions for distribution range for ", distName, " to be functions only of required arguments, namely the parameters used in the 'Rdist' element.")
-                namesToSubstitute <- intersect(c(distRule$reqdArgs), all.vars(boundExprs[[iBound]]))
-                for(nm in namesToSubstitute) {
-                    if(is.null(params[[nm]])) stop('this shouldn\'t happen -- something wrong with my understanding of parameter transformations')
-                    boundExprs[[iBound]] <- parseTreeSubstitute(pt = boundExprs[[iBound]], pattern = as.name(nm), replacement = params[[nm]])
-                }
+              if(length(intersect(nonReqdArgs, all.vars(boundExprs[[iBound]]))))
+                stop("Expecting expressions for distribution range for ", distName, " to be functions only of required arguments, namely the parameters used in the 'Rdist' element.")
+              namesToSubstitute <- intersect(c(distRule$reqdArgs), all.vars(boundExprs[[iBound]]))
+              for(nm in namesToSubstitute) {
+                if(is.null(params[[nm]])) stop('this shouldn\'t happen -- something wrong with my understanding of parameter transformations')
+                boundExprs[[iBound]] <- parseTreeSubstitute(pt = boundExprs[[iBound]], pattern = as.name(nm), replacement = params[[nm]])
+              }
             }
+          }
+          
+          ## hold onto the expressions for non-required args
+          nonReqdArgExprs <- params[nonReqdArgs]    ## grab the non-required args from the original params list
+          names(nonReqdArgExprs) <- if(length(nonReqdArgExprs) > 0) paste0('.', names(nonReqdArgExprs)) else character(0)  ## append '.' to the front of all the old (reparameterized away) param names
+          
+                                        # insert altParams and bounds into code
         }
-        
-        ## hold onto the expressions for non-required args
-        nonReqdArgExprs <- params[nonReqdArgs]    ## grab the non-required args from the original params list
-        names(nonReqdArgExprs) <- if(length(nonReqdArgExprs) > 0) paste0('.', names(nonReqdArgExprs)) else character(0)  ## append '.' to the front of all the old (reparameterized away) param names
-
-        # insert altParams and bounds into code
         newValueExpr <- as.call(c(as.list(newValueExpr), nonReqdArgExprs, boundExprs))
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        # note at this point boundExprs set back to NULL as all info in lower,upper in valueExpr
+                                        # note at this point boundExprs set back to NULL as all info in lower,upper in valueExpr
         BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, NULL)
         declInfo[[i]] <<- BUGSdeclClassObject
-    }  # close loop over declInfo
-})
-
-    modelDefClass$methods(addRemainingDotParams = function() {
+      }  # close loop over declInfo
+  })
+    
+modelDefClass$methods(addRemainingDotParams = function() {
     for(iDecl in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDecl]]     ## grab this current BUGS declation info object
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes

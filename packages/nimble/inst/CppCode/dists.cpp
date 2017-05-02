@@ -138,9 +138,18 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(chol) || !isReal(df) || !isReal(scale_param) || !isLogical(return_log))
+  if(!isMatrix(x) || !isMatrix(chol) || !isReal(x) || !isReal(chol))
+    RBREAK("Error (C_dwish_chol): 'x' and 'chol' must be real matrices.\n")
+  if(!isReal(df) || !isReal(scale_param) || !isLogical(return_log))
     RBREAK("Error (C_dwish_chol): invalid input type for one of the arguments.\n");
-  int p = pow(LENGTH(chol), 0.5);
+  int* dims = INTEGER(getAttrib(x, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dwish_chol): 'x' must be a square matrix.\n");
+  int p = dims[0];
+  dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1] || dims[0] != p)
+   RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix with the same dimensions as 'x'.\n");
+
   int give_log = (int) LOGICAL(return_log)[0];
   double scale = REAL(scale_param)[0];
 
@@ -153,7 +162,7 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
   
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dwish_chol(c_x, c_chol, c_df, p, scale, give_log, 1);  // 1: ok to overwrite when coming from R
+  REAL(ans)[0] = dwish_chol(c_x, c_chol, c_df, p, scale, give_log, 0); 
   UNPROTECT(1);
   return ans;
 }
@@ -211,11 +220,12 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param, i
     cholCopy = chol;
   else {
     cholCopy = new double[p*p];
-    for(i = 0; i < p*p; i++) 
-      cholCopy[i] = chol[i];
+    if(scale_param)
+      for(i = 0; i < p*p; i++) 
+        cholCopy[i] = chol[i];
   }
   if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
-  else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
+  else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, chol, &p, Z, &p);
 
   // cp result to Z or chol so can be used as matrix to multiply against and overwrite
   if(scale_param) {
@@ -229,7 +239,7 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param, i
   // do crossprod of result
   // for dtrmm call, again this would be more efficient if use fact that RHS upper triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
   if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
-  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, chol, &p, cholCopy, &p, &beta, Z, &p); 
+  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p); 
   if(!overwrite_inputs)
     delete [] cholCopy;
 }
@@ -239,10 +249,16 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(chol) || !isReal(df) || !isReal(scale_param))
+  if(!isMatrix(chol) || !isReal(chol))
+    RBREAK("Error (Crwish_chol): 'chol' must be a real matrix.\n")
+  if(!isReal(df) || !isReal(scale_param))
     RBREAK("Error (C_rwish_chol): invalid input type for one of the arguments.\n");
+  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix.\n");
+  int p = dims[0];
+
   int n_chol = LENGTH(chol);
-  int p = pow(n_chol, 0.5);
   double scale = REAL(scale_param)[0];
 
   double* c_chol = REAL(chol);
@@ -255,7 +271,7 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, n_chol));  
-  rwish_chol(REAL(ans), c_chol, c_df, p, scale, 1); // 1: ok to overwrite when coming from R
+  rwish_chol(REAL(ans), c_chol, c_df, p, scale, 0);
   
   PutRNGstate();
   UNPROTECT(1);
@@ -899,9 +915,21 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(mean) || !isReal(chol) || !isReal(prec_param) || !isLogical(return_log))
+  if(!isMatrix(chol) || !isReal(chol))
+    RBREAK("Error (C_dmnorm_chol): 'chol' must be a real matrix.\n");
+  if(!isReal(x) || !isReal(mean))
+    RBREAK("Error (C_dmnorm_chol): 'x' and 'mean' should be real valued.\n");
+  if(!isReal(prec_param) || !isLogical(return_log))
     RBREAK("Error (C_dmnorm_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix.\n");
+  int p = dims[0];
+
   int n_x = LENGTH(x);
+  if(n_x != p)
+    RBREAK("Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.\n");
   int n_mean = LENGTH(mean);
   int give_log = (int) LOGICAL(return_log)[0];
   double prec = REAL(prec_param)[0];
@@ -922,7 +950,7 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
   
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dmnorm_chol(c_x, full_mean, c_chol, n_x, prec, give_log, 1);  // 1: ok to overwrite when coming from R
+  REAL(ans)[0] = dmnorm_chol(c_x, full_mean, c_chol, n_x, prec, give_log, 0);
   if(n_mean < n_x)
     delete [] full_mean;
   UNPROTECT(1);
@@ -970,11 +998,19 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(mean) || !isReal(chol) || !isReal(prec_param))
+  if(!isMatrix(chol) || !isReal(chol))
+    RBREAK("Error (C_rmnorm_chol): 'chol' should be a real matrix.\n");
+  if(!isReal(mean))
+    RBREAK("Error (C_rmnorm_chol): 'mean' should be real-valued\n");
+  if(!isReal(prec_param))
     RBREAK("Error (C_rmnorm_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dmnorm_chol): 'chol' must be a square matrix.\n");
+  int n_values = dims[0];
+
   int n_mean = LENGTH(mean);
-  int n_chol = LENGTH(chol);
-  int n_values = pow(n_chol, 0.5);
   double prec = REAL(prec_param)[0];
 
   int i;
@@ -1071,9 +1107,21 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
   // Cholesky matrix should be given as a numeric vector in column-major order
   //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(mu) || !isReal(chol) || !isReal(df) || !isReal(prec_param) || !isLogical(return_log))
+  if(!isMatrix(chol) || !isReal(chol))
+    RBREAK("Error (C_dmvt_chol): 'chol' must be a real matrix.\n");
+  if(!isReal(x) || !isReal(mu))
+    RBREAK("Error (C_dmvt_chol): 'x' and 'mu' should be real valued.\n");
+  if(!isReal(df) || !isReal(prec_param) || !isLogical(return_log))
     RBREAK("Error (C_dmvt_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dmvt_chol): 'chol' must be a square matrix.\n");
+  int p = dims[0];
+
   int n_x = LENGTH(x);
+  if(n_x != p)
+    RBREAK("Error (C_dmvt_chol): 'x' and 'chol' are not of compatible sizes.\n");
   int n_mu = LENGTH(mu);
   int give_log = (int) LOGICAL(return_log)[0];
   double c_df = REAL(df)[0];
@@ -1095,7 +1143,7 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
   
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dmvt_chol(c_x, full_mu, c_chol, c_df, n_x, prec, give_log, 1);  // 1: ok to overwrite when coming from R
+  REAL(ans)[0] = dmvt_chol(c_x, full_mu, c_chol, c_df, n_x, prec, give_log, 0); 
   if(n_mu < n_x)
     delete [] full_mu;
   UNPROTECT(1);
@@ -1146,11 +1194,19 @@ SEXP C_rmvt_chol(SEXP mu, SEXP chol, SEXP df, SEXP prec_param)
   // Cholesky matrix should be given as a numeric vector in column-major order
   //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(mu) || !isReal(chol) || !isReal(df) || !isReal(prec_param))
+  if(!isMatrix(chol) || !isReal(chol))
+    RBREAK("Error (C_rmvt_chol): 'chol' should be a real matrix.\n");
+  if(!isReal(mu))
+    RBREAK("Error (C_rmvt_chol): 'mu' should be real-valued\n");
+  if(!isReal(prec_param))
     RBREAK("Error (C_rmvt_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_rmvt_chol): 'chol' must be a square matrix.\n");
+  int n_values = dims[0];
+
   int n_mu = LENGTH(mu);
-  int n_chol = LENGTH(chol);
-  int n_values = pow(n_chol, 0.5);
   double c_df = REAL(df)[0];
   double prec = REAL(prec_param)[0];
   
