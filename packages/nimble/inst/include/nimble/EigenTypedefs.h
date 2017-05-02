@@ -54,6 +54,23 @@ public:
   EIGEN_SVDCLASS();
 };
 
+
+class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
+public:
+	NimArr<1, double> value;
+	NimArr<2, double> gradient;
+	NimArr<3, double> hessian;
+	NimArr<4, double> thirdDerivs;
+
+	SEXP RObjectPointer;
+	bool RCopiedFlag;
+	void  copyFromSEXP ( SEXP S_nimList_ );
+	SEXP  copyToSEXP (  );
+	void  createNewSEXP (  );
+	void  resetFlags (  );
+	NIMBLE_ADCLASS (  );
+};
+
 template<class Derived>
 nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(const Eigen::MatrixBase<Derived> &x, bool valuesOnly) {
     nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;

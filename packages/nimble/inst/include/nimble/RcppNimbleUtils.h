@@ -138,13 +138,20 @@ NimArr<1, double> vectorDouble_2_NimArr(vector<double> input);
   So these are witten for doubles, and when we get to integers and logicals we can 
   use overlaoding or different names.
  */
-
+template<int ndim>
+void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans );
+template<int ndim>
+void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans );
 
 template<int ndim>
 SEXP NimArr_2_SEXP(const NimArr<ndim, double> &val);
 template<int ndim>
 SEXP NimArr_2_SEXP(const NimArr<ndim, int> &val);
 
+template<>
+void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans); 
+template<>
+void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans); 
 
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
@@ -361,4 +368,5 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 				 	int numOtherArgs, ...);
 					
 
+void RBrowserFun(SEXP Robj);
 #endif

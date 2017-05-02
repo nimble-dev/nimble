@@ -73,8 +73,6 @@ extern "C" {
 
 void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent);
 
-SEXP makeNewNimbleList(SEXP S_listName);
-
 //void dontDeleteFinalizer(SEXP ptr);
 
 #endif

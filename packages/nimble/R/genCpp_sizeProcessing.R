@@ -980,7 +980,9 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 
 
 sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
+  browser()
   asserts <- recurseSetSizes(code, symTab, typeEnv)
+  if(code$name == 'nimDerivs'){ asserts <- sizeNimbleFunction(code$args[[1]], symTab, typeEnv)}
   code$type <- 'nimbleList'
   nlClassName <- nl.getListDef(nimbleListReturningFunctionList[[code$name]]$nlGen)$className
   symbolObject <- symTab$getSymbolObject(nlClassName, inherits = TRUE)

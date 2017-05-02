@@ -1136,4 +1136,15 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 	//Could return ans if we decided to build it on the fly here instead of providing it as argument
 }	
 
+void RBrowserFun(SEXP Robj){
+  SEXP call;
+  PROTECT(call = allocVector(LANGSXP, 2));
+  SETCAR( call,
+    findFun( install("cppNimListDebug"), R_GlobalEnv )
+  );  
+  SETCADR(call, Robj);
+  SET_TAG( CDR( call ), install("sexpObj") );
+  EVAL(call);	
+  UNPROTECT(1);
+}
 

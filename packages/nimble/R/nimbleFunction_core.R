@@ -71,7 +71,7 @@ nimbleFunction <- function(setup         = NULL,
                            methods       = list(),
                            globalSetup   = NULL,
                            contains      = NULL,
-                           enableDerivs  = FALSE,
+                           enableDerivs  = list(),
                            name          = NA,
                            check         = getNimbleOption('checkNimbleFunction'),
                            where         = getNimbleFunctionEnvironment()
@@ -92,7 +92,7 @@ nimbleFunction <- function(setup         = NULL,
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
-    # if(enableDerivs) methodList <- c(methodList, buildDerivMethods(methodList))
+    if(length(enableDerivs)>0) methodList <- c(methodList, buildDerivMethods(methodList, enableDerivs))
     methodList <- lapply(methodList, nfMethodRC, check = check, methodNames = names(methodList), setupVarNames = c(all.vars(body(setup)), names(formals(setup))))
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
@@ -120,28 +120,16 @@ nimbleFunction <- function(setup         = NULL,
     return(generatorFunction)
 }
 
-buildDerivMethods <- function(methodsList) {
+buildDerivMethods <- function(methodsList, enableDerivs) {
     derivMethodsList <- list()
-    secondDerivMethodsList <- list()
-    for(i in seq_along(methodsList)) {
-        derivMethodsList[[i]] <- methodsList[[i]]
-        newCall <- as.call(c(list(quote(ADargumentTransfer)), lapply(names(formals(methodsList[[i]])), as.name)))
-        body(derivMethodsList[[i]]) <- substitute({return(getGradient(NEWCALL)); returnType(double(1))}, list(NEWCALL = newCall))
-        
-        secondDerivMethodsList[[i]] <- methodsList[[i]]
-        body(secondDerivMethodsList[[i]]) <- substitute({return(getHessian(NEWCALL)); returnType(double(2))}, list(NEWCALL = newCall))
-        # body(secondDerivMethodsList[[i]]) <- substitute({
-        #   ans <- vectorDouble_2_NimArr(getHessian(NEWCALL));
-        #   ansMat <- matrix(nrow = P, ncol = P);
-        #   for(rowNum in 1:P){
-        #     ansMat[rowNum, ] <- ans[(P*(rowNum - 1) + 1):(P*rowNum)]
-        #   };
-        #   returnType(double(2));
-        #   return(ansMat);}, list(NEWCALL = newCall, P = 4))
+    for(i in seq_along(enableDerivs)) {
+        derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
+        derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
+        argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer_')
+        newCall <- as.call(c(list(as.name(argTransferName)), lapply(names(formals(methodsList[[derivMethodIndex]])), as.name)))
+        body(derivMethodsList[[i]]) <- substitute({return(getDerivs(NEWCALL)); returnType(ADNimbleList())}, list(NEWCALL = newCall))
+        names(derivMethodsList)[i] <-paste0(names(methodsList)[derivMethodIndex], '_deriv')
     }
-    names(derivMethodsList) <-paste0(names(methodsList), '_gradient')
-    names(secondDerivMethodsList) <- paste0(names(methodsList), '_hessian')
-    derivMethodsList <- c(derivMethodsList, secondDerivMethodsList)
     derivMethodsList
 }
 

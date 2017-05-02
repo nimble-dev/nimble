@@ -157,6 +157,10 @@ nimbleListReturningFunction_keywordInfo <- keywordInfoClass(
                           thin = 1,
                           full = 2)
     }
+    if(deparse(code[[1]]) == 'nimDerivs'){
+      code[[2]][[1]] <- as.name(paste0(deparse(code[[2]][[1]]), '_deriv'))
+      code <- code[[2]]
+    }
     return(code)
   }
 )

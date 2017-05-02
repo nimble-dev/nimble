@@ -61,7 +61,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          eigBlank = 'cppOutputEigBlank',
                          voidPtr = 'cppOutputVoidPtr',
                          cppLiteral = 'cppOutputLiteral'
-                         )
+                        )
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
 cppMidOperators <- midOperators
@@ -451,3 +451,4 @@ cppOutputTemplate <- function(code, symTab) {
 }
 
 cppOutputLiteral <- function(code, symTab) code$args[[1]]
+

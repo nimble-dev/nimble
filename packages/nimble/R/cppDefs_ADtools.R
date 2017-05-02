@@ -258,14 +258,18 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     CFT
 }
 
-makeStaticInitClass <- function(cppDef) {
+makeStaticInitClass <- function(cppDef, derivMethods) {
     cppClass <- cppClassDef(name = 'initTest', useGenerator = FALSE)
     globalsDef <- cppGlobalObjects(name = 'initTestGlobals')
     globalsDef$objectDefs[['staticInitClassObject']] <- cppVarFull(baseType = 'initTest', name = 'initTestObject_')
-    
-    initializerDef <- cppFunctionDef(name = 'initTest', returnType = emptyTypeInfo())
-    initializerCode <- substitute(push_back(CLASSNAME::allADtapePtrs_, CLASSNAME::callForADtaping() ),  list(CLASSNAME = as.name(cppDef$name) ))
-    initializerCode <- do.call('call', list('{', initializerCode), quote = TRUE)
+    initializerCodeList <- list()
+    for(derivFun in derivMethods){
+      initializerDef <- cppFunctionDef(name = 'initTest', returnType = emptyTypeInfo())
+      initializerCodeList <- c(initializerCodeList,
+                               substitute(push_back(CLASSNAME::allADtapePtrs_, CLASSNAME::ADTAPINGNAME() ),  
+                                          list(CLASSNAME = as.name(cppDef$name),ADTAPINGNAME = as.name(paste0(derivFun, "_callForADtaping_")))))
+    }
+    initializerCode <- do.call('call', c('{', initializerCodeList), quote = TRUE)
     initializerECcode <- RparseTree2ExprClasses(initializerCode)
     initializerDef$code <- cppCodeBlock(code = initializerECcode, objectDefs = symbolTable())
     cppClass$functionDefs[['initializer']] <- initializerDef
@@ -305,7 +309,7 @@ makeHessianFunction <- function(newFunName = 'run_hessian_', regularFun, argumen
   HF
 }
 
-makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames) {
+makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0) {
     ## modeled closely parts of /*  */
     ## needs to set the ADtapePtr to one element of the ADtape
     TF <- RCfunctionDef$new() ## should it be static?
@@ -322,7 +326,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
     nimbleSymTab <- targetFunDef$RCfunProc$compileInfo$newLocalSymTab
 
     ## assign tape ptr code
-    assignTapePtrCode <- quote(memberData(ADtapeSetup, ADtape) <- allADtapePtrs_[1]) ## This will have to become a unique index in general. -1 added during output
+    assignTapePtrCode <- substitute(memberData(ADtapeSetup, ADtape) <- allADtapePtrs_[FUNINDEX], list(FUNINDEX = funIndex)) ## This will have to become a unique index in general. -1 added during output
     
     ## create code to copy from arguments into the independentVars
     numIndependentVars <- length(independentVarNames)
