@@ -279,3 +279,68 @@ try(test_that("Test that gamma conjugate sampler with invgamma dependency gets c
               expect_identical(smp[,1], smpMan,
                           info = "NIMBLE gamma conjugate sampler and manual sampler results differ")))
 
+# dinvwish_chol
+
+# tests:
+# draw rinvwish_chol, check vs. mean
+# check dinvwish_chol vs. direct coding
+# simple conjugacy where we have y ~ dmnorm(0, W), W ~ invwish(); compare posterior mean to known posterior mean
+# and test each using rate instead of scale
+
+# look at invWi notes: why do I have S/R reversed seemingly? mean should be proportional to S;
+
+set.seed(1)
+df <- 20
+d <- 3
+C <- crossprod(matrix(rnorm(d^2, 3), d))
+draws <- rWishart(10000, df, Sigma = solve(C)) # solve(C) is scale for wishart while C is scale for invWishart
+invdraws <- draws
+for(i in 1:dim(draws)[3])
+  invdraws[,,i] <- solve(draws[,,i])
+pmean <- apply(invdraws, c(1,2), mean)
+pmean
+C / (df - d - 1)
+
+# good test of wish_chol
+invdraws3 <- invdraws
+set.seed(1)
+for(i in 1:dim(invdraws)[3])
+  invdraws3[,,i] <- solve(rwish_chol(1, chol(C), df, scale_param = FALSE))
+pmean3 <- apply(invdraws3, c(1,2), mean)
+pmean3
+
+
+invdraws2 <- invdraws
+set.seed(1)
+for(i in 1:dim(invdraws)[3])
+  invdraws2[,,i] <- rinvwish_chol(1, chol(C), df, scale_param = TRUE)
+pmean2 <- apply(invdraws2, c(1,2), mean)
+pmean2
+
+invdraws2 <- invdraws
+set.seed(1)
+for(i in 1:dim(invdraws)[3])
+  invdraws2[,,i] <- rinvwish_chol(1, chol(solve(C)), df, scale_param = FALSE)
+pmean2 <- apply(invdraws2, c(1,2), mean)
+pmean2
+
+set.seed(1)
+df <- 20
+d <- 3
+C <- crossprod(matrix(rnorm(d^2, 3), d))
+U <- chol(C)
+draw <- rinvwish_chol(1, U, df)
+
+dinvwish_chol(draw, U, df, log = TRUE)
+dinvwish_chol(draw, chol(solve(C)), df, log = TRUE, scale_param = F)
+
+dfun <- function(W, S, nu) {
+  k <- nrow(W)
+  U = chol(S)
+  return(-(log(2)*nu*k/2+(k*(k-1)/4)*log(pi) +sum(lgamma((nu + 1 - 1:k)/2))) + nu*sum(log(diag(U))) -
+         (nu+k+1)*sum(log(diag(chol(W)))) -0.5*sum(diag(S %*% solve(W))))
+}
+
+dfun(draw, C, df)
+                    
+

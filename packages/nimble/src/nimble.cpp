@@ -31,6 +31,8 @@ R_CallMethodDef CallEntries[] = {
  //FUN(copyModelValuesElements, 4),
  FUN(C_dwish_chol, 5),
  FUN(C_rwish_chol, 3),
+ FUN(C_dinvwish_chol, 5),
+ FUN(C_rinvwish_chol, 3),
  FUN(C_ddirch, 3),
  FUN(C_rdirch, 1),
  FUN(C_dmulti, 4),

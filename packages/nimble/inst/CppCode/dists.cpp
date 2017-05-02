@@ -29,7 +29,6 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   char sideL('L');
   char sideR('R');
   char diag('N');
-  char transT('T');
   char transN('N');
   int info(0);
   double alpha(1.0);
@@ -91,6 +90,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
     if(overwrite_inputs) 
       xCopy = x;
     else {
+      xCopy = new double[p*p]; 
       for(i = 0; i < p*p; i++) 
         xCopy[i] = x[i];
     }
@@ -281,7 +281,8 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 
 double dinvwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log, int overwrite_inputs) {
   char uplo('U');
-  char side('L');
+  char sideL('L');
+  char sideR('R');
   char diag('N');
   char transT('T');
   char transN('N');
@@ -327,7 +328,7 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
   F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
   for(i = 0; i < p*p; i += p + 1) 
     dens -= (df + p + 1) * log(xChol[i]);
-
+  
   double tmp_dens = 0.0;
 
   // do upper-triangular solve for scale parameterization
@@ -346,7 +347,7 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
         cholCopy[i] = chol[i];
     }
     // chol %*% inverse(chol(x))
-    F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
+    F77_CALL(dtrsm)(&sideR, &uplo, &transN, &diag, &p, &p, &alpha, 
            xChol, &p, cholCopy, &p);
     // trace of crossproduct is sum of elements squared
     for(j = 0; j < p; j++) {
@@ -362,19 +363,20 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
       for(i = 0; i < p; i++)
         if(i == j) iden[j*p+i] = 1.0; else iden[j*p+i] = 0.0;
     // inverse of chol
-    F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
+    F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, 
                     chol, &p, iden, &p);
     // solve(t(chol(x)), result)
-    F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
+    F77_CALL(dtrsm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, 
                     xChol, &p, iden, &p);
     // trace of crossproduct is sum of elements squared
-    for(i = 0; i < p*p; i += p + 1) 
-      tmp_dens += iden[i] * iden[i];
+    for(j = 0; j < p; j++) {
+      for(i = 0; i < p; i++) {
+        tmp_dens += iden[j*p+i] * iden[j*p+i];
+      }
+    }
     delete [] iden;
   }
-  
   dens += -0.5 * tmp_dens;
-
   return give_log ? dens : exp(dens);
 }
 
@@ -414,6 +416,13 @@ void rinvwish_chol(double *Z, double* chol, double df, int p, double scale_param
   char transN('N');
   double alpha(1.0);
   double beta(0.0);
+
+  // calculations here generate W ~ Wi(S) for scale_param = 1 and W ~ Wi(S^-1) for scale_param = 0,
+  // and then invert the result, giving InvWi(S^-1) for scale_param = 1 and InvWi(S) for scale_param = 0,
+  // because scale for Wishart is inverse of scale for inverse-Wishart
+  // therefore generate under opposite parameterization
+  scale_param = 1 - scale_param;  
+
 
   double* cholCopy;
   int i, j, uind, lind;
