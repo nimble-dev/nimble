@@ -124,9 +124,9 @@ nfProcessing <- setRefClass('nfProcessing',
                               },
                               collectRCfunNeededTypes = function() {
                                   for(i in seq_along(RCfunProcs)) {
-                                      for(j in names(RCfunProcs[[i]]$neededRCfuns)) {
+                                      for(j in names(RCfunProcs[[i]]$NeededTypes)) {
                                           if(is.null(neededTypes[[j]])) {
-                                              neededTypes[[j]] <<- RCfunProcs[[i]]$neededRCfuns[[j]]
+                                              neededTypes[[j]] <<- RCfunProcs[[i]]$NeededTypes[[j]]
                                           }
                                       }
                                       ## could clear RCfunProc[[i]]$neededRCtypes, but instead will prevent them from being used at compilation

@@ -129,7 +129,7 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
 RCfunProcessing <- setRefClass('RCfunProcessing',
                                contains = 'RCvirtualFunProcessing',
                                fields = list(
-                                   neededRCfuns = 'list' ## nfMethodRC objects
+                                   NeededTypes = 'list' ## nfMethodRC objects
                                    ),
                                methods = list(
                                    process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE) {
@@ -203,7 +203,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
 
-                                       compileInfo$typeEnv[['neededRCfuns']] <<- list()
+                                       compileInfo$typeEnv[['NeededTypes']] <<- list()
                                        compileInfo$typeEnv[['.AllowUnknowns']] <<- TRUE ## will be FALSE for RHS recursion in setSizes
                                        compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
                                        passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
@@ -213,7 +213,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        if(inherits(tryResult, 'try-error')) {
                                            stop(paste('There is some problem at the setSizes processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
                                        }
-                                       neededRCfuns <<- compileInfo$typeEnv[['neededRCfuns']]
+                                       NeededTypes <<- compileInfo$typeEnv[['NeededTypes']]
                                        
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showType = TRUE) -- broken')

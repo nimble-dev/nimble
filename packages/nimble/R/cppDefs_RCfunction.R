@@ -42,8 +42,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      CPPuse
                                  },
                                  genNeededTypes = function() {
-                                     for(i in seq_along(RCfunProc$neededRCfuns)) {
-                                         neededType<- RCfunProc$neededRCfuns[[i]]
+                                     for(i in seq_along(RCfunProc$NeededTypes)) {
+                                         neededType<- RCfunProc$NeededTypes[[i]]
                                          if(inherits(neededType, 'nfMethodRC')) {
                                              thisCppDef <- nimbleProject$getRCfunCppDef(neededType, NULLok = TRUE)
                                              if(is.null(thisCppDef)) {

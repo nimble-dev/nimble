@@ -165,8 +165,8 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                 nfmObj <- environment(obj)$nfMethodRCobject
                 uniqueName <- nfmObj$uniqueName
                 if(length(uniqueName)==0) stop(exprClassProcessingErrorMsg(code, 'In size processing: A no-setup nimbleFunction with no internal name is being called.'), call. = FALSE)
-                if(is.null(typeEnv$neededRCfuns[[uniqueName]])) {
-                    typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
+                if(is.null(typeEnv$NeededTypes[[uniqueName]])) {
+                    typeEnv$NeededTypes[[uniqueName]] <- nfmObj
                 }
                 return(sizeRCfunction(code, symTab, typeEnv, nfmObj))
             }
