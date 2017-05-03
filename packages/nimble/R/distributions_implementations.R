@@ -182,7 +182,7 @@ NULL
 #' @rdname flat
 #' @export
 dflat <- function(x, log = FALSE) {  
-   if(log) out <- rep(as.numeric(0), length(x)) else  out <- rep(as.numeric(1), length(x))
+   if(log) out <- rep(0, length(x)) else  out <- rep(1, length(x))
    nas <- is.na(x)
    out[nas] <- x[nas]
    return(out)
@@ -197,7 +197,7 @@ rflat <- function(n = 1) {
 #' @rdname flat
 #' @export
 dhalfflat <- function(x, log = FALSE) {
-  out <- rep(as.numeric(0), length(x))
+  out <- rep(0, length(x))
   out[x < 0] <- -Inf
   nas <- is.na(x)
   out[nas] <- x[nas]
