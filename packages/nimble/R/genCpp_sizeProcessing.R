@@ -130,6 +130,14 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     code$toEigenize <- 'maybe'
                 }
             }
+            ## Add RCfunctions to neededRCfuns.
+            if(exists(code$name) && is.rcf(get(code$name))) {
+                nfmObj <- environment(get(code$name))$nfMethodRCobject
+                uniqueName <- nfmObj$uniqueName
+                if (is.null(typeEnv$neededRCfuns[[uniqueName]])) {
+                    typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
+                }
+            }
             ## Note that generation of a symbol for LHS of an assignment is done in the sizeAssign function, which is the handler for assignments
             return(NULL)
         }

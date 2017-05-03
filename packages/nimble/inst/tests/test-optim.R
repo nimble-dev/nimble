@@ -2,6 +2,15 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of the optim() function in NIMBLE code")
 
+example <- list(
+    par = 1.234,
+    fn = function(par) { 2.345 + sum((par - 3.456)^2) },
+    nimFnRun = function(par = double(1)) {
+        return(2.345 + sum((par - 3.456)^2))
+        returnType(double(0))
+    }
+)
+
 normalizeWhitespace <- function(lines) {
     line <- paste(lines, collapse = ' ')
     line <- gsub('\\s+', ' ', line)  # Shrink internal whitespace.
@@ -15,10 +24,10 @@ test_that("normalizeWhiteSpace() works", {
 })
 
 test_that("fakeOptim() behaves as expected", {
-    par <- 1.234
-    actual <- fakeOptim(par)
+    actual <- fakeOptim(example$par, example$fn)
     expected <- optimResultNimbleList$new()
-    expected$par <- par
+    expected$par <- example$par
+    expected$value <- example$fn(expected$par)
     expect_equal(actual, expected)
 })
 
@@ -35,29 +44,39 @@ test_that("nimbleFunction() replaces fakeOptim() with nimFakeOptim()", {
 
 test_that("nimbleFunction() with optim() evaluates correctly", {
     fun <- function(par) {
-        return(fakeOptim(par))
+        return(fakeOptim(par, example$fn))
     }
+    nimFn <- nimbleFunction(run = example$nimFnRun)
     nimFun <- nimbleFunction(
         setup = TRUE,
         run = function(par = double(1)) {
-            return(fakeOptim(par))
+            return(fakeOptim(par, nimFn))
             returnType(optimResultNimbleList())
         }
     )()
-    par <- 1.234
-    expect_equal(nimFun$run(par), fun(par))
+    expect_equal(nimFun$run(example$par), fun(example$par))
 })
 
 test_that("compileNimble of optim stub works", {
+    fun <- function(par) {
+        return(fakeOptim(par, example$fn))
+    }
+    nimbleOptions()
+    nimFn <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(2.345 + sum((par - 3.456) ^ 2))
+            returnType(double(0))
+        }
+    )
     nimFun <- nimbleFunction(
         setup = TRUE,
         run = function(par = double(1)) {
-            return(fakeOptim(par))
+            return(fakeOptim(par, nimFn))
             returnType(optimResultNimbleList())
         }
     )()
-    # compiledFun <- compileNimble(nimFun)
+    nimbleOptions(debugCppLineByLine = TRUE)
     compiledFun <- compileNimble(nimFun, showCompilerOutput = TRUE, dirName = '~/tmp')
-    par <- 1.234
-    expect_equal(nimFun$run(par), compiledFun$run(par))
+    nimbleOptions(debugCppLineByLine = FALSE)
+    expect_equal(nimFun$run(example$par), compiledFun$run(example$par))
 })

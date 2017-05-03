@@ -1,6 +1,11 @@
+#include <R_ext/Applic.h>
 #include <nimble/nimOptim.h>
 
-nimSmartPtr<OptimResultNimbleList> nimFakeOptim(const NimArr<1, double>& par) {
+// This is defined in R_ext/Applic.h:
+// typedef double optimfn(int, double *, void *);
+
+nimSmartPtr<OptimResultNimbleList> nimFakeOptim(const NimArr<1, double>& par,
+                                                void* fn) {
     nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
 
     // This is fake.
