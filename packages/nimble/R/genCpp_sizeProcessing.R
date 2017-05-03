@@ -2489,10 +2489,10 @@ sizeMatrixMult <- function(code, symTab, typeEnv) {
 
     if(a1$nDim == 1 & a2$nDim == 1) {
         origSizeExprs <- a1$sizeExprs[[1]]
-        a1 <- insertExprClassLayer(code, 1, 'asRow', type = a1$type)
+        a1 <- insertExprClassLayer(code, 1, 'asRow', type = a1$type, nDim = 2)
         a1$sizeExprs <- c(list(1), origSizeExprs)
         origSizeExprs <- a2$sizeExprs[[1]]
-        a2 <- insertExprClassLayer(code, 2, 'asCol', type = a2$type)
+        a2 <- insertExprClassLayer(code, 2, 'asCol', type = a2$type, nDim = 2)
         a2$sizeExprs <- c(origSizeExprs, list(1))
     } else {
         if(a1$nDim == 1) {
@@ -2500,22 +2500,22 @@ sizeMatrixMult <- function(code, symTab, typeEnv) {
             origSizeExprs <- a1$sizeExprs[[1]]
             ## For first argument, default to asRow unless second argument has only one row, in which case make first asCol
             if(identical(a2$sizeExprs[[1]], 1)) {
-                a1 <- insertExprClassLayer(code, 1, 'asCol', type = a1$type)
+                a1 <- insertExprClassLayer(code, 1, 'asCol', type = a1$type, nDim = 2)
                 a1$sizeExprs <- c(origSizeExprs, list(1))
             }
             else {
-                a1 <- insertExprClassLayer(code, 1, 'asRow', type = a1$type)
+                a1 <- insertExprClassLayer(code, 1, 'asRow', type = a1$type, nDim = 2)
                 a1$sizeExprs <- c(list(1), origSizeExprs)
             }
         } else if(a2$nDim == 1) {
             origSizeExprs <- a2$sizeExprs[[1]]
             if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, paste0('In sizeMatrixMult: Second arg has nDim = 1 and 1st arg has nDim = ', a1$nDim, '.')), call. = FALSE)
             if(identical(a1$sizeExprs[[2]], 1)) {
-                a2 <- insertExprClassLayer(code, 2, 'asRow', type = a2$type)
+                a2 <- insertExprClassLayer(code, 2, 'asRow', type = a2$type, nDim = 2)
                 a2$sizeExprs <- c(list(1), origSizeExprs)
            }
             else { 
-                a2 <- insertExprClassLayer(code, 2, 'asCol', type = a2$type)
+                a2 <- insertExprClassLayer(code, 2, 'asCol', type = a2$type, nDim = 2)
                 a2$sizeExprs <- c(origSizeExprs, list(1))
             }
         }
@@ -2814,7 +2814,7 @@ sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
     notOK <- FALSE
     checkList <- mvFirstArgCheckLists[[code$name]]
     if(!is.null(checkList)) {
-        if(length(code$args) < length(checkList[[1]])) stop(exprClassProcessingErrorMsg(code, 'In sizeRmultivarFirstArg: Not enough arguments provided.'), call. = FALSE)
+        if(length(code$args) < length(checkList[[1]])) stop(exprClassProcessingErrorMsg(code, 'Not enough arguments provided.'), call. = FALSE)
         for(i in seq_along(checkList[[1]])) {
             notOK <- if(inherits(code$args[[i]], 'exprClass')) code$args[[i]]$nDim != checkList[[1]][i] else notOK            
         }
@@ -2826,9 +2826,11 @@ sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
     }
 
     if(notOK) {
-        stop(exprClassProcessingErrorMsg(code, 'In sizeRmultivarFirstArg: Some argument(s) have the wrong dimension.'), call. = FALSE) 
+        stop(exprClassProcessingErrorMsg(code, 'Some argument(s) have the wrong dimension.'), call. = FALSE) 
     }
 
+    if(!inherits(code$args[[returnSizeArgID]], 'exprClass')) stop(exprClassProcessingErrorMsg(code, paste0('Expected ', nimDeparse(code$args[[returnSizeArgID]]) ,' to be an expression.')), call. = FALSE) 
+    
     code$type <- returnType
     code$nDim <- code$args[[returnSizeArgID]]$nDim
     code$toEigenize <- 'maybe'

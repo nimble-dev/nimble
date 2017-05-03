@@ -1,6 +1,9 @@
 NIMBLE
 ======
 
+[![Build Status](https://travis-ci.org/nimble-dev/nimble.svg?branch=devel)](https://travis-ci.org/nimble-dev/nimble)
+[![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
+
 This is the repository for the base NIMBLE package, 
 An R package for Programming with BUGS Models.
 

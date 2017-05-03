@@ -195,7 +195,7 @@ nimDeparse <- function(code, indent = '') {
 exprClassProcessingErrorMsg <- function(code, msg) {
     contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()
     ans <- paste0(msg, '\n This occurred for: ', nimDeparse(code),'\n', collapse = '')
-    if(!is.null(contextCode)) ans <- paste(ans, '\n This was part of the call: ', contextCode, collapse = '')
+    if(!is.null(contextCode)) ans <- paste(ans, 'This was part of the call: ', contextCode, collapse = '')
     ans
 }
 
