@@ -28,48 +28,45 @@ class nimbleFunctionCppADbase {
    nimSmartPtr<NIMBLE_ADCLASS> getDerivs(nimbleCppADinfoClass &ADinfo) {
 		nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
 		std::size_t n = length(ADinfo.independentVars); // dim of independent vars
-		std::size_t r = n; // for now, take all derivs.
-		vector<double> gradient_ans (n, -1);
-		vector<double> hessian_ans (n*n, -1);
-		vector<double> thirdDeriv_ans (n*n*n, -1);
-		vector<double> cppad_hessOut;
-		vector<double> cppad_thirdDerivOut;
-		
+
 		ADlist->value = vectorDouble_2_NimArr(ADinfo.ADtape->Forward(0, ADinfo.independentVars));
 		std::size_t q = ADlist->value.size();
 		ADlist->gradient.initialize(0, false, n, q);
 		ADlist->hessian.initialize(0, false, n, n, q);
-		ADlist->thirdDerivs.initialize(0, false, n, n, n, q);
+		//ADlist->thirdDerivs.initialize(0, false, n, n, n, q);
+		
+		vector<double> gradient_ans (n*q, -1);
+		vector<double> hessian_ans (n*n*q, -1);
+		//vector<double> thirdDeriv_ans (n*n*n*q, -1);
+		
+		vector<double> cppad_hessOut;
+		//vector<double> cppad_thirdDerivOut;
 
-		std::vector<double> w (q, 0);
-		w[0] = 1;
-		for(size_t dx1_ind = 0; dx1_ind < n; dx1_ind++){
-			std::vector<double> x1 (n, 0); // vector specifying first derivatives.  first specify coeffs for first dim of s across all directions r, then second dim, ...
-			x1[dx1_ind] = 1;
+		for(size_t dy_ind = 0; dy_ind < q; dy_ind++){
+			std::vector<double> w (q, 0);
+			w[dy_ind] = 1;
+			for(size_t dx1_ind = 0; dx1_ind < n; dx1_ind++){
+				std::vector<double> x1 (n, 0); // vector specifying first derivatives.  first specify coeffs for first dim of s across all directions r, then second dim, ...
+				x1[dx1_ind] = 1;
+
+				ADinfo.ADtape->Forward(1, x1); // may want separate case for r=1?	
+				cppad_hessOut = ADinfo.ADtape->Reverse(2, w);
 			
-			ADinfo.ADtape->Forward(1, x1); // may want separate case for r=1?	
-			cppad_hessOut = ADinfo.ADtape->Reverse(2, w);
-			for(size_t dx2_ind = 0; dx2_ind < n; dx2_ind++){
-				std::vector<double> x2 (n, 0); 
-				x2[dx2_ind] = 0;
-				ADinfo.ADtape->Forward(2, x2); // may want separate case for r=1?	
-				cppad_thirdDerivOut = ADinfo.ADtape->Reverse(3, w);
-				printf("thirdDerivOut length: %d /n", length(cppad_thirdDerivOut));
-			    for(size_t i = 0; i < n; i++){
-					thirdDeriv_ans[n*dx2_ind + n*n*dx1_ind + i] = cppad_thirdDerivOut[i*3 + 2];
+				// printf("thirdDerivOut length: %d \n", length(cppad_thirdDerivOut));
+				// for(size_t i = 0; i < length(cppad_thirdDerivOut); i++){
+					// printf("thirdDeriv element %d is %f \n", i+1, cppad_thirdDerivOut[i]);
+				// }
+				
+				for(size_t i = 0; i < n; i++){
+					gradient_ans[n*dy_ind + i] = cppad_hessOut[i*2 + 0];
+					hessian_ans[n*n*dy_ind + n*dx1_ind + i]  = cppad_hessOut[i*2 + 1];
 				}
-			}
-
-			for(size_t i = 0; i < n; i++){
-				gradient_ans[i] = cppad_hessOut[i*2 + 0];
-				hessian_ans[n*dx1_ind + i]  = cppad_hessOut[i*2 + 1];
 			}
 		}
 		
 		
 		std::copy(gradient_ans.begin(), gradient_ans.end(), ADlist->gradient.getPtr());
 		std::copy(hessian_ans.begin(), hessian_ans.end(), ADlist->hessian.getPtr());
-	    std::copy(thirdDeriv_ans.begin(), thirdDeriv_ans.end(), ADlist->thirdDerivs.getPtr());
 		return(ADlist);
   } 
 /* NimArr<1, double> getGradient(nimbleCppADinfoClass &ADinfo) {

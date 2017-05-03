@@ -214,6 +214,7 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     copyFromDepVarCode <- vector('list', numDependentVars+1)
     copyFromDepVarCode[[1]] <- quote(netIncrement_ <- 1) 
     totalDepLength <- 0;
+    browser()
     for(ivn in seq_along(dependentVarNames)) {
         thisName <- dependentVarNames[ivn]
         if(thisName == 'ANS_') {
