@@ -293,11 +293,30 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               invisible(NULL)
                                             },
                                               addADclassContentOneFun = function(funName) {
+                                                  outSym <- nfProc$RCfunProcs[[funName]]$compileInfo$returnSymbol
+                                                  checkADargument(funName, outSym, returnType = TRUE)
+                                                  if(length(nfProc$RCfunProcs[[funName]]$nameSubList) == 0) stop(paste0('Derivatives cannot be enabled for method ', funName, ', since this method has no arguments.'))
+                                                  for(iArg in seq_along(functionDefs[[funName]]$args$symbols)){
+                                                    arg <- functionDefs[[funName]]$args$symbols[[iArg]]
+                                                    argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)
+                                                    argName <- names(nfProc$RCfunProcs[[funName]]$nameSubList)[iArg]
+                                                    checkADargument(funName, argSym, argName = argName)
+                                                  }
                                                   addTypeTemplateFunction(funName)
                                                   independentVarNames <- names(functionDefs[[funName]]$args$symbols)
                                                   addADtapingFunction(funName, independentVarNames = independentVarNames, dependentVarNames = 'ANS_' )
                                                   addADargumentTransferFunction(funName, independentVarNames = independentVarNames)
                                               },
+                                              checkADargument = function(funName, argSym, argName = NULL, returnType = FALSE){
+                                                argTypeText <- if(returnType) 'returnType' else 'argument'
+                                                if(argSym$type != 'double')
+                                                  stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method is not a double, this method cannot have derivatives enabled.'))
+                                                if(!(argSym$nDim %in% c(0,1)))
+                                                   stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method must be a double scalar or double vector for derivatives to be enabled.'))
+                                                if((argSym$nDim == 1) && is.na(argSym$size)) stop(paste0('To enable derivatives, size must be given for the ', argName, ' ', argTypeText, ' of the ', funName,
+                                                                                                          ' method,  e.g. double(1, 3) for a length 3 vector.' ))
+                                              },
+
                                               addADclassContent = function() {
                                                   CPPincludes <<- c("<cppad/cppad.hpp>", CPPincludes)
                                                   Hincludes <<- c("<cppad/cppad.hpp>", nimbleIncludeFile("nimbleCppAD.h"), Hincludes)
@@ -309,8 +328,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
                                                   for(adEnabledFun in environment(nfProc$nfGenerator)$enableDerivs){
                                                     outType <- nfProc$RCfunProcs[[adEnabledFun]]$compileInfo$returnSymbol
-                                                    if(outType$type != 'double')
-                                                      stop(paste(adEnabledFun, 'method returnType is not double, cannot have derivatives enabled.'))
                                                     addADclassContentOneFun(adEnabledFun)
                                                   }
                                                   ## static declaration in the class definition

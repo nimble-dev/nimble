@@ -123,6 +123,8 @@ nimbleFunction <- function(setup         = NULL,
 buildDerivMethods <- function(methodsList, enableDerivs) {
     derivMethodsList <- list()
     for(i in seq_along(enableDerivs)) {
+        if(length(which(names(methodsList) == enableDerivs[[i]])) == 0) stop(paste0('derivatives cannot be enabled for method ',
+                                                                                    enableDerivs[[i]], ', this is not a valid method of the nimbleFunction.'))
         derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
         derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
         argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer_')
