@@ -740,6 +740,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             replaceables <- unlist(lapply(replacements, function(x) x$replaceable))
             allReplaceable <- all(replaceables) & do.eval
             repVar <- replaceConstantsRecurse(code[[2]], constEnv, constNames, FALSE)
+            code[[2]] <- repVar$code
             if(allReplaceable & repVar$replaceable) {
                 testcode <- as.numeric(eval(code, constEnv))
                 if(length(testcode) == 1) code <- testcode
