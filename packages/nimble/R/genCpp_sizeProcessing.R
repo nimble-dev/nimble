@@ -536,7 +536,8 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
   ## nimList$b <- 12 }
   ## accomplish this by copying code, getting arguments (e.g. a = 10, b = 12) from copied code and turning them into assignment 
   ## exprs in code$caller, and setting first argument of code$caller to be nimList <- nimListDef$new()
-  listDefName <- code$args[[1]]$name
+    browser()
+    listDefName <- code$args[[1]]$name
   if(symTab$parentST$symbolExists(listDefName)){
     listST <- symTab$getSymbolObject(listDefName, inherits = TRUE)
     code$type <- "nimbleList"
@@ -544,7 +545,22 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
     code$toEigenize <- "maybe"
     code$nDim <- 0
   }
-  else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
+  else { ## need to establish the symbol and needed type
+      nlDef <- get(listDefName)
+      nlp <- nfProc$nimbleProject$compileNimbleList(nlDef, initialTypeInferenceOnly = TRUE)
+      className <- nlDef$className
+      nfName <- deparse(leftSide)
+      newSym <- symbolNimbleListGenerator(name = name, nlProc = nlp)
+      if(is.null(typeEnv$neededRCfuns[[uniqueNameclassName]])) {
+          typeEnv$neededRCfuns[[uniqueNameclassName]] <- newSym
+      }
+      listST <- newSym
+      code$type <- "nimbleList"
+      code$sizeExprs <- listST
+      code$toEigenize <- "maybe"
+      code$nDim <- 0
+      ##      if(!(className %in% names(nfProc$neededTypes))) nfProc$neededTypes[[className]] <- newSym
+  }##stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
   
   asserts <- list()
   asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useArgs = c(TRUE, rep(FALSE, length(code$args)-1))))
@@ -977,8 +993,6 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     return(asserts)
 }
 
-
-
 sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   asserts <- recurseSetSizes(code, symTab, typeEnv)
   code$type <- 'nimbleList'
@@ -987,7 +1001,8 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   code$sizeExprs <- symbolObject
   code$toEigenize <- "yes"
   code$nDim <- 0
-  asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+  if(!(code$caller$name %in% assignmentOperators))
+      asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   if(length(asserts) == 0) NULL else asserts
 }
 

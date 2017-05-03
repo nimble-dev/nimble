@@ -41,7 +41,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                         if(!inherits(SEXPinterfaceFun, 'uninitializedField')) SEXPinterfaceFun$getCPPusings()))
                                      CPPuse
                                  },
-                                 genNeededTypes = function() {
+                                 genNeededTypes = function() { ## this should be extracted and combined with the one for cppDefs_nimbleFunction
                                      for(i in seq_along(RCfunProc$neededRCfuns)) {
                                          neededType<- RCfunProc$neededRCfuns[[i]]
                                          if(inherits(neededType, 'nfMethodRC')) {
@@ -54,9 +54,22 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                  CPPincludes <<- c(CPPincludes, thisCppDef)
                                              }
                                              next
-                                         } else {
-                                             stop("There is a neededType for an RCfun that is not another RCfun. That is not allowed.", call. = FALSE)
                                          }
+                                         if(inherits(neededType, 'symbolNimbleList')) {
+                                             CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
+                                             generatorName <- neededType$nlProc$name
+                                             thisCppDef <- nimbleProject$getNimbleListCppDef(generatorName = generatorName)
+                                             if(is.null(thisCppDef)){
+                                                 className <- names(nimCompProc$neededTypes)[i]
+                                                 thisCppDef <- nimbleProject$buildNimbleListCompilationInfo(className = generatorName, fromModel = fromModel)
+                                                 neededTypeDefs[[ className ]] <<- thisCppDef
+                                                 Hincludes <<- c(Hincludes, thisCppDef)
+                                                 CPPincludes <<- c(CPPincludes, thisCppDef)
+                                             }
+                                             next
+                                         }
+                                         stop("There is a neededType for an RCfun that is not valid.", call. = FALSE)
+                                         
                                      }
                                  },
                                  buildFunction = function(RCfun, parentST = NULL) {

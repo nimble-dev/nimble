@@ -18,7 +18,8 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                           RCfun = 'ANY', ##nfMethodRC
                                           nameSubList = 'ANY',
                                           compileInfo = 'ANY', ## RCfunctionCompileClass``
-                                          const = 'ANY'
+                                          const = 'ANY',
+                                          neededRCfuns = 'ANY'
                                           ),
                                       methods = list(
                                           initialize = function(f = NULL, funName, const = FALSE) {
@@ -40,11 +41,12 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                                   }
                                                   compileInfo <<- RCfunctionCompileClass$new(origRcode = RCfun$code, newRcode = RCfun$code)
                                               }
+                                              neededRCfuns <<- list()
                                           },
                                           showCpp = function() {
                                               writeCode(nimGenerateCpp(compileInfo$nimExpr, compileInfo$newLocalSymTab))
                                           },
-                                          setupSymbolTables = function(parentST = NULL, neededTypes = NULL) {
+                                          setupSymbolTables = function(parentST = NULL, neededTypes = NULL, nimbleProject = NULL) {
                                               argInfoWithMangledNames <- RCfun$argInfo
                                               numArgs <- length(argInfoWithMangledNames)
                                               if(numArgs > 0) {
@@ -59,13 +61,26 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
                                               nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
                                               names(nameSubList) <<- names(RCfun$argInfo)
+                                              browser()
+
+                                              message('BETTER SOLUTION WILL BE TO LET AN nlProc GET STARTED FOR SETUP WITHOUT A NIMBLEPROJECT AND BE REGISTERED TO A PROJECT LATER. THEN NIMBLEPROJECT IS AGAIN NOT NEEDED HERE')
+                                              
+                                              ## This will only handle basic types.  nimbleLists will be added below
                                               compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes, names(RCfun$argInfo)) ## will be used for function args.  must be a better way.
                                               compileInfo$newLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes, names(RCfun$argInfo))
+
+                                              ## This modifies the symTab and returns types needed for input or return
+                                              ## Currently the only non-basic type resolves in this step would be nimbleLists
+                                              if(is.null(nimbleProject)) nimbleProject <- get('nimbleProject', envir = RCfun)
+                                              neededRCfuns <<- resolveUnknownTypes(compileInfo$origLocalSymTab, neededTypes, nimbleProject)
+                                              resolveUnknownTypes(compileInfo$origLocalSymTab, c(neededRCfuns, neededTypes), nimbleProject)
+                                              
                                               if(!is.null(parentST)) {
                                                   compileInfo$origLocalSymTab$setParentST(parentST)
                                                   compileInfo$newLocalSymTab$setParentST(parentST)
                                               }
                                               compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, neededTypes, "return", "returnType")
+                                              neededRCfuns <<- c(neededRCfuns, resolveOneUnknownType(compileInfo$returnSymbol, neededTypes, nimbleProject))
                                           },
                                           process = function(...) {
                                               if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
@@ -129,7 +144,7 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
 RCfunProcessing <- setRefClass('RCfunProcessing',
                                contains = 'RCvirtualFunProcessing',
                                fields = list(
-                                   neededRCfuns = 'list' ## nfMethodRC objects
+                                   ## moved to base class: neededRCfuns = 'list' ## nfMethodRC objects
                                    ),
                                methods = list(
                                    process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE) {
@@ -213,7 +228,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        if(inherits(tryResult, 'try-error')) {
                                            stop(paste('There is some problem at the setSizes processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
                                        }
-                                       neededRCfuns <<- compileInfo$typeEnv[['neededRCfuns']]
+                                       neededRCfuns <<- c(neededRCfuns, compileInfo$typeEnv[['neededRCfuns']])
                                        
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showType = TRUE) -- broken')

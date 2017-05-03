@@ -119,7 +119,7 @@ nfProcessing <- setRefClass('nfProcessing',
                               addMemberFunctionsToSymbolTable = function(){},
                               setupLocalSymbolTables = function() {
                                   for(i in seq_along(RCfunProcs)) {
-                                      RCfunProcs[[i]]$setupSymbolTables(parentST = setupSymTab, neededTypes = neededTypes)
+                                      RCfunProcs[[i]]$setupSymbolTables(parentST = setupSymTab, neededTypes = neededTypes, nimbleProject = nimbleProject)
                                   }
                               },
                               collectRCfunNeededTypes = function() {
@@ -285,8 +285,9 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     outputNames <- character()
     if(setupOrig) {
     	setupSymTab <<- symbolTable(parentST = NULL)
-    	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator),  nf_getArgOutputNames(nfGenerator),
-    	                 nf_getReturnTypeOutputNames(nfGenerator))
+    	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator))##,
+                         ##nf_getArgOutputNames(nfGenerator),
+    	                 ##nf_getReturnTypeOutputNames(nfGenerator))
     	if(length(outputNames)>0) outputNames <- unique(outputNames)
     }
     if(setupNew) {
