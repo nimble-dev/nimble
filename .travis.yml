@@ -19,6 +19,7 @@ install:
 ##  - Rscript -e "install.packages('devtools', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('igraph', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('coda', repos = 'http://cran.us.r-project.org')"
+  - Rscript -e "install.packages('assertthat', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('testthat', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('mvtnorm', repos = 'http://cran.us.r-project.org')"  ## needed for test-distributions.R
   - Rscript -e "install.packages('abind', repos = 'http://cran.us.r-project.org')"    ## needed for test-compareMCMCs.R
