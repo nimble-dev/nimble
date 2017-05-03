@@ -287,19 +287,108 @@ try(test_that("Test that gamma conjugate sampler with invgamma dependency gets c
 # simple conjugacy where we have y ~ dmnorm(0, W), W ~ invwish(); compare posterior mean to known posterior mean
 # and test each using rate instead of scale
 
-# look at invWi notes: why do I have S/R reversed seemingly? mean should be proportional to S;
-
 set.seed(1)
 df <- 20
 d <- 3
 C <- crossprod(matrix(rnorm(d^2, 3), d))
+pm <- C / (df - d - 1)
+
+n <- 100
+draws1 <- draws2 <- draws3 <- array(0, c(d, d, n)
+set.seed(1)
+for(i in 1:n)
+  draws1[,,i] <- solve(rwish_chol(1, chol(C), df, scale_param = FALSE))
+pmean1 <- apply(draws1, c(1,2), mean)
+
+for(i in 1:n)
+  draws2[,,i] <- rinvwish_chol(1, chol(C), df, scale_param = TRUE)
+pmean2 <- apply(draws2, c(1,2), mean)
+
+for(i in 1:n)
+  draws3[,,i] <- rinvwish_chol(1, solve(chol(C)), df, scale_param = FALSE)
+pmean3 <- apply(draws3, c(1,2), mean)
+
+try(test_that("Test that rinvwish_chol and rwish_chol give correct results: ", {
+              expect_equal(max(abs(pmean1 - pm)), 0, tol = 0.03,
+                          info = "mean of inverse of rwish draws differs from truth"),
+              expect_equal(max(abs(pmean2 - pm)), 0, tol = 0.03,
+                          info = "mean of rinvwish with scale draws differs from truth"),
+              expect_equal(max(abs(pmean3 - pm)), 0, tol = 0.03,
+                          info = "mean of rinvwish with rate differs from truth")}))
+
+dens1 <- dinvwish_chol(draw1[,,1], chol(C), df, log = TRUE)
+dens2 <- dinvwish_chol(draw, chol(solve(C)), df, log = TRUE, scale_param = FALSE)
+
+dfun <- function(W, S, nu) {
+  k <- nrow(W)
+  U = chol(S)
+  return(-(log(2)*nu*k/2+(k*(k-1)/4)*log(pi) +sum(lgamma((nu + 1 - 1:k)/2))) + nu*sum(log(diag(U))) -
+         (nu+k+1)*sum(log(diag(chol(W)))) -0.5*sum(diag(S %*% solve(W))))
+}
+                  
+dens3 <-  dfun(draw[,,1], C, df)
+
+try(test_that("Test that dinvwish_chol gives correct results: ", {
+              expect_equal(dens1-dens3, 0, tol = 0.000001,
+                          info = "dinvwish with scale differs from truth"),
+              expect_equal(dens2-dens3, 0, tol = 0.000001,
+                          info = "dinvwish with rate differs from truth")}))
+                                                                        
+                                    # HERE
+set.seed(0)
+
+trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
+covs <- c(3, 2, .5)
+
+trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
+Omega = solve(trueCov)
+
+n = 20
+S = diag(rep(1,3))
+mu = 1:3
+Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
+M = 3
+data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
+
+code <- nimbleCode( {
+  for(i in 1:n) {
+    Y[i, 1:M] ~ dmnorm(mu[1:M], cov = Omega[1:M,1:M]);
+  }
+  Omega[1:M,1:M] ~ dinvwish(S[1:M,1:M], 4);
+})
+
+newDf = 4 + n
+newS = S + tcrossprod(Y- mu)
+OmegaTrueMean = newDf * solve(newS)/(newDf - nrow(trueCor)-1)
+
+wishRV <- array(0, c(M, M, 10000))
+for(i in 1:10000) {
+  z <- solve(t(chol(solve(newR))) %*% matrix(rnorm(3*newDf), ncol = newDf))
+  wishRV[ , , i] <- tcrossprod(z)
+}
+OmegaSimTrueSDs = apply(wishRV, c(1,2), sd)
+
+test_mcmc(model = code, name = 'conjugate Wishart', data = data, seed = 0, numItsC = 1000, inits = list(Omega = OmegaTrueMean),
+          results = list(mean = list(Omega = OmegaTrueMean ),
+            sd = list(Omega = OmegaSimTrueSDs)),
+          resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
+            sd = list(Omega = matrix(0.06, M, M))))
+
+                                    
+# need invWish conjugacy
+
+                                    
+                                    
 draws <- rWishart(10000, df, Sigma = solve(C)) # solve(C) is scale for wishart while C is scale for invWishart
+
+
+
 invdraws <- draws
 for(i in 1:dim(draws)[3])
   invdraws[,,i] <- solve(draws[,,i])
 pmean <- apply(invdraws, c(1,2), mean)
 pmean
-C / (df - d - 1)
+
 
 # good test of wish_chol
 invdraws3 <- invdraws
@@ -331,16 +420,5 @@ C <- crossprod(matrix(rnorm(d^2, 3), d))
 U <- chol(C)
 draw <- rinvwish_chol(1, U, df)
 
-dinvwish_chol(draw, U, df, log = TRUE)
-dinvwish_chol(draw, chol(solve(C)), df, log = TRUE, scale_param = F)
-
-dfun <- function(W, S, nu) {
-  k <- nrow(W)
-  U = chol(S)
-  return(-(log(2)*nu*k/2+(k*(k-1)/4)*log(pi) +sum(lgamma((nu + 1 - 1:k)/2))) + nu*sum(log(diag(U))) -
-         (nu+k+1)*sum(log(diag(chol(W)))) -0.5*sum(diag(S %*% solve(W))))
-}
-
-dfun(draw, C, df)
                     
 
