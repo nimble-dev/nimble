@@ -23,7 +23,7 @@ At the moment, you must install from the source package on any of Linux, Windows
 
 ```r
 # Linux, Windows, or Mac:
-install.packages("nimble", repos = "http://r-nimble.org", type = "source")
+install.packages("nimble", type = "source")
 ```
 
 Or use R CMD INSTALL after downloading from our [website](http://r-nimble.org/download-nimble)
