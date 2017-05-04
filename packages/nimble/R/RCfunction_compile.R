@@ -208,11 +208,20 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
                                        passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
-                                       compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.  
-                                       tryResult <- try(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv))
-                                       if(inherits(tryResult, 'try-error')) {
-                                           stop(paste('There is some problem at the setSizes processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
-                                       }
+                                       compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.
+                                       tryCatch(withCallingHandlers(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv),
+                                                                    error = function(e) {
+                                                                        stack <- sapply(sys.calls(), deparse)
+                                                                        .GlobalEnv$.nimble.traceback <- capture.output(traceback(stack))
+                                                                    }),
+                                                error = function(e) {
+                                                    stop(paste('There was some problem in the the setSizes processing step for this code:',
+                                                               paste(deparse(compileInfo$origRcode), collapse = '\n'),
+                                                               'Internal Error:', e,
+                                                               'Traceback:', paste0(.GlobalEnv$.nimble.traceback, collapse = '\n'),
+                                                               sep = '\n'),
+                                                         call. = FALSE)
+                                                })
                                        neededRCfuns <<- compileInfo$typeEnv[['neededRCfuns']]
                                        
                                        if(debug) {
