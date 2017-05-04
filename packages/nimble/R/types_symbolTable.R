@@ -92,64 +92,83 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
     ## }
 }
 
+resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject) {
+    ## return a list of the new symbol (could be same as the old symbol) and newNeededType
+    newNeededType <- NULL
+    if(!inherits(unknownSym, 'symbolUnknown')) return(list(unknownSym, newNeededType))
+    ## We need to resolve the type:
+    
+    AT <- unknownSym$argType
+    type <- deparse(AT[[1]])
+    name <- unknownSym$name
+
+    ## first see if it is a type already in neededTypes
+    ## This would occur if the type appeared in setup code
+    existingNeededTypeNames <- unlist(lapply(neededTypes, `[[`, 'name'))
+    isANeededType <- existingNeededTypeNames == type
+    if(any(isANeededType)) {
+        listST <- neededTypes[[which(isANeededType)[1]]]$copy(shallow  = TRUE)
+        listST$name <- name
+        return(list(listST, newNeededType))
+        ##symTab$addSymbol(listST, allowReplace = TRUE)
+        next
+    } else { ## either create the type, or in the case of 'return', search recursively into neededTypes
+        possibleTypeName <- type
+        ## look for a valid nlGenerator in the global environment
+        if(exists(possibleTypeName, envir = globalenv())) {
+            possibleNLgenerator <- get(possibleTypeName, envir = globalenv())
+            if(is.nlGenerator(possibleNLgenerator)) {
+                className <- nl.getListDef(possibleNLgenerator)$className
+                ## see if it is a different name for an existing neededType by matching on the internal className                    
+                isANeededType <- className == names(neededTypes)
+                if( any(isANeededType) ) {
+                    listST <- neededTypes[[which(isANeededType)[1]]]$copy(shallow = TRUE)
+                    listST$name <- name
+                    return(list(listST, newNeededType))
+                    ##   symTab$addSymbol(listST, allowReplace = TRUE)
+                   ## next
+                }
+                ## for the case of 'return' only, see if it matches a type nested within a neededType
+                if(name == 'return') {
+                    listST <- recurseGetListST(className, neededTypes)
+                    if(!is.null(listST)) {
+                        listST$name <- name
+                        return(list(listST, newNeededType))
+##                        symTab$addSymbol(listST, allowReplace = TRUE)
+##                        next
+                    }
+                }
+                ## can't find it anywhere, so create it and add to newNeededTypes
+                
+                ## Need access to the nimbleProject here!
+                nlGen <- possibleNLgenerator
+                nlp <- nimbleProject$compileNimbleList(nlGen, initialTypeInferenceOnly = TRUE)
+                className <- nl.getListDef(nlGen)$className 
+                newSym <- symbolNimbleList(name = name, nlProc = nlp)
+                ##    newNeededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
+                newNeededType <- newSym
+                returnSym <- symbolNimbleListGenerator(name = name, nlProc = nlp)
+##                symTab$addSymbol(lireturnSymstST, allowReplace = TRUE)
+                return(list(returnSym, newNeededType))
+                ##next
+            }
+        } else {
+            stop(paste0("Can't figure out what ", possibleTypeName, " is."))
+        }
+    }
+}
+
+
 resolveUnknownTypes <- function(symTab, neededTypes = NULL, nimbleProject) {
     ## modify the symTab in place.
     ## return new neededTypes
     newNeededTypes <- list()
     existingNeededTypeNames <- unlist(lapply(neededTypes, `[[`, 'name'))
     for(name in symTab$getSymbolNames()) {
-        if(!inherits(name, 'symbolUnknown')) next
-        ## We need to resolve the type:
         unknownSym <- symTab$getSymbolObject(name)
-        AT <- unknownSym$argType
-        type <- deparse(AT[[1]])
-        
-        ## first see if it is a type already in neededTypes
-        ## This would occur if the type appeared in setup code
-        isANeededType <- existingNeededTypeNames == type
-        if(any(isANeededType == 1)) {
-            listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow  = TRUE)
-            listST$name <- name
-            symTab$addSymbol(listST, allowReplace = TRUE)
-            next
-        } else { ## either create the type, or in the case of 'return', search recursively into neededTypes
-            possibleTypeName <- type
-            ## look for a valid nlGenerator in the global environment
-            if(exists(possibleTypeName, envir = globalenv())) {
-                possibleNLgenerator <- get(possibleTypeName, envir = globalenv())
-                if(is.nlGenerator(possibleNLgenerator)) {
-                    className <- nl.getListDef(possibleNLgenerator)$className
-                    ## see if it is a different name for an existing neededType by matching on the internal className                    
-                    isANeededType <- className == names(neededTypes)
-                    if( any(isANeededType) ) {
-                        listST <- neededTypes[[which(isANeededType)[1]]]$copy(shallow = TRUE)
-                        listST$name <- name
-                        symTab$addSymbol(listST, allowReplace = TRUE)
-                        next
-                    }
-                    ## for the case of 'return' only, see if it matches a type nested within a neededType
-                    if(name == 'return') {
-                        listST <- recurseGetListST(className, neededTypes)
-                        if(!is.null(listST)) {
-                            listST$name <- name
-                            symTab$addSymbol(listST, allowReplace = TRUE)
-                            next
-                        }
-                    }
-                    ## can't find it anywhere, so create it and add to newNeededTypes
-
-                    ## Oh no! Need access to the project!
-                    nlGen <- possibleNLgenerator
-                    nlp <- nimbleProject$compileNimbleList(nlGen, initialTypeInferenceOnly = TRUE)
-                    className <- nl.getListDef(nlGen)$className 
-                    newSym <- symbolNimbleList(name = name, nlProc = nlp)
-                    newNeededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
-                    returnSym <- symbolNimbleListGenerator(name = name, nlProc = nlp)
-                    symTab$addSymbol(lireturnSymstST, allowReplace = TRUE)
-                    next
-                }
-            }
-        }
+        result <- resolveOneUnknownType(unknownSym, neededTypes, nimbleProject)
+        if(!identical(result[[1]], unknownSym)) symTab$addSymbol(result[[1]], allowReplace = TRUE)
+        newNeededTypes <- c(newNeededTypes, result[[2]])
     }
     newNeededTypes
 }
@@ -201,7 +220,7 @@ symbolBase <-
                     )
                 )
 
-symbolUnknown <- setRefClass(Class = 'symbolUnkown',
+symbolUnknown <- setRefClass(Class = 'symbolUnknown',
                              contains = 'symbolBase',
                              fields = list(argType = 'ANY'),
                              methods = list(

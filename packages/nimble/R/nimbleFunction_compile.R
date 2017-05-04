@@ -49,7 +49,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        },
                                        doRCfunProcess = function(control = list(debug = FALSE, debugCpp = FALSE)) {
                                            for(i in seq_along(RCfunProcs)) {
-                                               RCfunProcs[[i]]$process(debug = control$debug, debugCpp = control$debugCpp, debugCppLabel = name, doKeywords = FALSE)
+                                               RCfunProcs[[i]]$process(debug = control$debug, debugCpp = control$debugCpp, debugCppLabel = name, doKeywords = FALSE, nimbleProject = nimbleProject)
                                            }
                                        },
                                        process = function(control = list(debug = FALSE, debugCpp = FALSE)) {

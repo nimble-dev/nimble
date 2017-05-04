@@ -61,9 +61,8 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
                                               nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
                                               names(nameSubList) <<- names(RCfun$argInfo)
-                                              browser()
 
-                                              message('BETTER SOLUTION WILL BE TO LET AN nlProc GET STARTED FOR SETUP WITHOUT A NIMBLEPROJECT AND BE REGISTERED TO A PROJECT LATER. THEN NIMBLEPROJECT IS AGAIN NOT NEEDED HERE')
+                                              ##NEED TO FIGURE OUT ABOUT A VIRTUALNIMBLEFUNCTION.  Could simply throw an error.  Could allow initial compilation to not need a nimbleProject
                                               
                                               ## This will only handle basic types.  nimbleLists will be added below
                                               compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes, names(RCfun$argInfo)) ## will be used for function args.  must be a better way.
@@ -80,7 +79,9 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                                   compileInfo$newLocalSymTab$setParentST(parentST)
                                               }
                                               compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, neededTypes, "return", "returnType")
-                                              neededRCfuns <<- c(neededRCfuns, resolveOneUnknownType(compileInfo$returnSymbol, neededTypes, nimbleProject))
+                                              updatedReturn <- resolveOneUnknownType(compileInfo$returnSymbol, neededTypes, nimbleProject)
+                                              compileInfo$returnSymbol <<- updatedReturn[[1]]
+                                              neededRCfuns <<- c(neededRCfuns, updatedReturn[[2]])
                                           },
                                           process = function(...) {
                                               if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
@@ -147,7 +148,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                    ## moved to base class: neededRCfuns = 'list' ## nfMethodRC objects
                                    ),
                                methods = list(
-                                   process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE) {
+                                   process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE, nimbleProject = NULL) {
                                        if(!is.null(nimbleOptions()$debugRCfunProcessing)) {
                                            if(nimbleOptions()$debugRCfunProcessing) {
                                                debug <- TRUE
@@ -155,6 +156,8 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            }
                                        }
 
+                                       if(is.null(nimbleProject)) nimbleProject <- get('nimbleProject', envir = RCfun)
+                                       
                                        if(!is.null(nimbleOptions()$debugCppLineByLine)) {
                                            if(nimbleOptions()$debugCppLineByLine) {
                                                debugCpp <- TRUE
@@ -221,6 +224,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        compileInfo$typeEnv[['neededRCfuns']] <<- list()
                                        compileInfo$typeEnv[['.AllowUnknowns']] <<- TRUE ## will be FALSE for RHS recursion in setSizes
                                        compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
+                                       compileInfo$typeEnv[['.nimbleProject']] <<- nimbleProject
                                        passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.  
