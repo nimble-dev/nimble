@@ -130,15 +130,15 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isMatrix(x) || !isMatrix(chol) || !isReal(x) || !isReal(chol))
+  if(!Rf_isMatrix(x) || !Rf_isMatrix(chol) || !Rf_isReal(x) || !Rf_isReal(chol))
     RBREAK("Error (C_dwish_chol): 'x' and 'chol' must be real matrices.\n")
-  if(!isReal(df) || !isReal(scale_param) || !isLogical(return_log))
+  if(!Rf_isReal(df) || !Rf_isReal(scale_param) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dwish_chol): invalid input type for one of the arguments.\n");
-  int* dims = INTEGER(getAttrib(x, R_DimSymbol));
+  int* dims = INTEGER(Rf_getAttrib(x, R_DimSymbol));
   if(dims[0] != dims[1])
     RBREAK("Error (C_dwish_chol): 'x' must be a square matrix.\n");
   int p = dims[0];
-  dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
   if(dims[0] != dims[1] || dims[0] != p)
    RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix with the same dimensions as 'x'.\n");
 
@@ -153,7 +153,7 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
     RBREAK("Error (C_dwish_chol): inconsistent degrees of freedom and dimension.\n");
   
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, 1));  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
   REAL(ans)[0] = dwish_chol(c_x, c_chol, c_df, p, scale, give_log, 0); 
   UNPROTECT(1);
   return ans;
@@ -241,11 +241,11 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isMatrix(chol) || !isReal(chol))
+  if(!Rf_isMatrix(chol) || !Rf_isReal(chol))
     RBREAK("Error (Crwish_chol): 'chol' must be a real matrix.\n")
-  if(!isReal(df) || !isReal(scale_param))
+  if(!Rf_isReal(df) || !Rf_isReal(scale_param))
     RBREAK("Error (C_rwish_chol): invalid input type for one of the arguments.\n");
-  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  int* dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
   if(dims[0] != dims[1])
     RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix.\n");
   int p = dims[0];
@@ -262,7 +262,7 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
   GetRNGstate(); 
 
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, n_chol));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_chol));  
   rwish_chol(REAL(ans), c_chol, c_df, p, scale, 0);
   
   PutRNGstate();
@@ -331,7 +331,7 @@ void rdirch(double *ans, double* alpha, int K)
 
 SEXP C_ddirch(SEXP x, SEXP alpha, SEXP return_log) 
 {
-  if(!isReal(x) || !isReal(alpha) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(alpha) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_ddirch): invalid input type for one of the arguments.\n");
   int K = LENGTH(alpha);
   if(LENGTH(x) != K)
@@ -346,7 +346,7 @@ SEXP C_ddirch(SEXP x, SEXP alpha, SEXP return_log)
   double* c_x = REAL(x);
   double* c_alpha = REAL(alpha);
 
-  PROTECT(ans = allocVector(REALSXP, 1));  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
   REAL(ans)[0] = ddirch(c_x, c_alpha, K, give_log);
 
   UNPROTECT(1);
@@ -355,14 +355,14 @@ SEXP C_ddirch(SEXP x, SEXP alpha, SEXP return_log)
  
 
 SEXP C_rdirch(SEXP alpha) {
-  if(!isReal(alpha))
+  if(!Rf_isReal(alpha))
     RBREAK("Error (C_rdirch): invalid input type for the argument.\n");
   int K = LENGTH(alpha);
 
   SEXP ans;
 
   if(K == 0) {
-    PROTECT(ans = allocVector(INTSXP, 0));
+    PROTECT(ans = Rf_allocVector(INTSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -371,7 +371,7 @@ SEXP C_rdirch(SEXP alpha) {
 
   GetRNGstate(); 
 
-  PROTECT(ans = allocVector(REALSXP, K));  
+  PROTECT(ans = Rf_allocVector(REALSXP, K));  
   rdirch(REAL(ans), c_alpha, K);
   PutRNGstate();
   UNPROTECT(1);
@@ -450,7 +450,7 @@ void rmulti(int *ans, double size, double* prob, int K) // Calling functions nee
 
 SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log) 
 {
-  if(!isReal(x) || !isReal(size) || !isReal(prob) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(size) || !Rf_isReal(prob) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_dmulti): invalid input type for one of the arguments.\n");
   int K = LENGTH(prob);
   if(LENGTH(x) != K)
@@ -476,7 +476,7 @@ SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log)
   if(c_size > sum + 10*DBL_EPSILON || c_size < sum - 10*DBL_EPSILON)
     RBREAK("Error (C_dmulti): sum of values is not equal to size.\n");
 
-  PROTECT(ans = allocVector(REALSXP, 1));  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
   REAL(ans)[0] = dmulti(c_x, c_size, c_prob, K, give_log);
 
   UNPROTECT(1);
@@ -485,14 +485,14 @@ SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log)
  
 
 SEXP C_rmulti(SEXP size, SEXP prob) {
-  if(!isReal(size) || !isReal(prob))
+  if(!Rf_isReal(size) || !Rf_isReal(prob))
     RBREAK("Error (C_rmulti): invalid input type for one of the arguments.\n");
   int K = LENGTH(prob);
 
   SEXP ans;
 
   if(K == 0) {
-    PROTECT(ans = allocVector(INTSXP, 0));
+    PROTECT(ans = Rf_allocVector(INTSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -502,7 +502,7 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
 
   GetRNGstate(); 
 
-  PROTECT(ans = allocVector(INTSXP, K));  
+  PROTECT(ans = Rf_allocVector(INTSXP, K));  
   // note that if NaN set in rmulti, the INTEGER() casts it to NA
   rmulti(INTEGER(ans), c_size, c_prob, K);
   PutRNGstate();
@@ -559,7 +559,7 @@ SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log)
   // this will call NIMBLE's dcat() for computation on scalars
   // prob must be a single vector of probs adding to one, but x can be a vector
 
-  if(!isReal(x) || !isReal(prob) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(prob) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_dcat): invalid input type for one of the arguments.\n");
   int n_x = LENGTH(x);
   int K = LENGTH(prob);
@@ -575,7 +575,7 @@ SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log)
   double* c_x = REAL(x);
   double* c_prob = REAL(prob);
 
-  PROTECT(ans = allocVector(REALSXP, n_x));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
   for(i = 0; i < n_x; i++) {
     REAL(ans)[i] = dcat(c_x[i], c_prob, K, give_log);
   }
@@ -585,7 +585,7 @@ SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log)
 }
   
 SEXP C_rcat(SEXP n, SEXP prob) {
-  if(!isInteger(n) || !isReal(prob))
+  if(!Rf_isInteger(n) || !Rf_isReal(prob))
     RBREAK("Error (C_rcat): invalid input type for one of the arguments.\n");
   int n_values = INTEGER(n)[0];
   int K = LENGTH(prob);
@@ -594,7 +594,7 @@ SEXP C_rcat(SEXP n, SEXP prob) {
   int i;
 
   if(n_values == 0) {
-    PROTECT(ans = allocVector(INTSXP, 0));
+    PROTECT(ans = Rf_allocVector(INTSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -604,7 +604,7 @@ SEXP C_rcat(SEXP n, SEXP prob) {
   double* c_prob = REAL(prob);
 
   GetRNGstate(); 
-  PROTECT(ans = allocVector(INTSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(INTSXP, n_values));  
 
   for(i = 0; i < n_values; i++) 
     INTEGER(ans)[i] = (int) rcat(c_prob, K);
@@ -681,14 +681,14 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isMatrix(chol) || !isReal(chol))
+  if(!Rf_isMatrix(chol) || !Rf_isReal(chol))
     RBREAK("Error (C_dmnorm_chol): 'chol' must be a real matrix.\n");
-  if(!isReal(x) || !isReal(mean))
+  if(!Rf_isReal(x) || !Rf_isReal(mean))
     RBREAK("Error (C_dmnorm_chol): 'x' and 'mean' should be real valued.\n");
-  if(!isReal(prec_param) || !isLogical(return_log))
+  if(!Rf_isReal(prec_param) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dmnorm_chol): invalid input type for one of the arguments.\n");
 
-  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  int* dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
   if(dims[0] != dims[1])
     RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix.\n");
   int p = dims[0];
@@ -715,7 +715,7 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
   } else full_mean = c_mean;
   
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, 1));  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
   REAL(ans)[0] = dmnorm_chol(c_x, full_mean, c_chol, n_x, prec, give_log, 0);
   if(n_mean < n_x)
     delete [] full_mean;
@@ -764,14 +764,14 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isMatrix(chol) || !isReal(chol))
+  if(!Rf_isMatrix(chol) || !Rf_isReal(chol))
     RBREAK("Error (C_rmnorm_chol): 'chol' should be a real matrix.\n");
-  if(!isReal(mean))
+  if(!Rf_isReal(mean))
     RBREAK("Error (C_rmnorm_chol): 'mean' should be real-valued\n");
-  if(!isReal(prec_param))
+  if(!Rf_isReal(prec_param))
     RBREAK("Error (C_rmnorm_chol): invalid input type for one of the arguments.\n");
 
-  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  int* dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
   if(dims[0] != dims[1])
     RBREAK("Error (C_dmnorm_chol): 'chol' must be a square matrix.\n");
   int n_values = dims[0];
@@ -797,7 +797,7 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
   GetRNGstate(); 
 
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
   rmnorm_chol(REAL(ans), full_mean, c_chol, n_values, prec);
 
   PutRNGstate();
@@ -873,14 +873,14 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
   // Cholesky matrix should be given as a numeric vector in column-major order
   //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isMatrix(chol) || !isReal(chol))
+  if(!Rf_isMatrix(chol) || !Rf_isReal(chol))
     RBREAK("Error (C_dmvt_chol): 'chol' must be a real matrix.\n");
-  if(!isReal(x) || !isReal(mu))
+  if(!Rf_isReal(x) || !Rf_isReal(mu))
     RBREAK("Error (C_dmvt_chol): 'x' and 'mu' should be real valued.\n");
-  if(!isReal(df) || !isReal(prec_param) || !isLogical(return_log))
+  if(!Rf_isReal(df) || !Rf_isReal(prec_param) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dmvt_chol): invalid input type for one of the arguments.\n");
 
-  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  int* dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
   if(dims[0] != dims[1])
     RBREAK("Error (C_dmvt_chol): 'chol' must be a square matrix.\n");
   int p = dims[0];
@@ -908,7 +908,7 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
   } else full_mu = c_mu;
   
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, 1));  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
   REAL(ans)[0] = dmvt_chol(c_x, full_mu, c_chol, c_df, n_x, prec, give_log, 0); 
   if(n_mu < n_x)
     delete [] full_mu;
@@ -960,14 +960,14 @@ SEXP C_rmvt_chol(SEXP mu, SEXP chol, SEXP df, SEXP prec_param)
   // Cholesky matrix should be given as a numeric vector in column-major order
   //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isMatrix(chol) || !isReal(chol))
+  if(!Rf_isMatrix(chol) || !Rf_isReal(chol))
     RBREAK("Error (C_rmvt_chol): 'chol' should be a real matrix.\n");
-  if(!isReal(mu))
+  if(!Rf_isReal(mu))
     RBREAK("Error (C_rmvt_chol): 'mu' should be real-valued\n");
-  if(!isReal(prec_param))
+  if(!Rf_isReal(prec_param))
     RBREAK("Error (C_rmvt_chol): invalid input type for one of the arguments.\n");
 
-  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  int* dims = INTEGER(Rf_getAttrib(chol, R_DimSymbol));
   if(dims[0] != dims[1])
     RBREAK("Error (C_rmvt_chol): 'chol' must be a square matrix.\n");
   int n_values = dims[0];
@@ -994,7 +994,7 @@ SEXP C_rmvt_chol(SEXP mu, SEXP chol, SEXP df, SEXP prec_param)
   GetRNGstate(); 
   
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
   rmvt_chol(REAL(ans), full_mu, c_chol, c_df, n_values, prec);
   
   PutRNGstate();
@@ -1068,7 +1068,7 @@ double qt_nonstandard(double p, double df, double mu, double sigma, int lower_ta
 
 
 SEXP C_dt_nonstandard(SEXP x, SEXP df, SEXP mu, SEXP sigma, SEXP return_log) {
-  if(!isReal(x) || !isReal(df) || !isReal(mu) || !isReal(sigma) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(df) || !Rf_isReal(mu) || !Rf_isReal(sigma) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_dt_nonstandard): invalid input type for one of the arguments.");
   int n_x = LENGTH(x);
   int n_mu = LENGTH(mu);
@@ -1081,7 +1081,7 @@ SEXP C_dt_nonstandard(SEXP x, SEXP df, SEXP mu, SEXP sigma, SEXP return_log) {
     return x;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_x));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
   double* c_x = REAL(x);
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
@@ -1112,7 +1112,7 @@ SEXP C_dt_nonstandard(SEXP x, SEXP df, SEXP mu, SEXP sigma, SEXP return_log) {
   
 SEXP C_rt_nonstandard(SEXP n, SEXP df, SEXP mu, SEXP sigma) {
   // this will call R's rt() for computation on scalars
-  if(!isInteger(n) || !isReal(df) || !isReal(mu) || !isReal(sigma))
+  if(!Rf_isInteger(n) || !Rf_isReal(df) || !Rf_isReal(mu) || !Rf_isReal(sigma))
     RBREAK("Error (C_rt_nonstandard): invalid input type for one of the arguments.");
   int n_mu = LENGTH(mu);
   int n_sigma = LENGTH(sigma);
@@ -1121,7 +1121,7 @@ SEXP C_rt_nonstandard(SEXP n, SEXP df, SEXP mu, SEXP sigma) {
   SEXP ans;
     
   if(n_values == 0) {
-    PROTECT(ans = allocVector(REALSXP, 0));
+    PROTECT(ans = Rf_allocVector(REALSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -1131,7 +1131,7 @@ SEXP C_rt_nonstandard(SEXP n, SEXP df, SEXP mu, SEXP sigma) {
     
   GetRNGstate(); 
     
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
   double* c_df = REAL(df);
@@ -1159,7 +1159,7 @@ SEXP C_rt_nonstandard(SEXP n, SEXP df, SEXP mu, SEXP sigma) {
 }
   
 SEXP C_pt_nonstandard(SEXP q, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEXP log_p) {
-  if(!isReal(q) || !isReal(df) || !isReal(mu) || !isReal(sigma) || !isLogical(lower_tail) || !isLogical(log_p))
+  if(!Rf_isReal(q) || !Rf_isReal(df) || !Rf_isReal(mu) || !Rf_isReal(sigma) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
     RBREAK("Error (C_pt_nonstandard): invalid input type for one of the arguments.");
   int n_q = LENGTH(q);
   int n_mu = LENGTH(mu);
@@ -1173,7 +1173,7 @@ SEXP C_pt_nonstandard(SEXP q, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
     return q;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_q));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_q));  
   double* c_q = REAL(q);
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
@@ -1203,7 +1203,7 @@ SEXP C_pt_nonstandard(SEXP q, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
 }
  
 SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEXP log_p) {
-  if(!isReal(p) || !isReal(df) || !isReal(mu) || !isReal(sigma) || !isLogical(lower_tail) || !isLogical(log_p))
+  if(!Rf_isReal(p) || !Rf_isReal(df) || !Rf_isReal(mu) || !Rf_isReal(sigma) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
     RBREAK("Error (C_qt_nonstandard): invalid input type for one of the arguments.");
   int n_p = LENGTH(p);
   int n_mu = LENGTH(mu);
@@ -1217,7 +1217,7 @@ SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
     return p;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_p));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_p));  
   double* c_p = REAL(p);
   double* c_mu = REAL(mu);
   double* c_sigma = REAL(sigma);
@@ -1289,7 +1289,7 @@ double rinterval(double t, double* c, int K)
 SEXP C_dinterval(SEXP x, SEXP t, SEXP c, SEXP return_log) {
   // this will call NIMBLE's dinterval() for computation on scalars
   // c must be a single vector of cutpoints; x and t can be vectors
-  if(!isReal(x) || !isReal(t) || !isReal(c) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(t) || !Rf_isReal(c) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_dinterval): invalid input type for one of the arguments.");
   int n_x = LENGTH(x);
   int n_t = LENGTH(t);
@@ -1301,7 +1301,7 @@ SEXP C_dinterval(SEXP x, SEXP t, SEXP c, SEXP return_log) {
     return x;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_x));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
   double* c_x = REAL(x);
   double* c_t = REAL(t);
   double* c_c = REAL(c);
@@ -1325,7 +1325,7 @@ SEXP C_dinterval(SEXP x, SEXP t, SEXP c, SEXP return_log) {
 }
   
 SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
-  if(!isInteger(n) || !isReal(t) || !isReal(c))
+  if(!Rf_isInteger(n) || !Rf_isReal(t) || !Rf_isReal(c))
     RBREAK("Error (C_rinterval): invalid input type for one of the arguments.");
   int n_t = LENGTH(t);
   int K = LENGTH(c);
@@ -1333,7 +1333,7 @@ SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
   SEXP ans;
     
   if(n_values == 0) {
-    PROTECT(ans = allocVector(INTSXP, 0));
+    PROTECT(ans = Rf_allocVector(INTSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -1343,7 +1343,7 @@ SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
     
   GetRNGstate(); 
     
-  PROTECT(ans = allocVector(INTSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(INTSXP, n_values));  
   double* c_t = REAL(t);
   double* c_c = REAL(c);
   if(n_t == 1) {
@@ -1411,7 +1411,7 @@ double qexp_nimble(double p, double rate, int lower_tail, int log_p)
 }
 
 SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
-  if(!isReal(x) || !isReal(rate) || !isLogical(return_log))
+  if(!Rf_isReal(x) || !Rf_isReal(rate) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dexp_nimble): invalid input type for one of the arguments.");
   int n_x = LENGTH(x);
   int n_rate = LENGTH(rate);
@@ -1422,7 +1422,7 @@ SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
     return x;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_x));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
   double* c_x = REAL(x);
   double* c_rate = REAL(rate);
 
@@ -1445,14 +1445,14 @@ SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
   
 SEXP C_rexp_nimble(SEXP n, SEXP rate) {
   // this will call rexp_nimble for computation on scalars
-  if(!isInteger(n) || !isReal(rate) )
+  if(!Rf_isInteger(n) || !Rf_isReal(rate) )
     RBREAK("Error (C_rexp_nimble): invalid input type for one of the arguments.");
   int n_rate = LENGTH(rate);
   int n_values = INTEGER(n)[0];
   SEXP ans;
     
   if(n_values == 0) {
-    PROTECT(ans = allocVector(REALSXP, 0));
+    PROTECT(ans = Rf_allocVector(REALSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -1462,7 +1462,7 @@ SEXP C_rexp_nimble(SEXP n, SEXP rate) {
     
   GetRNGstate(); 
     
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
   double* c_rate = REAL(rate);
   if(n_rate == 1) {
     // if no parameter vectors, more efficient not to deal with multiple indices
@@ -1483,7 +1483,7 @@ SEXP C_rexp_nimble(SEXP n, SEXP rate) {
 }
   
 SEXP C_pexp_nimble(SEXP q, SEXP rate, SEXP lower_tail, SEXP log_p) {
-  if(!isReal(q) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p)) 
+  if(!Rf_isReal(q) || !Rf_isReal(rate) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p)) 
     RBREAK("Error (C_pexp_nimble): invalid input type for one of the arguments.");
   int n_q = LENGTH(q);
   int n_rate = LENGTH(rate);
@@ -1495,7 +1495,7 @@ SEXP C_pexp_nimble(SEXP q, SEXP rate, SEXP lower_tail, SEXP log_p) {
     return q;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_q));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_q));  
   double* c_q = REAL(q);
   double* c_rate = REAL(rate);
 
@@ -1517,7 +1517,7 @@ SEXP C_pexp_nimble(SEXP q, SEXP rate, SEXP lower_tail, SEXP log_p) {
 }
   
 SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
-  if(!isReal(p) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p)) 
+  if(!Rf_isReal(p) || !Rf_isReal(rate) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p)) 
     RBREAK("Error (C_qexp_nimble): invalid input type for one of the arguments.");
   int n_p = LENGTH(p);
   int n_rate = LENGTH(rate);
@@ -1529,7 +1529,7 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
     return p;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_p));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_p));  
   double* c_p = REAL(p);
   double* c_rate = REAL(rate);
 
@@ -1597,7 +1597,7 @@ double qinvgamma(double p, double shape, double rate, int lower_tail, int log_p)
 
 
 SEXP C_dinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
-  if(!isReal(x) || !isReal(shape) || !isReal(rate) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(shape) || !Rf_isReal(rate) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_dinvgamma): invalid input type for one of the arguments.");
   int n_x = LENGTH(x);
   int n_shape = LENGTH(shape);
@@ -1609,7 +1609,7 @@ SEXP C_dinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
     return x;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_x));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
   double* c_x = REAL(x);
   double* c_shape = REAL(shape);
   double* c_rate = REAL(rate);
@@ -1635,7 +1635,7 @@ SEXP C_dinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
 }
   
 SEXP C_rinvgamma(SEXP n, SEXP shape, SEXP rate) {
-  if(!isInteger(n) || !isReal(shape) || !isReal(rate))
+  if(!Rf_isInteger(n) || !Rf_isReal(shape) || !Rf_isReal(rate))
     RBREAK("Error (C_rinvgamma): invalid input type for one of the arguments.");
   int n_shape = LENGTH(shape);
   int n_rate = LENGTH(rate);
@@ -1643,7 +1643,7 @@ SEXP C_rinvgamma(SEXP n, SEXP shape, SEXP rate) {
   SEXP ans;
     
   if(n_values == 0) {
-    PROTECT(ans = allocVector(REALSXP, 0));
+    PROTECT(ans = Rf_allocVector(REALSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -1653,7 +1653,7 @@ SEXP C_rinvgamma(SEXP n, SEXP shape, SEXP rate) {
     
   GetRNGstate(); 
     
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
   double* c_shape = REAL(shape);
   double* c_rate = REAL(rate);
   if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
@@ -1677,7 +1677,7 @@ SEXP C_rinvgamma(SEXP n, SEXP shape, SEXP rate) {
 }
   
 SEXP C_pinvgamma(SEXP q, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
-  if(!isReal(q) || !isReal(shape) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p))
+  if(!Rf_isReal(q) || !Rf_isReal(shape) || !Rf_isReal(rate) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
     RBREAK("Error (C_pinvgamma): invalid input type for one of the arguments.");
   int n_q = LENGTH(q);
   int n_shape = LENGTH(shape);
@@ -1690,7 +1690,7 @@ SEXP C_pinvgamma(SEXP q, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
     return q;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_q));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_q));  
   double* c_q = REAL(q);
   double* c_shape = REAL(shape);
   double* c_rate = REAL(rate);
@@ -1716,7 +1716,7 @@ SEXP C_pinvgamma(SEXP q, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
 }
  
 SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
-  if(!isReal(p) || !isReal(shape) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p))
+  if(!Rf_isReal(p) || !Rf_isReal(shape) || !Rf_isReal(rate) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
     RBREAK("Error (C_qinvgamma): invalid input type for one of the arguments.");
   int n_p = LENGTH(p);
   int n_shape = LENGTH(shape);
@@ -1729,7 +1729,7 @@ SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
     return p;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_p));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_p));  
   double* c_p = REAL(p);
   double* c_shape = REAL(shape);
   double* c_rate = REAL(rate);

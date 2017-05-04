@@ -999,7 +999,7 @@ SEXP getMVAccessorValues(SEXP accessor){
 	nimType arrType = (*nimTypePtr).getNimType();
 	SEXP rOutput;
 	if(arrType == DOUBLE){
-		PROTECT(rOutput = allocVector(REALSXP, (*SVAptr).getLength() ) );
+		PROTECT(rOutput = Rf_allocVector(REALSXP, (*SVAptr).getLength() ) );
 		NimArrBase<double>* NimArrPtr = static_cast<NimArrBase<double>*>(nimTypePtr) ;
 //		std::copy(	NimArrPtr->getPtr() + SVAptr->getIndexStart(),
 //			 	NimArrPtr->getPtr() + SVAptr->getIndexEnd(),
@@ -1012,7 +1012,7 @@ SEXP getMVAccessorValues(SEXP accessor){
 		return(rOutput);
 	}
 	if(arrType == INT){
-		PROTECT(rOutput = allocVector(INTSXP, (*SVAptr).getLength() ) );
+		PROTECT(rOutput = Rf_allocVector(INTSXP, (*SVAptr).getLength() ) );
 		NimArrBase<int>* NimArrPtr = static_cast<NimArrBase<int>*>(nimTypePtr) ;
 		int begin = SVAptr->getIndexStart();
 		int length = SVAptr->getLength();
@@ -1033,7 +1033,7 @@ SEXP getModelAccessorValues(SEXP accessor){
 	nimType arrType = (*nimTypePtr).getNimType();
 	SEXP rOutput;
 	if(arrType == DOUBLE){
-		PROTECT(rOutput = allocVector(REALSXP, (*SVAptr).getLength() ) );
+		PROTECT(rOutput = Rf_allocVector(REALSXP, (*SVAptr).getLength() ) );
 		NimArrBase<double>* NimArrPtr = static_cast<NimArrBase<double>*>(nimTypePtr) ;
 //		std::copy(	NimArrPtr->getPtr() + SVAptr->getIndexStart(),
 //			 	NimArrPtr->getPtr() + SVAptr->getIndexEnd(),
@@ -1046,7 +1046,7 @@ SEXP getModelAccessorValues(SEXP accessor){
 		return(rOutput);
 	}
 	if(arrType == INT){
-		PROTECT(rOutput = allocVector(INTSXP, (*SVAptr).getLength() ) );
+		PROTECT(rOutput = Rf_allocVector(INTSXP, (*SVAptr).getLength() ) );
 		NimArrBase<int>* NimArrPtr = static_cast<NimArrBase<int>*>(nimTypePtr) ;
 		int begin = SVAptr->getIndexStart();
 		int length = SVAptr->getLength();
@@ -1078,7 +1078,7 @@ SEXP getModelAccessorValues(SEXP accessor){
 // }
 
 SEXP getListElement(SEXP list, const char *str){
-	SEXP ans = R_NilValue, names = getAttrib(list, R_NamesSymbol);
+	SEXP ans = R_NilValue, names = Rf_getAttrib(list, R_NamesSymbol);
 	PROTECT(ans);
 	PROTECT(names);
 	for(int i = 0; i < LENGTH(list); i++){
@@ -1157,14 +1157,14 @@ SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP nodeEnv){
 	int numNodes = LENGTH(nodeNames);
 	SEXP thisPtr;
 	PROTECT(thisPtr);
-	SEXP thisName = PROTECT(allocVector(STRSXP, 1) );
+	SEXP thisName = PROTECT(Rf_allocVector(STRSXP, 1) );
 	SEXP falseObj = PROTECT( ScalarLogical(FALSE) );
-	SEXP indexObj = PROTECT( ScalarInteger(0) );
+	SEXP indexObj = PROTECT( Rf_ScalarInteger(0) );
 	for(int i = 0; i < numNodes; i++){
 		INTEGER(indexObj)[0]++;
 		thisPtr = getEnvVar_Sindex(nodeNames, nodeEnv, indexObj );
 		if(TYPEOF(thisPtr) != EXTPTRSXP)
-			error("trying to copy a non-existant pointer");
+			Rf_error("trying to copy a non-existant pointer");
 		thisPtr = addNodeFun(nodeFxnVec, thisPtr, falseObj, indexObj );
 	}
 	UNPROTECT(4);
@@ -1220,7 +1220,7 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
 SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
   SEXP Sdim;
   //  std::cout<<"in populateIndexedNodeInfoTable\n";
-  PROTECT(Sdim = getAttrib(StableContents, R_DimSymbol));
+  PROTECT(Sdim = Rf_getAttrib(StableContents, R_DimSymbol));
   if(LENGTH(Sdim) != 2) {PRINTF("Warning from populateIndexedNodeInfoTable: LENGTH(Sdim) != 2"); return(R_NilValue);}
   int nrow = INTEGER(Sdim)[0];
   int ncol = INTEGER(Sdim)[1];
@@ -1234,8 +1234,8 @@ SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
     return(R_NilValue);
   } else {
 
-    if(!isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
-    if(isInteger(StableContents)) {
+    if(!Rf_isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
+    if(Rf_isInteger(StableContents)) {
       int *contentsPtr = INTEGER(StableContents);
       tablePtr->reserve(nrow);
       for(int i = 0; i < nrow; i++) {
@@ -1386,10 +1386,10 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
 
 SEXP varAndIndices2Rlist(const varAndIndicesClass &input) {
   SEXP Soutput, Sindices;
-  PROTECT(Soutput = allocVector(VECSXP, 2));
+  PROTECT(Soutput = Rf_allocVector(VECSXP, 2));
   SET_VECTOR_ELT(Soutput, 0, string_2_STRSEXP(input.varName));
   int numinds = input.indices.size();
-  PROTECT(Sindices = allocVector(VECSXP, numinds));
+  PROTECT(Sindices = Rf_allocVector(VECSXP, numinds));
   for(int i = 0; i < numinds; i++) {
     SET_VECTOR_ELT(Sindices, i, vectorInt_2_SEXP(input.indices[i]));
   }
@@ -1400,7 +1400,7 @@ SEXP varAndIndices2Rlist(const varAndIndicesClass &input) {
   newNames[1].assign("indices");
   SEXP SnewNames;
   PROTECT(SnewNames = vectorString_2_STRSEXP(newNames));
-  setAttrib(Soutput, R_NamesSymbol, SnewNames);
+  Rf_setAttrib(Soutput, R_NamesSymbol, SnewNames);
 
   UNPROTECT(3);
   return(Soutput);
@@ -1493,7 +1493,7 @@ void varAndIndices2mapParts(const varAndIndicesClass &varAndInds, int snDim, con
 
 SEXP mapInfo2Rlist(const mapInfoClass &input) {
   SEXP Soutput;
-  PROTECT(Soutput = allocVector(VECSXP, 3));
+  PROTECT(Soutput = Rf_allocVector(VECSXP, 3));
   SET_VECTOR_ELT(Soutput, 0, int_2_SEXP(input.offset));
   SET_VECTOR_ELT(Soutput, 1, vectorInt_2_SEXP(input.sizes));
   SET_VECTOR_ELT(Soutput, 2, vectorInt_2_SEXP(input.strides));
@@ -1503,7 +1503,7 @@ SEXP mapInfo2Rlist(const mapInfoClass &input) {
   newNames[2].assign("strides");
   SEXP SnewNames;
   PROTECT(SnewNames = vectorString_2_STRSEXP(newNames));
-  setAttrib(Soutput, R_NamesSymbol, SnewNames);
+  Rf_setAttrib(Soutput, R_NamesSymbol, SnewNames);
   UNPROTECT(2);
   return(Soutput);
 }
