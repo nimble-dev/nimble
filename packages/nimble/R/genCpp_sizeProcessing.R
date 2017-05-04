@@ -536,7 +536,7 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
     ## nimList$b <- 12 }
     ## accomplish this by copying code, getting arguments (e.g. a = 10, b = 12) from copied code and turning them into assignment 
     ## exprs in code$caller, and setting first argument of code$caller to be nimList <- nimListDef$new()
-    browser()
+    
     listDefName <- code$args[[1]]$name
     if(symTab$symbolExists(listDefName, inherits = TRUE)){
         listST <- symTab$getSymbolObject(listDefName, inherits = TRUE)

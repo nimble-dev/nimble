@@ -94,7 +94,7 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
 
 resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject) {
     ## return a list of the new symbol (could be same as the old symbol) and newNeededType
-    newNeededType <- NULL
+    newNeededType <- list()
     if(!inherits(unknownSym, 'symbolUnknown')) return(list(unknownSym, newNeededType))
     ## We need to resolve the type:
     
@@ -146,7 +146,7 @@ resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject)
                 className <- nl.getListDef(nlGen)$className 
                 newSym <- symbolNimbleList(name = name, nlProc = nlp)
                 ##    newNeededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
-                newNeededType <- newSym
+                newNeededType[[className]] <- newSym
                 returnSym <- symbolNimbleList(name = name, nlProc = nlp)
 ##                symTab$addSymbol(lireturnSymstST, allowReplace = TRUE)
                 return(list(returnSym, newNeededType))
@@ -157,7 +157,6 @@ resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject)
         }
     }
 }
-
 
 resolveUnknownTypes <- function(symTab, neededTypes = NULL, nimbleProject) {
     ## modify the symTab in place.

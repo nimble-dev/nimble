@@ -72,14 +72,14 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               ## Currently the only non-basic type resolves in this step would be nimbleLists
                                               if(is.null(nimbleProject)) nimbleProject <- get('nimbleProject', envir = RCfun)
                                               neededRCfuns <<- resolveUnknownTypes(compileInfo$origLocalSymTab, neededTypes, nimbleProject)
-                                              resolveUnknownTypes(compileInfo$origLocalSymTab, c(neededRCfuns, neededTypes), nimbleProject)
+                                              resolveUnknownTypes(compileInfo$newLocalSymTab, c(neededRCfuns, neededTypes), nimbleProject)
                                               
                                               if(!is.null(parentST)) {
                                                   compileInfo$origLocalSymTab$setParentST(parentST)
                                                   compileInfo$newLocalSymTab$setParentST(parentST)
                                               }
                                               compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, neededTypes, "return", "returnType")
-                                              updatedReturn <- resolveOneUnknownType(compileInfo$returnSymbol, neededTypes, nimbleProject)
+                                              updatedReturn <- resolveOneUnknownType(compileInfo$returnSymbol, c(neededRCfuns, neededTypes), nimbleProject)
                                               compileInfo$returnSymbol <<- updatedReturn[[1]]
                                               neededRCfuns <<- c(neededRCfuns, updatedReturn[[2]])
                                           },
