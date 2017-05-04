@@ -3,6 +3,7 @@ NIMBLE
 
 [![Build Status](https://travis-ci.org/nimble-dev/nimble.svg?branch=devel)](https://travis-ci.org/nimble-dev/nimble)
 [![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
+[![Rdoc](http://www.rdocumentation.org/badges/version/nimble)](http://www.rdocumentation.org/packages/nimble)
 
 NIMBLE is an R package for programming with BUGS models and compiling parts of R.
 
