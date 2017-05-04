@@ -147,7 +147,7 @@ resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject)
                 newSym <- symbolNimbleList(name = name, nlProc = nlp)
                 ##    newNeededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
                 newNeededType <- newSym
-                returnSym <- symbolNimbleListGenerator(name = name, nlProc = nlp)
+                returnSym <- symbolNimbleList(name = name, nlProc = nlp)
 ##                symTab$addSymbol(lireturnSymstST, allowReplace = TRUE)
                 return(list(returnSym, newNeededType))
                 ##next
