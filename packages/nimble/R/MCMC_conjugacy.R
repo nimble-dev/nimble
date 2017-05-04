@@ -111,7 +111,7 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dinvwish',
          link = 'identity',
          dependents = list(
-             dmnorm = list(param = 'var', contribution_S = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
+             dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dwish_chol(cholesky    = chol(prior_S + contribution_S),
                                  df          = prior_df + contribution_df,
                                  scale_param = 1)')

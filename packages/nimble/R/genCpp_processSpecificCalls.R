@@ -275,13 +275,13 @@ replacementHandler <- function(code, symTab) {
 }
     
 dmFunHandler <- function(code, symTab) {
-    if(code$name %in% c('dwish_chol', 'dmnorm_chol', 'dmvt_chol'))
+    if(code$name %in% c('dwish_chol', 'dinvwish_chol', 'dmnorm_chol', 'dmvt_chol'))
         code$args$overwrite_inputs <- 0
     code$name <- paste0('nimArr_', code$name)
 }
 
 rmFunHandler <- function(code, symTab) {
-    if(code$name %in% c('rwish_chol'))
+    if(code$name %in% c('rwish_chol', 'rinvwish_chol'))
         code$args$overwrite_inputs <- 0
     dmFunHandler(code, symTab)
     rFunHandler(code, symTab)

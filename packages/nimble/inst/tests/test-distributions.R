@@ -16,36 +16,36 @@ truth <- mvtnorm::dmvt(x, delta = mn, sigma = sc, df = df, log = FALSE)
 
 try(test_that("dmvt_chol calculates density correctly in R: ",
               expect_equal(dmvt_chol(x, mn, chol(sc), df, prec_param = FALSE),
-                          truth,
-                          info = paste0("incorrect dmvt calculation in R"))))
+                           truth,
+                           info = paste0("incorrect dmvt calculation in R"))))
 
 ## test use through nimble function
 
 nf <- nimbleFunction(
-    run = function(x = double(1), mn = double(1),
-                   scale = double(2), df = double(0)) {
-        returnType(double(0))
-        ch <- chol(scale)
-        out <- dmvt_chol(x = x, mu = mn, cholesky = ch,
-                         df = df, prec_param = FALSE, log = FALSE)
-        return(out)
-    }
-)
+                     run = function(x = double(1), mn = double(1),
+                       scale = double(2), df = double(0)) {
+                       returnType(double(0))
+                       ch <- chol(scale)
+                       out <- dmvt_chol(x = x, mu = mn, cholesky = ch,
+                                        df = df, prec_param = FALSE, log = FALSE)
+                       return(out)
+                     }
+                     )
 
 cnf <- compileNimble(nf)
 
 try(test_that("Test that dmvt_chol works correctly in R nimble function: ",
-                  expect_equal(nf(x, mn, sc, df), (truth), 
-                  info = paste0("incorrect dmvt value in R nimble function"))))
+              expect_equal(nf(x, mn, sc, df), (truth), 
+                           info = paste0("incorrect dmvt value in R nimble function"))))
 
 try(test_that("Test that dmvt_chol works correctly in compiled nimble function: ",
-                  expect_equal(cnf(x, mn, sc, df), (truth), 
-                  info = paste0("incorrect dmvt value in compiled nimble function"))))
+              expect_equal(cnf(x, mn, sc, df), (truth), 
+                           info = paste0("incorrect dmvt value in compiled nimble function"))))
 
 ## test use in model
 
 mvt_code <- nimbleCode({
-    x[1:3] ~ dmvt(mn[1:3], scale = sc[1:3,1:3], df = df)
+  x[1:3] ~ dmvt(mn[1:3], scale = sc[1:3,1:3], df = df)
 })
 
 mvt_model <- nimbleModel(mvt_code, constants = list(mn = mn, sc = sc, prec = FALSE, df = df))
@@ -54,13 +54,13 @@ mvt_model$x <- x
 
 try(test_that("Test that dmvt calculation is correct in model likelihood calculation: ",
               expect_equal(exp(mvt_model$calculate()), (truth),
-                          info = paste0("incorrect likelihood value for dmvt"))))
+                           info = paste0("incorrect likelihood value for dmvt"))))
 
 c_mvt_model <- compileNimble(mvt_model)
 c_mvt_model$x
 try(test_that("Test that dmvt (compiled) calculation is correct in model likelihood calculation: ",
               expect_equal(exp(c_mvt_model$calculate()), (truth),
-                          info = paste0("incorrect likelihood value for dmvt (compiled)"))))
+                           info = paste0("incorrect likelihood value for dmvt (compiled)"))))
 
 ## random sampling
 # reference_samps <- mvtnorm::rmvt(n = 10000, delta = mn, sigma = sc, df = df)
@@ -70,54 +70,54 @@ true_cov <- sc*df/(df-2)
 
 try(test_that("Test that random samples (R) have correct mean: ",
               expect_equal(colMeans(r_samps), mn, 
-                                                    tol = 0.03,
-                          info = "Difference in means exceeds tolerance")))
+                           tol = 0.03,
+                           info = "Difference in means exceeds tolerance")))
 
 try(test_that("Test that random samples (R) have correct covariance: ",
               expect_equal(cov(r_samps), true_cov,
-                                               tol = 0.1,
-                          info = "Difference in covs exceeds tolerance")))
+                           tol = 0.1,
+                           info = "Difference in covs exceeds tolerance")))
 
 
 nf_sampling <- nimbleFunction(
-    run = function(mn = double(1), scale = double(2), df = double(0)) {
-        returnType(double(1))
-        ch <- chol(scale)
-        out <- rmvt_chol(n = 1, mu = mn, cholesky = ch,
-                         df = df, prec_param = FALSE)
-        return(out)
-    }
-)
+                              run = function(mn = double(1), scale = double(2), df = double(0)) {
+                                returnType(double(1))
+                                ch <- chol(scale)
+                                out <- rmvt_chol(n = 1, mu = mn, cholesky = ch,
+                                                 df = df, prec_param = FALSE)
+                                return(out)
+                              }
+                              )
 
 nf_samps <- t(replicate(10000, nf_sampling(mn, sc, df)))
 
 try(test_that("Test that random samples (nf) have correct mean: ",
               expect_equal(colMeans(nf_samps), mn, 
-                                                    tol = 0.03,
-                          info = "Difference in means exceeds tolerance")))
+                           tol = 0.03,
+                           info = "Difference in means exceeds tolerance")))
 
 try(test_that("Test that random samples (nf) have correct covariance: ",
               expect_equal(cov(nf_samps), true_cov, 
-                                                tol = 0.1,
-                          info = "Difference in covs exceeds tolerance")))
+                           tol = 0.1,
+                           info = "Difference in covs exceeds tolerance")))
 
 ## sampling via `simulate`
 simul_samp <- function(model) {
-    model$simulate()
-    return(model$x)
+  model$simulate()
+  return(model$x)
 }
 
 simul_samps <- t(replicate(10000, simul_samp(c_mvt_model)))
 
 try(test_that("Test that random samples (simulate) have correct mean: ",
               expect_equal(colMeans(simul_samps), mn,
-                                                    tol = 0.03,
-                          info = "Difference in means exceeds tolerance")))
+                           tol = 0.03,
+                           info = "Difference in means exceeds tolerance")))
 
 try(test_that("Test that random samples (simulate) have correct covariance: ",
               expect_equal(cov(simul_samps), true_cov, 
-                                                tol = 0.1,
-                          info = "Difference in covs exceeds tolerance")))
+                           tol = 0.1,
+                           info = "Difference in covs exceeds tolerance")))
 
 
 ## dmulti and dcat
@@ -131,10 +131,10 @@ unnormResult <- dmulti(normGen, prob = c(10, 10, 80), log = TRUE)
 
 try(test_that("rmulti handles 'probs' that do not sum to one: ",
               expect_identical(normGen, unnormGen,
-                          info = "normalized and unnormalized probabilities give different results")))
+                               info = "normalized and unnormalized probabilities give different results")))
 try(test_that("dmulti handles 'probs' that do not sum to one: ",
               expect_equal(normResult, unnormResult,
-                          info = "normalized and unnormalized probabilities give different results")))
+                           info = "normalized and unnormalized probabilities give different results")))
 
 set.seed(0)
 normGen <- rcat(1, prob = c(.1, .1, .8))
@@ -144,11 +144,11 @@ normResult <- dcat(normGen, prob = c(.1, .1, .8), log = TRUE)
 unnormResult <- dcat(normGen, prob = c(10, 10, 80), log = TRUE)
 
 try(test_that("rcat handles 'probs' that do not sum to one: ",
-                               expect_identical(normGen, unnormGen,
-                                                                             info = "normalized and unnormalized probabilities give different results")))
+              expect_identical(normGen, unnormGen,
+                               info = "normalized and unnormalized probabilities give different results")))
 try(test_that("dcat handles 'probs' that do not sum to one: ",
-                               expect_equal(normResult, unnormResult,
-                                                                         info = "normalized and unnormalized probabilities give different results")))
+              expect_equal(normResult, unnormResult,
+                           info = "normalized and unnormalized probabilities give different results")))
 
 ## dinvgamma
 
@@ -165,63 +165,63 @@ smp2 <- rinvgamma(100000, shape = alpha, rate = 1/beta)
 
 try(test_that("Test that rinvgamma with scale gets correct result: ",
               expect_equal(beta / (alpha-1), mean(smp1), tol = 0.01,
-                          info = "Difference in mean exceeds tolerance")))
+                           info = "Difference in mean exceeds tolerance")))
 try(test_that("Test that rinvgamma with rate gets correct result: ",
               expect_equal(beta / (alpha-1), mean(smp2), tol = 0.01,
-                          info = "Difference in mean exceeds tolerance")))
+                           info = "Difference in mean exceeds tolerance")))
 try(test_that("Test that rinvgamma with scale gets correct result: ",
               expect_equal(beta/((alpha-1)*sqrt(alpha-2)), sd(smp1), tol = 0.1,
-                          info = "Difference in sd exceeds tolerance")))
+                           info = "Difference in sd exceeds tolerance")))
 try(test_that("Test that rinvgamma with rate gets correct result: ",
               expect_equal(beta/((alpha-1)*sqrt(alpha-2)), sd(smp2), tol = 0.1,
-                          info = "Difference in sd exceeds tolerance")))
+                           info = "Difference in sd exceeds tolerance")))
 
 quantile <- quantile(smp1, .15)
 attributes(quantile) <- NULL
 try(test_that("Test that pinvgamma gets correct result: ",
               expect_equal(qinvgamma(.15, alpha, scale = beta), quantile, tol = 0.005,
-                          info = "Difference in quantile exceeds tolerance")))
+                           info = "Difference in quantile exceeds tolerance")))
 p <- mean(smp1 < .5)
 try(test_that("Test that qinvgamma gets correct result: ",
               expect_equal(pinvgamma(.5, alpha, scale = beta), p, tol = 0.005,
-                          info = "Difference in probability exceeds tolerance")))
+                           info = "Difference in probability exceeds tolerance")))
 
 
 code <- nimbleCode({
-    y ~ dinvgamma(a, scale = c*theta)
-    theta ~ dinvgamma(alpha, beta)
+  y ~ dinvgamma(a, scale = c*theta)
+  theta ~ dinvgamma(alpha, beta)
 })
 m = nimbleModel(code, data = list(y = y),
-                         inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
+  inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
 conf <- configureMCMC(m)
 samplers <- conf$getSamplers()
 try(test_that("dinvgamma-dinvgamma conjugacy with dependency using scale",
-                               expect_identical(samplers[[1]]$name, 'RW',
-                                                info = "conjugacy improperly detected")))
+              expect_identical(samplers[[1]]$name, 'RW',
+                               info = "conjugacy improperly detected")))
 
 code <- nimbleCode({
-    y ~ dinvgamma(a, rate = 2 + c*theta)
-    theta ~ dinvgamma(alpha, beta)
+  y ~ dinvgamma(a, rate = 2 + c*theta)
+  theta ~ dinvgamma(alpha, beta)
 })
 m = nimbleModel(code, data = list(y = y),
-                         inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
+  inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
 conf <- configureMCMC(m)
 samplers <- conf$getSamplers()
 try(test_that("dinvgamma-dinvgamma conjugacy with linear dependency",
-                               expect_identical(samplers[[1]]$name, 'RW',
-                                                info = "conjugacy improperly detected")))
+              expect_identical(samplers[[1]]$name, 'RW',
+                               info = "conjugacy improperly detected")))
 
 code <- nimbleCode({
-    y ~ dinvgamma(a, rate = c*theta)
-    theta ~ dinvgamma(alpha, beta)
+  y ~ dinvgamma(a, rate = c*theta)
+  theta ~ dinvgamma(alpha, beta)
 })
 m = nimbleModel(code, data = list(y=y),
-                         inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
+  inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
 conf <- configureMCMC(m)
 samplers <- conf$getSamplers()
 try(test_that("dinvgamma-dinvgamma conjugacy with dependency using rate",
-                               expect_identical(samplers[[1]]$name, 'conjugate_dinvgamma_dinvgamma',
-                                                info = "conjugacy not detected")))
+              expect_identical(samplers[[1]]$name, 'conjugate_dinvgamma_dinvgamma',
+                               info = "conjugacy not detected")))
 mcmc <- buildMCMC(conf)
 comp <- compileNimble(m, mcmc)
 set.seed(0)
@@ -229,36 +229,36 @@ comp$mcmc$run(100)
 smp <- as.matrix(comp$mcmc$mvSamples)
 
 manualSampler <- function(n, y, a, c, alpha, beta) {
-    out <- rep(0, n)
-    shape = a + alpha
-    scale = beta + 1/(c*y)
-    set.seed(0)
-    out1 <- 1/rgamma(n, shape, rate = scale)
-    set.seed(0)
-    out2 <- rinvgamma(n, shape, scale = scale)
-    return(list(out1, out2))
+  out <- rep(0, n)
+  shape = a + alpha
+  scale = beta + 1/(c*y)
+  set.seed(0)
+  out1 <- 1/rgamma(n, shape, rate = scale)
+  set.seed(0)
+  out2 <- rinvgamma(n, shape, scale = scale)
+  return(list(out1, out2))
 }
 smpMan <- manualSampler(100, y, a, c, alpha, beta) 
 
 try(test_that("Test that invgamma conjugate sampler gets correct result: ",
               expect_identical(smp[,1], smpMan[[1]],
-                          info = "NIMBLE conjugate sampler and manual sampler results differ")))
+                               info = "NIMBLE conjugate sampler and manual sampler results differ")))
 
 try(test_that("Test that invgamma conjugate sampler gets correct result: ",
               expect_identical(smp[,1], smpMan[[2]],
-                          info = "NIMBLE conjugate sampler and manual sampler results differ")))
+                               info = "NIMBLE conjugate sampler and manual sampler results differ")))
 
 code <- nimbleCode({
-    y ~ dinvgamma(a, scale = c*theta)
-    theta ~ dgamma(alpha, beta)
+  y ~ dinvgamma(a, scale = c*theta)
+  theta ~ dgamma(alpha, beta)
 })
 m = nimbleModel(code, data = list(y=y),
-                         inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
+  inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
 conf <- configureMCMC(m)
 samplers <- conf$getSamplers()
 try(test_that("dgamma-dinvgamma conjugacy with dependency using rate",
-                               expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dinvgamma',
-                                                info = "conjugacy not detected")))
+              expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dinvgamma',
+                               info = "conjugacy not detected")))
 mcmc <- buildMCMC(conf)
 comp <- compileNimble(m, mcmc)
 set.seed(0)
@@ -266,18 +266,18 @@ comp$mcmc$run(10)
 smp <- as.matrix(comp$mcmc$mvSamples)
 
 manualSampler <- function(n, y, a, c, alpha, beta) {
-    out <- rep(0, n)
-    shape = a + alpha
-    rate = beta + c/y
-    set.seed(0)
-    out <- rgamma(n, shape, rate = rate)
-    return(out)
+  out <- rep(0, n)
+  shape = a + alpha
+  rate = beta + c/y
+  set.seed(0)
+  out <- rgamma(n, shape, rate = rate)
+  return(out)
 }
 smpMan <- manualSampler(10, y, a, c, alpha, beta)
 
 try(test_that("Test that gamma conjugate sampler with invgamma dependency gets correct result: ",
               expect_identical(smp[,1], smpMan,
-                          info = "NIMBLE gamma conjugate sampler and manual sampler results differ")))
+                               info = "NIMBLE gamma conjugate sampler and manual sampler results differ")))
 
 # dinvwish_chol
 
@@ -294,7 +294,7 @@ C <- crossprod(matrix(rnorm(d^2, 3), d))
 pm <- C / (df - d - 1)
 
 n <- 100
-draws1 <- draws2 <- draws3 <- array(0, c(d, d, n)
+draws1 <- draws2 <- draws3 <- array(0, c(d, d, n))
 set.seed(1)
 for(i in 1:n)
   draws1[,,i] <- solve(rwish_chol(1, chol(C), df, scale_param = FALSE))
@@ -334,91 +334,59 @@ try(test_that("Test that dinvwish_chol gives correct results: ", {
               expect_equal(dens2-dens3, 0, tol = 0.000001,
                           info = "dinvwish with rate differs from truth")}))
                                                                         
-                                    # HERE
-set.seed(0)
+set.seed(1)
 
 trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
 covs <- c(3, 2, .5)
 
 trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
-Omega = solve(trueCov)
 
 n = 20
 S = diag(rep(1,3))
+nu = 4                                    
 mu = 1:3
 Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
 M = 3
-data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
+data <- list(Y = t(Y), n = n, M = M)
 
 code <- nimbleCode( {
   for(i in 1:n) {
-    Y[i, 1:M] ~ dmnorm(mu[1:M], cov = Omega[1:M,1:M]);
+    Y[i, 1:M] ~ dmnorm(mu[1:M], cov = Omega[1:M,1:M])
   }
-  Omega[1:M,1:M] ~ dinvwish(S[1:M,1:M], 4);
+  invOmega[1:M,1:M] <- inverse(Omega[1:M,1:M])
+  Omega[1:M,1:M] ~ dinvwish(S[1:M,1:M], nu)
 })
 
-newDf = 4 + n
+newDf = nu + n
 newS = S + tcrossprod(Y- mu)
-OmegaTrueMean = newDf * solve(newS)/(newDf - nrow(trueCor)-1)
-
-wishRV <- array(0, c(M, M, 10000))
+OmegaTrueMean = newS / (newDf - M - 1)
+invOmegaTrueMean = newDf * solve(newS)
+                   
+invwishRV <- array(0, c(M, M, 10000))
 for(i in 1:10000) {
-  z <- solve(t(chol(solve(newR))) %*% matrix(rnorm(3*newDf), ncol = newDf))
-  wishRV[ , , i] <- tcrossprod(z)
+  invwishRV[,,i] <- rinvwish_chol(1, chol(newS), df = newDf, scale_param = TRUE)
 }
-OmegaSimTrueSDs = apply(wishRV, c(1,2), sd)
+OmegaSimTrueSDs = apply(invwishRV, c(1,2), sd)
 
-test_mcmc(model = code, name = 'conjugate Wishart', data = data, seed = 0, numItsC = 1000, inits = list(Omega = OmegaTrueMean),
-          results = list(mean = list(Omega = OmegaTrueMean ),
+test_mcmc(model = code, name = 'conjugate Wishart', data = data, seed = 0, numItsC = 1000, inits = list(Omega = trueCov),
+          results = list(mean = list(Omega = OmegaTrueMean, invOmega = invOmegaTrueMean, mu = mu, S = S),
             sd = list(Omega = OmegaSimTrueSDs)),
-          resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
+          resultsTolerance = list(mean = list(Omega = matrix(.05, M,M), invOmega = matrix(.05, M, M)),
             sd = list(Omega = matrix(0.06, M, M))))
 
-                                    
-# need invWish conjugacy
+data = list(Y=t(Y))
+constants = list(n = n, M = M)
+m = nimbleModel(code, data = data, inits = list(Omega = trueCov, mu = mu, S = S),
+  constants = constants)
+conf <- configureMCMC(m)
+conf$getSamplers()
+mcmc <- buildMCMC(conf)
+cc = compileNimble(mcmc, m)
+cc$mcmc$run(1000)
+smp <- as.matrix(cc$mcmc$mvSamples)
+pm <- colMeans(smp)
+psd <- apply(smp, 2, sd)
 
-                                    
-                                    
-draws <- rWishart(10000, df, Sigma = solve(C)) # solve(C) is scale for wishart while C is scale for invWishart
-
-
-
-invdraws <- draws
-for(i in 1:dim(draws)[3])
-  invdraws[,,i] <- solve(draws[,,i])
-pmean <- apply(invdraws, c(1,2), mean)
-pmean
-
-
-# good test of wish_chol
-invdraws3 <- invdraws
-set.seed(1)
-for(i in 1:dim(invdraws)[3])
-  invdraws3[,,i] <- solve(rwish_chol(1, chol(C), df, scale_param = FALSE))
-pmean3 <- apply(invdraws3, c(1,2), mean)
-pmean3
-
-
-invdraws2 <- invdraws
-set.seed(1)
-for(i in 1:dim(invdraws)[3])
-  invdraws2[,,i] <- rinvwish_chol(1, chol(C), df, scale_param = TRUE)
-pmean2 <- apply(invdraws2, c(1,2), mean)
-pmean2
-
-invdraws2 <- invdraws
-set.seed(1)
-for(i in 1:dim(invdraws)[3])
-  invdraws2[,,i] <- rinvwish_chol(1, chol(solve(C)), df, scale_param = FALSE)
-pmean2 <- apply(invdraws2, c(1,2), mean)
-pmean2
-
-set.seed(1)
-df <- 20
-d <- 3
-C <- crossprod(matrix(rnorm(d^2, 3), d))
-U <- chol(C)
-draw <- rinvwish_chol(1, U, df)
-
-                    
-
+try(test_that("dinvwish-dmnorm conjugacy",
+              expect_identical(samplers[[1]]$name, 'conjugate_dinvwish_dmnorm',
+                               info = "conjugacy not detected")))
