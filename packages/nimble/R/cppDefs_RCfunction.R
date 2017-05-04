@@ -60,7 +60,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                              generatorName <- neededType$nlProc$name
                                              thisCppDef <- nimbleProject$getNimbleListCppDef(generatorName = generatorName)
                                              if(is.null(thisCppDef)){
-                                                 className <- names(nimCompProc$neededTypes)[i]
+                                                 className <- names(RCfunProc$neededRCfuns)[i]
                                                  thisCppDef <- nimbleProject$buildNimbleListCompilationInfo(className = generatorName, fromModel = fromModel)
                                                  neededTypeDefs[[ className ]] <<- thisCppDef
                                                  Hincludes <<- c(Hincludes, thisCppDef)
