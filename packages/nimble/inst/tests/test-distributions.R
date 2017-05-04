@@ -280,13 +280,6 @@ try(test_that("Test that gamma conjugate sampler with invgamma dependency gets c
                                info = "NIMBLE gamma conjugate sampler and manual sampler results differ")))
 
 # dinvwish_chol
-
-# tests:
-# draw rinvwish_chol, check vs. mean
-# check dinvwish_chol vs. direct coding
-# simple conjugacy where we have y ~ dmnorm(0, W), W ~ invwish(); compare posterior mean to known posterior mean
-# and test each using rate instead of scale
-
 set.seed(1)
 df <- 20
 d <- 3
@@ -300,24 +293,26 @@ for(i in 1:n)
   draws1[,,i] <- solve(rwish_chol(1, chol(C), df, scale_param = FALSE))
 pmean1 <- apply(draws1, c(1,2), mean)
 
+set.seed(1)
 for(i in 1:n)
   draws2[,,i] <- rinvwish_chol(1, chol(C), df, scale_param = TRUE)
 pmean2 <- apply(draws2, c(1,2), mean)
 
+set.seed(1)
 for(i in 1:n)
-  draws3[,,i] <- rinvwish_chol(1, solve(chol(C)), df, scale_param = FALSE)
+  draws3[,,i] <- rinvwish_chol(1, chol(solve(C)), df, scale_param = FALSE)
 pmean3 <- apply(draws3, c(1,2), mean)
 
 try(test_that("Test that rinvwish_chol and rwish_chol give correct results: ", {
-              expect_equal(max(abs(pmean1 - pm)), 0, tol = 0.03,
-                          info = "mean of inverse of rwish draws differs from truth"),
-              expect_equal(max(abs(pmean2 - pm)), 0, tol = 0.03,
-                          info = "mean of rinvwish with scale draws differs from truth"),
-              expect_equal(max(abs(pmean3 - pm)), 0, tol = 0.03,
+              expect_equal(max(abs(pmean1 - pm)), 0, tol = 0.06,
+                          info = "mean of inverse of rwish draws differs from truth")
+              expect_equal(max(abs(pmean2 - pm)), 0, tol = 0.06,
+                          info = "mean of rinvwish with scale draws differs from truth")
+              expect_equal(max(abs(pmean3 - pm)), 0, tol = 0.06,
                           info = "mean of rinvwish with rate differs from truth")}))
 
-dens1 <- dinvwish_chol(draw1[,,1], chol(C), df, log = TRUE)
-dens2 <- dinvwish_chol(draw, chol(solve(C)), df, log = TRUE, scale_param = FALSE)
+dens1 <- dinvwish_chol(draws1[,,1], chol(C), df, log = TRUE)
+dens2 <- dinvwish_chol(draws1[,,1], chol(solve(C)), df, log = TRUE, scale_param = FALSE)
 
 dfun <- function(W, S, nu) {
   k <- nrow(W)
@@ -326,11 +321,11 @@ dfun <- function(W, S, nu) {
          (nu+k+1)*sum(log(diag(chol(W)))) -0.5*sum(diag(S %*% solve(W))))
 }
                   
-dens3 <-  dfun(draw[,,1], C, df)
+dens3 <-  dfun(draws1[,,1], C, df)
 
 try(test_that("Test that dinvwish_chol gives correct results: ", {
               expect_equal(dens1-dens3, 0, tol = 0.000001,
-                          info = "dinvwish with scale differs from truth"),
+                          info = "dinvwish with scale differs from truth")
               expect_equal(dens2-dens3, 0, tol = 0.000001,
                           info = "dinvwish with rate differs from truth")}))
                                                                         
@@ -341,26 +336,31 @@ covs <- c(3, 2, .5)
 
 trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
 
+M = 3
 n = 20
-S = diag(rep(1,3))
+S = crossprod(matrix(rnorm(M*M), M)) # diag(rep(1,3))
 nu = 4                                    
 mu = 1:3
 Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
-M = 3
 data <- list(Y = t(Y), n = n, M = M)
 
 code <- nimbleCode( {
   for(i in 1:n) {
     Y[i, 1:M] ~ dmnorm(mu[1:M], cov = Omega[1:M,1:M])
   }
-  invOmega[1:M,1:M] <- inverse(Omega[1:M,1:M])
   Omega[1:M,1:M] ~ dinvwish(S[1:M,1:M], nu)
+})
+
+codeR <- nimbleCode( {
+  for(i in 1:n) {
+    Y[i, 1:M] ~ dmnorm(mu[1:M], cov = Omega[1:M,1:M])
+  }
+  Omega[1:M,1:M] ~ dinvwish(R = R[1:M,1:M], df = nu)
 })
 
 newDf = nu + n
 newS = S + tcrossprod(Y- mu)
 OmegaTrueMean = newS / (newDf - M - 1)
-invOmegaTrueMean = newDf * solve(newS)
                    
 invwishRV <- array(0, c(M, M, 10000))
 for(i in 1:10000) {
@@ -368,25 +368,28 @@ for(i in 1:10000) {
 }
 OmegaSimTrueSDs = apply(invwishRV, c(1,2), sd)
 
-test_mcmc(model = code, name = 'conjugate Wishart', data = data, seed = 0, numItsC = 1000, inits = list(Omega = trueCov),
-          results = list(mean = list(Omega = OmegaTrueMean, invOmega = invOmegaTrueMean, mu = mu, S = S),
+test_mcmc(model = code, name = 'conjugate inverse Wishart', data = data,
+          seed = 0, numItsC = 1000, inits = list(Omega = trueCov, mu = mu, S = S, nu = nu),
+          results = list(mean = list(Omega = OmegaTrueMean),
             sd = list(Omega = OmegaSimTrueSDs)),
-          resultsTolerance = list(mean = list(Omega = matrix(.05, M,M), invOmega = matrix(.05, M, M)),
-            sd = list(Omega = matrix(0.06, M, M))))
+          resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
+            sd = list(Omega = matrix(0.1, M, M))))
+
+test_mcmc(model = codeR, name = 'conjugate inverse Wishart', data = data,
+          seed = 0, numItsC = 1000, inits = list(Omega = trueCov, mu = mu, R = solve(S), nu = nu),
+          results = list(mean = list(Omega = OmegaTrueMean),
+            sd = list(Omega = OmegaSimTrueSDs)),
+          resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
+            sd = list(Omega = matrix(0.1, M, M))))
 
 data = list(Y=t(Y))
 constants = list(n = n, M = M)
-m = nimbleModel(code, data = data, inits = list(Omega = trueCov, mu = mu, S = S),
+m = nimbleModel(code, data = data, inits = list(nu = nu, Omega = trueCov, mu = mu, S = S),
   constants = constants)
 conf <- configureMCMC(m)
-conf$getSamplers()
-mcmc <- buildMCMC(conf)
-cc = compileNimble(mcmc, m)
-cc$mcmc$run(1000)
-smp <- as.matrix(cc$mcmc$mvSamples)
-pm <- colMeans(smp)
-psd <- apply(smp, 2, sd)
 
 try(test_that("dinvwish-dmnorm conjugacy",
-              expect_identical(samplers[[1]]$name, 'conjugate_dinvwish_dmnorm',
+              expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dinvwish_dmnorm',
                                info = "conjugacy not detected")))
+
+
