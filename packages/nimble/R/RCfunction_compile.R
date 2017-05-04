@@ -19,7 +19,8 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                           nameSubList = 'ANY',
                                           compileInfo = 'ANY', ## RCfunctionCompileClass``
                                           const = 'ANY',
-                                          neededRCfuns = 'ANY'
+                                          neededRCfuns = 'ANY',
+                                          initialTypeInferenceDone = 'ANY'
                                           ),
                                       methods = list(
                                           initialize = function(f = NULL, funName, const = FALSE) {
@@ -42,6 +43,7 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                                   compileInfo <<- RCfunctionCompileClass$new(origRcode = RCfun$code, newRcode = RCfun$code)
                                               }
                                               neededRCfuns <<- list()
+                                              initialTypeInferenceDone <<- FALSE
                                           },
                                           showCpp = function() {
                                               writeCode(nimGenerateCpp(compileInfo$nimExpr, compileInfo$newLocalSymTab))
@@ -148,7 +150,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                    ## moved to base class: neededRCfuns = 'list' ## nfMethodRC objects
                                    ),
                                methods = list(
-                                   process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE, nimbleProject = NULL) {
+                                   process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE, nimbleProject = NULL, initialTypeInferenceOnly = FALSE) {
                                        if(!is.null(nimbleOptions()$debugRCfunProcessing)) {
                                            if(nimbleOptions()$debugRCfunProcessing) {
                                                debug <- TRUE
@@ -156,24 +158,33 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            }
                                        }
 
+                                       if(debug) {
+                                           writeLines('**** READY to start RCfunProcessing::process *****')
+                                           browser()
+                                       }
+
                                        if(is.null(nimbleProject)) nimbleProject <- get('nimbleProject', envir = RCfun)
                                        
-                                       if(!is.null(nimbleOptions()$debugCppLineByLine)) {
-                                           if(nimbleOptions()$debugCppLineByLine) {
-                                               debugCpp <- TRUE
-                                               if(length(debugCppLabel) == 0) debugCppLabel <- name
+                                       if(!initialTypeInferenceDone) {
+                                           
+                                           if(!is.null(nimbleOptions()$debugCppLineByLine)) {
+                                               if(nimbleOptions()$debugCppLineByLine) {
+                                                   debugCpp <- TRUE
+                                                   if(length(debugCppLabel) == 0) debugCppLabel <- name
+                                               }
                                            }
+                                           
+                                           if(doKeywords) {
+                                               matchKeywords()
+                                               processKeywords()
+                                           }
+                                           
+                                           if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
+                                               setupSymbolTables()
+                                           }
+                                           initialTypeInferenceDone <<- TRUE
                                        }
-
-                                       if(doKeywords) {
-                                           matchKeywords()
-                                           processKeywords()
-                                       }
-                                                                              
-                                       if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
-                                           setupSymbolTables()
-                                       }
-
+                                       if(initialTypeInferenceOnly) return(NULL);
                                       
                                        if(debug) {
                                            writeLines('**** READY FOR makeExprClassObjects *****')

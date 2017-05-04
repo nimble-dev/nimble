@@ -168,6 +168,8 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                 if(is.null(typeEnv$neededRCfuns[[uniqueName]])) {
                     typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
                 }
+                ## new with nimbleLists: we need to initiate compilation here so we can get full returnType information, including of nimbleLists
+                typeEnv$.nimbleProject$compileRCfun(nmfObj, initialTypeInferenceOnly = TRUE)
                 return(sizeRCfunction(code, symTab, typeEnv, nfmObj))
             }
         }

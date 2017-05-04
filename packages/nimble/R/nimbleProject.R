@@ -409,7 +409,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(inherits(ans, 'uninitializedField') )  return(NULL)                                     	 
                                      ans
                                  },
-                                 needRCfunCppClass = function(nfmObj, genNeededTypes = TRUE, control = list(debug = FALSE, debugCpp = FALSE), fromModel = FALSE) {
+                                 needRCfunCppClass = function(nfmObj, genNeededTypes = TRUE, initialTypeInference = FALSE, control = list(debug = FALSE, debugCpp = FALSE), fromModel = FALSE) {
                                      if(!inherits(nfmObj, 'nfMethodRC')) stop("Can't compile this function. nfmObj is not an nfMethodRC", call. = FALSE)
                                      className <- nfmObj$uniqueName
                                      Cname <- Rname2CppName(className)
@@ -417,8 +417,9 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(is.null(RCfunInfo)) addRCfun(nfmObj, fromModel = fromModel)
                                      if(is.null(RCfunInfos[[className]]$RCfunProc)) {
                                          RCfunInfos[[className]]$RCfunProc <<- RCfunProcessing$new(nfmObj, Cname)
-                                         RCfunInfos[[className]]$RCfunProc$process(debug = control$debug, debugCpp = control$debugCpp)
+                                         RCfunInfos[[className]]$RCfunProc$process(debug = control$debug, debugCpp = control$debugCpp, initialTypeInferenceOnly = initialTypeInference, nimbleProject = .self)
                                      }
+                                     if(initialTypeInference) return(RCfunInfos[[className]]$RCfunProc)
                                      cppClass <- RCfunInfos[[className]]$cppClass
                                      if(is.null(cppClass)) {
                                          cppClass <- RCfunctionDef(project = .self)
@@ -429,10 +430,11 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      }
                                      cppClass
                                  },
-                                 compileRCfun = function( fun, filename = NULL, control = list(debug = FALSE, debugCpp = FALSE, writeFiles = TRUE, returnAsList = FALSE), showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+                                 compileRCfun = function( fun, filename = NULL, initialTypeInference = FALSE, control = list(debug = FALSE, debugCpp = FALSE, writeFiles = TRUE, returnAsList = FALSE), showCompilerOutput = nimbleOptions('showCompilerOutput')) {
                                      if(is.rcf(fun)) fun <- environment(fun)$nfMethodRCobject
-                                     addRCfun(fun) ## checks if it already exists and if it is an nfMethodRC
-                                     cppClass <- needRCfunCppClass(fun, genNeededTypes = TRUE, control = control)
+                                     addRCfun(fun) ## checks if it already exists and if it is an nfMethodRC ## redundant? done also in next step.
+                                     cppClass <- needRCfunCppClass(fun, genNeededTypes = TRUE, initialTypeInference = initialTypeInference, control = control)
+                                     if(initialTypeInference) return(cppClass) ## in this case cppClass with be an RCfunProc
                                      className <- fun$uniqueName
                                      if(control$writeFiles) {
                                          cppProj <- cppProjectClass(dirName = dirName)
