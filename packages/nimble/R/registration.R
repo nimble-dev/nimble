@@ -45,6 +45,7 @@ if(!exists('.NimbleUseRegistration') || !.NimbleUseRegistration) {
    C_rmnorm_chol = 'C_rmnorm_chol'
    C_dmvt_chol = 'C_dmvt_chol'
    C_rmvt_chol = 'C_rmvt_chol'
+   C_dcar_normal = 'C_dcar_normal'
    makeNumericList = 'makeNumericList'
    newModelValues = 'newModelValues'
    testRows = 'testRows'
