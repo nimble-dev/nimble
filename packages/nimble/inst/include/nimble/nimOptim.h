@@ -5,9 +5,9 @@
 #include <nimble/optimTypes.h>
 #include <nimble/smartPtrs.h>
 
-typedef double NimObjectiveFn(const NimArr<1, double>& par);
+typedef double NimObjectiveFn(NimArr<1, double>& par);
 
-nimSmartPtr<OptimResultNimbleList> nimFakeOptim(const NimArr<1, double> &par,
-                                                void *fn);
+nimSmartPtr<OptimResultNimbleList> nimFakeOptim(NimArr<1, double> &par,
+                                                NimObjectiveFn fn);
 
 #endif // __NIMBLE_NIMOPTIM_H

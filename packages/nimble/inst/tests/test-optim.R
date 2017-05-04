@@ -61,13 +61,7 @@ test_that("compileNimble of optim stub works", {
     fun <- function(par) {
         return(fakeOptim(par, example$fn))
     }
-    nimbleOptions()
-    nimFn <- nimbleFunction(
-        run = function(par = double(1)) {
-            return(2.345 + sum((par - 3.456) ^ 2))
-            returnType(double(0))
-        }
-    )
+    nimFn <- nimbleFunction(run = example$nimFnRun)
     nimFun <- nimbleFunction(
         setup = TRUE,
         run = function(par = double(1)) {
@@ -75,8 +69,6 @@ test_that("compileNimble of optim stub works", {
             returnType(optimResultNimbleList())
         }
     )()
-    nimbleOptions(debugCppLineByLine = TRUE)
     compiledFun <- compileNimble(nimFun, showCompilerOutput = TRUE, dirName = '~/tmp')
-    nimbleOptions(debugCppLineByLine = FALSE)
     expect_equal(nimFun$run(example$par), compiledFun$run(example$par))
 })

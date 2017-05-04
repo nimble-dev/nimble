@@ -1001,13 +1001,19 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
 }
 
 sizeOptim <- function(code, symTab, typeEnv) {
-    # TODO input various args and an optional nimbleList for control
+    # TODO input an optional nimbleList for control
     asserts <- nimble:::recurseSetSizes(code, symTab, typeEnv)
     code$type <- 'nimbleList'
     code$sizeExprs <- symTab$getSymbolObject('OptimResultNimbleList', inherits = TRUE)
     code$toEigenize <- 'maybe'
     code$nDim <- 0
     asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+
+    # Handle fn arguments that are RCfunctions.
+    fnCode <- code$args$fn
+    if(!exists(fnCode$name)) stop(paste0('fn argument is undefined in optim(par, fn = ', fnCode$name, ')'))
+    if(!is.rcf(get(fnCode$name))) stop(paste0('fn argument is not an RCfunction optim(par, fn = ', fnCode$name, ')'))
+    fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
     if(length(asserts) == 0) NULL else asserts
 }
 
