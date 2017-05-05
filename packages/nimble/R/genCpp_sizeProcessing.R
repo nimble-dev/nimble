@@ -1007,7 +1007,9 @@ sizeOptim <- function(code, symTab, typeEnv) {
     code$sizeExprs <- symTab$getSymbolObject('OptimResultNimbleList', inherits = TRUE)
     code$toEigenize <- 'maybe'
     code$nDim <- 0
-    asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    if(!(code$caller$name %in% assignmentOperators)) {
+        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    }
 
     # Handle fn arguments that are RCfunctions.
     fnCode <- code$args$fn
