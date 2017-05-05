@@ -53,6 +53,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimArr_rcat = 'sizeScalarRecurse',
                     nimArr_rinterval = 'sizeScalarRecurse',
                     nimPrint = 'sizeforceEigenize',
+                    nimDerivs = 'sizeNimDerivs',
                     ##nimCat = 'sizeforceEigenize',
                     as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
                     as.numeric = 'sizeUnaryCwise',
@@ -978,11 +979,25 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 }
 
 
+sizeNimDerivs <- function(code, symTab, typeEnv){
+  code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv')
+  setArg(code$caller, code$callerArgID, code$args[[1]])
+  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # set order arg
+  code$args[[2]] <- NULL
+  asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
+  code$args[[1]]$type <- 'nimbleList'
+  code$args[[1]]$sizeExprs <- symTab$getSymbolObject('NIMBLE_ADCLASS', TRUE)
+  code$args[[1]]$toEigenize <- "yes"
+  code$args[[1]]$nDim <- 0
+  asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))
+
+  #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # set variables arg
+  
+  if(length(asserts) == 0) NULL else asserts
+}
 
 sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
-  browser()
   asserts <- recurseSetSizes(code, symTab, typeEnv)
-  if(code$name == 'nimDerivs'){ asserts <- sizeNimbleFunction(code$args[[1]], symTab, typeEnv)}
   code$type <- 'nimbleList'
   nlClassName <- nl.getListDef(nimbleListReturningFunctionList[[code$name]]$nlGen)$className
   symbolObject <- symTab$getSymbolObject(nlClassName, inherits = TRUE)

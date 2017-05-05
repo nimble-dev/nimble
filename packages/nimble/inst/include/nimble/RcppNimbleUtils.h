@@ -377,5 +377,5 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 				 	int numOtherArgs, ...);
 					
 
-void RBrowserFun(SEXP Robj);
+void RBrowserFun();
 #endif

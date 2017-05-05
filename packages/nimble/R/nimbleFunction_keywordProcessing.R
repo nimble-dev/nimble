@@ -150,17 +150,6 @@ nimbleListReturningFunction_keywordInfo <- keywordInfoClass(
       symObj <- symbolNimbleListGenerator(name = nlClassName, nlProc = nlp)
       nfProc$setupSymTab$addSymbol(symObj)
     }
-    ## special processing for second argument of nimSvd
-    if(deparse(code[[1]]) == 'nimSvd'){
-      code[[3]] <- switch(tolower(code[[3]]),
-                          none = 0,
-                          thin = 1,
-                          full = 2)
-    }
-    if(deparse(code[[1]]) == 'nimDerivs'){
-      code[[2]][[1]] <- as.name(paste0(deparse(code[[2]][[1]]), '_deriv'))
-      code <- code[[2]]
-    }
     return(code)
   }
 )
@@ -924,6 +913,7 @@ matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
 matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
+matchFunctions[['nimDerivs']] <- nimDerivs
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}

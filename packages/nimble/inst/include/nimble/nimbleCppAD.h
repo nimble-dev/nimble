@@ -25,48 +25,76 @@ class nimbleCppADinfoClass {
    make more sense as stand-alone functions.  Let's see. */
 class nimbleFunctionCppADbase {
  public:
-   nimSmartPtr<NIMBLE_ADCLASS> getDerivs(nimbleCppADinfoClass &ADinfo) {
+   nimSmartPtr<NIMBLE_ADCLASS> getDerivs(nimbleCppADinfoClass &ADinfo, NimArr<1, double> &derivOrders) {
 		nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
 		std::size_t n = length(ADinfo.independentVars); // dim of independent vars
+		
+		int orderSize = derivOrders.size();
+		double array_derivOrders[orderSize];
+		std::memcpy(array_derivOrders, derivOrders.getPtr(), orderSize*sizeof(double));
+		int maxOrder = *std::max_element(array_derivOrders, array_derivOrders + orderSize);
+		bool ordersFound[3] = {false};
 
-		ADlist->value = vectorDouble_2_NimArr(ADinfo.ADtape->Forward(0, ADinfo.independentVars));
-		std::size_t q = ADlist->value.size();
-		ADlist->gradient.initialize(0, false, n, q);
-		ADlist->hessian.initialize(0, false, n, n, q);
-		//ADlist->thirdDerivs.initialize(0, false, n, n, n, q);
+		for(int i = 0; i < orderSize; i++){
+			if( (array_derivOrders[i] > 2) | (array_derivOrders[i] < 0)){ 
+				printf("Error: Derivative orders must be between 0 and 2.\n");
+				return(ADlist);
+			}
+			ordersFound[static_cast<int>(array_derivOrders[i])] = true;
+		}
 		
-		vector<double> gradient_ans (n*q, -1);
+		vector<double> value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
+		if(ordersFound[0] == true){
+			ADlist->value = vectorDouble_2_NimArr(value_ans);
+			if(maxOrder == 0){
+				return(ADlist);
+			}
+		}
+		if(ordersFound[1] == true){
+			ADlist->gradient.initialize(0, false, n, q);
+		}
+		if(ordersFound[2] == true){
+			ADlist->hessian.initialize(0, false, n, n, q);
+		}
+		
+		std::size_t q = length(value_ans);
+		vector<double> cppad_derivOut;
 		vector<double> hessian_ans (n*n*q, -1);
-		//vector<double> thirdDeriv_ans (n*n*n*q, -1);
-		
-		vector<double> cppad_hessOut;
-		//vector<double> cppad_thirdDerivOut;
+		vector<double> gradient_ans (n*q, -1);
 
 		for(size_t dy_ind = 0; dy_ind < q; dy_ind++){
 			std::vector<double> w (q, 0);
 			w[dy_ind] = 1;
-			for(size_t dx1_ind = 0; dx1_ind < n; dx1_ind++){
-				std::vector<double> x1 (n, 0); // vector specifying first derivatives.  first specify coeffs for first dim of s across all directions r, then second dim, ...
-				x1[dx1_ind] = 1;
+			if(maxOrder == 1){
+				cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
+			}
+			else{
+				for(size_t dx1_ind = 0; dx1_ind < n; dx1_ind++){				
+					std::vector<double> x1 (n, 0); // vector specifying first derivatives.  first specify coeffs for first dim of s across all directions r, then second dim, ...
+					x1[dx1_ind] = 1;
 
-				ADinfo.ADtape->Forward(1, x1); // may want separate case for r=1?	
-				cppad_hessOut = ADinfo.ADtape->Reverse(2, w);
-			
-				// printf("thirdDerivOut length: %d \n", length(cppad_thirdDerivOut));
-				// for(size_t i = 0; i < length(cppad_thirdDerivOut); i++){
-					// printf("thirdDeriv element %d is %f \n", i+1, cppad_thirdDerivOut[i]);
-				// }
+					ADinfo.ADtape->Forward(1, x1); // may want separate case for r=1?	
+					cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
 				
+					for(size_t i = 0; i < n; i++){
+						hessian_ans[n*n*dy_ind + n*dx1_ind + i]  = cppad_derivOut[i*2 + 1];
+					}
+				}
+			}
+			if(ordersFound[1] == true){
 				for(size_t i = 0; i < n; i++){
-					gradient_ans[n*dy_ind + i] = cppad_hessOut[i*2 + 0];
-					hessian_ans[n*n*dy_ind + n*dx1_ind + i]  = cppad_hessOut[i*2 + 1];
+					gradient_ans[n*dy_ind + i] = cppad_derivOut[i*maxOrder + 0];
 				}
 			}
 		}
 		
-		
-		std::copy(gradient_ans.begin(), gradient_ans.end(), ADlist->gradient.getPtr());
-		std::copy(hessian_ans.begin(), hessian_ans.end(), ADlist->hessian.getPtr());
+		if(ordersFound[1] == true){
+			std::copy(gradient_ans.begin(), gradient_ans.end(), ADlist->gradient.getPtr());
+		}
+		if(ordersFound[2] == true){
+			std::copy(hessian_ans.begin(), hessian_ans.end(), ADlist->hessian.getPtr());
+		}
+
 		return(ADlist);
   } 
 /* NimArr<1, double> getGradient(nimbleCppADinfoClass &ADinfo) {
