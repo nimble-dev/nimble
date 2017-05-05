@@ -169,8 +169,8 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
                 }
                 ## new with nimbleLists: we need to initiate compilation here so we can get full returnType information, including of nimbleLists
-                typeEnv$.nimbleProject$compileRCfun(nmfObj, initialTypeInferenceOnly = TRUE)
-                return(sizeRCfunction(code, symTab, typeEnv, nfmObj))
+                RCfunProc <- typeEnv$.nimbleProject$compileRCfun(obj, initialTypeInference = TRUE)
+                return(sizeRCfunction(code, symTab, typeEnv, nfmObj, RCfunProc))
             }
         }
     }
@@ -550,7 +550,7 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
     else { ## need to establish the symbol and needed type        
         nlDef <- get(listDefName)
         ## Need the nimbleProject!
-        nlp <- typeEnv$.nimbleProject$compileNimbleList(nlDef, initialTypeInferenceOnly = TRUE)
+        nlp <- typeEnv$.nimbleProject$compileNimbleList(nlDef, initialTypeInference = TRUE)
         className <- nl.getListDef(nlDef)$className
         ##nfName <- deparse(leftSide)
         
@@ -1166,11 +1166,14 @@ sizeValues <- function(code, symTab, typeEnv) {
     if(length(asserts)==0) NULL else asserts
 }
 
-sizeRCfunction <- function(code, symTab, typeEnv, nfmObj) {
+sizeRCfunction <- function(code, symTab, typeEnv, nfmObj, RCfunProc) {
     returnType <- nfmObj$returnType
     argInfo <- nfmObj$argInfo
     code$name <- nfmObj$uniqueName
-    asserts <- generalFunSizeHandler(code, symTab, typeEnv, returnType, argInfo)
+    returnSymbol <- RCfunProc$compileInfo$returnSymbol
+    argSymbolTable <- RCfunProc$compileInfo$origLocalSymTab
+##    asserts <- generalFunSizeHandler(code, symTab, typeEnv, returnType, argInfo)
+    asserts <- generalFunSizeHandlerFromSymbols(code, symTab, typeEnv, returnType, argInfo)
     return(asserts)
 }
 
@@ -2901,6 +2904,65 @@ sizeVoidPtr <- function(code, symTab, typeEnv) {
 ##
 generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chainedCall = FALSE) {
     useArgs <- unlist(lapply(args, function(x) as.character(x[[1]]) %in% c('double', 'integer', 'logical')))
+    
+    if(chainedCall) useArgs <- c(FALSE, useArgs)
+    if(length(code$args) != length(useArgs)) {
+        stop(exprClassProcessingErrorMsg(code, 'In generalFunSizeHandler: Wrong number of arguments.'), call. = FALSE)
+    }
+    ## Note this is NOT checking the dimensions of each arg. useArgs just means it will recurse on that and lift or do as needed
+
+    asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs)
+
+    ## lift any argument that is an expression
+    for(i in seq_along(code$args)) {
+        if(useArgs[i]) {
+            if(inherits(code$args[[i]], 'exprClass')) {
+                if(!code$args[[i]]$isName) {
+                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+                }
+            }
+        }
+    }
+    if(inherits(returnType, 'symbolNimbleList')) {
+        code$type <- 'nimbleList'
+        code$sizeExprs <- returnType
+        code$toEigenize <- 'maybe'
+        code$nDim <- 0
+        liftIfAmidExpression <- TRUE
+    } else {
+        returnSymbolBasic <- inherits(returnType, 'symbolBasic')
+        returnTypeLabel <- if(returnSymbolBasic) returnType$type else as.character(returnType[[1]])
+        
+        if(returnTypeLabel == 'void') {
+            code$type <- returnTypeLabel
+            code$toEigenize <- 'unknown'
+            return(asserts)
+        }
+        returnNDim <- if(returnSymbolBasic) returnType$nDim
+                      else if(length(returnType) > 1) as.numeric(returnType[[2]]) else 0
+                                                                
+                                        # returnSizeExprs <- if(returnTypeLabel == 'symbolNimbleList') symTab$getSymbolObject('return') else vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
+        returnSizeExprs <- vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
+        code$type <- returnTypeLabel
+        code$nDim <- returnNDim
+        code$sizeExprs <- returnSizeExprs
+        code$toEigenize <- if(code$nDim == 0) 'maybe' else 'no'
+        liftIfAmidExpression <- code$nDim > 0
+    }
+    
+    if(liftIfAmidExpression) {
+        if(!(code$caller$name %in% c('{','<-','<<-','='))) {
+            asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+        } else
+            typeEnv$.ensureNimbleBlocks <- TRUE
+    }
+    return(asserts)
+}
+
+generalFunSizeHandlerFromSymbols <- function(code, symTab, typeEnv, returnSymbol, argSymTab, chainedCall = FALSE) {
+    ## are symbols guaranteed in order?  I think so
+    ## fix this:
+    useArgs <- unlist(lapply(argSymTab$symbols, function(x) as.character(x$type) %in% c('double', 'integer', 'logical')))
     
     if(chainedCall) useArgs <- c(FALSE, useArgs)
     if(length(code$args) != length(useArgs)) {
