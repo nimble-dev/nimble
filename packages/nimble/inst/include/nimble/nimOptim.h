@@ -7,6 +7,10 @@
 
 typedef double NimObjectiveFn(NimArr<1, double>& par);
 
+nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
+                                            NimObjectiveFn fn);
+
+// DEPRECATED
 nimSmartPtr<OptimResultNimbleList> nimFakeOptim(NimArr<1, double> &par,
                                                 NimObjectiveFn fn);
 
