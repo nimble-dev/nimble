@@ -29,7 +29,7 @@ nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double>& par,
     nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
     result->par = par;
     result->counts.setSize(2);
-    result->hessian.setSize(n, n);
+    // result->hessian is not set.
 
     // Use Nelder-Mead by default.
     double* Bvec = par_nomap.getPtr();

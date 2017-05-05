@@ -1095,5 +1095,13 @@ is.nan.vec <- function(x) any(is.nan(x))
 #' @export
 nimRound <- round
 
+#' Nimble wrapper around R's builtin \code{\link{optim}}.
+#'
+#' @return \code{optimResultNimbleList}
+#' @seealso \code{\link{optim}}
 #' @export
-nimOptim <- function(par, fn) optim(par, fn)
+nimOptim <- function(par, fn) {
+    result <- optim(par, fn)
+    nimResult <- do.call(optimResultNimbleList$new, result)
+    return(nimResult)
+}
