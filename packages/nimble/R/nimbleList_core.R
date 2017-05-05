@@ -380,7 +380,7 @@ optimResultNimbleList <- nimbleList(
 ## functionName = list(nlGen = nimbleList definition, cppName = name of cpp function corresponding to dsl function)
 nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList, cppName = 'EIGEN_EIGEN'),
                                         nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"),
-                                        nimFakeOptim = list(nlGen = optimResultNimbleList, cppName = "OptimResultNimbleList"))
+                                        nimOptim = list(nlGen = optimResultNimbleList, cppName = "OptimResultNimbleList"))
 
 
 ## TODO Add nimbleList definitions for nimOptimResult and nimOptimControl.

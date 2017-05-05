@@ -14,7 +14,7 @@
 \alias{logit}
 \alias{nimEquals}
 \alias{nimRound}
-\alias{nimFakeOptim}
+\alias{nimOptim}
 \alias{nimStep}
 \alias{nimSwitch}
 \alias{phi}

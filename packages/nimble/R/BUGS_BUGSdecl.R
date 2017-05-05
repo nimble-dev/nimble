@@ -6,7 +6,7 @@ nimbleOrRfunctionNames <- c('[','+','-','/','*','(','exp','log','pow','^','%%','
                             'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'step', 'nimStep',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
                             'cube', 'abs', 'lgamma', 'loggam', 'log1p', 'lfactorial', ##'factorial', 'gamma',
-                            'ceiling', 'floor', 'round', 'nimRound', 'fakeOptim', 'nimFakeOptim', 'trunc',
+                            'ceiling', 'floor', 'round', 'nimRound', 'optim', 'nimOptim', 'trunc',
                             'mean','sum','sd','var','max','min','prod',
                             'asRow', 'asCol',
                             'chol', 'inverse', 'forwardsolve', 'backsolve', 'solve', 'nimEigen', 'nimSvd',  ## removed these from BUGS functions, pending problems with Eigen

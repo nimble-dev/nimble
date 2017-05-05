@@ -1,18 +1,18 @@
 #include <R_ext/Applic.h>
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <nimble/nimOptim.h>
-#include <string.h>
 
-// This is defined in R_ext/Applic.h:
-// typedef double optimfn(int, double *, void *);
-
-// This wraps a NimObjectiveFn as an R optimfn.
+// This wraps a NimObjectiveFn as an R `optimfn` type
+//   typedef double optimfn(int, double *, void *);
+// defined in
+//   https://svn.r-project.org/R/trunk/src/include/R_ext/Applic.h
 static double optimfn_wrapper(int n, double* par, void* fn) {
-    NimArr<1, double> par_copy;
-    par_copy.setSize(n);
-    memcpy(par_copy.getPtr(), par, n * sizeof(double));
-    return ((NimObjectiveFn*)fn)(par_copy);
+    NimArr<1, double> nim_par;
+    nim_par.setSize(n);
+    std::copy(par, par + n, nim_par.getPtr());
+    return ((NimObjectiveFn*)fn)(nim_par);
 }
 
 // This attempts to match the behavior of optim() defined in the documentation
@@ -36,7 +36,7 @@ nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double>& par,
     double* Fmin = &(result->value);
     int* fail = &(result->convergence);
     double abstol = -INFINITY;
-    double intol = std::sqrt(std::numeric_limits<double>::epsilon());
+    double reltol = std::sqrt(std::numeric_limits<double>::epsilon());
     void* ex = (void*)(fn);
     double alpha = 1.0;
     double bet = 0.5;
@@ -44,24 +44,8 @@ nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double>& par,
     int trace = 0;
     int* fncount = result->counts.getPtr();
     int maxit = 100;
-    nmmin(n, Bvec, X, Fmin, optimfn_wrapper, fail, abstol, intol,
+    nmmin(n, Bvec, X, Fmin, optimfn_wrapper, fail, abstol, reltol,
           ex, alpha, bet, gamm, trace, fncount, maxit);
-
-    return result;
-}
-
-// DEPRECATED
-nimSmartPtr<OptimResultNimbleList> nimFakeOptim(NimArr<1, double>& par,
-                                                NimObjectiveFn fn) {
-    nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
-
-    // This is fake.
-    result->par = par;
-    result->value = fn(par);
-    result->counts.setSize(0);
-    result->convergence = 0;
-    result->message = "";
-    result->hessian.setSize(0, 0);
 
     return result;
 }

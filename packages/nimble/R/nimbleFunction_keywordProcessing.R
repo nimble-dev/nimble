@@ -799,7 +799,7 @@ keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
 keywordList[['nimEigen']] <- nimbleListReturningFunction_keywordInfo
 keywordList[['nimSvd']] <- nimbleListReturningFunction_keywordInfo
-keywordList[['nimFakeOptim']] <- nimbleListReturningFunction_keywordInfo
+keywordList[['nimOptim']] <- nimbleListReturningFunction_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo
@@ -867,7 +867,7 @@ matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctio
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
-matchFunctions[['nimFakeOptim']] <- nimFakeOptim
+matchFunctions[['nimOptim']] <- nimOptim
 matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}

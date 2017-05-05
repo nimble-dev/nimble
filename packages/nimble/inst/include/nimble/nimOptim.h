@@ -7,11 +7,8 @@
 
 typedef double NimObjectiveFn(NimArr<1, double>& par);
 
+// This behaves like R's native optim() function.
 nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
                                             NimObjectiveFn fn);
-
-// DEPRECATED
-nimSmartPtr<OptimResultNimbleList> nimFakeOptim(NimArr<1, double> &par,
-                                                NimObjectiveFn fn);
 
 #endif // __NIMBLE_NIMOPTIM_H
