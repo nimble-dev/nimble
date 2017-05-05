@@ -54,7 +54,7 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 
 #' Nimble Derivatives
 #' @export
-nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
+nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), namevec = NA){
   fxnCall <- substitute(nimFxn)
   print('R nimDerivs not yet implemented')
   return(NA)
