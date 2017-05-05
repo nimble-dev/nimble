@@ -424,7 +424,8 @@ symbolModelValues <-
 symbolMemberFunction <-
     setRefClass(Class = 'symbolMemberFunction',
                 contains = 'symbolBase',
-                fields = list(nfMethodRCobj = 'ANY'),
+                fields = list(nfMethodRCobj = 'ANY',
+                              RCfunProc     = 'ANY'), ## added so that we can access returnType and argument types (origLocalSymbolTable)
                 methods = list(
                     initialize = function(...) {callSuper(...); type <<- 'Ronly'},
                     show = function() writeLines(paste('symbolMemberFunction', name)),
@@ -617,7 +618,8 @@ symbolCopierVector <-
 
 symbolNimbleFunctionList <-
     setRefClass(Class = 'symbolNimbleFunctionList',
-                contains = 'symbolNimPtrList')
+                contains = 'symbolNimPtrList',
+                fields = list(nfProc = 'ANY'))
 
 symbolEigenMap <- setRefClass(Class = 'symbolEigenMap',
                               contains = 'symbolBase',

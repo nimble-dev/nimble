@@ -55,6 +55,8 @@ RCfunInfoClass <- setRefClass('RCfunInfoClass',
                                   nfMethodRCobj = 'ANY', ## an mfMethodRC
                                   RCfunProc     = 'ANY', ## an RCfunProcessing or NULL
                                   cppClass      = 'ANY',  ## an RCfunctionDef or NULL
+                                  RinitTypesProcessed = 'ANY',
+                                  Rcompiled           = 'ANY',
                                   fromModel     =  'ANY'		#'logical'
                                   ))
 
@@ -394,7 +396,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(!inherits(nfmObj, 'nfMethodRC')) stop("Can't add this function. nfmObj is not an nfMethodRC", call. = FALSE)
                                      className <- nfmObj$uniqueName
                                      if(is.null(RCfunInfos[[className]])) {
-                                         RCfunInfos[[className]] <<- RCfunInfoClass(nfMethodRCobj = nfmObj, RCfunProc = NULL, cppClass = NULL, fromModel = fromModel)
+                                         RCfunInfos[[className]] <<- RCfunInfoClass(nfMethodRCobj = nfmObj, RCfunProc = NULL, cppClass = NULL, fromModel = fromModel, RinitTypesProcessed = FALSE, Rcompiled = FALSE)
                                      }
                                      assign('nimbleProject', .self, envir = nfmObj) ## needed for clearCompiled(), i.e. safe dyn.unload()
                                  },
@@ -417,9 +419,16 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(is.null(RCfunInfo)) addRCfun(nfmObj, fromModel = fromModel)
                                      if(is.null(RCfunInfos[[className]]$RCfunProc)) {
                                          RCfunInfos[[className]]$RCfunProc <<- RCfunProcessing$new(nfmObj, Cname)
-                                         RCfunInfos[[className]]$RCfunProc$process(debug = control$debug, debugCpp = control$debugCpp, initialTypeInferenceOnly = initialTypeInference, nimbleProject = .self)
+                                     }
+                                     if(!RCfunInfos[[className]]$RinitTypesProcessed) {
+                                         RCfunInfos[[className]]$RCfunProc$process(debug = control$debug, debugCpp = control$debugCpp, initialTypeInferenceOnly = TRUE, nimbleProject = .self)
+                                         RCfunInfos[[className]]$RinitTypesProcessed <<- TRUE
                                      }
                                      if(initialTypeInference) return(RCfunInfos[[className]]$RCfunProc)
+                                     if(!RCfunInfos[[className]]$Rcompiled) {
+                                         RCfunInfos[[className]]$RCfunProc$process(debug = control$debug, debugCpp = control$debugCpp, initialTypeInferenceOnly = FALSE, nimbleProject = .self)
+                                         RCfunInfos[[className]]$Rcompiled <<- TRUE
+                                     }
                                      cppClass <- RCfunInfos[[className]]$cppClass
                                      if(is.null(cppClass)) {
                                          cppClass <- RCfunctionDef(project = .self)

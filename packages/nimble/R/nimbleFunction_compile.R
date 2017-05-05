@@ -268,7 +268,7 @@ nfProcessing$methods(addMemberFunctionsToSymbolTable = function() {
     for(i in seq_along(origMethods)) {
         thisName <- names(origMethods)[i]
 ##        if(thisName == 'run') thisName <- 'operator()'
-        newSym <- symbolMemberFunction(name = thisName, nfMethodRCobj = origMethods[[i]])
+        newSym <- symbolMemberFunction(name = thisName, nfMethodRCobj = origMethods[[i]], RCfunProc = RCfunProcs[[i]])
         setupSymTab$addSymbol(newSym)
     }
 })
@@ -412,29 +412,31 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     return(newSym)
   }
   if(inherits(instances[[1]][[name]], 'indexedNodeInfoTableClass')) {
-    return(symbolIndexedNodeInfoTable(name = name, type = 'symbolIndexedNodeInfoTable')) ## the class type will get it copied but the Ronly will make it skip a type declaration, which is good since it is in the nodeFun base class.
+      return(symbolIndexedNodeInfoTable(name = name, type = 'symbolIndexedNodeInfoTable')) ## the class type will get it copied but the Ronly will make it skip a type declaration, which is good since it is in the nodeFun base class.
   }
   if(inherits(instances[[1]][[name]], 'nimbleFunctionList')) {
+      
+      neededObjectNames <<- c(neededObjectNames, name)
+      baseClass <- instances[[1]][[name]]$baseClass ## an nfGenerator created by virtualNimbleFunction()
+      baseClassName <- environment(baseClass)$className
+      
+      if(!(baseClassName %in% names(neededTypes))) {
+          nfp <- nimbleProject$setupVirtualNimbleFunction(baseClass, fromModel = inModel)
+          newSym <- symbolNimbleFunctionList(name = name, type = 'nimbleFunctionList', baseClass = baseClass, nfProc = nfp)
+          neededTypeSim <- symbolNimbleFunction(name = baseClassName, type = 'virtualNimbleFunction', nfProc = nfp)
+          neededTypes[[baseClassName]] <<- newSym
+      } else {
+          newSym <- neededTypes[[baseClassName]]
+      }
     
-    neededObjectNames <<- c(neededObjectNames, name)
-    baseClass <- instances[[1]][[name]]$baseClass ## an nfGenerator created by virtualNimbleFunction()
-    baseClassName <- environment(baseClass)$className
-    
-    newSym <- symbolNimbleFunctionList(name = name, type = 'nimbleFunctionList', baseClass = baseClass)
-    if(!(baseClassName %in% names(neededTypes))) {
-      nfp <- nimbleProject$setupVirtualNimbleFunction(baseClass, fromModel = inModel)
-      neededTypeSim <- symbolNimbleFunction(name = baseClassName, type = 'virtualNimbleFunction', nfProc = nfp)
-      neededTypes[[baseClassName]] <<- newSym
-    }
-    
-    allInstances <- unlist(lapply(instances, function(x) x[[name]]$contentsList), recursive = FALSE)
-    newNFprocs <- nimbleProject$compileNimbleFunctionMulti(allInstances, initialTypeInference = TRUE)
-    ## only types are needed here, not initialTypeInference, because nfVar's from a nimbleFunctionList are not available (could be in future)
-    for(nfp in newNFprocs) {
-      newTypeName <- environment(nfp$nfGenerator)$name
-      neededTypes[[ newTypeName ]] <<- symbolNimbleFunction(name = newTypeName, type = 'nimbleFunction',
-                                                            nfProc = nfp)
-    }
+      allInstances <- unlist(lapply(instances, function(x) x[[name]]$contentsList), recursive = FALSE)
+      newNFprocs <- nimbleProject$compileNimbleFunctionMulti(allInstances, initialTypeInference = TRUE)
+      ## only types are needed here, not initialTypeInference, because nfVar's from a nimbleFunctionList are not available (could be in future)
+      for(nfp in newNFprocs) {
+          newTypeName <- environment(nfp$nfGenerator)$name
+          neededTypes[[ newTypeName ]] <<- symbolNimbleFunction(name = newTypeName, type = 'nimbleFunction',
+                                                                nfProc = nfp)
+      }
     return(newSym)
   }
   if(inherits(instances[[1]][[name]], 'OptimReadyFunction')){
