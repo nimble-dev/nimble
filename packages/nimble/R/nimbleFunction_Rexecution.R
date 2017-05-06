@@ -1103,5 +1103,13 @@ nimRound <- round
 nimOptim <- function(par, fn) {
     result <- optim(par, fn)
     nimResult <- do.call(optimResultNimbleList$new, result)
+    # Tweak values to exactly match C++ behavior.
+    nimResult$counts <- unname(nimResult$counts)
+    if (is.null(nimResult$message)) {
+        nimResult$message <- ''
+    }
+    if (is.null(nimResult$hessian)) {
+        nimResult$hessian <- matrix(nrow = 0, ncol = 0)
+    }
     return(nimResult)
 }
