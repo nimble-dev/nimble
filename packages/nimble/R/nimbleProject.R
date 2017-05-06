@@ -711,7 +711,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(is.null(nfCompInfos[[generatorName]])) stop("It doesn't look like nfCompInfos was set up for this generator.  Call setupVirtualNimbleFunction first.", call. = FALSE) 
                                      if(inherits(nfCompInfos[[generatorName]]$nfProc, 'uninitializedField')) {## might always be FALSE by this point in processing
                                          if(is.character(vfun)) stop("vfun given as character but nfProc doesn't exist yet", call. = FALSE)
-                                         nfCompInfos[[generatorName]]$nfProc <<- virtualNFprocessing$new(vfun, generatorName)
+                                         nfCompInfos[[generatorName]]$nfProc <<- virtualNFprocessing$new(vfun, generatorName, project = .self)
                                      }
                                      if(!nfCompInfos[[generatorName]]$Rcompiled) {
                                          nfCompInfos[[generatorName]]$nfProc$process(control = control)
@@ -863,7 +863,11 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          nfCompInfos[[generatorName]]$labelMaker <<- NULL ## not needed?
                                      }
                                      if(inherits(nfCompInfos[[generatorName]]$nfProc, 'uninitializedField'))
-                                         nfCompInfos[[generatorName]]$nfProc <<- virtualNFprocessing$new(vfun, generatorName)
+                                         nfCompInfos[[generatorName]]$nfProc <<- virtualNFprocessing$new(vfun, generatorName, project = .self)
+                                     if(!nfCompInfos[[generatorName]]$Rcompiled) { ## to support nimbleLists, this step goes here now, so by size processing the method symbol tables will be set up
+                                         nfCompInfos[[generatorName]]$nfProc$process(control = control) ## there is no need for an initialTypeInference flag because that is *all* that a virtual NF really does anyway
+                                         nfCompInfos[[generatorName]]$Rcompiled <<- TRUE
+                                     }
                                      nfCompInfos[[generatorName]]$nfProc
                                  },
                                  compileNimbleFunctionMulti = function(funList, isNode = FALSE, filename = NULL, initialTypeInferenceOnly = FALSE,

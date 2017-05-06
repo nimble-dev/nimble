@@ -1,19 +1,22 @@
 virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                    fields = list(
                                        name = 'ANY', ## character
+                                       setupSymTab = 'ANY',
                                        nfGenerator =  'ANY',		#'function',
                                        compileInfos =  'ANY',		#'list', ## A list of RCfunctionCompileClass objects
                                        origMethods = 'ANY',
                                        RCfunProcs =  'ANY',		#'list', ## A list of RCfunProcessing  or RCvirtualFunProcessing objects
-                                      ## RCfuns = 'list', ## A list of RCfun objects
+                                       ## RCfuns = 'list', ## A list of RCfun objects
+                                       nimbleProject = 'ANY',
                                        cppDef = 'ANY'
                                        ),
                                    methods = list(
                                        show = function() {
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
-                                       initialize = function(f = NULL, className, virtual = TRUE, isNode = FALSE) {
-                                        ##   browser()
+                                       initialize = function(f = NULL, className, virtual = TRUE, isNode = FALSE, project = NULL) {
+                                           ##   browser()
+                                            nimbleProject <<- project
                                        		compileInfos <<- list()
                                        		RCfunProcs <<- list()
 
@@ -44,7 +47,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                         },
                                        setupLocalSymbolTables = function() {
                                            for(i in seq_along(RCfunProcs)) {
-                                               RCfunProcs[[i]]$setupSymbolTables()
+                                               RCfunProcs[[i]]$setupSymbolTables(parentST = setupSymTab, neededTypes = list(), nimbleProject = nimbleProject)
                                            }
                                        },
                                        doRCfunProcess = function(control = list(debug = FALSE, debugCpp = FALSE)) {
@@ -52,7 +55,17 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                RCfunProcs[[i]]$process(debug = control$debug, debugCpp = control$debugCpp, debugCppLabel = name, doKeywords = FALSE, nimbleProject = nimbleProject)
                                            }
                                        },
+                                       addMemberFunctionsToSymbolTable = function() {
+                                           for(i in seq_along(origMethods)) {
+                                               thisName <- names(origMethods)[i]
+                                               ##        if(thisName == 'run') thisName <- 'operator()'
+                                               newSym <- symbolMemberFunction(name = thisName, nfMethodRCobj = origMethods[[i]], RCfunProc = RCfunProcs[[i]])
+                                               setupSymTab$addSymbol(newSym)
+                                           }
+                                       },
                                        process = function(control = list(debug = FALSE, debugCpp = FALSE)) {
+                                           setupSymTab <<- symbolTable(parentST = NULL)
+                                           addMemberFunctionsToSymbolTable()
                                            setupLocalSymbolTables()
                                            doRCfunProcess(control)
                                        }
@@ -64,14 +77,12 @@ nfProcessing <- setRefClass('nfProcessing',
                             contains = 'virtualNFprocessing',
                             fields = list(
                                 instances = 'ANY',
-                                setupSymTab = 'ANY',
                                 neededTypes =  'ANY',		#'list', ## A list of symbolTable entries of non-native types, such as derived models or modelValues, that will be needed
                               neededObjectNames =  'ANY',		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
                                 newSetupOutputNames =  'ANY',		#'character',
                                 blockFromCppNames = 'ANY',
                                 newSetupCode =  'ANY',		#'list',
                                 newSetupCodeOneExpr = 'ANY',
-                                nimbleProject = 'ANY',
                                 inModel =  'ANY'		#'logical'
                               ),
                           methods = list(
@@ -84,7 +95,7 @@ nfProcessing <- setRefClass('nfProcessing',
                                   newSetupCode <<- list()
                                   if(!is.null(f)) {
                                       ## in new system, f must be a specialized nf, or a list of them
-                                      nimbleProject <<- project
+                                     ## nimbleProject <<- project
                                       inModel <<- fromModel
                                       if(missing(className)) {
                                           sf <- if(is.list(f)) nfGetDefVar(f[[1]], 'name') else nfGetDefVar(f, 'name')
@@ -92,7 +103,7 @@ nfProcessing <- setRefClass('nfProcessing',
                                       } else {
                                           name <<- className
                                       }
-                                      callSuper(f, name, virtual = FALSE, isNode = isNode)
+                                      callSuper(f, name, virtual = FALSE, isNode = isNode, project = project)
                                       instances <<- if(inherits(f, 'list')) lapply(f, nf_getRefClassObject) else list(nf_getRefClassObject(f))
                                      
                                       newSetupOutputNames <<- character()
@@ -116,7 +127,7 @@ nfProcessing <- setRefClass('nfProcessing',
                               setupTypesForUsingFunction = function(){},
                               doSetupTypeInference = function(){},
                               clearSetupOutputs = function() {},
-                              addMemberFunctionsToSymbolTable = function(){},
+                              ##addMemberFunctionsToSymbolTable = function(){},
                               setupLocalSymbolTables = function() {
                                   for(i in seq_along(RCfunProcs)) {
                                       RCfunProcs[[i]]$setupSymbolTables(parentST = setupSymTab, neededTypes = neededTypes, nimbleProject = nimbleProject)
@@ -264,14 +275,14 @@ nfProcessing$methods(setupTypesForUsingFunction = function() {
     }
 })
 
-nfProcessing$methods(addMemberFunctionsToSymbolTable = function() {
-    for(i in seq_along(origMethods)) {
-        thisName <- names(origMethods)[i]
-##        if(thisName == 'run') thisName <- 'operator()'
-        newSym <- symbolMemberFunction(name = thisName, nfMethodRCobj = origMethods[[i]], RCfunProc = RCfunProcs[[i]])
-        setupSymTab$addSymbol(newSym)
-    }
-})
+## nfProcessing$methods(addMemberFunctionsToSymbolTable = function() {
+##     for(i in seq_along(origMethods)) {
+##         thisName <- names(origMethods)[i]
+## ##        if(thisName == 'run') thisName <- 'operator()'
+##         newSym <- symbolMemberFunction(name = thisName, nfMethodRCobj = origMethods[[i]], RCfunProc = RCfunProcs[[i]])
+##         setupSymTab$addSymbol(newSym)
+##     }
+## })
 
 nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     if(!setupOrig & !setupNew) {
