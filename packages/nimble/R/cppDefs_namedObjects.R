@@ -29,7 +29,7 @@ cppNamedObjectsClass <- setRefClass('cppNamedObjectsClass',
                                    ##     newCodeLine <- cppLiteral(c(paste0('newObj = new ', name,';'),
                                    ##                                 'PROTECT(SextPtrDerived = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));',
                                    ##                                 'PROTECT(SextPtrBase = R_MakeExternalPtr(dynamic_cast<NamedObjects*>(newObj), R_NilValue, R_NilValue));',
-                                   ##                                 'PROTECT(Sans = allocVector(VECSXP, 2));',
+                                   ##                                 'PROTECT(Sans = Rf_allocVector(VECSXP, 2));',
                                    ##                                 'SET_VECTOR_ELT(Sans, 0, SextPtrDerived);',
                                    ##                                 'SET_VECTOR_ELT(Sans, 1, SextPtrBase);'))
                                    ##     notificationLine <- if(nimbleOptions()$messagesWhenBuildingOrFinalizingCppObjects)

@@ -156,7 +156,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                        baseClassName = allinheritance,
                                        Sname = SallinheritanceNames)
                                    baseClassCastLines <- cppLiteral(baseClassCastLines)
-                                   allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = allocVector(VECSXP,',numBaseClasses + 1, '));'))
+                                   allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = Rf_allocVector(VECSXP,',numBaseClasses + 1, '));'))
 
                                    packListLines <- mapply(function(Sname, i) paste0('SET_VECTOR_ELT(Sans,',i,',',Sname,');'),
                                                            Sname = c('Sderived_EXTPTR', SallinheritanceNames),

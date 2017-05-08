@@ -51,7 +51,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
  
 ##   PROTECT(SptrToSmartPtrBase = R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
 ##   PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
-##   PROTECT(Sans = allocVector(VECSXP,2));
+##   PROTECT(Sans = Rf_allocVector(VECSXP,2));
 ##   SET_VECTOR_ELT(Sans,0,SptrToSmartPtrBase);
 ##   SET_VECTOR_ELT(Sans,1,SptrToPtr);
 ##   UNPROTECT(3);
@@ -72,7 +72,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                  ##     paste0('reinterpret_cast<',name,'*>(*static_cast<void**>(ptrToPtr))->NO_hw();'),
                                                                       'PROTECT(SptrToSmartPtrBase = R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));',
                                                                       'PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));'))
-                                          allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = allocVector(VECSXP,', 2, '));'))
+                                          allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = Rf_allocVector(VECSXP,', 2, '));'))
                                           
                                           packListLines <- cppLiteral(c('SET_VECTOR_ELT(Sans,0,SptrToSmartPtrBase);',
                                                                         'SET_VECTOR_ELT(Sans,1,SptrToPtr);'
@@ -183,7 +183,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         listElementTable$addSymbol(cppSEXP(name = "S_newNimList"))
                                         listElementTable$addSymbol(cppSEXP(name = "S_listName"))
                                       
-                                        newListLine[[1]] <- substitute({PROTECT(S_listName <- allocVector(STRSXP, 1));
+                                        newListLine[[1]] <- substitute({PROTECT(S_listName <- Rf_allocVector(STRSXP, 1));
                                           SET_STRING_ELT(S_listName, 0, mkChar(LISTNAME));}, 
                                           list(LISTNAME = nimCompProc$nimbleListObj$className))
                                         newListLine[[2]] <- substitute(PROTECT(S_newNimList <- makeNewNimbleList(S_listName)),
@@ -215,7 +215,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         conditionalClauseEnd <- list(quote(cppLiteral('}')))
                                         environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
-                                        envLine <- substitute({PROTECT(ENVNAME <- allocVector(STRSXP, 1));
+                                        envLine <- substitute({PROTECT(ENVNAME <- Rf_allocVector(STRSXP, 1));
                                           SET_STRING_ELT(ENVNAME, 0, mkChar(".xData"));}, 
                                           list(ENVNAME = as.name(environmentCPPName)))
                                         
@@ -263,7 +263,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
 
                                         environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
-                                        envLine <- substitute({PROTECT(ENVNAME <- allocVector(STRSXP, 1));
+                                        envLine <- substitute({PROTECT(ENVNAME <- Rf_allocVector(STRSXP, 1));
                                           SET_STRING_ELT(ENVNAME, 0, mkChar(".xData"));}, 
                                           list(ENVNAME = as.name(environmentCPPName)))
 
