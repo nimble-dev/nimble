@@ -1002,8 +1002,16 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   asserts <- recurseSetSizes(code, symTab, typeEnv)
   code$type <- 'nimbleList'
-  nlClassName <- nl.getListDef(nimbleListReturningFunctionList[[code$name]]$nlGen)$className
-  symbolObject <- symTab$getSymbolObject(nlClassName, inherits = TRUE)
+  nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
+  nlDef <- nl.getListDef(nlGen)
+  className <- nlDef$className 
+##  nlClassName <- nl.getListDef(nimbleListReturningFunctionList[[code$name]]$nlGen)$className
+  symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
+  if(is.null(symbolObject)) {
+      nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)
+      symbolObject <- symbolNimbleListGenerator(name = className, nlProc = nlp)
+      symTab$addSymbol(symbolObject)
+  }
   code$sizeExprs <- symbolObject
   code$toEigenize <- "yes"
   code$nDim <- 0

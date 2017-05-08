@@ -137,6 +137,18 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 ## 	)
 
 
+nimSvd_keywordInfo <- keywordInfoClass(
+    keyword = 'nimSvd',
+    processor = function(code, nfProc){
+        if(deparse(code[[1]]) == 'nimSvd'){
+            code[[3]] <- switch(tolower(code[[3]]),
+                                none = 0,
+                                thin = 1,
+                                full = 2)
+        }
+        return(code)
+    })
+    
 ## nimbleListReturningFunction_keywordInfo <- keywordInfoClass(
 ##   keyword = 'multiple',
 ##   processor = function(code, nfProc){
@@ -852,6 +864,7 @@ keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
 ##keywordList[['nimEigen']] <- nimbleListReturningFunction_keywordInfo
 ##keywordList[['nimSvd']] <- nimbleListReturningFunction_keywordInfo
+keywordList[['nimSvd']] <- nimSvd_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
