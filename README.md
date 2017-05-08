@@ -2,6 +2,7 @@ NIMBLE
 ======
 
 [![Build Status](https://travis-ci.org/nimble-dev/nimble.svg?branch=devel)](https://travis-ci.org/nimble-dev/nimble)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/nimble-dev/nimble?branch=devel&svg=true)](https://ci.appveyor.com/project/nimble-dev/nimble)
 [![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
 [![Rdoc](http://www.rdocumentation.org/badges/version/nimble)](http://www.rdocumentation.org/packages/nimble)
 
