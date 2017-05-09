@@ -58,18 +58,16 @@ test_that("nimbleFunction with optim() runs", {
             returnType(optimResultNimbleList())
         }
     )()
-    # Work around scoping issues.
-    assign('nimCallee', nimCallee, envir = .GlobalEnv)
-    on.exit(remove('nimCallee', envir = .GlobalEnv), add = TRUE)
+    temporarilyAssignInGlobalEnv(nimCallee)  # Work around scoping issues.
     par <- c(1.2, 3.4)
     nimCaller$run(par)
 })
 
-test_that("nimbleFunction with optim() mostly agrees with R behavior", {
+test_that("when a nimbleFunction optim()izes an RCfunction, the R and DSL behavior mostly agree", {
     # Define R versions.
     callee <- function(par) { return(sum(par ^ 2)) }
     caller <- function(par) { return(optim(par, callee)) }
-    # Define nimble versions.
+    # Define DSL versions.
     nimCallee <- nimbleFunction(
         run = function(par = double(1)) {
             return(sum(par ^ 2))
@@ -83,9 +81,40 @@ test_that("nimbleFunction with optim() mostly agrees with R behavior", {
             returnType(optimResultNimbleList())
         }
     )()
-    # Work around scoping issues.
-    assign('nimCallee', nimCallee, envir = .GlobalEnv)
-    on.exit(remove('nimCallee', envir = .GlobalEnv), add = TRUE)
+    temporarilyAssignInGlobalEnv(nimCallee)  # Work around scoping issues.
+    # Test approximate agreement (i.e. that most fields agree).
+    par <- c(1.2, 3.4)
+    expected <- caller(par)
+    actual <- nimCaller$run(par)
+    expect_equal(actual$par, expected$par)
+    expect_equal(actual$convergence, expected$convergence)
+    expect_equal(actual$value, expected$value)
+    expect_equal(length(actual$counts), length(expected$counts))
+    expect_equal(actual$counts[1], expected$counts[[1]])  # Note the indexing disagreement.
+})
+
+test_that("when a nimbleFunction optim()izes a nimbleFunction, the R and DSL behavior mostly agree", {
+    # Define R versions.
+    callee <- function(par) { return(sum(par ^ 2)) }
+    caller <- function(par) { return(optim(par, callee)) }
+    # Define DSL versions.
+    nimCalleeGen <- nimbleFunction(
+        setup = TRUE,
+        run = function(par = double(1)) {
+            return(sum(par ^ 2))
+            returnType(double(0))
+        }
+    )
+    temporarilyAssignInGlobalEnv(nimCalleeGen)  # Work around scoping issues.
+    nimCaller <- nimbleFunction(
+        setup = function() {
+            nimCallee <- nimCalleeGen()
+        },
+        run = function(par = double(1)) {
+            return(optim(par, nimCallee$run))
+            returnType(optimResultNimbleList())
+        }
+    )()
     # Test approximate agreement (i.e. that most fields agree).
     par <- c(1.2, 3.4)
     expected <- caller(par)
@@ -111,9 +140,7 @@ test_that("when a nimbleFunction optim()izes an RCfunction, the DSL and C++ beha
             returnType(optimResultNimbleList())
         }
     )()
-    # Work around scoping issues.
-    assign('nimCallee', nimCallee, envir = .GlobalEnv)
-    on.exit(remove('nimCallee', envir = .GlobalEnv), add = TRUE)
+    temporarilyAssignInGlobalEnv(nimCallee)  # Work around scoping issues.
     # Test agreement.
     par <- c(1.2, 3.4)
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
@@ -131,9 +158,7 @@ test_that("when a nimbleFunction optim()izes a nimbleFunction, the DSL and C++ b
             returnType(double(0))
         }
     )
-    # Work around scoping issues.
-    assign('nimCalleeGen', nimCalleeGen, envir = .GlobalEnv)
-    on.exit(remove('nimCalleeGen', envir = .GlobalEnv), add = TRUE)
+    temporarilyAssignInGlobalEnv(nimCalleeGen)  # Work around scoping issues.
     nimCaller <- nimbleFunction(
         setup = function() {
             nimCallee <- nimCalleeGen()
