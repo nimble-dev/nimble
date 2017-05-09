@@ -32,7 +32,7 @@ nimSmartPtr<OptimResultNimbleList> nimOptim_internal(NimArr<1, double>& par,
 
     nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
     result->par = par;
-    result->counts.setSize(2);
+    result->counts.initialize(NA_INTEGER, true, 2);
     // result->hessian is not set.
 
     // Use Nelder-Mead by default.

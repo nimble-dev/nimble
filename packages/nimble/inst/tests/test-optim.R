@@ -27,8 +27,7 @@ test_that("nimOptim() behaves mostly like optim()", {
     expect_equal(actual$par, expected$par)
     expect_equal(actual$convergence, expected$convergence)
     expect_equal(actual$value, expected$value)
-    expect_equal(length(actual$counts), length(expected$counts))
-    expect_equal(actual$counts[1], expected$counts[[1]])  # Note the indexing disagreement.
+    expect_equal(actual$counts, unname(expected$counts))
 })
 
 test_that("nimbleFunction() replaces optim() with nimOptim()", {
@@ -146,7 +145,6 @@ test_that("when a nimbleFunction optim()izes an RCfunction, the DSL and C++ beha
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
     expected <- nimCaller$run(par)
     actual <- compiledCaller$run(par)
-    actual$counts[2] <- NA  # TODO remove this kludge by correctly treating NA in C++ -> R conversion.
     expect_equal(actual, expected)
 })
 
@@ -173,6 +171,5 @@ test_that("when a nimbleFunction optim()izes a nimbleFunction, the DSL and C++ b
     par <- c(1.2, 3.4)
     expected <- nimCaller$run(par)
     actual <- compiledCaller$run(par)
-    actual$counts[2] <- NA  # TODO remove this kludge by correctly treating NA in C++ -> R conversion.
     expect_equal(actual, expected)
 })
