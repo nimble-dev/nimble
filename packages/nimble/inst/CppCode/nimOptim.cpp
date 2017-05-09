@@ -1,5 +1,6 @@
 #include <R_ext/Applic.h>
 #include <nimble/nimOptim.h>
+#include <string.h>
 #include <cmath>
 #include <limits>
 
@@ -15,8 +16,9 @@ static double optimfn_wrapper(int n, double* par, void* fn) {
 }
 
 nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double>& par,
-                                            NimObjectiveFn fn) {
-    return nimOptim_internal(par, optimfn_wrapper, (void*)(fn));
+                                            NimObjectiveFn fn, void* gr,
+                                            const char* method) {
+    return nimOptim_internal(par, optimfn_wrapper, (void*)(fn), method);
 }
 
 // This attempts to match the behavior of optim() defined in the documentation
@@ -26,7 +28,8 @@ nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double>& par,
 //   https://svn.r-project.org/R/trunk/src/library/stats/src/optim.c
 //   https://svn.r-project.org/R/trunk/src/include/R_ext/Applic.h
 nimSmartPtr<OptimResultNimbleList> nimOptim_internal(NimArr<1, double>& par,
-                                                     optimfn fn, void* ex) {
+                                                     optimfn fn, void* ex,
+                                                     const char* method) {
     const int n = par.dimSize(0);
     NimArr<1, double> par_nomap = par;
 
@@ -35,21 +38,24 @@ nimSmartPtr<OptimResultNimbleList> nimOptim_internal(NimArr<1, double>& par,
     result->counts.initialize(NA_INTEGER, true, 2);
     // result->hessian is not set.
 
-    // Use Nelder-Mead by default.
-    double* Bvec = par_nomap.getPtr();
-    double* X = result->par.getPtr();
-    double* Fmin = &(result->value);
-    int* fail = &(result->convergence);
-    double abstol = -INFINITY;
-    double reltol = std::sqrt(std::numeric_limits<double>::epsilon());
-    double alpha = 1.0;
-    double bet = 0.5;
-    double gamm = 2.0;
-    int trace = 0;
-    int* fncount = result->counts.getPtr();
-    int maxit = 100;
-    nmmin(n, Bvec, X, Fmin, fn, fail, abstol, reltol, ex, alpha, bet, gamm,
-          trace, fncount, maxit);
+    if (strcmp(method, "Nelder-Mead") == 0) {
+        double* Bvec = par_nomap.getPtr();
+        double* X = result->par.getPtr();
+        double* Fmin = &(result->value);
+        int* fail = &(result->convergence);
+        double abstol = -INFINITY;
+        double reltol = std::sqrt(std::numeric_limits<double>::epsilon());
+        double alpha = 1.0;
+        double bet = 0.5;
+        double gamm = 2.0;
+        int trace = 0;
+        int* fncount = result->counts.getPtr();
+        int maxit = 100;
+        nmmin(n, Bvec, X, Fmin, fn, fail, abstol, reltol, ex, alpha, bet, gamm,
+              trace, fncount, maxit);
+    } else {
+        NIMERROR("Unknown method: %s", method);
+    }
 
     return result;
 }

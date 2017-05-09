@@ -141,8 +141,8 @@ test_that("when a nimbleFunction optim()izes an RCfunction, the DSL and C++ beha
     )()
     temporarilyAssignInGlobalEnv(nimCallee)  # Work around scoping issues.
     # Test agreement.
-    par <- c(1.2, 3.4)
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    par <- c(1.2, 3.4)
     expected <- nimCaller$run(par)
     actual <- compiledCaller$run(par)
     expect_equal(actual, expected)

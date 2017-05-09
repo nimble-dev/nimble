@@ -1101,12 +1101,16 @@ nimRound <- round
 #' @param fn  A function to be minimized (or maximized), with first argument the
 #'            vector of parameters over which minimization is to take place. It
 #'            should return a scalar result.
+#' @param gr  IGNORED
+#' @param ... IGNORED
+#' @param method The method to be used. See `Details` section of \code\link{{optim}}. One of:
+#'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"
 #'
 #' @return \code{\link{optimResultNimbleList}}
 #' @seealso \code{\link{optim}}
 #' @export
-nimOptim <- function(par, fn) {
-    result <- optim(par, fn)
+nimOptim <- function(par, fn, gr = NULL, ..., method = "Nelder-Mead") {
+    result <- optim(par, fn, gr = gr, ..., method = method)
     nimResult <- do.call(optimResultNimbleList$new, result)
     # Tweak values to exactly match C++ behavior.
     nimResult$counts <- unname(nimResult$counts)

@@ -6,17 +6,24 @@
 #include <nimble/smartPtrs.h>
 #include <algorithm>
 
+// These match the interface to R's optim().
+typedef double optimfn(int, double *, void *);
+typedef void optimgr(int, double *, double *, void *);
+
+nimSmartPtr<OptimResultNimbleList> nimOptim_internal(NimArr<1, double> &par,
+                                                     optimfn fn, void *ex,
+                                                     const char *method);
+
 // ---------------------------------------------------------------------------
 // Interface for RCfunction functions.
 
-nimSmartPtr<OptimResultNimbleList> nimOptim_internal(
-    NimArr<1, double> &par, double (*fn)(int, double *, void *), void *ex);
-
 typedef double NimObjectiveFn(NimArr<1, double> &par);
+typedef NimArr<1, double> NimObjectiveGr(NimArr<1, double> &par);
 
 // This behaves like R's native optim() function on RCfunction functions.
 nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
-                                            NimObjectiveFn fn);
+                                            NimObjectiveFn fn, void *gr,
+                                            const char *method);
 
 // ---------------------------------------------------------------------------
 // Interface for nimbleFunction classes.
@@ -56,8 +63,9 @@ double optimfn_method_wrapper(int n, double *par, void *fn) {
 // This behaves like R's native optim() function on nimbleFunction classes.
 template <class T>
 nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
-                                            NimBoundMethod<T> fn) {
-    return nimOptim_internal(par, &optimfn_method_wrapper<T>, &fn);
+                                            NimBoundMethod<T> fn, void *gr,
+                                            const char *method) {
+    return nimOptim_internal(par, &optimfn_method_wrapper<T>, &fn, method);
 }
 
 #endif  // __NIMBLE_NIMOPTIM_H

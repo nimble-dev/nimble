@@ -1363,9 +1363,9 @@ matchAndFill.call <- function(def, call){
     missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
     for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
         name <- names(theseFormals)[ind]
-        matchedCall[[name]] <- theseFormals[[name]]    
+        matchedCall[[name]] <- (if(is.null(theseFormals[[name]])) list(NULL) else theseFormals[[name]])
     }
-    
+
     newCall <- matchedCall[1]
 
     if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL
