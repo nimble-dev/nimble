@@ -128,9 +128,9 @@ buildDerivMethods <- function(methodsList, enableDerivs) {
         derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
         derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
         argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer_')
-        newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1), nimArgIndices = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]]))))
+        newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]]))))
         newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
-        newFormalsList[[length(newFormalsList) - 2]] <- NULL
+        newFormalsList[[length(newFormalsList) - 1]] <- NULL
         formals(derivMethodsList[[i]]) <- newFormalsList
         newCall <- as.call(c(list(as.name(argTransferName)), lapply(names(formals(methodsList[[derivMethodIndex]])), as.name)))
         body(derivMethodsList[[i]]) <- substitute({return(getDerivs(NEWCALL, DERIVSINDEX)); returnType(ADNimbleList())}, 

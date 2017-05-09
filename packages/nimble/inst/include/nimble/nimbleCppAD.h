@@ -44,12 +44,16 @@ class nimbleFunctionCppADbase {
 		}
 		
 		vector<double> value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
+		
 		if(ordersFound[0] == true){
 			ADlist->value = vectorDouble_2_NimArr(value_ans);
 			if(maxOrder == 0){
 				return(ADlist);
 			}
 		}
+		
+		std::size_t q = length(value_ans);
+
 		if(ordersFound[1] == true){
 			ADlist->gradient.initialize(0, false, n, q);
 		}
@@ -57,7 +61,6 @@ class nimbleFunctionCppADbase {
 			ADlist->hessian.initialize(0, false, n, n, q);
 		}
 		
-		std::size_t q = length(value_ans);
 		vector<double> cppad_derivOut;
 		vector<double> hessian_ans (n*n*q, -1);
 		vector<double> gradient_ans (n*q, -1);
