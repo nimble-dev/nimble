@@ -97,7 +97,7 @@ test_that("nimbleFunction with optim() mostly agrees with R behavior", {
     expect_equal(actual$counts[1], expected$counts[[1]])  # Note the indexing disagreement.
 })
 
-test_that("nimbleFunction with optim() agrees with C++ behavior", {
+test_that("when a nimbleFunction optim()izes an RCfunction, the DSL and C++ behavior agree", {
     nimCallee <- nimbleFunction(
         run = function(par = double(1)) {
             return(sum(par ^ 2))
@@ -117,6 +117,35 @@ test_that("nimbleFunction with optim() agrees with C++ behavior", {
     # Test agreement.
     par <- c(1.2, 3.4)
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    expected <- nimCaller$run(par)
+    actual <- compiledCaller$run(par)
+    actual$counts[2] <- NA  # TODO remove this kludge by correctly treating NA in C++ -> R conversion.
+    expect_equal(actual, expected)
+})
+
+test_that("when a nimbleFunction optim()izes a nimbleFunction, the DSL and C++ behavior agree", {
+    nimCalleeGen <- nimbleFunction(
+        setup = TRUE,
+        run = function(par = double(1)) {
+            return(sum(par ^ 2))
+            returnType(double(0))
+        }
+    )
+    # Work around scoping issues.
+    assign('nimCalleeGen', nimCalleeGen, envir = .GlobalEnv)
+    on.exit(remove('nimCalleeGen', envir = .GlobalEnv), add = TRUE)
+    nimCaller <- nimbleFunction(
+        setup = function() {
+            nimCallee <- nimCalleeGen()
+        },
+        run = function(par = double(1)) {
+            return(optim(par, nimCallee$run))
+            returnType(optimResultNimbleList())
+        }
+    )()
+    # Test agreement.
+    compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    par <- c(1.2, 3.4)
     expected <- nimCaller$run(par)
     actual <- compiledCaller$run(par)
     actual$counts[2] <- NA  # TODO remove this kludge by correctly treating NA in C++ -> R conversion.

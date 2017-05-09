@@ -1010,12 +1010,17 @@ sizeOptim <- function(code, symTab, typeEnv) {
     if(!(code$caller$name %in% assignmentOperators)) {
         asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
     }
-
-    # Handle fn arguments that are RCfunctions.
     fnCode <- code$args$fn
-    if(!exists(fnCode$name)) stop(paste0('fn argument is undefined in optim(par, fn = ', fnCode$name, ')'))
-    if(!is.rcf(get(fnCode$name))) stop(paste0('fn argument is not an RCfunction optim(par, fn = ', fnCode$name, ')'))
-    fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
+
+    if (fnCode$name == 'nfMethod') {
+        # Handle fn arguments that are nfMethods.
+        # stop('TODO')
+    } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
+        # Handle fn arguments that are RCfunctions.
+        fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
+    } else {
+        stop(paste0('unsupported fn argument in optim(par, fn = ', fnCode$name, '); try an RCfunction or nfMethod instead'))
+    }
     if(length(asserts) == 0) NULL else asserts
 }
 
