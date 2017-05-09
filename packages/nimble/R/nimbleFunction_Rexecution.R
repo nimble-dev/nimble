@@ -1097,7 +1097,12 @@ nimRound <- round
 
 #' Nimble wrapper around R's builtin \code{\link{optim}}.
 #'
-#' @return \code{optimResultNimbleList}
+#' @param par Initial values for the parameters to be optimized over.
+#' @param fn  A function to be minimized (or maximized), with first argument the
+#'            vector of parameters over which minimization is to take place. It
+#'            should return a scalar result.
+#'
+#' @return \code{\link{optimResultNimbleList}}
 #' @seealso \code{\link{optim}}
 #' @export
 nimOptim <- function(par, fn) {
