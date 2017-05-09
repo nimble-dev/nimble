@@ -1013,8 +1013,7 @@ sizeOptim <- function(code, symTab, typeEnv) {
     fnCode <- code$args$fn
 
     if (fnCode$name == 'nfMethod') {
-        # Handle fn arguments that are nfMethods.
-        # stop('TODO')
+        # This is handled in cppOutputNFmethod.
     } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
         # Handle fn arguments that are RCfunctions.
         fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
