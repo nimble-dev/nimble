@@ -28,7 +28,7 @@ void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
 //   https://svn.r-project.org/R/trunk/src/library/stats/src/optim.c
 //   https://svn.r-project.org/R/trunk/src/include/R_ext/Applic.h
 nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
-    NimArr<1, double>& par, const char* method) {
+    NimArr<1, double>& par, const std::string& method) {
     NIM_ASSERT(!par.isMap(), "Internal error: failed to handle mapped NimArr");
 
     nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
@@ -46,7 +46,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     int* grcount = &(result->counts[0]);
     int maxit = 100;
 
-    if (strcmp(method, "Nelder-Mead") == 0) {
+    if (method == "Nelder-Mead") {
         double* Bvec = par.getPtr();
         double* X = result->par.getPtr();
         double* Fmin = &(result->value);
@@ -55,7 +55,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         double gamm = 2.0;
         nmmin(n, Bvec, X, Fmin, NimOptimProblem::fn, fail, abstol, reltol, ex,
               alpha, bet, gamm, trace, fncount, maxit);
-    } else if (strcmp(method, "BFGS") == 0) {
+    } else if (method == "BFGS") {
         double* b = par.getPtr();
         double* Fmin = &(result->value);
         std::vector<int> mask(n, 1);
@@ -64,7 +64,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
               trace, mask.data(), abstol, reltol, nREPORT, ex, fncount, grcount,
               fail);
     } else {
-        NIMERROR("Unknown method: %s", method);
+        NIMERROR("Unknown method: %s", method.c_str());
     }
 
     return result;

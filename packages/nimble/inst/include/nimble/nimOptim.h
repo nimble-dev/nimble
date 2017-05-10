@@ -4,6 +4,7 @@
 #include <nimble/NimArr.h>
 #include <nimble/optimTypes.h>
 #include <nimble/smartPtrs.h>
+#include <string>
 
 // ---------------------------------------------------------------------------
 // This class and wrapper are equivalent to std::bind(-,-) in C++11, so that:
@@ -36,7 +37,7 @@ inline NimBoundMethod<T> NimBind(double (T::*method)(NimArr<1, double> &),
 class NimOptimProblem {
    public:
     nimSmartPtr<OptimResultNimbleList> solve(NimArr<1, double> &par,
-                                             const char *method);
+                                             const std::string &method);
 
     // These are callbacks for R's optim() where this is passed in as the final
     // argument `void * ex`.
@@ -85,14 +86,14 @@ class NimOptimProblem_Fun_Grad : public NimOptimProblem {
 template <class Fn, class Gr>
 inline nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
                                                    Fn fn, Gr gr,
-                                                   const char *method) {
+                                                   const std::string &method) {
     return NimOptimProblem_Fun_Grad<Fn, Gr>(fn, gr).solve(par, method);
 }
 
 template <class Fn>
 inline nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
                                                    Fn fn, SEXPREC *gr,
-                                                   const char *method) {
+                                                   const std::string &method) {
     NIM_ASSERT(
         gr == R_NilValue,
         "Internal error: failed to handle gradient argument type in optim()");

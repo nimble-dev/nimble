@@ -95,7 +95,9 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the R 
     # Define R versions.
     fn <- function(par) { return(sum(par ^ 2)) }
     gr <- function(par) { return(2 * par) }
-    caller <- function(par) { return(optim(par, fn, gr)) }
+    caller <- function(par, method) {
+        return(optim(par, fn, gr, method = method))
+    }
     # Define DSL versions.
     nimFn <- nimbleFunction(
         run = function(par = double(1)) {
@@ -112,7 +114,7 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the R 
     nimCaller <- nimbleFunction(
         setup = TRUE,
         run = function(par = double(1), method = character(0)) {
-            return(optim(par, nimFn, nimGr))
+            return(optim(par, nimFn, nimGr, method = method))
             returnType(optimResultNimbleList())
         }
     )()
@@ -120,9 +122,9 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the R 
     temporarilyAssignInGlobalEnv(nimGr)  # Work around scoping issues.
     # Test approximate agreement (i.e. that most fields agree).
     par <- c(1.2, 3.4)
-    for (method in c("Nelder-Mead", "BGFS")) {
-        expected <- caller(par)
-        actual <- nimCaller$run(par)
+    for (method in c("Nelder-Mead", "BFGS")) {
+        expected <- caller(par, method)
+        actual <- nimCaller$run(par, method)
         expect_equal(actual$par, expected$par)
         expect_equal(actual$convergence, expected$convergence)
         expect_equal(actual$value, expected$value)
@@ -189,7 +191,9 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
     # Define R versions.
     fn <- function(par) { return(sum(par ^ 2)) }
     gr <- function(par) { return(2 * par) }
-    caller <- function(par) { return(optim(par, fn, gr)) }
+    caller <- function(par, method) {
+        return(optim(par, fn, gr, method = method))
+    }
     # Define DSL versions.
     nimFn <- nimbleFunction(
         run = function(par = double(1)) {
@@ -208,16 +212,16 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
     nimCaller <- nimbleFunction(
         setup = TRUE,
         run = function(par = double(1), method = character(0)) {
-            return(optim(par, nimFn, nimGr))
+            return(optim(par, nimFn, nimGr, method = method))
             returnType(optimResultNimbleList())
         }
     )()
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
     # Test approximate agreement (i.e. that most fields agree).
     par <- c(1.2, 3.4)
-    for (method in c("Nelder-Mead", "BGFS")) {
-        expected <- caller(par)
-        actual <- nimCaller$run(par)
+    for (method in c("Nelder-Mead", "BFGS")) {
+        expected <- caller(par, method)
+        actual <- nimCaller$run(par, method)
         expect_equal(actual$par, expected$par)
         expect_equal(actual$convergence, expected$convergence)
         expect_equal(actual$value, expected$value)
