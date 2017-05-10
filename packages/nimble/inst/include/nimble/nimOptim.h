@@ -44,7 +44,7 @@ class NimOptimProblem {
     static void gr(int, double *, double *, void *);
 
    protected:
-    // These are callbacks used internally.
+    // These are callbacks used internally by fn() and gr().
     virtual double function() = 0;
     virtual void gradient() { NIMERROR("Gradient is not defined"); }
 

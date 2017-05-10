@@ -1010,8 +1010,8 @@ sizeOptim <- function(code, symTab, typeEnv) {
     if(!(code$caller$name %in% assignmentOperators)) {
         asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
     }
-    fnCode <- code$args$fn
 
+    fnCode <- code$args$fn
     if (fnCode$name == 'nfMethod') {
         # This is handled in cppOutputNFmethod.
     } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
@@ -1020,6 +1020,19 @@ sizeOptim <- function(code, symTab, typeEnv) {
     } else {
         stop(paste0('unsupported fn argument in optim(par, fn = ', fnCode$name, '); try an RCfunction or nfMethod instead'))
     }
+
+    grCode <- code$args$gr
+    if (is.null(grCode)) {
+        # We simply emit an R_NilValue.
+    } else if (grCode$name == 'nfMethod') {
+        # This is handled in cppOutputNFmethod.
+    } else if(exists(grCode$name) && is.rcf(get(grCode$name))) {
+        # Handle gr arguments that are RCfunctions.
+        grCode$name <- environment(get(grCode$name))$nfMethodRCobject$uniqueName
+    } else {
+        stop(paste0('unsupported gr argument in optim(par, gr = ', grCode$name, '); try an RCfunction or nfMethod instead'))
+    }
+
     if(length(asserts) == 0) NULL else asserts
 }
 

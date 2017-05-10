@@ -88,8 +88,46 @@ test_that("when a nimbleFunction optim()izes an RCfunction, the R and DSL behavi
     expect_equal(actual$par, expected$par)
     expect_equal(actual$convergence, expected$convergence)
     expect_equal(actual$value, expected$value)
-    expect_equal(length(actual$counts), length(expected$counts))
-    expect_equal(actual$counts[1], expected$counts[[1]])  # Note the indexing disagreement.
+    expect_equal(actual$counts, unname(expected$counts))
+})
+
+test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the R and DSL behavior mostly agree", {
+    # Define R versions.
+    fn <- function(par) { return(sum(par ^ 2)) }
+    gr <- function(par) { return(2 * par) }
+    caller <- function(par) { return(optim(par, fn, gr)) }
+    # Define DSL versions.
+    nimFn <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(sum(par ^ 2))
+            returnType(double(0))
+        }
+    )
+    nimGr <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(2 * par)
+            returnType(double(1))
+        }
+    )
+    nimCaller <- nimbleFunction(
+        setup = TRUE,
+        run = function(par = double(1), method = character(0)) {
+            return(optim(par, nimFn, nimGr))
+            returnType(optimResultNimbleList())
+        }
+    )()
+    temporarilyAssignInGlobalEnv(nimFn)  # Work around scoping issues.
+    temporarilyAssignInGlobalEnv(nimGr)  # Work around scoping issues.
+    # Test approximate agreement (i.e. that most fields agree).
+    par <- c(1.2, 3.4)
+    for (method in c("Nelder-Mead", "BGFS")) {
+        expected <- caller(par)
+        actual <- nimCaller$run(par)
+        expect_equal(actual$par, expected$par)
+        expect_equal(actual$convergence, expected$convergence)
+        expect_equal(actual$value, expected$value)
+        expect_equal(actual$counts, unname(expected$counts))
+    }
 })
 
 test_that("when a nimbleFunction optim()izes a nimbleFunction, the R and DSL behavior mostly agree", {
@@ -121,8 +159,7 @@ test_that("when a nimbleFunction optim()izes a nimbleFunction, the R and DSL beh
     expect_equal(actual$par, expected$par)
     expect_equal(actual$convergence, expected$convergence)
     expect_equal(actual$value, expected$value)
-    expect_equal(length(actual$counts), length(expected$counts))
-    expect_equal(actual$counts[1], expected$counts[[1]])  # Note the indexing disagreement.
+    expect_equal(actual$counts, unname(expected$counts))
 })
 
 test_that("when a nimbleFunction optim()izes an RCfunction, the DSL and C++ behavior agree", {
@@ -146,6 +183,46 @@ test_that("when a nimbleFunction optim()izes an RCfunction, the DSL and C++ beha
     expected <- nimCaller$run(par)
     actual <- compiledCaller$run(par)
     expect_equal(actual, expected)
+})
+
+test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DSL and C++ behavior mostly agree", {
+    # Define R versions.
+    fn <- function(par) { return(sum(par ^ 2)) }
+    gr <- function(par) { return(2 * par) }
+    caller <- function(par) { return(optim(par, fn, gr)) }
+    # Define DSL versions.
+    nimFn <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(sum(par ^ 2))
+            returnType(double(0))
+        }
+    )
+    nimGr <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(2 * par)
+            returnType(double(1))
+        }
+    )
+    temporarilyAssignInGlobalEnv(nimFn)  # Work around scoping issues.
+    temporarilyAssignInGlobalEnv(nimGr)  # Work around scoping issues.
+    nimCaller <- nimbleFunction(
+        setup = TRUE,
+        run = function(par = double(1), method = character(0)) {
+            return(optim(par, nimFn, nimGr))
+            returnType(optimResultNimbleList())
+        }
+    )()
+    compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    # Test approximate agreement (i.e. that most fields agree).
+    par <- c(1.2, 3.4)
+    for (method in c("Nelder-Mead", "BGFS")) {
+        expected <- caller(par)
+        actual <- nimCaller$run(par)
+        expect_equal(actual$par, expected$par)
+        expect_equal(actual$convergence, expected$convergence)
+        expect_equal(actual$value, expected$value)
+        expect_equal(actual$counts, unname(expected$counts))
+    }
 })
 
 test_that("when a nimbleFunction optim()izes a nimbleFunction, the DSL and C++ behavior agree", {

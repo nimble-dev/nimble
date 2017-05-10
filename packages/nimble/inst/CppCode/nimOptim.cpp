@@ -29,30 +29,40 @@ void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
 //   https://svn.r-project.org/R/trunk/src/include/R_ext/Applic.h
 nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     NimArr<1, double>& par, const char* method) {
-    const int n = par.dimSize(0);
-    NimArr<1, double> par_nomap = par;
+    NIM_ASSERT(!par.isMap(), "Internal error: failed to handle mapped NimArr");
 
     nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
     result->par = par;
     result->counts.initialize(NA_INTEGER, true, 2);
     // result->hessian is not set.
 
+    const int n = par.dimSize(0);
+    int* fail = &(result->convergence);
+    double abstol = -INFINITY;
+    double reltol = std::sqrt(std::numeric_limits<double>::epsilon());
+    void* ex = this;
+    int trace = 0;
+    int* fncount = &(result->counts[0]);
+    int* grcount = &(result->counts[0]);
+    int maxit = 100;
+
     if (strcmp(method, "Nelder-Mead") == 0) {
-        double* Bvec = par_nomap.getPtr();
+        double* Bvec = par.getPtr();
         double* X = result->par.getPtr();
         double* Fmin = &(result->value);
-        int* fail = &(result->convergence);
-        double abstol = -INFINITY;
-        double reltol = std::sqrt(std::numeric_limits<double>::epsilon());
-        void* ex = this;
         double alpha = 1.0;
         double bet = 0.5;
         double gamm = 2.0;
-        int trace = 0;
-        int* fncount = result->counts.getPtr();
-        int maxit = 100;
         nmmin(n, Bvec, X, Fmin, NimOptimProblem::fn, fail, abstol, reltol, ex,
               alpha, bet, gamm, trace, fncount, maxit);
+    } else if (strcmp(method, "BFGS") == 0) {
+        double* b = par.getPtr();
+        double* Fmin = &(result->value);
+        std::vector<int> mask(n, 1);
+        int nREPORT = 10;
+        vmmin(n, b, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, maxit,
+              trace, mask.data(), abstol, reltol, nREPORT, ex, fncount, grcount,
+              fail);
     } else {
         NIMERROR("Unknown method: %s", method);
     }
