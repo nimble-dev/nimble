@@ -36,7 +36,9 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     result->counts.initialize(NA_INTEGER, true, 2);
     // result->hessian is not set.
 
+    // Parameters common to all methods.
     const int n = par.dimSize(0);
+    double *Fmin = &(result->value);
     int* fail = &(result->convergence);
     double abstol = -INFINITY;
     double reltol = std::sqrt(std::numeric_limits<double>::epsilon());
@@ -49,7 +51,6 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     if (method == "Nelder-Mead") {
         double* Bvec = par.getPtr();
         double* X = result->par.getPtr();
-        double* Fmin = &(result->value);
         double alpha = 1.0;
         double bet = 0.5;
         double gamm = 2.0;
@@ -57,12 +58,17 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
               alpha, bet, gamm, trace, fncount, maxit);
     } else if (method == "BFGS") {
         double* b = par.getPtr();
-        double* Fmin = &(result->value);
         std::vector<int> mask(n, 1);
         int nREPORT = 10;
         vmmin(n, b, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, maxit,
               trace, mask.data(), abstol, reltol, nREPORT, ex, fncount, grcount,
               fail);
+    } else if (method == "CG") {
+        double* Bvec = par.getPtr();
+        double* X = result->par.getPtr();
+        int type = 1;
+        cgmin(n, Bvec, X, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
+              abstol, reltol, ex, type, trace, fncount, grcount, maxit);
     } else {
         NIMERROR("Unknown method: %s", method.c_str());
     }

@@ -90,6 +90,7 @@ inline nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
     return NimOptimProblem_Fun_Grad<Fn, Gr>(fn, gr).solve(par, method);
 }
 
+// This handles the special case where gr is not specified (i.e. is NULL).
 template <class Fn>
 inline nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
                                                    Fn fn, SEXPREC *gr,
