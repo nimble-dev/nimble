@@ -1032,7 +1032,6 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 #####	SETUPCODE TEMPLATES
 
 #		Current Available Templates:
-##		optimReadyFun_setupCodeTemplate
 #		modelVariableAccessorVector_setupCodeTemplate
 #		modelValuesAccessorVector_setupCodeTemplate
 #		accessorVectorLength_setupCodeTemplate
@@ -1053,18 +1052,6 @@ length_char_SetupTemplate <- setupCodeTemplateClass(
              CODE = argList$code)
     })
 
-# TODO
-## optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
-## 	makeName = function(argList){Rname2CppName(deparse(argList$name))},
-## 	codeTemplate = quote(OPTIM_FUN <- OptimReadyFunction(name = OPTIM_FUN_INQUOTES, nimbleFunction = NFNAME, localNimbleFunctionName = LOCALORGNAME)),
-## 	makeCodeSubList = function(resultName, argList){
-## 		list(OPTIM_FUN = as.name(argList$name),
-## 			OPTIM_FUN_INQUOTES = argList$name, 
-## 			NFNAME = as.name(argList$nimbleFunctionName),
-## 			LOCALORGNAME = argList$nimbleFunctionName)
-## 	})
-
-                                          
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
     makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), sep = '_'))},
