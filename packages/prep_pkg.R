@@ -69,7 +69,7 @@ for(file in files) {
   print(file)
   test <- try(a <- roxygen2:::roc_proc_text(roclet, paste(readLines(file.path(Rpath, file)), sep="\n")))
   if(!is(test, 'try-error'))
-    roxygen2:::roc_output(roclet, a, "nimble", options = list(wrap=FALSE, roclets = "rd"), check = FALSE)
+    roxygen2:::roclet_output(roclet, a, "nimble", options = list(wrap=FALSE, roclets = "rd"), check = FALSE)
 }
 
 
@@ -138,7 +138,7 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-math
 # now create real NAMESPACE file
 ## NAMESPACE
 system(paste("mv", file.path('nimble','NAMESPACE'), file.path('/tmp', 'NAMESPACE')))
-roxygenise('nimble','namespace')
+devtools::document('nimble', roclets = c('namespace'))
 
 namespace <- readLines(file.path('nimble','NAMESPACE'))
 
@@ -157,3 +157,4 @@ exportText <- c(exportTextAdd, exportText)
 
 #cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
 cat(paste(imports, importFroms, dynLibLine, S3methods, collapse = '\n', sep = '\n'), '\n', paste0(exportText, collapse = '\n'), sep = '', file = file.path("nimble", "NAMESPACE"))
+
