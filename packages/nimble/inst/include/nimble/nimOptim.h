@@ -4,30 +4,8 @@
 #include <nimble/NimArr.h>
 #include <nimble/optimTypes.h>
 #include <nimble/smartPtrs.h>
-#include <algorithm>
-
-// These match the interface to R's optim().
-typedef double optimfn(int, double *, void *);
-typedef void optimgr(int, double *, double *, void *);
-
-nimSmartPtr<OptimResultNimbleList> nimOptim_internal(NimArr<1, double> &par,
-                                                     optimfn fn, void *ex,
-                                                     const char *method);
 
 // ---------------------------------------------------------------------------
-// Interface for RCfunction functions.
-
-typedef double NimObjectiveFn(NimArr<1, double> &par);
-typedef NimArr<1, double> NimObjectiveGr(NimArr<1, double> &par);
-
-// This behaves like R's native optim() function on RCfunction functions.
-nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
-                                            NimObjectiveFn fn, void *gr,
-                                            const char *method);
-
-// ---------------------------------------------------------------------------
-// Interface for nimbleFunction classes.
-
 // This class and wrapper are equivalent to std::bind(-,-) in C++11, so that:
 //   object->method(par) == NimBoundMethod<T>(&T::method, object)(par);
 //                       == NimBind(&T::method, object)(par);
@@ -52,20 +30,73 @@ inline NimBoundMethod<T> NimBind(double (T::*method)(NimArr<1, double> &),
     return NimBoundMethod<T>(method, object);
 }
 
-template <class T>
-double optimfn_method_wrapper(int n, double *par, void *fn) {
-    NimArr<1, double> nim_par;
-    nim_par.setSize(n, false, false);
-    std::copy(par, par + n, nim_par.getPtr());
-    return static_cast<NimBoundMethod<T> *>(fn)->operator()(nim_par);
+// ---------------------------------------------------------------------------
+// NimOptimProblem class hierarchy
+
+class NimOptimProblem {
+   public:
+    nimSmartPtr<OptimResultNimbleList> solve(NimArr<1, double> &par,
+                                             const char *method);
+
+    // These are callbacks for R's optim() where this is passed in as the final
+    // argument `void * ex`.
+    static double fn(int, double *, void *);
+    static void gr(int, double *, double *, void *);
+
+   protected:
+    // These are callbacks used internally.
+    virtual double function() = 0;
+    virtual void gradient() { NIMERROR("Gradient is not defined"); }
+
+    // These are used as temporaries for C <-> NimArr conversion.
+    NimArr<1, double> par_;
+    NimArr<1, double> ans_;
+};
+
+template <class Fn>
+class NimOptimProblem_Fun : public NimOptimProblem {
+   public:
+    NimOptimProblem_Fun(Fn fn) : fn_(fn) {}
+
+   protected:
+    virtual double function() { return fn_(par_); }
+
+   private:
+    Fn fn_;
+};
+
+template <class Fn, class Gr>
+class NimOptimProblem_Fun_Grad : public NimOptimProblem {
+   public:
+    NimOptimProblem_Fun_Grad(Fn fn, Gr gr) : fn_(fn), gr_(gr) {}
+
+   protected:
+    virtual double function() { return fn_(par_); }
+    virtual void gradient() { ans_ = gr_(par_); }
+
+   private:
+    Fn fn_;
+    Gr gr_;
+};
+
+// ---------------------------------------------------------------------------
+// These nimOptim functions will appear in generated code
+
+template <class Fn, class Gr>
+inline nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
+                                                   Fn fn, Gr gr,
+                                                   const char *method) {
+    return NimOptimProblem_Fun_Grad<Fn, Gr>(fn, gr).solve(par, method);
 }
 
-// This behaves like R's native optim() function on nimbleFunction classes.
-template <class T>
-nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
-                                            NimBoundMethod<T> fn, void *gr,
-                                            const char *method) {
-    return nimOptim_internal(par, &optimfn_method_wrapper<T>, &fn, method);
+template <class Fn>
+inline nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
+                                                   Fn fn, SEXPREC *gr,
+                                                   const char *method) {
+    NIM_ASSERT(
+        gr == R_NilValue,
+        "Internal error: failed to handle gradient argument type in optim()");
+    return NimOptimProblem_Fun<Fn>(fn).solve(par, method);
 }
 
 #endif  // __NIMBLE_NIMOPTIM_H

@@ -1,24 +1,24 @@
 #include <R_ext/Applic.h>
 #include <nimble/nimOptim.h>
 #include <string.h>
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
-// This wraps a NimObjectiveFn as an R `optimfn` type
-//   typedef double optimfn(int, double *, void *);
-// defined in
-//   https://svn.r-project.org/R/trunk/src/include/R_ext/Applic.h
-static double optimfn_wrapper(int n, double* par, void* fn) {
-    NimArr<1, double> nim_par;
-    nim_par.setSize(n, false, false);
-    std::copy(par, par + n, nim_par.getPtr());
-    return ((NimObjectiveFn*)fn)(nim_par);
+double NimOptimProblem::fn(int n, double* par, void* ex) {
+    NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
+    problem->par_.setSize(n, false, false);
+    std::copy(par, par + n, problem->par_.getPtr());
+    return problem->function();
 }
 
-nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double>& par,
-                                            NimObjectiveFn fn, void* gr,
-                                            const char* method) {
-    return nimOptim_internal(par, optimfn_wrapper, (void*)(fn), method);
+void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
+    NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
+    problem->par_.setSize(n, false, false);
+    std::copy(par, par + n, problem->par_.getPtr());
+    problem->ans_.setSize(n, false, false);
+    problem->gradient();
+    std::copy(problem->ans_.getPtr(), problem->ans_.getPtr() + n, ans);
 }
 
 // This attempts to match the behavior of optim() defined in the documentation
@@ -27,9 +27,8 @@ nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double>& par,
 //   https://svn.r-project.org/R/trunk/src/library/stats/R/optim.R
 //   https://svn.r-project.org/R/trunk/src/library/stats/src/optim.c
 //   https://svn.r-project.org/R/trunk/src/include/R_ext/Applic.h
-nimSmartPtr<OptimResultNimbleList> nimOptim_internal(NimArr<1, double>& par,
-                                                     optimfn fn, void* ex,
-                                                     const char* method) {
+nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
+    NimArr<1, double>& par, const char* method) {
     const int n = par.dimSize(0);
     NimArr<1, double> par_nomap = par;
 
@@ -45,14 +44,15 @@ nimSmartPtr<OptimResultNimbleList> nimOptim_internal(NimArr<1, double>& par,
         int* fail = &(result->convergence);
         double abstol = -INFINITY;
         double reltol = std::sqrt(std::numeric_limits<double>::epsilon());
+        void* ex = this;
         double alpha = 1.0;
         double bet = 0.5;
         double gamm = 2.0;
         int trace = 0;
         int* fncount = result->counts.getPtr();
         int maxit = 100;
-        nmmin(n, Bvec, X, Fmin, fn, fail, abstol, reltol, ex, alpha, bet, gamm,
-              trace, fncount, maxit);
+        nmmin(n, Bvec, X, Fmin, NimOptimProblem::fn, fail, abstol, reltol, ex,
+              alpha, bet, gamm, trace, fncount, maxit);
     } else {
         NIMERROR("Unknown method: %s", method);
     }
