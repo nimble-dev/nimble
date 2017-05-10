@@ -436,20 +436,6 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     }
     return(newSym)
   }
-  if(inherits(instances[[1]][[name]], 'OptimReadyFunction')){
-    
-    thisObj <- instances[[1]][[name]]
-    nfName <- thisObj$getOriginalName()
-    funList <- lapply(instances, `[[`, nfName)
-    nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
-    newSym <- symbolOptimReadyFunction(name = name, type = 'OptimReadyFunction', nfName = nfName, nfProc = nfp, genName = thisObj$getGeneratorName())
-    
-    baseClassName <- class(nf_getRefClassObject(funList[[1]]))
-    optReadyClassName <- paste0('OPTIMREADY_', baseClassName)
-    
-    if(!(optReadyClassName %in% names(neededTypes))) neededTypes[[optReadyClassName]] <<- newSym
-    return(NULL)
-  }
   if(is.nf(instances[[1]][[name]])) { ## nimbleFunction
     funList <- lapply(instances, `[[`, name)
     nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
