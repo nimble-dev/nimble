@@ -85,6 +85,13 @@ distributionsInputList <- list(
                    altParams= 'scale = 1/rate',
                    range    = c(0, Inf),
                    pqAvail = TRUE),
+
+    dflat   = list(BUGSdist = 'dflat()',
+                   pqAvail = FALSE),
+    
+    dhalfflat   = list(BUGSdist = 'dhalfflat()',
+                   range = c(0, Inf),
+                   pqAvail = FALSE),
     
     dgamma  = list(BUGSdist = 'dgamma(shape, rate, scale, mean, sd)',
                    Rdist    = c('dgamma(shape, scale = 1/rate)',
@@ -105,7 +112,13 @@ distributionsInputList <- list(
                                 'sd = 1 / (rate * (max(shape,1)-1) * sqrt(max(shape,2)-2))'), # max ensures Inf moment when appropriate
                    range    = c(0, Inf),
                    pqAvail = TRUE),
-    
+
+    # intended solely for use in dhalfflat conjugacy                           
+    dsqrtinvgamma  = list(BUGSdist = 'dsqrtinvgamma(shape, scale, rate)',
+                   Rdist    = c('dsqrtinvgamma(shape, rate = 1/scale)'),
+                   range    = c(0, Inf),
+                   pqAvail = FALSE),
+                               
     ## gen.gamma = list(BUGSdist = 'gen.gamma(r, mu, beta)'),   ## not sure the state of this?  -DT
     
     dlnorm  = list(BUGSdist = 'dlnorm(meanlog, taulog, sdlog, varlog)',

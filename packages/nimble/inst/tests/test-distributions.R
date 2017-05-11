@@ -393,3 +393,96 @@ try(test_that("dinvwish-dmnorm conjugacy",
                                info = "conjugacy not detected")))
 
 
+## dflat
+
+code <- nimbleCode({
+  for(i in 1:n) 
+    y[i] ~ dnorm(mu, sd = sigma)
+  mu ~ dflat()
+  sigma ~ dhalfflat()
+})
+
+n <- 100
+inits <- list(mu = 0, sigma = 1)
+m <- nimbleModel(code, constants = list(n = n), data = list(y = rnorm(n)), inits = inits)
+cm <- compileNimble(m)
+
+try(test_that("Test dflat calculate in R: ", {
+  expect_identical(m$calculate('mu'), 0, "incorrect R calculate for dflat")
+  expect_identical(m$calculate('mu'), cm$calculate('mu'), "incorrect compiled calculate for dflat")
+  expect_identical(m$calculate('sigma'), 0, "incorrect R calculate for dhalfflat")
+  expect_identical(m$calculate('sigma'), cm$calculate('sigma'), "incorrect compiled calculate for dhalfflat")
+  m$simulate('mu'); m$simulate('sigma');  cm$simulate('mu'); cm$simulate('sigma')
+  expect_identical(m$mu, NaN, "incorrect R simulate for dflat")
+  expect_identical(m$mu, cm$mu, "incorrect compiled simulate for dflat")
+  expect_identical(m$sigma, NaN, "incorrect R simulate for dhalfflat")
+  expect_identical(m$sigma, cm$sigma, "incorrect compiled simulate for dhalfflat")
+}))
+
+m$setInits(inits)
+cm$setInits(inits)
+
+conf <- configureMCMC(m, nodes = 'mu')
+mcmc <- buildMCMC(conf)
+cmcmc <- compileNimble(mcmc, project = m)
+set.seed(1)
+mcmc$run(10)
+set.seed(1)
+cmcmc$run(10000)
+rsmp <- c(as.matrix(mcmc$mvSamples)[,'mu'])
+csmp <- c(as.matrix(cmcmc$mvSamples)[,'mu'])
+
+try(test_that("Test dflat conjugacy detected: ",
+              expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dflat_dnorm', info = "did not detect conjugacy")))
+try(test_that("Test R and compiled MCMC equivalence for dflat: ",
+              expect_identical(rsmp, csmp[1:10], "R and compiled samples don't match")))
+try(test_that("Test compiled MCMC for dflat: ", {
+              expect_equal(mean(csmp), mean(m$y), tol = 0.001, info = "posterior mean for mu not correct")
+              expect_equal(sd(csmp), 1/sqrt(n), tol = 0.002, info = "posterior sd for mu not correct")
+            }))
+
+m$setInits(inits)
+cm$setInits(inits)
+conf <- configureMCMC(m, nodes = 'sigma')
+mcmc <- buildMCMC(conf)
+cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+set.seed(1)
+mcmc$run(10)
+set.seed(1)
+cmcmc$run(10000)
+rsmp <- c(as.matrix(mcmc$mvSamples)[,'sigma'])
+csmp <- c(as.matrix(cmcmc$mvSamples)[,'sigma'])
+
+try(test_that("Test dhalfflat conjugacy detected: ",
+              expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dhalfflat_dnorm', info = "did not detect conjugacy")))
+try(test_that("Test R and compiled MCMC equivalence for dhalfflat: ",
+              expect_identical(rsmp, csmp[1:10], info = "R and compiled samples don't match")))
+try(test_that("Test compiled MCMC for dhalfflat: ", 
+              expect_equal(mean(csmp^2), var(m$y), tol = 0.03, info = "posterior mean for sigma not correct")))
+
+            
+m$setInits(inits)
+cm$setInits(inits)
+conf <- configureMCMC(m)
+mcmc <- buildMCMC(conf)
+cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
+set.seed(1)
+mcmc$run(10)
+set.seed(1)
+cmcmc$run(10000)
+rsmp <- as.matrix(mcmc$mvSamples)
+csmp <- as.matrix(cmcmc$mvSamples)
+
+try(test_that("Test R and compiled MCMC equivalence for dhalfflat: ",
+              expect_identical(rsmp, csmp[1:10, ], info = "R and compiled samples don't match")))
+try(test_that("Test compiled MCMC for dflat and dhalfflat: ", {
+              expect_equal(mean(csmp[ , 'mu']), mean(m$y), tol = 0.001, info = "posterior mean for mu not correct")
+              expect_equal(sd(csmp[ , 'mu']), sd(m$y)/sqrt(n), tol = 0.003, info = "posterior sd for mu not correct")
+
+              expect_equal(mean(csmp[ , 'sigma']^2), var(m$y), tol = 0.05, info = "posterior mean for sigma not correct")
+            }))
+
+   
+
+
+                 

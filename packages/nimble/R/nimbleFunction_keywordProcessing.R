@@ -660,13 +660,14 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             singleAccess_ArgList <- list(code = code, model = code[[2]], nodeExpr = code[[3]])
             nodeArg <- code[[3]]
             if(is.character(nodeArg)){
+                if(length(nodeArg) > 1) stop(paste0("Problem in ", deparse(code), ". ", deparse(code[[3]])," is too long.  It can only have one element."), call. = FALSE)
                 varAndIndices <- getVarAndIndices(nodeArg)
                 nDim <- sum(1 - unlist(lapply(varAndIndices$indices, is.numeric) ) )
                 useMap <- nDim > 0
             }
             else{
                 allNDims <- determineNdimsFromNfproc(singleAccess_ArgList$model, nodeArg, nfProc)
-                if(length(unique(allNDims)) > 1) stop(paste0('Error for ', deparse(code), '. Inconsistent numbers of dimensions for different instances.'))
+                if(length(unique(allNDims)) > 1) stop(paste0('Error for ', deparse(code), '. Inconsistent numbers of dimensions for different instances.'), call. = FALSE)
                 nDim <- allNDims[[1]]
                 useMap <- nDim > 0
             }
@@ -1493,9 +1494,10 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
     allNDims <- lapply(nfProc$instances, function(x) {
         model <- eval(modelExpr, envir = x)
         if(!exists(as.character(varOrNodeExpr), x, inherits = FALSE) ) {
-            stop(paste0('Error, ', as.character(varOrNodeExpr), ' does not exist in an instance of this nimbleFunction.'))
+            stop(paste0('Problem accessing node ', deparse(varOrNodeExpr), '.'), call. = FALSE)
         }
         lab <- eval(varOrNodeExpr, envir = x)
+        if(length(lab) != 1) stop(paste0("Length of ", deparse(varOrNodeExpr), " requested from ", deparse(modelExpr), " using '[[' is ", length(lab),". It must be 1." ) , call. = FALSE)
         varAndIndices <- nimbleInternalFunctions$getVarAndIndices(lab)
         determineNdimFromOneCase(model, varAndIndices)
     } )

@@ -57,6 +57,8 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_rinvgamma, 3),
  FUN(C_pinvgamma, 5),
  FUN(C_qinvgamma, 5),
+ FUN(C_dsqrtinvgamma, 4),
+ FUN(C_rsqrtinvgamma, 3),
  FUN(C_nimEigen, 3),
  FUN(C_nimSvd, 3),
 

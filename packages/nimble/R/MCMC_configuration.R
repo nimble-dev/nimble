@@ -155,6 +155,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                                                                  nodes <- model$expandNodeNames(nodes)            }
             
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
+            if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }    ## ensure all target node(s) are stochastic
 
             ## set up environment in which to evaluate sampler assignment rule conditions
             ruleEvaluationEnv <- new.env()
@@ -303,6 +304,8 @@ Invisibly returns a list of the current sampler configurations, which are sample
             } else stop('sampler type must be character name or function')
             if(!is.character(thisSamplerName)) stop('sampler name should be a character string')
             if(!is.function(samplerFunction)) stop('sampler type does not specify a function')
+
+            if(!(all(model$isStoch(target)))) { warning(paste0('No sampler assigned to non-stochastic node: ', paste0(target,collapse=', '))); return(invisible(samplerConfs)) }   ## ensure all target node(s) are stochastic
 
             libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only
             if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
