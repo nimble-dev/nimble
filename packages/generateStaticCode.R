@@ -10,7 +10,6 @@
 # 3. Run this script.
 
 library(nimble)
-nimbleDir <- file.path(dirname(sys.frame(1)$ofile), 'nimble')
 
 # This finds the latest generated .h and .cpp files.
 findGeneratedSources <- function() {
@@ -87,7 +86,7 @@ main <- function() {
         ''
     )
     writeFile(
-        file.path(nimbleDir, 'inst', 'include', 'nimble', 'optimTypes.h'),
+        file.path('nimble', 'inst', 'include', 'nimble', 'optimTypes.h'),
         c(
             provenance,
             '#ifndef __NIMBLE_OPTIMTYPES_H',
@@ -99,7 +98,7 @@ main <- function() {
         )
     )
     writeFile(
-        file.path(nimbleDir, 'inst', 'CppCode', 'optimTypes.cpp'),
+        file.path('nimble', 'inst', 'CppCode', 'optimTypes.cpp'),
         c(
             provenance,
             '#include <nimble/optimTypes.h>',
