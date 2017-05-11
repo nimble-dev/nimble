@@ -6,7 +6,7 @@
 #
 # Directions:
 # 1. Install clang-format.
-# 2. Temporarily set `predefined = FALSE` in the definition of `optimResultNimbleList`.
+# 2. Temporarily set `predefined = FALSE` in the definitions of `optimResultNimbleList` and `optimControlNimbleList`.
 # 3. Run this script.
 
 library(nimble)
@@ -64,7 +64,13 @@ main <- function() {
         run = function() {
             return(optimResultNimbleList$new())
             returnType(optimResultNimbleList())
-        }
+        },
+        methods = list(
+            control = function() {
+                return(optimControlNimbleList$new())
+                returnType(optimControlNimbleList())
+            }
+        )
     )()
 
     # Compilation will fail because we have duplicate definitions, but that's ok.    

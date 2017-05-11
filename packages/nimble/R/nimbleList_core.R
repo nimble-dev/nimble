@@ -355,9 +355,9 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 
 #' optimResultNimbleList definition
 #'
-#' \code{nimbleList} definition for the type of \code{nimbleList} returned by \code{\link{nimOptim}}.
+#' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} returned by \code{\link{nimOptim}}.
 #'
-#' @field parpar The best set of parameters found.
+#' @field par The best set of parameters found.
 #' @field value	The value of fn corresponding to par.
 #' @field counts A two-element integer vector giving the number of calls to fn and gr respectively.
 #' @field convergence An integer code. 0 indicates successful completion. Possible error codes are
@@ -369,7 +369,7 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #' @field hessian Only if argument hessian is true. A symmetric matrix giving an estimate of the Hessian at the solution found.
 #'
 #' @export
-#' @seealso  \code{\link{nimOptim}}
+#' @seealso \code{\link{optim}}, \code{\link{nimOptim}}
 optimResultNimbleList <- nimbleList(
     list(
         nimbleType('par', 'double', 1),
@@ -383,6 +383,35 @@ optimResultNimbleList <- nimbleList(
     predefined = TRUE
 )
 
+#' optimControlNimbleList definition
+#'
+#' \code{\link{nimbleList} definition for the type of \code{\link{nimbleList}} input as the \code{\link{control}} parameter
+#' to \code{\link{nimOptim}}. See \code{\link{optim}} for details.
+#' 
+#' @export
+#' @seealso \code{\link{optim}}, \code{\link{nimOptim}}
+optimControlNimbleList <- nimbleList(
+    list(
+        nimbleType('trace', 'integer', 0),
+        nimbleType('parscale', 'double', 1),
+        nimbleType('ndeps', 'double', 1),
+        nimbleType('maxit', 'integer', 0),
+        nimbleType('abstol', 'double', 0),
+        nimbleType('reltol', 'double', 0),
+        nimbleType('alpha', 'double', 0),
+        nimbleType('beta', 'double', 0),
+        nimbleType('gamma', 'double', 0),
+        nimbleType('REPORT', 'integer', 0),
+        nimbleType('type', 'integer', 0),
+        nimbleType('lmm', 'integer', 0),
+        nimbleType('factr', 'double', 0),
+        nimbleType('pgtol', 'double', 0),
+        nimbleType('temp', 'double', 0),
+        nimbleType('tmax', 'integer', 0)
+    ),
+    name = "OptimControlNimbleList",
+    predefined = TRUE
+)
 
 ## any DSL functions that return nimbleLists should be added to the list below, in the form:
 ## functionName = list(nlGen = nimbleList definition, cppName = name of cpp function corresponding to dsl function)
