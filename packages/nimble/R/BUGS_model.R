@@ -150,6 +150,26 @@ Details: The return value is a character vector with an element for each node in
                                       return(subExpr)
                                   },
 
+                                  isMultivariate = function(nodes) {
+                                      '
+Determines whether one or more nodes represent multivariate nodes
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a logical vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
+'
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE)
+                                      multi <- sapply(nodeNames, function(node) getDistributionInfo(getDistribution(node))$types$value$nDim > 0)
+                                      ##multi <- rep(FALSE, length(nodeNames))
+                                      ##for(i in seq_along(nodeNames)) {
+                                      ##    nodeExpanded <- expandNodeNames(nodeNames[i], returnScalarComponents = TRUE)
+                                      ##    if(length(nodeExpanded) > 1) multi[i] <- TRUE
+                                      ##}
+                                      return(multi)
+                                  },
+
                                   isDiscrete = function(nodes) {
                                                                           '
 Determines whether one or more nodes represent discrete random variables
@@ -941,10 +961,11 @@ Details: The newly created model object will be identical to the original model 
 
 setMethod('[[', 'modelBaseClass',
           function(x, i) {
+              if(length(i) != 1) stop(paste0("Only one node can be accessed from a model using '[['."), call. = FALSE)
               if(!is.indexed(i)) {
                   eval(substitute(x$VAR, list(VAR=i)))
               } else {
-                  parsedNode <- parse(text=i)[[1]]
+                  parsedNode <- parse(text=i, keep.source = FALSE)[[1]]
                   parsedNode[[2]] <- substitute(x$VAR, list(VAR=parsedNode[[2]]))
                   eval(parsedNode)
               }
@@ -953,6 +974,7 @@ setMethod('[[', 'modelBaseClass',
 
 setMethod('[[<-', 'modelBaseClass',
           function(x, i, value) {
+              if(length(i) != 1) stop(paste0("Only one node can be accessed from a model using '[['."), call. = FALSE)
               if(!is.indexed(i)) {
                   eval(substitute(x$VAR <- value, list(VAR=i)))
               } else {

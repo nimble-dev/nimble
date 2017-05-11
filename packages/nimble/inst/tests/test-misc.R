@@ -14,3 +14,17 @@ try(m <- nimbleModel(code, data = list(y = 0), check = TRUE))
 errmsg <- geterrmessage()    
 
 test_that("Test of full model check", expect_equal(oldmsg, errmsg, info = "found error in running full model check"))
+
+test_that("No nimKeyword appears in specificCallReplacements", {
+    duplicates <- intersect(names(nimble:::nimKeyWords), names(nimble:::specificCallReplacements))
+    if (length(duplicates) > 0) {
+        fail(paste('These symbols appear in both nimKeywords and specificCallReplacements:', paste(duplicates, collapse = ', ')))
+    }
+})
+
+test_that("No nimKeyword appears in specificCallHandlers", {
+    duplicates <- intersect(names(nimble:::nimKeyWords), names(nimble:::specificCallHandlers))
+    if (length(duplicates) > 0) {
+        fail(paste('These symbols appear in both nimKeywords and specificCallHandlers:', paste(duplicates, collapse = ', ')))
+    }
+})

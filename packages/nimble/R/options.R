@@ -40,6 +40,10 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         ##useDynamicConjugacy = TRUE,
 
         MCMCprogressBar = TRUE,
+
+        ## samplerAssignmentRules object that controls the default sampler assignments by configureMCMC.
+        ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
+        MCMCdefaultSamplerAssignmentRules = NULL,
         
         ## default settings for MCMC samplers
         MCMCcontrolDefaultList = list(
