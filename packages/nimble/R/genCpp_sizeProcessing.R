@@ -2686,6 +2686,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         a1nDim <- 0
         a1sizeExprs <- list()
         a1type <- storage.mode(a1)
+        a1toEigenize <- 'maybe'
     }
     if(inherits(a2, 'exprClass')) {
         if(a2$toEigenize == 'no') {
@@ -2697,11 +2698,13 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         a2nDim <- a2$nDim
         a2sizeExprs <- a2$sizeExprs
         a2type <- a2$type
+        a2toEigenize <- a2$toEigenize
     } else {
         a2DropNdim <- 0
         a2nDim <- 0
         a2sizeExprs <- list()
         a2type <- storage.mode(a2)
+        a2toEigenize <- 'maybe'
     }
     
     ## Choose the output type by type promotion
@@ -2709,7 +2712,14 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
     if(length(a2type) == 0) {warning('Problem with type of arg2 in sizeBinaryCwise', call. = FALSE); browser()}
     code$type <- setReturnType(code$name, arithmeticOutputType(a1type, a2type))
 
-    code$toEigenize <- if(a1DropNdim == 0 & a2DropNdim == 0) 'maybe' else 'yes'
+    forceYesEigenize <- identical(a1toEigenize, 'yes') | identical(a2toEigenize, 'yes')
+    code$toEigenize <- if(a1DropNdim == 0 & a2DropNdim == 0)
+                           if(forceYesEigenize)
+                               'yes'
+                           else
+                               'maybe'
+                       else 'yes'
+    ##    code$toEigenize <- if(a1DropNdim == 0 & a2DropNdim == 0) 'maybe' else 'yes'
     
     ## Catch the case that there is at least one scalar-equivalent (all lengths == 1)
     if(a1DropNdim == 0 | a2DropNdim == 0) { 
@@ -2719,7 +2729,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
             if(a2DropNdim == 0) { ##both are scalar-equiv
                 code$nDim <- max(a1nDim, a2nDim) ## use the larger nDims
                 code$sizeExprs <- rep(list(1), code$nDim) ## set sizeExprs to all 1
-                code$toEigenize <- 'maybe'
+                code$toEigenize <- if(forceYesEigenize) 'yes' else 'maybe'
             } else {
                 ## a2 is not scalar equiv, so take nDim and sizeExprs from it
                 code$nDim <- a2nDim
