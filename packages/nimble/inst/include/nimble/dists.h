@@ -42,6 +42,8 @@ extern "C" {
   SEXP C_rinvgamma(SEXP, SEXP, SEXP);
   SEXP C_pinvgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_qinvgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_dsqrtinvgamma(SEXP, SEXP, SEXP, SEXP);
+  SEXP C_rsqrtinvgamma(SEXP, SEXP, SEXP);
 
 }
 
@@ -93,4 +95,11 @@ double dinvgamma(double, double, double, int);
 double pinvgamma(double, double, double, int, int);
 double qinvgamma(double, double, double, int, int);
 
+double rsqrtinvgamma(double, double);
+double dsqrtinvgamma(double, double, double, int);
+
+double rflat();
+double dflat(double, int);
+double rhalfflat();
+double dhalfflat(double, int);
 #endif
