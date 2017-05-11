@@ -2,7 +2,7 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of the optim() function in NIMBLE code")
 
-supportedMethods <- c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")
+supportedMethods <- c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN")
 
 # Test helper to verify code.
 normalizeWhitespace <- function(lines) {
