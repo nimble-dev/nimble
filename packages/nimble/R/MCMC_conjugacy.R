@@ -21,6 +21,59 @@ conjugacyRelationshipsInputList <- list(
              ## dcat      = list(param = 'prob', contribution_alpha = {tmp = rep(0,length(prob)); tmp[value]=1; tmp}')),
          posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'),
 
+    ## flat
+    list(prior = 'dflat',
+         link = 'linear',
+         dependents = list(
+             dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',      contribution_tau = 'coeff^2 * tau'),
+             dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
+         posterior = 'dnorm(mean = contribution_mean / contribution_tau,
+                            sd   = contribution_tau^(-0.5))'),
+                                        
+    ## halfflat - first possible conjugacy; user can achieve this with gamma(1, 0) as we handle that
+    ## list(prior = 'dhalfflat',
+    ##      link = 'multiplicative',
+    ##      dependents = list(
+    ##          dpois  = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
+    ##        dnorm  = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
+    ##          dlnorm = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
+    ##          dgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
+    ##          dinvgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_rate = 'coeff / value'                 ),
+    ##          dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
+    ##          dweib   = list(param = 'lambda',   contribution_shape = '1',     contribution_rate = 'coeff   * value^shape' )),
+    ##          ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
+    ##          ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
+    ##      posterior = 'dgamma(shape = 1 + contribution_shape,
+    ##                          scale = 1 / contribution_rate)'),
+
+    ## halfflat - second possible conjugacy; note that user will be able to do invgamma(-1,0) and
+    ## get conjugacy once we fix issue #314
+    ## list(prior = 'dinvgamma',
+    ##      link = 'multiplicative',
+    ##      dependents = list(
+    ##          dnorm  = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'),
+    ##          dlnorm = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
+    ##          dgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_scale = 'value / coeff'                 ),
+    ##          dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'     ),
+    ##          dexp   = list(param = 'scale',   contribution_shape = '1',     contribution_scale = 'value / coeff'            )),
+    ##          ## add ddexp
+    ##      posterior = 'dinvgamma(shape = -1 + contribution_shape,
+    ##                          rate = 1 / contribution_scale)'),
+
+    ## halfflat - third possible conjugacy - we use this because it corresponds to the
+    ## Gelman (2006) recommended uniform on sd scale prior for variance components
+    ## and current NIMBLE conjugacy system only allows one possible form of conjugacy
+    ## note that sd ~ U(0,Inf) equivalent to var ~ IG(-1/2, 0)
+    ## also note that if conj system could detect 'squared' dependency, then
+    ## we could allow dnorm with param = 'var'                                     
+    list(prior = 'dhalfflat',
+         link = 'multiplicative',
+         dependents = list(
+             dnorm  = list(param = 'sd',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff^2 * 2)'),
+             dlnorm = list(param = 'sdlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff^2 * 2)')),
+         posterior = 'dsqrtinvgamma(shape = -1/2 + contribution_shape,
+                             rate = 1 / contribution_scale)'),
+         
     ## gamma
     list(prior = 'dgamma',
          link = 'multiplicative',
