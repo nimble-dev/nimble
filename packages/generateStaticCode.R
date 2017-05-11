@@ -103,7 +103,6 @@ main <- function() {
         c(
             provenance,
             '#include <nimble/optimTypes.h>',
-            '',
             lines_cpp
         )
     )
