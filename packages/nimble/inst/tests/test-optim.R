@@ -2,6 +2,8 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of the optim() function in NIMBLE code")
 
+supportedMethods <- c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")
+
 # Test helper to verify code.
 normalizeWhitespace <- function(lines) {
     line <- paste(lines, collapse = ' ')
@@ -122,7 +124,7 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the R 
     temporarilyAssignInGlobalEnv(nimGr)  # Work around scoping issues.
     # Test approximate agreement (i.e. that most fields agree).
     par <- c(1.2, 3.4)
-    for (method in c("Nelder-Mead", "BFGS", "CG")) {
+    for (method in supportedMethods) {
         expected <- caller(par, method)
         actual <- nimCaller$run(par, method)
         expect_equal(actual$par, expected$par)
@@ -219,7 +221,7 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
     # Test approximate agreement (i.e. that most fields agree).
     par <- c(1.2, 3.4)
-    for (method in c("Nelder-Mead", "BFGS", "CG")) {
+    for (method in supportedMethods) {
         expected <- caller(par, method)
         actual <- nimCaller$run(par, method)
         expect_equal(actual$par, expected$par)

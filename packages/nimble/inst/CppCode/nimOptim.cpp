@@ -36,32 +36,38 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     result->counts.initialize(NA_INTEGER, true, 2);
     // result->hessian is not set.
 
+    // Default control parameters.
+    const int trace = 0;
+    const int maxit = 100;
+    const double abstol = -INFINITY;
+    const double reltol = std::sqrt(std::numeric_limits<double>::epsilon());
+    const double alpha = 1.0;
+    const double beta = 0.5;
+    const double gamma = 2.0;
+    const int REPORT = 10;
+    const int type = 1;
+    const int lmm = 5;
+    const double factr = 1e7;
+    const double pgtol = 0;
+
     // Parameters common to all methods.
     const int n = par.dimSize(0);
-    double *Fmin = &(result->value);
+    double* Fmin = &(result->value);
     int* fail = &(result->convergence);
-    double abstol = -INFINITY;
-    double reltol = std::sqrt(std::numeric_limits<double>::epsilon());
     void* ex = this;
-    int trace = 0;
     int* fncount = &(result->counts[0]);
     int* grcount = &(result->counts[0]);
-    int maxit = 100;
 
     if (method == "Nelder-Mead") {
         double* Bvec = par.getPtr();
         double* X = result->par.getPtr();
-        double alpha = 1.0;
-        double bet = 0.5;
-        double gamm = 2.0;
         nmmin(n, Bvec, X, Fmin, NimOptimProblem::fn, fail, abstol, reltol, ex,
-              alpha, bet, gamm, trace, fncount, maxit);
+              alpha, beta, gamma, trace, fncount, maxit);
     } else if (method == "BFGS") {
         double* b = par.getPtr();
         std::vector<int> mask(n, 1);
-        int nREPORT = 10;
         vmmin(n, b, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, maxit,
-              trace, mask.data(), abstol, reltol, nREPORT, ex, fncount, grcount,
+              trace, mask.data(), abstol, reltol, REPORT, ex, fncount, grcount,
               fail);
     } else if (method == "CG") {
         double* Bvec = par.getPtr();
@@ -69,6 +75,16 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         int type = 1;
         cgmin(n, Bvec, X, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
               abstol, reltol, ex, type, trace, fncount, grcount, maxit);
+    } else if (method == "L-BFGS-B") {
+        double* x = result->par.getPtr();
+        std::vector<double> lower(n, -INFINITY);
+        std::vector<double> upper(n, INFINITY);
+        std::vector<int> nbd(n, 0);  // 0 means no active constraints.
+        char msg[60];
+        lbfgsb(n, lmm, x, lower.data(), upper.data(), nbd.data(), Fmin,
+               NimOptimProblem::fn, NimOptimProblem::gr, fail, ex, factr, pgtol,
+               fncount, grcount, maxit, msg, trace, REPORT);
+        result->message = msg;
     } else {
         NIMERROR("Unknown method: %s", method.c_str());
     }
