@@ -152,6 +152,10 @@ asCol <- function(x) {
 #' @details This is used internally by \code{\link{getParam}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
 makeParamInfo <- function(model, nodes, param) {
     ## updating to allow nodes to be a vector. getParam only works for a scalar but in a case like nodes[i] the param info is set up for the entire vector.
+
+    ## this allows for(i in seq_along(nodes)) a <- a + model$getParam(nodes[i], 'mean') through compilation even if some instances have nodes empty and so won't be called.
+    if(length(nodes) == 0) return(structure(c(list(paramID = integer()), type = NA, nDim = NA), class = 'getParam_info'))
+
     distNames <- model$getDistribution(nodes)
 
     ## if(length(nodes) != 1) stop(paste0("Problem with nodes argument while setting up getParam.  Should be length 1 but was: ", paste0(nodes, collapse = ",")))
@@ -167,6 +171,12 @@ makeParamInfo <- function(model, nodes, param) {
     nDimVec <- sapply(distNames, getDimension, param)
     if(length(unique(typeVec)) != 1 || length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.') 
     ans <- c(list(paramID = paramIDvec), type = typeVec[1], nDim = nDimVec[1])
+    class(ans) <- 'getParam_info'
+    ans
+}
+
+defaultParamInfo <- function() {
+    ans <- list(paramID = integer(), type = 'double', nDim = 0)
     class(ans) <- 'getParam_info'
     ans
 }
@@ -210,6 +220,7 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
         declID <- indexingInfo$declIDs[1] ## should only be one
         nodeFunction <- model$nodeFunctions[[ declID ]] 
         paramInfo <- makeParamInfo(model, node, param)
+        if(is.na(paramInfo$type)) stop(paste('getParam called with empty or invalid node:', as.character(node)))
     }
     paramID <- paramInfo$paramID
     nDim <- paramInfo$nDim

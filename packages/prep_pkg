@@ -100,7 +100,7 @@ undocClasses <- paste0(undocClasses, "-Class", sep = '')
 
 # need the following additional exports that need to be doc'ed by CRAN rules
 
-additionalExports <- c("calc_dmnormConjugacyContributions", "calc_dmnormAltParams", "getNodeFunctionIndexedInfo", "singleModelValuesAccess", "getNimbleProject", "nimbleInternalFunctions", "nimbleUserNamespace")
+additionalExports <- c("calc_dmnormConjugacyContributions", "calc_dmnormAltParams", "getNodeFunctionIndexedInfo", "singleModelValuesAccess", "getNimbleProject", "nimbleInternalFunctions", "nimbleUserNamespace", "dsqrtinvgamma", "rsqrtinvgamma")
 # write out nimble-internals.Rd
 
 internals <- c(undocClasses, explicitUndocFuns, additionalExports)

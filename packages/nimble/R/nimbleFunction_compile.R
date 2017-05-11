@@ -537,8 +537,15 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
   if(inherits(instances[[1]][[name]], 'modelValuesAccessorVector')){
     return(symbolModelValuesAccessorVector(name = name) )     	
   }
-  if(inherits(instances[[1]][[name]], 'getParam_info')) {
-    return(symbolGetParamInfo(name = name, paramInfo = instances[[1]][[name]]))
+  if(inherits(instances[[1]][[name]], 'getParam_info')) { ## the paramInfo in an instance is allowed to be NULL (see GitHub Issue #327). Hence we search for the first valid case and default to double()
+      iInst <- 1
+      paramInfo <- instances[[iInst]][[name]]
+      while(is.na(paramInfo$type) & iInst < length(instances)) {
+          iInst <- iInst + 1
+          paramInfo <- instances[[iInst]][[name]]
+      }
+      if(is.na(paramInfo$type)) paramInfo <- defaultParamInfo()
+      return(symbolGetParamInfo(name = name, paramInfo = paramInfo))
   }
   if(inherits(instances[[1]][[name]], 'getBound_info')) {
     return(symbolGetBoundInfo(name = name, boundInfo = instances[[1]][[name]]))

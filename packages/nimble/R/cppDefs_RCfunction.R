@@ -34,6 +34,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                  },
                                  getCPPincludes = function() {
                                      CPPinc <- c(CPPincludes,
+                                                 unlist(lapply(CPPincludes, function(x) if(is.character(x)) NULL else x$getCPPincludes()), recursive = FALSE), 
                                                  if(!inherits(SEXPinterfaceFun, 'uninitializedField')) SEXPinterfaceFun$getCPPincludes())
                                      CPPinc
                                  },

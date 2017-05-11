@@ -371,44 +371,79 @@ sizeRecyclingRuleRfunction <- function(code, symTab, typeEnv) {
 }
 
 
+concatenateIntermLabelMaker <- labelFunctionCreator("ConcatenateInterm")
+
 sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument version
     asserts <- recurseSetSizes(code, symTab, typeEnv)
 
-    ## must recurse to get nDims set
+    ## overall strategy is to separate runs of scaalrs and non-scalars
+    ## also in C++ we don't take arbitrary arguments.  Instead we chain together calls in groups of 4
+    ##     e.g. c(a1, a2, a3, a4, a5) will become c( c(a1, a2, a3, a4), a5)
+    
+    ## first puzzle is with nimC(scalar1, scalar2, vector1, scalar3)
+    ## we need to extract the runs of scalars like (scalar1, scalar2), so they can be packed up in an object together.
     isScalar <- unlist(lapply(code$args, function(x) if(inherits(x, 'exprClass')) x$nDim == 0 else TRUE))
-    ##isExprClass <- unlist(lapply(code$args, function(x) inherits(x, 'exprClass')))
+    ## run length encoding: This native R function returns information about repeats, so we can figure out how long each run of scalars is
     argRLE <- rle(isScalar)
+    ## How many arguments will we have after packing scalars together into single objects:
     newNumArgs <- sum(argRLE$values) + sum(argRLE$lengths[!argRLE$values]) ## number of scalar runs + sum of non-scalar runs * run-lengths
     newArgs <- vector(length(newNumArgs), mode = 'list')
     iInput <- 1
     iOutput <- 1
-    concatenateIntermLabelMaker <- labelFunctionCreator("ConcatenateInterm")
-    asserts <- NULL
+  ##  asserts <- NULL
     for(i in seq_along(argRLE$values)) {
         thisLength <- argRLE$lengths[i]
-        if(!(argRLE$values[i])) {
+        if(!(argRLE$values[i])) { ## it is a run of non-scalars, so pack them into the new argument list, newArgs
             newArgs[(iOutput-1) + (1:thisLength)] <- code$args[(iInput-1) + (1:thisLength)]
             iInput <- iInput + thisLength
             iOutput <- iOutput + thisLength
-        } else {
+        } else { ## it is a run of scalars, so construct an object for them
             newTempFixedName <- concatenateIntermLabelMaker()
             newTempVecName <- concatenateIntermLabelMaker()
+            ## Construct:
+            ## concatenateTemp(ConcatenateInterm_1),
+            ##   concatenateTemp is not output to C++. It is a placeholder
             newExpr <- exprClass(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = "concatenateTemp", nDim = 1, sizeExprs = list(thisLength), type = 'double')
             setArg(newExpr, 1, exprClass(isName = TRUE, isCall = FALSE, isAssign = FALSE, name = newTempVecName, nDim = 1, sizeExprs = list(thisLength), type = 'double'))
+
+            ## hardCodedVectorInitializer is a wrapper for the "contents1, contents2, ..." below 
             valuesExpr <- quote(hardCodedVectorInitializer())
             thisType <- 'logical'
             for(j in 1:thisLength) {
-                valuesExpr[[j+1]] <- parse(text = nimDeparse(code$args[[iInput - 1 + j]]), keep.source = FALSE)[[1]]
-                if(inherits(code$args[[iInput - 1 + j]], 'exprClass'))
-                    thisType <- arithmeticOutputType(thisType, code$args[[iInput - 1 + j]]$type)
-                else
+                thisArgIndex <- iInput - 1 + j
+                if(inherits(code$args[[thisArgIndex]], 'exprClass')) {
+                    if(!code$args[[thisArgIndex]]$isName) ## a little heavy-handed: lift any expression of any kind
+                        ## to avoid dealing with eigen or other handling inside initialization values
+                        ## This is necessary for cases like nimC(model[[node]][2], 1.2)
+                        ## because model[[node]] is a map
+                        asserts <- c(asserts, sizeInsertIntermediate(code, thisArgIndex, symTab, typeEnv))
+                    thisType <- arithmeticOutputType(thisType, code$args[[thisArgIndex]]$type)
+                } else {
                     thisType <- 'double'
+                }
+                ## Putting a map, or a values access, through parse(nimDeparse) won't work
+                ## So we lift any expression element above.
+                ## This could be done more cleanly with more coding work.
+                ## STOPPED HERE: Why use parse(nimDeparse)?  I think mostly so we can use substitute below
+                ## 
+                valuesExpr[[j+1]] <- parse(text = nimDeparse(code$args[[thisArgIndex]]), keep.source = FALSE)[[1]]
+                ## if(inherits(code$args[[thisArgIndex]], 'exprClass'))
+                ##     thisType <- arithmeticOutputType(thisType, code$args[[thisArgIndex]]$type)
+                ## else
+                ##     thisType <- 'double'
             }
             newExpr$type <- thisType
             newExpr$args[[1]]$type <- thisType
             iInput <- iInput + thisLength
             if(thisType == 'integer') thisType <- 'int'
             if(thisType == 'logical') thisType <- 'bool'
+            ## MAKE_FIXED_VECTOR("ConcatenateInterm_2", "ConcatenateInterm_1", numArgs, values, type) goes through a customized output generator
+            ##  to create something like
+            ##    double ConcatenateIterm_1[] = {contents1, contents2}
+            ##    std::vector<double> ConcatenateInterm_2(ConcatenateInterm_1, ConcatenateInterm_1 + length)
+            ##  so there is one intermediate whose only purpose is to achieve initialization by value and a second intermediate copied from the first.
+            ##     The second intermediate can later be used in the templated nimCd/nimCi/nimCb
+            ## 
             newAssert <- substitute(MAKE_FIXED_VECTOR(newTempVecName, newTempFixedName, thisLength, valuesExpr, thisType),
                                     list(newTempVecName = newTempVecName, newTempFixedName = newTempFixedName,
                                          thisLength = as.numeric(thisLength), valuesExpr = valuesExpr, thisType = thisType))
@@ -419,6 +454,7 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
         }
     }
 
+    ## Next step: chain together multiple calls:
     maxArgsOneCall <- 4
     numArgGroups <- ceiling(newNumArgs / (maxArgsOneCall-1))
     splitArgIDs <- split(1:newNumArgs, rep(1:numArgGroups, each = maxArgsOneCall-1, length.out = newNumArgs))
@@ -436,7 +472,8 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
         newExprList[[i]] <- exprClass(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'nimC', nDim = 1, toEigenize = 'yes', type = 'double')
         for(j in seq_along(splitArgIDs[[i]])) setArg(newExprList[[i]], j, newArgs[[splitArgIDs[[i]][j]]])
     }
-    ## Last step is to set up nesting and make sizeExprs
+
+    ## Last step is to set up nesting and make sizeExprs for each constructed argument
     for(i in seq_along(splitArgIDs)) {
         if(i != length(splitArgIDs)) {
             setArg(newExprList[[i]], maxArgsOneCall, newExprList[[i+1]])
@@ -2694,6 +2731,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         a1nDim <- 0
         a1sizeExprs <- list()
         a1type <- storage.mode(a1)
+        a1toEigenize <- 'maybe'
     }
     if(inherits(a2, 'exprClass')) {
         if(a2$toEigenize == 'no') {
@@ -2705,11 +2743,13 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         a2nDim <- a2$nDim
         a2sizeExprs <- a2$sizeExprs
         a2type <- a2$type
+        a2toEigenize <- a2$toEigenize
     } else {
         a2DropNdim <- 0
         a2nDim <- 0
         a2sizeExprs <- list()
         a2type <- storage.mode(a2)
+        a2toEigenize <- 'maybe'
     }
     
     ## Choose the output type by type promotion
@@ -2717,7 +2757,14 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
     if(length(a2type) == 0) {warning('Problem with type of arg2 in sizeBinaryCwise', call. = FALSE); browser()}
     code$type <- setReturnType(code$name, arithmeticOutputType(a1type, a2type))
 
-    code$toEigenize <- if(a1DropNdim == 0 & a2DropNdim == 0) 'maybe' else 'yes'
+    forceYesEigenize <- identical(a1toEigenize, 'yes') | identical(a2toEigenize, 'yes')
+    code$toEigenize <- if(a1DropNdim == 0 & a2DropNdim == 0)
+                           if(forceYesEigenize)
+                               'yes'
+                           else
+                               'maybe'
+                       else 'yes'
+    ##    code$toEigenize <- if(a1DropNdim == 0 & a2DropNdim == 0) 'maybe' else 'yes'
     
     ## Catch the case that there is at least one scalar-equivalent (all lengths == 1)
     if(a1DropNdim == 0 | a2DropNdim == 0) { 
@@ -2727,7 +2774,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
             if(a2DropNdim == 0) { ##both are scalar-equiv
                 code$nDim <- max(a1nDim, a2nDim) ## use the larger nDims
                 code$sizeExprs <- rep(list(1), code$nDim) ## set sizeExprs to all 1
-                code$toEigenize <- 'maybe'
+                code$toEigenize <- if(forceYesEigenize) 'yes' else 'maybe'
             } else {
                 ## a2 is not scalar equiv, so take nDim and sizeExprs from it
                 code$nDim <- a2nDim
