@@ -20,7 +20,8 @@ findGeneratedSources <- function() {
     paths <- rownames(files)
     paths_h <- paths[grep('\\bP_\\w+\\.h$', paths)]
     paths_cpp <- paths[grep('\\bP_\\w+\\.cpp$', paths)]
-    system2('clang-format', list('-i', paths_h[1], paths_cpp[1]))
+    ret <- system2('clang-format', list('-i', paths_h[1], paths_cpp[1]))
+    if(ret != 0) stop('Please install clang-format and try again')
     return(list(.h = paths_h[1], .cpp = paths_cpp[1]))
 }
 
