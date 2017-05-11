@@ -64,8 +64,6 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
                                               names(nameSubList) <<- names(RCfun$argInfo)
 
-                                              ##NEED TO FIGURE OUT ABOUT A VIRTUALNIMBLEFUNCTION.  Could simply throw an error.  Could allow initial compilation to not need a nimbleProject
-                                              
                                               ## This will only handle basic types.  nimbleLists will be added below
                                               compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes, names(RCfun$argInfo)) ## will be used for function args.  must be a better way.
                                               compileInfo$newLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes, names(RCfun$argInfo))
@@ -146,10 +144,8 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
 
 RCfunProcessing <- setRefClass('RCfunProcessing',
                                contains = 'RCvirtualFunProcessing',
-                               fields = list(
-                                   ## moved to base class: neededRCfuns = 'list' ## nfMethodRC objects
-                                   ),
-                               methods = list(
+                               fields = list(),
+                                   methods = list(
                                    process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE, nimbleProject = NULL, initialTypeInferenceOnly = FALSE) {
                                        if(!is.null(nimbleOptions()$debugRCfunProcessing)) {
                                            if(nimbleOptions()$debugRCfunProcessing) {

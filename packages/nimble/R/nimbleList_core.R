@@ -236,8 +236,6 @@ nlProcessing <- setRefClass('nlProcessing',
                                 neededTypes = 'ANY',
                                 nimbleProject = 'ANY',
                                 name = 'ANY',
-                                ##   instances = 'ANY',
-                                ## templateWithBlankFirstArg = 'ANY',
                                 nlGenerator = 'ANY',
                                 nestedListGens = 'ANY',
                                 neededObjectNames =  'ANY'		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
@@ -273,7 +271,6 @@ nlProcessing <- setRefClass('nlProcessing',
                                       name <<- className
                                     }
                                       nestedListGens <<- nl.getNestedGens(nlGenerator)
-                                      ##generateTemplate()
                                   }
                                 },
                                 setupTypesForUsingFunction= function() buildSymbolTable(), ## required name
@@ -314,18 +311,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                     }
                                   }
                                 },
-                                getSymbolTable = function() symTab ##,
-                                ## generateTemplate = function() {
-                                ##     vars <- c('.LEFTSIDE', nl.getListDef(nlGenerator)$types$vars)
-                                ##     functionAsList <- list(as.name('function'))
-                                ##     functionAsList[2] <- list(NULL)
-                                ##     if(length(vars) > 0) {
-                                ##         argsList <- nf_createAList(vars)
-                                ##         functionAsList[[2]] <- as.pairlist(argsList)
-                                ##     }
-                                ##     functionAsList[[3]] <- quote({})
-                                ##     templateWithBlankFirstArg <<- eval(as.call(functionAsList))
-                                ## }
+                                getSymbolTable = function() symTab 
                             ))
 
 

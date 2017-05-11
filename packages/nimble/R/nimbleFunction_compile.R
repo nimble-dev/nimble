@@ -6,7 +6,6 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        compileInfos =  'ANY',		#'list', ## A list of RCfunctionCompileClass objects
                                        origMethods = 'ANY',
                                        RCfunProcs =  'ANY',		#'list', ## A list of RCfunProcessing  or RCvirtualFunProcessing objects
-                                       ## RCfuns = 'list', ## A list of RCfun objects
                                        nimbleProject = 'ANY',
                                        cppDef = 'ANY'
                                        ),
@@ -15,8 +14,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
                                        initialize = function(f = NULL, className, virtual = TRUE, isNode = FALSE, project = NULL) {
-                                           ##   browser()
-                                            nimbleProject <<- project
+                                           nimbleProject <<- project
                                        		compileInfos <<- list()
                                        		RCfunProcs <<- list()
 
@@ -38,7 +36,6 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                RCfunProcs <<- list()
                                                for(i in seq_along(origMethods)) {
                                                    RCname <- names(origMethods)[i]
-                                                   ##if(RCname == 'run') RCname <- 'operator()'
                                                    RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname, const = isNode) else RCfunProcessing$new(origMethods[[i]], RCname, const = isNode)
                                                }
                                                compileInfos <<- lapply(RCfunProcs,
@@ -58,7 +55,6 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        addMemberFunctionsToSymbolTable = function() {
                                            for(i in seq_along(origMethods)) {
                                                thisName <- names(origMethods)[i]
-                                               ##        if(thisName == 'run') thisName <- 'operator()'
                                                newSym <- symbolMemberFunction(name = thisName, nfMethodRCobj = origMethods[[i]], RCfunProc = RCfunProcs[[i]])
                                                setupSymTab$addSymbol(newSym)
                                            }
@@ -94,8 +90,7 @@ nfProcessing <- setRefClass('nfProcessing',
                                   neededObjectNames <<- character()
                                   newSetupCode <<- list()
                                   if(!is.null(f)) {
-                                      ## in new system, f must be a specialized nf, or a list of them
-                                     ## nimbleProject <<- project
+                                      ## f must be a specialized nf, or a list of them
                                       inModel <<- fromModel
                                       if(missing(className)) {
                                           sf <- if(is.list(f)) nfGetDefVar(f[[1]], 'name') else nfGetDefVar(f, 'name')
@@ -114,7 +109,7 @@ nfProcessing <- setRefClass('nfProcessing',
 
                               getSymbolTable = function() setupSymTab,
                               getMethodInterfaces = function() origMethods,
-                              ##NEW PROCESSING TOOLS.   
+                              
                               processKeywords_all = function(){},
                               matchKeywords_all = function(){},
                               
@@ -127,7 +122,7 @@ nfProcessing <- setRefClass('nfProcessing',
                               setupTypesForUsingFunction = function(){},
                               doSetupTypeInference = function(){},
                               clearSetupOutputs = function() {},
-                              ##addMemberFunctionsToSymbolTable = function(){},
+                              
                               setupLocalSymbolTables = function() {
                                   for(i in seq_along(RCfunProcs)) {
                                       RCfunProcs[[i]]$setupSymbolTables(parentST = setupSymTab, neededTypes = neededTypes, nimbleProject = nimbleProject)
@@ -179,12 +174,6 @@ nfProcessing <- setRefClass('nfProcessing',
                                   }
 
                                   if(debug) browser()
-                                  ## next three steps moved to setupTypesforUsingFunction
-                                  ##addBaseClassTypes()
-                                  ##matchKeywords_all() ## this inserts some neededTypes from nimbleLists, so must be done before setupLocalSymbolTables()
-                                  ##processKeywords_all()
-
-                                  if(debug) browser()
                                   makeNewSetupLinesOneExpr()
                                   
                                   evalNewSetupLines()
@@ -200,14 +189,7 @@ nfProcessing <- setRefClass('nfProcessing',
                                       browser()
                                   }
                                   doSetupTypeInference(setupOrig = FALSE, setupNew = TRUE)
-                                  ## moved setupLocalSymbolTables inside setupTypeForUsingFunction
-                                                                                                      
-                                  ## if(debug) {
-                                  ##     writeLines('***** READY FOR setupLocalSymbolTables *****')
-                                  ##     browser()
-                                  ## }
-                                  ## setupLocalSymbolTables()
-
+                                  
                                   if(debug) {
                                       print('lapply(compileInfos, function(x) print(x$newLocalSymTab))')
                                       lapply(compileInfos, function(x) print(x$newLocalSymTab))
@@ -275,15 +257,6 @@ nfProcessing$methods(setupTypesForUsingFunction = function() {
     }
 })
 
-## nfProcessing$methods(addMemberFunctionsToSymbolTable = function() {
-##     for(i in seq_along(origMethods)) {
-##         thisName <- names(origMethods)[i]
-## ##        if(thisName == 'run') thisName <- 'operator()'
-##         newSym <- symbolMemberFunction(name = thisName, nfMethodRCobj = origMethods[[i]], RCfunProc = RCfunProcs[[i]])
-##         setupSymTab$addSymbol(newSym)
-##     }
-## })
-
 nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     if(!setupOrig & !setupNew) {
         warning('Weird, doSetupTypeInference was called with both setupOrig and setupNew FALSE.  Nothing to do.', call. = FALSE)
@@ -296,9 +269,7 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     outputNames <- character()
     if(setupOrig) {
     	setupSymTab <<- symbolTable(parentST = NULL)
-    	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator))##,
-                         ##nf_getArgOutputNames(nfGenerator),
-    	                 ##nf_getReturnTypeOutputNames(nfGenerator))
+    	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator))
     	if(length(outputNames)>0) outputNames <- unique(outputNames)
     }
     if(setupNew) {
@@ -383,18 +354,18 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
   isNLG <- FALSE
   if(is.nlGenerator(instances[[1]][[name]])){
-    nlGen <- instances[[1]][[name]] ##$new()
+    nlGen <- instances[[1]][[name]] 
     isNLG <- TRUE
   } else if(exists(name, envir = globalenv())) {
       foundObject <- get(name, envir = globalenv())
       if(is.nlGenerator(foundObject)) {
-          nlGen <- foundObject ##eval(parse(text = paste0(name, "$new"), keep.source = FALSE))()
+          nlGen <- foundObject 
           isNLG <- TRUE
       }
   }
   if(isNLG){
     nlp <- nimbleProject$compileNimbleList(nlGen, initialTypeInferenceOnly = TRUE)
-    className <- nl.getListDef(nlGen)$className ##nlList$nimbleListDef$className
+    className <- nl.getListDef(nlGen)$className
     newSym <- symbolNimbleList(name = name, nlProc = nlp)
     neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
     returnSym <- symbolNimbleListGenerator(name = name, nlProc = nlp)
@@ -578,9 +549,6 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
   if(inherits(instances[[1]][[name]], 'getBound_info')) {
     return(symbolGetBoundInfo(name = name, boundInfo = instances[[1]][[name]]))
   }
-  ## if(is.character(instances[[1]][[name]])) {
-  ##     return(symbolBase(name = name, type = 'Ronly'))
-  ## }
   if(is.character(instances[[1]][[name]])) {
     if(firstOnly) {
       nDim <- if(is.null(dim(instances[[1]][[name]]))) 1L else length(dim(instances[[1]][[name]]))
