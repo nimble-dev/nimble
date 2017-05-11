@@ -678,10 +678,10 @@ Details: The downward search for dependent nodes propagates through deterministi
 
 
 ## new C++ version
-## depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
 
 ## ## Uncomment these lines to catch discrepancies between the old and new systems.
-depIDs <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+## depIDs <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
 ## if(!identical(as.numeric(depIDsOld), as.numeric(depIDs))) {
 ##     cat('caught a discrepancy for depIDs')
 ##     browser()
