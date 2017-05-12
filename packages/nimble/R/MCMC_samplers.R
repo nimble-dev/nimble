@@ -1330,6 +1330,342 @@ sampler_RW_dirichlet <- nimbleFunction(
 )
 
 
+#######################################################################################
+### CAR_normal sampler for conitionally autoregressive (dcar_normal) distributions  ###
+#######################################################################################
+
+
+#' Convert CAR lists of neighbors and weights to adj, weights, num format
+#' @author Daniel Turek
+#' @export
+CAR_convertNeighborWeightLists <- function(neighborList, weightList) {
+    adj <- unlist(neighborList)
+    weights <- unlist(weightList)
+    num <- sapply(neighborList, length)
+    return(list(adj=adj, weights=weights, num=num))
+}
+
+
+#' Convert CAR weight matrix to adj, weights, num format
+#' @author Daniel Turek
+#' @export
+CAR_convertWeightMatrix <- function(weightMatrix) {
+    neighborList <- apply(weightMatrix, 1, function(row) which(row > 0))
+    weightList <- apply(weightMatrix, 1, function(row) row[which(row > 0)])
+    return(CAR_convertNeighborWeightLists(neighborList, weightList))
+}
+
+
+## internal only
+## specialized conjugacy-checking of the scalar component nodes of dcar_normal() distribution
+CAR_checkConjugacy <- function(model, target) {
+    depNodes <- model$getDependencies(target, stochOnly = TRUE, self = FALSE)
+    for(depNode in depNodes) {
+        if(!model$getDistribution(depNode) == 'dnorm')   return(FALSE)
+        if(model$isTruncated(depNode))   return(FALSE)
+        linearityCheckExpr <- model$getParamExpr(depNode, 'mean')
+        linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, skipExpansions=TRUE)
+        if(!cc_nodeInExpr(target, linearityCheckExpr))   return(FALSE)
+        linearityCheck <- cc_checkLinearity(linearityCheckExpr, target)
+        if(!cc_linkCheck(linearityCheck, 'linear'))   return(FALSE)
+        if(!cc_otherParamsCheck(model, depNode, target, skipExpansions=TRUE))   return(FALSE)
+    }
+    return(TRUE)
+}
+
+
+## internal only
+## does (optional) extensive checking of the validity of the adj, weights, and num parameters to dcar_normal(),
+## also processes these arguments into lists, easily usable in nimbleFunction setup code
+CAR_processParams <- function(model, target, adj, weights, num, check = TRUE) {
+    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+    d <- length(targetAsScalar)
+    if(check) {
+        if(length(num) != d) stop('num argument to dcar_normal() must be same length as dcar_normal() node')
+        if(any(floor(num) != num)) stop('num argument to dcar_normal() can only contain positive integers')
+        if(any(num <= 0)) stop('num argument to dcar_normal() can only contain positive integers')
+        if(any(num > d)) stop('entries in num argument to dcar_normal() cannot exceed length of dcar_normal() node')
+        if(sum(num) != length(adj)) stop('length of adj argument to dcar_normal() must be equal to total number of neighbors specified in num argument')
+        if(length(adj) != length(weights)) stop('length of adj and weight arguments to dcar_normal() must be the same')
+        if(any(weights <= 0)) stop('weights argument to dcar_normal() should only contain positive values')
+    }
+    indEnd <- cumsum(num)
+    indStart <- c(0, indEnd[-d]) + 1
+    neighborIndList <- mapply(function(start, end) adj[start:end], indStart, indEnd)
+    neighborNodeList <- lapply(neighborIndList, function(ind) targetAsScalar[ind])
+    neighborWeightList <- mapply(function(start, end) weights[start:end], indStart, indEnd)
+    names(neighborIndList)    <- targetAsScalar
+    names(neighborNodeList)   <- targetAsScalar
+    names(neighborWeightList) <- targetAsScalar
+    if(check) {
+        for(i in 1:d) {
+            for(j in seq_along(neighborIndList[[i]])) {
+                neighborInd <- neighborIndList[[i]][j]
+                ## check that no nodes are their own neighbors
+                if(i == neighborInd)
+                    stop(paste0('node ', targetAsScalar[i], ' in dcar_normal() distribution is neighbors with itself (which is not allowed)'))
+                ## check that neighbor relationships of each node are symmetric
+                if(!(i %in% neighborIndList[[neighborInd]]))
+                    stop(paste0('neighbor of node ', targetAsScalar[i], ' in dcar_normal() distribution are not symmetric with node ', targetAsScalar[j]))
+                ## check that weights for each neighbor relationship are symmetric
+                if(neighborWeightList[[neighborInd]][which(neighborIndList[[neighborInd]] == i)] != neighborWeightList[[i]][j])
+                    stop(paste0('weight of node ', targetAsScalar[i], ' with node ', targetAsScalar[j], ' in dcar_normal() distribution is not symmetric'))
+            }
+        }
+    }
+    retList <- list(neighborIndList = neighborIndList,
+                    neighborNodeList = neighborNodeList,
+                    neighborWeightList = neighborWeightList)
+    return(retList)
+}
+
+
+## internal only
+## evaluates the conditional density of scalar components of dcar_normal() nodes:
+## p(x_i | x_-i, tau), where x[1:N] ~ dcar_normal()
+CAR_evaluateDensity <- nimbleFunction(
+    setup = function(model, targetScalar, neighborNodes, neighborWeights) {
+        targetDCAR <- model$expandNodeNames(targetScalar)
+        sumWeights <- sum(neighborWeights)
+        if(length(targetDCAR) != 1)                              stop('something went wrong')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+    },
+    run = function() {
+        priorMean <- getMean()
+        priorSigma <- sqrt(1/getPrec())
+        lp <- dnorm(model[[targetScalar]], priorMean, priorSigma, log = TRUE)
+        returnType(double())
+        return(lp)
+    },
+    methods = list(
+        getMean = function() {
+            neighborValues <- values(model, neighborNodes)
+            mean <- sum(neighborValues*neighborWeights) / sumWeights
+            returnType(double())
+            return(mean)
+        },
+        getPrec = function() {
+            prec <- model$getParam(targetDCAR, 'tau') * sumWeights
+            returnType(double())
+            return(prec)
+        }
+    )
+)
+
+
+## internal only
+## posterior predictive sampler for scalar components of dcar_normal() nodes,
+## i.e. those scalar components which have no stochastic dependencies
+CAR_scalar_postPred <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
+        ## node list generation
+        calcNodes <- c(targetScalar, model$getDependencies(targetScalar, self = FALSE))
+        ## nested function and function list definitions
+        dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
+        ## checks
+        targetDCAR <- model$expandNodeNames(targetScalar)
+        if(length(targetDCAR) != 1)                              stop('something went wrong')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+    },
+    run = function() {
+        newValue <- rnorm(1, mean = dcar$getMean(), sd = sqrt(1/dcar$getPrec()))
+        model[[targetScalar]] <<- newValue
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+## internal only
+## dnorm-dnorm conjugate sampler for scalar components of dcar_normal() nodes,
+## i.e. those scalar components which only have dnorm() dependencies
+CAR_scalar_conjugate <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
+        ## node list generation
+        calcNodes <- c(targetScalar, model$getDependencies(targetScalar, self = FALSE))
+        calcNodesDeterm <- model$getDependencies(targetScalar, determOnly = TRUE)
+        depStochNodes_dnorm <- model$getDependencies(targetScalar, self = FALSE, stochOnly = TRUE)
+        nDependents <- length(depStochNodes_dnorm)
+        if(nDependents < 1) stop('something went wrong')
+        ## numeric value generation
+        if(!all(model$getDistribution(depStochNodes_dnorm) == 'dnorm')) stop('something went wrong')
+        linearityCheckExprList <- lapply(depStochNodes_dnorm, function(node) model$getParamExpr(node, 'mean'))
+        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) nimble:::cc_expandDetermNodesInExpr(model, expr, skipExpansions=TRUE))
+        if(!all(sapply(linearityCheckExprList, function(expr) nimble:::cc_nodeInExpr(targetScalar, expr)))) stop('something went wrong')
+        linearityCheckResultList <- lapply(linearityCheckExprList, function(expr) nimble:::cc_checkLinearity(expr, targetScalar))
+        if(any(sapply(linearityCheckResultList, function(expr) is.null(expr)))) stop('something went wrong')
+        offsetList <- lapply(linearityCheckResultList, '[[', 'offset')
+        scaleList <- lapply(linearityCheckResultList, '[[', 'scale')
+        allIdentityLinks <- ifelse(all(sapply(offsetList, function(offset) offset == 0)) && sapply(scaleList, function(scale) scale == 1), 1, 0)
+        if(allIdentityLinks)  cat(paste0(targetScalar, ' conjugate sampler: skipping two-point method\n'))   ### XXXXXXXXXXX delete
+        if(!allIdentityLinks) cat(paste0(targetScalar, ' conjugate sampler: require two-point method\n'))    ### XXXXXXXXXXX delete
+        ## nested function and function list definitions
+        dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
+        ## checks
+        targetDCAR <- model$expandNodeNames(targetScalar)
+        if(length(targetDCAR) != 1)                              stop('something went wrong')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+    },
+    run = function() {
+        prior_mean <- dcar$getMean()
+        prior_tau <- dcar$getPrec()
+        dependent_values <- values(model, depStochNodes_dnorm)
+        dependent_taus <- numeric(nDependents)
+        for(i in 1:nDependents)
+            dependent_taus[i] <- model$getParam(depStochNodes_dnorm[i], 'tau')
+        if(allIdentityLinks) {   ## don't need to calculate coeff and offset
+            contribution_mean <- sum(dependent_values * dependent_taus)
+            contribution_tau <- sum(dependent_taus)
+        } else {                 ## use "two-point" method to calculate coeff and offset
+            dependent_offsets <- numeric(nDependents)
+            dependent_coeffs <- numeric(nDependents)
+            model[[targetScalar]] <<- 0
+            model$calculate(calcNodesDeterm)
+            for(i in 1:nDependents)
+                dependent_offsets[i] <- model$getParam(depStochNodes_dnorm[i], 'mean')
+            model[[targetScalar]] <<- 1
+            model$calculate(calcNodesDeterm)
+            for(i in 1:nDependents)
+                dependent_coeffs[i] <- model$getParam(depStochNodes_dnorm[i], 'mean') - dependent_offsets[i]
+            contribution_mean <- sum(dependent_coeffs * (dependent_values - dependent_offsets) * dependent_taus)
+            contribution_tau <- sum(dependent_coeffs^2 * dependent_taus)
+        }
+        ## from MCMC_conjugacy.R:
+        ## dnorm  = list(param = 'mean', contribution_mean = 'coeff * (value-offset) * tau', contribution_tau = 'coeff^2 * tau'),
+        ## posterior = 'dnorm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
+        ##                    sd   = (prior_tau + contribution_tau)^(-0.5))'
+        posterior_mean <- (prior_mean * prior_tau + contribution_mean) / (prior_tau + contribution_tau)
+        posterior_sd <- (prior_tau + contribution_tau)^(-0.5)
+        newValue <- rnorm(1, mean = posterior_mean, sd = posterior_sd)
+        model[[targetScalar]] <<- newValue
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+## internal only
+## RW sampler for non-conjugate scalar components of dcar_normal() nodes
+CAR_scalar_RW <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
+        ## node list generation
+        depNodes <- model$getDependencies(targetScalar, self = FALSE)
+        copyNodes <- c(targetScalar, depNodes)
+        ## numeric value generation
+        scale         <- 1
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        gamma1        <- 0
+        optimalAR     <- 0.44
+        ## nested function and function list definitions
+        dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
+        ## checks
+        targetDCAR <- model$expandNodeNames(targetScalar)
+        if(length(targetDCAR) != 1)                              stop('something went wrong')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+    },
+    run = function() {
+        lp0 <- dcar$run() + model$getLogProb(depNodes)
+        propValue <- rnorm(1, mean = model[[targetScalar]], sd = scale)
+        model[[targetScalar]] <<- propValue
+        lp1 <- dcar$run() + model$calculate(depNodes)
+        logMHR <- lp1 - lp0
+        jump <- decide(logMHR)
+        if(jump) {
+            model$calculate(targetScalar)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodes, logProb = TRUE)
+        } else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodes, logProb = TRUE)
+        adaptiveProcedure(jump)
+    },
+    methods = list(
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(timesRan %% 200 == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                scale <<- scale * adaptFactor
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        reset = function() {
+            scale <<- scaleOriginal
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            gamma1 <<- 0
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+#' @rdname samplers
+#' @export
+sampler_CAR_normal <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        useConjugacy <- control$carUseConjugacy
+        ## node list generation
+        target <- model$expandNodeNames(target)
+        targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        ## checks
+        if(length(target) > 1)                               stop('CAR_normal sampler only applies to one target node')
+        if(model$getDistribution(target) != 'dcar_normal')   stop('CAR_normal sampler only applies to dcar_normal distributions')
+        ## nested function and function list definitions
+        adj <- model$getParam(target, 'adj')
+        weights <- model$getParam(target, 'weights')
+        num <- model$getParam(target, 'num')
+        neighborLists <- CAR_processParams(model, target, adj, weights, num)
+        componentSamplerFunctions <- nimbleFunctionList(sampler_BASE)
+        for(i in seq_along(targetScalarComponents)) {
+            targetScalar <- targetScalarComponents[i]
+            nDependents <- length(model$getDependencies(targetScalar, self = FALSE, stochOnly = TRUE))
+            conjugate <- CAR_checkConjugacy(model, targetScalar)
+            neighborNodes <- neighborLists$neighborNodeList[[i]]
+            neighborWeights <- neighborLists$neighborWeightList[[i]]
+            if(nDependents == 0) {
+                cat(paste0('dcar() component node ', targetScalar, ': assigning posterior predictive sampler\n'))   ## XXXXXXXXXXXXX delete
+                componentSamplerFunctions[[i]] <- CAR_scalar_postPred(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
+            } else if(conjugate && useConjugacy) {
+                cat(paste0('dcar() component node ', targetScalar, ': assigning conjugate sampler\n'))              ## XXXXXXXXXXXXX delete
+                componentSamplerFunctions[[i]] <- CAR_scalar_conjugate(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
+            } else {
+                cat(paste0('dcar() component node ', targetScalar, ': assigning RW sampler\n'))                     ## XXXXXXXXXXXXX delete
+                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
+            }
+        }
+    },
+    run = function() {
+        for(iSF in seq_along(componentSamplerFunctions))
+            componentSamplerFunctions[[iSF]]$run()
+    },
+    methods = list(
+        reset = function() {
+            for(iSF in seq_along(componentSamplerFunctions))
+                componentSamplerFunctions[[iSF]]$reset()
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+
 
 #' MCMC Sampling Algorithms
 #'

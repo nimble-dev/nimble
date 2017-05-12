@@ -67,7 +67,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
             pfResample = FALSE,
             pfOptimizeNparticles = FALSE,
             pfType = 'bootstrap',
-            pfLookahead = 'simulate'
+            pfLookahead = 'simulate',
+            carUseConjugacy = TRUE
         )
     )
 )
