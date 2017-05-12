@@ -322,10 +322,4 @@ int length(vector<T> vec)
 void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output);
 void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output, bool& silent);
 
-
-/*	optim tools	*/
-
-// TODO add nimOptim wrapper around R's native optim() function in
-// https://github.com/wch/r-source/blob/trunk/src/library/stats/src/optim.c#L175
-
 #endif
