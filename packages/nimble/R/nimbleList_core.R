@@ -395,7 +395,7 @@ optimControlNimbleList <- nimbleList(
         nimbleType('trace', 'integer', 0),
         nimbleType('parscale', 'double', 1),
         nimbleType('ndeps', 'double', 1),
-        nimbleType('maxit', 'integer', 0),
+        nimbleType('maxIt', 'integer', 0),
         nimbleType('abstol', 'double', 0),
         nimbleType('reltol', 'double', 0),
         nimbleType('alpha', 'double', 0),
@@ -417,7 +417,8 @@ optimControlNimbleList <- nimbleList(
 ## functionName = list(nlGen = nimbleList definition, cppName = name of cpp function corresponding to dsl function)
 nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList, cppName = 'EIGEN_EIGEN'),
                                         nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"),
-                                        nimOptim = list(nlGen = optimResultNimbleList, cppName = "OptimResultNimbleList"))
+                                        nimOptim = list(nlGen = optimResultNimbleList, cppName = "OptimResultNimbleList"),
+                                        nimOptimDefaultControl = list(nlGen = optimControlNimbleList, cppName = "OptimControlNimbleList"))
 
 
 ## TODO Add nimbleList definitions for nimOptimResult and nimOptimControl.

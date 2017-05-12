@@ -42,7 +42,7 @@ class OptimControlNimbleList : public NamedObjects, public pointedToBase {
     int trace;
     NimArr<1, double> parscale;
     NimArr<1, double> ndeps;
-    int maxit;
+    int maxIt;
     double abstol;
     double reltol;
     double alpha;

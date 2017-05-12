@@ -1038,7 +1038,6 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
 }
 
 sizeOptim <- function(code, symTab, typeEnv) {
-    # TODO input an optional nimbleList for control
     asserts <- nimble:::recurseSetSizes(code, symTab, typeEnv)
     code$type <- 'nimbleList'
     code$sizeExprs <- symTab$getSymbolObject('OptimResultNimbleList', inherits = TRUE)
@@ -1059,8 +1058,8 @@ sizeOptim <- function(code, symTab, typeEnv) {
     }
 
     grCode <- code$args$gr
-    if (is.null(grCode)) {
-        # We simply emit an R_NilValue.
+    if (identical(grCode, "NULL")) {
+        # We simply emit "NULL".
     } else if (grCode$name == 'nfMethod') {
         # This is handled in cppOutputNFmethod.
     } else if(exists(grCode$name) && is.rcf(get(grCode$name))) {
@@ -1068,6 +1067,12 @@ sizeOptim <- function(code, symTab, typeEnv) {
         grCode$name <- environment(get(grCode$name))$nfMethodRCobject$uniqueName
     } else {
         stop(paste0('unsupported gr argument in optim(par, gr = ', grCode$name, '); try an RCfunction or nfMethod instead'))
+    }
+
+    for(arg in c(code$args$lower, code$args$upper)) {
+        if(inherits(arg, 'exprClass') && arg$toEigenize=='yes') {
+            asserts <- c(asserts, sizeInsertIntermediate(code, arg$callerArgID, symTab, typeEnv))
+        }
     }
 
     if(length(asserts) == 0) NULL else asserts

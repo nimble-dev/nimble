@@ -14,20 +14,20 @@
 template <class T>
 class NimBoundMethod {
    public:
-    NimBoundMethod(double (T::*method)(NimArr<1, double> &), T *object)
+    NimBoundMethod(double (T::*method)(NimArr<1, double>&), T* object)
         : method_(method), object_(object) {}
-    double operator()(NimArr<1, double> &par) {
+    double operator()(NimArr<1, double>& par) {
         return (object_->*method_)(par);
     }
 
    private:
-    double (T::*method_)(NimArr<1, double> &);
-    T *object_;
+    double (T::*method_)(NimArr<1, double>&);
+    T* object_;
 };
 
 template <class T>
-inline NimBoundMethod<T> NimBind(double (T::*method)(NimArr<1, double> &),
-                                 T *object) {
+inline NimBoundMethod<T> NimBind(double (T::*method)(NimArr<1, double>&),
+                                 T* object) {
     return NimBoundMethod<T>(method, object);
 }
 
@@ -36,13 +36,16 @@ inline NimBoundMethod<T> NimBind(double (T::*method)(NimArr<1, double> &),
 
 class NimOptimProblem {
    public:
-    nimSmartPtr<OptimResultNimbleList> solve(NimArr<1, double> &par,
-                                             const std::string &method);
+    nimSmartPtr<OptimResultNimbleList> solve(
+        NimArr<1, double>& par, const std::string& method,
+        NimArr<1, double>& lower, NimArr<1, double>& upper,
+        nimSmartPtr<OptimControlNimbleList> control, bool hessian);
 
+   private:
     // These are callbacks for R's optim() where this is passed in as the final
     // argument `void * ex`.
-    static double fn(int, double *, void *);
-    static void gr(int, double *, double *, void *);
+    static double fn(int, double*, void*);
+    static void gr(int, double*, double*, void*);
 
    protected:
     // These are callbacks used internally by fn() and gr().
@@ -81,24 +84,62 @@ class NimOptimProblem_Fun_Grad : public NimOptimProblem {
 };
 
 // ---------------------------------------------------------------------------
-// These nimOptim functions will appear in generated code
+// These nimOptim() and nimOptimDefaultControl() will appear in generated code
+
+nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl();
 
 template <class Fn, class Gr>
-inline nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
-                                                   Fn fn, Gr gr,
-                                                   const std::string &method) {
-    return NimOptimProblem_Fun_Grad<Fn, Gr>(fn, gr).solve(par, method);
+inline nimSmartPtr<OptimResultNimbleList> nimOptim(
+    NimArr<1, double>& par, Fn fn, Gr gr, const std::string& method,
+    NimArr<1, double>& lower, NimArr<1, double>& upper,
+    nimSmartPtr<OptimControlNimbleList> control, bool hessian) {
+    return NimOptimProblem_Fun_Grad<Fn, Gr>(fn, gr).solve(
+        par, method, lower, upper, control, hessian);
 }
 
-// This handles the special case where gr is not specified (i.e. is NULL).
+// This handles the special case where gr is not specified (i.e. is "NULL").
 template <class Fn>
-inline nimSmartPtr<OptimResultNimbleList> nimOptim(NimArr<1, double> &par,
-                                                   Fn fn, SEXPREC *gr,
-                                                   const std::string &method) {
+inline nimSmartPtr<OptimResultNimbleList> nimOptim(
+    NimArr<1, double>& par, Fn fn, const char* gr, const std::string& method,
+    NimArr<1, double>& lower, NimArr<1, double>& upper,
+    nimSmartPtr<OptimControlNimbleList> control, bool hessian) {
     NIM_ASSERT(
-        gr == R_NilValue,
+        strcmp(gr, "NULL") == 0,
         "Internal error: failed to handle gradient argument type in optim()");
-    return NimOptimProblem_Fun<Fn>(fn).solve(par, method);
+    return NimOptimProblem_Fun<Fn>(fn).solve(par, method, lower, upper, control,
+                                             hessian);
+}
+
+// TODO Handle double -> vector conversion in R instead of here.
+template <class Fn, class Gr>
+inline nimSmartPtr<OptimResultNimbleList> nimOptim(
+    NimArr<1, double>& par, Fn fn, Gr gr, const std::string& method,
+    double lower, double upper, nimSmartPtr<OptimControlNimbleList> control,
+    bool hessian) {
+    NimArr<1, double> lower_vector;
+    lower_vector.initialize(lower, true, 1);
+    NimArr<1, double> upper_vector;
+    upper_vector.initialize(upper, true, 1);
+    return NimOptimProblem_Fun_Grad<Fn, Gr>(fn, gr).solve(
+        par, method, lower_vector, upper_vector, control, hessian);
+}
+
+// TODO Handle double -> vector conversion in R instead of here.
+// This handles the special case where gr is not specified (i.e. is "NULL").
+template <class Fn>
+inline nimSmartPtr<OptimResultNimbleList> nimOptim(
+    NimArr<1, double>& par, Fn fn, const char* gr, const std::string& method,
+    double lower, double upper, nimSmartPtr<OptimControlNimbleList> control,
+    bool hessian) {
+    NIM_ASSERT(
+        strcmp(gr, "NULL") == 0,
+        "Internal error: failed to handle gradient argument type in optim()");
+    NimArr<1, double> lower_vector;
+    lower_vector.initialize(lower, true, 1);
+    NimArr<1, double> upper_vector;
+    upper_vector.initialize(upper, true, 1);
+    return NimOptimProblem_Fun<Fn>(fn).solve(par, method, lower_vector,
+                                             upper_vector, control, hessian);
 }
 
 #endif  // __NIMBLE_NIMOPTIM_H

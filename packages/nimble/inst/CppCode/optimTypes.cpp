@@ -146,7 +146,7 @@ void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
     SEXP S_trace;
     SEXP S_parscale;
     SEXP S_ndeps;
-    SEXP S_maxit;
+    SEXP S_maxIt;
     SEXP S_abstol;
     SEXP S_reltol;
     SEXP S_alpha;
@@ -168,8 +168,8 @@ void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
                                         install("parscale")));
     PROTECT(S_ndeps = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
                                      install("ndeps")));
-    PROTECT(S_maxit = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
-                                     install("maxit")));
+    PROTECT(S_maxIt = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
+                                     install("maxIt")));
     PROTECT(S_abstol = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
                                       install("abstol")));
     PROTECT(S_reltol = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
@@ -197,7 +197,7 @@ void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
     trace = SEXP_2_int(S_trace);
     SEXP_2_NimArr<1>(S_parscale, parscale);
     SEXP_2_NimArr<1>(S_ndeps, ndeps);
-    maxit = SEXP_2_int(S_maxit);
+    maxIt = SEXP_2_int(S_maxIt);
     abstol = SEXP_2_double(S_abstol);
     reltol = SEXP_2_double(S_reltol);
     alpha = SEXP_2_double(S_alpha);
@@ -217,7 +217,7 @@ SEXP OptimControlNimbleList::copyToSEXP() {
     SEXP S_trace;
     SEXP S_parscale;
     SEXP S_ndeps;
-    SEXP S_maxit;
+    SEXP S_maxIt;
     SEXP S_abstol;
     SEXP S_reltol;
     SEXP S_alpha;
@@ -236,7 +236,7 @@ SEXP OptimControlNimbleList::copyToSEXP() {
         PROTECT(S_trace = int_2_SEXP(trace));
         PROTECT(S_parscale = NimArr_2_SEXP<1>(parscale));
         PROTECT(S_ndeps = NimArr_2_SEXP<1>(ndeps));
-        PROTECT(S_maxit = int_2_SEXP(maxit));
+        PROTECT(S_maxIt = int_2_SEXP(maxIt));
         PROTECT(S_abstol = double_2_SEXP(abstol));
         PROTECT(S_reltol = double_2_SEXP(reltol));
         PROTECT(S_alpha = double_2_SEXP(alpha));
@@ -255,7 +255,7 @@ SEXP OptimControlNimbleList::copyToSEXP() {
                   GET_SLOT(RObjectPointer, S_pxData));
         defineVar(install("ndeps"), S_ndeps,
                   GET_SLOT(RObjectPointer, S_pxData));
-        defineVar(install("maxit"), S_maxit,
+        defineVar(install("maxIt"), S_maxIt,
                   GET_SLOT(RObjectPointer, S_pxData));
         defineVar(install("abstol"), S_abstol,
                   GET_SLOT(RObjectPointer, S_pxData));
@@ -297,7 +297,7 @@ OptimControlNimbleList::OptimControlNimbleList() {
     namedObjects["trace"] = &trace;
     namedObjects["parscale"] = &parscale;
     namedObjects["ndeps"] = &ndeps;
-    namedObjects["maxit"] = &maxit;
+    namedObjects["maxIt"] = &maxIt;
     namedObjects["abstol"] = &abstol;
     namedObjects["reltol"] = &reltol;
     namedObjects["alpha"] = &alpha;
