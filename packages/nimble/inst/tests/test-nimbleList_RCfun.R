@@ -6,6 +6,10 @@ testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix 
 otherTestListDef1 <- testListDef1
 testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
 differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 cat("### nimbleList RCfun Test 1 ###\n")
 ##
@@ -24,7 +28,7 @@ nlTestFunc1 <- nimbleFunction(
 )
 
 RnimbleList1 <- nlTestFunc1()
-CnlTestFunc1 <- compileNimble(nlTestFunc1, dirName = '.')
+CnlTestFunc1 <- compileNimble(nlTestFunc1)
 CnimbleList1 <- CnlTestFunc1()
 
 expect_identical(RnimbleList1$nlScalar, 1)
@@ -39,7 +43,7 @@ nlTestFunc1a <- nimbleFunction(
   })
 
 RnimbleList1a <- nlTestFunc1a()
-CnlTestFunc1a <- compileNimble(nlTestFunc1a, dirName = '.')
+CnlTestFunc1a <- compileNimble(nlTestFunc1a)
 CnimbleList1a <- CnlTestFunc1a()
 
 expect_identical(RnimbleList1a$nlScalar, 5)
@@ -50,6 +54,15 @@ cat("### nimbleList RCfun Test 2 ###\n")
 ## Test functions 2 and 2a use a nimbleList returning RC function within a nimbleFunction.  In 2a, the names of the nimbleList definitions
 ## differ between the two functions (but refer to the same definition)
 ###
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
+
 innerNlTestFunc2 <- nimbleFunction(
   run = function(){
     newList2 <- testListDef1$new(nlScalar = 2)
@@ -57,6 +70,7 @@ innerNlTestFunc2 <- nimbleFunction(
     return(newList2)
   }
 )
+assign('innerNlTestFunc2', innerNlTestFunc2, envir = .GlobalEnv)
 
 outerNlTestFunc2 <- nimbleFunction(
   setup = function(){
@@ -71,13 +85,21 @@ outerNlTestFunc2 <- nimbleFunction(
 
 nlTestFunc2 <- outerNlTestFunc2()
 RnimbleList2 <- nlTestFunc2$run()
-CnlTestFunc2 <- compileNimble(nlTestFunc2, dirName = '.')
+CnlTestFunc2 <- compileNimble(nlTestFunc2, showCompilerOutput = TRUE)
 CnimbleList2 <- CnlTestFunc2$run()
 
 expect_identical(RnimbleList2$nlScalar, 2)
 expect_identical(RnimbleList2$nlScalar, CnimbleList2$nlScalar)
 
-
+cat("### nimbleList RCfun Test 2a ###\n")
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 innerNlTestFunc2a <- nimbleFunction(
   run = function(){
@@ -86,6 +108,7 @@ innerNlTestFunc2a <- nimbleFunction(
     return(newList2a)
   }
 )
+assign('innerNlTestFunc2a', innerNlTestFunc2a, envir = .GlobalEnv)
 
 outerNlTestFunc2a <- nimbleFunction(
   setup = function(nlGen){
@@ -99,7 +122,7 @@ outerNlTestFunc2a <- nimbleFunction(
 
 nlTestFunc2a <- outerNlTestFunc2a(testListDef1)
 RnimbleList2a <- nlTestFunc2a$run()
-CnlTestFunc2a <- compileNimble(nlTestFunc2a, dirName = '.')
+CnlTestFunc2a <- compileNimble(nlTestFunc2a, showCompilerOutput = TRUE)
 CnimbleList2a <- CnlTestFunc2a$run()
 
 
@@ -111,6 +134,14 @@ cat("### nimbleList RCfun Test 3 ###\n")
 ## Test functions 3 and 3a take a nimbleList as an argument, copy it, modify it, and return a nimbleList of the same type. 
 ## 3a uses alternate names for the same nimbleList definition.
 ###
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 nlTestFunc3 <- nimbleFunction(
   run = function(nlArg = testListDef1()){
@@ -124,12 +155,21 @@ nlTestFunc3 <- nimbleFunction(
 
 nlArg3 <- testListDef1$new(nlVector = c(1,2,3,4))
 RnimbleList3 <-nlTestFunc3(nlArg3)
-CnlTestFunc3 <- compileNimble(nlTestFunc3, dirName = '.')
+CnlTestFunc3 <- compileNimble(nlTestFunc3)
 CnimbleList3 <- CnlTestFunc3(nlArg3)
 
 expect_identical(RnimbleList3$nlVector, c(1,2,3,4))
 expect_identical(RnimbleList3$nlScalar, CnimbleList3$nlScalar)
 
+cat("### nimbleList RCfun Test 3a ###\n")
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 nlTestFunc3a <- nimbleFunction(
   run = function(nlArg = testListDef1()){
@@ -141,8 +181,9 @@ nlTestFunc3a <- nimbleFunction(
   }
 )
 
+nlArg3 <- testListDef1$new(nlVector = c(1,2,3,4))
 RnimbleList3a <- nlTestFunc3a(nlArg3)
-CnlTestFunc3a <- compileNimble(nlTestFunc3a, dirName = '.')
+CnlTestFunc3a <- compileNimble(nlTestFunc3a)
 CnimbleList3a <- CnlTestFunc3a(nlArg3)
 
 expect_identical(RnimbleList3a$nlVector, c(1,2,3,4))
@@ -152,6 +193,14 @@ cat("### nimbleList RCfun Test 4 ###\n")
 ###
 ## Test function 4 creates a nimbleList with a nested nimbleList inside and RC function
 ###
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 nlTestFunc4 <- nimbleFunction(
   run = function(){
@@ -165,7 +214,7 @@ nlTestFunc4 <- nimbleFunction(
 )
 
 RnimbleList4 <- nlTestFunc4()
-CnlTestFunc4 <- compileNimble(nlTestFunc4, dirName = '.')
+CnlTestFunc4 <- compileNimble(nlTestFunc4, showCompilerOutput = TRUE)
 CnimbleList4 <- CnlTestFunc4()
 
 expect_identical(RnimbleList4$nlScalar,2)
@@ -176,6 +225,14 @@ cat("### nimbleList RCfun Test 5 ###\n")
 ###
 ## Test function 5 takes 2 nimbleLists as arguments - the type of the second nl argument is nested within the first nl argument.
 ###
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 nlTestFunc5 <- nimbleFunction(
   run = function(argList = testListDef2(), argList2 = otherTestListDef1()){
@@ -192,7 +249,7 @@ nlArg5 <- testListDef2$new(nlScalar = 3.14)
 nlArg5_2 <- testListDef1$new(nlScalar = 7)
 
 RnimbleList5 <- nlTestFunc5(nlArg5, nlArg5_2)
-CnlTestFunc5 <- compileNimble(nlTestFunc5, dirName = '.')
+CnlTestFunc5 <- compileNimble(nlTestFunc5)
 CnimbleList5 <- CnlTestFunc5(nlArg5, nlArg5_2)
 
 expect_identical(RnimbleList5$nestedNL$nlScalar, 7)
@@ -203,6 +260,14 @@ cat("### nimbleList RCfun Test 6 ###\n")
 ###
 ## Test functions 6 and 7 test the use of eigen (and eigenNimbleLists) and svd (and svdNimbleLists) inside RC functions
 ###
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 nlTestFun6 <- nimbleFunction(
   run = function(){
@@ -215,13 +280,21 @@ nlTestFun6 <- nimbleFunction(
 )
 
 RnimbleList6 <- nlTestFun6()
-CnlTestFunc6 <- compileNimble(nlTestFun6, dirName = '.')
+CnlTestFunc6 <- compileNimble(nlTestFun6)
 CnimbleList6 <- CnlTestFunc6()
 
 expect_identical(RnimbleList6$values[1], 0)
 expect_identical(RnimbleList6$vectors, CnimbleList6$vectors)
 
 cat("### nimbleList RCfun Test 7 ###\n")
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 nlTestFun7 <- nimbleFunction(
   run = function(svdArg = svdNimbleList()){
@@ -235,7 +308,7 @@ nlTestFun7 <- nimbleFunction(
 
 svdArgList <- svdNimbleList$new(d = c(4, 3, 2, 1))
 RnimbleList7 <- nlTestFun7(svdArgList)
-CnlTestFunc7 <- compileNimble(nlTestFun7, dirName = '.')
+CnlTestFunc7 <- compileNimble(nlTestFun7)
 CnimbleList7 <- CnlTestFunc7(svdArgList)
 
 expect_identical(RnimbleList7$d, c(4, 3, 2, 1))
@@ -246,6 +319,14 @@ cat("### nimbleList RCfun Test 8 ###\n")
 ## Test function 8 has 2 nimbleList arguments coming from different nlDefs.  The second nlDef will not be added to the symbolTable unless
 ## it is detected as an argument type - this is currently broken.
 ###
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 nlTestFun8 <- nimbleFunction(
   run = function(nlArg1 = testListDef1(), nlArg2 = differentNlDef()){
@@ -258,7 +339,7 @@ nlTestFun8 <- nimbleFunction(
 nlArg8 = testListDef1$new(nlScalar = .1)
 nlArg8_2 = differentNlDef$new(differentNlScalar = .2)
 RnimbleList8 <- nlTestFun8(nlArg8, nlArg8_2)
-CnlTestFunc8 <- compileNimble(nlTestFun8, dirName = '.')
+CnlTestFunc8 <- compileNimble(nlTestFun8)
 CnimbleList8 <- CnlTestFunc8(nlArg8, nlArg8_2)
 
 expect_identical(RnimbleList8$nlScalar, .2)
@@ -270,6 +351,14 @@ cat("### nimbleList RCfun Test 9 ###\n")
 ## We then compile another function within the same project and use the same nimbleList generator there.  It also reuses the nlArg8 nimbleList.
 ###
 
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 nlTestFun9 <- nimbleFunction(
   run = function(nlArg1 = testListDef1(), doubleArg = double()){
@@ -279,7 +368,8 @@ nlTestFun9 <- nimbleFunction(
     return(returnNl)
   }
 )
-
+assign('nlTestFun9', nlTestFun9, envir = .GlobalEnv)
+    
 innerNlTestFun9_2 <- nimbleFunction(
   run = function(nlArg1 = testListDef1(), doubleArg = double()){
     nlArg1$nlScalar <- testListDef1$new(nlScalar = -1)$nlScalar + doubleArg
@@ -289,6 +379,8 @@ innerNlTestFun9_2 <- nimbleFunction(
     return(nlArg1)
   }
 )
+assign('innerNlTestFun9_2', innerNlTestFun9_2, envir = .GlobalEnv)
+
 innerNlTestFun9_1 <- nimbleFunction(
   run = function(nlArg1 = testListDef1(), doubleArg = double()){
     nlArg1$nlScalar <- innerNlTestFun9_2(nlArg1, doubleArg)$nlScalar
@@ -296,6 +388,9 @@ innerNlTestFun9_1 <- nimbleFunction(
     return(nlArg1)
   }
 )
+
+assign('innerNlTestFun9_1', innerNlTestFun9_1, envir = .GlobalEnv)
+
 
 nlArg9 <- testListDef1$new(nlScalar = .1)
 #CnlTestList9 <- compileNimble(list(innerNlTestFun9_2, innerNlTestFun9_1,  nlTestFun9))
@@ -328,6 +423,14 @@ cat("### nimbleList RCfun Test 10 ###\n")
 ## Test 10 calls a nimbleFunction that uses the eigen() function.  This function takes an eigenNimbleList as a
 ## setup argument.  The function is compiled 3 times, with 3 different nl setup arguments.
 ###
+testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+otherTestListDef1 <- testListDef1
+testListDef2 <- nimbleList(nlScalar = double(0), nestedNL = testListDef1())
+differentNlDef <- nimbleList(differentNlScalar = double(0))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
+assign('otherTestListDef1', otherTestListDef1, envir = .GlobalEnv)
+assign('testListDef2', testListDef2, envir = .GlobalEnv)
+assign('differentNlDef', differentNlDef, envir = .GlobalEnv)
 
 nlTestFun10 <- nimbleFunction(
   setup = function(eigList){}, 
