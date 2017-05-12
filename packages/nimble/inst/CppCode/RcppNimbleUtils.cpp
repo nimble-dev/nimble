@@ -1003,9 +1003,3 @@ SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex){
   	return(setEnvVar_Sindex(sString, sEnv, sVal, ScalarInteger(1)));
   }
 
-
-/* optim tools */
-
-// TODO add nimOptim wrapper around R's native optim() function in
-// https://github.com/wch/r-source/blob/trunk/src/library/stats/src/optim.c#L175
-

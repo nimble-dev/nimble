@@ -863,7 +863,6 @@ matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctio
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
-## matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
 matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
