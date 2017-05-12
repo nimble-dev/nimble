@@ -1,18 +1,17 @@
 NIMBLE
 ======
 
-This is the repository for the base NIMBLE package, 
-An R package for Programming with BUGS Models.
+[![Build Status](https://travis-ci.org/nimble-dev/nimble.svg?branch=devel)](https://travis-ci.org/nimble-dev/nimble)
+[![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
+[![Rdoc](http://www.rdocumentation.org/badges/version/nimble)](http://www.rdocumentation.org/packages/nimble)
 
-For more information:
+NIMBLE is an R package for programming with BUGS models and compiling parts of R.
 
-* [website](http://r-nimble.org/)
-* [user manual](http://r-nimble.org/manuals/NimbleUserManual.pdf)
-
-
-## Citation
-
-NIMBLE Development Team. 2014. NIMBLE: An R Package for Programming with BUGS models, Version 0.4.   http://r-nimble.org.
+*   [Website](http://r-nimble.org/)
+*   [Examples](https://r-nimble.org/examples)
+*   User manual as [pdf](http://r-nimble.org/manuals/NimbleUserManual.pdf) or
+    [online](https://www.rdocumentation.org/packages/nimble)
+*   [Developer documentation](https://nimble-dev.github.io/nimble-docs)
 
 ## Installation
 
@@ -23,8 +22,11 @@ At the moment, you must install from the source package on any of Linux, Windows
 install.packages("nimble", repos = "http://r-nimble.org", type = "source")
 ```
 
-Or use R CMD INSTALL after downloading from our [website](http://r-nimble.org/download-nimble)
+Or use `R CMD INSTALL` after downloading from our [website](http://r-nimble.org/download-nimble)
 
+## Citation
+
+NIMBLE Development Team. 2014. NIMBLE: An R Package for Programming with BUGS models, Version 0.4.   http://r-nimble.org.
 
 ## Acknowledgements
 

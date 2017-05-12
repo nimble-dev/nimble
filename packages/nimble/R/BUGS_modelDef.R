@@ -586,7 +586,7 @@ modelDefClass$methods(reparameterizeDists = function() {
         numArgs <- length(distRule$reqdArgs)
         newValueExpr <- quote(dist())       ## set up a parse tree for the new value expression
         newValueExpr[[1]] <- as.name(distName)     ## add in the distribution name
-        if(numArgs==0) { ## a user-defined distribution might have 0 arguments
+        if(numArgs==0) { ## for dflat, or a user-defined distribution might have 0 arguments
           nonReqdArgExprs <- NULL
           boundExprs <- BUGSdecl$boundExprs
         } else {   
@@ -740,6 +740,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             replaceables <- unlist(lapply(replacements, function(x) x$replaceable))
             allReplaceable <- all(replaceables) & do.eval
             repVar <- replaceConstantsRecurse(code[[2]], constEnv, constNames, FALSE)
+            code[[2]] <- repVar$code
             if(allReplaceable & repVar$replaceable) {
                 testcode <- as.numeric(eval(code, constEnv))
                 if(length(testcode) == 1) code <- testcode
