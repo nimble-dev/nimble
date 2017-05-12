@@ -202,8 +202,9 @@ print: A logical argument, specifying whether to print the ordered list of defau
                             if(!is.null(conjugacyResult)) {
                                 addConjugateSampler(conjugacyResult = conjugacyResult);     next }
                         }
-                        if(nodeDist == 'dmulti')   { addSampler(target = node, type = 'RW_multinomial');     next }
-                        if(nodeDist == 'ddirch')   { addSampler(target = node, type = 'RW_dirichlet');       next }
+                        if(nodeDist == 'dmulti')       { addSampler(target = node, type = 'RW_multinomial');     next }
+                        if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
+                        if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 addSampler(target = scalarNode, type = 'RW') };     next }
@@ -770,6 +771,9 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             if(print) printRules()
         },
         addDefaultSamplerAssignmentRules = function() {
+            ## CAR models
+            addRule(quote(model$getDistribution(node) == 'dcar_normal'), 'CAR_normal')
+            
 	    ## posterior predictive nodes
             addRule(quote(model$isEndNode(node)), 'posterior_predictive')
             
