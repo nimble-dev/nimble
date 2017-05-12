@@ -336,7 +336,9 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
       /* LHSINFERRED means e.g. x[1:10] ~ dmnorm() and x[2:3] is used on a RHS. So x[2:3] is LHSINFERRED. IT's not a real node for calculation (no nodeFunction), but it is a vertex in the graph */
       if(thisGraphNode->type != LHSINFERRED) {
 	ans.push_back(thisGraphNodeID);
+	thisGraphNode->touched = true;
       } else { /* need to include nodeFunctionNode and its non-LHSINFERRED children*/
+	/* the current LHSINFERRED node will not be touched or included */
 	graphNode* nodeFunctionNode = thisGraphNode->nodeFunctionNode;
 	if(!nodeFunctionNode->touched) {
 	  int nodeFunctionNodeID = nodeFunctionNode->CgraphID;
@@ -345,7 +347,6 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
 	  getDependenciesOneNode(ans, nodeFunctionNodeID, downstream, 1, false);
 	}
       }
-      thisGraphNode->touched = true;
       getDependenciesOneNode(ans, thisGraphNodeID, downstream, 1);
     } else {
 #ifdef _DEBUG_GETDEPS
@@ -404,7 +405,7 @@ void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool d
 #ifdef _DEBUG_GETDEPS
     PRINTF("        Adding child node %i\n", thisChildCgraphID);
 #endif
-    deps.push_back(thisChildNode->CgraphID);
+    deps.push_back(thisChildNode->CgraphID); /* LHSINFERRED nodes may be included here and will be stripped in R before final return - could be cleaner*/
     thisChildNode->touched = true;
     if(downstream | (thisChildNode->type != STOCH)) {
 #ifdef _DEBUG_GETDEPS

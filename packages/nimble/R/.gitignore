@@ -2,5 +2,4 @@ config.R
 Makevars
 .Rapp.history
 TEMP*
-## TAGS is for etags used with emacs-speaks-statistics
 TAGS
