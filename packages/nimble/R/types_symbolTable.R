@@ -374,20 +374,6 @@ symbolNimbleFunction <-
                     }
                     ))
 
-symbolOptimReadyFunction <- 
-	setRefClass(Class = 'symbolOptimReadyFunction',
-				contains = 'symbolBase',
-				fields = list(nfName = 'ANY', nfProc = 'ANY', genName = 'ANY'),
-				methods = list(
-					initialize = function(...){callSuper(...)},
-					show = function() writeLines(paste('symbolOptimObject', name)),
-					genCppVar = function(...){
-						cat('note: in genCppVar for symbolOptimReadyFunction, need to figure out how to get unique names\n')
-						return(cppVarFull(name = name, baseType = genName, ptr = 0))
-					}
-					)
-				)
-
 
 symbolVoidPtr <- setRefClass(Class = 'symbolVoidPtr',
                              contains = 'symbolBase',
