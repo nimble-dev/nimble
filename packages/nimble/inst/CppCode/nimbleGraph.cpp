@@ -56,17 +56,18 @@ void SEXP_2_nodeType(SEXP Stypes, vector<NODETYPE> &ans) {
   }
 }
 
-SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes) {
+SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP SnodeFunctionIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes) {
   vector<int> edgesFrom = SEXP_2_vectorInt(SedgesFrom, -1); // -1 subtracted here
   vector<int> edgesTo = SEXP_2_vectorInt(SedgesTo, -1); // -1 substracted here
   vector<int> edgesFrom2ParentExprIDs = SEXP_2_vectorInt(SedgesFrom2ParentExprIDs);
+  vector<int> nodeFunctionIDs = SEXP_2_vectorInt(SnodeFunctionIDs, -1);
   vector<NODETYPE> types;
   SEXP_2_nodeType(Stypes, types);
   vector<string> names;
   STRSEXP_2_vectorString(Snames, names);
   int numNodes = SEXP_2_int(SnumNodes);
   nimbleGraph *newGraph = new nimbleGraph;
-  newGraph->setNodes(edgesFrom, edgesTo, edgesFrom2ParentExprIDs, types, names, numNodes);
+  newGraph->setNodes(edgesFrom, edgesTo, edgesFrom2ParentExprIDs, nodeFunctionIDs, types, names, numNodes);
   SEXP SextPtrAns;
   PROTECT(SextPtrAns = R_MakeExternalPtr(newGraph, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx(SextPtrAns, &nimbleGraphFinalizer, TRUE);
@@ -131,10 +132,11 @@ SEXP anyStochParents(SEXP SgraphExtPtr) {
 }
 
 void nimbleGraph::setNodes(const vector<int> &edgesFrom, const vector<int> &edgesTo,
-		     const vector<int> &edgesFrom2ParentExprIDs,
-		     const vector<NODETYPE> &types,
-		     const vector<string> &names,
-		     int inputNumNodes) {
+			   const vector<int> &edgesFrom2ParentExprIDs,
+			   const vector<int> &nodeFunctionIDs,
+			   const vector<NODETYPE> &types,
+			   const vector<string> &names,
+			   int inputNumNodes) {
   if(inputNumNodes < 0) PRINTF("Error in setNodes: inputNumNodes < 0\n");
   numNodes = static_cast<unsigned int>(inputNumNodes);
   unsigned int numEdges = edgesFrom.size();
@@ -147,6 +149,10 @@ void nimbleGraph::setNodes(const vector<int> &edgesFrom, const vector<int> &edge
     PRINTF("Something is not the right size\n");
     return;
   }
+  if(numNodes != nodeFunctionIDs.size()) {
+    PRINTF("Wrong length for nodeFunctionIDs\n");
+    return;
+  }
   graphNodeVec.resize(numNodes);
   for(unsigned int iNode = 0; iNode < numNodes; iNode++) {
     graphNodeVec[iNode] = new graphNode(iNode, types[iNode], names[iNode]);
@@ -154,6 +160,10 @@ void nimbleGraph::setNodes(const vector<int> &edgesFrom, const vector<int> &edge
   for(unsigned int iEdge = 0; iEdge < numEdges; iEdge++) {
     graphNodeVec[ edgesFrom[iEdge]]->addChild( graphNodeVec[edgesTo[iEdge]], edgesFrom2ParentExprIDs[iEdge] );
   }
+  for(unsigned int iNode = 0; iNode < numNodes; iNode++) {
+    graphNodeVec[iNode]->nodeFunctionNode = graphNodeVec[ nodeFunctionIDs[iNode] ];
+  }
+
 }
 
 vector<int> nimbleGraph::anyStochDependencies() {
@@ -322,8 +332,21 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
 #ifdef _DEBUG_GETDEPS
       PRINTF("  Adding node %i to ans and recursing\n", thisGraphNodeID);
 #endif
-      ans.push_back(thisGraphNodeID);
-      thisGraphNode->touched = true;
+
+      /* LHSINFERRED means e.g. x[1:10] ~ dmnorm() and x[2:3] is used on a RHS. So x[2:3] is LHSINFERRED. IT's not a real node for calculation (no nodeFunction), but it is a vertex in the graph */
+      if(thisGraphNode->type != LHSINFERRED) {
+	ans.push_back(thisGraphNodeID);
+	thisGraphNode->touched = true;
+      } else { /* need to include nodeFunctionNode and its non-LHSINFERRED children*/
+	/* the current LHSINFERRED node will not be touched or included */
+	graphNode* nodeFunctionNode = thisGraphNode->nodeFunctionNode;
+	if(!nodeFunctionNode->touched) {
+	  int nodeFunctionNodeID = nodeFunctionNode->CgraphID;
+	  ans.push_back(nodeFunctionNodeID);
+	  nodeFunctionNode->touched = true;
+	  getDependenciesOneNode(ans, nodeFunctionNodeID, downstream, 1, false);
+	}
+      }
       getDependenciesOneNode(ans, thisGraphNodeID, downstream, 1);
     } else {
 #ifdef _DEBUG_GETDEPS
@@ -356,7 +379,7 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
 }
 
 
-void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth) {
+void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth, bool followLHSinferred) {
   if(recursionDepth > graphNodeVec.size()) {
     PRINTF("ERROR: getDependencies has recursed too far.  Something must be wrong.\n");
     return;
@@ -375,11 +398,14 @@ void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool d
   for(; i < numChildren; i++) {
     thisChildNode = thisGraphNode->children[i];
     if(thisChildNode->touched) continue;
+    if(!followLHSinferred) {
+      if(thisChildNode->type == LHSINFERRED) continue;
+    }
     thisChildCgraphID = thisChildNode->CgraphID;
 #ifdef _DEBUG_GETDEPS
     PRINTF("        Adding child node %i\n", thisChildCgraphID);
 #endif
-    deps.push_back(thisChildNode->CgraphID);
+    deps.push_back(thisChildNode->CgraphID); /* LHSINFERRED nodes may be included here and will be stripped in R before final return - could be cleaner*/
     thisChildNode->touched = true;
     if(downstream | (thisChildNode->type != STOCH)) {
 #ifdef _DEBUG_GETDEPS
