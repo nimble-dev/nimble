@@ -326,23 +326,37 @@ getSymbolicParentNodes <- function(code, constNames = list(), indexNames = list(
 getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames = list(), nimbleFunctionNames = list()) {
     ## Takes as input some code and returns the variables in it
     ## Expects one line of code, no '{'s
-    ## However, indexNames and constNames are not identified as separate variables
+    ## However, indexNames (from for-loop indices) and constNames are not identified as separate variables
     ## e.g. x[i] is returned as 'x' and 'i' or as 'x[i]' if i is an indexName
     ## indexNames and constNames can be substituted at compile time, such as a block index variable
     ## every function EXCEPT those in nimbleFunctionNames can be evaluated at compile time
     ## constNames, indexNames and nimbleFunctionNames should be lists of names
+    ##
+    ## details: each recursion returns a list with:
+    ## - code: a list of symbolicParentExprs
+    ## - replaceable: logical of whether it can be part of a partially evaluated expression
+    ##                this includes numbers, constants, indices and functions that can be evaluated in R
+    ##                replacements aren't actually done but are used to decide handling
+    ##                something replaceable doesn't need to become a symbolicParentNode
+    ## - hasIndex: is there an index inside
+
+    ## numeric constant
     if(is.numeric(code)) {
         return(list(code = NULL, replaceable = TRUE, hasIndex = FALSE))
     }
     cLength <- length(code)
+    ## a single name:
     if(cLength == 1) {
         if(is.name(code)) {
+            ## a blank index, e.g. from first index of x[, j]
             if(code == ''){
               return(list(code = NULL, replaceable = TRUE, hasIndex = FALSE))
             }
+            ## an index name
             if(any(code == indexNames)) {
                 return(list(code = NULL, replaceable = TRUE, hasIndex = TRUE))
             }
+            ## a constant name
             if(any(code == constNames)) {
                 return(list(code = NULL, replaceable = TRUE, hasIndex = FALSE))
             }
@@ -351,24 +365,33 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
         }
     }
 
+    ## a call:
     if(is.call(code)) {
         indexingBracket <- code[[1]] == '['
         if(indexingBracket) {
-            if(is.call(code[[2]])){
+            if(is.call(code[[2]])){ ## a case like foo(x)[i] (when will this occur in BUGS?), 
               indexingBracket <- FALSE
             } 
         }
         if(indexingBracket) { ##if(code[[1]] == '[') {
+            ## recurse on the index arguments
             contents <- lapply(code[-c(1,2)], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+            ## unpack the codes returned from recursion
             contentsCode <- unlist(lapply(contents, function(x) x$code), recursive = FALSE)
+            ## unpack whether each index has an index
             contentsHasIndex <- unlist(lapply(contents, function(x) x$hasIndex))
+            ## unpack whether each index is replaceable
             contentsReplaceable <- unlist(lapply(contents, function(x) x$replaceable))
+            ## recuse on the variable, e.g. mu in mu[i]
             variable <- getSymbolicParentNodesRecurse(code[[2]], constNames, indexNames, nimbleFunctionNames)
-            
-            if(variable$hasIndex) stop('Error: Variable', deparse(code[[2]]), 'on outside of [ contains a BUGS code index.')
-            if(variable$replaceable) { ## recheck from devel. right here decide if there are any indexing blocks. ## don't want that recursed due to foo(1:3) possibility
 
+            ## error if it looks like mu[i][j] where i is a for-loop index
+            if(variable$hasIndex) stop('Error: Variable', deparse(code[[2]]), 'on outside of [ contains a BUGS code index.')
+
+            
+            if(variable$replaceable) { ## a case like x[ block[i] ], dealing with the block[i], so block is replaceable
                 boolIndexingBlock <- unlist(lapply(code[-c(1,2)], function(x) if(length(x) > 1) if(x[[1]] == ':') TRUE else FALSE else FALSE))
+                
                 if(any(boolIndexingBlock)) {
                     return(list(code = c(contentsCode, code),
                                 replaceable = FALSE,
@@ -379,38 +402,45 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 hasIndex = any(contentsHasIndex)))
                 }
             } else {
+                ## x[i] with x a variable and no dynamic indices
                 if(all(contentsReplaceable)) {
                     return(list(code = c(contentsCode, list(code)),
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
-                } else { ## this case shouldn't be operational for now because non-replaceable indices are dynamic indices
-                    return(list(code = c(contentsCode, list(code[[2]])),
+                } else { ## non-replaceable indices are dynamic indices
+                    ##dynamicIndexParent <- code[[2]]
+                    dynamicIndexParent <- code
+                    dynamicIndexParent[-c(1, 2)][ !contentsReplaceable] <- NA
+                    return(list(code = c(contentsCode, list(dynamicIndexParent)),
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
                 }
             }
         } else {
+            ## a regular call like foo(x)
             if(cLength > 1) {
-                if(code[[1]] == '$')
-                  contents <- lapply(code[2],  function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
-                else
-                  contents <- lapply(code[-1], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+                if(code[[1]] == '$') ## a$x: recurse on a (when? maybe eigen(x)$values? ) 
+                    contents <- lapply(code[2],  function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+                else ## foo(x): recurse on x
+                    contents <- lapply(code[-1], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+                ## unpack results of recursion
                 contentsCode <- unlist(lapply(contents, function(x) x$code), recursive = FALSE)
+                ## unpack hasIndex entries
                 contentsHasIndex <- unlist(lapply(contents, function(x) x$hasIndex))
-                ## if(code[[1]] == ':') return(list(code = contentsCode, ## need a new part of the list for hasIndexingBlock, or can I set hasIndex = TRUE
-                ##            replaceable = FALSE ,
-                ##            hasIndex = any(contentsHasIndex)))
+                ## unpack replaceable entries
                 contentsReplaceable <- unlist(lapply(contents, function(x) x$replaceable))
                 allContentsReplaceable <- all(contentsReplaceable)
-            } else {
+            } else { ## no arguments: foo()
                 contentsCode <- NULL
                 contentsHasIndex <- FALSE
                 allContentsReplaceable <- TRUE
             }
+            ## check if the function can be called only in R, not NIMBLE
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
             funName <- deparse(code[[1]])
             isRonly <- isRfunction &
                 (!checkNimbleOrRfunctionNames(funName))
+            ## if it can be called only in R but not all contents are replaceable, generate error:
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName))
                     stop("R function '", funName,"' does not exist.")
