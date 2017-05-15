@@ -1,5 +1,3 @@
-library(assertthat)
-
 ######################################
 ## System to label for eigenization ##
 ######################################
@@ -817,7 +815,7 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
 
 eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     targetSym <- symTab$getSymbolObject(code$name, TRUE)
-    assert_that(!is.null(targetSym))
+    if(is.null(targetSym)) stop(paste('Internal error: symbol not found:', code$name))
     if(inherits(targetSym, 'symbolNimbleList')) return(NULL)
     if(!exists('nDim', envir = targetSym, inherits = FALSE)) {
        ## contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()
