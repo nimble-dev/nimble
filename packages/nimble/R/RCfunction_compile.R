@@ -236,18 +236,23 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
 
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.
+                                       ## This attempts to prevent the traceback from being hidden by multiple layers of error trapping.
+                                       ## A better solution might be to avoid layered trapping so that options(error = recover) could function.
                                        tryCatch(withCallingHandlers(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv),
                                                                     error = function(e) {
                                                                         stack <- sapply(sys.calls(), deparse)
                                                                         .GlobalEnv$.nimble.traceback <- capture.output(traceback(stack))
                                                                     }),
                                                 error = function(e) {
-                                                    stop(paste('There was some problem in the the setSizes processing step for this code:',
-                                                               paste(deparse(compileInfo$origRcode), collapse = '\n'),
-                                                               'Internal Error:', e,
-                                                               'Traceback:', paste0(.GlobalEnv$.nimble.traceback, collapse = '\n'),
-                                                               sep = '\n'),
-                                                         call. = FALSE)
+                                                    message <- paste('There was some problem in the the setSizes processing step for this code:',
+                                                                     paste(deparse(compileInfo$origRcode), collapse = '\n'))
+                                                    if(getNimbleOption('verboseErrors')) {
+                                                        message <- paste(message,
+                                                                         'Internal Error:', e,
+                                                                         'Traceback:', paste0(.GlobalEnv$.nimble.traceback, collapse = '\n'),
+                                                                         sep = '\n')
+                                                    }
+                                                    stop(message, call. = FALSE)
                                                 })
                                        neededRCfuns <<- c(neededRCfuns, compileInfo$typeEnv[['neededRCfuns']])
                                        
