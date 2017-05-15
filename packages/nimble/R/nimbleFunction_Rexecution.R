@@ -1106,7 +1106,7 @@ is.nan.vec <- function(x) any(is.nan(x))
 #' @export
 nimRound <- round
 
-#' Nimble wrapper around R's builtin \code{\link{optim}}.
+#' EXPERIMENTAL Nimble wrapper around R's builtin \code{\link{optim}}.
 #'
 #' @param par Initial values for the parameters to be optimized over.
 #' @param fn  A function to be minimized (or maximized), with first argument the

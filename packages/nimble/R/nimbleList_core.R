@@ -351,7 +351,7 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
                                   nimbleType('v', 'double', 2)), name = "EIGEN_SVDCLASS", predefined = TRUE)
 
 
-#' optimResultNimbleList definition
+#' EXPERIMENTAL Data type for the return value of \code{\link{nimOptim}}
 #'
 #' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} returned by \code{\link{nimOptim}}.
 #'
@@ -381,7 +381,7 @@ optimResultNimbleList <- nimbleList(
     predefined = TRUE
 )
 
-#' optimControlNimbleList definition
+#' EXPERIMENTAL Data type for the \code{control} parameter of \code{\link{nimOptim}}
 #'
 #' \code{\link{nimbleList} definition for the type of \code{\link{nimbleList}} input as the \code{\link{control}} parameter
 #' to \code{\link{nimOptim}}. See \code{\link{optim}} for details.
