@@ -157,73 +157,75 @@ print: A logical argument, specifying whether to print the ordered list of defau
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
             if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }    ## ensure all target node(s) are stochastic
 
-            ## set up environment in which to evaluate sampler assignment rule conditions
-            ruleEvaluationEnv <- new.env()
-            ruleEvaluationEnv$model <- model
-            ruleEvaluationEnv$useConjugacy <- useConjugacy
-            ruleEvaluationEnv$multivariateNodesAsScalars <- multivariateNodesAsScalars
-            if(useConjugacy) ruleEvaluationEnv$conjugacyResults <- model$checkConjugacy(nodes)
-            rules$setEvaluationEnv(ruleEvaluationEnv)
+            if(getNimbleOption('MCMCuseSamplerAssignmentRules')) {
+                ## use new system of samplerAssignmentRules
+                ## set up environment in which to evaluate sampler assignment rule conditions
+                ruleEvaluationEnv <- new.env()
+                ruleEvaluationEnv$model <- model
+                ruleEvaluationEnv$useConjugacy <- useConjugacy
+                ruleEvaluationEnv$multivariateNodesAsScalars <- multivariateNodesAsScalars
+                if(useConjugacy) ruleEvaluationEnv$conjugacyResults <- model$checkConjugacy(nodes)
+                rules$setEvaluationEnv(ruleEvaluationEnv)
 
-            for(node in nodes) {
-                ruleEvaluationEnv$node <- node     ## put current node into rule evaluation environment
-                rule <- rules$selectRuleToInvoke()
-                if(!is.null(rule)) {               ## matching rule was found
-                    sampler <- rule$getSampler()
-                    name <- rule$getName()
-                    if(is.call(sampler)) { eval(sampler, envir = ruleEvaluationEnv)
-                                       } else addSampler(target = node, type = sampler, name = name)
-                } else if(warnNoSamplerAssigned) {    ## no matching rule was found
-                    warning(paste0('No matching rule found, and no sampler assigned to node: ', node))
+                for(node in nodes) {
+                    ruleEvaluationEnv$node <- node     ## put current node into rule evaluation environment
+                    rule <- rules$selectRuleToInvoke()
+                    if(!is.null(rule)) {               ## matching rule was found
+                        sampler <- rule$getSampler()
+                        name <- rule$getName()
+                        if(is.call(sampler)) { eval(sampler, envir = ruleEvaluationEnv)
+                                           } else addSampler(target = node, type = sampler, name = name)
+                    } else if(warnNoSamplerAssigned) {    ## no matching rule was found
+                        warning(paste0('No matching rule found, and no sampler assigned to node: ', node))
+                    }
+                }
+            } else {
+                ## use old (static) system for assigning default samplers
+                isEndNode <- model$isEndNode(nodes)
+                if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
+                
+                for(i in seq_along(nodes)) {
+                    node <- nodes[i]
+                    discrete <- model$isDiscrete(node)
+                    binary <- model$isBinary(node)
+                    nodeDist <- model$getDistribution(node)
+                    nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
+                    nodeLength <- length(nodeScalarComponents)
+                    
+                    ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
+                    if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
+                    
+                    ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
+                    if(nodeLength > 1) {
+                        if(useConjugacy) {
+                            conjugacyResult <- conjugacyResultsAll[[node]]
+                            if(!is.null(conjugacyResult)) {
+                                addConjugateSampler(conjugacyResult = conjugacyResult);     next }
+                        }
+                        if(nodeDist == 'dmulti')   { addSampler(target = node, type = 'RW_multinomial');     next }
+                        if(nodeDist == 'ddirch')   { addSampler(target = node, type = 'RW_dirichlet');       next }
+                        if(multivariateNodesAsScalars) {
+                            for(scalarNode in nodeScalarComponents) {
+                                addSampler(target = scalarNode, type = 'RW') };     next }
+                        addSampler(target = node, type = 'RW_block');     next }
+                    
+                    ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
+                    if(useConjugacy) {
+                        conjugacyResult <- conjugacyResultsAll[[node]]
+                        if(!is.null(conjugacyResult)) {
+                            addConjugateSampler(conjugacyResult = conjugacyResult);     next }
+                    }
+                    
+                    ## if node is discrete 0/1 (binary), assign 'binary' sampler
+                    if(binary) { addSampler(target = node, type = 'binary');     next }
+                    
+                    ## if node distribution is discrete, assign 'slice' sampler
+                    if(discrete) { addSampler(target = node, type = 'slice');     next }
+                    
+                    ## default: 'RW' sampler
+                    addSampler(target = node, type = 'RW');     next
                 }
             }
-            
-            ## OLD SAMPLER ASSIGNMENT LOGIC
-            ##
-            ##isEndNode <- model$isEndNode(nodes)
-            ##if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
-            ## 
-            ##for(i in seq_along(nodes)) {
-            ##    node <- nodes[i]
-            ##    discrete <- model$isDiscrete(node)
-            ##    binary <- model$isBinary(node)
-            ##    nodeDist <- model$getDistribution(node)
-            ##    nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
-            ##    nodeLength <- length(nodeScalarComponents)
-            ##    
-            ##    ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
-            ##    if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
-            ##    
-            ##    ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
-            ##    if(nodeLength > 1) {
-            ##        if(useConjugacy) {
-            ##            conjugacyResult <- conjugacyResultsAll[[node]]
-            ##            if(!is.null(conjugacyResult)) {
-            ##                addConjugateSampler(conjugacyResult = conjugacyResult);     next }
-            ##        }
-            ##        if(nodeDist == 'dmulti')   { addSampler(target = node, type = 'RW_multinomial');     next }
-            ##        if(nodeDist == 'ddirch')   { addSampler(target = node, type = 'RW_dirichlet');       next }
-            ##        if(multivariateNodesAsScalars) {
-            ##            for(scalarNode in nodeScalarComponents) {
-            ##                addSampler(target = scalarNode, type = 'RW') };     next }
-            ##        addSampler(target = node, type = 'RW_block');     next }
-            ## 
-            ##    ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
-            ##    if(useConjugacy) {
-            ##        conjugacyResult <- conjugacyResultsAll[[node]]
-            ##        if(!is.null(conjugacyResult)) {
-            ##            addConjugateSampler(conjugacyResult = conjugacyResult);     next }
-            ##    }
-            ## 
-            ##    ## if node is discrete 0/1 (binary), assign 'binary' sampler
-            ##    if(binary) { addSampler(target = node, type = 'binary');     next }
-            ##    
-            ##    ## if node distribution is discrete, assign 'slice' sampler
-            ##    if(discrete) { addSampler(target = node, type = 'slice');     next }
-            ##    
-            ##    ## default: 'RW' sampler
-            ##    addSampler(target = node, type = 'RW');     next
-            ##}
             
             ##if(TRUE) { dynamicConjugateSamplerWrite(); message('don\'t forget to turn off writing dynamic sampler function file!') }
             if(print)   printSamplers()

@@ -43,6 +43,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 
         ## samplerAssignmentRules object that controls the default sampler assignments by configureMCMC.
         ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
+        MCMCuseSamplerAssignmentRules = FALSE,
         MCMCdefaultSamplerAssignmentRules = NULL,
         
         ## default settings for MCMC samplers
