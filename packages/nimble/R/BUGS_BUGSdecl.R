@@ -227,7 +227,8 @@ BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNa
     symbolicParentNodesReplaced <<- unique(getSymbolicParentNodes(valueExprReplaced, constantsNamesList, c(context$indexVarExprs, replacementNameExprs), nimFunNames))
     rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) if(length(x) == 1) as.character(x) else as.character(x[[2]])))
 
-    ## note that makeIndexNamePieces is designed only for indices that are a single name or number or a `:` operator with single name or number for each argument
+    ## note that makeIndexNamePieces is designed only for indices that are a single name or number, a `:` operator with single name or number for each argument,
+    ##     or an NA (for a dynamic index)
     ## This relies on the fact that any expression will have been lifted by this point and what it has been replaced with is simply a name
     ## This means makeIndexNamePieces can include a diagnostic
     targetIndexNamePieces <<- try(if(length(targetExprReplaced) > 1) lapply(targetExprReplaced[-c(1,2)], makeIndexNamePieces) else NULL)
@@ -338,6 +339,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     ##                this includes numbers, constants, indices and functions that can be evaluated in R
     ##                replacements aren't actually done but are used to decide handling
     ##                something replaceable doesn't need to become a symbolicParentNode
+    ##                and something replaceable in an index represents static indexing, not dynamic indexing
     ## - hasIndex: is there an index inside
 
     ## numeric constant
@@ -348,7 +350,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     ## a single name:
     if(cLength == 1) {
         if(is.name(code)) {
-            ## a blank index, e.g. from first index of x[, j]
+            ## is this for a blank index?, e.g. from first index of x[, j].  at this point indices have been filled so there shouldn't be blanks.
             if(code == ''){
               return(list(code = NULL, replaceable = TRUE, hasIndex = FALSE))
             }
@@ -408,9 +410,11 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
                 } else { ## non-replaceable indices are dynamic indices
-                    ##dynamicIndexParent <- code[[2]]
-                    dynamicIndexParent <- code
-                    dynamicIndexParent[-c(1, 2)][ !contentsReplaceable] <- NA
+                    if(!nimbleOptions(allowDynamicIndexing)) dynamicIndexParent <- code[[2]]
+                    else {
+                        dynamicIndexParent <- code
+                        dynamicIndexParent[-c(1, 2)][ !contentsReplaceable] <- NA
+                    }
                     return(list(code = c(contentsCode, list(dynamicIndexParent)),
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))

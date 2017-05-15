@@ -1278,7 +1278,12 @@ splitCompletionForOrigNodes <- function(var2nodeOrigID, var2vertexID, maxOrigNod
 
 splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, indexNames = NULL, parentExpr, parentExprReplaced = NULL, parentIndexNamePieces, replacementNameExprs, nextVertexID, maxVertexID, debug = FALSE) {
         if(debug) browser()
-    ## 1. Determine which indexExprs are in parentExpr
+    ## parentIndexNamePieces: when there is an NA for a dynamic index, we should assume a split on the full range of values.
+    ## This is the same case as anyContext = TRUE and all(useContent) = TRUE, i.e. boolUseUnrolledRow <- rep(TRUE, nrow(unrolledBUGSindices))
+    ## The "context" label may sometimes apply to x[dynamicI] even with no context.
+        ##
+
+        ## 1. Determine which indexExprs are in parentExpr
     useContext <- unlist(lapply(indexExprs, isNameInExprList, parentExpr))
     anyContext <- any(useContext)
     ## 2. Use unique or duplicated on unrolledBUGSindices to get a needed set
@@ -1289,7 +1294,8 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
             boolUseUnrolledRow <- rep(TRUE, nrow(unrolledBUGSindices))
     }
     ## 3. Determine if indices are all scalar
-    allScalar <- TRUE
+        allScalar <- TRUE
+        ## parentIndexNamePieces NA: need to decide if these count for scalar processing. I think they would count as scalar, using the 
     vectorIndices <- lapply(parentIndexNamePieces, function(x) {if(is.list(x)) {allScalar <<- FALSE; return(TRUE)}; FALSE})
 
         ## step 4 evaporated
@@ -1301,7 +1307,7 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
 
     ## 6. All scalar case: iterate or vectorize via cbind and put new vertexIDs over -1s
     if(allScalar) {
-        if(anyContext) {
+        if(anyContext) { ## parentIndexNamePieces NA: This block is where we want to go.  Goal of next step is to set varIndicesToUse. For an NA, we want the full extent.
             boolIndexNamePiecesExprs <- !unlist(lapply(parentIndexNamePieces, is.numeric)) 
             if(all(boolIndexNamePiecesExprs)) {
                 test <- try(varIndicesToUse <- unrolledBUGSindices[ boolUseUnrolledRow, unlist(parentIndexNamePieces) ])
@@ -1313,7 +1319,7 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
                 for(iii in seq_along(indexPieceNumericInds)) varIndicesToUse[, indexPieceNumericInds[iii] ] <- parentIndexNamePieces[[ indexPieceNumericInds[iii] ]]
             }
         }        
-        else {
+        else { ## is it hard-coded like x ~ dnorm(mu[1,2], 1)
             if(is.null(parentIndexNamePieces))
                 stop("Error in splitVertices: you may have omitted indexing for a multivariate variable: ", as.character(parentExprReplaced), ".")
             if(length(parentIndexNamePieces)==1) varIndicesToUse <- as.numeric(parentExprReplaced[[3]])
@@ -1322,6 +1328,8 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
                 for(iI in 1:ncol(varIndicesToUse)) varIndicesToUse[1, iI] <- as.numeric(parentExprReplaced[[iI+2]])
             }
         }
+        ## parentIndexNamePieces Should there be a unique in one of the next lines? Or varIndicesToUse <- unique(varIndicesToUse).
+        ## OR use a !duplicated construction in boolUseUnrolledRow <- rep(TRUE, nrow(unrolledBUGSindices)) above
         currentVertexIDs <- var2vertexID[varIndicesToUse]
         needsVertexID <- is.na(currentVertexIDs)
         numNewVertexIDs <- sum(needsVertexID)
@@ -2013,7 +2021,7 @@ modelDefClass$methods(genVarInfo3 = function() {
                         logProbVarInfo[[lhsLogProbVar]]$mins[iDim] <<- min(logProbVarInfo[[lhsLogProbVar]]$mins[iDim], rangeIndsLow[1])
                         logProbVarInfo[[lhsLogProbVar]]$maxs[iDim] <<- max(logProbVarInfo[[lhsLogProbVar]]$maxs[iDim], rangeIndsLow[2]) ## This collapses i:j to be i for logProb purposes because a multivariate node needs only a single logProb value
                     }
-                } else {
+                } else { 
                     inds <- if(is.numeric(indexNamePieces)) indexNamePieces else BUGSdecl$replacementsEnv[[ indexNamePieces ]]
                     rangeInds <- range(inds)
                     varInfo[[lhsVar]]$mins[iDim] <<- min(varInfo[[lhsVar]]$mins[iDim], rangeInds[1])
@@ -2056,6 +2064,9 @@ modelDefClass$methods(genVarInfo3 = function() {
                         varInfo[[rhsVar]]$mins[iDim] <<- min(varInfo[[rhsVar]]$mins[iDim], min(indsLow))
                         varInfo[[rhsVar]]$maxs[iDim] <<- max(varInfo[[rhsVar]]$maxs[iDim], max(indsHigh))
                     } else {
+                        ## If the index is dynamic (marked by NA), there is nothing to learn about index range of the variable.
+                        if(nimbleOptions(allowDynamicIndexing)) if(is.na(indexNamePieces)) next
+                        ## Otherwise extend the range of known mins and maxs based on this expression
                         inds <- if(is.numeric(indexNamePieces)) indexNamePieces else BUGSdecl$replacementsEnv[[ indexNamePieces ]]
                         rangeInds <- range(inds)
                         varInfo[[rhsVar]]$mins[iDim] <<- min(varInfo[[rhsVar]]$mins[iDim], rangeInds[1])
