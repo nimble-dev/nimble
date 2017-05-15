@@ -59,7 +59,7 @@ nonNativeEigenCalls <- c('logdet','sd','var','inprod', coreRmanipulationCalls, c
 matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')
 matrixSquareOperators <- c('chol','inverse')
-nimbleListReturningOperators <- c('nimEigen', 'nimSvd')
+nimbleListReturningOperators <- c('nimEigen', 'nimSvd', 'nimOptim')
 matrixSolveOperators <- c('solve','forwardsolve','backsolve')
 passThroughOperators <- c('return')
 ##keywordOperators <- c('for','if', 'while')

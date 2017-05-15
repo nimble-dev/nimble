@@ -186,7 +186,7 @@ recurseGetListST <- function(className, neededTypes){
       }
     }
   }
-  if(is.null(listST)) stop(paste('Internal error: failed to find symbol for', className)) 
+  if(is.null(listST)) stop(paste('Internal error: failed to find symbol for', className))
   return(listST)
 }
 
