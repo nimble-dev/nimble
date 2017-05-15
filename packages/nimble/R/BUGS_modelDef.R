@@ -1940,7 +1940,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$graphIDs <<- 1:length(maps$graphID_2_nodeName)
 
     maps$nimbleGraph <<- nimbleGraphClass()
-    maps$nimbleGraph$setGraph(maps$edgesFrom, maps$edgesTo, maps$edgesParentExprID, maps$types, maps$graphID_2_nodeName, length(maps$graphID_2_nodeName))
+    maps$nimbleGraph$setGraph(maps$edgesFrom, maps$edgesTo, maps$edgesParentExprID, maps$vertexID_2_nodeID, maps$types, maps$graphID_2_nodeName, length(maps$graphID_2_nodeName))
 ##    maps$nodeName_2_graphID <<- list2env( nodeName2GraphIDs(maps$nodeNames) )
 ##    maps$nodeName_2_logProbName <<- list2env( nodeName2LogProbName(maps$nodeNames) )
 
@@ -2034,7 +2034,10 @@ modelDefClass$methods(genVarInfo3 = function() {
         for(iV in seq_along(rhsVars)) {
             rhsVar <- rhsVars[iV]
             if(!(rhsVar %in% names(varInfo))) {
-                nDim <- if(length(BUGSdecl$symbolicParentNodes[[iV]])==1) 0 else length(BUGSdecl$symbolicParentNodes[[iV]])-2
+                nDim <- if(length(BUGSdecl$symbolicParentNodes[[iV]])==1)
+                            0
+                        else ## this assumes parent node does not have stochastic index.
+                            length(BUGSdecl$symbolicParentNodes[[iV]])-2
                 varInfo[[rhsVar]] <<- varInfoClass$new(varName = rhsVar,
                                                        mins = rep(100000, nDim),
                                                        maxs = rep(0, nDim),

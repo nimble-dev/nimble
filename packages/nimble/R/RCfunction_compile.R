@@ -18,7 +18,9 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                           RCfun = 'ANY', ##nfMethodRC
                                           nameSubList = 'ANY',
                                           compileInfo = 'ANY', ## RCfunctionCompileClass``
-                                          const = 'ANY'
+                                          const = 'ANY',
+                                          neededRCfuns = 'ANY',
+                                          initialTypeInferenceDone = 'ANY'
                                           ),
                                       methods = list(
                                           initialize = function(f = NULL, funName, const = FALSE) {
@@ -40,11 +42,13 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                                   }
                                                   compileInfo <<- RCfunctionCompileClass$new(origRcode = RCfun$code, newRcode = RCfun$code)
                                               }
+                                              neededRCfuns <<- list()
+                                              initialTypeInferenceDone <<- FALSE
                                           },
                                           showCpp = function() {
                                               writeCode(nimGenerateCpp(compileInfo$nimExpr, compileInfo$newLocalSymTab))
                                           },
-                                          setupSymbolTables = function(parentST = NULL, neededTypes = NULL) {
+                                          setupSymbolTables = function(parentST = NULL, neededTypes = NULL, nimbleProject = NULL) {
                                               argInfoWithMangledNames <- RCfun$argInfo
                                               numArgs <- length(argInfoWithMangledNames)
                                               if(numArgs > 0) {
@@ -59,13 +63,25 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
                                               nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
                                               names(nameSubList) <<- names(RCfun$argInfo)
+
+                                              ## This will only handle basic types.  nimbleLists will be added below
                                               compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes, names(RCfun$argInfo)) ## will be used for function args.  must be a better way.
                                               compileInfo$newLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes, names(RCfun$argInfo))
+
+                                              ## This modifies the symTab and returns types needed for input or return
+                                              ## Currently the only non-basic type resolves in this step would be nimbleLists
+                                              if(is.null(nimbleProject)) nimbleProject <- get('nimbleProject', envir = RCfun)
+                                              neededRCfuns <<- resolveUnknownTypes(compileInfo$origLocalSymTab, neededTypes, nimbleProject)
+                                              resolveUnknownTypes(compileInfo$newLocalSymTab, c(neededRCfuns, neededTypes), nimbleProject)
+                                              
                                               if(!is.null(parentST)) {
                                                   compileInfo$origLocalSymTab$setParentST(parentST)
                                                   compileInfo$newLocalSymTab$setParentST(parentST)
                                               }
                                               compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, neededTypes, "return", "returnType")
+                                              updatedReturn <- resolveOneUnknownType(compileInfo$returnSymbol, c(neededRCfuns, neededTypes), nimbleProject)
+                                              compileInfo$returnSymbol <<- updatedReturn[[1]]
+                                              neededRCfuns <<- c(neededRCfuns, updatedReturn[[2]])
                                           },
                                           process = function(...) {
                                               if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
@@ -129,11 +145,9 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
 
 RCfunProcessing <- setRefClass('RCfunProcessing',
                                contains = 'RCvirtualFunProcessing',
-                               fields = list(
-                                   neededRCfuns = 'list' ## nfMethodRC objects
-                                   ),
-                               methods = list(
-                                   process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE) {
+                               fields = list(),
+                                   methods = list(
+                                   process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE, nimbleProject = NULL, initialTypeInferenceOnly = FALSE) {
                                        if(!is.null(nimbleOptions()$debugRCfunProcessing)) {
                                            if(nimbleOptions()$debugRCfunProcessing) {
                                                debug <- TRUE
@@ -141,22 +155,33 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            }
                                        }
 
-                                       if(!is.null(nimbleOptions()$debugCppLineByLine)) {
-                                           if(nimbleOptions()$debugCppLineByLine) {
-                                               debugCpp <- TRUE
-                                               if(length(debugCppLabel) == 0) debugCppLabel <- name
+                                       if(debug) {
+                                           writeLines('**** READY to start RCfunProcessing::process *****')
+                                           browser()
+                                       }
+
+                                       if(is.null(nimbleProject)) nimbleProject <- get('nimbleProject', envir = RCfun)
+                                       
+                                       if(!initialTypeInferenceDone) {
+                                           
+                                           if(!is.null(nimbleOptions()$debugCppLineByLine)) {
+                                               if(nimbleOptions()$debugCppLineByLine) {
+                                                   debugCpp <- TRUE
+                                                   if(length(debugCppLabel) == 0) debugCppLabel <- name
+                                               }
                                            }
+                                           
+                                           if(doKeywords) {
+                                               matchKeywords()
+                                               processKeywords()
+                                           }
+                                           
+                                           if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
+                                               setupSymbolTables()
+                                           }
+                                           initialTypeInferenceDone <<- TRUE
                                        }
-
-                                       if(doKeywords) {
-                                           matchKeywords()
-                                           processKeywords()
-                                       }
-                                                                              
-                                       if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
-                                           setupSymbolTables()
-                                       }
-
+                                       if(initialTypeInferenceOnly) return(NULL);
                                       
                                        if(debug) {
                                            writeLines('**** READY FOR makeExprClassObjects *****')
@@ -207,8 +232,10 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        compileInfo$typeEnv[['neededRCfuns']] <<- list()
                                        compileInfo$typeEnv[['.AllowUnknowns']] <<- TRUE ## will be FALSE for RHS recursion in setSizes
                                        compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
+                                       compileInfo$typeEnv[['.nimbleProject']] <<- nimbleProject
                                        passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
+
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.
                                        tryCatch(withCallingHandlers(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv),
                                                                     error = function(e) {
@@ -223,7 +250,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                                                sep = '\n'),
                                                          call. = FALSE)
                                                 })
-                                       neededRCfuns <<- compileInfo$typeEnv[['neededRCfuns']]
+                                       neededRCfuns <<- c(neededRCfuns, compileInfo$typeEnv[['neededRCfuns']])
                                        
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showType = TRUE) -- broken')
