@@ -324,6 +324,7 @@ getSymbolicParentNodes <- function(code, constNames = list(), indexNames = list(
     ans <- getSymbolicParentNodesRecurse(code, constNames, indexNames, nimbleFunctionNames)
     return(ans$code)
 }
+
 getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames = list(), nimbleFunctionNames = list()) {
     ## Takes as input some code and returns the variables in it
     ## Expects one line of code, no '{'s
@@ -410,7 +411,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
                 } else { ## non-replaceable indices are dynamic indices
-                    if(!nimbleOptions(allowDynamicIndexing)) dynamicIndexParent <- code[[2]]
+                    if(!nimbleOptions()$allowDynamicIndexing) dynamicIndexParent <- code[[2]]
                     else {
                         dynamicIndexParent <- code
                         dynamicIndexParent[-c(1, 2)][ !contentsReplaceable] <- NA

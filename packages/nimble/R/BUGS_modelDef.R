@@ -1697,6 +1697,13 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     }
     if(debug) browser()
 
+    ## Is this the place to add vertices for "mu_UNKNOWN_INDEX_"
+    ## (By looking at all symbolicParentNodes and looking for NAs)
+    ## TBD future step: mu_UNKNOWN_INDEX_[1, NA] ... mu_UNKNOWN_INDEX_[10, NA]
+    ## I think these would go in vars_2_vertexOrigID
+    ## But detail: We need to keep track of entries in vars_2_vertexOrigID that are not in names(varInfo)
+    ## Fortunately 
+    
     ## 6. Make vertex names
     ##    E.g. from the results of the previous step, we may now need vertex names "x[1]", "x[2]" and "x[3:4]"
     ##    Those are constructed here from the vars_2_vertexOrigID elements
@@ -1744,6 +1751,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     } else
         nodeNamesRHSonly <- character()
 
+    ## SOMEWHERE put type labels for mu_UNKNOWN_INDEX
+    
     ## 7c. Re-label the IDs in the vars_2_vertexOrigID with the contiguous version
     for(iV in seq_along(varInfo)) {
         temp <- vars_2_vertexOrigID[[varInfo[[iV]]$varName]]
@@ -2065,7 +2074,7 @@ modelDefClass$methods(genVarInfo3 = function() {
                         varInfo[[rhsVar]]$maxs[iDim] <<- max(varInfo[[rhsVar]]$maxs[iDim], max(indsHigh))
                     } else {
                         ## If the index is dynamic (marked by NA), there is nothing to learn about index range of the variable.
-                        if(nimbleOptions(allowDynamicIndexing)) if(is.na(indexNamePieces)) next
+                        if(nimbleOptions()$allowDynamicIndexing) if(is.na(indexNamePieces)) next
                         ## Otherwise extend the range of known mins and maxs based on this expression
                         inds <- if(is.numeric(indexNamePieces)) indexNamePieces else BUGSdecl$replacementsEnv[[ indexNamePieces ]]
                         rangeInds <- range(inds)
