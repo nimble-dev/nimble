@@ -641,7 +641,6 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.
 '
-
                                       if(inherits(nodes, 'character')) {
                                           ## elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
                                           ## if(returnScalarComponents)
@@ -664,18 +663,22 @@ Details: The downward search for dependent nodes propagates through deterministi
                                           nodeIDs <- nodes
                                       
                                       if(inherits(omit, 'character')) { ## mimic above if it works
-                                          elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
-                                          if(returnScalarComponents)
-                                              omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
-                                                                   FALSE,
-                                                                   FALSE,
-                                                                   NA)
-                                          else
-                                              omitIDs <- elementIDs
+                                      ##     elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
+                                      ##     if(returnScalarComponents)
+                                      ##         omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
+                                      ##                              FALSE,
+                                      ##                              FALSE,
+                                      ##                              NA)
+                                      ##     else
+                                      ##         omitIDs <- elementIDs
+                                          elementIDs <- modelDef$nodeName2GraphIDs(omit, FALSE)
+                                          omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                                            FALSE,
+                                                            FALSE,
+                                                            NA)
                                       }
                                       else if(inherits(omit, 'numeric'))
                                           omitIDs <- omit
-
 
 ## new C++ version
  depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
@@ -690,7 +693,10 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
                                       if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
                                       if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
-                                      if(!self)	depIDs <- setdiff(depIDs, nodeIDs)
+if(!self)	{
+    nodeFunIDs <- unique(modelDef$maps$vertexID_2_nodeID[ nodeIDs ])
+    depIDs <- setdiff(depIDs, nodeFunIDs)
+}
                                       if(!includeData)	depIDs <- depIDs[!isDataFromGraphID(depIDs)]
                                       if(dataOnly)		depIDs <- depIDs[isDataFromGraphID(depIDs)]
                                       

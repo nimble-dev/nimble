@@ -322,8 +322,17 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
   n = Cnodes.size();
   graphNode *thisGraphNode;
   int thisGraphNodeID;
+  vector<int>::const_iterator omitFinder; 
   for(i = 0; i < n; i++) {
     thisGraphNodeID = Cnodes[i];
+
+    // Need to check Comit
+    // the touching of all Comit nodes still blocks them in the recursion
+    // but for the input nodes, we need to check if they are in Comit because
+    // being touched could also occur from another input node
+    omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
+    if(omitFinder != Comit.end()) continue; // it was in omits
+    
     thisGraphNode = graphNodeVec[ thisGraphNodeID ];
 #ifdef _DEBUG_GETDEPS
     PRINTF("Working on input node %i\n", thisGraphNodeID);
