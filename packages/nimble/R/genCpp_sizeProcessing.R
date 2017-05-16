@@ -16,6 +16,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
                makeCallList(nimbleListReturningOperators, 'sizeNimbleListReturningFunction'),
+               nimOptim = 'sizeOptim',
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     diag = 'sizeDiagonal',
                     dim = 'sizeDim',
@@ -127,6 +128,14 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     code$sizeExprs <- info$sizeExprs
                     code$nDim <- info$nDim
                     code$toEigenize <- 'maybe'
+                }
+            }
+            ## Add RCfunctions to neededRCfuns.
+            if(exists(code$name) && is.rcf(get(code$name))) {
+                nfmObj <- environment(get(code$name))$nfMethodRCobject
+                uniqueName <- nfmObj$uniqueName
+                if (is.null(typeEnv$neededRCfuns[[uniqueName]])) {
+                    typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
                 }
             }
             ## Note that generation of a symbol for LHS of an assignment is done in the sizeAssign function, which is the handler for assignments
@@ -1041,8 +1050,7 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   code$type <- 'nimbleList'
   nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
   nlDef <- nl.getListDef(nlGen)
-  className <- nlDef$className 
-##  nlClassName <- nl.getListDef(nimbleListReturningFunctionList[[code$name]]$nlGen)$className
+  className <- nlDef$className
   symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
   if(is.null(symbolObject)) {
       nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)
@@ -1050,11 +1058,58 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
       symTab$addSymbol(symbolObject)
   }
   code$sizeExprs <- symbolObject
-  code$toEigenize <- "yes"
+  code$toEigenize <- "yes"  # This is specialized for nimSvd and nimEigen.
   code$nDim <- 0
   if(!(code$caller$name %in% assignmentOperators))
       asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   if(length(asserts) == 0) NULL else asserts
+}
+
+sizeOptim <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code$type <- 'nimbleList'
+    nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
+    nlDef <- nl.getListDef(nlGen)
+    className <- nlDef$className
+    symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
+    if(is.null(symbolObject)) {
+        nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)
+        symbolObject <- symbolNimbleListGenerator(name = className, nlProc = nlp)
+        symTab$addSymbol(symbolObject)
+    }
+    code$sizeExprs <- symbolObject
+    code$toEigenize <- "no"
+    code$nDim <- 0
+
+    fnCode <- code$args$fn
+    if (fnCode$name == 'nfMethod') {
+        # This is handled in cppOutputNFmethod.
+    } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
+        # Handle fn arguments that are RCfunctions.
+        fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
+    } else {
+        stop(paste0('unsupported fn argument in optim(par, fn = ', fnCode$name, '); try an RCfunction or nfMethod instead'))
+    }
+
+    grCode <- code$args$gr
+    if (identical(grCode, "NULL")) {
+        # We simply emit "NULL".
+    } else if (grCode$name == 'nfMethod') {
+        # This is handled in cppOutputNFmethod.
+    } else if(exists(grCode$name) && is.rcf(get(grCode$name))) {
+        # Handle gr arguments that are RCfunctions.
+        grCode$name <- environment(get(grCode$name))$nfMethodRCobject$uniqueName
+    } else {
+        stop(paste0('unsupported gr argument in optim(par, gr = ', grCode$name, '); try an RCfunction or nfMethod instead'))
+    }
+
+    for(arg in c(code$args$lower, code$args$upper)) {
+        if(inherits(arg, 'exprClass') && arg$toEigenize=='yes') {
+            asserts <- c(asserts, sizeInsertIntermediate(code, arg$callerArgID, symTab, typeEnv))
+        }
+    }
+
+    if(length(asserts) == 0) NULL else asserts
 }
 
 sizeCppPointerDereference <- function(code, symTab, typeEnv) {

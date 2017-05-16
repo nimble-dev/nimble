@@ -34,7 +34,6 @@ specificCallHandlers = c(
          mvAccess = 'mvAccessHandler',
          numListAccess = 'mvAccessHandler',
          declare = 'declareHandler',
-         nfMethod = 'nfMethodErrorHandler',
          min = 'minMaxHandler',
          max = 'minMaxHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
@@ -61,12 +60,6 @@ exprClasses_processSpecificCalls <- function(code, symTab) {
         handler <- specificCallHandlers[[code$name]]
         if(!is.null(handler)) eval(call(handler, code, symTab))
     }
-}
-
-nfMethodErrorHandler <- function(code, symTab) {
-    if(code$caller$name != 'chainedCall')
-        stop(paste0('Error with ', nimDeparse(code), ': an nfMethod call always needs arguments. e.g. nfMethod(mf, \'foo\')().'), call. = FALSE)
-    NULL
 }
 
 seqAlongHandler <- function(code, symTab) {
