@@ -225,7 +225,13 @@ BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNa
     else distributionName <<- NA
     
     symbolicParentNodesReplaced <<- unique(getSymbolicParentNodes(valueExprReplaced, constantsNamesList, c(context$indexVarExprs, replacementNameExprs), nimFunNames))
-    rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) if(length(x) == 1) as.character(x) else as.character(x[[2]])))
+    if(!nimbleOptions()$allowDynamicIndexing) {
+        rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) 
+            if(length(x) == 1) as.character(x) else as.character(x[[2]])))
+    } else rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) {
+        x <- stripIndexWrapping(x) ## handles dynamic index wrapping
+        if(length(x) == 1) as.character(x) else as.character(x[[2]])
+    }))
 
     ## note that makeIndexNamePieces is designed only for indices that are a single name or number, a `:` operator with single name or number for each argument,
     ##     or an NA (for a dynamic index)
@@ -233,7 +239,12 @@ BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNa
     ## This means makeIndexNamePieces can include a diagnostic
     targetIndexNamePieces <<- try(if(length(targetExprReplaced) > 1) lapply(targetExprReplaced[-c(1,2)], makeIndexNamePieces) else NULL)
     if(inherits(targetIndexNamePieces, 'try-error')) stop(paste('Error occurred defining ', deparse(targetExprReplaced)), call. = FALSE)
-    parentIndexNamePieces <<- lapply(symbolicParentNodesReplaced, function(x) if(length(x) > 1) lapply(x[-c(1,2)], makeIndexNamePieces) else NULL)
+    if(!nimbleOptions()$allowDynamicIndexing) {
+        parentIndexNamePieces <<- lapply(symbolicParentNodesReplaced, function(x) if(length(x) > 1) lapply(x[-c(1,2)], makeIndexNamePieces) else NULL)
+    } else parentIndexNamePieces <<- lapply(symbolicParentNodesReplaced, function(x) {
+        x <- stripIndexWrapping(x)
+        if(length(x) > 1) lapply(x[-c(1,2)], makeIndexNamePieces) else NULL
+    })
     NULL
 })
                       
