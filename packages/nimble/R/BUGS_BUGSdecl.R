@@ -415,6 +415,10 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                     else {
                         dynamicIndexParent <- code
                         dynamicIndexParent[-c(1, 2)][ !contentsReplaceable] <- NA
+                        contentsCode = lapply(contentsCode, function(x) substitute(  
+                            .USED_IN_INDEX(CONTENTSCODE),
+                            list(CONTENTSCODE = x)))
+                            # lapply should deal with multiple dyn indices: mu[foo(k[i]),2,j[i]]
                     }
                     return(list(code = c(contentsCode, list(dynamicIndexParent)),
                                 replaceable = FALSE,
