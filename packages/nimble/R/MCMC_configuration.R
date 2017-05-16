@@ -633,6 +633,7 @@ rule <- setRefClass(
 #' @export
 #' @description
 #' Objects of this class specify an ordered set of rules for assigning MCMC sampling algorithms to the stochastic nodes in a BUGS model.
+#' This feature can be enabled by setting the NIMBLE option \code{MCMCuseSamplerAssignmentRules} to \code{TRUE}.
 #' The rules can be modified to alter under what circumstances various samplers are assigned, and with what precedence.
 #' When assigning samplers to each stochastic node, the set of rules is traversed beginning with the first, until a matching rule is found.
 #' When a matching rule is found, the sampler specified by that rule is assigned (or general code for sampler assignment is executed),
@@ -646,6 +647,9 @@ rule <- setRefClass(
 #' @author Daniel Turek
 #' @seealso \code{\link{configureMCMC}}
 #' @examples
+#' ## enable the use of samplerAssignmentRules:
+#' nimbleOptions(MCMCuseSamplerAssignmentRules = TRUE)
+#' 
 #' ## omitting empty=TRUE creates a copy of nimble's default rules
 #' my_rules <- samplerAssignmentRules(empty = TRUE)
 #' 
