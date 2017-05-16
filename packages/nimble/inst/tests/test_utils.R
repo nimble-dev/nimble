@@ -838,3 +838,32 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     invisible(NULL)
 }
  
+## utilities for saving test output to a reference file
+## and making the test a comparison of the file
+clearOldOutput <- function(filename) {
+    if(file.exists(filename)) file.remove(filename)
+}
+
+appendOutput <- function(filename, case, caseName, casePrefix = "") {
+    outputConnection <- file(filename, open = 'at')
+    writeLines(caseName, con = outputConnection)
+    outputAns <- lapply(case, function(x) writeLines(paste0(casePrefix, paste(x, collapse = " ")), con = outputConnection))
+    close(outputConnection)
+}
+
+writeOutput <- function(cases, filename) {
+    clearOldOutput(filename)
+    for(i in seq_along(cases)) appendOutput(filename, cases[[i]], names(cases)[i], casePrefix = paste0(i,": "))
+}
+
+compareFilesByLine <- function(trialResults, correctResults, main = "") {
+    test_that(paste0(main, ': same number of output lines'),
+          expect_equal(length(trialResults), length(correctResults)))
+    
+    linesToTest <- min(length(trialResults), length(correctResults))
+    mapply(function(lineno, trialLine, correctLine) {
+        test_that(paste0(main, ": output line #", lineno),
+                  expect_identical(trialLine, correctLine))
+    }, 1:linesToTest, trialResults, correctResults)
+    invisible(NULL)
+}

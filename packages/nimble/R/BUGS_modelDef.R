@@ -1230,9 +1230,9 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
         }
     }
     ## splits is a list of vectors of the indices that share the same indArr value
-    ## e.g. is indArr is [1 1 1; 2 2 2; 2 2 2]
-    ## Then the first element of splits will be `1`: [1 1 1] and the second will be `2`: [2 2 2 3 3 3].  These are vectors of row numbers
-    ## And the second element of splits will be `1`: [1 2 3] and the second will be `2`: [1 2 3 1 2 3].  These are vectors of column numbers
+    ## e.g. if indArr is [1 1 1; 2 2 2; 2 2 2]
+    ## Then the first element of splits will be `1`: [1 1 1] and the second will be `2`: [2 3 2 3 2 3].  These are vectors of row numbers
+    ## And the second element of splits will be `1`: [1 2 3] and the second will be `2`: [1 1 2 2 3 3].  These are vectors of column numbers
     ## etc.
     splits <- lapply(arrayWithIndices, split, indArr)
 
@@ -1255,26 +1255,7 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
     dimStrings[['sep']] <- ', '
     newNames <- paste0(varName, '[',  do.call('paste', dimStrings), ']') ## paste together pieces from different dimensions
     list(indices = as.integer(names(splits[[1]])), names = newNames)
-##    contigs <- lapply(splits, lapply, function(x) 
 }
-
-## makeVertexNamesFromIndexArray <- function(indArr, minInd = 1, varName) {
-##     ## Obvious potential for speedup via C
-##     uniqueInds <- unique(as.numeric(indArr))
-##     if(minInd > 1) uniqueInds <- uniqueInds[uniqueInds >= minInd]
-##     uniqueInds <- uniqueInds[!is.na(uniqueInds)]
-##     newNames <- character(length(uniqueInds))
-##     strfun <- function(x) if(x[1] == x[2]) as.character(x[1]) else paste0(x[1], ':', x[2])
-##     for(iI in seq_along(uniqueInds)) {
-##         i <- uniqueInds[iI]
-##         locationsInArray <- which(indArr == i, TRUE)
-##         ranges <- apply(locationsInArray, 2, range)
-##         strings <- apply(ranges, 2, strfun)
-##         contiguous <- nrow(locationsInArray) == prod(diff(ranges) + 1)
-##         newNames[iI] <- paste0( varName, if(contiguous) character(0) else "split", '[', paste0(strings, collapse = ", "), ']')
-##     }
-##     list(indices = uniqueInds, names = newNames)
-## }
 
 splitVertexIDsToElementIDs <- function(var2vertexID, nextVertexID) {
     vertexIDtable <- tabulate(var2vertexID) ## this fills in 0s for all elements
