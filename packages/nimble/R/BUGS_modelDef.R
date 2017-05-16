@@ -802,14 +802,18 @@ modelDefClass$methods(liftExpressionArgs = function() {
                 if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower', 'upper'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
                 paramExpr <- params[[iParam]]
                 if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
-                newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE)))   ## create the name of the new node ##nameMashup
+                requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
+                uniquePiece <- if(requireNewAndUniqueDecl) paste0("_L", BUGSdecl$sourceLineNumber) else ""
+                newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
                 newNodeNameExprIndexed <- addNecessaryIndexingToNewNode(newNodeNameExpr, paramExpr, contexts[[BUGSdecl$contextID]]$indexVarExprs)  ## add indexing if necessary
                 
                 newValueExpr[[iParam + 1]] <- newNodeNameExprIndexed  ## update the newValueExpr
                 
                 newNodeCode <- substitute(LHS <- RHS, list(LHS = newNodeNameExprIndexed, RHS = paramExpr))     ## create code line for declaration of new node
-                if(!checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)) {
-                    
+                ## if requireNewAndUniqueDecl is TRUE, the _L# is appended to the newNodeNameExpr and it should be impossible for this to be TRUE:
+                identicalNewDecl <- checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)
+                
+                if(!identicalNewDecl) {
                     BUGSdeclClassObject <- BUGSdeclClass$new()
                     BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, FALSE, NULL)   ## keep new declaration in the same context, regardless of presence/absence of indexing
                     newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
@@ -866,7 +870,7 @@ extractAnyVectorizedIndexExprs <- function(expr) {
 checkForDuplicateNodeDeclaration <- function(newNodeCode, newNodeNameExprIndexed, newDeclInfo) {
     for(i in seq_along(newDeclInfo)) {
         if(identical(newNodeNameExprIndexed, newDeclInfo[[i]]$targetExpr)) {
-            ## we've found a node declaration with exactly the same LHS
+            ## we've found a node declaration with exactly the same LHS, which is a mangling of the RHS during lifting
             if(!identical(newNodeCode, newDeclInfo[[i]]$code))   { stop('something fishy going on with our new node declarations.....') }
             return(TRUE)   ## indicate that we found a matching node declaration
         }
