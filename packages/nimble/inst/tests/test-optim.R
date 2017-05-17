@@ -2,7 +2,8 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of the optim() function in NIMBLE code")
 
-supportedMethods <- c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")
+# The method "SANN" uses the gr arg to specify a transition kernel, so we test it independently.
+methodsAllowingGradient <- c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")
 
 # Test helper to verify code.
 normalizeWhitespace <- function(lines) {
@@ -152,7 +153,7 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the R 
     temporarilyAssignInGlobalEnv(nimGr)  # Work around scoping issues.
     # Test approximate agreement (i.e. that most fields agree).
     par <- c(1.2, 3.4)
-    for (method in supportedMethods) {
+    for (method in methodsAllowingGradient) {
         info = paste(' where method =', method)
         expected <- caller(par, method)
         actual <- nimCaller$run(par, method)
@@ -292,7 +293,7 @@ test_that("when an RCfunction optim()izes an RCfunction with gradient, the DSL a
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
     # Test approximate agreement (i.e. that most fields agree).
     par <- c(1.2, 3.4)
-    for (method in supportedMethods) {
+    for (method in methodsAllowingGradient) {
         info = paste(' where method =', method)
         expected <- nimCaller(par, method)
         actual <- compiledCaller(par, method)
@@ -330,7 +331,7 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
     # Test approximate agreement (i.e. that most fields agree).
     par <- c(1.2, 3.4)
-    for (method in supportedMethods) {
+    for (method in methodsAllowingGradient) {
         info = paste(' where method =', method)
         expected <- nimCaller$run(par, method)
         actual <- compiledCaller$run(par, method)

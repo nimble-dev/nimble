@@ -114,8 +114,11 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
                msg, control->trace, control->REPORT);
         result->message = msg;
     } else if (method == "SANN") {
+        const int trace = control->trace ? control->REPORT : 0;
         samin(n, dpar, Fmin, NimOptimProblem::fn, control->maxIt, control->tmax,
-              control->temp, control->trace, ex);
+              control->temp, trace, ex);
+        result->par = par;
+        result->counts[0] = control->maxIt;
     } else {
         NIMERROR("Unknown method: %s", method.c_str());
     }

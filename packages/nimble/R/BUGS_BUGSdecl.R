@@ -6,10 +6,11 @@ nimbleOrRfunctionNames <- c('[','+','-','/','*','(','exp','log','pow','^','%%','
                             'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'step', 'nimStep',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
                             'cube', 'abs', 'lgamma', 'loggam', 'log1p', 'lfactorial', ##'factorial', 'gamma',
-                            'ceiling', 'floor', 'round', 'nimRound', 'optim', 'nimOptim', 'trunc',
+                            'ceiling', 'floor', 'round', 'nimRound', 'trunc',
+                            'optim', 'nimOptim', 'optimDefaultControl', 'nimOptimDefaultControl',
                             'mean','sum','sd','var','max','min','prod',
                             'asRow', 'asCol',
-                            'chol', 'inverse', 'forwardsolve', 'backsolve', 'solve', 'nimEigen', 'nimSvd', 'nimOptim',  ## removed these from BUGS functions, pending problems with Eigen
+                            'chol', 'inverse', 'forwardsolve', 'backsolve', 'solve', 'nimEigen', 'nimSvd',  ## removed these from BUGS functions, pending problems with Eigen
                             '>', '<', '>=', '<=', '==', '!=', '&', '|', '$',
                             distributionFuns,
                             # these are allowed in DSL as special cases even though exp_nimble and t_nonstandard are the canonical NIMBLE distribution functions

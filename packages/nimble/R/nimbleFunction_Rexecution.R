@@ -1150,7 +1150,16 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
     return(nimResult)
 }
 
-#' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
+#' EXPERIMENTAL Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
+#'
+#' @return an empty \code{list}.
+#' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
+#' @export
+optimDefaultControl <- function() {
+    return(list())
+}
+
+#' EXPERIMENTAL Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
 #'
 #' @return \code{\link{optimControlNimbleList}}
 #' @seealso \code{\link{nimOptim}}, \code{\link{optim}}

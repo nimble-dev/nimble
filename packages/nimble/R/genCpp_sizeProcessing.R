@@ -17,6 +17,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
                makeCallList(nimbleListReturningOperators, 'sizeNimbleListReturningFunction'),
                nimOptim = 'sizeOptim',
+               nimOptimDefaultControl = 'sizeOptimDefaultControl',
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     diag = 'sizeDiagonal',
                     dim = 'sizeDim',
@@ -1108,6 +1109,25 @@ sizeOptim <- function(code, symTab, typeEnv) {
             asserts <- c(asserts, sizeInsertIntermediate(code, arg$callerArgID, symTab, typeEnv))
         }
     }
+
+    if(length(asserts) == 0) NULL else asserts
+}
+
+sizeOptimDefaultControl <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code$type <- 'nimbleList'
+    nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
+    nlDef <- nl.getListDef(nlGen)
+    className <- nlDef$className
+    symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
+    if(is.null(symbolObject)) {
+        nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)
+        symbolObject <- symbolNimbleListGenerator(name = className, nlProc = nlp)
+        symTab$addSymbol(symbolObject)
+    }
+    code$sizeExprs <- symbolObject
+    code$toEigenize <- "no"
+    code$nDim <- 0
 
     if(length(asserts) == 0) NULL else asserts
 }
