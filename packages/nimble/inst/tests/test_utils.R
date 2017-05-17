@@ -18,6 +18,14 @@ system.in.dir <- function(cmd, dir = '.') {
         system(cmd)
 }
 
+## This is useful for working around scoping issues with nimbleFunctions using other nimbleFunctions.
+temporarilyAssignInGlobalEnv <- function(value) {
+    name <- deparse(substitute(value))
+    assign(name, value, envir = .GlobalEnv)
+    rmCommand <- substitute(remove(name, envir = .GlobalEnv))
+    do.call('on.exit', list(rmCommand), envir = parent.frame())
+}
+
 gen_runFunCore <- function(input) {
     runFun <- function() {}
     formalsList <- input$args
