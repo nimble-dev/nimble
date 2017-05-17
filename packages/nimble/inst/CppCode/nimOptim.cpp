@@ -87,7 +87,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     int* fail = &(result->convergence);
     void* ex = this;
     int* fncount = &(result->counts[0]);
-    int* grcount = &(result->counts[0]);
+    int* grcount = &(result->counts[1]);
 
     if (method == "Nelder-Mead") {
         nmmin(n, dpar, X, Fmin, NimOptimProblem::fn, fail, control->abstol,
@@ -98,6 +98,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         vmmin(n, dpar, Fmin, NimOptimProblem::fn, NimOptimProblem::gr,
               control->maxIt, control->trace, mask.data(), control->abstol,
               control->reltol, control->REPORT, ex, fncount, grcount, fail);
+        result->par = par;
     } else if (method == "CG") {
         cgmin(n, dpar, X, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
               control->abstol, control->reltol, ex, control->type,

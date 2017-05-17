@@ -42,8 +42,8 @@ class NimOptimProblem {
         nimSmartPtr<OptimControlNimbleList> control, bool hessian);
 
    private:
-    // These are callbacks for R's optim() where this is passed in as the final
-    // argument `void * ex`.
+    // These are callbacks for R's optim() where `this` is passed in as the
+    // final argument `void * ex`.
     static double fn(int, double*, void*);
     static void gr(int, double*, double*, void*);
 
