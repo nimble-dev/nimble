@@ -24,6 +24,7 @@ Rscript packages/nimble/inst/tests/test-nimbleFunctionInterfaces.R
 Rscript packages/nimble/inst/tests/test-nimbleList.R
 Rscript packages/nimble/inst/tests/test-nimbleList_RCfun.R
 Rscript packages/nimble/inst/tests/test-numericTypes.R
+Rscript packages/nimble/inst/tests/test-optim.R
 Rscript packages/nimble/inst/tests/test-setData.R
 Rscript packages/nimble/inst/tests/test-size.R
 Rscript packages/nimble/inst/tests/test-trunc.R
