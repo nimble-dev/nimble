@@ -39,7 +39,7 @@ pumpMCEM <- buildMCEM(model = pump,
 ## C changed from .001 to .01 to make the test run faster
 ## Correspondingly changed tolerance below from 0.01 to 0.04
 set.seed(0)
-out <- pumpMCEM(initM = 1000)
+out <- pumpMCEM$run(initM = 1000)
 names(out) <- NULL
 
 mle <- c(0.82, 1.26)
