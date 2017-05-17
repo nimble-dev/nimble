@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh -ex
 
 Rscript packages/nimble/inst/tests/test-allocation.R
 Rscript packages/nimble/inst/tests/test-checkDSL.R
