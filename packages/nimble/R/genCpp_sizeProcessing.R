@@ -1,4 +1,4 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'getValuesIndexRange', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr', 'dimNimArr', 'assignNimArrToNimArr')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rinvwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'getValuesIndexRange', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr', 'dimNimArr', 'assignNimArrToNimArr')
 setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
@@ -16,6 +16,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
                makeCallList(nimbleListReturningOperators, 'sizeNimbleListReturningFunction'),
+               nimOptim = 'sizeOptim',
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     diag = 'sizeDiagonal',
                     dim = 'sizeDim',
@@ -71,8 +72,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(paste0(c('d','q','p'), 'exp'), 'sizeRecyclingRule'),
                rexp = 'sizeRecyclingRuleRfunction',
                makeCallList(c('isnan','ISNAN','ISNA'), 'sizeScalarRecurse'),
-               makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
-               makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
+               makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dinvwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
+               makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rinvwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
                makeCallList(c('decide', 'size', 'getsize','getNodeFunctionIndexedInfo', 'endNimbleTimer'), 'sizeScalar'),
                makeCallList(c('calculate','calculateDiff', 'getLogProb'), 'sizeScalarModelOp'),
                simulate = 'sizeSimulate',
@@ -127,6 +128,14 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     code$sizeExprs <- info$sizeExprs
                     code$nDim <- info$nDim
                     code$toEigenize <- 'maybe'
+                }
+            }
+            ## Add RCfunctions to neededRCfuns.
+            if(exists(code$name) && is.rcf(get(code$name))) {
+                nfmObj <- environment(get(code$name))$nfMethodRCobject
+                uniqueName <- nfmObj$uniqueName
+                if (is.null(typeEnv$neededRCfuns[[uniqueName]])) {
+                    typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
                 }
             }
             ## Note that generation of a symbol for LHS of an assignment is done in the sizeAssign function, which is the handler for assignments
@@ -1041,8 +1050,7 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   code$type <- 'nimbleList'
   nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
   nlDef <- nl.getListDef(nlGen)
-  className <- nlDef$className 
-##  nlClassName <- nl.getListDef(nimbleListReturningFunctionList[[code$name]]$nlGen)$className
+  className <- nlDef$className
   symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
   if(is.null(symbolObject)) {
       nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)
@@ -1050,11 +1058,58 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
       symTab$addSymbol(symbolObject)
   }
   code$sizeExprs <- symbolObject
-  code$toEigenize <- "yes"
+  code$toEigenize <- "yes"  # This is specialized for nimSvd and nimEigen.
   code$nDim <- 0
   if(!(code$caller$name %in% assignmentOperators))
       asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   if(length(asserts) == 0) NULL else asserts
+}
+
+sizeOptim <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code$type <- 'nimbleList'
+    nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
+    nlDef <- nl.getListDef(nlGen)
+    className <- nlDef$className
+    symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
+    if(is.null(symbolObject)) {
+        nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)
+        symbolObject <- symbolNimbleListGenerator(name = className, nlProc = nlp)
+        symTab$addSymbol(symbolObject)
+    }
+    code$sizeExprs <- symbolObject
+    code$toEigenize <- "no"
+    code$nDim <- 0
+
+    fnCode <- code$args$fn
+    if (fnCode$name == 'nfMethod') {
+        # This is handled in cppOutputNFmethod.
+    } else if(exists(fnCode$name) && is.rcf(get(fnCode$name))) {
+        # Handle fn arguments that are RCfunctions.
+        fnCode$name <- environment(get(fnCode$name))$nfMethodRCobject$uniqueName
+    } else {
+        stop(paste0('unsupported fn argument in optim(par, fn = ', fnCode$name, '); try an RCfunction or nfMethod instead'))
+    }
+
+    grCode <- code$args$gr
+    if (identical(grCode, "NULL")) {
+        # We simply emit "NULL".
+    } else if (grCode$name == 'nfMethod') {
+        # This is handled in cppOutputNFmethod.
+    } else if(exists(grCode$name) && is.rcf(get(grCode$name))) {
+        # Handle gr arguments that are RCfunctions.
+        grCode$name <- environment(get(grCode$name))$nfMethodRCobject$uniqueName
+    } else {
+        stop(paste0('unsupported gr argument in optim(par, gr = ', grCode$name, '); try an RCfunction or nfMethod instead'))
+    }
+
+    for(arg in c(code$args$lower, code$args$upper)) {
+        if(inherits(arg, 'exprClass') && arg$toEigenize=='yes') {
+            asserts <- c(asserts, sizeInsertIntermediate(code, arg$callerArgID, symTab, typeEnv))
+        }
+    }
+
+    if(length(asserts) == 0) NULL else asserts
 }
 
 sizeCppPointerDereference <- function(code, symTab, typeEnv) {
@@ -2871,6 +2926,8 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
                              nimArr_rmvt_chol = list(c(1, 2, 0, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), df(scalar), prec_param(scalar)
                                                        1, 'double'), ## 1 = argument from which to take answer size, double = answer type
                              nimArr_rwish_chol = list(c(2, 0, 0, 0), ## chol, df, prec_param, overwrite_inputs
+                                 1, 'double'),
+                             nimArr_rinvwish_chol = list(c(2, 0, 0), ## chol, df, prec_param
                                  1, 'double'),
                              nimArr_rmulti = list(c(0, 1), ## size, probs
                                  2, 'double'), ## We treat integer rv's as doubles

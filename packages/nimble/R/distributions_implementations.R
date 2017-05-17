@@ -51,6 +51,56 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     return(out)
 }
 
+#' The Inverse Wishart Distribution
+#'
+#' Density and random generation for the Inverse Wishart distribution, using the Cholesky factor of either the scale matrix or the rate matrix.
+#'
+#' @name Inverse-Wishart
+#' @aliases inverse-wishart
+#' 
+#' @param x vector of values.
+#' @param n number of observations (only \code{n=1} is handled currently).
+#' @param cholesky upper-triangular Cholesky factor of either the scale matrix (when \code{scale_param} is TRUE) or rate matrix (otherwise).
+#' @param df degrees of freedom.
+#' @param scale_param logical; if TRUE the Cholesky factor is that of the scale matrix; otherwise, of the rate matrix.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @author Christopher Paciorek
+#' @export
+#' @details See Gelman et al., Appendix A for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
+#' @return \code{dinvwish_chol} gives the density and \code{rinvwish_chol} generates random deviates.
+#' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' df <- 40
+#' ch <- chol(matrix(c(1, .7, .7, 1), 2))
+#' x <- rwish_chol(1, ch, df = df)
+#' dwish_chol(x, ch, df = df)
+#'
+NULL
+
+#' @rdname Inverse-Wishart
+#' @export
+dinvwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
+  # scale_param = FALSE is the GCSR parameterization (i.e., inverse scale matrix); scale_param = TRUE is the parameterization best for conjugacy calculations (i.e., scale matrix)
+    if(storage.mode(cholesky) != 'double')
+          storage.mode(cholesky) <- 'double'
+    if(storage.mode(x) != 'double')
+            storage.mode(x) <- 'double'
+    .Call('C_dinvwish_chol', x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
+}
+
+#' @rdname Inverse-Wishart
+#' @export
+rinvwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
+    if(n != 1) warning('rinvwish_chol only handles n = 1 at the moment')
+    if(storage.mode(cholesky) != 'double')
+    	storage.mode(cholesky) <- 'double'
+    out <- .Call('C_rinvwish_chol', cholesky, as.double(df), as.double(scale_param))
+    if(!is.null(out)) out <- matrix(out, nrow = sqrt(length(cholesky)))
+    return(out)
+}
+
 
 #' Spectral Decomposition of a Matrix  
 #'

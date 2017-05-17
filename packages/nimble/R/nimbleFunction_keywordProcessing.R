@@ -814,6 +814,8 @@ matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctio
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
+matchFunctions[['nimOptim']] <- nimOptim
+matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
@@ -863,7 +865,7 @@ for(distfun in paste0(c('d','p','q','r'), 'nbinom'))
 
 
 # the following are standard in terms of both matchFunctions and keywordList
-matchDistList <- list('binom', 'cat', 'dirch', 'interval', 'lnorm', 'logis', 'multi', 'mnorm_chol', 'mvt_chol', 'norm', 'pois', 't_nonstandard', 'unif', 'weibull', 'wish_chol')
+matchDistList <- list('binom', 'cat', 'dirch', 'interval', 'lnorm', 'logis', 'multi', 'mnorm_chol', 'mvt_chol', 'norm', 'pois', 't_nonstandard', 'unif', 'weibull', 'wish_chol', 'invwish_chol')
 # these are standard for keywordList and handled specially above for matchFunctions
 ##keywordOnlyMatchDistList <- list('t', 'beta', 'chisq', 'nbinom')
 
@@ -1282,9 +1284,9 @@ matchAndFill.call <- function(def, call){
     missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
     for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
         name <- names(theseFormals)[ind]
-        matchedCall[[name]] <- theseFormals[[name]]    
+        matchedCall[[name]] <- (if(is.null(theseFormals[[name]])) list(NULL) else theseFormals[[name]])
     }
-    
+
     newCall <- matchedCall[1]
 
     if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL

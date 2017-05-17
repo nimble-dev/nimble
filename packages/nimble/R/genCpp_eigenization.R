@@ -1,4 +1,3 @@
-
 ######################################
 ## System to label for eigenization ##
 ######################################
@@ -112,7 +111,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
 )
 
 eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRisk. ## getParam always triggers an intermediate so it should never need handling here
-    makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam', 'getBound', 'getNodeFunctionIndexedInfo', 'concatenateTemp', 'MAKE_FIXED_VECTOR', 'hardCodedVectorInitializer'), 'eigenize_doNotRecurse'),
+    makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dinvwish_chol', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam', 'getBound', 'getNodeFunctionIndexedInfo', 'concatenateTemp', 'MAKE_FIXED_VECTOR', 'hardCodedVectorInitializer'), 'eigenize_doNotRecurse'),
     list(coeffSetter = 'eigenize_coeffSetter',
          nfVar = 'eigenize_nfVar',
          chainedCall = 'eigenize_chainedCall',
@@ -816,6 +815,7 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
 
 eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     targetSym <- symTab$getSymbolObject(code$name, TRUE)
+    if(is.null(targetSym)) stop(paste('Internal error: symbol not found:', code$name))
     if(inherits(targetSym, 'symbolNimbleList')) return(NULL)
     if(!exists('nDim', envir = targetSym, inherits = FALSE)) {
        ## contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()

@@ -205,7 +205,16 @@ distributionsInputList <- list(
                    altParams = c('R = inverse(t(cholesky)%*%cholesky)',
                                  'S = inverse(t(cholesky)%*%cholesky)'),
                    alias    = 'dwishart',
-                   types    = c('value = double(2)', 'R = double(2)', 'S = double(2)', 'cholesky = double(2)'))
+                   types    = c('value = double(2)', 'R = double(2)', 'S = double(2)', 'cholesky = double(2)')),
+    # altParams ok here (but still would like back/forwardsolve), because code in altParams only used for R if S was provided by user and vice versa, so don't need 'if'
+
+    dinvwish   = list(BUGSdist = 'dinvwish(S, df, R)',
+                   Rdist    = c('dinvwish_chol(cholesky = chol(S), df, scale_param = 1)',
+                                'dinvwish_chol(cholesky = chol(R), df, scale_param = 0)'),
+                   altParams = c('R = inverse(t(cholesky)%*%cholesky)',
+                                 'S = inverse(t(cholesky)%*%cholesky)'),
+                   alias    = 'dinvwishart',
+                   types    = c('value = double(2)', 'S = double(2)', 'R = double(2)', 'cholesky = double(2)'))
     # altParams ok here (but still would like back/forwardsolve), because code in altParams only used for R if S was provided by user and vice versa, so don't need 'if'
 )
 
