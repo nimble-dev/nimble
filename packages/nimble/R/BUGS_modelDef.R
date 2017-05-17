@@ -105,7 +105,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  genVarInfo3                    = function() {},
 
                                  # put check of var dims here?
-
+                                 findDynamicIndexParticipants   = function() {},
                                  genExpandedNodeAndParentNames3 = function() {},
                                  
                                  #These functions are NOT run inside of setupModel
@@ -158,6 +158,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv
     genReplacedTargetValueAndParentInfo() ## In each declInfo[[i]], symbolicParentNodesReplaced, rhsVars, targetIndexNamePieces, and parentIndexNamePieces set
     genNodeInfo3(debug = debug)           ## In each contexts[[i]], replacementsEnv set. In each declInfo[[i]], replacementsEnv, unrolledIndicesMatrix, outputSize, and numUnrolledNodes set
     genVarInfo3()                         ## Sets varInfo[[nodeNames]] and logProbVarInfo[[nodeNames]] with varInfoClass objects (varName mins, maxs, nDim, anyStoch)
+    findDynamicIndexParticipants(debug = debug) ## find vertices/variable elements involved in dynamic indexing
     genExpandedNodeAndParentNames3(debug = debug) ## heavy processing: all graphIDs, maps, graph, nodeNames etc. built here
     maps$setPositions3()                  ## Determine top, latent and end nodes
     buildSymbolTable()                    ## 
@@ -1277,7 +1278,7 @@ splitCompletionForOrigNodes <- function(var2nodeOrigID, var2vertexID, maxOrigNod
 }
 
 splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, indexNames = NULL, parentExpr, parentExprReplaced = NULL, parentIndexNamePieces, replacementNameExprs, nextVertexID, maxVertexID, debug = FALSE) {
-        if(debug) browser()
+    if(debug) browser()
     ## parentIndexNamePieces: when there is an NA for a dynamic index, we should assume a split on the full range of values.
     ## This is the same case as anyContext = TRUE and all(useContent) = TRUE, i.e. boolUseUnrolledRow <- rep(TRUE, nrow(unrolledBUGSindices))
     ## The "context" label may sometimes apply to x[dynamicI] even with no context.
@@ -1285,6 +1286,16 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
 
         ## 1. Determine which indexExprs are in parentExpr
     useContext <- unlist(lapply(indexExprs, isNameInExprList, parentExpr))
+    # CJP: 5/17/17
+    if(nimbleOptions()$allowDynamicIndexing) {
+        dynamicIndices <- sapply(parentExpr[3:length(parentExpr)], function(x) is.numeric(x) && is.na(x))
+        if(any(dynamicIndices)) {
+            if(length(parentExpr) > 3 || length(indexExprs) > 1) stop("splitVertices: dynamic indexing with multiple indices not yet allowed in: ", deparse(parentExpr))
+            useContext <- TRUE  # we want to fracture into element-wise vertices
+        }
+    }
+    # FIXME: what about case where parent is already fractured based on LHS?
+    
     anyContext <- any(useContext)
     ## 2. Use unique or duplicated on unrolledBUGSindices to get a needed set
     if(anyContext) {
@@ -1296,7 +1307,13 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
     ## 3. Determine if indices are all scalar
         allScalar <- TRUE
         ## parentIndexNamePieces NA: need to decide if these count for scalar processing. I think they would count as scalar, using the 
-    vectorIndices <- lapply(parentIndexNamePieces, function(x) {if(is.list(x)) {allScalar <<- FALSE; return(TRUE)}; FALSE})
+    vectorIndices <- lapply(parentIndexNamePieces, function(x) {
+        if(is.list(x)) {
+            allScalar <<- FALSE;
+            return(TRUE)
+        }
+        FALSE
+    })
 
         ## step 4 evaporated
         if(all(is.na(var2vertexID)))
@@ -1316,7 +1333,20 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
                 varIndicesToUse <- matrix(nrow = sum(boolUseUnrolledRow), ncol = length(parentIndexNamePieces))
                 varIndicesToUse[, boolIndexNamePiecesExprs] <- unrolledBUGSindices[ boolUseUnrolledRow, unlist(parentIndexNamePieces)[boolIndexNamePiecesExprs]]
                 indexPieceNumericInds <- which(!boolIndexNamePiecesExprs)
-                for(iii in seq_along(indexPieceNumericInds)) varIndicesToUse[, indexPieceNumericInds[iii] ] <- parentIndexNamePieces[[ indexPieceNumericInds[iii] ]]
+                if(!nimbleOptions()$allowDynamicIndexing) { # CJP 5/17/17
+                    for(iii in seq_along(indexPieceNumericInds))
+                        varIndicesToUse[, indexPieceNumericInds[iii] ] <-
+                            parentIndexNamePieces[[ indexPieceNumericInds[iii] ]]
+                } else {
+                    # CJP 5/17/17
+                    # FIXME: not right, even for simple mu[NA] as we need extent of mu not extent of context
+                    for(iii in seq_along(indexPieceNumericInds))
+                        if(dynamicIndices[iii]) {
+                            varIndicesToUse[ , indexPieceNumericInds[iii] ] <-
+                                unrolledBUGSindices[ boolUseUnrolledRow, indexPieceNumericInds[iii] ]
+                        } else varIndicesToUse[, indexPieceNumericInds[iii] ] <-
+                            parentIndexNamePieces[[ indexPieceNumericInds[iii] ]]
+                }
             }
         }        
         else { ## is it hard-coded like x ~ dnorm(mu[1,2], 1)
@@ -1483,6 +1513,20 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
 }
 
 
+# Note: this method can only appear before genExpandedNodeAndParentNames3 if done by variable not if done by vertex as vertices created in genExpandedNodeAndParentNames3
+modelDefClass$methods(findDynamicIndexParticipants = function(debug = FALSE) {
+## this will walk through declarations and find elements used in dynamic indexing
+## will also strip out .USED_IN_INDEX at this stage
+## I believe we want to record usage in dynamic indices based on variables rather than vertices given that we plan to have changes to values (which are stored based on variables) trigger changes in graph
+## however, we may allow an entire vertex to be the stochastic index, so this might be vertex-based, e.g.
+    # y[i,1:3] ~ dmnorm(mu[k[i,1:3]],...)  ; in this case the vertex k[1,1:3] is involved in a dynamic index
+
+    ## for now all this does is strip out .USED_IN_INDEX
+    for(iDI in seq_along(declInfo)) {
+        declInfo[[iDI]]$symbolicParentNodes <<- lapply(declInfo[[iDI]]$symbolicParentNodes, stripIndexWrapping)
+    }
+    # CJP note: make use of $replacementsEnv[[indexNamePieces]] to get indexing used in a decl
+})
 
 modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 ## This is a (ridiculously long) function that works through the BUGS lines (declInfo elements) and varInfo to set up the graph and maps
@@ -2112,10 +2156,12 @@ modelDefClass$methods(genIsDataVarInfo = function() {
             anyStoch = FALSE))
     names(isDataVarInfo) <<- lapply(isDataVarInfo, `[[`, 'varName')
 })
+
 modelDefClass$methods(genVarNames = function() {
     ## uses varInfo and logProbVarInfo to set field: varNames
     varNames <<- c(names(varInfo), names(logProbVarInfo))
 })
+
 modelDefClass$methods(buildSymbolTable = function() {
     ## uses varInfo and logProbVarInfo to set field: symTab
     
@@ -2391,7 +2437,4 @@ getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {
         NULL
 }
 
-
-stripIndexWrapping <- function(expr) 
-    if(length(expr) == 1 || expr[[1]] != quote(.USED_IN_INDEX)) return(expr) else return(expr[[2]])
 
