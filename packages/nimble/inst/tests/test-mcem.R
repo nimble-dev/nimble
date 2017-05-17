@@ -96,7 +96,7 @@ mixedEffData <- list(y = c(248.4, 254.8, 380.4, 332.7, 329.1, -31.7, 2.8,
 mixedEffConsts = list(ngroups=max(mixedEffGroups), n=length(mixedEffGroups), groups = mixedEffGroups)
 mixedEffMod <- nimbleModel(mixedEffCode, data = mixedEffData, constants = mixedEffConsts)
 compileNimble(mixedEffMod)
-mixedEffMCEM <- buildMCEM2(model = mixedEffMod,
+mixedEffMCEM <- buildMCEM(model = mixedEffMod,
                        latentNodes = 'B', burnIn = 300,
                        mcmcControl = list(adaptInterval = 100),
                        boxConstraints = list(),

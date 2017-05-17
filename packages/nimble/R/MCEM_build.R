@@ -183,7 +183,7 @@ getMCEMRanges <- nimbleFunction(
 #' }
 #' # Could also use latentNodes = 'theta' and buildMCEM() would figure out this means 'theta[1:10]'
 #' 
-buildMCEM2 <- function(model, latentNodes, getAsympCov = TRUE, burnIn = 500 , mcmcControl = list(adaptInterval = 100),
+buildMCEM <- function(model, latentNodes, getAsympCov = TRUE, burnIn = 500 , mcmcControl = list(adaptInterval = 100),
                       boxConstraints = list(), buffer = 10^-6, alpha = 0.25, beta = 0.25, 
                       gamma = 0.05, C = 0.001, numReps = 300, verbose = TRUE) {
   latentNodes = model$expandNodeNames(latentNodes)
