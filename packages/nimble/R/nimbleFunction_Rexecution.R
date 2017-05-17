@@ -1105,3 +1105,59 @@ is.nan.vec <- function(x) any(is.nan(x))
 
 #' @export
 nimRound <- round
+
+#' EXPERIMENTAL Nimble wrapper around R's builtin \code{\link{optim}}.
+#'
+#' @param par Initial values for the parameters to be optimized over.
+#' @param fn  A function to be minimized (or maximized), with first argument the
+#'            vector of parameters over which minimization is to take place. It
+#'            should return a scalar result.
+#' @param gr  A function to return the gradient for the "BFGS", "CG" and "L-BFGS-B" methods.
+#'            For the "SANN" method it specifies a function to generate a new candidate point.
+#'            If it is the string "NULL" a default Gaussian Markov kernel is used.
+#' @param ... IGNORED
+#' @param method The method to be used. See `Details` section of \code\link{{optim}}. One of:
+#'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"
+#' @param lower Vector or scalar of lower bounds for parameters.
+#' @param lower Vector or scalar of upper bounds for parameters.
+#' @param control A list of control parameters. See ‘Details’ section of \code\link{{optim}}.
+#' @param hessian Logical. Should a Hessian matrix be returned?
+#'
+#' @return \code{\link{optimResultNimbleList}}
+#' @seealso \code{\link{optim}}
+#' @export
+nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
+                     control = nimOptimDefaultControl(), hessian = FALSE) {
+    # Tweak control value.
+    defaultControl <- optimControlNimbleList$new()
+    Rcontrol <- list()
+    for (name in defaultControl$nimbleListDef$types$vars) {
+        if (!identical(control[[name]], defaultControl[[name]])) {
+            Rcontrol[[name]] <- control[[name]]
+        }
+    }
+    result <- optim(par, fn, gr = gr, ..., method = method,
+                    lower = lower, upper = upper, control = Rcontrol, hessian = hessian)
+    nimResult <- do.call(optimResultNimbleList$new, result)
+    # Tweak result value to exactly match C++ behavior.
+    nimResult$counts <- unname(nimResult$counts)
+    if (is.null(nimResult$message)) {
+        nimResult$message <- ''
+    }
+    if (is.null(nimResult$hessian)) {
+        nimResult$hessian <- matrix(nrow = 0, ncol = 0)
+    }
+    return(nimResult)
+}
+
+#' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
+#'
+#' @return \code{\link{optimControlNimbleList}}
+#' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
+#' @export
+nimOptimDefaultControl <- function() {
+    control <- optimControlNimbleList$new()
+    control$maxIt <- NULL
+    control$REPORT <- NULL
+    return(control)
+}

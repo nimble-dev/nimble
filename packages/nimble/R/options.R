@@ -26,6 +26,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         checkModel = FALSE,
         checkNimbleFunction = TRUE,
         verbose = TRUE,
+        verboseErrors = FALSE,
 
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
         ## if this option is changed, then congugate sampler functions can be rebuilt using:
@@ -43,6 +44,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 
         ## samplerAssignmentRules object that controls the default sampler assignments by configureMCMC.
         ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
+        MCMCuseSamplerAssignmentRules = FALSE,
         MCMCdefaultSamplerAssignmentRules = NULL,
         
         ## default settings for MCMC samplers
@@ -94,7 +96,8 @@ getNimbleOption <- function(x) {
 #' NIMBLE Options Settings
 #'
 #' Allow the user to set and examine a variety of global _options_
-#' that affect the way in which NIMBLE operates
+#' that affect the way in which NIMBLE operates. Call \code{nimbleOptions()}
+#' with no arguments to see a list of available opions.
 #' 
 #' @param ... any options to be defined as one or more 'name = value' pairs.
 #' Options can also be passed by giving a single unnamed argument that is a named list.

@@ -332,7 +332,16 @@ cppOutputNFvar <- function(code, symTab) {
 
 cppOutputNFmethod <- function(code, symTab) {
     if(length(code$args) < 2) stop('Error: expecting at least 2 arguments for operator ',code$name)
-    paste0( nimGenerateCpp(code$args[[1]], symTab), '.', code$args[[2]]) ##, ## No nimGenerateCpp on code$args[[2]] because it should be a string
+    if(code$caller$name == 'chainedCall') {
+        paste0( nimGenerateCpp(code$args[[1]], symTab), '.', code$args[[2]]) ##, ## No nimGenerateCpp on code$args[[2]] because it should be a string
+    } else {
+        ## This bound method obj$run is not part of a call, so we transform it to NimBoundMethod<T>(&T::run, obj).
+        objectName <- code$args[[1]]$name
+        typeName <- symTab$getSymbolObject(objectName, inherits = TRUE)$baseType
+        methodName <- code$args[[2]]
+        #paste0('NimBoundMethod<', typeName, '>(&', typeName, '::', methodName, ', ', objectName, ')')
+        paste0('NimBind(&', typeName, '::', methodName, ', ', objectName, ')')
+    }
     ## This used to take method args in this argList.  But now they are in a chainedCall
 }
 
