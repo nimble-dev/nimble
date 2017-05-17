@@ -372,23 +372,57 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 
 Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as \'data\'.
 '
-                                      validValues = rep(TRUE, length(modelDef$maps$graphIDs) )
+                                      ## Previousy we always started with all TRUE
+                                      ## validValues = rep(TRUE, length(modelDef$maps$graphIDs) )
+                                      ## Now start by filtering out LHSinferred
+                                      validValues <- modelDef$maps$types != "LHSinferred"
                                       if(!includeRHSonly)		validValues[modelDef$maps$types == 'RHSonly'] <- FALSE
                                       if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
                                       if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE
-                                      if(!includeData)		validValues[isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
-                                      if(dataOnly)			validValues[!isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
-                                      if(topOnly)				validValues[-modelDef$maps$top_IDs] <- FALSE
+
+                                      ## need to exclude LHSinferred IDs from being passed in to isDataFromGraphID
+                                      ## because vertex-split names won't go through eval(parse(...)) correctly
+                                      boolIsData <- rep(FALSE, length(modelDef$maps$graphIDs))
+                                      possibleDataIDs <- modelDef$maps$graphIDs[modelDef$maps$types == 'RHSonly' | modelDef$maps$types == 'stoch']
+                                      boolIsData[possibleDataIDs] <- isDataFromGraphID(possibleDataIDs)
+                                      
+                                      ##if(!includeData)		validValues[isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
+                                      if(!includeData)		        validValues[boolIsData] <- FALSE
+                                      if(dataOnly)			validValues[!boolIsData] <- FALSE
+                                      if(topOnly)			validValues[-modelDef$maps$top_IDs] <- FALSE
                                       if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
                                       if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
+
+                                      ## putting some logic here that can be pulled to a separate method later
+                                      ## issue is that validValues can index split vertices whose names contain -s- and will not survive eval(parse(...))
+                                      ## if returnScalarComponents is FALSE, we should not need to call expandNodeNames (stoch and determ) and RHSonly
+                                      ans <- expandNodeNamesFromGraphIDs(seq_along(modelDef$maps$graphIDs)[validValues], 
+                                                                         returnScalarComponents = returnScalarComponents,
+                                                                         returnType = returnType)                                       
                                       
-                                      ans <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], 
-                                      						 returnScalarComponents = returnScalarComponents,
-                                      						 returnType = returnType) 
+                                      ## this filters out LHSinferred, returns only nodes with nodeFunctions (stoch and determ) and RHSonly
+                                      ## ans <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], 
+                                      ## 						 returnScalarComponents = returnScalarComponents,
+                                      ## 						 returnType = returnType) 
                                       return(ans)                                      
                                   },
-                                  
-                                  expandNodeNames = function(nodes, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE){
+expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE) {
+    if(length(graphID)==0) return(if(returnType=='names') character() else numeric())
+    if(sort) 
+        graphID <- sort(graphID)
+    if(returnType == 'names'){
+        if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
+        else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
+        return(nodeNames)
+    }
+    if(returnType == 'ids'){
+        if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.") 
+        return(graphID)
+    }                  
+    if(!(returnType %in% c('ids','names')))
+        stop('instead expandNodeNames, imporper returnType chosen')
+},
+expandNodeNames = function(nodes, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE){
                                       '
 Takes a vector of names of nodes or variables and returns the unique and expanded names in the model, i.e. \'x\' expands to \'x[1]\', \'x[2]\', ...
 
@@ -407,19 +441,20 @@ unique: should names be the unique names or should original ordering of nodes (a
 
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
                                       graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique)
-                                      if(sort) 
-                                          graphID <- sort(graphID)
-                                      if(returnType == 'names'){
-                                          if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
-                                          else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
-                                          return(nodeNames)
-                                      }
-                                      if(returnType == 'ids'){
-                                          if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.") 
-                                          return(graphID)
-                                      }                  
-                                      if(!(returnType %in% c('ids','names')))
-                                      	stop('instead expandNodeNames, imporper returnType chosen')
+                                      expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType)
+                                      ## if(sort) 
+                                      ##     graphID <- sort(graphID)
+                                      ## if(returnType == 'names'){
+                                      ##     if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
+                                      ##     else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
+                                      ##     return(nodeNames)
+                                      ## }
+                                      ## if(returnType == 'ids'){
+                                      ##     if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.") 
+                                      ##     return(graphID)
+                                      ## }                  
+                                      ## if(!(returnType %in% c('ids','names')))
+                                      ## 	stop('instead expandNodeNames, imporper returnType chosen')
                                   },
                                   
                                   topologicallySortNodes = function(nodes, returnType = 'names') {
@@ -564,9 +599,10 @@ Details: The variable or node names specified is expanded into a vector of model
                                   },
 
                                   isDataFromGraphID = function(g_id){
-                                   	nodeNames <- modelDef$maps$graphID_2_nodeName[g_id]	
+                                      ## notice this uses only the first element for multivariate nodes
+                                      nodeNames <- modelDef$maps$graphID_2_nodeName[g_id]	
                                   	ret <- unlist(lapply(as.list(nodeNames),
-                                                  function(nn)     
+                                                  function(nn)
                                                     return(as.vector(eval(parse(text=nn, keep.source = FALSE)[[1]],
                                                                                 envir=isDataEnv))[[1]])))
                                     if(is.null(ret))   ret <- logical(0)
