@@ -26,6 +26,8 @@ extern "C" {
   SEXP C_rmvt_chol(SEXP, SEXP, SEXP, SEXP); 
   SEXP C_dwish_chol(SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_rwish_chol(SEXP, SEXP, SEXP);
+  SEXP C_dinvwish_chol(SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_rinvwish_chol(SEXP, SEXP, SEXP);
   SEXP C_dcat(SEXP, SEXP, SEXP);
   SEXP C_rcat(SEXP, SEXP);
   SEXP C_dmulti(SEXP, SEXP, SEXP, SEXP);
@@ -63,6 +65,8 @@ double dmvt_chol(double*, double*, double*, double, int, double, int, int);
 void rmvt_chol(double *, double*, double*, double, int, double);
 double dwish_chol(double*, double*, double, int, double, int, int);
 void rwish_chol(double*, double*, double, int, double, int);
+double dinvwish_chol(double*, double*, double, int, double, int, int);
+void rinvwish_chol(double*, double*, double, int, double, int);
 
 double dinterval(double, double, double*, int, int);
 double rinterval(double, double*, int);
