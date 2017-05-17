@@ -368,7 +368,7 @@ sizeRecyclingRuleRfunction <- function(code, symTab, typeEnv) {
     code$sizeExprs <- newSizeExprs
     code$type <- 'double' ## will need to look up from a list
     code$nDim <- 1
-    code$toEigenize <- TRUE
+    code$toEigenize <- 'yes'
     return(asserts)
 }
 
@@ -2267,8 +2267,8 @@ isIntegerEquivalent <- function(code) {
 }
 
 sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
-    message('still need to handle -1L sequences')
-    message('check that arguments are scalars')
+    ##message('still need to handle -1L sequences')
+    ##message('check that arguments are scalars')
     asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
     byProvided <- code$name == 'nimSeqBy' | code$name == 'nimSeqByLen'
     lengthProvided <- code$name == 'nimSeqLen' | code$name == 'nimSeqByLen'
@@ -2560,11 +2560,13 @@ sizeReturn <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
         if(!code$args[[1]]$isName) {
-##            if(code$args[[1]]$toEigenize == 'yes') {
-            if(anyNonScalar(code$args[[1]])) {
+            liftArg <- FALSE
+            if(code$args[[1]]$toEigenize == 'yes')
+                liftArg <- TRUE
+            else if(anyNonScalar(code$args[[1]]))
+                liftArg <- TRUE
+            if(liftArg)
                 asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv, forceAssign = TRUE))
-            }
-            ##            }
         }
     }
     invisible(asserts)
