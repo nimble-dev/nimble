@@ -40,6 +40,7 @@ extern "C" SEXP OptimResultNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(
 class OptimControlNimbleList : public NamedObjects, public pointedToBase {
    public:
     int trace;
+    double fnscale;
     NimArr<1, double> parscale;
     NimArr<1, double> ndeps;
     int maxit;

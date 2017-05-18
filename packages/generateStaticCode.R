@@ -10,6 +10,7 @@
 # 3. Run this script.
 
 library(nimble)
+library(methods)
 
 # This finds the latest generated .h and .cpp files.
 findGeneratedSources <- function() {

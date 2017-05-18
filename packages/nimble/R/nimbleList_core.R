@@ -391,6 +391,7 @@ optimResultNimbleList <- nimbleList(
 optimControlNimbleList <- nimbleList(
     list(
         nimbleType('trace', 'integer', 0),
+        nimbleType('fnscale', 'double', 0),
         nimbleType('parscale', 'double', 1),
         nimbleType('ndeps', 'double', 1),
         nimbleType('maxit', 'integer', 0),
