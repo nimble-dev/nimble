@@ -428,8 +428,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                         dynamicIndexParent[-c(1, 2)][ !contentsReplaceable] <- as.numeric(NA)
                         ## before proceeding with more complicated cases, we'll need to check that they work; for now error out with anything more complicated than mu[foo(k[i])]
                         # should add tests where we expect failure at this stage for these cases
-                        if(length(dynamicIndexParent) > 3)  # e.g., mu[k[i],i]
-                            stop("getSymbolicParentNodesRecurse: multi-dimensional dynamic indexing not yet enabled, but requested in ", deparse(code)) # note this doesn't even allow mu[NA,1]
+                        ## TMP:
+                       ## if(length(dynamicIndexParent) > 3)  # e.g., mu[k[i],i]
+                         ##   stop("getSymbolicParentNodesRecurse: multi-dimensional dynamic indexing not yet enabled, but requested in ", deparse(code)) # note this doesn't even allow mu[NA,1]
                         if(length(contentsCode) > 1)   # e.g., mu[k[i],j[i]]
                             stop("getSymbolicParentNodesRecurse: multiple dynamic indices not yet enabled, but requested in ", deparse(code))
                         if(any(sapply(contentsCode, length) > 3))  # e.g., mu[k[i,1:3]]
