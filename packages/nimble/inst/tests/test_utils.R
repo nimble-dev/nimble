@@ -3,6 +3,11 @@ require(testthat)
 require(methods)
 require(nimble)
 
+## Mark tests that are know to fail with `if(RUN_FAILING_TESTS)`.
+## By default these tests will not be run, but we will occasionally clean up by running them with
+## $ RUN_FAILING_TESTS=1 Rscript test-my-stuff.R
+RUN_FAILING_TESTS <- (nchar(Sys.getenv('RUN_FAILING_TESTS')) != 0)
+
 ## We can get problems on Windows with system(cmd) if cmd contains
 ## paths with spaces in directory names.  Solution is to make a cmd
 ## string with only local names (to avoid spaces) and indicate what

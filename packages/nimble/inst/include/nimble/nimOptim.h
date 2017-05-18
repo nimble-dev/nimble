@@ -42,8 +42,8 @@ class NimOptimProblem {
         nimSmartPtr<OptimControlNimbleList> control, bool hessian);
 
    private:
-    // These are callbacks for R's optim() where `this` is passed in as the
-    // final argument `void * ex`.
+    // These function and gradient callbacks for R's optim() where `this` is
+    // passed in as the final argument `void * ex`.
     static double fn(int, double*, void*);
     static void gr(int, double*, double*, void*);
 
@@ -52,9 +52,10 @@ class NimOptimProblem {
     virtual double function() = 0;
     virtual void gradient() { NIMERROR("Gradient is not defined"); }
 
-    // These are used as temporaries for C <-> NimArr conversion.
-    NimArr<1, double> par_;
-    NimArr<1, double> ans_;
+    // Temporaries.
+    double fnscale_;
+    NimArr<1, double> par_;  // Argument for fn() and gr().
+    NimArr<1, double> ans_;  // Result of gradient.
 };
 
 template <class Fn>

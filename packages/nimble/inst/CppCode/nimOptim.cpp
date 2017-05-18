@@ -9,7 +9,7 @@ double NimOptimProblem::fn(int n, double* par, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
     std::copy(par, par + n, problem->par_.getPtr());
-    return problem->function();
+    return problem->function() / problem->fnscale_;
 }
 
 void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
@@ -18,12 +18,15 @@ void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     std::copy(par, par + n, problem->par_.getPtr());
     problem->ans_.setSize(n, false, false);
     problem->gradient();
-    std::copy(problem->ans_.getPtr(), problem->ans_.getPtr() + n, ans);
+    for (int i = 0; i < n; ++i) {
+        ans[i] = problem->ans_[i] / problem->fnscale_;
+    }
 }
 
 nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
     nimSmartPtr<OptimControlNimbleList> control = new OptimControlNimbleList;
     control->trace = 0;
+    control->fnscale = 1;
     control->parscale.initialize(1.0, true, 1);
     control->ndeps.initialize(1e-3, true, 1);
     control->maxit = NA_INTEGER;  // Context-dependent.
@@ -72,6 +75,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     }
 
     // Parameters common to all methods.
+    fnscale_ = control->fnscale;
     double* dpar = par.getPtr();
     double* X = result->par.getPtr();
     double* Fmin = &(result->value);
@@ -97,7 +101,11 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     } else if (method == "L-BFGS-B") {
         if (lower.dimSize(0) == 1) lower.initialize(lower[0], true, n);
         if (upper.dimSize(0) == 1) upper.initialize(upper[0], true, n);
-        std::vector<int> nbd(n, 0);  // 0 means no active constraints.
+        std::vector<int> nbd(n, 0);
+        for (int i = 0; i < n; ++i) {
+            if (std::isfinite(lower[i])) nbd[i] |= 1;
+            if (std::isfinite(upper[i])) nbd[i] |= 2;
+        }
         char msg[60];
         lbfgsb(n, control->lmm, X, lower.getPtr(), upper.getPtr(), nbd.data(),
                Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail, ex,
