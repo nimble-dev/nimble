@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh -ex
 
 # This runner profiles the tests so that we can prioritize for faster failures.
 RUNNER="/usr/bin/time -v Rscript"
