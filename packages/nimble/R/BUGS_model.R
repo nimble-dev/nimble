@@ -372,39 +372,46 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 
 Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as \'data\'.
 '
-                                      ## Previousy we always started with all TRUE
-                                      ## validValues = rep(TRUE, length(modelDef$maps$graphIDs) )
-                                      ## Now start by filtering out LHSinferred
+                                      ## Part of fix for Issue #340:
+                                      ## In previous versions, we started with validValues all TRUE
+                                      ## and LHSinferred nodes (which should never be returned) were filtered out in the final expandNodeNames call
+                                      ## Now a LHSinferred node can have a name reflecting that it is a split vertex, like mu[ 1 %.s$ 5]
+                                      ##   which means its elements begin at 1 and end at 5 but are not contiguous (some elements are not included)
+                                      ## Such a name can be parsed but evaluating it in one of the "vars2..." environments will fail
+                                      ## so it needs to be omitted from the call to expandNodeNames.
+                                      ## It turns out ot be easy to do that by filtering out LHSinferred nodes at initialization of validValues
+                                      ## validValues is a boolean vector aligned with modelDef$maps$nodesNames and allied vectors
                                       validValues <- modelDef$maps$types != "LHSinferred"
+                                      ## Apply a series of filters of what can be included
                                       if(!includeRHSonly)		validValues[modelDef$maps$types == 'RHSonly'] <- FALSE
                                       if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
                                       if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE
 
-                                      ## need to exclude LHSinferred IDs from being passed in to isDataFromGraphID
-                                      ## because vertex-split names won't go through eval(parse(...)) correctly
                                       boolIsData <- rep(FALSE, length(modelDef$maps$graphIDs))
                                       possibleDataIDs <- modelDef$maps$graphIDs[modelDef$maps$types == 'RHSonly' | modelDef$maps$types == 'stoch']
                                       boolIsData[possibleDataIDs] <- isDataFromGraphID(possibleDataIDs)
                                       
-                                      ##if(!includeData)		validValues[isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
                                       if(!includeData)		        validValues[boolIsData] <- FALSE
                                       if(dataOnly)			validValues[!boolIsData] <- FALSE
                                       if(topOnly)			validValues[-modelDef$maps$top_IDs] <- FALSE
                                       if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
                                       if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
 
-                                      ## putting some logic here that can be pulled to a separate method later
-                                      ## issue is that validValues can index split vertices whose names contain -s- and will not survive eval(parse(...))
-                                      ## if returnScalarComponents is FALSE, we should not need to call expandNodeNames (stoch and determ) and RHSonly
-                                      ## push logical/numeric/character logic inside expandNodeNames, if the other circuitous cases could use it
+                                      ## Part of fix for Issue #340.
+                                      ## In general the flow of model/node querying functions sometimes flips between IDs and names multiple times
+                                      ## which is inefficienty/redudant.  I am adding some logic here to avoid such a flip when it would be
+                                      ## redundant.  In the future it may make sense to push this logic to be internal to expandNodesNames and/or
+                                      ## nodeName2GraphIDs, but I am leaving that for a future step.
+                                  
+                                      ## New logic, part of fix for Issue #340:
+                                      ## If returnScalarComponents is FALSE, we should not need to call expandNodeNames (stoch and determ) and RHSonly,
+                                      ## which flips to names and back to IDs.  Instead we can work directly with the IDs
                                       if(!returnScalarComponents) {
                                           ans <- expandNodeNamesFromGraphIDs(which(validValues), 
                                                                              returnScalarComponents = returnScalarComponents,
                                                                              returnType = returnType)                                       
                                       } else { 
-                                      ## this filters out LHSinferred, returns only nodes with nodeFunctions (stoch and determ) and RHSonly
-                                          ## when returnScalarElements is TRUE,
-                                          ## nodeNames2graphID is called 
+                                          ## nodeNames2graphID is called inside expandNodeNames 
                                           ans <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], 
                                                                  returnScalarComponents = returnScalarComponents,
                                                                  returnType = returnType) 

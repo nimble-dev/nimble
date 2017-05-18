@@ -1206,7 +1206,10 @@ makeSplitInfo <- function(splitIndices) {
 
 
 ## This function takes a array of vertex indices and returns a set of node names based on shared indices
-## e.g. c(1, 1, 2, 2, 2) for varName 'x' would return 'x[1:2]' and 'x[2:3]'
+## e.g. c(1, 1, 2, 2, 2) for varName 'x' would return 'x[1:2]' and 'x[3:5]'
+## when there are non-contiguous indices, `%.s%` is used instead of `:`.  `%.s%`  can be parsed but is not intended to be evaluated
+## e.g. c(1, 2, 2, 1, 1) would return x[1 %.s% 5] and x[2:3]
+## Interwoven non-contiguous indices such as c(1, 2, 1, 2, 2) should never occur based on how splitVertices works
 makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
     dims <- dim(indArr)
     nDim <- length(dims)
@@ -1218,7 +1221,7 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
     ## etc.
     arrayWithIndices <- vector('list', length = nDim)
     arrayWithIndices[[1]] <- array( rep(1:dims[1], prod(dims[-1])), dims)
-    ## would reduce memory footprint to do all steps on each dimension before building arrayWithIndices for new dimension
+    ## We could reduce memory footprint by doing all steps on each dimension before building arrayWithIndices for new dimension
     if(nDim > 1) {
         permutation <- 1:nDim
         for(iD in 2:nDim) {
@@ -1247,7 +1250,7 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
         seps <- rep(':', nrow(all))  ## initialize seps and modify later if needed 
         scal <- all[,3]==0           ## which rows are for scalar elements
         seps[scal] <- ''             ## set the sep for scalars to ''
-        seps[all[,4]==0] <- '-s-'    ## for rows that are not contiguous, use i-s-j (currently never user)
+        seps[all[,4]==0] <- '%.s%'    ## for rows that are not contiguous, use i %.s% j. Any actual call to %.s% results in an error.
         maxStrs <- as.character(all[,2]) ## maximums
         maxStrs[scal] <- ''              ## clear maximums for scalars 
         paste0(all[,1], seps, maxStrs)   ## paste minimum-separator-maximum
@@ -1255,6 +1258,29 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
     dimStrings[['sep']] <- ', '
     newNames <- paste0(varName, '[',  do.call('paste', dimStrings), ']') ## paste together pieces from different dimensions
     list(indices = as.integer(names(splits[[1]])), names = newNames)
+}
+
+## This converts i%.s%j (indicating a split vertex) to i:j
+## This will only be called for RHSonly nodes.
+## These are correct, even after splitting, to use in eval(parse(...)) in the "vars2..." environments
+## But split vertices that are LHSinferred keep their %.s% and should never end up evaluated in a "vars2..." environment
+convertSplitVertexNamesToEvalSafeNames <- function(origNames, ok = TRUE) {
+    boolConvert <- grepl("%.s%", origNames)
+    convertOneName <- function(oneName) {
+        parsedName <- parse(text = oneName, keep.source = FALSE)[[1]]
+        boolSplitByIndex <- rep(FALSE, length(parsedName)-2)
+        for(i in 3:length(parsedName)) {
+            if(!is.name(parsedName[[i]])) {
+                if(deparse(parsedName[[i]][[1]]) == '%.s%') {
+                    parsedName[[i]][[1]] <- quote(`:`)
+                    boolSplitByIndex[i-2] <- TRUE
+                }
+            }
+        }
+        deparse(parsedName)
+    }
+    origNames[boolConvert] <- unlist(lapply(origNames[boolConvert], convertOneName))
+    origNames
 }
 
 splitVertexIDsToElementIDs <- function(var2vertexID, nextVertexID) {
@@ -1797,6 +1823,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
    if(debug) browser()
     vertexID_2_nodeID <- vertexID_2_nodeID[1:numContigVertices]
     types[ types == 'RHSonly' & vertexID_2_nodeID != 0] <- 'LHSinferred' ## The types == 'RHSonly' could be obtained more easily, since it will be a single set of FALSES followed by a single set of TRUES, but anyway, this works
+
+    ## 9c. for RHSonly names that have a splitVertex indication (i %.s% j), convert back to colon (i:j)
+    ##     because these can then be correctly used in eval(parse(...)) in one of the vars2... environments
+    allVertexNames[types == 'RHSonly'] <- convertSplitVertexNamesToEvalSafeNames(allVertexNames[types == 'RHSonly'])
     
     ## 10. Build the graph for topological sorting
     if(debug) browser()
