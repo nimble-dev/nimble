@@ -26,7 +26,7 @@ nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
     control->trace = 0;
     control->parscale.initialize(1.0, true, 1);
     control->ndeps.initialize(1e-3, true, 1);
-    control->maxIt = NA_INTEGER;  // Context-dependent.
+    control->maxit = NA_INTEGER;  // Context-dependent.
     control->abstol = -INFINITY;
     control->reltol = std::sqrt(std::numeric_limits<double>::epsilon());
     control->alpha = 1.0;
@@ -63,13 +63,13 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     }
 
     // Set context-dependent default control values.
-    if (control->maxIt == NA_INTEGER) {
+    if (control->maxit == NA_INTEGER) {
         if (method == "Nelder-Mead") {
-            control->maxIt = 500;
+            control->maxit = 500;
         } else if (method == "SANN") {
-            control->maxIt = 10000;
+            control->maxit = 10000;
         } else {
-            control->maxIt = 100;
+            control->maxit = 100;
         }
     }
     if (control->REPORT == NA_INTEGER) {
@@ -92,17 +92,17 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     if (method == "Nelder-Mead") {
         nmmin(n, dpar, X, Fmin, NimOptimProblem::fn, fail, control->abstol,
               control->reltol, ex, control->alpha, control->beta,
-              control->gamma, control->trace, fncount, control->maxIt);
+              control->gamma, control->trace, fncount, control->maxit);
     } else if (method == "BFGS") {
         std::vector<int> mask(n, 1);
         vmmin(n, dpar, Fmin, NimOptimProblem::fn, NimOptimProblem::gr,
-              control->maxIt, control->trace, mask.data(), control->abstol,
+              control->maxit, control->trace, mask.data(), control->abstol,
               control->reltol, control->REPORT, ex, fncount, grcount, fail);
         result->par = par;
     } else if (method == "CG") {
         cgmin(n, dpar, X, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
               control->abstol, control->reltol, ex, control->type,
-              control->trace, fncount, grcount, control->maxIt);
+              control->trace, fncount, grcount, control->maxit);
     } else if (method == "L-BFGS-B") {
         if (lower.dimSize(0) == 1) lower.initialize(lower[0], true, n);
         if (upper.dimSize(0) == 1) upper.initialize(upper[0], true, n);
@@ -110,15 +110,15 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
         char msg[60];
         lbfgsb(n, control->lmm, X, lower.getPtr(), upper.getPtr(), nbd.data(),
                Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail, ex,
-               control->factr, control->pgtol, fncount, grcount, control->maxIt,
+               control->factr, control->pgtol, fncount, grcount, control->maxit,
                msg, control->trace, control->REPORT);
         result->message = msg;
     } else if (method == "SANN") {
         const int trace = control->trace ? control->REPORT : 0;
-        samin(n, dpar, Fmin, NimOptimProblem::fn, control->maxIt, control->tmax,
+        samin(n, dpar, Fmin, NimOptimProblem::fn, control->maxit, control->tmax,
               control->temp, trace, ex);
         result->par = par;
-        result->counts[0] = control->maxIt;
+        result->counts[0] = control->maxit;
     } else {
         NIMERROR("Unknown method: %s", method.c_str());
     }

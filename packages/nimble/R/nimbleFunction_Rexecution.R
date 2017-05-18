@@ -1166,7 +1166,7 @@ optimDefaultControl <- function() {
 #' @export
 nimOptimDefaultControl <- function() {
     control <- optimControlNimbleList$new()
-    control$maxIt <- NULL
+    control$maxit <- NULL
     control$REPORT <- NULL
     return(control)
 }
