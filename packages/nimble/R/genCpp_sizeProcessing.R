@@ -577,17 +577,13 @@ sizeRep <- function(code, symTab, typeEnv) {
 }
 
 sizeNewNimbleList <- function(code, symTab, typeEnv){
-    ## The code looks like: nimListDef$new(a = '', b = 12).
+    ## The code looks like: nimListDef$new(a = 10, b = 12).
     ## We want to change code$caller to :
     ## { nimList <- nimListDef$new()
     ## nimList$a <- 10
     ## nimList$b <- 12 }.
     ## We accomplish this by copying code, getting arguments (e.g. a = 10, b = 12) from copied code and turning them into assignment 
     ## exprs in code$caller, and setting first argument of code$caller to be nimList <- nimListDef$new().
-
-    ## TODO How was `a = ''` converted into `a <- 10`?
-    ## Is '' serving the place of NULL by some convention?
-    ## If so, where was the value of 10 originally specified?
     
     listDefName <- code$args[[1]]$name
     if(symTab$symbolExists(listDefName, inherits = TRUE)){
@@ -639,6 +635,7 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
         thisVarName <- listElements[i]
         if(!is.null(originalCode$args[[thisVarName]])) {
             ## Skip first arg, which will be name of nlDef, then check if value is "".
+            ## TODO Remove the test for empty string, since it is probably no longer necessary.
             if(!inherits(originalCode$args[[thisVarName]], 'exprClass') || (originalCode$args[[thisVarName]]$name != "")) {
                 ## nfVar(A, 'x') for whichever element name it's on ('x')
                 RnfVarExprs[[exprCounter]] <- substitute(nfVar(A, X), list(A = RlistNameExpr, X = thisVarName))
