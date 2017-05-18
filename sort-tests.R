@@ -36,7 +36,7 @@ sorted_old_tests <- old_tests[order(old_tests)]
 if (!all(sorted_new_tests == sorted_old_tests)) {
     stop(paste('Set of tests changed since profiling. Please rerun profile and try again.',
                'OLD TESTS:', paste0(sorted_old_tests, collapse = '\n'),
-               'NEW TESTS:', paste0(sorted_old_tests, collapse = '\n'),
+               'NEW TESTS:', paste0(sorted_new_tests, collapse = '\n'),
                sep = '\n'))
 }
 new_runner_lines <- paste0('$RUNNER ', df$name, '  # takes ', df$time, ' seconds')
