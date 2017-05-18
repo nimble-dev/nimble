@@ -641,38 +641,50 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.
 '
-
                                       if(inherits(nodes, 'character')) {
-                                          elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
-                                          if(returnScalarComponents)
-                                             # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                                              nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                                                                   FALSE,
-                                                                   FALSE,
-                                                                   NA)
-                                          else
-                                              nodeIDs <- elementIDs
+                                          ## elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
+                                          ## if(returnScalarComponents)
+                                          ##    # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                          ##     nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                          ##                          FALSE,
+                                          ##                          FALSE,
+                                          ##                          NA)
+                                          ## else
+                                          ##     nodeIDs <- elementIDs
+
+                                          ## experimental: always start from scalar components
+                                          elementIDs <- modelDef$nodeName2GraphIDs(nodes, FALSE)
+                                          nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                                            FALSE,
+                                                            FALSE,
+                                                            NA)
                                       }
                                       else if(inherits(nodes, 'numeric'))
                                           nodeIDs <- nodes
                                       
-                                      if(inherits(omit, 'character')) {
-                                          elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
-                                          if(returnScalarComponents)
-                                              omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
-                                                                   FALSE,
-                                                                   FALSE,
-                                                                   NA)
-                                          else
-                                              omitIDs <- elementIDs
+                                      if(inherits(omit, 'character')) { ## mimic above if it works
+                                      ##     elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
+                                      ##     if(returnScalarComponents)
+                                      ##         omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
+                                      ##                              FALSE,
+                                      ##                              FALSE,
+                                      ##                              NA)
+                                      ##     else
+                                      ##         omitIDs <- elementIDs
+                                          elementIDs <- modelDef$nodeName2GraphIDs(omit, FALSE)
+                                          omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                                            FALSE,
+                                                            FALSE,
+                                                            NA)
                                       }
                                       else if(inherits(omit, 'numeric'))
                                           omitIDs <- omit
-                                      
 
-depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+## new C++ version
+ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+
 ## ## Uncomment these lines to catch discrepancies between the old and new systems.
-## depIDsOld <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+## depIDs <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
 ## if(!identical(as.numeric(depIDsOld), as.numeric(depIDs))) {
 ##     cat('caught a discrepancy for depIDs')
 ##     browser()
@@ -681,7 +693,10 @@ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(i
                                       if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
                                       if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
                                       if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
-                                      if(!self)	depIDs <- setdiff(depIDs, nodeIDs)
+if(!self)	{
+    nodeFunIDs <- unique(modelDef$maps$vertexID_2_nodeID[ nodeIDs ])
+    depIDs <- setdiff(depIDs, nodeFunIDs)
+}
                                       if(!includeData)	depIDs <- depIDs[!isDataFromGraphID(depIDs)]
                                       if(dataOnly)		depIDs <- depIDs[isDataFromGraphID(depIDs)]
                                       

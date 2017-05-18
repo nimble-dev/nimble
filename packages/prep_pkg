@@ -100,7 +100,7 @@ undocClasses <- paste0(undocClasses, "-Class", sep = '')
 
 # need the following additional exports that need to be doc'ed by CRAN rules
 
-additionalExports <- c("calc_dmnormConjugacyContributions", "calc_dmnormAltParams", "getNodeFunctionIndexedInfo", "singleModelValuesAccess", "getNimbleProject", "nimbleInternalFunctions", "nimbleUserNamespace")
+additionalExports <- c("calc_dmnormConjugacyContributions", "calc_dmnormAltParams", "getNodeFunctionIndexedInfo", "singleModelValuesAccess", "getNimbleProject", "nimbleInternalFunctions", "nimbleUserNamespace", "dsqrtinvgamma", "rsqrtinvgamma")
 # write out nimble-internals.Rd
 
 internals <- c(undocClasses, explicitUndocFuns, additionalExports)
@@ -119,7 +119,7 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-inte
 
 mathFuns <- c('cloglog', 'cube', 'expit', 'icloglog', 'ilogit',
   'inprod', 'inverse', 'iprobit', 'logdet', 'logfact', 'loggam', 'logit',
-  'nimEquals', 'nimRound', 'nimStep', 'nimSwitch', 'phi', 'pow', 'probit')
+  'nimEquals', 'nimOptim', 'nimRound', 'nimStep', 'nimSwitch', 'phi', 'pow', 'probit')
 
 text <- rep("", length(mathFuns))
 for(i in seq_along(mathFuns)) 

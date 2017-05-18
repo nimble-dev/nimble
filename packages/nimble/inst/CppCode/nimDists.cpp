@@ -167,6 +167,52 @@ void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double d
   if(ans.isMap()) {ans = ansCopy;}
 }
 
+double nimArr_dinvwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log, int overwrite_inputs) {
+  double *xptr, *cholptr;
+  NimArr<2, double> xCopy, cholCopy;
+  int p = x.dim()[0];
+  if((x.dim()[1] != p) | (chol.dim()[0] != p) | (chol.dim()[1] != p)) {
+    _nimble_global_output<<"Error in nimArr_dinvwish_chol: some dimensions are not right\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+  if(df < p) {
+    _nimble_global_output<<"Error in nimArr_dinvwish_chol: inconsistent degrees of freedom and dimension.\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+  xptr = nimArrCopyIfNeeded<2, double>(x, xCopy).getPtr();
+  cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
+  double ans = dinvwish_chol(xptr, cholptr, df, p, scale_param, give_log, overwrite_inputs);
+  return(ans);
+}
+
+
+void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double scale_param, int overwrite_inputs) {
+  double *ansptr, *cholptr;
+  NimArr<2, double> ansCopy, cholCopy;
+  int p = chol.dim()[0];
+  if(chol.dim()[1] != p) {
+    _nimble_global_output<<"Error in nimArr_rinvwish_chol: chol is not square\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+  if(df < p) {
+    _nimble_global_output<<"Error in nimArr_rinvwish_chol: inconsistent degrees of freedom and dimension.\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+  if(!ans.isMap()) {
+    ans.setSize(p, p);
+  } else {
+    if((ans.dim()[0] != p) | (ans.dim()[1] != p)) {
+      _nimble_global_output<<"Error in nimArr_rinvwish_chol: ans sizes do not match chol.\n";
+      nimble_print_to_R(_nimble_global_output);
+    }
+  }
+  ansptr = nimArrCopyIfNeeded<2, double>(ans, ansCopy).getPtr();
+  cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
+
+  rinvwish_chol(ansptr, cholptr, df, p, scale_param, overwrite_inputs);
+  if(ans.isMap()) {ans = ansCopy;}
+}
+
 
 
 double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log, int overwrite_inputs) { 

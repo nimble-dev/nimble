@@ -586,7 +586,7 @@ modelDefClass$methods(reparameterizeDists = function() {
         numArgs <- length(distRule$reqdArgs)
         newValueExpr <- quote(dist())       ## set up a parse tree for the new value expression
         newValueExpr[[1]] <- as.name(distName)     ## add in the distribution name
-        if(numArgs==0) { ## a user-defined distribution might have 0 arguments
+        if(numArgs==0) { ## for dflat, or a user-defined distribution might have 0 arguments
           nonReqdArgExprs <- NULL
           boundExprs <- BUGSdecl$boundExprs
         } else {   
@@ -740,6 +740,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             replaceables <- unlist(lapply(replacements, function(x) x$replaceable))
             allReplaceable <- all(replaceables) & do.eval
             repVar <- replaceConstantsRecurse(code[[2]], constEnv, constNames, FALSE)
+            code[[2]] <- repVar$code
             if(allReplaceable & repVar$replaceable) {
                 testcode <- as.numeric(eval(code, constEnv))
                 if(length(testcode) == 1) code <- testcode
@@ -1939,7 +1940,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$graphIDs <<- 1:length(maps$graphID_2_nodeName)
 
     maps$nimbleGraph <<- nimbleGraphClass()
-    maps$nimbleGraph$setGraph(maps$edgesFrom, maps$edgesTo, maps$edgesParentExprID, maps$types, maps$graphID_2_nodeName, length(maps$graphID_2_nodeName))
+    maps$nimbleGraph$setGraph(maps$edgesFrom, maps$edgesTo, maps$edgesParentExprID, maps$vertexID_2_nodeID, maps$types, maps$graphID_2_nodeName, length(maps$graphID_2_nodeName))
 ##    maps$nodeName_2_graphID <<- list2env( nodeName2GraphIDs(maps$nodeNames) )
 ##    maps$nodeName_2_logProbName <<- list2env( nodeName2LogProbName(maps$nodeNames) )
 
@@ -2033,7 +2034,10 @@ modelDefClass$methods(genVarInfo3 = function() {
         for(iV in seq_along(rhsVars)) {
             rhsVar <- rhsVars[iV]
             if(!(rhsVar %in% names(varInfo))) {
-                nDim <- if(length(BUGSdecl$symbolicParentNodes[[iV]])==1) 0 else length(BUGSdecl$symbolicParentNodes[[iV]])-2
+                nDim <- if(length(BUGSdecl$symbolicParentNodes[[iV]])==1)
+                            0
+                        else ## this assumes parent node does not have stochastic index.
+                            length(BUGSdecl$symbolicParentNodes[[iV]])-2
                 varInfo[[rhsVar]] <<- varInfoClass$new(varName = rhsVar,
                                                        mins = rep(100000, nDim),
                                                        maxs = rep(0, nDim),
