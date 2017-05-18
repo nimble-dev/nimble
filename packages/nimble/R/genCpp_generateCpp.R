@@ -32,6 +32,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          nimSwitch = 'cppOutputNimSwitch',
                          getParam = 'cppOutputGetParam',
                          getBound = 'cppOutputGetBound',
+                        dnorm = 'cppOutputDerivDist',
+                        dpois = 'cppOutputDerivDist',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
@@ -143,6 +145,16 @@ cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')
 }
 
+cppOutputDerivDist <- function(code, symTab){
+  browser()
+  ###for now, use different dist c++ fn if taking derivs
+  if(identical(code$cppADCode, TRUE))
+    paste0('nimDerivs_',code$name, '(', 
+           paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ), ')', collapse = ', '), ')')
+  else
+    paste0(code$name, '(',
+           paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
+}
 
 cppOutputNumList <- function(code, symTab) {
     paste0( nimGenerateCpp(code$args[[1]], symTab))
