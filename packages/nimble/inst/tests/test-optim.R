@@ -4,6 +4,7 @@ context("Testing of the optim() function in NIMBLE code")
 
 # The methods "SANN" and "Brent" are not supported.
 methodsAllowingGradient <- c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")
+methodsAllowingBounds <- c("L-BFGS-B")
 
 # Test helper to verify code.
 normalizeWhitespace <- function(lines) {
@@ -343,3 +344,107 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
     expect_error(nimCaller$run(par, "bogus-method"))
     expect_error(compiledCaller$run(par, "bogus-method"))
 })
+
+test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DSL and C++ behavior mostly agree", {
+    nimFn <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(sum(par ^ 2))
+            returnType(double(0))
+        }
+    )
+    nimGr <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(2 * par)
+            returnType(double(1))
+        }
+    )
+    temporarilyAssignInGlobalEnv(nimFn)  # Work around scoping issues.
+    temporarilyAssignInGlobalEnv(nimGr)  # Work around scoping issues.
+    nimCaller <- nimbleFunction(
+        setup = TRUE,
+        run = function(par = double(1), method = character(0)) {
+            return(optim(par, nimFn, nimGr, method = method))
+            returnType(optimResultNimbleList())
+        }
+    )()
+    compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    # Test approximate agreement (i.e. that most fields agree).
+    par <- c(1.2, 3.4)
+    for (method in methodsAllowingGradient) {
+        info = paste(' where method =', method)
+        expected <- nimCaller$run(par, method)
+        actual <- compiledCaller$run(par, method)
+        expect_equal(actual$par, expected$par, info = info)
+        expect_equal(actual$convergence, expected$convergence, info = info)
+        expect_equal(actual$value, expected$value, info = info)
+        expect_equal(actual$counts, unname(expected$counts), info = info)
+    }
+    expect_error(nimCaller$run(par, "bogus-method"))
+    expect_error(compiledCaller$run(par, "bogus-method"))
+})
+
+test_that("when optim() is called with non-default arguments, behavior is the same among R, DSL, and C++", expect_failure({
+    # Define R functions.
+    fn <- function(par) { sum((par - c(5, 7) ^ 2)) }
+    gr <- function(par) { 2 * (par - c(5, 7)) }
+    optimizer <- function(method, lower, upper, control) {
+        return(optim(c(1, 2), fn, gr, method = method, lower = lower, control = control))
+    }
+    # Define DSL functions.
+    nimFn <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(sum((par - c(5, 7)) ^ 2))
+            returnType(double(0))
+        }
+    )
+    temporarilyAssignInGlobalEnv(nimFn)
+    nimGr <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(2 * (par - c(5, 7)))
+            returnType(double(1))
+        }
+    )
+    temporarilyAssignInGlobalEnv(nimGr)
+    nimOptimizer <- nimbleFunction(
+        run = function(method = character(0), lower = double(1), upper = double(1), control = optimControlNimbleList()) {
+            par <- c(1, 2)  # FIXME compilation fails when this is inline.
+            return(optim(par, nimFn, nimGr, method = method, lower = lower, upper = upper, control = control))
+            returnType(optimResultNimbleList())
+        }
+    )
+    compiledOptimizer <- compileNimble(nimOptimizer, showCompilerOutput = TRUE)
+
+    expect_agreement <- function(...) {
+        input <- list(...)
+        info <- capture.output(dput(input, control = c()))
+        value_r <- optimizer(...)
+        value_dsl <- nimOptimizer(...)
+        value_cpp <- compiledOptimizer(...)
+
+        expect_equal(value_r$par, value_dsl$par, info = info)
+        expect_equal(value_r$convergence, value_dsl$convergence, info = info)
+        expect_equal(value_r$value, value_dsl$value, info = info)
+        expect_equal(value_r$counts, unname(value_dsl$counts), info = info)
+
+        expect_equal(value_dsl$par, value_cpp$par, info = info)
+        expect_equal(value_dsl$convergence, value_cpp$convergence, info = info)
+        expect_equal(value_dsl$value, value_cpp$value, info = info)
+        expect_equal(value_dsl$counts, unname(value_cpp$counts), info = info)
+    }
+
+    # Test with many configurations.
+    default <- nimOptimDefaultControl()
+    expect_agreement(method = "Nelder-Mead", lower = -Inf, upper = Inf, control = {x <- default; x$maxit = 5; x})
+    expect_agreement(method = "BFGS", lower = -Inf, upper = Inf, control = {x <- default; x$maxit = 5; x})
+    expect_agreement(method = "CG", lower = -Inf, upper = Inf, control = {x <- default; x$maxit = 5; x})
+    expect_agreement(method = "L-BFGS-B", lower = -Inf, upper = Inf, control = {x <- default; x$maxit = 5; x})
+    expect_agreement(method = "CG", lower = -Inf, upper = Inf, control = {x <- default; x$type = 1; x})  # Fletcher-Reeves
+    expect_agreement(method = "CG", lower = -Inf, upper = Inf, control = {x <- default; x$type = 2; x})  # Polak-Ribiere
+    expect_agreement(method = "CG", lower = -Inf, upper = Inf, control = {x <- default; x$type = 3; x})  # Beal-Sorenson
+    expect_agreement(method = "L-BFGS-B", lower = -Inf, upper = 2, control = default)
+    expect_agreement(method = "L-BFGS-B", lower = -Inf, upper = c(6, 6), control = default)
+    expect_agreement(method = "L-BFGS-B", lower = 6, upper = Inf, control = default)
+    expect_agreement(method = "L-BFGS-B", lower = 2, upper = 3, control = default)
+    expect_agreement(method = "L-BFGS-B", lower = c(6, 6), upper = Inf, control = default)
+    expect_agreement(method = "L-BFGS-B", lower = c(1, 2), upper = c(3, 4), control = default)
+}))
