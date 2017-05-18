@@ -396,14 +396,19 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       ## putting some logic here that can be pulled to a separate method later
                                       ## issue is that validValues can index split vertices whose names contain -s- and will not survive eval(parse(...))
                                       ## if returnScalarComponents is FALSE, we should not need to call expandNodeNames (stoch and determ) and RHSonly
-                                      ans <- expandNodeNamesFromGraphIDs(seq_along(modelDef$maps$graphIDs)[validValues], 
-                                                                         returnScalarComponents = returnScalarComponents,
-                                                                         returnType = returnType)                                       
-                                      
+                                      ## push logical/numeric/character logic inside expandNodeNames, if the other circuitous cases could use it
+                                      if(!returnScalarComponents) {
+                                          ans <- expandNodeNamesFromGraphIDs(which(validValues), 
+                                                                             returnScalarComponents = returnScalarComponents,
+                                                                             returnType = returnType)                                       
+                                      } else { 
                                       ## this filters out LHSinferred, returns only nodes with nodeFunctions (stoch and determ) and RHSonly
-                                      ## ans <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], 
-                                      ## 						 returnScalarComponents = returnScalarComponents,
-                                      ## 						 returnType = returnType) 
+                                          ## when returnScalarElements is TRUE,
+                                          ## nodeNames2graphID is called 
+                                          ans <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], 
+                                                                 returnScalarComponents = returnScalarComponents,
+                                                                 returnType = returnType) 
+                                      }
                                       return(ans)                                      
                                   },
 expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE) {
