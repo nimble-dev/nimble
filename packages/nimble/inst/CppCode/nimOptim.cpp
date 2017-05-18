@@ -32,7 +32,7 @@ nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
     control->alpha = 1.0;
     control->beta = 0.5;
     control->gamma = 2.0;
-    control->REPORT = NA_INTEGER;  // Context-dependent.
+    control->REPORT = 10;
     control->type = 1;
     control->lmm = 5;
     control->factr = 1e7;
@@ -66,17 +66,8 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     if (control->maxit == NA_INTEGER) {
         if (method == "Nelder-Mead") {
             control->maxit = 500;
-        } else if (method == "SANN") {
-            control->maxit = 10000;
         } else {
             control->maxit = 100;
-        }
-    }
-    if (control->REPORT == NA_INTEGER) {
-        if (method == "SANN") {
-            control->REPORT = 100;
-        } else {
-            control->REPORT = 10;
         }
     }
 
@@ -113,12 +104,6 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
                control->factr, control->pgtol, fncount, grcount, control->maxit,
                msg, control->trace, control->REPORT);
         result->message = msg;
-    } else if (method == "SANN") {
-        const int trace = control->trace ? control->REPORT : 0;
-        samin(n, dpar, Fmin, NimOptimProblem::fn, control->maxit, control->tmax,
-              control->temp, trace, ex);
-        result->par = par;
-        result->counts[0] = control->maxit;
     } else {
         NIMERROR("Unknown method: %s", method.c_str());
     }

@@ -1113,11 +1113,10 @@ nimRound <- round
 #'            vector of parameters over which minimization is to take place. It
 #'            should return a scalar result.
 #' @param gr  A function to return the gradient for the "BFGS", "CG" and "L-BFGS-B" methods.
-#'            For the "SANN" method it specifies a function to generate a new candidate point.
-#'            If it is the string "NULL" a default Gaussian Markov kernel is used.
 #' @param ... IGNORED
 #' @param method The method to be used. See `Details` section of \code\link{{optim}}. One of:
-#'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"
+#'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B".
+#'               Note that the R methods "SANN", "Brent" are not supported.
 #' @param lower Vector or scalar of lower bounds for parameters.
 #' @param lower Vector or scalar of upper bounds for parameters.
 #' @param control A list of control parameters. See ‘Details’ section of \code\link{{optim}}.
@@ -1166,7 +1165,6 @@ optimDefaultControl <- function() {
 #' @export
 nimOptimDefaultControl <- function() {
     control <- optimControlNimbleList$new()
-    control$maxit <- NULL
-    control$REPORT <- NULL
+    control$maxit <- NULL  ## The default value depends on method.
     return(control)
 }

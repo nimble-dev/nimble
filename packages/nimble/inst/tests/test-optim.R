@@ -2,7 +2,7 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of the optim() function in NIMBLE code")
 
-# The method "SANN" uses the gr arg to specify a transition kernel, so we test it independently.
+# The methods "SANN" and "Brent" are not supported.
 methodsAllowingGradient <- c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B")
 
 # Test helper to verify code.
@@ -342,39 +342,4 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
     }
     expect_error(nimCaller$run(par, "bogus-method"))
     expect_error(compiledCaller$run(par, "bogus-method"))
-})
-
-# FAILS, sometimes crashing rstudio
-test_that("when an RCfunction optimizes an RCfunction with SANN, the DSL and C++ behavior mostly agree", {
-    nimFn <- nimbleFunction(
-        run = function(par = double(1)) {
-            return(sum(par ^ 2))
-            returnType(double(0))
-        }
-    )
-    nimGr <- nimbleFunction(
-        run = function(par = double(1)) {
-            # Work around https://github.com/nimble-dev/nimble/issues/351
-            direction <- rnorm(length(par))
-            return(direction)
-            returnType(double(1))
-        }
-    )
-    temporarilyAssignInGlobalEnv(nimFn)  # Work around scoping issues.
-    temporarilyAssignInGlobalEnv(nimGr)  # Work around scoping issues.
-    nimCaller <- nimbleFunction(
-        run = function(par = double(1), method = character(0)) {
-            return(optim(par, nimFn, nimGr, method = method))
-            returnType(optimResultNimbleList())
-        }
-    )
-    compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
-    # Test approximate agreement (i.e. that most fields agree).
-    par <- c(1.2, 3.4)
-    expected <- nimCaller(par, method = "SANN")
-    actual <- compiledCaller(par, method = "SANN")
-    expect_equal(actual$par, expected$par)
-    expect_equal(actual$convergence, expected$convergence)
-    expect_equal(actual$value, expected$value)
-    expect_equal(actual$counts, unname(expected$counts))
 })
