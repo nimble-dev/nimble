@@ -729,78 +729,110 @@ logicalTestsResults <- lapply(logicalTests, test_coreRfeature)
 
 ## Some tests of using coreR features in BUGS models
 
-mc <- nimbleCode({
-    a ~ dnorm(0,1)
-    b[1:2] <- c(a, 1.1)
-})
-
-m <- nimbleModel(mc, inits = list(a = 2))
-cm <- try(compileNimble(m))
-test_that('c(a, 1.1) in BUGS compiles',
-          expect_false(inherits(cm, 'try-error')))
-test_that('c(a, 1.1) in BUGS',
-          expect_identical(as.numeric(m$b), c(2, 1.1)))
-
-##
-mc <- nimbleCode({
-    b[1:2] <- c(1.2, 1.1)
-})
-
-m <- nimbleModel(mc)
-cm <- try(compileNimble(m))
-test_that('c(1.2, 1.1) in BUGS compiles',
-          expect_false(inherits(cm, 'try-error')))
-test_that('c(1.2, 1.1) in BUGS',
-          expect_identical(as.numeric(m$b), c(1.2, 1.1)))
+test_that('c(a, 1.1) in BUGS works', {
+    mc <- nimbleCode({
+        a ~ dnorm(0,1)
+        b[1:2] <- c(a, 1.1)
+    })
+    
+    m <- nimbleModel(mc, inits = list(a = 2))
+    expect_identical(as.numeric(m$b), c(2, 1.1))
+    m$b <- as.numeric(rep(NA, 3))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), c(2, 1.1))
+}
+)
 
 ##
-mc <- nimbleCode({
-    a ~ dnorm(0,1)
-    b[1:2] <- rep(a, 2)
-})
 
-m <- nimbleModel(mc, inits = list(a = 1.2))
-cm <- try(compileNimble(m))
-test_that('rep(a, 2) in BUGS compiles',
-          expect_false(inherits(cm, 'try-error')))
-test_that('rep(a, 2) in BUGS',
-          expect_identical(as.numeric(m$b), c(1.2, 1.2)))
-
-##
-mc <- nimbleCode({
-    b[1:2] <- rep(1, 2)
-})
-
-m <- nimbleModel(mc)
-cm <- try(compileNimble(m))
-test_that('rep(1,2) in BUGS compiles',
-          expect_false(inherits(cm, 'try-error')))
-test_that('rep(1,2) in BUGS',
-          expect_identical(as.numeric(m$b), rep(1,2)))
+test_that('c(1.2, 1.1) in BUGS works', {
+    mc <- nimbleCode({
+        b[1:2] <- c(1.2, 1.1)
+    })
+    m <- nimbleModel(mc)
+    expect_identical(as.numeric(m$b), c(1.2, 1.1))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), c(1.2, 1.1))
+}
+)
 
 ##
-mc <- nimbleCode({
-    b[1:2] <- 2:3
-})
 
-m <- nimbleModel(mc)
-cm <- try(compileNimble(m))
-test_that('2:3 in BUGS compiles',
-          expect_false(inherits(cm, 'try-error')))
-test_that('2:3 in BUGS',
-          expect_equal(as.numeric(m$b), 2:3))
+test_that('rep(a, 2) in BUGS works', {
+    mc <- nimbleCode({
+        a ~ dnorm(0,1)
+        b[1:2] <- rep(a, 2)
+    })
+    
+    m <- nimbleModel(mc, inits = list(a = 1.2))
+    expect_identical(as.numeric(m$b), c(1.2, 1.2))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), c(1.2, 1.2))
+}
+)
+
+##
+
+test_that('rep(1,2)  in BUGS works', {
+    mc <- nimbleCode({
+        b[1:2] <- rep(1, 2)
+    })
+    m <- nimbleModel(mc)
+    expect_identical(as.numeric(m$b), rep(1, 2))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), rep(1, 2))
+}
+)
 
 
 ##
-mc <- nimbleCode({
-    b[1:3] <- seq(1.2, 2.3, length = 3)
-})
 
-m <- nimbleModel(mc)
-cm <- try(compileNimble(m))
-test_that('seq(1.2, 2.3, length = 3) in BUGS compiles',
-          expect_false(inherits(cm, 'try-error')))
-test_that('seq(1.2, 2.3, length = 3)in BUGS',
-          expect_identical(as.numeric(m$b),  seq(1.2, 2.3, length = 3)))
+test_that('2:3   in BUGS works', {
+    mc <- nimbleCode({
+        b[1:2] <- 2:3 
+    })
+    m <- nimbleModel(mc)
+    expect_equal(as.numeric(m$b), 2:3 )
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_equal(as.numeric(cm$b), 2:3 )
+}
+)
 
+##
 
+test_that('seq(1.2, 2.3, length = 3) in BUGS works', {
+    mc <- nimbleCode({
+        b[1:3] <- seq(1.2, 2.3, length = 3)
+    })
+    m <- nimbleModel(mc)
+    expect_identical(as.numeric(m$b), seq(1.2, 2.3, length = 3) )
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), seq(1.2, 2.3, length = 3) )
+}
+)
+
+##
+
+test_that('diag(3) in BUGS works', {
+    mc <- nimbleCode({
+        b[1:3, 1:3] <- diag(3)
+    })
+    m <- nimbleModel(mc)
+    expect_equal(m$b, diag(3))
+    m$b <- matrix(100, nrow = 3, ncol = 3)
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(cm$b, diag(3))
+}
+)

@@ -15,9 +15,9 @@ nimbleOrRfunctionNames <- c('[','+','-','/','*','(','exp','log','pow','^','%%','
                             # these are allowed in DSL as special cases even though exp_nimble and t_nonstandard are the canonical NIMBLE distribution functions
                             paste0(c('d','r','q','p'), 't'),
                             paste0(c('d','r','q','p'), 'exp'),
-                            'nimC', 'nimRep', 'nimSeq')
+                            'nimC', 'nimRep', 'nimSeq', 'diag')
 
-functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq')
+functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq', 'diag')
 
 #' BUGSdeclClass contains the information extracted from one BUGS declaration
 BUGSdeclClass <- setRefClass('BUGSdeclClass',
