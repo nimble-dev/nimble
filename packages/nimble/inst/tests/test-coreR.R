@@ -716,6 +716,45 @@ logicalTests <- list(
          outputType = quote(double(2)))
 )
 
+returnTests <- list(
+    list(name = "return(rnorm scalar)",
+         expr = quote({}),
+         return = quote(return(rnorm(1))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double())),
+    list(name = "return(rnorm vector)",
+         expr = quote({}),
+         return = quote(return(rnorm(4))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))),
+    list(name = "return(rep(...))",
+         expr = quote({}),
+         return = quote(return(rep(1.23, 4))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))),
+    list(name = "return(seq(...))",
+         expr = quote({}),
+         return = quote(return(seq(from = .1, to = .5, by = .15))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))),
+    list(name = "return(A + B scalar)",
+         expr = quote({A <- .1; B <- .2}),
+         return = quote(return(A + B)),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(0))),
+    list(name = "return(A + B vector)",
+         expr = quote({A <- rep(.1, 3); B <- rep(.2, 3)}),
+         return = quote(return(A + B)),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))) 
+)
+
 cTestsResults <- lapply(cTests, test_coreRfeature)
 blockTestsResults <- lapply(blockTests, test_coreRfeature)
 repTestsResults <- lapply(repTests, test_coreRfeature)
@@ -726,3 +765,4 @@ seqTestsResults <- lapply(seqTests, test_coreRfeature)
 nonSeqIndexTestsResults <- lapply(nonSeqIndexTests, test_coreRfeature)
 indexChainTestsResults <- lapply(indexChainTests, test_coreRfeature)
 logicalTestsResults <- lapply(logicalTests, test_coreRfeature)
+returnTestResults <- lapply(returnTests, test_coreRfeature)
