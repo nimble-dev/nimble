@@ -1064,14 +1064,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## make a unique name
                                            thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
-
-                                           ## things to work with:
-                                           ## BUGSdecl$symbolicParentNodes
-                                           ## modelDef$maps$edgesFrom2ParentExprID
-                                           ## modelDef$maps$graphID_2_nodeName
-                                           ## to see fields: BUGSdecl$getRefClass()$fields()
-                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds,
-                                                                                   parents = BUGSdecl$symbolicParentNodes, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
+                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
                                            nodeFunctionGeneratorNames[i] <<- thisNodeGeneratorName

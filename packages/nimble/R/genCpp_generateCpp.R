@@ -146,6 +146,7 @@ cppOutputEigBlank <- function(code, symTab) {
 }
 
 cppOutputDerivDist <- function(code, symTab){
+  browser()
   ###for now, use different dist c++ fn if taking derivs
   if(identical(code$cppADCode, TRUE))
     paste0('nimDerivs_',code$name, '(', 

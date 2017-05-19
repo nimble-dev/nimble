@@ -1742,7 +1742,6 @@ sizeScalar <- function(code, symTab, typeEnv) {
 }
 
 sizeScalarModelOp <- function(code, symTab, typeEnv) {
-  print(code)
     if(length(code$args) > 1) {
         asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
         ## This used to error-trap attempts at index expressions.
@@ -1775,7 +1774,6 @@ sizeScalarModelOp <- function(code, symTab, typeEnv) {
     else code$type <- outputType
     code$sizeExprs <- list()
     code$toEigenize <- 'maybe'
-    print(code)
     asserts
 }
 
