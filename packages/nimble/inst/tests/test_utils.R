@@ -36,7 +36,10 @@ gen_runFunCore <- function(input) {
     formals(runFun) <- formalsList
     tmp <- quote({})
     tmp[[2]] <- input$expr
-    tmp[[3]] <- quote(return(out))
+    tmp[[3]] <- if(is.null(input[['return']]))
+                    quote(return(out))
+                else
+                    input[['return']]
     tmp[[4]] <- substitute(returnType(OUT), list(OUT = input$outputType))
     body(runFun) <- tmp
     return(runFun)
@@ -130,21 +133,31 @@ test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot 
   attr(out_nfC, 'dim') <- dimOutC
   checkEqual <- input[['checkEqual']]
   if(is.null(checkEqual)) checkEqual <- FALSE
-  if(!checkEqual) {
-      try(test_that(paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
-                    expect_identical(out, out_nfR)))
-      try(test_that(paste0("Identical test of math (direct R vs. C++ nimbleFunction): ", input$name),
-                    expect_identical(out, out_nfC)))
-  } else {
-      try(test_that(paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
-                    expect_equal(out, out_nfR)))
-      try(test_that(paste0("Equal test of math (direct R vs. C++ nimbleFunction): ", input$name),
-                    expect_equal(out, out_nfC)))
+  if(is.null(input[['return']])) { ## use default 'out' object
+      if(!checkEqual) {
+          try(test_that(paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
+                        expect_identical(out, out_nfR)))
+          try(test_that(paste0("Identical test of math (direct R vs. C++ nimbleFunction): ", input$name),
+                        expect_identical(out, out_nfC)))
+      } else {
+          try(test_that(paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
+                        expect_equal(out, out_nfR)))
+          try(test_that(paste0("Equal test of math (direct R vs. C++ nimbleFunction): ", input$name),
+                        expect_equal(out, out_nfC)))
+      }
+  } else { ## not using default return(out), so only compare out_nfR to out_nfC
+      if(!checkEqual) {
+          try(test_that(paste0("Identical test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name),
+                        expect_identical(out_nfC, out_nfR)))
+      } else {
+          try(test_that(paste0("Equal test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name),
+                        expect_equal(out_nfC, out_nfR)))
+
+      }
   }
   # unload DLL as R doesn't like to have too many loaded
   if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
   invisible(NULL)
-
 }
 
 gen_runFun <- function(input) {
