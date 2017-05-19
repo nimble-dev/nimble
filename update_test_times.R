@@ -3,7 +3,7 @@
 
 args = commandArgs(trailingOnly = TRUE)
 if(length(args) != 1 || '-h' %in% args || '--help' %in% args) {
-    cat('Usage: Rscript sort-tests.R TEST_LOG_FILE',
+    cat('Usage: Rscript update_test_times.R TEST_LOG_FILE',
         'Sort the test-devel.sh script by running the cheapest tests first.',
         'The TEST_LOG_FILE should be either a file that you manually create',
         'using someting like',
