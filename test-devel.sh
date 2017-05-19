@@ -14,6 +14,7 @@ Rscript packages/nimble/inst/tests/test-getBound.R
 Rscript packages/nimble/inst/tests/test-getDependencies.R
 Rscript packages/nimble/inst/tests/test-getDistributionInfo.R
 Rscript packages/nimble/inst/tests/test-getParam.R
+Rscript packages/nimble/inst/tests/test-graphStructure.R
 Rscript packages/nimble/inst/tests/test-math.R
 Rscript packages/nimble/inst/tests/test-mcem.R
 Rscript packages/nimble/inst/tests/test-mcmc.R
