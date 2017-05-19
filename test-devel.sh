@@ -1,7 +1,7 @@
 #!/bin/sh -ex
 
 # This runner profiles the tests so that we can prioritize for faster failures.
-RUNNER="/usr/bin/time -v Rscript"
+RUNNER="/usr/bin/time -v Rscript test-files.R"
 
 $RUNNER packages/nimble/inst/tests/test-types.R  # takes 0.94 seconds
 $RUNNER packages/nimble/inst/tests/test-checkDSL.R  # takes 1.78 seconds
