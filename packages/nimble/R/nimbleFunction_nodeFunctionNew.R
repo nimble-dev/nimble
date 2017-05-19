@@ -1,4 +1,5 @@
-nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeExpr, type, setupOutputExprs, evaluate = TRUE, where = globalenv()) {
+nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parents, logProbNodeExpr, type, setupOutputExprs, evaluate = TRUE, where = globalenv()) {
+    browser()
     if(!(type %in% c('stoch', 'determ')))       stop(paste0('invalid argument to nodeFunction(): type = ', type))
     setupOutputLabels <- nndf_makeNodeFunctionIndexLabels(setupOutputExprs) ## should perhaps move to the declInfo for preservation
     LHSrep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(LHS, setupOutputLabels)
@@ -16,7 +17,7 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeE
                            where = where),
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
                  SETUPFUNCTION = nndf_createSetupFunction(),  ##nndf = new node function
-                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, altParamsRep, boundsRep, logProbNodeExprRep, type),
+                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, parents, altParamsRep, boundsRep, logProbNodeExprRep, type),
                  where         = where)
         )
     if(evaluate)    return(eval(nodeFunctionTemplate))     else       return(nodeFunctionTemplate)
@@ -72,7 +73,7 @@ indexedNodeInfoTableClass <- function(BUGSdecl) {
 }
 
 ## creates a list of the methods calculate, simulate, getParam, getBound, and getLogProb, corresponding to LHS, RHS, and type arguments
-nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, type) {
+nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbNodeExpr, type) {
     if(type == 'determ') {
         methodList <- eval(substitute(
             list(
@@ -84,11 +85,16 @@ nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, 
             list(LHS=LHS,
                  RHS=RHS)))
     }
+  
+  substitute(a <- function(PARENTS){1+1}, list(PARENTS = 'x'))
+  
+  
     if(type == 'stoch') {
         methodList <- eval(substitute(
             list(
                 simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- STOCHSIM                                                         },
                 calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
+                # calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
                 calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {STOCHCALC_FULLEXPR_DIFF; LocalAns <- LocalNewLogProb - LOGPROB;  LOGPROB <<- LocalNewLogProb;
                                             returnType(double());   return(invisible(LocalAns))},
                 getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                       returnType(double());   return(LOGPROB)            }
@@ -98,6 +104,10 @@ nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, 
                  STOCHSIM  = ndf_createStochSimulate(RHS),
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
+
+        if(!is.null(parents)) names(parents) <- parents
+        formals(methodList$calculate) <- c(formals(methodList$calculate), parents)
+        
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
@@ -145,13 +155,14 @@ nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, 
         methodList[[caseName]] <- nndf_generateGetBoundSwitchFunction(bounds, seq_along(bounds), type = 'double', nDim = nDimSupported)
     }
     ## add model$ in front of all names, except the setupOutputs
-    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"))
+    browser()
+    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_", paste(parents)))
     return(methodList)
 }
 
 nndf_addModelDollarSignsToMethods <- function(methodList, exceptionNames = character()) {
     for(i in seq_along(methodList)) {
-        body(methodList[[i]]) <-addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))
+      body(methodList[[i]]) <-addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))
     }
     return(methodList)
 }
