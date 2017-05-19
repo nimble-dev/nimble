@@ -1286,12 +1286,11 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
 
     ## 1. Determine which indexExprs are in parentExpr
     useContext <- unlist(lapply(indexExprs, isNameInExprList, parentExpr))
-    # CJP: 5/17/17
     if(nimbleOptions()$allowDynamicIndexing) {
-        # FIXME: replace next step with function that is like 'isNameInExprList'
-        dynamicIndices <- sapply(parentExpr[3:length(parentExpr)], function(x) is.numeric(x) && is.na(x))
+        dynamicIndices <- sapply(quote(NA_real_), isNameInExprList, parentExpr)
+        ## parentExpr[3:length(parentExpr)], function(x) is.numeric(x) && is.na(x))
         if(any(dynamicIndices)) {
-         ##   if(length(parentExpr) > 3 || length(indexExprs) > 1) stop("splitVertices: dynamic indexing with multiple indices not yet allowed in: ", deparse(parentExpr))
+         ##   if(length(parentExpr) > 3 || length(indexExprs) > 1) stop("splitVertices: dynamic indexing with multiple indices not yet allowed in: ", deparse(parentExpr))  ## allowing this to pass for now to handle mu[3,NA,i]
             useDynamicIndices <- TRUE
             numDynamicIndices <- sum(dynamicIndices)
             ranges <- data.frame(rbind(rhsVarInfo$mins[dynamicIndices], rhsVarInfo$maxs[dynamicIndices]))
@@ -2146,7 +2145,8 @@ modelDefClass$methods(genVarInfo3 = function() {
                         ## If the index is dynamic (marked by NA), there is nothing to learn about index range of the variable.
                         if(nimbleOptions()$allowDynamicIndexing)
                             if(is.na(indexNamePieces)) {
-                                varInfo[[rhsVar]]$mins[iDim] <<- 1 ## o.w., never changed from 1e5 if only on RHS and in dimensions input
+                                varInfo[[rhsVar]]$mins[iDim] <<- min(varInfo[[rhsVar]]$mins[iDim], 1) ## o.w., never changed from 1e5 if only on RHS and in 'dimensions' input
+                                varInfo[[rhsVar]]$maxs[iDim] <<- max(varInfo[[rhsVar]]$maxs[iDim], 1) ## o.w., can end up with (1,0) as (min,max) before 'dimensions' are used
                                 next
                             }
                         ## Otherwise extend the range of known mins and maxs based on this expression
