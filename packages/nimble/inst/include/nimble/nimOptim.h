@@ -50,7 +50,7 @@ class NimOptimProblem {
    protected:
     // These are callbacks used internally by fn() and gr().
     virtual double function() = 0;
-    virtual void gradient() { NIMERROR("Gradient is not defined"); }
+    virtual void gradient();  // Uses finite difference by default.
 
     // Temporaries.
     double fnscale_;

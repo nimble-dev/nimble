@@ -23,6 +23,11 @@ void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     }
 }
 
+void NimOptimProblem::gradient() {
+    // TODO Use finite difference approximation.
+    NIMERROR("Gradient is not defined");
+}
+
 nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
     nimSmartPtr<OptimControlNimbleList> control = new OptimControlNimbleList;
     control->trace = 0;
