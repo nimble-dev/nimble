@@ -26,6 +26,49 @@ temporarilyAssignInGlobalEnv <- function(value) {
     do.call('on.exit', list(rmCommand), envir = parent.frame())
 }
 
+withTempProject <- function(code) {
+    code <- substitute(code)
+    project <- nimble:::nimbleProjectClass()
+    nimbleOptions(nimbleProject = project)
+    on.exit({
+        ## messages are suppressed by test_that, so "assign('.check', 1, globalenv())" can be used as a way to verify this code was called 
+        .project <- nimbleOptions()$nimbleProject
+        nimbleOptions(nimbleProject = NULL) ## clear this before clearCompiled step, in case clearCompiled() itself fails
+        .project$clearCompiled()
+    })
+    try(eval(code, envir = parent.frame()))
+}
+
+expect_compiles <- function(...) {
+    nimbleOptions(stopCompilationBeforeLinking = TRUE)
+    nimbleOptions(forceO1 = TRUE)
+    on.exit({
+        assign('.check', 1, globalenv())
+        nimbleOptions(stopCompilationBeforeLinking = FALSE)
+        nimbleOptions(forceO1 = FALSE)
+    })
+    ans <- try(compileNimble(...)) ## expecting a thrown error
+    if(identical(ans, "safely stopping before linking")) 
+        NULL
+    else
+        ans
+}
+
+## Alternative idea for expect_compiles
+## expect_compiles <- function(nimbleCompileCall) { ## alternative: nimbleCompileCall would be compileNimble(foo)
+##     nimbleCompileCall <- substitute(nimbleCompileCall)
+##     nimbleOptions(stopCompilationBeforeLinking = TRUE)
+##     on.exit({
+##         assign('.check', 1, globalenv())
+##         nimbleOptions(stopCompilationBeforeLinking = NULL)
+##     })
+##     ans <- try(eval(nimbleCompileCall, envir = parent.frame())) ## expecting a thrown error
+##     if(identical(ans, "safely stopping before linking")) 
+##         NULL
+##     else
+##         ans
+## }
+
 gen_runFunCore <- function(input) {
     runFun <- function() {}
     formalsList <- input$args
