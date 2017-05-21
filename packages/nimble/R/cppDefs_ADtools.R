@@ -111,7 +111,8 @@ makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, i
 ## (which is in permanent C++, not generated from R)
 ## We do not assume that in the target function the arguments are independent variables and the
 ## returned value is the dependent variable.  Those are set by the independentVarNames and dependentVarNames
-makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, ADfunName, independentVarNames, dependentVarNames) {
+makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, ADfunName, independentVarNames, dependentVarNames,
+                                 calculateFunc = FALSE, calculateFuncSymTab = NA) {
     ## Make new function definition to call for taping (CFT)
     CFT <- RCfunctionDef$new(static = TRUE)
     CFT$returnType <- cppVarFull(baseType = "CppAD::ADFun", templateArgs = list('double'), ptr = 1, name = 'RETURN_TAPE_') ##cppVoid()
@@ -130,7 +131,12 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     ## Make local AD variables for all function inputs and outputs
     ## e.g. if the original targetFun takes NimArr<1, double>, it's templated CppAD version will take NimArr<1, TYPE_>
     ## Next line creates local variables for passing to that templated CppAD version
-    localVars <- symbolTable2templateTypeSymbolTable(targetFunDef$args, clearRef = TRUE, replacementBaseType = 'CppAD::AD', replacementTemplateArgs = list('double') )
+    if(calculateFunc){
+      localVars <- symbolTable2templateTypeSymbolTable
+    }
+    else{
+      localVars <- symbolTable2templateTypeSymbolTable(targetFunDef$args, clearRef = TRUE, replacementBaseType = 'CppAD::AD', replacementTemplateArgs = list('double') )
+    }
     ## and similar for the return variable
     initADptrCode <- cppLiteral("RETURN_TAPE_ = new CppAD::ADFun<double>;")
     ansSym <- cppVarSym2templateTypeCppVarSym(targetFunDef$returnType, clearRef = TRUE, replacementBaseType = 'CppAD::AD', replacementTemplateArgs = list('double'))
@@ -258,6 +264,8 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     CFT
 }
 
+
+
 makeStaticInitClass <- function(cppDef, derivMethods) {
     cppClass <- cppClassDef(name = 'initTest', useGenerator = FALSE)
     globalsDef <- cppGlobalObjects(name = 'initTestGlobals')
@@ -275,38 +283,6 @@ makeStaticInitClass <- function(cppDef, derivMethods) {
     cppClass$functionDefs[['initializer']] <- initializerDef
     cppClass$globalObjectsDefs[['globals']] <- globalsDef
     cppClass
-}
-
-makeGradientFunction <- function(newFunName = 'run_gradient_', regularFun, argumentTransferName, independentVarNames) {
-    GF <- RCfunctionDef()
-    GF$name <- newFunName
-    GF$args <- regularFun$args
-    GF$returnType <- symbolBasic(name = 'NAME_NOT_USED', type = 'double', nDim = 1, size = as.numeric(NA))$genCppVar()## could check that this is double: regularFun$returnType
-    localVars <- symbolTable()
-    argTransferCall <- substitute(FOO(), list(FOO = as.name(argumentTransferName)))
-    for(i in seq_along(independentVarNames)) argTransferCall[[i + 1]] <- as.name(independentVarNames[[i]])
-    oneLinerCode <- substitute(return(vectorDouble_2_NimArr(getGradient(ATC))),  list(ATC = argTransferCall))
-    allRcode <- do.call('call', c(list('{'), list(oneLinerCode)), quote=TRUE)
-
-    allCode <- RparseTree2ExprClasses(allRcode)
-    GF$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
-    GF
-}
-
-makeHessianFunction <- function(newFunName = 'run_hessian_', regularFun, argumentTransferName, independentVarNames) {
-  HF <- RCfunctionDef()
-  HF$name <- newFunName
-  HF$args <- regularFun$args
-  HF$returnType <- symbolBasic(name = 'NAME_NOT_USED', type = 'double', nDim = 2, size = as.numeric(NA))$genCppVar()## could check that this is double: regularFun$returnType
-  localVars <- symbolTable()
-  argTransferCall <- substitute(FOO(), list(FOO = as.name(argumentTransferName)))
-  for(i in seq_along(independentVarNames)) argTransferCall[[i + 1]] <- as.name(independentVarNames[[i]])
-  oneLinerCode <- substitute(return(vectorDouble_2_NimArr(getHessian(ATC))),  list(ATC = argTransferCall))
-  allRcode <- do.call('call', c(list('{'), list(oneLinerCode)), quote=TRUE)
-  
-  allCode <- RparseTree2ExprClasses(allRcode)
-  HF$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
-  HF
 }
 
 makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0) {

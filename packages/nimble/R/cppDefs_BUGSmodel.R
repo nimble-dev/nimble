@@ -84,6 +84,8 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                      },
 
                                      buildNodes = function(where = globalenv(), debugCpp = FALSE) {
+                                       browser()
+                                         addADclassContent()
                                          nimbleProject$addNimbleFunctionMulti(model$nodeFunctions, fromModel = TRUE, model$nodeFunctionGeneratorNames)
                                          
                                          nodeFuns <<- nimbleProject$compileNimbleFunctionMulti(model$nodeFunctions, isNode = TRUE,
@@ -92,6 +94,69 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                                                                                generatorFunNames = model$nodeFunctionGeneratorNames,
                                                                                                alreadyAdded = TRUE) ## fromModel is redundant here
                                      },
+                                     addADclassContentOneNode = function(nodeFun) {
+                                       browser()
+                                       funName <- 'calculate_AD_'
+                                       independentVarNames <- names(formals(nodeFun$calculate_AD_))
+                                       independentVarNames <- independentVarNames[-1] ## For the time being, INDEXNODEINFO_ is still the first argument, but don't want to add it to tape!
+                                       ## don't check args for calculate_AD_ currently.  Will we ever?
+                                       # for(iArg in seq_along(functionDefs[[funName]]$args$symbols)){
+                                       #   arg <- functionDefs[[funName]]$args$symbols[[iArg]]
+                                       #   argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)
+                                       #   argName <- names(nfProc$RCfunProcs[[funName]]$nameSubList)[iArg]
+                                       #   checkADargument(funName, argSym, argName = argName)
+                                       #}
+                                       addTypeTemplateFunction(funName)
+                                       addADtapingFunction(funName, independentVarNames = independentVarNames, dependentVarNames = 'ANS_' )
+                                       addADargumentTransferFunction(funName, independentVarNames = independentVarNames)
+                                     },
+                                     addADtapingFunction = function( funName, independentVarNames, dependentVarNames, nodeFun) {
+                                       ADfunName <- paste0(funName, '_AD_')
+                                       regularFun <- nodeFun[[funName]]
+                                       newFunName <- paste0(funName, '_callForADtaping_')
+                                       tst <- nodeFun$model$modelDef$symTab$copy()
+                                       for(i in seq_along(tst$symbols)){
+                                         if(!(names(tst$symbols)[i] %in% independentVarNames){
+                                           tst$removeSymbol(names(tst$symbols)[i])
+                                         }
+                                       }
+                                       tst$removeSymbol('y')
+                                       functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames,
+                                                                                           calculateFunc = T, calculateFuncSymTab = )
+                                       invisible(NULL)
+                                     },
+                                     addTypeTemplateFunction = function( funName ) {
+                                       newFunName <- paste0(funName, '_AD_')
+                                       regularFun <- RCfunDefs[[funName]]
+                                       functionDefs[[newFunName]] <<- makeTypeTemplateFunction(newFunName, regularFun)
+                                       invisible(NULL)
+                                     },
+                                     addADclassContent = function() {
+                                       CPPincludes <<- c("<cppad/cppad.hpp>", CPPincludes)
+                                       Hincludes <<- c("<cppad/cppad.hpp>", nimbleIncludeFile("nimbleCppAD.h"), Hincludes)
+                                       addInheritance("nimbleFunctionCppADbase")
+                                       ## cppClass$objectDefs$addSymbol(cppVarFull(name = 'allADtapePtrs_', static = TRUE, baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1))))
+                                       ##objectDefs[['vectorADtapePtrs']] <<- cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), static = TRUE, name = 'allADtapePtrs_')
+                                       objectDefs[['allADtapePtrs_']] <<- cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), static = TRUE, name = 'allADtapePtrs_')
+                                       # ##cppClass$objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
+                                       objectDefs[['ADtapeSetup']] <<- cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass')
+
+                                       for(nodeFun in model$nodeFunctions){
+                                         addADclassContentOneNode(nodeFun)
+                                       }
+                                       # ## static declaration in the class definition
+                                       # 
+                                       # ## globals to hold the global static definition
+                                       globals <- cppGlobalObjects(name = 'staticGlobals', staticMembers = TRUE)
+                                       globals$objectDefs[['staticGlobalTape']] <- cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), name = paste0(name,'::allADtapePtrs_'))
+                                       # ##globalObjectsDefs[['allADtapePtrs_']] <<- globals
+                                       neededTypeDefs[['allADtapePtrs_']] <<- globals
+                                       # 
+                                       # addStaticInitClass()
+                                       # 
+                                       # invisible(NULL)
+                                     },
+                                     
                                      buildAll = function(buildNodeDefs = TRUE, where = globalenv(), ...) {
                                          makeCppNames() 
                                          buildVars()

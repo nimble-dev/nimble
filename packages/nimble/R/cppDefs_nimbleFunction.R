@@ -276,22 +276,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   neededTypeDefs[['staticInitClass']] <<- makeStaticInitClass(.self, environment(nfProc$nfGenerator)$enableDerivs) ##
                                                   invisible(NULL)
                                               },
-                                              addGradientFunction = function(funName, independentVarNames) {
-                                                  ##ADfunName <- if(funName == 'operator()') 'run_AD_' else paste0(funName, '_AD_')
-                                                 regularFun <- RCfunDefs[[funName]]
-                                                 argumentTransferName <- 'ADargumentTransfer'
-                                                 newFunName <- 'ADgradient'
-                                                 functionDefs[[newFunName]] <<- makeGradientFunction(newFunName, regularFun, argumentTransferName, independentVarNames)
-##                                                 functionDefs[[newFunName]]$buildSEXPinterfaceFun(className = nfProc$name)
-                                                 invisible(NULL)
-                                             },
-                                            addHessianFunction = function(funName, independentVarNames) {
-                                              regularFun <- RCfunDefs[[funName]]
-                                              argumentTransferName <- 'ADargumentTransfer'
-                                              newFunName <- 'ADhessian'
-                                              functionDefs[[newFunName]] <<- makeHessianFunction(newFunName, regularFun, argumentTransferName, independentVarNames)
-                                              invisible(NULL)
-                                            },
                                               addADclassContentOneFun = function(funName) {
                                                   outSym <- nfProc$RCfunProcs[[funName]]$compileInfo$returnSymbol
                                                   checkADargument(funName, outSym, returnType = TRUE)
@@ -327,7 +311,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ##cppClass$objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
                                                   objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
                                                   for(adEnabledFun in environment(nfProc$nfGenerator)$enableDerivs){
-                                                    outType <- nfProc$RCfunProcs[[adEnabledFun]]$compileInfo$returnSymbol
                                                     addADclassContentOneFun(adEnabledFun)
                                                   }
                                                   ## static declaration in the class definition
