@@ -3,17 +3,28 @@
 # this script creates the Rd files from the roxygen info in the R files
 # and creates the NAMESPACE file
 
-# as of R3.2.2 get lots of messages like
-# "Found more than one class "nfMethodRC" in cache; using the first, from namespace 'nimble'"
-# seems to be because we are loading in nimble and we are sourcing code files in global,
-# so class definitions are in two places
+library(roxygen2)
+if(packageVersion('roxygen2') > "5.0.1")
+    stop("some issue with roxygen2 6.0.1 -- see https://github.com/klutometis/roxygen/issues/568 and https://github.com/klutometis/roxygen/issues/595; use version 5.0.1 of royxgen2")
+library(methods)
 
-require(roxygen2)
-require(methods)
+### 1. Set up NAMESPACE content apart from exports
 
-
-# need to document all S4 methods
-explicitUndocFuns <- c("[,numberedModelValuesAccessors-method", "[<-,numberedModelValuesAccessors-method", "[,numberedObjects-method", "[<-,numberedObjects-method", "[[,CNumericList-method", "[[<-,CNumericList-method", "[[,RNumericList-method", "[[<-,RNumericList-method", "[[,nimPointerList-method", "[[<-,nimPointerList-method", "[[<-,nimbleFunctionList-method", "[,distributionsClass-method", "[[,distributionsClass-method", "[[,conjugacyRelationshipsClass-method")
+## need to document all S4 methods
+explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
+                       "[<-,numberedModelValuesAccessors-method",
+                       "[,numberedObjects-method",
+                       "[<-,numberedObjects-method",
+                       "[[,CNumericList-method",
+                       "[[<-,CNumericList-method",
+                       "[[,RNumericList-method",
+                       "[[<-,RNumericList-method",
+                       "[[,nimPointerList-method",
+                       "[[<-,nimPointerList-method",
+                       "[[<-,nimbleFunctionList-method",
+                       "[,distributionsClass-method",
+                       "[[,distributionsClass-method",
+                       "[[,conjugacyRelationshipsClass-method")
 
 imports <- c("methods", "igraph")
 imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
@@ -22,11 +33,11 @@ importFroms <- c("coda, effectiveSize, as.mcmc, is.mcmc.list",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",
                  "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var")
-#                 "R2WinBUGS, bugs",
-#                 "rjags, jags.model",
-#                 "rjags, coda.samples",
-#                 "rstan, stan_model",
-#                 "rstan, sampling")
+##                 "R2WinBUGS, bugs",
+##                 "rjags, jags.model",
+##                 "rjags, coda.samples",
+##                 "rstan, stan_model",
+##                 "rstan, sampling")
 
 importFroms <- paste("importFrom(", importFroms, ")", sep = "", collapse = "\n") 
 
@@ -39,10 +50,15 @@ S3methods <- c("as.matrix, CmodelValues",
 
 S3methods <- paste("S3method(", S3methods, ")", sep = "", collapse = "\n")
 
-# need everything exported for roxygenization to work...
-#cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportAllLine, "\n", sep = "", collapse = ''),
+## need everything exported for roxygenization to work...
 cat(paste(imports, importFroms, dynLibLine, S3methods, exportAllLine, sep = "\n", collapse = '\n'),
     file = file.path("nimble", "NAMESPACE"))
+
+### 2. Create Rd files
+
+roxygenize('nimble', 'rd')
+
+### 3. Create nimble-internals.Rd as CRAN-required documentation for internal functions that need to be exported
 
 system("R CMD build nimble")
 
@@ -50,36 +66,14 @@ nimble_version <- system("grep 'Version:' nimble/DESCRIPTION | cut -d' ' -f2", i
 
 system(paste0("R CMD INSTALL nimble_", nimble_version, ".tar.gz"))
 
-# need to remove existing Rd files or get errors with
-# recursion and walking graph for classes
-cur <- getwd()
-setwd(file.path("nimble", "man"))
-
-files <- list.files()
-file.remove(files)
-
-setwd(cur)
-
-require(nimble)
-
-Rpath <- file.path("nimble", "R")
-files <- list.files(Rpath, pattern = "*R$")  # omit config.R.in
-roclet = rd_roclet()
-for(file in files) {  
-  print(file)
-  test <- try(a <- roxygen2:::roc_proc_text(roclet, paste(readLines(file.path(Rpath, file)), sep="\n")))
-  if(!is(test, 'try-error'))
-    roxygen2:::roclet_output(roclet, a, "nimble", options = list(wrap=FALSE, roclets = "rd"), check = FALSE)
-}
-
-
-
+library(nimble)
 
 funs <- ls('package:nimble')
 documentedFuns <- list.files(file.path("nimble", "man"), pattern = "*Rd$")
 documentedFuns <- sub(".Rd$", "", documentedFuns)
 
-# pull in all the @aliases and @names in the Rd files
+## pull in all the @aliases and @names in the Rd files
+cur <- getwd()
 setwd(file.path("nimble", "man"))
 tmp <- readLines(pipe("cat *Rd"))
 aliases <- tmp[grep("^(\\\\name|\\\\alias)", tmp)]
@@ -89,19 +83,25 @@ aliases <- unique(aliases)
 
 setwd(cur)
 
-# combination of file names and @aliases and @names, though all file names are probably in @name or @alias...
+## combination of file names and @aliases and @names, though all file names are probably in @name or @alias...
 documentedFuns <- unique(c(documentedFuns, aliases))
 undocFuns <- funs[!funs %in% documentedFuns]
 # make sure to have fooClass-Class documented in nimble-internal to pass R CMD check
 undocClasses <- undocFuns[grep("Class$", undocFuns)]
 
-#undocFuns <- c(undocFuns, paste0(undocClasses, "-Class", sep = ''))
 undocClasses <- paste0(undocClasses, "-Class", sep = '')
 
-# need the following additional exports that need to be doc'ed by CRAN rules
+## need the following additional exports that need to be doc'ed by CRAN rules
 
-additionalExports <- c("calc_dmnormConjugacyContributions", "calc_dmnormAltParams", "getNodeFunctionIndexedInfo", "singleModelValuesAccess", "getNimbleProject", "nimbleInternalFunctions", "nimbleUserNamespace", "dsqrtinvgamma", "rsqrtinvgamma")
-# write out nimble-internals.Rd
+additionalExports <- c("calc_dmnormConjugacyContributions",
+                       "calc_dmnormAltParams",
+                       "getNodeFunctionIndexedInfo",
+                       "singleModelValuesAccess",
+                       "getNimbleProject",
+                       "nimbleInternalFunctions",
+                       "nimbleUserNamespace",
+                       "dsqrtinvgamma",
+                       "rsqrtinvgamma")
 
 internals <- c(undocClasses, explicitUndocFuns, additionalExports)
 
@@ -116,10 +116,28 @@ text <- c("\\name{nimble-internal}", "\\title{Functions and Classes Internal to 
 
 cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-internal.Rd"))
 
+### 4. Create nimble-math.Rd as documentation for various math functions we don't want to write individual documentation for given similarity to BUGS or base R functions
 
-mathFuns <- c('cloglog', 'cube', 'expit', 'icloglog', 'ilogit',
-  'inprod', 'inverse', 'iprobit', 'logdet', 'logfact', 'loggam', 'logit',
-  'nimEquals', 'nimOptim', 'nimRound', 'nimStep', 'nimSwitch', 'phi', 'pow', 'probit')
+mathFuns <- c('cloglog',
+              'cube',
+              'expit',
+              'icloglog',
+              'ilogit',
+              'inprod',
+              'inverse',
+              'iprobit',
+              'logdet',
+              'logfact',
+              'loggam',
+              'logit',
+              'nimEquals',
+              'nimOptim',
+              'nimRound',
+              'nimStep',
+              'nimSwitch',
+              'phi',
+              'pow',
+              'probit')
 
 text <- rep("", length(mathFuns))
 for(i in seq_along(mathFuns)) 
@@ -131,19 +149,15 @@ text <- c("\\name{nimble-math}", "\\title{Mathematical functions for BUGS and ni
 
 cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-math.Rd"))
 
-# when classes are exported, R seems to want individual Rd files for them
-#for(i in exportClasses)
-#    cat(paste(paste0("\\name{nimble-internal}\n", "\\title{Functions and Classes Internal to NIMBLE}\n", "\\alias{", i, "}\n", "\\alias{", i, "-Class}\n"), internalDesc, collapse = "\n"), file = file.path("nimble", "man", paste0(i, ".Rd")))
+### 5. Create final NAMESPACE file, which is careful about what is exported
 
-# now create real NAMESPACE file
-## NAMESPACE
-system(paste("mv", file.path('nimble','NAMESPACE'), file.path('/tmp', 'NAMESPACE')))
-devtools::document('nimble', roclets = c('namespace'))
+if(!file.exists(file.path('nimble','R','config.R')))
+    stop("You need a nimble/R/config.R file, but it must NOT be in the repository; you can probably do the following to create config.R from nimble/packages: 'make configure; cd nimble; ./configure'.")
+file.remove(file.path('nimble', 'NAMESPACE'))
+roxygenise('nimble','namespace')
 
 namespace <- readLines(file.path('nimble','NAMESPACE'))
 
-#rmLines <- c(grep("^#", namespace), grep("^$", namespace))
-#namespace <- namespace[-rmLines]
 exportNames <- gsub("(export|exportClasses)", "", namespace)
 exportNames <- gsub("[()]", "", exportNames)
 exportNames <- gsub("\"", "", exportNames)
@@ -155,6 +169,5 @@ additionalExports <- c(additionalExports, 'nimbleType')  # nimbleType needed it 
 exportTextAdd <- paste0("export(", additionalExports, ")")
 exportText <- c(exportTextAdd, exportText)
 
-#cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
 cat(paste(imports, importFroms, dynLibLine, S3methods, collapse = '\n', sep = '\n'), '\n', paste0(exportText, collapse = '\n'), sep = '', file = file.path("nimble", "NAMESPACE"))
 
