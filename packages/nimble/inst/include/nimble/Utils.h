@@ -38,6 +38,11 @@ class nimbleTimerClass_ {
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
 #define NIM_ASSERT(cond, ...) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " __VA_ARGS__); }}
 
+#define NIM_ASSERT_SIZE(my_array, n)                                   \
+    NIM_ASSERT(my_array.dimSize(0) == n,                               \
+               #my_array " has wrong size: expected %d, actual %d", n, \
+               my_array.dimSize(0));
+
 // code copied from nmath.h - useful utilities 
 # define MATHLIB_ERROR(fmt,x)		error(fmt,x);
 # define MATHLIB_WARNING(fmt,x)		warning(fmt,x)

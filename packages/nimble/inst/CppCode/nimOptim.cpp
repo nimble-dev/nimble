@@ -23,11 +23,6 @@ void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     }
 }
 
-void NimOptimProblem::gradient() {
-    // TODO Use finite difference approximation.
-    NIMERROR("Gradient is not defined");
-}
-
 nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
     nimSmartPtr<OptimControlNimbleList> control = new OptimControlNimbleList;
     control->trace = 0;
@@ -103,6 +98,8 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     } else if (method_ == "L-BFGS-B") {
         if (lower_.dimSize(0) == 1) lower_.initialize(lower_[0], true, n);
         if (upper_.dimSize(0) == 1) upper_.initialize(upper_[0], true, n);
+        NIM_ASSERT_SIZE(lower_, n);
+        NIM_ASSERT_SIZE(upper_, n);
         std::vector<int> nbd(n, 0);
         for (int i = 0; i < n; ++i) {
             if (std::isfinite(lower_[i])) nbd[i] |= 1;

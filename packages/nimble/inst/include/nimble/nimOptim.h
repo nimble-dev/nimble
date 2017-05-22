@@ -4,6 +4,7 @@
 #include <nimble/NimArr.h>
 #include <nimble/optimTypes.h>
 #include <nimble/smartPtrs.h>
+#include <algorithm>
 #include <string>
 
 // ---------------------------------------------------------------------------
@@ -55,7 +56,7 @@ class NimOptimProblem {
    protected:
     // These are callbacks used internally by fn() and gr().
     virtual double function() = 0;
-    virtual void gradient();  // Uses finite difference by default.
+    virtual void gradient() = 0;
 
     // Problem parameters.
     const std::string& method_;
@@ -80,10 +81,45 @@ class NimOptimProblem_Fun : public NimOptimProblem {
 
    protected:
     virtual double function() { return fn_(par_); }
+    virtual void gradient();  // Uses finite difference approximation.
 
    private:
     Fn fn_;
 };
+
+template <class Fn>
+void NimOptimProblem_Fun<Fn>::gradient() {
+    const int n = par_.dimSize(0);
+    NIM_ASSERT_SIZE(ans_, n);
+    NimArr<1, double>& ndeps = control_->ndeps;
+    if (ndeps.dimSize(0) == 1) ndeps.initialize(ndeps[0], true, n);
+    NIM_ASSERT_SIZE(ndeps, n);
+    NimArr<1, double> par_h = par_;
+    if (method_ == "L-BFGS-B") {
+        // Constrained optimization.
+        for (int i = 0; i < n; ++i) {
+            const double h_pos = std::min(ndeps[i], upper_[i] - par_[i]);
+            const double h_neg = std::min(ndeps[i], par_[i] - lower_[i]);
+            par_h[i] = par_[i] + h_pos;
+            const double pos = fn_(par_h);
+            par_h[i] = par_[i] - h_neg;
+            const double neg = fn_(par_h);
+            par_h[i] = par_[i];
+            ans_[i] = (pos - neg) / (h_pos + h_neg);
+        }
+    } else {
+        // Unconstrained optimization.
+        for (int i = 0; i < n; ++i) {
+            const double h = ndeps[i];
+            par_h[i] = par_[i] + h;
+            const double pos = fn_(par_h);
+            par_h[i] = par_[i] - h;
+            const double neg = fn_(par_h);
+            par_h[i] = par_[i];
+            ans_[i] = (pos - neg) / (2 * h);
+        }
+    }
+}
 
 template <class Fn, class Gr>
 class NimOptimProblem_Fun_Grad : public NimOptimProblem {
