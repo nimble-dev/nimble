@@ -9,7 +9,7 @@ double NimOptimProblem::fn(int n, double* par, void* ex) {
     NimOptimProblem* problem = static_cast<NimOptimProblem*>(ex);
     problem->par_.setSize(n, false, false);
     std::copy(par, par + n, problem->par_.getPtr());
-    return problem->function() / problem->fnscale_;
+    return problem->function() / problem->control_->fnscale;
 }
 
 void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
@@ -19,7 +19,7 @@ void NimOptimProblem::gr(int n, double* par, double* ans, void* ex) {
     problem->ans_.setSize(n, false, false);
     problem->gradient();
     for (int i = 0; i < n; ++i) {
-        ans[i] = problem->ans_[i] / problem->fnscale_;
+        ans[i] = problem->ans_[i] / problem->control_->fnscale;
     }
 }
 
@@ -57,30 +57,27 @@ nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
 //   https://svn.r-project.org/R/trunk/src/library/stats/src/optim.c
 //   https://svn.r-project.org/R/trunk/src/include/R_ext/Applic.h
 nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
-    NimArr<1, double>& par, const std::string& method, NimArr<1, double>& lower,
-    NimArr<1, double>& upper, nimSmartPtr<OptimControlNimbleList> control,
-    bool hessian) {
+    NimArr<1, double>& par) {
     NIM_ASSERT(!par.isMap(), "Internal error: failed to handle mapped NimArr");
     const int n = par.dimSize(0);
 
     nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
     result->par = par;
     result->counts.initialize(NA_INTEGER, true, 2);
-    if (hessian) {
+    if (hessian_) {
         result->hessian.initialize(NA_REAL, true, n, n);
     }
 
-    // Set context-dependent default control values.
-    if (control->maxit == NA_INTEGER) {
-        if (method == "Nelder-Mead") {
-            control->maxit = 500;
+    // Set context-dependent default control_ values.
+    if (control_->maxit == NA_INTEGER) {
+        if (method_ == "Nelder-Mead") {
+            control_->maxit = 500;
         } else {
-            control->maxit = 100;
+            control_->maxit = 100;
         }
     }
 
     // Parameters common to all methods.
-    fnscale_ = control->fnscale;
     double* dpar = par.getPtr();
     double* X = result->par.getPtr();
     double* Fmin = &(result->value);
@@ -89,40 +86,40 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     int* fncount = &(result->counts[0]);
     int* grcount = &(result->counts[1]);
 
-    if (method == "Nelder-Mead") {
-        nmmin(n, dpar, X, Fmin, NimOptimProblem::fn, fail, control->abstol,
-              control->reltol, ex, control->alpha, control->beta,
-              control->gamma, control->trace, fncount, control->maxit);
-    } else if (method == "BFGS") {
+    if (method_ == "Nelder-Mead") {
+        nmmin(n, dpar, X, Fmin, NimOptimProblem::fn, fail, control_->abstol,
+              control_->reltol, ex, control_->alpha, control_->beta,
+              control_->gamma, control_->trace, fncount, control_->maxit);
+    } else if (method_ == "BFGS") {
         std::vector<int> mask(n, 1);
         vmmin(n, dpar, Fmin, NimOptimProblem::fn, NimOptimProblem::gr,
-              control->maxit, control->trace, mask.data(), control->abstol,
-              control->reltol, control->REPORT, ex, fncount, grcount, fail);
+              control_->maxit, control_->trace, mask.data(), control_->abstol,
+              control_->reltol, control_->REPORT, ex, fncount, grcount, fail);
         result->par = par;
-    } else if (method == "CG") {
+    } else if (method_ == "CG") {
         cgmin(n, dpar, X, Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
-              control->abstol, control->reltol, ex, control->type,
-              control->trace, fncount, grcount, control->maxit);
-    } else if (method == "L-BFGS-B") {
-        if (lower.dimSize(0) == 1) lower.initialize(lower[0], true, n);
-        if (upper.dimSize(0) == 1) upper.initialize(upper[0], true, n);
+              control_->abstol, control_->reltol, ex, control_->type,
+              control_->trace, fncount, grcount, control_->maxit);
+    } else if (method_ == "L-BFGS-B") {
+        if (lower_.dimSize(0) == 1) lower_.initialize(lower_[0], true, n);
+        if (upper_.dimSize(0) == 1) upper_.initialize(upper_[0], true, n);
         std::vector<int> nbd(n, 0);
         for (int i = 0; i < n; ++i) {
-            if (std::isfinite(lower[i])) nbd[i] |= 1;
-            if (std::isfinite(upper[i])) nbd[i] |= 2;
+            if (std::isfinite(lower_[i])) nbd[i] |= 1;
+            if (std::isfinite(upper_[i])) nbd[i] |= 2;
         }
         char msg[60];
-        lbfgsb(n, control->lmm, X, lower.getPtr(), upper.getPtr(), nbd.data(),
-               Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail, ex,
-               control->factr, control->pgtol, fncount, grcount, control->maxit,
-               msg, control->trace, control->REPORT);
+        lbfgsb(n, control_->lmm, X, lower_.getPtr(), upper_.getPtr(),
+               nbd.data(), Fmin, NimOptimProblem::fn, NimOptimProblem::gr, fail,
+               ex, control_->factr, control_->pgtol, fncount, grcount,
+               control_->maxit, msg, control_->trace, control_->REPORT);
         result->message = msg;
     } else {
-        NIMERROR("Unknown method: %s", method.c_str());
+        NIMERROR("Unknown method_: %s", method_.c_str());
     }
 
     // Compute Hessian.
-    if (hessian) {
+    if (hessian_) {
         Rf_warning("Hessian computation is not implemented");  // TODO
     }
 
