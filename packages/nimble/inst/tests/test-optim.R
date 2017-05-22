@@ -74,7 +74,7 @@ test_that("nimbleFunction with optim() runs", {
 test_that("when an RCfunction optim()izes an RCfunction, the R and DSL behavior mostly agree", {
     # Define R versions.
     callee <- function(par) { return(sum(par ^ 2)) }
-    caller <- function(par) { return(optim(par, callee)) }
+    caller <- function(par, method) { return(optim(par, callee, method = method)) }
     # Define DSL versions.
     nimCallee <- nimbleFunction(
         run = function(par = double(1)) {
@@ -83,23 +83,27 @@ test_that("when an RCfunction optim()izes an RCfunction, the R and DSL behavior 
         }
     )
     nimCaller <- nimbleFunction(
-        run = function(par = double(1)) {
-            return(optim(par, nimCallee))
+        run = function(par = double(1), method = character(0)) {
+            return(optim(par, nimCallee, method = method))
             returnType(optimResultNimbleList())
         }
     )
     temporarilyAssignInGlobalEnv(nimCallee)  # Work around scoping issues.
     # Test agreement.
     par <- c(1.2, 3.4)
-    result_r <- caller(par)
-    result_dsl <- nimCaller(par)
-    expect_r_and_dsl_agree(result_r, result_dsl)
+    for (method in methodsAllowingGradient) {
+        result_r <- caller(par, method)
+        result_dsl <- nimCaller(par, method)
+        expect_r_and_dsl_agree(result_r, result_dsl, info = paste(' where method =', method))
+    }
+    expect_error(caller(par, "bogus-method"))
+    expect_error(nimCaller(par, "bogus-method"))
 })
 
 test_that("when a nimbleFunction optim()izes an RCfunction, the R and DSL behavior mostly agree", {
     # Define R versions.
     callee <- function(par) { return(sum(par ^ 2)) }
-    caller <- function(par) { return(optim(par, callee)) }
+    caller <- function(par, method) { return(optim(par, callee, method = method)) }
     # Define DSL versions.
     nimCallee <- nimbleFunction(
         run = function(par = double(1)) {
@@ -109,17 +113,21 @@ test_that("when a nimbleFunction optim()izes an RCfunction, the R and DSL behavi
     )
     nimCaller <- nimbleFunction(
         setup = TRUE,
-        run = function(par = double(1)) {
-            return(optim(par, nimCallee))
+        run = function(par = double(1), method = character(0)) {
+            return(optim(par, nimCallee, method = method))
             returnType(optimResultNimbleList())
         }
     )()
     temporarilyAssignInGlobalEnv(nimCallee)  # Work around scoping issues.
     # Test agreement.
     par <- c(1.2, 3.4)
-    result_r <- caller(par)
-    result_dsl <- nimCaller$run(par)
-    expect_r_and_dsl_agree(result_r, result_dsl)
+    for (method in methodsAllowingGradient) {
+        result_r <- caller(par, method)
+        result_dsl <- nimCaller$run(par, method)
+        expect_r_and_dsl_agree(result_r, result_dsl, info = paste(' where method =', method))
+    }
+    expect_error(caller(par, "bogus-method"))
+    expect_error(nimCaller(par, "bogus-method"))
 })
 
 test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the R and DSL behavior mostly agree", {
@@ -165,7 +173,7 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the R 
 test_that("when a nimbleFunction optim()izes a nimbleFunction, the R and DSL behavior mostly agree", {
     # Define R versions.
     callee <- function(par) { return(sum(par ^ 2)) }
-    caller <- function(par) { return(optim(par, callee)) }
+    caller <- function(par, method) { return(optim(par, callee, method = method)) }
     # Define DSL versions.
     nimCalleeGen <- nimbleFunction(
         setup = TRUE,
@@ -179,16 +187,20 @@ test_that("when a nimbleFunction optim()izes a nimbleFunction, the R and DSL beh
         setup = function() {
             nimCallee <- nimCalleeGen()
         },
-        run = function(par = double(1)) {
-            return(optim(par, nimCallee$run))
+        run = function(par = double(1), method = character(0)) {
+            return(optim(par, nimCallee$run, method = method))
             returnType(optimResultNimbleList())
         }
     )()
     # Test agreement.
     par <- c(1.2, 3.4)
-    result_r <- caller(par)
-    result_dsl <- nimCaller$run(par)
-    expect_r_and_dsl_agree(result_r, result_dsl)
+    for (method in methodsAllowingGradient) {
+        result_r <- caller(par, method)
+        result_dsl <- nimCaller$run(par, method)
+        expect_r_and_dsl_agree(result_r, result_dsl, info = paste(' where method =', method))
+    }
+    expect_error(caller(par, "bogus-method"))
+    expect_error(nimCaller$run(par, "bogus-method"))
 })
 
 test_that("when an RCfunction optim()izes an RCfunction, the DSL and C++ behavior agree", {
@@ -199,8 +211,8 @@ test_that("when an RCfunction optim()izes an RCfunction, the DSL and C++ behavio
         }
     )
     nimCaller <- nimbleFunction(
-        run = function(par = double(1)) {
-            return(optim(par, nimCallee))
+        run = function(par = double(1), method = character(0)) {
+            return(optim(par, nimCallee, method = method))
             returnType(optimResultNimbleList())
         }
     )
@@ -208,9 +220,13 @@ test_that("when an RCfunction optim()izes an RCfunction, the DSL and C++ behavio
     # Test agreement.
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
     par <- c(1.2, 3.4)
-    result_dsl <- nimCaller(par)
-    result_cpp <- compiledCaller(par)
-    expect_equal(result_dsl, result_cpp)
+    for (method in methodsAllowingGradient) {
+        result_dsl <- nimCaller(par, method)
+        result_cpp <- compiledCaller(par, method)
+        expect_equal(result_dsl, result_cpp, info = paste(' where method =', method))
+    }
+    expect_error(nimCaller(par, "bogus-method"))
+    expect_error(compiledCaller(par, "bogus-method"))
 })
 
 test_that("when a nimbleFunction optim()izes an RCfunction, the DSL and C++ behavior agree", {
@@ -222,8 +238,8 @@ test_that("when a nimbleFunction optim()izes an RCfunction, the DSL and C++ beha
     )
     nimCaller <- nimbleFunction(
         setup = TRUE,
-        run = function(par = double(1)) {
-            return(optim(par, nimCallee))
+        run = function(par = double(1), method = character(0)) {
+            return(optim(par, nimCallee, method = method))
             returnType(optimResultNimbleList())
         }
     )()
@@ -231,9 +247,13 @@ test_that("when a nimbleFunction optim()izes an RCfunction, the DSL and C++ beha
     # Test agreement.
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
     par <- c(1.2, 3.4)
-    result_dsl <- nimCaller$run(par)
-    result_cpp <- compiledCaller$run(par)
-    expect_equal(result_dsl, result_cpp)
+    for (method in methodsAllowingGradient) {
+        result_dsl <- nimCaller$run(par, method)
+        result_cpp <- compiledCaller$run(par, method)
+        expect_equal(result_dsl, result_cpp, info = paste(' where method =', method))
+    }
+    expect_error(nimCaller$run(par, "bogus-method"))
+    expect_error(compiledCaller$run(par, "bogus-method"))
 })
 
 test_that("when a nimbleFunction optim()izes a nimbleFunction, the DSL and C++ behavior agree", {
@@ -249,17 +269,21 @@ test_that("when a nimbleFunction optim()izes a nimbleFunction, the DSL and C++ b
         setup = function() {
             nimCallee <- nimCalleeGen()
         },
-        run = function(par = double(1)) {
-            return(optim(par, nimCallee$run))
+        run = function(par = double(1), method = character(0)) {
+            return(optim(par, nimCallee$run, method = method))
             returnType(optimResultNimbleList())
         }
     )()
     # Test agreement.
     compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
     par <- c(1.2, 3.4)
-    result_dsl <- nimCaller$run(par)
-    result_cpp <- compiledCaller$run(par)
-    expect_equal(result_dsl, result_cpp)
+    for (method in methodsAllowingGradient) {
+        result_dsl <- nimCaller$run(par, method)
+        result_cpp <- compiledCaller$run(par, method)
+        expect_equal(result_dsl, result_cpp, info = paste(' where method =', method))
+    }
+    expect_error(nimCaller$run(par, "bogus-method"))
+    expect_error(compiledCaller$run(par, "bogus-method"))
 })
 
 test_that("when an RCfunction optim()izes an RCfunction with gradient, the DSL and C++ behavior mostly agree", {
@@ -364,6 +388,52 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
 })
 
 test_that("when optim() is called with bounds, behavior is the same among R, DSL, and C++", {
+    # Only method L-BFGS-B supports bounds.
+    # Define R functions.
+    fn <- function(par) { sum((par - c(5, 7)) ^ 2) }
+    optimizer <- function(lower, upper) {
+        return(optim(c(1, 2), fn, method = 'L-BFGS-B', lower = lower, upper = upper))
+    }
+    # Define DSL functions.
+    nimFn <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(sum((par - c(5, 7)) ^ 2))
+            returnType(double(0))
+        }
+    )
+    temporarilyAssignInGlobalEnv(nimFn)
+    nimOptimizer <- nimbleFunction(
+        run = function(lower = double(1), upper = double(1)) {
+            par <- c(1, 2)  # FIXME compilation fails when this is inline.
+            return(optim(par, nimFn, method = 'L-BFGS-B', lower = lower, upper = upper))
+            returnType(optimResultNimbleList())
+        }
+    )
+    compiledOptimizer <- compileNimble(nimOptimizer, showCompilerOutput = TRUE)
+    
+    expect_agreement <- function(lower, upper) {
+        info <- paste(' where lower =', capture.output(dput(lower, control = c())),
+                      ', upper =', capture.output(dput(upper, control = c())))
+        result_r <- optimizer(lower, upper)
+        result_dsl <- nimOptimizer(lower, upper)
+        result_cpp <- compiledOptimizer(lower, upper)
+        expect_r_and_dsl_agree(result_r, result_dsl, info = info)
+        expect_equal(result_dsl, result_cpp, info = info)
+    }
+    
+    # Test with many configurations.
+    expect_agreement(lower = -Inf, upper = Inf)
+    expect_agreement(lower = -Inf, upper = 2)
+    expect_agreement(lower = 6, upper = Inf)
+    expect_agreement(lower = c(6, 6), upper = Inf)
+    if(RUN_FAILING_TESTS) {  # TODO Fix these failing tests.
+        expect_agreement(lower = 2, upper = 3)  # FAILS dsl ! = cpp only in .count field
+        expect_agreement(lower = c(1, 2), upper = c(3, 4))  # FAILS dsl != cpp only in .count field
+        expect_agreement(lower = -Inf, upper = c(6, 6))  # FAILS dsl != cpp only in .count field
+    }
+})
+
+test_that("when optim() is called with bounds and gradient, behavior is the same among R, DSL, and C++", {
     # Only method L-BFGS-B supports bounds.
     # Define R functions.
     fn <- function(par) { sum((par - c(5, 7)) ^ 2) }
@@ -481,6 +551,46 @@ test_that("optim() minimizes with fnscale = 1 and maximizes when fnscale = -1", 
     fn <- function(par) {
         return(sum(par) * exp(-sum(par ^ 2) / 2))
     }
+    optimizer <- function(method, fnscale) {
+        control <- list(fnscale = fnscale)
+        return(optim(c(0.1, -0.1), fn, method = method, control = control))
+    }
+    # Define DSL functions.
+    nimFn <- nimbleFunction(
+        run = function(par = double(1)) {
+            return(sum(par) * exp(-sum(par ^ 2) / 2))
+            returnType(double(0))
+        }
+    )
+    temporarilyAssignInGlobalEnv(nimFn)
+    nimOptimizer <- nimbleFunction(
+        run = function(method = character(0), fnscale = double(0)) {
+            control <- optimDefaultControl()
+            control$fnscale <- fnscale
+            par <- c(0.1, -0.1)  # FIXME compilation fails when this is inline.
+            return(optim(par, nimFn, method = method, control = control))
+            returnType(optimResultNimbleList())
+        }
+    )
+    compiledOptimizer <- compileNimble(nimOptimizer, showCompilerOutput = TRUE)
+    # Test with many methods and fnscales.
+    for (method in methodsAllowingGradient) {
+        for (fnscale in c(-1, 1)) {
+            result_r <- optimizer(method, fnscale)
+            result_dsl <- nimOptimizer(method, fnscale)
+            result_cpp <- compiledOptimizer(method, fnscale)
+            info <- paste(' where method =', method, ', fnscale =', fnscale)
+            expect_r_and_dsl_agree(result_r, result_dsl, info = info)
+            expect_equal(result_dsl, result_cpp, info = info)
+        }
+    }
+})
+
+test_that("optim() with gradient minimizes with fnscale = 1 and maximizes when fnscale = -1", {
+    # Define R functions with exactly one global minimumm and one global maximum.
+    fn <- function(par) {
+        return(sum(par) * exp(-sum(par ^ 2) / 2))
+    }
     gr <- function(par) {
         return(sum(par) * exp(-sum(par ^ 2) / 2) * (rep(1, length(par)) - par))
     }
@@ -516,7 +626,6 @@ test_that("optim() minimizes with fnscale = 1 and maximizes when fnscale = -1", 
     # Test with many methods and fnscales.
     for (method in methodsAllowingGradient) {
         for (fnscale in c(-1, 1)) {
-            if (method == "Nelder-Mead" && fnscale == -1 && !RUN_FAILING_TESTS) next  # TODO Fix this case.
             result_r <- optimizer(method, fnscale)
             result_dsl <- nimOptimizer(method, fnscale)
             result_cpp <- compiledOptimizer(method, fnscale)

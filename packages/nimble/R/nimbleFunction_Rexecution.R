@@ -1127,7 +1127,8 @@ nimRound <- round
 #' @export
 nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
                      control = nimOptimDefaultControl(), hessian = FALSE) {
-    # Tweak control value.
+    # Tweak parameters.
+    if (identical(gr, "NULL")) gr <- NULL
     defaultControl <- nimOptimDefaultControl()
     Rcontrol <- list()
     for (name in defaultControl$nimbleListDef$types$vars) {

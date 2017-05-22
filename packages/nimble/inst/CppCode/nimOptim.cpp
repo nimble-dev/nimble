@@ -114,6 +114,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     } else {
         NIMERROR("Unknown method_: %s", method_.c_str());
     }
+    result->value *= control_->fnscale;
 
     // Compute Hessian.
     if (hessian_) {
