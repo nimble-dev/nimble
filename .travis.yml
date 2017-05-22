@@ -26,5 +26,5 @@ install:
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
-script: ./test-devel.sh
+script: ./run_tests.R
 
