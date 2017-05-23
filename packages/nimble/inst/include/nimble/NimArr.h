@@ -279,7 +279,7 @@ public:
   
   T &operator[](int i) const {
     std::div_t divRes = std::div(i, size1);
-    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes.rem, floor(divRes.quot))]);
+    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes.rem, divRes.quot)]);
   }
     
   ~NimArr<2, T>() {};
@@ -518,8 +518,8 @@ class NimArr<3, T> : public NimArrBase<T> {
 
   T &operator[](int i) const {
     std::div_t divRes1 = std::div(i, size1);
-    std::div_t divRes2 = std::div(floor(divRes1.quot), size2);
-    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, floor(divRes2.quot))]);
+    std::div_t divRes2 = std::div(divRes1.quot, size2);
+    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, divRes2.quot)]);
   }
 
   ~NimArr<3, T>() {};
@@ -795,9 +795,9 @@ class NimArr<4, T> : public NimArrBase<T> {
 
   T &operator[](int i) const {
     std::div_t divRes1 = std::div(i, size1);
-    std::div_t divRes2 = std::div(floor(divRes1.quot), size2);
-    std::div_t divRes3 = std::div(floor(divRes2.quot), size3);
-    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, divRes3.rem, floor(divRes3.quot))]);
+    std::div_t divRes2 = std::div(divRes1.quot, size2);
+    std::div_t divRes3 = std::div(divRes2.quot, size3);
+    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, divRes3.rem, divRes3.quot)]);
   }
   
   ~NimArr<4, T>() {};

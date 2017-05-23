@@ -237,7 +237,9 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                         'Utils.cpp',
                                                         'NamedObjects.cpp',
                                                         'ModelClassUtils.cpp',
-                                                        'accessorClasses.cpp'
+                                                        'accessorClasses.cpp',
+                                                        'optimTypes.cpp',
+                                                        'nimOptim.cpp'
                                                         )
                                        if(getNimbleOption('includeCPPdists')) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
 

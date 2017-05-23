@@ -51,6 +51,56 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     return(out)
 }
 
+#' The Inverse Wishart Distribution
+#'
+#' Density and random generation for the Inverse Wishart distribution, using the Cholesky factor of either the scale matrix or the rate matrix.
+#'
+#' @name Inverse-Wishart
+#' @aliases inverse-wishart
+#' 
+#' @param x vector of values.
+#' @param n number of observations (only \code{n=1} is handled currently).
+#' @param cholesky upper-triangular Cholesky factor of either the scale matrix (when \code{scale_param} is TRUE) or rate matrix (otherwise).
+#' @param df degrees of freedom.
+#' @param scale_param logical; if TRUE the Cholesky factor is that of the scale matrix; otherwise, of the rate matrix.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @author Christopher Paciorek
+#' @export
+#' @details See Gelman et al., Appendix A for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
+#' @return \code{dinvwish_chol} gives the density and \code{rinvwish_chol} generates random deviates.
+#' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' df <- 40
+#' ch <- chol(matrix(c(1, .7, .7, 1), 2))
+#' x <- rwish_chol(1, ch, df = df)
+#' dwish_chol(x, ch, df = df)
+#'
+NULL
+
+#' @rdname Inverse-Wishart
+#' @export
+dinvwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
+  # scale_param = FALSE is the GCSR parameterization (i.e., inverse scale matrix); scale_param = TRUE is the parameterization best for conjugacy calculations (i.e., scale matrix)
+    if(storage.mode(cholesky) != 'double')
+          storage.mode(cholesky) <- 'double'
+    if(storage.mode(x) != 'double')
+            storage.mode(x) <- 'double'
+    .Call('C_dinvwish_chol', x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
+}
+
+#' @rdname Inverse-Wishart
+#' @export
+rinvwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
+    if(n != 1) warning('rinvwish_chol only handles n = 1 at the moment')
+    if(storage.mode(cholesky) != 'double')
+    	storage.mode(cholesky) <- 'double'
+    out <- .Call('C_rinvwish_chol', cholesky, as.double(df), as.double(scale_param))
+    if(!is.null(out)) out <- matrix(out, nrow = sqrt(length(cholesky)))
+    return(out)
+}
+
 
 #' Nimble Derivatives
 #' @export
@@ -165,9 +215,58 @@ nimSvd <- function(x, vectors = 'full') {
   .Call('C_nimSvd', x, vectors, svdNimbleList$new())
 }
 
+#' The Improper Uniform Distribution
+#'
+#' Improper flat distribution for use as a prior distribution in BUGS models
+#'
+#' @name flat
+#' @aliases halfflat
+#'
+#' @param x vector of values. 
+#' @param n number of observations.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#'
+#' @author Christopher Paciorek
+#' @export
+#' @return \code{dflat} gives the pseudo-density value of 1, while \code{rflat} returns \code{NaN},
+#' since one cannot simulate from an improper distribution. Similarly, \code{dhalfflat}
+#' gives a pseudo-density value of 1 when \code{
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' dflat(1)
+NULL
 
+#' @rdname flat
+#' @export
+dflat <- function(x, log = FALSE) {  
+   if(log) out <- rep(0, length(x)) else  out <- rep(1, length(x))
+   nas <- is.na(x)
+   out[nas] <- x[nas]
+   return(out)
+}
 
+#' @rdname flat
+#' @export
+rflat <- function(n = 1) {
+  return(rep(NaN, n))
+}
 
+#' @rdname flat
+#' @export
+dhalfflat <- function(x, log = FALSE) {
+  out <- rep(0, length(x))
+  out[x < 0] <- -Inf
+  nas <- is.na(x)
+  out[nas] <- x[nas]
+  if(log) return(out) else return(exp(out))
+}
+
+#' @rdname flat
+#' @export
+rhalfflat <- function(n = 1) {
+  return(rep(NaN, n))
+}
 
 #' The Dirichlet Distribution
 #'
@@ -682,6 +781,7 @@ rinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
     .Call('C_rinvgamma', as.integer(n), as.double(shape), as.double(rate))
 }
 
+
 #' @rdname Inverse-Gamma
 #' @export
 pinvgamma <- function(q, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, log.p = FALSE) {
@@ -704,3 +804,23 @@ qinvgamma <- function(p, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, lo
   .Call('C_qinvgamma', as.double(p), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
+# sqrtinvgamma is intended solely for use in conjugacy with dhalfflat
+#' @export
+dsqrtinvgamma <- function(x, shape, scale = 1, rate = 1/scale, log = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+    .Call('C_dsqrtinvgamma', as.double(x), as.double(shape), as.double(rate), as.logical(log))
+}
+
+#' @export
+rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+    .Call('C_rsqrtinvgamma', as.integer(n), as.double(shape), as.double(rate))
+}

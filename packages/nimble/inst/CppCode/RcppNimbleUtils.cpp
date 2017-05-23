@@ -1015,8 +1015,6 @@ SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex){
 //   FRAMEWORK FOR USING R'S OPTIM FUNCTIONS IN NIMBLE
 
 
-
-
 void bareBonesOptim(NimArr<1, double> initPar, optimfn objFxn, void* nfPtr, int nargs,  ...){
 	int n1 = initPar.size();
 	NM_OptimControl* nmControl = new NM_OptimControl(1.0, 0.5, 2.0,0.0001, 0.0001, 500, 0);
@@ -1136,11 +1134,12 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 	//Could return ans if we decided to build it on the fly here instead of providing it as argument
 }	
 
+// This function calls a function named 'cppNimDebug' that exists in R's global env.  'cppNimDebug' can be any function you would like.
 void RBrowserFun(){
   SEXP call;
   PROTECT(call = allocVector(LANGSXP, 1));
   SETCAR( call,
-    findFun( install("cppNimListDebug"), R_GlobalEnv )
+    findFun( install("cppNimDebug"), R_GlobalEnv )
   );  
   //SETCADR(call, Robj);
   //SET_TAG( CDR( call ), install("sexpObj") );

@@ -26,7 +26,6 @@ makeNFBindingFields <- function(symTab, cppNames) {
         ptrName = paste0(".", vn, "_Ptr")
         fieldList[[ptrName]] <- "ANY" ## "ANY" 
         ## Model variables:
-        if(inherits(thisSymbol, 'symbolOptimReadyFunction'))	next
         if(inherits(thisSymbol,'symbolNimArrDoublePtr')) { ## copy type 'modelVar'
             fieldList[[vn]] <- eval(substitute(
                 function(x) {

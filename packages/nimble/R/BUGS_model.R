@@ -372,23 +372,69 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 
 Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as \'data\'.
 '
-                                      validValues = rep(TRUE, length(modelDef$maps$graphIDs) )
+                                      ## Part of fix for Issue #340:
+                                      ## In previous versions, we started with validValues all TRUE
+                                      ## and LHSinferred nodes (which should never be returned) were filtered out in the final expandNodeNames call
+                                      ## Now a LHSinferred node can have a name reflecting that it is a split vertex, like mu[ 1 %.s$ 5]
+                                      ##   which means its elements begin at 1 and end at 5 but are not contiguous (some elements are not included)
+                                      ## Such a name can be parsed but evaluating it in one of the "vars2..." environments will fail
+                                      ## so it needs to be omitted from the call to expandNodeNames.
+                                      ## It turns out ot be easy to do that by filtering out LHSinferred nodes at initialization of validValues
+                                      ## validValues is a boolean vector aligned with modelDef$maps$nodesNames and allied vectors
+                                      validValues <- modelDef$maps$types != "LHSinferred"
+                                      ## Apply a series of filters of what can be included
                                       if(!includeRHSonly)		validValues[modelDef$maps$types == 'RHSonly'] <- FALSE
                                       if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
                                       if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE
-                                      if(!includeData)		validValues[isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
-                                      if(dataOnly)			validValues[!isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
-                                      if(topOnly)				validValues[-modelDef$maps$top_IDs] <- FALSE
+
+                                      boolIsData <- rep(FALSE, length(modelDef$maps$graphIDs))
+                                      possibleDataIDs <- modelDef$maps$graphIDs[modelDef$maps$types == 'RHSonly' | modelDef$maps$types == 'stoch']
+                                      boolIsData[possibleDataIDs] <- isDataFromGraphID(possibleDataIDs)
+                                      
+                                      if(!includeData)		        validValues[boolIsData] <- FALSE
+                                      if(dataOnly)			validValues[!boolIsData] <- FALSE
+                                      if(topOnly)			validValues[-modelDef$maps$top_IDs] <- FALSE
                                       if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
                                       if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
-                                      
-                                      ans <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], 
-                                      						 returnScalarComponents = returnScalarComponents,
-                                      						 returnType = returnType) 
+
+                                      ## Part of fix for Issue #340.
+                                      ## In general the flow of model/node querying functions sometimes flips between IDs and names multiple times
+                                      ## which is inefficienty/redudant.  I am adding some logic here to avoid such a flip when it would be
+                                      ## redundant.  In the future it may make sense to push this logic to be internal to expandNodesNames and/or
+                                      ## nodeName2GraphIDs, but I am leaving that for a future step.
+                                  
+                                      ## New logic, part of fix for Issue #340:
+                                      ## If returnScalarComponents is FALSE, we should not need to call expandNodeNames (stoch and determ) and RHSonly,
+                                      ## which flips to names and back to IDs.  Instead we can work directly with the IDs
+                                      if(!returnScalarComponents) {
+                                          ans <- expandNodeNamesFromGraphIDs(which(validValues), 
+                                                                             returnScalarComponents = returnScalarComponents,
+                                                                             returnType = returnType)                                       
+                                      } else { 
+                                          ## nodeNames2graphID is called inside expandNodeNames 
+                                          ans <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], 
+                                                                 returnScalarComponents = returnScalarComponents,
+                                                                 returnType = returnType) 
+                                      }
                                       return(ans)                                      
                                   },
-                                  
-                                  expandNodeNames = function(nodes, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE){
+expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE) {
+    if(length(graphID)==0) return(if(returnType=='names') character() else numeric())
+    if(sort) 
+        graphID <- sort(graphID)
+    if(returnType == 'names'){
+        if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
+        else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
+        return(nodeNames)
+    }
+    if(returnType == 'ids'){
+        if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.") 
+        return(graphID)
+    }                  
+    if(!(returnType %in% c('ids','names')))
+        stop('instead expandNodeNames, imporper returnType chosen')
+},
+expandNodeNames = function(nodes, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE){
                                       '
 Takes a vector of names of nodes or variables and returns the unique and expanded names in the model, i.e. \'x\' expands to \'x[1]\', \'x[2]\', ...
 
@@ -407,19 +453,20 @@ unique: should names be the unique names or should original ordering of nodes (a
 
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
                                       graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique)
-                                      if(sort) 
-                                          graphID <- sort(graphID)
-                                      if(returnType == 'names'){
-                                          if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
-                                          else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
-                                          return(nodeNames)
-                                      }
-                                      if(returnType == 'ids'){
-                                          if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.") 
-                                          return(graphID)
-                                      }                  
-                                      if(!(returnType %in% c('ids','names')))
-                                      	stop('instead expandNodeNames, imporper returnType chosen')
+                                      expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType)
+                                      ## if(sort) 
+                                      ##     graphID <- sort(graphID)
+                                      ## if(returnType == 'names'){
+                                      ##     if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
+                                      ##     else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
+                                      ##     return(nodeNames)
+                                      ## }
+                                      ## if(returnType == 'ids'){
+                                      ##     if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.") 
+                                      ##     return(graphID)
+                                      ## }                  
+                                      ## if(!(returnType %in% c('ids','names')))
+                                      ## 	stop('instead expandNodeNames, imporper returnType chosen')
                                   },
                                   
                                   topologicallySortNodes = function(nodes, returnType = 'names') {
@@ -564,9 +611,10 @@ Details: The variable or node names specified is expanded into a vector of model
                                   },
 
                                   isDataFromGraphID = function(g_id){
-                                   	nodeNames <- modelDef$maps$graphID_2_nodeName[g_id]	
+                                      ## notice this uses only the first element for multivariate nodes
+                                      nodeNames <- modelDef$maps$graphID_2_nodeName[g_id]	
                                   	ret <- unlist(lapply(as.list(nodeNames),
-                                                  function(nn)     
+                                                  function(nn)
                                                     return(as.vector(eval(parse(text=nn, keep.source = FALSE)[[1]],
                                                                                 envir=isDataEnv))[[1]])))
                                     if(is.null(ret))   ret <- logical(0)
@@ -641,38 +689,50 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.
 '
-
                                       if(inherits(nodes, 'character')) {
-                                          elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
-                                          if(returnScalarComponents)
-                                             # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                                              nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                                                                   FALSE,
-                                                                   FALSE,
-                                                                   NA)
-                                          else
-                                              nodeIDs <- elementIDs
+                                          ## elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
+                                          ## if(returnScalarComponents)
+                                          ##    # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                          ##     nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                          ##                          FALSE,
+                                          ##                          FALSE,
+                                          ##                          NA)
+                                          ## else
+                                          ##     nodeIDs <- elementIDs
+
+                                          ## experimental: always start from scalar components
+                                          elementIDs <- modelDef$nodeName2GraphIDs(nodes, FALSE)
+                                          nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                                            FALSE,
+                                                            FALSE,
+                                                            NA)
                                       }
                                       else if(inherits(nodes, 'numeric'))
                                           nodeIDs <- nodes
                                       
-                                      if(inherits(omit, 'character')) {
-                                          elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
-                                          if(returnScalarComponents)
-                                              omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
-                                                                   FALSE,
-                                                                   FALSE,
-                                                                   NA)
-                                          else
-                                              omitIDs <- elementIDs
+                                      if(inherits(omit, 'character')) { ## mimic above if it works
+                                      ##     elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
+                                      ##     if(returnScalarComponents)
+                                      ##         omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
+                                      ##                              FALSE,
+                                      ##                              FALSE,
+                                      ##                              NA)
+                                      ##     else
+                                      ##         omitIDs <- elementIDs
+                                          elementIDs <- modelDef$nodeName2GraphIDs(omit, FALSE)
+                                          omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                                            FALSE,
+                                                            FALSE,
+                                                            NA)
                                       }
                                       else if(inherits(omit, 'numeric'))
                                           omitIDs <- omit
-                                      
 
-depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+## new C++ version
+ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+
 ## ## Uncomment these lines to catch discrepancies between the old and new systems.
-## depIDsOld <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+## depIDs <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
 ## if(!identical(as.numeric(depIDsOld), as.numeric(depIDs))) {
 ##     cat('caught a discrepancy for depIDs')
 ##     browser()
@@ -681,7 +741,10 @@ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(i
                                       if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
                                       if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
                                       if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
-                                      if(!self)	depIDs <- setdiff(depIDs, nodeIDs)
+if(!self)	{
+    nodeFunIDs <- unique(modelDef$maps$vertexID_2_nodeID[ nodeIDs ])
+    depIDs <- setdiff(depIDs, nodeFunIDs)
+}
                                       if(!includeData)	depIDs <- depIDs[!isDataFromGraphID(depIDs)]
                                       if(dataOnly)		depIDs <- depIDs[isDataFromGraphID(depIDs)]
                                       

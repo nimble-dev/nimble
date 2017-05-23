@@ -31,6 +31,8 @@ R_CallMethodDef CallEntries[] = {
  //FUN(copyModelValuesElements, 4),
  FUN(C_dwish_chol, 5),
  FUN(C_rwish_chol, 3),
+ FUN(C_dinvwish_chol, 5),
+ FUN(C_rinvwish_chol, 3),
  FUN(C_ddirch, 3),
  FUN(C_rdirch, 1),
  FUN(C_dmulti, 4),
@@ -55,6 +57,8 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_rinvgamma, 3),
  FUN(C_pinvgamma, 5),
  FUN(C_qinvgamma, 5),
+ FUN(C_dsqrtinvgamma, 4),
+ FUN(C_rsqrtinvgamma, 3),
  FUN(C_nimEigen, 3),
  FUN(C_nimSvd, 3),
 
@@ -83,7 +87,7 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_rankSample, 4),
  FUN(parseVar, 1),
 
- FUN(setGraph, 6),
+ FUN(setGraph, 7),
  FUN(anyStochDependencies, 1),
  FUN(anyStochParents, 1),
  FUN(getDependencies, 4),

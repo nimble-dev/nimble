@@ -108,7 +108,6 @@ Collate:
     filtering_liuwest.R
     filtering_enkf.R
     filtering_bootstrap.R
-    optimTools.R
     NF_utils.R
     miscFunctions.R
     makevars.R

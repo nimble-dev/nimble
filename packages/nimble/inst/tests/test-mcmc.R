@@ -19,15 +19,6 @@ if(FALSE) { # template for running JAGS for comparison
   out <- as.mcmc(out1)
 }
 
-if(FALSE) {
-allModels <- c(# vol1
-               'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats', 'seeds',
-               # 'bones',
-               # vol2
-               'dugongs')
-
-sapply(allModels, test_mcmc, numItsC = 1000)
-}
 
 ### Beginning of actual tests
 
@@ -107,7 +98,6 @@ test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
 # are simulated from their priors to have large magnitude values
 
 # rework ice example so that beta[1] and beta[2] will be top nodes
-##system(paste("sed 's/tau\\*1.0E-6/1.0E-6/g'", system.file('classic-bugs','vol2','ice','icear.bug', package = 'nimble'), ">", file.path(tempdir(), "icear.bug")))
 system.in.dir(paste("sed 's/tau\\*1.0E-6/1.0E-6/g' icear.bug > ", file.path(tempdir(), "icear.bug")), dir = system.file('classic-bugs','vol2','ice', package = 'nimble'))
 test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE)
 # looks fine, but alpha and beta values shifted a bit (systematically) relative to JAGS results - on further inspection this is because mixing for this model is poor in both NIMBLE and JAGS - with longer runs they seem to agree (as best as one can tell given the mixing without doing a super long run)
@@ -118,11 +108,8 @@ test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
 # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
 
 
-##system.in.dir(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
 writeLines(c("var","Y[N,T],","dN[N,T];"), con = file.path(tempdir(), "leuk.bug")) ## echo doesn't seem to work on Windows
-##system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
 # need nimStep in data block as we no longer have step
-##system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
 system.in.dir(paste("cat leuk.bug >> ", file.path(tempdir(), "leuk.bug")), dir = system.file('classic-bugs','vol1','leuk',package = 'nimble'))
 # need nimStep in data block as we no longer have step
 system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
@@ -132,19 +119,15 @@ test_mcmc(model = file.path(tempdir(), "leuk.bug"), name = 'leuk', inits = syste
           resultsTolerance = list(mean = list(beta = 0.02), sd = list(beta = 0.02)))
 
 writeLines(paste("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
-##system.in.dir(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug")))
-##system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
 system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
 test_mcmc(model = file.path(tempdir(), "salm.bug"), name = 'salm', inits = system.file('classic-bugs', 'vol1', 'salm','salm-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'salm','salm-data.R', package = 'nimble'), numItsC = 1000)
 # looks good compared to JAGS
 
-##system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
 file.copy(system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), file.path(tempdir(), "air.bug"), overwrite=TRUE)
 system.in.dir(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug")))
 test_mcmc(model = file.path(tempdir(), "air.bug"), name = 'air', inits = system.file('classic-bugs', 'vol2', 'air','air-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'air','air-data.R', package = 'nimble'), numItsC = 1000)
 # theta[2] posterior is a bit off from JAGS - would be worth more investigation
 
-##system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
 system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) # alternative way to get size info in there
 test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
 # C MCMC runs and seems fine; R MCMC fails as can't do Cholesky of 0 matrix in 2-point method

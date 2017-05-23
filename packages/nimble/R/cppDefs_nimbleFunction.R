@@ -118,19 +118,6 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                  }
                                                  next
                                                }
-                                               if(inherits(neededType, 'symbolOptimReadyFunction')){
-                                                   typeName <- neededType$genName
-                                                   thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = typeName)                                                     	 
-                                                   if(is.null(thisCppDef)){
-                                                       thisCppDef <- cppOptimObject(name = typeName, nfSym = neededType)
-                                                       neededTypeDefs[[ typeName ]] <<- thisCppDef
-                                                   } else {
-                                                       Hincludes <<- c(Hincludes, thisCppDef)
-                                                       CPPincludes <<- c(CPPincludes, thisCppDef)
-                                                   }
-                                                   
-                                               }
-                                               
                                                if(inherits(neededType, 'symbolNimbleFunctionList')) {
                                                    
                                                    baseClassName <- environment(neededType$baseClass)$name

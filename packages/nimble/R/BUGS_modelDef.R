@@ -586,7 +586,7 @@ modelDefClass$methods(reparameterizeDists = function() {
         numArgs <- length(distRule$reqdArgs)
         newValueExpr <- quote(dist())       ## set up a parse tree for the new value expression
         newValueExpr[[1]] <- as.name(distName)     ## add in the distribution name
-        if(numArgs==0) { ## a user-defined distribution might have 0 arguments
+        if(numArgs==0) { ## for dflat, or a user-defined distribution might have 0 arguments
           nonReqdArgExprs <- NULL
           boundExprs <- BUGSdecl$boundExprs
         } else {   
@@ -740,6 +740,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             replaceables <- unlist(lapply(replacements, function(x) x$replaceable))
             allReplaceable <- all(replaceables) & do.eval
             repVar <- replaceConstantsRecurse(code[[2]], constEnv, constNames, FALSE)
+            code[[2]] <- repVar$code
             if(allReplaceable & repVar$replaceable) {
                 testcode <- as.numeric(eval(code, constEnv))
                 if(length(testcode) == 1) code <- testcode
@@ -801,14 +802,18 @@ modelDefClass$methods(liftExpressionArgs = function() {
                 if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower', 'upper'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
                 paramExpr <- params[[iParam]]
                 if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
-                newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE)))   ## create the name of the new node ##nameMashup
+                requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
+                uniquePiece <- if(requireNewAndUniqueDecl) paste0("_L", BUGSdecl$sourceLineNumber) else ""
+                newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
                 newNodeNameExprIndexed <- addNecessaryIndexingToNewNode(newNodeNameExpr, paramExpr, contexts[[BUGSdecl$contextID]]$indexVarExprs)  ## add indexing if necessary
                 
                 newValueExpr[[iParam + 1]] <- newNodeNameExprIndexed  ## update the newValueExpr
                 
                 newNodeCode <- substitute(LHS <- RHS, list(LHS = newNodeNameExprIndexed, RHS = paramExpr))     ## create code line for declaration of new node
-                if(!checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)) {
-                    
+                ## if requireNewAndUniqueDecl is TRUE, the _L# is appended to the newNodeNameExpr and it should be impossible for this to be TRUE:
+                identicalNewDecl <- checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)
+                
+                if(!identicalNewDecl) {
                     BUGSdeclClassObject <- BUGSdeclClass$new()
                     BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, FALSE, NULL)   ## keep new declaration in the same context, regardless of presence/absence of indexing
                     newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
@@ -865,7 +870,7 @@ extractAnyVectorizedIndexExprs <- function(expr) {
 checkForDuplicateNodeDeclaration <- function(newNodeCode, newNodeNameExprIndexed, newDeclInfo) {
     for(i in seq_along(newDeclInfo)) {
         if(identical(newNodeNameExprIndexed, newDeclInfo[[i]]$targetExpr)) {
-            ## we've found a node declaration with exactly the same LHS
+            ## we've found a node declaration with exactly the same LHS, which is a mangling of the RHS during lifting
             if(!identical(newNodeCode, newDeclInfo[[i]]$code))   { stop('something fishy going on with our new node declarations.....') }
             return(TRUE)   ## indicate that we found a matching node declaration
         }
@@ -1188,13 +1193,39 @@ removeColonOperator <- function(code) {
     }
 }
 
+## utility function used by makeVertexNamesFromIndexArray2
+makeSplitInfo <- function(splitIndices) {
+    r <- range(splitIndices)     ## [min, max]
+    vec <- r[1]!=r[2]            ## logical: is it a vector
+    contig <- if(vec)            ## logical: is it contiguous
+                  ## first condition checks for gaps like [1 3 4], in which case (4-1+1) != length(c(1,3,4))
+                  ## but this won't catch cases like [1 3 4; 1 2 3 4]
+                  diff(r)+1 == length(unique(splitIndices)) &
+                      ## second condition checks for unequal counts of some indices: for [1 3 4; 1 2 3 4], there will be unequal counts
+                      length(unique(table(splitIndices))) == 1
+              else
+                  TRUE   ## doesn't really matter below if we define a scalar as contiguous or not contiguous
+    c(r, as.numeric(vec), as.numeric(contig)) ## make all numeric for future rbind into matrix
+}
+
+
+## This function takes a array of vertex indices and returns a set of node names based on shared indices
+## e.g. c(1, 1, 2, 2, 2) for varName 'x' would return 'x[1:2]' and 'x[3:5]'
+## when there are non-contiguous indices, `%.s%` is used instead of `:`.  `%.s%`  can be parsed but is not intended to be evaluated
+## e.g. c(1, 2, 2, 1, 1) would return x[1 %.s% 5] and x[2:3]
+## Interwoven non-contiguous indices such as c(1, 2, 1, 2, 2) should never occur based on how splitVertices works
 makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
     dims <- dim(indArr)
     nDim <- length(dims)
     indArr[indArr < minInd] <- NA
     if(all(is.na(indArr))) return(list(indices = integer(), names = character()))
+    ## arrayWithIndices is a list of arrays of the same size as x
+    ## In the first, elements give the row index, e.g. [1 1 1; 2 2 2; 3 3 3]
+    ## In the second, elements give the column index, e.g. [1 2 3; 1 2 3; 1 2 3]
+    ## etc.
     arrayWithIndices <- vector('list', length = nDim)
     arrayWithIndices[[1]] <- array( rep(1:dims[1], prod(dims[-1])), dims)
+    ## We could reduce memory footprint by doing all steps on each dimension before building arrayWithIndices for new dimension
     if(nDim > 1) {
         permutation <- 1:nDim
         for(iD in 2:nDim) {
@@ -1205,42 +1236,55 @@ makeVertexNamesFromIndexArray2 <- function(indArr, minInd = 1, varName) {
             arrayWithIndices[[iD]] <- aperm(array( rep(1:dims[iD], prod(dims[-1])), dims[usePerm]), usePerm)
         }
     }
+    ## splits is a list of vectors of the indices that share the same indArr value
+    ## e.g. if indArr is [1 1 1; 2 2 2; 2 2 2]
+    ## Then the first element of splits will be `1`: [1 1 1] and the second will be `2`: [2 3 2 3 2 3].  These are vectors of row numbers
+    ## And the second element of splits will be `1`: [1 2 3] and the second will be `2`: [1 1 2 2 3 3].  These are vectors of column numbers
+    ## etc.
     splits <- lapply(arrayWithIndices, split, indArr)
 
-    info <- lapply(splits, lapply, function(x) {r <- range(x); s <- r[1]!=r[2]; c <- if(!s) diff(r)+1 == length(unique(x)) else TRUE; c(r, as.numeric(s), as.numeric(c))})
+    ## info is a list of summaries from the splits
     ## each entry is (min, max, 0/1 for vector, 0/1 for contiguous)
+    info <- lapply(splits, lapply, makeSplitInfo)
+
+    ## From here on is the construction of string labels from the info
     dimStrings <- lapply(info, function(x) {
-        all <- do.call('rbind', x)
-        seps <- rep(':', nrow(all))
-        scal <- all[,3]==0
-        seps[scal] <- ''
-        seps[all[,4]==0] <- '-s-'
-        maxStrs <- as.character(all[,2])
-        maxStrs[scal] <- ''
-        paste0(all[,1], seps, maxStrs)
+        all <- do.call('rbind', x)   ## This makes a table with a row for each unique element of indArr
+        ## and columns following the order of info
+        seps <- rep(':', nrow(all))  ## initialize seps and modify later if needed 
+        scal <- all[,3]==0           ## which rows are for scalar elements
+        seps[scal] <- ''             ## set the sep for scalars to ''
+        seps[all[,4]==0] <- '%.s%'    ## for rows that are not contiguous, use i %.s% j. Any actual call to %.s% results in an error.
+        maxStrs <- as.character(all[,2]) ## maximums
+        maxStrs[scal] <- ''              ## clear maximums for scalars 
+        paste0(all[,1], seps, maxStrs)   ## paste minimum-separator-maximum
     })
     dimStrings[['sep']] <- ', '
-    newNames <- paste0(varName, '[',  do.call('paste', dimStrings), ']')
+    newNames <- paste0(varName, '[',  do.call('paste', dimStrings), ']') ## paste together pieces from different dimensions
     list(indices = as.integer(names(splits[[1]])), names = newNames)
-##    contigs <- lapply(splits, lapply, function(x) 
 }
 
-makeVertexNamesFromIndexArray <- function(indArr, minInd = 1, varName) {
-    ## Obvious potential for speedup via C
-    uniqueInds <- unique(as.numeric(indArr))
-    if(minInd > 1) uniqueInds <- uniqueInds[uniqueInds >= minInd]
-    uniqueInds <- uniqueInds[!is.na(uniqueInds)]
-    newNames <- character(length(uniqueInds))
-    strfun <- function(x) if(x[1] == x[2]) as.character(x[1]) else paste0(x[1], ':', x[2])
-    for(iI in seq_along(uniqueInds)) {
-        i <- uniqueInds[iI]
-        locationsInArray <- which(indArr == i, TRUE)
-        ranges <- apply(locationsInArray, 2, range)
-        strings <- apply(ranges, 2, strfun)
-        contiguous <- nrow(locationsInArray) == prod(diff(ranges) + 1)
-        newNames[iI] <- paste0( varName, if(contiguous) character(0) else "split", '[', paste0(strings, collapse = ", "), ']')
+## This converts i%.s%j (indicating a split vertex) to i:j
+## This will only be called for RHSonly nodes.
+## These are correct, even after splitting, to use in eval(parse(...)) in the "vars2..." environments
+## But split vertices that are LHSinferred keep their %.s% and should never end up evaluated in a "vars2..." environment
+convertSplitVertexNamesToEvalSafeNames <- function(origNames, ok = TRUE) {
+    boolConvert <- grepl("%.s%", origNames)
+    convertOneName <- function(oneName) {
+        parsedName <- parse(text = oneName, keep.source = FALSE)[[1]]
+        boolSplitByIndex <- rep(FALSE, length(parsedName)-2)
+        for(i in 3:length(parsedName)) {
+            if(!is.name(parsedName[[i]])) {
+                if(deparse(parsedName[[i]][[1]]) == '%.s%') {
+                    parsedName[[i]][[1]] <- quote(`:`)
+                    boolSplitByIndex[i-2] <- TRUE
+                }
+            }
+        }
+        deparse(parsedName)
     }
-    list(indices = uniqueInds, names = newNames)
+    origNames[boolConvert] <- unlist(lapply(origNames[boolConvert], convertOneName))
+    origNames
 }
 
 splitVertexIDsToElementIDs <- function(var2vertexID, nextVertexID) {
@@ -1783,6 +1827,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
    if(debug) browser()
     vertexID_2_nodeID <- vertexID_2_nodeID[1:numContigVertices]
     types[ types == 'RHSonly' & vertexID_2_nodeID != 0] <- 'LHSinferred' ## The types == 'RHSonly' could be obtained more easily, since it will be a single set of FALSES followed by a single set of TRUES, but anyway, this works
+
+    ## 9c. for RHSonly names that have a splitVertex indication (i %.s% j), convert back to colon (i:j)
+    ##     because these can then be correctly used in eval(parse(...)) in one of the vars2... environments
+    allVertexNames[types == 'RHSonly'] <- convertSplitVertexNamesToEvalSafeNames(allVertexNames[types == 'RHSonly'])
     
     ## 10. Build the graph for topological sorting
     if(debug) browser()
@@ -1939,7 +1987,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$graphIDs <<- 1:length(maps$graphID_2_nodeName)
 
     maps$nimbleGraph <<- nimbleGraphClass()
-    maps$nimbleGraph$setGraph(maps$edgesFrom, maps$edgesTo, maps$edgesParentExprID, maps$types, maps$graphID_2_nodeName, length(maps$graphID_2_nodeName))
+    maps$nimbleGraph$setGraph(maps$edgesFrom, maps$edgesTo, maps$edgesParentExprID, maps$vertexID_2_nodeID, maps$types, maps$graphID_2_nodeName, length(maps$graphID_2_nodeName))
 ##    maps$nodeName_2_graphID <<- list2env( nodeName2GraphIDs(maps$nodeNames) )
 ##    maps$nodeName_2_logProbName <<- list2env( nodeName2LogProbName(maps$nodeNames) )
 
@@ -2033,7 +2081,10 @@ modelDefClass$methods(genVarInfo3 = function() {
         for(iV in seq_along(rhsVars)) {
             rhsVar <- rhsVars[iV]
             if(!(rhsVar %in% names(varInfo))) {
-                nDim <- if(length(BUGSdecl$symbolicParentNodes[[iV]])==1) 0 else length(BUGSdecl$symbolicParentNodes[[iV]])-2
+                nDim <- if(length(BUGSdecl$symbolicParentNodes[[iV]])==1)
+                            0
+                        else ## this assumes parent node does not have stochastic index.
+                            length(BUGSdecl$symbolicParentNodes[[iV]])-2
                 varInfo[[rhsVar]] <<- varInfoClass$new(varName = rhsVar,
                                                        mins = rep(100000, nDim),
                                                        maxs = rep(0, nDim),

@@ -26,6 +26,8 @@ extern "C" {
   SEXP C_rmvt_chol(SEXP, SEXP, SEXP, SEXP); 
   SEXP C_dwish_chol(SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_rwish_chol(SEXP, SEXP, SEXP);
+  SEXP C_dinvwish_chol(SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_rinvwish_chol(SEXP, SEXP, SEXP);
   SEXP C_dcat(SEXP, SEXP, SEXP);
   SEXP C_rcat(SEXP, SEXP);
   SEXP C_dmulti(SEXP, SEXP, SEXP, SEXP);
@@ -42,6 +44,8 @@ extern "C" {
   SEXP C_rinvgamma(SEXP, SEXP, SEXP);
   SEXP C_pinvgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_qinvgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_dsqrtinvgamma(SEXP, SEXP, SEXP, SEXP);
+  SEXP C_rsqrtinvgamma(SEXP, SEXP, SEXP);
 
 }
 
@@ -61,6 +65,8 @@ double dmvt_chol(double*, double*, double*, double, int, double, int, int);
 void rmvt_chol(double *, double*, double*, double, int, double);
 double dwish_chol(double*, double*, double, int, double, int, int);
 void rwish_chol(double*, double*, double, int, double, int);
+double dinvwish_chol(double*, double*, double, int, double, int, int);
+void rinvwish_chol(double*, double*, double, int, double, int);
 
 double dinterval(double, double, double*, int, int);
 double rinterval(double, double*, int);
@@ -93,4 +99,11 @@ double dinvgamma(double, double, double, int);
 double pinvgamma(double, double, double, int, int);
 double qinvgamma(double, double, double, int, int);
 
+double rsqrtinvgamma(double, double);
+double dsqrtinvgamma(double, double, double, int);
+
+double rflat();
+double dflat(double, int);
+double rhalfflat();
+double dhalfflat(double, int);
 #endif

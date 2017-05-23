@@ -214,6 +214,18 @@ nimbleList <- function(...,
     return(nlGenerator)
 }
 
+makeNimbleListTemplateWithBlankFirstArg <- function(nlDef) {
+    vars <- c('.LEFTSIDE', nlDef$types$vars)
+    functionAsList <- list(as.name('function'))
+    functionAsList[2] <- list(NULL)
+    if(length(vars) > 0) {
+        argsList <- nf_createAList(vars)
+        functionAsList[[2]] <- as.pairlist(argsList)
+    }
+    functionAsList[[3]] <- quote({})
+    eval(as.call(functionAsList))
+}
+
 ## nimbleList processing class
 ## analogous to but must simpler than NFprocessing
 nlProcessing <- setRefClass('nlProcessing',
@@ -224,8 +236,6 @@ nlProcessing <- setRefClass('nlProcessing',
                                 neededTypes = 'ANY',
                                 nimbleProject = 'ANY',
                                 name = 'ANY',
-                                ##   instances = 'ANY',
-                                templateWithBlankFirstArg = 'ANY',
                                 nlGenerator = 'ANY',
                                 nestedListGens = 'ANY',
                                 neededObjectNames =  'ANY'		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
@@ -261,7 +271,6 @@ nlProcessing <- setRefClass('nlProcessing',
                                       name <<- className
                                     }
                                       nestedListGens <<- nl.getNestedGens(nlGenerator)
-                                      generateTemplate()
                                   }
                                 },
                                 setupTypesForUsingFunction= function() buildSymbolTable(), ## required name
@@ -302,18 +311,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                     }
                                   }
                                 },
-                                getSymbolTable = function() symTab,
-                                generateTemplate = function() {
-                                    vars <- c('.LEFTSIDE', nl.getListDef(nlGenerator)$types$vars)
-                                    functionAsList <- list(as.name('function'))
-                                    functionAsList[2] <- list(NULL)
-                                    if(length(vars) > 0) {
-                                        argsList <- nf_createAList(vars)
-                                        functionAsList[[2]] <- as.pairlist(argsList)
-                                    }
-                                    functionAsList[[3]] <- quote({})
-                                    templateWithBlankFirstArg <<- eval(as.call(functionAsList))
-                                }
+                                getSymbolTable = function() symTab 
                             ))
 
 
@@ -358,11 +356,76 @@ ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
                                  nimbleType('thirdDerivs', 'double', 4)),
                             name = "NIMBLE_ADCLASS", predefined = TRUE)
 
+#' EXPERIMENTAL Data type for the return value of \code{\link{nimOptim}}
+#'
+#' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} returned by \code{\link{nimOptim}}.
+#'
+#' @field par The best set of parameters found.
+#' @field value	The value of fn corresponding to par.
+#' @field counts A two-element integer vector giving the number of calls to fn and gr respectively.
+#' @field convergence An integer code. 0 indicates successful completion. Possible error codes are
+#'        1 indicates that the iteration limit maxit had been reached.
+#'        10 indicates degeneracy of the Nelder–Mead simplex.
+#'        51 indicates a warning from the "L-BFGS-B" method; see component message for further details.
+#'        52 indicates an error from the "L-BFGS-B" method; see component message for further details.
+#' @field message A character string giving any additional information returned by the optimizer, or NULL.
+#' @field hessian Only if argument hessian is true. A symmetric matrix giving an estimate of the Hessian at the solution found.
+#'
+#' @export
+#' @seealso \code{\link{optim}}, \code{\link{nimOptim}}
+optimResultNimbleList <- nimbleList(
+    list(
+        nimbleType('par', 'double', 1),
+        nimbleType('value', 'double', 0),
+        nimbleType('counts', 'integer', 1),
+        nimbleType('convergence', 'integer', 0),
+        nimbleType('message', 'character', 0),
+        nimbleType('hessian', 'double', 2)
+    ),
+    name = "OptimResultNimbleList",
+    predefined = TRUE
+)
+
+#' EXPERIMENTAL Data type for the \code{control} parameter of \code{\link{nimOptim}}
+#'
+#' \code{\link{nimbleList} definition for the type of \code{\link{nimbleList}} input as the \code{\link{control}} parameter
+#' to \code{\link{nimOptim}}. See \code{\link{optim}} for details.
+#' 
+#' @export
+#' @seealso \code{\link{optim}}, \code{\link{nimOptim}}
+optimControlNimbleList <- nimbleList(
+    list(
+        nimbleType('trace', 'integer', 0),
+        nimbleType('parscale', 'double', 1),
+        nimbleType('ndeps', 'double', 1),
+        nimbleType('maxIt', 'integer', 0),
+        nimbleType('abstol', 'double', 0),
+        nimbleType('reltol', 'double', 0),
+        nimbleType('alpha', 'double', 0),
+        nimbleType('beta', 'double', 0),
+        nimbleType('gamma', 'double', 0),
+        nimbleType('REPORT', 'integer', 0),
+        nimbleType('type', 'integer', 0),
+        nimbleType('lmm', 'integer', 0),
+        nimbleType('factr', 'double', 0),
+        nimbleType('pgtol', 'double', 0),
+        nimbleType('temp', 'double', 0),
+        nimbleType('tmax', 'integer', 0)
+    ),
+    name = "OptimControlNimbleList",
+    predefined = TRUE
+)
+
 ## any DSL functions that return nimbleLists should be added to the list below, in the form:
 ## functionName = list(nlGen = nimbleList definition, cppName = name of cpp function corresponding to dsl function)
 nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList, cppName = 'EIGEN_EIGEN'),
                                         nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"),
-                                        nimDerivs = list(nlGen = ADNimbleList, cppName = "NIM_DERIVS"))
+                                        nimDerivs = list(nlGen = ADNimbleList, cppName = "NIM_DERIVS"),
+                                        nimOptim = list(nlGen = optimResultNimbleList, cppName = "OptimResultNimbleList"),
+                                        nimOptimDefaultControl = list(nlGen = optimControlNimbleList, cppName = "OptimControlNimbleList"))
+
+
+## TODO Add nimbleList definitions for nimOptimResult and nimOptimControl.
 
 
 #' check if a nimbleList

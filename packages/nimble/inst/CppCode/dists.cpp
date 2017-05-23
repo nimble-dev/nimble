@@ -26,13 +26,13 @@ bool R_FINITE_VEC(double* P, int s) {
 
 double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log, int overwrite_inputs) {
   char uplo('U');
-  char side('L');
+  char sideL('L');
+  char sideR('R');
   char diag('N');
-  char transT('T');
   char transN('N');
   int info(0);
   double alpha(1.0);
-  double* xCopy;
+  double* xChol;
 
   int i, j;
 
@@ -61,46 +61,55 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   }
 
   // determinant of x using Cholesky:
-  // dpotrf overwrites x so need to copy first since the trace calc below also overwrites
-  xCopy = new double[p*p];
-  for(i = 0; i < p*p; i++) 
-    xCopy[i] = x[i];
-  F77_CALL(dpotrf)(&uplo, &p, xCopy, &p, &info);
+  if(overwrite_inputs & (int) scale_param)  // if !scale_param we need x below
+    xChol = x;
+  else {
+    xChol = new double[p*p];
+    for(i = 0; i < p*p; i++) 
+      xChol[i] = x[i];
+  }
+  F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
   for(i = 0; i < p*p; i += p + 1) 
-    dens += (df - p - 1) * log(xCopy[i]);
-  if(overwrite_inputs)  // distinct copy not needed below if ok to overwrite
-    delete [] xCopy;
+    dens += (df - p - 1) * log(xChol[i]);
+  
+  // R %*% x = t(chol) %*% chol %*% x (could also do with chol(x) but no more efficient
+  // solve(S, x) = crossproduct( chol(x) %*% inverse(chol) )
 
-  // do upper-triangular solves for scale parameterization
-  // or upper-triangular multiplies for rate parameterization
   // dtr{m,s}m is a BLAS level-3 function
   double tmp_dens = 0.0;
-  if(overwrite_inputs) 
-    xCopy = x;
-  else {
-    for(i = 0; i < p*p; i++) 
-      xCopy[i] = x[i];
-  }
   if(scale_param) {
-    F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
-           chol, &p, xCopy, &p);
-    F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
-           chol, &p, xCopy, &p);
-    for(i = 0; i < p*p; i += p + 1) 
-      tmp_dens += xCopy[i];
-    dens += -0.5 * tmp_dens;
+    // chol(x) %*% inverse(chol)
+    F77_CALL(dtrsm)(&sideR, &uplo, &transN, &diag, &p, &p, &alpha, 
+                    chol, &p, xChol, &p);
+    // trace of crossproduct of result is sum of squares of elements
+    for(j = 0; j < p; j++) 
+      for(i = 0; i <= j; i++) 
+        tmp_dens += xChol[j*p+i]*xChol[j*p+i];
   } else {
-    F77_CALL(dtrmm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
+    double* xCopy;
+    if(overwrite_inputs) 
+      xCopy = x;
+    else {
+      xCopy = new double[p*p]; 
+      for(i = 0; i < p*p; i++) 
+        xCopy[i] = x[i];
+    }
+    // chol %*% x
+    F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, 
            chol, &p, xCopy, &p);
-    // at this point don't need to do all the multiplications so don't call dtrmm again
-    // direct product of upper triangles
+    // trace crossproduct of t(chol) with result is sum of product of upper-triangular elements
     for(j = 0; j < p; j++) {
       for(i = 0; i <= j; i++) {
         tmp_dens += xCopy[j*p+i] * chol[j*p+i];
       }
     }
-    if(!overwrite_inputs)
+    if(overwrite_inputs)  
       delete [] xCopy;
+  }
+
+  if(!overwrite_inputs)
+    delete xChol;
+
     // attempt to improve above calcs by doing efficient U^T U multiply followed by direct product multiply, however this would not make use of threading provided by BLAS and even with one thread seems to be no faster
     // U^T*U directly followed by direct product with x
     /* 
@@ -118,8 +127,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
       }
     */
     
-    dens += -0.5 * tmp_dens;
-  }
+  dens += -0.5 * tmp_dens;
 
   return give_log ? dens : exp(dens);
 }
@@ -247,7 +255,7 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
     RBREAK("Error (C_rwish_chol): invalid input type for one of the arguments.\n");
   int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
   if(dims[0] != dims[1])
-    RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix.\n");
+    RBREAK("Error (C_rwish_chol): 'chol' must be a square matrix.\n");
   int p = dims[0];
 
   int n_chol = LENGTH(chol);
@@ -270,6 +278,241 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
   return ans;
 }
 
+
+double dinvwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log, int overwrite_inputs) {
+  char uplo('U');
+  char sideL('L');
+  char sideR('R');
+  char diag('N');
+  char transT('T');
+  char transN('N');
+  int info(0);
+  double alpha(1.0);
+  double* xChol;
+
+  int i, j;
+
+  if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+    return R_NaN;
+#endif
+
+  // also covers df < 0
+  if(df < (double) p) ML_ERR_return_NAN;
+
+  if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+
+  double dens = -(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2);
+  for(i = 0; i < p; i++)
+    dens -= lgammafn((df - i) / 2);
+
+  // determinant of S or R
+  if(scale_param) {
+    for(i = 0; i < p*p; i += p + 1) 
+      dens += df * log(chol[i]);
+  } else {
+    for(i = 0; i < p*p; i += p + 1) 
+      dens -= df * log(chol[i]);
+  }
+
+  // determinant of x using Cholesky:
+  if(overwrite_inputs) 
+    xChol = x;
+  else {
+    xChol = new double[p*p];
+    for(i = 0; i < p*p; i++) 
+      xChol[i] = x[i];
+  }
+  F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
+  for(i = 0; i < p*p; i += p + 1) 
+    dens -= (df + p + 1) * log(xChol[i]);
+  
+  double tmp_dens = 0.0;
+
+  // do upper-triangular solve for scale parameterization
+  // or upper-triangular multiplies for rate parameterization
+
+  // S %*% inverse(x) = crossprod(chol %*% inverse(chol(x)) 
+  // inverse(R) %*% inverse(x) = crossproduct(solve(t(chol(x)), inverse(chol)))
+  // dtr{m,s}m is a BLAS level-3 function
+  if(scale_param) {
+    double* cholCopy;
+    if(overwrite_inputs)
+      cholCopy = chol;
+    else {
+      cholCopy = new double[p*p];
+      for(i = 0; i < p*p; i++) 
+        cholCopy[i] = chol[i];
+    }
+    // chol %*% inverse(chol(x))
+    F77_CALL(dtrsm)(&sideR, &uplo, &transN, &diag, &p, &p, &alpha, 
+           xChol, &p, cholCopy, &p);
+    // trace of crossproduct is sum of elements squared
+    for(j = 0; j < p; j++) {
+      for(i = 0; i <= j; i++) {
+        tmp_dens += cholCopy[j*p+i] * cholCopy[j*p+i];
+      }
+    }
+    if(!overwrite_inputs)
+      delete [] cholCopy;
+  } else {
+    double* iden = new double[p*p];
+    for(j = 0; j < p; j++)
+      for(i = 0; i < p; i++)
+        if(i == j) iden[j*p+i] = 1.0; else iden[j*p+i] = 0.0;
+    // inverse of chol
+    F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, 
+                    chol, &p, iden, &p);
+    // solve(t(chol(x)), result)
+    F77_CALL(dtrsm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, 
+                    xChol, &p, iden, &p);
+    // trace of crossproduct is sum of elements squared
+    for(j = 0; j < p; j++) {
+      for(i = 0; i < p; i++) {
+        tmp_dens += iden[j*p+i] * iden[j*p+i];
+      }
+    }
+    delete [] iden;
+  }
+  dens += -0.5 * tmp_dens;
+  return give_log ? dens : exp(dens);
+}
+
+
+SEXP C_dinvwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log) 
+// calculates Inverse Wishart density given Cholesky of scale or rate matrix
+// Cholesky matrix should be given as a numeric vector in column-major order
+//   including all n x n elements; lower-triangular elements are ignored
+{
+  if(!isReal(x) || !isReal(chol) || !isReal(df) || !isReal(scale_param) || !isLogical(return_log))
+    RBREAK("Error (C_dinvwish_chol): invalid input type for one of the arguments.\n");
+  int p = pow(LENGTH(chol), 0.5);
+  int give_log = (int) LOGICAL(return_log)[0];
+  double scale = REAL(scale_param)[0];
+
+  double* c_x = REAL(x);
+  double* c_chol = REAL(chol);
+  double c_df = REAL(df)[0];
+ 
+  if(c_df < p)
+    RBREAK("Error (C_dinvwish_chol): inconsistent degrees of freedom and dimension.\n");
+  
+  SEXP ans;
+  PROTECT(ans = allocVector(REALSXP, 1));  
+  REAL(ans)[0] = dinvwish_chol(c_x, c_chol, c_df, p, scale, give_log, 0); 
+  UNPROTECT(1);
+  return ans;
+}
+
+
+void rinvwish_chol(double *Z, double* chol, double df, int p, double scale_param, int overwrite_inputs) {
+  char uploU('U');
+  char uploL('L');
+  char sideL('L');
+  char diag('N');
+  char transT('T');
+  char transN('N');
+  double alpha(1.0);
+  double beta(0.0);
+
+  // calculations here generate W ~ Wi(S) for scale_param = 1 and W ~ Wi(S^-1) for scale_param = 0,
+  // and then invert the result, giving InvWi(S^-1) for scale_param = 1 and InvWi(S) for scale_param = 0,
+  // because scale for Wishart is inverse of scale for inverse-Wishart
+  // therefore generate under opposite parameterization
+  scale_param = 1 - scale_param;  
+
+
+  double* cholCopy;
+  int i, j, uind, lind;
+  
+#ifdef IEEE_754
+  if (R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param)) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = R_NaN;
+    return;
+  }
+#endif
+    
+  // also covers df < 0
+  if(df < (double) p) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = R_NaN;
+    return;
+  }
+  
+  // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals - crossproduct of result is standardized Wishart; based on rWishart in stats package
+  for(j = 0; j < p; j++) {
+    Z[j*p + j] = sqrt(rchisq(df - (double) j)); 
+    for(i = 0; i < j; i++) {
+      uind = i + j * p, /* upper triangle index */
+      lind = j + i * p; /* lower triangle index */
+      Z[(scale_param ? uind : lind)] = norm_rand();
+      Z[(scale_param ? lind : uind)] = 0;
+    }
+  }
+ 
+  if(overwrite_inputs)
+    cholCopy = chol;
+  else {
+    cholCopy = new double[p*p];
+    for(i = 0; i < p*p; i++) 
+      cholCopy[i] = chol[i];
+  }
+
+  // with S parameterization: t(chol)%*%t(Z)%*%Z%*%chol is Wishart-distributed, so take inverse based on pieces
+  // with R parameterization: inverse(chol)%*%Z%*%t(Z)%*%inverse(t(chol)) is Wishart-distributed, again inverse of pieces
+  if(scale_param) {
+    // Z %*% chol
+    F77_CALL(dtrmm)(&sideL, &uploU, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
+    double* iden = new double[p*p];
+    for(j = 0; j < p; j++)
+      for(i = 0; i < p; i++)
+        if(i == j) iden[j*p+i] = 1.0; else iden[j*p+i] = 0.0;
+    // inverse(Z %*% chol)
+    F77_CALL(dtrsm)(&sideL, &uploU, &transN, &diag, &p, &p, &alpha, cholCopy, &p, iden, &p);
+    // crossproduct of result
+    F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, iden, &p, iden, &p, &beta, Z, &p);    
+    delete [] iden;
+  } else {    
+    // solve(Z, chol)
+    F77_CALL(dtrsm)(&sideL, &uploL, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
+    // crossproduct of result
+    F77_CALL(dgemm)(&transT, &transN, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p);
+  }
+
+  if(!overwrite_inputs)
+    delete [] cholCopy;
+}
+
+SEXP C_rinvwish_chol(SEXP chol, SEXP df, SEXP scale_param) 
+// generates single Inverse Wishart draw given Cholesky of scale or rate matrix
+// Cholesky matrix should be given as a numeric vector in column-major order
+//   including all n x n elements; lower-triangular elements are ignored
+{
+  if(!isReal(chol) || !isReal(df) || !isReal(scale_param))
+    RBREAK("Error (C_rinvwish_chol): invalid input type for one of the arguments.\n");
+  int n_chol = LENGTH(chol);
+  int p = pow(n_chol, 0.5);
+  double scale = REAL(scale_param)[0];
+
+  double* c_chol = REAL(chol);
+  double c_df = REAL(df)[0];
+
+  if(c_df < p)
+    RBREAK("Error (C_rinvwish_chol): inconsistent degrees of freedom and dimension.\n");
+
+  GetRNGstate(); 
+
+  SEXP ans;
+  PROTECT(ans = allocVector(REALSXP, n_chol));  
+  rinvwish_chol(REAL(ans), c_chol, c_df, p, scale, 0); 
+  
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
 
 
 double ddirch(double* x, double* alpha, int K, int give_log) 
@@ -690,7 +933,7 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
 
   int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
   if(dims[0] != dims[1])
-    RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix.\n");
+    RBREAK("Error (C_dmnorm_chol): 'chol' must be a square matrix.\n");
   int p = dims[0];
 
   int n_x = LENGTH(x);
@@ -1548,6 +1791,143 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
     
   UNPROTECT(1);
   return ans;
+}
+
+
+// used solely in conjugacy for dhalfflat (so dsqrtinvgamma really just a placeholder)
+double dsqrtinvgamma(double x, double shape, double rate, int give_log)
+{
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(shape) || ISNAN(rate))
+    return x + shape + rate;
+#endif
+  double out = dinvgamma(x*x, shape, rate, 1) + log(2*x);
+  if(give_log) return(out);
+  else return(exp(out));
+}
+
+double rsqrtinvgamma(double shape, double rate)
+{
+#ifdef IEEE_754
+  if (ISNAN(shape) || ISNAN(rate))
+    ML_ERR_return_NAN;
+#endif
+  return(pow(rinvgamma(shape, rate), 0.5));
+}
+
+SEXP C_dsqrtinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
+  if(!isReal(x) || !isReal(shape) || !isReal(rate) || !isLogical(return_log)) 
+    RBREAK("Error (C_dsqrtinvgamma): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_x));  
+  double* c_x = REAL(x);
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = dsqrtinvgamma(c_x[i], *c_shape, *c_rate, give_log);
+  } else {
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_x; i++) {
+      REAL(ans)[i] = dsqrtinvgamma(c_x[i], c_shape[i_shape++], c_rate[i_rate++], give_log);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_rsqrtinvgamma(SEXP n, SEXP shape, SEXP rate) {
+  if(!isInteger(n) || !isReal(shape) || !isReal(rate))
+    RBREAK("Error (C_rsqrtinvgamma): invalid input type for one of the arguments.");
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int n_values = INTEGER(n)[0];
+  SEXP ans;
+    
+  if(n_values == 0) {
+    PROTECT(ans = allocVector(REALSXP, 0));
+    UNPROTECT(1);
+    return ans;
+  }
+  if(n_values < 0)
+    // should formalize using R's C error-handling API
+    RBREAK("Error (C_rsqrtinvgamma): n must be non-negative.\n");
+    
+  GetRNGstate(); 
+    
+  PROTECT(ans = allocVector(REALSXP, n_values));  
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_values; i++) 
+      REAL(ans)[i] = rsqrtinvgamma(*c_shape, *c_rate);
+  } else {
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_values; i++) {
+      REAL(ans)[i] = rsqrtinvgamma(c_shape[i_shape++], c_rate[i_rate++]);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+
+double dflat(double x, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(x))
+    return x;
+#endif
+  if(give_log) return 0;
+  else return 1;
+}
+
+double rflat()
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  return R_NaN ;
+}
+
+double dhalfflat(double x, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(x))
+    return x;
+#endif
+  if(x >= 0) x = 0; else x = ML_NEGINF;
+  if(!give_log) x = exp(x);
+  return x;
+}
+
+double rhalfflat()
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  return R_NaN;
 }
 
 // NIMBLE's C parameterization of invgamma is (shape,rate) because
