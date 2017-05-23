@@ -2553,7 +2553,6 @@ sizeReturn <- function(code, symTab, typeEnv) {
         if(!identical(typeEnv$returnType$type, 'void')) stop(exprClassProcessingErrorMsg(code, 'return() with no argument can only be used with returnType(void()), which is the default if there is no returnType() statement.'), call. = FALSE)
         return(invisible(NULL))
     }
-    
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
 
