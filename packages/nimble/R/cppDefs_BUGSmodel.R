@@ -84,8 +84,6 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                      },
 
                                      buildNodes = function(where = globalenv(), debugCpp = FALSE) {
-                                       browser()
-                                         addADclassContent()
                                          nimbleProject$addNimbleFunctionMulti(model$nodeFunctions, fromModel = TRUE, model$nodeFunctionGeneratorNames)
                                          
                                          nodeFuns <<- nimbleProject$compileNimbleFunctionMulti(model$nodeFunctions, isNode = TRUE,
@@ -93,6 +91,12 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                                                                                fromModel = TRUE,
                                                                                                generatorFunNames = model$nodeFunctionGeneratorNames,
                                                                                                alreadyAdded = TRUE) ## fromModel is redundant here
+                                         
+                                         browser()
+                                         
+                                         nodeFuns$y_L3_UID_7$addADclassContent()
+                                         addADclassContent()
+                                         
                                      },
                                      addADclassContentOneNode = function(nodeFun) {
                                        browser()
@@ -116,7 +120,7 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                        newFunName <- paste0(funName, '_callForADtaping_')
                                        tst <- nodeFun$model$modelDef$symTab$copy()
                                        for(i in seq_along(tst$symbols)){
-                                         if(!(names(tst$symbols)[i] %in% independentVarNames){
+                                         if(!(names(tst$symbols)[i] %in% independentVarNames)){
                                            tst$removeSymbol(names(tst$symbols)[i])
                                          }
                                        }
@@ -126,6 +130,7 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                        invisible(NULL)
                                      },
                                      addTypeTemplateFunction = function( funName ) {
+                                       browser()
                                        newFunName <- paste0(funName, '_AD_')
                                        regularFun <- RCfunDefs[[funName]]
                                        functionDefs[[newFunName]] <<- makeTypeTemplateFunction(newFunName, regularFun)
@@ -141,7 +146,7 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                        # ##cppClass$objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
                                        objectDefs[['ADtapeSetup']] <<- cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass')
 
-                                       for(nodeFun in model$nodeFunctions){
+                                       for(nodeFun in nodeFuns){
                                          addADclassContentOneNode(nodeFun)
                                        }
                                        # ## static declaration in the class definition

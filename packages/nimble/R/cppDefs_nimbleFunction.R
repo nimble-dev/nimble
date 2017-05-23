@@ -273,6 +273,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex)
                                               },
                                               addStaticInitClass = function() {
+                                                browser()
                                                   neededTypeDefs[['staticInitClass']] <<- makeStaticInitClass(.self, environment(nfProc$nfGenerator)$enableDerivs) ##
                                                   invisible(NULL)
                                               },

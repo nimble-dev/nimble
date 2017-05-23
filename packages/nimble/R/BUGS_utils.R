@@ -68,6 +68,23 @@ addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     return(expr)
 }
 
+removeIndices <- function(expr) {
+  if(is.numeric(expr)) return(expr)
+  if(is(expr, 'srcref')) return(expr)
+  if(is.name(expr)) return(expr)
+  if(is.call(expr)) {
+    if(expr[[1]] == '['){
+      return(expr[[2]])
+    } 
+    if(length(expr) > 1) {
+      expr[2:length(expr)] <- lapply(expr[-1], function(listElement) removeIndices(listElement))
+      return(expr)
+    }
+  }
+  return(expr)
+}
+
+
 # Determine if a piece of code contains a '['
 hasBracket <- function(code) {
     if(length(code) < 2) return(FALSE)

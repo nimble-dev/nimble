@@ -127,15 +127,15 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     ## Add them to arguments symbol table ## switch design and make these local
 ##    CFT$args$addSymbol( ADindependentVarsSym )
 ##    CFT$args$addSymbol( ADresponseVarsSym )
-
+    browser()
     ## Make local AD variables for all function inputs and outputs
     ## e.g. if the original targetFun takes NimArr<1, double>, it's templated CppAD version will take NimArr<1, TYPE_>
     ## Next line creates local variables for passing to that templated CppAD version
     if(calculateFunc){
-      localVars <- symbolTable2templateTypeSymbolTable
+      localVars <- symbolTable2templateTypeSymbolTable(calculateFuncSymTab, clearRef = TRUE, replacementBaseType = 'CppAD::AD', replacementTemplateArgs = list('double'))
     }
     else{
-      localVars <- symbolTable2templateTypeSymbolTable(targetFunDef$args, clearRef = TRUE, replacementBaseType = 'CppAD::AD', replacementTemplateArgs = list('double') )
+      localVars <- symbolTable2templateTypeSymbolTable(targetFunDef$args, clearRef = TRUE, replacementBaseType = 'CppAD::AD', replacementTemplateArgs = list('double'))
     }
     ## and similar for the return variable
     initADptrCode <- cppLiteral("RETURN_TAPE_ = new CppAD::ADFun<double>;")

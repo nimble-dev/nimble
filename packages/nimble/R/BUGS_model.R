@@ -1070,8 +1070,13 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## modelDef$maps$edgesFrom2ParentExprID
                                            ## modelDef$maps$graphID_2_nodeName
                                            ## to see fields: BUGSdecl$getRefClass()$fields()
+                                           stochParents <- BUGSdecl$allParentVarNames()
+                                           stochParents <- unlist(lapply(stochParents, function(name){
+                                             if(modelDef$varInfo[[name]]$anyStoch) return(name)
+                                           }))
+                                           
                                            nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, 
-                                                                                   parents = BUGSdecl$symbolicParentNodes, logProbNodeExpr=logProbNodeExpr, type=type,
+                                                                                   parents = stochParents, logProbNodeExpr=logProbNodeExpr, type=type,
                                                                                    setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            # nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator

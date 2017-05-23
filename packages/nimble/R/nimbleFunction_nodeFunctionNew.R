@@ -14,6 +14,7 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parents,
                            methods       = METHODS,
                            name          = name,
                            check         = FALSE,
+                           enableDerivs = list('calculate_AD_'),
                            where = where),
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
                  SETUPFUNCTION = nndf_createSetupFunction(),  ##nndf = new node function
@@ -90,7 +91,7 @@ nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbN
             list(
                 simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- STOCHSIM                                                         },
                 calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
-                calculate_AD_  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
+                calculate_AD_  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR_AD;   returnType(double());   return(invisible(LOGPROB)) },
                 calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {STOCHCALC_FULLEXPR_DIFF; LocalAns <- LocalNewLogProb - LOGPROB;  LOGPROB <<- LocalNewLogProb;
                                             returnType(double());   return(invisible(LocalAns))},
                 getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                       returnType(double());   return(LOGPROB)            }
@@ -99,15 +100,21 @@ nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbN
                  LOGPROB   = logProbNodeExpr,
                  STOCHSIM  = ndf_createStochSimulate(RHS),
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
+                 STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, ADFunc = TRUE),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
         
-        parentsArgs <- rep(NA, length(parents))
-        if(!is.null(parents)){
-          names(parentsArgs) <- parentsArgs
+        parentsArgs <- if(length(parents) > 0) list() else NULL
+        for(i in seq_along(parents)){
+          parentsArgs[[parents[i]]] <- quote(double())  
         }
-        selfWithNoInds <- c(NA)
+        # parentsArgs <- rep(quote(double), length(parents))
+        # if(!is.null(parents)){
+        #   names(parentsArgs) <- parents
+        # }
+        selfWithNoInds <- c(quote(double()))
         names(selfWithNoInds) <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
-        formals(methodList$calculate_AD_) <- c(formals(methodList$calculate_AD_), selfWithNoInds, parentsArgs)
+        formals(methodList$calculate_AD_) <- c(selfWithNoInds, parentsArgs)
+        logProbNameWithNoInds <-  strsplit(deparse(logProbNodeExpr), '[', fixed = TRUE)[[1]][1]
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
@@ -156,14 +163,17 @@ nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbN
     }
     ## add model$ in front of all names, except the setupOutputs
     methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"), 
-                                                    ADexceptionNames = c(parents, selfWithNoInds))
+                                                    ADexceptionNames = c(names(parentsArgs), names(selfWithNoInds), logProbNameWithNoInds))
     return(methodList)
 }
 
 nndf_addModelDollarSignsToMethods <- function(methodList, exceptionNames = character(), ADexceptionNames = character()) {
     for(i in seq_along(methodList)) {
-      if(names(methodList)[i] == 'calculate_AD_')  body(methodList[[i]]) <-addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, ADexceptionNames))
-      else  body(methodList[[i]]) <-addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))
+      if(names(methodList)[i] == 'calculate_AD_'){
+        body(methodList[[i]]) <- removeIndices(body(methodList[[i]]))
+        body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, ADexceptionNames))
+      }
+      else  body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))
     }
     return(methodList)
 }
