@@ -2547,10 +2547,34 @@ sizeUnaryReduction <- function(code, symTab, typeEnv) {
 sizeReturn <- function(code, symTab, typeEnv) {
     if(length(code$args) > 1) stop(exprClassProcessingErrorMsg(code, 'return has argument length > 1.'), call. = FALSE)
     code$toEigenize <- 'no'
-    if(length(code$args) == 0) return(invisible(NULL))
+    if(!exists('return', env = typeEnv)) stop(exprClassProcessingErrorMsg(code, 'There was no returnType declaration and the default is missing.'), call. = FALSE)
+
+    if(length(code$args) == 0) {
+        if(!identical(typeEnv$returnType$type, 'void')) stop(exprClassProcessingErrorMsg(code, 'return() with no argument can only be used with returnType(void()), which is the default if there is no returnType() statement.'), call. = FALSE)
+        return(invisible(NULL))
+    }
     
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
+
+        if(inherits(typeEnv$return, 'symbolNimbleListGenerator') || code$args[[1]]$type == 'symbolNimbleList') {
+            if(!inherits(typeEnv$return, 'symbolNimbleListGenerator')) stop(exprClassProcessingErrorMsg(code, paste0('return() argument is a nimbleList but returnType() statement gives a different type')), call. = FALSE)
+            if(!(code$args[[1]]$type == 'symbolNimbleList')) stop(exprClassProcessingErrorMsg(code, paste0('returnType statement gives a nimbleList type but return() argument is not the right type')), call. = FALSE)
+            if(!identical(symTab$getSymbolObject(RHS$name)$nlProc, typeEnv$return$nlProc)) stop(exprClassProcessingErrorMsg(code, paste0('nimbleList given in return() argument does not match nimbleList type declared in returnType()')), call. = FALSE)
+        } else {
+            fail <- FALSE
+            if(!identical(code$args[[1]]$type, typeEnv$return$type)) {
+                failMsg <- paste0('Type ', code$args[[1]]$type, ' of the return() argument does not match type ',  typeEnv$return$type, ' given in the returnType() statement (void is default).')
+                fail <- TRUE
+            }
+            if(!identical(code$args[[1]]$nDim, typeEnv$return$nDim)) {
+                failMsg <- paste0( if(exists("failMsg", inherits = FALSE)) paste0(failMsg,' ') else character(),
+                                  paste0('Number of dimensions ', code$args[[1]]$nDim, ' of the return() argument does not match number ',  typeEnv$return$nDim, ' given in the returnType() statement.'))
+                fail <- TRUE
+            }
+            if(fail)
+                stop(exprClassProcessingErrorMsg(code, failMsg), call. = FALSE)
+        }
         if(!code$args[[1]]$isName) {
             liftArg <- FALSE
             if(code$args[[1]]$toEigenize == 'yes')
