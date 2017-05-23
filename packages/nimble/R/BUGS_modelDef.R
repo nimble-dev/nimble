@@ -1533,6 +1533,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
 
 
 # Note: this method can only appear before genExpandedNodeAndParentNames3 if done by variable not if done by vertex as vertices created in genExpandedNodeAndParentNames3
+## perhaps make a varUsedInIndex environment and then later turn that into a vertexUsedInEnv 
 modelDefClass$methods(findDynamicIndexParticipants = function(debug = FALSE) {
 ## this will walk through declarations and find elements used in dynamic indexing
 ## will also strip out .USED_IN_INDEX at this stage
@@ -1765,7 +1766,17 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     ## TBD future step: mu_UNKNOWN_INDEX_[1, NA] ... mu_UNKNOWN_INDEX_[10, NA]
     ## I think these would go in vars_2_vertexOrigID
     ## But detail: We need to keep track of entries in vars_2_vertexOrigID that are not in names(varInfo)
-    ## Fortunately 
+    ## Fortunately
+
+    ## idea: (no, see next) go back into symbolicParentNodes and insert mu_UNKNOWN_INDEX; then run through splitVertices and splitCompletionForOrigNodes based on unknownIndexVarInfo that mimics varInfo or by putting mu_UNKNOWN_INDEX into varInfo
+    ## instead, insert BUGS code of muUI[i,1:extent,3]<-mu[i,1:extent,3]
+    ## and let vertex processing above handle it; have var be noted as unknownIndex; we'll get the necessary vertices for muUI and the necessary edges from mu to muUI
+    ## BUGSdecl type should be 'unknown_index'
+    ## or perhaps make it unknownIndexDecl and process it separately in some sense; then include unknownIndexDecl with BUGSdecl for processing above and same for unknownIndexVarInfo
+    ## could instead have
+    ## for(jj in 1:extent)
+    ## muUI[i,1:extent,3] <- mu[i, jj, 3]
+    ## and this would shard mu directly without need for new code in splitVertices, but complicated in terms of new indexing and weird in terms of redefining LHS
     
     ## 6. Make vertex names
     ##    E.g. from the results of the previous step, we may now need vertex names "x[1]", "x[2]" and "x[3:4]"
@@ -1814,14 +1825,16 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         types <- c(types, rep('RHSonly', length(allVertexNames) - maxOrigNodeID))
     } else
         nodeNamesRHSonly <- character()
-
-    ## SOMEWHERE put type labels for mu_UNKNOWN_INDEX
     
     ## 7c. Re-label the IDs in the vars_2_vertexOrigID with the contiguous version
     for(iV in seq_along(varInfo)) {
         temp <- vars_2_vertexOrigID[[varInfo[[iV]]$varName]]
         if(!all(is.na(temp))) vars_2_vertexOrigID[[varInfo[[iV]]$varName]][] <- origVertexID_2_contigID[temp] 
     }
+
+    ## SOMEWHERE put type labels for mu_UNKNOWN_INDEX
+
+    # add edges from mu_unkn_idx to y's here: perhaps insert mu_unknown_idx in place of mu in symbolicParentNodes and this should just work
 
     ## 8. Collect edges from RHS vars to LHS nodes
     if(debug) browser()
@@ -1848,6 +1861,9 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         }
     }
 
+    # add edges from mu[] to mu_unkn_idx here; somehow need mapping of mu vertices to mu_unknown_index vertices; we already have the mu vertices
+
+    
     ## 9. Collect edges from original nodes to inferred vertices
     ##    e.g. When x[1:2] has been fractured into x[1] and x[2], there are edges from x[1:2] to x[1] and x[2]
     ##         Note that in getDependencies("x[1]"), the result will include "x[1:2]" as the nodeFunction of "x[1]"
