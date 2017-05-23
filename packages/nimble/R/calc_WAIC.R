@@ -18,7 +18,7 @@ calcDataNF <- nimbleFunction(
 #' Takes a NIMBLE model and a NIMBLE MCMC object.  Creates an algorithm that will calculate the WAIC from the posterior samples of the MCMC object.
 #' 
 #' @param model a NIMBLE model 
-#' @param mcmc a NIMBLE MCMC object, created from a call to buildMCMC()
+#' @param mcmc a NIMBLE MCMC object, created from a call to buildMCMC().  
 #'
 #'  @author Nicholas Michaud
 #' @export
@@ -33,7 +33,8 @@ calcDataNF <- nimbleFunction(
 #' The compiled function will function identically to the uncompiled object, except acting on the compiled model object and compiled MCMC samples.
 
 #' The \code{run} method of \code{calcWAIC} calculates the WAIC of a given model.  The WAIC is calculated using the posterior samples from the provided NIMBLE MCMC object.  As such, the MCMC algorithm must have been run prior to calculating the WAIC.     
-#' The WAIC (Watanabe, 2010) is calculated from equations 5, 12, and 13 in Gelman (2014).
+#' The WAIC (Watanabe, 2010) is calculated from Equations 5, 12, and 13 in Gelman (2014).  Note that the set of all parameters monitored by \code{mcmc} will be treated as \eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014). 
+#'  All parameters downstream of the monitored parameters that are necessary to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of \eqn{theta}.
 #'
 #' @references 
 #' 
