@@ -2557,10 +2557,10 @@ sizeReturn <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
 
-        if(inherits(typeEnv$return, 'symbolNimbleListGenerator') || code$args[[1]]$type == 'symbolNimbleList') {
-            if(!inherits(typeEnv$return, 'symbolNimbleListGenerator')) stop(exprClassProcessingErrorMsg(code, paste0('return() argument is a nimbleList but returnType() statement gives a different type')), call. = FALSE)
-            if(!(code$args[[1]]$type == 'symbolNimbleList')) stop(exprClassProcessingErrorMsg(code, paste0('returnType statement gives a nimbleList type but return() argument is not the right type')), call. = FALSE)
-            if(!identical(symTab$getSymbolObject(RHS$name)$nlProc, typeEnv$return$nlProc)) stop(exprClassProcessingErrorMsg(code, paste0('nimbleList given in return() argument does not match nimbleList type declared in returnType()')), call. = FALSE)
+        if(typeEnv$return$type == 'nimbleList' || code$args[[1]]$type == 'nimbleList') {
+            if(typeEnv$return$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('return() argument is a nimbleList but returnType() statement gives a different type')), call. = FALSE)
+            if(code$args[[1]]$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('returnType statement gives a nimbleList type but return() argument is not the right type')), call. = FALSE)
+            if(!identical(symTab$getSymbolObject(code$args[[1]]$name)$nlProc, typeEnv$return$sizeExprs$nlProc)) stop(exprClassProcessingErrorMsg(code, paste0('nimbleList given in return() argument does not match nimbleList type declared in returnType()')), call. = FALSE)
         } else {
             fail <- FALSE
             if(!identical(code$args[[1]]$type, typeEnv$return$type)) {
