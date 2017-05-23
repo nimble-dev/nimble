@@ -1,3 +1,4 @@
+-- The MCEM algorithm returned from a call to buildMCEM() now has an estimateCov() method, which can be used to estimate the asymptotic covariance of model parameters at their MLE values.  
 
 -- New system of Sampler Assignment Rules in the MCMC, which allows customizing the rules used to assign default samplers in MCMC configuration objects.
 

@@ -8,26 +8,8 @@ correctOutputFilename <- 'graphStructureTestResults_Correct.Rout'
 ## library(testthat)
 ## library(nimble)
 ## run code below, then:
-## writeOutput(cases, correctOutputFilename)
+##writeOutput(cases, correctOutputFilename)
 testOutputFilename <- 'graphStructureTestResults.Rout'
-
-clearOldOutput <- function(filename) {
-    if(file.exists(filename)) file.remove(filename)
-}
-
-appendOutput <- function(filename, case, caseName, casePrefix = "") {
-    outputConnection <- file(filename, open = 'at')
-    writeLines(caseName, con = outputConnection)
-    outputAns <- lapply(case, function(x) writeLines(paste0(casePrefix, paste(x, collapse = " ")), con = outputConnection))
-    close(outputConnection)
-}
-
-writeOutput <- function(cases, filename) {
-    clearOldOutput(filename)
-    for(i in seq_along(cases)) appendOutput(filename, cases[[i]], names(cases)[i], casePrefix = paste0(i,": "))
-}
-
-
 
 cases <- list()
 caseName <- 'graph structure tests case 1'
@@ -56,6 +38,7 @@ cases[[caseName]] <- list(
     m$getDependencies('a', downstream = TRUE, self = FALSE, returnScalarComponents = TRUE)
     )
 
+###
 caseName <- 'graph structure tests case 2 (dmnorm fully split)'
 m <- nimbleModel(
     code = nimbleCode({
@@ -85,16 +68,113 @@ cases[[caseName]] <- list(
     m$getDependencies('mu', includeRHSonly = TRUE)
 )
 
+###
+caseName <- 'split in the middle of a vector node (original case of Issue #340)'
+code <- nimbleCode({
+    x[1:4] ~ dmnorm(mu[1:4], C[1:4,1:4])
+    y[1] ~ dnorm(x[2], 1)
+})
+constants <- list(mu = rep(0,4), C = diag(4))
+Rmodel <- nimbleModel(code)
+cases[[caseName]] <- list(
+    Rmodel$getDependencies('x'),
+    Rmodel$getDependencies('x[1]'),
+    Rmodel$getDependencies('x[2]'),
+    Rmodel$getDependencies('x[3]')
+)
+
+##
+caseName <- 'scalar split in the middle of a matrix node'
+code <- nimbleCode({
+    x[1:5, 1:5] <- 2 * inputx[1:5, 1:5]
+    y[1] ~ dnorm(x[2, 3], 1)
+})
+
+constants <- list(inputx = diag(5))
+Rmodel <- nimbleModel(code, constants = constants)
+cases[[caseName]] <- list(
+    Rmodel$getDependencies('x[1:5, 2:3]'),
+    Rmodel$getDependencies('x[1:5, 2:3]', self = FALSE),
+    Rmodel$getDependencies('x[2, 3]'),
+    Rmodel$getDependencies('x[1:5, 1]'),
+    Rmodel$getDependencies('x[1:5, 2:3]')
+)
+
+caseName <- 'vector splits of matrix node'
+code <- nimbleCode({
+    x[1:5, 1:5] <- 2 * inputx[1:5, 1:5]
+    for(i in 1:5) y[i,1:5] ~ dmnorm(x[i, 1:5], cov[1:5, 1:5])
+})
+
+constants <- list(inputx = diag(5), cov = diag(5))
+Rmodel <- nimbleModel(code, constants = constants)
+cases[[caseName]] <- list(
+    Rmodel$getDependencies('x[2, 1:5]'),
+    Rmodel$getDependencies('x[2, 4]'),
+    Rmodel$getDependencies('x[1:3, 4]'),
+    Rmodel$getDependencies('x[1:3, 4]'),
+    Rmodel$getDependencies('x[1:3, 3:5]')
+)
+
+caseName <- 'some double splitting'
+code <- nimbleCode({
+    x[1:5, 1:5] <- 2 * inputx[1:5, 1:5]
+    a[1:3, 1:4] <- 2 * x[2:4, 2:5]
+    for(i in 1:3) y[1:3, i + 1] ~ dmnorm(a[1:3, i], cov[1:3, 1:3])
+    z[2] ~ dnorm(a[2, 3], 1)
+    z[3] ~ dnorm(a[1, 3], 1)
+})
+
+constants <- list(inputx = diag(5), cov = diag(5))
+Rmodel <- nimbleModel(code, constants = constants)
+cases[[caseName]] <- list(
+    Rmodel$getDependencies('x'),
+    Rmodel$getDependencies('x[2:4, 2:5]'),
+    Rmodel$getDependencies('x[2:4, 3]'),
+    Rmodel$getDependencies('x[1, 1:5]'),
+    Rmodel$getDependencies('a[1:3, 2]'),
+    Rmodel$getDependencies('a[1:3, 3]'),
+    Rmodel$getDependencies('a[2:3, 2:3]')
+)
+
+caseName <- 'some wierd double splitting'
+code <- nimbleCode({
+    x[1:5, 1:5] <- 2 * inputx[1:5, 1:5]
+    for(i in 1:3) y[i,1:5] ~ dmnorm(x[i, 1:5], cov[1:5, 1:5])
+    y[5,3] ~ dnorm(x[2, 3], 1)
+    y[6, 1:5] ~ dmnorm(x[5, 1:5], cov[1:5, 1:5])
+})
+
+constants <- list(inputx = diag(5), cov = diag(5))
+Rmodel <- nimbleModel(code, constants = constants)
+
+cases[[caseName]] <- list(
+    Rmodel$getDependencies('x'),
+    Rmodel$getDependencies('x[2,3]'),
+    Rmodel$getDependencies('x[5,1]'),
+    Rmodel$getDependencies('x[2:5,1]'),
+    Rmodel$getDependencies('x[2:4,1:5]'),
+    Rmodel$getDependencies('x[1:2,1:5]')
+)
+
+caseName <- 'elemental tests of makeVertexNamesFromIndexArray2'
+indArr <- matrix(1, nrow = 5, ncol = 5)
+indArr[1:5, 1:2] <- 4
+indArr[2, 1:3] <- 2
+indArr[3, 2:5] <- 3
+
+indArr2 <- matrix(1, nrow = 3, ncol = 3)
+indArr2[2:3, 1:3] <- 2
+
+cases[[caseName]] <- list(
+    nimble:::makeVertexNamesFromIndexArray2(indArr, 1, 'x'),
+    nimble:::makeVertexNamesFromIndexArray2(indArr2, 1, 'x')
+)
+
+
 writeOutput(cases, testOutputFilename)
 trialResults <- readLines(testOutputFilename)
 ##correctResults <- trialResults
 correctResults <- readLines(system.file(file.path('tests', correctOutputFilename), package = 'nimble'))
 
-test_that('same number of output lines',
-          expect_equal(length(trialResults), length(correctResults)))
-
-linesToTest <- min(length(trialResults), length(correctResults))
-mapply(function(lineno, trialLine, correctLine) {
-    test_that(paste0("output line #", lineno),
-              expect_identical(trialLine, correctLine))
-}, 1:linesToTest, trialResults, correctResults)
+compareFilesByLine(trialResults, correctResults)
