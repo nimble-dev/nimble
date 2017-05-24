@@ -421,7 +421,7 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
                         asserts <- c(asserts, sizeInsertIntermediate(code, thisArgIndex, symTab, typeEnv))
                     thisType <- arithmeticOutputType(thisType, code$args[[thisArgIndex]]$type)
                 } else {
-                    thisType <- 'double'
+                    thisType <- storage.mode(code$args[[thisArgIndex]]) ##'double'
                 }
                 ## Putting a map, or a values access, through parse(nimDeparse) won't work
                 ## So we lift any expression element above.
@@ -1348,6 +1348,13 @@ sizeforceEigenize <- function(code, symTab, typeEnv) {
     toEigs <- lapply(code$args, function(x) {
         if(inherits(x, 'exprClass')) x$toEigenize else 'unknown'
     })
+    toLift <- lapply(code$args, function(x) {
+        if(inherits(x, 'exprClass')) (identical(x$type, 'logical') & !x$isName) else FALSE
+    })
+    for(i in seq_along(toLift)) {
+        if(toLift[[i]])
+            asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv)) 
+    }
     code$toEigenize <- if(any( unlist(toEigs) %in% c('maybe', 'yes'))) 'yes' else 'no'
     code$type <- 'unknown'
     if(length(asserts) == 0) NULL else asserts
@@ -1551,7 +1558,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         RHStype <- RHS$type
         RHSsizeExprs <- RHS$sizeExprs
     } else {
-        if(is.numeric(RHS)) {
+        if(is.numeric(RHS) | is.logical(RHS)) {
             RHSname = ''
             RHSnDim <- 0
             RHStype <- storage.mode(RHS)
