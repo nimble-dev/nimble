@@ -817,10 +817,47 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
     .Call('C_rsqrtinvgamma', as.integer(n), as.double(shape), as.double(rate))
 }
 
+
+#' The CAR-Normal Distribution
+#'
+#'   Density function and random generation for the improper
+#'   Gaussian conditional autoregressive (CAR) distribution.
+#' 
+#' @name CAR-Normal
+#' 
+#' @param x vector of values.
+#' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.
+#' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
+#' @param tau scalar precision of the Gaussian CAR prior.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#'
+#' @author Daniel Turek
+#' 
+#' @export
+#' 
+#' @details 
+#'
+#' @return \code{dcar_normal} gives the density, and \code{rcar_normal} generates a vector of NaNs, since this distribution is improper.
+#' @references Banerjee, S., Carlin, B.P., and Gelfand, E.G. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' x <- c(1, 3, 3, 4)
+#' num <- c(1, 2, 2, 1)
+#' adj <- c(2, 1,3, 2,4, 3)
+#' weights <- c(1, 1, 1, 1, 1, 1)
+#' lp <- dcar_normal(x, adj, weights, num)
+NULL
+
 #' @rdname CAR-Normal
 #' @export
 dcar_normal <- function(x, adj, weights, num, tau, log = FALSE) {
     ##return(NaN)
+    if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
+    if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
+    if(storage.mode(weights) != 'double')   storage.mode(weights) <- 'double'
+    if(storage.mode(num) != 'double')   storage.mode(num) <- 'double'
     d <- length(x)
     if(length(num) != d) stop('num argument to dcar_normal() must be same length as dcar_normal() node')
     if(any(floor(num) != num)) stop('num argument to dcar_normal() can only contain positive integers')

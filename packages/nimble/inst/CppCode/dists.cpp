@@ -2175,14 +2175,14 @@ double dcar_normal(double* x, double* adj, double* weights, double* num, double 
     for(int j = 0; j < num[i]; j++) {
       xj = x[ (int) adj[count] - 1 ];
       lp = lp + weights[count] * pow(xi-xj,2);
-      count = count + 1;
+      count++;
     }
   }
   if(count != L) {
     ML_ERR_return_NAN;
   }
   lp = lp * (-1/2.0) * tau;
-  lp = lp + (K-c)/2.0 * log(tau/2/3.1415926535897932384626433832795028841971693);
+  lp = lp + (K-c)/2.0 * (log(tau) - M_LN_2PI);
   if(give_log) {
     return(lp);
   }

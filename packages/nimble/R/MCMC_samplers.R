@@ -1495,9 +1495,9 @@ CAR_scalar_conjugate <- nimbleFunction(
         ## numeric value generation
         if(!all(model$getDistribution(depStochNodes_dnorm) == 'dnorm')) stop('something went wrong')
         linearityCheckExprList <- lapply(depStochNodes_dnorm, function(node) model$getParamExpr(node, 'mean'))
-        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) nimble:::cc_expandDetermNodesInExpr(model, expr, skipExpansions=TRUE))
-        if(!all(sapply(linearityCheckExprList, function(expr) nimble:::cc_nodeInExpr(targetScalar, expr)))) stop('something went wrong')
-        linearityCheckResultList <- lapply(linearityCheckExprList, function(expr) nimble:::cc_checkLinearity(expr, targetScalar))
+        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansions=TRUE))
+        if(!all(sapply(linearityCheckExprList, function(expr) cc_nodeInExpr(targetScalar, expr)))) stop('something went wrong')
+        linearityCheckResultList <- lapply(linearityCheckExprList, function(expr) cc_checkLinearity(expr, targetScalar))
         if(any(sapply(linearityCheckResultList, function(expr) is.null(expr)))) stop('something went wrong')
         offsetList <- lapply(linearityCheckResultList, '[[', 'offset')
         scaleList <- lapply(linearityCheckResultList, '[[', 'scale')
@@ -1556,12 +1556,15 @@ CAR_scalar_conjugate <- nimbleFunction(
 ## RW sampler for non-conjugate scalar components of dcar_normal() nodes
 CAR_scalar_RW <- nimbleFunction(
     contains = sampler_BASE,
-    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
+    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights, control) {
+        ## control list extraction
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        scale         <- control$scale
         ## node list generation
         depNodes <- model$getDependencies(targetScalar, self = FALSE)
         copyNodes <- c(targetScalar, depNodes)
         ## numeric value generation
-        scale         <- 1
         scaleOriginal <- scale
         timesRan      <- 0
         timesAccepted <- 0
@@ -1587,13 +1590,13 @@ CAR_scalar_RW <- nimbleFunction(
             nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodes, logProb = TRUE)
         } else
             nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodes, logProb = TRUE)
-        adaptiveProcedure(jump)
+        if(adaptive)     adaptiveProcedure(jump)
     },
     methods = list(
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
-            if(timesRan %% 200 == 0) {
+            if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
                 gamma1 <<- 1/((timesAdapted + 3)^0.8)
@@ -1621,7 +1624,11 @@ sampler_CAR_normal <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        useConjugacy <- control$carUseConjugacy
+        useConjugacy  <- control$carUseConjugacy
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        scale         <- control$scale
+        RW_control <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale)
         ## node list generation
         target <- model$expandNodeNames(target)
         targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -1648,7 +1655,7 @@ sampler_CAR_normal <- nimbleFunction(
                 componentSamplerFunctions[[i]] <- CAR_scalar_conjugate(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
             } else {
                 cat(paste0('dcar() component node ', targetScalar, ': assigning RW sampler\n'))                     ## XXXXXXXXXXXXX delete
-                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
+                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborWeights, RW_control)
             }
         }
     },
@@ -1846,6 +1853,19 @@ sampler_CAR_normal <- nimbleFunction(
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
 #' \item scale. The initial value of the proposal standard deviation (on the log scale) for each component of the reparameterized Dirichlet distribution.  If adaptive = FALSE, the proposal standard deviations will never change. (default = 1)
 #' }
+#'
+#'
+#' @section CAR_normal sampler:
+#'
+#' The CAR_normal sampler operates uniquely on improper Gaussian conditional autoregressive (CAR) nodes, those with a dcar_normal prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler, however these component samplers are specialized to operate on dimensions of a dcar_normal distribution.
+#'
+#' The CAR_normal sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation for any component RW samplers.  Every adaptInterval MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
+#' \item scale. The initial value of the normal proposal standard deviation for any component RW samplers.  If adaptive = FALSE, scale will never change. (default = 1)
+#' }
+#'
 #'
 #' @section posterior_predictive sampler:
 #'
