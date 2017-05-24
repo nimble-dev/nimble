@@ -163,18 +163,15 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                       },
                                       buildAll = function(where = where) {
                                           addListSymbols()
-                                          buildCastPtrToNamedObjectsPtrFun()
-                                          buildCastPtrToPtrPairFun()
-                                          if(predefined){
-                                            callSuper(where)
-                                          }
-                                          else{
+                                          if(!predefined){
+                                              buildCastPtrToNamedObjectsPtrFun()
+                                              buildCastPtrToPtrPairFun()
                                               buildCopyFromSexp()
                                               buildCopyToSexp()
                                               buildCreateNewSexp()
                                               buildResetFlags()
-                                              callSuper(where)
                                           }
+                                          callSuper(where)
                                       },
                                       buildCreateNewSexp = function(){
                                         interfaceArgs <- symbolTable()
