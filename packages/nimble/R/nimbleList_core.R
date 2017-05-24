@@ -105,6 +105,10 @@ nimbleList <- function(...,
     ## attaches two attributes, one to mark it as a nimbleList (for efficienct checking
     ## compatible with checking of other objects that have a class) and
     ## one that has the nimbleListDefClass object
+
+    ## This hack allows us to generate static code by temporarily setting predefined = FALSE
+    ## for all predefined nimbleLists. See generateStaticCode.R for usage.
+    if(!is.null(.GlobalEnv$.nimble.generateStaticCode)) predefined <- FALSE
   
   ## 3 possibilities: arguments as expressions, arguments as list created within call,
   ## arguments as list created outside of call

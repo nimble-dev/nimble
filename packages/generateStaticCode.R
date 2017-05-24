@@ -6,9 +6,9 @@
 #
 # Directions:
 # 1. Install clang-format.
-# 2. Temporarily set `predefined = FALSE` in the definitions of `optimResultNimbleList` and `optimControlNimbleList`.
-# 3. Run this script.
+# 2. Run this script.
 
+.GlobalEnv$.nimble.generateStaticCode <- TRUE  # Must come before library(nimble).
 library(nimble)
 
 # This finds the latest generated .h and .cpp files.
@@ -62,11 +62,15 @@ main <- function() {
         name = 'REMOVE_THIS_CODE',
         setup = TRUE,
         run = function() {
-            return(optimResultNimbleList$new())
-            returnType(optimResultNimbleList())
+            return(0)
+            returnType(double(0))
         },
         methods = list(
-            control = function() {
+            optimResult = function() {
+                return(optimResultNimbleList$new())
+                returnType(optimResultNimbleList())
+            },
+            optimControl = function() {
                 return(optimControlNimbleList$new())
                 returnType(optimControlNimbleList())
             }
