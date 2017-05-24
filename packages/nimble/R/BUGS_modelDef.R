@@ -42,6 +42,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  logProbVarInfo = 'ANY',	#list	  ## list of varInfoClass objects, set in genLogProbVarInfo()
                                  isDataVarInfo = 'ANY', 	#list		## list of varInfoClass objects, set in genIsDataVarInfo()
                                  varNames = 'ANY',  ## vector of all model variable names, set in genVarNames()
+                                 unknownIndexNames = 'ANY', ## vector of unknown index variable names
                                  symTab = 'ANY',  ## symbolTable object, set in buildSymbolTable()
                                  graph = 'ANY',     ## igraph object, set in buildIgraph()
                                  graphNodesList = 'ANY',   ## list of graphNode objects, set in genGraphNodesList()
@@ -103,11 +104,12 @@ modelDefClass <- setRefClass('modelDefClass',
                                  
                                  genNodeInfo3                   = function() {},
                                  genVarInfo3                    = function() {},
-
+                                 genUnknownIndexDeclarations    = function() {},
                                  # put check of var dims here?
                                  findDynamicIndexParticipants   = function() {},
+                                 addDynamicIndexVars            = function() {},
                                  genExpandedNodeAndParentNames3 = function() {},
-                                 
+                                 stripUnknownIndexInfo          = function() {},
                                  #These functions are NOT run inside of setupModel
                                  nodeName2GraphIDs = function(){},
                                  graphIDs2indexedNodeInfo = function(){},
@@ -158,9 +160,12 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv
     genReplacedTargetValueAndParentInfo() ## In each declInfo[[i]], symbolicParentNodesReplaced, rhsVars, targetIndexNamePieces, and parentIndexNamePieces set
     genNodeInfo3(debug = debug)           ## In each contexts[[i]], replacementsEnv set. In each declInfo[[i]], replacementsEnv, unrolledIndicesMatrix, outputSize, and numUnrolledNodes set
     genVarInfo3()                         ## Sets varInfo[[nodeNames]] and logProbVarInfo[[nodeNames]] with varInfoClass objects (varName mins, maxs, nDim, anyStoch)
+    genUnknownIndexDeclarations()     ## creates unknownIndexDeclInfo that contains declarations for unknownIndex nodes
     findDynamicIndexParticipants(debug = debug) ## find vertices/variable elements involved in dynamic indexing
     # actually we probably want findDynIdxParts to operate at vertex level, so needs to happen within or after genExpandedNodeAndParentNames3
+    addDynamicIndexVars()             ## adds elements to varInfo for the dynamic index variables
     genExpandedNodeAndParentNames3(debug = debug) ## heavy processing: all graphIDs, maps, graph, nodeNames etc. built here
+    stripUnknownIndexInfo()     
     maps$setPositions3()                  ## Determine top, latent and end nodes
     buildSymbolTable()                    ## 
     genIsDataVarInfo()                    ## only the maxs is ever used, in newModel
@@ -885,11 +890,12 @@ modelDefClass$methods(genSymbolicParentNodes = function() {
     ## sets field declInfo[[i]]$symbolicParentNodes. must be after overwrites of declInfo
     
     nimFunNames <- getAllDistributionsInfo('namesExprList')
-    
+
     for(i in seq_along(declInfo)){
         declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
     }
 })
+
 
 modelDefClass$methods(genReplacementsAndCodeReplaced = function() {
     ## sets fields declInfo[[i]]$replacements, $codeReplaced, and $replacementNameExprs
@@ -1542,11 +1548,28 @@ modelDefClass$methods(findDynamicIndexParticipants = function(debug = FALSE) {
     # y[i,1:3] ~ dmnorm(mu[k[i,1:3]],...)  ; in this case the vertex k[1,1:3] is involved in a dynamic index
     # outcome of PdV/CJP converstation 5/18/17 was that we probably want it based on vertices
     ## for now all this does is strip out .USED_IN_INDEX
-    for(iDI in seq_along(declInfo)) {
-        declInfo[[iDI]]$symbolicParentNodes <<- lapply(declInfo[[iDI]]$symbolicParentNodes, stripIndexWrapping)
+    if(nimbleOptions()$allowDynamicIndexing) {
+        for(iDI in seq_along(declInfo)) {
+            declInfo[[iDI]]$symbolicParentNodes <<- lapply(declInfo[[iDI]]$symbolicParentNodes, stripIndexWrapping)
+        }
     }
     # CJP note: make use of $replacementsEnv[[indexNamePieces]] to get indexing used in a decl
 })
+
+modelDefClass$methods(addDynamicIndexVars = function(debug = FALSE) {
+    unknownIndexNames <<- NULL
+    if(nimbleOptions()$allowDynamicIndexing) 
+        for(iDI in seq_along(declInfo)) {
+            BUGSdecl <- declInfo[[iDI]]
+            if(BUGSdecl$type != 'dynamicIndex') next
+            lhsVar <- BUGSdecl$targetVarName
+            if(!(lhsVar %in% names(varInfo))) {
+                varInfo[[lhsVar]] <<- varInfo[[BUGSdecl$rhsVars]]
+                varInfo[[lhsVar]]$anyStoch <<- FALSE
+                unknownIndexVarNames <<- c(unknownIndexVarNames, lhsVar)
+            }
+        }
+}
 
 modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 ## This is a (ridiculously long) function that works through the BUGS lines (declInfo elements) and varInfo to set up the graph and maps
@@ -1836,6 +1859,24 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 
     # add edges from mu_unkn_idx to y's here: perhaps insert mu_unknown_idx in place of mu in symbolicParentNodes and this should just work
 
+    # should this use symbolicParentNodesReplaced?
+    ## replace 'mu[3,NA,i]' with '.mu_UNKNOWN_INDEX[3,NA,i]' so that edges from mu_UNKNOWN_INDEX to dependents will happen naturally
+    if(nimbleOptions()$allowDynamicIndexing) {
+        browser()
+        for(iDI in seq_along(declInfo)) {  
+            BUGSdecl <- declInfo[[iDI]]
+            for(node in seq_along(BUGSdecl$symbolicParentNodes)) {
+                symbolicParentNode <- declInfo[[iDI]]$symbolicParentNodes[[node]]
+                if(isNameInExprList(quote(NA_real_), symbolicParentNode)) { # dynamic indexing
+                    originalRhsVar <- symbolicParentNode[[2]]
+                    declInfo[[iDI]]$symbolicParentNodes[[node]] <<- replaceVarNameWithUnknownIndexVarName(symbolicParentNode)
+                    rhsVar <- symbolicParentNode[[2]]
+                    declInfo[[iDI]]$rhsVars[declInfo[[iDI]]$rhsVars == originalRhsVar] <<- rhsVar
+                }
+            }
+        }
+    }
+    
     ## 8. Collect edges from RHS vars to LHS nodes
     if(debug) browser()
     edgesFrom <- numeric(0)          ## Set up aligned vectors of edgeFrom, edgesTo, and the parentExprID of an edge, i.e. which part of a pulled apart expression is an edge from.  E.g x ~ dnorm(a, b) would make an edgeFrom entry with the ID of a, edgeTo with ID of x, and parentExprID would be 1 since the a would be the first piece of the RHS as it is pulled apart.  The next edge would from from b, to x, with parentExprID of 2.
@@ -2186,6 +2227,48 @@ modelDefClass$methods(genVarInfo3 = function() {
     }
 })
 
+modelDefClass$methods(stripUnknownIndexInfo = function() {
+    if(nimbleOptions()$allowDynamicIndexing) {
+        declInfo[sapply(declInfo, function(x) x$type == 'unknownIndex')] <- NULL
+        sapply(unknownIndexNames, function(x) assign(x, NULL, envir = varInfo))
+    }
+})
+
+modelDefClass$methods(genUnknownIndexDeclarations = function() {
+    if(nimbleOptions()$allowDynamicIndexing) {
+        nimFunNames <- getAllDistributionsInfo('namesExprList')
+        browser()
+        for(i in seq_along(declInfo)){
+            for(p in seq_along(declInfo[[i]]$symbolicParentNodes)) {
+                parentExpr <- stripIndexWrapping(declInfo[[i]]$symbolicParentNodes[[p]])
+                dynamicIndices <- whichDynamicIndices(parentExpr)
+                if(length(dynamicIndices)) {
+                    varName <- deparse(parentExpr[[2]])
+                    
+                    BUGSdeclClassObject <- BUGSdeclClass$new()
+                    rhsCode <- parentExpr
+                    ranges <- data.frame(rbind(varInfo[[varName]]$mins[dynamicIndices], varInfo[[varName]]$maxs[dynamicIndices]))
+                    fullExtent <- lapply(ranges, function(x) 
+                        substitute(X:Y, list(X = x[1], Y = x[2])))
+                    rhsCode[dynamicIndices+2] <- fullExtent
+                    lhsCode <- rhsCode
+                    lhsCode <- replaceVarNameWithUnknownIndexVarName(rhsCode)
+                    newCode <- substitute(LHS <- RHS, list(LHS = lhsCode, RHS = rhsCode))
+                    BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber)
+                    BUGSdeclClassObject$setIndexVariableExprs(contexts[[declInfo[[i]]$contextID]]$indexVarExprs)
+                    BUGSdeclClassObject$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
+                    BUGSdeclClassObject$genReplacementsAndCodeReplaced(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
+                    BUGSdeclClassObject$genReplacedTargetValueAndParentInfo(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
+                    BUGSdeclClassObject$unrolledIndicesMatrix <- declInfo[[i]]$unrolledIndicesMatrix
+                    BUGSdeclClassObject$numUnrolledNodes <- declInfo[[i]]$numUnrolledNodes
+                    BUGSdeclClassObject$type <- "unknownIndex"
+                    declInfo[length(declInfo)+1] <<- BUGSdeclClassObject
+                }
+            }
+        }
+    }
+})
+
 modelDefClass$methods(genIsDataVarInfo = function() {
     ## uses varInfo to set field: isDataVarInfo
     isDataVarInfo <<- lapply(varInfo, function(x)
@@ -2478,4 +2561,12 @@ getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {
         NULL
 }
 
+replaceVarNameWithUnknownIndexVarName <- function(parentExpr) {
+    parentExpr[[2]] <- as.name(paste0(".", parentExpr[[2]], "_UNKNOWN_INDEX"))
+    return(parentExpr)
+}
 
+whichDynamicIndices <- function(expr) {
+    if(expr[[1]] != "[") stop("whichDynamicIndices: 'expr' should be a bracket expression")
+    return(which(sapply(expr[3:length(expr)], identical, quote(NA_real_))))
+}

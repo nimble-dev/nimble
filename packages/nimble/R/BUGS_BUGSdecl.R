@@ -78,6 +78,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                              methods = list(
                                  setup                          = function() {},
                                  setIndexVariableExprs          = function() {},
+                                 genUnknownIndexDeclarations    = function() {},
                                  genSymbolicParentNodes         = function() {},
                                  genReplacementsAndCodeReplaced = function() {},
                                  genAltParamsModifyCodeReplaced = function() {},
@@ -199,10 +200,27 @@ BUGSdeclClass$methods(setIndexVariableExprs = function(exprs) {
 })
 
 
-BUGSdeclClass$methods(genSymbolicParentNodes = function(constantsNamesList, context, nimFunNames) {
+BUGSdeclClass$methods(genSymbolicParentNodes = function(constantsNamesList, context, nimFunNames, unknownIndexDeclInfo = NULL) {
     ## sets the field symbolicparentNodes
     symbolicParentNodes <<- unique(getSymbolicParentNodes(valueExpr, constantsNamesList, context$indexVarExprs, nimFunNames)) 
 })
+
+# HERE
+## BUGSdeclClass$methods(genUnknownIndexDeclarations = function(varInfo)
+##     ## creates analogous declInfo for new unknownIndex
+##     browser()
+##     unknownIndexDeclInfo <- list()
+##     for(parentExpr in symbolicParentNodes) {
+##         varName <- deparse(parentExpr[[2]])
+##         dynamicIndices <- whichDynamicIndices(parentExpr)
+##         if(length(dynamicIndices)) {
+            
+
+##         }
+##     }
+##     return(unknownIndexDeclInfo)
+## })
+
 
 ## move this to a util file when everything is working.  It is convenient here for now
 makeIndexNamePieces <- function(indexCode) {
@@ -607,5 +625,4 @@ addIndexWrapping <- function(expr)
 
 stripIndexWrapping <- function(expr) 
     if(length(expr) == 1 || expr[[1]] != quote(.USED_IN_INDEX)) return(expr) else return(expr[[2]])
-
 
