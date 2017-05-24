@@ -2576,7 +2576,7 @@ sizeReturn <- function(code, symTab, typeEnv) {
                     fail <- TRUE
                 }
             }
-            if(!identical(code$args[[1]]$nDim, typeEnv$return$nDim)) {
+            if(!isTRUE(all.equal(code$args[[1]]$nDim, typeEnv$return$nDim))) {
                 failMsg <- paste0( if(exists("failMsg", inherits = FALSE)) paste0(failMsg,' ') else character(),
                                   paste0('Number of dimensions ', code$args[[1]]$nDim, ' of the return() argument does not match number ',  typeEnv$return$nDim, ' given in the returnType() statement.'))
                 fail <- TRUE
