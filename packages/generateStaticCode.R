@@ -6,9 +6,10 @@
 #
 # Directions:
 # 1. Install clang-format.
-# 2. Run this script.
+# 2. Temporarily set `predefined = FALSE` in the definitions of `optimResultNimbleList` and `optimControlNimbleList`.
+# 3. Run this script.
 
-.GlobalEnv$.nimble.generateStaticCode <- TRUE  # Must come before library(nimble).
+library(methods)
 library(nimble)
 
 # This finds the latest generated .h and .cpp files.
@@ -19,6 +20,7 @@ findGeneratedSources <- function() {
     paths <- rownames(files)
     paths_h <- paths[grep('\\bP_\\w+\\.h$', paths)]
     paths_cpp <- paths[grep('\\bP_\\w+\\.cpp$', paths)]
+    if(length(paths_h) == 0 || length(paths_cpp) == 0) stop('Failed to generate sources')
     ret <- system2('clang-format', list('-i', paths_h[1], paths_cpp[1]))
     if(ret != 0) stop('Please install clang-format and try again')
     return(list(.h = paths_h[1], .cpp = paths_cpp[1]))
@@ -66,7 +68,15 @@ main <- function() {
             returnType(double(0))
         },
         methods = list(
-            optimResult = function() {
+            # eigenNimbleList = function() {
+            #     return(eigenNimbleList$new())
+            #     returnType(eigenNimbleList())
+            # },
+            # svdNimbleList = function() {
+            #     return(svdNimbleList$new())
+            #     returnType(svdNimbleList())
+            # },
+            optimResultNimbleList = function() {
                 return(optimResultNimbleList$new())
                 returnType(optimResultNimbleList())
             },
@@ -78,7 +88,9 @@ main <- function() {
     )()
 
     # Compilation will fail because we have duplicate definitions, but that's ok.    
-    tryCatch(compileNimble(nimFun), error = function(e){})
+    #tryCatch(
+             compileNimble(nimFun)
+    #, error = function(e){})
 
     # Read the relevant parts of both files.
     files <- findGeneratedSources()
@@ -96,22 +108,22 @@ main <- function() {
         ''
     )
     writeFile(
-        file.path('nimble', 'inst', 'include', 'nimble', 'optimTypes.h'),
+        file.path('nimble', 'inst', 'include', 'nimble', 'predefinedNimbleLists.h'),
         c(
             provenance,
-            '#ifndef __NIMBLE_OPTIMTYPES_H',
-            '#define __NIMBLE_OPTIMTYPES_H',
+            '#ifndef __NIMBLE_PREDEFINEDNIMBLELISTS_H',
+            '#define __NIMBLE_PREDEFINEDNIMBLELISTS_H',
             '',
             '#include <nimble/smartPtrs.h>',
             lines_h,
-            '#endif  // __NIMBLE_OPTIMTYPES_H'
+            '#endif  // __NIMBLE_PREDEFINEDNIMBLELISTS_H'
         )
     )
     writeFile(
-        file.path('nimble', 'inst', 'CppCode', 'optimTypes.cpp'),
+        file.path('nimble', 'inst', 'CppCode', 'predefinedNimbleLists.cpp'),
         c(
             provenance,
-            '#include <nimble/optimTypes.h>',
+            '#include <nimble/predefinedNimbleLists.h>',
             lines_cpp
         )
     )

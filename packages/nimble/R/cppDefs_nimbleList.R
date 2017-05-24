@@ -12,14 +12,8 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         inheritance <<- c(inheritance, 'pointedToBase')
                                       },
                                       getDefs = function() {
-                                        ans <- if(predefined){ ## prevents redefinition of EIGEN_EIGENCLASS or EIGEN_SVDCLASS
-                                          if(inherits(SEXPfinalizerFun, 'uninitializedField'))
-                                            list(SEXPgeneratorFun)
-                                          else
-                                            list(SEXPgeneratorFun, SEXPfinalizerFun)
-                                        }
-                                               else callSuper()
-                                        c(ans, ptrCastFun, ptrCastToPtrPairFun)
+                                        if(predefined) return(NULL)  ## Prevents redefinition of nimbleList classes that are predefined in inst/.
+                                        c(callSuper(), ptrCastFun, ptrCastToPtrPairFun)
                                       },
                                       buildCastPtrToNamedObjectsPtrFun = function() {
                                           ## SEXP  nfRefClass_84_castPtrPtrToNamedObjectsPtrSEXP ( SEXP input )  {
@@ -163,9 +157,9 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                       },
                                       buildAll = function(where = where) {
                                           addListSymbols()
+                                          buildCastPtrToNamedObjectsPtrFun()
+                                          buildCastPtrToPtrPairFun()
                                           if(!predefined){
-                                              buildCastPtrToNamedObjectsPtrFun()
-                                              buildCastPtrToPtrPairFun()
                                               buildCopyFromSexp()
                                               buildCopyToSexp()
                                               buildCreateNewSexp()
