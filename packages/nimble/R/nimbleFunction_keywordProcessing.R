@@ -746,14 +746,7 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
-<<<<<<< HEAD
-keywordList[['nimDerivs']] <- nimbleListReturningFunction_keywordInfo
-keywordList[['nimEigen']] <- nimbleListReturningFunction_keywordInfo
-keywordList[['nimSvd']] <- nimbleListReturningFunction_keywordInfo
-keywordList[['nimOptim']] <- nimOptim_keywordInfo
-=======
 keywordList[['nimSvd']] <- nimSvd_keywordInfo
->>>>>>> 3f2950f45a24ad0c8c167dc6306287fc7dfbda1b
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo

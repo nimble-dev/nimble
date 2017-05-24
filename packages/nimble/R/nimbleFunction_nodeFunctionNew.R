@@ -14,11 +14,12 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parents,
                            methods       = METHODS,
                            name          = name,
                            check         = FALSE,
-                           enableDerivs = list('calculate_AD_'),
+                           enableDerivs  = CALCAD_LIST,
                            where = where),
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
                  SETUPFUNCTION = nndf_createSetupFunction(),  ##nndf = new node function
                  METHODS       = nndf_createMethodList(LHSrep, RHSrep, parents, altParamsRep, boundsRep, logProbNodeExprRep, type),
+                 CALCAD_LIST   = (if(type == 'stoch') list(getCalcADFunName()) else list()),
                  where         = where)
         )
     if(evaluate)    return(eval(nodeFunctionTemplate))     else       return(nodeFunctionTemplate)
@@ -91,7 +92,7 @@ nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbN
             list(
                 simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- STOCHSIM                                                         },
                 calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
-                calculate_AD_  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR_AD;   returnType(double());   return(invisible(LOGPROB)) },
+                CALCADFUNNAME  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR_AD;   returnType(double());   return(invisible(LOGPROB)) },
                 calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {STOCHCALC_FULLEXPR_DIFF; LocalAns <- LocalNewLogProb - LOGPROB;  LOGPROB <<- LocalNewLogProb;
                                             returnType(double());   return(invisible(LocalAns))},
                 getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                       returnType(double());   return(LOGPROB)            }
@@ -103,6 +104,7 @@ nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbN
                  STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, ADFunc = TRUE),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
         
+        names(methodList)[3] <-  getCalcADFunName() ## replase CALCADFUNNAME with real name
         parentsArgs <- if(length(parents) > 0) list() else NULL
         for(i in seq_along(parents)){
           parentsArgs[[parents[i]]] <- quote(double())  
@@ -113,7 +115,7 @@ nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbN
         # }
         selfWithNoInds <- c(quote(double()))
         names(selfWithNoInds) <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
-        formals(methodList$calculate_AD_) <- c(selfWithNoInds, parentsArgs)
+        formals(methodList[[getCalcADFunName()]]) <- c(selfWithNoInds, parentsArgs)
         logProbNameWithNoInds <-  strsplit(deparse(logProbNodeExpr), '[', fixed = TRUE)[[1]][1]
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
@@ -169,7 +171,7 @@ nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbN
 
 nndf_addModelDollarSignsToMethods <- function(methodList, exceptionNames = character(), ADexceptionNames = character()) {
     for(i in seq_along(methodList)) {
-      if(names(methodList)[i] == 'calculate_AD_'){
+      if(names(methodList)[i] == getCalcADFunName()){
         body(methodList[[i]]) <- removeIndices(body(methodList[[i]]))
         body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, ADexceptionNames))
       }

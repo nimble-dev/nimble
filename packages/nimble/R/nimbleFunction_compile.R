@@ -36,7 +36,9 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                RCfunProcs <<- list()
                                                for(i in seq_along(origMethods)) {
                                                    RCname <- names(origMethods)[i]
-                                                   RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname, const = isNode) else RCfunProcessing$new(origMethods[[i]], RCname, const = isNode)
+                                                   if(isNode && strsplit(RCname, '_', fixed = TRUE)[[1]][1] == getCalcADFunName()) constFlag <- FALSE
+                                                   else constFlag <- isNode
+                                                   RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname, const = constFlag) else RCfunProcessing$new(origMethods[[i]], RCname, const = constFlag)
                                                }
                                                compileInfos <<- lapply(RCfunProcs,
                                                                        function(x) x$compileInfo)
