@@ -212,7 +212,7 @@ BUGSdeclClass$methods(genSymbolicParentNodes = function(constantsNamesList, cont
 ##     unknownIndexDeclInfo <- list()
 ##     for(parentExpr in symbolicParentNodes) {
 ##         varName <- deparse(parentExpr[[2]])
-##         dynamicIndices <- whichDynamicIndices(parentExpr)
+##         dynamicIndices <- detectDynamicIndices(parentExpr)
 ##         if(length(dynamicIndices)) {
             
 
