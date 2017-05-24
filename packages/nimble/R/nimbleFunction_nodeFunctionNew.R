@@ -103,11 +103,10 @@ nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbN
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
                  STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, ADFunc = TRUE),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
-        
         names(methodList)[3] <-  getCalcADFunName() ## replase CALCADFUNNAME with real name
         parentsArgs <- if(length(parents) > 0) list() else NULL
         for(i in seq_along(parents)){
-          parentsArgs[[parents[i]]] <- quote(double())  
+          parentsArgs[[parents[i]]] <- quote(double(1))  
         }
         # parentsArgs <- rep(quote(double), length(parents))
         # if(!is.null(parents)){
@@ -115,7 +114,8 @@ nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbN
         # }
         selfWithNoInds <- c(quote(double()))
         names(selfWithNoInds) <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
-        formals(methodList[[getCalcADFunName()]]) <- c(selfWithNoInds, parentsArgs)
+        formals(methodList[[getCalcADFunName()]]) <- c( formals(methodList[[getCalcADFunName()]]), 
+                                                        selfWithNoInds, parentsArgs)
         logProbNameWithNoInds <-  strsplit(deparse(logProbNodeExpr), '[', fixed = TRUE)[[1]][1]
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
@@ -172,7 +172,7 @@ nndf_createMethodList <- function(LHS, RHS, parents, altParams, bounds, logProbN
 nndf_addModelDollarSignsToMethods <- function(methodList, exceptionNames = character(), ADexceptionNames = character()) {
     for(i in seq_along(methodList)) {
       if(names(methodList)[i] == getCalcADFunName()){
-        body(methodList[[i]]) <- removeIndices(body(methodList[[i]]))
+        # body(methodList[[i]]) <- removeIndices(body(methodList[[i]]))
         body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, ADexceptionNames))
       }
       else  body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))

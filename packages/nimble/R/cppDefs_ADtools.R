@@ -127,7 +127,6 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     ## Add them to arguments symbol table ## switch design and make these local
 ##    CFT$args$addSymbol( ADindependentVarsSym )
 ##    CFT$args$addSymbol( ADresponseVarsSym )
-    browser()
     ## Make local AD variables for all function inputs and outputs
     ## e.g. if the original targetFun takes NimArr<1, double>, it's templated CppAD version will take NimArr<1, TYPE_>
     ## Next line creates local variables for passing to that templated CppAD version
@@ -285,15 +284,22 @@ makeStaticInitClass <- function(cppDef, derivMethods) {
     cppClass
 }
 
-makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0) {
+makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0,
+                                           functionDefs, isNode) {
     ## modeled closely parts of /*  */
     ## needs to set the ADtapePtr to one element of the ADtape
     TF <- RCfunctionDef$new() ## should it be static?
     TF$returnType <- cppVarFull(baseType = 'nimbleCppADinfoClass', ref = TRUE, name = 'RETURN_OBJ')
     TF$name <- newFunName
     localVars <- symbolTable()
-    TF$args <- targetFunDef$args
-
+    browser()
+    if(!isNode)
+      TF$args <- targetFunDef$args
+      
+    
+    # functionDefs[['calculate']]$code$code
+    
+    
     ## set up index vars (up to 6)
     indexVarNames <- paste0(letters[9:14],'_')
     for(ivn in indexVarNames)

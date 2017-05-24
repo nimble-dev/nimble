@@ -7,7 +7,8 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        origMethods = 'ANY',
                                        RCfunProcs =  'ANY',		#'list', ## A list of RCfunProcessing  or RCvirtualFunProcessing objects
                                        nimbleProject = 'ANY',
-                                       cppDef = 'ANY'
+                                       cppDef = 'ANY',
+                                       isNode = 'ANY'
                                        ),
                                    methods = list(
                                        show = function() {
@@ -17,6 +18,8 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            nimbleProject <<- project
                                        		compileInfos <<- list()
                                        		RCfunProcs <<- list()
+                                       		
+                                       		isNode <<- isNode
 
                                            if(!is.null(f)) { ## This allows successful default instantiation by R when defining nfProcessing below -- crazy
                                                ## nfGenerator allowed if it is a nimbleFunctionVirtual

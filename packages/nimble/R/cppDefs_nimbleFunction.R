@@ -247,7 +247,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   invisible(NULL)
                                               },
                                               addADtapingFunction = function( funName, independentVarNames, dependentVarNames ) {
-                                                browser()
                                                   ADfunName <- paste0(funName, '_AD_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   newFunName <- paste0(funName, '_callForADtaping_')
@@ -258,7 +257,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   newFunName <- paste0(funName, '_ADargumentTransfer_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   funIndex <- which(environment(nfProc$nfGenerator)$enableDerivs == funName) ## needed for correct index for allADtapePtrs_
-                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex)
+                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, functionDefs, nfProc$isNode)
                                               },
                                               addStaticInitClass = function() {
                                                   neededTypeDefs[['staticInitClass']] <<- makeStaticInitClass(.self, environment(nfProc$nfGenerator)$enableDerivs) ##
@@ -304,8 +303,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ## static declaration in the class definition
                                                   
                                                   ## globals to hold the global static definition
-                                                  browser()
-                                                  globals <- cppGlobalObjects(name = 'staticGlobals', staticMembers = TRUE)
+                                                  globals <- cppGlobalObjects(name = paste0('staticGlobals_', name), staticMembers = TRUE)
                                                   globals$objectDefs[['staticGlobalTape']] <- cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), name = paste0(name,'::allADtapePtrs_'))
                                                   ##globalObjectsDefs[['allADtapePtrs_']] <<- globals
                                                   neededTypeDefs[['allADtapePtrs_']] <<- globals
