@@ -752,7 +752,7 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
 
     annotationSizeExprs <- lapply(cSizeExprs$args, nimbleGeneralParseDeparse) ## and this is for purposes of the sizeExprs in the AST exprClass object
     
-    missingSizes <- unlist(lapply(cSizeExprs$args, identical, as.numeric(NA)))
+    missingSizes <- unlist(lapply(cSizeExprs$args, function(x) identical(x, as.numeric(NA)) | identical(x, NA))) ## note is.na doesn't work b/c the argument can be an expression and is.na warns on that ##old: identical, as.numeric(NA)))
     ## only case where we do something useful with missingSizes is matrix(value = non-scalar, ...)
     if(any(missingSizes)) {
         ## modify sizes in generated C++ line
@@ -2568,11 +2568,13 @@ sizeReturn <- function(code, symTab, typeEnv) {
             if(code$args[[1]]$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('returnType statement gives a nimbleList type but return() argument is not the right type')), call. = FALSE)
             ## equivalent to symTab$getSymbolObject(code$args[[1]]$name)$nlProc, if it is a name
             if(!identical(code$args[[1]]$sizeExprs$nlProc, typeEnv$return$sizeExprs$nlProc)) stop(exprClassProcessingErrorMsg(code, paste0('nimbleList given in return() argument does not match nimbleList type declared in returnType()')), call. = FALSE)
-        } else {
+        } else { ## check numeric types and nDim
             fail <- FALSE
             if(!identical(code$args[[1]]$type, typeEnv$return$type)) {
-                failMsg <- paste0('Type ', code$args[[1]]$type, ' of the return() argument does not match type ',  typeEnv$return$type, ' given in the returnType() statement (void is default).')
-                fail <- TRUE
+                if(typeEnv$return$nDim > 0) { ## allow scalar casting of returns without error
+                    failMsg <- paste0('Type ', code$args[[1]]$type, ' of the return() argument does not match type ',  typeEnv$return$type, ' given in the returnType() statement (void is default).')
+                    fail <- TRUE
+                }
             }
             if(!identical(code$args[[1]]$nDim, typeEnv$return$nDim)) {
                 failMsg <- paste0( if(exists("failMsg", inherits = FALSE)) paste0(failMsg,' ') else character(),
