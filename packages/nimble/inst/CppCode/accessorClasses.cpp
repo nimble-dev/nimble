@@ -198,11 +198,6 @@ void ManyVariablesMapAccessor::check(int i) {
 }
 #endif
 
-ManyModelValuesMapAccessor::ManyModelValuesMapAccessor() : currentRow(0) {
-
-}
-
-
 ManyModelValuesMapAccessor::~ManyModelValuesMapAccessor() {
     for(unsigned int i = 0; i < varAccessors.size(); ++i)
       delete static_cast<SingleModelValuesMapAccess*>(varAccessors[i]);
