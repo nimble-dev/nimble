@@ -2,6 +2,7 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of calcWAIC")
 
+##3
 sigma     <- c(15,10,16,11, 9,11,10,18)
 schoolobs <- c(28,8, -3, 7,-1, 1,18,12)
 
@@ -33,6 +34,6 @@ CschoolWAICfunc <- compileNimble(schoolWAICfunc, project = schoolSATmodel)
 schoolWAIC <- CschoolWAICfunc$run(20000)
 
 ##below WAIC value from Gelman '13 "Understanding predictive information criteria for Bayesian models"
-try(test_that("Test that WAIC is accurate: ",
-              expect_equal(schoolWAIC, 61.8, tolerance = 2.0)))
+test_that("Test that WAIC is accurate: ",
+          expect_equal(schoolWAIC, 61.8, tolerance = 2.0))
 
