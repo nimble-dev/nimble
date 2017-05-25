@@ -2161,7 +2161,7 @@ SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP retu
 double dcar_normal(double* x, double* adj, double* weights, double* num, double tau, int K, int L, int give_log) {
   // This method implements the following density calculation:
   // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
-  // where tau is precision, c = 1, and N is the length of x.
+  // where tau is precision, c = (number of islands + 1), and N is the length of x.
   // This is the density on an N-c dimensional space, and improper on the remaining c dimensions.
   int c = 1;
   double lp = 0;
@@ -2171,6 +2171,9 @@ double dcar_normal(double* x, double* adj, double* weights, double* num, double 
     return R_NaN;
   }
   for(int i = 0; i < K; i++) {
+    if(num[i] == 0) {
+      c++;
+    }
     xi = x[i];
     for(int j = 0; j < num[i]; j++) {
       xj = x[ (int) adj[count] - 1 ];

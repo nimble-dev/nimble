@@ -1382,18 +1382,25 @@ CAR_processParams <- function(model, target, adj, weights, num, check = TRUE) {
     d <- length(targetAsScalar)
     if(check) {
         if(length(num) != d) stop('num argument to dcar_normal() must be same length as dcar_normal() node')
-        if(any(floor(num) != num)) stop('num argument to dcar_normal() can only contain positive integers')
-        if(any(num <= 0)) stop('num argument to dcar_normal() can only contain positive integers')
+        if(any(floor(num) != num)) stop('num argument to dcar_normal() can only contain non-negative integers')
+        if(any(num < 0)) stop('num argument to dcar_normal() can only contain non-negative integers')
         if(any(num > d)) stop('entries in num argument to dcar_normal() cannot exceed length of dcar_normal() node')
+        if(sum(num) == 0) stop('dcar_normal() distribution must specify some neighbors')
         if(sum(num) != length(adj)) stop('length of adj argument to dcar_normal() must be equal to total number of neighbors specified in num argument')
         if(length(adj) != length(weights)) stop('length of adj and weight arguments to dcar_normal() must be the same')
         if(any(weights <= 0)) stop('weights argument to dcar_normal() should only contain positive values')
     }
-    indEnd <- cumsum(num)
-    indStart <- c(0, indEnd[-d]) + 1
-    neighborIndList <- mapply(function(start, end) adj[start:end], indStart, indEnd)
+    subsetIndList <- vector('list', d)
+    nextInd <- 1
+    for(i in 1:d) {
+        subsetIndList[[i]] <- numeric()
+        if(num[i] != 0) subsetIndList[[i]] <- nextInd:(nextInd+num[i]-1)
+        nextInd <- nextInd + num[i]
+    }
+    if(nextInd != length(adj)+1) stop('something went wrong')
+    neighborIndList <- lapply(subsetIndList, function(ind) adj[ind])
     neighborNodeList <- lapply(neighborIndList, function(ind) targetAsScalar[ind])
-    neighborWeightList <- mapply(function(start, end) weights[start:end], indStart, indEnd)
+    neighborWeightList <- lapply(subsetIndList, function(ind) weights[ind])
     names(neighborIndList)    <- targetAsScalar
     names(neighborNodeList)   <- targetAsScalar
     names(neighborWeightList) <- targetAsScalar
@@ -1426,6 +1433,7 @@ CAR_processParams <- function(model, target, adj, weights, num, check = TRUE) {
 CAR_evaluateDensity <- nimbleFunction(
     setup = function(model, targetScalar, neighborNodes, neighborWeights) {
         targetDCAR <- model$expandNodeNames(targetScalar)
+        island <- length(neighborNodes)==0
         sumWeights <- sum(neighborWeights)
         if(length(targetDCAR) != 1)                              stop('something went wrong')
         if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
@@ -1435,10 +1443,12 @@ CAR_evaluateDensity <- nimbleFunction(
         priorSigma <- sqrt(1/getPrec())
         lp <- dnorm(model[[targetScalar]], priorMean, priorSigma, log = TRUE)
         returnType(double())
+        if(island) return(0)
         return(lp)
     },
     methods = list(
         getMean = function() {
+            if(island) return(0)
             neighborValues <- values(model, neighborNodes)
             mean <- sum(neighborValues*neighborWeights) / sumWeights
             returnType(double())
@@ -1461,6 +1471,8 @@ CAR_scalar_postPred <- nimbleFunction(
     setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
         ## node list generation
         calcNodes <- c(targetScalar, model$getDependencies(targetScalar, self = FALSE))
+        ## numeric value generation
+        island <- length(neighborNodes)==0
         ## nested function and function list definitions
         dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
         ## checks
@@ -1469,6 +1481,7 @@ CAR_scalar_postPred <- nimbleFunction(
         if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
     },
     run = function() {
+        if(island) return()
         newValue <- rnorm(1, mean = dcar$getMean(), sd = sqrt(1/dcar$getPrec()))
         model[[targetScalar]] <<- newValue
         model$calculate(calcNodes)
@@ -1647,6 +1660,7 @@ sampler_CAR_normal <- nimbleFunction(
             conjugate <- CAR_checkConjugacy(model, targetScalar)
             neighborNodes <- neighborLists$neighborNodeList[[i]]
             neighborWeights <- neighborLists$neighborWeightList[[i]]
+            if(length(neighborNodes)==0) cat(paste0('island node detected: ', targetScalar, '\n'))   ## XXXXXXXXXXXXX delete
             if(nDependents == 0) {
                 cat(paste0('dcar() component node ', targetScalar, ': assigning posterior predictive sampler\n'))   ## XXXXXXXXXXXXX delete
                 componentSamplerFunctions[[i]] <- CAR_scalar_postPred(model, mvSaved, targetScalar, neighborNodes, neighborWeights)

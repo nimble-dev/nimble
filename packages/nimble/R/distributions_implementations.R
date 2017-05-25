@@ -860,19 +860,20 @@ dcar_normal <- function(x, adj, weights, num, tau, log = FALSE) {
     if(storage.mode(num) != 'double')   storage.mode(num) <- 'double'
     d <- length(x)
     if(length(num) != d) stop('num argument to dcar_normal() must be same length as dcar_normal() node')
-    if(any(floor(num) != num)) stop('num argument to dcar_normal() can only contain positive integers')
-    if(any(num <= 0)) stop('num argument to dcar_normal() can only contain positive integers')
+    if(any(floor(num) != num)) stop('num argument to dcar_normal() can only contain non-negative integers')
+    if(any(num < 0)) stop('num argument to dcar_normal() can only contain non-negative integers')
     if(any(num > d)) stop('entries in num argument to dcar_normal() cannot exceed length of dcar_normal() node')
+    if(sum(num) == 0) stop('dcar_normal() distribution must specify some neighbors')
     if(sum(num) != length(adj)) stop('length of adj argument to dcar_normal() must be equal to total number of neighbors specified in num argument')
     if(length(adj) != length(weights)) stop('length of adj and weight arguments to dcar_normal() must be the same')
     if(any(weights <= 0)) stop('weights argument to dcar_normal() should only contain positive values')
-    ##
     ##
     ##k <- length(x)
     ##c <- 1
     ##lp <- 0
     ##count <- 1
     ##for(i in 1:k) {
+    ##    if(num[i] == 0)   c <- c + 1
     ##    xi <- x[i]
     ##    for(j in 1:num[i]) {
     ##        xj <- x[adj[count]]
@@ -885,7 +886,6 @@ dcar_normal <- function(x, adj, weights, num, tau, log = FALSE) {
     ##lp <- lp + (k-c)/2 * log(tau/2/pi)
     ##if(log) return(lp)
     ##return(exp(lp))
-    ##
     ##
     .Call('C_dcar_normal', as.double(x), as.double(adj), as.double(weights), as.double(num), as.double(tau), as.logical(log))
 }
