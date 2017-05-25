@@ -68,29 +68,30 @@ main <- function() {
             returnType(double(0))
         },
         methods = list(
-            # eigenNimbleList = function() {
-            #     return(eigenNimbleList$new())
-            #     returnType(eigenNimbleList())
-            # },
-            # svdNimbleList = function() {
-            #     return(svdNimbleList$new())
-            #     returnType(svdNimbleList())
-            # },
-            optimResultNimbleList = function() {
+            eigenStub = function() {
+                return(eigenNimbleList$new())
+                returnType(eigenNimbleList())
+            },
+            svdStub = function() {
+                return(svdNimbleList$new())
+                returnType(svdNimbleList())
+            },
+            optimResultStub = function() {
                 return(optimResultNimbleList$new())
                 returnType(optimResultNimbleList())
             },
-            optimControl = function() {
+            optimControlStub = function() {
                 return(optimControlNimbleList$new())
                 returnType(optimControlNimbleList())
             }
         )
     )()
 
-    # Compilation will fail because we have duplicate definitions, but that's ok.    
-    #tryCatch(
-             compileNimble(nimFun)
-    #, error = function(e){})
+    # Compilation should with a SHLIBCreationError due to duplicate symbols,
+    # but any other error is unexpected.    
+    tryCatch(compileNimble(nimFun), error = function(e){
+        if(!inherits(e, 'SHLIBCreationError')) stop(e)
+    })
 
     # Read the relevant parts of both files.
     files <- findGeneratedSources()
