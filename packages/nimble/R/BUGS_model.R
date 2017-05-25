@@ -1128,18 +1128,13 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
                                            
-                                           ## things to work with:
-                                           ## BUGSdecl$symbolicParentNodes
-                                           ## modelDef$maps$edgesFrom2ParentExprID
-                                           ## modelDef$maps$graphID_2_nodeName
-                                           ## to see fields: BUGSdecl$getRefClass()$fields()
-                                           stochParents <- BUGSdecl$allParentVarNames()
-                                           stochParents <- unlist(lapply(stochParents, function(name){
-                                             if(modelDef$varInfo[[name]]$anyStoch) return(name)
-                                           }))
+                                           parents <- BUGSdecl$allParentVarNames()
+                                           # stochParents <- unlist(lapply(parents, function(name){
+                                           #   if(modelDef$varInfo[[name]]$anyStoch) return(name)
+                                           # }))
                                            
                                            nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, 
-                                                                                   parents = stochParents, logProbNodeExpr=logProbNodeExpr, type=type,
+                                                                                   parents = parents, logProbNodeExpr=logProbNodeExpr, type=type,
                                                                                    setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            # nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator

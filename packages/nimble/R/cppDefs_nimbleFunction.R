@@ -250,7 +250,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ADfunName <- paste0(funName, '_AD_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   newFunName <- paste0(funName, '_callForADtaping_')
-                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames, nfProc$isNode)
+                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames, nfProc$isNode, functionDefs)
                                                   invisible(NULL)
                                               },
                                               addADargumentTransferFunction = function( funName, independentVarNames ) {

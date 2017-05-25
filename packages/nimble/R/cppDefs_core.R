@@ -228,7 +228,7 @@ cppClassDef <- setRefClass('cppClassDef',
 ## The parse tree can be either an R parse tree or one of our exprClass objects
 cppCodeBlock <- setRefClass('cppCodeBlock',
                             fields = list(typeDefs = 'ANY', objectDefs = 'ANY', code = 'ANY', skipBrackets = 'ANY',
-                                          cppADCode = 'ANY'),			#'logical'),
+                                          cppADCode = 'ANY', generatorSymTab = 'ANY'),			#'logical'),
                             methods = list(
                                 generate = function(indent = '', ...) {
                                     if(inherits(typeDefs, 'uninitializedField')) typeDefs <<- list()
@@ -243,9 +243,11 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                                     } ##else outputCppCode <- list()
 
                                     if(inherits(code, 'exprClass')) {
-                                        if(!inherits(objectDefs, 'symbolTable')) stop('Error, with exprClass code in the cppCodeBlock, must have objectDefs be a symbolTable')
+                                        if(inherits(generatorSymTab, 'symbolTable')) useSymTab <- generatorSymTab
+                                        else if(!inherits(objectDefs, 'symbolTable')) stop('Error, with exprClass code in the cppCodeBlock, must have objectDefs be a symbolTable')
+                                        else useSymTab <- objectDefs
                                         if(identical(cppADCode, TRUE)) recurseSetCppADExprs(code, TRUE) 
-                                      outputCppCode <- c(outputCppCode, nimGenerateCpp(code, objectDefs, indent = ' ', showBracket = FALSE))
+                                      outputCppCode <- c(outputCppCode, nimGenerateCpp(code, useSymTab, indent = ' ', showBracket = FALSE))
                                         if(identical(cppADCode, TRUE)) recurseSetCppADExprs(code, FALSE) 
                                     } else {
                                         outputCppCode <- c(outputCppCode, outputCppParseTree2(code, indent))

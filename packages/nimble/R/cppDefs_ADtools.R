@@ -62,7 +62,8 @@ makeTypeTemplateFunction = function(newName, .self) {
     newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = TRUE)
     localArgs <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
-    newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs, cppADCode = TRUE)
+    newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs, cppADCode = TRUE,
+                                      generatorSymTab = .self$code$objectDefs)
     newCppFunDef
 }
 
@@ -112,7 +113,7 @@ makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, i
 ## (which is in permanent C++, not generated from R)
 ## We do not assume that in the target function the arguments are independent variables and the
 ## returned value is the dependent variable.  Those are set by the independentVarNames and dependentVarNames
-makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, ADfunName, independentVarNames, dependentVarNames, isNode) {
+makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, ADfunName, independentVarNames, dependentVarNames, isNode, allFunDefs) {
     ## Make new function definition to call for taping (CFT)
     CFT <- RCfunctionDef$new(static = TRUE)
     CFT$returnType <- cppVarFull(baseType = "CppAD::ADFun", templateArgs = list('double'), ptr = 1, name = 'RETURN_TAPE_') ##cppVoid()
