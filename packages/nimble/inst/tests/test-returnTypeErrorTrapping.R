@@ -50,3 +50,21 @@ test_that('nimbleList return type error caught', {
     expect_failure(expect_identical(class(Cnf1), "function"))
 })
 
+test_that('void() return passes return type error trapping', {
+    foo <- nimbleFunction(
+        run = function(x = double(1)) {
+            return()
+        })
+    cfoo <- try(compileNimble(foo))
+    expect_success(expect_identical(class(cfoo), "function"))
+})
+
+test_that('return type error caught when non-void object is returned', {
+    foo <- nimbleFunction(
+        run = function(x = double(1)) {
+            return(x)
+            returnType(void())
+        })
+    cfoo <- try(compileNimble(foo))
+    expect_failure(expect_identical(class(cfoo), "function"))
+})
