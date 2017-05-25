@@ -12,14 +12,23 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         inheritance <<- c(inheritance, 'pointedToBase')
                                       },
                                       getDefs = function() {
-                                        ans <- if(predefined){ ## prevents redefinition of EIGEN_EIGENCLASS or EIGEN_SVDCLASS
-                                          if(inherits(SEXPfinalizerFun, 'uninitializedField'))
-                                            list(SEXPgeneratorFun)
-                                          else
-                                            list(SEXPgeneratorFun, SEXPfinalizerFun)
+                                        if(predefined) {
+                                            ## Prevent redefinition of nimbleList classes that live
+                                            ## in predefinedNimbleLists.h and predefinedNumbleLists.cpp.
+                                            return(list())
+                                        } else if(name == 'EIGEN_SVDCLASS' || name == 'EIGEN_EIGENCLASS') {
+                                            ## Handle these two EITEN_ classes specially. They are implemented as an inheritance hierarchy,
+                                            ## so we cannot generate the class definitions (Nick and Perry understand why).
+                                            ## Note that this branch is only ever run under the control of generateStaticCode.R to
+                                            ## regenerate C++ code  in predefinedNimbleLists.h and predefinedNimbleLists.cpp.
+                                            defs <- c(SEXPgeneratorFun, ptrCastFun, ptrCastToPtrPairFun)
+                                            if(!inherits(SEXPfinalizerFun, 'uninitializedField')) {
+                                                defs <- c(defs, SEXPfinalizerFun)
+                                            }
+                                            return(defs)
+                                        } else {
+                                            return(c(callSuper(), ptrCastFun, ptrCastToPtrPairFun))
                                         }
-                                               else callSuper()
-                                        c(ans, ptrCastFun, ptrCastToPtrPairFun)
                                       },
                                       buildCastPtrToNamedObjectsPtrFun = function() {
                                           ## SEXP  nfRefClass_84_castPtrPtrToNamedObjectsPtrSEXP ( SEXP input )  {
@@ -165,16 +174,13 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           addListSymbols()
                                           buildCastPtrToNamedObjectsPtrFun()
                                           buildCastPtrToPtrPairFun()
-                                          if(predefined){
-                                            callSuper(where)
-                                          }
-                                          else{
+                                          if(!predefined){
                                               buildCopyFromSexp()
                                               buildCopyToSexp()
                                               buildCreateNewSexp()
                                               buildResetFlags()
-                                              callSuper(where)
                                           }
+                                          callSuper(where)
                                       },
                                       buildCreateNewSexp = function(){
                                         interfaceArgs <- symbolTable()

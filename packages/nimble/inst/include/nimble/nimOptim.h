@@ -2,7 +2,7 @@
 #define __NIMBLE_NIMOPTIM_H
 
 #include <nimble/NimArr.h>
-#include <nimble/optimTypes.h>
+#include <nimble/predefinedNimbleLists.h>
 #include <nimble/smartPtrs.h>
 #include <string>
 
