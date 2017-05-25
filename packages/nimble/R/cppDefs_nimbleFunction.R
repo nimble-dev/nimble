@@ -250,14 +250,14 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ADfunName <- paste0(funName, '_AD_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   newFunName <- paste0(funName, '_callForADtaping_')
-                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames)
+                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames, nfProc$isNode)
                                                   invisible(NULL)
                                               },
                                               addADargumentTransferFunction = function( funName, independentVarNames ) {
                                                   newFunName <- paste0(funName, '_ADargumentTransfer_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   funIndex <- which(environment(nfProc$nfGenerator)$enableDerivs == funName) ## needed for correct index for allADtapePtrs_
-                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, functionDefs, nfProc$isNode)
+                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, nfProc$isNode)
                                               },
                                               addStaticInitClass = function() {
                                                   neededTypeDefs[['staticInitClass']] <<- makeStaticInitClass(.self, environment(nfProc$nfGenerator)$enableDerivs) ##
@@ -267,14 +267,18 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   outSym <- nfProc$RCfunProcs[[funName]]$compileInfo$returnSymbol
                                                   checkADargument(funName, outSym, returnType = TRUE)
                                                   if(length(nfProc$RCfunProcs[[funName]]$nameSubList) == 0) stop(paste0('Derivatives cannot be enabled for method ', funName, ', since this method has no arguments.'))
-                                                  for(iArg in seq_along(functionDefs[[funName]]$args$symbols)){
-                                                    arg <- functionDefs[[funName]]$args$symbols[[iArg]]
-                                                    argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)
-                                                    argName <- names(nfProc$RCfunProcs[[funName]]$nameSubList)[iArg]
-                                                    checkADargument(funName, argSym, argName = argName)
+                                                  if(!nfProc$isNode){
+                                                    for(iArg in seq_along(functionDefs[[funName]]$args$symbols)){
+                                                      arg <- functionDefs[[funName]]$args$symbols[[iArg]]
+                                                      argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)
+                                                      argName <- names(nfProc$RCfunProcs[[funName]]$nameSubList)[iArg]
+                                                      checkADargument(funName, argSym, argName = argName)
+                                                    }
                                                   }
                                                   addTypeTemplateFunction(funName)
                                                   independentVarNames <- names(functionDefs[[funName]]$args$symbols)
+                                                  if(nfProc$isNode) independentVarNames <- independentVarNames[-1]  ## remove ARG1_INDEXEDNODEINFO__ from independentVars
+                                                  
                                                   addADtapingFunction(funName, independentVarNames = independentVarNames, dependentVarNames = 'ANS_' )
                                                   addADargumentTransferFunction(funName, independentVarNames = independentVarNames)
                                               },

@@ -1040,7 +1040,15 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 
 
 sizeNimDerivs <- function(code, symTab, typeEnv){
-  code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv')
+  browser()
+  if(code$args[[1]]$name == 'calculate'){
+    calcDerivFlag <- T
+    code$args[[1]]$name <- paste0(code$args[[1]]$name, 'WithArgs_deriv')
+  } 
+  else{
+    calcDerivFlag <- F
+    code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv')
+  }
   
   # if(is.na(code$args[[3]])){
   #   allArgLength <- sum(sapply(typeEnv$passedArgumentNames, function(x){return(symTab$getSymbolObject(x)$size)}))
@@ -1072,7 +1080,8 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   code$args[[1]]$sizeExprs <- symTab$getSymbolObject('NIMBLE_ADCLASS', TRUE)
   code$args[[1]]$toEigenize <- "yes"
   code$args[[1]]$nDim <- 0
-  asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))
+  if(calcDerivFlag) asserts <- c(asserts, sizeScalarModelOp(code$args[[1]], symTab, typeEnv))
+  else asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))
 
   #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # set variables arg
   

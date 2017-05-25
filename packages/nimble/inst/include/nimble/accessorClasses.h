@@ -773,4 +773,6 @@ void NodeVector_Finalizer( SEXP Sv);
 void ManyVariable_Finalizer(SEXP Sv);
 void ManyMV_Finalizer(SEXP Sv);
 
+indexedNodeInfo generateDummyIndexedNodeInfo();
+
 #endif

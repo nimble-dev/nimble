@@ -1132,7 +1132,8 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 		delete otherArgs;
 	//actually, nothing else to do at this point! 
 	//Could return ans if we decided to build it on the fly here instead of providing it as argument
-}	
+}
+
 
 // This function calls a function named 'cppNimDebug' that exists in R's global env.  'cppNimDebug' can be any function you would like.
 void RBrowserFun(){
@@ -1146,4 +1147,5 @@ void RBrowserFun(){
   EVAL(call);	
   UNPROTECT(1);
 }
+
 

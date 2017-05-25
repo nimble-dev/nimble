@@ -1947,3 +1947,10 @@ void NodeVector_Finalizer( SEXP Sv) {
 //   R_ClearExternalPtr(Sv);
 // }
 
+indexedNodeInfo generateDummyIndexedNodeInfo(){
+	vector<double> dummyVec;
+	dummyVec.push_back(0);
+	indexedNodeInfo dummyInfo = dummyVec;
+	return(dummyInfo);
+};	
+
