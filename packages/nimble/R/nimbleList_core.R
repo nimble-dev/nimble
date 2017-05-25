@@ -106,9 +106,10 @@ nimbleList <- function(...,
     ## compatible with checking of other objects that have a class) and
     ## one that has the nimbleListDefClass object
 
-    ## This manual override allows us to generate static code by temporarily setting predefined = FALSE
-    ## for all predefined nimbleLists.
-    if(0) predefined <- FALSE  ## Temporarily enable this when using generateStaticCode.R.
+    ## This manual override allows us to generate static code by temporarily setting
+    ## predefined = FALSE for all predefined nimbleLists.
+    GENERATE_STATIC_CODE <- FALSE  ## Enable this before using generateStaticCode.R.
+    if(GENERATE_STATIC_CODE) predefined <- FALSE
     
   ## 3 possibilities: arguments as expressions, arguments as list created within call,
   ## arguments as list created outside of call
