@@ -162,7 +162,7 @@ class SingleVariableMapAccessBase {
   int offset, length;
   bool singleton;
   vector<int> sizes, strides;
- SingleVariableMapAccessBase() : offset(0), singleton(false) {length = 0;}; /* length(0) triggers the Rf_length macro mixup */
+ SingleVariableMapAccessBase() : offset(0), singleton(false) {length = 0;} /* length(0) triggers the Rf_length macro mixup */
   virtual ~SingleVariableMapAccessBase();
   virtual NimArrType *getNimArrPtr()=0;
   void calculateLength() {
@@ -182,7 +182,7 @@ class SingleVariableMapAccessBase {
 class ManyVariablesMapAccessorBase {
  public:
   int totalLength;
- ManyVariablesMapAccessorBase() : totalLength(0) {};
+ ManyVariablesMapAccessorBase() : totalLength(0) {}
   int &getTotalLength() {return(totalLength);}
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector()=0;
   virtual void  setRow(int i) = 0;
@@ -240,7 +240,7 @@ class SingleModelValuesMapAccess : public SingleVariableMapAccessBase {
 class ManyModelValuesMapAccessor : public ManyVariablesMapAccessorBase {
   public:
   int currentRow;
- ManyModelValuesMapAccessor() : currentRow(0) {};
+ ManyModelValuesMapAccessor() : currentRow(0) {}
   vector<SingleVariableMapAccessBase *> varAccessors;
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
   virtual void setRow(int i);// see .cpp
@@ -287,7 +287,7 @@ class SingleVariableAccessBase {
  public:
   int flatIndexStart, flatIndexEnd; // For 1-3: In R these should be 1,3; In C++: 0, 3
   int length; // copying function can check for singletons if it wants to
- SingleVariableAccessBase() : flatIndexStart(0), flatIndexEnd(0) { length = 0; };
+ SingleVariableAccessBase() : flatIndexStart(0), flatIndexEnd(0) { length = 0; }
   int getIndexStart() {return(flatIndexStart);}  
   int getIndexEnd() {return(flatIndexEnd);}
   int getLength() {return(length);}
@@ -334,7 +334,7 @@ class SingleModelValuesAccess : public SingleVariableAccessBase {
   NimVecType *pVVar;   // Cliff and I talked about making a vecNimArrType base class
   int currentRow;
   virtual NimArrType *getNimArrPtr() {return(pVVar->getRowTypePtr(currentRow));} // Need to put a function like this in vecNimArrType base class
- SingleModelValuesAccess() : currentRow(0) {};
+ SingleModelValuesAccess() : currentRow(0) {}
   ~SingleModelValuesAccess() {};
   void setRow(int i) {currentRow = i;}
   int getRow() {return(currentRow);}
@@ -345,7 +345,7 @@ class SingleModelValuesAccess : public SingleVariableAccessBase {
 class ManyModelValuesAccessor : public ManyVariablesAccessorBase {
   public:
   int currentRow;
- ManyModelValuesAccessor() : currentRow(0) {};
+ ManyModelValuesAccessor() : currentRow(0) {}
   vector<SingleVariableAccessBase *> varAccessors;
   virtual vector<SingleVariableAccessBase *> &getAccessVector() {return(varAccessors);}
   virtual void setRow(int i);// see .cpp
@@ -361,7 +361,7 @@ class ManyModelValuesAccessor : public ManyVariablesAccessorBase {
 class rowInfoClass {
  public:
   int rowFrom, rowTo;
- rowInfoClass() : rowFrom(0), rowTo(0) {};
+ rowInfoClass() : rowFrom(0), rowTo(0) {}
 };
 
 class copierClass { // virtual base class
@@ -388,7 +388,7 @@ template<class Tfrom, class Tto>
   class singletonCopierClass_M2MV : public copierClass {
  public:
   int toOffset, fromOffset;
- singletonCopierClass_M2MV() : toOffset(0), fromOffset(0) {};
+ singletonCopierClass_M2MV() : toOffset(0), fromOffset(0) {}
   singletonCopierClass_M2MV(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
     fromNimArr =  static_cast<NimArrType**>(from->getObject());
     toVecNimArr = static_cast<NimVecType*>(to->getObject());
@@ -407,7 +407,7 @@ template<class Tfrom, class Tto>
   class singletonCopierClass_M2M : public copierClass {
  public:
   int toOffset, fromOffset;
- singletonCopierClass_M2M() : toOffset(0), fromOffset(0) {};
+ singletonCopierClass_M2M() : toOffset(0), fromOffset(0) {}
   singletonCopierClass_M2M(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
     fromNimArr =  static_cast<NimArrType**>(from->getObject());
     toNimArr = static_cast<NimArrType**>(to->getObject());
@@ -426,7 +426,7 @@ template<class Tfrom, class Tto>
   class singletonCopierClass_MV2M : public copierClass {
  public:
   int toOffset, fromOffset;
- singletonCopierClass_MV2M() : toOffset(0), fromOffset(0) {};
+ singletonCopierClass_MV2M() : toOffset(0), fromOffset(0) {}
   singletonCopierClass_MV2M(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
     fromVecNimArr =  static_cast<NimVecType*>(from->getObject());
     toNimArr = static_cast<NimArrType**>(to->getObject());
@@ -445,7 +445,7 @@ template<class Tfrom, class Tto>
   class singletonCopierClass_MV2MV : public copierClass {
  public:
   int toOffset, fromOffset;
- singletonCopierClass_MV2MV() : toOffset(0), fromOffset(0) {};
+ singletonCopierClass_MV2MV() : toOffset(0), fromOffset(0) {}
   singletonCopierClass_MV2MV(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
     fromVecNimArr =  static_cast<NimVecType*>(from->getObject());
     toVecNimArr = static_cast<NimVecType*>(to->getObject());
@@ -464,7 +464,7 @@ class blockCopierClassBase : public copierClass {
  public:
   //  int toOffset, fromOffset;
   bool isFromMV, isToMV;
- blockCopierClassBase() : isFromMV(false), isToMV(false) {};
+ blockCopierClassBase() : isFromMV(false), isToMV(false) {}
   // put common initializations here
   // for now leave strides and sizes dynamically accessed
   blockCopierClassBase(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV1, int isToMV1) {
