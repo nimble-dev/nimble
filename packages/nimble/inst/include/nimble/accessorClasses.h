@@ -24,14 +24,6 @@ using std::cout;
 /////////////////////////////////
 // 1. NodeVectors:
 /////////////////////////////////
-class NodeVectorClass {
- public:
-  vector<nodeFun *> nodeFunPtrs;
-  virtual vector<nodeFun *> &getNodeFunctionPtrs() {return(nodeFunPtrs);}
-  // to be inherited and implemented differently when we have dynamic dependencies
-  virtual ~NodeVectorClass() {};
-};
-
 class oneNodeUseInfo {
  public:
   nodeFun *nodeFunPtr;
@@ -716,11 +708,6 @@ void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA);
 //void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA, int i);
 
 
-//double calculate(NodeVectorClass &nodes);
-//double getLogProb(NodeVectorClass &nodes);
-//void simulate(NodeVectorClass &nodes);
-
-void cAddNodeFun(NodeVectorClass nVObj, nodeFun* nFPtr);
 void cAddVariableAccessor(ManyVariablesAccessor* mVAPtr, SingleVariableAccess* sVAPtr, int index);
 template<class T>
 void cRemoveAccessor(T* aPtr, int index, bool removeAll);
