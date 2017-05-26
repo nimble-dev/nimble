@@ -1,5 +1,9 @@
-.onLoad <- function(libname, pkgname) {
-    packageStartupMessage('For more information on NIMBLE and a User Manual, please visit http://R-nimble.org')
+.onAttach <- function(libname, pkgname) {
+    release <- utils::packageDescription("nimble", field = "Version")
+    #date <- utils::packageDescription("nimble", field = "Date")
+    packageStartupMessage("nimble version ", release, " is loaded.",
+                          "\nFor more information on NIMBLE and a User Manual,",
+                          "\nplease visit http://R-nimble.org.")
 }
 
 if(!exists("NeedMakevarsFile"))
