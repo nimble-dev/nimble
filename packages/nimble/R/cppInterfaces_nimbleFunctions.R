@@ -762,7 +762,6 @@ copyFromRobjectViaActiveBindings <- function(Robj, cppNames, cppCopyTypes, .self
             next
         }
         else if(cppCopyTypes[[v]] == 'nodeFxnVec') {
-            ##populateNodeFxnVec(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v)
             populateNodeFxnVecNew(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v, dll = dll) 
             next
         }
@@ -889,7 +888,6 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
         }
         else if(cppCopyTypes[[v]] == 'nodeFxnVec') {
             populateNodeFxnVecNew(fxnPtr = basePtr, Robject = Robj, fxnVecName = v, dll = dll)
-            ## populateNodeFxnVec(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v) 
             next
         }
         else if(cppCopyTypes[[v]] == 'modelVarAccess'){
