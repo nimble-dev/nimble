@@ -2557,11 +2557,11 @@ sizeReturn <- function(code, symTab, typeEnv) {
     if(!exists('return', env = typeEnv)) stop(exprClassProcessingErrorMsg(code, 'There was no returnType declaration and the default is missing.'), call. = FALSE)
 
     if(length(code$args) == 0) {
-        if(!is.null(typeEnv$returnType$type))
+        if(!identical(typeEnv$return$type, 'void'))
             stop(exprClassProcessingErrorMsg(code, 'return() with no argument can only be used with returnType(void()), which is the default if there is no returnType() statement.'), call. = FALSE)
         return(invisible(NULL))
     }
-    if(is.null(typeEnv$returnType$type))
+    if(identical(typeEnv$return$type, 'void'))
         stop(exprClassProcessingErrorMsg(code, 'returnType was declared void() (default) (or something invalid), which is not consistent with the object you are trying to return.'), call. = FALSE)
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
