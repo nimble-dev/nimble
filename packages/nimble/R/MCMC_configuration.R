@@ -91,6 +91,8 @@ MCMCconf <- setRefClass(
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
             useConjugacy = TRUE,
+            onlyRW = FALSE,
+            onlySlice = FALSE,
             multivariateNodesAsScalars = FALSE,
             warnNoSamplerAssigned = TRUE,
             print = FALSE) {
@@ -124,6 +126,10 @@ thin: The thinning interval for \'monitors\'.  Default value is one.
 thin2: The thinning interval for \'monitors2\'.  Default value is one.
 
 useConjugacy: A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
+
+onlyRW: A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler, and terminal nodes are assigned a posterior_predictive sampler.
+
+onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 
@@ -163,6 +169,8 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 ruleEvaluationEnv <- new.env()
                 ruleEvaluationEnv$model <- model
                 ruleEvaluationEnv$useConjugacy <- useConjugacy
+                ruleEvaluationEnv$onlyRW <- onlyRW
+                ruleEvaluationEnv$onlySlice <- onlySlice
                 ruleEvaluationEnv$multivariateNodesAsScalars <- multivariateNodesAsScalars
                 if(useConjugacy) ruleEvaluationEnv$conjugacyResults <- model$checkConjugacy(nodes)
                 rules$setEvaluationEnv(ruleEvaluationEnv)
@@ -206,8 +214,12 @@ print: A logical argument, specifying whether to print the ordered list of defau
                         if(nodeDist == 'ddirch')   { addSampler(target = node, type = 'RW_dirichlet');       next }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
-                                addSampler(target = scalarNode, type = 'RW') };     next }
+                                if(onlySlice) addSampler(target = scalarNode, type = 'slice')
+                                else          addSampler(target = scalarNode, type = 'RW')    };     next }
                         addSampler(target = node, type = 'RW_block');     next }
+                    
+                    if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW'   );     next }
+                    if(onlySlice)             { addSampler(target = node, type = 'slice');     next }
                     
                     ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
                     if(useConjugacy) {
@@ -786,12 +798,19 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             ## multivariate & multivariateNodesAsScalars: univariate RW
             addRule(quote(model$isMultivariate(node) && multivariateNodesAsScalars),
                     quote(for(sn in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
-                        addSampler(target = sn, type = 'RW')
+                        if(onlySlice) addSampler(target = sn, type = 'slice')
+                        else          addSampler(target = sn, type = 'RW')
                     }))
             
             ## multivariate: RW_block
             addRule(quote(model$isMultivariate(node)), 'RW_block')
 
+	    ## onlyRW argument
+            addRule(quote(onlyRW && !model$isDiscrete(node)), 'RW')
+            
+	    ## onlySlice argument
+            addRule(quote(onlySlice), 'slice')
+            
 	    ## binary-valued nodes
             addRule(quote(model$isBinary(node)), 'binary')
             
@@ -856,6 +875,8 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@param thin The thinning interval for \code{monitors}.  Default value is one.
 #'@param thin2 The thinning interval for \code{monitors2}.  Default value is one.
 #'@param useConjugacy A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
+#'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal nodes are assigned a posterior_predictive sampler (\link{sampler_posterior_predictive}).
+#'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
 #'@param rules An object of class samplerAssignmentRules, which governs the assigment of MCMC sampling algorithms to stochastic model nodes.  The default set of sampler assignment rules is specified by the nimble option \'MCMCdefaultSamplerAssignmentRules\'.
 #'@param warnNoSamplerAssigned A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
@@ -869,13 +890,10 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@seealso \code{\link{samplerAssignmentRules}}, \code{\link{buildMCMC}}
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
-                          useConjugacy = TRUE, onlyRW, onlySlice, multivariateNodesAsScalars = FALSE,
+                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
                           print = FALSE, autoBlock = FALSE, oldConf,
                           rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
-
-    if(!missing(onlyRW))    warning('onlyRW argument has been deprecated')
-    if(!missing(onlySlice)) warning('onlySlice argument has been deprecated')
     
     if(class(rules) != 'samplerAssignmentRules') stop('rules argument must be a samplerAssignmentRules object')
 
@@ -894,6 +912,7 @@ configureMCMC <- function(model, nodes, control = list(),
     thisConf <- MCMCconf(model = model, nodes = nodes, control = control, rules = rules,
                          monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
                          useConjugacy = useConjugacy,
+                         onlyRW = onlyRW, onlySlice = onlySlice,
                          multivariateNodesAsScalars = multivariateNodesAsScalars,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
                          print = print)
