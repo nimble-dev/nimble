@@ -7,10 +7,92 @@
 #include <nimble/RcppUtils.h>
 #include <nimble/Utils.h>
 #include <nimble/accessorClasses.h>
-#include <nimble/optimTypes.h>
+#include <nimble/predefinedNimbleLists.h>
 #include <nimble/smartPtrs.h>
 #include <iostream>
 #undef eval
+
+SEXP new_EIGEN_EIGENCLASS() {
+    nimSmartPtr<EIGEN_EIGENCLASS> *ptrToSmartPtr;
+    EIGEN_EIGENCLASS *newObj;
+    SEXP SptrToSmartPtr;
+    newObj = new EIGEN_EIGENCLASS;
+    ptrToSmartPtr = new nimSmartPtr<EIGEN_EIGENCLASS>;
+    ptrToSmartPtr->setPtrFromT(newObj);
+    PROTECT(SptrToSmartPtr =
+                R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
+    UNPROTECT(1);
+    return (EIGEN_EIGENCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+}
+
+SEXP EIGEN_EIGENCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
+    return (R_MakeExternalPtr(
+        dynamic_cast<NamedObjects *>(reinterpret_cast<EIGEN_EIGENCLASS *>(
+            *static_cast<void **>(R_ExternalPtrAddr(input)))),
+        R_NilValue, R_NilValue));
+}
+
+SEXP EIGEN_EIGENCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
+    nimSmartPtrBase *ptrToSmartPtrBase;
+    nimSmartPtr<EIGEN_EIGENCLASS> *ptrToSmartPtr;
+    void *ptrToPtr;
+    SEXP SptrToSmartPtrBase;
+    SEXP SptrToPtr;
+    SEXP Sans;
+    ptrToSmartPtr =
+        static_cast<nimSmartPtr<EIGEN_EIGENCLASS> *>(R_ExternalPtrAddr(input));
+    ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase *>(ptrToSmartPtr);
+    ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();
+    PROTECT(SptrToSmartPtrBase =
+                R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
+    PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
+    PROTECT(Sans = allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(Sans, 0, SptrToSmartPtrBase);
+    SET_VECTOR_ELT(Sans, 1, SptrToPtr);
+    UNPROTECT(3);
+    return (Sans);
+}
+
+SEXP new_EIGEN_SVDCLASS() {
+    nimSmartPtr<EIGEN_SVDCLASS> *ptrToSmartPtr;
+    EIGEN_SVDCLASS *newObj;
+    SEXP SptrToSmartPtr;
+    newObj = new EIGEN_SVDCLASS;
+    ptrToSmartPtr = new nimSmartPtr<EIGEN_SVDCLASS>;
+    ptrToSmartPtr->setPtrFromT(newObj);
+    PROTECT(SptrToSmartPtr =
+                R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
+    UNPROTECT(1);
+    return (EIGEN_SVDCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+}
+
+SEXP EIGEN_SVDCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
+    return (R_MakeExternalPtr(
+        dynamic_cast<NamedObjects *>(reinterpret_cast<EIGEN_SVDCLASS *>(
+            *static_cast<void **>(R_ExternalPtrAddr(input)))),
+        R_NilValue, R_NilValue));
+}
+
+SEXP EIGEN_SVDCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
+    nimSmartPtrBase *ptrToSmartPtrBase;
+    nimSmartPtr<EIGEN_SVDCLASS> *ptrToSmartPtr;
+    void *ptrToPtr;
+    SEXP SptrToSmartPtrBase;
+    SEXP SptrToPtr;
+    SEXP Sans;
+    ptrToSmartPtr =
+        static_cast<nimSmartPtr<EIGEN_SVDCLASS> *>(R_ExternalPtrAddr(input));
+    ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase *>(ptrToSmartPtr);
+    ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();
+    PROTECT(SptrToSmartPtrBase =
+                R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
+    PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
+    PROTECT(Sans = allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(Sans, 0, SptrToSmartPtrBase);
+    SET_VECTOR_ELT(Sans, 1, SptrToPtr);
+    UNPROTECT(3);
+    return (Sans);
+}
 
 void OptimResultNimbleList::copyFromSEXP(SEXP S_nimList_) {
     SEXP S_pxData;

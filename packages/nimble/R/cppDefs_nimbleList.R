@@ -12,14 +12,23 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         inheritance <<- c(inheritance, 'pointedToBase')
                                       },
                                       getDefs = function() {
-                                        ans <- if(predefined){ ## prevents redefinition of EIGEN_EIGENCLASS or EIGEN_SVDCLASS
-                                          if(inherits(SEXPfinalizerFun, 'uninitializedField'))
-                                            list(SEXPgeneratorFun)
-                                          else
-                                            list(SEXPgeneratorFun, SEXPfinalizerFun)
+                                        if(predefined) {
+                                            ## Prevent redefinition of nimbleList classes that live
+                                            ## in predefinedNimbleLists.h and predefinedNumbleLists.cpp.
+                                            return(list())
+                                        } else if(name == 'EIGEN_SVDCLASS' || name == 'EIGEN_EIGENCLASS') {
+                                            ## Handle these two EITEN_ classes specially. They are implemented as an inheritance hierarchy,
+                                            ## so we cannot generate the class definitions (Nick and Perry understand why).
+                                            ## Note that this branch is only ever run under the control of generateStaticCode.R to
+                                            ## regenerate C++ code  in predefinedNimbleLists.h and predefinedNimbleLists.cpp.
+                                            defs <- c(SEXPgeneratorFun, ptrCastFun, ptrCastToPtrPairFun)
+                                            if(!inherits(SEXPfinalizerFun, 'uninitializedField')) {
+                                                defs <- c(defs, SEXPfinalizerFun)
+                                            }
+                                            return(defs)
+                                        } else {
+                                            return(c(callSuper(), ptrCastFun, ptrCastToPtrPairFun))
                                         }
-                                               else callSuper()
-                                        c(ans, ptrCastFun, ptrCastToPtrPairFun)
                                       },
                                       buildCastPtrToNamedObjectsPtrFun = function() {
                                           ## SEXP  nfRefClass_84_castPtrPtrToNamedObjectsPtrSEXP ( SEXP input )  {
@@ -36,26 +45,26 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                         externC = TRUE)
                                       },
                                       buildCastPtrToPtrPairFun = function() {
-## SEXP  nfRefClass_84_castDerivedPtrPtrToPairOfPtrsSEXP ( SEXP input )  {
-##   nimSmartPtrBase * ptrToSmartPtrBase;
-##   nimSmartPtr<nfRefClass_84> * ptrToSmartPtr;
-##   void * ptrToPtr;
-##   SEXP SptrToSmartPtrBase;
-##   SEXP SptrToPtr;
-##   SEXP Sans;
-
-##   ptrToSmartPtr = static_cast<nimSmartPtr<nfRefClass_84> *>(R_ExternalPtrAddr(input));
-##   ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase*>(ptrToSmartPtr);
-##   ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();
-##   reinterpret_cast<nfRefClass_84*>(*static_cast<void**>(ptrToPtr))->NO_hw();
- 
-##   PROTECT(SptrToSmartPtrBase = R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
-##   PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
-##   PROTECT(Sans = allocVector(VECSXP,2));
-##   SET_VECTOR_ELT(Sans,0,SptrToSmartPtrBase);
-##   SET_VECTOR_ELT(Sans,1,SptrToPtr);
-##   UNPROTECT(3);
-##   return(Sans);
+                                          ## SEXP  nfRefClass_84_castDerivedPtrPtrToPairOfPtrsSEXP ( SEXP input )  {
+                                          ##   nimSmartPtrBase * ptrToSmartPtrBase;
+                                          ##   nimSmartPtr<nfRefClass_84> * ptrToSmartPtr;
+                                          ##   void * ptrToPtr;
+                                          ##   SEXP SptrToSmartPtrBase;
+                                          ##   SEXP SptrToPtr;
+                                          ##   SEXP Sans;
+                                          ##
+                                          ##   ptrToSmartPtr = static_cast<nimSmartPtr<nfRefClass_84> *>(R_ExternalPtrAddr(input));
+                                          ##   ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase*>(ptrToSmartPtr);
+                                          ##   ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();
+                                          ##   reinterpret_cast<nfRefClass_84*>(*static_cast<void**>(ptrToPtr))->NO_hw();
+                                          ##
+                                          ##   PROTECT(SptrToSmartPtrBase = R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
+                                          ##   PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
+                                          ##   PROTECT(Sans = allocVector(VECSXP,2));
+                                          ##   SET_VECTOR_ELT(Sans,0,SptrToSmartPtrBase);
+                                          ##   SET_VECTOR_ELT(Sans,1,SptrToPtr);
+                                          ##   UNPROTECT(3);
+                                          ##   return(Sans);
                                           ## }
                                           newName <- paste0(name, "_castDerivedPtrPtrToPairOfPtrsSEXP")
 
@@ -69,7 +78,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           newCodeLine <- cppLiteral(c(paste0('ptrToSmartPtr = static_cast<nimSmartPtr<',name,'>* >(R_ExternalPtrAddr(input));'),
                                                                       'ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase*>(ptrToSmartPtr);',
                                                                       'ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();',
-                                                                 ##     paste0('reinterpret_cast<',name,'*>(*static_cast<void**>(ptrToPtr))->NO_hw();'),
                                                                       'PROTECT(SptrToSmartPtrBase = R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));',
                                                                       'PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));'))
                                           allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = allocVector(VECSXP,', 2, '));'))
@@ -91,30 +99,32 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                               returnType = cppSEXP(),
                                                                               externC = TRUE)                                          
                                       },
-                                      buildSEXPgenerator = function(finalizer = NULL) { ## build a function that will provide a new object and return an external pointer
-                                          ## This differs from general cppClassDef case
-                                          ## because we will return a pointer to a smartPtr to a nimbleList object
-                                          ## the pointer to the smartPtr will be case to base class nimSmartPtrBase, which has a virtual casting
-                                          ## member function
+                                      buildSEXPgenerator = function(finalizer = NULL) {
+                                          ## Build a function that will provide a new object and return an external pointer.
                                           ##
-                                          ## and also we'll return a ptr to a the realPtr (a double pointer to the object)
-
+                                          ## This differs from general cppClassDef case
+                                          ## because we will return a pointer to a smartPtr to a nimbleList object.
+                                          ## The pointer to the smartPtr will be case to base class nimSmartPtrBase, which has a virtual casting
+                                          ## member function.
+                                          ##
+                                          ## We'll also return a ptr to a the realPtr (a double pointer to the object).
+                                          ##
                                           ## Example output:
-
+                                          ##
                                           ## SEXP  new_nfRefClass_84 (  )  {
-##   nimSmartPtr<nfRefClass_84> * ptrToSmartPtr;
-##   nfRefClass_84 * newObj;
-##   SEXP SptrToSmartPtr;
-  
-##   newObj = new  nfRefClass_84 ;
-##   ptrToSmartPtr = new nimSmartPtr<nfRefClass_84>;
-##   ptrToSmartPtr->setPtrFromT(newObj);
-##   (*ptrToSmartPtr)->NO_hw();
-  
-##   PROTECT(SptrToSmartPtr = R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
-##   UNPROTECT(1);
-##   return(nfRefClass_84_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
-## }
+                                          ##   nimSmartPtr<nfRefClass_84> * ptrToSmartPtr;
+                                          ##   nfRefClass_84 * newObj;
+                                          ##   SEXP SptrToSmartPtr;
+                                          ##
+                                          ##   newObj = new  nfRefClass_84 ;
+                                          ##   ptrToSmartPtr = new nimSmartPtr<nfRefClass_84>;
+                                          ##   ptrToSmartPtr->setPtrFromT(newObj);
+                                          ##   (*ptrToSmartPtr)->NO_hw();
+                                          ##
+                                          ##   PROTECT(SptrToSmartPtr = R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
+                                          ##   UNPROTECT(1);
+                                          ##   return(nfRefClass_84_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+                                          ## }
 
                                           extPtrTypes <<- c('ptrToSmartPtr','ptrToPtrToObject')
 
@@ -124,7 +134,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           newCodeLine <- cppLiteral(c(paste('newObj = new ',name,';'),
                                                                       paste0('ptrToSmartPtr = new nimSmartPtr<',name,'>;'),
                                                                       'ptrToSmartPtr->setPtrFromT(newObj);',
-                                                                ##      '(*ptrToSmartPtr)->NO_hw();',
                                                                       'PROTECT(SptrToSmartPtr = R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));'))
                                                                       
                                           codeLines <- substitute({
@@ -165,16 +174,13 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           addListSymbols()
                                           buildCastPtrToNamedObjectsPtrFun()
                                           buildCastPtrToPtrPairFun()
-                                          if(predefined){
-                                            callSuper(where)
-                                          }
-                                          else{
+                                          if(!predefined){
                                               buildCopyFromSexp()
                                               buildCopyToSexp()
                                               buildCreateNewSexp()
                                               buildResetFlags()
-                                              callSuper(where)
                                           }
+                                          callSuper(where)
                                       },
                                       buildCreateNewSexp = function(){
                                         interfaceArgs <- symbolTable()
