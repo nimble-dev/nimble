@@ -365,7 +365,7 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #' @field counts A two-element integer vector giving the number of calls to fn and gr respectively.
 #' @field convergence An integer code. 0 indicates successful completion. Possible error codes are
 #'        1 indicates that the iteration limit maxit had been reached.
-#'        10 indicates degeneracy of the Nelder–Mead simplex.
+#'        10 indicates degeneracy of the Nelder-Mead simplex.
 #'        51 indicates a warning from the "L-BFGS-B" method; see component message for further details.
 #'        52 indicates an error from the "L-BFGS-B" method; see component message for further details.
 #' @field message A character string giving any additional information returned by the optimizer, or NULL.
