@@ -22,7 +22,7 @@ One can also install from the package version on our website; in general there i
 install.packages("nimble", type = "source", repos = "http://r-nimble.org")
 ```
 
-Or use `R CMD INSTALL` after downloading from our [website](http://r-nimble.org/download-nimble)
+Or use `R CMD INSTALL` after downloading from our [website](http://r-nimble.org/download-nimble).
 
 ## Citation
 
@@ -36,6 +36,6 @@ The development of NIMBLE has been funded by:
 * an NSF SI2-SSI grant  (ACI-1550488) to P. de Valpine, C. Paciorek, and D. Temple Lang; and
 * an NSF Collaborative Research grant (DMS-1622444) to P. de Valpine, A. Rodriguez, and C. Paciorek.
 
-with additional support provided by postdoctoral funding for D. Turek from the Berkeley Institute for Data Science and Google Summer of Code fellowships for N. Michaud (2015) and Colin Lewis-Beck (2017).
+with additional support provided by postdoctoral funding for D. Turek from the Berkeley Institute for Data Science and Google Summer of Code fellowships for N. Michaud (2015) and C. Lewis-Beck (2017).
 
 

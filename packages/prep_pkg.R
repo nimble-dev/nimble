@@ -51,12 +51,16 @@ S3methods <- c("as.matrix, CmodelValues",
 S3methods <- paste("S3method(", S3methods, ")", sep = "", collapse = "\n")
 
 ## need everything exported for roxygenization to work...
-cat(paste(imports, importFroms, dynLibLine, S3methods, exportAllLine, sep = "\n", collapse = '\n'),
-    file = file.path("nimble", "NAMESPACE"))
+## cat(paste(imports, importFroms, dynLibLine, S3methods, exportAllLine, sep = "\n", collapse = '\n'),
+##     file = file.path("nimble", "NAMESPACE"))
 
-### 2. Create Rd files
+### 2. Create Rd files and original NAMESPACE
 
-roxygenize('nimble', 'rd')
+if(!file.exists(file.path('nimble','R','config.R')))
+    stop("You need a nimble/R/config.R file, but it must NOT be in the repository; you can probably do the following to create config.R from nimble/packages: 'make configure; cd nimble; ./configure'.")
+
+file.remove(file.path('nimble', 'NAMESPACE'))  ## roxygen2 doesn't want to overwrite if file not created by roxygen2
+roxygenize('nimble', c('namespace','rd'))
 
 ### 3. Create nimble-internals.Rd as CRAN-required documentation for internal functions that need to be exported
 
@@ -69,6 +73,7 @@ system(paste0("R CMD INSTALL nimble_", nimble_version, ".tar.gz"))
 library(nimble)
 
 funs <- ls('package:nimble')
+
 documentedFuns <- list.files(file.path("nimble", "man"), pattern = "*Rd$")
 documentedFuns <- sub(".Rd$", "", documentedFuns)
 
@@ -151,10 +156,10 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-math
 
 ### 5. Create final NAMESPACE file, which is careful about what is exported
 
-if(!file.exists(file.path('nimble','R','config.R')))
-    stop("You need a nimble/R/config.R file, but it must NOT be in the repository; you can probably do the following to create config.R from nimble/packages: 'make configure; cd nimble; ./configure'.")
-file.remove(file.path('nimble', 'NAMESPACE'))
-roxygenise('nimble','namespace')
+## if(!file.exists(file.path('nimble','R','config.R')))
+##     stop("You need a nimble/R/config.R file, but it must NOT be in the repository; you can probably do the following to create config.R from nimble/packages: 'make configure; cd nimble; ./configure'.")
+## file.remove(file.path('nimble', 'NAMESPACE'))  ## roxygen2 doesn't want to overwrite if file not created by roxygen2
+## roxygenise('nimble','namespace')
 
 namespace <- readLines(file.path('nimble','NAMESPACE'))
 

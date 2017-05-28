@@ -220,9 +220,9 @@ nimSvd <- function(x, vectors = 'full') {
 #'
 #' @author Christopher Paciorek
 #' @export
-#' @return \code{dflat} gives the pseudo-density value of 1, while \code{rflat} returns \code{NaN},
+#' @return \code{dflat} gives the pseudo-density value of 1, while \code{rflat} and \code{rhalfflat} return \code{NaN},
 #' since one cannot simulate from an improper distribution. Similarly, \code{dhalfflat}
-#' gives a pseudo-density value of 1 when \code{
+#' gives a pseudo-density value of 1 when \code{x} is non-negative.
 #' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples

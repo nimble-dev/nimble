@@ -388,7 +388,7 @@ optimResultNimbleList <- nimbleList(
 
 #' EXPERIMENTAL Data type for the \code{control} parameter of \code{\link{nimOptim}}
 #'
-#' \code{\link{nimbleList} definition for the type of \code{\link{nimbleList}} input as the \code{\link{control}} parameter
+#' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} input as the \code{\link{control}} parameter
 #' to \code{\link{nimOptim}}. See \code{\link{optim}} for details.
 #' 
 #' @export

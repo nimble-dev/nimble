@@ -1116,11 +1116,11 @@ nimRound <- round
 #'            For the "SANN" method it specifies a function to generate a new candidate point.
 #'            If it is the string "NULL" a default Gaussian Markov kernel is used.
 #' @param ... IGNORED
-#' @param method The method to be used. See `Details` section of \code\link{{optim}}. One of:
+#' @param method The method to be used. See `Details` section of \code{\link{optim}}. One of:
 #'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"
 #' @param lower Vector or scalar of lower bounds for parameters.
 #' @param lower Vector or scalar of upper bounds for parameters.
-#' @param control A list of control parameters. See ‘Details’ section of \code\link{{optim}}.
+#' @param control A list of control parameters. See ‘Details’ section of \code{\link{optim}}.
 #' @param hessian Logical. Should a Hessian matrix be returned?
 #'
 #' @return \code{\link{optimResultNimbleList}}
