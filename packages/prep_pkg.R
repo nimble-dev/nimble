@@ -50,19 +50,9 @@ S3methods <- c("as.matrix, CmodelValues",
 
 S3methods <- paste("S3method(", S3methods, ")", sep = "", collapse = "\n")
 
-## need everything exported for roxygenization to work...
-## cat(paste(imports, importFroms, dynLibLine, S3methods, exportAllLine, sep = "\n", collapse = '\n'),
-##     file = file.path("nimble", "NAMESPACE"))
-
-### 2. Create Rd files and original NAMESPACE
-
-if(!file.exists(file.path('nimble','R','config.R')))
-    stop("You need a nimble/R/config.R file, but it must NOT be in the repository; you can probably do the following to create config.R from nimble/packages: 'make configure; cd nimble; ./configure'.")
-
-file.remove(file.path('nimble', 'NAMESPACE'))  ## roxygen2 doesn't want to overwrite if file not created by roxygen2
-roxygenize('nimble', c('namespace','rd'))
-
-### 3. Create nimble-internals.Rd as CRAN-required documentation for internal functions that need to be exported
+## create basic NAMESPACE just for purpose of loading package and seeing all functions
+cat(paste(imports, importFroms, dynLibLine, S3methods, exportAllLine, sep = "\n", collapse = '\n'),
+     file = file.path("nimble", "NAMESPACE"))
 
 system("R CMD build nimble")
 
@@ -73,6 +63,16 @@ system(paste0("R CMD INSTALL nimble_", nimble_version, ".tar.gz"))
 library(nimble)
 
 funs <- ls('package:nimble')
+
+### 2. Create Rd files and first-pass NAMESPACE with exports
+
+if(!file.exists(file.path('nimble','R','config.R')))
+    stop("You need a nimble/R/config.R file, but it must NOT be in the repository; you can probably do the following to create config.R from nimble/packages: 'make configure; cd nimble; ./configure'.")
+
+file.remove(file.path('nimble', 'NAMESPACE'))  ## roxygen2 doesn't want to overwrite if file not created by roxygen2
+roxygenize('nimble', c('namespace','rd'))
+
+### 3. Create nimble-internals.Rd as CRAN-required documentation for internal functions that need to be exported
 
 documentedFuns <- list.files(file.path("nimble", "man"), pattern = "*Rd$")
 documentedFuns <- sub(".Rd$", "", documentedFuns)
