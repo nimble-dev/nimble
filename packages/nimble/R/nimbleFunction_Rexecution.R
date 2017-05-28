@@ -1118,7 +1118,7 @@ nimRound <- round
 #' @param method The method to be used. See \code{Details} section of \code{\link{optim}}. One of:
 #'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"
 #' @param lower Vector or scalar of lower bounds for parameters.
-#' @param lower Vector or scalar of upper bounds for parameters.
+#' @param upper Vector or scalar of upper bounds for parameters.
 #' @param control A list of control parameters. See \code{Details} section of \code{\link{optim}}.
 #' @param hessian Logical. Should a Hessian matrix be returned?
 #'

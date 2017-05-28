@@ -659,6 +659,7 @@ rule <- setRefClass(
 #' @author Daniel Turek
 #' @seealso \code{\link{configureMCMC}}
 #' @examples
+#' \dontrun{
 #' ## enable the use of samplerAssignmentRules:
 #' nimbleOptions(MCMCuseSamplerAssignmentRules = TRUE)
 #' 
@@ -684,6 +685,7 @@ rule <- setRefClass(
 #' 
 #' ## reset configureMCMC() to use default rules
 #' nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
+#' }
 samplerAssignmentRules <- setRefClass(
     Class = 'samplerAssignmentRules',
     fields = list(

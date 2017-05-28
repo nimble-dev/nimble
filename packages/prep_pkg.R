@@ -64,7 +64,9 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
                        "[[<-,nimbleFunctionList-method",
                        "[,distributionsClass-method",
                        "[[,distributionsClass-method",
-                       "[[,conjugacyRelationshipsClass-method")
+                       "[[,conjugacyRelationshipsClass-method",
+                       "dsqrtinvgamma",
+                       "rsqrtinvgamma")
 
 additionalExports <- c("calc_dmnormConjugacyContributions",
                        "calc_dmnormAltParams",
@@ -102,7 +104,6 @@ mathFuns <- c('cloglog',
               'loggam',
               'logit',
               'nimEquals',
-              'nimOptim',
               'nimRound',
               'nimStep',
               'nimSwitch',

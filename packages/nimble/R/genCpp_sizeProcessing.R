@@ -2554,7 +2554,7 @@ sizeUnaryReduction <- function(code, symTab, typeEnv) {
 sizeReturn <- function(code, symTab, typeEnv) {
     if(length(code$args) > 1) stop(exprClassProcessingErrorMsg(code, 'return has argument length > 1.'), call. = FALSE)
     code$toEigenize <- 'no'
-    if(!exists('return', env = typeEnv)) stop(exprClassProcessingErrorMsg(code, 'There was no returnType declaration and the default is missing.'), call. = FALSE)
+    if(!exists('return', envir = typeEnv)) stop(exprClassProcessingErrorMsg(code, 'There was no returnType declaration and the default is missing.'), call. = FALSE)
 
     if(length(code$args) == 0) {
         if(!identical(typeEnv$return$type, 'void'))

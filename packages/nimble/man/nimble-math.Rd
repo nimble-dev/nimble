@@ -13,7 +13,6 @@
 \alias{loggam}
 \alias{logit}
 \alias{nimEquals}
-\alias{nimOptim}
 \alias{nimRound}
 \alias{nimStep}
 \alias{nimSwitch}
