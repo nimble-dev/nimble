@@ -22,6 +22,10 @@ in particular check exact results vs previous versions (ignore differences in co
 doing this test by test because of DLL unloading issue
 types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists errors filtering getBound getDependencies getDistributionInfo getParam graphStructure math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList nimbleList_RCfun numericTypes setData size trunc types user"
 for type in $types; do
+Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" > /tmp/test-results-v${VERSION}-${type} 2>&1
+done
+
+for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
 done
 
