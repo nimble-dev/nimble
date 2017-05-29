@@ -4,18 +4,15 @@
 \alias{buildMCEM}
 \title{Builds an MCEM algorithm from a given NIMBLE model}
 \usage{
-buildMCEM(model, latentNodes, getAsympCov = TRUE, burnIn = 500,
-  mcmcControl = list(adaptInterval = 100), boxConstraints = list(),
-  buffer = 10^-6, alpha = 0.25, beta = 0.25, gamma = 0.05, C = 0.001,
-  numReps = 300, verbose = TRUE)
+buildMCEM(model, latentNodes, burnIn = 500, mcmcControl = list(adaptInterval
+  = 100), boxConstraints = list(), buffer = 10^-6, alpha = 0.25,
+  beta = 0.25, gamma = 0.05, C = 0.001, numReps = 300, verbose = TRUE)
 }
 \arguments{
 \item{model}{a nimble model}
 
 \item{latentNodes}{character vector of the names of the stochastic nodes to integrated out. Names can be expanded, but don't need to be. For example, if the model contains
 \code{x[1], x[2] and x[3]} then one could provide either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or \code{latentNodes = 'x'}.}
-
-\item{getAsympCov}{logical indicating whether function for estimating the asymptotic covariance should be returned; this feature is currently EXPERIMENTAL}
 
 \item{burnIn}{burn-in used for MCMC sampler in E step}
 
@@ -41,7 +38,7 @@ buildMCEM(model, latentNodes, getAsympCov = TRUE, burnIn = 500,
 an R list with two elements:
 \itemize{
 \item{\code{run}} {A function that when called runs the MCEM algorithm. This function takes the arguments listed in \code{run} Arguments below.}
-\item{\code{estimateCov}} {An experimental function that when called estimates the asymptotic covariance of the parameters.  The covariance is estimated using the method of Louis (1982).
+\item{\code{estimateCov}} {An EXPERIMENTAL function that when called estimates the asymptotic covariance of the parameters.  The covariance is estimated using the method of Louis (1982).
 This function takes the arguments listed in \code{estimateCov} Arguments below.}
 }
 }

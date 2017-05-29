@@ -19,6 +19,7 @@
 \alias{rsqrtinvgamma}
 \alias{calc_dmnormConjugacyContributions}
 \alias{calc_dmnormAltParams}
+\alias{calc_dwishAltParams}
 \alias{getNodeFunctionIndexedInfo}
 \alias{singleModelValuesAccess}
 \alias{getNimbleProject}
