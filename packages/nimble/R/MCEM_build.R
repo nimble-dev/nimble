@@ -104,7 +104,6 @@ getMCEMRanges <- nimbleFunction(
 #' @param model a nimble model 
 #' @param latentNodes character vector of the names of the stochastic nodes to integrated out. Names can be expanded, but don't need to be. For example, if the model contains
 #' \code{x[1], x[2] and x[3]} then one could provide either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or \code{latentNodes = 'x'}.
-#' @param getAsympCov logical indicating whether function for estimating the asymptotic covariance should be returned; this feature is currently EXPERIMENTAL
 #' @param burnIn burn-in used for MCMC sampler in E step
 #' @param mcmcControl	list passed to \code{configureMCMC}, which builds the MCMC sampler. See \code{help(configureMCMC)} for more details
 #' @param boxConstraints list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.  Any nodes that are not given constrains will have their constraints automatically determined by NIMBLE
@@ -184,7 +183,7 @@ getMCEMRanges <- nimbleFunction(
 #' }
 #' # Could also use latentNodes = 'theta' and buildMCEM() would figure out this means 'theta[1:10]'
 #' 
-buildMCEM <- function(model, latentNodes, getAsympCov = TRUE, burnIn = 500 , mcmcControl = list(adaptInterval = 100),
+buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adaptInterval = 100),
                       boxConstraints = list(), buffer = 10^-6, alpha = 0.25, beta = 0.25, 
                       gamma = 0.05, C = 0.001, numReps = 300, verbose = TRUE) {
   latentNodes = model$expandNodeNames(latentNodes)
