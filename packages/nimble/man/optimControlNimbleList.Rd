@@ -3,7 +3,7 @@
 \docType{data}
 \name{optimControlNimbleList}
 \alias{optimControlNimbleList}
-\title{EXPERIMENTAL Data type for the 'control' parameter of \code{\link{nimOptim}}}
+\title{EXPERIMENTAL Data type for the \code{control} parameter of \code{\link{nimOptim}}}
 \format{\preformatted{List of 1
  $ new:function (...)  
 }}
@@ -11,7 +11,7 @@
 optimControlNimbleList
 }
 \description{
-\code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} input as the \code{\link{control}} parameter
+\code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} input as the \code{control} parameter
 to \code{\link{nimOptim}}. See \code{\link{optim}} for details.
 }
 \seealso{
