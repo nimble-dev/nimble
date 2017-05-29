@@ -70,6 +70,7 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
 
 additionalExports <- c("calc_dmnormConjugacyContributions",
                        "calc_dmnormAltParams",
+                       "calc_dwishAltParams",
                        "getNodeFunctionIndexedInfo",
                        "singleModelValuesAccess",
                        "getNimbleProject",
