@@ -372,7 +372,6 @@ rCalcDiffNodes <- function(model, nfv){
 #' @param nodeFunctionIndex For internal NIMBLE use only
 #' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \code{\link{simulate}})
 #' @author NIMBLE development team
-#' @export
 #' @details
 #' These functions expands the nodes and then process them in the model in the order provided.  Expanding nodes means turning 'y[1:2]' into c('y[1]','y[2]') if y is a vector of scalar nodes.
 #' Calculation is defined for a stochastic node as executing the log probability (density) calculation and for a deterministic node as calculating whatever function was provided on the right-hand side of the model declaration.
@@ -1116,11 +1115,11 @@ nimRound <- round
 #'            For the "SANN" method it specifies a function to generate a new candidate point.
 #'            If it is the string "NULL" a default Gaussian Markov kernel is used.
 #' @param ... IGNORED
-#' @param method The method to be used. See `Details` section of \code\link{{optim}}. One of:
+#' @param method The method to be used. See \code{Details} section of \code{\link{optim}}. One of:
 #'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"
 #' @param lower Vector or scalar of lower bounds for parameters.
-#' @param lower Vector or scalar of upper bounds for parameters.
-#' @param control A list of control parameters. See ‘Details’ section of \code\link{{optim}}.
+#' @param upper Vector or scalar of upper bounds for parameters.
+#' @param control A list of control parameters. See \code{Details} section of \code{\link{optim}}.
 #' @param hessian Logical. Should a Hessian matrix be returned?
 #'
 #' @return \code{\link{optimResultNimbleList}}

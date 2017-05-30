@@ -421,7 +421,7 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
                         asserts <- c(asserts, sizeInsertIntermediate(code, thisArgIndex, symTab, typeEnv))
                     thisType <- arithmeticOutputType(thisType, code$args[[thisArgIndex]]$type)
                 } else {
-                    thisType <- 'double'
+                    thisType <- storage.mode(code$args[[thisArgIndex]]) ##'double'
                 }
                 ## Putting a map, or a values access, through parse(nimDeparse) won't work
                 ## So we lift any expression element above.
@@ -752,7 +752,7 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
 
     annotationSizeExprs <- lapply(cSizeExprs$args, nimbleGeneralParseDeparse) ## and this is for purposes of the sizeExprs in the AST exprClass object
     
-    missingSizes <- unlist(lapply(cSizeExprs$args, identical, as.numeric(NA)))
+    missingSizes <- unlist(lapply(cSizeExprs$args, function(x) identical(x, as.numeric(NA)) | identical(x, NA))) ## note is.na doesn't work b/c the argument can be an expression and is.na warns on that ##old: identical, as.numeric(NA)))
     ## only case where we do something useful with missingSizes is matrix(value = non-scalar, ...)
     if(any(missingSizes)) {
         ## modify sizes in generated C++ line
@@ -1348,6 +1348,13 @@ sizeforceEigenize <- function(code, symTab, typeEnv) {
     toEigs <- lapply(code$args, function(x) {
         if(inherits(x, 'exprClass')) x$toEigenize else 'unknown'
     })
+    toLift <- lapply(code$args, function(x) {
+        if(inherits(x, 'exprClass')) (identical(x$type, 'logical') & !x$isName) else FALSE
+    })
+    for(i in seq_along(toLift)) {
+        if(toLift[[i]])
+            asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv)) 
+    }
     code$toEigenize <- if(any( unlist(toEigs) %in% c('maybe', 'yes'))) 'yes' else 'no'
     code$type <- 'unknown'
     if(length(asserts) == 0) NULL else asserts
@@ -1551,7 +1558,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         RHStype <- RHS$type
         RHSsizeExprs <- RHS$sizeExprs
     } else {
-        if(is.numeric(RHS)) {
+        if(is.numeric(RHS) | is.logical(RHS)) {
             RHSname = ''
             RHSnDim <- 0
             RHStype <- storage.mode(RHS)
@@ -2547,10 +2554,39 @@ sizeUnaryReduction <- function(code, symTab, typeEnv) {
 sizeReturn <- function(code, symTab, typeEnv) {
     if(length(code$args) > 1) stop(exprClassProcessingErrorMsg(code, 'return has argument length > 1.'), call. = FALSE)
     code$toEigenize <- 'no'
-    if(length(code$args) == 0) return(invisible(NULL))
-    
+    if(!exists('return', envir = typeEnv)) stop(exprClassProcessingErrorMsg(code, 'There was no returnType declaration and the default is missing.'), call. = FALSE)
+
+    if(length(code$args) == 0) {
+        if(!identical(typeEnv$return$type, 'void'))
+            stop(exprClassProcessingErrorMsg(code, 'return() with no argument can only be used with returnType(void()), which is the default if there is no returnType() statement.'), call. = FALSE)
+        return(invisible(NULL))
+    }
+    if(identical(typeEnv$return$type, 'void'))
+        stop(exprClassProcessingErrorMsg(code, 'returnType was declared void() (default) (or something invalid), which is not consistent with the object you are trying to return.'), call. = FALSE)
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
+
+        if(typeEnv$return$type == 'nimbleList' || code$args[[1]]$type == 'nimbleList') {
+            if(typeEnv$return$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('return() argument is a nimbleList but returnType() statement gives a different type')), call. = FALSE)
+            if(code$args[[1]]$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('returnType statement gives a nimbleList type but return() argument is not the right type')), call. = FALSE)
+            ## equivalent to symTab$getSymbolObject(code$args[[1]]$name)$nlProc, if it is a name
+            if(!identical(code$args[[1]]$sizeExprs$nlProc, typeEnv$return$sizeExprs$nlProc)) stop(exprClassProcessingErrorMsg(code, paste0('nimbleList given in return() argument does not match nimbleList type declared in returnType()')), call. = FALSE)
+        } else { ## check numeric types and nDim
+            fail <- FALSE
+            if(!identical(code$args[[1]]$type, typeEnv$return$type)) {
+                if(typeEnv$return$nDim > 0) { ## allow scalar casting of returns without error
+                    failMsg <- paste0('Type ', code$args[[1]]$type, ' of the return() argument does not match type ',  typeEnv$return$type, ' given in the returnType() statement (void is default).')
+                    fail <- TRUE
+                }
+            }
+            if(!isTRUE(all.equal(code$args[[1]]$nDim, typeEnv$return$nDim))) {
+                failMsg <- paste0( if(exists("failMsg", inherits = FALSE)) paste0(failMsg,' ') else character(),
+                                  paste0('Number of dimensions ', code$args[[1]]$nDim, ' of the return() argument does not match number ',  typeEnv$return$nDim, ' given in the returnType() statement.'))
+                fail <- TRUE
+            }
+            if(fail)
+                stop(exprClassProcessingErrorMsg(code, failMsg), call. = FALSE)
+        }
         if(!code$args[[1]]$isName) {
             liftArg <- FALSE
             if(code$args[[1]]$toEigenize == 'yes')
