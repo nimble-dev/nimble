@@ -155,12 +155,17 @@ See also the numerous testing tools in [`test_utils.R`](https://github.com/nimbl
 
 and many undocumented test utilities.
 
+### Run tests with `test_package`
+
+Run tests locally using e.g. `test_package('nimble', 'my-component')` to test `$REPO/packages/nimble/inst/tests/test-my-component.R`.
+Note that although can be using either `test_package()` or directly via `Rscript`, the `Rscript` method fails to detect some errors.
+
 ## Style
 
 > Programs must be written for people to read,
-> and only incidentally for machines to execute.”
+> and only incidentally for machines to execute.
 >
-> -<cite>Harold Abelson, Structure and Interpretation of Computer Programs</cite>
+> --<cite>Harold Abelson, Structure and Interpretation of Computer Programs</cite>
 
 Try to be consistent with the code you're modifying.
 If in doubt, seek guidance from
