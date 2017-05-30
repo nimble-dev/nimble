@@ -52,7 +52,7 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     NimArr<1, double>& par, const std::string& method, NimArr<1, double>& lower,
     NimArr<1, double>& upper, nimSmartPtr<OptimControlNimbleList> control,
     bool hessian) {
-    NIM_ASSERT(!par.isMap(), "Internal error: failed to handle mapped NimArr");
+    NIM_ASSERT1(!par.isMap(), "Internal error: failed to handle mapped NimArr");
     const int n = par.dimSize(0);
 
     nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;
