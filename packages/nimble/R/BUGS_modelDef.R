@@ -1283,6 +1283,8 @@ splitCompletionForOrigNodes <- function(var2nodeOrigID, var2vertexID, maxOrigNod
     list(var2vertexID = var2vertexID, nextVertexID = nextVertexID) 
 }
 
+# could remove some of this and simply rely on having
+# mu_UNKNOWN_INDEX[i,1:4,3] with info that 2nd index is dynamic and therefore needs to be split if mu_UNKNOWN_INDEX[i,1:4,3] already sub'ed in before genExpandedNodeAndParent
 splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, indexNames = NULL, parentExpr, parentExprReplaced = NULL, parentIndexNamePieces, replacementNameExprs, nextVertexID, maxVertexID, rhsVarInfo = NULL, debug = FALSE) {
     if(debug) browser()
     ## parentIndexNamePieces: when there is an NA for a dynamic index, we should assume a split on the full range of values.
@@ -1553,18 +1555,28 @@ modelDefClass$methods(findDynamicIndexParticipants = function(debug = FALSE) {
         for(iDI in seq_along(declInfo)) {
             if(declInfo[[iDI]]$type == "unknownIndex") {
                 parentExpr <- declInfo[[iDI]]$symbolicParentNodes[[1]]
+                targetExpr <- declInfo[[iDI]]$targetExpr
                 varName <- declInfo[[iDI]]$rhsVars[1] # deparse(parentExpr[[2]])
                 dynamicIndices <- detectDynamicIndices(parentExpr)
                 ranges <- data.frame(rbind(varInfo[[varName]]$mins[dynamicIndices], varInfo[[varName]]$maxs[dynamicIndices]))
                 fullExtent <- lapply(ranges, function(x) 
                     substitute(X:Y, list(X = x[1], Y = x[2])))
                 parentExpr[which(dynamicIndices)+2] <- fullExtent
+                targetExpr[which(dynamicIndices)+2] <- fullExtent
                 declInfo[[iDI]]$symbolicParentNodes[[1]] <<- parentExpr
                 declInfo[[iDI]]$symbolicParentNodesReplaced[[1]] <<- parentExpr
+                declInfo[[iDI]]$targetExpr <<- targetExpr
+                declInfo[[iDI]]$targetExprReplaced <<- targetExpr
                 count <- 1
-                for(p in seq_along(declInfo[[iDI]]$parentIndexNamePieces[[1]]))
+                for(p in seq_along(declInfo[[iDI]]$parentIndexNamePieces[[1]])) # only one parent by construction
                     if(dynamicIndices[p]) {
-                        declInfo[[iDI]]$parentIndexNamePieces[[1]][[p]] <<- fullExtent[[count]]
+                        declInfo[[iDI]]$parentIndexNamePieces[[1]][[p]] <<- as.list(ranges[[count]])
+                        count <- count + 1
+                    }
+                count <- 1
+                for(p in seq_along(declInfo[[iDI]]$targetIndexNamePieces))
+                    if(dynamicIndices[p]) {
+                        declInfo[[iDI]]$targetIndexNamePieces[[p]] <<- as.list(ranges[[count]])
                         count <- count + 1
                     }
             } 
@@ -1675,6 +1687,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             next_origID <- next_origID + 1
         }
     }
+
     nodeNamesLHSall <- allNodeNames
     maxOrigNodeID <- next_origID - 1
     numNodeFunctions <<- maxOrigNodeID
@@ -1754,7 +1767,9 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         } else totModelSize <- totModelSize + if(varInfo[[iV]]$nDim == 0) 1 else prod(varInfo[[iV]]$maxs)
         varName <- varInfo[[iV]]$varName
         vars_2_vertexOrigID[[ varName ]] <- vars_2_nodeOrigID[[ varName ]]
+        # perhaps NA-out vars_2_nodeOrigID for unknownIndex vars here
     }
+    
 
     ## 4. Use RHS pieces to split vertices in vars_2_vertexOrigID
     ##    E.g. say x[1:2] ~ dmnorm(...)
@@ -1888,18 +1903,29 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     # add edges from mu_unkn_idx to y's here: perhaps insert mu_unknown_idx in place of mu in symbolicParentNodes and this should just work
 
     # should this use symbolicParentNodesReplaced?
-    ## replace 'mu[3,NA,i]' with '.mu_UNKNOWN_INDEX[3,NA,i]' so that edges from mu_UNKNOWN_INDEX to dependents will happen naturally
+    ## replace 'mu[3,NA,i]' in symbolicParentNodes (and parentIndexNamePieces with '.mu_UNKNOWN_INDEX[3,1:4,i]' so that edges from mu_UNKNOWN_INDEX to dependents will happen naturally
     if(nimbleOptions()$allowDynamicIndexing) {
-        browser()
         for(iDI in seq_along(declInfo)) {  
             BUGSdecl <- declInfo[[iDI]]
             for(node in seq_along(BUGSdecl$symbolicParentNodes)) {
-                symbolicParentNode <- declInfo[[iDI]]$symbolicParentNodes[[node]]
+                symbolicParentNode <- BUGSdecl$symbolicParentNodes[[node]]
                 if(isNameInExprList(quote(NA_real_), symbolicParentNode)) { # dynamic indexing
-                    originalRhsVar <- symbolicParentNode[[2]]
-                    declInfo[[iDI]]$symbolicParentNodes[[node]] <<- replaceVarNameWithUnknownIndexVarName(symbolicParentNode)
+                    originalRhsVar <- deparse(symbolicParentNode[[2]])
+                    dynamicIndices <- detectDynamicIndices(symbolicParentNode) 
+                    ranges <- data.frame(rbind(varInfo[[originalRhsVar]]$mins[dynamicIndices], varInfo[[originalRhsVar]]$maxs[dynamicIndices]))
+                    fullExtent <- lapply(ranges, function(x) 
+                        substitute(X:Y, list(X = x[1], Y = x[2])))
+                    symbolicParentNode[which(dynamicIndices)+2] <- fullExtent
+                    BUGSdecl$symbolicParentNodes[[node]] <- replaceVarNameWithUnknownIndexVarName(symbolicParentNode)
+                    BUGSdecl$symbolicParentNodesReplaced[[node]] <- replaceVarNameWithUnknownIndexVarName(symbolicParentNode)
                     rhsVar <- symbolicParentNode[[2]]
-                    declInfo[[iDI]]$rhsVars[declInfo[[iDI]]$rhsVars == originalRhsVar] <<- deparse(declInfo[[iDI]]$symbolicParentNodes[[node]][[2]])
+                    BUGSdecl$rhsVars[BUGSdecl$rhsVars == originalRhsVar] <- deparse(BUGSdecl$symbolicParentNodes[[node]][[2]])   
+                    count <- 1
+                    for(p in seq_along(BUGSdecl$parentIndexNamePieces[[node]])) 
+                        if(dynamicIndices[p]) {
+                            BUGSdecl$parentIndexNamePieces[[node]][[p]] <- as.list(ranges[[count]])
+                            count <- count + 1
+                        }
                 }
             }
         }
@@ -1913,6 +1939,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     for(iDI in seq_along(declInfo)) {    ## Iterate over BUGS lines
         BUGSdecl <- declInfo[[iDI]]
         if(BUGSdecl$numUnrolledNodes == 0) next
+        if(nimbleOptions()$allowDynamicIndexing)
+            if(BUGSdecl$type == "unknownIndex") next
         rhsVars <- BUGSdecl$rhsVars
         for(iV in seq_along(rhsVars)) {  ## Iterate over RHS vars
             
@@ -1939,7 +1967,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     if(debug) browser()
     for(iV in seq_along(varInfo)) {
         varName <- varInfo[[iV]]$varName
-        newEdges <- collectInferredVertexEdges(vars_2_nodeOrigID[[varName]], vars_2_vertexOrigID[[varName]])
+        if(nimbleOptions()$allowDynamicIndexing && varName %in% unknownIndexNames) {
+            baseVarName <- stripUnknownIndexFromVarName(varName) 
+            newEdges <- collectInferredVertexEdges(vars_2_vertexOrigID[[baseVarName]], vars_2_vertexOrigID[[varName]])
+        } else newEdges <- collectInferredVertexEdges(vars_2_nodeOrigID[[varName]], vars_2_vertexOrigID[[varName]])
         edgesFrom <- c(edgesFrom, newEdges[[1]])
         edgesTo <- c(edgesTo, newEdges[[2]])
         edgesParentExprID <- c(edgesParentExprID, rep(NA, length(newEdges[[1]])))
@@ -2594,6 +2625,12 @@ getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {
         ans
     } else
         NULL
+}
+
+stripUnknownIndexFromVarName <- function(varName) {
+    tmp <- gsub("_UNKNOWN_INDEX", "", varName)
+    return(gsub("^.", "", tmp))
+    
 }
 
 replaceVarNameWithUnknownIndexVarName <- function(parentExpr) {
