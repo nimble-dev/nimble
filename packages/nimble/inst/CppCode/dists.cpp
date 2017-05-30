@@ -1106,7 +1106,7 @@ double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double p
   dens += -0.5 * (df + n) * log(1 + tmp / df);
   
   if(!overwrite_inputs)
-    delete xCopy;
+    delete [] xCopy;
 
   return give_log ? dens : exp(dens);
 }
