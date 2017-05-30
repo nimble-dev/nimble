@@ -1112,7 +1112,12 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
-
+                                           parents <- BUGSdecl$allParentVarNames()
+                                           selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
+                                           parents <- c(selfWithNoInds, parents)
+                                           browser()
+                                           parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents)
+                                           parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, allSizeAndDimList = parentsSizeAndDims)
                                            altParams <- BUGSdecl$altParamExprs
                                            altParams <- lapply(altParams, nimble:::insertSingleIndexBrackets, modelDef$varInfo)
                                            bounds <- BUGSdecl$boundExprs
@@ -1127,14 +1132,10 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## make a unique name
                                            thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
-                                           
-                                           parents <- BUGSdecl$allParentVarNames()
-                                           # stochParents <- unlist(lapply(parents, function(name){
-                                           #   if(modelDef$varInfo[[name]]$anyStoch) return(name)
-                                           # }))
+
                                            
                                            nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, 
-                                                                                   parents = parents, logProbNodeExpr=logProbNodeExpr, type=type,
+                                                                                   parentsSizeAndDims = parentsSizeAndDims, logProbNodeExpr=logProbNodeExpr, type=type,
                                                                                    setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            # nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator

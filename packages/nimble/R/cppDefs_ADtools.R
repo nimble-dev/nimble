@@ -157,21 +157,20 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     iNextLine <- 1
     
     
-    
     for(iSym in seq_along(symNames)) {
         thisSymName <- symNames[iSym]
         if(thisSymName == 'ANS_') {
             thisSym <- targetFunDef$RCfunProc$compileInfo$returnSymbol
         } else {
-         if(isNode){
-           nameSubList <- targetFunDef$RCfunProc$nameSubList
-           thisName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisSymName))]
-           thisName <- paste0('model_', thisName)
-           thisSym <- targetFunDef$RCfunProc$compileInfo$origLocalSymTab$parentST$getSymbolObject(thisName)
-         }
-         else{
+         # if(isNode){
+         #   nameSubList <- targetFunDef$RCfunProc$nameSubList
+         #   thisName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisSymName))]
+         #   thisName <- paste0('model_', thisName)
+         #   thisSym <- targetFunDef$RCfunProc$compileInfo$origLocalSymTab$parentST$getSymbolObject(thisName)
+         # }
+         # else{
             thisSym <- nimbleSymTab$getSymbolObject(thisSymName)
-         }
+         # }
         }
         if(thisSym$nDim > 0) {
             setSizeCall <- do.call('call',c(list('setSize', quote(as.name(thisSymName))), as.list(thisSym$size))) 
@@ -206,12 +205,12 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     for(ivn in seq_along(independentVarNames)) {
         thisName <- independentVarNames[ivn]
         thisSym <- nimbleSymTab$getSymbolObject(thisName)
-        if(isNode){
-          nameSubList <- targetFunDef$RCfunProc$nameSubList
-          thisSymName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisName))]
-          thisSymName <- paste0('model_', thisSymName)
-          thisSym <- targetFunDef$RCfunProc$compileInfo$origLocalSymTab$parentST$getSymbolObject(thisSymName)
-        }
+        # if(isNode){
+        #   nameSubList <- targetFunDef$RCfunProc$nameSubList
+        #   thisSymName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisName))]
+        #   thisSymName <- paste0('model_', thisSymName)
+        #   thisSym <- targetFunDef$RCfunProc$compileInfo$origLocalSymTab$parentST$getSymbolObject(thisSymName)
+        # }
         if(thisSym$nDim > 0) {
             thisSizes <- thisSym$size
             sizeList <- lapply(thisSizes, function(x) c(1, x))
@@ -306,18 +305,21 @@ makeStaticInitClass <- function(cppDef, derivMethods) {
     cppClass
 }
 
-makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0, isNode) {
+makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0, parentIndexInfoList) {
     ## modeled closely parts of /*  */
     ## needs to set the ADtapePtr to one element of the ADtape
     TF <- RCfunctionDef$new() ## should it be static?
     TF$returnType <- cppVarFull(baseType = 'nimbleCppADinfoClass', ref = TRUE, name = 'RETURN_OBJ')
     TF$name <- newFunName
-    localVars <- symbolTable()
+    localVars <- symbolTable() 
+    isNode <- !inherits(parentIndexInfoList, 'uninitializedField')
     if(!isNode)
       TF$args <- targetFunDef$args
     else{
       TF$args <- symbolTable()
-      TF$args$addSymbol(targetFunDef$args$getSymbolObject('ARG1_INDEXEDNODEINFO__'))   
+      indexNodeInfoSym <- targetFunDef$args$getSymbolObject('ARG1_INDEXEDNODEINFO__')
+      indexNodeInfoSym$name <-'INDEXEDNODEINFO_' ## to conform with original R function indexing
+      TF$args$addSymbol(indexNodeInfoSym)   
     }
     
     ## set up index vars (up to 6)
@@ -339,14 +341,10 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
     totalIndependentLength <- 0
     for(ivn in seq_along(independentVarNames)) {
         thisName <- independentVarNames[ivn]
+        thisSym <- nimbleSymTab$getSymbolObject(thisName)
         if(isNode){
           nameSubList <- targetFunDef$RCfunProc$nameSubList
           thisName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisName))]
-          thisName <- paste0('model_', thisName)
-          thisSym <- targetFunDef$RCfunProc$compileInfo$origLocalSymTab$parentST$getSymbolObject(thisName)
-        }
-        else{
-          thisSym <- nimbleSymTab$getSymbolObject(thisName)
         }
         if(thisSym$nDim > 0) {
             thisSizes <- thisSym$size
@@ -355,9 +353,17 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
             newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
             copyIntoIndepVarCode[[ivn+1]] <- newRcode 
             totalIndependentLength <- totalIndependentLength + prod(thisSizes)
-        } else {
-            copyIntoIndepVarCode[[ivn+1]] <- substitute({memberData(ADtapeSetup, independentVars)[netIncrement_] <- RHS; netIncrement_ <- netIncrement_ + 1}, list(RHS = as.name(thisName))) 
-            totalIndependentLength <- totalIndependentLength + 1
+        } 
+        else {
+          if(isNode){
+            indexName <- paste0("cppLiteral('(**model_", thisName, ")')", parentIndexInfoList[[thisName]])
+            RHS <- parse(text = substitute(INDEXNAME, list(INDEXNAME = as.name(indexName))))[[1]]
+          }
+          else{
+            RHS <- as.name(thisName)
+          } 
+          copyIntoIndepVarCode[[ivn+1]] <- substitute({memberData(ADtapeSetup, independentVars)[netIncrement_] <- RHS; netIncrement_ <- netIncrement_ + 1}, list(RHS = RHS)) 
+          totalIndependentLength <- totalIndependentLength + 1
         }
     }
     setSizeLine <- substitute(cppMemberFunction(resize(memberData(ADtapeSetup, independentVars), TIL)), list(TIL = totalIndependentLength))

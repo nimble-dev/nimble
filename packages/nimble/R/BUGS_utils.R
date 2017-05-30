@@ -45,6 +45,51 @@ determineNodeIndexSizes <- function(node) {
     return(sizes)
 }
 
+makeSizeAndDimList <- function(code, nodesToExtract, indexedNodeInfo = NULL, allSizeAndDimList = list()){
+  if(is.call(code)){
+    if(code[[1]] == '[') {
+      if(deparse(code[[2]]) %in% nodesToExtract){
+        thisCodeExprList <- list()
+        numInds <- length(code) - 2
+        codeLength <- c()
+        for(i in 1:numInds){
+          if(is.call(code[[i+2]]) && code[[i+2]][[1]] == ':'){
+            if(is.numeric(code[[i+2]][[2]])){
+              codeStartInd <- code[[i+2]][[2]]
+            }
+            else{
+              #codeStartInd <- indexedNodeInfo
+            }
+            if(is.numeric(code[[i+2]][[3]])){
+              codeEndInd <- code[[i+2]][[3]]
+            }
+            else{
+              
+            }
+            codeLength <- c(codeLength, codeEndInd - codeStartInd + 1)
+          }
+          else{
+            codeLength <- c(codeLength, 1)
+          }
+        }
+        thisCodeExprList$lengths <- codeLength
+        thisCodeExprList$nDim <- sum(codeLength > 1)
+        if(is.null(allSizeAndDimList[[deparse(code[[2]])]])) allSizeAndDimList[[deparse(code[[2]])]][[1]] <- thisCodeExprList
+        else allSizeAndDimList[[deparse(code[[2]])]][[length(allSizeAndDimList[[deparse(code[[2]])]]) + 1]] <- thisCodeExprList
+        return(allSizeAndDimList)
+      }
+    }
+    if(length(code) > 1){
+      for(i in 2:length(code)){
+        allSizeAndDimList <- makeSizeAndDimList(code[[i]], nodesToExtract, indexedNodeInfo, allSizeAndDimList)
+      }
+    }
+  }
+  return(allSizeAndDimList)
+}
+
+
+
 ## This should add model$ in front of any names that are not already part of a '$' expression
 addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     if(is.numeric(expr)) return(expr)
@@ -71,9 +116,6 @@ addModelDollarSign <- function(expr, exceptionNames = character(0)) {
 }
 
 removeIndices <- function(expr) {
-  if(is.numeric(expr)) return(expr)
-  if(is(expr, 'srcref')) return(expr)
-  if(is.name(expr)) return(expr)
   if(is.call(expr)) {
     if(expr[[1]] == '['){
       return(expr[[2]])

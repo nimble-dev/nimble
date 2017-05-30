@@ -189,7 +189,8 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
 cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                       contains = 'cppNimbleClassClass',
                                       fields = list(
-                                          nfProc = 'ANY' ## an nfProcessing class, needed to get the member data symbol table post-compilation
+                                          nfProc = 'ANY', ## an nfProcessing class, needed to get the member data symbol table post-compilation
+                                          parentIndexInfoList = 'ANY'
                                           ),
                                           methods = list(
                                               getDefs = function() {
@@ -208,12 +209,12 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               initialize = function(nfProc, isNode, debugCpp = FALSE, fromModel = FALSE, ...) {
                                                   callSuper(nfProc, debugCpp, fromModel, ...)
                                                   if(!missing(nfProc)) processNFproc(nfProc, debugCpp = debugCpp, fromModel = fromModel)
-                                                  
                                                   if(isNode) {
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassObj <- environment(nfProc$nfGenerator)$contains
                                                       if(is.null(baseClassObj)) {
                                                           inheritance <<- c(inheritance, 'nodeFun')
+                                                          parentIndexInfoList <<- environment(nfProc$nfGenerator)$parentIndexInfoList
                                                       }
                                                   }
                                               },
@@ -257,7 +258,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   newFunName <- paste0(funName, '_ADargumentTransfer_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   funIndex <- which(environment(nfProc$nfGenerator)$enableDerivs == funName) ## needed for correct index for allADtapePtrs_
-                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, nfProc$isNode)
+                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, parentIndexInfoList)
                                               },
                                               addStaticInitClass = function() {
                                                   neededTypeDefs[['staticInitClass']] <<- makeStaticInitClass(.self, environment(nfProc$nfGenerator)$enableDerivs) ##

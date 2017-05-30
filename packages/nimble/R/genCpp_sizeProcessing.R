@@ -1040,7 +1040,6 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 
 
 sizeNimDerivs <- function(code, symTab, typeEnv){
-  browser()
   if(code$args[[1]]$name == 'calculate'){
     calcDerivFlag <- T
     code$args[[1]]$name <- paste0(code$args[[1]]$name, 'WithArgs_deriv')
