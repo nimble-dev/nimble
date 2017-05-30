@@ -418,7 +418,7 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       }
                                       return(ans)                                      
                                   },
-expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE) {
+expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE) {
     if(length(graphID)==0) return(if(returnType=='names') character() else numeric())
     if(sort) 
         graphID <- sort(graphID)
