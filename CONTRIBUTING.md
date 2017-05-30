@@ -83,7 +83,7 @@ Note that `compileNimble()` requires all user-defined functions to exist in the 
           return(3.1415)
       })
       temporarilyAssignInGlobalNamespace(helper)  # <-- Make helper available.
-      fun <- numbleFunction(function(r = double(0)){
+      fun <- nimbleFunction(run = function(r = double(0)){
           returnType(double(0))
           return(helper() * r * r)
       })
