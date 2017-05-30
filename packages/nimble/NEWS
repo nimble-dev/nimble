@@ -3,6 +3,7 @@
 USER LEVEL CHANGES
 
 -- The functions returned from a call to buildMCEM() now include an estimateCov() method, which can be used to estimate the asymptotic covariance of model parameters at their MLE values.  
+
 -- nimbleLists can now be used in nimbleFunctions that do not have setup code.
 
 -- Enabled use of c(), rep(), seq(), diag() and ':' in BUGS code.
@@ -29,15 +30,17 @@ DEVELOPER LEVEL CHANGES
 
 BUG FIXES
 
--- Fixed bug preventing use of nimC() with an argument like model[[node]]
+-- Fixed underflow error in MCMC binary sampler.
 
--- Fixed model$getDependencies(nodes) to return only what is needed (and no extra) when nodes contains a subset of elements of a non-scalar node.  e.g. model$getDependencies('x[1]') if BUGS code has 'x[1:5] ~ dmnorm(...)'
+-- Fixed bug preventing use of nimC() with an argument like model[[node]].
+
+-- Fixed model$getDependencies(nodes) to return only what is needed (and no extra) when nodes contains a subset of elements of a non-scalar node.  e.g. model$getDependencies('x[1]') if BUGS code has 'x[1:5] ~ dmnorm(...)'.
 
 -- Fixed bug in model definition processing where some (rare) syntax could lead to very inefficient computation.
 
 -- Fixed bug when multiple nimbleFunctions with multiple levels of nesting led to incomplete inclusion of multiple .o files in compilation.
 
--- Fixed compilation of cases where a scalar is computed from vectors and then used in scalar operations, e.g. inprod(X, Y) + a
+-- Fixed compilation of cases where a scalar is computed from vectors and then used in scalar operations, e.g. inprod(X, Y) + a.
 
 -- Fixed bug where return(rnorm(2)) and some other cases of a return argument that is an expression returning a vector would fail to compile.
 
