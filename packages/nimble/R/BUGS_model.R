@@ -453,7 +453,7 @@ unique: should names be the unique names or should original ordering of nodes (a
 
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
                                       graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique)
-                                      expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType)
+                                      expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType, sort)
                                       ## if(sort) 
                                       ##     graphID <- sort(graphID)
                                       ## if(returnType == 'names'){
