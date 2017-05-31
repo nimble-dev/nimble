@@ -1,10 +1,10 @@
 language: r
+sudo: false
+cache: packages
 
 os:
   - linux
   - osx
-
-sudo: required
 
 warnings_are_errors: true
 
