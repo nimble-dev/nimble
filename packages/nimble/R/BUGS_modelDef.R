@@ -1761,13 +1761,13 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     ## A "vertex" is any vertex that will go in the graph.  This can include nodeFunctions, fractured nodeFunctions (e.g. if x[1:2] is declared but also used as x[1] and x[2], and RHSonly parts
     totModelSize <- 0
     for(iV in seq_along(varInfo)) {
-        if(nimbleOptions()$allowDynamicIndexing) {
-            if(!varInfo[[iV]]$varName %in% unknownIndexNames)  ## unknownIndex vars not part of model
-                totModelSize <- totModelSize + if(varInfo[[iV]]$nDim == 0) 1 else prod(varInfo[[iV]]$maxs)
-        } else totModelSize <- totModelSize + if(varInfo[[iV]]$nDim == 0) 1 else prod(varInfo[[iV]]$maxs)
+        ## if(nimbleOptions()$allowDynamicIndexing) {
+        ##     if(!varInfo[[iV]]$varName %in% unknownIndexNames)  ## unknownIndex vars not part of model
+        ##         totModelSize <- totModelSize + if(varInfo[[iV]]$nDim == 0) 1 else prod(varInfo[[iV]]$maxs)
+        ## } else
+        totModelSize <- totModelSize + if(varInfo[[iV]]$nDim == 0) 1 else prod(varInfo[[iV]]$maxs)
         varName <- varInfo[[iV]]$varName
         vars_2_vertexOrigID[[ varName ]] <- vars_2_nodeOrigID[[ varName ]]
-        # perhaps NA-out vars_2_nodeOrigID for unknownIndex vars here
     }
     
 
@@ -1898,6 +1898,12 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(!all(is.na(temp))) vars_2_vertexOrigID[[varInfo[[iV]]$varName]][] <- origVertexID_2_contigID[temp] 
     }
 
+    ## 7d. Treat unknownIndex variables like RHSonly with NAs in vars_2_nodeOrigID
+    if(nimbleOptions()$allowDynamicIndexing)
+        if(varInfo[[iV]]$varName %in% unknownIndexNames) {
+            vars_2_nodeOrigID[[ varName ]][!is.na(vars_2_nodeOrigID[[ varName ]])] <- NA   
+        }
+    
     ## SOMEWHERE put type labels for mu_UNKNOWN_INDEX
 
     # add edges from mu_unkn_idx to y's here: perhaps insert mu_unknown_idx in place of mu in symbolicParentNodes and this should just work
@@ -1909,7 +1915,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             BUGSdecl <- declInfo[[iDI]]
             for(node in seq_along(BUGSdecl$symbolicParentNodes)) {
                 symbolicParentNode <- BUGSdecl$symbolicParentNodes[[node]]
-                if(isNameInExprList(quote(NA_real_), symbolicParentNode)) { # dynamic indexing
+                if(isNameInExpr(quote(NA_real_), symbolicParentNode)) { # dynamic indexing
                     originalRhsVar <- deparse(symbolicParentNode[[2]])
                     dynamicIndices <- detectDynamicIndices(symbolicParentNode) 
                     ranges <- data.frame(rbind(varInfo[[originalRhsVar]]$mins[dynamicIndices], varInfo[[originalRhsVar]]$maxs[dynamicIndices]))
@@ -2087,6 +2093,11 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(any(boolNA))
             vars_2_nodeID_noNAs[[vN]][boolNA] <-  vars_2_vertexID[[vN]][boolNA] 
     }
+
+    ## FIXME: now that we removed declInfo for UNKNOWN_INDEX vars, the graphID_2declID is wrong for those vertices - should be 0
+    ## FIXME: maps$graphID_2_nodeFunctionName is messed up for UNKNOWN_INDEX vars - points to the corresponding non-UNKNOWN_INDEX variable: see vertexID_2_nodeID
+    ## FIXME: check maps$edgesParentExprID
+    ## FIXME: check maps$graphID_2_unrolledIndicesMatrixRow
     
     ## 12. Set up things needed for maps.
     maps <<- mapsClass$new()
@@ -2294,7 +2305,7 @@ modelDefClass$methods(stripUnknownIndexInfo = function() {
     # FIXME: figure out what node stuff needs removed because of unknownIndex "nodes"
     if(nimbleOptions()$allowDynamicIndexing) {
         declInfo[sapply(declInfo, function(x) x$type == 'unknownIndex')] <<- NULL
-        sapply(unknownIndexNames, function(x) assign(x, NULL, envir = varInfo))
+        # sapply(unknownIndexNames, function(x) assign(x, NULL, envir = varInfo)) # we may need the varInfo for the UNKNOWN_INDEX 'variables'
     }
 })
 
@@ -2639,6 +2650,6 @@ replaceVarNameWithUnknownIndexVarName <- function(parentExpr) {
 }
 
 detectDynamicIndices <- function(expr) {
-    if(expr[[1]] != "[") stop("whichDynamicIndices: 'expr' should be a bracket expression")
+    if(length(expr) == 1 || expr[[1]] != "[") return(FALSE) # stop("whichDynamicIndices: 'expr' should be a bracket expression")
     return(sapply(expr[3:length(expr)], identical, quote(NA_real_)))
 }
