@@ -4,6 +4,8 @@
 
 To file a bug or request a feature,
 [open an issue on Github](https://github.com/nimble-dev/nimble/issues/new).
+When possible, include a fully reproducible example demonstrating the error or unwanted behaviour.
+Please note your operating system, R version, and NIMBLE version (either CRAN X.X-X or git commit).
 
 ## Submitting code via pull requests
 
