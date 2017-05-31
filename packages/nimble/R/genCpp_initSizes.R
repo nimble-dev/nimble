@@ -49,7 +49,6 @@ addToTypeEnv <- function(sym, typeEnv, name) {
           nDim <- 0
         }  
         else {
-            ##assign(code$name, NULL, envir = typeEnv)
             return(typeEnv) ## symbol exists but it is something without numeric type info
         }
     } else {
