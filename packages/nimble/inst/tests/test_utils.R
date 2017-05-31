@@ -63,7 +63,7 @@ test_coreRfeature_internal <- function(input, verbose = TRUE, dirName = NULL) { 
   runFun <- gen_runFunCore(input)
   nfR <- nimbleFunction(run = runFun)
   ## This try is safe because failure is caught by expect_equal below
-  nfC <- try(compileNimble(nfR, dirName = dirName))
+  nfC <- try(compileNimble(nfR, dirName = dirName), silent = TRUE)
   compilerFailed <- inherits(nfC, 'try-error')
   expectCompilerFailed <- FALSE
   if(!is.null(input[['safeCompilerFail']]))
@@ -73,7 +73,6 @@ test_coreRfeature_internal <- function(input, verbose = TRUE, dirName = NULL) { 
   expect_equal(compilerFailed, expectCompilerFailed, info = paste0("Compiler worked or failed as expected: ", input$name) )
 
   if(compilerFailed) {
-      if(expectCompilerFailed) message('COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.')
       return();
   }
   
