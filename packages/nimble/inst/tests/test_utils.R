@@ -18,23 +18,6 @@ system.in.dir <- function(cmd, dir = '.') {
         system(cmd)
 }
 
-## Use this function to mark tests as known failures, e.g.
-## ```r
-##   test_that('This test is known to fail', {
-##       KNOWN_FAILURE('due to Eigen issue')
-##       # Rest of testing code here...
-##   })
-## ```
-## To run all tests including KNOWN_FAILURES, set an environment variable, e.g.
-## ```sh
-##   RUN_KNOWN_FAILURES=true Rscript nimble/inst/tests/test-sizes.R
-## ```
-KNOWN_FAILURE <- function(...) {
-    if(length(Sys.getenv('RUN_KNOWN_FAILURES')) == 0) {
-        skip(paste('Skipping KNOWN_FAILURE', ...))
-    }
-}
-
 ## This is useful for working around scoping issues with nimbleFunctions using other nimbleFunctions.
 temporarilyAssignInGlobalEnv <- function(value) {
     name <- deparse(substitute(value))
@@ -805,37 +788,34 @@ weightedMetricFunc <- function(index, samples, weights, metric, samplesToWeights
 }
 
 test_size <- function(input, verbose = TRUE) {
-    errorMsg <- paste0(ifelse(input$knownProblem, "KNOWN ISSUE: ", ""), "Result does not match ", input$expectPass)
+    if(is.null(input$expectPassWithConst)) input$expectPassWithConst <- input$expectPass
+    if(is.null(input$knownProblem)) input$knownProblem <- FALSE
+    if(is.null(input$knownProblemWithConst)) input$knownProblemWithConst <- input$knownProblem
+
     if(verbose) cat("### Testing", input$name, " with RHS variable ###\n")
-    result <- try(
+    code <- quote({
         m <- nimbleModel(code = input$expr, data = input$data, inits = input$inits)
-    )
-    try(test_that(paste0("Test 1 of size/dimension check: ", input$name),
-                  expect_equal(!is(result, "try-error"), input$expectPass,
-                              info = errorMsg)))
-    if(!is(result, "try-error")) {
-        result <- try(
-            { calculate(m); out <- calculate(m)} )
-        try(test_that(paste0("Test 2 of size/dimension check: ", input$name),
-                      expect_equal(!is(result, "try-error"), input$expectPass,
-                                  info = errorMsg)))
+        calculate(m)  ## Calculates from scratch.
+        calculate(m)  ## Uses cached value.
+    })
+    if(xor(input$expectPass, input$knownProblem)) {
+        test_that(paste(input$name, 'with RHS variable works as expected'), eval(code))
+    } else {
+        test_that(paste(input$name, 'with RHS variable fails as expected'), expect_error(eval(code)))
     }
-    
+
     if(verbose) cat("### Testing", input$name, "with RHS constant ###\n")
-    if(!is.null(input$expectPassWithConst)) input$expectPass <- input$expectPassWithConst
-    result <- try(
+    code <- quote({
         m <- nimbleModel(code = input$expr, data = input$data, constants = input$inits)
-    )
-    try(test_that(paste0("Test 3 of size/dimension check: ", input$name),
-                  expect_equal(!is(result, "try-error"), input$expectPass,
-                              info = errorMsg)))
-    if(!is(result, "try-error")) {
-        result <- try(
-            { calculate(m); out <- calculate(m)} )
-        try(test_that(paste0("Test 4 of size/dimension check: ", input$name),
-                      expect_equal(!is(result, "try-error"), input$expectPass,
-                                  info = errorMsg)))
+        calculate(m)  ## Calculates from scratch.
+        calculate(m)  ## Uses cached value.
+    })
+    if(xor(input$expectPassWithConst, input$knownProblemWithConst)) {
+        test_that(paste(input$name, 'with RHS constant works as expected'), eval(code))
+    } else {
+        test_that(paste(input$name, 'with RHS constant fails as expected'), expect_error(eval(code)))
     }
+
     invisible(NULL)
 }
 
