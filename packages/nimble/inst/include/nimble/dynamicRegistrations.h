@@ -11,6 +11,7 @@
 #include <nimble/NamedObjects.h>
 #include <nimble/dllFinalizer.h>
 #include <nimble/smartPtrs.h>
+#include <nimble/predefinedNimbleLists.h>
 
 #include <R_ext/Rdynload.h>
 
@@ -121,6 +122,20 @@ R_CallMethodDef CallEntries[] = {
   FUN(RNimble_Ptr_ManualFinalizer, 1),
   FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 2),
   FUN(CountDllObjects, 1),
+
+  // predefinedNimbleList
+  FUN(new_EIGEN_EIGENCLASS, 0),
+  FUN(EIGEN_EIGENCLASS_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(EIGEN_EIGENCLASS_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_EIGEN_SVDCLASS, 0),
+  FUN(EIGEN_SVDCLASS_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(EIGEN_SVDCLASS_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_OptimResultNimbleList, 0),
+  FUN(OptimResultNimbleList_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(OptimResultNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+  
   {NULL, NULL, 0}
 };
 
