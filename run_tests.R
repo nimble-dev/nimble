@@ -20,11 +20,11 @@ allTests <- row.names(testTimes)
 
 # Run each test in a separate process to avoid dll garbage overload.
 for (test in allTests) {
-    runViaTestthat <- FALSE  # TODO Fix test-size.R and set this to TRUE.
+    runViaTestthat <- TRUE  # TODO Fix test-size.R and set this to TRUE.
     if (runViaTestthat) {
         name <- gsub('test-(.*)\\.R', '\\1', test)
         script = paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "', name, '")')
-        commmand <- c('Rscript', '-e', shQuote(script))
+        command <- c('Rscript', '-e', shQuote(script))
     } else {
         command <- c('Rscript', file.path('packages', 'nimble', 'inst', 'tests', test))
     }

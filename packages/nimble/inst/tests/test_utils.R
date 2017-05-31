@@ -18,6 +18,23 @@ system.in.dir <- function(cmd, dir = '.') {
         system(cmd)
 }
 
+## Use this function to mark tests as known failures, e.g.
+## ```r
+##   test_that('This test is known to fail', {
+##       KNOWN_FAILURE('due to Eigen issue')
+##       # Rest of testing code here...
+##   })
+## ```
+## To run all tests including KNOWN_FAILURES, set an environment variable, e.g.
+## ```sh
+##   RUN_KNOWN_FAILURES=true Rscript nimble/inst/tests/test-sizes.R
+## ```
+KNOWN_FAILURE <- function(...) {
+    if(length(Sys.getenv('RUN_KNOWN_FAILURES')) == 0) {
+        skip(paste('Skipping KNOWN_FAILURE', ...))
+    }
+}
+
 ## This is useful for working around scoping issues with nimbleFunctions using other nimbleFunctions.
 temporarilyAssignInGlobalEnv <- function(value) {
     name <- deparse(substitute(value))
