@@ -1225,8 +1225,6 @@ SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
     void *vptr=0;
     tablePtr->push_back(indexedNodeInfo(static_cast<int *>(vptr), 0, 0));
     if(ncol != 0) {PRINTF("Warning from populateIndexedNodeInfoTable: nrow == 0 but ncol != 0.");}
-    UNPROTECT(1);
-    return(R_NilValue);
   } else {
 
     if(!isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
