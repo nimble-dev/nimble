@@ -474,11 +474,12 @@ testsLHSRHSmismatch <- list(
 )
 
 # for these we simply want errors caught at model-building not compilation
+if(0){
 sapply(testsScalar, test_size)
 sapply(testsMultivarParam, test_size)
 sapply(testsDeterm, test_size)
 sapply(testsMultivar, test_size)
 sapply(testsTrunc, test_size)
-
+}
 # for these we want errors caught by NIMBLE error-checking not by R errors at model-building
 sapply(testsLHSRHSmismatch, test_size_specific_error)
