@@ -18,17 +18,24 @@ for (test in allTests) {
 testTimes <- testTimes[order(testTimes),, drop = FALSE]
 allTests <- row.names(testTimes)
 
+# Run under /usr/bin/time -v if possible, to gather timing information.
+if (system2('/usr/bin/time', c('-v', 'ls'))) {
+    runner <- 'Rscript'
+} else {
+    runner <- c('/usr/bin/time', '-v', 'Rscript')
+}
+
 # Run each test in a separate process to avoid dll garbage overload.
 for (test in allTests) {
     runViaTestthat <- FALSE  # TODO Fix test-size.R and set this to TRUE.
     if (runViaTestthat) {
         name <- gsub('test-(.*)\\.R', '\\1', test)
         script = paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "', name, '")')
-        commmand <- c('Rscript', '-e', shQuote(script))
+        commmand <- c(runner, '-e', shQuote(script))
     } else {
-        command <- c('Rscript', file.path('packages', 'nimble', 'inst', 'tests', test))
+        command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
     }
-    if(system2('/usr/bin/time', c('-v', command))) {
+    if(system2(command[1], tail(command, -1))) {
         stop(paste('Failed', test))
     }
 }
