@@ -241,6 +241,37 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                       resampleData = FALSE,
                       topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL, removeAllDefaultSamplers = FALSE,
                       doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
+    origName <- name
+    if(is.null(name)) {
+        if(!missing(example)) {
+            name <- example
+        } else {
+            if(is.character(model)) {
+                name <- model
+            } else {
+                name <- 'unnamed case'
+            }
+        }
+   }
+    test_that(name, {
+        test_mcmc_internal(example, model, data, inits,
+                           verbose, numItsR, numItsC,
+                           basic, exactSample, results, resultsTolerance,
+                           numItsC_results,
+                           resampleData,
+                           topLevelValues, seed, mcmcControl, samplers, removeAllDefaultSamplers,
+                           doR, doCpp, returnSamples, name = origName
+                           )
+    })
+}
+
+test_mcmc_internal <- function(example, model, data = NULL, inits = NULL,
+                      verbose = TRUE, numItsR = 5, numItsC = 1000,
+                      basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
+                      numItsC_results = numItsC,
+                      resampleData = FALSE,
+                      topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL, removeAllDefaultSamplers = FALSE,
+                      doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
   # There are three modes of testing:
   # 1) basic = TRUE: compares R and C MCMC values and, if requested by passing values in 'exactSample', will compare results to actual samples (you'll need to make sure the seed matches what was used to generate those samples)
   # 2) if you pass 'results', it will compare MCMC output to known posterior summaries within tolerance specified in resultsTolerance
@@ -345,23 +376,14 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
       if(doR && doCpp && !is.null(R_samples)) {
           context(paste0("testing ", example, " MCMC"))
-          try(
-              test_that(paste0("test of equality of output from R and C versions of ", example, " MCMC"), {
-                  expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
-              })
-              )
+          expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
       }
-      if(is.null(R_samples)) {
-          cat("R MCMC failed.\n")
-      }
+      expect_false(is.null(R_samples), info = "R MCMC failed") 
 
       if(doCpp) {
           if(!is.null(exactSample)) {
               for(varName in names(exactSample))
-                  try(
-                      test_that(paste("Test of MCMC result against known samples for", example, ":", varName), {
-                          expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), round(exactSample[[varName]], 8)) })
-                      )
+                  expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), round(exactSample[[varName]], 8), info = paste0("Equality of compiled MCMC samples and known exact samples for variable ", varName))
           }
       }
 
@@ -398,11 +420,8 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
           diff <- abs(postResult[matched] - results[[metric]][[varName]])
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
-            try(
-              test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, strInfo, ")"), {
-                expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
-              })
-              )
+            expect_true(diff[ind] < resultsTolerance[[metric]][[varName]][ind],
+                        info = paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, strInfo, ")"))
           }
         }
       } else  { # 'cov'
@@ -413,11 +432,8 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
           diff <- c(abs(postResult - results[[metric]][[varName]]))
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
-            try(
-              test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo), {
-                expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
-              })
-              )
+            expect_true(diff[ind] < resultsTolerance[[metric]][[varName]][ind],
+                        info = paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo))
           }
         }
       }
@@ -451,7 +467,6 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     sapply(topNodesElements, function(x) Cmodel[[x]] <- topLevelValues[[x]])
     # check this works as side effect
     nontopNodes <- Rmodel$getDependencies(topNodes, self = FALSE, includeData = TRUE, downstream = TRUE, stochOnly = FALSE)
-    # nonDataNodes <- Rmodel$getDependencies(topNodes, self = TRUE, includeData = FALSE, downstream = TRUE, stochOnly = TRUE)
     nonDataNodesElements <- Rmodel$getDependencies(topNodes, self = TRUE, includeData = FALSE, downstream = TRUE, stochOnly = TRUE, returnScalarComponents = TRUE)
     dataVars <- unique(nimble:::removeIndexing(Rmodel$getDependencies(topNodes, dataOnly = TRUE, downstream = TRUE)))
     set.seed(seed)
@@ -480,17 +495,14 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     coverage <- sum(covered) / length(nonDataNodesElements)
     tolerance <- 0.15
     if(verbose)
-      cat("Coverage for model", example, "is", coverage*100, "%.\n")
+        cat("Coverage for model", example, "is", coverage*100, "%.\n")
     miscoverage <- abs(coverage - 0.95)
-    try(
-      test_that(paste("Test of MCMC coverage on known parameter values for:", example), {
-                expect_lt(miscoverage, tolerance)
-              })
-      )
     if(miscoverage > tolerance || verbose) {
       cat("True values with 95% posterior interval:\n")
       print(cbind(trueVals, t(interval), covered))
     }
+    expect_true(miscoverage < tolerance,
+                info = paste("Test of MCMC coverage on known parameter values for:", example))
   }
 
   cat("===== Finished MCMC test for ", name, ". =====\n", sep = "")
