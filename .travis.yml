@@ -1,5 +1,9 @@
 language: r
 
+os:
+  - linux
+  - osx
+
 sudo: required
 
 warnings_are_errors: true
