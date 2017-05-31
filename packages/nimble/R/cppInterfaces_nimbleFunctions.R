@@ -324,14 +324,32 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
     return(fieldList)
 }
 
+## This simply looks in the dll and then looks everywhere
+## It is a band-aid solution for the problem that predefined nimbleLists can have their functions in the sessionSpecificDll
+## but what may be at hand is the project dll
+nimbleTryGetNativeSymbolInfo <- function(symName, dll) {
+    ans <- try(getNativeSymbolInfo(symName, dll), silent = TRUE)
+    if(inherits(ans, 'try-error')) {
+        ans <- try(getNativeSymbolInfo(symName), silent  = TRUE)
+        if(inherits(ans, 'try-error')) stop(paste0('Unable to find compiled function ', symName,'.'), call.=FALSE)
+    }
+    ans
+}
+
 #### functions that are similar to what is created in makeNFBindingFields but are standalone and look up pointers each time
 getSetNimbleList <- function(vptr, name, value, cppDef, dll) {
     ## When missing value, we need the cppDef from the symTab of the assignment target
     ## from this we can get the castFun and the catToPtrPairFun
     ## When receiving value, we don't need anything more 
     if(missing(value)) {
-        existingExtPtrs <- eval(call('.Call', getNativeSymbolInfo(cppDef$ptrCastToPtrPairFun$name, dll), vptr) )
-        cppDef$Rgenerator( dll = dll, existingExtPtrs = existingExtPtrs )        
+        ## This simply looks in the dll and then looks everywhere
+        ## It is a band-aid solution for the problem that predefined nimbleLists can have their functions in the sessionSpecificDll
+        ## but what may be at hand is the project dll
+        nativeSymInfo <- nimbleTryGetNativeSymbolInfo(cppDef$ptrCastToPtrPairFun$name, dll)
+        dllToUse <- if(!is.null(nativeSymInfo$package)) nativeSymInfo$package else dll
+        
+        existingExtPtrs <- eval(call('.Call', nativeSymInfo, vptr) )
+        cppDef$Rgenerator( dll = dllToUse, existingExtPtrs = existingExtPtrs )        
     } else {
         if(is.list(value)) {
             ptrToPtr <- value[[1]]$ptrToPtrList[[ value[[2]] ]]
@@ -1386,6 +1404,15 @@ CmultiNimbleListClass <- setRefClass('CmultiNimbleListClass',
                                                  } else {
                                                      if(is.null(dll)) stop('In addInstance, DLL was not set and so must be provided when calling', call. = FALSE)
                                                      dll <<- dll       ## should only occur first time addInstance is called
+                                                     ## experimental fix to handle predefined lists.  more general fix is to provide sessionSpecificDll as the dll
+                                                     ## natSymInfo <- try(getNativeSymbolInfo(compiledNodeFun$ptrCastFun$name, dll))
+                                                     ## if(inherits(natSymInfo, 'try-error')) {
+                                                     ##     natSymInfo <- try(getNativeSymbolInfo(compiledNodeFun$ptrCastFun$name))
+                                                     ##     if(inherits(natSymInfo, 'try-error')) {
+                                                     ##         stop(paste0('Problem loading compiled function ', compiledNodeFun$ptrCastFun$name))
+                                                     ##     }
+                                                     ## }
+                                                     ## castFunSymbolInfo <<- natSymInfo
                                                      castFunSymbolInfo <<- getNativeSymbolInfo(compiledNodeFun$ptrCastFun$name, dll)
                                                  }
                                                  newObjPtrs <- eval(parse(text = ".Call(basePtrCall)", keep.source = FALSE))
