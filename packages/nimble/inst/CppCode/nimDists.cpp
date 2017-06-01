@@ -358,8 +358,8 @@ double nimArr_dcar_normal(NimArr<1, double> &x, NimArr<1, double> &adj, NimArr<1
   weightsptr = nimArrCopyIfNeeded<1, double>(weights, weightsCopy).getPtr();
   numptr = nimArrCopyIfNeeded<1, double>(num, numCopy).getPtr();
   
-  int K = x.size();
-  if(num.size() != K) {
+  int N = x.size();
+  if(num.size() != N) {
     _nimble_global_output<<"Error in nimArr_dcar_normal: x and num and different sizes.\n";
     nimble_print_to_R(_nimble_global_output);
   }
@@ -369,7 +369,7 @@ double nimArr_dcar_normal(NimArr<1, double> &x, NimArr<1, double> &adj, NimArr<1
     nimble_print_to_R(_nimble_global_output);
   }
   
-  double ans = dcar_normal(xptr, adjptr, weightsptr, numptr, tau, K, L, give_log);
+  double ans = dcar_normal(xptr, adjptr, weightsptr, numptr, tau, N, L, give_log);
   return(ans);
 }
 

@@ -2140,7 +2140,7 @@ SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP retu
   if(!isReal(x) || !isReal(adj) || !isReal(weights) || !isReal(num) || !isReal(tau) || !isLogical(return_log))
     RBREAK("Error (C_dcar_normal): invalid input type for one of the arguments.");
   
-  int K = LENGTH(x);
+  int N = LENGTH(x);
   int L = LENGTH(adj);
   
   double* c_x = REAL(x);
@@ -2152,13 +2152,13 @@ SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP retu
   SEXP ans;
   
   PROTECT(ans = allocVector(REALSXP, 1));
-  REAL(ans)[0] = dcar_normal(c_x, c_adj, c_weights, c_num, c_tau, K, L, give_log);
+  REAL(ans)[0] = dcar_normal(c_x, c_adj, c_weights, c_num, c_tau, N, L, give_log);
   
   UNPROTECT(1);
   return ans;
 }
 
-double dcar_normal(double* x, double* adj, double* weights, double* num, double tau, int K, int L, int give_log) {
+double dcar_normal(double* x, double* adj, double* weights, double* num, double tau, int N, int L, int give_log) {
   // This method implements the following density calculation:
   // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
   // where tau is precision, c = (number of islands + 1), and N is the length of x.
@@ -2170,22 +2170,22 @@ double dcar_normal(double* x, double* adj, double* weights, double* num, double 
   if(tau < 0) {
     return R_NaN;
   }
-  for(int i = 0; i < K; i++) {
+  for(int i = 0; i < N; i++) {
     if(num[i] == 0) {
       c++;
     }
     xi = x[i];
     for(int j = 0; j < num[i]; j++) {
       xj = x[ (int) adj[count] - 1 ];
-      lp = lp + weights[count] * pow(xi-xj,2);
+      lp += weights[count] * pow(xi-xj,2);
       count++;
     }
   }
   if(count != L) {
     ML_ERR_return_NAN;
   }
-  lp = lp * (-1/2.0) * tau;
-  lp = lp + (K-c)/2.0 * (log(tau) - M_LN_2PI);
+  lp *= (-1/2.0) * tau / 2.0;   // extra factor of (1/2) accounts for double-summing over all (xi,xj) pairs
+  lp += (N-c)/2.0 * (log(tau) - M_LN_2PI);
   if(give_log) {
     return(lp);
   }
