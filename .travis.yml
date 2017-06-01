@@ -1,6 +1,12 @@
 language: r
+sudo: false
+cache: packages
 
-sudo: required
+matrix:
+  include:
+    - os: linux
+    - os: osx
+      env: SKIP_EXPENSIVE_TESTS=TRUE
 
 warnings_are_errors: true
 
