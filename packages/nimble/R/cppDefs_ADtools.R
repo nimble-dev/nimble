@@ -77,31 +77,6 @@ recurseSetCppADExprs <- function(code, logicVal = TRUE){
 }
 
 
-## Generate a block of code for copying to or from CppAD objects, to or from original C++ objects
-## On the CppAD side, we are always flattening to 1D.
-##
-## The code this generates is embedded in the ADtapingFunction made by makeADtapingFunction
-##
-## Note this does some work similar to BUGScontextClass::embedCodeInForLoop
-makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, incrementIndex, isNode) {
-    indexNames <- names(indexList)
-    indexedBracketExpr <- do.call('call', c(list('[', as.name('TO_BE_REPLACED')), lapply(indexNames, as.name)), quote = TRUE)
-    if(indicesRHS) {
-        if(isNode)   RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = cppLiteral(paste0('(**', deparse(RHSvar), ')')))), list(indexedBracketExpr = indexedBracketExpr)))
-        else RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = RHSvar)), list(indexedBracketExpr = indexedBracketExpr)))
-        LHS <- substitute(A[i], list(A = LHSvar, i = incrementIndex))
-    } else {
-        LHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = LHSvar)), list(indexedBracketExpr = indexedBracketExpr)))
-        RHS <- substitute(A[i], list(A = RHSvar, i = incrementIndex))
-
-    }
-    innerCode <- substitute({LHS <- RHS; incrementIndex <- incrementIndex + 1;}, list(LHS = LHS, RHS = RHS, incrementIndex = incrementIndex))
-    for(i in length(indexList):1) {
-        newForLoop <- substitute(for(NEWINDEX_ in NEWSTART_:NEWEND_) INNERCODE, list(NEWINDEX_ = as.name(indexNames[i]), NEWSTART_ = indexList[[i]][1], NEWEND_ = indexList[[i]][2], INNERCODE = innerCode))
-        innerCode <- newForLoop
-    }
-    innerCode
-}
 
 ## This makes the function to be called once for CppAD taping
 ## It sets up AD variables, copies from regular variables into them
@@ -156,21 +131,12 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     setSizeLines <- vector('list', length(symNames) + 2) ## extra 2 are for the ADindependentVars and ADresponseVars
     iNextLine <- 1
     
-    
     for(iSym in seq_along(symNames)) {
         thisSymName <- symNames[iSym]
         if(thisSymName == 'ANS_') {
             thisSym <- targetFunDef$RCfunProc$compileInfo$returnSymbol
         } else {
-         # if(isNode){
-         #   nameSubList <- targetFunDef$RCfunProc$nameSubList
-         #   thisName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisSymName))]
-         #   thisName <- paste0('model_', thisName)
-         #   thisSym <- targetFunDef$RCfunProc$compileInfo$origLocalSymTab$parentST$getSymbolObject(thisName)
-         # }
-         # else{
             thisSym <- nimbleSymTab$getSymbolObject(thisSymName)
-         # }
         }
         if(thisSym$nDim > 0) {
             setSizeCall <- do.call('call',c(list('setSize', quote(as.name(thisSymName))), as.list(thisSym$size))) 
@@ -205,12 +171,6 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     for(ivn in seq_along(independentVarNames)) {
         thisName <- independentVarNames[ivn]
         thisSym <- nimbleSymTab$getSymbolObject(thisName)
-        # if(isNode){
-        #   nameSubList <- targetFunDef$RCfunProc$nameSubList
-        #   thisSymName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisName))]
-        #   thisSymName <- paste0('model_', thisSymName)
-        #   thisSym <- targetFunDef$RCfunProc$compileInfo$origLocalSymTab$parentST$getSymbolObject(thisSymName)
-        # }
         if(thisSym$nDim > 0) {
             thisSizes <- thisSym$size
             sizeList <- lapply(thisSizes, function(x) c(1, x))
@@ -305,14 +265,14 @@ makeStaticInitClass <- function(cppDef, derivMethods) {
     cppClass
 }
 
-makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0, parentIndexInfoList) {
+makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0, parentsSizeAndDims) {
     ## modeled closely parts of /*  */
     ## needs to set the ADtapePtr to one element of the ADtape
     TF <- RCfunctionDef$new() ## should it be static?
     TF$returnType <- cppVarFull(baseType = 'nimbleCppADinfoClass', ref = TRUE, name = 'RETURN_OBJ')
     TF$name <- newFunName
     localVars <- symbolTable() 
-    isNode <- !inherits(parentIndexInfoList, 'uninitializedField')
+    isNode <- !inherits(parentsSizeAndDims, 'uninitializedField')
     if(!isNode)
       TF$args <- targetFunDef$args
     else{
@@ -339,24 +299,48 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
     localVars$addSymbol( cppVar(name = 'netIncrement_', baseType = 'int') )
     copyIntoIndepVarCode[[1]] <- quote(netIncrement_ <- 1) 
     totalIndependentLength <- 0
+    ## need to get values, potentially from nimArrs of high dims.
+    ## general idea: instead of indexText, have expr for start for each dim.
+    ## if length > 1, pass the start info makeCopyingCodeBlock.
+    ## then, we can iterate over nimArray<double, 2>(i, j) for i = dim 1 start, j = dim 2 start e.g.  
+    ## Since total length per dim is known, end unnecessary.
     for(ivn in seq_along(independentVarNames)) {
         thisName <- independentVarNames[ivn]
         thisSym <- nimbleSymTab$getSymbolObject(thisName)
         if(isNode){
           nameSubList <- targetFunDef$RCfunProc$nameSubList
           thisName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisName))]
+          thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", thisName)) ## extract 1, 2, etc. from end of arg name
+          thisName <- sub("_[0-9]+$","",thisName)
+          thisModelName <- paste0('model_', thisName) ## add model_ at beginning and remove _1, _2, etc. at end of arg name
+          thisSizeAndDims <- parentsSizeAndDims[[thisName]][[thisModelElementNum]]
         }
         if(thisSym$nDim > 0) {
             thisSizes <- thisSym$size
-            sizeList <- lapply(thisSizes, function(x) c(1, x))
+            if(isNode){
+              sizeList <- list()
+              for(i in 1:length(thisSizeAndDims$lengths)){
+                sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]], 
+                                   parse(text = paste0(deparse(thisSizeAndDims$indexExpr[[i]]), ' + ', thisSizeAndDims$lengths[i], ' - ', 1))[[1]])
+              }
+            }
+            else{
+              sizeList <- lapply(thisSizes, function(x) c(1, x))
+            }
             names(sizeList) <- indexVarNames[1:length(sizeList)]
-            newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
+            newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisModelName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
             copyIntoIndepVarCode[[ivn+1]] <- newRcode 
             totalIndependentLength <- totalIndependentLength + prod(thisSizes)
         } 
         else {
           if(isNode){
-            indexName <- paste0("cppLiteral('(**model_", thisName, ")')", parentIndexInfoList[[thisName]])
+            if(length(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$lengths) > 1)
+              indexBracketInfo <- paste0('(', 
+                                         paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr, deparse), collapse = ', '),
+                                        ')')
+            else
+              indexBracketInfo <- paste0('[', deparse(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]]), ']')
+            indexName <- paste0("cppLiteral('(**", thisModelName, ")')", indexBracketInfo)
             RHS <- parse(text = substitute(INDEXNAME, list(INDEXNAME = as.name(indexName))))[[1]]
           }
           else{
@@ -374,6 +358,34 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
     TF$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
     TF
 }
+
+## Generate a block of code for copying to or from CppAD objects, to or from original C++ objects
+## On the CppAD side, we are always flattening to 1D.
+##
+## The code this generates is embedded in the ADtapingFunction made by makeADtapingFunction
+##
+## Note this does some work similar to BUGScontextClass::embedCodeInForLoop
+makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, incrementIndex, isNode) {
+  indexNames <- names(indexList)
+  indexedBracketExpr <- do.call('call', c(list('[', as.name('TO_BE_REPLACED')), lapply(indexNames, as.name)), quote = TRUE)
+  if(indicesRHS) {
+    if(isNode)   RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = cppLiteral(paste0('(**', deparse(RHSvar), ')')))), list(indexedBracketExpr = indexedBracketExpr)))
+    else RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = RHSvar)), list(indexedBracketExpr = indexedBracketExpr)))
+    LHS <- substitute(A[i], list(A = LHSvar, i = incrementIndex))
+  } else {
+    LHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = LHSvar)), list(indexedBracketExpr = indexedBracketExpr)))
+    RHS <- substitute(A[i], list(A = RHSvar, i = incrementIndex))
+    
+  }
+  innerCode <- substitute({LHS <- RHS; incrementIndex <- incrementIndex + 1;}, list(LHS = LHS, RHS = RHS, incrementIndex = incrementIndex))
+  for(i in length(indexList):1) {
+    if(is.list(indexList[[i]]))  newForLoop <- substitute(for(NEWINDEX_ in NEWSTART_:NEWEND_) INNERCODE, list(NEWINDEX_ = as.name(indexNames[i]), NEWSTART_ = indexList[[i]][[1]], NEWEND_ = indexList[[i]][[2]], INNERCODE = innerCode))
+    else newForLoop <- substitute(for(NEWINDEX_ in NEWSTART_:NEWEND_) INNERCODE, list(NEWINDEX_ = as.name(indexNames[i]), NEWSTART_ = indexList[[i]][1], NEWEND_ = indexList[[i]][2], INNERCODE = innerCode))
+    innerCode <- newForLoop
+  }
+  innerCode
+}
+
 
 ## makeStaticRecordAllTapesFunction <- function() {
 ##     initFunction <- RCfunctionDef$new()

@@ -190,7 +190,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                       contains = 'cppNimbleClassClass',
                                       fields = list(
                                           nfProc = 'ANY', ## an nfProcessing class, needed to get the member data symbol table post-compilation
-                                          parentIndexInfoList = 'ANY'
+                                          parentsSizeAndDims = 'ANY'
                                           ),
                                           methods = list(
                                               getDefs = function() {
@@ -214,7 +214,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       baseClassObj <- environment(nfProc$nfGenerator)$contains
                                                       if(is.null(baseClassObj)) {
                                                           inheritance <<- c(inheritance, 'nodeFun')
-                                                          parentIndexInfoList <<- environment(nfProc$nfGenerator)$parentIndexInfoList
+                                                          parentsSizeAndDims <<- environment(nfProc$nfGenerator)$parentsSizeAndDims
                                                       }
                                                   }
                                               },
@@ -258,7 +258,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   newFunName <- paste0(funName, '_ADargumentTransfer_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   funIndex <- which(environment(nfProc$nfGenerator)$enableDerivs == funName) ## needed for correct index for allADtapePtrs_
-                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, parentIndexInfoList)
+                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, parentsSizeAndDims)
                                               },
                                               addStaticInitClass = function() {
                                                   neededTypeDefs[['staticInitClass']] <<- makeStaticInitClass(.self, environment(nfProc$nfGenerator)$enableDerivs) ##

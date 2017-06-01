@@ -6,10 +6,10 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeA
     RHSrep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(RHS, setupOutputLabels)
     parents <- names(parentsSizeAndDims)
     parentIndexInfoList <- nndf_extractNodeIndices(LHSrep, parents)
-    parentIndexInfoList <- nndf_extractNodeIndices(RHSrep, parents, indexTextList = parentIndexInfoList)
+    parentIndexInfoList <- nndf_extractNodeIndices(RHSrep, parents, indexExprList = parentIndexInfoList)
     for(i in seq_along(parentIndexInfoList)){
       for(j in seq_along(parentIndexInfoList[[i]])){
-        parentsSizeAndDims[[names(parentIndexInfoList)[i]]][[j]]$indexText <- parentIndexInfoList[[i]][[j]]$indexText 
+        parentsSizeAndDims[[names(parentIndexInfoList)[i]]][[j]]$indexExpr <- parentIndexInfoList[[i]][[j]]$indexExpr 
       }
     }
     altParamsRep <- lapply(altParams, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
@@ -50,23 +50,31 @@ nndf_makeNodeFunctionIndexAccessCall <- function(index) {
     substitute(getNodeFunctionIndexedInfo(INDEXEDNODEINFO_, INDEX), list(INDEX = index)) ## still needs unity decrement for c++
 }
 
-nndf_extractNodeIndices <- function(code, nodesToExtract, indexTextList = list()){
+nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()){
   if(is.call(code)){
-    if(code[[1]] == '[') {
+    if(deparse(code[[1]]) == '[') {
       if(deparse(code[[2]]) %in% nodesToExtract){
-        thisIndexText <-  paste0('[', strsplit(deparse(code), '[', fixed = TRUE)[[1]][2])
-        if(is.null(indexTextList[[deparse(code[[2]])]])) indexTextList[[deparse(code[[2]])]][[1]]$indexText <- thisIndexText
-        else indexTextList[[deparse(code[[2]])]][[length(indexTextList[[deparse(code[[2]])]]) + 1]]$indexText <- thisIndexText
-        return(indexTextList)
+        thisIndexExpr <- list()
+        for(i in 1:(length(code)-2)){
+          if(is.call(code[[i + 2]]) && deparse(code[[i+2]][[1]]) == ':'){
+            thisIndexExpr <- c(thisIndexExpr, code[[i+2]][[2]])
+          }
+          else{
+            thisIndexExpr <- c(thisIndexExpr, code[[i+2]])
+          }
+        }
+        if(is.null(indexExprList[[deparse(code[[2]])]])) indexExprList[[deparse(code[[2]])]][[1]]$indexExpr <- thisIndexExpr
+        else indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]]) + 1]]$indexExpr <- thisIndexExpr
+        return(indexExprList)
       }
     }
     if(length(code) > 1){
       for(i in 2:length(code)){
-        indexTextList <- nndf_extractNodeIndices(code[[i]], nodesToExtract, indexTextList)
+        indexExprList <- nndf_extractNodeIndices(code[[i]], nodesToExtract, indexExprList)
       }
     }
   }
-  return(indexTextList)
+  return(indexExprList)
 }
 
 nndf_replaceSetupOutputsWithIndexedNodeInfo <- function(code, setupOutputLabels) {
@@ -141,8 +149,10 @@ nndf_createMethodList <- function(LHS, RHS, parents, parentsSizeAndDims, altPara
         parentsArgs <- if(length(parentsSizeAndDims) > 0) list() else NULL
         for(i in seq_along(parentsSizeAndDims)){
           for(j in seq_along(parentsSizeAndDims[[i]])){
-            parentsArgs[[paste0(names(parentsSizeAndDims)[i], '_', j)]] <- substitute(double(PARDIM, PARSIZES), list(PARDIM = as.numeric(parentsSizeAndDims[[i]][[j]]$nDim), 
-                                                                                                                        PARSIZES = nndf_makeParentSizeExpr(parentsSizeAndDims[[i]][[j]])))  
+            parentsArgs[[paste0(names(parentsSizeAndDims)[i], '_', j)]] <- substitute(double(PARDIM, PARSIZES), 
+                                                                                      list(PARDIM = as.numeric(parentsSizeAndDims[[i]][[j]]$nDim), 
+                                                                                           PARSIZES = nndf_makeParentSizeExpr(parentsSizeAndDims[[i]][[j]])))  
+            body(methodList[[getCalcADFunName()]]) <- nndf_addArgInfoToCalcAD(body(methodList[[getCalcADFunName()]]), names(parentsSizeAndDims)[i], j)
           }
         }
         browser()
@@ -197,6 +207,23 @@ nndf_createMethodList <- function(LHS, RHS, parents, parentsSizeAndDims, altPara
     methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"), 
                                                     ADexceptionNames = c(names(parentsArgs), 'logProb'))
     return(methodList)
+}
+
+nndf_addArgInfoToCalcAD <- function(code, argName, argNum){
+  for(i in seq_along(code)){
+    if(is.name(code[[i]]) && (deparse(code[[i]]) == argName)){
+      code[[i]] <- parse(text = paste0(deparse(code[[i]]), '_', argNum))[[1]]
+      return(code)
+    }
+    else if(length(code[[i]]) > 1){
+      didArgAdd <- nndf_addArgInfoToCalcAD(code[[i]], argName, argNum)
+      if(!is.null(didArgAdd)){ 
+        code[[i]] <- didArgAdd
+        return(code)
+      }
+    }
+  }
+  return(NULL)
 }
 
 nndf_makeParentSizeExpr <- function(sizeInfoList){

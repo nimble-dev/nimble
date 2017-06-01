@@ -1115,9 +1115,9 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            parents <- BUGSdecl$allParentVarNames()
                                            selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
                                            parents <- c(selfWithNoInds, parents)
-                                           browser()
-                                           parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents)
-                                           parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, allSizeAndDimList = parentsSizeAndDims)
+                                           parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix)
+                                           parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, BUGSdecl$unrolledIndicesMatrix,
+                                                                                             allSizeAndDimList = parentsSizeAndDims)
                                            altParams <- BUGSdecl$altParamExprs
                                            altParams <- lapply(altParams, nimble:::insertSingleIndexBrackets, modelDef$varInfo)
                                            bounds <- BUGSdecl$boundExprs

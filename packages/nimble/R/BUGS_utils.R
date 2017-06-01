@@ -45,28 +45,33 @@ determineNodeIndexSizes <- function(node) {
     return(sizes)
 }
 
-makeSizeAndDimList <- function(code, nodesToExtract, indexedNodeInfo = NULL, allSizeAndDimList = list()){
+makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NULL, allSizeAndDimList = list()){
   if(is.call(code)){
-    if(code[[1]] == '[') {
+    if(deparse(code[[1]]) == '[') {
       if(deparse(code[[2]]) %in% nodesToExtract){
         thisCodeExprList <- list()
         numInds <- length(code) - 2
         codeLength <- c()
         for(i in 1:numInds){
-          if(is.call(code[[i+2]]) && code[[i+2]][[1]] == ':'){
+          if(is.call(code[[i+2]]) && deparse(code[[i+2]][[1]]) == ':'){
             if(is.numeric(code[[i+2]][[2]])){
-              codeStartInd <- code[[i+2]][[2]]
+              codeStartInds <- code[[i+2]][[2]]
             }
             else{
-              #codeStartInd <- indexedNodeInfo
+              codeStartInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[2]])]
             }
             if(is.numeric(code[[i+2]][[3]])){
-              codeEndInd <- code[[i+2]][[3]]
+              codeEndInds <- code[[i+2]][[3]]
             }
             else{
-              
+              codeEndInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[3]])]
             }
-            codeLength <- c(codeLength, codeEndInd - codeStartInd + 1)
+            thisCodeLength <- codeEndInds - codeStartInds + 1
+            if(!all(thisCodeLength == thisCodeLength[1])){
+              print("Error: AD not currently supported for ragged arrays in model code")
+              browser()
+            }
+            codeLength <- c(codeLength, thisCodeLength[1])
           }
           else{
             codeLength <- c(codeLength, 1)
