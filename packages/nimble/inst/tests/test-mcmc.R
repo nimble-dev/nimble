@@ -2,25 +2,7 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of default MCMC")
 
-### TODO: add in the special cases for dipper
-
-if(FALSE) { # template for running JAGS for comparison
-  require(R2jags)
-    dir = system.file(file.path('classic-bugs', 'vol2', 'air'), package = 'nimble')
-  data = new.env(); inits = new.env()
-  source(file.path(dir, 'air-data.R'), data)
-  source(file.path(dir, 'air-init.R'), inits)
-  data = as.list(data)
-  inits = list(as.list(inits))
-  out1 <- jags(data = data, inits = inits,
-               parameters.to.save = c('X','theta'), n.chains = 1,
-               n.iter = 100000, n.burnin = 50000, n.thin = 1, model.file = file.path(dir, 'air.bug'),
-               DIC = FALSE, jags.seed = 0)
-  out <- as.mcmc(out1)
-}
-
-
-### Beginning of actual tests
+## tests of classic BUGS examples
 
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine

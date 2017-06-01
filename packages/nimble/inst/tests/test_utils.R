@@ -234,14 +234,39 @@ test_math <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
 
 ### Function for testing MCMC called from test_mcmc.R
 
-test_mcmc <- function(example, model, data = NULL, inits = NULL,
-                      verbose = TRUE, numItsR = 5, numItsC = 1000,
-                      basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
-                      numItsC_results = numItsC,
-                      resampleData = FALSE,
-                      topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL, removeAllDefaultSamplers = FALSE,
-                      doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
-    origName <- name
+## test_mcmc <- function(example, model, data = NULL, inits = NULL,
+##                       verbose = TRUE, numItsR = 5, numItsC = 1000,
+##                       basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
+##                       numItsC_results = numItsC,
+##                       resampleData = FALSE,
+##                       topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL, removeAllDefaultSamplers = FALSE,
+##                       doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
+##     origName <- name
+##     if(is.null(name)) {
+##         if(!missing(example)) {
+##             name <- example
+##         } else {
+##             if(is.character(model)) {
+##                 name <- model
+##             } else {
+##                 name <- 'unnamed case'
+##             }
+##         }
+##    }
+##     test_that(name, {
+##         test_mcmc_internal(example, model, data, inits,
+##                            verbose, numItsR, numItsC,
+##                            basic, exactSample, results, resultsTolerance,
+##                            numItsC_results,
+##                            resampleData,
+##                            topLevelValues, seed, mcmcControl, samplers, removeAllDefaultSamplers,
+##                            doR, doCpp, returnSamples, name = origName
+##                            )
+##     })
+## }
+
+test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NULL) {
+    ## imitate processing test_mcmc_internal just to get a name for the test_that description
     if(is.null(name)) {
         if(!missing(example)) {
             name <- example
@@ -252,21 +277,35 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                 name <- 'unnamed case'
             }
         }
-   }
+    }
+    ## missing(example) does not work inside the test_that
+    if(!missing(example)) {
+                                        # classic-bugs example specified by name
+        dir = nimble:::getBUGSexampleDir(example)
+        if(missing(model)) model <- example
+        modelKnown <- TRUE
+  ##      Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
+  ##                              check = FALSE)
+    } else {
+                                        # code, data and inits specified directly where 'model' contains the code
+        ##example = deparse(substitute(model))
+        dir = ""
+        modelKnown <- !missing(model)
+##        if(missing(model)) stop("Neither BUGS example nor model code supplied.")
+##        Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE,
+##                                check = FALSE)
+    }
+    
     test_that(name, {
-        test_mcmc_internal(example, model, data, inits,
-                           verbose, numItsR, numItsC,
-                           basic, exactSample, results, resultsTolerance,
-                           numItsC_results,
-                           resampleData,
-                           topLevelValues, seed, mcmcControl, samplers, removeAllDefaultSamplers,
-                           doR, doCpp, returnSamples, name = origName
-                           )
+        expect_true(modelKnown, 'Neither BUGS example nor model code supplied.')
+        Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = dir, useInits = TRUE,
+                                check = FALSE)
+        test_mcmc_internal(Rmodel, dir, ..., name = name)
     })
 }
 
-test_mcmc_internal <- function(example, model, data = NULL, inits = NULL,
-                      verbose = TRUE, numItsR = 5, numItsC = 1000,
+test_mcmc_internal <- function(Rmodel, data = NULL, inits = NULL,
+                      verbose = FALSE, numItsR = 5, numItsC = 1000,
                       basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
                       numItsC_results = numItsC,
                       resampleData = FALSE,
@@ -303,37 +342,38 @@ test_mcmc_internal <- function(example, model, data = NULL, inits = NULL,
             tmp <- conf$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) conf$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
     }
 
-    if(is.null(name)) {
-        if(!missing(example)) {
-            name <- example
-        } else {
-            if(is.character(model)) {
-                name <- model
-            } else {
-                name <- 'unnamed case'
-            }
-        }
-    }
+    expect_false(is.null(name), info = 'name argument NULL')
+    ## if(is.null(name)) {
+    ##     if(!missing(example)) {
+    ##         name <- example
+    ##     } else {
+    ##         if(is.character(model)) {
+    ##             name <- model
+    ##         } else {
+    ##             name <- 'unnamed case'
+    ##         }
+    ##     }
+    ## }
 
-    cat("===== Starting MCMC test for ", name, ". =====\n", sep = "")
+    if(verbose) cat("===== Starting MCMC test for ", name, ". =====\n", sep = "")
 
-    if(!missing(example)) {
-                                        # classic-bugs example specified by name
-  	dir = nimble:::getBUGSexampleDir(example)
-        if(missing(model)) model <- example
-        Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
-                                check = FALSE)
-    } else {
-                                        # code, data and inits specified directly where 'model' contains the code
-        example = deparse(substitute(model))
-        if(missing(model)) stop("Neither BUGS example nor model code supplied.")
-        Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE,
-                                check = FALSE)
-    }
+    ## if(!missing(example)) {
+    ##                                     # classic-bugs example specified by name
+    ##     dir = nimble:::getBUGSexampleDir(example)
+    ##     if(missing(model)) model <- example
+    ##     Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
+    ##                             check = FALSE)
+    ## } else {
+    ##                                     # code, data and inits specified directly where 'model' contains the code
+    ##     example = deparse(substitute(model))
+    ##     if(missing(model)) stop("Neither BUGS example nor model code supplied.")
+    ##     Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE,
+    ##                             check = FALSE)
+    ## }
 
   if(doCpp) {
       Cmodel <- compileNimble(Rmodel)
-      cat('done compiling model\n')
+      if(verbose) cat('done compiling model\n')
   }
   if(!is.null(mcmcControl)) mcmcConf <- configureMCMC(Rmodel, control = mcmcControl) else mcmcConf <- configureMCMC(Rmodel)
   if(removeAllDefaultSamplers) mcmcConf$removeSamplers()
@@ -375,7 +415,7 @@ test_mcmc_internal <- function(example, model, data = NULL, inits = NULL,
       }
 
       if(doR && doCpp && !is.null(R_samples)) {
-          context(paste0("testing ", example, " MCMC"))
+##          context(paste0("testing ", example, " MCMC"))
           expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
       }
       expect_false(is.null(R_samples), info = "R MCMC failed") 
@@ -421,7 +461,7 @@ test_mcmc_internal <- function(example, model, data = NULL, inits = NULL,
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
             expect_true(diff[ind] < resultsTolerance[[metric]][[varName]][ind],
-                        info = paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, strInfo, ")"))
+                        info = paste("Test of MCMC result against known posterior for :",  metric, "(", varName, strInfo, ")"))
           }
         }
       } else  { # 'cov'
@@ -433,7 +473,7 @@ test_mcmc_internal <- function(example, model, data = NULL, inits = NULL,
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
             expect_true(diff[ind] < resultsTolerance[[metric]][[varName]][ind],
-                        info = paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo))
+                        info = paste("Test of MCMC result against known posterior for:",  metric, "(", varName, ")", strInfo))
           }
         }
       }
@@ -495,17 +535,17 @@ test_mcmc_internal <- function(example, model, data = NULL, inits = NULL,
     coverage <- sum(covered) / length(nonDataNodesElements)
     tolerance <- 0.15
     if(verbose)
-        cat("Coverage for model", example, "is", coverage*100, "%.\n")
+        cat("Coverage for ", name, " is", coverage*100, "%.\n")
     miscoverage <- abs(coverage - 0.95)
     if(miscoverage > tolerance || verbose) {
       cat("True values with 95% posterior interval:\n")
       print(cbind(trueVals, t(interval), covered))
     }
     expect_true(miscoverage < tolerance,
-                info = paste("Test of MCMC coverage on known parameter values for:", example))
+                info = paste("Test of MCMC coverage on known parameter values for:", name))
   }
 
-  cat("===== Finished MCMC test for ", name, ". =====\n", sep = "")
+    if(verbose) cat("===== Finished MCMC test for ", name, ". =====\n", sep = "")
 
     if(doCpp) {
         if(.Platform$OS.type != "windows") {
