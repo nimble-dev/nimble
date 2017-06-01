@@ -1980,7 +1980,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         edgesFrom <- c(edgesFrom, newEdges[[1]])
         edgesTo <- c(edgesTo, newEdges[[2]])
         edgesParentExprID <- c(edgesParentExprID, rep(NA, length(newEdges[[1]])))
-        vertexID_2_nodeID[newEdges[[2]]] <- newEdges[[1]]
+        if(nimbleOptions()$allowDynamicIndexing) {
+            if(!varName %in% unknownIndexNames)
+                vertexID_2_nodeID[newEdges[[2]]] <- newEdges[[1]]
+        } else vertexID_2_nodeID[newEdges[[2]]] <- newEdges[[1]]
     }
 
     ## 9b. truncate vertexID_2_nodeID and relabel some vertices as LHSinferred
@@ -2094,8 +2097,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             vars_2_nodeID_noNAs[[vN]][boolNA] <-  vars_2_vertexID[[vN]][boolNA] 
     }
 
-    ## FIXME: now that we removed declInfo for UNKNOWN_INDEX vars, the graphID_2declID is wrong for those vertices - should be 0
-    ## FIXME: maps$graphID_2_nodeFunctionName is messed up for UNKNOWN_INDEX vars - points to the corresponding non-UNKNOWN_INDEX variable: see vertexID_2_nodeID
+    ## FIXME: now that we removed declInfo for UNKNOWN_INDEX vars, the graphID_2_declID is wrong for those vertices - should be 0
     ## FIXME: check maps$edgesParentExprID
     ## FIXME: check maps$graphID_2_unrolledIndicesMatrixRow
     
