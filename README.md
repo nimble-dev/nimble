@@ -10,7 +10,6 @@ NIMBLE is an R package for programming with BUGS models and compiling parts of R
 *   [Website](http://r-nimble.org/)
 *   [Examples](https://r-nimble.org/examples)
 *   [User manual](http://r-nimble.org/manuals/NimbleUserManual.pdf)
-    [online](https://www.rdocumentation.org/packages/nimble)
 *   [Developer documentation](https://nimble-dev.github.io/nimble-docs)
 
 ## Installation
