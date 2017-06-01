@@ -63,7 +63,7 @@ try(test_that("Test that dmvt (compiled) calculation is correct in model likelih
                            info = paste0("incorrect likelihood value for dmvt (compiled)"))))
 
 ## random sampling
-# reference_samps <- mvtnorm::rmvt(n = 10000, delta = mn, sigma = sc, df = df)
+set.seed(0)
 r_samps <- t(replicate(10000, rmvt_chol(n = 1, mn, chol(sc), df, prec_param = FALSE)))
 true_cov <- sc*df/(df-2)
 
@@ -96,16 +96,13 @@ try(test_that("Test that random samples (nf) have correct mean: ",
                            tol = 0.03,
                            info = "Difference in means exceeds tolerance")))
 
-test_that("Test that random samples (nf) have correct covariance: ", {
-    expect_failure(
-        expect_equal(cov(nf_samps), true_cov,
-                     tol = 0.1,
-                     info = "Difference in covs exceeds tolerance"),
-        info = 'KNOWN ISSUE https://github.com/nimble-dev/nimble/issues/405'
-    )
-})
+try(test_that("Test that random samples (nf) have correct covariance: ",
+              expect_equal(cov(nf_samps), true_cov,
+                           tol = 0.1,
+                           info = "Difference in covs exceeds tolerance")))
 
 ## sampling via `simulate`
+set.seed(0)
 simul_samp <- function(model) {
   model$simulate()
   return(model$x)
@@ -155,7 +152,7 @@ try(test_that("dcat handles 'probs' that do not sum to one: ",
                            info = "normalized and unnormalized probabilities give different results")))
 
 ## dinvgamma
-
+set.seed(0)
 y <- 1.1; a <- 1; c <- 2; alpha <- 3; beta <- 2; theta <- 1
 
 manDens <- alpha*log(beta) - lgamma(alpha) - (alpha+1)*log(y) - beta/y
@@ -398,7 +395,7 @@ try(test_that("dinvwish-dmnorm conjugacy",
 
 
 ## dflat
-
+set.seed(0)
 code <- nimbleCode({
   for(i in 1:n) 
     y[i] ~ dnorm(mu, sd = sigma)
