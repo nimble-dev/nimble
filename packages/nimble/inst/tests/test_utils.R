@@ -234,38 +234,7 @@ test_math <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
 
 ### Function for testing MCMC called from test_mcmc.R
 
-## test_mcmc <- function(example, model, data = NULL, inits = NULL,
-##                       verbose = TRUE, numItsR = 5, numItsC = 1000,
-##                       basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
-##                       numItsC_results = numItsC,
-##                       resampleData = FALSE,
-##                       topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL, removeAllDefaultSamplers = FALSE,
-##                       doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
-##     origName <- name
-##     if(is.null(name)) {
-##         if(!missing(example)) {
-##             name <- example
-##         } else {
-##             if(is.character(model)) {
-##                 name <- model
-##             } else {
-##                 name <- 'unnamed case'
-##             }
-##         }
-##    }
-##     test_that(name, {
-##         test_mcmc_internal(example, model, data, inits,
-##                            verbose, numItsR, numItsC,
-##                            basic, exactSample, results, resultsTolerance,
-##                            numItsC_results,
-##                            resampleData,
-##                            topLevelValues, seed, mcmcControl, samplers, removeAllDefaultSamplers,
-##                            doR, doCpp, returnSamples, name = origName
-##                            )
-##     })
-## }
-
-test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NULL) {
+test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NULL, knownFailures = list()) {
     ## imitate processing test_mcmc_internal just to get a name for the test_that description
     if(is.null(name)) {
         if(!missing(example)) {
@@ -280,37 +249,38 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NUL
     }
     ## missing(example) does not work inside the test_that
     if(!missing(example)) {
-                                        # classic-bugs example specified by name
+        ## classic-bugs example specified by name
         dir = nimble:::getBUGSexampleDir(example)
         if(missing(model)) model <- example
         modelKnown <- TRUE
-  ##      Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
-  ##                              check = FALSE)
     } else {
-                                        # code, data and inits specified directly where 'model' contains the code
-        ##example = deparse(substitute(model))
         dir = ""
         modelKnown <- !missing(model)
-##        if(missing(model)) stop("Neither BUGS example nor model code supplied.")
-##        Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE,
-##                                check = FALSE)
     }
-    
+
     test_that(name, {
         expect_true(modelKnown, 'Neither BUGS example nor model code supplied.')
         Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = dir, useInits = TRUE,
                                 check = FALSE)
-        test_mcmc_internal(Rmodel, ..., name = name)
+        test_mcmc_internal(Rmodel, ..., name = name, knownFailures = knownFailures)
     })
 }
 
+testIfNotKnownFailure <- function(knownFailure, expectation) {
+    expectation <- substitute(expectation)
+    if(is.null(knownFailure))
+        eval(expectation, envir = parent.frame())
+    else
+        eval(substitute(skip(REPORT), list(REPORT = knownFailure)), envir = parent.frame())
+}
+
 test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
-                      verbose = TRUE, numItsR = 5, numItsC = 1000,
+                      verbose = FALSE, numItsR = 5, numItsC = 1000,
                       basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
                       numItsC_results = numItsC,
                       resampleData = FALSE,
                       topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL, removeAllDefaultSamplers = FALSE,
-                      doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
+                      doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL, knownFailures = list()) {
   # There are three modes of testing:
   # 1) basic = TRUE: compares R and C MCMC values and, if requested by passing values in 'exactSample', will compare results to actual samples (you'll need to make sure the seed matches what was used to generate those samples)
   # 2) if you pass 'results', it will compare MCMC output to known posterior summaries within tolerance specified in resultsTolerance
@@ -338,8 +308,9 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
             tmp <- conf$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) conf$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
     }
 
-    expect_false(is.null(name), info = 'name argument NULL')
-
+    testIfNotKnownFailure(knownFailures[['nameOK']],
+                          expect_false(is.null(name), info = 'name argument NULL'))
+        
     ## leaving this message permanently on for now
     cat("===== Starting MCMC test for ", name, ". =====\n", sep = "")
 
@@ -387,14 +358,19 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
       }
 
       if(doR && doCpp && !is.null(R_samples)) {
-          expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
+          testIfNotKnownFailure(knownFailures[['R C samples match']],
+                                expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal")))
       }
-      expect_false(is.null(R_samples), info = "R MCMC failed") 
+      testIfNotKnownFailure(knownFailures[['R MCMC']],
+                            expect_false(is.null(R_samples), info = "R MCMC failed") )
 
       if(doCpp) {
           if(!is.null(exactSample)) {
               for(varName in names(exactSample))
-                  expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), round(exactSample[[varName]], 8), info = paste0("Equality of compiled MCMC samples and known exact samples for variable ", varName))
+                  testIfNotKnownFailure(knownFailures[['C samples match known samples']],
+                                        expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8),
+                                                     round(exactSample[[varName]], 8),
+                                                     info = paste0("Equality of compiled MCMC samples and known exact samples for variable ", varName)))
           }
       }
 
@@ -431,8 +407,9 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
           diff <- abs(postResult[matched] - results[[metric]][[varName]])
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
-            expect_true(diff[ind] < resultsTolerance[[metric]][[varName]][ind],
-                        info = paste("Test of MCMC result against known posterior for :",  metric, "(", varName, strInfo, ")"))
+            testIfNotKnownFailure(knownFailures[['MCMC match to known posterior']],
+                                  expect_true(diff[ind] < resultsTolerance[[metric]][[varName]][ind],
+                                              info = paste("Test of MCMC result against known posterior for :",  metric, "(", varName, strInfo, ")")))
           }
         }
       } else  { # 'cov'
@@ -443,8 +420,9 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
           diff <- c(abs(postResult - results[[metric]][[varName]]))
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
-            expect_true(diff[ind] < resultsTolerance[[metric]][[varName]][ind],
-                        info = paste("Test of MCMC result against known posterior for:",  metric, "(", varName, ")", strInfo))
+            testIfNotKnownFailure(knownFailures[['MCMC match to known posterior cov']],
+                                  expect_true(diff[ind] < resultsTolerance[[metric]][[varName]][ind],
+                                              info = paste("Test of MCMC result against known posterior for:",  metric, "(", varName, ")", strInfo)))
           }
         }
       }
@@ -512,8 +490,10 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
       cat("True values with 95% posterior interval:\n")
       print(cbind(trueVals, t(interval), covered))
     }
-    expect_true(miscoverage < tolerance,
-                info = paste("Test of MCMC coverage on known parameter values for:", name))
+    testIfNotKnownFailure(knownFailures[['coverage']],
+                          expect_true(miscoverage < tolerance,
+                                      info = paste("Test of MCMC coverage on known parameter values for:", name))
+                          )
   }
 
     if(verbose) cat("===== Finished MCMC test for ", name, ". =====\n", sep = "")

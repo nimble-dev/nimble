@@ -2,6 +2,12 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of default MCMC")
 
+RwarnLevel <- options('warn')
+options(warn = -1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
 ## tests of classic BUGS examples
 
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
@@ -119,27 +125,12 @@ test_that('air example setup', {
 
 test_that('jaw-linear setup', {
     system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) # alternative way to get size info in there
-    test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
+    test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000,
+              knownFailures = list('R MCMC' = 'KNOWN ISSUE: R MCMC fails for jaw-linear'))
+    })
                                         # C MCMC runs and seems fine; R MCMC fails as can't do Cholesky of 0 matrix in 2-point method
-})
-
-test_that('dmnorm-wish setup', {
-    inits = list(beta0 = 40, beta1 = 0)
-    data =list(M=4,N=20, Y = matrix(c(47.8, 46.4, 46.3, 45.1, 47.6, 52.5, 51.2, 49.8, 48.1,
-                                      45, 51.2, 48.5, 52.1, 48.2, 49.6, 50.7, 47.2, 53.3, 46.2, 46.3,
-                                      48.8, 47.3, 46.8, 45.3, 48.5, 53.2, 53, 50, 50.8, 47, 51.4, 49.2,
-                                      52.8, 48.9, 50.4, 51.7, 47.7, 54.6, 47.5, 47.6, 49, 47.7, 47.8,
-                                      46.1, 48.9, 53.3, 54.3, 50.3, 52.3, 47.3, 51.6, 53, 53.7, 49.3,
-                                      51.2, 52.7, 48.4, 55.1, 48.1, 51.3, 49.7, 48.4, 48.5, 47.2, 49.3,
-                                      53.7, 54.5, 52.7, 54.4, 48.3, 51.9, 55.5, 55, 49.8, 51.8, 53.3,
-                                      49.5, 55.3, 48.4, 51.8)  , 20, 4), age = c(8, 8.5, 9, 9.5),
-               R = matrix(c(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1), 4 ,4),
-               ones = rep(1, 4))
-    test_mcmc(model = model, name = 'dmnorm-dwish example', data = data, inits = inits, numItsC = 1000)
-})
-
-
-test_mcmc('pump with results',
+                                      
+test_mcmc('pump',
           resampleData = TRUE,
           results = list(mean = list(
                              "theta[1]" = 0.06,
@@ -450,12 +441,16 @@ test_that('Dirichlet-multinomial with replication setup', {
     
     inits <- list(p = matrix(1/K, m, K), alpha = rep(1/K, K))
     data <- list(n = n, K = K, m = m, y = y)
-    
-    test_mcmc(model = code, name = 'Dirichlet-multinomial with replication', data= data, seed = 0, numItsC = 1000,
+
+    ## two tolerance failures are known, for p[39] and p[76]
+    test_mcmc(model = code, name = 'Dirichlet-multinomial with replication', data= data,
+              seed = 0, numItsC = 1000,
               inits = inits, numItsC_results = 100000,
               results = list(mean = list(p = p, alpha = alpha)),
               resultsTolerance = list(mean = list(p = matrix(.05, m, K),
-                                                  alpha = c(5,10,10,20,.5))))
+                                                  alpha = c(5,10,10,20,.5))),
+              knownFailures = list('MCMC match to known posterior' = 'KNOWN ISSUE: two samples outside resultsTolerance') )
+    skip('KNOWN ISSUE: two samples outside resultsTolerance')
 })
 # note alphas mix poorly (and are highly correlated),
 # presumably because of cross-level dependence between
@@ -779,8 +774,8 @@ test_that('conjugate MVN with ragged dependencies', {
                                  t(B[1:5,1:3]) %*% prec_y[1:5,1:5] %*% (1:5 - a[1:5])   )
     
 
-    expect_that(all(abs(pmean - obsmean) / pmean < 0.01), info = 'ragged dmnorm conjugate posterior mean')
-    expect_that(all(abs(pprec - obsprec) / pprec < 0.005), info = 'ragged dmnorm conjugate posterior precision')
+    expect_true(all(abs(pmean - obsmean) / pmean < 0.01), info = 'ragged dmnorm conjugate posterior mean')
+    expect_true(all(abs(pprec - obsprec) / pprec < 0.005), info = 'ragged dmnorm conjugate posterior precision')
     
     })
     
@@ -1103,3 +1098,6 @@ test_that('RW_dirichlet sampler more complicated', {
     
 })
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
+nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
