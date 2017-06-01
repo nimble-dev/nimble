@@ -17,14 +17,14 @@ exprClass <- setRefClass('exprClass',
                              isAssign =  'ANY',		#'logical', ## it is an assignment (all assignments are also calls)
                              name =  'ANY',		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
                              nDim =  'ANY',		#'numeric', ## how many dimensions
-                             sizeExprs =  'ANY',		#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
+                             sizeExprs =  'ANY',	#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
                              type =  'ANY',		#'character', ## type label
                              args =  'ANY',		#'list', ## list of exprClass objects for the arguments
-                             eigMatrix =  'ANY',		#'logical', ## vs. Array.  Only used for Eigenized expressions
-                             toEigenize =  'ANY',		#'character', ##'yes', 'no', or 'maybe'
-                             caller = 'ANY', ## exprClass object for the call to which this is an argument (if any)
-                             callerArgID =  'ANY',		#'numeric', ## index in the calling object's args list for this object.
-                             assertions =  'ANY'		#'list'
+                             eigMatrix =  'ANY',	#'logical', ## vs. Array.  Only used for Eigenized expressions
+                             toEigenize =  'ANY',	#'character', ##'yes', 'no', or 'maybe'
+                             caller = 'ANY',            # exprClass object for the call to which this is an argument (if any)
+                             callerArgID =  'ANY',	#'numeric', ## index in the calling object's args list for this object.
+                             assertions =  'ANY'	#'list'
                              ),
                          methods = list(
                              initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); callSuper(...)},
@@ -76,7 +76,7 @@ exprClass <- setRefClass('exprClass',
 exprTypeInfoClass <- setRefClass('exprTypeInfoClass',
                                  fields = list(
                                      nDim =  'ANY',		#'numeric',
-                                     sizeExprs =  'ANY',		#'list',
+                                     sizeExprs =  'ANY',	#'list',
                                      type =  'ANY'),		#'character'),
                                  methods = list(
                                  	initialize = function(...){sizeExprs <<- list();callSuper(...)},

@@ -3,6 +3,11 @@ require(testthat)
 require(methods)
 require(nimble)
 
+## Mark tests that are know to fail with `if(RUN_FAILING_TESTS)`.
+## By default these tests will not be run, but we will occasionally clean up by running them with
+## $ RUN_FAILING_TESTS=1 Rscript test-my-stuff.R
+RUN_FAILING_TESTS <- (nchar(Sys.getenv('RUN_FAILING_TESTS')) != 0)
+
 ## We can get problems on Windows with system(cmd) if cmd contains
 ## paths with spaces in directory names.  Solution is to make a cmd
 ## string with only local names (to avoid spaces) and indicate what
@@ -183,6 +188,11 @@ make_input <- function(dim, size = 3, logicalArg) {
 }
 
 test_math <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
+    test_that(input$name, {
+        test_math_internal(input, verbose, size, dirName)
+    })
+}
+test_math_internal <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
   if(verbose) cat("### Testing", input$name, "###\n")
   runFun <- gen_runFun(input)
   nfR <- nimbleFunction(  
@@ -222,12 +232,10 @@ test_math <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
   attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
   if(is.logical(out)) out <- as.numeric(out)
   if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
-  try(test_that(paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name),
-                expect_equal(out, out_nfR)))
-  try(test_that(paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name),
-                expect_equal(out, out_nfC)))
+  expect_equal(out, out_nfR, info = paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name))
+  expect_equal(out, out_nfC, info = paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name))
   # unload DLL as R doesn't like to have too many loaded
-  if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
+  if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR)
   invisible(NULL)
 }
 
