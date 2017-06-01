@@ -152,7 +152,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv
     replaceAllConstants()             ## overwrites declInfo with constants replaced; only replaces scalar constants
     addIndexVarsToDeclInfo()          ## sets field declInfo[[i]]$indexVariableExprs from contexts.  must be after overwrites of declInfo
     genSymbolicParentNodes()          ## sets field declInfo[[i]]$symbolicParentNodes. must be after overwrites of declInfo
-    genUnknownIndexDeclarations()     ## creates unknownIndexDeclInfo that contains declarations for unknownIndex nodes; needs symbolicParentNodes in order to know what declarations have unknown indices
+    genUnknownIndexDeclarations()     ## add 'lifted' declarations for unknownIndex nodes; needs symbolicParentNodes in order to know what declarations have unknown indices
     genReplacementsAndCodeReplaced()  ## sets fields: declInfo[[i]]$replacements, $codeReplaced, $replacementNameExprs, $logProbNodeExpr
     genAltParamsModifyCodeReplaced()  ## sets field declInfo[[i]]$altParams, and modifies $codeReplaced to not include .param arguments (if stochastic)
     genBounds()                       ## sets field declInfo[[i]]$boundExprs, and (if not truncated) modifies $codeReplaced to omit lower and upper arguments (if stochastic)
@@ -160,7 +160,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv
     genReplacedTargetValueAndParentInfo() ## In each declInfo[[i]], symbolicParentNodesReplaced, rhsVars, targetIndexNamePieces, and parentIndexNamePieces set
     genNodeInfo3(debug = debug)           ## In each contexts[[i]], replacementsEnv set. In each declInfo[[i]], replacementsEnv, unrolledIndicesMatrix, outputSize, and numUnrolledNodes set
     genVarInfo3()                         ## Sets varInfo[[nodeNames]] and logProbVarInfo[[nodeNames]] with varInfoClass objects (varName mins, maxs, nDim, anyStoch)
-    addDynamicIndexVars()             ## adds elements to varInfo for the dynamic index variables
+    addDynamicIndexVars()             ## adds elements to varInfo for the dynamic index variables and creates unknownIndexNames to store names of these lifted variables
     findDynamicIndexParticipants(debug = debug) ## update unknownIndex declarations with full extent of relevant variable and find vertices/variable elements involved in dynamic indexing (this may need to be split in two pieces)
     # actually we probably want findDynIdxParts to operate at vertex level, so needs to happen within or after genExpandedNodeAndParentNames3
     genExpandedNodeAndParentNames3(debug = debug) ## heavy processing: all graphIDs, maps, graph, nodeNames etc. built here
@@ -1295,7 +1295,6 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
     useContext <- unlist(lapply(indexExprs, isNameInExprList, parentExpr))
     if(nimbleOptions()$allowDynamicIndexing) {
         dynamicIndices <- detectDynamicIndices(parentExpr)
-        ## parentExpr[3:length(parentExpr)], function(x) is.numeric(x) && is.na(x))
         if(sum(dynamicIndices)) {
          ##   if(length(parentExpr) > 3 || length(indexExprs) > 1) stop("splitVertices: dynamic indexing with multiple indices not yet allowed in: ", deparse(parentExpr))  ## allowing this to pass for now to handle mu[3,NA,i]
             useDynamicIndices <- TRUE
@@ -1540,17 +1539,9 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
 }
 
 
-# Note: this method can only appear before genExpandedNodeAndParentNames3 if done by variable not if done by vertex as vertices created in genExpandedNodeAndParentNames3
-## perhaps make a varUsedInIndex environment and then later turn that into a vertexUsedInEnv 
-## this also now adds in fullExtent in place of NA
+## eventually the thought was that this will walk through declarations and find elements used in dynamic indexing, but it may move to later after vertices are created
+## perhaps make a varUsedInIndex environment and then later turn that into a vertexUsedInIndex environment; we will probably want use in dynamic indices recorded on a vertex basis
 modelDefClass$methods(findDynamicIndexParticipants = function(debug = FALSE) {
-## this will walk through declarations and find elements used in dynamic indexing
-## will also strip out .USED_IN_INDEX at this stage
-## I believe we want to record usage in dynamic indices based on variables rather than vertices given that we plan to have changes to values (which are stored based on variables) trigger changes in graph
-## however, we may allow an entire vertex to be the stochastic index, so this might be vertex-based, e.g.
-    # y[i,1:3] ~ dmnorm(mu[k[i,1:3]],...)  ; in this case the vertex k[1,1:3] is involved in a dynamic index
-    # outcome of PdV/CJP converstation 5/18/17 was that we probably want it based on vertices
-    ## for now all this does is strip out .USED_IN_INDEX
     if(nimbleOptions()$allowDynamicIndexing) {
         for(iDI in seq_along(declInfo)) {
             if(declInfo[[iDI]]$type == "unknownIndex") {
@@ -1583,7 +1574,6 @@ modelDefClass$methods(findDynamicIndexParticipants = function(debug = FALSE) {
             declInfo[[iDI]]$symbolicParentNodes <<- lapply(declInfo[[iDI]]$symbolicParentNodes, stripIndexWrapping)
         }
     }
-    # CJP note: make use of $replacementsEnv[[indexNamePieces]] to get indexing used in a decl
 })
 
 modelDefClass$methods(addDynamicIndexVars = function(debug = FALSE) {
@@ -1832,17 +1822,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     ## TBD future step: mu_UNKNOWN_INDEX_[1, NA] ... mu_UNKNOWN_INDEX_[10, NA]
     ## I think these would go in vars_2_vertexOrigID
     ## But detail: We need to keep track of entries in vars_2_vertexOrigID that are not in names(varInfo)
-    ## Fortunately
-
-    ## idea: (no, see next) go back into symbolicParentNodes and insert mu_UNKNOWN_INDEX; then run through splitVertices and splitCompletionForOrigNodes based on unknownIndexVarInfo that mimics varInfo or by putting mu_UNKNOWN_INDEX into varInfo
-    ## instead, insert BUGS code of muUI[i,1:extent,3]<-mu[i,1:extent,3]
-    ## and let vertex processing above handle it; have var be noted as unknownIndex; we'll get the necessary vertices for muUI and the necessary edges from mu to muUI
-    ## BUGSdecl type should be 'unknown_index'
-    ## or perhaps make it unknownIndexDecl and process it separately in some sense; then include unknownIndexDecl with BUGSdecl for processing above and same for unknownIndexVarInfo
-    ## could instead have
-    ## for(jj in 1:extent)
-    ## muUI[i,1:extent,3] <- mu[i, jj, 3]
-    ## and this would shard mu directly without need for new code in splitVertices, but complicated in terms of new indexing and weird in terms of redefining LHS
     
     ## 6. Make vertex names
     ##    E.g. from the results of the previous step, we may now need vertex names "x[1]", "x[2]" and "x[3:4]"
@@ -1906,8 +1885,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     
     ## SOMEWHERE put type labels for mu_UNKNOWN_INDEX
 
-    # add edges from mu_unkn_idx to y's here: perhaps insert mu_unknown_idx in place of mu in symbolicParentNodes and this should just work
-
+    
     # should this use symbolicParentNodesReplaced?
     ## replace 'mu[3,NA,i]' in symbolicParentNodes (and parentIndexNamePieces with '.mu_UNKNOWN_INDEX[3,1:4,i]' so that edges from mu_UNKNOWN_INDEX to dependents will happen naturally
     if(nimbleOptions()$allowDynamicIndexing) {
@@ -1964,9 +1942,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         }
     }
 
-    # add edges from mu[] to mu_unkn_idx here; somehow need mapping of mu vertices to mu_unknown_index vertices; we already have the mu vertices
-
-    
+   
     ## 9. Collect edges from original nodes to inferred vertices
     ##    e.g. When x[1:2] has been fractured into x[1] and x[2], there are edges from x[1:2] to x[1] and x[2]
     ##         Note that in getDependencies("x[1]"), the result will include "x[1:2]" as the nodeFunction of "x[1]"
@@ -2304,10 +2280,10 @@ modelDefClass$methods(genVarInfo3 = function() {
 })
 
 modelDefClass$methods(stripUnknownIndexInfo = function() {
-    # FIXME: figure out what node stuff needs removed because of unknownIndex "nodes"
+    # FIXME: figure out what other node stuff needs removed because unknownIndex nodes are not nodeFunctions
     if(nimbleOptions()$allowDynamicIndexing) {
         declInfo[sapply(declInfo, function(x) x$type == 'unknownIndex')] <<- NULL
-        # sapply(unknownIndexNames, function(x) assign(x, NULL, envir = varInfo)) # we may need the varInfo for the UNKNOWN_INDEX 'variables'
+        # sapply(unknownIndexNames, function(x) assign(x, NULL, envir = varInfo)) # keep as we may need the varInfo for the UNKNOWN_INDEX 'variables'
     }
 })
 
