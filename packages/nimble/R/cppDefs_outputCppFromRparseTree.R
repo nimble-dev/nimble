@@ -471,7 +471,7 @@ outputCppParseTree2 <- function(code, indent = '') {
     }
     
     dpc <- deparse(code)
-    if(is.name(code)) { ## && !(dpc %in% names(ModifiedRmmParseKeywords2))) { ## I'm not seeing when this last condition would matter
+    if(is.name(code)) {
         return(dpc)
     }
 
