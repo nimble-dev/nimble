@@ -300,12 +300,12 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NUL
         expect_true(modelKnown, 'Neither BUGS example nor model code supplied.')
         Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = dir, useInits = TRUE,
                                 check = FALSE)
-        test_mcmc_internal(Rmodel, dir, ..., name = name)
+        test_mcmc_internal(Rmodel, ..., name = name)
     })
 }
 
-test_mcmc_internal <- function(Rmodel, data = NULL, inits = NULL,
-                      verbose = FALSE, numItsR = 5, numItsC = 1000,
+test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
+                      verbose = TRUE, numItsR = 5, numItsC = 1000,
                       basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
                       numItsC_results = numItsC,
                       resampleData = FALSE,
@@ -323,7 +323,6 @@ test_mcmc_internal <- function(Rmodel, data = NULL, inits = NULL,
     # single multivar sampler: samplers(type = "RW_block", target = 'x')
     # multiple multivar samplers: samplers(type = "RW_block", target = list('x', c('theta', 'mu')))
 
-
     setSampler <- function(var, conf) {
         currentTargets <- sapply(conf$samplerConfs, function(x) x$target)
                                         # remove already defined scalar samplers
@@ -332,9 +331,6 @@ test_mcmc_internal <- function(Rmodel, data = NULL, inits = NULL,
                                         # look for cases where one is adding a blocked sampler specified on a variable and should remove scalar samplers for constituent nodes
         currentTargets <- sapply(conf$samplerConfs, function(x) x$target)
         inds <- which(sapply(unlist(var$target), function(x) Rmodel$expandNodeNames(x)) %in% currentTargets)
-                                        #      inds <- which(sapply(conf$samplerConfs, function(x)
-                                        #          gsub("\\[[0-9]+\\]", "", x$target))
-                                        #                         %in% var$target)
         conf$removeSamplers(inds, print = FALSE)
 
         if(is.list(var$target) && length(var$target) == 1) var$target <- var$target[[1]]
@@ -343,33 +339,9 @@ test_mcmc_internal <- function(Rmodel, data = NULL, inits = NULL,
     }
 
     expect_false(is.null(name), info = 'name argument NULL')
-    ## if(is.null(name)) {
-    ##     if(!missing(example)) {
-    ##         name <- example
-    ##     } else {
-    ##         if(is.character(model)) {
-    ##             name <- model
-    ##         } else {
-    ##             name <- 'unnamed case'
-    ##         }
-    ##     }
-    ## }
 
-    if(verbose) cat("===== Starting MCMC test for ", name, ". =====\n", sep = "")
-
-    ## if(!missing(example)) {
-    ##                                     # classic-bugs example specified by name
-    ##     dir = nimble:::getBUGSexampleDir(example)
-    ##     if(missing(model)) model <- example
-    ##     Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
-    ##                             check = FALSE)
-    ## } else {
-    ##                                     # code, data and inits specified directly where 'model' contains the code
-    ##     example = deparse(substitute(model))
-    ##     if(missing(model)) stop("Neither BUGS example nor model code supplied.")
-    ##     Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE,
-    ##                             check = FALSE)
-    ## }
+    ## leaving this message permanently on for now
+    cat("===== Starting MCMC test for ", name, ". =====\n", sep = "")
 
   if(doCpp) {
       Cmodel <- compileNimble(Rmodel)
@@ -415,7 +387,6 @@ test_mcmc_internal <- function(Rmodel, data = NULL, inits = NULL,
       }
 
       if(doR && doCpp && !is.null(R_samples)) {
-##          context(paste0("testing ", example, " MCMC"))
           expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
       }
       expect_false(is.null(R_samples), info = "R MCMC failed") 
@@ -440,7 +411,7 @@ test_mcmc_internal <- function(Rmodel, data = NULL, inits = NULL,
 
   ## assume doR and doCpp from here down
   if(!is.null(results)) {
-     # do (potentially) longer run and compare results to inputs given
+      ## do (potentially) longer run and compare results to inputs given
     set.seed(seed)
     Cmcmc$run(numItsC_results)
     CmvSample <- nfVar(Cmcmc, 'mvSamples')
@@ -549,8 +520,6 @@ test_mcmc_internal <- function(Rmodel, data = NULL, inits = NULL,
 
     if(doCpp) {
         if(.Platform$OS.type != "windows") {
-            ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rmcmc have the same project so they are interchangeable in these lines.
-            ##dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
             nimble:::clearCompiled(Rmodel)
         }
     }
