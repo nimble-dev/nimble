@@ -788,49 +788,49 @@ weightedMetricFunc <- function(index, samples, weights, metric, samplesToWeights
 }
 
 test_size <- function(input, verbose = TRUE) {
-    errorMsg <- paste0(ifelse(input$knownProblem, "KNOWN ISSUE: ", ""), "Result does not match ", input$expectPass)
+    if(is.null(input$expectPassWithConst)) input$expectPassWithConst <- input$expectPass
+    if(is.null(input$knownProblem)) input$knownProblem <- FALSE
+    if(is.null(input$knownProblemWithConst)) input$knownProblemWithConst <- input$knownProblem
+
     if(verbose) cat("### Testing", input$name, " with RHS variable ###\n")
-    result <- try(
+    code <- quote({
         m <- nimbleModel(code = input$expr, data = input$data, inits = input$inits)
-    )
-    try(test_that(paste0("Test 1 of size/dimension check: ", input$name),
-                  expect_equal(!is(result, "try-error"), input$expectPass,
-                              info = errorMsg)))
-    if(!is(result, "try-error")) {
-        result <- try(
-            { calculate(m); out <- calculate(m)} )
-        try(test_that(paste0("Test 2 of size/dimension check: ", input$name),
-                      expect_equal(!is(result, "try-error"), input$expectPass,
-                                  info = errorMsg)))
+        calculate(m)  ## Calculates from scratch.
+        calculate(m)  ## Uses cached value.
+    })
+    message = paste(input$name, 'with RHS', ifelse(input$expectPass, 'works', 'fails'), 'as expected')
+    if (input$knownProblem) message = paste(message, 'marked as KNOWN ISSUE')
+    if(xor(input$expectPass, input$knownProblem)) {
+        test_that(message, eval(code))
+    } else {
+        test_that(message, expect_error(eval(code)))
     }
-    
+
     if(verbose) cat("### Testing", input$name, "with RHS constant ###\n")
-    if(!is.null(input$expectPassWithConst)) input$expectPass <- input$expectPassWithConst
-    result <- try(
+    code <- quote({
         m <- nimbleModel(code = input$expr, data = input$data, constants = input$inits)
-    )
-    try(test_that(paste0("Test 3 of size/dimension check: ", input$name),
-                  expect_equal(!is(result, "try-error"), input$expectPass,
-                              info = errorMsg)))
-    if(!is(result, "try-error")) {
-        result <- try(
-            { calculate(m); out <- calculate(m)} )
-        try(test_that(paste0("Test 4 of size/dimension check: ", input$name),
-                      expect_equal(!is(result, "try-error"), input$expectPass,
-                                  info = errorMsg)))
+        calculate(m)  ## Calculates from scratch.
+        calculate(m)  ## Uses cached value.
+    })
+    message = paste(input$name, 'with RHS', ifelse(input$expectPassWithConst, 'works', 'fails'), 'as expected')
+    if (input$knownProblemWithConst) message = paste(message, 'marked as KNOWN ISSUE')
+    if(xor(input$expectPassWithConst, input$knownProblemWithConst)) {
+        test_that(message, eval(code))
+    } else {
+        test_that(message, expect_error(eval(code)))
     }
+
     invisible(NULL)
 }
 
 # could redo test_size to always expect specific error, but not taking time to do that now
 test_size_specific_error <- function(input, verbose = TRUE) {
-    errorMsg <- paste0(ifelse(input$knownProblem, "KNOWN ISSUE: ", ""), "Result does not match ", input$expectPass)
     if(verbose) cat("### Testing", input$name, "###\n")
-    try(test_that(paste0("Test 1 of size/dimension check: ", input$name),
-                  expect_error(
-                      m <- nimbleModel(code = input$expr, data = input$data, inits = input$inits),
-                      regexp = input$correctErrorMsg,
-                      info = errorMsg)))    
+    test_that(paste0("Test 1 of size/dimension check: ", input$name), {
+        expect_error(nimbleModel(code = input$expr, data = input$data, inits = input$inits),
+                     regexp = input$correctErrorMsg, info = paste("Result does not match", input$expectPass))
+    })
+
     invisible(NULL)
 }
 

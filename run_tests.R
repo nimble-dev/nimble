@@ -37,7 +37,7 @@ for (test in allTests) {
     if (runViaTestthat) {
         name <- gsub('test-(.*)\\.R', '\\1', test)
         script = paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "', name, '")')
-        commmand <- c(runner, '-e', shQuote(script))
+        command <- c(runner, '-e', shQuote(script))
     } else {
         command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
     }
