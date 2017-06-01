@@ -29,10 +29,8 @@ nimbleFunctionVirtual <- function(contains = NULL,
     ## We make this look like a nimbleFunction in relevants ways for compilation
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     methodList <- lapply(methodList, nfMethodRC, check = FALSE)
-##    CclassName <- as.character(NA) ##Rname2CppName(className)
     generatorFunction <- function() {}
     force(contains)
-##    Cwritten <- compiled <- loadedSO <- FALSE ## Not sure we need all these for an abstract class 
     nfRefClassDef <- nfRefClass <- NULL ## Existence of these makes this treated like a nfGenerator
     return(generatorFunction)
 }
@@ -191,7 +189,6 @@ nf_assignmentLHSvars <- function(code) {
 ## determines the name of the target variable, from the LHS code of an `<-` assignment statement
 nf_getVarFromAssignmentLHScode <- function(code) {
     if(is.name(code)) return(deparse(code))
-    ##if(!any(code[[1]] == c('[', '[[', '$')))  stop(paste0('invalid assignment target expression in setup: ', deparse(code)))
     return(nf_getVarFromAssignmentLHScode(code[[2]]))
 }
 
