@@ -778,7 +778,7 @@ test_that('c(a, 1.1) in BUGS works', {
     
     m <- nimbleModel(mc, inits = list(a = 2))
     expect_identical(as.numeric(m$b), c(2, 1.1))
-    m$b <- as.numeric(rep(NA, 3))
+    m$b <- as.numeric(rep(NA, 2))
     cm <- compileNimble(m)
     cm$calculate()
     expect_identical(as.numeric(cm$b), c(2, 1.1))
@@ -856,7 +856,7 @@ test_that('seq(1.2, 2.3, length = 3) in BUGS works', {
     })
     m <- nimbleModel(mc)
     expect_identical(as.numeric(m$b), seq(1.2, 2.3, length = 3) )
-    m$b <- as.numeric(rep(NA, 2))
+    m$b <- as.numeric(rep(NA, 3))
     cm <- compileNimble(m)
     cm$calculate()
     expect_identical(as.numeric(cm$b), seq(1.2, 2.3, length = 3) )

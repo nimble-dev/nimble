@@ -245,7 +245,8 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                                                         .GlobalEnv$.nimble.traceback <- capture.output(traceback(stack))
                                                                     }),
                                                 error = function(e) {
-                                                    message <- paste('There was some problem in the the setSizes processing step for this code:',
+                                                    eMessage <- if(!is.null(e$message)) paste0(as.character(e$message),"\n") else ""
+                                                    message <- paste(eMessage, 'There was some problem in the the setSizes processing step for this code:',
                                                                      paste(deparse(compileInfo$origRcode), collapse = '\n'))
                                                     if(getNimbleOption('verboseErrors')) {
                                                         message <- paste(message,

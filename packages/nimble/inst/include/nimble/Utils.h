@@ -36,12 +36,16 @@ class nimbleTimerClass_ {
 #define PRINTF Rprintf
 #define NIMERROR error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
-#define NIM_ASSERT(cond, ...) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " __VA_ARGS__); }}
+/* #define NIM_ASSERT(cond, ...) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " __VA_ARGS__); }} */ /* future */
+#define NIM_ASSERT1(cond, msg) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg); }}
+#define NIM_ASSERT2(cond, msg, msgArg1) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1); }}
+#define NIM_ASSERT3(cond, msg, msgArg1, msgArg2) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1, msgArg2); }}
+#define NIM_ASSERT4(cond, msg, msgArg1, msgArg2, msgArg3) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1, msgArg2, msgArg3); }}
 
-#define NIM_ASSERT_SIZE(my_array, n)                                   \
-    NIM_ASSERT(my_array.dimSize(0) == n,                               \
-               #my_array " has wrong size: expected %d, actual %d", n, \
-               my_array.dimSize(0));
+#define NIM_ASSERT_SIZE(my_array, n)                                    \
+    NIM_ASSERT3(my_array.dimSize(0) == n,                               \
+                #my_array " has wrong size: expected %d, actual %d", n, \
+                my_array.dimSize(0));
 
 // code copied from nmath.h - useful utilities 
 # define MATHLIB_ERROR(fmt,x)		error(fmt,x);

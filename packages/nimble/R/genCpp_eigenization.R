@@ -439,7 +439,7 @@ promoteArgTypes <- function(code) {
     argID <- 0
     newType <- 'double'
 
-    if(code$name == '<-') {argID <- 2; newType <- a1Type} ##return(eigenCast(code, 2, a1type))
+    if(code$name == '<-') {argID <- 2; newType <- a1type} ##return(eigenCast(code, 2, a1type))
     ## because we know arg types don't match, pairs of conditions are mutually exclusive
     if(argID == 0) {
         if(a2type == 'double') { argID <- 1; newType <- 'double'} ##return(eigenCast(code, 1, 'double'))

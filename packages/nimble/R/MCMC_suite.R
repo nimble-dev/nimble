@@ -55,6 +55,8 @@
 #' \code{'stan'} specifies Stan; in this case, must also provide the \code{'stan_model'} argument;
 #' \code{'nimble'} specifies NIMBLE's default MCMC algorithm;
 #' \code{'nimble_noConj'} specifies NIMBLE's default MCMC algorithm without the use of any conjugate Gibbs sampling;
+#' \code{'nimble_RW'} specifies NIMBLE MCMC algorithm using only random walk Metropolis-Hastings (\code{'RW'}) samplers;
+#' \code{'nimble_slice'} specifies NIMBLE MCMC algorithm using only slice (\code{'slice'}) samplers;
 #' \code{'autoBlock'} specifies NIMBLE MCMC algorithm with block sampling of dynamically determined parameter groups attempting to maximize sampling efficiency;
 #' Anything else will be interpreted as NIMBLE MCMC algorithms, and must have associated entries in the MCMCdefs argument.
 #' Default value is \code{'nimble'}, which specifies NIMBLE's default MCMC algorithm.
@@ -136,7 +138,7 @@
 #'                     inits = list(mu=0),
 #'                     niter = 10000,
 #'                     monitors = 'mu',
-#'                     MCMCs = c('nimble', 'jags'),
+#'                     MCMCs = c('nimble', 'nimble_RW'),
 #'                     summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
 #'                     makePlot = FALSE)
 #' }
@@ -202,7 +204,7 @@ MCMCsuite <- function(
 #'                     inits = list(mu=0),
 #'                     niter = 10000,
 #'                     monitors = 'mu',
-#'                     MCMCs = c('nimble', 'jags'),
+#'                     MCMCs = c('nimble', 'nimble_RW'),
 #'                     summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
 #'                     makePlot = FALSE)
 #' }
@@ -399,6 +401,8 @@ MCMCsuiteClass <- setRefClass(
         setMCMCdefs = function(newMCMCdefs) {
             MCMCdefs <<- list(nimble        = quote(configureMCMC(Rmodel)),
                               nimble_noConj = quote(configureMCMC(Rmodel, useConjugacy = FALSE)),
+                              nimble_RW     = quote(configureMCMC(Rmodel, onlyRW       = TRUE)),
+                              nimble_slice  = quote(configureMCMC(Rmodel, onlySlice    = TRUE)),
                               autoBlock     = quote(configureMCMC(Rmodel, autoBlock    = TRUE)))
             MCMCdefs[names(newMCMCdefs)] <<- newMCMCdefs
             MCMCdefNames <<- names(MCMCdefs)

@@ -162,7 +162,7 @@ inline nimSmartPtr<OptimResultNimbleList> nimOptim(
     NimArr<1, double>& par, Fn fn, const char* gr, const std::string& method,
     NimArr<1, double>& lower, NimArr<1, double>& upper,
     nimSmartPtr<OptimControlNimbleList> control, bool hessian) {
-    NIM_ASSERT(
+    NIM_ASSERT1(
         strcmp(gr, "NULL") == 0,
         "Internal error: failed to handle gradient argument type in optim()");
     return NimOptimProblem_Fun<Fn>(fn, method, lower, upper, control, hessian)
@@ -191,7 +191,7 @@ inline nimSmartPtr<OptimResultNimbleList> nimOptim(
     NimArr<1, double>& par, Fn fn, const char* gr, const std::string& method,
     double lower, double upper, nimSmartPtr<OptimControlNimbleList> control,
     bool hessian) {
-    NIM_ASSERT(
+    NIM_ASSERT1(
         strcmp(gr, "NULL") == 0,
         "Internal error: failed to handle gradient argument type in optim()");
     NimArr<1, double> lower_vector;

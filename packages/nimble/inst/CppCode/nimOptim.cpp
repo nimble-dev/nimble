@@ -53,7 +53,7 @@ nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl() {
 //   https://svn.r-project.org/R/trunk/src/include/R_ext/Applic.h
 nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     NimArr<1, double>& par) {
-    NIM_ASSERT(!par.isMap(), "Internal error: failed to handle mapped NimArr");
+    NIM_ASSERT1(!par.isMap(), "Internal error: failed to handle mapped NimArr");
     const int n = par.dimSize(0);
 
     nimSmartPtr<OptimResultNimbleList> result = new OptimResultNimbleList;

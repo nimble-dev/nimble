@@ -56,10 +56,11 @@ sampler_binary <- nimbleFunction(
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
     },
     run = function() {
-        currentProb <- exp(getLogProb(model, calcNodes))
+        currentLogProb <- getLogProb(model, calcNodes)
         model[[target]] <<- 1 - model[[target]]
-        otherProb <- exp(calculate(model, calcNodes))
-        if(!is.nan(otherProb) & runif(1,0,1) < otherProb/(currentProb+otherProb))
+        otherLogProb <- calculate(model, calcNodes)
+        acceptanceProb <- 1/(exp(currentLogProb - otherLogProb) + 1)
+        if(!is.nan(acceptanceProb) & runif(1,0,1) < acceptanceProb)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         else
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)

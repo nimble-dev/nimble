@@ -15,7 +15,6 @@
 #' @param scale_param logical; if TRUE the Cholesky factor is that of the scale matrix; otherwise, of the rate matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
 #' @return \code{dwish_chol} gives the density and \code{rwish_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -65,7 +64,6 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 #' @param scale_param logical; if TRUE the Cholesky factor is that of the scale matrix; otherwise, of the rate matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
 #' @return \code{dinvwish_chol} gives the density and \code{rinvwish_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -219,10 +217,9 @@ nimSvd <- function(x, vectors = 'full') {
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #'
 #' @author Christopher Paciorek
-#' @export
-#' @return \code{dflat} gives the pseudo-density value of 1, while \code{rflat} returns \code{NaN},
+#' @return \code{dflat} gives the pseudo-density value of 1, while \code{rflat} and \code{rhalfflat} return \code{NaN},
 #' since one cannot simulate from an improper distribution. Similarly, \code{dhalfflat}
-#' gives a pseudo-density value of 1 when \code{
+#' gives a pseudo-density value of 1 when \code{x} is non-negative.
 #' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples
@@ -272,7 +269,6 @@ rhalfflat <- function(n = 1) {
 #' @param alpha vector of parameters of same length as \code{x}
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. 
 #' @return \code{ddirch} gives the density and \code{rdirch} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -310,7 +306,6 @@ rdirch <- function(n = 1, alpha) {
 #' @param prob vector of probabilities, internally normalized to sum to one, of same length as \code{x}
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. 
 #' @return \code{dmulti} gives the density and \code{rmulti} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -347,7 +342,6 @@ rmulti <- function(n = 1, size, prob) {
 #' @param prob vector of probabilities, internally normalized to sum to one.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See the BUGS manual for mathematical details. 
 #' @return \code{dcat} gives the density and \code{rcat} generates random deviates.
 ##' @seealso \link{Distributions} for other standard distributions
@@ -392,7 +386,6 @@ rcat <- function(n = 1, prob) {
 #' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
 #' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. 
 #' @return \code{dt_nonstandard} gives the density, \code{pt_nonstandard} gives the distribution
 #' function, \code{qt_nonstandard} gives the quantile function, and \code{rt_nonstandard}
@@ -442,7 +435,6 @@ qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.
 #' @param prec_param logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the covariance matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
 #' @return \code{dmnorm_chol} gives the density and \code{rmnorm_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -493,7 +485,6 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 #' @param prec_param logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the scale matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Peter Sujan
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The 'precision' matrix as used here is defined as the inverse of the scale matrix, \eqn{\Sigma^{-1}}, given in Gelman et al. 
 #' @return \code{dmvt_chol} gives the density and \code{rmvt_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -543,7 +534,6 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
 #' @param c vector of one or more values delineating the intervals.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details Used for working with censoring in BUGS code.
 #' Taking \code{c} to define the endpoints of two or more intervals (with implicit endpoints of plus/minus infinity), \code{x} (or the return value of \code{rinterval}) gives the non-negative integer valued index of the interval in which \code{t} falls. See the NIMBLE manual for additional details. 
 #' @return \code{dinterval} gives the density and \code{rinterval} generates random deviates,
@@ -583,7 +573,6 @@ rinterval <- function(n = 1, t, c) {
 #' @param cond logical value   
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details Used for working with constraints in BUGS code.
 #' See the NIMBLE manual for additional details. 
 #' @return \code{dconstraint} gives the density and \code{rconstraint} generates random deviates,
@@ -640,7 +629,6 @@ rconstraint <- function(n = 1, cond) {
 #' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
 #' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
 #' @author Christopher Paciorek
-#' @export
 #' @details NIMBLE's exponential distribution functions use Rmath's functions
 #' under the hood, but are parameterized to take both rate and scale and to
 #' use 'rate' as the core parameterization in C, unlike Rmath, which uses 'scale'.
@@ -721,7 +709,6 @@ qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
 #' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
 #' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
 #' @author Christopher Paciorek
-#' @export
 #' @details The inverse gamma distribution with parameters \code{shape} \eqn{=\alpha}{= a} and
 #' \code{scale} \eqn{=\sigma}{= s} has density
 #' \deqn{

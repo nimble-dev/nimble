@@ -94,7 +94,7 @@ addIndentToList <- function(x, indent) {
 ### Deparse from exprClass back to R code: not guaranteed to be identical, but valid.
 nimDeparse <- function(code, indent = '') {
     ## numeric case
-    if(is.numeric(code)) return(code)
+    if(is.numeric(code) | is.logical(code)) return(code)
     if(is.character(code)) return(paste0('\"', code, '\"'))
     if(is.null(code)) return('NULL')
     ## name

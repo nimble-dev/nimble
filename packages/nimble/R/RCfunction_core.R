@@ -1,6 +1,19 @@
 # for use in DSL code check:
-otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType", "seq_along", "double", "rankSample", "new",
-                   "nimEigen", "nimSvd", "nimOptim", "nimOptimDefaultControl")
+otherDSLcalls <- c("{",
+                   "[[",
+                   "$",
+                   "resize",
+                   "declare",
+                   "returnType",
+                   "seq_along",
+                   "double",
+                   "rankSample",
+                   "new",
+                   "nimEigen",
+                   "nimSvd",
+                   "nimOptim",
+                   "nimOptimDefaultControl",
+                   "void")
 
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
@@ -138,9 +151,9 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
                                      sapply(nonDSLinR, function(x) is.rcf(x, inputIsName = TRUE)) |
                                      sapply(nonDSLinR, function(x) is.nlGenerator(x, inputIsName = TRUE)))]
         if(length(nonDSLinR))
-           warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists: ", paste(nonDSLinR, collapse = ', '), "."))
+           warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists: ", paste(nonDSLinR, collapse = ', '), "."), call. = FALSE)
         if(length(nonDSLnonR))
-            warning(paste0("For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists before compilation: ", paste(nonDSLnonR, collapse = ', '), "."))
+            warning(paste0("For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists before compilation: ", paste(nonDSLnonR, collapse = ', '), "."), call. = FALSE)
     }
     return(0)
 }
