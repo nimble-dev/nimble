@@ -4,29 +4,33 @@ update DESCRIPTION and INSTALL with current version number
 
 update LICENSE with current year
 
+check CRAN results page to see what issues CRAN testing has noted:
+https://cran.r-project.org/web/checks/check_results_nimble.html
+
 for version on nimble website, remove FLIBS from src/Makevars.in
 for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
 
 Make sure src/Makevars.win is present.
 
-R CMD build nimble
-R CMD INSTALL nimble_${VERSION}.tar.gz
-# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
+# before running prep_pkg.R make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
 
-./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
-
+./prep_pkg.R # this creates man pages and updates NAMESPACE
 
 R CMD build nimble
 R CMD check --as-cran nimble_${VERSION}.tar.gz
 # officially this should be done on a development build of R, but now can be done formally using rhub (see below), so doing on your own machine in a release version of R just serves as a first pass
 
+R CMD INSTALL nimble_${VERSION}.tar.gz
+
 run tests:
 in particular check exact results vs previous versions (ignore differences in compilation log info)
 doing this test by test because of DLL unloading issue
-types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists filtering getBound getDependencies getDistributionInfo getParam math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList numericTypes setData size trunc types user"
+types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists errors filtering getBound getDependencies getDistributionInfo getParam graphStructure math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList nimbleList_RCfun numericTypes setData size trunc types user"
 for type in $types; do
-Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
+Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" > /tmp/test-results-v${VERSION} 2>&1
 done
+
+run tests on all OS ideally
 
 rebuild manual as further test of package
 
@@ -38,9 +42,9 @@ and change to requireNamespace('rstan') from require('rstan')
 
 test cross-machine on Macs and on Windows
 
-can test using rhub:
+can test using rhub (from within packages/nimble):
 
-Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel')); check_with_sanitizers()" >> rhub.out
+Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> rhub.out
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 

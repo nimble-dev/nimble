@@ -105,7 +105,12 @@ nimbleList <- function(...,
     ## attaches two attributes, one to mark it as a nimbleList (for efficienct checking
     ## compatible with checking of other objects that have a class) and
     ## one that has the nimbleListDefClass object
-  
+
+    ## This manual override allows us to generate static code by temporarily setting
+    ## predefined = FALSE for all predefined nimbleLists.
+    GENERATE_STATIC_CODE <- FALSE  ## Enable this before using generateStaticCode.R.
+    if(GENERATE_STATIC_CODE) predefined <- FALSE
+    
   ## 3 possibilities: arguments as expressions, arguments as list created within call,
   ## arguments as list created outside of call
   
@@ -360,7 +365,7 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #' @field counts A two-element integer vector giving the number of calls to fn and gr respectively.
 #' @field convergence An integer code. 0 indicates successful completion. Possible error codes are
 #'        1 indicates that the iteration limit maxit had been reached.
-#'        10 indicates degeneracy of the Nelder–Mead simplex.
+#'        10 indicates degeneracy of the Nelder-Mead simplex.
 #'        51 indicates a warning from the "L-BFGS-B" method; see component message for further details.
 #'        52 indicates an error from the "L-BFGS-B" method; see component message for further details.
 #' @field message A character string giving any additional information returned by the optimizer, or NULL.
@@ -383,7 +388,7 @@ optimResultNimbleList <- nimbleList(
 
 #' EXPERIMENTAL Data type for the \code{control} parameter of \code{\link{nimOptim}}
 #'
-#' \code{\link{nimbleList} definition for the type of \code{\link{nimbleList}} input as the \code{\link{control}} parameter
+#' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} input as the \code{control} parameter
 #' to \code{\link{nimOptim}}. See \code{\link{optim}} for details.
 #' 
 #' @export
@@ -391,9 +396,10 @@ optimResultNimbleList <- nimbleList(
 optimControlNimbleList <- nimbleList(
     list(
         nimbleType('trace', 'integer', 0),
+        nimbleType('fnscale', 'double', 0),
         nimbleType('parscale', 'double', 1),
         nimbleType('ndeps', 'double', 1),
-        nimbleType('maxIt', 'integer', 0),
+        nimbleType('maxit', 'integer', 0),
         nimbleType('abstol', 'double', 0),
         nimbleType('reltol', 'double', 0),
         nimbleType('alpha', 'double', 0),

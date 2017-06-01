@@ -716,6 +716,45 @@ logicalTests <- list(
          outputType = quote(double(2)))
 )
 
+returnTests <- list(
+    list(name = "return(rnorm scalar)",
+         expr = quote({}),
+         return = quote(return(rnorm(1))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double())),
+    list(name = "return(rnorm vector)",
+         expr = quote({}),
+         return = quote(return(rnorm(4))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))),
+    list(name = "return(rep(...))",
+         expr = quote({}),
+         return = quote(return(rep(1.23, 4))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))),
+    list(name = "return(seq(...))",
+         expr = quote({}),
+         return = quote(return(seq(from = .1, to = .5, by = .15))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))),
+    list(name = "return(A + B scalar)",
+         expr = quote({A <- .1; B <- .2}),
+         return = quote(return(A + B)),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(0))),
+    list(name = "return(A + B vector)",
+         expr = quote({A <- rep(.1, 3); B <- rep(.2, 3)}),
+         return = quote(return(A + B)),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))) 
+)
+
 cTestsResults <- lapply(cTests, test_coreRfeature)
 blockTestsResults <- lapply(blockTests, test_coreRfeature)
 repTestsResults <- lapply(repTests, test_coreRfeature)
@@ -726,3 +765,116 @@ seqTestsResults <- lapply(seqTests, test_coreRfeature)
 nonSeqIndexTestsResults <- lapply(nonSeqIndexTests, test_coreRfeature)
 indexChainTestsResults <- lapply(indexChainTests, test_coreRfeature)
 logicalTestsResults <- lapply(logicalTests, test_coreRfeature)
+returnTestResults <- lapply(returnTests, test_coreRfeature)
+
+
+## Some tests of using coreR features in BUGS models
+
+test_that('c(a, 1.1) in BUGS works', {
+    mc <- nimbleCode({
+        a ~ dnorm(0,1)
+        b[1:2] <- c(a, 1.1)
+    })
+    
+    m <- nimbleModel(mc, inits = list(a = 2))
+    expect_identical(as.numeric(m$b), c(2, 1.1))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), c(2, 1.1))
+}
+)
+
+##
+
+test_that('c(1.2, 1.1) in BUGS works', {
+    mc <- nimbleCode({
+        b[1:2] <- c(1.2, 1.1)
+    })
+    m <- nimbleModel(mc)
+    expect_identical(as.numeric(m$b), c(1.2, 1.1))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), c(1.2, 1.1))
+}
+)
+
+##
+
+test_that('rep(a, 2) in BUGS works', {
+    mc <- nimbleCode({
+        a ~ dnorm(0,1)
+        b[1:2] <- rep(a, 2)
+    })
+    
+    m <- nimbleModel(mc, inits = list(a = 1.2))
+    expect_identical(as.numeric(m$b), c(1.2, 1.2))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), c(1.2, 1.2))
+}
+)
+
+##
+
+test_that('rep(1,2)  in BUGS works', {
+    mc <- nimbleCode({
+        b[1:2] <- rep(1, 2)
+    })
+    m <- nimbleModel(mc)
+    expect_identical(as.numeric(m$b), rep(1, 2))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), rep(1, 2))
+}
+)
+
+
+##
+
+test_that('2:3   in BUGS works', {
+    mc <- nimbleCode({
+        b[1:2] <- 2:3 
+    })
+    m <- nimbleModel(mc)
+    expect_equal(as.numeric(m$b), 2:3 )
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_equal(as.numeric(cm$b), 2:3 )
+}
+)
+
+##
+
+test_that('seq(1.2, 2.3, length = 3) in BUGS works', {
+    mc <- nimbleCode({
+        b[1:3] <- seq(1.2, 2.3, length = 3)
+    })
+    m <- nimbleModel(mc)
+    expect_identical(as.numeric(m$b), seq(1.2, 2.3, length = 3) )
+    m$b <- as.numeric(rep(NA, 3))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), seq(1.2, 2.3, length = 3) )
+}
+)
+
+##
+
+test_that('diag(3) in BUGS works', {
+    mc <- nimbleCode({
+        b[1:3, 1:3] <- diag(3)
+    })
+    m <- nimbleModel(mc)
+    expect_equal(m$b, diag(3))
+    m$b <- matrix(100, nrow = 3, ncol = 3)
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(cm$b, diag(3))
+}
+)
+

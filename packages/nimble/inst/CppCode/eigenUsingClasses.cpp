@@ -7,16 +7,16 @@
 
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
-  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+  NIM_ASSERT2(isNumeric(Sn) || isLogical(Sn),
     "SEXP_2_NimArr<1, double> called for SEXP that is not a numeric or logical: actual type %s\n",
     type2str(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
-  NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
+  NIM_ASSERT1(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(nn);
   if(isReal(Sn)) {
      std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());
   } else {
-    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+    NIM_ASSERT2(isInteger(Sn) || isLogical(Sn),
       "could not handle input of type %s to SEXP_2_NimArr<1, double>\n",
       type2str(TYPEOF(Sn)));
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
@@ -29,16 +29,16 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
 // Actually this is identical to above so could be done without specialization
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
-  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+  NIM_ASSERT2(isNumeric(Sn) || isLogical(Sn),
     "SEXP_2_NimArr<1, int> called for SEXP that is not a numeric or logical: actual type %s\n",
     type2str(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
-  NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
+  NIM_ASSERT1(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(nn);
   if(isReal(Sn)) {
      std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());
   } else {
-    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+    NIM_ASSERT2(isInteger(Sn) || isLogical(Sn),
       "could not handle input of type %s to SEXP_2_NimArr<1, int>\n",
       type2str(TYPEOF(Sn)));
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
@@ -58,9 +58,9 @@ SEXP  EIGEN_EIGENCLASS_R::copyToSEXP (  )  {
 	SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
 	PROTECT(S_values = NimArr_2_SEXP<1>(values));
 	PROTECT(S_vectors = NimArr_2_SEXP<2>(vectors));
-	defineVar(install("values"), S_values, GET_SLOT(RObjectPointer, S_pxData));
-	defineVar(install("vectors"), S_vectors, GET_SLOT(RObjectPointer, S_pxData));
-	UNPROTECT(3);
+	defineVar(install("values"), S_values, PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
+	defineVar(install("vectors"), S_vectors, PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
+	UNPROTECT(5);
 	
 	return(RObjectPointer);
 }
@@ -82,11 +82,11 @@ void  EIGEN_EIGENCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
 	RObjectPointer =  S_nimList_;
 	PROTECT(S_pxData = allocVector(STRSXP, 1));
 	SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
-	PROTECT(S_values = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("values")));
-	PROTECT(S_vectors = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("vectors")));
+	PROTECT(S_values = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)), install("values")));
+	PROTECT(S_vectors = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)), install("vectors")));
 	SEXP_2_NimArr<1>(S_values, values);
 	SEXP_2_NimArr<2>(S_vectors, vectors);
-	UNPROTECT(3);
+	UNPROTECT(5);
 }
 
 
@@ -102,10 +102,10 @@ void  EIGEN_EIGENCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
  	PROTECT(S_d = NimArr_2_SEXP<1>(d));
  	PROTECT(S_u = NimArr_2_SEXP<2>(u));
  	PROTECT(S_v = NimArr_2_SEXP<2>(v));
- 	defineVar(install("d"), S_d, GET_SLOT(RObjectPointer, S_pxData));
- 	defineVar(install("u"), S_u, GET_SLOT(RObjectPointer, S_pxData));
- 	defineVar(install("v"), S_v, GET_SLOT(RObjectPointer, S_pxData));
- 	UNPROTECT(4);
+ 	defineVar(install("d"), S_d, PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
+ 	defineVar(install("u"), S_u, PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
+ 	defineVar(install("v"), S_v, PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
+ 	UNPROTECT(7);
 		
  	return(RObjectPointer);
  }
@@ -128,13 +128,13 @@ void  EIGEN_EIGENCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
  	RObjectPointer =  S_nimList_;
  	PROTECT(S_pxData = allocVector(STRSXP, 1));
  	SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
- 	PROTECT(S_d = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("d")));
- 	PROTECT(S_v = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("v")));
- 	PROTECT(S_u = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("u")));
+ 	PROTECT(S_d = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)), install("d")));
+ 	PROTECT(S_v = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)), install("v")));
+ 	PROTECT(S_u = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)), install("u")));
  	SEXP_2_NimArr<1>(S_d, d);
  	SEXP_2_NimArr<2>(S_v, v);
  	SEXP_2_NimArr<2>(S_u, u);
- 	UNPROTECT(4);
+ 	UNPROTECT(7);
  }
 
 SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {

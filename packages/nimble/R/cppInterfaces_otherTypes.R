@@ -82,39 +82,8 @@ populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dl
     eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateValueMapAccessorsFromNodeNames, manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr))
 }
 
-## addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
-##     countInf$count <- countInf$count + 1
-##     addNodeFxn(fxnVecPtr, nodes[[x]]$.basePtr, addAtEnd = FALSE, index = countInf$count)
-## }
-
-## getFxnVectorPtr <- function(fxnPtr, fxnVecName)
-##     .Call('getModelObjectPtr', fxnPtr, fxnVecName)
-
-## populateNodeFxnVec_OLD <- function(fxnPtr, Robject, fxnVecName){
-##     fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
-##     resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes))	
-##     nodePtrsEnv <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointersEnv
-##     nil <- .Call('populateNodeFxnVector', fxnVecPtr, Robject[[fxnVecName]]$nodes, nodePtrsEnv)
-## }
-
 getNamedObjected <- function(objectPtr, fieldName, dll)
     eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, objectPtr, fieldName))
-
-inner_populateNodeFxnVec <- function(fxnVecPtr, gids, numberedPtrs, dll)
-    nil <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVector_byGID, fxnVecPtr, as.integer(gids), numberedPtrs))
-
-## This is deprecated.  Remove at some point.
-populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName, dll){
-    fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName, dll = dll)
-    gids <- Robject[[fxnVecName]]$gids
-    numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byGID$.ptr
-    
-    ## This is not really the most efficient way to do things; eventually 
-    ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
-    ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
-	
-    inner_populateNodeFxnVec(fxnVecPtr, gids, numberedPtrs, dll = dll)
-}
 
 populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
     fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName, dll = dll)

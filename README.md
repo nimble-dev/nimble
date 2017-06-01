@@ -16,19 +16,27 @@ NIMBLE is an R package for programming with BUGS models and compiling parts of R
 
 ## Installation
 
-At the moment, you must install from the source package on any of Linux, Windows or Mac:
+NIMBLE can be installed in the usual fashion from CRAN, but Mac users need to have Xcode installed and Windows users need Rtools installed. Please see the User Manual for more details.
 
-```r
-# Linux, Windows, or Mac:
-install.packages("nimble", type = "source")
+One can also install from the package version on our website; in general there is no need to do this, but some additional functionality in `compareMCMCs` and `MCMCsuite` is only available through the version on our website. To install from the website, invoke:
+```
+install.packages("nimble", type = "source", repos = "http://r-nimble.org")
 ```
 
-Or use `R CMD INSTALL` after downloading from our [website](http://r-nimble.org/download-nimble)
+Or use `R CMD INSTALL` after downloading from our [website](http://r-nimble.org/download-nimble).
 
 ## Citation
 
-NIMBLE Development Team. 2014. NIMBLE: An R Package for Programming with BUGS models, Version 0.4.   http://r-nimble.org.
+NIMBLE Development Team. 2017. NIMBLE: An R Package for Programming with BUGS models, Version 0.6-5.   http://r-nimble.org.
 
 ## Acknowledgements
 
-The development of NIMBLE has been funded by an NSF Advances in Biological Informatics grant (DBI-1147230) to P. de Valpine, C. Paciorek, and D. Temple Lang, with additional support provided by postdoctoral funding for D. Turek from the Berkeley Institute for Data Science.
+The development of NIMBLE has been funded by:
+
+* an NSF Advances in Biological Informatics grant (DBI-1147230) to P. de Valpine, C. Paciorek, and D. Temple Lang;
+* an NSF SI2-SSI grant  (ACI-1550488) to P. de Valpine, C. Paciorek, and D. Temple Lang; and
+* an NSF Collaborative Research grant (DMS-1622444) to P. de Valpine, A. Rodriguez, and C. Paciorek.
+
+with additional support provided by postdoctoral funding for D. Turek from the Berkeley Institute for Data Science and Google Summer of Code fellowships for N. Michaud (2015) and C. Lewis-Beck (2017).
+
+

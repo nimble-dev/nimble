@@ -6,7 +6,7 @@ nimble_0.1.tar.gz :  nimble/*
 prep:  nimble/R nimble_0.1.tar.gz nimble/NAMESPACE nimble/man
       # need installed pkg to be able to list all fxns/classes
       R CMD INSTALL nimble_0.1.tar.gz
-      ./prep_pkg
+      ./prep_pkg.R
 
 all:  nimble/man/* nimble_0.1.tar.gz nimble/NAMESPACE
 

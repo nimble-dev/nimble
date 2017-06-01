@@ -62,7 +62,6 @@ matrixSquareOperators <- c('chol','inverse')
 nimbleListReturningOperators <- c('nimEigen', 'nimSvd')  ## These use sizeNimbleListReturningFunction. Note that nimOptim is handled separately.
 matrixSolveOperators <- c('solve','forwardsolve','backsolve')
 passThroughOperators <- c('return')
-##keywordOperators <- c('for','if', 'while')
 
 returnTypeCodes <- list(
     double = 1L,
@@ -105,11 +104,7 @@ brackOperators <- list('[' = c('[',']'), '[[' = c('[[',']]'))
 
 callToSkipInEigenization <- c('copy','setValues', 'setValuesIndexRange', 'getValues', 'getValuesIndexRange', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dinvwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rinvwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'calculateDiff', 'simulate', 'getLogProb', 'nimEquals', 'startNimbleTimer', 'endNimbleTimer')
 
-
-## used for nimDeparse &/or cppOutputs
-
 ## used for cppOutputs
-## eigProxyCalls <- c('eigTranspose', 'eigCos', 'eigSin', 'eigTan', 'eigAcos', 'eigAsin', 'eigExp', 'eigLog', 'eigCube', 'cwiseProduct', 'cwiseQuotient', 'eigArray', 'eigMatrix', 'eigInverse', 'setAll', 'eigEval')
 ## things here should have the inverse listing in the eigenizeTranslate list
 eigProxyTranslate <- c(eigTranspose = 'transpose',
                        eigCos = 'cos',
@@ -175,7 +170,6 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
                                        eigIprobit = c('iprobit', 'double', 'double'),
                                        eigGammafn = c('gammafn', 'double', 'double'),
                                        eigLgammafn = c('lgammafn', 'double', 'double'),
-                                       ##eigLgamma1p = c('lgamma1p', 'double', 'double'),
                                        eigLog1p = c('log1p', 'double', 'double'),
                                        eigLfactorial = c('lfactorial', 'double', 'double'),
                                        eigFactorial = c('factorial', 'double', 'double'),

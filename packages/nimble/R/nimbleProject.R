@@ -821,13 +821,16 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                    if(!is.nl(nl)) stop("Can't instantiateNimbleList, nl is not a nimbleList")
                                    className <- nl$nimbleListDef$className
                                    nlCppDef <- getNimbleListCppDef(generatorName = className)
-                                   ok <- TRUE
+                                     ok <- TRUE
+                                     dllToUse <- if(isTRUE(nl.getDefinitionContent(nl.getGenerator(nl), 'predefined')))
+                                                     nimbleUserNamespace$sessionSpecificDll
+                                                 else dll
                                    if(asTopLevel) {
                                      if(is.null(nlCppDef$Rgenerator)) ok <- FALSE
-                                     else ans <- nlCppDef$Rgenerator(nl, dll = dll, project = .self)
+                                     else ans <- nlCppDef$Rgenerator(nl, dll = dllToUse, project = .self)
                                    } else {
                                      if(is.null(nlCppDef$CmultiInterface)) ok <- FALSE
-                                     else ans <- nlCppDef$CmultiInterface$addInstance(nl, dll = dll)
+                                     else ans <- nlCppDef$CmultiInterface$addInstance(nl, dll = dllToUse)
                                    }
                                    if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
                                    ans

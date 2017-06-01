@@ -83,7 +83,7 @@ nimGenerateCpp <- function(code, symTab = NULL, indent = '', showBracket = TRUE,
     if(is.numeric(code)) return(code)
     if(is.character(code)) return(paste0('\"', gsub("\\n","\\\\n", code), '\"'))
     if(is.null(code)) return('R_NilValue')
-    if(is.logical(code) ) return(code)
+    if(is.logical(code) ) return(if(code) 'true' else 'false')
     if(is.list(code) ) stop("Error generating C++ code, there is a list where there shouldn't be one.  It is probably inside map information.", call. = FALSE)
 
     if(length(code$isName) == 0) browser()
@@ -173,8 +173,6 @@ cppNewNimbleList <- function(code, symTab) {
     ## This won't work for something like A$B <- nl$new()
     ## because the first arg of the caller is A$B, not a simple name
     ## But the generator info is embedded in sizeExprs
-      ##listType <- symTab$getSymbolObject(code$caller$args[[1]]$name)$templateArgs
-  ##if(is.null(listType)) listType <-  symTab$getSymbolObject(code$caller$args[[1]]$name, inherits = TRUE)$templateArgs
     listType <- code$sizeExprs$nlProc$cppDef$name
     paste0("new ", listType)
 }
@@ -237,8 +235,6 @@ cppOutputNimSwitch <- function(code, symTab) {
 }
 
 cppOutputGetParam <- function(code, symTab) {
-    ##    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->getParam_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
-  ##  iNodeFunction <- if(length(code$args) < 3) 0 else paste(cppMinusOne(nimDeparse(code$args[[3]])))
     if(length(code$args) < 4) {  ## code$args[[3]] is used for the paramInfo that is only used in size processing
         ans <- paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[0])')
     } else {
@@ -247,12 +243,9 @@ cppOutputGetParam <- function(code, symTab) {
                       '.getUseInfoVec()[',iNodeFunction,'],', iNodeFunction ,')')
     }
     return(ans)
-##    return(paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[',iNodeFunction,'])'))
 }
 
 cppOutputGetBound <- function(code, symTab) {
-    ##    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->getParam_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
-  ##  iNodeFunction <- if(length(code$args) < 3) 0 else paste(cppMinusOne(nimDeparse(code$args[[3]])))
     if(length(code$args) < 4) {  ## code$args[[3]] is used for the paramInfo that is only used in size processing
         ans <- paste0('getBound_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[0])')
     } else {
@@ -261,7 +254,6 @@ cppOutputGetBound <- function(code, symTab) {
                       '.getUseInfoVec()[',iNodeFunction,'],', iNodeFunction ,')')
     }
     return(ans)
-##    return(paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[',iNodeFunction,'])'))
 }
 
 cppOutputEigenMapAssign <- function(code, symTab) {
