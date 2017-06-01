@@ -6,6 +6,7 @@ blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.
 if(Sys.getenv('SKIP_EXPENSIVE_TESTS') == 'TRUE') {
     blacklist <- c(blacklist, 'test-mcmc.R', 'test-numericTypes.R')
 }
+cat('SKIPPING', blacklist, sep = '\n  ')
 
 allTests <- list.files('packages/nimble/inst/tests')
 allTests <- allTests[grepl('test-.*\\.R', allTests)]
@@ -22,7 +23,7 @@ testTimes <- testTimes[order(testTimes),, drop = FALSE]
 allTests <- row.names(testTimes)
 
 # Run under /usr/bin/time -v if possible, to gather timing information.
-if (system2('/usr/bin/time', c('-v', 'ls'))) {
+if (system2('/usr/bin/time', c('-v', 'echo', 'Running under /usr/bin/time -v'))) {
     runner <- 'Rscript'
 } else {
     runner <- c('/usr/bin/time', '-v', 'Rscript')
@@ -30,6 +31,8 @@ if (system2('/usr/bin/time', c('-v', 'ls'))) {
 
 # Run each test in a separate process to avoid dll garbage overload.
 for (test in allTests) {
+    cat('--------------------------------------------------------------------------------\n')
+    cat('TESING', test, '\n')
     runViaTestthat <- FALSE  # TODO Fix test-size.R and set this to TRUE.
     if (runViaTestthat) {
         name <- gsub('test-(.*)\\.R', '\\1', test)
@@ -39,6 +42,7 @@ for (test in allTests) {
         command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
     }
     if(system2(command[1], tail(command, -1))) {
-        stop(paste('Failed', test))
+        stop(paste('FAILED', test))
     }
+    cat('PASSED', test, '\n')
 }
