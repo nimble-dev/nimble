@@ -893,6 +893,11 @@ dcar_normal <- function(x, adj, weights, num, tau, log = FALSE) {
 #' @rdname CAR-Normal
 #' @export
 rcar_normal <- function(n = 1, adj, weights, num, tau) {
-    return(rep(NaN, length(num)))
+    ## it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
+    ## since initializeModel() will call this simulate method if there are any NA's present,
+    ## (which is allowed for island components), which over-writes all the other valid initial values.
+    ##return(rep(NaN, length(num)))
+    currentValues <- eval(quote(model[[nodes]]), parent.frame(3))
+    return(currentValues)
 }
 

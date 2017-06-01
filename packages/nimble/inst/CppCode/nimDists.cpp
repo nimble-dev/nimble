@@ -375,26 +375,31 @@ double nimArr_dcar_normal(NimArr<1, double> &x, NimArr<1, double> &adj, NimArr<1
 
 
 void nimArr_rcar_normal(NimArr<1, double> &ans, NimArr<1, double> &adj, NimArr<1, double> &weights, NimArr<1, double> &num, double tau) {
-  int n = num.size();
-  NimArr<1, double> ansCopy;
-  double *ansPtr;
-
-  if(!ans.isMap()) {
-    ans.setSize(n);
-  } else {
-    if(ans.size() != n) {
-      _nimble_global_output<<"Error in nimArr_rcar_normal: answer size ("<< ans.size() <<") does not match num size ("<<n<<").\n";
-      nimble_print_to_R(_nimble_global_output);
-    }
-  }
-  ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
-  for(int i = 0; i < n; i++)
-    ansPtr[i] = R_NaN;
-
-  if(ans.isMap()) {
-    ans = ansCopy;
-  }
-
+  //
+  // it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
+  // since initializeModel() will call this simulate method if there are any NA's present,
+  // (which is allowed for island components), which over-writes all the other valid initial values.
+  //
+  //int n = num.size();
+  //NimArr<1, double> ansCopy;
+  //double *ansPtr;
+  //
+  //if(!ans.isMap()) {
+  //  ans.setSize(n);
+  //} else {
+  //  if(ans.size() != n) {
+  //    _nimble_global_output<<"Error in nimArr_rcar_normal: answer size ("<< ans.size() <<") does not match num size ("<<n<<").\n";
+  //    nimble_print_to_R(_nimble_global_output);
+  //  }
+  //}
+  //ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
+  //for(int i = 0; i < n; i++)
+  //  ansPtr[i] = R_NaN;
+  //
+  //if(ans.isMap()) {
+  //  ans = ansCopy;
+  //}
+  //
 }
 
 
