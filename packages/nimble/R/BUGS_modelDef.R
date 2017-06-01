@@ -1283,8 +1283,6 @@ splitCompletionForOrigNodes <- function(var2nodeOrigID, var2vertexID, maxOrigNod
     list(var2vertexID = var2vertexID, nextVertexID = nextVertexID) 
 }
 
-# could remove some of this and simply rely on having
-# mu_UNKNOWN_INDEX[i,1:4,3] with info that 2nd index is dynamic and therefore needs to be split if mu_UNKNOWN_INDEX[i,1:4,3] already sub'ed in before genExpandedNodeAndParent
 splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, indexNames = NULL, parentExpr, parentExprReplaced = NULL, parentIndexNamePieces, replacementNameExprs, nextVertexID, maxVertexID, rhsVarInfo = NULL, debug = FALSE) {
     if(debug) browser()
     ## parentIndexNamePieces: when there is an NA for a dynamic index, we should assume a split on the full range of values.
@@ -1553,6 +1551,7 @@ modelDefClass$methods(findDynamicIndexParticipants = function(debug = FALSE) {
                 fullExtent <- lapply(ranges, function(x) 
                     substitute(X:Y, list(X = x[1], Y = x[2])))
                 parentExpr[which(dynamicIndices)+2] <- fullExtent
+                # NOTE: might be able to leave NA in targetExpr
                 targetExpr[which(dynamicIndices)+2] <- fullExtent
                 declInfo[[iDI]]$symbolicParentNodes[[1]] <<- parentExpr
                 declInfo[[iDI]]$symbolicParentNodesReplaced[[1]] <<- parentExpr
@@ -1565,6 +1564,7 @@ modelDefClass$methods(findDynamicIndexParticipants = function(debug = FALSE) {
                         count <- count + 1
                     }
                 count <- 1
+                # NOTE: might be able to leave NA in targetIndexNamePieces
                 for(p in seq_along(declInfo[[iDI]]$targetIndexNamePieces))
                     if(dynamicIndices[p]) {
                         declInfo[[iDI]]$targetIndexNamePieces[[p]] <<- as.list(ranges[[count]])
@@ -1883,11 +1883,9 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             vars_2_nodeOrigID[[ varName ]][!is.na(vars_2_nodeOrigID[[ varName ]])] <- NA   
         }
     
-    ## SOMEWHERE put type labels for mu_UNKNOWN_INDEX
-
-    
     # should this use symbolicParentNodesReplaced?
     ## replace 'mu[3,NA,i]' in symbolicParentNodes (and parentIndexNamePieces with '.mu_UNKNOWN_INDEX[3,1:4,i]' so that edges from mu_UNKNOWN_INDEX to dependents will happen naturally
+    ## NOTE: I think this could be done very early on, perhaps in genSymbolicParentNodes to change name of parent variable (would need to insert full extent into parentIndexNamePieces later than that, but not even sure we need full extent, perhaps can work with .mu_UNKNOWN_INDEX[i,NA,3] as the parent)
     if(nimbleOptions()$allowDynamicIndexing) {
         for(iDI in seq_along(declInfo)) {  
             BUGSdecl <- declInfo[[iDI]]
