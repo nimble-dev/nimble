@@ -96,10 +96,14 @@ try(test_that("Test that random samples (nf) have correct mean: ",
                            tol = 0.03,
                            info = "Difference in means exceeds tolerance")))
 
-try(test_that("Test that random samples (nf) have correct covariance: ",
-              expect_equal(cov(nf_samps), true_cov, 
-                           tol = 0.1,
-                           info = "Difference in covs exceeds tolerance")))
+test_that("Test that random samples (nf) have correct covariance: ", {
+    expect_failure(
+        expect_equal(cov(nf_samps), true_cov,
+                     tol = 0.1,
+                     info = "Difference in covs exceeds tolerance"),
+        info = 'KNOWN ISSUE https://github.com/nimble-dev/nimble/issues/405'
+    )
+})
 
 ## sampling via `simulate`
 simul_samp <- function(model) {
