@@ -105,7 +105,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    addFunction = function(funDef, name, filename) {
                                        if(missing(name)) name <- funDef$name
                                        cppDefs[[name]] <<- funDef
-                                         ##XXX This computation doesn't seem to matter. Where is filename stored? ANS: There is a field in the funDef ref class object for it.  could be done in 1 line instead of 2
                                        if(!missing(filename)) {
                                            filename <- Rname2CppName(filename); funDef$filename <- filename
                                        } else {
@@ -217,25 +216,12 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        isWindows = (.Platform$OS.type == "windows")
 
                                        includes <- character()
-
-                                       ## following was before we created libnimble.a as an alternative to libnimble.so/libnimble.dll
-                                       ## includes <- if(!.useLib) {
-	                               ##                if(isWindows) {
-                                       ##                   shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir, cppPermList[1])))
-		    		       ##                   sprintf("%s/%s", shortDirname, cppPermList)
-                                       ##                } else
-                                       ##                   sprintf("%s/%s", normalizePath(NimbleCodeDir, winslash = '/'), cppPermList)
-                                       ## 	            } else
-                                       ##                 character()
-
                                        timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
 
                                        dynamicRegistrationsDllName <- paste0("dynamicRegistrations_", timeStamp)
                                        dynamicRegistrationsCppName <- paste0(dynamicRegistrationsDllName, ".cpp")
-                                       
-                                       ## mainfiles <- paste(paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' '), dynamicRegistrationsCppName)
-                                       mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
 
+                                       mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
 
 				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
 				           createMakevars(.useLib = .useLib, dir = dirName)
@@ -273,7 +259,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(!showCompilerOutput) { 
                                            logFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
                                            SHLIBcmd <- paste(SHLIBcmd, ">", logFile)
-                                           ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
+                                           ## See Rstudio comment above
                                        }
 
                                        if(nimbleOptions('pauseAfterWritingFiles')) browser()

@@ -7,9 +7,9 @@
 ## Base class for C++ file and compilation information
 cppDefinition <- setRefClass('cppDefinition', 
                              fields = list(
-                                 filename = 'ANY',	#'character',  ## what filename (to which .h and .cpp will be appended) is this definition in
-                                 CPPusings = 'ANY',	#''character',
-                                 neededTypeDefs = 'ANY',	#''list',
+                                 filename = 'ANY',	#  character, what filename (to which .h and .cpp will be appended) is this definition in
+                                 CPPusings = 'ANY',	#  character
+                                 neededTypeDefs = 'ANY',#  list,
                                
                                Hincludes = 'list',
                                CPPincludes = 'list',
@@ -38,8 +38,8 @@ cppDefinition <- setRefClass('cppDefinition',
 cppNamespace <- setRefClass('cppNamespace',
                             contains = 'cppDefinition',
                             fields = list(
-                                name = 'ANY',	#'character',
-                                objectDefs = 'ANY', ## This one must be ANY because it could be a list or a symbolTable
+                                name = 'ANY',	    ## character,
+                                objectDefs = 'ANY', ## list or symbolTable
                                 functionDefs = 'ANY'),
                             methods = list(
                                 initialize = function(...) {name <<- character();functionDefs <<- list(); objectDefs <<- list(); callSuper(...)}, ## By default a list, but can be a symbolTable
@@ -75,10 +75,10 @@ cppClassDef <- setRefClass('cppClassDef',
                                inheritance = 'list',           ## classes to be declared as public 
                                ancestors = 'list',             ## classes inherited by inherited classes, needed to make all cast pointers
                                extPtrTypes = 'ANY',
-                               private = 'list',		#'list', ## a placeholder.  everything is public
+                               private = 'list',		# 'list'. This field is a placeholder for future functionality.  Currently everything is generated as public
                                useGenerator = 'ANY',		#'logical',
-                               SEXPgeneratorFun = 'ANY', ## These will be cppFunctionDefs
-                               SEXPfinalizerFun = 'ANY'),
+                               SEXPgeneratorFun = 'ANY',        ## cppFunctionDef object
+                               SEXPfinalizerFun = 'ANY'),       ## cppFunctionDef object
                            methods = list(
                                initialize = function(...) {
                                    useGenerator <<- TRUE
@@ -227,14 +227,14 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
 ##
 cppFunctionDef <- setRefClass('cppFunctionDef',
                               contains = 'cppDefinition',
-                              fields = list(name = 'ANY',	#'character',
-                                  returnType = 'ANY',	#'cppVar', 
-                                  args = 'ANY', 
-                                  code = 'ANY',	#	'cppCodeBlock',
-                                  externC = 'ANY',
-                                  virtual = 'ANY',  ## only relevant for class members
-                                  abstract = 'ANY', ## ditto
-                                  const = 'ANY'     ## ditto
+                              fields = list(name = 'ANY',	# character
+                                  returnType = 'ANY',	        # cppVar
+                                  args = 'ANY',                 # list
+                                  code = 'ANY',	                # cppCodeBlock
+                                  externC = 'ANY',              # logical
+                                  virtual = 'ANY',              ## logical, only relevant for class members
+                                  abstract = 'ANY',             ## ditto
+                                  const = 'ANY'                 ## ditto
                                             ),
                               methods = list(
                                   initialize = function(...) {
