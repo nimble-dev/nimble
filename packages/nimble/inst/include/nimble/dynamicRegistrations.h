@@ -48,7 +48,6 @@ R_CallMethodDef CallEntries[] = {
   FUN(getVarAndIndices, 1),
   FUN(varAndIndices2mapParts, 3),
   FUN(var2mapParts, 3),
-  FUN(populateNodeFxnVector_byGID, 3),
   FUN(populateNodeFxnVectorNew_byDeclID, 4),
   FUN(populateIndexedNodeInfoTable, 2),
   FUN(populateValueMapAccessorsFromNodeNames, 4),
@@ -56,7 +55,6 @@ R_CallMethodDef CallEntries[] = {
   FUN(populateNumberedObject_withSingleModelValuesAccessors, 5),
   FUN(populateCopierVector, 5),
   FUN(populateNumberedObject_withSingleModelVariablesAccessors, 5),
-  FUN(populateModelVariablesAccessors_byGID, 5),
   //  FUN(new_SingleModelValuesAccessor_NumberedObjects, 0),
   //FUN(new_SingleModelVariablesAccessor_NumberedObjects, 0),
 
