@@ -3,6 +3,9 @@
 
 # Avoid running these blacklisted tests, since they take too long.
 blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.R')
+if(Sys.getenv('SKIP_EXPENSIVE_TESTS') == 'TRUE') {
+    blacklist <- c(blacklist, 'test-mcmc.R', 'test-numericTypes.R')
+}
 
 allTests <- list.files('packages/nimble/inst/tests')
 allTests <- allTests[grepl('test-.*\\.R', allTests)]

@@ -2,9 +2,11 @@ language: r
 sudo: false
 cache: packages
 
-os:
-  - linux
-  - osx
+matrix:
+  include:
+    - os: linux
+    - os: osx
+      env: SKIP_EXPENSIVE_TESTS=TRUE
 
 warnings_are_errors: true
 
