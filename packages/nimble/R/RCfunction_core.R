@@ -12,6 +12,7 @@ otherDSLcalls <- c("{",
                    "nimEigen",
                    "nimSvd",
                    "nimOptim",
+                   "nimOptimDefaultControl",
                    "void")
 
 nimKeyWords <- list(copy = 'nimCopy',
@@ -32,7 +33,8 @@ nimKeyWords <- list(copy = 'nimCopy',
                     seq = 'nimSeq',
                     eigen = 'nimEigen',
                     svd = 'nimSvd',
-                    optim = 'nimOptim')
+                    optim = 'nimOptim',
+                    optimDefaultControl = 'nimOptimDefaultControl')
 
 nfMethodRCinterface <- setRefClass(Class = 'nfMethodRCinterface',
                                    fields = list(
