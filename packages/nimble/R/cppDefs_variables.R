@@ -152,7 +152,6 @@ cppVecNimArrPtr <- function(name = character(0), nDim = 1, type = 'double', ptr 
 
 cppSEXP <- function(name = character(0), ...) cppVar(name = name, baseType = 'SEXP', ptr = 0, ...)
 
-cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClass', ptr = 0, ...)
 cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClassNew', ptr = 0, ...) 
 
 ## to be defunct
