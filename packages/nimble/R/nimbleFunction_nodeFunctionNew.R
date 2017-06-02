@@ -17,7 +17,6 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeA
         }
       }
     }
-    browser()
     nodeFunctionTemplate <-
         substitute(
             nimbleFunction(##contains      = CONTAINS,

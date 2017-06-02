@@ -297,20 +297,15 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   CPPincludes <<- c("<cppad/cppad.hpp>", CPPincludes)
                                                   Hincludes <<- c("<cppad/cppad.hpp>", nimbleIncludeFile("nimbleCppAD.h"), Hincludes)
                                                   addInheritance("nimbleFunctionCppADbase")
-                                                  ## cppClass$objectDefs$addSymbol(cppVarFull(name = 'allADtapePtrs_', static = TRUE, baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1))))
-                                                  ##objectDefs[['vectorADtapePtrs']] <<- cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), static = TRUE, name = 'allADtapePtrs_')
                                                   objectDefs$addSymbol(cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), static = TRUE, name = 'allADtapePtrs_'))
-                                                  ##cppClass$objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
                                                   objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
                                                   for(adEnabledFun in environment(nfProc$nfGenerator)$enableDerivs){
                                                     addADclassContentOneFun(adEnabledFun)
                                                   }
                                                   ## static declaration in the class definition
-                                                  
                                                   ## globals to hold the global static definition
                                                   globals <- cppGlobalObjects(name = paste0('staticGlobals_', name), staticMembers = TRUE)
                                                   globals$objectDefs[['staticGlobalTape']] <- cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), name = paste0(name,'::allADtapePtrs_'))
-                                                  ##globalObjectsDefs[['allADtapePtrs_']] <<- globals
                                                   neededTypeDefs[['allADtapePtrs_']] <<- globals
 
                                                   addStaticInitClass()

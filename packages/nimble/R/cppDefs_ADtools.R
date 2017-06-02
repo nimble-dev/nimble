@@ -17,21 +17,9 @@ cppVarSym2templateTypeCppVarSym <- function(oldSym, addRef = FALSE, clearRef = F
                 newSym$ref <- FALSE
         }
     }
-    ## original version generated use of EigenTemplateTypes<TYPE_>::some local typedef.
-    ## but this did not cover subsequent code like uses of new.
-    ## so instead now we generate a typedef at the top of a function to redefine EigenMapStr and MatrixXd and then everything else just works.
-    ##
-    ## ## replacementTemplateArgs ignored for next two
-    ## else if(newSym$baseType == 'EigenMapStr') {
-    ##     newSym$baseType <- paste0('typename EigenTemplateTypes<',replacementBaseType,'>::typeEigenMapStr')
-    ## }
-    ## else if(newSym$baseType == 'Map') {
-    ##     if(newSym$templateArgs[[1]] == 'MatrixXd') {
-    ##         newSym$templateArgs[[1]] <- 'typename EigenTemplateTypes<TYPE_>::typeMatrixXd'
-    ##     }
-    ## }
     newSym
 }
+
 ## Convert a symbol table for C++ vars into a symbol table for C++ for templated CppAD code
 ## For CppAD, we wrap C++ code in template<class TYPE_> 
 ## and replace any double with TYPE_
@@ -300,20 +288,15 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
     localVars$addSymbol( cppVar(name = 'netIncrement_', baseType = 'int') )
     copyIntoIndepVarCode[[1]] <- quote(netIncrement_ <- 1) 
     totalIndependentLength <- 0
-    ## need to get values, potentially from nimArrs of high dims.
-    ## general idea: instead of indexText, have expr for start for each dim.
-    ## if length > 1, pass the start info makeCopyingCodeBlock.
-    ## then, we can iterate over nimArray<double, 2>(i, j) for i = dim 1 start, j = dim 2 start e.g.  
-    ## Since total length per dim is known, end unnecessary.
     for(ivn in seq_along(independentVarNames)) {
         thisName <- independentVarNames[ivn]
         thisSym <- nimbleSymTab$getSymbolObject(thisName)
         if(isNode){
           nameSubList <- targetFunDef$RCfunProc$nameSubList
           thisName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisName))]
-          thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", thisName)) ## extract 1, 2, etc. from end of arg name
+          thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", thisName)) ## Extract 1, 2, etc. from end of arg name.
           thisName <- sub("_[0-9]+$","",thisName)
-          thisModelName <- paste0('model_', thisName) ## add model_ at beginning and remove _1, _2, etc. at end of arg name
+          thisModelName <- paste0('model_', thisName) ## Add model_ at beginning and remove _1, _2, etc. at end of arg name.
           thisSizeAndDims <- parentsSizeAndDims[[thisName]][[thisModelElementNum]]
         }
         if(thisSym$nDim > 0) {
@@ -384,13 +367,3 @@ makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, i
   }
   innerCode
 }
-
-
-# makeStaticRecordAllTapesFunction <- function() {
-#     initFunction <- RCfunctionDef$new()
-#     initFunction$returnType <- cppVarFull(baseType = 'void', static = TRUE)
-#     initFunction$args <- symbolTable()
-#     code <- putCodeLinesInBrackets(list(cppLiteral("myclass::callForADtaping());"))) ## this will be a ADtapePtrs.push_back
-#     initFunction$code <- cppCodeBlock(code = code, objectDefs = symbolTable())
-#     initFunction
-# }
