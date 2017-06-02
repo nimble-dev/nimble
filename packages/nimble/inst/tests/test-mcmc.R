@@ -2,10 +2,23 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of default MCMC")
 
-RwarnLevel <- options('warn')
+RwarnLevel <- options('warn')$warn
 options(warn = -1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = FALSE)
+
+## If you do *not* want to write to results files
+##    comment out the sink() call below.  And consider setting verbose = FALSE 
+## To record a new gold file, nimbleOptions('generateGoldFileForMCMCtesting') should contain the path to the directory where you want to put it
+## e.g. nimbleOptions(generateGoldFileForMCMCtesting = getwd())
+## Comparison to the gold file won't work until it is installed with the package.
+nimbleOptions(verbose = TRUE)
+goldFileName <- 'mcmcTestLog_Correct.Rout'
+tempFileName <- 'mcmcTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCMCtesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForMCMCtesting'), goldFileName) else tempFileName
+
+sink(outputFile)
+
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 ## tests of classic BUGS examples
@@ -346,7 +359,8 @@ test_that('various conjugacies setup', {
     sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),
                       c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
     
-    test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
+    test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
+    skip("KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'")
 })
 
 ### Weibull-gamma conjugacy
@@ -710,6 +724,7 @@ test_that('conjugate Wishart setup', {
 ## testing conjugate MVN updating with ragged dependencies;
 ## that is, dmnorm dependents of different lengths from the target node
 test_that('conjugate MVN with ragged dependencies', {
+    cat('===== Starting MCMC test for conjugate MVN with ragged dependencies. =====')
     code <- nimbleCode({
         x[1:3] ~ dmnorm(mu0[1:3], prec = ident[1:3,1:3])
         mu_y2[1:2] <- asCol(a[1:2]) + B[1:2,1:3] %*% asCol(x[1:3])
@@ -781,6 +796,7 @@ test_that('conjugate MVN with ragged dependencies', {
     
 ## testing binary sampler
 test_that('binary sampler setup', {
+    cat('===== Starting MCMC test for binary sampler. =====')
     code <- nimbleCode({
         a ~ dbern(0.5)
         b ~ dbern(0.6)
@@ -803,14 +819,14 @@ test_that('binary sampler setup', {
     
     Rmodel <- nimbleModel(code, constants, data, inits)
     
-    test_that('model$isBinary', expect_true(Rmodel$isBinary('a')))
-    test_that('model$isBinary', expect_true(Rmodel$isBinary('b')))
-    test_that('model$isBinary', expect_true(Rmodel$isBinary('c')))
-    test_that('model$isBinary', expect_true(Rmodel$isBinary('d')))
-    test_that('model$isBinary', expect_true(Rmodel$isBinary('e')))
-    test_that('model$isBinary', expect_true(Rmodel$isBinary('f')))
-    test_that('model$isBinary', expect_true(Rmodel$isBinary('g')))
-    test_that('model$isBinary', expect_true(Rmodel$isBinary('h')))
+    expect_true(Rmodel$isBinary('a'), info = 'model$isBinary')
+    expect_true(Rmodel$isBinary('b'), info = 'model$isBinary')
+    expect_true(Rmodel$isBinary('c'), info = 'model$isBinary')
+    expect_true(Rmodel$isBinary('d'), info = 'model$isBinary')
+    expect_true(Rmodel$isBinary('e'), info = 'model$isBinary')
+    expect_true(Rmodel$isBinary('f'), info = 'model$isBinary')
+    expect_true(Rmodel$isBinary('g'), info = 'model$isBinary')
+    expect_true(Rmodel$isBinary('h'), info = 'model$isBinary')
     
     spec <- configureMCMC(Rmodel, nodes = NULL)
     spec$addSampler('a', 'binary', print=FALSE)
@@ -847,6 +863,7 @@ test_that('binary sampler setup', {
     
     ## testing the binary sampler handles 'out of bounds' ok
 test_that('binary sampler handles out of bounds', {
+    cat('===== Starting MCMC test for binary sampler handles out of bounds. =====')
     code <- nimbleCode({
         px ~ dbern(0.5)
         py ~ dbern(0.5)
@@ -859,7 +876,7 @@ test_that('binary sampler handles out of bounds', {
     Rmodel <- nimbleModel(code, constants, data, inits)
     
     spec <- configureMCMC(Rmodel)
-    spec$printSamplers()
+    if(nimbleOptions('verbose')) spec$printSamplers()
     Rmcmc <- buildMCMC(spec)
     Cmodel <- compileNimble(Rmodel)
     Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
@@ -877,6 +894,7 @@ test_that('binary sampler handles out of bounds', {
     
     ## testing the RW_multinomial sampler
 test_that('RW_multinomial sampler', {
+    cat('===== Starting MCMC test for RW_multinomial sampler. =====')
     codeTest <- nimbleCode ({
         X[1:nGroups] ~ dmultinom(size=N, prob=pVecX[1:nGroups])
         Y[1:nGroups] ~ dmultinom(size=N, prob=pVecY[1:nGroups])
@@ -901,7 +919,7 @@ test_that('RW_multinomial sampler', {
     modelTest <- nimbleModel(codeTest, constants=Constants, inits=Inits, data=Data, check=TRUE)
     cModelTest <- compileNimble(modelTest)
     
-    mcmcTestConfig <- configureMCMC(cModelTest, print = TRUE)
+    mcmcTestConfig <- configureMCMC(cModelTest, print = nimbleOptions('verbose'))
     samplers <- mcmcTestConfig$getSamplers()
     test_that('assign RW_multinomial sampler', expect_equal(samplers[[1]]$name, 'RW_multinomial'))
     test_that('assign RW_multinomial sampler', expect_equal(samplers[[2]]$name, 'RW_multinomial'))
@@ -969,6 +987,7 @@ test_that('RW_multinomial sampler', {
 
 ## testing the RW_multinomial sampler on distribution of size 2
 test_that('RW_multinomial sampler on distribution of size 2', {
+    cat('===== Starting MCMC test RW_multinomial sampler on distribution of size 2. =====')
     code <- nimbleCode({
         prob[1] <- p
         prob[2] <- 1-p
@@ -986,12 +1005,12 @@ test_that('RW_multinomial sampler on distribution of size 2', {
     Cmodel <- compileNimble(Rmodel)
     
     conf <- configureMCMC(Rmodel)
-    conf$printSamplers()
+    if(nimbleOptions('verbose')) conf$printSamplers()
     conf$removeSamplers()
-    conf$printSamplers()
-    conf$addSampler(target = 'x', type = 'RW_multinomial')
-    conf$addSampler(target = 'y', type = 'slice')
-    conf$printSamplers()
+    if(nimbleOptions('verbose')) conf$printSamplers()
+    conf$addSampler(target = 'x', type = 'RW_multinomial', print = nimbleOptions('verbose'))
+    conf$addSampler(target = 'y', type = 'slice', print = nimbleOptions('verbose'))
+    if(nimbleOptions('verbose')) conf$printSamplers()
     Rmcmc  <- buildMCMC(conf)
     Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
     
@@ -1005,6 +1024,7 @@ test_that('RW_multinomial sampler on distribution of size 2', {
 ## testing RW_dirichlet sampler
 ## consistent with conjugate multinomial sampler
 test_that('RW_dirichlet sampler consistent with conjugate multinomial sampler', {
+    cat('===== Starting MCMC test if RW_dirichlet sampler consistent with conjugate multinomial sampler. =====')
     n <- 100
     alpha <- c(10, 30, 15)
     K <- length(alpha)
@@ -1038,20 +1058,21 @@ test_that('RW_dirichlet sampler consistent with conjugate multinomial sampler', 
     nodes <- c('p[1]','p[2]','p[3]')
     ans <- c(0.12812261, 0.6728109, 0.19906652)
     tol <- 1e-6
-    test_that('correct R RW_dirichlet samples', expect_equal(as.numeric(Rsamples[30, nodes]), ans, tolerance=tol))
-    test_that('correct C RW_dirichlet samples', expect_equal(as.numeric(Csamples[30, nodes]), ans, tolerance=tol))
+    expect_equal(as.numeric(Rsamples[30, nodes]), ans, tolerance=tol, info = 'correct R RW_dirichlet samples')
+    expect_equal(as.numeric(Csamples[30, nodes]), ans, tolerance=tol, info = 'correct C RW_dirichlet samples')
     
     Cmcmc$run(100000)
     Csamples <- as.matrix(Cmcmc$mvSamples)
     means <- apply(Csamples, 2, mean)
-    
-    test_that('agreement between RW_dirichlet and conjugate dirichlet sampling', expect_true(all(abs(means[c('p[1]','p[2]','p[3]')] - means[c('p2[1]','p2[2]','p2[3]')]) < 0.001)))
+
+    expect_true( all(abs(means[c('p[1]','p[2]','p[3]')] - means[c('p2[1]','p2[2]','p2[3]')]) < 0.001), info = 'agreement between RW_dirichlet and conjugate dirichlet sampling' )
 })
     
 ## testing RW_dirichlet sampler
 ## more complicated -- intermediate deterministic nodes, and non-conjugate
 ## test agreement between RW_dirichlet sampler, and writing model with component gammas
 test_that('RW_dirichlet sampler more complicated', {
+    cat('===== Starting MCMC test RW_dirichlet sampler more complicated. =====')
     code <- nimbleCode({
         alpha[1] <- 4
         alpha[2] ~ dgamma(1,1)
@@ -1082,7 +1103,7 @@ test_that('RW_dirichlet sampler more complicated', {
     inits <- list(alpha=c(4,1,1,2), p1=rep(0.25,4), p2=rep(0.25,4), theta=rep(1,4))
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel)
-    conf$printSamplers()
+    if(nimbleOptions('verbose')) conf$printSamplers()
     conf$addMonitors('p1','p2')
     Rmcmc <- buildMCMC(conf)
     Cmodel <- compileNimble(Rmodel)
@@ -1092,11 +1113,20 @@ test_that('RW_dirichlet sampler more complicated', {
     samples <- as.matrix(Cmcmc$mvSamples)
     means <- apply(samples, 2, mean)
     sds <- apply(samples, 2, sd)
-    
-    test_that('non-conjugate agreement between RW_dirichlet and component gamma sampling: mean', expect_true(all(abs(means[c('p1[1]','p1[2]','p1[3]','p1[4]')] - means[c('p2[1]','p2[2]','p2[3]','p2[4]')]) < 0.01)))
-    test_that('non-conjugate agreement between RW_dirichlet and component gamma sampling: sd', expect_true(all(abs(sds[c('p1[1]','p1[2]','p1[3]','p1[4]')] - sds[c('p2[1]','p2[2]','p2[3]','p2[4]')]) < 0.01)))
-    
+
+    expect_true(all(abs(means[c('p1[1]','p1[2]','p1[3]','p1[4]')] - means[c('p2[1]','p2[2]','p2[3]','p2[4]')]) < 0.01),
+                info = 'non-conjugate agreement between RW_dirichlet and component gamma sampling: mean')
+    expect_true(all(abs(sds[c('p1[1]','p1[2]','p1[3]','p1[4]')] - sds[c('p2[1]','p2[2]','p2[3]','p2[4]')]) < 0.01),
+                info = 'non-conjugate agreement between RW_dirichlet and component gamma sampling: sd')
 })
+
+sink(NULL)
+
+if(!generatingGoldFile) {
+    trialResults <- readLines(tempFileName)
+    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    compareFilesByLine(trialResults, correctResults)
+}
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

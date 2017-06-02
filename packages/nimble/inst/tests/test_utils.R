@@ -275,7 +275,7 @@ testIfNotKnownFailure <- function(knownFailure, expectation) {
 }
 
 test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
-                      verbose = FALSE, numItsR = 5, numItsC = 1000,
+                      verbose = nimbleOptions('verbose'), numItsR = 5, numItsC = 1000,
                       basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
                       numItsC_results = numItsC,
                       resampleData = FALSE,
