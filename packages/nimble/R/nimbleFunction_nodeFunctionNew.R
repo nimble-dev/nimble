@@ -122,11 +122,14 @@ nndf_createMethodList <- function(LHS, RHS, parents, parentsSizeAndDims, altPara
             list(
                 simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- RHS                                                 },
                 calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { simulate(INDEXEDNODEINFO_ = INDEXEDNODEINFO_);    returnType(double());   return(invisible(0)) },
+                CALCADFUNNAME  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <- RHS;    returnType(double(THISDIM));   return(THISNAME) },
                 calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {simulate(INDEXEDNODEINFO_ = INDEXEDNODEINFO_);  returnType(double());   return(invisible(0)) },
                 getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                returnType(double());   return(0)            }
             ),
             list(LHS=LHS,
-                 RHS=RHS)))
+                 RHS=RHS,
+                 THISDIM = as.numeric(parentsSizeAndDims[[1]][[1]]$nDim),
+                 THISNAME = as.name(names(parentsSizeAndDims)[1]))))
     }
     if(type == 'stoch') {
         methodList <- eval(substitute(
@@ -145,17 +148,6 @@ nndf_createMethodList <- function(LHS, RHS, parents, parentsSizeAndDims, altPara
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
                  STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(as.name('logProb'), LHS, RHS, ADFunc = TRUE),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
-        names(methodList)[3] <-  getCalcADFunName() ## replace CALCADFUNNAME with real name
-        parentsArgs <- if(length(parentsSizeAndDims) > 0) list() else NULL
-        for(i in seq_along(parentsSizeAndDims)){
-          for(j in seq_along(parentsSizeAndDims[[i]])){
-            parentsArgs[[paste0(names(parentsSizeAndDims)[i], '_', j)]] <- substitute(double(PARDIM, PARSIZES), 
-                                                                                      list(PARDIM = as.numeric(parentsSizeAndDims[[i]][[j]]$nDim), 
-                                                                                           PARSIZES = nndf_makeParentSizeExpr(parentsSizeAndDims[[i]][[j]])))  
-            body(methodList[[getCalcADFunName()]]) <- nndf_addArgInfoToCalcAD(body(methodList[[getCalcADFunName()]]), names(parentsSizeAndDims)[i], j)
-          }
-        }
-        formals(methodList[[getCalcADFunName()]]) <- c(formals(methodList[[getCalcADFunName()]]), parentsArgs)
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
@@ -202,7 +194,20 @@ nndf_createMethodList <- function(LHS, RHS, parents, parentsSizeAndDims, altPara
         caseName <- paste0("getBound_",nDimSupported,"D_double")
         methodList[[caseName]] <- nndf_generateGetBoundSwitchFunction(bounds, seq_along(bounds), type = 'double', nDim = nDimSupported)
     }
+    names(methodList)[names(methodList) == 'CALCADFUNNAME'] <-  getCalcADFunName() ## replace CALCADFUNNAME with real name
+    parentsArgs <- if(length(parentsSizeAndDims) > 0) list() else NULL
+    for(i in seq_along(parentsSizeAndDims)){
+      for(j in seq_along(parentsSizeAndDims[[i]])){
+        parentsArgs[[paste0(names(parentsSizeAndDims)[i], '_', j)]] <- substitute(double(PARDIM, PARSIZES), 
+                                                                                  list(PARDIM = as.numeric(parentsSizeAndDims[[i]][[j]]$nDim), 
+                                                                                       PARSIZES = nndf_makeParentSizeExpr(parentsSizeAndDims[[i]][[j]])))  
+        body(methodList[[getCalcADFunName()]]) <- nndf_addArgInfoToCalcAD(body(methodList[[getCalcADFunName()]]), names(parentsSizeAndDims)[i], j)
+      }
+    }
+    if(type == 'determ') body(methodList[[getCalcADFunName()]]) <- nndf_addArgInfoToCalcAD(body(methodList[[getCalcADFunName()]]), names(parentsSizeAndDims)[1], 1)
+    formals(methodList[[getCalcADFunName()]]) <- c(formals(methodList[[getCalcADFunName()]]), parentsArgs)
     ## add model$ in front of all names, except the setupOutputs
+  
     methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"), 
                                                     ADexceptionNames = c(names(parentsArgs), 'logProb'))
     return(methodList)
