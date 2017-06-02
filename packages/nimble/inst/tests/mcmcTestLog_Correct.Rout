@@ -2599,7 +2599,7 @@ beta[11]  -2799.3248688 -2803.8579702 -2799.398676       0
 ===== Finished MCMC test for ice. =====
 Detected cases as data within 'constants'.
 Adding cases as data for building model.
-===== Starting MCMC test for /var/folders/v7/tzbf84253jg2_l2pm304l2cr0000gn/T//RtmpBVM08B/icear.bug. =====
+===== Starting MCMC test for icear.bug. =====
 done compiling model
       alpha[1]   alpha[2]   alpha[3]  alpha[4]  alpha[5]  alpha[6]  alpha[7]
 mean         0 -0.4398563 0.53008136 1.4490723 2.1464460 2.6011546 2.6630532
@@ -2621,7 +2621,7 @@ mean  -9.4531671 -9.410645 -9.3930665 -9.4547078 0.17398405
 sd     0.2383471  0.189456  0.1568383  0.2087267 0.09727360
 2.5%  -9.7269520 -9.650799 -9.6095191 -9.9435589 0.05411725
 97.5% -8.8397128 -8.927350 -9.0858043 -9.0934827 0.40434307
-Coverage for  /var/folders/v7/tzbf84253jg2_l2pm304l2cr0000gn/T//RtmpBVM08B/icear.bug  is 100 %.
+Coverage for  icear.bug  is 100 %.
 True values with 95% posterior interval:
              trueVals        2.5%      97.5% covered
 alpha[2]   -1.1845153  -1.1910630 -1.1124259       1
@@ -2648,7 +2648,7 @@ beta[8]    -5.6860936  -5.7364088 -5.6404834       1
 beta[9]    -4.6133629  -4.6495547 -4.5608903       1
 beta[10]   -3.2342140  -3.2778479 -3.2033487       1
 beta[11]   -1.5206015  -1.5316884 -1.5055535       1
-===== Finished MCMC test for /var/folders/v7/tzbf84253jg2_l2pm304l2cr0000gn/T//RtmpBVM08B/icear.bug. =====
+===== Finished MCMC test for icear.bug. =====
 Detected r as data within 'constants'.
 Adding x,r as data for building model.
 ===== Starting MCMC test for beetles. =====

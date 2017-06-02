@@ -247,7 +247,8 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NUL
             }
         }
     }
-    ## missing(example) does not work inside the test_that
+    name <- basename(name) ## name could be a pathed directory including tempdir(), which would change every time and hence appear as errors in line-by-line comparison with the gold file. So for futher purposes we use only the file name
+    ## `missing(example)` does not work inside the test_that
     if(!missing(example)) {
         ## classic-bugs example specified by name
         dir = nimble:::getBUGSexampleDir(example)
@@ -312,7 +313,8 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
                           expect_false(is.null(name), info = 'name argument NULL'))
         
     ## leaving this message permanently on for now
-    cat("===== Starting MCMC test for ", name, ". =====\n", sep = "")
+    cat("===== Starting MCMC test for ", name, ". =====\n", sep = "") ## for log file, for comparison to gold file
+    system(paste0("echo \"===== Starting MCMC test for ", name, ". =====\n\"", sep = "")) ## for travis log file, so it knows the process is not dead after 10 minutes of silence (message() does not work)
 
   if(doCpp) {
       Cmodel <- compileNimble(Rmodel)
