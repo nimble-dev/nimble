@@ -21,18 +21,17 @@ branches:
   only:
     - devel
 
-r_packages:
-  - igraph
-  - coda
-  - testthat
-  - mvtnorm  # needed for test-distributions.R
-  - abind    # needed for test-compareMCMCs.R
-  - covr     # needed for code coverage reports
-
-script:
+install:
+  - Rscript -e "install.packages('igraph', repos = 'http://cran.us.r-project.org')"
+  - Rscript -e "install.packages('coda', repos = 'http://cran.us.r-project.org')"
+  - Rscript -e "install.packages('testthat', repos = 'http://cran.us.r-project.org')"
+  - Rscript -e "install.packages('mvtnorm', repos = 'http://cran.us.r-project.org')"  ## needed for test-distributions.R
+  - Rscript -e "install.packages('abind', repos = 'http://cran.us.r-project.org')"    ## needed for test-compareMCMCs.R
+  - Rscript -e "install.packages('covr', repos = 'http://cran.us.r-project.org')"  ## needed for code coverage reports
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
-  - ./run_tests.R
+
+script: ./run_tests.R
 
 after_success:
   - Rscript -e 'library(covr); if(R.version$os == "linux-gnu") codecov()'
