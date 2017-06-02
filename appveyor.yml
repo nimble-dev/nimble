@@ -12,6 +12,15 @@ install:
 
 # Adapt as necessary starting from here
 
+environment:
+  matrix:
+    - R_VERSION: release
+      GCC_PATH: mingw_32
+
+    - R_VERSION: release
+      R_ARCH: x64
+      GCC_PATH: mingw_64
+
 before_build:
   - dir
   - dir ..
