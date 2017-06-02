@@ -56,23 +56,28 @@ indexNames <- function(x) {
     lapply(x, function(z) {z$name <- paste(i, z$name); i <<- i + 1; z})
 }
 
-test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot like test_math but a bit more flexible
+
+test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) {
+    test_that(input$name, {
+        test_coreRfeature_internal(input, verbose, dirName)
+    })
+}
+
+test_coreRfeature_internal <- function(input, verbose = TRUE, dirName = NULL) { ## a lot like test_math but a bit more flexible
   if(verbose) cat("### Testing", input$name, "###\n")
   runFun <- gen_runFunCore(input)
   nfR <- nimbleFunction(run = runFun)
-  nfC <- try(compileNimble(nfR, dirName = dirName))
-  compilerFailed <- inherits(nfC, 'try-error')
-  expectCompilerFailed <- FALSE
+  ## This try is safe because failure is caught by expect_equal below
+
+  expectCompilerFail <- FALSE
   if(!is.null(input[['safeCompilerFail']]))
       if(isTRUE(input[['safeCompilerFail']]))
-          expectCompilerFailed <- TRUE
-
-  test_that(paste0("Compiler worked or failed as expected: ", input$name),
-            expect_equal(compilerFailed, expectCompilerFailed))
-
-  if(compilerFailed) {
-      if(expectCompilerFailed) message('COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.')
-      return();
+          expectCompilerFail <- TRUE
+  if(!expectCompilerFail) {
+      nfC <- compileNimble(nfR, dirName = dirName)
+  } else {
+      expect_error(nfC <- compileNimble(nfR, dirName = dirName))
+      return()
   }
   
   nArgs <- length(input$args)
@@ -140,24 +145,17 @@ test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot 
   if(is.null(checkEqual)) checkEqual <- FALSE
   if(is.null(input[['return']])) { ## use default 'out' object
       if(!checkEqual) {
-          try(test_that(paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
-                        expect_identical(out, out_nfR)))
-          try(test_that(paste0("Identical test of math (direct R vs. C++ nimbleFunction): ", input$name),
-                        expect_identical(out, out_nfC)))
+          expect_identical(out, out_nfR, info = paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name))
+          expect_identical(out, out_nfC, info = paste0("Identical test of math (direct R vs. C++ nimbleFunction): ", input$name))
       } else {
-          try(test_that(paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
-                        expect_equal(out, out_nfR)))
-          try(test_that(paste0("Equal test of math (direct R vs. C++ nimbleFunction): ", input$name),
-                        expect_equal(out, out_nfC)))
+          expect_equal(out, out_nfR, info = paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name) )
+          expect_equal(out, out_nfC, info = paste0("Equal test of math (direct R vs. C++ nimbleFunction): ", input$name))
       }
   } else { ## not using default return(out), so only compare out_nfR to out_nfC
       if(!checkEqual) {
-          try(test_that(paste0("Identical test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name),
-                        expect_identical(out_nfC, out_nfR)))
+          expect_identical(out_nfC, out_nfR, info = paste0("Identical test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name))
       } else {
-          try(test_that(paste0("Equal test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name),
-                        expect_equal(out_nfC, out_nfR)))
-
+          expect_identical(out_nfC, out_nfR, info = paste0("Equal test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name))
       }
   }
   # unload DLL as R doesn't like to have too many loaded
