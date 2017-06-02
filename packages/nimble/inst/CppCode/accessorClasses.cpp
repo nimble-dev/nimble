@@ -995,7 +995,6 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
   int index;
   NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
   NodeVectorClassNew* nfv = static_cast<NodeVectorClassNew*>(R_ExternalPtrAddr(SnodeFxnVec) ) ;
-  //  (*nfv).instructions.resize(len);
   //int previousIndex = -1;
   int nextRowInd;
   for(int i = 0; i < len; i++){
@@ -1007,7 +1006,6 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
     }
     (*nfv).instructions.push_back(NodeInstruction(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd));
   }
-  //  std::cout<<"done with "<<(*nfv).instructions.size()<<"\n";
   return(R_NilValue);
 }
 

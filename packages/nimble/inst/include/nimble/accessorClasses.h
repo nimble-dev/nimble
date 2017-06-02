@@ -82,16 +82,10 @@ return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useI
 //getParam_1D
 NimArr<1, double> getParam_1D_double(int paramID, const NodeInstruction &useInfo, int iNodeFunction = 0);
 
-/* template<typename paramIDtype> */
-/* NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const NodeInstruction &useInfo, int iNodeFunction); */
-
 template<class paramIDtype>
 NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const NodeInstruction &useInfo, int iNodeFunction) {
   return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID[iNodeFunction], useInfo.operand));
 }
-
-//extern template NimArr<1, double> getParam_1D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const NodeInstruction &useInfo, int iNodeFunction);
-//extern template NimArr<1, double> getParam_1D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const NodeInstruction &useInfo, int iNodeFunction);
 
 //getParam_2D
 NimArr<2, double> getParam_2D_double(int paramID, const NodeInstruction &useInfo, int iNodeFunction = 0);
@@ -129,7 +123,6 @@ NimArr<1, double> getBound_1D_double(const boundIDtype &boundID, const NodeInstr
 
 //getBound_2D
 NimArr<2, double> getBound_2D_double(int boundID, const NodeInstruction &useInfo, int iNodeFunction = 0);
-/* template<typename boundIDtype> */
 template<class boundIDtype>
 NimArr<2, double> getBound_2D_double(const boundIDtype &boundID, const NodeInstruction &useInfo, int iNodeFunction) {
   return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID[iNodeFunction], useInfo.operand));
