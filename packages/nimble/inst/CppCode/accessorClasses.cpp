@@ -101,9 +101,6 @@ void simulate(NodeVectorClassNew &nodes, int iNodeFunction) {
 }
 
 
-// 2. We will only delete the singleVariableAccessors when we delete the ManyVariablesAccesor that they are contained in
-		// Cliff's note: actually, we have changed the paradigm. We now make one variable accessor per node, which can appear in many different
-		// ManyVariableAccessors. All unique singleAccessors will be held in a single SpecializedNumberedObjects, which takes care of the finalizer.
 ManyVariablesAccessor::~ManyVariablesAccessor(){
 }
 
@@ -863,75 +860,6 @@ SingleVariableAccess* cMakeSingleVariableAccessor(NimArrType** varPtr, int begin
 	return(sVAPtr);
 }
 
-SEXP getMVAccessorValues(SEXP accessor){
-	void* vPtr = R_ExternalPtrAddr(accessor);
-	if(vPtr == NULL)
-		return(R_NilValue);
-	SingleModelValuesAccess* SVAptr = static_cast<SingleModelValuesAccess*>(vPtr);
-	NimArrType* nimTypePtr = (*SVAptr).getNimArrPtr();
-	nimType arrType = (*nimTypePtr).getNimType();
-	SEXP rOutput;
-	if(arrType == DOUBLE){
-		PROTECT(rOutput = allocVector(REALSXP, (*SVAptr).getLength() ) );
-		NimArrBase<double>* NimArrPtr = static_cast<NimArrBase<double>*>(nimTypePtr) ;
-//		std::copy(	NimArrPtr->getPtr() + SVAptr->getIndexStart(),
-//			 	NimArrPtr->getPtr() + SVAptr->getIndexEnd(),
-//			 	REAL(rOutput) );			// Not sure why this isn't working...
-		int begin = SVAptr->getIndexStart();
-		int length = SVAptr->getLength();
-		for(int i = 0; i <length; i++)
-			REAL(rOutput)[i] = (*NimArrPtr)[begin + i];
-		UNPROTECT(1);
-		return(rOutput);
-	}
-	if(arrType == INT){
-		PROTECT(rOutput = allocVector(INTSXP, (*SVAptr).getLength() ) );
-		NimArrBase<int>* NimArrPtr = static_cast<NimArrBase<int>*>(nimTypePtr) ;
-		int begin = SVAptr->getIndexStart();
-		int length = SVAptr->getLength();
-		for(int i = 0; i <length; i++)
-			INTEGER(rOutput)[i] = (*NimArrPtr)[begin + i];
-		UNPROTECT(1);
-		return(rOutput);
-	}
-	return(R_NilValue);
-}
-
-SEXP getModelAccessorValues(SEXP accessor){
-	void* vPtr = R_ExternalPtrAddr(accessor);
-	if(vPtr == NULL)
-		return(R_NilValue);
-	SingleVariableAccess* SVAptr = static_cast<SingleVariableAccess*>(vPtr);
-	NimArrType* nimTypePtr = (*SVAptr).getNimArrPtr();
-	nimType arrType = (*nimTypePtr).getNimType();
-	SEXP rOutput;
-	if(arrType == DOUBLE){
-		PROTECT(rOutput = allocVector(REALSXP, (*SVAptr).getLength() ) );
-		NimArrBase<double>* NimArrPtr = static_cast<NimArrBase<double>*>(nimTypePtr) ;
-//		std::copy(	NimArrPtr->getPtr() + SVAptr->getIndexStart(),
-//			 	NimArrPtr->getPtr() + SVAptr->getIndexEnd(),
-//			 	REAL(rOutput) );			// Not sure why this isn't working...
-		int begin = SVAptr->getIndexStart();
-		int length = SVAptr->getLength();
-		for(int i = 0; i <length; i++)
-			REAL(rOutput)[i] = (*NimArrPtr)[begin + i];
-		UNPROTECT(1);
-		return(rOutput);
-	}
-	if(arrType == INT){
-		PROTECT(rOutput = allocVector(INTSXP, (*SVAptr).getLength() ) );
-		NimArrBase<int>* NimArrPtr = static_cast<NimArrBase<int>*>(nimTypePtr) ;
-		int begin = SVAptr->getIndexStart();
-		int length = SVAptr->getLength();
-		for(int i = 0; i <length; i++)
-			INTEGER(rOutput)[i] = (*NimArrPtr)[begin + i];
-		UNPROTECT(1);
-		return(rOutput);
-	}
-
-	return(R_NilValue);
-}
-
 SEXP getListElement(SEXP list, const char *str){
 	SEXP ans = R_NilValue, names = getAttrib(list, R_NamesSymbol);
 	PROTECT(ans);
@@ -945,7 +873,6 @@ SEXP getListElement(SEXP list, const char *str){
 	UNPROTECT(2);
 	return(ans);
 }
-
 
 SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP GIDs, SEXP curRow, SEXP SnumbObj){
 //	int cIndex = INTEGER(beginIndex)[0] - 1;
@@ -1430,33 +1357,6 @@ SEXP populateModelVariablesAccessors_byGID(SEXP SmodelVariableAccessorVector, SE
 	return(R_NilValue);
 }
 
-SEXP removeModelVariableAccessor(SEXP rPtr, SEXP index, SEXP removeAll){
-	int cIndex = INTEGER(index)[0] - 1;
-	bool cRemoveAll = LOGICAL(removeAll)[0];
-	void* vPtr = R_ExternalPtrAddr(rPtr);
-	if(vPtr == NULL){
-		PRINTF("Warning: pointer to null passed to removeNodeFun\n");
-		return(R_NilValue);
-	}
-	ManyVariablesAccessor* mVAPtr = static_cast<ManyVariablesAccessor*>(vPtr);
-	cRemoveAccessor<ManyVariablesAccessor>(mVAPtr, cIndex, cRemoveAll);
-	return(R_NilValue);
-}
-
-SEXP removeModelValuesAccessor(SEXP rPtr, SEXP index, SEXP removeAll){
-	int cIndex = INTEGER(index)[0] - 1;
-	bool cRemoveAll = LOGICAL(removeAll)[0];
-	void* vPtr = R_ExternalPtrAddr(rPtr);
-	if(vPtr == NULL){
-		PRINTF("Warning: pointer to null passed to removeNodeFun\n");
-		return(R_NilValue);
-	}
-	ManyModelValuesAccessor* mMVAPtr = static_cast<ManyModelValuesAccessor*>(vPtr);
-	cRemoveAccessor<ManyModelValuesAccessor>(mMVAPtr, cIndex, cRemoveAll);
-	return(R_NilValue);
-}
-
-
 template<class T>
 void cRemoveAccessor(T* aPtr, int index, bool removeAll){
 	if(removeAll == TRUE){
@@ -1498,38 +1398,6 @@ void cAddAccessor(Many* mPtr, Single* sPtr, bool addAtEnd, int index){
 	}
 	(*mPtr).varAccessors[index] = sPtr;
 	return;
-}
-
-SEXP addSingleVariableAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index){
-	void* vMVAPtr = R_ExternalPtrAddr(MVAPtr);
-	void* vSVAPtr = R_ExternalPtrAddr(SVAPtr);
-	if((vMVAPtr == NULL) | (vSVAPtr == NULL)){
-		PRINTF("Warning: pointer to null passed to addNodeFun\n");
-		return(R_NilValue);
-	}
-	int cIndex = - 1;
-	bool cAddAtEnd = LOGICAL(addAtEnd)[0];
-	if(cAddAtEnd == FALSE)
-		cIndex = INTEGER(index)[0] - 1;
-	ManyVariablesAccessor* cMVAPtr = static_cast<ManyVariablesAccessor*>(vMVAPtr);
-	SingleVariableAccess* cSVAPtr = static_cast<SingleVariableAccess*>(vSVAPtr);
-	cAddAccessor<ManyVariablesAccessor, SingleVariableAccess>(cMVAPtr, cSVAPtr, cAddAtEnd, cIndex);
-	return(R_NilValue);
-}
-
-SEXP addSingleModelValuesAccessor(SEXP MMVAPtr, SEXP SMVAPtr, SEXP addAtEnd, SEXP index){
-	void* vMMVAPtr = R_ExternalPtrAddr(MMVAPtr);
-	void* vSMVAPtr = R_ExternalPtrAddr(SMVAPtr);
-	if((vMMVAPtr == NULL) | (vSMVAPtr == NULL)){
-		PRINTF("Warning: pointer to null passed to addNodeFun\n");
-		return(R_NilValue);
-	}
-	int cIndex = INTEGER(index)[0] - 1;
-	bool cAddAtEnd = LOGICAL(addAtEnd)[0];
-	ManyModelValuesAccessor* cMMVAPtr = static_cast<ManyModelValuesAccessor*>(vMMVAPtr);
-	SingleModelValuesAccess* cSMVAPtr = static_cast<SingleModelValuesAccess*>(vSMVAPtr);
-	cAddAccessor<ManyModelValuesAccessor, SingleModelValuesAccess>(cMMVAPtr, cSMVAPtr, cAddAtEnd, cIndex);
-	return(R_NilValue);
 }
 
 SEXP manualSetNRows(SEXP Sextptr, SEXP nRows){
