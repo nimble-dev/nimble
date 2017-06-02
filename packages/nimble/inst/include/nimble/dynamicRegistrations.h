@@ -29,8 +29,6 @@ R_CallMethodDef CallEntries[] = {
   FUN(derefPtr, 1),
 
   // accessorClasses
-  FUN(resizeManyModelVarAccessor, 2),
-  FUN(resizeManyModelValuesAccessor, 2),
   FUN(manualSetNRows, 2),
   FUN(getVarAndIndices, 1),
   FUN(varAndIndices2mapParts, 3),
@@ -39,9 +37,7 @@ R_CallMethodDef CallEntries[] = {
   FUN(populateIndexedNodeInfoTable, 2),
   FUN(populateValueMapAccessorsFromNodeNames, 4),
   FUN(populateValueMapAccessors, 3),
-  FUN(populateNumberedObject_withSingleModelValuesAccessors, 5),
   FUN(populateCopierVector, 5),
-  FUN(populateNumberedObject_withSingleModelVariablesAccessors, 5),
 
   //dists
   // these don't need to be linked into an on-the-fly dll because they will be in nimble.so
