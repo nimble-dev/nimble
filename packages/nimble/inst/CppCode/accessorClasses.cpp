@@ -5,23 +5,23 @@ using std::istringstream;
 
 NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
-  return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID, useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID, useInfo.block));
 }
 
 NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
-  return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID, useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID, useInfo.block));
 }
 
 // code for getBound copied over from getParam; none of this currently used as we only have scalar bounds for multivariate nodes
 NimArr<1, double> getBound_1D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) boundID += 0;
-  return(useInfo.nodeFunPtr->getBound_1D_double_block(boundID, useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getBound_1D_double_block(boundID, useInfo.block));
 }
 
 NimArr<2, double> getBound_2D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) boundID += 0;
-  return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID, useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID, useInfo.block));
 }
 
 // see include/nimble/nimbleEigenNimArr.h for some templated versions of calculate, simulate, calculateDiff and getLogProb used for arbitrary index vectors
@@ -31,7 +31,7 @@ double calculate(NodeVectorClassNew &nodes) {
   vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
   vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
   for(; iNode != iNodeEnd; iNode++)
-    ans += iNode->nodeFunPtr->calculateBlock(iNode->useInfo);
+    ans += iNode->nodeFunPtr->calculateBlock(iNode->block);
   return(ans);
 }
 
@@ -42,7 +42,7 @@ double calculate(NodeVectorClassNew &nodes, int iNodeFunction) {
     return(0);
   }
   const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
-  return(oneUseInfo.nodeFunPtr->calculateBlock(oneUseInfo.useInfo));
+  return(oneUseInfo.nodeFunPtr->calculateBlock(oneUseInfo.block));
 }
 
 double calculateDiff(NodeVectorClassNew &nodes) {
@@ -51,7 +51,7 @@ double calculateDiff(NodeVectorClassNew &nodes) {
   vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
   vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
   for(; iNode != iNodeEnd; iNode++)
-    ans += iNode->nodeFunPtr->calculateDiffBlock(iNode->useInfo);
+    ans += iNode->nodeFunPtr->calculateDiffBlock(iNode->block);
   return(ans);
 }
 
@@ -61,7 +61,7 @@ double calculateDiff(NodeVectorClassNew &nodes, int iNodeFunction) {
     return(0);
   }
   const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
-  return(oneUseInfo.nodeFunPtr->calculateDiffBlock(oneUseInfo.useInfo));
+  return(oneUseInfo.nodeFunPtr->calculateDiffBlock(oneUseInfo.block));
 }
 
 double getLogProb(NodeVectorClassNew &nodes) {
@@ -70,7 +70,7 @@ double getLogProb(NodeVectorClassNew &nodes) {
   vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
   vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
   for(; iNode != iNodeEnd; iNode++)
-    ans += iNode->nodeFunPtr->getLogProbBlock(iNode->useInfo);
+    ans += iNode->nodeFunPtr->getLogProbBlock(iNode->block);
   return(ans);
 }
 
@@ -80,7 +80,7 @@ double getLogProb(NodeVectorClassNew &nodes, int iNodeFunction) {
     return(0);
   }
   const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
-  return(oneUseInfo.nodeFunPtr->getLogProbBlock(oneUseInfo.useInfo));
+  return(oneUseInfo.nodeFunPtr->getLogProbBlock(oneUseInfo.block));
 }
 
 void simulate(NodeVectorClassNew &nodes) {
@@ -88,7 +88,7 @@ void simulate(NodeVectorClassNew &nodes) {
   vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
   vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
   for(; iNode != iNodeEnd; iNode++)
-    iNode->nodeFunPtr->simulateBlock(iNode->useInfo);
+    iNode->nodeFunPtr->simulateBlock(iNode->block);
 }
 
 void simulate(NodeVectorClassNew &nodes, int iNodeFunction) {
@@ -97,7 +97,7 @@ void simulate(NodeVectorClassNew &nodes, int iNodeFunction) {
     return;
   }
   const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
-  oneUseInfo.nodeFunPtr->simulateBlock(oneUseInfo.useInfo);
+  oneUseInfo.nodeFunPtr->simulateBlock(oneUseInfo.block);
 }
 
 
@@ -1009,7 +1009,7 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
       (*nfv).useInfoVec.push_back(oneNodeUseInfo(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd));
       //previousIndex = index;
     } else { // simple form of aggregation: push rows of same nodeFun into same object if they come one after the other
-      (*nfv).useInfoVec.back().useInfo.indicesForIndexedNodeInfo.push_back(nextRowInd);
+      (*nfv).useInfoVec.back().block.push_back(nextRowInd);
     }
   }
   //  std::cout<<"done with "<<(*nfv).useInfoVec.size()<<"\n";

@@ -27,10 +27,10 @@ using std::cout;
 class oneNodeUseInfo {
  public:
   nodeFun *nodeFunPtr;
-  useInfoForIndexedNodeInfo useInfo;
+  vector<int> block;  // Each element is an index into a nodeFun's indexedNodeInfoTable field.
   oneNodeUseInfo(nodeFun *nFP, int firstIndex) {
     nodeFunPtr = nFP;
-    useInfo.indicesForIndexedNodeInfo.push_back(firstIndex);
+    block.push_back(firstIndex);
   }
 };
 
@@ -65,19 +65,18 @@ void simulate(NodeVectorClassNew &nodes, int iNodeFunction);
 // for these, if there is use of iNodeFunction, it is generated directly from cppOutputGetParam
 //getParam_0D
 inline double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo) {
-  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
-  //return(useInfo.nodeFunPtr->getParam_0D_double(paramID, (*(useInfo.nodeFunPtr->getIndexedNodeInfoTablePtr()))[ useInfo.useInfo.indicesForIndexedNodeInfo[0] ] ) );
+  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.block));
 }
 inline double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) { 
   /* iNodeFunction sometimes needs to be generated in a call even if not needed */
   /* but we want to avoid compiled warnings about an unused argument */
   /* the following line of code tries to make the compiler think iNodeFunction will be used */
   if(iNodeFunction) paramID += 0;
-  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.block));
 }
 template<typename paramIDtype>
 inline double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.useInfo));
+return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.block));
 }
 
 //getParam_1D
@@ -88,7 +87,7 @@ NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo,
 
 template<class paramIDtype>
 NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-  return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID[iNodeFunction], useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID[iNodeFunction], useInfo.block));
 }
 
 //extern template NimArr<1, double> getParam_1D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
@@ -96,32 +95,26 @@ NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const oneNodeUs
 
 //getParam_2D
 NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
-/* template<typename paramIDtype> */
-/* NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction); */
 template<class paramIDtype>
 NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-  return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID[iNodeFunction], useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID[iNodeFunction], useInfo.block));
 }
-
-//extern template NimArr<2, double> getParam_2D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-//extern template NimArr<2, double> getParam_2D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 
 // code for getBound copied over from getParam; only 0D currently used as we set bounds same for all values in multivariate nodes
 //getBound_0D
 inline double getBound_0D_double(int boundID, const oneNodeUseInfo &useInfo) {
-  return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID, useInfo.useInfo));
-  //return(useInfo.nodeFunPtr->getBound_0D_double(boundID, (*(useInfo.nodeFunPtr->getIndexedNodeInfoTablePtr()))[ useInfo.useInfo.indicesForIndexedNodeInfo[0] ] ) );
+  return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID, useInfo.block));
 }
 inline double getBound_0D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) { 
   /* iNodeFunction sometimes needs to be generated in a call even if not needed */
   /* but we want to avoid compiled warnings about an unused argument */
   /* the following line of code tries to make the compiler think iNodeFunction will be used */
   if(iNodeFunction) boundID += 0;
-  return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID, useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID, useInfo.block));
 }
 template<typename boundIDtype>
 inline double getBound_0D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID[iNodeFunction], useInfo.useInfo));
+return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID[iNodeFunction], useInfo.block));
 }
 
 //getBound_1D
@@ -130,17 +123,16 @@ NimArr<1, double> getBound_1D_double(int boundID, const oneNodeUseInfo &useInfo,
 
 template<class boundIDtype>
 NimArr<1, double> getBound_1D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-  return(useInfo.nodeFunPtr->getBound_1D_double_block(boundID[iNodeFunction], useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getBound_1D_double_block(boundID[iNodeFunction], useInfo.block));
 }
 
 
 //getBound_2D
 NimArr<2, double> getBound_2D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
 /* template<typename boundIDtype> */
-/* NimArr<2, double> getBound_2D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction); */
 template<class boundIDtype>
 NimArr<2, double> getBound_2D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-  return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID[iNodeFunction], useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID[iNodeFunction], useInfo.block));
 }
 
 

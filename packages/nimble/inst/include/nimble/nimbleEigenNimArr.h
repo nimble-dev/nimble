@@ -94,14 +94,14 @@ double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical
     int thisIndex;
     for(int i = 0; i < len; ++i) {
       thisIndex = indices(i)-1; // indices is R-based
-      ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateBlock(useInfoVec[ thisIndex ].useInfo );
+      ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateBlock(useInfoVec[ thisIndex ].block );
     }
     return(ans);
   }
   // logical = true. treat indices as a logical vector
   for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      ans += useInfoVec[ i ].nodeFunPtr->calculateBlock(useInfoVec[ i ].useInfo );
+      ans += useInfoVec[ i ].nodeFunPtr->calculateBlock(useInfoVec[ i ].block );
     }
   }
   return(ans);
@@ -116,14 +116,14 @@ template<typename Derived>
     int thisIndex;
     for(int i = 0; i < len; ++i) {
       thisIndex = indices(i)-1; // indices is R-based
-      ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateDiffBlock(useInfoVec[ thisIndex ].useInfo );
+      ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateDiffBlock(useInfoVec[ thisIndex ].block );
     }
     return(ans);
   }
   // logical = true. treat indices as a logical vector
   for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      ans += useInfoVec[ i ].nodeFunPtr->calculateDiffBlock(useInfoVec[ i ].useInfo );
+      ans += useInfoVec[ i ].nodeFunPtr->calculateDiffBlock(useInfoVec[ i ].block );
     }
   }
   return(ans);
@@ -138,14 +138,14 @@ template<typename Derived>
     int thisIndex;
     for(int i = 0; i < len; ++i) {
       thisIndex = indices(i)-1; // indices is R-based
-      ans += useInfoVec[ thisIndex ].nodeFunPtr->getLogProbBlock(useInfoVec[ thisIndex ].useInfo );
+      ans += useInfoVec[ thisIndex ].nodeFunPtr->getLogProbBlock(useInfoVec[ thisIndex ].block );
     }
     return(ans);
   }
   // logical = true. treat indices as a logical vector
   for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      ans += useInfoVec[ i ].nodeFunPtr->getLogProbBlock(useInfoVec[ i ].useInfo );
+      ans += useInfoVec[ i ].nodeFunPtr->getLogProbBlock(useInfoVec[ i ].block );
     }
   }
   return(ans);
@@ -159,13 +159,13 @@ template<typename Derived>
    int thisIndex;
    for(int i = 0; i < len; ++i) {
     thisIndex = indices(i)-1; // indices is R-based
-    useInfoVec[ thisIndex ].nodeFunPtr->simulateBlock(useInfoVec[ thisIndex ].useInfo );
+    useInfoVec[ thisIndex ].nodeFunPtr->simulateBlock(useInfoVec[ thisIndex ].block );
    }
   } else {
   // logical = true. treat indices as a logical vector
    for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      useInfoVec[ i ].nodeFunPtr->simulateBlock(useInfoVec[ i ].useInfo );
+      useInfoVec[ i ].nodeFunPtr->simulateBlock(useInfoVec[ i ].block );
     }
    }
   }
