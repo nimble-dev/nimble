@@ -117,7 +117,7 @@ void EIGEN_EIGEN_INTERNAL(const Eigen::MatrixBase<Derived> &x, bool valuesOnly, 
 	  Eig_eigVecs = solver.eigenvectors().rowwise().reverse();	
 	}
 	//	return(returnClass);
-};
+}
 
  template<class Derived> 
 void EIGEN_SVD_INTERNAL(const Eigen::MatrixBase<Derived> &x, int vectors, EIGEN_SVDCLASS_R *returnClass) { 
@@ -150,7 +150,7 @@ void EIGEN_SVD_INTERNAL(const Eigen::MatrixBase<Derived> &x, int vectors, EIGEN_
  	} 
 	Svd_d = svd.singularValues();  
  	//return(returnClass); 
- }; 
+ }
 
 
 template<class derived1, class derived2>

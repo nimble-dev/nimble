@@ -11,6 +11,7 @@
 #include <nimble/NamedObjects.h>
 #include <nimble/dllFinalizer.h>
 #include <nimble/smartPtrs.h>
+#include <nimble/predefinedNimbleLists.h>
 
 #include <R_ext/Rdynload.h>
 
@@ -47,7 +48,6 @@ R_CallMethodDef CallEntries[] = {
   FUN(getVarAndIndices, 1),
   FUN(varAndIndices2mapParts, 3),
   FUN(var2mapParts, 3),
-  FUN(populateNodeFxnVector_byGID, 3),
   FUN(populateNodeFxnVectorNew_byDeclID, 4),
   FUN(populateIndexedNodeInfoTable, 2),
   FUN(populateValueMapAccessorsFromNodeNames, 4),
@@ -55,7 +55,6 @@ R_CallMethodDef CallEntries[] = {
   FUN(populateNumberedObject_withSingleModelValuesAccessors, 5),
   FUN(populateCopierVector, 5),
   FUN(populateNumberedObject_withSingleModelVariablesAccessors, 5),
-  FUN(populateModelVariablesAccessors_byGID, 5),
   //  FUN(new_SingleModelValuesAccessor_NumberedObjects, 0),
   //FUN(new_SingleModelVariablesAccessor_NumberedObjects, 0),
 
@@ -121,6 +120,20 @@ R_CallMethodDef CallEntries[] = {
   FUN(RNimble_Ptr_ManualFinalizer, 1),
   FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 2),
   FUN(CountDllObjects, 1),
+
+  // predefinedNimbleList
+  FUN(new_EIGEN_EIGENCLASS, 0),
+  FUN(EIGEN_EIGENCLASS_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(EIGEN_EIGENCLASS_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_EIGEN_SVDCLASS, 0),
+  FUN(EIGEN_SVDCLASS_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(EIGEN_SVDCLASS_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_OptimResultNimbleList, 0),
+  FUN(OptimResultNimbleList_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(OptimResultNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+  
   {NULL, NULL, 0}
 };
 

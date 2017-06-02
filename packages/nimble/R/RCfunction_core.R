@@ -1,6 +1,20 @@
 # for use in DSL code check:
-otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType", "seq_along", "double", "rankSample", "new",
-                   "nimEigen", "nimSvd", "nimOptim",  "nimDerivs")
+otherDSLcalls <- c("{",
+                   "[[",
+                   "$",
+                   "resize",
+                   "declare",
+                   "returnType",
+                   "seq_along",
+                   "double",
+                   "rankSample",
+                   "new",
+                   "nimEigen",
+                   "nimSvd",
+                   "nimOptim",
+                   "nimOptimDefaultControl",
+                   "nimDerivs",
+                   "void")
 
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
@@ -21,6 +35,7 @@ nimKeyWords <- list(copy = 'nimCopy',
                     eigen = 'nimEigen',
                     svd = 'nimSvd',
                     optim = 'nimOptim',
+                    optimDefaultControl = 'nimOptimDefaultControl',
                     derivs = 'nimDerivs')
 
 nfMethodRCinterface <- setRefClass(Class = 'nfMethodRCinterface',
@@ -138,9 +153,9 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
                                      sapply(nonDSLinR, function(x) is.rcf(x, inputIsName = TRUE)) |
                                      sapply(nonDSLinR, function(x) is.nlGenerator(x, inputIsName = TRUE)))]
         if(length(nonDSLinR))
-           warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists: ", paste(nonDSLinR, collapse = ', '), "."))
+           warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists: ", paste(nonDSLinR, collapse = ', '), "."), call. = FALSE)
         if(length(nonDSLnonR))
-            warning(paste0("For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists before compilation: ", paste(nonDSLnonR, collapse = ', '), "."))
+            warning(paste0("For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists before compilation: ", paste(nonDSLnonR, collapse = ', '), "."), call. = FALSE)
     }
     return(0)
 }

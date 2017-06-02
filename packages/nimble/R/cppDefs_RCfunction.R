@@ -2,8 +2,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                              contains = 'cppFunctionDef',
                              fields = list(
                                  SEXPinterfaceFun = 'ANY',
-                                 SEXPinterfaceCname = 'ANY',	#character
-                                 RCfunProc = 'ANY' ## a RCfunProcessing object
+                                 SEXPinterfaceCname = 'ANY',	## character
+                                 RCfunProc = 'ANY'              ## RCfunProcessing object
                                  ), 
                              methods = list(
                                  initialize = function(...) {
@@ -43,7 +43,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                         if(!inherits(SEXPinterfaceFun, 'uninitializedField')) SEXPinterfaceFun$getCPPusings()))
                                      CPPuse
                                  },
-                                 genNeededTypes = function() { ## this should be extracted and combined with the one for cppDefs_nimbleFunction
+                                 genNeededTypes = function() { ## this could be extracted and combined with the one for cppDefs_nimbleFunction
                                      for(i in seq_along(RCfunProc$neededRCfuns)) {
                                          neededType<- RCfunProc$neededRCfuns[[i]]
                                          if(inherits(neededType, 'nfMethodRC')) {
@@ -98,19 +98,12 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      warning("creating a .Call() expression with no DLL information")
                                      browser()                                     
                                    }
-                                   
-                                   # attempt to mimic cxxfunction in inline pkg
-                                   # dotCall <- quote( .Call( EXTERNALNAME ))
-                                   # dotCall[[1L]] <- .Call
-                                   # dotCall[[2L]] <- getNativeSymbolInfo(SEXPinterfaceCname, dll )$address
-                                   
+                                                                     
                                    # avoid R CMD check problem with registration
                                    # ok not to use getNativeSymbolInfo with a dll argument because SEXPinterfaceCname can't possible be in nimble.so, so it is unique to the project dll.
                                    txt <- ".Call(SEXPname)"
                                    dotCall <- eval(substitute(substitute(txt1, list(SEXPname = SEXPinterfaceCname)), list(txt1 = parse(text = txt)[[1]])))
-                                   
-                                   # dotCall <- substitute(.Call(SEXPname), list(SEXPname = SEXPinterfaceCname))
-                                   
+                                                                      
                                    for(i in seq_along(argNames)) dotCall[[i+2]] <- as.name(argNames[i])
                                    if(asMember & is.character(includeDotSelf)) dotCall[[length(argNames) + 3]] <- as.name(includeDotSelf)
                                    if(returnArgsAsList) {
@@ -136,34 +129,18 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                    }
                                    if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                    if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
-                                     ##returnListObj <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]
-                                     ##returnListDefs <- returnListObj$nimbleListDef
-                                     ##returnListNestedLists <- returnListObj$nestedListGenList
-                                     ## refClassDef <- returnListObj$.refClassDef
-                                     ##returnListNew <- new(refClassDef, NLDEFCLASSOBJECT = returnListDefs, 
-                                     ##                   NESTEDGENLIST = returnListNestedLists)
-                                     
-                                     returnNimListGen <- RCfunProc$compileInfo$returnSymbol$nlProc$nlGenerator
-                                     # returnListDefs <- nl.getListDef(nlGenerator)
-                                     # returnListNestedLists <- nl.getNestedGens(nlGenerator)
-                                     # refClassGen <- nl.getDefinitionContent(nlGenerator, 'nlRefClass')
-                                     # browser()
-                                     # returnListNew <- refClassGen$new(NLDEFCLASSOBJECT = returnListDefs, 
-                                     #                                  NESTEDGENLIST = returnListNestedLists)
-                                     # returnNimListGen <- list(new = function(){return(returnListNew)})
-
-                                     addGenListToUserNamespace <- function(nimListGen, genList = list()){
-                                       nimList <- nimListGen$new()
-                                       if(is.null(nimbleUserNamespace$nimListGens[[nimList$nimbleListDef$className]]))
-                                         nimbleUserNamespace$nimListGens[[nimList$nimbleListDef$className]] <- nimListGen
-                                       nestedNimLists <- nimList$nestedListGenList
-                                       for(i in seq_along(nestedNimLists)){
-                                         tempGenList <- nestedNimLists[[i]]
-                                         addGenListToUserNamespace(tempGenList, genList)
+                                       returnNimListGen <- RCfunProc$compileInfo$returnSymbol$nlProc$nlGenerator
+                                       addGenListToUserNamespace <- function(nimListGen, genList = list()){
+                                           nimList <- nimListGen$new()
+                                           if(is.null(nimbleUserNamespace$nimListGens[[nimList$nimbleListDef$className]]))
+                                               nimbleUserNamespace$nimListGens[[nimList$nimbleListDef$className]] <- nimListGen
+                                           nestedNimLists <- nimList$nestedListGenList
+                                           for(i in seq_along(nestedNimLists)){
+                                               tempGenList <- nestedNimLists[[i]]
+                                               addGenListToUserNamespace(tempGenList, genList)
+                                           }
                                        }
-                                     }
-                                     
-                                     addGenListToUserNamespace(returnNimListGen)
+                                       addGenListToUserNamespace(returnNimListGen)
                                    }
                                    funCode <- parse(text = paste0('function(', paste0(argNamesCall, collapse = ','),') A'), keep.source = FALSE)[[1]]
                                    ## the first warning may be removed later if there is no CnativeSymbolInfo_ to be created or if eval is FALSE (as for a nimbleFunction member
@@ -184,11 +161,9 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                    if(eval) {
                                      fun = eval(funCode)
                                      newenv <- eval(quote(new.env()), envir = env)
-                                     environment(fun) = newenv #??? may want this to be environment() or the default value for env to be environment()
-                                     ##environment(fun) = env #??? may want this to be environment() or the default value for env to be environment()
+                                     environment(fun) = newenv 
                                      if(!is.null(dll))   {
                                        # replace the name of the symbol in the .Call() with the resolved symbol.
-                                       ##body(fun)[[2]][[3]][[2]] = getNativeSymbolInfo(SEXPinterfaceCname, dll)
                                        body(fun)[[3]][[3]][[2]] = quote(CnativeSymbolInfo_)
                                        assign('CnativeSymbolInfo_', getNativeSymbolInfo(SEXPinterfaceCname, dll), envir = newenv)
                                      } else {
@@ -415,61 +390,6 @@ buildCopyLineToSEXP <- function(fromSym, toSym, writeCall = FALSE, conditionalTe
     }
     stop(paste("Error, don't know how to make a copy line to SEXP for something of class", class(fromSym)))
 }
-
-
-## Fun can be an nfMethodRC (returned by RCfunction()), an RCfunProcessing, or a cppProject (each representing steps of processing)
-
-compileRCfunction <- function(fun, name, fileName, dirName, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE, debug = FALSE, debugCpp = FALSE, returnInternals = FALSE, .useLib = UseLibraryMakevars) {
-    if(missing(name)) name <- deparse(substitute(fun))
-    Cname <- Rname2CppName(name)
-    if(missing(fileName)) fileName <- Cname
-    givenDirName <- if(missing(dirName)) {
-                         dirName <- fileName
-                         FALSE
-                      } else
-                         TRUE
-
-    if(inherits(fun, 'nfMethodRC')) {
-        RCFP <- RCfunProcessing$new(fun, Cname)
-        RCFP$process(debug = debug, debugCpp = debugCpp)
-        RCF <- RCfunctionDef$new()
-        RCF$buildFunction(RCFP)
-        RCF$buildSEXPinterfaceFun()
-    }
-    if(inherits(fun, 'RCfunProcessing')) {
-        RCF <- fun
-    }
-
-    if(!inherits(fun, 'cppProjectClass')) {
-        cppProj <- cppProjectClass$new(dirName = dirName)
-        cppProj$addFunction(RCF, Cname)
-    } else {
-        cppProj <- fun
-        Cname <- names(cppProj$cppDefs)[1] ## Assume for now there is only 1
-          # set the dirName only if the caller explicitly specified it.
-          # Otherwise, it should have been set in a previous call that created the cppProj.
-        if(givenDirName || (length(cppProj$dirName) == 0 || cppProj$dirName == ""))
-           cppProj$dirName = dirName
-    }
-
-   
-    if(writeFiles) {
-        cppProj$writeFiles(Cname)
-    }
-    if(compileCpp) {
-        cppProj$compileFile(Cname, .useLib = .useLib)
-    }
-    if(loadSO) {
-        cppProj$loadSO(Cname)
-    }
-    if(!loadSO) returnInternals <- TRUE
-    if(returnInternals) {
-        return(cppProj)
-    } else {
-        cppProj$cppDefs[[1]]$buildRwrapperFunCode(includeLHS = FALSE, eval = TRUE, dll = cppProj$dll)
-    }
-}
-
 
 generateConditionalLines <- function(LHSSymTab, 
                                      RHSSymTab){

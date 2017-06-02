@@ -18,7 +18,6 @@ cppVirtualNimbleFunctionClass <- setRefClass('cppVirtualNimbleFunctionClass',
                                                          else {
                                                              baseClassName <- environment(baseClassObj)$CclassName
                                                              addInheritance(baseClassName)
-                                                            ## addAncestors(c(baseClassObj$inheritance, baseClassObj$ancestors))
                                                          }
                                                      }
                                                  },
@@ -39,7 +38,7 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                        ## Inherits a functionDefs list for member functions
                                        ## Inherits an objectDefs list for member data
                                        SEXPmemberInterfaceFuns = 'ANY', ## List of SEXP interface functions, one for each member function
-                                       nimCompProc = 'ANY', ## an nfProcessing or nlProcessing class, needed to get the member data symbol table post-compilation
+                                       nimCompProc = 'ANY', ## nfProcessing or nlProcessing object, needed to get the member data symbol table post-compilation
 
                                        Rgenerator = 'ANY' , ## function to generate and wrap a new object from an R object
                                        CmultiInterface = 'ANY', ## object for interfacing multiple C instances when a top-level interface is not needed
@@ -337,7 +336,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   newCobjectInterface
                                               },
                                               buildCallable = function(R_NimbleFxn, dll = NULL, asTopLevel = TRUE){
-                                             ##     cat('buildCallable\n')
                                                   if(asTopLevel) {
                                                       cppInterfaceObject <- Rgenerator(R_NimbleFxn, dll, project = nimbleProject)
                                                   } else { ## actually this particular pathway should never be taken. asTopLevel = FALSE will occur only for nimbleProject$instantiateNimbleFunction 
@@ -352,11 +350,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassName <- environment(baseClassObj)$name
                                                       addInheritance(baseClassName)
-                                                      ## These lines would be completely general...
-                                                      ##baseClassCppDef <- environment(baseClassObj)$cppDef
-                                                      ##if(is.null(baseClassCppDef)) warning('cppDef for a base class not available when needed')
-                                                      ##addAncestors(c(baseClassCppDef$inheritance, baseClassCppDef$ancestors))
-                                                      ## ... but I'm going with this for now because it is just what is needed 
                                                       addAncestors('NamedObjects')
                                                   }
                                                   if(nimbleOptions('enableDerivs') && length(environment(nfProc$nfGenerator)$enableDerivs) > 0) addADclassContent()
@@ -365,119 +358,3 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               }
                                           ),
                                       )
-
-## This and the functions below were original stand-along compilation functions
-## Now they are superceded by compileNimble.
-## A stand-alone call could still work but these may have faller out of date.
-compileNimbleFunction <- function(fun, dirName, all.instances = TRUE, individual.instances = NA, name = deparse(substitute(fun) ),  fileName = Rname2CppName(name), writeFiles = !(environment(fun)$Cwritten), compileCpp = !(environment(fun)$compiled), loadSO = !(environment(fun)$loadedSO), debug = FALSE, debugCpp = FALSE, returnInternals = FALSE ) {
-    if(missing(dirName))    dirName <- makeDefaultDirName()
-    
-        if(!is.nfGenerator(fun)) stop('Error in compileNimbleFunction: fun should be a nimbleFunction generator')
-	cppProj <- nfWriteCompileAndLoadSO(RFun = fun, dirName = dirName, name = name, fileName = fileName,
-                                           writeFiles = writeFiles, compileCpp = compileCpp, loadSO = loadSO, debug = debug, debugCpp = debugCpp)
-
-        if(returnInternals) return(cppProj)
-        
-	if(all.instances == FALSE){
-            if(!is.list(individual.instances))
-                return(nfBuildCInterface(cppProj, instance = individual.instances, name = name) ) 
-            else{
-                functionList = list()
-                for(i in 1:length(individual.instances) ) 
-                    functionList[[i]] <- nfBuildCInterface(cppProj, instance = individual.instances[[i]], name = name)
-            }
-            return(functionList)
-	}
-
-	functionList = list()
-	k = length(environment(fun)$instances)
-	if(k == 1)
-            {
-		nfRefClassObject <- environment(fun)$instances[[1]]
-		wrappedFunction <- function(...) { nfRefClassObject$run() }
-		environment(wrappedFunction) <- new.env(parent = parent.frame())
-		environment(wrappedFunction)$nfRefClassObject <- nfRefClassObject
-		return(nfBuildCInterface(cppProj, instance = wrappedFunction, name = name) )
-            }
-	
-	for(i in 1:k) {
-            nfRefClassObject <- environment(fun)$instances[[i]]
-            wrappedFunction <- function(...) { nfRefClassObject$run() }
-            environment(wrappedFunction) <- new.env(parent = parent.frame())
-            environment(wrappedFunction)$nfRefClassObject <- nfRefClassObject
-            functionList[[i]] <- nfBuildCInterface(cppProj, instance = wrappedFunction, name = name)
-	}
-	return(functionList)		
-    }
-
-## nf should be a nfProcessing object OR a nimbleFunction (generator or function).
-makeCppNIMBLEfunction <- function(nf, name, debug = FALSE, debugCpp = FALSE, isNode = FALSE, where = globalenv()) { 
-    if(inherits(nf, 'nfProcessing') | inherits(nf, 'virtualNFprocessing')) {
-        if(!missing(name)) {
-            writeLines(paste('Warning, name', name, 'will be overwritten by the name of the nfProcessing object', nfp$name))
-        }
-        name <- nf$name
-        nfp <- nf
-    } else {
-        if(missing(name)) name <- deparse(substitute(nf))
-    }
-    Cname <- Rname2CppName(name)
-    if(is.nf(nf) | is.nfGenerator(nf)) {
-        virtual <- FALSE
-        if(is.nfGenerator(nf)) {
-            if(environment(nf)$virtual) virtual <- TRUE
-        }
-        if(virtual)
-            nfp <- virtualNFprocessing$new(nf, Cname)
-        else {
-            genFun <- nf_getGeneratorFunction(nf)
-            nfp <- environment(genFun)$nfProc
-            if(is.null(nfp)) {
-                nfp <- nfProcessing$new(nf, Cname)
-                environment(genFun)$nfProc <- nfp
-            } else {
-                nfp$setClassName(Cname)
-            }
-        }
-        nfp$process(debug = debug, debugCpp = debugCpp)
-    }
-
-    if(inherits(nfp, 'nfProcessing')) {
-        ans <- cppNimbleFunctionClass$new(name = Cname, nfProc = nfp, isNode = isNode, debugCpp = debugCpp) 
-        ans$buildAll(where = where)
-    } else {
-        if(inherits(nfp, 'virtualNFprocessing'))
-            ans <- cppVirtualNimbleFunctionClass(name = Cname, nfProc = nfp)
-        else
-            stop('Some problem in makeCppNIMBLEfunction')
-    }
-    
-    ans
-}
-
-nfWriteCompileAndLoadSO <- function(RFun, dirName, name = deparse(substitute(RFun)), fileName = Rname2CppName(name),
-                                    writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE, debug = FALSE, debugCpp = FALSE){
-    Cname = Rname2CppName(name)
-    NFC <- makeCppNIMBLEfunction(RFun, Cname, debug = debug, debugCpp = debugCpp)
-    cppProj <- cppProjectClass$new(dirName = dirName)
-    cppProj$addClass(NFC, Cname)
-
-    if(writeFiles){
-        cppProj$writeFiles(fileName)
-        environment(RFun)$Cwritten <- TRUE
-    }
-    if(compileCpp) {
-        cppProj$compileFile(fileName)
-        environment(RFun)$compiled <- TRUE
-    }
-    if(loadSO) {
-        cppProj$loadSO(fileName)
-        environment(RFun)$loadedSO <- TRUE
-    }
-    return(cppProj)
-}
-
-nfBuildCInterface <- function(cppProj, instance, name = deparse(substitute(RFun) )){
-	return( cppProj$cppDefs[[name]]$buildCallable(instance, cppProj$dll ) )
-}
-

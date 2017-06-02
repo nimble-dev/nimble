@@ -418,7 +418,7 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       }
                                       return(ans)                                      
                                   },
-expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE) {
+expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE) {
     if(length(graphID)==0) return(if(returnType=='names') character() else numeric())
     if(sort) 
         graphID <- sort(graphID)
@@ -453,7 +453,7 @@ unique: should names be the unique names or should original ordering of nodes (a
 
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
                                       graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique)
-                                      expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType)
+                                      expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType, sort)
                                       ## if(sort) 
                                       ##     graphID <- sort(graphID)
                                       ## if(returnType == 'names'){

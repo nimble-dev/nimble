@@ -192,6 +192,22 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
             boolThisCase <- typesNDims == nDimSupported ## & typesTypes == 'double' ## until (if ever) we have separate handling of integer params, these should be folded in with doubles.  We don't normally have any integer params, because we handle integers as doubles
             paramNamesToUse <- getParamNames(distName)[boolThisCase]
             caseName <- paste0("getParam_",nDimSupported,"D_double")
+
+            ## Special handling needed for dinterval
+            ## Second parameter is a vector but is expected to handle a scalar
+            ## It goes in nDimSupported == 1, but we need it's return type cast to vector
+            ## if it is in fact only a scalar. We do so by wrapping in c() if
+            ## it doesn't any `:` in it
+            if(nDimSupported == 1) {
+                allParams[paramNamesToUse] <- lapply(allParams[paramNamesToUse],
+                                                     function(x) {
+                                                         if(':' %in% all.names(x))
+                                                             x
+                                                         else
+                                                             substitute(c(X), list(X = x))
+                                                     })
+            }
+            
             if(length(paramNamesToUse) > 0)
                 methodList[[caseName]] <- nndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported)
         }

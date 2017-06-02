@@ -12,7 +12,6 @@ cppDefinition <- setRefClass('cppDefinition',
                                  neededTypeDefs = 'ANY',	#''list',
                                  Hincludes = 'list',
                                  CPPincludes = 'list',
-                               
                                  nimbleProject = 'ANY'),  
                              methods = list(
                                  initialize = function(..., project) {
@@ -56,8 +55,8 @@ cppGlobalObjects <- setRefClass('cppGlobalObject',
 cppNamespace <- setRefClass('cppNamespace',
                             contains = 'cppDefinition',
                             fields = list(
-                                name = 'ANY',	#'character',
-                                objectDefs = 'ANY', ## This one must be ANY because it could be a list or a symbolTable
+                                name = 'ANY',	    ## character,
+                                objectDefs = 'ANY', ## list or symbolTable
                                 functionDefs = 'ANY'),
                             methods = list(
                                 initialize = function(...) {name <<- character();functionDefs <<- list(); objectDefs <<- list(); callSuper(...)}, ## By default a list, but can be a symbolTable
@@ -93,9 +92,9 @@ cppClassDef <- setRefClass('cppClassDef',
                                inheritance = 'list',           ## classes to be declared as public 
                                ancestors = 'list',             ## classes inherited by inherited classes, needed to make all cast pointers
                                extPtrTypes = 'ANY',
-                               private = 'list',		#'list', ## a placeholder.  everything is public
+                               private = 'list',		# 'list'. This field is a placeholder for future functionality.  Currently everything is generated as public
                                useGenerator = 'ANY',		#'logical',
-                               SEXPgeneratorFun = 'ANY', ## These will be cppFunctionDefs
+                               SEXPgeneratorFun = 'ANY', ## These will be cppFunctionDefs.
                                SEXPfinalizerFun = 'ANY',
                                globalObjectsDefs = 'ANY'
                            ),
@@ -263,12 +262,12 @@ cppFunctionDef <- setRefClass('cppFunctionDef',
                               contains = 'cppDefinition',
                               fields = list(name = 'ANY',	#'character',
                                   returnType = 'ANY',	#'cppVar', 
-                                  args = 'ANY', 
+                                  args = 'ANY',  # list
                                   code = 'ANY',	#	'cppCodeBlock',
-                                  externC = 'ANY',
-                                  virtual = 'ANY',
-                                  static = 'ANY',
-                                  abstract = 'ANY',
+                                  externC = 'ANY',  # logical
+                                  virtual = 'ANY', ## logical, only relevant for class members
+                                  static = 'ANY',  ## ditto
+                                  abstract = 'ANY',  ## ditto
                                   template = 'ANY',
                                   const = 'ANY'
                                             ),
