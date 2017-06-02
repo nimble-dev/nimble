@@ -29,11 +29,10 @@ r_packages:
   - abind    # needed for test-compareMCMCs.R
   - covr     # needed for code coverage reports
 
-install:
+script:
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
-
-script: ./run_tests.R
+  - ./run_tests.R
 
 after_success:
   - Rscript -e 'library(covr); if(R.version$os == "linux-gnu") codecov()'
