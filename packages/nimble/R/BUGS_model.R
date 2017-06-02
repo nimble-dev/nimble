@@ -1112,12 +1112,15 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
-                                           parents <- BUGSdecl$allParentVarNames()
-                                           selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
-                                           parents <- c(selfWithNoInds, parents)
-                                           parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix)
-                                           parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, BUGSdecl$unrolledIndicesMatrix,
-                                                                                             allSizeAndDimList = parentsSizeAndDims)
+                                           if(nimbleOptions('enableDerivs')){
+                                             parents <- BUGSdecl$allParentVarNames()
+                                             selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
+                                             parents <- c(selfWithNoInds, parents)
+                                             parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix)
+                                             parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, BUGSdecl$unrolledIndicesMatrix,
+                                                                                               allSizeAndDimList = parentsSizeAndDims)
+                                           }
+                                           else parentsSizeAndDims <- list()
                                            altParams <- BUGSdecl$altParamExprs
                                            altParams <- lapply(altParams, nimble:::insertSingleIndexBrackets, modelDef$varInfo)
                                            bounds <- BUGSdecl$boundExprs

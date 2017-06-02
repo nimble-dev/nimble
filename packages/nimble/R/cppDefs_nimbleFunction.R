@@ -364,7 +364,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       ## ... but I'm going with this for now because it is just what is needed 
                                                       addAncestors('NamedObjects')
                                                   }
-                                                  if(length(environment(nfProc$nfGenerator)$enableDerivs) > 0) addADclassContent()
+                                                  if(nimbleOptions('enableDerivs') && length(environment(nfProc$nfGenerator)$enableDerivs) > 0) addADclassContent()
 
                                                   callSuper(where)
                                               }

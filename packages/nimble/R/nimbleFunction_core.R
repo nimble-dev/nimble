@@ -46,6 +46,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' @param methods An optional named list of NIMBLE function definitions for other class methods.
 #' @param globalSetup For internal use only
 #' @param contains An optional object returned from \link{nimbleFunctionVirtual} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
+#' @param enableDerivs EXPERIMENTAL A list of names of function methods to enable derivatives for.  Currently only for developer use.
 #' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
 #' @param check Boolean indicating whether to check the run code for function calls that NIMBLE cannot compile. Checking can be turned off for all calls to \code{nimbleFunction} using \code{nimbleOptions(checkNimbleFunction = FALSE)}.
 #' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
@@ -92,7 +93,7 @@ nimbleFunction <- function(setup         = NULL,
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
-    if(length(enableDerivs)>0) methodList <- c(methodList, buildDerivMethods(methodList, enableDerivs))
+    if(nimbleOptions('enableDerivs') && length(enableDerivs)>0) methodList <- c(methodList, buildDerivMethods(methodList, enableDerivs))
     methodList <- lapply(methodList, nfMethodRC, check = check, methodNames = names(methodList), setupVarNames = c(all.vars(body(setup)), names(formals(setup))))
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
