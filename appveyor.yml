@@ -12,6 +12,10 @@ install:
 
 # Adapt as necessary starting from here
 
+branches:
+  only:
+    - devel
+
 environment:
   global:
     USE_RTOOLS: true
@@ -28,7 +32,9 @@ build_script:
   - travis-tool.sh install_deps
 
 test_script:
-  - Rscript run_tests.R
+  - echo %cd%
+  - dir
+  - Rscript nimble/run_tests.R
 
 on_failure:
   - 7z a failure.zip *.Rcheck\*
