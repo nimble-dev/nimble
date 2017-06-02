@@ -43,51 +43,28 @@ class nodeFun : public NamedObjects {
   virtual NimArr<1, double> getBound_1D_double(int boundID, const indexedNodeInfo &iNI) const {NimArr<1, double> ans; return(ans);}
   virtual NimArr<2, double> getBound_2D_double(int boundID, const indexedNodeInfo &iNI) const {NimArr<2, double> ans; return(ans);}
 
-  // These may be overridden by vectorized versions.
-  virtual double calculateBlock(const vector<int> &block) const {
-    double ans(0);
-    for(vector<int>::const_iterator i = block.begin(), end = block.end(); i != end; ++i) {
-      ans += calculate(indexedNodeInfoTable[ *i ]);
-    }
-    return(ans);
-  }
-  virtual double calculateDiffBlock(const vector<int> &block) const {
-    double ans(0);
-    for(vector<int>::const_iterator i = block.begin(), end = block.end(); i != end; ++i) {
-      ans += calculateDiff(indexedNodeInfoTable[ *i ]);
-    }
-    return(ans);
-  }
-  virtual double getLogProbBlock(const vector<int> &block) const {
-    double ans(0);
-    for(vector<int>::const_iterator i = block.begin(), end = block.end(); i != end; ++i) {
-      ans += getLogProb(indexedNodeInfoTable[ *i ]);
-    }
-    return(ans);
-  }
-  virtual void simulateBlock(const vector<int> &block) const {
-    for(vector<int>::const_iterator i = block.begin(), end = block.end(); i != end; ++i) {
-      simulate(indexedNodeInfoTable[ *i ]);
-    }
-  }
+  double calculateBlock(int operand) const { return calculate(indexedNodeInfoTable[operand]); }
+  double calculateDiffBlock(int operand) const { return calculateDiff(indexedNodeInfoTable[operand]); }
+  double getLogProbBlock(int operand) const { return getLogProb(indexedNodeInfoTable[operand]); }
+  void simulateBlock(int operand) const { simulate(indexedNodeInfoTable[operand]); }
 
-  double getParam_0D_double_block(int paramID, const vector<int> &block) const {
-    return(getParam_0D_double(paramID, indexedNodeInfoTable[ block[0] ]));
+  double getParam_0D_double_block(int paramID, int operand) const {
+    return(getParam_0D_double(paramID, indexedNodeInfoTable[operand]));
   }
-  NimArr<1, double> getParam_1D_double_block(int paramID, const vector<int> &block) const {
-    return(getParam_1D_double(paramID, indexedNodeInfoTable[ block[0] ]));
+  NimArr<1, double> getParam_1D_double_block(int paramID, int operand) const {
+    return(getParam_1D_double(paramID, indexedNodeInfoTable[operand]));
   }
-  NimArr<2, double> getParam_2D_double_block(int paramID, const vector<int> &block) const {
-    return(getParam_2D_double(paramID, indexedNodeInfoTable[ block[0] ]));
+  NimArr<2, double> getParam_2D_double_block(int paramID, int operand) const {
+    return(getParam_2D_double(paramID, indexedNodeInfoTable[operand]));
   }
-  double getBound_0D_double_block(int boundID, const vector<int> &block) const {
-    return(getBound_0D_double(boundID, indexedNodeInfoTable[ block[0] ]));
+  double getBound_0D_double_block(int boundID, int operand) const {
+    return(getBound_0D_double(boundID, indexedNodeInfoTable[operand]));
   }
-  NimArr<1, double> getBound_1D_double_block(int boundID, const vector<int> &block) const {
-    return(getBound_1D_double(boundID, indexedNodeInfoTable[ block[0] ]));
+  NimArr<1, double> getBound_1D_double_block(int boundID, int operand) const {
+    return(getBound_1D_double(boundID, indexedNodeInfoTable[operand]));
   }
-  NimArr<2, double> getBound_2D_double_block(int boundID, const vector<int> &block) const {
-    return(getBound_2D_double(boundID, indexedNodeInfoTable[ block[0] ]));
+  NimArr<2, double> getBound_2D_double_block(int boundID, int operand) const {
+    return(getBound_2D_double(boundID, indexedNodeInfoTable[operand]));
   }
 };
 
