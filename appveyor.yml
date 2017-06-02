@@ -15,6 +15,7 @@ install:
 environment:
   global:
     USE_RTOOLS: true
+    SKIP_EXPENSIVE_TESTS: TRUE
 
 before_build:
   - dir
@@ -27,7 +28,7 @@ build_script:
   - travis-tool.sh install_deps
 
 test_script:
-  - travis-tool.sh run_tests
+  - Rscript run_tests.R
 
 on_failure:
   - 7z a failure.zip *.Rcheck\*
