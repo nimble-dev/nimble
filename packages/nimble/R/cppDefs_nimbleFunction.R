@@ -313,7 +313,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ##globalObjectsDefs[['allADtapePtrs_']] <<- globals
                                                   neededTypeDefs[['allADtapePtrs_']] <<- globals
 
-                                                  # addStaticInitClass()
+                                                  addStaticInitClass()
 
                                                   invisible(NULL)
                                               },

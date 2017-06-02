@@ -155,7 +155,6 @@ nndf_createMethodList <- function(LHS, RHS, parents, parentsSizeAndDims, altPara
             body(methodList[[getCalcADFunName()]]) <- nndf_addArgInfoToCalcAD(body(methodList[[getCalcADFunName()]]), names(parentsSizeAndDims)[i], j)
           }
         }
-        browser()
         formals(methodList[[getCalcADFunName()]]) <- c(formals(methodList[[getCalcADFunName()]]), parentsArgs)
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {

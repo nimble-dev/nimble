@@ -247,12 +247,13 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
 
 
 makeStaticInitClass <- function(cppDef, derivMethods) {
-    cppClass <- cppClassDef(name = 'initTest', useGenerator = FALSE)
-    globalsDef <- cppGlobalObjects(name = 'initTestGlobals')
-    globalsDef$objectDefs[['staticInitClassObject']] <- cppVarFull(baseType = 'initTest', name = 'initTestObject_')
+    cppClass <- cppClassDef(name = paste0('initTape_', cppDef$name), useGenerator = FALSE)
+    globalsDef <- cppGlobalObjects(name = paste0('initTapeGlobals_', cppDef$name))
+    globalsDef$objectDefs[['staticInitClassObject']] <- cppVarFull(baseType = paste0('initTape_', cppDef$name),
+                                                                   name = paste0('initTape_', cppDef$name, '_Object_'))
     initializerCodeList <- list()
     for(derivFun in derivMethods){
-      initializerDef <- cppFunctionDef(name = 'initTest', returnType = emptyTypeInfo())
+      initializerDef <- cppFunctionDef(name = 'initTape', returnType = emptyTypeInfo())
       initializerCodeList <- c(initializerCodeList,
                                substitute(push_back(CLASSNAME::allADtapePtrs_, CLASSNAME::ADTAPINGNAME() ),  
                                           list(CLASSNAME = as.name(cppDef$name),ADTAPINGNAME = as.name(paste0(derivFun, "_callForADtaping_")))))
@@ -325,7 +326,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
               }
             }
             else{
-              sizeList <- lapply(thisSizes, function(x) c(1, x))
+              sizeList <- lapply(thisSizes, function(x) list(1, x))
             }
             names(sizeList) <- indexVarNames[1:length(sizeList)]
             newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisModelName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
@@ -375,23 +376,21 @@ makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, i
   } else {
     LHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = LHSvar)), list(indexedBracketExpr = indexedBracketExpr)))
     RHS <- substitute(A[i], list(A = RHSvar, i = incrementIndex))
-    
   }
   innerCode <- substitute({LHS <- RHS; incrementIndex <- incrementIndex + 1;}, list(LHS = LHS, RHS = RHS, incrementIndex = incrementIndex))
   for(i in length(indexList):1) {
-    if(is.list(indexList[[i]]))  newForLoop <- substitute(for(NEWINDEX_ in NEWSTART_:NEWEND_) INNERCODE, list(NEWINDEX_ = as.name(indexNames[i]), NEWSTART_ = indexList[[i]][[1]], NEWEND_ = indexList[[i]][[2]], INNERCODE = innerCode))
-    else newForLoop <- substitute(for(NEWINDEX_ in NEWSTART_:NEWEND_) INNERCODE, list(NEWINDEX_ = as.name(indexNames[i]), NEWSTART_ = indexList[[i]][1], NEWEND_ = indexList[[i]][2], INNERCODE = innerCode))
+    newForLoop <- substitute(for(NEWINDEX_ in NEWSTART_:NEWEND_) INNERCODE, list(NEWINDEX_ = as.name(indexNames[i]), NEWSTART_ = indexList[[i]][[1]], NEWEND_ = indexList[[i]][[2]], INNERCODE = innerCode))
     innerCode <- newForLoop
   }
   innerCode
 }
 
 
-## makeStaticRecordAllTapesFunction <- function() {
-##     initFunction <- RCfunctionDef$new()
-##     initFunction$returnType <- cppVarFull(baseType = 'void', static = TRUE)
-##     initFunction$args <- symbolTable()
-##     code <- putCodeLinesInBrackets(list(cppLiteral("myclass::callForADtaping());"))) ## this will be a ADtapePtrs.push_back
-##     initFunction$code <- cppCodeBlock(code = code, objectDefs = symbolTable())
-##     initFunction
-## }
+# makeStaticRecordAllTapesFunction <- function() {
+#     initFunction <- RCfunctionDef$new()
+#     initFunction$returnType <- cppVarFull(baseType = 'void', static = TRUE)
+#     initFunction$args <- symbolTable()
+#     code <- putCodeLinesInBrackets(list(cppLiteral("myclass::callForADtaping());"))) ## this will be a ADtapePtrs.push_back
+#     initFunction$code <- cppCodeBlock(code = code, objectDefs = symbolTable())
+#     initFunction
+# }
