@@ -7,8 +7,8 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        origMethods = 'ANY',             ## list of original methods
                                        RCfunProcs =  'ANY',		## list of RCfunProcessing  or RCvirtualFunProcessing objects
                                        nimbleProject = 'ANY',           ## nimbleProjectclass object
-                                       cppDef = 'ANY'                   ## cppNimbleFunctionClass or cppVirtualNimbleFunctionClass object
-                                       isNode = 'ANY',                  ## logical, is it a nodeFunction?
+                                       cppDef = 'ANY',                  ## cppNimbleFunctionClass or cppVirtualNimbleFunctionClass object
+                                       isNode = 'ANY'                  ## logical, is it a nodeFunction?
                                    ),
                                    methods = list(
                                        show = function() {
