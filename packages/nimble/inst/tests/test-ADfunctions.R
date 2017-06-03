@@ -1,19 +1,30 @@
-nf <- nimbleFunction(
-  setup = function(){},
-  run = function(x = double(0)) {
-    outList <- derivs(testMethod(x))
-    returnType(ADNimbleList())
-    return(outList)
-  },
-  methods = list(
-    testMethod = function(x = double(0)) {
-      out <- dnorm(x,0.1,1.1)
-      returnType(double())
-      return(out)
-    }
-  ), enableDerivs = list('testMethod')
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+nimbleOptions(enableDerivs = TRUE)
+nimbleOptions(showCompilerOutput = TRUE)
+context("Testing of derivatives for nimbleFunctions.")
+
+test_that('Derivatives of dnorm function correctly.',
+  {
+    ADfun1 <- nimbleFunction(
+      setup = function(){},
+      run = function(x = double(0)) {
+        outList <- derivs(testMethod(x))
+        returnType(ADNimbleList())
+        return(outList)
+      },
+      methods = list(
+        testMethod = function(x = double(0)) {
+          out <- dnorm(x,0,1)
+          returnType(double())
+          return(out)
+        }
+      ), enableDerivs = list('testMethod')
+    )
+    
+    ADfunInst <- ADfun1()
+    cADfunInst <- compileNimble(ADfunInst)
+    Rderiv <- D(expression((1/(sqrt(2*pi)))*exp(-(x^2)/2)), 'x') ## Can be replaced by NIMBLE's R version of derivs in the future.
+    x <- 1.4
+    expect_equal(cADfunInst$run(x), eval(Rderiv))
+  }
 )
-nf1 <- nf()
-cnf1 <- compileNimble(nf1)
-x <- 2.0
-cnf1$run(x)
