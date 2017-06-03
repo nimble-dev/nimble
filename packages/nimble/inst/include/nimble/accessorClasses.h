@@ -24,14 +24,6 @@ using std::cout;
 /////////////////////////////////
 // 1. NodeVectors:
 /////////////////////////////////
-class NodeVectorClass {
- public:
-  vector<nodeFun *> nodeFunPtrs;
-  virtual vector<nodeFun *> &getNodeFunctionPtrs() {return(nodeFunPtrs);}
-  // to be inherited and implemented differently when we have dynamic dependencies
-  virtual ~NodeVectorClass() {};
-};
-
 class oneNodeUseInfo {
  public:
   nodeFun *nodeFunPtr;
@@ -716,11 +708,6 @@ void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA);
 //void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA, int i);
 
 
-//double calculate(NodeVectorClass &nodes);
-//double getLogProb(NodeVectorClass &nodes);
-//void simulate(NodeVectorClass &nodes);
-
-void cAddNodeFun(NodeVectorClass nVObj, nodeFun* nFPtr);
 void cAddVariableAccessor(ManyVariablesAccessor* mVAPtr, SingleVariableAccess* sVAPtr, int index);
 template<class T>
 void cRemoveAccessor(T* aPtr, int index, bool removeAll);
@@ -760,8 +747,6 @@ extern "C" {
   SEXP varAndIndices2mapParts(SEXP SvarAndIndicesExtPtr, SEXP Ssizes, SEXP SnDim);
   SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim);
   
-  //  SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP );
-  SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj);
   SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS);
   SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents);
   SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr );

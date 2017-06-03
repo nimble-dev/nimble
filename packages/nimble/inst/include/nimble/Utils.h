@@ -42,6 +42,11 @@ class nimbleTimerClass_ {
 #define NIM_ASSERT3(cond, msg, msgArg1, msgArg2) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1, msgArg2); }}
 #define NIM_ASSERT4(cond, msg, msgArg1, msgArg2, msgArg3) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1, msgArg2, msgArg3); }}
 
+#define NIM_ASSERT_SIZE(my_array, n)                                    \
+    NIM_ASSERT3(my_array.dimSize(0) == n,                               \
+                #my_array " has wrong size: expected %d, actual %d", n, \
+                my_array.dimSize(0));
+
 // code copied from nmath.h - useful utilities 
 # define MATHLIB_ERROR(fmt,x)		error(fmt,x);
 # define MATHLIB_WARNING(fmt,x)		warning(fmt,x)

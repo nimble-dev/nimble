@@ -76,7 +76,6 @@ blockIndexInfo <- function(code) {
             if(code$args[[i]]$name != ':') {
                 if(code$args[[i]]$name != "") {
                     firstIndexRexprs[[im1]] <- parse(text = nimDeparse(code$args[[i]]), keep.source = FALSE)[[1]]
-                    ##stop('Error in makeMapExprFromBrackets, only indexing blocks using : or blanks are recognized')
                 } else {
                     ## It is a blank
                     blockBool[im1] <- TRUE
@@ -120,7 +119,7 @@ addTransposeIfNeededForNonSeqBlock <- function(code, drop = TRUE) {
 insertEigenTranspose <- function(code) {
     newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'eigTranspose', args = list(1))
     newExpr2$sizeExprs <- c(code$sizeExprs[2], code$sizeExprs[1])
-    newExpr2$toEigenize <- 'yes' ## ditto
+    newExpr2$toEigenize <- 'yes' 
     newExpr2$nDim <-  code$nDim
     newExpr2$type <- code$type
     setArg(newExpr2, 1, code)
@@ -182,18 +181,6 @@ makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
         newExpr$sizeExprs <- code$sizeExprs
         newExpr$toEigenize <- 'yes' ## not really needed since will be called from eigenization
         newExpr <- insertEigenTranspose(newExpr)
-        
-        ## This used to be called from size processing, but now it is called from eigenization
-        ## so we need to annotate it 
-        ## newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'eigTranspose', args = list(1))
-        ## newExpr2$sizeExprs <- c(newExpr$sizeExprs[2], newExpr$sizeExprs[1])
-        ## newExpr2$toEigenize <- 'yes' ## ditto
-        ## newExpr2$nDim <-  newExpr$nDim
-        ## newExpr2$type <- newExpr$type
-               
-        ## setArg(newExpr2, 1, newExpr)
-        ## ## newExpr2 gets annotated in the calling function, sizeIndexingBracket
-        ## newExpr <- newExpr2
     }
     newExpr
 }
@@ -216,47 +203,11 @@ makeMapExprFromBrackets <- function(code, drop = TRUE) {
         sourceSizeExprs <- code$args[[1]]$sizeExprs
         sourceNdim <- length(sourceSizeExprs)
         sourceStrideRexprs <- makeStrideRexprs(sourceVarExpr, sourceNdim)
-        ##   sourceMapName <- sourceVarName
     }
 
     thisBlockIndexInfo <- blockIndexInfo(code)
     blockBool <- thisBlockIndexInfo$blockBool
     firstIndexRexprs <- thisBlockIndexInfo$firstIndexRexprs
-    ## targetIndexExprs begin at mapExpr arg 2
-    ## nArgs <- length(code$args)
-    ## nDim <- nArgs-1
-
-    ## ## iterate and set up
-    ## blockBool <- rep(FALSE, nDim)
-    ## firstIndexRexprs <- vector('list', nDim)
-    ## for(i in 2:nArgs) { ## 1 is the var
-    ##     im1 <- i-1
-    ##     if(inherits(code$args[[i]], 'exprClass')) {
-    ##         if(code$args[[i]]$name != ':') {
-    ##             if(code$args[[i]]$name != "") {
-    ##                 firstIndexRexprs[[im1]] <- parse(text = nimDeparse(code$args[[i]]), keep.source = FALSE)[[1]]
-    ##                 ##stop('Error in makeMapExprFromBrackets, only indexing blocks using : or blanks are recognized')
-    ##             } else {
-    ##                 ## It is a blank
-    ##                 blockBool[im1] <- TRUE
-    ##                 firstIndexRexprs[[im1]] <- 1
-    ##             }
-    ##         } else {
-    ##             ## It is a ":"
-    ##             blockBool[im1] <- TRUE
-    ##             if(!is.null(code$args[[i]]$sizeExprs))
-    ##                 if(length(code$args[[i]]$sizeExprs[[1]])==1)
-    ##                     if(is.numeric(code$args[[i]]$sizeExprs[[1]]))
-    ##                         if(code$args[[i]]$sizeExprs[[1]]==1)
-    ##                             blockBool[im1] <- FALSE
-    ##             firstIndexRexprs[[im1]] <- parse(text = nimDeparse(code$args[[i]]$args[[1]]), keep.source = FALSE)[[1]]
-    ##         }
-    ##     } else {
-    ##         firstIndexRexprs[[im1]] <- code$args[[i]]
-    ##     }
-    ## }
-
- ##   targetVarExpr <- sourceVarExpr
     if(identical(sourceOffsetRexpr, 0)) {
         targetOffsetRexpr <- makeOffsetRexpr(firstIndexRexprs, sourceStrideRexprs)
     } else {

@@ -17,7 +17,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                             ## in predefinedNimbleLists.h and predefinedNumbleLists.cpp.
                                             return(list())
                                         } else if(name == 'EIGEN_SVDCLASS' || name == 'EIGEN_EIGENCLASS') {
-                                            ## Handle these two EITEN_ classes specially. They are implemented as an inheritance hierarchy,
+                                            ## Handle these two EIGEN_ classes specially. They are implemented as an inheritance hierarchy,
                                             ## so we cannot generate the class definitions (Nick and Perry understand why).
                                             ## Note that this branch is only ever run under the control of generateStaticCode.R to
                                             ## regenerate C++ code  in predefinedNimbleLists.h and predefinedNimbleLists.cpp.
@@ -31,6 +31,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         }
                                       },
                                       buildCastPtrToNamedObjectsPtrFun = function() {
+                                          ## Creating code like:
                                           ## SEXP  nfRefClass_84_castPtrPtrToNamedObjectsPtrSEXP ( SEXP input )  {
                                           ##  return( R_MakeExternalPtr(dynamic_cast<NamedObjects*>(reinterpret_cast<nfRefClass_84*>(*static_cast<void**>(R_ExternalPtrAddr(input)))), R_NilValue, R_NilValue));
                                           ##}
@@ -45,6 +46,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                         externC = TRUE)
                                       },
                                       buildCastPtrToPtrPairFun = function() {
+                                          ## example of code being generated:
                                           ## SEXP  nfRefClass_84_castDerivedPtrPtrToPairOfPtrsSEXP ( SEXP input )  {
                                           ##   nimSmartPtrBase * ptrToSmartPtrBase;
                                           ##   nimSmartPtr<nfRefClass_84> * ptrToSmartPtr;

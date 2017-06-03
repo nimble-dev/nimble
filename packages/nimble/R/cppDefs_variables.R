@@ -7,7 +7,7 @@ cleanWhite <- function(s) gsub('[[:blank:]]+', ' ', s)
 ## Below there are some wrappers for common cases like cppDouble, cppNimArrPtr, cppVoid, etc.
 cppVar <- setRefClass('cppVar',
                              fields = list(
-                                 baseType = 'ANY',		#			'character',
+                                 baseType = 'ANY',	#'character',
                                  ptr = 'ANY',		#'numeric',
                                  ref = 'ANY',		#'logical',
                                  name = 'ANY'), 	#'character'),
@@ -27,7 +27,7 @@ cppVar <- setRefClass('cppVar',
                                  generateUse = function(...) {
                                      name
                                  },
-                                 generateUseDeref = function(...) { ## used to be asArg = FALSE
+                                 generateUseDeref = function(...) { 
                                      paste0('(', paste(rep('*', max(0, ptr)), collapse = ''), name, ')') ## used to be ptr-asArg
                                  }
                                  )
@@ -39,8 +39,8 @@ cppVarFull <- setRefClass('cppVarFull',
                       contains = 'cppVar',
                       fields = list(
                           templateArgs = 'ANY', #'list',
-                          baseScope = 'ANY', #'list',
-                          baseConst = 'ANY', #'logical',
+                          baseScope = 'ANY',    #'list',
+                          baseConst = 'ANY',    #'logical',
                           baseConstPtr = 'ANY', #'numeric',
                           const = 'ANY', 	#'logical',
                           static = 'ANY', 	#'logical',
@@ -152,7 +152,6 @@ cppVecNimArrPtr <- function(name = character(0), nDim = 1, type = 'double', ptr 
 
 cppSEXP <- function(name = character(0), ...) cppVar(name = name, baseType = 'SEXP', ptr = 0, ...)
 
-cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClass', ptr = 0, ...)
 cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClassNew', ptr = 0, ...) 
 
 ## to be defunct

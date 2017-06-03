@@ -2,15 +2,15 @@ NIMBLE
 ======
 
 [![Build Status](https://travis-ci.org/nimble-dev/nimble.svg?branch=devel)](https://travis-ci.org/nimble-dev/nimble)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/nimble-dev/nimble?branch=devel&svg=true)](https://ci.appveyor.com/project/nimble-dev/nimble)
+[![Coverage](https://codecov.io/github/nimble-dev/nimble/branch/devel/graphs/badge.svg)](https://codecov.io/github/nimble-dev/nimble) 
 [![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
-[![Rdoc](http://www.rdocumentation.org/badges/version/nimble)](http://www.rdocumentation.org/packages/nimble)
 
 NIMBLE is an R package for programming with BUGS models and compiling parts of R.
 
 *   [Website](http://r-nimble.org/)
 *   [Examples](https://r-nimble.org/examples)
-*   User manual as [pdf](http://r-nimble.org/manuals/NimbleUserManual.pdf) or
-    [online](https://www.rdocumentation.org/packages/nimble)
+*   [User manual](http://r-nimble.org/manuals/NimbleUserManual.pdf)
 *   [Developer documentation](https://nimble-dev.github.io/nimble-docs)
 
 ## Installation
