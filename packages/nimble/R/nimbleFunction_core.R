@@ -29,10 +29,8 @@ nimbleFunctionVirtual <- function(contains = NULL,
     ## We make this look like a nimbleFunction in relevants ways for compilation
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     methodList <- lapply(methodList, nfMethodRC, check = FALSE)
-##    CclassName <- as.character(NA) ##Rname2CppName(className)
     generatorFunction <- function() {}
     force(contains)
-##    Cwritten <- compiled <- loadedSO <- FALSE ## Not sure we need all these for an abstract class 
     nfRefClassDef <- nfRefClass <- NULL ## Existence of these makes this treated like a nfGenerator
     return(generatorFunction)
 }
@@ -119,6 +117,30 @@ nimbleFunction <- function(setup         = NULL,
     return(generatorFunction)
 }
 
+`specialHandling<-` <- function(nf, value) {
+    if(is.rcf(nf)) {
+        environment(nf)[['.specialHandling']] <- value
+        return(nf)
+    }
+    stop('special handling only works for RCfunctions')
+}
+
+specialHandling <- function(nf) {
+    if(is.rcf(nf)) {
+        return(environment(nf)[['.specialHandling']])
+    }
+    stop('special handling only works for RCfunctions')
+}
+
+filenameFromSpecialHandling <- function(nf, origFilename) {
+    if(is.rcf(nf)) {
+        SH <- specialHandling(nf)
+        if(is.null(SH)) return(NULL)
+        return(SH$filename)
+    }
+    stop('special handling only works for RCfunctions')
+}
+
 # for now export this as R<3.1.2 give warnings if don't
 
 #' Class \code{nimbleFunctionBase}
@@ -191,7 +213,6 @@ nf_assignmentLHSvars <- function(code) {
 ## determines the name of the target variable, from the LHS code of an `<-` assignment statement
 nf_getVarFromAssignmentLHScode <- function(code) {
     if(is.name(code)) return(deparse(code))
-    ##if(!any(code[[1]] == c('[', '[[', '$')))  stop(paste0('invalid assignment target expression in setup: ', deparse(code)))
     return(nf_getVarFromAssignmentLHScode(code[[2]]))
 }
 

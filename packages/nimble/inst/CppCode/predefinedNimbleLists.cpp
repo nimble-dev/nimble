@@ -226,9 +226,10 @@ SEXP OptimResultNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
 void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
     SEXP S_pxData;
     SEXP S_trace;
+    SEXP S_fnscale;
     SEXP S_parscale;
     SEXP S_ndeps;
-    SEXP S_maxIt;
+    SEXP S_maxit;
     SEXP S_abstol;
     SEXP S_reltol;
     SEXP S_alpha;
@@ -246,12 +247,14 @@ void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
     SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
     PROTECT(S_trace = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
                                      install("trace")));
+    PROTECT(S_fnscale = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
+                                       install("fnscale")));
     PROTECT(S_parscale = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
                                         install("parscale")));
     PROTECT(S_ndeps = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
                                      install("ndeps")));
-    PROTECT(S_maxIt = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
-                                     install("maxIt")));
+    PROTECT(S_maxit = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
+                                     install("maxit")));
     PROTECT(S_abstol = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
                                       install("abstol")));
     PROTECT(S_reltol = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
@@ -277,9 +280,10 @@ void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
     PROTECT(S_tmax = findVarInFrame(GET_SLOT(S_nimList_, S_pxData),
                                     install("tmax")));
     trace = SEXP_2_int(S_trace);
+    fnscale = SEXP_2_double(S_fnscale);
     SEXP_2_NimArr<1>(S_parscale, parscale);
     SEXP_2_NimArr<1>(S_ndeps, ndeps);
-    maxIt = SEXP_2_int(S_maxIt);
+    maxit = SEXP_2_int(S_maxit);
     abstol = SEXP_2_double(S_abstol);
     reltol = SEXP_2_double(S_reltol);
     alpha = SEXP_2_double(S_alpha);
@@ -292,14 +296,15 @@ void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
     pgtol = SEXP_2_double(S_pgtol);
     temp = SEXP_2_double(S_temp);
     tmax = SEXP_2_int(S_tmax);
-    UNPROTECT(17);
+    UNPROTECT(18);
 }
 SEXP OptimControlNimbleList::copyToSEXP() {
     SEXP S_pxData;
     SEXP S_trace;
+    SEXP S_fnscale;
     SEXP S_parscale;
     SEXP S_ndeps;
-    SEXP S_maxIt;
+    SEXP S_maxit;
     SEXP S_abstol;
     SEXP S_reltol;
     SEXP S_alpha;
@@ -316,9 +321,10 @@ SEXP OptimControlNimbleList::copyToSEXP() {
         PROTECT(S_pxData = allocVector(STRSXP, 1));
         SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
         PROTECT(S_trace = int_2_SEXP(trace));
+        PROTECT(S_fnscale = double_2_SEXP(fnscale));
         PROTECT(S_parscale = NimArr_2_SEXP<1>(parscale));
         PROTECT(S_ndeps = NimArr_2_SEXP<1>(ndeps));
-        PROTECT(S_maxIt = int_2_SEXP(maxIt));
+        PROTECT(S_maxit = int_2_SEXP(maxit));
         PROTECT(S_abstol = double_2_SEXP(abstol));
         PROTECT(S_reltol = double_2_SEXP(reltol));
         PROTECT(S_alpha = double_2_SEXP(alpha));
@@ -333,11 +339,13 @@ SEXP OptimControlNimbleList::copyToSEXP() {
         PROTECT(S_tmax = int_2_SEXP(tmax));
         defineVar(install("trace"), S_trace,
                   GET_SLOT(RObjectPointer, S_pxData));
+        defineVar(install("fnscale"), S_fnscale,
+                  GET_SLOT(RObjectPointer, S_pxData));
         defineVar(install("parscale"), S_parscale,
                   GET_SLOT(RObjectPointer, S_pxData));
         defineVar(install("ndeps"), S_ndeps,
                   GET_SLOT(RObjectPointer, S_pxData));
-        defineVar(install("maxIt"), S_maxIt,
+        defineVar(install("maxit"), S_maxit,
                   GET_SLOT(RObjectPointer, S_pxData));
         defineVar(install("abstol"), S_abstol,
                   GET_SLOT(RObjectPointer, S_pxData));
@@ -359,7 +367,7 @@ SEXP OptimControlNimbleList::copyToSEXP() {
         defineVar(install("temp"), S_temp, GET_SLOT(RObjectPointer, S_pxData));
         defineVar(install("tmax"), S_tmax, GET_SLOT(RObjectPointer, S_pxData));
         RCopiedFlag = true;
-        UNPROTECT(17);
+        UNPROTECT(18);
     }
     return (RObjectPointer);
 }
@@ -377,9 +385,10 @@ OptimControlNimbleList::OptimControlNimbleList() {
     RCopiedFlag = false;
     RObjectPointer = NULL;
     namedObjects["trace"] = &trace;
+    namedObjects["fnscale"] = &fnscale;
     namedObjects["parscale"] = &parscale;
     namedObjects["ndeps"] = &ndeps;
-    namedObjects["maxIt"] = &maxIt;
+    namedObjects["maxit"] = &maxit;
     namedObjects["abstol"] = &abstol;
     namedObjects["reltol"] = &reltol;
     namedObjects["alpha"] = &alpha;

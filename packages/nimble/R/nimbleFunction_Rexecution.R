@@ -1112,11 +1112,10 @@ nimRound <- round
 #'            vector of parameters over which minimization is to take place. It
 #'            should return a scalar result.
 #' @param gr  A function to return the gradient for the "BFGS", "CG" and "L-BFGS-B" methods.
-#'            For the "SANN" method it specifies a function to generate a new candidate point.
-#'            If it is the string "NULL" a default Gaussian Markov kernel is used.
 #' @param ... IGNORED
-#' @param method The method to be used. See \code{Details} section of \code{\link{optim}}. One of:
-#'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"
+#' @param method The method to be used. See `Details` section of \code\link{{optim}}. One of:
+#'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B".
+#'               Note that the R methods "SANN", "Brent" are not supported.
 #' @param lower Vector or scalar of lower bounds for parameters.
 #' @param upper Vector or scalar of upper bounds for parameters.
 #' @param control A list of control parameters. See \code{Details} section of \code{\link{optim}}.
@@ -1127,8 +1126,9 @@ nimRound <- round
 #' @export
 nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
                      control = nimOptimDefaultControl(), hessian = FALSE) {
-    # Tweak control value.
-    defaultControl <- optimControlNimbleList$new()
+    # Tweak parameters.
+    if (identical(gr, "NULL")) gr <- NULL
+    defaultControl <- nimOptimDefaultControl()
     Rcontrol <- list()
     for (name in defaultControl$nimbleListDef$types$vars) {
         if (!identical(control[[name]], defaultControl[[name]])) {
@@ -1149,14 +1149,22 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
     return(nimResult)
 }
 
-#' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
+#' EXPERIMENTAL Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
+#'
+#' @return an empty \code{list}.
+#' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
+#' @export
+optimDefaultControl <- function() {
+    return(list())
+}
+
+#' EXPERIMENTAL Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
 #'
 #' @return \code{\link{optimControlNimbleList}}
 #' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
 #' @export
 nimOptimDefaultControl <- function() {
     control <- optimControlNimbleList$new()
-    control$maxIt <- NULL
-    control$REPORT <- NULL
+    control$maxit <- NULL  ## The default value depends on method.
     return(control)
 }

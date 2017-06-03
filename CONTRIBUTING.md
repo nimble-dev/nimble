@@ -93,6 +93,34 @@ Note that `compileNimble()` requires all user-defined functions to exist in the 
   })
 ```
 
+### Mark known failures with `expect_failure()` or `skip()`
+
+The best way to mark a known failure is to wrap an individually failing expectaion in `expect_failure()`.
+The second best way to mark a known failure is to call `skip()` within a `test_that()` block.
+**AVOID** the `try(test_that())` idiom, since this behaves differently when running tests under `Rscript` versus `test_package()/test_file()`.
+```diff
++ # GOOD Wrap an expectation in expect_failure() and point to a github issue.
+  test_that('One equals zero', {
+      expect_failure(
+          expect_equal(1, 0),
+          info = 'KNOWN ISSUE https://github.com/nimble-dev/nimble/issues/10'
+      )
+  })
+  
++ # GOOD skip() all or part of a test and point to a github issue.
+  test_that('One equals everything', {
+      expect_equal(1, 1)  ## This passes.
+      skip('KNOWN ISSUE https://github.com/nimble-dev/nimble/issues/10')
+      expect_equal(1, 0)  ## This fails.
+  })
+  
+- # BAD Avoid wrapping tests in try(), since they will still fail under `test_package()`.
+- # This passes under Rscript but fails under test_package() and test_file().
+  try(test_that('One equals zero', {
+      expect_equal(1, 0)
+  }))
+```
+
 ### Use parameterized tests
 
 Use parametrized tests to test many possibilities in a for loop.
