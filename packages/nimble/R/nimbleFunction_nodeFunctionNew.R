@@ -124,24 +124,29 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
             list(
                 simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- RHS                                                 },
                 calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { simulate(INDEXEDNODEINFO_ = INDEXEDNODEINFO_);    returnType(double());   return(invisible(0)) },
-                # if(nimbleOptions('enableDerivs'))
-                #   CALCADFUNNAME  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <- RHS;    returnType(double(THISDIM));   return(THISNAME) },
                 calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {simulate(INDEXEDNODEINFO_ = INDEXEDNODEINFO_);  returnType(double());   return(invisible(0)) },
                 getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                returnType(double());   return(0)            }
             ),
             list(LHS=LHS,
+                 RHS=RHS)))
+        if(nimbleOptions('enableDerivs')){
+          methodList[['CALCADFUNNAME']]  <- eval(substitute(
+            function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <- RHS;    returnType(double(THISDIM));   return(THISNAME) },
+            list(LHS=LHS,
                  RHS=RHS,
-                 THISDIM =  if(nimbleOptions('enableDerivs')) as.numeric(parentsSizeAndDims[[1]][[1]]$nDim) else NULL,
-                 THISNAME = if(nimbleOptions('enableDerivs'))  as.name(names(parentsSizeAndDims)[1]) else NULL
-                 )))
+                 THISDIM =   as.numeric(parentsSizeAndDims[[1]][[1]]$nDim) else NULL,
+                 THISNAME =  as.name(names(parentsSizeAndDims)[1]) else NULL
+            )))
+        }
+        
     }
     if(type == 'stoch') {
         methodList <- eval(substitute(
             list(
                 simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- STOCHSIM                                                         },
                 calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
-                # if(nimbleOptions('enableDerivs'))
-                #   CALCADFUNNAME  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR_AD;   returnType(double());   return(invisible(LOGPROB_AD)) },
+                if(nimbleOptions('enableDerivs'))
+                   CALCADFUNNAME  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR_AD;   returnType(double());   return(invisible(LOGPROB_AD)) },
                 calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {STOCHCALC_FULLEXPR_DIFF; LocalAns <- LocalNewLogProb - LOGPROB;  LOGPROB <<- LocalNewLogProb;
                                             returnType(double());   return(invisible(LocalAns))},
                 getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                       returnType(double());   return(LOGPROB)            }
@@ -153,6 +158,12 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
                  STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(as.name('logProb'), LHS, RHS, ADFunc = TRUE),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
+        if(nimbleOptions('enableDerivs')){
+          methodList[['CALCADFUNNAME']]  <- eval(substitute(
+            function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR_AD;   returnType(double());   return(invisible(LOGPROB_AD)) },
+            list(LOGPROB_AD = as.name('logProb'),
+                STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(as.name('logProb'), LHS, RHS, ADFunc = TRUE))))
+        }
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
