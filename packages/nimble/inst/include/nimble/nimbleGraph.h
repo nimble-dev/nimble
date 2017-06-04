@@ -59,7 +59,7 @@ extern "C" {
   SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP SnodeFunctionIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes);
   SEXP anyStochDependencies(SEXP SextPtr);
   SEXP anyStochParents(SEXP SextPtr);
-  SEXP getDependencies(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream);
+  SEXP C_getDependencies(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream);
   SEXP getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode);
 }
 

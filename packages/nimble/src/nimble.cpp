@@ -90,7 +90,7 @@ R_CallMethodDef CallEntries[] = {
  FUN(setGraph, 7),
  FUN(anyStochDependencies, 1),
  FUN(anyStochParents, 1),
- FUN(getDependencies, 4),
+ FUN(C_getDependencies, 4),
  FUN(getDependencyPathCountOneNode, 2), 
  {NULL, NULL, 0}
 };

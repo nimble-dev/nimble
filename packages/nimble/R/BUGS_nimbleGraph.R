@@ -36,7 +36,7 @@ nimbleGraphClass <- setRefClass(
                 }
             }
 
-            .Call("getDependencies", graphExtPtr, nodes, omit, downstream)
+            .Call(C_getDependencies, graphExtPtr, nodes, omit, downstream)
         },
         getDependencyPathCountOneNode = function(node) {
             if(length(node) > 1)

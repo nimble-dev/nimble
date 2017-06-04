@@ -101,7 +101,7 @@ SEXP anyStochDependencies(SEXP SgraphExtPtr) {
   return(Sans);
 }
 
-SEXP getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream) {
+SEXP C_getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
   vector<int> omit = SEXP_2_vectorInt(Somit, -1);
