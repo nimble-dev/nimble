@@ -108,7 +108,7 @@ nimbleList <- function(...,
 
     ## This manual override allows us to generate static code by temporarily setting
     ## predefined = FALSE for all predefined nimbleLists.
-    GENERATE_STATIC_CODE <- FALSE  ## Enable this before using generateStaticCode.R.
+    GENERATE_STATIC_CODE <- TRUE  ## Enable this before using generateStaticCode.R.
     if(GENERATE_STATIC_CODE) predefined <- FALSE
     
   ## 3 possibilities: arguments as expressions, arguments as list created within call,
@@ -359,7 +359,7 @@ ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
                                  nimbleType('gradient', 'double', 2),
                                  nimbleType('hessian', 'double', 3),
                                  nimbleType('thirdDerivs', 'double', 4)),
-                            name = "NIMBLE_ADCLASS", predefined = TRUE)
+                            name = "NIMBLE_ADCLASS", predefined = FALSE)
 
 #' EXPERIMENTAL Data type for the return value of \code{\link{nimOptim}}
 #'
@@ -427,6 +427,7 @@ optimControlNimbleList <- nimbleList(
 nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList, cppName = 'EIGEN_EIGEN'),
                                         nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"),
                                         nimDerivs = list(nlGen = ADNimbleList, cppName = "NIM_DERIVS"),
+                                        getDerivs = list(nlGen = ADNimbleList, cppName = 'getDerivs'),
                                         nimOptim = list(nlGen = optimResultNimbleList, cppName = "OptimResultNimbleList"),
                                         nimOptimDefaultControl = list(nlGen = optimControlNimbleList, cppName = "OptimControlNimbleList"))
 

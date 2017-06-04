@@ -241,7 +241,7 @@ makeStaticInitClass <- function(cppDef, derivMethods) {
                                                                    name = paste0('initTape_', cppDef$name, '_Object_'))
     initializerCodeList <- list()
     for(derivFun in derivMethods){
-      initializerDef <- cppFunctionDef(name = paste0('initTape_', cppDef$name), returnType = cppOutputBlank())
+      initializerDef <- cppFunctionDef(name = paste0('initTape_', cppDef$name), returnType = emptyTypeInfo())
       initializerCodeList <- c(initializerCodeList,
                                substitute(push_back(CLASSNAME::allADtapePtrs_, CLASSNAME::ADTAPINGNAME() ),  
                                           list(CLASSNAME = as.name(cppDef$name),ADTAPINGNAME = as.name(paste0(derivFun, "_callForADtaping_")))))

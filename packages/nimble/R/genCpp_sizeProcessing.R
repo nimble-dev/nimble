@@ -1057,7 +1057,6 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
     # setArg(newExpr, 3, 1)
     # setArg(code$args[[1]], nestedIind + 1, newExpr)code$args[[3]] <- rep(1)
   # }
-  
   setArg(code$caller, code$callerArgID, code$args[[1]])
   setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # set order arg
   # setArg(code$args[[1]], length(code$args[[1]]$args) + 1, newExpr) # set order arg
@@ -2577,7 +2576,6 @@ sizeReturn <- function(code, symTab, typeEnv) {
         stop(exprClassProcessingErrorMsg(code, 'returnType was declared void() (default) (or something invalid), which is not consistent with the object you are trying to return.'), call. = FALSE)
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
-
         if(typeEnv$return$type == 'nimbleList' || code$args[[1]]$type == 'nimbleList') {
             if(typeEnv$return$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('return() argument is a nimbleList but returnType() statement gives a different type')), call. = FALSE)
             if(code$args[[1]]$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('returnType statement gives a nimbleList type but return() argument is not the right type')), call. = FALSE)
