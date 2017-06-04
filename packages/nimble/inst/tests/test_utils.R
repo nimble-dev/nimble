@@ -146,10 +146,10 @@ test_coreRfeature_internal <- function(input, verbose = TRUE, dirName = NULL) { 
   if(is.null(input[['return']])) { ## use default 'out' object
       if(!checkEqual) {
           expect_identical(out, out_nfR, info = paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name))
-          expect_identical(out, out_nfC, info = paste0("Identical test of math (direct R vs. C++ nimbleFunction): ", input$name))
+          expect_identical(out, out_nfC, info = paste0("Identical test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
       } else {
           expect_equal(out, out_nfR, info = paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name) )
-          expect_equal(out, out_nfC, info = paste0("Equal test of math (direct R vs. C++ nimbleFunction): ", input$name))
+          expect_equal(out, out_nfC, info = paste0("Equal test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
       }
   } else { ## not using default return(out), so only compare out_nfR to out_nfC
       if(!checkEqual) {
