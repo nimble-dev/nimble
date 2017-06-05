@@ -56,11 +56,11 @@ public:
 void nimbleGraphFinalizer(SEXP SgraphExtPtr);
 
 extern "C" {
-  SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP SnodeFunctionIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes);
-  SEXP anyStochDependencies(SEXP SextPtr);
-  SEXP anyStochParents(SEXP SextPtr);
+  SEXP C_setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP SnodeFunctionIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes);
+  SEXP C_anyStochDependencies(SEXP SextPtr);
+  SEXP C_anyStochParents(SEXP SextPtr);
   SEXP C_getDependencies(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream);
-  SEXP getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode);
+  SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode);
 }
 
 #endif
