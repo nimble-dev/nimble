@@ -117,6 +117,32 @@ nimbleFunction <- function(setup         = NULL,
     return(generatorFunction)
 }
 
+
+## See https://github.com/nimble-dev/nimble/wiki/Developer-backdoor-to-manually-replace-generated-C
+`specialHandling<-` <- function(nf, value) {
+    if(is.rcf(nf)) {
+        environment(nf)[['.specialHandling']] <- value
+        return(nf)
+    }
+    stop('special handling only works for RCfunctions')
+}
+
+specialHandling <- function(nf) {
+    if(is.rcf(nf)) {
+        return(environment(nf)[['.specialHandling']])
+    }
+    stop('special handling only works for RCfunctions')
+}
+
+filenameFromSpecialHandling <- function(nf, origFilename) {
+    if(is.rcf(nf)) {
+        SH <- specialHandling(nf)
+        if(is.null(SH)) return(NULL)
+        return(SH$filename)
+    }
+    stop('special handling only works for RCfunctions')
+}
+
 # for now export this as R<3.1.2 give warnings if don't
 
 #' Class \code{nimbleFunctionBase}

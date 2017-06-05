@@ -440,6 +440,11 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      cppClass
                                  },
                                  compileRCfun = function( fun, filename = NULL, initialTypeInference = FALSE, control = list(debug = FALSE, debugCpp = FALSE, writeFiles = TRUE, returnAsList = FALSE), showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+                                     disableWrite <- FALSE
+                                     if(nimbleOptions('enableSpecialHandling')) {
+                                         filename <- filenameFromSpecialHandling(fun, filename)
+                                         if(!is.null(filename)) disableWrite <- TRUE
+                                     }
                                      if(is.rcf(fun)) fun <- environment(fun)$nfMethodRCobject
                                      addRCfun(fun) ## checks if it already exists and if it is an nfMethodRC ## redundant? done also in next step.
                                      cppClass <- needRCfunCppClass(fun, genNeededTypes = TRUE, initialTypeInference = initialTypeInference, control = control)
@@ -450,7 +455,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          cppProjects[[ className ]] <<- cppProj
                                          if(is.null(filename)) filename <- paste0(projectName, '_', className)
                                          cppProj$addClass( cppClass, className, filename )
-                                         cppProj$writeFiles(filename)
+                                         if(!disableWrite) cppProj$writeFiles(filename)
                                      }
                                      if(control$compileCpp) {
                                          cppProj$compileFile(filename, showCompilerOutput)
