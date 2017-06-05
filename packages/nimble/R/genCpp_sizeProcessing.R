@@ -1038,31 +1038,9 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
     calcDerivFlag <- F
     code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv')
   }
-  
-  # if(is.na(code$args[[3]])){
-  #   allArgLength <- sum(sapply(typeEnv$passedArgumentNames, function(x){return(symTab$getSymbolObject(x)$size)}))
-  #   newExpr <- exprClass(name = 'nimRep', isName = FALSE, isCall = TRUE, isAssign = FALSE)
-  #   setArg(newExpr, 1, 1) 
-  #   setArg(newExpr, 2, allArgLength) 
-# 
-    # 
-    #     newExpr$type <- 'integer'
-    # indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
-    # newExpr$sizeExprs <- if(!indexIsScalar) c(code$args[[iInd + 1]]$sizeExprs) else list(1)
-    # newExpr$nDim <- 1
-    # newExpr$toEigenize <- 'yes'
-    # ## sizeExprs, nDim, toEigenize?
-    # setArg(newExpr, 1, code$args[[1]]$args[[nestedIind + 1]])
-    # setArg(newExpr, 2, code$args[[iInd + 1]])
-    # setArg(newExpr, 3, 1)
-    # setArg(code$args[[1]], nestedIind + 1, newExpr)code$args[[3]] <- rep(1)
-  # }
   setArg(code$caller, code$callerArgID, code$args[[1]])
-  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # set order arg
-  # setArg(code$args[[1]], length(code$args[[1]]$args) + 1, newExpr) # set order arg
-  ##asserts <- sizeRep(code$args[[1]]$args[[length(code$args[[1]]$args)]], symTab, typeEnv)
+  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # Set order argument.
   code$args[[2]] <- NULL
-  # code$args[[2]] <- NULL
   asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
   code$args[[1]]$type <- 'nimbleList'
   code$args[[1]]$sizeExprs <- symTab$getSymbolObject('NIMBLE_ADCLASS', TRUE)
@@ -1070,7 +1048,7 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   code$args[[1]]$nDim <- 0
   if(calcDerivFlag) asserts <- c(asserts, sizeScalarModelOp(code$args[[1]], symTab, typeEnv))
   else asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))
-  #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # set variables arg
+  #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # Sets variables argument, not yet implemented.
   
   if(length(asserts) == 0) NULL else asserts
 }
