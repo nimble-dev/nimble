@@ -89,8 +89,9 @@ class NimArrBase: public NimArrType {
     T *new_v = new T[l];
     if(own_v) {
       if(copyValues) {
-	if(l < NAlength) std::copy(v, v + l, new_v);
-	else {
+	if(l < NAlength) {
+      std::copy(v, v + l, new_v);
+    } else {
 	  std::copy(v, v + NAlength, new_v);
 	  if(fillZeros) {
 	    std::fill(new_v + NAlength, new_v + l, static_cast<T>(0));
@@ -119,13 +120,13 @@ class NimArrBase: public NimArrType {
   }
   void setMyType() {
     myType = UNDEFINED;
-    if(typeid(T) == typeid(int) )
+    if(typeid(T) == typeid(int) ) {
       myType = INT;
-    if(typeid(T) == typeid(double) )
+    } else if(typeid(T) == typeid(double) ) {
       myType = DOUBLE;
-    if(typeid(T) == typeid(bool) )
+    } else if(typeid(T) == typeid(bool) ) {
       myType = BOOL;
-
+    }
   }
   virtual ~NimArrBase(){
     if(own_v) delete [] v;
@@ -163,13 +164,13 @@ class VecNimArrBase : public NimVecType {
 
   VecNimArrBase() {
     myType = UNDEFINED;
-    if(typeid(T) == typeid(int) )
+    if(typeid(T) == typeid(int) ) {
       myType = INT;
-    if(typeid(T) == typeid(double) )
+    } else if(typeid(T) == typeid(double) ) {
       myType = DOUBLE;
-    if(typeid(T) == typeid(bool) )
+    } else if(typeid(T) == typeid(bool) ) {
       myType = BOOL;
-
+    }
   }
 
   ~VecNimArrBase(){}
