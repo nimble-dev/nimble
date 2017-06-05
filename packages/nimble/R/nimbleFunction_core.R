@@ -117,6 +117,8 @@ nimbleFunction <- function(setup         = NULL,
     return(generatorFunction)
 }
 
+
+## See https://github.com/nimble-dev/nimble/wiki/Developer-backdoor-to-manually-replace-generated-C
 `specialHandling<-` <- function(nf, value) {
     if(is.rcf(nf)) {
         environment(nf)[['.specialHandling']] <- value
