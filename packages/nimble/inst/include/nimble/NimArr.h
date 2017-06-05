@@ -28,8 +28,6 @@ public:
     if(size1 != other.size1) {
       PRINTF("Error in mapCopy.  Sizes don't match: %i != %i \n", size1, other.size1);
     }
-    /* typename vector<T>::iterator to(NimArrBase<T>::vPtr->begin() + NimArrBase<T>::offset); */
-    /* typename vector<Tother>::iterator from = other.vPtr->begin() + other.offset; */
     T *to(*NimArrBase<T>::vPtr + NimArrBase<T>::offset);
     Tother *from(*other.vPtr + other.offset);
     int otherStride = other.stride1;
@@ -62,9 +60,6 @@ public:
       if(NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
       NimArrBase<T>::v = new T[size1];
       NimArrBase<T>::own_v = true;
-      /* typename vector<T>::iterator to(NimArrBase<T>::v.begin()); */
-      /* typename vector<T>::iterator toEnd = NimArrBase<T>::v.end(); */
-      /* typename vector<Tother>::iterator from = (*other.getVptr()).begin() + other.offset; */
       T *to(NimArrBase<T>::v);
       T *toEnd(to + size1);
       Tother *from(*other.getVptr() + other.offset);
@@ -99,9 +94,6 @@ public:
        NimArrBase<T>::v = new T[size1];
        NimArrBase<T>::own_v = true;
 
-       /* typename vector<T>::iterator to(NimArrBase<T>::v.begin()); */
-       /* typename vector<T>::iterator toEnd = NimArrBase<T>::v.end(); */
-       /* typename vector<T>::iterator from = (*other.vPtr).begin() + other.offset; */
        T *to(NimArrBase<T>::v);
        T *toEnd(to + size1);
        T *from(*other.vPtr + other.offset);
@@ -229,8 +221,6 @@ public:
       PRINTF("Error in mapCopy.  Sizes 2 don't match: %i != %i \n", size2, other.size2);
     }
 
-    /* typename vector<T>::iterator to(NimArrBase<T>::vPtr->begin() + NimArrBase<T>::offset); */
-    /* typename vector<Tother>::iterator from = other.vPtr->begin() + other.offset; */
     T *to(*NimArrBase<T>::vPtr + NimArrBase<T>::offset);
     Tother *from(*other.vPtr + other.offset);
 
@@ -270,8 +260,6 @@ public:
       NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
       NimArrBase<T>::own_v = true;
 
-      /* typename vector<T>::iterator to = NimArrBase<T>::v.begin(); */
-      /* typename vector<T>::iterator from = (*other.vPtr).begin() + other.offset; */
       T *to(NimArrBase<T>::v);
       T *from(*other.vPtr + other.offset);
 
@@ -451,8 +439,6 @@ class NimArr<3, T> : public NimArrBase<T> {
       PRINTF("Error in mapCopy.  Sizes 3 don't match: %i != %i \n", size3, other.size3);
     }
 
-    /* typename vector<T>::iterator to(NimArrBase<T>::vPtr->begin() + NimArrBase<T>::offset); */
-    /* typename vector<Tother>::iterator from = other.vPtr->begin() + other.offset; */
     T *to(*NimArrBase<T>::vPtr + NimArrBase<T>::offset);
     Tother *from(*other.vPtr + other.offset);
 
@@ -499,8 +485,6 @@ class NimArr<3, T> : public NimArrBase<T> {
       NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
       NimArrBase<T>::own_v = true;
 
-      /* typename vector<T>::iterator to = NimArrBase<T>::v.begin(); */
-      /* typename vector<T>::iterator from = (*other.vPtr).begin() + other.offset; */
       T *to(NimArrBase<T>::v);
       T *from(*other.vPtr + other.offset);
       int otherStride1 = other.stride1;
@@ -543,8 +527,6 @@ class NimArr<3, T> : public NimArrBase<T> {
        NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
       NimArrBase<T>::own_v = true;
 
-      /* typename vector<T>::iterator to = NimArrBase<T>::v.begin(); */
-      /* typename vector<T>::iterator from = (*other.vPtr).begin() + other.offset; */
       T *to(NimArrBase<T>::v);
       T *from(*other.vPtr + other.offset);
       int otherStride1 = other.stride1;
@@ -710,8 +692,6 @@ class NimArr<4, T> : public NimArrBase<T> {
     if(size4 != other.size4){
       PRINTF("Error in mapCopy.  Sizes 4 don't match: %i != %i \n", size4, other.size4);
     }
-    /* typename vector<T>::iterator to(NimArrBase<T>::vPtr->begin() + NimArrBase<T>::offset); */
-    /* typename vector<Tother>::iterator from = other.vPtr->begin() + other.offset; */
     T *to(*NimArrBase<T>::vPtr + NimArrBase<T>::offset);
     Tother *from(*other.vPtr + other.offset);
 
@@ -765,8 +745,6 @@ class NimArr<4, T> : public NimArrBase<T> {
       NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
       NimArrBase<T>::own_v = true;
 
-    	/* typename vector<T>::iterator to = NimArrBase<T>::v.begin(); */
-    	/* typename vector<T>::iterator from = (*other.vPtr).begin() + other.offset; */
        T *to(NimArrBase<T>::v);
        T *from(*other.vPtr + other.offset);
 
