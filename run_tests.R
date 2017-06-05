@@ -6,7 +6,6 @@ blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.
 if(Sys.getenv('SKIP_EXPENSIVE_TESTS') == 'TRUE') {
     blacklist <- c(blacklist, 'test-mcmc.R', 'test-numericTypes.R')
 }
-blacklist <- c(blacklist, 'test-mcmc.R')  # KNOWN ISSUE https://github.com/nimble-dev/nimble/issues/404
 cat('SKIPPING', blacklist, sep = '\n  ')
 
 allTests <- list.files('packages/nimble/inst/tests')
