@@ -21,6 +21,9 @@ branches:
   only:
     - devel
 
+before_install:
+  - tlmgr update --self --reinstall-forcibly-removed
+
 install:
   - Rscript -e "install.packages('igraph', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('coda', repos = 'http://cran.us.r-project.org')"
