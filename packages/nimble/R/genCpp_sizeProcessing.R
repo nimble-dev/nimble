@@ -1070,7 +1070,6 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   code$args[[1]]$nDim <- 0
   if(calcDerivFlag) asserts <- c(asserts, sizeScalarModelOp(code$args[[1]], symTab, typeEnv))
   else asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))
-
   #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # set variables arg
   
   if(length(asserts) == 0) NULL else asserts
@@ -1090,6 +1089,8 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   }
   code$sizeExprs <- symbolObject
   code$toEigenize <- "yes"  # This is specialized for nimSvd and nimEigen.
+  if(code$name == 'getDerivs')
+    code$toEigenize <- 'no'  ## Temp. solution to ensure that derivsOrders argument is a nimArray and not an eigen type.
   code$nDim <- 0
   if(!(code$caller$name %in% assignmentOperators))
       asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
