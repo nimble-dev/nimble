@@ -256,10 +256,12 @@ cppProjectClass <- setRefClass('cppProjectClass',
 				           createMakevars(.useLib = .useLib, dir = dirName)
 
                                        dllName <- paste0(names[1], "_", timeStamp)
-                                       
+                                                                             
                                        outputSOfile <<- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
 
-                                       includes <- c(includes, Oincludes)
+                                       if(!inherits(Oincludes, 'uninitializedField')) { ## will only be unitialized if writeFiles was skipped due to specialHandling (developer backdoor)
+                                           includes <- c(includes, Oincludes) ## normal operation will have Oincludes.
+                                       }
                                        SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
                                        cur = getwd()

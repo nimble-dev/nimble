@@ -159,6 +159,7 @@ SEXP OptimResultNimbleList::copyToSEXP() {
   }
   return (RObjectPointer);
 }
+
 void OptimResultNimbleList::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
