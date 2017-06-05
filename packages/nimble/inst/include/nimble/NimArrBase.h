@@ -33,7 +33,7 @@ enum nimType {INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1};
  class NimArrType{
 	public:
 	nimType myType;
-	virtual nimType getNimType() const {return(myType);};
+	virtual nimType getNimType() const {return myType;};
 	virtual ~NimArrType(){
 	};
  };
@@ -42,7 +42,7 @@ enum nimType {INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1};
   class NimVecType{
 	public:
 	nimType myType;
-	virtual nimType getNimType() const {return(myType);};
+	virtual nimType getNimType() const {return myType;};
 	virtual NimArrType* getRowTypePtr(int row)=0;
 	virtual int size() =0;
 	virtual void setRowDims(int row, vector<int> dims) = 0;
@@ -57,20 +57,20 @@ class NimArrBase: public NimArrType {
   T **vPtr;
   std::size_t element_size() {return(sizeof(T));}
   void setVptr() {vPtr = &v;}
-  T **getVptr() const{return(vPtr);}
+  T **getVptr() const{return vPtr;}
   bool own_v;
   int NAdims[4];
-  const int* dim() const {return(NAdims);}
+  const int* dim() const {return NAdims;}
   int NAstrides[4];
   // Everyone has a stride1, and the flat [] operator needs it, so it is here.
   int stride1, offset;
-  int getOffset() {return(offset);}
+  int getOffset() {return offset;}
   bool boolMap;
-  bool isMap() const {return(boolMap);}
-  const int* strides() const {return(NAstrides);}
+  bool isMap() const {return boolMap;}
+  const int* strides() const {return NAstrides;}
   // Name length can cause problems if R headers have been #include'd, as they have #define length Rf_length.
   int NAlength;
-  int size() const {return(NAlength);}
+  int size() const {return NAlength;}
   virtual int numDims() const = 0;
   virtual int dimSize(int i) const = 0;
   // Generic for nDim > 1, overloaded for other dimensions.

@@ -13,11 +13,11 @@ template<class T>
 class NimArr<1, T> : public NimArrBase<T> {
 public:
   int size1;
-  int calculateIndex(int i) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i);}
-  int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0]));};
+  int calculateIndex(int i) const {return NimArrBase<T>::offset + NimArrBase<T>::stride1 * i;}
+  int calculateIndex(vector<int> &i) const {return calculateIndex(i[0]);};
   T &operator()(int i) const {
   // could add asserts here
-      return((*NimArrBase<T>::vPtr)[calculateIndex(i)]);
+      return (*NimArrBase<T>::vPtr)[calculateIndex(i)];
   }
 
   ~NimArr<1, T>() {
@@ -38,14 +38,14 @@ public:
 	 to += NimArrBase<T>::stride1;
 	 from += otherStride;
     }
-    return(*this);
+    return *this;
   }
 
       // This makes the copied-to object contiguous-memory.  Use mapCopy to copy into an existing map
   template<class Tother>
   NimArr<1, T> &templateCopyOperator(const NimArr<1, Tother> &other) {
     if(NimArrBase<T>::isMap()) {
-     return(mapCopy(other));
+     return mapCopy(other);
     }
   
     NimArrBase<T>::NAdims[0] = other.dim()[0];
@@ -81,12 +81,12 @@ public:
       std::copy(other.v, other.v + size1, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
-    return(*this);
+    return *this;
   }
 
-  NimArr<1, T> &operator=(const NimArr<1, double> &other) {return(templateCopyOperator<double>(other));}
-  NimArr<1, T> &operator=(const NimArr<1, int> &other) {return(templateCopyOperator<int>(other));}
-  NimArr<1, T> &operator=(const NimArr<1, bool> &other) {return(templateCopyOperator<bool>(other));}  
+  NimArr<1, T> &operator=(const NimArr<1, double> &other) {return templateCopyOperator<double>(other);}
+  NimArr<1, T> &operator=(const NimArr<1, int> &other) {return templateCopyOperator<int>(other);}
+  NimArr<1, T> &operator=(const NimArr<1, bool> &other) {return templateCopyOperator<bool>(other);}  
 
   NimArr<1, T> (const NimArr<1, T> &other) :
   NimArrBase<T>(other)
@@ -182,14 +182,14 @@ public:
   virtual void setSize(vector<int> sizeVec, bool copyValues = true, bool fillZeros = true) {
     setSize(sizeVec[0], copyValues, fillZeros);
   }
-  virtual int numDims() const {return(1);}
+  virtual int numDims() const {return 1;}
   virtual int dimSize(int i) const {
     switch(i) {
     case 0:
-      return(size1); break;
+      return size1; break;
     default:
       PRINTF("Error, incorrect dimension given to dimSize\n");
-      return(0);
+      return 0;
     }
   }
 };
@@ -206,16 +206,16 @@ template<class T>
 class NimArr<2, T> : public NimArrBase<T> {
 public:
   int size1, size2, stride2;
-  int calculateIndex(int i, int j) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j);}
-  int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0], i[1]));};
+  int calculateIndex(int i, int j) const {return NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j;}
+  int calculateIndex(vector<int> &i) const {return calculateIndex(i[0], i[1]);};
   T &operator()(int i, int j) const {
  // could add asserts here
-      return((*NimArrBase<T>::vPtr)[calculateIndex(i, j)]);
+      return (*NimArrBase<T>::vPtr)[calculateIndex(i, j)];
   }
   
   T &operator[](int i) const {
     std::div_t divRes = std::div(i, size1);
-    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes.rem, divRes.quot)]);
+    return (*NimArrBase<T>::vPtr)[calculateIndex(divRes.rem, divRes.quot)];
   }
     
   ~NimArr<2, T>() {};
@@ -245,12 +245,12 @@ public:
       from += (-size1 * otherStride1) + otherStride2;
       to += (-size1 * NimArrBase<T>::stride1) + stride2;
     }
-    return(*this);
+    return *this;
   }
 
   NimArr<2, T> &operator=(const NimArr<2, T> &other) {
     if(NimArrBase<T>::isMap()) {
-      return(mapCopy(other));
+      return mapCopy(other);
     }
 
     std::memcpy(NimArrBase<T>::NAdims, other.dim(), 2*sizeof(int));
@@ -292,7 +292,7 @@ public:
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
-    return(*this);
+    return *this;
   }
 
   NimArr<2, T> (const NimArr<2, T> &other) :
@@ -404,16 +404,16 @@ public:
     virtual void setSize(vector<int> sizeVec, bool copyValues = true, bool fillZeros = true) {
       setSize(sizeVec[0], sizeVec[1], copyValues, fillZeros);
     }
-    virtual int numDims() const {return(2);}
+    virtual int numDims() const {return 2;}
     virtual int dimSize(int i) const {
       switch(i) {
       case 0:
-	return(size1); break;
+	return size1; break;
       case 1:
-	return(size2); break;
+	return size2; break;
       default:
 	PRINTF("Error, incorrect dimension given to dimSize\n");
-	return(0);
+	return 0;
       }
     }
 };
@@ -424,17 +424,17 @@ template<class T>
 class NimArr<3, T> : public NimArrBase<T> {
  public:
   int size1, size2, size3, stride2, stride3;
-  int calculateIndex(int i, int j, int k) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k);}
-  int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0], i[1], i[2]));};
+  int calculateIndex(int i, int j, int k) const {return NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k;}
+  int calculateIndex(vector<int> &i) const {return calculateIndex(i[0], i[1], i[2]);};
   T &operator()(int i, int j, int k) const {
   // could add asserts here
-      return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k)]);
+      return (*NimArrBase<T>::vPtr)[calculateIndex(i, j, k)];
   }
 
   T &operator[](int i) const {
     std::div_t divRes1 = std::div(i, size1);
     std::div_t divRes2 = std::div(divRes1.quot, size2);
-    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, divRes2.quot)]);
+    return (*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, divRes2.quot)];
   }
 
   ~NimArr<3, T>() {};
@@ -472,12 +472,12 @@ class NimArr<3, T> : public NimArrBase<T> {
       from += (-size2 * otherStride2) + otherStride3;
       to += (-size2 * stride2 + stride3);
     }
-    return(*this);
+    return *this;
   }
 
   NimArr<3, T> &operator=(const NimArr<3, T> &other) {
     if(NimArrBase<T>::isMap()) {
-      return(mapCopy(other));
+      return mapCopy(other);
     }
 
     std::memcpy(NimArrBase<T>::NAdims, other.dim(), 3 * sizeof(int));
@@ -524,7 +524,7 @@ class NimArr<3, T> : public NimArrBase<T> {
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
-    return(*this);
+    return *this;
   }
 
   NimArr<3, T> (const NimArr<3, T> &other) :
@@ -657,18 +657,18 @@ class NimArr<3, T> : public NimArrBase<T> {
   virtual void setSize(vector<int> sizeVec, bool copyValues = true, bool fillZeros = true) {
     setSize(sizeVec[0], sizeVec[1], sizeVec[2], copyValues, fillZeros);
   }
-  virtual int numDims() const {return(3);}
+  virtual int numDims() const {return 3;}
   virtual int dimSize(int i) const {
     switch(i) {
     case 0:
-      return(size1); break;
+      return size1; break;
     case 1:
-      return(size2); break;
+      return size2; break;
     case 2:
-      return(size3); break;
+      return size3; break;
     default:
       PRINTF("Error, incorrect dimension given to dimSize\n");
-      return(0);
+      return 0;
     }
   }
 };
@@ -680,18 +680,18 @@ template<class T>
 class NimArr<4, T> : public NimArrBase<T> {
  public:
   int size1, size2, size3, size4, stride2, stride3, stride4;
-  int calculateIndex(int i, int j, int k, int l) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k + stride4 * l );}
-  int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0], i[1], i[2], i[3]));};
+  int calculateIndex(int i, int j, int k, int l) const {return NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k + stride4 * l ;}
+  int calculateIndex(vector<int> &i) const {return calculateIndex(i[0], i[1], i[2], i[3]);};
   T &operator()(int i, int j, int k, int l) const {
   // could add asserts here
-      return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k, l)]);
+      return (*NimArrBase<T>::vPtr)[calculateIndex(i, j, k, l)];
   }
 
   T &operator[](int i) const {
     std::div_t divRes1 = std::div(i, size1);
     std::div_t divRes2 = std::div(divRes1.quot, size2);
     std::div_t divRes3 = std::div(divRes2.quot, size3);
-    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, divRes3.rem, divRes3.quot)]);
+    return (*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, divRes3.rem, divRes3.quot)];
   }
   
   ~NimArr<4, T>() {};
@@ -736,12 +736,12 @@ class NimArr<4, T> : public NimArrBase<T> {
       from += (-size3 *otherStride3) + otherStride4;
       to += (-size3 * stride3 + stride4);
     }
-    return(*this);
+    return *this;
   }
 
   NimArr<4, T> &operator=(const NimArr<3, T> &other) {
     if(NimArrBase<T>::isMap()) {
-      return(mapCopy(other));
+      return mapCopy(other);
     }
 
     std::memcpy(NimArrBase<T>::NAdims, other.dim(), 4 * sizeof(int));
@@ -795,7 +795,7 @@ class NimArr<4, T> : public NimArrBase<T> {
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
     NimArrBase<T>::setVptr();
-    return(*this);
+    return *this;
   }
 
   NimArr<4, T> (const NimArr<4, T> &other) :
@@ -939,20 +939,20 @@ class NimArr<4, T> : public NimArrBase<T> {
   virtual void setSize(vector<int> sizeVec, bool copyValues = true, bool fillZeros = true) {
     setSize(sizeVec[0], sizeVec[1], sizeVec[2], sizeVec[3], copyValues, fillZeros);
   }
-  virtual int numDims() const {return(4);}
+  virtual int numDims() const {return 4;}
   virtual int dimSize(int i) const {
     switch(i) {
     case 0:
-      return(size1); break;
+      return size1; break;
     case 1:
-      return(size2); break;
+      return size2; break;
     case 2:
-      return(size3); break;
+      return size3; break;
     case 3:
-      return(size4); break;
+      return size4; break;
     default:
       PRINTF("Error, incorrect dimension given to dimSize\n");
-      return(0);
+      return 0;
     }
   }
 };
@@ -972,15 +972,15 @@ class VecNimArr : public VecNimArrBase<T>  {
     if(i >= values.size()) {
       PRINTF("Error accessing a VecNimArr element: requested element %i but values.size() is only %i\n", i, values.size());
       PRINTF("Returning the first element if possible to avoid a segfault crash\n");
-      return(values[0]);
+      return values[0];
     }
-    return(values[i]);
+    return values[i];
   }
   virtual void resize(int i) {values.resize(i);}
   void resizeNoPtr(int i){values.resize(i);}
-  int getsizeNoPtr(){return(values.size());}
-  virtual NimArrBase<T>* getBasePtr(int i) {return(&(values[i]));}
-  virtual int size() {return(values.size());}
+  int getsizeNoPtr(){return values.size();}
+  virtual NimArrBase<T>* getBasePtr(int i) {return &(values[i]);}
+  virtual int size() {return values.size();}
   
   virtual void setRowDims(int row, vector<int> dims){
   	if(dims.size() != ndim){
@@ -993,13 +993,13 @@ class VecNimArr : public VecNimArrBase<T>  {
   }
   
   virtual vector<int> getRowDims(int row){
-    if(row >= size()) return(vector<int>(0));
+    if(row >= size()) return vector<int>(0);
   	NimArrBase<T>* nimBasePtr = VecNimArr<ndim, T>::getBasePtr(row);
   	int nRowDims = (*nimBasePtr).numDims();
   	vector<int> rowDims(nRowDims);
   	for(int i = 0; i < nRowDims; i++)
   		rowDims[i] = (*nimBasePtr).dimSize(i);
-  	return(rowDims);
+  	return rowDims;
   }
 
   
