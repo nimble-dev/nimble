@@ -62,20 +62,25 @@ class NimArrBase: public NimArrType {
   int NAdims[4];
   const int* dim() const {return(NAdims);}
   int NAstrides[4];
-  int stride1, offset; // everyone has a stride1, and the flat [] operator needs it, so it is here.
+  // Everyone has a stride1, and the flat [] operator needs it, so it is here.
+  int stride1, offset;
   int getOffset() {return(offset);}
   bool boolMap;
   bool isMap() const {return(boolMap);}
   const int* strides() const {return(NAstrides);}
-  int NAlength; // name length can cause problems if R headers have been #include'd, as they have #define length Rf_length
+  // Name length can cause problems if R headers have been #include'd, as they have #define length Rf_length.
+  int NAlength;
   int size() const {return(NAlength);}
   virtual int numDims() const = 0;
   virtual int dimSize(int i) const = 0;
-  T &operator[](int i) const {return((*vPtr)[offset + i * stride1]);} // generic for nDim > 1, overloaded for other dimensions
-  T &valueNoMap(int i) const {return(*(v + i));} // only to be used if not a map 
+  // Generic for nDim > 1, overloaded for other dimensions.
+  T &operator[](int i) const {return((*vPtr)[offset + i * stride1]);}
+  // Only to be used if not a map .
+  T &valueNoMap(int i) const {return(*(v + i));}
   virtual int calculateIndex(vector<int> &i) const =0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec, bool copyValues = true, bool fillZeros = true)=0;
+  // Warning, this does not make sense if vPtr is pointing to someone else's vMemory.
   void setLength(int l, bool copyValues = true, bool fillZeros = true) {
     if(NAlength==l) {
       if((!copyValues) & fillZeros) fillAllValues(static_cast<T>(0));
@@ -100,7 +105,7 @@ class NimArrBase: public NimArrType {
     NAlength = l;
     v = new_v;
     own_v = true;
-  } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory.
+  }
   void fillAllValues(T value) { std::fill(v, v + NAlength, value); }
   void fillAllValues(T value, bool fillZeros, bool recycle) {
     if(recycle) {
@@ -125,8 +130,10 @@ class NimArrBase: public NimArrType {
   virtual ~NimArrBase(){
     if(own_v) delete [] v;
   };
- NimArrBase(const NimArrBase<T> &other) : // do we ever use this case?
-    own_v(false), // isn't a map but we'll only set to true when giving it values.
+ // Do we ever use this case?
+ NimArrBase(const NimArrBase<T> &other) :
+    // own_v isn't a map but we'll only set to true when giving it values.
+    own_v(false),
       offset(0),
       boolMap(false),
     NAlength(other.size())

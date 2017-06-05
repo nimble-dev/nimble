@@ -15,7 +15,10 @@ public:
   int size1;
   int calculateIndex(int i) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i);}
   int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0]));};
-  T &operator()(int i) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i)]);} // could add asserts here
+  T &operator()(int i) const {
+  // could add asserts here
+      return((*NimArrBase<T>::vPtr)[calculateIndex(i)]);
+  }
 
   ~NimArr<1, T>() {
   };
@@ -38,8 +41,9 @@ public:
     return(*this);
   }
 
+      // This makes the copied-to object contiguous-memory.  Use mapCopy to copy into an existing map
   template<class Tother>
-  NimArr<1, T> &templateCopyOperator(const NimArr<1, Tother> &other) { // This makes the copied-to object contiguous-memory.  Use mapCopy to copy into an existing map
+  NimArr<1, T> &templateCopyOperator(const NimArr<1, Tother> &other) {
     if(NimArrBase<T>::isMap()) {
      return(mapCopy(other));
     }
@@ -202,9 +206,12 @@ template<class T>
 class NimArr<2, T> : public NimArrBase<T> {
 public:
   int size1, size2, stride2;
-  int calculateIndex(int i, int j) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j);} // j * s1 + i);}
+  int calculateIndex(int i, int j) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j);}
   int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0], i[1]));};
-  T &operator()(int i, int j) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j)]);} // could add asserts here
+  T &operator()(int i, int j) const {
+ // could add asserts here
+      return((*NimArrBase<T>::vPtr)[calculateIndex(i, j)]);
+  }
   
   T &operator[](int i) const {
     std::div_t divRes = std::div(i, size1);
@@ -419,7 +426,10 @@ class NimArr<3, T> : public NimArrBase<T> {
   int size1, size2, size3, stride2, stride3;
   int calculateIndex(int i, int j, int k) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k);}
   int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0], i[1], i[2]));};
-  T &operator()(int i, int j, int k) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k)]);} // could add asserts here
+  T &operator()(int i, int j, int k) const {
+  // could add asserts here
+      return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k)]);
+  }
 
   T &operator[](int i) const {
     std::div_t divRes1 = std::div(i, size1);
@@ -672,7 +682,10 @@ class NimArr<4, T> : public NimArrBase<T> {
   int size1, size2, size3, size4, stride2, stride3, stride4;
   int calculateIndex(int i, int j, int k, int l) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k + stride4 * l );}
   int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0], i[1], i[2], i[3]));};
-  T &operator()(int i, int j, int k, int l) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k, l)]);} // could add asserts here
+  T &operator()(int i, int j, int k, int l) const {
+  // could add asserts here
+      return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k, l)]);
+  }
 
   T &operator[](int i) const {
     std::div_t divRes1 = std::div(i, size1);
