@@ -21,15 +21,19 @@ branches:
   only:
     - devel
 
+latex: false  # Work around tlmgr issues.
+
 install:
-##  - Rscript -e "install.packages('devtools', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('igraph', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('coda', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('testthat', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('mvtnorm', repos = 'http://cran.us.r-project.org')"  ## needed for test-distributions.R
   - Rscript -e "install.packages('abind', repos = 'http://cran.us.r-project.org')"    ## needed for test-compareMCMCs.R
+  - Rscript -e "install.packages('covr', repos = 'http://cran.us.r-project.org')"  ## needed for code coverage reports
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
 script: ./run_tests.R
 
+after_success:
+  - Rscript -e 'library(covr); if(R.version$os == "linux-gnu") codecov()'

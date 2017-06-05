@@ -234,7 +234,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           conditionalLineList <- c(conditionalLineList, generateConditionalLines(nimCompProc$symTab$getSymbolObject(elementNames[i]),
                                                                                                                  listElementTable$getSymbolObject(Snames[i])))
                                           
-                                          copyToListLines[[i]] <- substitute(defineVar(install(ELEMENTNAME), VALUE, GET_SLOT(ROBJ, XDATA)),
+                                          copyToListLines[[i]] <- substitute(defineVar(install(ELEMENTNAME), VALUE, PROTECT(GET_SLOT(ROBJ, XDATA))),
                                                                              list(ELEMENTNAME = elementNames[i], VALUE = as.name(Snames[i]),
                                                                                   ROBJ = as.name('RObjectPointer'),
                                                                                   XDATA = as.name(environmentCPPName)))
@@ -244,7 +244,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                        list()))
                                         returnLine <- list(substitute(return(ROBJ),
                                                            list(ROBJ = as.name('RObjectPointer'))))
-                                        unprotectLine <- list(substitute(UNPROTECT(N), list(N = numElements + 1)))
+                                        unprotectLine <- list(substitute(UNPROTECT(N), list(N = 2 * numElements + 1)))
                                         allCode <- embedListInRbracket(c(conditionalClauseStart, list(envLine),  conditionalLineList,
                                                                          copyToListLines, setFlagLine, unprotectLine,
                                                                          conditionalClauseEnd, returnLine))
@@ -278,7 +278,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
-                                            copyFromListLines[[i]] <- substitute(PROTECT(SVAR <- findVarInFrame(GET_SLOT(S_nimList_, XDATA), install(ARGNAME))),
+                                            copyFromListLines[[i]] <- substitute(PROTECT(SVAR <- findVarInFrame(PROTECT(GET_SLOT(S_nimList_, XDATA)), install(ARGNAME))),
                                                                                list(ARGNAME = argNames[i], 
                                                                                     SVAR = as.name(Snames[i]),
                                                                                     XDATA = as.name(environmentCPPName)))
@@ -287,7 +287,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                             copyLines <- c(copyLines, copyLine)
                                         }
                                         numArgs <- length(argNames)
-                                        unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1))
+                                        unprotectLine <- substitute(UNPROTECT(N), list(N = 2 * numArgs + 1))
                                         allCode <- embedListInRbracket(c(storeSexpLine, envLine, 
                                                                          copyFromListLines, copyLines,
                                                                          list(unprotectLine)))
