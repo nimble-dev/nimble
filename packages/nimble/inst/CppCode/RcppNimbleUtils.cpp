@@ -50,14 +50,6 @@ SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr) {
   return(R_NilValue);
 }
 
-// could be useful but is not currently used
-// SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si) {
-//   vectorOfPtrsAccessBase *accessorPtr = static_cast<vectorOfPtrsAccessBase *>(R_ExternalPtrAddr(SaccessorPtr)); 
-//   int i = INTEGER(Si)[0];
-//   void *ans = accessorPtr->getVecPtr(i);
-//   return( R_MakeExternalPtr(ans, R_NilValue, R_NilValue));
-// }
-
 /*This function was created so we can report the status of different operations
 from C++ to R. I found that Rbreak does not stop the R function from which the C++
 function was called. This can cause an excessive number (e.g. nrow) of printed 
@@ -366,14 +358,11 @@ SEXP getMVElement(SEXP Sextptr, SEXP Sindex){
   	}
   return(cGetMVElementOneRow(typePtr, vecType, index) ) ;	
 }  	
-  	
 
-// //SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int nrowCpp, int index) 	{  	
-// //ONe
+// This is not called directly from R.  It is called from getMVElement
 SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{  	
     if(vecType == DOUBLE){
 		VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(typePtr);
-//		int nrowCpp = matPtr->size();
 		NimArrBase<double> *thisRow;
   		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
 		int outputLength = thisRow->size();
@@ -544,27 +533,6 @@ SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
  	UNPROTECT(1);
  	return(Sans);
  	}
-
-
-// SEXP setVarPointer(SEXP SextptrModelVar, SEXP SextptrStorageVar, SEXP Srownum) {
-//   // This function is untested in its new (NimArr) version
-//   if(!R_ExternalPtrAddr(SextptrModelVar)) {
-//     PRINTF("Error: Sextptr is not a valid external pointer\n");
-//     return(R_NilValue);
-//   }
-//   if(!R_ExternalPtrAddr(SextptrStorageVar)) {
-//     PRINTF("Error: Sextptr is not a valid external pointer\n");
-//     return(R_NilValue);
-//   }
-//   if(!isInteger(Srownum)) {
-//     PRINTF("Error: Srownum is not a valid integer\n");
-//     return(R_NilValue);
-//   }
-//   VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(R_ExternalPtrAddr(SextptrStorageVar));
-//   NimArrBase<double> **vecPtr = static_cast< NimArrBase<double>** >(R_ExternalPtrAddr(SextptrModelVar));
-//   (*vecPtr) = matPtr->getBasePtr( INTEGER(Srownum)[0] );
-//   return(R_NilValue);
-// }
 
 SEXP NimArrDouble_2_SEXP(NimArrBase<double> &nimArrDbl){
 		int len = nimArrDbl.size();
