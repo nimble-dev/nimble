@@ -90,7 +90,7 @@ main <- function() {
             optimControlStub = function() {
                 return(optimControlNimbleList$new())
                 returnType(optimControlNimbleList())
-            }
+            },
             ADStub = function() {
               return(ADNimbleList$new())
               returnType(ADNimbleList())
