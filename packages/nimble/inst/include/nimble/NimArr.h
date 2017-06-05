@@ -6,9 +6,9 @@
 #include <cstdlib>
 
 template <int ndim, class T> class NimArr;
+
 // Here is the specialization for 1 dimensions (for any type, T = double, int or
 // bool).
-
 template <class T> class NimArr<1, T> : public NimArrBase<T> {
 public:
   int size1;

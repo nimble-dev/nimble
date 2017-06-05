@@ -34,7 +34,7 @@ class NimArrType {
 public:
   nimType myType;
   virtual nimType getNimType() const { return myType; }
-  virtual ~NimArrType(){};
+  virtual ~NimArrType(){}
 };
 
 class NimVecType {
