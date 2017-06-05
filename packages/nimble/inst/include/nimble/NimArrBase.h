@@ -33,7 +33,7 @@ enum nimType {INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1};
  class NimArrType{
 	public:
 	nimType myType;
-	virtual nimType getNimType() const {return myType;};
+	virtual nimType getNimType() const {return myType;}
 	virtual ~NimArrType(){
 	};
  };
@@ -42,12 +42,12 @@ enum nimType {INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1};
   class NimVecType{
 	public:
 	nimType myType;
-	virtual nimType getNimType() const {return myType;};
+	virtual nimType getNimType() const {return myType;}
 	virtual NimArrType* getRowTypePtr(int row)=0;
 	virtual int size() =0;
 	virtual void setRowDims(int row, vector<int> dims) = 0;
 	virtual vector<int> getRowDims(int row) = 0;
-	virtual ~NimVecType(){};
+	virtual ~NimVecType(){}
   };
 
 template<class T>
@@ -129,7 +129,7 @@ class NimArrBase: public NimArrType {
   }
   virtual ~NimArrBase(){
     if(own_v) delete [] v;
-  };
+  }
  // Do we ever use this case?
  NimArrBase(const NimArrBase<T> &other) :
     // own_v isn't a map but we'll only set to true when giving it values.
@@ -140,7 +140,7 @@ class NimArrBase: public NimArrType {
       {
 	std::memcpy(NAdims, other.dim(), other.numDims()*sizeof(int));
    	myType = other.getNimType();
-      };
+      }
 
  NimArrBase() : v(), vPtr(&v), own_v(false), offset(0), boolMap(false), NAlength(0) {
     setMyType();
@@ -172,7 +172,7 @@ class VecNimArrBase : public NimVecType {
 
   }
 
-  ~VecNimArrBase(){};
+  ~VecNimArrBase(){}
 };
 
 
