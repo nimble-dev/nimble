@@ -31,14 +31,14 @@ using std::vector;
 enum nimType { INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1 };
 
 class NimArrType {
-public:
+ public:
   nimType myType;
   virtual nimType getNimType() const { return myType; }
-  virtual ~NimArrType(){}
+  virtual ~NimArrType() {}
 };
 
 class NimVecType {
-public:
+ public:
   nimType myType;
   virtual nimType getNimType() const { return myType; }
   virtual NimArrType *getRowTypePtr(int row) = 0;
@@ -48,8 +48,9 @@ public:
   virtual ~NimVecType() {}
 };
 
-template <class T> class NimArrBase : public NimArrType {
-public:
+template <class T>
+class NimArrBase : public NimArrType {
+ public:
   T *v;
   T **vPtr;
   std::size_t element_size() { return (sizeof(T)); }
@@ -83,8 +84,7 @@ public:
   // vMemory.
   void setLength(int l, bool copyValues = true, bool fillZeros = true) {
     if (NAlength == l) {
-      if ((!copyValues) & fillZeros)
-        fillAllValues(static_cast<T>(0));
+      if ((!copyValues) & fillZeros) fillAllValues(static_cast<T>(0));
       return;
     }
     T *new_v = new T[l];
@@ -99,8 +99,7 @@ public:
           }
         }
       } else {
-        if (fillZeros)
-          std::fill(new_v, new_v + l, static_cast<T>(0));
+        if (fillZeros) std::fill(new_v, new_v + l, static_cast<T>(0));
       }
       delete[] v;
     }
@@ -113,11 +112,9 @@ public:
     if (recycle) {
       std::fill(v, v + NAlength, value);
     } else {
-      if (NAlength > 0)
-        v[0] = value;
+      if (NAlength > 0) v[0] = value;
       if (NAlength > 1)
-        if (fillZeros)
-          std::fill(v + 1, v + NAlength, static_cast<T>(0));
+        if (fillZeros) std::fill(v + 1, v + NAlength, static_cast<T>(0));
     }
   }
   void setMyType() {
@@ -131,14 +128,15 @@ public:
     }
   }
   virtual ~NimArrBase() {
-    if (own_v)
-      delete[] v;
+    if (own_v) delete[] v;
   }
   // Do we ever use this case?
   NimArrBase(const NimArrBase<T> &other)
-      : // own_v isn't a map but we'll only set to true when giving it values.
+      :  // own_v isn't a map but we'll only set to true when giving it values.
         own_v(false),
-        offset(0), boolMap(false), NAlength(other.size()) {
+        offset(0),
+        boolMap(false),
+        NAlength(other.size()) {
     std::memcpy(NAdims, other.dim(), other.numDims() * sizeof(int));
     myType = other.getNimType();
   }
@@ -157,8 +155,9 @@ public:
                       vector<int> &fromStr, vector<int> &fromIs);
 };
 
-template <class T> class VecNimArrBase : public NimVecType {
-public:
+template <class T>
+class VecNimArrBase : public NimVecType {
+ public:
   virtual void resize(int i) = 0;
   virtual NimArrBase<T> *getBasePtr(int i) = 0;
   NimArrType *getRowTypePtr(int row) {

@@ -1,16 +1,18 @@
 #ifndef __NIMARR
 #define __NIMARR
 
+#include <cstdlib>
 #include "NimArrBase.h"
 #include "Utils.h"
-#include <cstdlib>
 
-template <int ndim, class T> class NimArr;
+template <int ndim, class T>
+class NimArr;
 
 // Here is the specialization for 1 dimensions (for any type, T = double, int or
 // bool).
-template <class T> class NimArr<1, T> : public NimArrBase<T> {
-public:
+template <class T>
+class NimArr<1, T> : public NimArrBase<T> {
+ public:
   int size1;
   int calculateIndex(int i) const {
     return NimArrBase<T>::offset + NimArrBase<T>::stride1 * i;
@@ -58,9 +60,7 @@ public:
     NimArrBase<T>::offset = 0;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
     if (other.boolMap) {
-
-      if (NimArrBase<T>::own_v)
-        delete[] NimArrBase<T>::v;
+      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
       NimArrBase<T>::v = new T[size1];
       NimArrBase<T>::own_v = true;
       T *to(NimArrBase<T>::v);
@@ -73,8 +73,7 @@ public:
         from += otherStride;
       }
     } else {
-      if (NimArrBase<T>::own_v)
-        delete[] NimArrBase<T>::v;
+      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
       NimArrBase<T>::v = new T[size1];
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + size1, NimArrBase<T>::v);
@@ -122,8 +121,7 @@ public:
   NimArr<1, T>() : NimArrBase<T>() { setSize(0); }
 
   void setMap(NimArrBase<T> &source, int off, int str1, int is1) {
-    if (NimArrBase<T>::own_v)
-      delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -134,8 +132,7 @@ public:
 
   void setMap(NimArrBase<T> &source, int off, vector<int> &str,
               vector<int> &is) {
-    if (NimArrBase<T>::own_v)
-      delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -192,12 +189,12 @@ public:
   virtual int numDims() const { return 1; }
   virtual int dimSize(int i) const {
     switch (i) {
-    case 0:
-      return size1;
-      break;
-    default:
-      PRINTF("Error, incorrect dimension given to dimSize\n");
-      return 0;
+      case 0:
+        return size1;
+        break;
+      default:
+        PRINTF("Error, incorrect dimension given to dimSize\n");
+        return 0;
     }
   }
 };
@@ -210,8 +207,9 @@ void dimNimArr(NimArr<1, int> &output, NimArrBase<T> &input) {
 
 // Here is the specialization for 2 dimensions.
 
-template <class T> class NimArr<2, T> : public NimArrBase<T> {
-public:
+template <class T>
+class NimArr<2, T> : public NimArrBase<T> {
+ public:
   int size1, size2, stride2;
   int calculateIndex(int i, int j) const {
     return NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j;
@@ -277,8 +275,7 @@ public:
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
     NimArrBase<T>::NAstrides[1] = stride2 = size1;
     if (other.boolMap) {
-      if (NimArrBase<T>::own_v)
-        delete[] NimArrBase<T>::v;
+      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
       NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
       NimArrBase<T>::own_v = true;
 
@@ -296,8 +293,7 @@ public:
         from += (-size1 * otherStride1) + otherStride2;
       }
     } else {
-      if (NimArrBase<T>::own_v)
-        delete[] NimArrBase<T>::v;
+      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
       NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
@@ -342,8 +338,7 @@ public:
 
   void setMap(NimArrBase<T> &source, int off, int str1, int str2, int is1,
               int is2) {
-    if (NimArrBase<T>::own_v)
-      delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -357,8 +352,7 @@ public:
 
   void setMap(NimArrBase<T> &source, int off, vector<int> &str,
               vector<int> &is) {
-    if (NimArrBase<T>::own_v)
-      delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -426,23 +420,24 @@ public:
   virtual int numDims() const { return 2; }
   virtual int dimSize(int i) const {
     switch (i) {
-    case 0:
-      return size1;
-      break;
-    case 1:
-      return size2;
-      break;
-    default:
-      PRINTF("Error, incorrect dimension given to dimSize\n");
-      return 0;
+      case 0:
+        return size1;
+        break;
+      case 1:
+        return size2;
+        break;
+      default:
+        PRINTF("Error, incorrect dimension given to dimSize\n");
+        return 0;
     }
   }
 };
 
 // Here is the specialization for 3 dimensions.
 
-template <class T> class NimArr<3, T> : public NimArrBase<T> {
-public:
+template <class T>
+class NimArr<3, T> : public NimArrBase<T> {
+ public:
   int size1, size2, size3, stride2, stride3;
   int calculateIndex(int i, int j, int k) const {
     return NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j +
@@ -522,8 +517,7 @@ public:
     NimArrBase<T>::NAstrides[1] = stride2 = size1;
     NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;
     if (other.boolMap) {
-      if (NimArrBase<T>::own_v)
-        delete[] NimArrBase<T>::v;
+      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
       NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
       NimArrBase<T>::own_v = true;
 
@@ -544,8 +538,7 @@ public:
         from += (-size2 * otherStride2) + otherStride3;
       }
     } else {
-      if (NimArrBase<T>::own_v)
-        delete[] NimArrBase<T>::v;
+      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
       NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
@@ -555,7 +548,6 @@ public:
   }
 
   NimArr<3, T>(const NimArr<3, T> &other) : NimArrBase<T>(other) {
-
     std::memcpy(NimArrBase<T>::NAdims, other.dim(), 3 * sizeof(int));
     size1 = NimArrBase<T>::NAdims[0];
     size2 = NimArrBase<T>::NAdims[1];
@@ -596,8 +588,7 @@ public:
 
   void setMap(NimArrBase<T> &source, int off, int str1, int str2, int str3,
               int is1, int is2, int is3) {
-    if (NimArrBase<T>::own_v)
-      delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -614,8 +605,7 @@ public:
 
   void setMap(NimArrBase<T> &source, int off, vector<int> &str,
               vector<int> &is) {
-    if (NimArrBase<T>::own_v)
-      delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -694,26 +684,27 @@ public:
   virtual int numDims() const { return 3; }
   virtual int dimSize(int i) const {
     switch (i) {
-    case 0:
-      return size1;
-      break;
-    case 1:
-      return size2;
-      break;
-    case 2:
-      return size3;
-      break;
-    default:
-      PRINTF("Error, incorrect dimension given to dimSize\n");
-      return 0;
+      case 0:
+        return size1;
+        break;
+      case 1:
+        return size2;
+        break;
+      case 2:
+        return size3;
+        break;
+      default:
+        PRINTF("Error, incorrect dimension given to dimSize\n");
+        return 0;
     }
   }
 };
 
 // Here is the specialization for 4 dimensions.
 
-template <class T> class NimArr<4, T> : public NimArrBase<T> {
-public:
+template <class T>
+class NimArr<4, T> : public NimArrBase<T> {
+ public:
   int size1, size2, size3, size4, stride2, stride3, stride4;
   int calculateIndex(int i, int j, int k, int l) const {
     return NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j +
@@ -804,8 +795,7 @@ public:
     NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;
     NimArrBase<T>::NAstrides[3] = stride4 = size1 * size2 * size3;
     if (other.boolMap) {
-      if (NimArrBase<T>::own_v)
-        delete[] NimArrBase<T>::v;
+      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
       NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
       NimArrBase<T>::own_v = true;
 
@@ -831,8 +821,7 @@ public:
         from += (-size3 * otherStride3) + otherStride4;
       }
     } else {
-      if (NimArrBase<T>::own_v)
-        delete[] NimArrBase<T>::v;
+      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
       NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
@@ -889,8 +878,7 @@ public:
 
   void setMap(NimArrBase<T> &source, int off, int str1, int str2, int str3,
               int str4, int is1, int is2, int is3, int is4) {
-    if (NimArrBase<T>::own_v)
-      delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -909,8 +897,7 @@ public:
 
   void setMap(NimArrBase<T> &source, int off, vector<int> &str,
               vector<int> &is) {
-    if (NimArrBase<T>::own_v)
-      delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -996,21 +983,21 @@ public:
   virtual int numDims() const { return 4; }
   virtual int dimSize(int i) const {
     switch (i) {
-    case 0:
-      return size1;
-      break;
-    case 1:
-      return size2;
-      break;
-    case 2:
-      return size3;
-      break;
-    case 3:
-      return size4;
-      break;
-    default:
-      PRINTF("Error, incorrect dimension given to dimSize\n");
-      return 0;
+      case 0:
+        return size1;
+        break;
+      case 1:
+        return size2;
+        break;
+      case 2:
+        return size3;
+        break;
+      case 3:
+        return size4;
+        break;
+      default:
+        PRINTF("Error, incorrect dimension given to dimSize\n");
+        return 0;
     }
   }
 };
@@ -1019,17 +1006,20 @@ public:
 // VecNimArr
 ///////////////////////////////////
 
-template <int ndim, class T> class VecNimArr : public VecNimArrBase<T> {
-public:
+template <int ndim, class T>
+class VecNimArr : public VecNimArrBase<T> {
+ public:
   ~VecNimArr<ndim, T>() {}
-  std::vector<NimArr<ndim, T>> values;
+  std::vector<NimArr<ndim, T> > values;
   NimArr<ndim, T> &operator[](unsigned int i) {
     if (i >= values.size()) {
-      PRINTF("Error accessing a VecNimArr element: requested element %i but "
-             "values.size() is only %i\n",
-             i, values.size());
-      PRINTF("Returning the first element if possible to avoid a segfault "
-             "crash\n");
+      PRINTF(
+          "Error accessing a VecNimArr element: requested element %i but "
+          "values.size() is only %i\n",
+          i, values.size());
+      PRINTF(
+          "Returning the first element if possible to avoid a segfault "
+          "crash\n");
       return values[0];
     }
     return values[i];
@@ -1052,13 +1042,11 @@ public:
   }
 
   virtual vector<int> getRowDims(int row) {
-    if (row >= size())
-      return vector<int>(0);
+    if (row >= size()) return vector<int>(0);
     NimArrBase<T> *nimBasePtr = VecNimArr<ndim, T>::getBasePtr(row);
     int nRowDims = (*nimBasePtr).numDims();
     vector<int> rowDims(nRowDims);
-    for (int i = 0; i < nRowDims; i++)
-      rowDims[i] = (*nimBasePtr).dimSize(i);
+    for (int i = 0; i < nRowDims; i++) rowDims[i] = (*nimBasePtr).dimSize(i);
     return rowDims;
   }
 
@@ -1133,25 +1121,26 @@ void dynamicMapCopy(NimArrType *toNimArr, int toOffset, vector<int> &toStr,
     PRINTF("Error, dynamicMapCopy is not set up for nested maps\n");
   }
   switch (mapDim) {
-  case 1:
-    dynamicMapCopyDim<Tfrom, Tto, 1>(toNimArr, toOffset, toStr, toIs,
-                                     fromNimArr, fromOffset, fromStr, fromIs);
-    break;
-  case 2:
-    dynamicMapCopyDim<Tfrom, Tto, 2>(toNimArr, toOffset, toStr, toIs,
-                                     fromNimArr, fromOffset, fromStr, fromIs);
-    break;
-  case 3:
-    dynamicMapCopyDim<Tfrom, Tto, 3>(toNimArr, toOffset, toStr, toIs,
-                                     fromNimArr, fromOffset, fromStr, fromIs);
-    break;
-  case 4:
-    dynamicMapCopyDim<Tfrom, Tto, 4>(toNimArr, toOffset, toStr, toIs,
-                                     fromNimArr, fromOffset, fromStr, fromIs);
-    break;
-  default:
-    PRINTF("Error in copying (dynamicMapCopy): more than 4 dimensions not "
-           "supported yet\n");
+    case 1:
+      dynamicMapCopyDim<Tfrom, Tto, 1>(toNimArr, toOffset, toStr, toIs,
+                                       fromNimArr, fromOffset, fromStr, fromIs);
+      break;
+    case 2:
+      dynamicMapCopyDim<Tfrom, Tto, 2>(toNimArr, toOffset, toStr, toIs,
+                                       fromNimArr, fromOffset, fromStr, fromIs);
+      break;
+    case 3:
+      dynamicMapCopyDim<Tfrom, Tto, 3>(toNimArr, toOffset, toStr, toIs,
+                                       fromNimArr, fromOffset, fromStr, fromIs);
+      break;
+    case 4:
+      dynamicMapCopyDim<Tfrom, Tto, 4>(toNimArr, toOffset, toStr, toIs,
+                                       fromNimArr, fromOffset, fromStr, fromIs);
+      break;
+    default:
+      PRINTF(
+          "Error in copying (dynamicMapCopy): more than 4 dimensions not "
+          "supported yet\n");
   }
 }
 
@@ -1187,25 +1176,26 @@ void dynamicMapCopyFlatToDim(NimArrBase<Tto> *toNimArr, int toOffset,
     PRINTF("Error, dynamicMapCopyFlatToDim is not set up for nested maps\n");
   }
   switch (mapDim) {
-  case 1:
-    dynamicMapCopyFlatToDimFixed<Tfrom, Tto, 1>(
-        toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
-    break;
-  case 2:
-    dynamicMapCopyFlatToDimFixed<Tfrom, Tto, 2>(
-        toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
-    break;
-  case 3:
-    dynamicMapCopyFlatToDimFixed<Tfrom, Tto, 3>(
-        toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
-    break;
-  case 4:
-    dynamicMapCopyFlatToDimFixed<Tfrom, Tto, 4>(
-        toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
-    break;
-  default:
-    PRINTF("Error in copying (dynamicMapCopyFlatToDim): more than 4 dimensions "
-           "not supported yet\n");
+    case 1:
+      dynamicMapCopyFlatToDimFixed<Tfrom, Tto, 1>(
+          toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
+      break;
+    case 2:
+      dynamicMapCopyFlatToDimFixed<Tfrom, Tto, 2>(
+          toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
+      break;
+    case 3:
+      dynamicMapCopyFlatToDimFixed<Tfrom, Tto, 3>(
+          toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
+      break;
+    case 4:
+      dynamicMapCopyFlatToDimFixed<Tfrom, Tto, 4>(
+          toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
+      break;
+    default:
+      PRINTF(
+          "Error in copying (dynamicMapCopyFlatToDim): more than 4 dimensions "
+          "not supported yet\n");
   }
 }
 
@@ -1240,25 +1230,26 @@ void dynamicMapCopyDimToFlat(NimArrBase<Tto> *toNimArr, int toOffset, int toStr,
     PRINTF("Error, dynamicMapCopyFlatToDim is not set up for nested maps\n");
   }
   switch (mapDim) {
-  case 1:
-    dynamicMapCopyDimToFlatFixed<Tfrom, Tto, 1>(
-        toNimArr, toOffset, toStr, fromNimArr, fromOffset, fromStr, fromIs);
-    break;
-  case 2:
-    dynamicMapCopyDimToFlatFixed<Tfrom, Tto, 2>(
-        toNimArr, toOffset, toStr, fromNimArr, fromOffset, fromStr, fromIs);
-    break;
-  case 3:
-    dynamicMapCopyDimToFlatFixed<Tfrom, Tto, 3>(
-        toNimArr, toOffset, toStr, fromNimArr, fromOffset, fromStr, fromIs);
-    break;
-  case 4:
-    dynamicMapCopyDimToFlatFixed<Tfrom, Tto, 4>(
-        toNimArr, toOffset, toStr, fromNimArr, fromOffset, fromStr, fromIs);
-    break;
-  default:
-    PRINTF("Error in copying (dynamicMapCopyDimToFlat): more than 4 dimensions "
-           "not supported yet\n");
+    case 1:
+      dynamicMapCopyDimToFlatFixed<Tfrom, Tto, 1>(
+          toNimArr, toOffset, toStr, fromNimArr, fromOffset, fromStr, fromIs);
+      break;
+    case 2:
+      dynamicMapCopyDimToFlatFixed<Tfrom, Tto, 2>(
+          toNimArr, toOffset, toStr, fromNimArr, fromOffset, fromStr, fromIs);
+      break;
+    case 3:
+      dynamicMapCopyDimToFlatFixed<Tfrom, Tto, 3>(
+          toNimArr, toOffset, toStr, fromNimArr, fromOffset, fromStr, fromIs);
+      break;
+    case 4:
+      dynamicMapCopyDimToFlatFixed<Tfrom, Tto, 4>(
+          toNimArr, toOffset, toStr, fromNimArr, fromOffset, fromStr, fromIs);
+      break;
+    default:
+      PRINTF(
+          "Error in copying (dynamicMapCopyDimToFlat): more than 4 dimensions "
+          "not supported yet\n");
   }
 }
 
