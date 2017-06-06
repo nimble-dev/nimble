@@ -269,6 +269,11 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        if(inherits(tryResult, 'try-error')) {
                                            stop(paste('There is some problem at the insertAdditions processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
                                        }
+
+                                       if(nimbleOptions('useRefactoredSizeProcessing')) {
+                                           exprClasses_setToEigenize(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
+                                       }
+                                       
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showAssertions = TRUE)')
                                            compileInfo$nimExpr$show(showAssertions = TRUE)

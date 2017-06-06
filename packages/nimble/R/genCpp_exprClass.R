@@ -24,7 +24,8 @@ exprClass <- setRefClass('exprClass',
                              toEigenize =  'ANY',	#'character', ##'yes', 'no', or 'maybe'
                              caller = 'ANY',            # exprClass object for the call to which this is an argument (if any)
                              callerArgID =  'ANY',	#'numeric', ## index in the calling object's args list for this object.
-                             assertions =  'ANY'	#'list'
+                             assertions =  'ANY',	#'list'
+                             aux = 'ANY'                # anything needed for specific operators
                              ),
                          methods = list(
                              initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); callSuper(...)},

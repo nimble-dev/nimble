@@ -7,6 +7,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        useRefactoredSizeProcessing = FALSE,
+        doSelfListSeparately = FALSE,
         enableSpecialHandling = FALSE,
         pauseAfterWritingFiles = FALSE,
         convertSingleVectorsToScalarsInSetupArgs = TRUE,

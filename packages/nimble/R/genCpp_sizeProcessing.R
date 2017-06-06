@@ -251,6 +251,8 @@ sizeDim <- function(code, symTab, typeEnv) {
 }
 
 sizeDiagonal <- function(code, symTab, typeEnv) {
+    ## refactor: code$name change step stays here
+    ## because the 3 cases are not implementation-specific
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     argIsExprClass <- inherits(code$args[[1]], 'exprClass')
     nDimArg <- if(argIsExprClass) code$args[[1]]$nDim else 0
@@ -301,8 +303,10 @@ sizeWhich <- function(code, symTab, typeEnv) {
     code$toEigenize <- 'yes'
     code$name <- 'setWhich'
 
-    if(!(code$caller$name %in% assignmentOperators)) {
-        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    if(!nimbleOptions('doSelfLiftSeparately')) {
+        if(!(code$caller$name %in% assignmentOperators)) {
+            asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+        }
     }
     if(length(asserts) == 0) NULL else asserts
 }
@@ -331,7 +335,7 @@ sizeRecyclingRule <- function(code, symTab, typeEnv) { ## also need an entry in 
     code$sizeExprs <- newSizeExprs
     code$type <- 'double' ## will need to look up from a list
     code$nDim <- 1
-    code$toEigenize <- TRUE
+    code$toEigenize <- 'yes' ## toEigen: N.B. This had TRUE
     return(asserts)
 }
 
@@ -345,6 +349,7 @@ sizeRecyclingRuleRfunction <- function(code, symTab, typeEnv) {
     ## If scalar, that gives size
     ## If vector, size is length of first argument.
     ## Problem is vector of length 1, where size should be value of first element, not length of 1.
+    ## toEigen: keep this lift here for now, since it sets up sizes.
     if(inherits(code$args[[1]], 'exprClass')) {
         if(!code$args[[1]]$isName) {
             asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
@@ -894,7 +899,6 @@ sizeGetBound <- function(code, symTab, typeEnv) {
         asserts <- list()
     }
  
-    
     boundInfoSym <- symTab$getSymbolObject(code$args[[3]]$name, inherits = TRUE)
     code$type <- boundInfoSym$boundInfo$type
     code$nDim <- boundInfoSym$boundInfo$nDim
@@ -950,6 +954,7 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 
 ## a$b becomes nfVar(a, 'b')
 sizeNFvar <- function(code, symTab, typeEnv) {
+    ## toEigen: Is it correct that this does not mark toEigen?
     asserts <- list()
     if(!inherits(code$args[[1]], 'exprClass'))
         stop(exprClassProcessingErrorMsg(code, 'Problem using $: no name on the right?'), call. = FALSE)
@@ -1040,10 +1045,12 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
       symTab$addSymbol(symbolObject)
   }
   code$sizeExprs <- symbolObject
-  code$toEigenize <- "yes"  # This is specialized for nimSvd and nimEigen.
+  code$toEigenize <- "yes"  
   code$nDim <- 0
-  if(!(code$caller$name %in% assignmentOperators))
-      asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+  if(!nimbleOptions('doSelfLiftSeparately')) {
+      if(!(code$caller$name %in% assignmentOperators))
+          asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+  }
   if(length(asserts) == 0) NULL else asserts
 }
 
@@ -1329,6 +1336,7 @@ assignmentTypeWarn <- function(LHS, RHS) {
 }
 
 ## used for setAll
+## toEigen: N.B. This may be deprecated.
 sizeOneEigenCommand <- function(code, symTab, typeEnv) {
     if(!code$args[[1]]$isName) stop(exprClassProcessingErrorMsg(code, 'In sizeOneEigenCommand:  First arg should be a name.'), call. = FALSE)
     recurseSetSizes(code, symTab, typeEnv)
@@ -1357,6 +1365,7 @@ sizeforceEigenize <- function(code, symTab, typeEnv) {
     if(length(asserts) == 0) NULL else asserts
 }
 
+## toEigen: N.B. Deprecated (see external-c-calls in development)
 sizecallC <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
     asserts
@@ -1451,6 +1460,7 @@ sizeSetSize <- function(code, symTab, typeEnv) {
 
 
 ## This was redundant and we should eventually be able to remove it
+## toEigen: N.B. omitting this
 sizeResizeNoPtr <- function(code, symTab, typeEnv){
     sym <- symTab$getSymbolObject(code$args[[1]]$name, inherits = TRUE)
     if(length(code$args[[2]]) != 1)  stop(exprClassProcessingErrorMsg(code, 'In sizeResizeNoPtr: Problem with number of dimensions provided in resize.'), call. = FALSE)
@@ -1535,8 +1545,6 @@ sizeAssign <- function(code, symTab, typeEnv) {
     }
     if(length(asserts) == 0) NULL else asserts
 }
-
-
 
 ## Handler for assignment
 sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALSE) {

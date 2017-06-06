@@ -50,6 +50,7 @@ Collate:
     genCpp_buildIntermediates.R
     genCpp_processSpecificCalls.R
     genCpp_sizeProcessing.R
+    genCpp_toEigenize.R
     genCpp_insertAssertions.R
     genCpp_maps.R
     genCpp_liftMaps.R
