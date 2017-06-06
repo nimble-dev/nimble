@@ -210,9 +210,4 @@ double logdet(const MatrixBase<Derived>& v) {
   return(log(v.determinant()));
 }
 
-
-
-SEXP makeNewNimbleList(SEXP S_listName);
-
-
 #endif
