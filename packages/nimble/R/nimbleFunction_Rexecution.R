@@ -360,6 +360,40 @@ rCalcDiffNodes <- function(model, nfv){
     return(l_Prob)
 }
 
+rDeriv_CalcNodes <- function(model, nodeFxnVector){
+  browser()
+  # l_Prob <- 0
+  # model <- nfv$model
+  # useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
+  # indexingInfo <- nfv$indexingInfo
+  # declIDs <- indexingInfo$declIDs
+  # numNodes <- length(declIDs)
+  # if(numNodes < 1) return(l_Prob)
+  # unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
+  # for(i in 1:numNodes) {
+  #   declID <- declIDs[i]
+  #   unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+  #   if(useCompiledNonNestedInterface) {
+  #     l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'calculateDiff', unrolledIndicesMatrixRow)
+  #   } else
+  #     l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$calculateDiff(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
+  # }
+  # return(l_Prob)
+}
+
+nimDerivs_calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex, order){
+  if(!missing(nodeFxnVector)){
+    return(rCalcNodes(model, nodeFxnVector))
+  }
+  if(inherits(model, 'modelBaseClass') ){
+    if(missing(nodes) ) 
+      nodes <- model$getMaps('nodeNamesLHSall')
+    nfv <- nodeFunctionVector(model, nodes)
+    return(rDeriv_CalcNodes(model, nfv))
+  }	
+}
+
+
 
 #' calculate, calculateDiff, simulate, or get the current log probabilities (densities) a set of nodes in a NIMBLE model
 #'
@@ -392,8 +426,6 @@ rCalcDiffNodes <- function(model, nfv){
 #'
 #' simulate returns NULL.
 #' 
-NULL
-
 #' @rdname nodeFunctions
 #' @export
 calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)	

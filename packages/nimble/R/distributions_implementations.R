@@ -100,6 +100,8 @@ rinvwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 }
 
 
+
+
 #' Nimble Derivatives
 #' 
 #' EXPERIMENTAL Computes the value, gradient, and Hessian of a given  \code{nimbleFunction} method.  The R version is currently unimplemented.
@@ -113,6 +115,14 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
   fxnCall <- match.call(function(nimFxn, order){})
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
   derivFxnCall <- fxnCall[['nimFxn']]
+  if(deparse(derivFxnCall[[1]]) == 'calculate'){
+    derivFxnCall <- match.call(calculate, derivFxnCall)
+    return(nimDerivs_calculate(model = eval(derivFxnCall[['model']], envir = fxnEnv),
+                               nodes = eval(derivFxnCall[['nodes']], envir = fxnEnv),
+                               nodeFxnVector = eval(derivFxnCall[['nodeFxnVector']], envir = fxnEnv),
+                               nodeFunctionIndex = eval(derivFxnCall[['nodeFunctionIndex']], envir = fxnEnv),
+                               order))
+  }
   fxnArgLengths <- sapply(derivFxnCall, function(x){return(length(eval(x, envir = fxnEnv)))})[-1]
   numFxnArgs <- length(fxnArgLengths)
   totalFxnArgLength <- sum(fxnArgLengths)
