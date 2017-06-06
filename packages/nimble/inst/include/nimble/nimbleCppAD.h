@@ -24,7 +24,6 @@ Type nimDerivs_dnorm(Type x, Type mean, Type sd, int give_log=0)
 {
   Type logres;
   logres=-log(Type(sqrt(2*M_PI))*sd)-Type(.5)*pow((x-mean)/sd,2);
-  //return 1/(sqrt(2*M_PI)*sd)*exp(-.5*pow((x-mean)/sd,2));
   if(give_log)return logres; else return exp(logres);
 }
 
@@ -109,28 +108,5 @@ class nimbleFunctionCppADbase {
 
 		return(ADlist);
   } 
-/* NimArr<1, double> getGradient(nimbleCppADinfoClass &ADinfo) {
-    printf("inside getGradient\n");
-    NimArr<1, double> ans = vectorDouble_2_NimArr(ADinfo.ADtape->RevOne(ADinfo.independentVars, 0));
-    return(ans);
-  }
-  
-  NimArr<2, double> getHessian(nimbleCppADinfoClass &ADinfo) {
-	NimArr<2, double> nimAnsMat;
-	std::size_t p = length(ADinfo.independentVars);
-    std::vector<int> i (p);
-    std::vector<int> j (p);
-	
-	nimAnsMat.initialize(0, 1, 1, 1, p, p);
-	for(std::size_t independentVar=0; independentVar < p; independentVar++ ) {
-	  i[independentVar] = 0; 
-	  j[independentVar] = independentVar; 
-	}
-	printf("inside getHessian\n");
-	vector<double> ans = ADinfo.ADtape->RevTwo(ADinfo.independentVars, i, j);
-	std::copy(ans.begin(), ans.end(), nimAnsMat.getPtr());  //could this line ever cause error?
-	return(nimAnsMat);
-  } 
-  */
 
 };
