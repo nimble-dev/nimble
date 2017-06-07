@@ -608,14 +608,14 @@ make_MCMC_comparison_pages <- function(comparisonResults, dir = '.', pageCompone
 }
 
 effectiveSizeStan <- function(x) {
-    if(!requireNamespace('rstan', quietly = TRUE)) {
+    if(!require('rstan', quietly = TRUE)) {
         stop('Problem loading rstan')
     } else {
-        warning('effectiveSizeStan: use of rstan is not yet provided via the CRAN version of NIMBLE because of packaging issues. To use this functionality, please install NIMBLE from http://r-nimble.org.')
-        return(NA)
-        ## x <- array(x, dim = c(length(x), 1, 1))
-        ## ans <- rstan::monitor(x, warmup = 0, probs = numeric(), print = FALSE)
-        ## ans
+        ## warning('effectiveSizeStan: use of rstan is not yet provided via the CRAN version of NIMBLE because of packaging issues. To use this functionality, please install NIMBLE from http://r-nimble.org.')
+        ## return(NA)
+        x <- array(x, dim = c(length(x), 1, 1))
+        ans <- rstan::monitor(x, warmup = 0, probs = numeric(), print = FALSE)
+        ans
     }
 }
 
