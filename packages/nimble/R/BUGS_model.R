@@ -1112,7 +1112,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
-                                           if(nimbleOptions('enableDerivs')){
+                                           if(nimbleOptions('experimentalEnableDerivs')){
                                              parents <- BUGSdecl$allParentVarNames()
                                              selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
                                              parents <- c(selfWithNoInds, parents)

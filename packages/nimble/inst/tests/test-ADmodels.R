@@ -1,5 +1,5 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-nimbleOptions(enableDerivs = TRUE)
+nimbleOptions(experimentalEnableDerivs = TRUE)
 context("Testing of derivatives for calculate() for nimbleModels")
 
 test_that('nimbleModel with derivatives compiles correctly.',
