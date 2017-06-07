@@ -882,6 +882,7 @@ dcar_normal <- function(x, adj, weights, num, tau, log = FALSE) {
     ##    }
     ##}
     ##if(count != (length(adj)+1)) stop('something wrong')
+    ##lp <- lp / 2
     ##lp <- lp * (-1/2) * tau
     ##lp <- lp + (k-c)/2 * log(tau/2/pi)
     ##if(log) return(lp)

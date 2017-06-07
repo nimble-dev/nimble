@@ -2184,7 +2184,8 @@ double dcar_normal(double* x, double* adj, double* weights, double* num, double 
   if(count != L) {
     ML_ERR_return_NAN;
   }
-  lp *= (-1/2.0) * tau / 2.0;   // extra factor of (1/2) accounts for double-summing over all (xi,xj) pairs
+  lp *= 1/2.0;     // accounts for double-summing over all (xi,xj) pairs
+  lp *= (-1/2.0) * tau;
   lp += (N-c)/2.0 * (log(tau) - M_LN_2PI);
   if(give_log) {
     return(lp);
