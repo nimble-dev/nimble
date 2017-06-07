@@ -35,7 +35,7 @@ if (system2('/usr/bin/time', c('-v', 'echo', 'Running under /usr/bin/time -v')))
 for (test in allTests) {
     cat('--------------------------------------------------------------------------------\n')
     cat('TESING', test, '\n')
-    runViaTestthat <- FALSE  # TODO Fix test-size.R and set this to TRUE.
+    runViaTestthat <- TRUE
     if (runViaTestthat) {
         name <- gsub('test-(.*)\\.R', '\\1', test)
         script = paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "', name, '")')
