@@ -1140,7 +1140,6 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, 
                                                                                    parentsSizeAndDims = parentsSizeAndDims, logProbNodeExpr=logProbNodeExpr, type=type,
                                                                                    setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
-                                           # nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
                                            nodeFunctionGeneratorNames[i] <<- thisNodeGeneratorName
