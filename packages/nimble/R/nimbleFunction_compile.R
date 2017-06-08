@@ -7,8 +7,9 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        origMethods = 'ANY',             ## list of original methods
                                        RCfunProcs =  'ANY',		## list of RCfunProcessing  or RCvirtualFunProcessing objects
                                        nimbleProject = 'ANY',           ## nimbleProjectclass object
-                                       cppDef = 'ANY'                   ## cppNimbleFunctionClass or cppVirtualNimbleFunctionClass object
-                                       ),
+                                       cppDef = 'ANY',                  ## cppNimbleFunctionClass or cppVirtualNimbleFunctionClass object
+                                       isNode = 'ANY'                  ## logical, is it a nodeFunction?
+                                   ),
                                    methods = list(
                                        show = function() {
                                            writeLines(paste0('virtualNFprocessing object ', name))
@@ -17,6 +18,8 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            nimbleProject <<- project
                                        		compileInfos <<- list()
                                        		RCfunProcs <<- list()
+                                       		
+                                       		isNode <<- isNode
 
                                            if(!is.null(f)) { ## This allows successful default instantiation by R when defining nfProcessing below -- crazy
                                                ## nfGenerator allowed if it is a nimbleFunctionVirtual
@@ -36,7 +39,9 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                RCfunProcs <<- list()
                                                for(i in seq_along(origMethods)) {
                                                    RCname <- names(origMethods)[i]
-                                                   RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname, const = isNode) else RCfunProcessing$new(origMethods[[i]], RCname, const = isNode)
+                                                   if(isNode && strsplit(RCname, '_', fixed = TRUE)[[1]][1] == getCalcADFunName()) constFlag <- FALSE
+                                                   else constFlag <- isNode
+                                                   RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname, const = constFlag) else RCfunProcessing$new(origMethods[[i]], RCname, const = constFlag)
                                                }
                                                compileInfos <<- lapply(RCfunProcs,
                                                                        function(x) x$compileInfo)

@@ -1041,3 +1041,10 @@ SEXP manualSetNRows(SEXP Sextptr, SEXP nRows){
   	(*vPtr).numRows = INTEGER(nRows)[0];
   return(R_NilValue);
   }
+
+indexedNodeInfo generateDummyIndexedNodeInfo(){
+	vector<double> dummyVec;
+	dummyVec.push_back(0);
+	indexedNodeInfo dummyInfo = dummyVec;
+	return(dummyInfo);
+};	

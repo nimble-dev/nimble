@@ -124,14 +124,13 @@ class vectorOfPtrsAccess : public vectorOfPtrsAccessBase {
   void *getVecPtr(int i) {return(static_cast<void *>( (*theVec)[i] ) ); }
 };
 
+NimArr<1, double> vectorDouble_2_NimArr(vector<double> input);
 
 /*
   Apparently partial specialization of function templates is not allowed.
   So these are witten for doubles, and when we get to integers and logicals we can 
   use overlaoding or different names.
  */
-
-
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans );
 template<int ndim>

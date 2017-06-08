@@ -55,6 +55,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimArr_rcat = 'sizeScalarRecurse',
                     nimArr_rinterval = 'sizeScalarRecurse',
                     nimPrint = 'sizeforceEigenize',
+                    nimDerivs = 'sizeNimDerivs',
                     ##nimCat = 'sizeforceEigenize',
                     as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
                     as.numeric = 'sizeUnaryCwise',
@@ -1027,6 +1028,31 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     return(asserts)
 }
 
+
+sizeNimDerivs <- function(code, symTab, typeEnv){
+  if(code$args[[1]]$name == 'calculate'){
+    calcDerivFlag <- T
+    code$args[[1]]$name <- paste0(code$args[[1]]$name, 'WithArgs_deriv')
+  } 
+  else{
+    calcDerivFlag <- F
+    code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv')
+  }
+  setArg(code$caller, code$callerArgID, code$args[[1]])
+  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # Set order argument.
+  code$args[[2]] <- NULL
+  asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
+  code$args[[1]]$type <- 'nimbleList'
+  code$args[[1]]$sizeExprs <- symTab$getSymbolObject('NIMBLE_ADCLASS', TRUE)
+  code$args[[1]]$toEigenize <- "yes"
+  code$args[[1]]$nDim <- 0
+  if(calcDerivFlag) asserts <- c(asserts, sizeScalarModelOp(code$args[[1]], symTab, typeEnv))
+  else asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))
+  #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # Sets variables argument, not yet implemented.
+  
+  if(length(asserts) == 0) NULL else asserts
+}
+
 sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   asserts <- recurseSetSizes(code, symTab, typeEnv)
   code$type <- 'nimbleList'
@@ -1041,6 +1067,8 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   }
   code$sizeExprs <- symbolObject
   code$toEigenize <- "yes"  # This is specialized for nimSvd and nimEigen.
+  if(code$name == 'getDerivs')
+    code$toEigenize <- 'no'  ## Temp. solution to ensure that derivsOrders argument is a nimArray and not an eigen type.
   code$nDim <- 0
   if(!(code$caller$name %in% assignmentOperators))
       asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
@@ -2527,7 +2555,6 @@ sizeReturn <- function(code, symTab, typeEnv) {
         stop(exprClassProcessingErrorMsg(code, 'returnType was declared void() (default) (or something invalid), which is not consistent with the object you are trying to return.'), call. = FALSE)
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
-
         if(typeEnv$return$type == 'nimbleList' || code$args[[1]]$type == 'nimbleList') {
             if(typeEnv$return$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('return() argument is a nimbleList but returnType() statement gives a different type')), call. = FALSE)
             if(code$args[[1]]$type != 'nimbleList') stop(exprClassProcessingErrorMsg(code, paste0('returnType statement gives a nimbleList type but return() argument is not the right type')), call. = FALSE)

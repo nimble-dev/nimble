@@ -91,7 +91,9 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                                                                                fromModel = TRUE,
                                                                                                generatorFunNames = model$nodeFunctionGeneratorNames,
                                                                                                alreadyAdded = TRUE) ## fromModel is redundant here
+                                         
                                      },
+                                    
                                      buildAll = function(buildNodeDefs = TRUE, where = globalenv(), ...) {
                                          makeCppNames() 
                                          buildVars()
