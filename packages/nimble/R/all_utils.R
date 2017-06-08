@@ -2,20 +2,33 @@
 
 double <- function(ndim, dims) {}
 
-labelFunctionCreator <- function(lead, start = 1) {
-  nextIndex <- start
-  force(lead)
-  labelGenerator <- function(reset = FALSE, count = 1, envName = "") {
-    if(reset) {
-      nextIndex <<- 1
-      return(invisible(NULL))
+labelFunctionCreator <- function() {
+    allLabelFunctionCreators <- list()
+
+    creatorFun <- function(lead, start = 1) {
+        nextIndex <- start
+        force(lead)
+        labelGenerator <- function(reset = FALSE, count = 1, envName = "") {
+            if(reset) {
+                nextIndex <<- 1
+                return(invisible(NULL))
+            }
+            lead <- paste(lead, envName , sep = '_')
+            ans <- paste0(lead, nextIndex - 1 + (1:count))
+            nextIndex <<- nextIndex + count
+            ans
+        }
+        allLabelFunctionCreators[[ length(allLabelFunctionCreators) ]] <<- labelGenerator
+        labelGenerator
     }
-    lead <- paste(lead, envName , sep = '_')
-    ans <- paste0(lead, nextIndex - 1 + (1:count))
-    nextIndex <<- nextIndex + count
-    ans
-  }
-  labelGenerator
+    creatorFun
+}()
+
+resetLabelFunctionCreators <- function() {
+    allLabelFunctionCreators <- environment(labelFunctionCreator)$allLabelFunctionCreators
+    for(i in allLabelFunctionCreators) {
+        environment(i)$nextIndex <- 1
+    }
 }
 
 nimbleUniqueID <- labelFunctionCreator("UID")

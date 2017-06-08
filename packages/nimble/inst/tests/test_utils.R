@@ -899,13 +899,10 @@ compareFilesByLine <- function(trialResults, correctResults, main = "") {
 }
 
 compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
-    test_that(paste0(main, ': same number of output lines'),
-          expect_equal(length(trialResults), length(correctResults)))
-    
-    linesToTest <- min(length(trialResults), length(correctResults))
-    mapply(function(lineno, trialLine, correctLine) {
-        test_that(paste0(main, ": output line #", lineno),
-                  expect_identical(trialLine, correctLine))
-    }, 1:linesToTest, trialResults, correctResults)
+    if(main == "") main <- paste0(trialFile, ' and ', correctFile, ' do not match\n')
+    diffOutput <- system2('diff', c(trialFile, correctFile), stdout = TRUE)
+    test_that(paste0(main, paste0(diffOutput, collapse = '\n')),
+              expect_true(length(diffOutput) == 0)
+              )
     invisible(NULL)
 }
