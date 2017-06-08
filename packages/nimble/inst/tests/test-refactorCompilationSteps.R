@@ -11,9 +11,9 @@ compareOldAndNewCompilationRC <- function(input) {
     require(testthat)
     foo <- nimbleFunction(run = run, name = 'foo')
     nimbleOptions(useRefactoredSizeProcessing = FALSE)
-    testProject <- nimble:::nimbleProjectClass(name = 'test')
-    ## management of compilation through the control list is crude and leads to error
-    ## but the project does contain the result, so we can run this, catch the error
+    testProject <- nimble:::nimbleProjectClass(name = 'original')
+    ## management of compilation through the control list is crude and leads to error we don't care about
+    ## but the project does contain the result, so we can run this, catch the error to keep running
     ## and extract the result from the project
     old <- try(compileNimble(foo, project = testProject, control = list(writeFiles = TRUE, compileCpp = FALSE, loadSO = FALSE)))
     filename <- testProject$RCfunInfos[['foo']][['cppClass']]$filename
@@ -22,7 +22,7 @@ compareOldAndNewCompilationRC <- function(input) {
     oldFooHOutput <- readLines(file.path(tempdir(), 'nimble_generatedCode', paste0(filename, '.h')))
     
     nimbleOptions(useRefactoredSizeProcessing = TRUE)
-    testProject <- nimble:::nimbleProjectClass(name = 'test')
+    testProject <- nimble:::nimbleProjectClass(name = 'refactored')
     new <- try(compileNimble(foo, project = testProject, control = list(writeFiles = TRUE, compileCpp = FALSE, loadSO = FALSE)))
     filename <- testProject$RCfunInfos[['foo']][['cppClass']]$filename
     ## we could regenerate it, but might as well read it from the file

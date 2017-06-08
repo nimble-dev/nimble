@@ -897,3 +897,15 @@ compareFilesByLine <- function(trialResults, correctResults, main = "") {
     }, 1:linesToTest, trialResults, correctResults)
     invisible(NULL)
 }
+
+compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
+    test_that(paste0(main, ': same number of output lines'),
+          expect_equal(length(trialResults), length(correctResults)))
+    
+    linesToTest <- min(length(trialResults), length(correctResults))
+    mapply(function(lineno, trialLine, correctLine) {
+        test_that(paste0(main, ": output line #", lineno),
+                  expect_identical(trialLine, correctLine))
+    }, 1:linesToTest, trialResults, correctResults)
+    invisible(NULL)
+}

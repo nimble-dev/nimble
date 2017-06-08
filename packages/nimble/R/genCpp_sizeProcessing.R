@@ -1507,7 +1507,9 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
         newArgExpr <- RparseTree2ExprClasses(as.name(newName))
         newArgExpr$type <- code$args[[argID]]$type
         newArgExpr$sizeExprs <- code$args[[argID]]$sizeExprs
-        newArgExpr$toEigenize <- 'maybe'
+        if(!nimbleOptions('useRefactoredSizeProcessing')) {
+            newArgExpr$toEigenize <- 'maybe'
+        }
         newArgExpr$nDim <- code$args[[argID]]$nDim
     } else {
 
@@ -1524,7 +1526,9 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
         newArgExpr <- RparseTree2ExprClasses(as.name(newName))
         newArgExpr$type <- newExpr$args[[1]]$type
         newArgExpr$sizeExprs <- newExpr$args[[1]]$sizeExprs
-        newArgExpr$toEigenize <- 'maybe'
+        if(!nimbleOptions('useRefactoredSizeProcessing')) {
+            newArgExpr$toEigenize <- 'maybe'
+        }
         newArgExpr$nDim <- newExpr$args[[1]]$nDim
     }
     setArg(code, argID, newArgExpr)
@@ -1608,7 +1612,9 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                 }
             } else { ## yes in symTab
                 ## This case is ok.  It is in the symbol table but not the typeEnv.  So it is something like ptr <- getPtr(A)
+                 if(!nimbleOptions('useRefactoredSizeProcessing')) {
                 code$toEigenize <- 'no'
+                 } ##useRefactoredSizeProcessing
                 code$nDim <- 0
                 code$type <- 'unknown'
                 code$sizeExprs <- list()
@@ -1646,6 +1652,8 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## Note this can use LHS$name for RHSsizeExprs when returning from a nimbleFunction on RHS.  But this is probably not needed any more.
     if(any(unlist(lapply(RHSsizeExprs, is.null)))) RHSsizeExprs <- makeSizeExpressions(rep(NA, RHSnDim), LHS$name) ## reset sizeExprs for the LHS var. re-using RHSsizeExprs for LHS.  This would only be valid if it is a nimbleFunction returning something on the RHS.  For assignment to be executed in Eigen, the RHS sizes MUST be known
 
+     if(!nimbleOptions('useRefactoredSizeProcessing')) {
+                
     if(LHS$toEigenize == 'yes') {
         code$toEigenize <- 'yes'
 ##        message('Warning from sizeAssign: not expecting LHS to have toEigenize == yes')
@@ -1664,7 +1672,8 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             else 'no'
         }
     }
-
+    
+                
     if(code$toEigenize == 'yes') { ## this would make more sense in eigenize_assign
     ## generate setSize(LHS, ...) where ... are dimension expressions
         if(length(RHSnDim) == 0) {
@@ -1717,7 +1726,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             if(LHS$name == 'map') assert <- c(assert, sizeInsertIntermediate(code, 1, symTab, typeEnv) )
         }
     }
-
+     } ##useRefactoredSizeProcessing
     if(!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter', 'nimNonseqIndexedd', 'nimNonseqIndexedi','nimNonseqIndexedb'))) {
         ## should already be annotated if it is an indexed assignment.
         ## It should be harmless to re-annotated EXCEPT in case like out[1:5] <- scalar

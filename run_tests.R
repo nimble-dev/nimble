@@ -2,7 +2,7 @@
 # This script runs most tests in nimble/inst/tests/ prioritized by duration.
 
 # Avoid running these blacklisted tests, since they take too long.
-blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.R')
+blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.R', 'test-refactorSizeProcessing.R')
 if(Sys.getenv('SKIP_EXPENSIVE_TESTS') == 'TRUE') {
     blacklist <- c(blacklist, 'test-mcmc.R', 'test-numericTypes.R')
 }
