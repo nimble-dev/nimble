@@ -7,13 +7,11 @@
 ## Base class for C++ file and compilation information
 cppDefinition <- setRefClass('cppDefinition', 
                              fields = list(
-                                 filename = 'ANY',	#  character, what filename (to which .h and .cpp will be appended) is this definition in
-                                 CPPusings = 'ANY',	#  character
-                                 neededTypeDefs = 'ANY',#  list,
-                               
-                               Hincludes = 'list',
-                               CPPincludes = 'list',
-                               
+                                 filename = 'ANY',	#'character',  ## what filename (to which .h and .cpp will be appended) is this definition in
+                                 CPPusings = 'ANY',	#''character',
+                                 neededTypeDefs = 'ANY',	#''list',
+                                 Hincludes = 'list',
+                                 CPPincludes = 'list',
                                  nimbleProject = 'ANY'),  
                              methods = list(
                                  initialize = function(..., project) {
@@ -31,6 +29,25 @@ cppDefinition <- setRefClass('cppDefinition',
                              )
 
 
+cppGlobalObjects <- setRefClass('cppGlobalObject',
+                                contains = 'cppDefinition',
+                                field = list(
+                                    name = 'ANY',
+                                    objectDefs = 'ANY', ## a list or symbolTable
+                                    staticMembers = 'ANY'
+                                ),
+                                methods = list(
+                                    initialize = function(...) {name <<- character(); objectDefs <<-list(); staticMembers <<- FALSE; callSuper(...)},
+                                    generate = function(declaration = FALSE) {
+                                        ## For globals for class static members, we want no declaration
+                                        ## Otherwise we want a declaration and put extern in front
+                                        if(staticMembers & declaration) return(character())
+                                        objectDefsToUse <- if(inherits(objectDefs, 'symbolTable')) objectDefs$symbols else objectDefs
+                                        output <- paste0(generateAll(objectDefsToUse, declaration = declaration),';')
+                                        if(declaration) output <- paste("extern ", output)
+                                        output
+                                    }
+                                    ))
 ## class for C++ namespaces.
 ## A namespace includes, objects, classes, functions, typedefs, and other namespaces
 ## This is incomplete.  The typeDefs and nested namespaces are not used yet.
@@ -77,11 +94,14 @@ cppClassDef <- setRefClass('cppClassDef',
                                extPtrTypes = 'ANY',
                                private = 'list',		# 'list'. This field is a placeholder for future functionality.  Currently everything is generated as public
                                useGenerator = 'ANY',		#'logical',
-                               SEXPgeneratorFun = 'ANY',        ## cppFunctionDef object
-                               SEXPfinalizerFun = 'ANY'),       ## cppFunctionDef object
+                               SEXPgeneratorFun = 'ANY', ## These will be cppFunctionDefs.
+                               SEXPfinalizerFun = 'ANY',
+                               globalObjectsDefs = 'ANY'
+                           ),
                            methods = list(
                                initialize = function(...) {
                                    useGenerator <<- TRUE
+                                   globalObjectsDefs <<- list()
                                    Hincludes <<-	c(Hincludes, '<Rinternals.h>')	
                                    CPPincludes <<-	c(CPPincludes, '<iostream>') 
                                    callSuper(...)
@@ -108,14 +128,17 @@ cppClassDef <- setRefClass('cppClassDef',
                                    CPPuse
                                },
                                getDefs = function() {
-                                   if(useGenerator) {
+                                   ans <- if(useGenerator) {
+                                       if(inherits(SEXPgeneratorFun, 'uninitializedField')) stop('Trying to getDefs from a CppClassDef with useGenerator==TRUE but SEXPgeneratorFun not defined')
                                        if(inherits(SEXPfinalizerFun, 'uninitializedField'))
                                            list(.self, SEXPgeneratorFun)
                                        else
                                            list(.self, SEXPgeneratorFun, SEXPfinalizerFun)
-                                   }
-                                   else
+                                   } else {
                                        list(.self)
+                                   }
+                                   if(length(globalObjectsDefs) > 0) ans <- c(ans, globalObjectsDefs)
+                                   ans
                                },
                                addInheritance = function(newI) inheritance <<- c(inheritance, newI),
                                addAncestors = function(newI) ancestors <<- c(ancestors, newI), 
@@ -203,18 +226,28 @@ cppClassDef <- setRefClass('cppClassDef',
 ## A cppCodeBlock is an arbitrary collection of parse tree and other cppCodeBlocks (defined below)
 ## The parse tree can be either an R parse tree or one of our exprClass objects
 cppCodeBlock <- setRefClass('cppCodeBlock',
-                            fields = list(objectDefs = 'ANY', code = 'ANY', skipBrackets = 'ANY'),			#'logical'),
+                            fields = list(typeDefs = 'ANY', objectDefs = 'ANY', code = 'ANY', skipBrackets = 'ANY',
+                                          cppADCode = 'ANY', generatorSymTab = 'ANY'),			#'logical'),
                             methods = list(
                                 generate = function(indent = '', ...) {
+                                    if(inherits(typeDefs, 'uninitializedField')) typeDefs <<- list()
+                                    typeDefsToUse <- if(inherits(typeDefs, 'symbolTable')) typeDefs$symbols else typeDefs
+                                    if(length(typeDefsToUse) > 0) {
+                                        outputCppCode <- paste0(indent, generateObjectDefs(typeDefsToUse),';')
+                                    } else outputCppCode <- list()
                                     if(inherits(objectDefs, 'uninitializedField')) objectDefs <<- list()
                                     objectDefsToUse <- if(inherits(objectDefs, 'symbolTable')) objectDefs$symbols else objectDefs
                                     if(length(objectDefsToUse) > 0) {
-                                        outputCppCode <- paste0(indent, generateObjectDefs(objectDefsToUse),';')
-                                    } else outputCppCode <- list()
+                                        outputCppCode <- c(outputCppCode, paste0(indent, generateObjectDefs(objectDefsToUse),';'))
+                                    } ##else outputCppCode <- list()
 
                                     if(inherits(code, 'exprClass')) {
-                                        if(!inherits(objectDefs, 'symbolTable')) stop('Error, with exprClass code in the cppCodeBlock, must have objectDefs be a symbolTable')
-                                        outputCppCode <- c(outputCppCode, nimGenerateCpp(code, objectDefs, indent = ' ', showBracket = FALSE))
+                                        if(inherits(generatorSymTab, 'symbolTable')) useSymTab <- generatorSymTab
+                                        else if(!inherits(objectDefs, 'symbolTable')) stop('Error, with exprClass code in the cppCodeBlock, must have objectDefs be a symbolTable')
+                                        else useSymTab <- objectDefs
+                                        if(identical(cppADCode, TRUE)) recurseSetCppADExprs(code, TRUE) 
+                                      outputCppCode <- c(outputCppCode, nimGenerateCpp(code, useSymTab, indent = ' ', showBracket = FALSE))
+                                        if(identical(cppADCode, TRUE)) recurseSetCppADExprs(code, FALSE) 
                                     } else {
                                         outputCppCode <- c(outputCppCode, outputCppParseTree2(code, indent))
                                     }
@@ -227,14 +260,16 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
 ##
 cppFunctionDef <- setRefClass('cppFunctionDef',
                               contains = 'cppDefinition',
-                              fields = list(name = 'ANY',	# character
-                                  returnType = 'ANY',	        # cppVar
-                                  args = 'ANY',                 # list
-                                  code = 'ANY',	                # cppCodeBlock
-                                  externC = 'ANY',              # logical
-                                  virtual = 'ANY',              ## logical, only relevant for class members
-                                  abstract = 'ANY',             ## ditto
-                                  const = 'ANY'                 ## ditto
+                              fields = list(name = 'ANY',	#'character',
+                                  returnType = 'ANY',	#'cppVar', 
+                                  args = 'ANY',  # list
+                                  code = 'ANY',	#	'cppCodeBlock',
+                                  externC = 'ANY',  # logical
+                                  virtual = 'ANY', ## logical, only relevant for class members
+                                  static = 'ANY',  ## ditto
+                                  abstract = 'ANY',  ## ditto
+                                  template = 'ANY',
+                                  const = 'ANY'
                                             ),
                               methods = list(
                                   initialize = function(...) {
@@ -243,26 +278,29 @@ cppFunctionDef <- setRefClass('cppFunctionDef',
                                       callSuper(...)
                                       if(inherits(virtual, 'uninitializedField')) virtual <<- FALSE
                                       if(inherits(abstract, 'uninitializedField')) abstract <<- FALSE
+                                      if(inherits(template, 'uninitializedField')) template <<- NULL
+                                      if(inherits(static, 'uninitializedField')) static <<- FALSE                                          
                                       if(inherits(const, 'uninitializedField')) const <<- FALSE
                                   },
                                   generate = function(declaration = FALSE, scopes = character(), ...) {
                                       if(inherits(args, 'uninitializedField')) args <<- list()
                                       argsToUse <- if(inherits(args, 'symbolTable')) args$symbols else args
                                       if(declaration) {
-                                          outputCode <- paste0(if(virtual) 'virtual ' else character(0), generateFunctionHeader(returnType, name, argsToUse, scopes, ...), if(const) ' const ' else character(0), if(abstract) '= 0' else character(0), ';')
+                                          outputCode <- paste0(if(virtual) 'virtual ' else character(0),
+                                                               generateFunctionHeader(returnType, name, argsToUse, scopes, template, static, ...),
+                                                               if(const) ' const ' else character(0),
+                                                               if(abstract) '= 0' else character(0), ';')
                                           if(!inherits(externC, 'uninitializedField' ) ){
                                             if(externC == TRUE)
                                               outputCode <- paste0('extern "C" ', outputCode)
                                           }
                                            return(outputCode) 
-                                          
-                                          
                                       } else {
                                           if(inherits(code$code, 'uninitializedField')) {
                                               ## There is no code. This can occur for a nimbleFunctionVirtual, which is an abstract base class.
                                               return(character(0))
                                           }
-                                          c(paste(generateFunctionHeader(returnType, name, argsToUse, scopes, ...), if(const) ' const ' else character(0), '{'),
+                                          c(paste(generateFunctionHeader(returnType, name, argsToUse, scopes, template, static = FALSE, ...), if(const) ' const ' else character(0), '{'),
                                             code$generate(...),
                                             list('}'))
                                       }
@@ -270,10 +308,13 @@ cppFunctionDef <- setRefClass('cppFunctionDef',
                                   )
                               )
 
-generateFunctionHeader <- function(returnType, name, args, scopes = character()) {
-    list(paste(returnType$generate(printName = character()), paste(c(scopes, name), collapse = '::'), '(',
-          paste(unlist(lapply(args, function(x) x$generate())), collapse = ', '),
-          ')'))
+generateFunctionHeader <- function(returnType, name, args, scopes = character(), template = NULL, static = FALSE) {
+    list(paste(paste0(if(is.null(template)) character() else paste(template$generate(),'\n'),
+               paste0(if(static) 'static ' else character(), returnType$generate(printName = character()), collapse = '')),
+               paste(c(scopes, name), collapse = '::'),
+               '(',
+               paste(unlist(lapply(args, function(x) x$generate())), collapse = ', '),
+               ')'))
 }
 
 generateClassHeader <- function(ns, inheritance) {

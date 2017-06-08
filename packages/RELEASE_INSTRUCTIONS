@@ -27,7 +27,7 @@ in particular check exact results vs previous versions (ignore differences in co
 doing this test by test because of DLL unloading issue
 types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists errors filtering getBound getDependencies getDistributionInfo getParam graphStructure math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList nimbleList_RCfun numericTypes setData size trunc types user"
 for type in $types; do
-Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" > /tmp/test-results-v${VERSION} 2>&1
+Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
 done
 
 run tests on all OS ideally
@@ -62,20 +62,19 @@ go to website: R-nimble.org/login and login
 note that to make a new blog post or modify pages, need to 
 deactivate Google analyticator on Plugins -> Installed Plugins page
 
-change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
+change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version on Archived versions page.
 
 put new user manual in /web/R-nimble/wordpress/manuals
 and change symlink to point to newest pdf
+and change to g+w for NimbleUserManual_$VERSION.pdf
 
-make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
+update documentation page with link to updated manual
 
 add info on new release to release notes page
 
-update NEWS info on webpage as high-level summary of NEWS in package
-
 update version numbering on license and citation page and 'What is Nimble' page
 
-update documentation page with link to updated manual
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 

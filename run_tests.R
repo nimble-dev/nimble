@@ -2,7 +2,7 @@
 # This script runs most tests in nimble/inst/tests/ prioritized by duration.
 
 # Avoid running these blacklisted tests, since they take too long.
-blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.R')
+blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.R', 'test-ADfunctions.R', 'test-ADmodels.R')
 if(Sys.getenv('SKIP_EXPENSIVE_TESTS') == 'TRUE') {
     blacklist <- c(blacklist, 'test-mcmc.R', 'test-numericTypes.R')
 }
@@ -35,10 +35,10 @@ if (system2('/usr/bin/time', c('-v', 'echo', 'Running under /usr/bin/time -v')))
 for (test in allTests) {
     cat('--------------------------------------------------------------------------------\n')
     cat('TESING', test, '\n')
-    runViaTestthat <- FALSE  # TODO Fix test-size.R and set this to TRUE.
+    runViaTestthat <- TRUE
     if (runViaTestthat) {
         name <- gsub('test-(.*)\\.R', '\\1', test)
-        script = paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "', name, '")')
+        script = paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "^', name, '$")')
         command <- c(runner, '-e', shQuote(script))
     } else {
         command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))

@@ -188,7 +188,8 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
 cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                       contains = 'cppNimbleClassClass',
                                       fields = list(
-                                          nfProc = 'ANY' ## an nfProcessing class, needed to get the member data symbol table post-compilation
+                                          nfProc = 'ANY', ## an nfProcessing class, needed to get the member data symbol table post-compilation
+                                          parentsSizeAndDims = 'ANY'
                                           ),
                                           methods = list(
                                               getDefs = function() {
@@ -207,12 +208,12 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               initialize = function(nfProc, isNode, debugCpp = FALSE, fromModel = FALSE, ...) {
                                                   callSuper(nfProc, debugCpp, fromModel, ...)
                                                   if(!missing(nfProc)) processNFproc(nfProc, debugCpp = debugCpp, fromModel = fromModel)
-                                                  
                                                   if(isNode) {
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassObj <- environment(nfProc$nfGenerator)$contains
                                                       if(is.null(baseClassObj)) {
                                                           inheritance <<- c(inheritance, 'nodeFun')
+                                                          parentsSizeAndDims <<- environment(nfProc$nfGenerator)$parentsSizeAndDims
                                                       }
                                                   }
                                               },
@@ -238,6 +239,77 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       functionDefs[[RCname]]$buildSEXPinterfaceFun(className = nfProc$name)
                                                       RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
                                                   }
+                                              },
+                                              addTypeTemplateFunction = function( funName ) {
+                                                  newFunName <- paste0(funName, '_AD_')
+                                                  regularFun <- RCfunDefs[[funName]]
+                                                  functionDefs[[newFunName]] <<- makeTypeTemplateFunction(newFunName, regularFun)
+                                                  invisible(NULL)
+                                              },
+                                              addADtapingFunction = function( funName, independentVarNames, dependentVarNames ) {
+                                                  ADfunName <- paste0(funName, '_AD_')
+                                                  regularFun <- RCfunDefs[[funName]]
+                                                  newFunName <- paste0(funName, '_callForADtaping_')
+                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames, nfProc$isNode, functionDefs)
+                                                  invisible(NULL)
+                                              },
+                                              addADargumentTransferFunction = function( funName, independentVarNames ) {
+                                                  newFunName <- paste0(funName, '_ADargumentTransfer_')
+                                                  regularFun <- RCfunDefs[[funName]]
+                                                  funIndex <- which(environment(nfProc$nfGenerator)$enableDerivs == funName) ## needed for correct index for allADtapePtrs_
+                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, parentsSizeAndDims)
+                                              },
+                                              addStaticInitClass = function() {
+                                                  neededTypeDefs[['staticInitClass']] <<- makeStaticInitClass(.self, environment(nfProc$nfGenerator)$enableDerivs) ##
+                                                  invisible(NULL)
+                                              },
+                                              addADclassContentOneFun = function(funName) {
+                                                  outSym <- nfProc$RCfunProcs[[funName]]$compileInfo$returnSymbol
+                                                  checkADargument(funName, outSym, returnType = TRUE)
+                                                  if(length(nfProc$RCfunProcs[[funName]]$nameSubList) == 0) stop(paste0('Derivatives cannot be enabled for method ', funName, ', since this method has no arguments.'))
+                                                  if(!nfProc$isNode){
+                                                    for(iArg in seq_along(functionDefs[[funName]]$args$symbols)){
+                                                      arg <- functionDefs[[funName]]$args$symbols[[iArg]]
+                                                      argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)
+                                                      argName <- names(nfProc$RCfunProcs[[funName]]$nameSubList)[iArg]
+                                                      checkADargument(funName, argSym, argName = argName)
+                                                    }
+                                                  }
+                                                  addTypeTemplateFunction(funName)
+                                                  independentVarNames <- names(functionDefs[[funName]]$args$symbols)
+                                                  if(nfProc$isNode) independentVarNames <- independentVarNames[-1]  ## remove ARG1_INDEXEDNODEINFO__ from independentVars
+                                                  
+                                                  addADtapingFunction(funName, independentVarNames = independentVarNames, dependentVarNames = 'ANS_' )
+                                                  addADargumentTransferFunction(funName, independentVarNames = independentVarNames)
+                                              },
+                                              checkADargument = function(funName, argSym, argName = NULL, returnType = FALSE){
+                                                argTypeText <- if(returnType) 'returnType' else 'argument'
+                                                if(argSym$type != 'double')
+                                                  stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method is not a double, this method cannot have derivatives enabled.'))
+                                                if(!(argSym$nDim %in% c(0,1)))
+                                                   stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method must be a double scalar or double vector for derivatives to be enabled.'))
+                                                if((argSym$nDim == 1) && is.na(argSym$size)) stop(paste0('To enable derivatives, size must be given for the ', argName, ' ', argTypeText, ' of the ', funName,
+                                                                                                          ' method,  e.g. double(1, 3) for a length 3 vector.' ))
+                                              },
+
+                                              addADclassContent = function() {
+                                                  CPPincludes <<- c("<cppad/cppad.hpp>", CPPincludes)
+                                                  Hincludes <<- c("<cppad/cppad.hpp>", nimbleIncludeFile("nimbleCppAD.h"), Hincludes)
+                                                  addInheritance("nimbleFunctionCppADbase")
+                                                  objectDefs$addSymbol(cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), static = TRUE, name = 'allADtapePtrs_'))
+                                                  objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
+                                                  for(adEnabledFun in environment(nfProc$nfGenerator)$enableDerivs){
+                                                    addADclassContentOneFun(adEnabledFun)
+                                                  }
+                                                  ## static declaration in the class definition
+                                                  ## globals to hold the global static definition
+                                                  globals <- cppGlobalObjects(name = paste0('staticGlobals_', name), staticMembers = TRUE)
+                                                  globals$objectDefs[['staticGlobalTape']] <- cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), name = paste0(name,'::allADtapePtrs_'))
+                                                  neededTypeDefs[['allADtapePtrs_']] <<- globals
+
+                                                  addStaticInitClass()
+
+                                                  invisible(NULL)
                                               },
                                               buildCmultiInterface = function(dll = NULL) {
                                                   sym <- if(!is.null(dll))
@@ -273,12 +345,15 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               },
                                               buildAll = function(where = where) {
                                                   baseClassObj <- environment(nfProc$nfGenerator)$contains
+                                                  
                                                   if(!is.null(baseClassObj)) {
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassName <- environment(baseClassObj)$name
                                                       addInheritance(baseClassName)
                                                       addAncestors('NamedObjects')
                                                   }
+                                                  if(nimbleOptions('experimentalEnableDerivs') && length(environment(nfProc$nfGenerator)$enableDerivs) > 0) addADclassContent()
+
                                                   callSuper(where)
                                               }
                                           ),

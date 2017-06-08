@@ -42,12 +42,12 @@ class NimArr<1, T> : public NimArrBase<T> {
     return *this;
   }
 
-  // This makes the copied-to object contiguous-memory.  Use mapCopy to copy
-  // into an existing map
-  template <class Tother>
-  NimArr<1, T> &templateCopyOperator(const NimArr<1, Tother> &other) {
-    if (NimArrBase<T>::isMap()) {
-      return mapCopy(other);
+  // This makes the copied-to object contiguous-memory.
+  // Use mapCopy to copy into an existing map.
+  template<class Tother>
+  NimArr<1, T> &operator=(const NimArr<1, Tother> &other) {
+    if(NimArrBase<T>::isMap()) {
+     return mapCopy(other);
     }
 
     NimArrBase<T>::NAdims[0] = other.dim()[0];
@@ -82,17 +82,48 @@ class NimArr<1, T> : public NimArrBase<T> {
     return *this;
   }
 
-  NimArr<1, T> &operator=(const NimArr<1, double> &other) {
-    return templateCopyOperator<double>(other);
-  }
-  NimArr<1, T> &operator=(const NimArr<1, int> &other) {
-    return templateCopyOperator<int>(other);
-  }
-  NimArr<1, T> &operator=(const NimArr<1, bool> &other) {
-    return templateCopyOperator<bool>(other);
+  NimArr<1, T> &operator=(const NimArr<1, T> &other) {
+    if(NimArrBase<T>::isMap()) {
+      return(mapCopy(other));
+    }
+
+    std::memcpy(NimArrBase<T>::NAdims, other.dim(), 1*sizeof(int));
+    size1 = NimArrBase<T>::NAdims[0];
+
+    NimArrBase<T>::NAlength = other.size();
+    NimArrBase<T>::myType = other.getNimType();
+
+    NimArrBase<T>::boolMap = false;
+    NimArrBase<T>::offset = 0;
+
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
+    if(other.boolMap) {
+      if(NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
+      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      NimArrBase<T>::own_v = true;
+
+      T *to(NimArrBase<T>::v);
+      T *from(*other.vPtr + other.offset);
+
+      int otherStride1 = other.stride1;
+      for(int iRow = 0; iRow < size1; iRow++) {
+  	*to = *from;
+  	to++;
+  	from += otherStride1;
+      }
+    } else {
+      if(NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
+      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      NimArrBase<T>::own_v = true;
+      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+    }
+    NimArrBase<T>::setVptr();
+    return(*this);
   }
 
-  NimArr<1, T>(const NimArr<1, T> &other) : NimArrBase<T>(other) {
+  NimArr<1, T> (const NimArr<1, T> &other) :
+  NimArrBase<T>(other)
+  {
     NimArrBase<T>::NAdims[0] = other.dim()[0];
     size1 = NimArrBase<T>::NAdims[0];
 

@@ -73,7 +73,12 @@ double t(double x) {return(x);}
 int prod(int x) {return(x);}
 double prod(double x) {return(x);}
 
-
+NimArr<1, double> vectorDouble_2_NimArr(vector<double> input) {
+  NimArr<1, double> output;
+  output.setSize(input.size(), false, false);
+  std::copy(input.begin(), input.end(), output.getPtr());
+  return(output);
+}
 
 /* Cliff's new function for adding blank rows to C model values */
 SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded){
@@ -970,4 +975,4 @@ SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex){
  SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal){						
   	return(setEnvVar_Sindex(sString, sEnv, sVal, ScalarInteger(1)));
   }
-
+  

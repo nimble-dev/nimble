@@ -1,4 +1,16 @@
-                           CHANGES IN VERSION 0.6-5 (May 2017)
+                           CHANGES IN VERSION 0.6-6 (August 2017)
+
+USER LEVEL CHANGES
+
+-- nimOptim
+
+DEVELOPER LEVEL CHANGES
+
+-- improvements to testing
+
+BUG FIXES
+
+                           CHANGES IN VERSION 0.6-5 (June 2017)
 
 USER LEVEL CHANGES
 
@@ -51,6 +63,10 @@ BUG FIXES
 -- Fixed bug in compiling code that constructs logical scalars and vectors.
 
 -- Fixed bug preventing installation on Solaris.
+
+-- Fixed issue with PROTECT flagged by rchk.
+
+-- Fixed C++ array deletion issue in two multivariate densities.
 
                            CHANGES IN VERSION 0.6-4 (April 2017)
 

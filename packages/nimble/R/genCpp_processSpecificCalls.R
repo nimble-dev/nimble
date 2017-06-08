@@ -34,7 +34,8 @@ specificCallHandlers = c(
          numListAccess = 'mvAccessHandler',
          declare = 'declareHandler',
          min = 'minMaxHandler',
-         max = 'minMaxHandler'),
+         max = 'minMaxHandler',
+         nimSvd = 'svdHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(c('nimNumeric', 'nimLogical', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
     makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dwish_chol', 'dinvwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
@@ -69,6 +70,14 @@ seqAlongHandler <- function(code, symTab) {
     code$args[[1]] <- 1
     setArg(code, 2, oldArg)
     NULL
+}
+
+svdHandler <- function(code, symTab){
+  code$args[[2]] <- switch(tolower(code$args[[2]]),
+                         none = 0,
+                         thin = 1,
+                         full = 2)
+  NULL
 }
 
 ## processes something like declare(Z, double(1, c(3, 4))) where the first argument to double is the number of dimensions and next (optional)
