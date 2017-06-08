@@ -171,6 +171,7 @@ distributionsInputList <- list(
     
     
     dcar_normal = list(BUGSdist = 'dcar_normal(adj, weights, num, tau)',
+                       Rdist    = 'dcar_normal(adj, weights = adj/adj, num, tau)',
                        types    = c('value = double(1)', 'adj = double(1)', 'weights = double(1)', 'num = double(1)', 'tau = double(0)'),
                        mixedSizes = TRUE,
                        alias    = 'car.normal'),
