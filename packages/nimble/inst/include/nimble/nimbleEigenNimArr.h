@@ -88,20 +88,20 @@ void setValuesIndexRange(NimArrBase<T> &nimArr, ManyVariablesMapAccessor &MVA, c
 template<typename Derived>
 double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
   double ans(0);
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
   if(!logical) {
     int thisIndex;
     for(int i = 0; i < len; ++i) {
       thisIndex = indices(i)-1; // indices is R-based
-      ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateBlock(useInfoVec[ thisIndex ].useInfo );
+      ans += instructions[ thisIndex ].nodeFunPtr->calculateBlock(instructions[ thisIndex ].operand);
     }
     return(ans);
   }
   // logical = true. treat indices as a logical vector
   for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      ans += useInfoVec[ i ].nodeFunPtr->calculateBlock(useInfoVec[ i ].useInfo );
+      ans += instructions[ i ].nodeFunPtr->calculateBlock(instructions[ i ].operand);
     }
   }
   return(ans);
@@ -110,20 +110,20 @@ double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical
 template<typename Derived>  
   double calculateDiff(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
   double ans(0);
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
   if(!logical) {
     int thisIndex;
     for(int i = 0; i < len; ++i) {
       thisIndex = indices(i)-1; // indices is R-based
-      ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateDiffBlock(useInfoVec[ thisIndex ].useInfo );
+      ans += instructions[ thisIndex ].nodeFunPtr->calculateDiffBlock(instructions[ thisIndex ].operand);
     }
     return(ans);
   }
   // logical = true. treat indices as a logical vector
   for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      ans += useInfoVec[ i ].nodeFunPtr->calculateDiffBlock(useInfoVec[ i ].useInfo );
+      ans += instructions[ i ].nodeFunPtr->calculateDiffBlock(instructions[ i ].operand);
     }
   }
   return(ans);
@@ -132,20 +132,20 @@ template<typename Derived>
 template<typename Derived>  
   double getLogProb(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
   double ans(0);
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
   if(!logical) {
     int thisIndex;
     for(int i = 0; i < len; ++i) {
       thisIndex = indices(i)-1; // indices is R-based
-      ans += useInfoVec[ thisIndex ].nodeFunPtr->getLogProbBlock(useInfoVec[ thisIndex ].useInfo );
+      ans += instructions[ thisIndex ].nodeFunPtr->getLogProbBlock(instructions[ thisIndex ].operand);
     }
     return(ans);
   }
   // logical = true. treat indices as a logical vector
   for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      ans += useInfoVec[ i ].nodeFunPtr->getLogProbBlock(useInfoVec[ i ].useInfo );
+      ans += instructions[ i ].nodeFunPtr->getLogProbBlock(instructions[ i ].operand);
     }
   }
   return(ans);
@@ -153,19 +153,19 @@ template<typename Derived>
 
 template<typename Derived>  
   void simulate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
   if(!logical) {
    int thisIndex;
    for(int i = 0; i < len; ++i) {
     thisIndex = indices(i)-1; // indices is R-based
-    useInfoVec[ thisIndex ].nodeFunPtr->simulateBlock(useInfoVec[ thisIndex ].useInfo );
+    instructions[ thisIndex ].nodeFunPtr->simulateBlock(instructions[ thisIndex ].operand);
    }
   } else {
   // logical = true. treat indices as a logical vector
    for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      useInfoVec[ i ].nodeFunPtr->simulateBlock(useInfoVec[ i ].useInfo );
+      instructions[ i ].nodeFunPtr->simulateBlock(instructions[ i ].operand);
     }
    }
   }

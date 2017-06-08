@@ -236,22 +236,22 @@ cppOutputNimSwitch <- function(code, symTab) {
 
 cppOutputGetParam <- function(code, symTab) {
     if(length(code$args) < 4) {  ## code$args[[3]] is used for the paramInfo that is only used in size processing
-        ans <- paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[0])')
+        ans <- paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getInstructions()[0])')
     } else {
         iNodeFunction <- paste(cppMinusOne(nimDeparse(code$args[[4]])))
         ans <- paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,
-                      '.getUseInfoVec()[',iNodeFunction,'],', iNodeFunction ,')')
+                      '.getInstructions()[',iNodeFunction,'],', iNodeFunction ,')')
     }
     return(ans)
 }
 
 cppOutputGetBound <- function(code, symTab) {
     if(length(code$args) < 4) {  ## code$args[[3]] is used for the paramInfo that is only used in size processing
-        ans <- paste0('getBound_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[0])')
+        ans <- paste0('getBound_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getInstructions()[0])')
     } else {
         iNodeFunction <- paste(cppMinusOne(nimDeparse(code$args[[4]])))
         ans <- paste0('getBound_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,
-                      '.getUseInfoVec()[',iNodeFunction,'],', iNodeFunction ,')')
+                      '.getInstructions()[',iNodeFunction,'],', iNodeFunction ,')')
     }
     return(ans)
 }
