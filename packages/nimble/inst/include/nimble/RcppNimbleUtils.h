@@ -58,13 +58,6 @@ extern "C" {
 
   SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue);
 
-  SEXP resizeNumListRow(SEXP Sextptr, SEXP Sindex, SEXP dims); 	// resizes a particular row of a numericlist
-
-//  SEXP setNumList(SEXP Sextptr, SEXP Sindex, SEXP Svalue);   automatically resizes. Might want to use later
-   SEXP setNumListRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);		// this sets the number of rows in a numericList (really, any VecNimArr)
-
-  SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows);
-
   SEXP newSampObject();	//  Creates our new object from sampleClass (will be generated automatically later)
 							//	Just for use in demos
 							// 	To get a pointer to an element from sampleClass, use

@@ -185,7 +185,7 @@ as.matrix.modelValuesBaseClass <- function(x, varNames, ...){
 	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
-		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
+		.Call(fastMatrixInsert, ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
 		colIndex = colIndex + prod(x$sizes[[varNames[i] ]])
 		}
 	colnames(ans) <- flatNames
@@ -201,7 +201,7 @@ as.matrix.CmodelValues <- function(x, varNames, ...){
 	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
-		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
+		.Call(fastMatrixInsert, ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
 		colIndex = colIndex + prod(x$sizes[[varNames[i] ]])
 		}
 	colnames(ans) <- flatNames
@@ -243,12 +243,12 @@ Rmatrix2mvOneVar <- function(mat, mv, varName, k){
 	if( mv$symTab$symbols[[varName]][['type']] == 'double'){
 		storage.mode(mat) <- 'double'
 		len <- ncol(mat)
-		.Call('matrix2ListDouble', mat, mv[[varName]], listStartIndex = as.integer(1), RnRows = k, Rlength = as.integer(mv$sizes[[varName]]) )
+		.Call(matrix2ListDouble, mat, mv[[varName]], listStartIndex = as.integer(1), RnRows = k, Rlength = as.integer(mv$sizes[[varName]]) )
 	}
 	if( mv$symTab$symbols[[varName]][['type']] == 'int'){
 		storage.mode(mat) <- 'integer'
 		len <- ncol(mat)
-		.Call('matrix2ListInt', mat, mv[[varName]], listStartIndex = as.integer(1), RnRows = k, Rlength = as.integer(mv$sizes[[varName]]) )
+		.Call(matrix2ListInt, mat, mv[[varName]], listStartIndex = as.integer(1), RnRows = k, Rlength = as.integer(mv$sizes[[varName]]) )
 	}
 }
 
