@@ -1704,6 +1704,11 @@ CAR_scalar_RW <- nimbleFunction(
         if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
     },
     run = function() {
+        if(is.na(model[[targetScalar]]) | is.nan(model[[targetScalar]])) {
+            model[[targetScalar]] <<- 0
+            model$calculate(copyNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodes, logProb = TRUE)
+        }
         lp0 <- dcar$run() + model$getLogProb(depNodes)
         propValue <- rnorm(1, mean = model[[targetScalar]], sd = scale)
         model[[targetScalar]] <<- propValue
