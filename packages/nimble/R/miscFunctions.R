@@ -45,4 +45,22 @@ calc_dmnormConjugacyContributions <- nimbleFunction(
     }
 )
 
+# used in altParams for dwish and dinvwish
+# this needs to be sourced after nimbleFunction() is defined, so can't be done in distributions_inputList.R
+calc_dwishAltParams <- nimbleFunction(
+    run = function(cholesky = double(2), scale_param = double(), return_scale = double()) {
+        if(scale_param == return_scale) {
+            ans <- t(cholesky) %*% cholesky
+        } else {
+            I <- identityMatrix(dim(cholesky)[1])
+            ans <- backsolve(cholesky, forwardsolve(t(cholesky), I))
+            ## Chris suggests:
+            ## tmp <- forwardsolve(L, I)
+            ## ans <- crossprod(tmp)
+        }
+        returnType(double(2))
+        return(ans)
+    }
+)
+
 

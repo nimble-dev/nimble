@@ -1,7 +1,72 @@
+                           CHANGES IN VERSION 0.6-6 (August 2017)
 
--- New system of Sampler Assignment Rules in the MCMC, which allows customizing the rules used to assign default samplers in MCMC configuration objects.
+USER LEVEL CHANGES
+
+-- nimOptim
+
+DEVELOPER LEVEL CHANGES
+
+-- improvements to testing
+
+BUG FIXES
+
+                           CHANGES IN VERSION 0.6-5 (June 2017)
+
+USER LEVEL CHANGES
+
+-- The functions returned from a call to buildMCEM() now include an estimateCov() method, which can be used to estimate the asymptotic covariance of model parameters at their MLE values.  
+
+-- nimbleLists can now be used in nimbleFunctions that do not have setup code.
+
+-- Enabled use of c(), rep(), seq(), diag() and ':' in BUGS code.
 
 -- Added dflat and dhalfflat for improper uniform (prior) distributions on the real line and positive real line; includes conjugacies for dnorm dependents (in mean) with dflat distribution and dnorm dependents (in sd) with dhalfflat distribution.
+
+-- Allow compilation of cases like model$getParam(nodes[i], 'mean'), even if nodes is empty, in a nimbleFunction instance (in which case the code would not execute, but it must be able to compile).
+
+-- Added inverse-wishart distribution to NIMBLE's provided distributions.
+
+-- Improved a variety of error-trapping.
+
+-- New nimbleOptions()$verboseErrors, default FALSE.  If TRUE, the call stack will be output when an error is trapped.
+
+DEVELOPER LEVEL CHANGES
+
+-- Added error trapping to report useful error message when the type of the returned object does not match the declared returnType of a nimbleFunction.
+
+-- Added onAttach message to point users to website and manual.
+
+-- Updated script for creating roxygen-based documentation.
+
+-- Added more complete handling of split vertices during graph construction and model-querying methods.
+
+BUG FIXES
+
+-- Fixed underflow error in MCMC binary sampler.
+
+-- Fixed bug preventing use of nimC() with an argument like model[[node]].
+
+-- Fixed model$getDependencies(nodes) to return only what is needed (and no extra) when nodes contains a subset of elements of a non-scalar node.  e.g. model$getDependencies('x[1]') if BUGS code has 'x[1:5] ~ dmnorm(...)'.
+
+-- Fixed bug in model definition processing where some (rare) syntax could lead to very inefficient computation.
+
+-- Fixed bug when multiple nimbleFunctions with multiple levels of nesting led to incomplete inclusion of multiple .o files in compilation.
+
+-- Fixed compilation of cases where a scalar is computed from vectors and then used in scalar operations, e.g. inprod(X, Y) + a.
+
+-- Fixed bug where return(rnorm(2)) and some other cases of a return argument that is an expression returning a vector would fail to compile.
+
+-- Fixed bug where identical BUGS declarations with expression arguments in different for-loops could yield incorrect models.
+
+-- Fixed bug where a LHS node split in the middle by a RHS usage would fail during model building.
+
+-- Fixed bug in compiling code that constructs logical scalars and vectors.
+
+-- Fixed bug preventing installation on Solaris.
+
+-- Fixed issue with PROTECT flagged by rchk.
+
+-- Fixed C++ array deletion issue in two multivariate densities.
 
                            CHANGES IN VERSION 0.6-4 (April 2017)
 

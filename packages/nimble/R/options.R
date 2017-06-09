@@ -7,9 +7,15 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+<<<<<<< HEAD
         nimbleProject = NULL,  ## only used by withTempProject and compileNimble in testing code.
         stopCompilationBeforeLinking = NULL,
+=======
+        enableSpecialHandling = FALSE,
+>>>>>>> devel
         pauseAfterWritingFiles = FALSE,
+        CppAD_directory = NA,
+        experimentalEnableDerivs = FALSE,
         convertSingleVectorsToScalarsInSetupArgs = TRUE,
         messagesWhenBuildingOrFinalizingCppObjects = FALSE,
         indexDrop = TRUE,

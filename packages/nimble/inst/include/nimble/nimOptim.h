@@ -2,8 +2,9 @@
 #define __NIMBLE_NIMOPTIM_H
 
 #include <nimble/NimArr.h>
-#include <nimble/optimTypes.h>
+#include <nimble/predefinedNimbleLists.h>
 #include <nimble/smartPtrs.h>
+#include <algorithm>
 #include <string>
 
 // ---------------------------------------------------------------------------
@@ -36,43 +37,100 @@ inline NimBoundMethod<T> NimBind(double (T::*method)(NimArr<1, double>&),
 
 class NimOptimProblem {
    public:
-    nimSmartPtr<OptimResultNimbleList> solve(
-        NimArr<1, double>& par, const std::string& method,
-        NimArr<1, double>& lower, NimArr<1, double>& upper,
-        nimSmartPtr<OptimControlNimbleList> control, bool hessian);
+    NimOptimProblem(const std::string& method, NimArr<1, double>& lower,
+                    NimArr<1, double>& upper,
+                    nimSmartPtr<OptimControlNimbleList> control, bool hessian)
+        : method_(method),
+          lower_(lower),
+          upper_(upper),
+          control_(control),
+          hessian_(hessian) {}
+    nimSmartPtr<OptimResultNimbleList> solve(NimArr<1, double>& par);
 
    private:
-    // These are callbacks for R's optim() where this is passed in as the final
-    // argument `void * ex`.
+    // These function and gradient callbacks for R's optim() where `this` is
+    // passed in as the final argument `void * ex`.
     static double fn(int, double*, void*);
     static void gr(int, double*, double*, void*);
 
    protected:
     // These are callbacks used internally by fn() and gr().
     virtual double function() = 0;
-    virtual void gradient() { NIMERROR("Gradient is not defined"); }
+    virtual void gradient() = 0;
 
-    // These are used as temporaries for C <-> NimArr conversion.
-    NimArr<1, double> par_;
-    NimArr<1, double> ans_;
+    // Problem parameters.
+    const std::string& method_;
+    NimArr<1, double>& lower_;
+    NimArr<1, double>& upper_;
+    nimSmartPtr<OptimControlNimbleList> control_;
+    const bool hessian_;
+
+    // Temporaries.
+    NimArr<1, double> par_;  // Argument for fn() and gr().
+    NimArr<1, double> ans_;  // Result of gradient.
 };
 
 template <class Fn>
 class NimOptimProblem_Fun : public NimOptimProblem {
    public:
-    NimOptimProblem_Fun(Fn fn) : fn_(fn) {}
+    NimOptimProblem_Fun(Fn fn, const std::string& method,
+                        NimArr<1, double>& lower, NimArr<1, double>& upper,
+                        nimSmartPtr<OptimControlNimbleList> control,
+                        bool hessian)
+        : NimOptimProblem(method, lower, upper, control, hessian), fn_(fn) {}
 
    protected:
     virtual double function() { return fn_(par_); }
+    virtual void gradient();  // Uses finite difference approximation.
 
    private:
     Fn fn_;
 };
 
+template <class Fn>
+void NimOptimProblem_Fun<Fn>::gradient() {
+    const int n = par_.dimSize(0);
+    NIM_ASSERT_SIZE(ans_, n);
+    NimArr<1, double>& ndeps = control_->ndeps;
+    if (ndeps.dimSize(0) == 1) ndeps.initialize(ndeps[0], true, n);
+    NIM_ASSERT_SIZE(ndeps, n);
+    NimArr<1, double> par_h = par_;
+    if (method_ == "L-BFGS-B") {
+        // Constrained optimization.
+        for (int i = 0; i < n; ++i) {
+            const double h_pos = std::min(ndeps[i], upper_[i] - par_[i]);
+            const double h_neg = std::min(ndeps[i], par_[i] - lower_[i]);
+            par_h[i] = par_[i] + h_pos;
+            const double pos = fn_(par_h);
+            par_h[i] = par_[i] - h_neg;
+            const double neg = fn_(par_h);
+            par_h[i] = par_[i];
+            ans_[i] = (pos - neg) / (h_pos + h_neg);
+        }
+    } else {
+        // Unconstrained optimization.
+        for (int i = 0; i < n; ++i) {
+            const double h = ndeps[i];
+            par_h[i] = par_[i] + h;
+            const double pos = fn_(par_h);
+            par_h[i] = par_[i] - h;
+            const double neg = fn_(par_h);
+            par_h[i] = par_[i];
+            ans_[i] = (pos - neg) / (2 * h);
+        }
+    }
+}
+
 template <class Fn, class Gr>
 class NimOptimProblem_Fun_Grad : public NimOptimProblem {
    public:
-    NimOptimProblem_Fun_Grad(Fn fn, Gr gr) : fn_(fn), gr_(gr) {}
+    NimOptimProblem_Fun_Grad(Fn fn, Gr gr, const std::string& method,
+                             NimArr<1, double>& lower, NimArr<1, double>& upper,
+                             nimSmartPtr<OptimControlNimbleList> control,
+                             bool hessian)
+        : NimOptimProblem(method, lower, upper, control, hessian),
+          fn_(fn),
+          gr_(gr) {}
 
    protected:
     virtual double function() { return fn_(par_); }
@@ -93,8 +151,9 @@ inline nimSmartPtr<OptimResultNimbleList> nimOptim(
     NimArr<1, double>& par, Fn fn, Gr gr, const std::string& method,
     NimArr<1, double>& lower, NimArr<1, double>& upper,
     nimSmartPtr<OptimControlNimbleList> control, bool hessian) {
-    return NimOptimProblem_Fun_Grad<Fn, Gr>(fn, gr).solve(
-        par, method, lower, upper, control, hessian);
+    return NimOptimProblem_Fun_Grad<Fn, Gr>(fn, gr, method, lower, upper,
+                                            control, hessian)
+        .solve(par);
 }
 
 // This handles the special case where gr is not specified (i.e. is "NULL").
@@ -103,11 +162,11 @@ inline nimSmartPtr<OptimResultNimbleList> nimOptim(
     NimArr<1, double>& par, Fn fn, const char* gr, const std::string& method,
     NimArr<1, double>& lower, NimArr<1, double>& upper,
     nimSmartPtr<OptimControlNimbleList> control, bool hessian) {
-    NIM_ASSERT(
+    NIM_ASSERT1(
         strcmp(gr, "NULL") == 0,
         "Internal error: failed to handle gradient argument type in optim()");
-    return NimOptimProblem_Fun<Fn>(fn).solve(par, method, lower, upper, control,
-                                             hessian);
+    return NimOptimProblem_Fun<Fn>(fn, method, lower, upper, control, hessian)
+        .solve(par);
 }
 
 // TODO Handle double -> vector conversion in R instead of here.
@@ -120,8 +179,9 @@ inline nimSmartPtr<OptimResultNimbleList> nimOptim(
     lower_vector.initialize(lower, true, 1);
     NimArr<1, double> upper_vector;
     upper_vector.initialize(upper, true, 1);
-    return NimOptimProblem_Fun_Grad<Fn, Gr>(fn, gr).solve(
-        par, method, lower_vector, upper_vector, control, hessian);
+    return NimOptimProblem_Fun_Grad<Fn, Gr>(fn, gr, method, lower_vector,
+                                            upper_vector, control, hessian)
+        .solve(par);
 }
 
 // TODO Handle double -> vector conversion in R instead of here.
@@ -131,15 +191,16 @@ inline nimSmartPtr<OptimResultNimbleList> nimOptim(
     NimArr<1, double>& par, Fn fn, const char* gr, const std::string& method,
     double lower, double upper, nimSmartPtr<OptimControlNimbleList> control,
     bool hessian) {
-    NIM_ASSERT(
+    NIM_ASSERT1(
         strcmp(gr, "NULL") == 0,
         "Internal error: failed to handle gradient argument type in optim()");
     NimArr<1, double> lower_vector;
     lower_vector.initialize(lower, true, 1);
     NimArr<1, double> upper_vector;
     upper_vector.initialize(upper, true, 1);
-    return NimOptimProblem_Fun<Fn>(fn).solve(par, method, lower_vector,
-                                             upper_vector, control, hessian);
+    return NimOptimProblem_Fun<Fn>(fn, method, lower_vector, upper_vector,
+                                   control, hessian)
+        .solve(par);
 }
 
 #endif  // __NIMBLE_NIMOPTIM_H
