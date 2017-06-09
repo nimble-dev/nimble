@@ -25,15 +25,8 @@ exprClass <- setRefClass('exprClass',
                              caller = 'ANY',            # exprClass object for the call to which this is an argument (if any)
                              callerArgID =  'ANY',	#'numeric', ## index in the calling object's args list for this object.
                              assertions =  'ANY',	#'list'
-                             
-                             eigMatrix =  'ANY',		#'logical', ## vs. Array.  Only used for Eigenized expressions
-                             toEigenize =  'ANY',		#'character', ##'yes', 'no', or 'maybe'
-                             caller = 'ANY', ## exprClass object for the call to which this is an argument (if any)
-                             callerArgID =  'ANY',		#'numeric', ## index in the calling object's args list for this object.
-                             assertions =  'ANY',		#'list'
-                             cppADCode = 'ANY',    #'logical ## is expr in code generated for cppad?
+                             cppADCode = 'ANY',         #'logical' ## is expr in code generated for cppad?
                              aux = 'ANY'                # anything needed for specific operators
-
                              ),
                          methods = list(
                              initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); cppADCode <<- FALSE; callSuper(...)},

@@ -25,16 +25,16 @@ toEigenizeMaybeCalls <- c('map',
 
 toEigenizeUseRuleCalls <- c('nimPrint')
 
-toEigenCalls <- c(makeCallList(binaryOperators, 'toEigenBinaryCwise'),
+toEigenCalls <- c(makeCallList(binaryOperators, 'toEigenBinaryCwise'),             #ok
                   makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
-                  makeCallList(binaryOrUnaryOperators, 'toEigenBinaryUnaryCwise'),
-                  makeCallList(unaryOperators, 'toEigenUnaryCwise'), 
+                  makeCallList(binaryOrUnaryOperators, 'toEigenBinaryUnaryCwise'), #ok
+                  makeCallList(unaryOperators, 'toEigenUnaryCwise'),               #ok
                   makeCallList(unaryOrNonaryOperators, 'sizeUnaryNonaryCwise'),
-                  makeCallList(assignmentOperators, 'toEigenAssign'), 
-                  makeCallList(reductionUnaryOperators, 'sizeUnaryReduction'), 
+                  makeCallList(assignmentOperators, 'toEigenAssign'),              #ok
+                  makeCallList(reductionUnaryOperators, 'sizeUnaryReduction'),     # drafted
                   makeCallList(matrixSquareReductionOperators, 'sizeMatrixSquareReduction'),
                   makeCallList(reductionBinaryOperators, 'sizeBinaryReduction'),
-                  makeCallList(matrixMultOperators, 'sizeMatrixMult'), 
+                  makeCallList(matrixMultOperators, 'toEigenMatrixMult'),          # drafted
                   makeCallList(matrixFlipOperators, 'sizeTranspose'),
                   makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
                   makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
@@ -383,7 +383,90 @@ toEigenBinaryUnaryCwise <- function(code, symTab, typeEnv) {
 }
 
 toEigenBinaryCwise <- function(code, symTab, typeEnv) {
-    message('setting toEigenize for toEigenBinaryCwise must be handled')
-    return(list())
+    asserts <- recurseSetToEigenize(code, symTab, typeEnv)
+    a1 <- code$args[[1]] 
+    a2 <- code$args[[2]]
+    if(inherits(a1, 'exprClass')) {
+        if(a1$toEigenize == 'no') {
+            asserts <- c(asserts, toEigenInsertIntermediate(code, 1, symTab, typeEnv))
+            a1 <- code$args[[1]]
+        }
+        a1DropNdim <- length(dropSingleSizes(a1$sizeExprs)$sizeExprs)
+        a1toEigenize <- a1$toEigenize
+    } else {
+        a1DropNdim <- 0
+        a1toEigenize <- 'maybe'
+    }
+    if(inherits(a2, 'exprClass')) {
+        if(a2$toEigenize == 'no') {
+            asserts <- c(asserts, toEigenInsertIntermediate(code, 2, symTab, typeEnv))
+            a2 <- code$args[[2]]
+        }
+        a2DropNdim <- length(dropSingleSizes(a2$sizeExprs)$sizeExprs)
+        a2toEigenize <- a2$toEigenize
+    } else {
+        a2DropNdim <- 0
+        a2toEigenize <- 'maybe'
+    }
+    forceYesEigenize <- identical(a1toEigenize, 'yes') | identical(a2toEigenize, 'yes')
+    code$toEigenize <- if(a1DropNdim == 0 & a2DropNdim == 0)
+                           if(forceYesEigenize)
+                               'yes'
+                           else
+                               'maybe'
+                       else 'yes'
+    asserts
 }
 
+toEigenUnaryCwise <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    a1 <- code$args[[1]]
+    ## lifting rule: lift if not eigenizable
+    if(inherits(a1, 'exprClass')) {
+        if(a1$toEigenize == 'no') {
+            asserts <- c(asserts, toEigenInsertIntermediate(code, 1, symTab, typeEnv))
+            a1 <- code$args[[1]]
+        }
+    }
+    ## propagation rule: yes or maybe
+    code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
+    asserts
+}
+
+toEigenMatrixMult <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetToEigenize(code, symTab, typeEnv)
+    a1 <- code$args[[1]]
+    a2 <- code$args[[2]]
+    ## POSSIBLE DIFFERENT BEHAVIOR:
+    ## sizeMatrixMult may insert an asRow() or asCol()
+    ## It would do so *after* sizeInsertIntermediate
+    ## But now that would happen *before* sizeInsertIntermediate
+    ## Options: (1) The new code made be just as valid.  (2) We could make toEigenInsertIntermediate be smart about asRow or asCol
+    if(a1$toEigenize == 'no') {
+        asserts <- c(asserts, toEigenInsertIntermediate(code, 1, symTab, typeEnv))
+    }
+    if(a2$toEigenize == 'no') {
+        asserts <- c(asserts, toEigenInsertIntermediate(code, 2, symTab, typeEnv))
+    }
+    code$toEigenize <- 'yes'
+    asserts
+}
+
+toEigenUnaryReduction <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetToEigenize(code, symTab, typeEnv)
+    if(inherits(code$args[[1]], 'exprClass')) {
+        if(!code$args[[1]]$isName) {
+            if(code$args[[1]]$toEigenize == 'no') {
+                asserts <- c(asserts, toEigenInsertIntermediate(code, 1, symTab, typeEnv))
+            }
+        }
+    }
+
+    code$toEigenize <- 'yes'
+
+    if(!(code$caller$name %in% c('{','<-','<<-','='))) {
+        asserts <- c(asserts, toEigenInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    }
+    
+    if(length(asserts) == 0) NULL else asserts
+}

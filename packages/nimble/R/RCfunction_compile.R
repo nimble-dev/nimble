@@ -266,7 +266,6 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        }
 
                                        if(nimbleOptions('useRefactoredSizeProcessing')) {
-                                           browser()
                                            exprClasses_setToEigenize(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
                                        }
 

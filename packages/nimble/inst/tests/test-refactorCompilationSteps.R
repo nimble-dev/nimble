@@ -5,6 +5,8 @@ context("Testing of old vs. new generated C++ during refactoring steps")
 oldWarnLevel <- options('warn')
 options(warn = -1)
 
+## Known concern: ordering of asRow()/asCol() and intermediates
+
 compareOldAndNewCompilationRC <- function(input) {
     run <- input$run
     name <- input$name
@@ -22,10 +24,7 @@ compareOldAndNewCompilationRC <- function(input) {
     newfilename <- paste0(filename,'_original')
     pathedfilename <- file.path(tempdir(), 'nimble_generatedCode', filename)
     original_pathedfilename <- file.path(tempdir(), 'nimble_generatedCode', newfilename)
-    for(ext in c('.h', '.cpp')) file.copy(paste0(pathedfilename, ext), paste0(original_pathedfilename, ext))
-    ## we could regenerate it, but might as well read it from the file
-   ## oldFooCppOutput <- readLines(file.path(tempdir(), 'nimble_generatedCode', paste0(filename, '.cpp')))
-   ## oldFooHOutput <- readLines(file.path(tempdir(), 'nimble_generatedCode', paste0(filename, '.h')))
+    for(ext in c('.h', '.cpp')) file.copy(paste0(pathedfilename, ext), paste0(original_pathedfilename, ext), overwrite = TRUE)
     
     nimbleOptions(useRefactoredSizeProcessing = TRUE)
     nimble:::resetLabelFunctionCreators() ## sets any generated IDs back to 1
@@ -37,12 +36,7 @@ compareOldAndNewCompilationRC <- function(input) {
 
     for(ext in c('.h','.cpp'))
         compareFilesUsingDiff(paste0(refactored_pathedfilename, ext), paste0(original_pathedfilename, ext),
-                              main = paste0(ext, ' files do not match for: ', name))
-    
-    ## newFooCppOutput <- readLines(file.path(tempdir(), 'nimble_generatedCode', paste0(filename, '.cpp')))
-    ## newFooHOutput <- readLines(file.path(tempdir(), 'nimble_generatedCode', paste0(filename, '.h')))
-    ## test_that(paste0(name,': .cpp matches'), expect_identical(oldFooCppOutput, newFooCppOutput))
-    ## test_that(paste0(name,': .h matches'), expect_identical(oldFooHOutput, newFooHOutput))
+                              main = paste0(ext, ' files do not match for: ', name))    
 }
 
 testCases <- list(
@@ -53,3 +47,15 @@ testCases <- list(
 
 ans <- lapply(testCases, compareOldAndNewCompilationRC)
 options(warn = as.numeric(oldWarnLevel))
+
+source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
+
+compareOldAndNewMathTest <- function(input) {
+    runFun <- gen_runFun(input)
+    input$run <- runFun
+    compareOldAndNewCompilationRC(input)
+}
+
+boolUseTest <- unlist(lapply(testsBasicMath, function(x) grepl('\\+', x$name))) ## 3 cases
+ans <- lapply(testsBasicMath[boolUseTest], compareOldAndNewMathTest)
+ans <- lapply(testsBasicMath, compareOldAndNewMathTest)
