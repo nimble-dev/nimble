@@ -1465,22 +1465,6 @@ CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList,
 
 
 #### internal only
-#### helper to get starting index in adj vector
-CAR_calcAdjStartIndex <- nimbleFunction(
-    run = function(num = double(1), index = double()) {
-        adjStartInd <- 1
-        i <- 1
-        while(i < index) {
-            adjStartInd <- adjStartInd + num[i]
-            i <- i + 1
-        }
-        returnType(double())
-        return(adjStartInd)
-    }
-)
-
-
-#### internal only
 #### calculate number of islands
 CAR_calcNumIslands <- nimbleFunction(
     run = function(adj = double(1), num = double(1)) {
@@ -1493,7 +1477,8 @@ CAR_calcNumIslands <- nimbleFunction(
                 numIslands <- numIslands + 1
                 nNeighbors <- num[i]
                 if(nNeighbors > 0) {
-                    adjStartInd <- CAR_calcAdjStartIndex(num, i)
+                    adjStartInd <- 1
+                    if(i > 1) adjStartInd <- adjStartInd + sum(num[1:(i-1)])
                     indToVisit <- numeric(nNeighbors)
                     indToVisit[1:nNeighbors] <- adj[adjStartInd:(adjStartInd+nNeighbors-1)]
                     lengthIndToVisit <- nNeighbors
@@ -1505,7 +1490,8 @@ CAR_calcNumIslands <- nimbleFunction(
                             newNneighbors <- num[nextInd]
                             if(newNneighbors > 0) {
                                 newIndToVisit <- numeric(newNneighbors)
-                                adjStartInd <- CAR_calcAdjStartIndex(num, nextInd)
+                                adjStartInd <- 1
+                                if(nextInd > 1) adjStartInd <- adjStartInd + sum(num[1:(nextInd-1)])
                                 new_indToVisit <- c(indToVisit, adj[adjStartInd:(adjStartInd+newNneighbors-1)])
                                 new_lengthIndToVisit <- lengthIndToVisit + newNneighbors
                                 lengthIndToVisit <- new_lengthIndToVisit
