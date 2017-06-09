@@ -2,7 +2,7 @@
 
 double <- function(ndim, dims) {}
 
-labelFunctionCreator <- function() {
+labelFunctionMetaCreator <- function() {
     allLabelFunctionCreators <- list()
 
     creatorFun <- function(lead, start = 1) {
@@ -18,16 +18,18 @@ labelFunctionCreator <- function() {
             nextIndex <<- nextIndex + count
             ans
         }
-        allLabelFunctionCreators[[ length(allLabelFunctionCreators) ]] <<- labelGenerator
+        allLabelFunctionCreators[[ length(allLabelFunctionCreators) + 1 ]] <<- labelGenerator
         labelGenerator
     }
     creatorFun
-}()
+}
+
+labelFunctionCreator <- labelFunctionMetaCreator()
 
 resetLabelFunctionCreators <- function() {
     allLabelFunctionCreators <- environment(labelFunctionCreator)$allLabelFunctionCreators
     for(i in allLabelFunctionCreators) {
-        environment(i)$nextIndex <- 1
+        i(reset = TRUE)
     }
 }
 

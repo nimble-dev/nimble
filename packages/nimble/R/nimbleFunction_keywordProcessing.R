@@ -90,17 +90,6 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 	}
 )
 
-nimSvd_keywordInfo <- keywordInfoClass(
-    keyword = 'nimSvd',
-    processor = function(code, nfProc){
-        if(deparse(code[[1]]) == 'nimSvd'){
-            code[[3]] <- switch(tolower(code[[3]]),
-                                none = 0,
-                                thin = 1,
-                                full = 2)
-        }
-        return(code)
-    })    
 
 nimSeq_keywordInfo <- keywordInfoClass(
     keyword = 'nimSeq',
@@ -735,7 +724,6 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
-keywordList[['nimSvd']] <- nimSvd_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo
@@ -790,6 +778,7 @@ matchFunctions[['nimOptim']] <- nimOptim
 matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
+matchFunctions[['nimDerivs']] <- nimDerivs
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}

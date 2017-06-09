@@ -9,8 +9,10 @@ compareOldAndNewCompilationRC <- function(input) {
     run <- input$run
     name <- input$name
     require(testthat)
+
     foo <- nimbleFunction(run = run, name = 'foo')
     nimbleOptions(useRefactoredSizeProcessing = FALSE)
+    nimble:::resetLabelFunctionCreators() ## sets any generated IDs back to 1
     testProject <- nimble:::nimbleProjectClass(name = 'for_comparison')
     ## management of compilation through the control list is crude and leads to error we don't care about
     ## but the project does contain the result, so we can run this, catch the error to keep running
@@ -26,6 +28,7 @@ compareOldAndNewCompilationRC <- function(input) {
    ## oldFooHOutput <- readLines(file.path(tempdir(), 'nimble_generatedCode', paste0(filename, '.h')))
     
     nimbleOptions(useRefactoredSizeProcessing = TRUE)
+    nimble:::resetLabelFunctionCreators() ## sets any generated IDs back to 1
     testProject <- nimble:::nimbleProjectClass(name = 'for_comparison')
     new <- try(compileNimble(foo, project = testProject, control = list(writeFiles = TRUE, compileCpp = FALSE, loadSO = FALSE)))
     filename <- testProject$RCfunInfos[['foo']][['cppClass']]$filename

@@ -224,6 +224,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 					   }
 					   ## Put GetRNGstate() and PutRNGstate() around the call.    
 					   fullCall <- substitute({GetRNGstate(); FULLCALL; PutRNGstate()}, list(FULLCALL = fullCall))
+
 					   returnAllArgs <- TRUE
 					   ## Pack up all inputs and the return value in a list.
 					   if(returnAllArgs) {
@@ -273,8 +274,9 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 					       }
 					       returnLine <- quote(return(S_returnValue_LIST_1234))
 					       unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid))
-					       allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
-					                                        conditionalLineList, 
+					       allCode <- embedListInRbracket(c(copyLines, list(fullCall), 
+					                                        list(allocVectorLine),
+					                                        conditionalLineList,
 					                                        returnListLines,
 					                                        list(unprotectLine),
 					                                        list(returnLine)))
