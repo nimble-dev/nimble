@@ -1763,14 +1763,15 @@ sampler_CAR_normal <- nimbleFunction(
         target <- model$expandNodeNames(target)
         targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
-        ## checks
-        if(length(target) > 1)                               stop('CAR_normal sampler only applies to one target node')
-        if(model$getDistribution(target) != 'dcar_normal')   stop('CAR_normal sampler only applies to dcar_normal distributions')
-        ## nested function and function list definitions
         adj <- model$getParam(target, 'adj')
         weights <- model$getParam(target, 'weights')
         num <- model$getParam(target, 'num')
         neighborLists <- CAR_processParams(model, target, adj, weights, num)
+        nonIslandScalarComponentNodes <- targetScalarComponents[num != 0]
+        ## checks
+        if(length(target) > 1)                               stop('CAR_normal sampler only applies to one target node')
+        if(model$getDistribution(target) != 'dcar_normal')   stop('CAR_normal sampler only applies to dcar_normal distributions')
+        ## nested function and function list definitions
         componentSamplerFunctions <- nimbleFunctionList(sampler_BASE)
         for(i in seq_along(targetScalarComponents)) {
             targetScalar <- targetScalarComponents[i]
@@ -1794,8 +1795,8 @@ sampler_CAR_normal <- nimbleFunction(
     run = function() {
         for(iSF in seq_along(componentSamplerFunctions))
             componentSamplerFunctions[[iSF]]$run()
-        targetValues <- values(model, target)
-        values(model, target) <<- targetValues - mean(targetValues)
+        targetValues <- values(model, nonIslandScalarComponentNodes)
+        values(model, nonIslandScalarComponentNodes) <<- targetValues - mean(targetValues)
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
