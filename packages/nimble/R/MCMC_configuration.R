@@ -165,27 +165,28 @@ print: A logical argument, specifying whether to print the ordered list of defau
 
             if(getNimbleOption('MCMCuseSamplerAssignmentRules')) {
                 ## use new system of samplerAssignmentRules
-                ## set up environment in which to evaluate sampler assignment rule conditions
-                ruleEvaluationEnv <- new.env()
-                ruleEvaluationEnv$model <- model
-                ruleEvaluationEnv$useConjugacy <- useConjugacy
-                ruleEvaluationEnv$onlyRW <- onlyRW
-                ruleEvaluationEnv$onlySlice <- onlySlice
-                ruleEvaluationEnv$multivariateNodesAsScalars <- multivariateNodesAsScalars
-                if(useConjugacy) ruleEvaluationEnv$conjugacyResults <- model$checkConjugacy(nodes)
-                rules$setEvaluationEnv(ruleEvaluationEnv)
-
-                for(node in nodes) {
-                    ruleEvaluationEnv$node <- node     ## put current node into rule evaluation environment
-                    rule <- rules$selectRuleToInvoke()
-                    if(!is.null(rule)) {               ## matching rule was found
-                        sampler <- rule$getSampler()
-                        name <- rule$getName()
-                        if(is.call(sampler)) { eval(sampler, envir = ruleEvaluationEnv)
-                                           } else addSampler(target = node, type = sampler, name = name)
-                    } else if(warnNoSamplerAssigned) {    ## no matching rule was found
-                        warning(paste0('No matching rule found, and no sampler assigned to node: ', node))
-                    }
+                isEndNodeAll <- model$isEndNode(nodes)
+                isMultivariateAll <- model$isMultivariate(nodes)
+                isDiscreteAll <- model$isDiscrete(nodes)
+                isBinaryAll <- model$isBinary(nodes)
+                nodeDistributionsAll <- model$getDistribution(nodes)
+                if(useConjugacy) {
+                    conjugacyResultsAll <- model$checkConjugacy(nodes)
+                    isConjugateAll <- nodes %in% names(conjugacyResultsAll)
+                }
+                
+                ruleSelectFunction <- function() {}
+                body(ruleSelectFunction) <- rules$makeRuleSelectionCodeBlock()
+                
+                for(i in seq_along(nodes)) {
+                    node <- nodes[i]
+                    isEndNode <- isEndNodeAll[i]
+                    isMultivariate <- isMultivariateAll[i]
+                    isDiscrete <- isDiscreteAll[i]
+                    isBinary <- isBinaryAll[i]
+                    nodeDistribution <- nodeDistributionsAll[i]
+                    if(useConjugacy) isConjugate <- isConjugateAll[i]
+                    ruleSelectFunction()
                 }
             } else {
                 ## use old (static) system for assigning default samplers
@@ -639,6 +640,26 @@ rule <- setRefClass(
 )
 
 
+addRuleToCodeBlock <- function(oldCode, rule) {
+    condition <- rule$getCondition()
+    sampler <- rule$getSampler()
+    name <- rule$getName()
+    if(is.call(sampler)) {
+        substitute(
+            if(CONDITION) { SAMPLER } else OLDCODE,
+            list(CONDITION = condition,
+                 SAMPLER = sampler,
+                 NAME = name,
+                 OLDCODE = oldCode))
+    } else {
+        substitute(
+            if(CONDITION) { addSampler(target = node, type = SAMPLER, name = NAME) } else OLDCODE,
+            list(CONDITION = condition,
+                 SAMPLER = sampler,
+                 NAME = name,
+                 OLDCODE = oldCode))
+    }
+}
 
 #' Class \code{samplerAssignmentRules}
 #' @aliases samplerAssignmentRules addRule reorder printRules
@@ -689,8 +710,7 @@ rule <- setRefClass(
 samplerAssignmentRules <- setRefClass(
     Class = 'samplerAssignmentRules',
     fields = list(
-        ruleList = 'list',       ## list of rule objects
-        evaluationEnv = 'environment'
+        ruleList = 'list'       ## list of rule objects
     ),
     methods = list(
         initialize = function(empty = FALSE, print = FALSE) {
@@ -707,30 +727,13 @@ print: Logical argument (default = FALSE).  If TRUE, the ordered list of sampler
             if(!empty) addDefaultSamplerAssignmentRules()
             if(print) printRules()
         },
-        setEvaluationEnv = function(env) {
-            evaluationEnv <<- env
-        },
-        selectRuleToInvoke = function() {
-            i <- 1
-            while(i <= length(ruleList)) {   ## using while() rather than for() to protect against ruleList=list()
-                e <- try(eval(ruleList[[i]]$getCondition(), envir=evaluationEnv), silent=TRUE)
-                if(inherits(e, 'try-error')) {
-                    msg <- paste0('evaluating condition of sampler assignment rule ', i, ', when node = ', evaluationEnv$node, ',\n',
-                                  strsplit(as.character(e), '\n')[[1]][2])
-                    stop(msg, call. = FALSE)
-                }
-                if(length(e) == 0) {
-                    msg <- paste0('condition evaluated as length = 0, from sampler assignment rule ', i, ', when node = ', evaluationEnv$node, '\n')
-                    stop(msg, call. = FALSE)
-                }
-                if(length(e) > 1) {
-                    msg <- paste0('condition evaluated as length > 1, from sampler assignment rule ', i, ', when node = ', evaluationEnv$node, '\n')
-                    warning(msg, call. = FALSE)
-                }
-                if(e) return(ruleList[[i]])
-                i <- i+1
-            }
-            return(NULL)     ## no matching rule found; return NULL
+        makeRuleSelectionCodeBlock = function() {
+            code <- quote(if(warnNoSamplerAssigned) {    ## no matching rule was found
+                warning(paste0('No matching rule found, and no sampler assigned to node: ', node))
+            })
+            for(i in rev(seq_along(ruleList)))   ## important to add rules in *reverse* order
+                code <- addRuleToCodeBlock(code, ruleList[[i]])
+            return(code)
         },
         addRule = function(condition, sampler, position, name, print = FALSE) {
             '
@@ -785,39 +788,39 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
         },
         addDefaultSamplerAssignmentRules = function() {
 	    ## posterior predictive nodes
-            addRule(quote(model$isEndNode(node)), 'posterior_predictive')
+            addRule(quote(isEndNode), 'posterior_predictive')
             
 	    ## conjugate nodes
-            addRule(quote(useConjugacy && !is.null(conjugacyResults[[node]])),
-                    quote(addConjugateSampler(conjugacyResult = conjugacyResults[[node]])))
+            addRule(quote(useConjugacy && isConjugate),
+                    quote(addConjugateSampler(conjugacyResultsAll[[node]])))
             
 	    ## multinomial
-            addRule(quote(model$getDistribution(node) == 'dmulti'), 'RW_multinomial')
+            addRule(quote(nodeDistribution == 'dmulti'), 'RW_multinomial')
             
 	    ## dirichlet
-            addRule(quote(model$getDistribution(node) == 'ddirch'), 'RW_dirichlet')
+            addRule(quote(nodeDistribution == 'ddirch'), 'RW_dirichlet')
 
             ## multivariate & multivariateNodesAsScalars: univariate RW
-            addRule(quote(model$isMultivariate(node) && multivariateNodesAsScalars),
-                    quote(for(sn in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
-                        if(onlySlice) addSampler(target = sn, type = 'slice')
-                        else          addSampler(target = sn, type = 'RW')
+            addRule(quote(isMultivariate && multivariateNodesAsScalars),
+                    quote(for(scalarNode in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
+                        if(onlySlice) addSampler(target = scalarNode, type = 'slice')
+                        else          addSampler(target = scalarNode, type = 'RW')
                     }))
             
             ## multivariate: RW_block
-            addRule(quote(model$isMultivariate(node)), 'RW_block')
+            addRule(quote(isMultivariate), 'RW_block')
 
 	    ## onlyRW argument
-            addRule(quote(onlyRW && !model$isDiscrete(node)), 'RW')
+            addRule(quote(onlyRW && !isDiscrete), 'RW')
             
 	    ## onlySlice argument
             addRule(quote(onlySlice), 'slice')
             
 	    ## binary-valued nodes
-            addRule(quote(model$isBinary(node)), 'binary')
+            addRule(quote(isBinary), 'binary')
             
 	    ## discrete-valued nodes
-            addRule(quote(model$isDiscrete(node)), 'slice')
+            addRule(quote(isDiscrete), 'slice')
             
 	    ## default for continuous-valued nodes: RW
             addRule(TRUE, 'RW')

@@ -100,6 +100,20 @@ rinvwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 }
 
 
+#' Nimble Derivatives
+#' 
+#' EXPERIMENTAL Computes the value, gradient, and Hessian of a given  \code{nimbleFunction} method.  The R version is currently unimplemented.
+#' 
+#' @param nimFxn a call to a \code{nimbleFunction} method with arguments included.
+#' @param order an integer vector with values within the set {0, 1, 2}, corresponding to whether the function value, gradient, and Hessian should be returned respectively.
+#' 
+#' @export
+nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
+  fxnCall <- substitute(nimFxn)
+  print('R nimDerivs not yet implemented')
+  return(NA)
+}
+
 #' Spectral Decomposition of a Matrix  
 #'
 #' Computes eigenvalues and eigenvectors of a numeric matrix.  

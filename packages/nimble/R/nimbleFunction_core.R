@@ -44,6 +44,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' @param methods An optional named list of NIMBLE function definitions for other class methods.
 #' @param globalSetup For internal use only
 #' @param contains An optional object returned from \link{nimbleFunctionVirtual} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
+#' @param enableDerivs EXPERIMENTAL A list of names of function methods to enable derivatives for.  Currently only for developer use.
 #' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
 #' @param check Boolean indicating whether to check the run code for function calls that NIMBLE cannot compile. Checking can be turned off for all calls to \code{nimbleFunction} using \code{nimbleOptions(checkNimbleFunction = FALSE)}.
 #' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
@@ -69,11 +70,11 @@ nimbleFunction <- function(setup         = NULL,
                            methods       = list(),
                            globalSetup   = NULL,
                            contains      = NULL,
+                           enableDerivs  = list(),
                            name          = NA,
                            check         = getNimbleOption('checkNimbleFunction'),
                            where         = getNimbleFunctionEnvironment()
                            ) {
-
     if(is.logical(setup)) if(setup) setup <- function() {} else setup <- NULL
 
     if(is.null(setup)) {
@@ -90,6 +91,8 @@ nimbleFunction <- function(setup         = NULL,
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
+    if(nimbleOptions('experimentalEnableDerivs') && length(enableDerivs)>0) methodList <- c(methodList, buildDerivMethods(methodList, enableDerivs))
+    else if(!nimbleOptions('experimentalEnableDerivs') && length(enableDerivs)>0) stop('To enable nimbleFunction derivatives, you must first set "nimbleOptions(experimentalEnableDerivs = TRUE)".')
     methodList <- lapply(methodList, nfMethodRC, check = check, methodNames = names(methodList), setupVarNames = c(all.vars(body(setup)), names(formals(setup))))
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
@@ -115,6 +118,55 @@ nimbleFunction <- function(setup         = NULL,
         eval(body(globalSetup), envir = .globalSetupEnv)
     }
     return(generatorFunction)
+}
+
+buildDerivMethods <- function(methodsList, enableDerivs) {
+    derivMethodsList <- list()
+    for(i in seq_along(enableDerivs)) {
+        if(length(which(names(methodsList) == enableDerivs[[i]])) == 0) stop(paste0('derivatives cannot be enabled for method ',
+                                                                                    enableDerivs[[i]], ', this is not a valid method of the nimbleFunction.'))
+        derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
+        derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
+        argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer_')
+        if(enableDerivs[i] == getCalcADFunName()) isNode <- TRUE else isNode <- FALSE
+        if(!isNode)     newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]]))))
+        else     newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
+        newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
+        newFormalsList[[length(newFormalsList) - 1]] <- NULL 
+        
+        formals(derivMethodsList[[i]]) <- newFormalsList
+        if(!isNode) newCall <- as.call(c(list(as.name(argTransferName)), lapply(names(formals(methodsList[[derivMethodIndex]])), as.name)))
+        else newCall <- as.call(c(list(as.name(argTransferName)), lapply(names(formals(methodsList[[derivMethodIndex]]))[1], as.name)))
+        body(derivMethodsList[[i]]) <- substitute({return(getDerivs(NEWCALL, DERIVSINDEX)); returnType(ADNimbleList())}, 
+                                                  list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders')))
+        names(derivMethodsList)[i] <-paste0(names(methodsList)[derivMethodIndex], '_deriv')
+    }
+    derivMethodsList
+}
+
+## See https://github.com/nimble-dev/nimble/wiki/Developer-backdoor-to-manually-replace-generated-C
+`specialHandling<-` <- function(nf, value) {
+    if(is.rcf(nf)) {
+        environment(nf)[['.specialHandling']] <- value
+        return(nf)
+    }
+    stop('special handling only works for RCfunctions')
+}
+
+specialHandling <- function(nf) {
+    if(is.rcf(nf)) {
+        return(environment(nf)[['.specialHandling']])
+    }
+    stop('special handling only works for RCfunctions')
+}
+
+filenameFromSpecialHandling <- function(nf, origFilename) {
+    if(is.rcf(nf)) {
+        SH <- specialHandling(nf)
+        if(is.null(SH)) return(NULL)
+        return(SH$filename)
+    }
+    stop('special handling only works for RCfunctions')
 }
 
 # for now export this as R<3.1.2 give warnings if don't

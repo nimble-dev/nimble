@@ -235,8 +235,9 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        compileInfo$typeEnv[['.nimbleProject']] <<- nimbleProject
                                        passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
-
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.
+                                       compileInfo$typeEnv[['nameSubList']] <<- nameSubList
+                                       
                                        ## This attempts to prevent the traceback from being hidden by multiple layers of error trapping.
                                        ## A better solution might be to avoid layered trapping so that options(error = recover) could function.
                                        tryCatch(withCallingHandlers(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv),
@@ -257,7 +258,6 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                                     stop(message, call. = FALSE)
                                                 })
                                        neededRCfuns <<- c(neededRCfuns, compileInfo$typeEnv[['neededRCfuns']])
-                                       
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showType = TRUE) -- broken')
                                            print('compileInfo$nimExpr$show(showAssertions = TRUE) -- possible broken')

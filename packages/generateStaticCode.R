@@ -61,7 +61,7 @@ writeFile <- function(filename, lines) {
     con <- file(filename, open = 'w')
     writeLines(lines, con)
     close(con)
-    ret <- system2('clang-format', c('-i', "-style='{BasedOnStyle: Google, IndentWidth: 4}'", filename))
+    ret <- system2('clang-format', c('-i', "-style=file", filename))
     if(ret != 0) stop('Please install clang-format and try again')
 }
 
@@ -90,6 +90,10 @@ main <- function() {
             optimControlStub = function() {
                 return(optimControlNimbleList$new())
                 returnType(optimControlNimbleList())
+            },
+            ADStub = function() {
+              return(ADNimbleList$new())
+              returnType(ADNimbleList())
             }
         )
     )()

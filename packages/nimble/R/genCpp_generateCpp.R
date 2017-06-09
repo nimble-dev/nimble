@@ -12,15 +12,17 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('setSize', 'initialize', 'getPtr', 'dim', 'getOffset', 'strides', 'isMap', 'mapCopy', 'setMap'), 'cppOutputMemberFunction'),
                     makeCallList(eigOtherMemberFunctionCalls, 'cppOutputEigMemberFunctionNoTranslate'),
                     makeCallList(eigProxyCallsExternalUnary, 'cppOutputEigExternalUnaryFunction'),
-                    makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
+                    makeCallList(c('startNimbleTimer','endNimbleTimer','push_back'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
                     makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
                     list(
                         eigenCast = 'cppOutputEigenCast',
+                        memberData = 'cppOutputMemberData',
                         fill = 'cppOutputEigMemberFunctionNoTranslate',
                         MAKE_FIXED_VECTOR = 'cppOutputMakeFixedVector',
                         concatenateTemp = 'cppOutputEigBlank',
                         ':' = 'cppOutputColon',
+                        '::' = 'cppOutputMidOperator',
                         size = 'cppOutputSize',
                          'for' = 'cppOutputFor',
                          'if' = 'cppOutputIfWhile',
@@ -30,6 +32,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          nimSwitch = 'cppOutputNimSwitch',
                          getParam = 'cppOutputGetParam',
                          getBound = 'cppOutputGetBound',
+                        dnorm = 'cppOutputDerivDist',
+                        dpois = 'cppOutputDerivDist',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
@@ -57,11 +61,13 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          blank = 'cppOutputBlank',
                          callC = 'cppOutputEigBlank', ## not really eigen, but this just jumps over a layer in the parse tree
                          eigBlank = 'cppOutputEigBlank',
-                         voidPtr = 'cppOutputVoidPtr'
-                         )
+                         voidPtr = 'cppOutputVoidPtr',
+                         cppLiteral = 'cppOutputLiteral'
+                        )
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
 cppMidOperators <- midOperators
+cppMidOperators[['::']] <- '::'
 cppMidOperators[['%*%']] <- ' * '
 cppMidOperators[['cppMemberDereference']] <- '->'
 cppMidOperators[['nfVar']] <- '->'
@@ -139,6 +145,15 @@ cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')
 }
 
+cppOutputDerivDist <- function(code, symTab){
+  ###for now, use different dist c++ fn if taking derivs
+  if(identical(code$cppADCode, TRUE))
+    paste0('nimDerivs_',code$name, '(', 
+           paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ), ')', collapse = ', '), ')')
+  else
+    paste0(code$name, '(',
+           paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
+}
 
 cppOutputNumList <- function(code, symTab) {
     paste0( nimGenerateCpp(code$args[[1]], symTab))
@@ -236,22 +251,22 @@ cppOutputNimSwitch <- function(code, symTab) {
 
 cppOutputGetParam <- function(code, symTab) {
     if(length(code$args) < 4) {  ## code$args[[3]] is used for the paramInfo that is only used in size processing
-        ans <- paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[0])')
+        ans <- paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getInstructions()[0])')
     } else {
         iNodeFunction <- paste(cppMinusOne(nimDeparse(code$args[[4]])))
         ans <- paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,
-                      '.getUseInfoVec()[',iNodeFunction,'],', iNodeFunction ,')')
+                      '.getInstructions()[',iNodeFunction,'],', iNodeFunction ,')')
     }
     return(ans)
 }
 
 cppOutputGetBound <- function(code, symTab) {
     if(length(code$args) < 4) {  ## code$args[[3]] is used for the paramInfo that is only used in size processing
-        ans <- paste0('getBound_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[0])')
+        ans <- paste0('getBound_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getInstructions()[0])')
     } else {
         iNodeFunction <- paste(cppMinusOne(nimDeparse(code$args[[4]])))
         ans <- paste0('getBound_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,
-                      '.getUseInfoVec()[',iNodeFunction,'],', iNodeFunction ,')')
+                      '.getInstructions()[',iNodeFunction,'],', iNodeFunction ,')')
     }
     return(ans)
 }
@@ -284,6 +299,10 @@ cppOutputEigenMapAssign <- function(code, symTab) {
 cppOutputSize <- function(code, symTab) {
     ## Windows compiler will give warnings if something.size(), which returns unsigned int, is compared to an int.  Since R has no unsigned int, we cast .size() to int.
     paste0('static_cast<int>(', nimGenerateCpp(code$args[[1]], symTab), '.size())')
+}
+
+cppOutputMemberData <- function(code, symTab) {
+    paste0( nimGenerateCpp(code$args[[1]], symTab), '.', code$args[[2]]$name)
 }
 
 cppOutputMemberFunction <- function(code, symTab) {
@@ -404,7 +423,7 @@ cppOutputCall <- function(code, symTab) {
 }
 
 cppOutputPow <- function(code, symTab) {
-    useStaticCase <- if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
+    useStaticCase <- if(identical(code$cppADCode, TRUE)) FALSE else if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
     if(useStaticCase)
         paste0(exprName2Cpp(code, symTab), '( static_cast<double>(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
     else
@@ -442,3 +461,6 @@ cppOutputLiteral <- function(code, symTab) {
 cppOutputTemplate <- function(code, symTab) {
     paste0(code$args[[1]]$name, '<', paste0(unlist(lapply(code$args[-1], nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), '>' )
 }
+
+cppOutputLiteral <- function(code, symTab) code$args[[1]]
+

@@ -25,20 +25,20 @@ extern "C" SEXP EIGEN_SVDCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
 extern "C" SEXP EIGEN_SVDCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
 
 class OptimResultNimbleList : public NamedObjects, public pointedToBase {
-   public:
-    NimArr<1, double> par;
-    double value;
-    NimArr<1, int> counts;
-    int convergence;
-    std::string message;
-    NimArr<2, double> hessian;
-    SEXP RObjectPointer;
-    bool RCopiedFlag;
-    void copyFromSEXP(SEXP S_nimList_);
-    SEXP copyToSEXP();
-    void createNewSEXP();
-    void resetFlags();
-    OptimResultNimbleList();
+ public:
+  NimArr<1, double> par;
+  double value;
+  NimArr<1, int> counts;
+  int convergence;
+  std::string message;
+  NimArr<2, double> hessian;
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  OptimResultNimbleList();
 };
 
 extern "C" SEXP new_OptimResultNimbleList();
@@ -50,31 +50,31 @@ extern "C" SEXP OptimResultNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(
     SEXP input);
 
 class OptimControlNimbleList : public NamedObjects, public pointedToBase {
-   public:
-    int trace;
-    double fnscale;
-    NimArr<1, double> parscale;
-    NimArr<1, double> ndeps;
-    int maxit;
-    double abstol;
-    double reltol;
-    double alpha;
-    double beta;
-    double gamma;
-    int REPORT;
-    int type;
-    int lmm;
-    double factr;
-    double pgtol;
-    double temp;
-    int tmax;
-    SEXP RObjectPointer;
-    bool RCopiedFlag;
-    void copyFromSEXP(SEXP S_nimList_);
-    SEXP copyToSEXP();
-    void createNewSEXP();
-    void resetFlags();
-    OptimControlNimbleList();
+ public:
+  int trace;
+  double fnscale;
+  NimArr<1, double> parscale;
+  NimArr<1, double> ndeps;
+  int maxit;
+  double abstol;
+  double reltol;
+  double alpha;
+  double beta;
+  double gamma;
+  int REPORT;
+  int type;
+  int lmm;
+  double factr;
+  double pgtol;
+  double temp;
+  int tmax;
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  OptimControlNimbleList();
 };
 
 extern "C" SEXP new_OptimControlNimbleList();
@@ -84,5 +84,26 @@ extern "C" SEXP OptimControlNimbleList_castPtrPtrToNamedObjectsPtrSEXP(
 
 extern "C" SEXP OptimControlNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(
     SEXP input);
+
+class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
+ public:
+  NimArr<1, double> value;
+  NimArr<2, double> gradient;
+  NimArr<3, double> hessian;
+  NimArr<4, double> thirdDerivs;
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  NIMBLE_ADCLASS();
+};
+
+extern "C" SEXP new_NIMBLE_ADCLASS();
+
+extern "C" SEXP NIMBLE_ADCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
+
+extern "C" SEXP NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
 
 #endif  // __NIMBLE_PREDEFINEDNIMBLELISTS_H
