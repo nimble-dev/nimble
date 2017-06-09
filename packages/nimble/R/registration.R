@@ -14,7 +14,6 @@ if(!exists('.NimbleUseRegistration') || !.NimbleUseRegistration) {
    R_setOnePtrVectorOfPtrs = 'setOnePtrVectorOfPtrs'
    R_setDoublePtrFromSinglePtr = 'setDoublePtrFromSinglePtr'
    R_setSmartPtrFromSinglePtr = 'setSmartPtrFromSinglePtr'
-  ## R_setSinglePtrFromSinglePtr = 'setSinglePtrFromSinglePtr'
    C_dwish_chol = 'C_dwish_chol'
    C_rwish_chol = 'C_rwish_chol'
    C_dinvwish_chol = 'C_dinvwish_chol'

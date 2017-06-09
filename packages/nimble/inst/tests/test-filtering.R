@@ -186,7 +186,7 @@ test_mcmc(model = code, name = 'scalar pmcmc', inits = inits, data = c(testdata,
                                       sigma_y = .5)))
 
 test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, consts),  samplers = list(
-  list(type = 'RW_PF_block', target = c('sigma_x', 'sigma_y'), control = list(latents = 'x', m = 1000, resample = F))),
+  list(type = 'RW_PF_block', target = c('sigma_x', 'sigma_y'), control = list(latents = 'x', m = 1000, resample = FALSE))),
   removeAllDefaultSamplers = TRUE, numItsC = 1000, results = list(
     mean = list(sigma_x = sigma_x,
                 sigma_y = sigma_y)),

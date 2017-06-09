@@ -206,23 +206,22 @@ distributionsInputList <- list(
                                 'scale = calc_dmnormAltParams(cholesky, prec_param, 0)'),
                    types    = c('value = double(1)', 'mu = double(1)', 'cholesky = double(2)', 'df = double(0)', 'prec = double(2)', 'scale = double(2)')),
     
-    dwish   = list(BUGSdist = 'dwish(R, df, S)',
+    dwish   = list(BUGSdist = 'dwish(R, df, S, cholesky, scale_param)',
                    Rdist    = c('dwish_chol(cholesky = chol(R), df, scale_param = 0)',
-                                'dwish_chol(cholesky = chol(S), df, scale_param = 1)'),
-                   altParams = c('R = inverse(t(cholesky)%*%cholesky)',
-                                 'S = inverse(t(cholesky)%*%cholesky)'),
+                                'dwish_chol(cholesky = chol(S), df, scale_param = 1)',
+                                'dwish_chol(cholesky, df, scale_param)'),
+                   altParams = c('R = calc_dwishAltParams(cholesky, scale_param, 0)',
+                                 'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
                    alias    = 'dwishart',
                    types    = c('value = double(2)', 'R = double(2)', 'S = double(2)', 'cholesky = double(2)')),
-    # altParams ok here (but still would like back/forwardsolve), because code in altParams only used for R if S was provided by user and vice versa, so don't need 'if'
 
-    dinvwish   = list(BUGSdist = 'dinvwish(S, df, R)',
+    dinvwish   = list(BUGSdist = 'dinvwish(S, df, R, cholesky, scale_param)',
                    Rdist    = c('dinvwish_chol(cholesky = chol(S), df, scale_param = 1)',
                                 'dinvwish_chol(cholesky = chol(R), df, scale_param = 0)'),
-                   altParams = c('R = inverse(t(cholesky)%*%cholesky)',
-                                 'S = inverse(t(cholesky)%*%cholesky)'),
+                   altParams = c('R = calc_dwishAltParams(cholesky, scale_param, 0)',
+                                 'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
                    alias    = 'dinvwishart',
                    types    = c('value = double(2)', 'S = double(2)', 'R = double(2)', 'cholesky = double(2)'))
-    # altParams ok here (but still would like back/forwardsolve), because code in altParams only used for R if S was provided by user and vice versa, so don't need 'if'
 )
 
 

@@ -30,7 +30,6 @@ int prod(int x);
 double prod(double x);
 
 SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index);
-//SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int nrowCpp, int index);
 void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP Svalue);
  
 //bool checkString(SEXP Ss, int len);
@@ -57,7 +56,6 @@ extern "C" {
 
   SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd);
 
-  //  SEXP printMVElement(SEXP Sextptr, SEXP Sindex);
   SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue);
 
   SEXP resizeNumListRow(SEXP Sextptr, SEXP Sindex, SEXP dims); 	// resizes a particular row of a numericlist
@@ -65,8 +63,6 @@ extern "C" {
 //  SEXP setNumList(SEXP Sextptr, SEXP Sindex, SEXP Svalue);   automatically resizes. Might want to use later
    SEXP setNumListRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);		// this sets the number of rows in a numericList (really, any VecNimArr)
 
-
-  //  SEXP setVarPointer(SEXP SextptrModelVar, SEXP SextptrStorageVar, SEXP Srownum);
   SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows);
 
   SEXP newSampObject();	//  Creates our new object from sampleClass (will be generated automatically later)
@@ -92,9 +88,6 @@ extern "C" {
 
   SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
-  //SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si);
-  
-  
   
   SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex);// This is a utility for looking up a field of an environment
   														 // sString is a character vector with the field name we want
@@ -131,14 +124,13 @@ class vectorOfPtrsAccess : public vectorOfPtrsAccessBase {
   void *getVecPtr(int i) {return(static_cast<void *>( (*theVec)[i] ) ); }
 };
 
+NimArr<1, double> vectorDouble_2_NimArr(vector<double> input);
 
 /*
   Apparently partial specialization of function templates is not allowed.
   So these are witten for doubles, and when we get to integers and logicals we can 
   use overlaoding or different names.
  */
-
-
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans );
 template<int ndim>
@@ -156,11 +148,11 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans);
 
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
-  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+  NIM_ASSERT3(isNumeric(Sn) || isLogical(Sn),
     "SEXP_2_NimArr<%d, double> called for SEXP that is not a numeric or logical: actual type %s\n",
     ndim, type2str(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
-  NIM_ASSERT(inputDims.size() == ndim,
+  NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, double> called for SEXP that is not a numeric: expected %d, actual %d\n",
     ndim, ndim, inputDims.size());
   // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
@@ -169,7 +161,7 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
   if(isReal(Sn)) {
     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
-    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+    NIM_ASSERT3(isInteger(Sn) || isLogical(Sn),
       "could not handle input of type %s to SEXP_2_NimArr<%d, double>\n",
       type2str(TYPEOF(Sn)), ndim);
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
@@ -180,11 +172,11 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
 // ACTUALLY THIS IS IDENTICAL CODE TO ABOVE, SO THEY COULD BE COMBINED WITHOUT TEMPLATE SPECIALIZATION
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
-  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+  NIM_ASSERT3(isNumeric(Sn) || isLogical(Sn),
     "SEXP_2_NimArr<%d, int> called for SEXP that is not a numeric or logical: actual type %s\n",
     ndim, type2str(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
-  NIM_ASSERT(inputDims.size() == ndim,
+  NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, int> called for SEXP that is not a numeric: expected %d, actual %d\n",
     ndim, ndim, inputDims.size());
   // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
@@ -193,7 +185,7 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
   if(isReal(Sn)) {
     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
-    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+    NIM_ASSERT3(isInteger(Sn) || isLogical(Sn),
       "could not handle input type %s to SEXP_2_NimArr<%d, int>\n",
       type2str(TYPEOF(Sn)), ndim);
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
@@ -203,11 +195,11 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
 
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
-  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+  NIM_ASSERT3(isNumeric(Sn) || isLogical(Sn),
     "SEXP_2_NimArr<%d, bool> called for SEXP that is not a numeric or logical: actual type %s\n",
     ndim, type2str(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
-  NIM_ASSERT(inputDims.size() == ndim,
+  NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, bool> called for SEXP that is not a numeric: expected %d, actual %d\n",
     ndim, ndim, inputDims.size());
   // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
@@ -216,7 +208,7 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
   if(isReal(Sn)) {
     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
-    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+    NIM_ASSERT3(isInteger(Sn) || isLogical(Sn),
       "could not handle input type %s to SEXP_2_NimArr<%d, bool>\n",
       type2str(TYPEOF(Sn)), ndim);
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);

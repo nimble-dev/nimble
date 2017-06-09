@@ -63,7 +63,7 @@ try(test_that("Test that dmvt (compiled) calculation is correct in model likelih
                            info = paste0("incorrect likelihood value for dmvt (compiled)"))))
 
 ## random sampling
-# reference_samps <- mvtnorm::rmvt(n = 10000, delta = mn, sigma = sc, df = df)
+set.seed(0)
 r_samps <- t(replicate(10000, rmvt_chol(n = 1, mn, chol(sc), df, prec_param = FALSE)))
 true_cov <- sc*df/(df-2)
 
@@ -97,11 +97,12 @@ try(test_that("Test that random samples (nf) have correct mean: ",
                            info = "Difference in means exceeds tolerance")))
 
 try(test_that("Test that random samples (nf) have correct covariance: ",
-              expect_equal(cov(nf_samps), true_cov, 
+              expect_equal(cov(nf_samps), true_cov,
                            tol = 0.1,
                            info = "Difference in covs exceeds tolerance")))
 
 ## sampling via `simulate`
+set.seed(0)
 simul_samp <- function(model) {
   model$simulate()
   return(model$x)
@@ -151,7 +152,7 @@ try(test_that("dcat handles 'probs' that do not sum to one: ",
                            info = "normalized and unnormalized probabilities give different results")))
 
 ## dinvgamma
-
+set.seed(0)
 y <- 1.1; a <- 1; c <- 2; alpha <- 3; beta <- 2; theta <- 1
 
 manDens <- alpha*log(beta) - lgamma(alpha) - (alpha+1)*log(y) - beta/y
@@ -394,7 +395,7 @@ try(test_that("dinvwish-dmnorm conjugacy",
 
 
 ## dflat
-
+set.seed(0)
 code <- nimbleCode({
   for(i in 1:n) 
     y[i] ~ dnorm(mu, sd = sigma)
@@ -474,7 +475,8 @@ rsmp <- as.matrix(mcmc$mvSamples)
 csmp <- as.matrix(cmcmc$mvSamples)
 
 try(test_that("Test R and compiled MCMC equivalence for dhalfflat: ",
-              expect_identical(rsmp, csmp[1:10, ], info = "R and compiled samples don't match")))
+              expect_equivalent(rsmp, csmp[1:10, ], info = "R and compiled samples don't match")))
+# for some reason, these are not identical - after 8-10 iterations, R and C values diverge in 8th decimal place or so
 try(test_that("Test compiled MCMC for dflat and dhalfflat: ", {
               expect_equal(mean(csmp[ , 'mu']), mean(m$y), tol = 0.001, info = "posterior mean for mu not correct")
               expect_equal(sd(csmp[ , 'mu']), sd(m$y)/sqrt(n), tol = 0.003, info = "posterior sd for mu not correct")

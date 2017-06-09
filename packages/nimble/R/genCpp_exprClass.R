@@ -17,17 +17,18 @@ exprClass <- setRefClass('exprClass',
                              isAssign =  'ANY',		#'logical', ## it is an assignment (all assignments are also calls)
                              name =  'ANY',		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
                              nDim =  'ANY',		#'numeric', ## how many dimensions
-                             sizeExprs =  'ANY',		#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
+                             sizeExprs =  'ANY',	#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
                              type =  'ANY',		#'character', ## type label
                              args =  'ANY',		#'list', ## list of exprClass objects for the arguments
                              eigMatrix =  'ANY',		#'logical', ## vs. Array.  Only used for Eigenized expressions
                              toEigenize =  'ANY',		#'character', ##'yes', 'no', or 'maybe'
                              caller = 'ANY', ## exprClass object for the call to which this is an argument (if any)
                              callerArgID =  'ANY',		#'numeric', ## index in the calling object's args list for this object.
-                             assertions =  'ANY'		#'list'
+                             assertions =  'ANY',		#'list'
+                             cppADCode = 'ANY'    #'logical ## is expr in code generated for cppad?
                              ),
                          methods = list(
-                             initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); callSuper(...)},
+                             initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); cppADCode <<- FALSE; callSuper(...)},
                              ## This displays the parse tree using indentation on multiple rows of output
                              ## It also checks that the caller and callerArgID fields are all correct
                              ## For deparsing, call nimDeparse
@@ -76,7 +77,7 @@ exprClass <- setRefClass('exprClass',
 exprTypeInfoClass <- setRefClass('exprTypeInfoClass',
                                  fields = list(
                                      nDim =  'ANY',		#'numeric',
-                                     sizeExprs =  'ANY',		#'list',
+                                     sizeExprs =  'ANY',	#'list',
                                      type =  'ANY'),		#'character'),
                                  methods = list(
                                  	initialize = function(...){sizeExprs <<- list();callSuper(...)},
@@ -94,7 +95,7 @@ addIndentToList <- function(x, indent) {
 ### Deparse from exprClass back to R code: not guaranteed to be identical, but valid.
 nimDeparse <- function(code, indent = '') {
     ## numeric case
-    if(is.numeric(code)) return(code)
+    if(is.numeric(code) | is.logical(code)) return(code)
     if(is.character(code)) return(paste0('\"', code, '\"'))
     if(is.null(code)) return('NULL')
     ## name

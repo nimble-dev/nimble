@@ -103,12 +103,12 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
         tmp_dens += xCopy[j*p+i] * chol[j*p+i];
       }
     }
-    if(overwrite_inputs)  
+    if(!overwrite_inputs)  
       delete [] xCopy;
   }
 
-  if(!overwrite_inputs)
-    delete xChol;
+  if(!(overwrite_inputs & (int) scale_param))
+    delete [] xChol;
 
     // attempt to improve above calcs by doing efficient U^T U multiply followed by direct product multiply, however this would not make use of threading provided by BLAS and even with one thread seems to be no faster
     // U^T*U directly followed by direct product with x
@@ -1108,7 +1108,7 @@ double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double p
   dens += -0.5 * (df + n) * log(1 + tmp / df);
   
   if(!overwrite_inputs)
-    delete xCopy;
+    delete [] xCopy;
 
   return give_log ? dens : exp(dens);
 }
