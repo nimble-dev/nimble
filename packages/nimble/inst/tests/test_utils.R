@@ -15,7 +15,7 @@ RUN_FAILING_TESTS <- (nchar(Sys.getenv('RUN_FAILING_TESTS')) != 0)
 ## paths with spaces ok.
 system.in.dir <- function(cmd, dir = '.') {
     curDir <- getwd()
-    on.exit(setwd(curDir))
+    on.exit(setwd(curDir), add = TRUE)
     setwd(dir)
     if(.Platform$OS.type == "windows")
         shell(shQuote(cmd))
@@ -28,51 +28,34 @@ temporarilyAssignInGlobalEnv <- function(value) {
     name <- deparse(substitute(value))
     assign(name, value, envir = .GlobalEnv)
     rmCommand <- substitute(remove(name, envir = .GlobalEnv))
-    do.call('on.exit', list(rmCommand), envir = parent.frame())
+    do.call('on.exit', list(rmCommand, add = TRUE), envir = parent.frame())
 }
 
 withTempProject <- function(code) {
     code <- substitute(code)
     project <- nimble:::nimbleProjectClass()
-    nimbleOptions(nimbleProject = project)
+    nimbleOptions(nimbleProjectForTesting = project)
     on.exit({
-        ## messages are suppressed by test_that, so "assign('.check', 1, globalenv())" can be used as a way to verify this code was called 
-        .project <- nimbleOptions()$nimbleProject
+        ## messages are suppressed by test_that, so "assign('.check', 1, globalenv())" can be used as a way to verify this code was called
+        .project <- nimbleOptions('nimbleProjectForTesting')
         nimbleOptions(nimbleProject = NULL) ## clear this before clearCompiled step, in case clearCompiled() itself fails
         .project$clearCompiled()
-    })
-    try(eval(code, envir = parent.frame()))
+    }, add = TRUE)
+    eval(code)
 }
 
-expect_compiles <- function(...) {
+expect_compiles <- function(..., info = NULL) {
+    oldSCBL <- nimbleOptions('stopCompilationBeforeLinking')
     nimbleOptions(stopCompilationBeforeLinking = TRUE)
     nimbleOptions(forceO1 = TRUE)
     on.exit({
         assign('.check', 1, globalenv())
-        nimbleOptions(stopCompilationBeforeLinking = FALSE)
+        nimbleOptions(stopCompilationBeforeLinking = oldSCBL)
         nimbleOptions(forceO1 = FALSE)
-    })
+    }, add = TRUE)
     ans <- try(compileNimble(...)) ## expecting a thrown error
-    if(identical(ans, "safely stopping before linking")) 
-        NULL
-    else
-        ans
+    expect_identical(as.character(ans), 'Error : safely stopping before linking\n', info = info)
 }
-
-## Alternative idea for expect_compiles
-## expect_compiles <- function(nimbleCompileCall) { ## alternative: nimbleCompileCall would be compileNimble(foo)
-##     nimbleCompileCall <- substitute(nimbleCompileCall)
-##     nimbleOptions(stopCompilationBeforeLinking = TRUE)
-##     on.exit({
-##         assign('.check', 1, globalenv())
-##         nimbleOptions(stopCompilationBeforeLinking = NULL)
-##     })
-##     ans <- try(eval(nimbleCompileCall, envir = parent.frame())) ## expecting a thrown error
-##     if(identical(ans, "safely stopping before linking")) 
-##         NULL
-##     else
-##         ans
-## }
 
 gen_runFunCore <- function(input) {
     runFun <- function() {}
