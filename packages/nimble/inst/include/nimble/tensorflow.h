@@ -4,6 +4,7 @@
 #include <nimble/NimArr.h>
 #include <nimble/Utils.h>
 #include <tensorflow/c/c_api.h>
+#include <string>
 #include <vector>
 
 // This class runs a single tensorflow graph. Instances should be created as
