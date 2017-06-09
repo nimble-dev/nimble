@@ -206,19 +206,14 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            "}")
                                        writeLines(contentLines, con = dynamicRegistrationsCppName)
                                    },
-                                   compileDynamicRegistrations = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
-                                       timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
-                                       
-                                       dynamicRegistrationsDllName <- paste0("dynamicRegistrations_", timeStamp)
-                                       dynamicRegistrationsCppName <- paste0(dynamicRegistrationsDllName, ".cpp")
-                                       
-                                       writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dynamicRegistrationsDllName)
-                                       ssDllName <- file.path(dirName, paste0(dynamicRegistrationsDllName, .Platform$dynlib.ext))
-                                       ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', dynamicRegistrationsCppName, '-o', basename(ssDllName))
+                                   compileStaticCode = function(dllName, cppName) {
+                                       ssDllName <- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
+                                       ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', cppName, '-o', basename(ssDllName))
                                        if(!showCompilerOutput) {
-                                           logFile <- paste0("dynamicRegistrations_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
+                                           logFile <- paste0(dllName, ".log")
                                            ssdSHLIBcmd <- paste(ssdSHLIBcmd, ">", logFile)
-                                           ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
+                                           ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console.
+                                           ## Redirecting it to a file seems to cure this.
                                        }
                                        isWindows = (.Platform$OS.type == "windows")
                                        if(isWindows)
@@ -228,8 +223,27 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(status != 0) 
                                            stop(structure(simpleError("Failed to create the shared library"),
                                                           class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
-                                       nimbleUserNamespace$sessionSpecificDll <- dyn.load(ssDllName, local = TRUE)
-                                   },                                  
+                                       return(dyn.load(ssDllName, local = TRUE))
+                                   },
+                                   compileDynamicRegistrations = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+                                       timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
+                                       dllName <- paste0("dynamicRegistrations_", timeStamp)
+                                       cppName <- paste0(dllName, ".cpp")
+                                       writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dynamicRegistrationsDllName)
+                                       nimbleUserNamespace$sessionSpecificDll <- compileStaticCode(dllName, cppName)
+                                   },
+                                   compileTensorflowWrapper = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+                                       # Load prerequisite DLLs.
+                                       library(tensorflow)
+                                       tfPath <- tf$`__path__`  # This line triggers loading of _pywrap_tensorflow_internal.so.
+                                       nimbleUserNamespace$tensorflowDll <- file.path(tfPath, 'python', '_pywrap_tensorflow_internal.so')
+                                       if(!file.exists(tfLibraryPath)) stop(paste('Missing shared library', nimbleUserNamespace$tensorflowDll))
+
+                                       timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
+                                       dllName <- paste0("nimble-tensorflow_", timeStamp)
+                                       cppName <- file.path(system.file(package = 'nimble'), 'CppCode', 'tensorflow.cpp')
+                                       nimbleUserNamespace$tensorflowWrapperDll <- compileStaticCode(dllName, cppName)
+                                   },
                                    compileFile = function(names, showCompilerOutput = nimbleOptions('showCompilerOutput'),
                                                           .useLib = UseLibraryMakevars) {
                                        cppPermList <- c('RcppUtils.cpp',
@@ -268,7 +282,12 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        setwd(dirName)
                                        on.exit(setwd(cur))
 
-                                       if(is.null(nimbleUserNamespace$sessionSpecificDll)) compileDynamicRegistrations(showCompilerOutput = showCompilerOutput)
+                                       if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
+                                           compileDynamicRegistrations(showCompilerOutput = showCompilerOutput)
+                                       }
+                                       if(nimbleOptions('useTensorflow') && is.null(nimbleUserNamespace$tensorflowWrapperDll)) {
+                                           compileTensorflowWrapper(showCompilerOutput = showCompilerOutput)
+                                       }
 
                                        if(!showCompilerOutput) { 
                                            logFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
