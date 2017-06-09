@@ -2,6 +2,19 @@
 
 double <- function(ndim, dims) {}
 
+## Sequential label generation system:
+## labelFunctionMetaCreator returns a function that returns a function.
+## labelFunctionMetaCreator is only called once, immediately below, to create labelFunctionCreator
+## The outer layer allows allLabelFunctionCreators to be in the closure of every function returned
+## by labelFunctionCreator.  Each of those functions is registered as an element of allLableFunctionCreators.
+## 
+## This scheme allows the function resetLabelFunctionCreators below to work simply,
+## resetting the count to 1 for all of the label generators.
+##
+## The motivation for resetLabelFunctionCreators is for testing: If we want to check
+## that two pathways to code generation (one existing, one experimental) create identical
+## code, it is helpful to have identical generated labels.  Resetting all label generators
+## supports this goal.
 labelFunctionMetaCreator <- function() {
     allLabelFunctionCreators <- list()
 

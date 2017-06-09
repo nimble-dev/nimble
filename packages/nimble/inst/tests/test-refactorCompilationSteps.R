@@ -46,9 +46,6 @@ testCases <- list(
          }))
 
 ans <- lapply(testCases, compareOldAndNewCompilationRC)
-options(warn = as.numeric(oldWarnLevel))
-
-source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
 
 compareOldAndNewMathTest <- function(input) {
     runFun <- gen_runFun(input)
@@ -56,6 +53,7 @@ compareOldAndNewMathTest <- function(input) {
     compareOldAndNewCompilationRC(input)
 }
 
-boolUseTest <- unlist(lapply(testsBasicMath, function(x) grepl('\\+', x$name))) ## 3 cases
-ans <- lapply(testsBasicMath[boolUseTest], compareOldAndNewMathTest)
-ans <- lapply(testsBasicMath, compareOldAndNewMathTest)
+source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
+ans2 <- lapply(testsBasicMath, compareOldAndNewMathTest)
+
+options(warn = as.numeric(oldWarnLevel))
