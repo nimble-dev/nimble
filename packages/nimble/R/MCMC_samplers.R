@@ -1627,8 +1627,8 @@ CAR_scalar_conjugate <- nimbleFunction(
         offsetList <- lapply(linearityCheckResultList, '[[', 'offset')
         scaleList <- lapply(linearityCheckResultList, '[[', 'scale')
         allIdentityLinks <- ifelse(all(sapply(offsetList, function(offset) offset == 0)) && sapply(scaleList, function(scale) scale == 1), 1, 0)
-        if(allIdentityLinks)  cat(paste0(targetScalar, ' conjugate sampler: skipping two-point method\n'))   ### XXXXXXXXXXX delete
-        if(!allIdentityLinks) cat(paste0(targetScalar, ' conjugate sampler: require two-point method\n'))    ### XXXXXXXXXXX delete
+        ##if(allIdentityLinks)  cat(paste0(targetScalar, ' conjugate sampler: skipping two-point method\n'))
+        ##if(!allIdentityLinks) cat(paste0(targetScalar, ' conjugate sampler: require two-point method\n'))
         ## nested function and function list definitions
         dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
         ## checks
@@ -1773,15 +1773,15 @@ sampler_CAR_normal <- nimbleFunction(
             conjugate <- CAR_checkConjugacy(model, targetScalar)
             neighborNodes <- neighborLists$neighborNodeList[[i]]
             neighborWeights <- neighborLists$neighborWeightList[[i]]
-            if(length(neighborNodes)==0) cat(paste0('island node detected: ', targetScalar, '\n'))   ## XXXXXXXXXXXXX delete
+            ##if(length(neighborNodes)==0) cat(paste0('island node detected: ', targetScalar, '\n'))
             if(nDependents == 0) {
-                cat(paste0('dcar() component node ', targetScalar, ': assigning posterior predictive sampler\n'))   ## XXXXXXXXXXXXX delete
+                ##cat(paste0('dcar() component node ', targetScalar, ': assigning posterior predictive sampler\n'))
                 componentSamplerFunctions[[i]] <- CAR_scalar_postPred(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
             } else if(conjugate && useConjugacy) {
-                cat(paste0('dcar() component node ', targetScalar, ': assigning conjugate sampler\n'))              ## XXXXXXXXXXXXX delete
+                ##cat(paste0('dcar() component node ', targetScalar, ': assigning conjugate sampler\n'))
                 componentSamplerFunctions[[i]] <- CAR_scalar_conjugate(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
             } else {
-                cat(paste0('dcar() component node ', targetScalar, ': assigning RW sampler\n'))                     ## XXXXXXXXXXXXX delete
+                ##cat(paste0('dcar() component node ', targetScalar, ': assigning RW sampler\n'))
                 componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborWeights, RW_control)
             }
         }
