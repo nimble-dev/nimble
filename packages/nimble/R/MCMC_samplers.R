@@ -1375,21 +1375,22 @@ CAR_checkConjugacy <- function(model, target) {
 
 
 ## internal only
-## does (optional) extensive checking of the validity of the adj, weights, and num parameters to dcar_normal(),
-## also processes these arguments into lists, easily usable in nimbleFunction setup code
-CAR_processParams <- function(model, target, adj, weights, num, check = TRUE) {
-    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    d <- length(targetAsScalar)
-    if(check) {
-        if(length(num) != d) stop('num argument to dcar_normal() must be same length as dcar_normal() node')
-        if(any(floor(num) != num)) stop('num argument to dcar_normal() can only contain non-negative integers')
-        if(any(num < 0)) stop('num argument to dcar_normal() can only contain non-negative integers')
-        if(any(num > d)) stop('entries in num argument to dcar_normal() cannot exceed length of dcar_normal() node')
-        if(sum(num) == 0) stop('dcar_normal() distribution must specify some neighbors')
-        if(sum(num) != length(adj)) stop('length of adj argument to dcar_normal() must be equal to total number of neighbors specified in num argument')
-        if(length(adj) != length(weights)) stop('length of adj and weight arguments to dcar_normal() must be the same')
-        if(any(weights <= 0)) stop('weights argument to dcar_normal() should only contain positive values')
-    }
+## checks validity of adj, weights, num parameters
+CAR_checkAdjWeightsNum <- function(adj, weights, num) {
+    if(any(floor(num) != num)) stop('num argument to dcar_normal() can only contain non-negative integers')
+    if(any(num < 0)) stop('num argument to dcar_normal() can only contain non-negative integers')
+    if(any(num > length(num))) stop('entries in num argument to dcar_normal() cannot exceed length of dcar_normal() node')
+    if(sum(num) == 0) stop('dcar_normal() distribution must specify some neighbors')
+    if(sum(num) != length(adj)) stop('length of adj argument to dcar_normal() must be equal to total number of neighbors specified in num argument')
+    if(length(adj) != length(weights)) stop('length of adj and weight arguments to dcar_normal() must be the same')
+    if(any(weights <= 0)) stop('weights argument to dcar_normal() should only contain positive values')
+}
+
+
+## internal only
+## determines indicies of adj (and weights) vectors corresponding to each node
+CAR_calcSubsetIndList <- function(adj, num) {
+    d <- length(num)
     subsetIndList <- vector('list', d)
     nextInd <- 1
     for(i in 1:d) {
@@ -1398,32 +1399,143 @@ CAR_processParams <- function(model, target, adj, weights, num, check = TRUE) {
         nextInd <- nextInd + num[i]
     }
     if(nextInd != length(adj)+1) stop('something went wrong')
+    return(subsetIndList)
+}
+
+
+## internal only
+## checks validity of neighborIndList and neighborWeightList
+CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList, targetAsScalar) {
+    for(i in 1:length(neighborIndList)) {
+        for(j in seq_along(neighborIndList[[i]])) {
+            neighborInd <- neighborIndList[[i]][j]
+            if(i == neighborInd)   ## no nodes are their own neighbors
+                stop(paste0('node ', targetAsScalar[i], ' in dcar_normal() distribution is neighbors with itself (which is not allowed)'))
+            if(!(i %in% neighborIndList[[neighborInd]]))  ## neighbor relationships are symmetric
+                stop(paste0('neighbor of node ', targetAsScalar[i], ' in dcar_normal() distribution are not symmetric with node ', targetAsScalar[j]))
+            if(neighborWeightList[[neighborInd]][which(neighborIndList[[neighborInd]] == i)] != neighborWeightList[[i]][j])   ## weights symmetric
+                stop(paste0('weight of node ', targetAsScalar[i], ' with ', targetAsScalar[j], ' in dcar_normal() distribution is not symmetric'))
+        }
+    }
+}
+
+
+## internal only
+## helper to calculate number of islands -- recursive version, won't compile
+##CAR_markVisited <- nimbleFunction(
+##    run = function(adj = double(1), num = double(1), visited = double(1), index = double()) {
+##        if(visited[index] == 0) {
+##            visited[index] <- 1
+##            adjStartInd <- 1
+##            i <- 1
+##            while(i < index) {
+##                adjStartInd <- adjStartInd + num[i]
+##                i <- i + 1
+##            }
+##            i <- 0
+##            while(i < num[index]) {
+##                visited <- CAR_markVisited(adj, num, visited, adj[adjStartInd+i])
+##                i <- i + 1
+##            }
+##        }
+##        returnType(double(1))
+##        return(visited)
+##    }
+##)
+##
+#### internal only
+#### calculate number of islands -- recursive version, won't compile
+##CAR_calcNumIslands <- nimbleFunction(
+##    run = function(adj = double(1), num = double(1)) {
+##        N <- dim(num)[1]
+##        numIslands <- 0
+##        visited <- rep(0, N)
+##        for(i in 1:N) {
+##            if(visited[i] == 0) {
+##                numIslands <- numIslands + 1
+##                visited <- CAR_markVisited(adj, num, visited, i)
+##            }
+##        }
+##        print('numIslands: ', numIslands)   ## XXXXXX delete!
+##        returnType(double())
+##        return(numIslands)
+##    }
+##)
+
+
+#### internal only
+#### helper to get starting index in adj vector
+CAR_calcAdjStartIndex <- nimbleFunction(
+    run = function(num = double(1), index = double()) {
+        adjStartInd <- 1
+        i <- 1
+        while(i < index) {
+            adjStartInd <- adjStartInd + num[i]
+            i <- i + 1
+        }
+        returnType(double())
+        return(adjStartInd)
+    }
+)
+
+
+#### internal only
+#### calculate number of islands
+CAR_calcNumIslands <- nimbleFunction(
+    run = function(adj = double(1), num = double(1)) {
+        N <- dim(num)[1]
+        numIslands <- 0
+        visited <- rep(0, N)
+        for(i in 1:N) {
+            if(visited[i] == 0) {
+                visited[i] <- 1
+                numIslands <- numIslands + 1
+                nNeighbors <- num[i]
+                if(nNeighbors > 0) {
+                    adjStartInd <- CAR_calcAdjStartIndex(num, i)
+                    indToVisit <- numeric(nNeighbors)
+                    indToVisit[1:nNeighbors] <- adj[adjStartInd:(adjStartInd+nNeighbors-1)]
+                    lengthIndToVisit <- nNeighbors
+                    l <- 1
+                    while(l <= lengthIndToVisit) {
+                        nextInd <- indToVisit[l]
+                        if(visited[nextInd] == 0) {
+                            visited[nextInd] <- 1
+                            newNneighbors <- num[nextInd]
+                            if(newNneighbors > 0) {
+                                newIndToVisit <- numeric(newNneighbors)
+                                adjStartInd <- CAR_calcAdjStartIndex(num, nextInd)
+                                new_indToVisit <- c(indToVisit, adj[adjStartInd:(adjStartInd+newNneighbors-1)])
+                                new_lengthIndToVisit <- lengthIndToVisit + newNneighbors
+                                lengthIndToVisit <- new_lengthIndToVisit
+                                indToVisit <- new_indToVisit
+                            }
+                        }
+                        l <- l + 1
+                    }
+                }
+            }
+        }
+        returnType(double())
+        return(numIslands)
+    }
+)
+
+
+## internal only
+## does (optional) extensive checking of the validity of the adj, weights, and num parameters to dcar_normal(),
+## also processes these arguments into lists, easily usable in nimbleFunction setup code
+CAR_processParams <- function(model, target, adj, weights, num) {
+    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+    if(length(targetAsScalar) != length(num)) stop('num argument to dcar_normal() must be same length as dcar_normal() node')
+    CAR_checkAdjWeightsNum(adj, weights, num)
+    subsetIndList <- CAR_calcSubsetIndList(adj, num)
     neighborIndList <- lapply(subsetIndList, function(ind) adj[ind])
     neighborNodeList <- lapply(neighborIndList, function(ind) targetAsScalar[ind])
     neighborWeightList <- lapply(subsetIndList, function(ind) weights[ind])
-    names(neighborIndList)    <- targetAsScalar
-    names(neighborNodeList)   <- targetAsScalar
-    names(neighborWeightList) <- targetAsScalar
-    if(check) {
-        for(i in 1:d) {
-            for(j in seq_along(neighborIndList[[i]])) {
-                neighborInd <- neighborIndList[[i]][j]
-                ## check that no nodes are their own neighbors
-                if(i == neighborInd)
-                    stop(paste0('node ', targetAsScalar[i], ' in dcar_normal() distribution is neighbors with itself (which is not allowed)'))
-                ## check that neighbor relationships of each node are symmetric
-                if(!(i %in% neighborIndList[[neighborInd]]))
-                    stop(paste0('neighbor of node ', targetAsScalar[i], ' in dcar_normal() distribution are not symmetric with node ', targetAsScalar[j]))
-                ## check that weights for each neighbor relationship are symmetric
-                if(neighborWeightList[[neighborInd]][which(neighborIndList[[neighborInd]] == i)] != neighborWeightList[[i]][j])
-                    stop(paste0('weight of node ', targetAsScalar[i], ' with node ', targetAsScalar[j], ' in dcar_normal() distribution is not symmetric'))
-            }
-        }
-    }
-    retList <- list(neighborIndList = neighborIndList,
-                    neighborNodeList = neighborNodeList,
-                    neighborWeightList = neighborWeightList)
-    return(retList)
+    names(neighborIndList) <- names(neighborNodeList) <- names(neighborWeightList) <- targetAsScalar
+    CAR_checkNeighborIndWeightLists(neighborIndList, neighborWeightList, targetAsScalar)
+    return(list(neighborIndList=neighborIndList, neighborNodeList=neighborNodeList, neighborWeightList=neighborWeightList))
 }
 
 

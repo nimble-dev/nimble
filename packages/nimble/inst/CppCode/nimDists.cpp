@@ -346,7 +346,7 @@ int nimArr_rinterval(double t, double c) {
   return(ans);
 }
 
-double nimArr_dcar_normal(NimArr<1, double> &x, NimArr<1, double> &adj, NimArr<1, double> &weights, NimArr<1, double> &num, double tau, int give_log) {
+double nimArr_dcar_normal(NimArr<1, double> &x, NimArr<1, double> &adj, NimArr<1, double> &weights, NimArr<1, double> &num, double tau, int numIslands, int give_log) {
   
   //return give_log ? ML_POSINF: R_D__0;
   
@@ -369,12 +369,12 @@ double nimArr_dcar_normal(NimArr<1, double> &x, NimArr<1, double> &adj, NimArr<1
     nimble_print_to_R(_nimble_global_output);
   }
   
-  double ans = dcar_normal(xptr, adjptr, weightsptr, numptr, tau, N, L, give_log);
+  double ans = dcar_normal(xptr, adjptr, weightsptr, numptr, tau, numIslands, N, L, give_log);
   return(ans);
 }
 
 
-void nimArr_rcar_normal(NimArr<1, double> &ans, NimArr<1, double> &adj, NimArr<1, double> &weights, NimArr<1, double> &num, double tau) {
+void nimArr_rcar_normal(NimArr<1, double> &ans, NimArr<1, double> &adj, NimArr<1, double> &weights, NimArr<1, double> &num, double tau, int numIslands) {
   //
   // it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
   // since initializeModel() will call this simulate method if there are any NA's present,

@@ -852,21 +852,12 @@ NULL
 
 #' @rdname CAR-Normal
 #' @export
-dcar_normal <- function(x, adj, weights, num, tau, log = FALSE) {
-    ##return(NaN)
+dcar_normal <- function(x, adj, weights, num, tau, numIslands, log = FALSE) {
+    CAR_checkAdjWeightsNum(adj, weights, num)
     if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
     if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
     if(storage.mode(weights) != 'double')   storage.mode(weights) <- 'double'
     if(storage.mode(num) != 'double')   storage.mode(num) <- 'double'
-    d <- length(x)
-    if(length(num) != d) stop('num argument to dcar_normal() must be same length as dcar_normal() node')
-    if(any(floor(num) != num)) stop('num argument to dcar_normal() can only contain non-negative integers')
-    if(any(num < 0)) stop('num argument to dcar_normal() can only contain non-negative integers')
-    if(any(num > d)) stop('entries in num argument to dcar_normal() cannot exceed length of dcar_normal() node')
-    if(sum(num) == 0) stop('dcar_normal() distribution must specify some neighbors')
-    if(sum(num) != length(adj)) stop('length of adj argument to dcar_normal() must be equal to total number of neighbors specified in num argument')
-    if(length(adj) != length(weights)) stop('length of adj and weight arguments to dcar_normal() must be the same')
-    if(any(weights <= 0)) stop('weights argument to dcar_normal() should only contain positive values')
     ##
     ##k <- length(x)
     ##c <- 1
@@ -888,12 +879,12 @@ dcar_normal <- function(x, adj, weights, num, tau, log = FALSE) {
     ##if(log) return(lp)
     ##return(exp(lp))
     ##
-    .Call('C_dcar_normal', as.double(x), as.double(adj), as.double(weights), as.double(num), as.double(tau), as.logical(log))
+    .Call('C_dcar_normal', as.double(x), as.double(adj), as.double(weights), as.double(num), as.double(tau), as.double(numIslands), as.logical(log))
 }
 
 #' @rdname CAR-Normal
 #' @export
-rcar_normal <- function(n = 1, adj, weights, num, tau) {
+rcar_normal <- function(n = 1, adj, weights, num, tau, numIslands) {
     ## it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
     ## since initializeModel() will call this simulate method if there are any NA's present,
     ## (which is allowed for island components), which over-writes all the other valid initial values.

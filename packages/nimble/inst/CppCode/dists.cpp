@@ -2136,8 +2136,8 @@ SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
   return ans;
 }
 
-SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP return_log) {
-  if(!isReal(x) || !isReal(adj) || !isReal(weights) || !isReal(num) || !isReal(tau) || !isLogical(return_log))
+SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP numIslands, SEXP return_log) {
+  if(!isReal(x) || !isReal(adj) || !isReal(weights) || !isReal(num) || !isReal(tau) || !isReal(numIslands) || !isLogical(return_log))
     RBREAK("Error (C_dcar_normal): invalid input type for one of the arguments.");
   
   int N = LENGTH(x);
@@ -2148,32 +2148,61 @@ SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP retu
   double* c_weights = REAL(weights);
   double* c_num = REAL(num);
   double c_tau = REAL(tau)[0];
+  int c_numIslands = (int) REAL(numIslands)[0];
   int give_log = (int) LOGICAL(return_log)[0];
   SEXP ans;
   
   PROTECT(ans = allocVector(REALSXP, 1));
-  REAL(ans)[0] = dcar_normal(c_x, c_adj, c_weights, c_num, c_tau, N, L, give_log);
+  REAL(ans)[0] = dcar_normal(c_x, c_adj, c_weights, c_num, c_tau, c_numIslands, N, L, give_log);
   
   UNPROTECT(1);
   return ans;
 }
 
-double dcar_normal(double* x, double* adj, double* weights, double* num, double tau, int N, int L, int give_log) {
+
+//void car_markVisited(double* adj, double* num, bool* visited, int index) {
+//  if(!visited[index]) {
+//    visited[index] = true;
+//    int adjStartInd = 0;
+//    for(int i = 0; i < index; i++) {
+//      adjStartInd += (int) num[i];
+//    }
+//    for(int i = 0; i < (int) num[index]; i++) {
+//      car_markVisited(adj, num, visited, (int) adj[adjStartInd+i] - 1);
+//    }
+//  }
+//}
+//
+//int car_calcNumIslands(double* adj, double* num, int N) {
+//  int numIslands = 0;
+//  bool* visited = new bool[N];
+//  for(int i = 0; i < N; i++) {
+//    visited[i] = false;
+//  }
+//  for(int i = 0; i < N; i++) {
+//    if(!visited[i]) {
+//      numIslands++;
+//      car_markVisited(adj, num, visited, i);
+//    }
+//  }
+//  delete [] visited;
+//  return(numIslands);
+//}
+
+double dcar_normal(double* x, double* adj, double* weights, double* num, double tau, int numIslands, int N, int L, int give_log) {
   // This method implements the following density calculation:
   // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
-  // where tau is precision, c = (number of islands + 1), and N is the length of x.
+  // where tau is precision, c = (number of islands), and N is the length of x.
   // This is the density on an N-c dimensional space, and improper on the remaining c dimensions.
-  int c = 1;
-  double lp = 0;
-  int count = 0;
-  double xi, xj;
   if(tau < 0) {
     return R_NaN;
   }
+  int c = numIslands;  //car_calcNumIslands(adj, num, N);
+  //PRINTF("C is equal to %d\n", c);
+  double lp = 0;
+  int count = 0;
+  double xi, xj;
   for(int i = 0; i < N; i++) {
-    if(num[i] == 0) {
-      c++;
-    }
     xi = x[i];
     for(int j = 0; j < num[i]; j++) {
       xj = x[ (int) adj[count] - 1 ];

@@ -703,7 +703,7 @@ modelDefClass$methods(replaceAllConstants = function() {
     }
 })
 
-neverReplaceable <- list(chol = TRUE, inverse = TRUE) ## only the names matter, any non-null value will do.
+neverReplaceable <- list(chol = TRUE, inverse = TRUE, CAR_calcNumIslands = TRUE) ## only the names matter, any non-null value will do.
 
 replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) {
     ## This takes as input a call and an environment or list of constants (only names matter)
@@ -785,6 +785,9 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
     }
     stop('Error, hit end')
 }
+
+liftedCallsDoNotAddIndexing <- c('CAR_calcNumIslands')
+
 modelDefClass$methods(liftExpressionArgs = function() {
     ## overwrites declInfo (*and adds*), lifts any expressions in distribution arguments to new nodes
     newDeclInfo <- list()
@@ -805,7 +808,11 @@ modelDefClass$methods(liftExpressionArgs = function() {
                 requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
                 uniquePiece <- if(requireNewAndUniqueDecl) paste0("_L", BUGSdecl$sourceLineNumber) else ""
                 newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
-                newNodeNameExprIndexed <- addNecessaryIndexingToNewNode(newNodeNameExpr, paramExpr, contexts[[BUGSdecl$contextID]]$indexVarExprs)  ## add indexing if necessary
+                if(deparse(paramExpr[[1]]) %in% liftedCallsDoNotAddIndexing) {   ## skip adding indexing to mixed-size calls
+                    newNodeNameExprIndexed <- newNodeNameExpr
+                } else {
+                    newNodeNameExprIndexed <- addNecessaryIndexingToNewNode(newNodeNameExpr, paramExpr, contexts[[BUGSdecl$contextID]]$indexVarExprs)  ## add indexing if necessary
+                }
                 
                 newValueExpr[[iParam + 1]] <- newNodeNameExprIndexed  ## update the newValueExpr
                 
@@ -839,6 +846,7 @@ isExprLiftable <- function(paramExpr) {
     if(is.call(paramExpr)) {
         if(paramExpr[[1]] == 'chol')        return(TRUE)    ## do lift calls to chol(...)
         if(paramExpr[[1]] == 'inverse')     return(TRUE)    ## do lift calls to inverse(...)
+        if(paramExpr[[1]] == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
         if(length(paramExpr) == 1)          return(FALSE)   ## don't generally lift function calls:   fun(...) ## this comment seems incorrect
         if(getCallText(paramExpr) == '[')   return(FALSE)   ## don't lift simply indexed expressions:  x[...]
         ## if(getCallText(paramExpr) == '[') { ## these lines are for future handling of foo()[]
