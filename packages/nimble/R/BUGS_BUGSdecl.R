@@ -371,7 +371,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     ##                something replaceable doesn't need to become a symbolicParentNode
     ##                and something replaceable in an index represents static indexing, not dynamic indexing
     ## - hasIndex: is there an index inside
-
+    
     ## numeric constant
     if(is.numeric(code)) {
         return(list(code = NULL, replaceable = TRUE, hasIndex = FALSE))
@@ -443,7 +443,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                     if(!nimbleOptions()$allowDynamicIndexing) dynamicIndexParent <- code[[2]]
                     else {
                         dynamicIndexParent <- code
-                        dynamicIndexParent[-c(1, 2)][ !contentsReplaceable] <- as.numeric(NA)
+                        dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ] <- as.numeric(NA)
+                        dynamicIndexParent <- addUnknownIndexToVarNameInBracketExpr(dynamicIndexParent)
                         ## before proceeding with more complicated cases, we'll need to check that they work; for now error out with anything more complicated than mu[foo(k[i])]
                         # should add tests where we expect failure at this stage for these cases
                         ## TMP:
