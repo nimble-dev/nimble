@@ -1,19 +1,13 @@
 #include <base64/base64.h>
 #include <nimble/tensorflow.h>
 
-#define TF_CHECK_OK(status)            \
-  {                                    \
-    if (TF_GetCode(status) != TF_OK) { \
-      NIMERROR(TF_Message(status));    \
-    }                                  \
+#define TF_CHECK_OK(status)                                         \
+  {                                                                 \
+    if (TF_GetCode(status) != TF_OK) {                              \
+      NIMERROR("Tensorflow error at %s:%s: %s", __FILE__, __LINE__, \
+               TF_Message(status));                                 \
+    }                                                               \
   }
-
-#define NIM_ASSERT_REL(x, rel, y)                                            \
-  NIM_ASSERT3((x)rel(y), "Expected " #x " " #rel " " #y "; actual %d vs %d", \
-              (x), (y))
-#define NIM_ASSERT_EQ(x, y) NIM_ASSERT_REL(x, ==, y)
-#define NIM_ASSERT_LT(x, y) NIM_ASSERT_REL(x, <, y)
-#define NIM_ASSERT_LE(x, y) NIM_ASSERT_REL(x, <=, y)
 
 // This is passed as the deallocator of memory that is not owned.
 void fake_deallocator(void* data, size_t len, void* arg) {}  // Does nothing.
@@ -79,7 +73,7 @@ NimTfRunner::~NimTfRunner() {
 
 void NimTfRunner::setInput(double& scalar) {
   NIM_ASSERT_LT(input_pos_, inputs_.size());
-  NIM_ASSERT_EQ(output_pos_, 0);
+  NIM_ASSERT_EQ(output_pos_, outputs_.size());
   input_values_[input_pos_] = TF_NewTensor(
       TF_DOUBLE, NULL, 0, &scalar, sizeof(double), fake_deallocator, NULL);
   input_pos_ += 1;
@@ -88,7 +82,7 @@ void NimTfRunner::setInput(double& scalar) {
 void NimTfRunner::setInput(NimArrBase<double>& nimArr) {
   NIM_ASSERT1(!nimArr.isMap(), "Cannot handle mapped array");
   NIM_ASSERT_LT(input_pos_, inputs_.size());
-  NIM_ASSERT_EQ(output_pos_, 0);
+  NIM_ASSERT_EQ(output_pos_, outputs_.size());
   static std::vector<int64_t> dims;
   const int n = nimArr.numDims();
   dims.resize(n);
