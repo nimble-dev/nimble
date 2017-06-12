@@ -55,6 +55,7 @@ Collate:
     genCpp_maps.R
     genCpp_liftMaps.R
     genCpp_eigenization.R
+    genCpp_TFize.R
     genCpp_addDebugMarks.R
     genCpp_generateCpp.R
     RCfunction_core.R
