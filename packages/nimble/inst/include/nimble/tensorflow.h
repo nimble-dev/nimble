@@ -21,8 +21,8 @@
 //        .withOutput("RESULT_")
 //        .build();
 //
-//    NimArr<double, 1> result;
-//    result->initialize(0.0, false, ARG2_x_.dimSize(0));
+//    NimArr<1, double> result;
+//    result.initialize(0.0, false, ARG2_x_.dimSize(0));
 //    runner->setInput(ARG1_a_);
 //    runner->setInput(ARG2_x_);
 //    runner->setInput(ARG3_y_);
@@ -51,6 +51,7 @@ class NimTfRunner {
   ~NimTfRunner();
 
   // These must be called in strict order.
+  void setInput(double& scalar);
   void setInput(NimArrBase<double>& nimArr);
   void run();
   void getOutput(NimArrBase<double>& nimArr);

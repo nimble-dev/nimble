@@ -206,7 +206,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            "}")
                                        writeLines(contentLines, con = dynamicRegistrationsCppName)
                                    },
-                                   compileStaticCode = function(dllName, cppName) {
+                                   compileStaticCode = function(dllName, cppName, showCompilerOutput) {
                                        ssDllName <- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
                                        ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', cppName, '-o', basename(ssDllName))
                                        if(!showCompilerOutput) {
@@ -229,8 +229,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
                                        dllName <- paste0("dynamicRegistrations_", timeStamp)
                                        cppName <- paste0(dllName, ".cpp")
-                                       writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dynamicRegistrationsDllName)
-                                       nimbleUserNamespace$sessionSpecificDll <- compileStaticCode(dllName, cppName)
+                                       writeDynamicRegistrationsDotCpp(cppName, dllName)
+                                       nimbleUserNamespace$sessionSpecificDll <- compileStaticCode(dllName, cppName, showCompilerOutput)
                                    },
                                    compileTensorflowWrapper = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
                                        # Load prerequisite DLLs.
@@ -242,7 +242,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
                                        dllName <- paste0("nimble-tensorflow_", timeStamp)
                                        cppName <- file.path(system.file(package = 'nimble'), 'CppCode', 'tensorflow.cpp')
-                                       nimbleInternalNamespace$tensorflowWrapperDll <- compileStaticCode(dllName, cppName)
+                                       nimbleUserNamespace$tensorflowWrapperDll <- compileStaticCode(dllName, cppName, showCompilerOutput)
                                    },
                                    compileFile = function(names, showCompilerOutput = nimbleOptions('showCompilerOutput'),
                                                           .useLib = UseLibraryMakevars) {
@@ -287,6 +287,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
                                        if(nimbleOptions('useTensorflow') && is.null(nimbleUserNamespace$tensorflowWrapperDll)) {
                                            compileTensorflowWrapper(showCompilerOutput = showCompilerOutput)
+                                           SHLIBcmd <- paste(SHLIBcmd, nimbleUserNamespace$tensorflowWrapperDll[['path']])
                                        }
 
                                        if(!showCompilerOutput) { 
