@@ -80,7 +80,58 @@ NimArr<1, double> vectorDouble_2_NimArr(vector<double> input) {
   return(output);
 }
 
-/* Cliff's new function for adding blank rows to C model values */
+SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1){
+    NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(Sextptr));
+    nimType vecType = (*typePtr).getNimType();
+    if(vecType == DOUBLE){
+    	VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(R_ExternalPtrAddr(Sextptr));
+    	int nrowCpp = matPtr->size();
+	    int new_size = INTEGER(nRows)[0];
+    	matPtr->resize(new_size);
+    	if(new_size <= nrowCpp)
+    		return(returnStatus(true));
+    	if(LOGICAL(setSize2row1)[0]	== TRUE){
+		    	NimArrBase<double> *thisRow;
+    			thisRow = matPtr->getBasePtr(0);
+    			int numDims = thisRow->numDims();
+		     	vector<int> Dims(numDims);
+ 				for(int i = 0; i < numDims; i++)
+    	  			Dims[i] = thisRow->dimSize(i);
+   		   		for(int i = nrowCpp; i < new_size; i++){
+   		   			thisRow = matPtr->getBasePtr(i);
+    	  			thisRow->setSize(Dims);
+    	  		}
+    	return(returnStatus(true) );
+    	}
+    }
+    else if(vecType == INT){
+    	VecNimArrBase<int> *matPtr = static_cast< VecNimArrBase<int>* >(R_ExternalPtrAddr(Sextptr));
+    	int nrowCpp = matPtr->size();
+    	  int new_size = INTEGER(nRows)[0];
+	  	matPtr->resize(new_size);
+	  	if(new_size <= nrowCpp)
+    		return(returnStatus(true));
+
+    	if(LOGICAL(setSize2row1)[0]	== TRUE){
+    		NimArrBase<int> *thisRow;
+    		thisRow = matPtr->getBasePtr(0);
+    		int numDims = thisRow->numDims();
+  	    	vector<int> Dims(numDims);
+			for(int i = 0; i < numDims; i++)
+      			Dims[i] = thisRow->dimSize(i);
+      		for(int i = nrowCpp; i < new_size; i++){
+      			thisRow = matPtr->getBasePtr(i);
+      			thisRow->setSize(Dims);
+      		}
+      	}
+    return(returnStatus(true) );
+    }
+ 	
+ 	PRINTF("Data type for VecNimArr not currently supported\n");
+ 	return(returnStatus(false) ) ;
+}
+
+/* Add blank rows to C model values */
 SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded){
     if(!isInteger(numAdded)) {
         PRINTF("Error: numAdded is not an integer!\n");

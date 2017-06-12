@@ -45,6 +45,7 @@ extern "C" {
   //  SEXP getVec(SEXP Sextptr);
   //  SEXP getVec_Integer(SEXP Sextptr);
   
+  SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);
   SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded);
   SEXP getNRow(SEXP Sextptr);
   SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SEXP rowsTo);

@@ -72,6 +72,8 @@ R_CallMethodDef CallEntries[] = {
   FUN(populate_SEXP_2_stringVector, 2),
   FUN(extract_stringVector_2_SEXP, 1),
 
+  FUN(setVecNimArrRows, 3),
+  
   FUN(setPtrVectorOfPtrs, 3),
   FUN(setOnePtrVectorOfPtrs, 3),
   FUN(getEnvVar_Sindex, 3),
