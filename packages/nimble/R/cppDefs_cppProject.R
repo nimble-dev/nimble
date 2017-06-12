@@ -236,15 +236,13 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        # Load prerequisite DLLs.
                                        if(!require(tensorflow)) stop('tensorflow package must be installed. Try "install.packages(\"tensorflow\")"')
                                        tfPath <- tf$`__path__`  # This line triggers loading of _pywrap_tensorflow_internal.so.
-                                       nimbleUserNamespace$tensorflowDll <- file.path(tfPath, 'python', '_pywrap_tensorflow_internal.so')
-                                       if(!file.exists(nimbleUserNamespace$tensorflowDll)) {
-                                           stop(paste('Missing shared library', nimbleUserNamespace$tensorflowDll))
-                                       }
+                                       tensorflowDllPath <- file.path(tfPath, 'python', '_pywrap_tensorflow_internal.so')
+                                       if(!file.exists(tensorflowDllPath))  stop(paste('Missing shared library', tensorflowDllPath))
 
                                        timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
                                        dllName <- paste0("nimble-tensorflow_", timeStamp)
                                        cppName <- file.path(system.file(package = 'nimble'), 'CppCode', 'tensorflow.cpp')
-                                       nimbleUserNamespace$tensorflowWrapperDll <- compileStaticCode(dllName, cppName)
+                                       nimbleInternalNamespace$tensorflowWrapperDll <- compileStaticCode(dllName, cppName)
                                    },
                                    compileFile = function(names, showCompilerOutput = nimbleOptions('showCompilerOutput'),
                                                           .useLib = UseLibraryMakevars) {
