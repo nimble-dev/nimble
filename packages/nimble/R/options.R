@@ -9,6 +9,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
     list(
         nimbleProjectForTesting = NULL,  ## only used by withTempProject and compileNimble in testing code.
         stopCompilationBeforeLinking = NULL,
+        experimentalNewSizeProcessing = FALSE,
+        experimentalSelfLiftStage = FALSE,
         enableSpecialHandling = FALSE,
         pauseAfterWritingFiles = FALSE,
         CppAD_directory = NA,
