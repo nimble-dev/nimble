@@ -1070,7 +1070,6 @@ insertSingleIndexBrackets <- function(code, varInfo) {
     return(code)
 }
 
-
 # for now export this as R<3.1.2 give warnings if don't
 
 #' Class \code{RmodelBaseClass}
