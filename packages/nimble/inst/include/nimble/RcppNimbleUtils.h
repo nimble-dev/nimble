@@ -45,6 +45,7 @@ extern "C" {
   //  SEXP getVec(SEXP Sextptr);
   //  SEXP getVec_Integer(SEXP Sextptr);
   
+  SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);
   SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded);
   SEXP getNRow(SEXP Sextptr);
   SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SEXP rowsTo);
@@ -57,13 +58,6 @@ extern "C" {
   SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd);
 
   SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue);
-
-  SEXP resizeNumListRow(SEXP Sextptr, SEXP Sindex, SEXP dims); 	// resizes a particular row of a numericlist
-
-//  SEXP setNumList(SEXP Sextptr, SEXP Sindex, SEXP Svalue);   automatically resizes. Might want to use later
-   SEXP setNumListRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);		// this sets the number of rows in a numericList (really, any VecNimArr)
-
-  SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows);
 
   SEXP newSampObject();	//  Creates our new object from sampleClass (will be generated automatically later)
 							//	Just for use in demos

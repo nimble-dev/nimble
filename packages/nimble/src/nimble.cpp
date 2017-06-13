@@ -55,11 +55,11 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_rankSample, 4),
  FUN(parseVar, 1),
 
- FUN(setGraph, 7),
- FUN(anyStochDependencies, 1),
- FUN(anyStochParents, 1),
- FUN(getDependencies, 4),
- FUN(getDependencyPathCountOneNode, 2), 
+ FUN(C_setGraph, 7),
+ FUN(C_anyStochDependencies, 1),
+ FUN(C_anyStochParents, 1),
+ FUN(C_getDependencies, 4),
+ FUN(C_getDependencyPathCountOneNode, 2), 
  {NULL, NULL, 0}
 };
 

@@ -36,7 +36,7 @@ dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
           storage.mode(cholesky) <- 'double'
     if(storage.mode(x) != 'double')
             storage.mode(x) <- 'double'
-    .Call('C_dwish_chol', x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
+    .Call(C_dwish_chol, x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
 }
 
 #' @rdname Wishart
@@ -45,7 +45,7 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rwish_chol only handles n = 1 at the moment')
     if(storage.mode(cholesky) != 'double')
     	storage.mode(cholesky) <- 'double'
-    out <- .Call('C_rwish_chol', cholesky, as.double(df), as.double(scale_param))
+    out <- .Call(C_rwish_chol, cholesky, as.double(df), as.double(scale_param))
     if(!is.null(out)) out <- matrix(out, nrow = sqrt(length(cholesky)))
     return(out)
 }
@@ -85,7 +85,7 @@ dinvwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
           storage.mode(cholesky) <- 'double'
     if(storage.mode(x) != 'double')
             storage.mode(x) <- 'double'
-    .Call('C_dinvwish_chol', x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
+    .Call(C_dinvwish_chol, x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
 }
 
 #' @rdname Inverse-Wishart
@@ -94,7 +94,7 @@ rinvwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rinvwish_chol only handles n = 1 at the moment')
     if(storage.mode(cholesky) != 'double')
     	storage.mode(cholesky) <- 'double'
-    out <- .Call('C_rinvwish_chol', cholesky, as.double(df), as.double(scale_param))
+    out <- .Call(C_rinvwish_chol, cholesky, as.double(df), as.double(scale_param))
     if(!is.null(out)) out <- matrix(out, nrow = sqrt(length(cholesky)))
     return(out)
 }
@@ -155,7 +155,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
 #' 
 nimEigen <- function(x, only.values = FALSE) {
   ## placeholder list with correct names of elements, will be populated in C++
-  .Call('C_nimEigen', x, as.logical(only.values), eigenNimbleList$new())
+  .Call(C_nimEigen, x, as.logical(only.values), eigenNimbleList$new())
 }
 
 
@@ -216,7 +216,7 @@ nimSvd <- function(x, vectors = 'full') {
                     thin = 1,
                     full = 2)
   if(is.null(vectors)) stop("nimSvd: vectors argument to 'svd' must be one of \"none\", \"thin\", or \"full\".")
-  .Call('C_nimSvd', x, vectors, svdNimbleList$new())
+  .Call(C_nimSvd, x, vectors, svdNimbleList$new())
 }
 
 #' The Improper Uniform Distribution
@@ -297,14 +297,14 @@ NULL
 #' @rdname Dirichlet
 #' @export
 ddirch <- function(x, alpha, log = FALSE) {
-    .Call('C_ddirch', as.double(x), as.double(alpha), as.logical(log))
+    .Call(C_ddirch, as.double(x), as.double(alpha), as.logical(log))
 }
 
 #' @rdname Dirichlet
 #' @export
 rdirch <- function(n = 1, alpha) {
     if(n != 1) warning('rdirch only handles n = 1 at the moment')
-  .Call('C_rdirch', as.double(alpha))
+  .Call(C_rdirch, as.double(alpha))
 }
 
 #' The Multinomial Distribution
@@ -335,14 +335,14 @@ NULL
 #' @rdname Multinomial
 #' @export
 dmulti <- function(x, size = sum(x), prob, log = FALSE) {
-  .Call('C_dmulti', as.double(x), as.double(size), as.double(prob), as.logical(log))
+  .Call(C_dmulti, as.double(x), as.double(size), as.double(prob), as.logical(log))
 }
 
 #' @rdname Multinomial
 #' @export
 rmulti <- function(n = 1, size, prob) {
   if(n != 1) warning('rmulti only handles n = 1 at the moment')
-  .Call('C_rmulti', as.double(size), as.double(prob))
+  .Call(C_rmulti, as.double(size), as.double(prob))
 }
 
 #' The Categorical Distribution
@@ -370,13 +370,13 @@ NULL
 #' @rdname Categorical
 #' @export
 dcat <- function(x, prob, log = FALSE) {
-  .Call('C_dcat', as.double(x), as.double(prob), as.logical(log))
+  .Call(C_dcat, as.double(x), as.double(prob), as.logical(log))
 }
 
 #' @rdname Categorical
 #' @export
 rcat <- function(n = 1, prob) {
-  .Call('C_rcat', as.integer(n), as.double(prob))
+  .Call(C_rcat, as.integer(n), as.double(prob))
 }
 
 
@@ -415,25 +415,25 @@ NULL
 #' @rdname t
 #' @export
 dt_nonstandard <- function(x, df = 1, mu = 0, sigma = 1, log = FALSE) {
-  .Call('C_dt_nonstandard', as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(log))
+  .Call(C_dt_nonstandard, as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(log))
 }
 
 #' @rdname t
 #' @export
 rt_nonstandard <- function(n, df = 1, mu = 0, sigma = 1) {
-  .Call('C_rt_nonstandard', as.integer(n), as.double(df), as.double(mu), as.double(sigma))
+  .Call(C_rt_nonstandard, as.integer(n), as.double(df), as.double(mu), as.double(sigma))
 }
 
 #' @rdname t
 #' @export
 pt_nonstandard <- function(q, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
-  .Call('C_pt_nonstandard', as.double(q), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_pt_nonstandard, as.double(q), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' @rdname t
 #' @export
 qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
-  .Call('C_qt_nonstandard', as.double(p), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_qt_nonstandard, as.double(p), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' The Multivariate Normal Distribution
@@ -469,7 +469,7 @@ dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
   # FIXME: allow cholesky to be lower tri
     if(storage.mode(cholesky) != 'double')
          storage.mode(cholesky) <- 'double'
-    .Call('C_dmnorm_chol', as.double(x), as.double(mean), cholesky, as.double(prec_param), as.logical(log))
+    .Call(C_dmnorm_chol, as.double(x), as.double(mean), cholesky, as.double(prec_param), as.logical(log))
 }
 
 #' @rdname MultivariateNormal
@@ -480,7 +480,7 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
     if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
     if(storage.mode(cholesky) != 'double')
          storage.mode(cholesky) <- 'double'
-    .Call('C_rmnorm_chol', as.double(mean), cholesky, as.double(prec_param))
+    .Call(C_rmnorm_chol, as.double(mean), cholesky, as.double(prec_param))
 }
 
 #' The Multivariate t Distribution
@@ -520,7 +520,7 @@ dmvt_chol <- function(x, mu, cholesky, df, prec_param = TRUE, log = FALSE) {
   # FIXME: allow cholesky to be lower tri
     if(storage.mode(cholesky) != 'double')
        storage.mode(cholesky) <- 'double'
-    .Call('C_dmvt_chol', as.double(x), as.double(mu), cholesky,
+    .Call(C_dmvt_chol, as.double(x), as.double(mu), cholesky,
         as.double(df), as.double(prec_param), as.logical(log))
 }
 
@@ -532,7 +532,7 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
     if(n != 1) warning('rmvt_chol only handles n = 1 at the moment')
     if(storage.mode(cholesky) != 'double')
          storage.mode(cholesky) <- 'double'
-    .Call('C_rmvt_chol', as.double(mu), cholesky,
+    .Call(C_rmvt_chol, as.double(mu), cholesky,
         as.double(df), as.double(prec_param))
 }
 
@@ -567,13 +567,13 @@ NULL
 #' @rdname Interval
 #' @export
 dinterval <- function(x, t, c, log = FALSE) {
-    .Call('C_dinterval', as.double(x), as.double(t), as.double(c), as.logical(log))
+    .Call(C_dinterval, as.double(x), as.double(t), as.double(c), as.logical(log))
 }
 
 #' @rdname Interval
 #' @export
 rinterval <- function(n = 1, t, c) {
-    .Call('C_rinterval', as.integer(n), as.double(t), as.double(c))
+    .Call(C_rinterval, as.integer(n), as.double(t), as.double(c))
 }
 
 #' Constraint calculations in NIMBLE
@@ -668,7 +668,7 @@ dexp_nimble <- function(x, rate = 1/scale, scale = 1, log = FALSE) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_dexp_nimble', as.double(x), as.double(rate), as.logical(log))
+    .Call(C_dexp_nimble, as.double(x), as.double(rate), as.logical(log))
 }
 
 #' @rdname Exponential
@@ -679,7 +679,7 @@ rexp_nimble <- function(n = 1, rate = 1/scale, scale = 1) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_rexp_nimble', as.integer(n), as.double(rate))
+    .Call(C_rexp_nimble, as.integer(n), as.double(rate))
 }
 
 #' @rdname Exponential
@@ -690,7 +690,7 @@ pexp_nimble <- function(q, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-  .Call('C_pexp_nimble', as.double(q), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_pexp_nimble, as.double(q), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' @rdname Exponential
@@ -701,7 +701,7 @@ qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-  .Call('C_qexp_nimble', as.double(p), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_qexp_nimble, as.double(p), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' The Inverse Gamma Distribution
@@ -760,7 +760,7 @@ dinvgamma <- function(x, shape, scale = 1, rate = 1/scale, log = FALSE) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_dinvgamma', as.double(x), as.double(shape), as.double(rate), as.logical(log))
+    .Call(C_dinvgamma, as.double(x), as.double(shape), as.double(rate), as.logical(log))
 }
 
 #' @rdname Inverse-Gamma
@@ -771,7 +771,7 @@ rinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_rinvgamma', as.integer(n), as.double(shape), as.double(rate))
+    .Call(C_rinvgamma, as.integer(n), as.double(shape), as.double(rate))
 }
 
 
@@ -783,7 +783,7 @@ pinvgamma <- function(q, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, lo
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-  .Call('C_pinvgamma', as.double(q), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_pinvgamma, as.double(q), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' @rdname Inverse-Gamma
@@ -794,7 +794,7 @@ qinvgamma <- function(p, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, lo
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-  .Call('C_qinvgamma', as.double(p), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_qinvgamma, as.double(p), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
 # sqrtinvgamma is intended solely for use in conjugacy with dhalfflat
@@ -805,7 +805,7 @@ dsqrtinvgamma <- function(x, shape, scale = 1, rate = 1/scale, log = FALSE) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_dsqrtinvgamma', as.double(x), as.double(shape), as.double(rate), as.logical(log))
+    .Call(C_dsqrtinvgamma, as.double(x), as.double(shape), as.double(rate), as.logical(log))
 }
 
 #' @export
@@ -815,5 +815,5 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_rsqrtinvgamma', as.integer(n), as.double(shape), as.double(rate))
+    .Call(C_rsqrtinvgamma, as.integer(n), as.double(shape), as.double(rate))
 }

@@ -18,13 +18,13 @@ nimbleGraphClass <- setRefClass(
             ## But on the C++ side we need these IDs to be self, so there is something valid.
             boolZero <- nodeFunctionIDs == 0
             nodeFunctionIDs[boolZero] <- (1:length(nodeFunctionIDs))[boolZero]
-            graphExtPtr <<- .Call('setGraph', edgesFrom, edgesTo, edgesFrom2ParentExprIDs, nodeFunctionIDs, types, names, numNodes)
+            graphExtPtr <<- .Call(C_setGraph, edgesFrom, edgesTo, edgesFrom2ParentExprIDs, nodeFunctionIDs, types, names, numNodes)
         },
         anyStochDependencies = function() {
-           .Call("anyStochDependencies",graphExtPtr)
+           .Call(C_anyStochDependencies,graphExtPtr)
         },
         anyStochParents = function() {
-            .Call("anyStochParents",graphExtPtr)
+            .Call(C_anyStochParents,graphExtPtr)
         },
         getDependencies = function(nodes, omit = integer(), downstream = FALSE) {
             for(i in list(nodes, omit)) {
@@ -36,11 +36,11 @@ nimbleGraphClass <- setRefClass(
                 }
             }
 
-            .Call("getDependencies", graphExtPtr, nodes, omit, downstream)
+            .Call(C_getDependencies, graphExtPtr, nodes, omit, downstream)
         },
         getDependencyPathCountOneNode = function(node) {
             if(length(node) > 1)
                 stop("getDependencyPathCountOneNode: argument 'node' should provide a single node.")
-            .Call("getDependencyPathCountOneNode", graphExtPtr, node)
+            .Call(C_getDependencyPathCountOneNode, graphExtPtr, node)
         }
     ))
