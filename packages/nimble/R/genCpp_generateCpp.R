@@ -15,7 +15,9 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer','push_back'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
                     makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
+                    makeCallList(c("TFsetInput_", "TFgetOutput_", "TFrun_"), 'cppOutputMemberFunctionDeref'),
                     list(
+                        cppComment = 'cppOutputComment',
                         eigenCast = 'cppOutputEigenCast',
                         memberData = 'cppOutputMemberData',
                         fill = 'cppOutputEigMemberFunctionNoTranslate',
@@ -76,7 +78,7 @@ cppMidOperators[['|']] <- ' || '
 for(v in c('$', ':')) cppMidOperators[[v]] <- NULL
 for(v in assignmentOperators) cppMidOperators[[v]] <- ' = '
 
-nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch','cppLiteral')
+nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch','cppLiteral', 'cppComment')
 
 ## In the following list, the names are names in the parse tree (i.e. the name field in an exprClass object)
 ## and the elements are the name of the function to use to generate output for that name
@@ -463,4 +465,6 @@ cppOutputTemplate <- function(code, symTab) {
 }
 
 cppOutputLiteral <- function(code, symTab) code$args[[1]]
+
+cppOutputComment <- function(code, symTab) paste0("/* ", code$args[[1]], " */")
 

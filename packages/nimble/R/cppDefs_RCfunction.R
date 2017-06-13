@@ -8,7 +8,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                              methods = list(
                                  initialize = function(...) {
                                  	 SEXPinterfaceCname <<- character()
-                                     Hincludes <<- c(Hincludes,
+                                         Hincludes <<- c(Hincludes,
+                                                         if(nimbleOptions('experimentalTensorFlowCpp')) "<tensorflow/c/c_api.h>" else character(),
                                                      nimbleIncludeFile("NimArr.h"),
                                                      "<Rinternals.h>",
                                                      nimbleIncludeFile("accessorClasses.h"),

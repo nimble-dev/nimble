@@ -36,7 +36,7 @@ exprClass <- setRefClass('exprClass',
                                  assertions <<- list();
                                  eigMatrix <<- logical();
                                  cppADCode <<- FALSE;
-                                 aus <<- list();
+                                 aux <<- list();
                                  callSuper(...)
                              },
                              ## This displays the parse tree using indentation on multiple rows of output
