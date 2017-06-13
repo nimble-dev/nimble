@@ -520,8 +520,10 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      modelDef <- model$getModelDef()
                                      modelDefName <- modelDef$name
                                      Cname <- Rname2CppName(modelDefName)
-                                     if(is.null(filename)) {
-                                         filename <- paste0(projectName, '_', Rname2CppName(modelDefName)) 
+                                     if(!disableWrite) {
+                                         if(is.null(filename)) {
+                                             filename <- paste0(projectName, '_', Rname2CppName(modelDefName)) 
+                                         }
                                          nfFileName <- paste0(projectName, '_', Rname2CppName(modelDefName),'_nfCode')
                                      }
                                      modelCpp <- cppBUGSmodelClass(modelDef = modelDef, model = model,
