@@ -87,7 +87,7 @@ nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch','cppLiteral
 
 ## Main function for generating C++ output
 nimGenerateCpp <- function(code, symTab = NULL, indent = '', showBracket = TRUE, asArg = FALSE) {
-    if(is.numeric(code)) return(code)
+    if(is.numeric(code)) return(if(is.nan(code)) "(nimble_NaN())" else code)
     if(is.character(code)) return(paste0('\"', gsub("\\n","\\\\n", code), '\"'))
     if(is.null(code)) return('R_NilValue')
     if(is.logical(code) ) return(if(code) 'true' else 'false')

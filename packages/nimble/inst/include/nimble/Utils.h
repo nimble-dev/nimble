@@ -158,4 +158,5 @@ int nimStep(double x);
 double cube(double x);
 double inprod(double v1, double v2);
 
+double nimble_NaN();
 #endif

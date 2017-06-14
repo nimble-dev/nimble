@@ -47,3 +47,15 @@ test_that("keyword next works", {
     expect_equal(nfRes, c(3, 4), info = 'keyword next uncompiled')
     expect_equal(cnfRes, c(3, 4), info = 'keyword next compiled')
 })
+
+test_that("literal NaN", {
+    nf <- nimbleFunction(
+        run = function() {
+            ans <- NaN
+            return(ans)
+            returnType(double())
+        })
+    cnf <- compileNimble(nf)
+    expect_true(is.nan(nf()), 'NaN uncompiled')
+    expect_true(is.nan(cnf()), 'NaN compiled')
+})
