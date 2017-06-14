@@ -1533,6 +1533,8 @@ CAR_evaluateDensity <- nimbleFunction(
     setup = function(model, targetScalar, neighborNodes, neighborWeights) {
         targetDCAR <- model$expandNodeNames(targetScalar)
         island <- length(neighborNodes)==0
+        numNeighbors <- length(neighborWeights)                        ## fix length-1 neighborWeights
+        neighborWeights <- array(neighborWeights, c(1, numNeighbors))  ## fix length-1 neighborWeights
         sumWeights <- sum(neighborWeights)
         if(length(targetDCAR) != 1)                              stop('something went wrong')
         if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
@@ -1549,7 +1551,7 @@ CAR_evaluateDensity <- nimbleFunction(
         getMean = function() {
             if(island) return(0)
             neighborValues <- values(model, neighborNodes)
-            mean <- sum(neighborValues*neighborWeights) / sumWeights
+            mean <- sum(neighborValues*neighborWeights[1,1:numNeighbors]) / sumWeights
             returnType(double())
             return(mean)
         },
