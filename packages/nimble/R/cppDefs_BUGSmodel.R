@@ -46,14 +46,14 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                              nDim <- max(modelDef$logProbVarInfo[[v]]$nDim, 1) 
                                              addObject(cname, cppNimArrPtr(name = cname, nDim = nDim, type = 'double'))
                                          }
-                                         addObject('_defaultModelValues', cppVar(name = '_defaultModelValues', baseType = CmodelValuesClassName))
+                                         addObject('defaultModelValues_', cppVar(name = 'defaultModelValues_', baseType = CmodelValuesClassName))
                                      },
                                      ## buildConstructorFunctionDef adds a cppFunctionDef object for the constructor to the functionDefs field (inherited from cppNamespaceClass via cppNamedObjectsClass).  Most of this comprises the namedObjects assignments generated from  namedObjectsConstructorCodeBlock() inherited from cppNamedObjectsClass
                                      buildConstructorFunctionDef = function() {
 
-                                         lines12 <- cppLiteral(c("_defaultModelValues.resize(1);",
-                                                                 "pointAtAll(&_defaultModelValues, 0);",
-                                                                 "_modelValues = static_cast<Values *>(&_defaultModelValues);")) 
+                                         lines12 <- cppLiteral(c("defaultModelValues_.resize(1);",
+                                                                 "pointAtAll(&defaultModelValues_, 0);",
+                                                                 "modelValues_ = static_cast<Values *>(&defaultModelValues_);")) 
                                          
                                          code <- putCodeLinesInBrackets(list(lines12, namedObjectsConstructorCodeBlock())) 
                                          conFunDef <- cppFunctionDef(name = name,
