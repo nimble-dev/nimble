@@ -16,6 +16,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
                     makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
                     list(
+                        'next' = 'cppOutputNext',
                         eigenCast = 'cppOutputEigenCast',
                         memberData = 'cppOutputMemberData',
                         fill = 'cppOutputEigMemberFunctionNoTranslate',
@@ -121,6 +122,8 @@ exprName2Cpp <- function(code, symTab, asArg = FALSE) {
         return(code$name)
     }
 }
+
+cppOutputNext <- function(code, symTab) 'continue'
 
 cppOutputEigenCast <- function(code, symTab) {
     paste0( '(',nimGenerateCpp(code$args[[1]], symTab), ').cast<', code$args[[2]], '>()')

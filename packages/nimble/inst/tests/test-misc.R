@@ -28,3 +28,22 @@ test_that("No nimKeyword appears in specificCallHandlers", {
         fail(paste('These symbols appear in both nimKeywords and specificCallHandlers:', paste(duplicates, collapse = ', ')))
     }
 })
+
+test_that("keyword next works", {
+    nf <- nimbleFunction(
+    run = function() {
+        x <- numeric(2)
+        for(i in 1:4) {
+            if(i < 3) next
+            x[i-2] <- i
+        }
+        return(x)
+        returnType(double(1))
+    },
+    check = FALSE)
+    nfRes <- nf()
+    cnf <- compileNimble(nf, dirName = '.')
+    cnfRes <- cnf()
+    expect_equal(nfRes, c(3, 4), info = 'keyword next uncompiled')
+    expect_equal(cnfRes, c(3, 4), info = 'keyword next compiled')
+})
