@@ -422,7 +422,7 @@ convertCalcArgNameToModelNodeName <- function(calcArgName, sizeAndDimInfo){
 ## The first derivative (gradient) of the calculateWithArgs() function corresponding to thisLine with respect to each of the parameters corresponding to the wrtLineNums argument.
 recurse_gradChainRule <- function(thisLine, wrtLineNums, derivList, derivInfo){
   thisDeriv <- rep(0, length(wrtLineNums))  ## Set correct deriv. length
-  parentLines <- derivInfo[[2]][[thisLine]] ## Read all parent lines
+  parentLines <- derivInfo[[2]][[thisLine]] ## Get all parent lines
   thisDeriv[which(wrtLineNums == thisLine)] <- 1 ## The derivative w.r.t. itself is 1
   for(j in seq_along(parentLines)){  ## Iterate over parent calculate functions
     if(parentLines[j] > 0){ 
@@ -453,7 +453,7 @@ recurse_gradChainRule <- function(thisLine, wrtLineNums, derivList, derivInfo){
 #   return(thisDeriv)
 # }
 # 
-#
+
 # Hessian function is still under construction.
 # recurse_HessChainRule <- function(thisLine, wrtLineNums, derivList, derivInfo){
 #   thisHessian <- matrix(0, nrow = length(wrtLineNums), ncol = length(wrtLineNums))
@@ -482,26 +482,16 @@ recurse_gradChainRule <- function(thisLine, wrtLineNums, derivList, derivInfo){
 #       }
 #     }
 #   }
-#   
-#     if(thisLine == wrtLineNums[i]){
-#       thisDeriv[i] <- 1
-#     }
-#     else for(j in seq_along(parentLines)){
-#       if(parentLines[j] > 0){
-#         thisDeriv[i] <- thisDeriv[i] + derivList[[thisLine]]$gradient[j] * recurse_gradChainRule(parentLines[j], wrtLineNums[i],
-#                                                                                                  derivList, derivInfo)
-#       }
-#     }
-#   }
 #   return(thisDeriv)
 # }
 # 
+
 
 nimDerivs_calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex, order){
   if(!is.null(nodeFxnVector)){
     stop('nfv case of nimDerivs_calculate not implemented yet.')
   }
-  wrtPars <- c('a','b')
+  wrtPars <- c('a','b')  ## Currently wrtPars are hard coded.
   wrtParsDeps <- model$getDependencies(wrtPars)
   if(!all(model$expandNodeNames(nodes) %in% wrtParsDeps)){
     print('Warning: not all calculate nodes depend on a wrtNode')
