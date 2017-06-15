@@ -23,6 +23,11 @@ branches:
 
 latex: false  # Work around tlmgr issues.
 
+addons:
+  apt:
+    packages:
+      - time  # For /usr/bin/time profiling.
+
 install:
   - /usr/bin/time -v 'R --version'
   - /usr/bin/time -v echo 'Running under /usr/bin/time -v'
