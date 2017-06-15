@@ -2,8 +2,12 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of old vs. new generated C++ during refactoring steps")
 
-oldWarnLevel <- options('warn')
+RwarnLevel <- options('warn')$warn
 options(warn = -1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+
 
 ## Known concern: ordering of asRow()/asCol() and intermediates
 
@@ -56,4 +60,5 @@ compareOldAndNewMathTest <- function(input) {
 source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
 ans2 <- lapply(testsBasicMath, compareOldAndNewMathTest)
 
-options(warn = as.numeric(oldWarnLevel))
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
