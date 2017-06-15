@@ -110,9 +110,9 @@ rinvwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 #' @param order an integer vector with values within the set {0, 1, 2}, corresponding to whether the function value, gradient, and Hessian should be returned respectively.
 #' 
 #' @export
-nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
+nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL){
   fxnEnv <- parent.frame()
-  fxnCall <- match.call(function(nimFxn, order){})
+  fxnCall <- match.call(function(nimFxn, order, dropArgs){})
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
   derivFxnCall <- fxnCall[['nimFxn']]
   if(deparse(derivFxnCall[[1]]) == 'calculate'){
@@ -123,17 +123,20 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
                                nodeFunctionIndex = eval(derivFxnCall[['nodeFunctionIndex']], envir = fxnEnv),
                                order))
   }
+  useArgs <- 1:(length(derivFxnCall) - 1)
+  if(!is.null(dropArgs)) useArgs <- useArgs[-dropArgs]
   fxnArgLengths <- sapply(derivFxnCall, function(x){return(length(eval(x, envir = fxnEnv)))})[-1]
-  numFxnArgs <- length(fxnArgLengths)
-  totalFxnArgLength <- sum(fxnArgLengths)
+  totalFxnArgLength <- sum(fxnArgLengths[useArgs])
   delta <- .0001
-  fxph <- numeric(totalFxnArgLength)
-  fxmh <- numeric(totalFxnArgLength)
-  grad <- numeric(totalFxnArgLength)
-  derivxy <- matrix(0, nrow = totalFxnArgLength, ncol = totalFxnArgLength)
   origValue <- eval(derivFxnCall, envir = fxnEnv)
-  if(length(origValue) > 1) stop('Currently only have R derivs for functions that return scalars.')
-  for(i in seq_along(fxnArgLengths)){
+  if(length(nimDim(origValue)) > 1) stop('nimDerivs() cannot take derivatives of matrix or array valued functions.')
+  outLength <- nimDim(origValue)[1]
+  fxph <- matrix(nrow = totalFxnArgLength, ncol = outLength)
+  fxmh <- matrix(nrow = totalFxnArgLength, ncol = outLength)
+  grad <- matrix(nrow = totalFxnArgLength, ncol = outLength)
+  derivxy <- array(0, dim = c(totalFxnArgLength, totalFxnArgLength, outLength))
+  #if(length(origValue) > 1) stop('Currently only have R derivs for functions that return scalars.')
+  for(i in useArgs){
     origDFxnCall <-  derivFxnCall[[i + 1]] 
     deltaVec <- rep(0, fxnArgLengths[i])
     for(j in 1:fxnArgLengths[i]){
@@ -142,18 +145,18 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
       derivFxnCall[[i + 1]] <- substitute(DFXNCALL + DELTAVEC, 
                                           list(DFXNCALL = derivFxnCall[[i + 1]],
                                                DELTAVEC = deltaVec))
-      fxph[thisArgNum] <- eval(derivFxnCall, envir = fxnEnv)
+      fxph[thisArgNum,] <- eval(derivFxnCall, envir = fxnEnv)
       derivFxnCall[[i + 1]] <- substitute(DFXNCALL - 2*DELTAVEC, 
                                           list(DFXNCALL = derivFxnCall[[i + 1]],
                                                DELTAVEC = deltaVec))    
-      fxmh[thisArgNum] <- eval(derivFxnCall, envir = fxnEnv)
-      grad[thisArgNum] <- (fxph[thisArgNum] - fxmh[thisArgNum])/(2*delta)
-      derivxy[thisArgNum, thisArgNum] <- (fxph[thisArgNum] -2*origValue + fxmh[thisArgNum])/(delta^2)
+      fxmh[thisArgNum,] <- eval(derivFxnCall, envir = fxnEnv)
+      grad[thisArgNum,] <- (fxph[thisArgNum,] - fxmh[thisArgNum,])/(2*delta)
+      derivxy[thisArgNum, thisArgNum,] <- (fxph[thisArgNum,] -2*origValue + fxmh[thisArgNum,])/(delta^2)
       derivFxnCall[[i + 1]] <- origDFxnCall
       deltaVec[j] <- 0
     }
   }
-  for(i in seq_along(fxnArgLengths)){
+  for(i in useArgs){
     origDFxnCall <-  derivFxnCall[[i + 1]] 
     deltaVec <- rep(0, fxnArgLengths[i])
     for(j in 1:fxnArgLengths[i]){
@@ -171,14 +174,14 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
                                               list(DFXNCALL = derivFxnCall[[i + 1]],
                                                    DELTAVEC = deltaVec))
           fxymh <-  eval(derivFxnCall, envir = fxnEnv)
-          derivxy[thisArgNum, thisArgNum_2] <- 
-            (fxyph - fxph[thisArgNum] - fxph[thisArgNum_2] + 2*origValue - fxmh[thisArgNum] - fxmh[thisArgNum_2] + fxymh)/(2*delta^2)
+          derivxy[thisArgNum, thisArgNum_2,] <- 
+            (fxyph - fxph[thisArgNum,] - fxph[thisArgNum_2,] + 2*origValue - fxmh[thisArgNum,] - fxmh[thisArgNum_2,] + fxymh)/(2*delta^2)
           derivFxnCall[[i + 1]] <- origDFxnCall
           deltaVec[j_2] <- 0
         }
       }
-      if(i != numFxnArgs){
-        for(i_2 in (i+1):numFxnArgs){
+      if(i != useArgs[length(useArgs)]){
+        for(i_2 in useArgs[-c(1:which(useArgs == i))]){
           origDFxnCall_2 <-  derivFxnCall[[i_2 + 1]] 
           deltaVec_2 <- rep(0, fxnArgLengths[i_2])
           for(j_2 in 1:fxnArgLengths[i_2]){
@@ -198,8 +201,8 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
                                                   list(DFXNCALL = derivFxnCall[[i_2 + 1]],
                                                        DELTAVEC = deltaVec_2))
             fxymh <-  eval(derivFxnCall, envir = fxnEnv)
-            derivxy[thisArgNum, thisArgNum_2] <- 
-              (fxyph - fxph[thisArgNum] - fxph[thisArgNum_2] + 2*origValue - fxmh[thisArgNum] - fxmh[thisArgNum_2] + fxymh)/(2*delta^2)
+            derivxy[thisArgNum, thisArgNum_2,] <- 
+              (fxyph - fxph[thisArgNum,] - fxph[thisArgNum_2,] + 2*origValue - fxmh[thisArgNum,] - fxmh[thisArgNum_2,] + fxymh)/(2*delta^2)
             derivFxnCall[[i + 1]] <- origDFxnCall
             derivFxnCall[[i_2 + 1]] <- origDFxnCall_2
             deltaVec_2[j_2] <- 0
@@ -209,7 +212,6 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
       deltaVec[j] <- 0
     }
   }
-  
   return(nimble:::ADNimbleList$new(value = origValue,
                       gradient = grad,
                       hessian = derivxy))

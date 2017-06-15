@@ -155,10 +155,7 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
         if(nimbleOptions('enableDerivs')){
-          methodList[['CALCADFUNNAME']]  <- eval(substitute(
-            function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR_AD;   returnType(double());   return(invisible(LOGPROB_AD)) },
-            list(LOGPROB_AD = as.name('logProb'),
-                 STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(as.name('logProb'), LHS, RHS, ADFunc = TRUE))))
+          methodList[['CALCADFUNNAME']]  <- methodList[['calculate']]
         }
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
@@ -234,13 +231,14 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
           body(methodList[[getCalcADFunName()]]) <- nndf_addArgInfoToCalcAD(body(methodList[[getCalcADFunName()]]), names(parentsSizeAndDims)[i], j)
         }
       }
-      if(type == 'determ') body(methodList[[getCalcADFunName()]]) <- nndf_addArgInfoToCalcAD(body(methodList[[getCalcADFunName()]]), names(parentsSizeAndDims)[1], 1)
+      if(type == 'determ'){
+        body(methodList[[getCalcADFunName()]]) <- nndf_addArgInfoToCalcAD(body(methodList[[getCalcADFunName()]]), names(parentsSizeAndDims)[1], 1)
+      }
       formals(methodList[[getCalcADFunName()]]) <- c(formals(methodList[[getCalcADFunName()]]), parentsArgs)
     }
-    ## add model$ in front of all names, except the setupOutputs
-  
+    ADexceptionNames <- c(names(parentsArgs))
     methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"), 
-                                                    ADexceptionNames = c(names(parentsArgs), 'logProb'))
+                                                    ADexceptionNames = ADexceptionNames)
     return(methodList)
 }
 
@@ -275,7 +273,7 @@ nndf_addModelDollarSignsToMethods <- function(methodList, exceptionNames = chara
         body(methodList[[i]]) <- removeIndices(body(methodList[[i]]))
         body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, ADexceptionNames))
       }
-      else  body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))
+      else  body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = exceptionNames)
     }
     return(methodList)
 }
