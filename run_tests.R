@@ -1,5 +1,10 @@
 #!/usr/bin/env Rscript
 # This script runs most tests in nimble/inst/tests/ prioritized by duration.
+# To run only some of the tests, define the environment variable NIMBLE_TEST_BATCH=N
+# where N is a number in 1,...,5.
+# To see which tests will be run, pass the argument --dry-run, for example
+#   ./run_tests.R --dry-run                        # Run all tests.                        
+#   $ NIMBLE_TEST_BATCH=1 ./run_tests.R --dry-run  # Run one batch of tests.
 
 # Avoid running these blacklisted tests, since they take too long.
 blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.R')
