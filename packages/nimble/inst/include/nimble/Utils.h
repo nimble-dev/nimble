@@ -5,6 +5,7 @@
 #include "R.h"
 #include<Rinternals.h>
 #include<Rmath.h>
+#include<limits>
 #include<string>
 #include<time.h>
 using std::string;
