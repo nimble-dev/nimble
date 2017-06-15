@@ -158,5 +158,9 @@ int nimStep(double x);
 double cube(double x);
 double inprod(double v1, double v2);
 
-double nimble_NaN();
+inline double nimble_NaN() {
+  return std::numeric_limits<double>::has_quiet_NaN
+    ? std::numeric_limits<double>::quiet_NaN()
+    : (0./0.);
+}
 #endif
