@@ -23,10 +23,28 @@ testTimes <- testTimes[order(testTimes),, drop = FALSE]
 allTests <- intersect(row.names(testTimes), allTests)
 
 # Parallelize tests by splitting them up into batches.
+# We use the Best Fit Decreasing heuristic to approximatly solve this 1-D bin packing problem.
 totalBatches = 5
 testBatch = as.integer(Sys.getenv('NIMBLE_TEST_BATCH'))
+if (!is.na(testBatch)) {
+    if (testBatch < 1 || testBatch > totalBatches) {
+        stop(paste0('Invalid NIMBLE_TEST_BATCH=', Sys.getenv('NIMBLE_TEST_BATCH')))
+    }
+    decreasingTests <- rev(allTests)
+    binTimes <- -1e-6 * seq(totalBatches)  # Bias big tests towards later batches.
+    allTests <- character()
+    for (test in decreasingTests) {
+        bin <- which.min(binTimes)
+        binTimes[bin] <- binTimes[bin] + testTimes[test, 'time']
+        if (bin == testBatch) {
+            allTests = c(test, allTests)  # Test shorter tests first.
+        }
+    }
+}
 
 cat('PLANNING TO TEST', allTests, sep = '\n  ')
+cat('PREDICTED DURATION =', sum(testTimes[allTests, 'time']), 'sec\n')
+if ('--dry-run' %in% commandArgs(trailingOnly = TRUE)) quit()
 
 # Run under /usr/bin/time -v if possible, to gather timing information.
 if (system2('/usr/bin/time', c('-v', 'echo', 'Running tests under /usr/bin/time -v'))) {

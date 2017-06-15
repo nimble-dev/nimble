@@ -33,6 +33,11 @@ branches:
 
 latex: false  # Work around tlmgr issues.
 
+addons:
+  apt:
+    packages:
+      - time  # For /usr/bin/time profiling.
+
 install:
   - Rscript -e "install.packages('igraph', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('coda', repos = 'http://cran.us.r-project.org')"
