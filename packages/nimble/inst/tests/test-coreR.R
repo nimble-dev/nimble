@@ -2,6 +2,12 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context("Testing of core R functions in NIMBLE code")
 
+RwarnLevel <- options('warn')$warn
+options(warn = -1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = TRUE)
+
+
 ## fix result_type in nimbleEigen.h
 
 cTests <- list(
@@ -755,17 +761,17 @@ returnTests <- list(
          outputType = quote(double(1))) 
 )
 
-cTestsResults <- lapply(cTests, test_coreRfeature)
-blockTestsResults <- lapply(blockTests, test_coreRfeature)
-repTestsResults <- lapply(repTests, test_coreRfeature)
-diagTestsResults <- lapply(diagTests, test_coreRfeature)
-recyclingRuleTestsResults <- lapply(recyclingRuleTests, test_coreRfeature)
-rRecyclingRuleTestsResults <- lapply(rRecyclingRuleTests, test_coreRfeature)
-seqTestsResults <- lapply(seqTests, test_coreRfeature)
-nonSeqIndexTestsResults <- lapply(nonSeqIndexTests, test_coreRfeature)
-indexChainTestsResults <- lapply(indexChainTests, test_coreRfeature)
-logicalTestsResults <- lapply(logicalTests, test_coreRfeature)
-returnTestResults <- lapply(returnTests, test_coreRfeature)
+cTestsResults <- test_coreRfeature_batch(cTests, 'cTests') ##lapply(cTests, test_coreRfeature)
+blockTestsResults <- test_coreRfeature_batch(blockTests, 'blockTests') ##lapply(blockTests, test_coreRfeature)
+repTestsResults <- test_coreRfeature_batch(repTests, 'repTests') ## lapply(repTests, test_coreRfeature)
+diagTestsResults <- test_coreRfeature_batch(diagTests, 'diagTests') ## lapply(diagTests, test_coreRfeature)
+recyclingRuleTestsResults <- test_coreRfeature_batch(recyclingRuleTests, 'recyclingRuleTests') ## lapply(recyclingRuleTests, test_coreRfeature)
+rRecyclingRuleTestsResults <- test_coreRfeature_batch(rRecyclingRuleTests, 'rRecyclingRuleTests') ## lapply(rRecyclingRuleTests, test_coreRfeature)
+seqTestsResults <- test_coreRfeature_batch(seqTests, 'seqTests') ## lapply(seqTests, test_coreRfeature)
+nonSeqIndexTestsResults <- test_coreRfeature_batch(nonSeqIndexTests, 'nonSeqIndexTests') ## lapply(nonSeqIndexTests, test_coreRfeature)
+indexChainTestsResults <- test_coreRfeature_batch(indexChainTests, 'indexChainTests') ## lapply(indexChainTests, test_coreRfeature)
+logicalTestsResults <- test_coreRfeature_batch(logicalTests, 'logicalTests') ## lapply(logicalTests, test_coreRfeature)
+returnTestResults <- test_coreRfeature_batch(returnTests, 'returnTests') ## lapply(returnTests, test_coreRfeature)
 
 
 ## Some tests of using coreR features in BUGS models
@@ -878,3 +884,5 @@ test_that('diag(3) in BUGS works', {
 }
 )
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
