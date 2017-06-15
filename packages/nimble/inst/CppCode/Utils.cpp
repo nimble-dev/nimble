@@ -68,7 +68,7 @@ int nimStep(double x) { return(x >= 0 ? 1 : 0);}
 double cube(double x) {return(x*x*x);}
 double inprod(double v1, double v2) {return(v1*v2);}
 
-inline double nimble_NaN() {
+double nimble_NaN() {
   return std::numeric_limits<double>::has_quiet_NaN
     ? std::numeric_limits<double>::quiet_NaN()
     : (0./0.);
