@@ -29,7 +29,6 @@ addons:
       - time  # For /usr/bin/time profiling.
 
 install:
-  - /usr/bin/time -v 'R --version'
   - /usr/bin/time -v echo 'Running under /usr/bin/time -v'
   - Rscript -e "install.packages('igraph', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('coda', repos = 'http://cran.us.r-project.org')"
