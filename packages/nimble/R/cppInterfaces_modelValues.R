@@ -100,7 +100,7 @@ CmodelValues <- setRefClass(
         },
         resize = function(rows){	
         	for(ptr in componentExtptrs)
-        	jnk <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setNumListRows, ptr, as.integer(rows), TRUE))
+        	jnk <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setVecNimArrRows, ptr, as.integer(rows), TRUE))
         	jnk <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$manualSetNRows, extptr, as.integer(rows)) )  	
         	},
         getSize = function() {	eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getNRow, componentExtptrs[[1]])) } ## formerly getCRows(componentExtptrs[[1]])		}

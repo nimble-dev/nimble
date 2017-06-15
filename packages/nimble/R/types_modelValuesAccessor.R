@@ -75,7 +75,7 @@ makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
         isLogProbName <- grepl('logProb_', nodeNames)
         nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
     }
-    varNames <- .Call('parseVar', nodeNames)
+    varNames <- .Call(parseVar, nodeNames)
     symTab <- sourceObject$getSymbolTable()
     varSizesAndNDims2 <- symTab$makeDimAndSizeList(varNames)    
     varSizesAndNDims <- varSizesAndNDims2
