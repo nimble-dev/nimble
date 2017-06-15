@@ -671,13 +671,13 @@ symbolInternalType <-
                     })
                 )
 
-symbolTensorFlowRunner <-
-    setRefClass(Class = "symbolTensorFlowRunner",
+symbolTensorflowRunner <-
+    setRefClass(Class = "symbolTensorflowRunner",
                 contains = "symbolBase",
                 fields = list(constructor = "ANY"),
                 methods = list(
                     initialize = function(...) callSuper(...),
-                    show = function() writeLines(paste('symbolTensorFlowRunner ', name)),
+                    show = function() writeLines(paste('symbolTensorflowRunner ', name)),
                     genCppVar = function(functionArg = FALSE) {
                         cppVarFull(name = name, baseType = "NimTfRunner", static = TRUE, ptr = 1, constructor = constructor)
                     }

@@ -58,13 +58,13 @@ TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
     ## for a first step now we will just paste together the constructor code
     TFconstructor <- makeTFconstruction(TFcontent)
     TFrunnerName <- TFrunnerLabelGenerator()    
-    TFrunnerSym <- symbolTensorFlowRunner(name = TFrunnerName, constructor = TFconstructor, type = "symbolTensorFlowRunner")
+    TFrunnerSym <- symbolTensorflowRunner(name = TFrunnerName, constructor = TFconstructor, type = "symbolTensorflowRunner")
     symTab$addSymbol(TFrunnerSym)
     TFsetupExprs <- makeTFsetupExprs(TFcontent, TFrunnerName)
     ## convert original code line to a comment
     original <- nimDeparse(code)
     code$name <- "cppComment"
-    code$args <- list(paste0("End: TensorFlow implementation for: ", original))
+    code$args <- list(paste0("End: Tensorflow implementation for: ", original))
     TFsetupExprs
 }
 

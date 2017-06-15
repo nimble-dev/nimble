@@ -296,7 +296,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
 
-                                       if(nimbleOptions('experimentalTensorFlowCpp')) {
+                                       if(nimbleOptions('experimentalUseTensorflow')) {
                                            exprClasses_TFize(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
                                        } else {                                       
                                            tryResult <- try(exprClasses_eigenize(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv))
