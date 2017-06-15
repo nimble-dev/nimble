@@ -10,6 +10,8 @@ if (length(args) != 1 || '-h' %in% args || '--help' %in% args) {
         '  run_tests.sh 2>&1 > test_log.txt',
         'or a travis log file that you download from',
         '  https://travis-ci.org/nimble-dev/nimble/builds',
+        'It is fine if the test log has run only a subset of tests;',
+        'this script will only update the times of the tests that were run.',
         sep = '\n'
     )
     quit('no', 1)
