@@ -7,10 +7,12 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        experimentalNewSizeProcessing = FALSE,
+        experimentalSelfLiftStage = FALSE,
         enableSpecialHandling = FALSE,
         pauseAfterWritingFiles = FALSE,
         CppAD_directory = NA,
-        enableDerivs = FALSE,
+        experimentalEnableDerivs = FALSE,
         convertSingleVectorsToScalarsInSetupArgs = TRUE,
         messagesWhenBuildingOrFinalizingCppObjects = FALSE,
         indexDrop = TRUE,

@@ -3,101 +3,101 @@
 #include<sstream>
 using std::istringstream;
 
-NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+NimArr<1, double> getParam_1D_double(int paramID, const NodeInstruction &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
-  return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID, useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID, useInfo.operand));
 }
 
-NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+NimArr<2, double> getParam_2D_double(int paramID, const NodeInstruction &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
-  return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID, useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID, useInfo.operand));
 }
 
 // code for getBound copied over from getParam; none of this currently used as we only have scalar bounds for multivariate nodes
-NimArr<1, double> getBound_1D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+NimArr<1, double> getBound_1D_double(int boundID, const NodeInstruction &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) boundID += 0;
-  return(useInfo.nodeFunPtr->getBound_1D_double_block(boundID, useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getBound_1D_double_block(boundID, useInfo.operand));
 }
 
-NimArr<2, double> getBound_2D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+NimArr<2, double> getBound_2D_double(int boundID, const NodeInstruction &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) boundID += 0;
-  return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID, useInfo.useInfo));
+  return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID, useInfo.operand));
 }
 
 // see include/nimble/nimbleEigenNimArr.h for some templated versions of calculate, simulate, calculateDiff and getLogProb used for arbitrary index vectors
 double calculate(NodeVectorClassNew &nodes) {
   double ans(0);
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
-  vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
-  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  vector<NodeInstruction>::const_iterator iNode(instructions.begin());
+  vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
   for(; iNode != iNodeEnd; iNode++)
-    ans += iNode->nodeFunPtr->calculateBlock(iNode->useInfo);
+    ans += iNode->nodeFunPtr->calculateBlock(iNode->operand);
   return(ans);
 }
 
 
 double calculate(NodeVectorClassNew &nodes, int iNodeFunction) {
-  if(nodes.getUseInfoVec().size() < static_cast<unsigned int>(iNodeFunction)) {
+  if(nodes.getInstructions().size() < static_cast<unsigned int>(iNodeFunction)) {
     PRINTF("Warning in calculate: index of requested set of nodes is too large\n");
     return(0);
   }
-  const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
-  return(oneUseInfo.nodeFunPtr->calculateBlock(oneUseInfo.useInfo));
+  const NodeInstruction &oneUseInfo = nodes.getInstructions()[iNodeFunction-1];
+  return(oneUseInfo.nodeFunPtr->calculateBlock(oneUseInfo.operand));
 }
 
 double calculateDiff(NodeVectorClassNew &nodes) {
   double ans(0);
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
-  vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
-  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  vector<NodeInstruction>::const_iterator iNode(instructions.begin());
+  vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
   for(; iNode != iNodeEnd; iNode++)
-    ans += iNode->nodeFunPtr->calculateDiffBlock(iNode->useInfo);
+    ans += iNode->nodeFunPtr->calculateDiffBlock(iNode->operand);
   return(ans);
 }
 
 double calculateDiff(NodeVectorClassNew &nodes, int iNodeFunction) {
-  if(nodes.getUseInfoVec().size() < static_cast<unsigned int>(iNodeFunction)) {
+  if(nodes.getInstructions().size() < static_cast<unsigned int>(iNodeFunction)) {
     PRINTF("Warning in calculateDiff: index of requested set of nodes is too large\n");
     return(0);
   }
-  const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
-  return(oneUseInfo.nodeFunPtr->calculateDiffBlock(oneUseInfo.useInfo));
+  const NodeInstruction &oneUseInfo = nodes.getInstructions()[iNodeFunction-1];
+  return(oneUseInfo.nodeFunPtr->calculateDiffBlock(oneUseInfo.operand));
 }
 
 double getLogProb(NodeVectorClassNew &nodes) {
   double ans(0);
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
-  vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
-  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  vector<NodeInstruction>::const_iterator iNode(instructions.begin());
+  vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
   for(; iNode != iNodeEnd; iNode++)
-    ans += iNode->nodeFunPtr->getLogProbBlock(iNode->useInfo);
+    ans += iNode->nodeFunPtr->getLogProbBlock(iNode->operand);
   return(ans);
 }
 
 double getLogProb(NodeVectorClassNew &nodes, int iNodeFunction) {
-  if(nodes.getUseInfoVec().size() < static_cast<unsigned int>(iNodeFunction)) {
+  if(nodes.getInstructions().size() < static_cast<unsigned int>(iNodeFunction)) {
     PRINTF("Warning in getLogProb: index of requested set of nodes is too large\n");
     return(0);
   }
-  const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
-  return(oneUseInfo.nodeFunPtr->getLogProbBlock(oneUseInfo.useInfo));
+  const NodeInstruction &oneUseInfo = nodes.getInstructions()[iNodeFunction-1];
+  return(oneUseInfo.nodeFunPtr->getLogProbBlock(oneUseInfo.operand));
 }
 
 void simulate(NodeVectorClassNew &nodes) {
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
-  vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
-  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  vector<NodeInstruction>::const_iterator iNode(instructions.begin());
+  vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
   for(; iNode != iNodeEnd; iNode++)
-    iNode->nodeFunPtr->simulateBlock(iNode->useInfo);
+    iNode->nodeFunPtr->simulateBlock(iNode->operand);
 }
 
 void simulate(NodeVectorClassNew &nodes, int iNodeFunction) {
-  if(nodes.getUseInfoVec().size() < static_cast<unsigned int>(iNodeFunction)) {
+  if(nodes.getInstructions().size() < static_cast<unsigned int>(iNodeFunction)) {
     PRINTF("Warning in simulate: index of requested set of nodes is too large\n");
     return;
   }
-  const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
-  oneUseInfo.nodeFunPtr->simulateBlock(oneUseInfo.useInfo);
+  const NodeInstruction &oneUseInfo = nodes.getInstructions()[iNodeFunction-1];
+  oneUseInfo.nodeFunPtr->simulateBlock(oneUseInfo.operand);
 }
 
 SingleVariableMapAccessBase::~SingleVariableMapAccessBase(){}
@@ -626,12 +626,7 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
     if(nextRowInd == -1) { // should only happen from a scalar, so there is one dummy indexedNodeInfo
       nextRowInd = 0;
     }
-    if(true) { // (Disabling this aggregation because it messes up use of individual nodeFunctionVector elements) if(index != previousIndex) {
-      (*nfv).useInfoVec.push_back(oneNodeUseInfo(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd));
-      //previousIndex = index;
-    } else { // simple form of aggregation: push rows of same nodeFun into same object if they come one after the other
-      (*nfv).useInfoVec.back().useInfo.indicesForIndexedNodeInfo.push_back(nextRowInd);
-    }
+    (*nfv).instructions.push_back(NodeInstruction(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd));
   }
   return(R_NilValue);
 }

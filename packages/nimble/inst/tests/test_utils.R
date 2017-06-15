@@ -897,3 +897,12 @@ compareFilesByLine <- function(trialResults, correctResults, main = "") {
     }, 1:linesToTest, trialResults, correctResults)
     invisible(NULL)
 }
+
+compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
+    if(main == "") main <- paste0(trialFile, ' and ', correctFile, ' do not match\n')
+    diffOutput <- system2('diff', c(trialFile, correctFile), stdout = TRUE)
+    test_that(paste0(main, paste0(diffOutput, collapse = '\n')),
+              expect_true(length(diffOutput) == 0)
+              )
+    invisible(NULL)
+}

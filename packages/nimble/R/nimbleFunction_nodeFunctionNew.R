@@ -7,7 +7,7 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeA
     altParamsRep <- lapply(altParams, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     boundsRep <- lapply(bounds, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     logProbNodeExprRep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(logProbNodeExpr, setupOutputLabels)
-    if(nimbleOptions('enableDerivs')){
+    if(nimbleOptions('experimentalEnableDerivs')){
       parents <- names(parentsSizeAndDims)
       parentIndexInfoList <- nndf_extractNodeIndices(LHSrep, parents)
       parentIndexInfoList <- nndf_extractNodeIndices(RHSrep, parents, indexExprList = parentIndexInfoList)
@@ -30,7 +30,7 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeA
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
                  SETUPFUNCTION = nndf_createSetupFunction(),  ##nndf = new node function
                  METHODS       = nndf_createMethodList(LHSrep, RHSrep, parentsSizeAndDims, altParamsRep, boundsRep, logProbNodeExprRep, type),
-                 CALCAD_LIST   = if(nimbleOptions('enableDerivs')) list(getCalcADFunName()) else list(),
+                 CALCAD_LIST   = if(nimbleOptions('experimentalEnableDerivs')) list(getCalcADFunName()) else list(),
                  where         = where)
         )
     if(evaluate){
@@ -129,7 +129,7 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
             ),
             list(LHS=LHS,
                  RHS=RHS)))
-        if(nimbleOptions('enableDerivs')){
+        if(nimbleOptions('experimentalEnableDerivs')){
           methodList[['CALCADFUNNAME']]  <- eval(substitute(
             function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <- RHS;    returnType(double(THISDIM));   return(THISNAME) },
             list(LHS=LHS,
@@ -154,7 +154,7 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
                  STOCHSIM  = ndf_createStochSimulate(RHS),
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
-        if(nimbleOptions('enableDerivs')){
+        if(nimbleOptions('experimentalEnableDerivs')){
           methodList[['CALCADFUNNAME']]  <- methodList[['calculate']]
         }
         if(FALSE) {
@@ -220,7 +220,7 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
         methodList[[caseName]] <- nndf_generateGetBoundSwitchFunction(bounds, seq_along(bounds), type = 'double', nDim = nDimSupported)
     }
     parentsArgs <-c()
-    if(nimbleOptions('enableDerivs')){
+    if(nimbleOptions('experimentalEnableDerivs')){
       names(methodList)[names(methodList) == 'CALCADFUNNAME'] <-  getCalcADFunName() ## replace CALCADFUNNAME with real name
       parentsArgs <- if(length(parentsSizeAndDims) > 0) list() else NULL
       for(i in seq_along(parentsSizeAndDims)){
@@ -239,6 +239,7 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
     ADexceptionNames <- c(names(parentsArgs))
     methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"), 
                                                     ADexceptionNames = ADexceptionNames)
+
     return(methodList)
 }
 
@@ -273,7 +274,7 @@ nndf_addModelDollarSignsToMethods <- function(methodList, exceptionNames = chara
         body(methodList[[i]]) <- removeIndices(body(methodList[[i]]))
         body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, ADexceptionNames))
       }
-      else  body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = exceptionNames)
+      else  body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))
     }
     return(methodList)
 }
