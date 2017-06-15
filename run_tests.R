@@ -62,7 +62,7 @@ if (system2('/usr/bin/time', c('-v', 'echo', 'Running tests under /usr/bin/time 
 # Run each test in a separate process to avoid dll garbage overload.
 for (test in allTests) {
     cat('--------------------------------------------------------------------------------\n')
-    cat('TESING', test, '\n')
+    cat('TESTING', test, '\n')
     runViaTestthat <- TRUE
     if (runViaTestthat) {
         name <- gsub('test-(.*)\\.R', '\\1', test)

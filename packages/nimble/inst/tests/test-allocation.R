@@ -3,14 +3,18 @@
 library(nimble)
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = -1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = TRUE)
+
 
 numericTests <- list(
     list(name = 'numeric: length',
          expr = quote(out <- numeric(5)),
          outputType = quote(double(1) ),
          args = list(),
-         setArgVals = quote({}),
-         safeCompilerFail = FALSE
+         setArgVals = quote({})
          ),
     list(name = 'numeric: length 0',
          expr = quote({
@@ -26,8 +30,7 @@ numericTests <- list(
          expr = quote(out <- nimNumeric(5, value = 2, recycle = FALSE, fillZeros = TRUE)),
          outputType = quote(double(1) ),
          args = list(),
-         setArgVals = quote({}),
-         safeCompilerFail = FALSE
+         setArgVals = quote({})
          ),
     list(name = 'numeric: length, scalar value, init=FALSE',
          expr = quote({out <- nimNumeric(5, value = 1.5, init = FALSE);
@@ -47,22 +50,6 @@ numericTests <- list(
              out <- nimNumeric(sum(a) + 1, value = mean(b) + 0.5, init = (c > 2)[4]);
          }),
          outputType = quote(double(1))
-         ),
-    list(name = 'numeric: fail for length given as vector',
-         expr = quote({
-             a <- 2:4
-             out <- nimNumeric(a, value = 1.5);
-         }),
-         outputType = quote(double(1)),
-         safeCompilerFail = TRUE
-         ),
-    list(name = 'numeric: fail for init given as vector',
-         expr = quote({
-             b <- c(TRUE, FALSE, TRUE)
-             out <- nimNumeric(3, value = 1.5, init = b);
-         }),
-         outputType = quote(double(1)),
-         safeCompilerFail = TRUE
          ),
     list(name = 'numeric: length, vector value',
          expr = quote({
@@ -113,8 +100,7 @@ integerTests <- list(
          expr = quote(out <- integer(5)),
          outputType = quote(integer(1) ),
          args = list(),
-         setArgVals = quote({}),
-         safeCompilerFail = FALSE
+         setArgVals = quote({})
          ),
     list(name = 'integer: length, scalar value',
          expr = quote(out <- nimInteger(5, value = 1.5)),
@@ -124,8 +110,7 @@ integerTests <- list(
          expr = quote(out <- nimInteger(5, value = 2, recycle = FALSE, fillZeros = TRUE)),
          outputType = quote(integer(1) ),
          args = list(),
-         setArgVals = quote({}),
-         safeCompilerFail = FALSE
+         setArgVals = quote({})
          ),
     list(name = 'integer: length, scalar value, init=FALSE',
          expr = quote({out <- nimInteger(5, value = 1.5, init = FALSE);
@@ -147,22 +132,6 @@ integerTests <- list(
              out <- nimInteger(sum(a) + 1, value = round(mean(b)), init = (c > 2)[4]);
          }),
          outputType = quote(integer(1))
-         ),
-    list(name = 'integer: fail for length given as vector',
-         expr = quote({
-             a <- 2:4
-             out <- nimInteger(a, value = 15);
-         }),
-         outputType = quote(integer(1)),
-         safeCompilerFail = TRUE
-         ),
-    list(name = 'integer: fail for init given as vector',
-         expr = quote({
-             b <- c(TRUE, FALSE, TRUE)
-             out <- nimInteger(3, value = 15, init = b);
-         }),
-         outputType = quote(integer(1)),
-         safeCompilerFail = TRUE
          ),
     list(name = 'integer: length, vector value',
          expr = quote({
@@ -213,8 +182,7 @@ logicalTests <- list(
          expr = quote(out <- logical(5)),
          outputType = quote(logical(1) ),
          args = list(),
-         setArgVals = quote({}),
-         safeCompilerFail = FALSE
+         setArgVals = quote({})
          ),
     list(name = 'logical: length, scalar value',
          expr = quote(out <- nimLogical(5, value = 1.5)),
@@ -224,8 +192,7 @@ logicalTests <- list(
          expr = quote(out <- nimLogical(5, value = TRUE, recycle = FALSE, fillZeros = TRUE)),
          outputType = quote(logical(1) ),
          args = list(),
-         setArgVals = quote({}),
-         safeCompilerFail = FALSE
+         setArgVals = quote({})
          ),
     list(name = 'logical: length, scalar value, init=FALSE',
          expr = quote({out <- nimLogical(5, value = FALSE, init = FALSE);
@@ -245,22 +212,6 @@ logicalTests <- list(
              out <- nimLogical(sum(a) + 1, value = mean(b) > 0, init = (c > 2)[4]);
          }),
          outputType = quote(logical(1))
-         ),
-    list(name = 'logical: fail for length given as vector',
-         expr = quote({
-             a <- 2:4
-             out <- nimLogical(a, value = TRUE);
-         }),
-         outputType = quote(logical(1)),
-         safeCompilerFail = TRUE
-         ),
-    list(name = 'logical: fail for init given as vector',
-         expr = quote({
-             b <- c(TRUE, FALSE, TRUE)
-             out <- nimLogical(3, value = TRUE, init = b);
-         }),
-         outputType = quote(logical(1)),
-         safeCompilerFail = TRUE
          ),
     list(name = 'logical: length, vector value',
          expr = quote({
@@ -475,14 +426,6 @@ arrayTests1D <- list(
          }),
          outputType = quote(double(1))
          ),
-    list(name = 'array 1D (dim vector without nDim: safe compiler fail)',
-         expr = quote({
-             dim <- c(2)
-             out <- nimArray(6, dim = dim);
-         }),
-         outputType = quote(double(1)),
-         safeCompilerFail = TRUE
-         ),
     list(name = 'array 1D (dim vector)',
          expr = quote({
              dim <- c(2)
@@ -557,14 +500,6 @@ arrayTests3D <- list(
              out <- nimArray(1.23, dim = c(2, 3, 4), fillZeros = TRUE, recycle = FALSE);
          }),
          outputType = quote(double(3))
-         ),
-    list(name = 'array 3D (dim vector without nDim: safe compiler fail)',
-         expr = quote({
-             dim <- c(2, 3, 4)
-             out <- nimArray(6, dim = dim);
-         }),
-         outputType = quote(double(3)),
-         safeCompilerFail = TRUE
          ),
     list(name = 'array 3D (dim vector)',
          expr = quote({
@@ -654,14 +589,6 @@ arrayTests2D <- list(
              out <- nimArray(1.23, dim = c(2, 3), fillZeros = TRUE, recycle = FALSE);
          }),
          outputType = quote(double(2))
-         ),
-    list(name = 'array 2D (dim vector without nDim: safe compiler fail)',
-         expr = quote({
-             dim <- c(2, 3)
-             out <- nimArray(6, dim = dim);
-         }),
-         outputType = quote(double(2)),
-         safeCompilerFail = TRUE
          ),
     list(name = 'array 2D (dim vector)',
          expr = quote({
@@ -914,14 +841,94 @@ setSize3D <- list(
          )
     )
 
-numericTestResults <- lapply(numericTests, test_coreRfeature)
-numericTestResults <- lapply(integerTests, test_coreRfeature)
-logicalTestResults <- lapply(logicalTests, test_coreRfeature)
-matrixTestResults <- lapply(matrixTests, test_coreRfeature)
-array1DTestResults <- lapply(arrayTests1D, test_coreRfeature)
-array2DTestResults <- lapply(arrayTests2D, test_coreRfeature)
-array3DTestResults <- lapply(arrayTests3D, test_coreRfeature)
-setSize1DResults <- lapply(setSize1D, test_coreRfeature)
-setSize1DintegerResults <- lapply(setSize1Dinteger, test_coreRfeature)
-setSize2DResults <- lapply(setSize2D, test_coreRfeature)
-setSize3DResults <- lapply(setSize3D, test_coreRfeature)
+expectedCompilerFailures <- list(
+    list(name = 'numeric: fail for length given as vector',
+         expr = quote({
+             a <- 2:4
+             out <- nimNumeric(a, value = 1.5);
+         }),
+         outputType = quote(double(1)),
+         safeCompilerFail = TRUE
+         ),
+    list(name = 'numeric: fail for init given as vector',
+         expr = quote({
+             b <- c(TRUE, FALSE, TRUE)
+             out <- nimNumeric(3, value = 1.5, init = b);
+         }),
+         outputType = quote(double(1)),
+         safeCompilerFail = TRUE
+         ),
+    list(name = 'integer: fail for length given as vector',
+         expr = quote({
+             a <- 2:4
+             out <- nimInteger(a, value = 15);
+         }),
+         outputType = quote(integer(1)),
+         safeCompilerFail = TRUE
+         ),
+    list(name = 'integer: fail for init given as vector',
+         expr = quote({
+             b <- c(TRUE, FALSE, TRUE)
+             out <- nimInteger(3, value = 15, init = b);
+         }),
+         outputType = quote(integer(1)),
+         safeCompilerFail = TRUE
+         ),
+    list(name = 'logical: fail for length given as vector',
+         expr = quote({
+             a <- 2:4
+             out <- nimLogical(a, value = TRUE);
+         }),
+         outputType = quote(logical(1)),
+         safeCompilerFail = TRUE
+         ),
+    list(name = 'logical: fail for init given as vector',
+         expr = quote({
+             b <- c(TRUE, FALSE, TRUE)
+             out <- nimLogical(3, value = TRUE, init = b);
+         }),
+         outputType = quote(logical(1)),
+         safeCompilerFail = TRUE
+         ),
+    list(name = 'array 1D (dim vector without nDim: safe compiler fail)',
+         expr = quote({
+             dim <- c(2)
+             out <- nimArray(6, dim = dim);
+         }),
+         outputType = quote(double(1)),
+         safeCompilerFail = TRUE
+         ),
+    list(name = 'array 3D (dim vector without nDim: safe compiler fail)',
+         expr = quote({
+             dim <- c(2, 3, 4)
+             out <- nimArray(6, dim = dim);
+         }),
+         outputType = quote(double(3)),
+         safeCompilerFail = TRUE
+         ),
+    list(name = 'array 2D (dim vector without nDim: safe compiler fail)',
+         expr = quote({
+             dim <- c(2, 3)
+             out <- nimArray(6, dim = dim);
+         }),
+         outputType = quote(double(2)),
+         safeCompilerFail = TRUE
+         )
+    )
+
+numericTestResults <- test_coreRfeature_batch(numericTests, 'numericTests') ## lapply(numericTests, test_coreRfeature)
+numericTestResults <- test_coreRfeature_batch(integerTests, 'integerTests') ## lapply(integerTests, test_coreRfeature)
+logicalTestResults <- test_coreRfeature_batch(logicalTests, 'logicalTests') ## lapply(logicalTests, test_coreRfeature)
+matrixTestResults <- test_coreRfeature_batch(matrixTests, 'matrixTests') ## lapply(matrixTests, test_coreRfeature)
+array1DTestResults <- test_coreRfeature_batch(arrayTests1D, 'arrayTests1D') ## lapply(arrayTests1D, test_coreRfeature)
+array2DTestResults <- test_coreRfeature_batch(arrayTests2D, 'arrayTests2D') ## lapply(arrayTests2D, test_coreRfeature)
+array3DTestResults <- test_coreRfeature_batch(arrayTests3D, 'arrayTests3D') ## lapply(arrayTests3D, test_coreRfeature)
+setSize1DResults <- test_coreRfeature_batch(setSize1D, 'setSize1D') ## lapply(setSize1D, test_coreRfeature)
+setSize1DintegerResults <- test_coreRfeature_batch(setSize1Dinteger, 'setSize1Dinteger') ## lapply(setSize1Dinteger, test_coreRfeature)
+setSize2DResults <- test_coreRfeature_batch(setSize2D, 'setSize2D') ## lapply(setSize2D, test_coreRfeature)
+setSize3DResults <- test_coreRfeature_batch(setSize3D, 'setSize3D') ## lapply(setSize3D, test_coreRfeature)
+
+allocationExpectedCompilerFailures <- lapply(expectedCompilerFailures, test_coreRfeature)
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
