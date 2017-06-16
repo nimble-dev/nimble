@@ -397,17 +397,23 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineInfo){
       derivList$value <- 0
       model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)
     }
+    ## Iterate over all wrt params.
     for(j in seq_along(wrtLineInfo)){
+      ## If this line represents this wrt param, set chain rule derivs to 1.
       if(wrtLineInfo[[j]]$lineNum == i){
         chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices] <- 1   
+        ## If this line is also the line of a calculate node, add the derivative of this node's calc. function wrt itself.
         if(i %in% nodesLineNums){
           outGradient[wrtLineInfo[[j]]$lineIndices] <- outGradient[wrtLineInfo[[j]]$lineIndices] + derivList$gradient[1:wrtLineInfo[[j]]$lineSize] 
         }
       }
+      ## If this line does not represent this wrt param, calc derivatives wrt this param via chain rule.
       else{
         thisArgIndex <- 0
+        ## Iterate over this line's parent nodes.
         for(k in seq_along(derivInfo[[2]][[i]])){
           if(derivInfo[[2]][[i]][[k]][1] > 0){
+            ## Get derivs of this parent node.
             parentGradients <- chainRuleDerivList[derivInfo[[2]][[i]][[k]]]
             if(length(parentGradients) > 1){
               parentGradients <- t(sapply(parentGradients, as.numeric))
@@ -415,11 +421,13 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineInfo){
             else{
               parentGradients <- parentGradients[[1]]
             }
+            ## Calculate derivs of this node (i) wrt this parameter (j) for this parent node (k) via chain rule. 
             chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices] <- chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices] +
               derivList$gradient[,(thisArgIndex + 1):(thisArgIndex + argSizeInfo[k]), drop = FALSE]%*%parentGradients[,wrtLineInfo[[j]]$lineIndices, drop = FALSE]
           }
           thisArgIndex <- thisArgIndex + argSizeInfo[k]
           if(i %in% nodesLineNums){
+            ## If this line is also the line of a calculate node, add the derivative of this line (i) wrt this param (j).
             outGradient[wrtLineInfo[[j]]$lineIndices] <- outGradient[wrtLineInfo[[j]]$lineIndices]  +  chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices]
           }
         }
