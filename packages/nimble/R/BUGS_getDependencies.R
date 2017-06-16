@@ -94,9 +94,16 @@ enhanceDepsForDerivs <- function(inputNodes, deps, model) {
   ##           The 0 means that beta is not part of deps
   ##           The 3 means that x[4] is deps[3]
   declIDlengths <- sapply(declIDs, function(x){
-    length(lapply( model$modelDef$declInfo[[x]]$symbolicParentNodesReplaced, deparse)) + 1
+    length(model$expandNodeNames(lapply( model$modelDef$declInfo[[x]]$symbolicParentNodesReplaced, deparse))) + 1
   })
-  depIndex_2_parentDepIndices <- lapply(declIDlengths, integer)
+  depIndex_2_parentDepIndices <- lapply(declIDlengths, function(x){
+    outList <- list()
+    for(i in 1:x){
+      outList[[i]] <- 0
+    }
+    return(outList)}
+  )
+  
   ## For each input depsID
   for(i in seq_along(depIDs)) {
     thisNode <- depIDs[i]
@@ -121,7 +128,13 @@ enhanceDepsForDerivs <- function(inputNodes, deps, model) {
         ## Populate an entry in the resultss
         iThisNodeInDeps <- which(depIDs == thisToNode)
         thisParentExprID <- parentExprIDs[iTo]
-        depIndex_2_parentDepIndices[[iThisNodeInDeps]][ thisParentExprID + 1 ] <- i
+        if(length(depIndex_2_parentDepIndices[[iThisNodeInDeps]][[ thisParentExprID + 1 ]]) == 1 && 
+           depIndex_2_parentDepIndices[[iThisNodeInDeps]][[ thisParentExprID + 1 ]][1] == 0){
+          depIndex_2_parentDepIndices[[iThisNodeInDeps]][[ thisParentExprID + 1 ]] <- i
+        }
+        else{
+          depIndex_2_parentDepIndices[[iThisNodeInDeps]][[ thisParentExprID + 1 ]] <- c(depIndex_2_parentDepIndices[[iThisNodeInDeps]][[ thisParentExprID + 1 ]], i)
+        }
       }
     }
   }

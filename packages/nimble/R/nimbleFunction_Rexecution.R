@@ -360,7 +360,7 @@ rCalcDiffNodes <- function(model, nfv){
     return(l_Prob)
 }
 
-rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineNums){
+rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineInfo){
   model <- nfv$model
   # useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
   indexingInfo <- nfv$indexingInfo
@@ -368,7 +368,14 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineNums){
   numNodes <- length(declIDs)
   # if(numNodes < 1) return(l_Prob)
   unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
-  derivList <- list()
+  chainRuleDerivList <- list()
+  outValue <- 0
+  outGradient <- rep(0, sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})))
+  outIndexEndPoints <- cumsum(sapply(wrtLineInfo, function(x){return(x$lineSize)}))
+  outIndexStartPoints <- c(1, (outIndexEndPoints[-length(outIndexEndPoints)]+1))
+  for(i in seq_along(wrtLineInfo)){
+    wrtLineInfo[[i]]$lineIndices <- outIndexStartPoints[i]:outIndexEndPoints[i]
+  }
   for(i in 1:numNodes) {
     declID <- declIDs[i]
     sizeAndDimInfo <- environment(model$nodeFunctions[[declID]]$.generatorFunction)[['parentsSizeAndDims']]
@@ -377,26 +384,49 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineNums){
     calcWithArgs <- model$nodeFunctions[[ declID ]]$calculateWithArgs
     calcWithArgsCall <- as.call(c(list(as.name('calcWithArgs'), unrolledIndicesMatrixRow), lapply(names(formalArgNames)[-1],
                                                         function(x){parse(text = convertCalcArgNameToModelNodeName(x, sizeAndDimInfo))[[1]]})))
-    derivList[[i]] <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS),
+    derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS),
                                  list(CALCCALL = calcWithArgsCall,
                                       DERIVORDERS = c(0, 1, 2),
                                       DROPARGS = 1)))
+    argSizeInfo <- sapply(3:length(calcWithArgsCall), function(x){length(eval(calcWithArgsCall[[x]]))})
+    names(argSizeInfo) <- names(formals(calcWithArgs))[2:length(formals(calcWithArgs))]  ## used only for debugging
+    chainRuleDerivList[[i]] <- matrix(0, 
+                                      nrow = length(derivList$value),
+                                      ncol = sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})))
     if(model$modelDef$declInfo[[declID]]$type == 'determ'){
-      derivList[[i]]$value <- 0
+      derivList$value <- 0
       model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)
     }
-  }
-  outValue <- 0
-  outGradient <- rep(0, length(wrtLineNums))
-  ## Below we iterate over the nodes that were given in the `nodes` argument to the `calculate(model, nodes)` call.
-  ## For each of these nodes, we take derivatives w.r.t. all of the w.r.t. parameters (each of which correspond to an element of wrtLineNums)
-  for(i in nodesLineNums){  
-    outValue <- outValue + derivList[[i]]$value
-    ## If the current line is the line of one of the w.r.t. parameters, add the deriv. of the log prob of that param. w.r.t. itself
-    outGradient[which(wrtLineNums == i)] <- outGradient[which(wrtLineNums == i)] + derivList[[i]]$gradient[1] 
-    if(length(which(wrtLineNums != i)) > 0){
-      ## For each other w.r.t. parameter, calculate the gradient of the calculate function for this node w.r.t. that param. 
-      outGradient[which(wrtLineNums != i)] <- outGradient[which(wrtLineNums != i)] + recurse_gradChainRule(i, wrtLineNums[which(wrtLineNums != i)], derivList, derivInfo)   
+    for(j in seq_along(wrtLineInfo)){
+      if(wrtLineInfo[[j]]$lineNum == i){
+        chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices] <- 1   
+        if(i %in% nodesLineNums){
+          outGradient[wrtLineInfo[[j]]$lineIndices] <- outGradient[wrtLineInfo[[j]]$lineIndices] + derivList$gradient[1:wrtLineInfo[[j]]$lineSize] 
+        }
+      }
+      else{
+        thisArgIndex <- 0
+        for(k in seq_along(derivInfo[[2]][[i]])){
+          if(derivInfo[[2]][[i]][[k]][1] > 0){
+            parentGradients <- chainRuleDerivList[derivInfo[[2]][[i]][[k]]]
+            if(length(parentGradients) > 1){
+              parentGradients <- t(sapply(parentGradients, as.numeric))
+            }
+            else{
+              parentGradients <- parentGradients[[1]]
+            }
+            chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices] <- chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices] +
+              derivList$gradient[,(thisArgIndex + 1):(thisArgIndex + argSizeInfo[k]), drop = FALSE]%*%parentGradients[,wrtLineInfo[[j]]$lineIndices, drop = FALSE]
+          }
+          thisArgIndex <- thisArgIndex + argSizeInfo[k]
+          if(i %in% nodesLineNums){
+            outGradient[wrtLineInfo[[j]]$lineIndices] <- outGradient[wrtLineInfo[[j]]$lineIndices]  +  chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices]
+          }
+        }
+      }
+    }
+    if(i %in% nodesLineNums){
+      outValue <- outValue + derivList$value
     }
   }
   return(ADNimbleList$new(value = outValue,
@@ -407,85 +437,14 @@ convertCalcArgNameToModelNodeName <- function(calcArgName, sizeAndDimInfo){
   thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", calcArgName)) ## Extract 1, 2, etc. from end of arg name.
   thisName <- sub("_[0-9]+$","",calcArgName) ## Extract node name from beginning of arg name.
   indexBracketInfo <- paste0('[',
-                             paste0(sapply(sizeAndDimInfo[[thisName]][[thisModelElementNum]]$indexExpr, deparse), collapse = ', '),
+                             paste0(sapply(sizeAndDimInfo[[thisName]][[thisModelElementNum]]$indexExpr, function(x){
+                               if(length(x) == 1) return(deparse(x[[1]]))
+                               else{
+                                 return(paste0(deparse(x[[1]]), ':', deparse(x[[2]])))
+                               }}), collapse = ', '),
                              ']')
   return(paste0('model$', thisName, indexBracketInfo))
 }
-
-## Arguments to the below function:
-## The thisLine argument determines which calculate function we are taking the derivative of
-## The wrtLineNums argument contains the line numbers for the parameters we are taking derivatives with respect to
-## The derivList argument contains derivatives (graidents and hessians) for all dependent nodes of the w.r.t. parameters.
-## The derivInfo argument is the list of information returned by enhanceDepsForDerivs()
-##
-## Returned by the below function:
-## The first derivative (gradient) of the calculateWithArgs() function corresponding to thisLine with respect to each of the parameters corresponding to the wrtLineNums argument.
-recurse_gradChainRule <- function(thisLine, wrtLineNums, derivList, derivInfo){
-  thisDeriv <- rep(0, length(wrtLineNums))  ## Set correct deriv. length
-  parentLines <- derivInfo[[2]][[thisLine]] ## Get all parent lines
-  thisDeriv[which(wrtLineNums == thisLine)] <- 1 ## The derivative w.r.t. itself is 1
-  for(j in seq_along(parentLines)){  ## Iterate over parent calculate functions
-    if(parentLines[j] > 0){ 
-      ## Take derivative of parent calculate function w.r.t. all arguments (except those that correspond to thisLine)
-      thisDeriv[which(wrtLineNums != thisLine)] <- thisDeriv[which(wrtLineNums != thisLine)] +
-        derivList[[thisLine]]$gradient[j] * recurse_gradChainRule(parentLines[j], wrtLineNums[which(wrtLineNums != thisLine)],
-                                                                                               derivList, derivInfo)
-    }
-  }
-  return(thisDeriv)
-}
-
-## A non-vectorized version of the chain-rule graident function is below.
-# recurse_gradChainRule <- function(thisLine, wrtLineNums, derivList, derivInfo){
-#   thisDeriv <- rep(0, length(wrtLineNums))  ## Set correct deriv. length
-#   parentLines <- derivInfo[[2]][[thisLine]] ## Read all parent lines
-#   for(i in 1:length(wrtLineNums)){
-#     if(thisLine == wrtLineNums[i]){
-#       thisDeriv[i] <- 1
-#     }
-#     else for(j in seq_along(parentLines)){
-#       if(parentLines[j] > 0){
-#         thisDeriv[i] <- thisDeriv[i] + derivList[[thisLine]]$gradient[j] * recurse_gradChainRule(parentLines[j], wrtLineNums[i],
-#                                                                                                    derivList, derivInfo)
-#       }
-#     }
-#   }
-#   return(thisDeriv)
-# }
-# 
-
-# Hessian function is still under construction.
-# recurse_HessChainRule <- function(thisLine, wrtLineNums, derivList, derivInfo){
-#   thisHessian <- matrix(0, nrow = length(wrtLineNums), ncol = length(wrtLineNums))
-#   parentLines <- derivInfo[[2]][[thisLine]]
-#   for(i in 1:length(wrtLineNums)){
-#     if(thisLine == wrtLineNums[i]){
-#       thisHessian[i,i] <- 1
-#     }
-#     else{
-#       for(j in seq_along(parentLines)){
-#         if(parentLines[j] > 0){
-#           thisHessian[i,i] <- thisHessian[i,i] +  derivList[[thisLine]]$gradient[j]*recurse_HessChainRule(parentLines[j], wrtLineNums[i],
-#                                                                                                           derivList, derivInfo)
-#       }
-#     }
-#     for(j in 1)
-#     thisHessian[i,i] <- 
-#     for(j in 1:length(wrtLineNums)){
-#       if(thisLine == wrtLineNums[i] && thisLine == wrtLineNums[j]){
-#         thisHessian[i, j] <- 1
-#       }
-#       else{
-#         for(i_2 in seq_along(parentLines)){
-#           for(j_2 in )
-#         }
-#       }
-#     }
-#   }
-#   return(thisDeriv)
-# }
-# 
-
 
 nimDerivs_calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex, order){
   if(!is.null(nodeFxnVector)){
@@ -493,15 +452,27 @@ nimDerivs_calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex, 
   }
   wrtPars <- c('a','b')  ## Currently wrtPars are hard coded.
   wrtParsDeps <- model$getDependencies(wrtPars)
-  if(!all(model$expandNodeNames(nodes) %in% wrtParsDeps)){
+  nodes <- model$expandNodeNames(nodes)
+  if(!all(nodes %in% wrtParsDeps)){
     print('Warning: not all calculate nodes depend on a wrtNode')
   }
-  derivInfo <- nimble:::enhanceDepsForDerivs(wrtPars, wrtParsDeps, model)
+  derivInfo <- nimble:::enhanceDepsForDerivs(model$expandNodeNames(wrtPars), wrtParsDeps, model)
   stochNodes <- nodes[model$getNodeType(nodes) == 'stoch']
-  nodesLineNums <- sapply(model$expandNodeNames(stochNodes), function(x){which(x == derivInfo[[1]])})
-  wrtLineNums <- sapply(model$expandNodeNames(wrtPars), function(x){which(x == derivInfo[[1]])})
-  nfv <- nodeFunctionVector(model, wrtParsDeps)
-  return(rDeriv_CalcNodes(model, nfv, derivInfo, nodesLineNums, wrtLineNums))
+  nodesLineNums <- sapply(stochNodes, function(x){which(x == derivInfo[[1]])})
+  wrtLineInfo <- list()
+  for(i in seq_along(model$expandNodeNames(wrtPars))){
+    wrtLineInfo[[i]] <- list()
+    wrtLineInfo[[i]]$lineNum <- which(model$expandNodeNames(wrtPars)[i] == derivInfo[[1]])
+    wrtLineInfo[[i]]$lineSize <- length(values(model, model$expandNodeNames(wrtPars)[i]))
+  }
+  # wrtLineInfo$lineNums <- sapply(model$expandNodeNames(wrtPars), function(x){which(x == derivInfo[[1]])})
+  # wrtLineInfo$lineSizes <- sapply(model$expandNodeNames(wrtPars), function(x){length(values(model, x))})
+  if(inherits(model, 'modelBaseClass') ){
+    if(missing(nodes) ) 
+      nodes <- model$getMaps('nodeNamesLHSall')
+    nfv <- nodeFunctionVector(model, wrtParsDeps)
+    return(rDeriv_CalcNodes(model, nfv, derivInfo, nodesLineNums, wrtLineInfo))
+  }	
 }
 
 

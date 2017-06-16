@@ -129,9 +129,9 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL){
   origValue <- eval(derivFxnCall, envir = fxnEnv)
   if(length(nimDim(origValue)) > 1) stop('nimDerivs() cannot take derivatives of matrix or array valued functions.')
   outLength <- nimDim(origValue)[1]
-  fxph <- matrix(nrow = totalFxnArgLength, ncol = outLength)
-  fxmh <- matrix(nrow = totalFxnArgLength, ncol = outLength)
-  grad <- matrix(nrow = totalFxnArgLength, ncol = outLength)
+  fxph <- matrix(nrow = outLength, ncol = totalFxnArgLength)
+  fxmh <- matrix(nrow = outLength, ncol = totalFxnArgLength)
+  grad <- matrix(nrow = outLength, ncol = totalFxnArgLength)
   derivxy <- array(0, dim = c(totalFxnArgLength, totalFxnArgLength, outLength))
   #if(length(origValue) > 1) stop('Currently only have R derivs for functions that return scalars.')
   for(i in useArgs){
@@ -143,13 +143,13 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL){
       derivFxnCall[[i + 1]] <- substitute(DFXNCALL + DELTAVEC, 
                                           list(DFXNCALL = derivFxnCall[[i + 1]],
                                                DELTAVEC = deltaVec))
-      fxph[thisArgNum,] <- eval(derivFxnCall, envir = fxnEnv)
+      fxph[,thisArgNum] <- eval(derivFxnCall, envir = fxnEnv)
       derivFxnCall[[i + 1]] <- substitute(DFXNCALL - 2*DELTAVEC, 
                                           list(DFXNCALL = derivFxnCall[[i + 1]],
                                                DELTAVEC = deltaVec))    
-      fxmh[thisArgNum,] <- eval(derivFxnCall, envir = fxnEnv)
-      grad[thisArgNum,] <- (fxph[thisArgNum,] - fxmh[thisArgNum,])/(2*delta)
-      derivxy[thisArgNum, thisArgNum,] <- (fxph[thisArgNum,] -2*origValue + fxmh[thisArgNum,])/(delta^2)
+      fxmh[,thisArgNum] <- eval(derivFxnCall, envir = fxnEnv)
+      grad[,thisArgNum] <- (fxph[,thisArgNum] - fxmh[,thisArgNum])/(2*delta)
+      derivxy[thisArgNum, thisArgNum,] <- (fxph[,thisArgNum] -2*origValue + fxmh[,thisArgNum])/(delta^2)
       derivFxnCall[[i + 1]] <- origDFxnCall
       deltaVec[j] <- 0
     }
@@ -173,7 +173,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL){
                                                    DELTAVEC = deltaVec))
           fxymh <-  eval(derivFxnCall, envir = fxnEnv)
           derivxy[thisArgNum, thisArgNum_2,] <- 
-            (fxyph - fxph[thisArgNum,] - fxph[thisArgNum_2,] + 2*origValue - fxmh[thisArgNum,] - fxmh[thisArgNum_2,] + fxymh)/(2*delta^2)
+            (fxyph - fxph[,thisArgNum] - fxph[,thisArgNum_2] + 2*origValue - fxmh[,thisArgNum] - fxmh[,thisArgNum_2] + fxymh)/(2*delta^2)
           derivFxnCall[[i + 1]] <- origDFxnCall
           deltaVec[j_2] <- 0
         }
@@ -200,7 +200,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL){
                                                        DELTAVEC = deltaVec_2))
             fxymh <-  eval(derivFxnCall, envir = fxnEnv)
             derivxy[thisArgNum, thisArgNum_2,] <- 
-              (fxyph - fxph[thisArgNum,] - fxph[thisArgNum_2,] + 2*origValue - fxmh[thisArgNum,] - fxmh[thisArgNum_2,] + fxymh)/(2*delta^2)
+              (fxyph - fxph[,thisArgNum] - fxph[,thisArgNum_2] + 2*origValue - fxmh[,thisArgNum] - fxmh[,thisArgNum_2] + fxymh)/(2*delta^2)
             derivFxnCall[[i + 1]] <- origDFxnCall
             derivFxnCall[[i_2 + 1]] <- origDFxnCall_2
             deltaVec_2[j_2] <- 0

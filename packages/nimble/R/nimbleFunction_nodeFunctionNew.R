@@ -7,16 +7,6 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeA
     altParamsRep <- lapply(altParams, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     boundsRep <- lapply(bounds, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     logProbNodeExprRep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(logProbNodeExpr, setupOutputLabels)
-    if(nimbleOptions('experimentalEnableDerivs')){
-      parents <- names(parentsSizeAndDims)
-      parentIndexInfoList <- nndf_extractNodeIndices(LHSrep, parents)
-      parentIndexInfoList <- nndf_extractNodeIndices(RHSrep, parents, indexExprList = parentIndexInfoList)
-      for(i in seq_along(parentIndexInfoList)){
-        for(j in seq_along(parentIndexInfoList[[i]])){
-          parentsSizeAndDims[[names(parentIndexInfoList)[i]]][[j]]$indexExpr <- parentIndexInfoList[[i]][[j]]$indexExpr 
-        }
-      }
-    }
     nodeFunctionTemplate <-
         substitute(
             nimbleFunction(##contains      = CONTAINS,
@@ -57,6 +47,7 @@ nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()
     if(deparse(code[[1]]) == '[') {
       if(deparse(code[[2]]) %in% nodesToExtract){
         thisIndexExpr <- list()
+        browser()
         for(i in 1:(length(code)-2)){
           if(is.call(code[[i + 2]]) && deparse(code[[i+2]][[1]]) == ':'){
             thisIndexExpr <- c(thisIndexExpr, code[[i+2]][[2]])
