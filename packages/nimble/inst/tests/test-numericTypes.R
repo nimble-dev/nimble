@@ -1,6 +1,12 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context("Testing of numeric type handling and casting")
 
+RwarnLevel <- options('warn')$warn
+options(warn = -1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = TRUE)
+
+
 inverseCallReplacements <- as.list(names(nimble:::specificCallReplacements))
 names(inverseCallReplacements) <- unlist(nimble:::specificCallReplacements)
 inverseReplace <- function(x) {
@@ -263,13 +269,16 @@ binaryMatrixOpTypeTests <- unlist(recursive = FALSE,
 binaryMatrixOpTypeTests <- indexNames(binaryMatrixOpTypeTests)
 
 
-unaryCwiseResults <- lapply(unaryCwiseTypeTests, test_coreRfeature)
-binaryCwiseResults <- lapply(binaryCwiseTypeTests, test_coreRfeature)
-binaryCwiseLogicalResults <- lapply(binaryCwiseTypeTestsLogicals, test_coreRfeature)
-reductionResults <- lapply(reductionTypeTests, test_coreRfeature)
-reductionLogicalResults <- lapply(reductionTypeTestsLogical, test_coreRfeature)
-reductionMatrixSquareResults <- lapply(reductionTypeTestsMatrixSquare[3:4], test_coreRfeature)
-binaryCwiseMidOpsResults <- lapply(binaryCwiseTypeTestsMidOps, test_coreRfeature)
-binaryCwiseInProdResults <- lapply(binaryCwiseTypeTestsInprod, test_coreRfeature)
-binaryCwiseLeftPromoteResults <- lapply(binaryCwiseTypeTestsLeftPromotOps, test_coreRfeature)
-binaryMatrixOpResults <- lapply(binaryMatrixOpTypeTests, test_coreRfeature)
+unaryCwiseResults <- test_coreRfeature_batch(unaryCwiseTypeTests, 'unaryCwiseTypeTests') ## lapply(unaryCwiseTypeTests, test_coreRfeature)
+binaryCwiseResults <- test_coreRfeature_batch(binaryCwiseTypeTests, 'binaryCwiseTypeTests') ## lapply(binaryCwiseTypeTests, test_coreRfeature)
+binaryCwiseLogicalResults <- test_coreRfeature_batch(binaryCwiseTypeTestsLogicals, 'binaryCwiseTypeTestsLogicals') ## lapply(binaryCwiseTypeTestsLogicals, test_coreRfeature)
+reductionResults <- test_coreRfeature_batch(reductionTypeTests, 'reductionTypeTests') ## lapply(reductionTypeTests, test_coreRfeature)
+reductionLogicalResults <- test_coreRfeature_batch(reductionTypeTestsLogical, 'reductionTypeTestsLogical') ## lapply(reductionTypeTestsLogical, test_coreRfeature)
+reductionMatrixSquareResults <- test_coreRfeature_batch(reductionTypeTestsMatrixSquare[3:4], 'reductionTypeTestsMatrixSquare[3:4]') ## lapply(reductionTypeTestsMatrixSquare[3:4], test_coreRfeature)
+binaryCwiseMidOpsResults <- test_coreRfeature_batch(binaryCwiseTypeTestsMidOps, 'binaryCwiseTypeTestsMidOps') ## lapply(binaryCwiseTypeTestsMidOps, test_coreRfeature)
+binaryCwiseInProdResults <- test_coreRfeature_batch(binaryCwiseTypeTestsInprod, 'binaryCwiseTypeTestsInprod') ## lapply(binaryCwiseTypeTestsInprod, test_coreRfeature)
+binaryCwiseLeftPromoteResults <- test_coreRfeature_batch(binaryCwiseTypeTestsLeftPromotOps, 'binaryCwiseTypeTestsLeftPromotOps') ## lapply(binaryCwiseTypeTestsLeftPromotOps, test_coreRfeature)
+binaryMatrixOpResults <- test_coreRfeature_batch(binaryMatrixOpTypeTests, 'binaryMatrixOpTypeTests') ## lapply(binaryMatrixOpTypeTests, test_coreRfeature)
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

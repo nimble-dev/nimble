@@ -58,9 +58,6 @@ R_CallMethodDef CallEntries[] = {
   FUN(setMVElementFromList, 3),
   FUN(matrix2VecNimArr, 4),
   FUN(setMVElement, 3),
-  FUN(resizeNumListRow, 3),
-  FUN(setNumListRows, 3),
-  FUN(makeNumericList, 3),
   FUN(Nim_2_SEXP, 2),
   FUN(SEXP_2_Nim, 4),
   FUN(extract_double_2_SEXP, 2),
@@ -75,6 +72,8 @@ R_CallMethodDef CallEntries[] = {
   FUN(populate_SEXP_2_stringVector, 2),
   FUN(extract_stringVector_2_SEXP, 1),
 
+  FUN(setVecNimArrRows, 3),
+  
   FUN(setPtrVectorOfPtrs, 3),
   FUN(setOnePtrVectorOfPtrs, 3),
   FUN(getEnvVar_Sindex, 3),
