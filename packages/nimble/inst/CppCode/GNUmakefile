@@ -11,11 +11,8 @@ endif
 -include $(R_HOME)/etc$(R_ARCH)/Makeconf
 # Don't have to succeed in including this if we are calling cleanup in the nimble package directory.
 # Following two lines result in much smaller libnimble.a or equivalent by removing -g flags
-##$(shell cp $(R_HOME)/etc$(R_ARCH)/Makeconf ./Makeconf)
 $(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
 -include ./Makeconf
-# Alternative: comment the above three lines and uncomment the following line. This does not remove -g flags
-##-include $(R_HOME)/etc$(R_ARCH)/Makeconf
 include ./Makevars
 
 ifndef OS
