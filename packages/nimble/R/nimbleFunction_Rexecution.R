@@ -473,8 +473,6 @@ nimDerivs_calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex, 
     wrtLineInfo[[i]]$lineNum <- which(model$expandNodeNames(wrtPars)[i] == derivInfo[[1]])
     wrtLineInfo[[i]]$lineSize <- length(values(model, model$expandNodeNames(wrtPars)[i]))
   }
-  # wrtLineInfo$lineNums <- sapply(model$expandNodeNames(wrtPars), function(x){which(x == derivInfo[[1]])})
-  # wrtLineInfo$lineSizes <- sapply(model$expandNodeNames(wrtPars), function(x){length(values(model, x))})
   if(inherits(model, 'modelBaseClass') ){
     if(missing(nodes) ) 
       nodes <- model$getMaps('nodeNamesLHSall')
