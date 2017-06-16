@@ -136,7 +136,7 @@ tfProxyClass <- setRefClass(
     Class = "tfProxyClass",
     fields = list(
         inputNames = 'ANY', ## character vector of arguments *representing canonical order*
-        outputNames= 'ANY', ## initially, a single name
+        outputNames = 'ANY', ## initially, a single name
         serializedGraph = 'ANY'),
     methods = list(
         initialize = function() {
@@ -144,12 +144,12 @@ tfProxyClass <- setRefClass(
             serializedGraph <<- character()
         },
         addInputVar = function(name, type = 'double', output = FALSE) { ## not sure if nDim is needed
-            if(!(name %in% inputNames)) {
+            if (!(name %in% inputNames)) {
                 inputNames <<- append(inputNames, name)
             }
         },
         addOutputVar = function(name, type = 'double', output = FALSE) { ## not sure if nDim is needed
-            if(!(name %in% outputNames)) {
+            if (!(name %in% outputNames)) {
                 outputNames <<- append(outputNames, name)
             }
         },
