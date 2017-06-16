@@ -104,6 +104,12 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, AD
                                  list(##LOGPROB = logProbNodeExpr,
                                       STOCHCALC = RHS))
           } 
+          else if(ADFunc){
+            code <- substitute(LOGPROB <- STOCHCALC,
+                               list(LOGPROB = logProbNodeExpr,
+                                    STOCHCALC = RHS))
+            
+          }
           else{
             code <- substitute(LOGPROB <<- STOCHCALC,
                                list(LOGPROB = logProbNodeExpr,

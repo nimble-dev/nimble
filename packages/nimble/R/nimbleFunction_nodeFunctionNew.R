@@ -146,7 +146,10 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
         if(nimbleOptions('experimentalEnableDerivs')){
-          methodList[['CALCADFUNNAME']]  <- methodList[['calculate']]
+          methodList[['CALCADFUNNAME']]  <- eval(substitute(
+            function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR_AD;  returnType(double());  return(LOGPROB) },
+            list(LOGPROB   = logProbNodeExpr,
+                 STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, ADFunc = TRUE))))
         }
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
@@ -227,7 +230,7 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
       }
       formals(methodList[[getCalcADFunName()]]) <- c(formals(methodList[[getCalcADFunName()]]), parentsArgs)
     }
-    ADexceptionNames <- c(names(parentsArgs))
+    ADexceptionNames <- c(names(parentsArgs), deparse(logProbNodeExpr[[2]]))
     methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"), 
                                                     ADexceptionNames = ADexceptionNames)
 

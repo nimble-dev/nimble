@@ -125,13 +125,15 @@ addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     return(expr)
 }
 
-removeIndices <- function(expr) {
+removeIndices <- function(expr, exceptionNames = character(0)) {
   if(is.call(expr)) {
     if(expr[[1]] == '['){
-      return(expr[[2]])
+      if(!deparse(expr[[2]]) %in% exceptionNames){
+        return(expr[[2]])
+      }
     } 
     if(length(expr) > 1) {
-      expr[2:length(expr)] <- lapply(expr[-1], function(listElement) removeIndices(listElement))
+      expr[2:length(expr)] <- lapply(expr[-1], function(listElement) removeIndices(listElement, exceptionNames))
       return(expr)
     }
   }
