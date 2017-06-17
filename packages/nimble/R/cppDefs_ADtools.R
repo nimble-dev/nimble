@@ -323,7 +323,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
                                          paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr, deparse), collapse = ', '),
                                         ')')
             else
-              indexBracketInfo <- paste0('[', deparse(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]]), ']')
+              indexBracketInfo <- paste0('[', deparse(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]][[1]]), ']')
             indexName <- paste0("cppLiteral('(**", thisModelName, ")')", indexBracketInfo)
             RHS <- parse(text = substitute(INDEXNAME, list(INDEXNAME = as.name(indexName))))[[1]]
           }
