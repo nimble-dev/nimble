@@ -2,6 +2,7 @@
 # bootstrap method of "Markov Chain Monte Carlo in Statistical Mechanics"
 # by Mignani & Rosa, 2001 (p. 350)
 calc_asympVar = nimbleFunction(
+    name = 'calc_asympVar',
   setup = function(model, fixedNodes, sampledNodes, mvBlock, mvSample, burnIn = 0, numReps){
     calc_E_llk <- calc_E_llk_gen(model, fixedNodes = fixedNodes, sampledNodes = sampledNodes, burnIn = 0, mvSample = mvBlock)
   },
@@ -33,6 +34,7 @@ calc_asympVar = nimbleFunction(
 
 # Calculates Q function if diff = 0, calculates difference in Q functions if diff = 1.
 calc_E_llk_gen = nimbleFunction(
+    name = 'calc_E_llk_gen',
   setup = function(model, fixedNodes, sampledNodes, mvSample, burnIn = 0){
     fixedCalcNodes <- model$getDependencies(fixedNodes)	
     latentCalcNodes <- model$getDependencies(sampledNodes)
@@ -83,6 +85,7 @@ calc_E_llk_gen = nimbleFunction(
 
 ## helper function to extract ranges of nodes to be maximized
 getMCEMRanges <- nimbleFunction(
+    name = 'getMCEMRanges',
   setup = function(model, maxNodes, buffer){
     low_limits = rep(-Inf, length(maxNodes) ) 
     hi_limits  = rep(Inf,  length(maxNodes) ) 
@@ -395,6 +398,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
 }
 
 bootstrapGetCov <- nimbleFunction(
+    name = 'bootstrapGetCov',
     setup = function(model, fixedNodes, sampledNodes, mvSample, burnIn = 0){
       fixedCalcNodes <- model$getDependencies(fixedNodes)	
       latentCalcNodes <- model$getDependencies(sampledNodes)

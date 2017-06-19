@@ -48,6 +48,7 @@ decide <- function(logMetropolisRatio) {
 #' -- If the proposal is rejected, the values and associated logProbs of all calcNodes are copied from the mvSaved object into the model object
 #' -- Return a logical value, indicating whether the proposal was accepted
 decideAndJump <- nimbleFunction(
+    name = 'decideAndJump',
     setup = function(model, mvSaved, calcNodes) { },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
         logMHR <- modelLP1 - modelLP0 - propLP1 + propLP0
@@ -88,6 +89,7 @@ decideAndJump <- nimbleFunction(
 #' my_setAndCalc <- setAndCalculateOne(Rmodel, 'x[1]')
 #' lp <- my_setAndCalc$run(2)
 setAndCalculateOne <- nimbleFunction(
+    name = 'setAndCalculateOne',
     setup = function(model, targetNode) {
         targetNodeAsScalar <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
         if(length(targetNodeAsScalar) > 1)     stop('more than one targetNode; cannot use setAndCalculateOne()')
@@ -131,6 +133,7 @@ setAndCalculateOne <- nimbleFunction(
 #' my_setAndCalc <- setAndCalculate(Rmodel, c('x[1]', 'x[2]', 'y[1]', 'y[2]'))
 #' lp <- my_setAndCalc$run(c(1.2, 1.4, 7.6, 8.9))
 setAndCalculate <- nimbleFunction(
+    name = 'setAndCalculate',
     setup = function(model, targetNodes) {
         targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(targetNodes)
@@ -146,6 +149,7 @@ setAndCalculate <- nimbleFunction(
 #' @rdname setAndCalculate
 #' @export
 setAndCalculateDiff <- nimbleFunction(
+    name = 'setAndCalculateDiff',
     setup = function(model, targetNodes) {
         targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(targetNodes)
@@ -160,6 +164,7 @@ setAndCalculateDiff <- nimbleFunction(
 
 
 calcAdaptationFactor <- nimbleFunction(
+    name = 'calcAdaptationFactor',
     setup = function(paramDimension) {
         ## optimal acceptance rates:  (dim=1) .44,    (dim=2) .35,    (dim=3) .32,    (dim=4) .25,    (dim>=5) .234
         acceptanceRates <- c(0.44, 0.35, 0.32, 0.25, 0.234)
