@@ -127,7 +127,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrtPars
   totalFxnArgLength <- sum(fxnArgLengths[useArgs])
   delta <- .0001
   origValue <- eval(derivFxnCall, envir = fxnEnv)
-  if(length(nimDim(origValue)) > 1) stop('nimDerivs() cannot take derivatives of matrix or array valued functions.')
+  # if(length(nimDim(origValue)) > 1) stop('nimDerivs() cannot take derivatives of matrix or array valued functions.')
   outLength <- nimDim(origValue)[1]
   fxph <- matrix(nrow = outLength, ncol = totalFxnArgLength)
   fxmh <- matrix(nrow = outLength, ncol = totalFxnArgLength)

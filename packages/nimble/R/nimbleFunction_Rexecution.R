@@ -388,6 +388,7 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineInfo){
     calcWithArgs <- model$nodeFunctions[[ declID ]]$calculateWithArgs
     calcWithArgsCall <- as.call(c(list(as.name('calcWithArgs'), unrolledIndicesMatrixRow), lapply(names(formalArgNames)[-1],
                                                         function(x){parse(text = convertCalcArgNameToModelNodeName(x, sizeAndDimInfo))[[1]]})))
+    browser()
     derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS),
                                  list(CALCCALL = calcWithArgsCall,
                                       DERIVORDERS = c(0, 1, 2),

@@ -68,3 +68,43 @@ test_that('Derivatives of model$calculate work for nimbleModel with multivariate
           }
 )
 
+
+test_that('Derivatives of model$calculate work for nimbleModel with a for loop.',
+          {
+            
+            ADCode3 <- nimbleCode({
+              for(i in 1:20){
+                y[i, 1:2] ~ dmnorm(mu[1:2], sigma[1:2, 1:2])
+              }
+              meanVec[1:2] <- c(0,0)
+              mu[1:2] ~ dmnorm(meanVec[1:2], diagMat[1:2, 1:2])
+              sigma[1:2, 1:2] ~ dwish(diagMat[1:2, 1:2], 3)
+            })
+            
+            simData <- matrix(0, nrow = 20, ncol = 2)
+            ADMod3 <- nimbleModel(
+              code = ADCode3, dimensions = list(a = 2, b = 2, c = 2), constants = list(diagMat = diag(2)),
+              data = list(y = simData), inits = list(mu = c(-1.5, 0.8), sigma = diag(2)))
+            temporarilyAssignInGlobalEnv(ADMod3)  
+            # cADMod2 <- compileNimble(ADMod2)
+            
+            ## R derivatives are evaluated below.
+            testFxn <- function(mu, sigma){
+              origmu <- ADMod3$mu
+              ADMod3$mu <- mu
+              origsigma <- ADMod3$sigma
+              ADMod3$sigma <- sigma
+              ADMod3$calculate(ADMod3$getDependencies(c('mu', 'sigma')))
+              outVal <- calculate(ADMod3, ADMod3$getDependencies(c('mu', 'sigma')))
+              ADMod3$mu <- origmu
+              ADMod3$sigma <- origsigma
+              return(outVal)
+            }
+            rDerivs <- nimDerivs(testFxn(mu = c(-1.5, 0.8), sigma = diag(2)))
+            rDerivs_chainRule <- nimDerivs(calculate(ADMod3, ADMod3$getDependencies(c('mu', 'sigma'))), wrtPars = c('mu','sigma'))
+            expect_equal(rDerivs$value, rDerivs_chainRule$value)
+            expect_equal(rDerivs$gradient, rDerivs_chainRule$gradient)
+          }
+)
+
+
