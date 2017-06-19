@@ -73,7 +73,7 @@ test_that('Derivatives of model$calculate work for nimbleModel with a for loop.'
           {
             
             ADCode3 <- nimbleCode({
-              for(i in 1:20){
+              for(i in 1:2){
                 y[i, 1:2] ~ dmnorm(mu[1:2], sigma[1:2, 1:2])
               }
               meanVec[1:2] <- c(0,0)
@@ -81,7 +81,7 @@ test_that('Derivatives of model$calculate work for nimbleModel with a for loop.'
               sigma[1:2, 1:2] ~ dwish(diagMat[1:2, 1:2], 3)
             })
             
-            simData <- matrix(0, nrow = 20, ncol = 2)
+            simData <- matrix(0, nrow = 2, ncol = 2)
             ADMod3 <- nimbleModel(
               code = ADCode3, dimensions = list(a = 2, b = 2, c = 2), constants = list(diagMat = diag(2)),
               data = list(y = simData), inits = list(mu = c(-1.5, 0.8), sigma = diag(2)))
@@ -101,7 +101,7 @@ test_that('Derivatives of model$calculate work for nimbleModel with a for loop.'
               return(outVal)
             }
             rDerivs <- nimDerivs(testFxn(mu = c(-1.5, 0.8), sigma = diag(2)))
-            rDerivs_chainRule <- nimDerivs(calculate(ADMod3, ADMod3$getDependencies(c('mu', 'sigma'))), wrtPars = c('mu','sigma'))
+            rDerivs_chainRule <- nimDerivs(calculate(ADMod3, ADMod3$getDependencies(c('mu', 'sigma'))), wrtPars = c('mu', 'sigma'))
             expect_equal(rDerivs$value, rDerivs_chainRule$value)
             expect_equal(rDerivs$gradient, rDerivs_chainRule$gradient)
           }

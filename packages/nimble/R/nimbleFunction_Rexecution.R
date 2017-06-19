@@ -388,31 +388,56 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineInfo){
     calcWithArgs <- model$nodeFunctions[[ declID ]]$calculateWithArgs
     calcWithArgsCall <- as.call(c(list(as.name('calcWithArgs'), unrolledIndicesMatrixRow), lapply(names(formalArgNames)[-1],
                                                         function(x){parse(text = convertCalcArgNameToModelNodeName(x, sizeAndDimInfo))[[1]]})))
-    browser()
     derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS),
                                  list(CALCCALL = calcWithArgsCall,
                                       DERIVORDERS = c(0, 1, 2),
                                       DROPARGS = 1)))
     argSizeInfo <- sapply(3:length(calcWithArgsCall), function(x){length(eval(calcWithArgsCall[[x]]))})
     names(argSizeInfo) <- names(formals(calcWithArgs))[2:length(formals(calcWithArgs))]  ## used only for debugging
-    chainRuleDerivList[[i]] <- matrix(0, 
-                                      nrow = length(derivList$value),
-                                      ncol = sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})))
-    chainRuleHessianList[[i]] <- array(0, dim = c(sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})),
-                                                  sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})),
-                                                  length(derivList$value)))
     if(model$modelDef$declInfo[[declID]]$type == 'determ'){
       derivList$value <- 0
       model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)
     }
+    isWrtLine <- any(sapply(wrtLineInfo, function(x){return(x$lineNum == i)}))
+    isNodeLine <- i %in% nodesLineNums
+    
+    ## The derivCalcFlags vector constructed below determines whether this node (i) should be treated as an output node (FALSE),
+    ## a node that is necessary for later use in the chain rule (TRUE), or both (FALSE, TRUE).
+    if(model$modelDef$declInfo[[declID]]$type == 'determ'){
+      derivCalcFlags <- TRUE
+    }
+    else if(isNodeLine){
+      derivCalcFlags <- FALSE
+    }
+    if(isWrtLine){
+      derivCalcFlags <- c(derivCalcFlags, TRUE)
+    }
+    
+    chainRuleHessianList[[i]] <- array(0, dim = c(sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})),
+                                                  sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})),
+                                                  length(derivList$value)))
+    
+    for(derivCalcFlag in derivCalcFlags){
+      if(derivCalcFlag == FALSE){
+        chainRuleDerivList[[i]] <- matrix(0, 
+                                          nrow = length(derivList$value),
+                                          ncol = sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})))
+      }
+      else{
+        chainRuleDerivList[[i]] <- matrix(0,
+                                          nrow = length(eval(calcWithArgsCall[[3]])),
+                                          ncol = sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})))
+      }
     ## Iterate over all wrt params.
     for(j in seq_along(wrtLineInfo)){
-      ## If this line represents this wrt param, set chain rule derivs to 1.
       if(wrtLineInfo[[j]]$lineNum == i){
-        chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices] <- 1   
-        ## If this line is also the line of a calculate node, add the derivative of this node's calc. function wrt itself.
-        if(i %in% nodesLineNums){
-          outGradient[, wrtLineInfo[[j]]$lineIndices] <- outGradient[, wrtLineInfo[[j]]$lineIndices] + derivList$gradient[1:wrtLineInfo[[j]]$lineSize] 
+        if(derivCalcFlag == FALSE){
+          ## If this line is included in output, add the derivative of this node's calc. function wrt itself.
+          outGradient[,wrtLineInfo[[j]]$lineIndices] <- outGradient[,wrtLineInfo[[j]]$lineIndices] + derivList$gradient[1:wrtLineInfo[[j]]$lineSize] 
+        }
+        else{
+          ## If this line represents this wrt param, set chain rule derivs to 1 (or identity).
+          chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices] <- diag(length(eval(calcWithArgsCall[[3]])))
         }
       }
       ## If this line does not represent this wrt param, calc derivatives wrt this param via chain rule.
@@ -435,17 +460,15 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineInfo){
           }
           thisArgIndex <- thisArgIndex + argSizeInfo[k]
         }
-        if(i %in% nodesLineNums){
+        if(derivCalcFlag == FALSE){
           ## If this line is also the line of a calculate node, add the derivative of this line (i) wrt this param (j).
-          outGradient[, wrtLineInfo[[j]]$lineIndices] <- outGradient[, wrtLineInfo[[j]]$lineIndices]  +  
-            chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices]
+            outGradient[, wrtLineInfo[[j]]$lineIndices] <- outGradient[, wrtLineInfo[[j]]$lineIndices]  +  
+              chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices]
         }
-      #   
-      #   for(j_2 in j:length(wrtLineInfo)){
-      #     
       }
     }
-    if(i %in% nodesLineNums){
+    }
+    if(isNodeLine){
       outValue <- outValue + derivList$value
     }
     
@@ -526,6 +549,9 @@ convertCalcArgNameToModelNodeName <- function(calcArgName, sizeAndDimInfo){
   indexBracketInfo <- paste0('[',
                              paste0(sapply(sizeAndDimInfo[[thisName]][[thisModelElementNum]]$indexExpr, function(x){
                                if(length(x) == 1) return(deparse(x[[1]]))
+                               else if( deparse(x[[1]]) == 'getNodeFunctionIndexedInfo'){
+                                 x[[2]] <- parse(text = 'unrolledIndicesMatrixRow')[[1]]
+                               } 
                                else{
                                  return(paste0(deparse(x[[1]]), ':', deparse(x[[2]])))
                                }}), collapse = ', '),
