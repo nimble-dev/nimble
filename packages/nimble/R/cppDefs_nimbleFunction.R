@@ -265,9 +265,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               },
                                               addADclassContentOneFun = function(funName) {
                                                   outSym <- nfProc$RCfunProcs[[funName]]$compileInfo$returnSymbol
-                                                  checkADargument(funName, outSym, returnType = TRUE)
                                                   if(length(nfProc$RCfunProcs[[funName]]$nameSubList) == 0) stop(paste0('Derivatives cannot be enabled for method ', funName, ', since this method has no arguments.'))
                                                   if(!nfProc$isNode){
+                                                    checkADargument(funName, outSym, returnType = TRUE)
                                                     for(iArg in seq_along(functionDefs[[funName]]$args$symbols)){
                                                       arg <- functionDefs[[funName]]$args$symbols[[iArg]]
                                                       argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)

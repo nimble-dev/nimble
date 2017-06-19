@@ -349,7 +349,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
 ## The code this generates is embedded in the ADtapingFunction made by makeADtapingFunction
 ##
 ## Note this does some work similar to BUGScontextClass::embedCodeInForLoop
-makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, incrementIndex, isNode) {
+makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, incrementIndex, isNode = FALSE) {
   indexNames <- names(indexList)
   indexedBracketExpr <- do.call('call', c(list('[', as.name('TO_BE_REPLACED')), lapply(indexNames, as.name)), quote = TRUE)
   if(indicesRHS) {

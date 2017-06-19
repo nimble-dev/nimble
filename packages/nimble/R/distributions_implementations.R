@@ -108,9 +108,9 @@ rinvwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 #' @param order an integer vector with values within the set {0, 1, 2}, corresponding to whether the function value, gradient, and Hessian should be returned respectively.
 #' 
 #' @export
-nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL){
+nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrtPars = NULL){
   fxnEnv <- parent.frame()
-  fxnCall <- match.call(function(nimFxn, order, dropArgs){})
+  fxnCall <- match.call(function(nimFxn, order, dropArgs, wrtPars){})
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
   derivFxnCall <- fxnCall[['nimFxn']]
   if(deparse(derivFxnCall[[1]]) == 'calculate'){
@@ -119,7 +119,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL){
                                nodes = eval(derivFxnCall[['nodes']], envir = fxnEnv),
                                nodeFxnVector = eval(derivFxnCall[['nodeFxnVector']], envir = fxnEnv),
                                nodeFunctionIndex = eval(derivFxnCall[['nodeFunctionIndex']], envir = fxnEnv),
-                               order))
+                               order, wrtPars))
   }
   useArgs <- 1:(length(derivFxnCall) - 1)
   if(!is.null(dropArgs)) useArgs <- useArgs[-dropArgs]
