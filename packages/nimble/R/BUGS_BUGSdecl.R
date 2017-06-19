@@ -450,14 +450,14 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                         ## TMP:
                        ## if(length(dynamicIndexParent) > 3)  # e.g., mu[k[i],i]
                          ##   stop("getSymbolicParentNodesRecurse: multi-dimensional dynamic indexing not yet enabled, but requested in ", deparse(code)) # note this doesn't even allow mu[NA,1]
-                        if(length(contentsCode) > 1)   # e.g., mu[k[i],j[i]]
-                            stop("getSymbolicParentNodesRecurse: multiple dynamic indices not yet enabled, but requested in ", deparse(code))
-                        if(any(sapply(contentsCode, length) > 3))  # e.g., mu[k[i,1:3]]
-                            stop("getSymbolicParentNodesRecurse: non-scalar dynamic indices not yet enabled, but requested in ", deparse(code))
+                      ##  if(length(contentsCode) > 1)   # e.g., mu[k[i],j[i]]
+                      ##      stop("getSymbolicParentNodesRecurse: multiple dynamic indices not yet enabled, but requested in ", deparse(code))
+                      ##  if(any(sapply(contentsCode, length) > 3))  # e.g., mu[k[i,1:3]]
+                       ##     stop("getSymbolicParentNodesRecurse: non-scalar dynamic indices not yet enabled, but requested in ", deparse(code))
                         lens <- sapply(contentsCode, length)
-                        for(i in seq_along(lens)) 
-                            if(lens[i] == 3 && length(contentsCode[[i]][[3]]) > 1)
-                                stop("getSymbolicParentNodesRecurse: non-scalar dynamic indices not yet enabled, but requested in ", deparse(code))
+                     ##   for(i in seq_along(lens)) 
+                     ##       if(lens[i] == 3 && length(contentsCode[[i]][[3]]) > 1)
+                     ##           stop("getSymbolicParentNodesRecurse: non-scalar dynamic indices not yet enabled, but requested in ", deparse(code))
                         contentsCode = lapply(contentsCode, addIndexWrapping)
                             # lapply should deal with multiple dyn indices: mu[foo(k[i]),2,j[i]]
                     }

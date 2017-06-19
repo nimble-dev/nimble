@@ -47,7 +47,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  graph = 'ANY',     ## igraph object, set in buildIgraph()
                                  graphNodesList = 'ANY',   ## list of graphNode objects, set in genGraphNodesList()
                                  maps = 'ANY',   ## object of mapsClass, set in buildMaps()
-                                 numNodeFunctions = 'ANY',
+                                 numNodeFunctions = 'ANY',  ## FIXME: obsolete as only used in buildNodeFunctions_old()
                                  
                                  modelClass = 'ANY',   ## custom model class
                                  modelValuesClassName = 'ANY',    ## set in setModelValuesClassName()
@@ -1630,6 +1630,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     allNodeNames <- character()   ## vector of all node names
     types <- character()          ## parallel vector of types such as "stoch", "determ", "RHSonly", and "LHSinferred"
     ## 2b. Use LHS declarations create nodes:
+    ## note we need to create nodes for unknownIndex vars because origID is used in creating edges from parent variable to unknownIndex variable
+    if(debug) browser()
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
         if(BUGSdecl$numUnrolledNodes == 0) next
@@ -1682,11 +1684,14 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         }
     }
 
-    nodeNamesLHSall <- allNodeNames
     maxOrigNodeID <- next_origID - 1
-    numNodeFunctions <<- maxOrigNodeID
-    if(nimbleOptions()$allowDynamicIndexing)
-        numNodeFunctions <<- numNodeFunctions - length(unknownIndexNames)  ## FIXME: check this
+    if(nimbleOptions()$allowDynamicIndexing) {
+        nodeNamesLHSall <- allNodeNames[types != "unknownIndex"]
+        numNodeFunctions <<- maxOrigNodeID - sum(types == "unknownIndex")
+    } else {
+        nodeNamesLHSall <- allNodeNames
+        numNodeFunctions <<- maxOrigNodeID
+    }
     allNewVertexNames <- character(0)
     allNewVertexIDs <- integer(0)
 
@@ -1755,13 +1760,12 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     ## 3. determine total model size from all objects
     ##    and initialize vars_2_vertexOrigID from vars_2_nodeOrigID
     ## A "vertex" is any vertex that will go in the graph.  This can include nodeFunctions, fractured nodeFunctions (e.g. if x[1:2] is declared but also used as x[1] and x[2], and RHSonly parts
+    ## for now treat unknownIndex vars as part of totModelSize (otherwise would need to avoid having elements for unknownIndex vars later)
     totModelSize <- 0
     for(iV in seq_along(varInfo)) {
         varName <- varInfo[[iV]]$varName
         vars_2_vertexOrigID[[ varName ]] <- vars_2_nodeOrigID[[ varName ]]
         if(nimbleOptions()$allowDynamicIndexing) 
-           if(varInfo[[iV]]$varName %in% unknownIndexNames)  ## unknownIndex vars not part of model
-               next
         totModelSize <- totModelSize + if(varInfo[[iV]]$nDim == 0) 1 else prod(varInfo[[iV]]$maxs)
     }
     
@@ -1776,7 +1780,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     nextVertexID <- maxOrigNodeID+1 ## origVertexIDs start after origNodeIDs.  These will be sorted later.
     for(iDI in seq_along(declInfo)) {  ## Iterate over BUGS declarations (lines)
         BUGSdecl <- declInfo[[iDI]]
-        if(nimbleOptions()$allowDynamicIndexing)
         if(BUGSdecl$numUnrolledNodes == 0) next
         rhsVars <- BUGSdecl$rhsVars
         for(iV in seq_along(rhsVars)) {  ## Iterate over the RHS variables in a BUGS line
@@ -1876,8 +1879,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 
     ## 7d. Treat unknownIndex variables like RHSonly with NAs in vars_2_nodeOrigID
     if(nimbleOptions()$allowDynamicIndexing) {
-        if(varInfo[[iV]]$varName %in% unknownIndexNames) {
-            vars_2_nodeOrigID[[ varName ]][!is.na(vars_2_nodeOrigID[[ varName ]])] <- NA   
+        for(iV in seq_along(varInfo)) {
+            varName <- varInfo[[iV]]$varName
+            if(varName %in% unknownIndexNames) 
+                vars_2_nodeOrigID[[ varName ]][!is.na(vars_2_nodeOrigID[[ varName ]])] <- NA
         }
     }
         
@@ -1969,9 +1974,17 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         BUGSdecl$graphIDs <- oldGraphID_2_newGraphID[ BUGSdecl$origIDs ]
         graphID_2_declID[ BUGSdecl$graphIDs ] <- iDI
     }
-
+    if(nimbleOptions()$allowDynamicIndexing) {
+        ## inserted declInfo elements for unknownIndex vars will be removed later
+        unknownIndexDecl <- which(sapply(declInfo, function(x) x$type == "unknownIndex"))
+        graphID_2_declID[graphID_2_declID %in% unknownIndexDecl] <- 0 
+    }
+    
     ## 11d. set up the elementIDs
     ## These provide an ID for each scalar, but any new IDs created here are not in the graph
+    ## for now we have elementIDs for all unknownIndex vars, as it's easier to generate them than not
+    ## given that initial element vector is based on vertices and unknownIndex vars need to be in vertices;
+    ## they presumably won't cause any issues as they shouldn't ever be used
     if(debug) browser()
     vars_2_elementID <- new.env()
     maxVertexID <- numContigVertices
@@ -2001,7 +2014,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     }
     elementID_2_vertexID <- 1:length(sortOrder2)
     elementID_2_vertexID[sortOrder2] <- origElementID_2_vertexID[boolStillInUse]   
-    
+
     for(iV in seq_along(varInfo)) {
         ## construct element names
         vN <- varInfo[[iV]]$varName
@@ -2039,11 +2052,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             vars_2_nodeID_noNAs[[vN]][boolNA] <-  vars_2_vertexID[[vN]][boolNA] 
     }
 
-    ## FIXME: now that we removed declInfo for UNKNOWN_INDEX vars, the graphID_2_declID is wrong for those vertices - should be 0
-    ## FIXME: check maps$edgesParentExprID
-    ## FIXME: check maps$graphID_2_unrolledIndicesMatrixRow
-    
     ## 12. Set up things needed for maps.
+    if(debug) browser()
     maps <<- mapsClass$new()
     maps$elementID_2_vertexID <<- elementID_2_vertexID
     maps$vars2ID_elements <<- vars_2_elementID
@@ -2192,6 +2202,8 @@ modelDefClass$methods(genVarInfo3 = function() {
 
         for(iV in seq_along(rhsVars)) {
             rhsVar <- rhsVars[iV]
+            if(nimbleOptions()$allowDynamicIndexing)
+                rhsVar <- stripUnknownIndexFromVarName(rhsVar) # symbolicParentNodes already expressed in terms of unknownIndex entity but we want the inferred variable to be the original one
             if(!(rhsVar %in% names(varInfo))) {
                 if(!nimbleOptions()$allowDynamicIndexing) {
                     nDim <- if(length(BUGSdecl$symbolicParentNodes[[iV]])==1)
@@ -2201,7 +2213,7 @@ modelDefClass$methods(genVarInfo3 = function() {
                 } else {
                     tmp <- stripIndexWrapping(BUGSdecl$symbolicParentNodes[[iV]])
                     nDim <- if(length(tmp)==1) 0 else length(tmp)-2
-                    rhsVar <- stripUnknownIndexFromVarName(rhsVar) # symbolicParentNodes already expressed in terms of unknownIndex entity but we want the inferred variable to be the original one
+                    
                 }
                 varInfo[[rhsVar]] <<- varInfoClass$new(varName = rhsVar,
                                                        mins = rep(100000, nDim),
@@ -2269,10 +2281,9 @@ modelDefClass$methods(addUnknownIndexVars = function(debug = FALSE) {
 
 
 modelDefClass$methods(stripUnknownIndexInfo = function() {
-    # FIXME: figure out what other node stuff needs removed because unknownIndex nodes are not nodeFunctions
     if(nimbleOptions()$allowDynamicIndexing) {
         declInfo[sapply(declInfo, function(x) x$type == 'unknownIndex')] <<- NULL
-        sapply(unknownIndexNames, function(x) assign(x, NULL, envir = varInfo)) 
+        ## sapply(unknownIndexNames, function(x) varInfo[[x]] <<- NULL) ## needed for isData stuff since we have unknownIndex vars as part of graph
     }
 })
 

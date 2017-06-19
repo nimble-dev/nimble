@@ -131,7 +131,6 @@ warnNoSamplerAssigned: A logical argument, with default value TRUE.  This specif
 
 print: A logical argument, specifying whether to print the ordered list of default samplers.
 '
-            
             samplerConfs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list(); monitors <<- character(); monitors2 <<- character();
             namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
             ##model <<- model

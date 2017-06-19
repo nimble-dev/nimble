@@ -383,7 +383,7 @@ conjugacyClass <- setRefClass(
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
             dependentObj <- dependents[[depNodeDist]]
             linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr)
+            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode)
             if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
             if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
             linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
@@ -855,7 +855,11 @@ conjugacyClass <- setRefClass(
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
-                    forLoopBody$addCode(CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                    if(nimbleOptions()$allowDynamicIndexing) { ## FIXME: do so only have one if() here and only insert the check if the sampler involves a dynamic index
+                        forLoopBody$addCode(if(COEFF_EXPR !=0) CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                                            list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
+
+                    } else forLoopBody$addCode(CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
                                         list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
                 }
                 functionBody$addCode(for(iDep in 1:N_DEP) FORLOOPBODY,
@@ -971,9 +975,20 @@ cc_makeRDistributionName     <- function(distName)     return(paste0('r', substr
 
 
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
-cc_expandDetermNodesInExpr <- function(model, expr) {
+cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL) {
     if(is.numeric(expr)) return(expr)     # return numeric
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) { # expr is a name, or an indexed name
+        if(nimbleOptions()$allowDynamicIndexing) {
+            ## this deals with having mu[k[1]] (which won't pass through expandNodeNames), replacing k[1] with the index from targetNode
+            if(!is.name(expr)) {
+                indexExprs <- expr[3:length(expr)]
+                numericIndices <- sapply(indexExprs, is.numeric)
+                if(!all(numericIndices)) {
+                    indexExprs[!numericIndices] <- parse(text = targetNode)[[1]][3:length(expr)][!numericIndices]
+                    expr[3:length(expr)] <- indexExprs
+                }
+            }
+        }
         exprText <- deparse(expr)
         expandedNodeNamesRaw <- try(model$expandNodeNames(exprText), silent=TRUE)  # causes error when expr is the name of an array memberData object, which isn't a node name
         if(inherits(expandedNodeNamesRaw, 'try-error')) {
@@ -997,7 +1012,7 @@ cc_expandDetermNodesInExpr <- function(model, expr) {
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
                 newExpr <- model$getValueExpr(exprText)
-                return(cc_expandDetermNodesInExpr(model, newExpr))
+                return(cc_expandDetermNodesInExpr(model, newExpr, targetNode))
             }
             if(type == 'RHSonly') return(expr)
             stop('something went wrong with Daniel\'s understanding of newNimbleModel')
@@ -1006,12 +1021,12 @@ cc_expandDetermNodesInExpr <- function(model, expr) {
         ## if(is.name(expr)) return(expr) # rather than throw an error, return expr; for the case where expr is the name of an array memberData object
         newExpr <- cc_createStructureExpr(model, exprText)
         for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]])
+            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode)
         return(newExpr)
     }
     if(is.call(expr)) {
         for(i in seq_along(expr)[-1])
-            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]])
+            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode)
         return(expr)
     }
     stop(paste0('something went wrong processing: ', deparse(expr)))
@@ -1048,7 +1063,7 @@ cc_otherParamsCheck <- function(model, depNode, targetNode) {
     paramsList <- as.list(model$getValueExpr(depNode)[-1])       # extracts the list of all parameters, for the distribution of depNode
     timesFound <- 0   ## for success, we'll find targetNode in only *one* parameter expression
     for(i in seq_along(paramsList)) {
-        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]])
+        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode)
         if(cc_vectorizedComponentCheck(targetNode, expr))   return(FALSE)
         if(cc_nodeInExpr(targetNode, expr))     { timesFound <- timesFound + 1 }    ## we found 'targetNode'
     }
