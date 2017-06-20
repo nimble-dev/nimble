@@ -454,7 +454,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                       ##      stop("getSymbolicParentNodesRecurse: multiple dynamic indices not yet enabled, but requested in ", deparse(code))
                       ##  if(any(sapply(contentsCode, length) > 3))  # e.g., mu[k[i,1:3]]
                        ##     stop("getSymbolicParentNodesRecurse: non-scalar dynamic indices not yet enabled, but requested in ", deparse(code))
-                        lens <- sapply(contentsCode, length)
+                     ##   lens <- sapply(contentsCode, length)
                      ##   for(i in seq_along(lens)) 
                      ##       if(lens[i] == 3 && length(contentsCode[[i]][[3]]) > 1)
                      ##           stop("getSymbolicParentNodesRecurse: non-scalar dynamic indices not yet enabled, but requested in ", deparse(code))

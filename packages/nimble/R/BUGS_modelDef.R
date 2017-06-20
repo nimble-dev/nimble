@@ -1489,10 +1489,16 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
     if(length(anyContext)==0) browser()
 
     if(nimbleOptions()$allowDynamicIndexing) {
+        ## replace NA with 1 to index into first element, since for unknownIndex vars there should be only one vertex
         for(iii in seq_along(parentIndexNamePieces))
-            ## replace NA with 1 to index into first element, since for unknownIndex vars there should be only one vertex
             if(length(parentIndexNamePieces[[iii]]) == 1 && is.na(parentIndexNamePieces[[iii]]))
                 parentIndexNamePieces[[iii]] <- 1
+        if(length(parentExprReplaced) >= 3) {
+            indexExprs <- parentExprReplaced[3:length(parentExprReplaced)]
+            for(iii in seq_along(indexExprs)) 
+            if(length(indexExprs[[iii]]) == 1 && is.na(indexExprs[[iii]]))
+                parentExprReplaced[[iii+2]] <- 1
+        }
     }
     
     allScalar <- TRUE
