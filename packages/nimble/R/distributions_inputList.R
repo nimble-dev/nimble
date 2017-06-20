@@ -170,8 +170,9 @@ distributionsInputList <- list(
     ####################################
     
     
-    dcar_normal = list(BUGSdist = 'dcar_normal(adj, weights, num, tau)',
-                       Rdist    = c('dcar_normal(adj, weights,           num, tau, numIslands = CAR_calcNumIslands(adj, num))',
+    dcar_normal = list(BUGSdist = 'dcar_normal(adj, weights, num, tau, numIslands)',
+                       Rdist    = c('dcar_normal(adj, weights = adj/adj, num, tau, numIslands)',
+                                    'dcar_normal(adj, weights,           num, tau, numIslands = CAR_calcNumIslands(adj, num))',
                                     'dcar_normal(adj, weights = adj/adj, num, tau, numIslands = CAR_calcNumIslands(adj, num))'),
                        types    = c('value = double(1)', 'adj = double(1)', 'weights = double(1)', 'num = double(1)', 'tau = double(0)', 'numIslands = double(0)'),
                        mixedSizes = TRUE,
