@@ -1582,6 +1582,11 @@ CAR_scalar_postPred <- nimbleFunction(
         if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
     },
     run = function() {
+        if(is.na(model[[targetScalar]]) | is.nan(model[[targetScalar]])) {
+            model[[targetScalar]] <<- 0
+            model$calculate(calcNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        }
         if(island) return()
         newValue <- rnorm(1, mean = dcar$getMean(), sd = sqrt(1/dcar$getPrec()))
         model[[targetScalar]] <<- newValue
