@@ -22,6 +22,7 @@ sampler_BASE <- nimbleFunctionVirtual(
 #' @rdname samplers
 #' @export
 sampler_posterior_predictive <- nimbleFunction(
+    name = 'sampler_posterior_predictive',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
@@ -46,6 +47,7 @@ sampler_posterior_predictive <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_binary <- nimbleFunction(
+    name = 'sampler_binary',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
@@ -79,6 +81,7 @@ sampler_binary <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW <- nimbleFunction(
+    name = 'sampler_RW',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -168,6 +171,7 @@ sampler_RW <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_block <- nimbleFunction(
+    name = 'sampler_RW_block',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -282,6 +286,7 @@ sampler_RW_block <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_llFunction <- nimbleFunction(
+    name = 'sampler_RW_llFunction',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -328,6 +333,7 @@ sampler_RW_llFunction <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_slice <- nimbleFunction(
+    name = 'sampler_slice',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -417,6 +423,7 @@ sampler_slice <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_ess <- nimbleFunction(
+    name = 'sampler_ess',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
@@ -464,6 +471,7 @@ sampler_ess <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_AF_slice <- nimbleFunction(
+    name = 'sampler_AF_slice',
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
     ## control list extraction
@@ -631,6 +639,7 @@ getPosteriorDensityFromConjSampler_virtual <- nimbleFunctionVirtual(
 )
 
 getPosteriorDensityFromConjSampler <- nimbleFunction(
+    name = 'getPosteriorDensityFromConjSampler',
     contains = getPosteriorDensityFromConjSampler_virtual,
     setup = function(conjugateSamplerFunction) {},
     run = function() {
@@ -643,6 +652,7 @@ getPosteriorDensityFromConjSampler <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_crossLevel <- nimbleFunction(
+    name = 'sampler_crossLevel',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -721,6 +731,7 @@ sampler_crossLevel <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_llFunction_block <- nimbleFunction(
+    name = 'sampler_RW_llFunction_block',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -814,6 +825,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_PF <- nimbleFunction(
+    name = 'sampler_RW_PF',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -961,6 +973,7 @@ sampler_RW_PF <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_PF_block <- nimbleFunction(
+    name = 'sampler_RW_PF_block',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target,  control) {
         ## control list extraction
@@ -1133,7 +1146,8 @@ sampler_RW_PF_block <- nimbleFunction(
 
 #' @rdname samplers
 #' @export
-sampler_RW_multinomial <- nimbleFunction( 
+sampler_RW_multinomial <- nimbleFunction(
+    name = 'sampler_RW_multinomial',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -1264,6 +1278,7 @@ sampler_RW_multinomial <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_dirichlet <- nimbleFunction(
+    name = 'sampler_RW_dirichlet',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction

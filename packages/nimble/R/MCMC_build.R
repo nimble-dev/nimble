@@ -49,6 +49,7 @@
 #' head(samples)
 #' }
 buildMCMC <- nimbleFunction(
+    name = 'MCMC',
     setup = function(conf, ...) {
     	if(inherits(conf, 'modelBaseClass'))
     		conf <- configureMCMC(conf, ...)
