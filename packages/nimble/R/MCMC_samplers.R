@@ -1533,6 +1533,7 @@ sampler_CAR_normal <- nimbleFunction(
         adj <- model$getParam(target, 'adj')
         weights <- model$getParam(target, 'weights')
         num <- model$getParam(target, 'num')
+        sumToZero <- model$getParam(target, 'sumToZero')
         neighborLists <- CAR_processParams(model, target, adj, weights, num)
         componentSamplerFunctions <- nimbleFunctionList(sampler_BASE)
         for(i in seq_along(targetScalarComponents)) {
@@ -1557,10 +1558,12 @@ sampler_CAR_normal <- nimbleFunction(
     run = function() {
         for(iSF in seq_along(componentSamplerFunctions))
             componentSamplerFunctions[[iSF]]$run()
-        targetValues <- values(model, target)
-        values(model, target) <<- targetValues - mean(targetValues)
-        model$calculate(calcNodes)
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(sumToZero) {
+            targetValues <- values(model, target)
+            values(model, target) <<- targetValues - mean(targetValues)
+            model$calculate(calcNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        }
     },
     methods = list(
         reset = function() {

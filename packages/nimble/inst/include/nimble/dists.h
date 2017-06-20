@@ -46,7 +46,7 @@ extern "C" {
   SEXP C_qinvgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_dsqrtinvgamma(SEXP, SEXP, SEXP, SEXP);
   SEXP C_rsqrtinvgamma(SEXP, SEXP, SEXP);
-  SEXP C_dcar_normal(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_dcar_normal(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 }
 
 // NOTE: R CMD SHLIB seems to handle C++ code without using wrapping the functions in 'extern "C"'; note that some of these functions have a bit of C++ syntax
@@ -71,8 +71,8 @@ void rinvwish_chol(double*, double*, double, int, double, int);
 double dinterval(double, double, double*, int, int);
 double rinterval(double, double*, int);
 
-double dcar_normal(double*, double*, double*, double*, double, int, int, int, int);
-void rcar_normal(int, double*, double*, double*, double, int);
+double dcar_normal(double*, double*, double*, double*, double, int, int, int, int, int);
+void rcar_normal(int, double*, double*, double*, double, int, int);
 
 
 // SHOULD BE IN nimDists.h 
