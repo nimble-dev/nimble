@@ -158,21 +158,21 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineInfo){
     ## The derivCalcFlags vector constructed below determines whether this node (i) should be treated as an output node (FALSE),
     ## a node that is necessary for later use in the chain rule (TRUE), or both (FALSE, TRUE).
     if(model$modelDef$declInfo[[declID]]$type == 'determ'){
-      derivCalcFlags <- TRUE
+      derivOutputFlags <- FALSE
     }
     else if(isNodeLine){
-      derivCalcFlags <- FALSE
+      derivOutputFlags <- TRUE
     }
     if(isWrtLine){
-      derivCalcFlags <- c(derivCalcFlags, TRUE)
+      derivOutputFlags <- c(derivOutputFlags, FALSE)
     }
     
     chainRuleHessianList[[i]] <- array(0, dim = c(sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})),
                                                   sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})),
                                                   length(derivList$value)))
     
-    for(derivCalcFlag in derivCalcFlags){
-      if(derivCalcFlag == FALSE){
+    for(derivOutputFlag in derivOutputFlags){
+      if(derivOutputFlag == TRUE){
         chainRuleDerivList[[i]] <- matrix(0, 
                                           nrow = length(derivList$value),
                                           ncol = sum(sapply(wrtLineInfo, function(x){return(x$lineSize)})))
@@ -185,7 +185,7 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineInfo){
       ## Iterate over all wrt params.
       for(j in seq_along(wrtLineInfo)){
         if(wrtLineInfo[[j]]$lineNum == i){
-          if(derivCalcFlag == FALSE){
+          if(derivOutputFlag == TRUE){
             ## If this line is included in output, add the derivative of this node's calc. function wrt itself.
             outGradient[,wrtLineInfo[[j]]$lineIndices] <- outGradient[,wrtLineInfo[[j]]$lineIndices] + derivList$gradient[1:wrtLineInfo[[j]]$lineSize] 
           }
@@ -214,7 +214,7 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, nodesLineNums, wrtLineInfo){
             }
             thisArgIndex <- thisArgIndex + argSizeInfo[k]
           }
-          if(derivCalcFlag == FALSE){
+          if(derivOutputFlag == TRUE){
             ## If this line is included in output, add the derivative of this line (i) wrt this param (j).
             outGradient[, wrtLineInfo[[j]]$lineIndices] <- outGradient[, wrtLineInfo[[j]]$lineIndices]  +  
               chainRuleDerivList[[i]][,wrtLineInfo[[j]]$lineIndices]

@@ -107,4 +107,3 @@ test_that('Derivatives of model$calculate work for nimbleModel with a for loop.'
           }
 )
 
-
