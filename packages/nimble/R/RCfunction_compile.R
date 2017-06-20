@@ -235,8 +235,9 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        compileInfo$typeEnv[['.nimbleProject']] <<- nimbleProject
                                        passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
-
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.
+                                       compileInfo$typeEnv[['nameSubList']] <<- nameSubList
+                                       
                                        ## This attempts to prevent the traceback from being hidden by multiple layers of error trapping.
                                        ## A better solution might be to avoid layered trapping so that options(error = recover) could function.
                                        tryCatch(withCallingHandlers(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv),
@@ -245,7 +246,8 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                                                         .GlobalEnv$.nimble.traceback <- capture.output(traceback(stack))
                                                                     }),
                                                 error = function(e) {
-                                                    message <- paste('There was some problem in the the setSizes processing step for this code:',
+                                                    eMessage <- if(!is.null(e$message)) paste0(as.character(e$message),"\n") else ""
+                                                    message <- paste(eMessage, 'There was some problem in the the setSizes processing step for this code:',
                                                                      paste(deparse(compileInfo$origRcode), collapse = '\n'))
                                                     if(getNimbleOption('verboseErrors')) {
                                                         message <- paste(message,
@@ -256,7 +258,6 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                                     stop(message, call. = FALSE)
                                                 })
                                        neededRCfuns <<- c(neededRCfuns, compileInfo$typeEnv[['neededRCfuns']])
-                                       
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showType = TRUE) -- broken')
                                            print('compileInfo$nimExpr$show(showAssertions = TRUE) -- possible broken')
@@ -264,10 +265,15 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
 
+                                       if(nimbleOptions('experimentalNewSizeProcessing')) {
+                                           exprClasses_setToEigenize(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
+                                       }
+
                                        tryResult <- try(exprClasses_insertAssertions(compileInfo$nimExpr))
                                        if(inherits(tryResult, 'try-error')) {
                                            stop(paste('There is some problem at the insertAdditions processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
                                        }
+                                       
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showAssertions = TRUE)')
                                            compileInfo$nimExpr$show(showAssertions = TRUE)

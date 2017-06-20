@@ -4,15 +4,15 @@ Title: Flexible BUGS-Compatible System for Hierarchical Statistical Modeling
 Description: Flexible application of algorithms to models specified in the BUGS
     language. Algorithms can be written in the NIMBLE language and made available to
     any model.
-Version: 0.6-5
-Date: 2017-04-22
+Version: 0.6-6
+Date: 2017-06-06
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
 Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-
-    Bergman, Duncan Temple Lang
+    Bergman, Nick Michaud, Fritz Obermeyer, Duncan Temple Lang
 Depends:
     R (>= 3.1.2)
 Imports:
-    methods,igraph,coda,assertthat
+    methods,igraph,coda
 Suggests:
     testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2
 URL: http://r-nimble.org
@@ -50,6 +50,7 @@ Collate:
     genCpp_buildIntermediates.R
     genCpp_processSpecificCalls.R
     genCpp_sizeProcessing.R
+    genCpp_toEigenize.R
     genCpp_insertAssertions.R
     genCpp_maps.R
     genCpp_liftMaps.R
@@ -78,6 +79,7 @@ Collate:
     cppDefs_variables.R
     cppDefs_core.R
     cppDefs_namedObjects.R
+    cppDefs_ADtools.R
     cppDefs_BUGSmodel.R
     cppDefs_RCfunction.R
     cppDefs_nimbleFunction.R
@@ -114,3 +116,4 @@ Collate:
     nimble-package.r
     zzz.R
 RoxygenNote: 5.0.1
+

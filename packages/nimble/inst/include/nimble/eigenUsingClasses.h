@@ -46,5 +46,4 @@ SEXP C_nimSvd(SEXP S_x, SEXP S_vectors, SEXP returnList);
 }
 
 
-
 #endif

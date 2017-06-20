@@ -65,7 +65,7 @@ RparseTree2ExprClasses <- function(code, caller = NULL, callerArgID = numeric())
                     if(name == '[' & i == length(code))
                         ans$args[[i-1]] <- code[[i]]
                     else ## cast logical to numeric unless it is last arg of a [, in which case it could be for drop.  This is not a very logical place for this step, but it works.
-                        ans$args[[i-1]] <- as.numeric(code[[i]])
+                        ans$args[[i-1]] <- code[[i]] ## try keeping logicals instead of casting to numeric as.numeric(code[[i]])
                 } else {
                     ans$args[[i-1]] <- if(is.numeric(code[[i]]) | is.character(code[[i]]) | is.null(code[[i]])) code[[i]] else RparseTree2ExprClasses(code[[i]], caller = ans, callerArgID = i-1)
                 }

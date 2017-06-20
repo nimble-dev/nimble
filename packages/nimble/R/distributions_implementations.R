@@ -15,7 +15,6 @@
 #' @param scale_param logical; if TRUE the Cholesky factor is that of the scale matrix; otherwise, of the rate matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
 #' @return \code{dwish_chol} gives the density and \code{rwish_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -37,7 +36,7 @@ dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
           storage.mode(cholesky) <- 'double'
     if(storage.mode(x) != 'double')
             storage.mode(x) <- 'double'
-    .Call('C_dwish_chol', x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
+    .Call(C_dwish_chol, x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
 }
 
 #' @rdname Wishart
@@ -46,7 +45,7 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rwish_chol only handles n = 1 at the moment')
     if(storage.mode(cholesky) != 'double')
     	storage.mode(cholesky) <- 'double'
-    out <- .Call('C_rwish_chol', cholesky, as.double(df), as.double(scale_param))
+    out <- .Call(C_rwish_chol, cholesky, as.double(df), as.double(scale_param))
     if(!is.null(out)) out <- matrix(out, nrow = sqrt(length(cholesky)))
     return(out)
 }
@@ -65,7 +64,6 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 #' @param scale_param logical; if TRUE the Cholesky factor is that of the scale matrix; otherwise, of the rate matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
 #' @return \code{dinvwish_chol} gives the density and \code{rinvwish_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -87,7 +85,7 @@ dinvwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
           storage.mode(cholesky) <- 'double'
     if(storage.mode(x) != 'double')
             storage.mode(x) <- 'double'
-    .Call('C_dinvwish_chol', x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
+    .Call(C_dinvwish_chol, x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
 }
 
 #' @rdname Inverse-Wishart
@@ -96,11 +94,25 @@ rinvwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rinvwish_chol only handles n = 1 at the moment')
     if(storage.mode(cholesky) != 'double')
     	storage.mode(cholesky) <- 'double'
-    out <- .Call('C_rinvwish_chol', cholesky, as.double(df), as.double(scale_param))
+    out <- .Call(C_rinvwish_chol, cholesky, as.double(df), as.double(scale_param))
     if(!is.null(out)) out <- matrix(out, nrow = sqrt(length(cholesky)))
     return(out)
 }
 
+
+#' Nimble Derivatives
+#' 
+#' EXPERIMENTAL Computes the value, gradient, and Hessian of a given  \code{nimbleFunction} method.  The R version is currently unimplemented.
+#' 
+#' @param nimFxn a call to a \code{nimbleFunction} method with arguments included.
+#' @param order an integer vector with values within the set {0, 1, 2}, corresponding to whether the function value, gradient, and Hessian should be returned respectively.
+#' 
+#' @export
+nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
+  fxnCall <- substitute(nimFxn)
+  print('R nimDerivs not yet implemented')
+  return(NA)
+}
 
 #' Spectral Decomposition of a Matrix  
 #'
@@ -143,7 +155,7 @@ rinvwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 #' 
 nimEigen <- function(x, only.values = FALSE) {
   ## placeholder list with correct names of elements, will be populated in C++
-  .Call('C_nimEigen', x, as.logical(only.values), eigenNimbleList$new())
+  .Call(C_nimEigen, x, as.logical(only.values), eigenNimbleList$new())
 }
 
 
@@ -204,7 +216,7 @@ nimSvd <- function(x, vectors = 'full') {
                     thin = 1,
                     full = 2)
   if(is.null(vectors)) stop("nimSvd: vectors argument to 'svd' must be one of \"none\", \"thin\", or \"full\".")
-  .Call('C_nimSvd', x, vectors, svdNimbleList$new())
+  .Call(C_nimSvd, x, vectors, svdNimbleList$new())
 }
 
 #' The Improper Uniform Distribution
@@ -219,10 +231,9 @@ nimSvd <- function(x, vectors = 'full') {
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #'
 #' @author Christopher Paciorek
-#' @export
-#' @return \code{dflat} gives the pseudo-density value of 1, while \code{rflat} returns \code{NaN},
+#' @return \code{dflat} gives the pseudo-density value of 1, while \code{rflat} and \code{rhalfflat} return \code{NaN},
 #' since one cannot simulate from an improper distribution. Similarly, \code{dhalfflat}
-#' gives a pseudo-density value of 1 when \code{
+#' gives a pseudo-density value of 1 when \code{x} is non-negative.
 #' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples
@@ -272,7 +283,6 @@ rhalfflat <- function(n = 1) {
 #' @param alpha vector of parameters of same length as \code{x}
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. 
 #' @return \code{ddirch} gives the density and \code{rdirch} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -287,14 +297,14 @@ NULL
 #' @rdname Dirichlet
 #' @export
 ddirch <- function(x, alpha, log = FALSE) {
-    .Call('C_ddirch', as.double(x), as.double(alpha), as.logical(log))
+    .Call(C_ddirch, as.double(x), as.double(alpha), as.logical(log))
 }
 
 #' @rdname Dirichlet
 #' @export
 rdirch <- function(n = 1, alpha) {
     if(n != 1) warning('rdirch only handles n = 1 at the moment')
-  .Call('C_rdirch', as.double(alpha))
+  .Call(C_rdirch, as.double(alpha))
 }
 
 #' The Multinomial Distribution
@@ -310,7 +320,6 @@ rdirch <- function(n = 1, alpha) {
 #' @param prob vector of probabilities, internally normalized to sum to one, of same length as \code{x}
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. 
 #' @return \code{dmulti} gives the density and \code{rmulti} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -326,14 +335,14 @@ NULL
 #' @rdname Multinomial
 #' @export
 dmulti <- function(x, size = sum(x), prob, log = FALSE) {
-  .Call('C_dmulti', as.double(x), as.double(size), as.double(prob), as.logical(log))
+  .Call(C_dmulti, as.double(x), as.double(size), as.double(prob), as.logical(log))
 }
 
 #' @rdname Multinomial
 #' @export
 rmulti <- function(n = 1, size, prob) {
   if(n != 1) warning('rmulti only handles n = 1 at the moment')
-  .Call('C_rmulti', as.double(size), as.double(prob))
+  .Call(C_rmulti, as.double(size), as.double(prob))
 }
 
 #' The Categorical Distribution
@@ -347,7 +356,6 @@ rmulti <- function(n = 1, size, prob) {
 #' @param prob vector of probabilities, internally normalized to sum to one.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See the BUGS manual for mathematical details. 
 #' @return \code{dcat} gives the density and \code{rcat} generates random deviates.
 ##' @seealso \link{Distributions} for other standard distributions
@@ -362,13 +370,13 @@ NULL
 #' @rdname Categorical
 #' @export
 dcat <- function(x, prob, log = FALSE) {
-  .Call('C_dcat', as.double(x), as.double(prob), as.logical(log))
+  .Call(C_dcat, as.double(x), as.double(prob), as.logical(log))
 }
 
 #' @rdname Categorical
 #' @export
 rcat <- function(n = 1, prob) {
-  .Call('C_rcat', as.integer(n), as.double(prob))
+  .Call(C_rcat, as.integer(n), as.double(prob))
 }
 
 
@@ -392,7 +400,6 @@ rcat <- function(n = 1, prob) {
 #' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
 #' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. 
 #' @return \code{dt_nonstandard} gives the density, \code{pt_nonstandard} gives the distribution
 #' function, \code{qt_nonstandard} gives the quantile function, and \code{rt_nonstandard}
@@ -408,25 +415,25 @@ NULL
 #' @rdname t
 #' @export
 dt_nonstandard <- function(x, df = 1, mu = 0, sigma = 1, log = FALSE) {
-  .Call('C_dt_nonstandard', as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(log))
+  .Call(C_dt_nonstandard, as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(log))
 }
 
 #' @rdname t
 #' @export
 rt_nonstandard <- function(n, df = 1, mu = 0, sigma = 1) {
-  .Call('C_rt_nonstandard', as.integer(n), as.double(df), as.double(mu), as.double(sigma))
+  .Call(C_rt_nonstandard, as.integer(n), as.double(df), as.double(mu), as.double(sigma))
 }
 
 #' @rdname t
 #' @export
 pt_nonstandard <- function(q, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
-  .Call('C_pt_nonstandard', as.double(q), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_pt_nonstandard, as.double(q), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' @rdname t
 #' @export
 qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
-  .Call('C_qt_nonstandard', as.double(p), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_qt_nonstandard, as.double(p), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' The Multivariate Normal Distribution
@@ -442,7 +449,6 @@ qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.
 #' @param prec_param logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the covariance matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
 #' @return \code{dmnorm_chol} gives the density and \code{rmnorm_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -463,7 +469,7 @@ dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
   # FIXME: allow cholesky to be lower tri
     if(storage.mode(cholesky) != 'double')
          storage.mode(cholesky) <- 'double'
-    .Call('C_dmnorm_chol', as.double(x), as.double(mean), cholesky, as.double(prec_param), as.logical(log))
+    .Call(C_dmnorm_chol, as.double(x), as.double(mean), cholesky, as.double(prec_param), as.logical(log))
 }
 
 #' @rdname MultivariateNormal
@@ -474,7 +480,7 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
     if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
     if(storage.mode(cholesky) != 'double')
          storage.mode(cholesky) <- 'double'
-    .Call('C_rmnorm_chol', as.double(mean), cholesky, as.double(prec_param))
+    .Call(C_rmnorm_chol, as.double(mean), cholesky, as.double(prec_param))
 }
 
 #' The Multivariate t Distribution
@@ -493,7 +499,6 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 #' @param prec_param logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the scale matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Peter Sujan
-#' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The 'precision' matrix as used here is defined as the inverse of the scale matrix, \eqn{\Sigma^{-1}}, given in Gelman et al. 
 #' @return \code{dmvt_chol} gives the density and \code{rmvt_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
@@ -515,7 +520,7 @@ dmvt_chol <- function(x, mu, cholesky, df, prec_param = TRUE, log = FALSE) {
   # FIXME: allow cholesky to be lower tri
     if(storage.mode(cholesky) != 'double')
        storage.mode(cholesky) <- 'double'
-    .Call('C_dmvt_chol', as.double(x), as.double(mu), cholesky,
+    .Call(C_dmvt_chol, as.double(x), as.double(mu), cholesky,
         as.double(df), as.double(prec_param), as.logical(log))
 }
 
@@ -527,7 +532,7 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
     if(n != 1) warning('rmvt_chol only handles n = 1 at the moment')
     if(storage.mode(cholesky) != 'double')
          storage.mode(cholesky) <- 'double'
-    .Call('C_rmvt_chol', as.double(mu), cholesky,
+    .Call(C_rmvt_chol, as.double(mu), cholesky,
         as.double(df), as.double(prec_param))
 }
 
@@ -543,7 +548,6 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
 #' @param c vector of one or more values delineating the intervals.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details Used for working with censoring in BUGS code.
 #' Taking \code{c} to define the endpoints of two or more intervals (with implicit endpoints of plus/minus infinity), \code{x} (or the return value of \code{rinterval}) gives the non-negative integer valued index of the interval in which \code{t} falls. See the NIMBLE manual for additional details. 
 #' @return \code{dinterval} gives the density and \code{rinterval} generates random deviates,
@@ -563,13 +567,13 @@ NULL
 #' @rdname Interval
 #' @export
 dinterval <- function(x, t, c, log = FALSE) {
-    .Call('C_dinterval', as.double(x), as.double(t), as.double(c), as.logical(log))
+    .Call(C_dinterval, as.double(x), as.double(t), as.double(c), as.logical(log))
 }
 
 #' @rdname Interval
 #' @export
 rinterval <- function(n = 1, t, c) {
-    .Call('C_rinterval', as.integer(n), as.double(t), as.double(c))
+    .Call(C_rinterval, as.integer(n), as.double(t), as.double(c))
 }
 
 #' Constraint calculations in NIMBLE
@@ -583,7 +587,6 @@ rinterval <- function(n = 1, t, c) {
 #' @param cond logical value   
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
-#' @export
 #' @details Used for working with constraints in BUGS code.
 #' See the NIMBLE manual for additional details. 
 #' @return \code{dconstraint} gives the density and \code{rconstraint} generates random deviates,
@@ -640,7 +643,6 @@ rconstraint <- function(n = 1, cond) {
 #' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
 #' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
 #' @author Christopher Paciorek
-#' @export
 #' @details NIMBLE's exponential distribution functions use Rmath's functions
 #' under the hood, but are parameterized to take both rate and scale and to
 #' use 'rate' as the core parameterization in C, unlike Rmath, which uses 'scale'.
@@ -666,7 +668,7 @@ dexp_nimble <- function(x, rate = 1/scale, scale = 1, log = FALSE) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_dexp_nimble', as.double(x), as.double(rate), as.logical(log))
+    .Call(C_dexp_nimble, as.double(x), as.double(rate), as.logical(log))
 }
 
 #' @rdname Exponential
@@ -677,7 +679,7 @@ rexp_nimble <- function(n = 1, rate = 1/scale, scale = 1) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_rexp_nimble', as.integer(n), as.double(rate))
+    .Call(C_rexp_nimble, as.integer(n), as.double(rate))
 }
 
 #' @rdname Exponential
@@ -688,7 +690,7 @@ pexp_nimble <- function(q, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-  .Call('C_pexp_nimble', as.double(q), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_pexp_nimble, as.double(q), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' @rdname Exponential
@@ -699,7 +701,7 @@ qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-  .Call('C_qexp_nimble', as.double(p), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_qexp_nimble, as.double(p), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' The Inverse Gamma Distribution
@@ -721,7 +723,6 @@ qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
 #' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
 #' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
 #' @author Christopher Paciorek
-#' @export
 #' @details The inverse gamma distribution with parameters \code{shape} \eqn{=\alpha}{= a} and
 #' \code{scale} \eqn{=\sigma}{= s} has density
 #' \deqn{
@@ -759,7 +760,7 @@ dinvgamma <- function(x, shape, scale = 1, rate = 1/scale, log = FALSE) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_dinvgamma', as.double(x), as.double(shape), as.double(rate), as.logical(log))
+    .Call(C_dinvgamma, as.double(x), as.double(shape), as.double(rate), as.logical(log))
 }
 
 #' @rdname Inverse-Gamma
@@ -770,7 +771,7 @@ rinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_rinvgamma', as.integer(n), as.double(shape), as.double(rate))
+    .Call(C_rinvgamma, as.integer(n), as.double(shape), as.double(rate))
 }
 
 
@@ -782,7 +783,7 @@ pinvgamma <- function(q, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, lo
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-  .Call('C_pinvgamma', as.double(q), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_pinvgamma, as.double(q), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' @rdname Inverse-Gamma
@@ -793,7 +794,7 @@ qinvgamma <- function(p, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, lo
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-  .Call('C_qinvgamma', as.double(p), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_qinvgamma, as.double(p), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
 # sqrtinvgamma is intended solely for use in conjugacy with dhalfflat
@@ -804,7 +805,7 @@ dsqrtinvgamma <- function(x, shape, scale = 1, rate = 1/scale, log = FALSE) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_dsqrtinvgamma', as.double(x), as.double(shape), as.double(rate), as.logical(log))
+    .Call(C_dsqrtinvgamma, as.double(x), as.double(shape), as.double(rate), as.logical(log))
 }
 
 #' @export
@@ -814,5 +815,5 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_rsqrtinvgamma', as.integer(n), as.double(shape), as.double(rate))
+    .Call(C_rsqrtinvgamma, as.integer(n), as.double(shape), as.double(rate))
 }

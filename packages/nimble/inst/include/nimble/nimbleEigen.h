@@ -100,11 +100,11 @@ template<typename result_type, typename eigenType, typename Index>
 struct nimble_eigen_coeff_impl<false, result_type, eigenType, Index> {
   static result_type getCoeff(const eigenType &Arg, Index i) {
     std::div_t divRes = div(static_cast<int>(i), static_cast<int>(Arg.rows())); // some compilers don't like seeing div(long, int)
-    return Arg.coeff(divRes.rem, floor(divRes.quot));
+    return Arg.coeff(divRes.rem, divRes.quot);
   }
   static result_type getDiagCoeff(const eigenType &Arg, Index i) {
     std::div_t divRes = div(static_cast<int>(i), static_cast<int>(Arg.rows()));
-    return Arg.coeff(divRes.rem, floor(divRes.quot));
+    return Arg.coeff(divRes.rem, divRes.quot);
   }
 };
 
@@ -152,7 +152,7 @@ template<typename DerivedIndex, typename DerivedSource>
     std::div_t divRes = div(static_cast<int>(i), dim1);
     // iRow = divRes.rem
     // iCol = floor(divRes.quot)
-    if(divRes.rem == floor(divRes.quot)) { // on diagonal
+    if(divRes.rem == divRes.quot) { // on diagonal
       return nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedSource>::nimbleUseLinearAccess), result_type, DerivedSource, DerivedIndex >::getDiagCoeff(src, divRes.rem);
     }
     return 0; // off diagonal
@@ -722,7 +722,7 @@ public:
   Scalar &coeffRef(IndexType i) const {
     std::div_t divRes = div(static_cast<int>(i), dim1);
     return target.coeffRef(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::nimbleUseLinearAccess), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, divRes.rem)-1,
-			   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, floor(divRes.quot))-1);
+			   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, divRes.quot)-1);
 
     // use % to get the i-th total element
   }
@@ -763,7 +763,7 @@ class nonseqIndexedClass {
     //std::cout<<"IN 1\n";
     std::div_t divRes = div(static_cast<int>(i), dim1);
     return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::nimbleUseLinearAccess), result_type, DerivedI1, IndexObj >::getCoeff(index1, divRes.rem) - 1,
-		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::nimbleUseLinearAccess), result_type, DerivedI2, IndexObj >::getCoeff(index2, floor(divRes.quot)) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
+		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::nimbleUseLinearAccess), result_type, DerivedI2, IndexObj >::getCoeff(index2, divRes.quot) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
     //index1(divRes.rem)-1, index2(floor(divRes.quot))-1);
   }
   result_type operator()(IndexObj i, IndexObj j) const
@@ -822,7 +822,7 @@ template<typename result_type, typename eigenType, typename Index>
 struct nimble_eigen_coeff_mod_impl<false, result_type, eigenType, Index> {
   static result_type getCoeff(const eigenType &Arg, Index i, unsigned int size) {
     std::div_t divRes = div(static_cast<int>(i % size), static_cast<int>(Arg.rows()));
-    return Arg.coeff(divRes.rem, floor(divRes.quot));
+    return Arg.coeff(divRes.rem, divRes.quot);
   }  
 };
 

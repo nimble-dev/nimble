@@ -34,7 +34,7 @@ exprClasses_insertAssertions <- function(code) {
             if(length(code$args[[i]]$assertions) > 0) {
                 toInsert <- lapply(code$args[[i]]$assertions, function(x) if(inherits(x, 'exprClass')) x else RparseTree2ExprClasses(x))
                 before <- unlist(lapply(toInsert, function(x) {if(x$name == 'after') FALSE else TRUE}))
-                
+                if(nimbleOptions('experimentalNewSizeProcessing')) code$args[[i]]$assertions <- list()  ## Clear assertions field so it can be used by later compiler stages
                 newExpr <- newBracketExpr(args = c(lapply(toInsert[before], ## assertions will be inserted recursively IF they are in {}
                                                           function(z) {exprClasses_insertAssertions(z); z}),
                                                    code$args[i],

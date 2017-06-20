@@ -21,6 +21,7 @@ LWSetMeanVirtual <- nimbleFunctionVirtual(
 
 # Has a return_mean method which returns the mean of a normally distributed nimble node.
 paramMean <- nimbleFunction(
+    name = 'paramMean',
   contains = LWSetMeanVirtual,
   setup = function(model, node){
     ## check that node has a normal distribution!
@@ -40,6 +41,7 @@ LWSetParVirtual <- nimbleFunctionVirtual(
 )
 
 doPars <- nimbleFunction(
+    name = 'doPars',
   contains = LWSetParVirtual,
   setup = function(parName, mvWSamples, mvEWSamples) {
   },
@@ -104,6 +106,7 @@ doPars <- nimbleFunction(
 
 
 LWStep <- nimbleFunction(
+    name = 'LWStep',
   contains = LWStepVirtual,
   setup = function(model, mvWSamples, mvEWSamples, nodes, paramVarDims, iNode, paramNodes, paramVars, names, saveAll, d, silent = FALSE) {
     notFirst <- iNode != 1
@@ -272,6 +275,7 @@ LWStep <- nimbleFunction(
 # the mean of all particles, and cholesVar, which returns the cholesky 
 # decomposition of the weighted MC covariance matrix
 LWparFunc <- nimbleFunction(
+    name = 'LWparFunc',
   setup = function(d, parDim, prevInd){
     # Calculate h^2 and a using specified discount factor d
     hsq <- 1-((3*d-1)/(2*d))^2 
@@ -371,6 +375,7 @@ LWparFunc <- nimbleFunction(
 #' lw_sigma_x <- as.matrix(Cmy_LWF$mvEWSamples, 'sigma_x')
 #' }
 buildLiuWestFilter <- nimbleFunction(
+    name = 'buildLiuWestFilter',
   setup = function(model, nodes, params = NULL, control = list()){
     
     #control list extraction
