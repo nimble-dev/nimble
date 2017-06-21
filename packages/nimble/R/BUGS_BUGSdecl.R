@@ -371,7 +371,6 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     ##                something replaceable doesn't need to become a symbolicParentNode
     ##                and something replaceable in an index represents static indexing, not dynamic indexing
     ## - hasIndex: is there an index inside
-    
     ## numeric constant
     if(is.numeric(code)) {
         return(list(code = NULL, replaceable = TRUE, hasIndex = FALSE))
@@ -442,24 +441,12 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 } else { ## non-replaceable indices are dynamic indices
                     if(!nimbleOptions()$allowDynamicIndexing) dynamicIndexParent <- code[[2]]
                     else {
+                        if(any(sapply(contentsCode, detectNonscalarIndex)))
+                            stop("getSymbolicParentNodesRecurse: only scalar random indices are allowed; vector random indexing found in ", deparse(code))
                         dynamicIndexParent <- code
                         dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ] <- as.numeric(NA)
                         dynamicIndexParent <- addUnknownIndexToVarNameInBracketExpr(dynamicIndexParent)
-                        ## before proceeding with more complicated cases, we'll need to check that they work; for now error out with anything more complicated than mu[foo(k[i])]
-                        # should add tests where we expect failure at this stage for these cases
-                        ## TMP:
-                       ## if(length(dynamicIndexParent) > 3)  # e.g., mu[k[i],i]
-                         ##   stop("getSymbolicParentNodesRecurse: multi-dimensional dynamic indexing not yet enabled, but requested in ", deparse(code)) # note this doesn't even allow mu[NA,1]
-                      ##  if(length(contentsCode) > 1)   # e.g., mu[k[i],j[i]]
-                      ##      stop("getSymbolicParentNodesRecurse: multiple dynamic indices not yet enabled, but requested in ", deparse(code))
-                      ##  if(any(sapply(contentsCode, length) > 3))  # e.g., mu[k[i,1:3]]
-                       ##     stop("getSymbolicParentNodesRecurse: non-scalar dynamic indices not yet enabled, but requested in ", deparse(code))
-                     ##   lens <- sapply(contentsCode, length)
-                     ##   for(i in seq_along(lens)) 
-                     ##       if(lens[i] == 3 && length(contentsCode[[i]][[3]]) > 1)
-                     ##           stop("getSymbolicParentNodesRecurse: non-scalar dynamic indices not yet enabled, but requested in ", deparse(code))
                         contentsCode = lapply(contentsCode, addIndexWrapping)
-                            # lapply should deal with multiple dyn indices: mu[foo(k[i]),2,j[i]]
                     }
                     return(list(code = c(contentsCode, list(dynamicIndexParent)),
                                 replaceable = FALSE,
@@ -621,9 +608,21 @@ genLogProbNodeExprAndReplacements <- function(code, codeReplaced, indexVarExprs)
     list(logProbNodeExpr = logProbNodeExpr, replacements = replacements)
 }
 
-addIndexWrapping <- function(expr)
+addIndexWrapping <- function(expr) {
+    if(expr[[1]] == '.USED_IN_INDEX') ## nested random indexing
+        return(expr)
     substitute(.USED_IN_INDEX(EXPR), list(EXPR = expr))
+}
 
 stripIndexWrapping <- function(expr) 
     if(length(expr) == 1 || expr[[1]] != quote(.USED_IN_INDEX)) return(expr) else return(expr[[2]])
 
+detectNonscalarIndex <- function(expr) {
+    if(length(expr) == 1) return(FALSE)
+    if(length(expr) == 2) {  ## this can occur if we have mu[k[j[i]]]
+        expr <- stripIndexWrapping(expr)
+        if(length(expr) <= 2)
+            stop("detectNonscalarIndex: unexpected expression ", expr)
+    }
+    return(max(sapply(expr[3:length(expr)], length)) > 1)
+}

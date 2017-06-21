@@ -1496,7 +1496,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
         if(length(parentExprReplaced) >= 3) {
             indexExprs <- parentExprReplaced[3:length(parentExprReplaced)]
             for(iii in seq_along(indexExprs)) 
-            if(length(indexExprs[[iii]]) == 1 && is.na(indexExprs[[iii]]))
+            if(length(indexExprs[[iii]]) == 1 && is.numeric(indexExprs[[iii]]) && is.na(indexExprs[[iii]]))  ## is.numeric check avoids warning when check k[i] type situation
                 parentExprReplaced[[iii+2]] <- 1
         }
     }
