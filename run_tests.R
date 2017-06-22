@@ -83,15 +83,15 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
         stderr.log <- file.path(logDir, paste0('test-', name, '.stderr'))
         stdout.log <- file.path(logDir, paste0('test-', name, '.stdout'))
         if (system2(command[1], tail(command, -1), stderr = stderr.log, stdout = stdout.log)) {
-            cat('FAILED', test, 'See', stderr.log, stdout.log, '\n')
+            cat('\x1b[31mFAILED\x1b[0m', test, 'See', stderr.log, stdout.log, '\n')
             return(TRUE)
         }
     } else {
         if (system2(command[1], tail(command, -1))) {
-            stop(paste('FAILED', test))
+            stop(paste('\x1b[31mFAILED\x1b[0m', test))
         }
     }
-    cat('PASSED', test, '\n')
+    cat('\x1b[32mPASSED\x1b[0m', test, '\n')
     return(FALSE)
 }
 

@@ -1,11 +1,24 @@
 .PHONY: FORCE
 
-build: nimble/configure
-	@echo "Building nimble package in-place"
-	(R CMD build nimble)
+VERSION=$(shell grep Version: nimble/DESCRIPTION | grep -o '[^ ]*$$')
+
+version: FORCE
+	@echo $(VERSION)
 
 configure: nimble/configure.ac
 	(cd nimble; autoconf)
+
+nimble_$(VERSION).tar.gz: nimble/configure FORCE
+	@echo "Building nimble package in this directory"
+	(R CMD build nimble)
+
+build: nimble_$(VERSION).tar.gz
+
+check: build FORCE
+	R CMD check --as-cran nimble_$(VERSION).tar.gz
+
+test: FORCE
+	cd .. ; ./run_tests.R --parallel
 
 clang-format: FORCE
 	clang-format -style=file \
@@ -14,9 +27,6 @@ clang-format: FORCE
 	  nimble/inst/include/nimble/predefinedNimbleLists.h \
 	  nimble/inst/CppCode/predefinedNimbleLists.cpp \
 	  -i
-
-test: FORCE
-	cd .. ; ./run_tests.R --parallel
 
 clean: FORCE
 	git clean -dfX
