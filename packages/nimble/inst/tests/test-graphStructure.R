@@ -2,6 +2,10 @@
 ## test-getDependencies has some more basic tests.
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = -1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
 
 correctOutputFilename <- 'graphStructureTestResults_Correct.Rout'
 ## Use this to regenerate results in the test directory:
@@ -178,3 +182,6 @@ trialResults <- readLines(testOutputFilename)
 correctResults <- readLines(system.file(file.path('tests', correctOutputFilename), package = 'nimble'))
 
 compareFilesByLine(trialResults, correctResults)
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

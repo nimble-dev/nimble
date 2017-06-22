@@ -2,6 +2,7 @@
 # bootstrap method of "Markov Chain Monte Carlo in Statistical Mechanics"
 # by Mignani & Rosa, 2001 (p. 350)
 calc_asympVar = nimbleFunction(
+    name = 'calc_asympVar',
   setup = function(model, fixedNodes, sampledNodes, mvBlock, mvSample, burnIn = 0, numReps){
     calc_E_llk <- calc_E_llk_gen(model, fixedNodes = fixedNodes, sampledNodes = sampledNodes, burnIn = 0, mvSample = mvBlock)
   },
@@ -33,6 +34,7 @@ calc_asympVar = nimbleFunction(
 
 # Calculates Q function if diff = 0, calculates difference in Q functions if diff = 1.
 calc_E_llk_gen = nimbleFunction(
+    name = 'calc_E_llk_gen',
   setup = function(model, fixedNodes, sampledNodes, mvSample, burnIn = 0){
     fixedCalcNodes <- model$getDependencies(fixedNodes)	
     latentCalcNodes <- model$getDependencies(sampledNodes)
@@ -83,6 +85,7 @@ calc_E_llk_gen = nimbleFunction(
 
 ## helper function to extract ranges of nodes to be maximized
 getMCEMRanges <- nimbleFunction(
+    name = 'getMCEMRanges',
   setup = function(model, maxNodes, buffer){
     low_limits = rep(-Inf, length(maxNodes) ) 
     hi_limits  = rep(Inf,  length(maxNodes) ) 
@@ -238,24 +241,26 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   if(length(maxNodes) == 0)
     stop('no nodes to be maximized over')
   
-  
+  resetFunctions <- FALSE
   if(is(model, "RmodelBaseClass") ){
     Rmodel = model
     if(is(model$CobjectInterface, "uninitializedField")){
       cModel <- compileNimble(model)
     }
-    else
+    else{
       cModel = model$CobjectInterface
+      resetFunctions <- TRUE
+    }
   }
   else{
     cModel <- model
     Rmodel <- model$Rmodel
+    resetFunctions <- TRUE
   }
   
   zAlpha <- qnorm(alpha, 0, 1, lower.tail=FALSE)
   zBeta <- qnorm(beta, 0, 1, lower.tail=FALSE)
   zGamma <- qnorm(gamma, 0, 1, lower.tail=FALSE)
-  
   
   mcmc_Latent_Conf <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl) 
   Rmcmc_Latent <- buildMCMC(mcmc_Latent_Conf)
@@ -265,7 +270,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   RvarCalc <- calc_asympVar(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvBlock, mvSample = sampledMV, numReps = numReps)
   RgetCov <- bootstrapGetCov(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV)
   
-  cmcmc_Latent = compileNimble(Rmcmc_Latent, project = Rmodel)
+  cmcmc_Latent = compileNimble(Rmcmc_Latent, project = Rmodel, resetFunctions = resetFunctions)
   cGetCov = compileNimble(RgetCov, project = Rmodel)  
   cvarCalc <- compileNimble(RvarCalc, project = Rmodel)
   cCalc_E_llk = compileNimble(Rcalc_E_llk, project = Rmodel)  
@@ -395,6 +400,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
 }
 
 bootstrapGetCov <- nimbleFunction(
+    name = 'bootstrapGetCov',
     setup = function(model, fixedNodes, sampledNodes, mvSample, burnIn = 0){
       fixedCalcNodes <- model$getDependencies(fixedNodes)	
       latentCalcNodes <- model$getDependencies(sampledNodes)

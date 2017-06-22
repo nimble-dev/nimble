@@ -1,6 +1,13 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context('testing return() type error trapping')
 
+RwarnLevel <- options('warn')$warn
+options(warn = -1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+nimbleVerboseErrorsSetting <- nimbleOptions('verboseErrors')
+nimbleOptions(verboseErrors = FALSE)
+
 ## We can use upcoming expect_compiles in the future,
 ## but for now I'm doing it more crudely
 
@@ -68,3 +75,7 @@ test_that('return type error caught when non-void object is returned', {
     cfoo <- try(compileNimble(foo))
     expect_failure(expect_identical(class(cfoo), "function"))
 })
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
+nimbleOptions(verboseErrors = nimbleVerboseErrorsSetting)

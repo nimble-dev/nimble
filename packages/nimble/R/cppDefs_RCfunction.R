@@ -96,7 +96,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                    
                                    if(is.character(SEXPinterfaceCname) && is.null(dll) && eval) {
                                      warning("creating a .Call() expression with no DLL information")
-                                     browser()                                     
                                    }
                                                                      
                                    # avoid R CMD check problem with registration

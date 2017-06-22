@@ -1,5 +1,8 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = -1)
+
 context("Testing of size/dimension checks in NIMBLE code.\nNote that numerous error messages are expected here; check for test failures not denoted with 'KNOWN PROBLEM'.")
 
 vec2 <- c(1,1)
@@ -482,3 +485,6 @@ sapply(testsTrunc, test_size)
 
 # for these we want errors caught by NIMBLE error-checking not by R errors at model-building
 sapply(testsLHSRHSmismatch, test_size_specific_error)
+
+RwarnLevel <- options('warn')$warn
+options(warn = -1)
