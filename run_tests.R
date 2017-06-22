@@ -1,8 +1,15 @@
 #!/usr/bin/env Rscript
+
 # This script runs most tests in nimble/inst/tests/ prioritized by duration.
+#
 # To run only some of the tests, define the environment variable NIMBLE_TEST_BATCH=N
 # where N is a number in 1,...,5.
+# To run tests in paralle, pass the argument --parallel, for example
+#
+#   ./run_tests.R --parallel  # Run tests in parallel.
+#
 # To see which tests will be run, pass the argument --dry-run, for example
+#
 #   ./run_tests.R --dry-run                        # Run all tests.                        
 #   $ NIMBLE_TEST_BATCH=1 ./run_tests.R --dry-run  # Run one batch of tests.
 
@@ -60,19 +67,48 @@ if (system2('/usr/bin/time', c('-v', 'echo', 'Running tests under /usr/bin/time 
 }
 
 # Run each test in a separate process to avoid dll garbage overload.
-for (test in allTests) {
-    cat('--------------------------------------------------------------------------------\n')
+runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
+    if (!logToFile) cat('--------------------------------------------------------------------------------\n')
     cat('TESTING', test, '\n')
-    runViaTestthat <- TRUE
     if (runViaTestthat) {
         name <- gsub('test-(.*)\\.R', '\\1', test)
-        script = paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "^', name, '$")')
+        script <- paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "^', name, '$")')
         command <- c(runner, '-e', shQuote(script))
     } else {
         command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
     }
-    if(system2(command[1], tail(command, -1))) {
-        stop(paste('FAILED', test))
+    if (logToFile) {
+        logDir <- '/tmp/log/nimble'
+        dir.create(logDir, recursive = TRUE, showWarnings = FALSE)
+        stderr.log <- file.path(logDir, paste0('test-', name, '.stderr'))
+        stdout.log <- file.path(logDir, paste0('test-', name, '.stdout'))
+        if (system2(command[1], tail(command, -1), stderr = stderr.log, stdout = stdout.log)) {
+            cat('FAILED', test, 'See', stderr.log, stdout.log, '\n')
+            return(TRUE)
+        }
+    } else {
+        if (system2(command[1], tail(command, -1))) {
+            stop(paste('FAILED', test))
+        }
     }
     cat('PASSED', test, '\n')
+    return(FALSE)
+}
+
+if ('--parallel' %in% commandArgs(trailingOnly = TRUE)) {
+    if (!require(parallel)) stop('Missing parallel package, required for --parallel')
+    cores <- detectCores()
+    cat('PARALLELIZING OVER', cores, 'CORES\n')
+    failed <- mclapply(allTests, runTest, logToFile = TRUE,
+                       mc.cores = cores, mc.preschedule = FALSE, mc.cleanup = TRUE)
+    numFailed <- sum(unlist(failed))
+    if (numFailed == 0) {
+        cat('PASSED all tests\n')
+    } else {
+        stop(paste('FAILED', numFailed, 'tests'))
+    }
+} else {
+    for (test in allTests) {
+        runTest(test)
+    }
 }
