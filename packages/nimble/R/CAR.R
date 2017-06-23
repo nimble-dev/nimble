@@ -21,7 +21,6 @@ CAR_convertWeightMatrix <- function(weightMatrix) {
 }
 
 
-## internal only
 ## specialized conjugacy-checking of the scalar component nodes of dcar_normal() distribution
 CAR_checkConjugacy <- function(model, target) {
     depNodes <- model$getDependencies(target, stochOnly = TRUE, self = FALSE)
@@ -39,7 +38,6 @@ CAR_checkConjugacy <- function(model, target) {
 }
 
 
-## internal only
 ## checks validity of adj, weights, num parameters
 CAR_checkAdjWeightsNum <- function(adj, weights, num) {
     if(any(floor(num) != num)) stop('num argument to dcar_normal() can only contain non-negative integers')
@@ -52,7 +50,6 @@ CAR_checkAdjWeightsNum <- function(adj, weights, num) {
 }
 
 
-## internal only
 ## determines indicies of adj (and weights) vectors corresponding to each node
 CAR_calcSubsetIndList <- function(adj, num) {
     d <- length(num)
@@ -68,7 +65,6 @@ CAR_calcSubsetIndList <- function(adj, num) {
 }
 
 
-## internal only
 ## checks validity of neighborIndList and neighborWeightList
 CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList, targetAsScalar) {
     for(i in 1:length(neighborIndList)) {
@@ -85,7 +81,6 @@ CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList,
 }
 
 
-## internal only
 ## helper to calculate number of islands -- recursive version, won't compile
 ##CAR_markVisited <- nimbleFunction(
 ##    run = function(adj = double(1), num = double(1), visited = double(1), index = double()) {
@@ -108,7 +103,6 @@ CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList,
 ##    }
 ##)
 ##
-#### internal only
 #### calculate number of islands -- recursive version, won't compile
 ##CAR_calcNumIslands <- nimbleFunction(
 ##    run = function(adj = double(1), num = double(1)) {
@@ -128,8 +122,8 @@ CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList,
 ##)
 
 
-#### internal only
-#### calculate number of islands
+## calculate number of islands
+## non-recursive nimbleFunction version
 CAR_calcNumIslands <- nimbleFunction(
     run = function(adj = double(1), num = double(1)) {
         N <- dim(num)[1]
@@ -173,7 +167,6 @@ CAR_calcNumIslands <- nimbleFunction(
 )
 
 
-## internal only
 ## does (optional) extensive checking of the validity of the adj, weights, and num parameters to dcar_normal(),
 ## also processes these arguments into lists, easily usable in nimbleFunction setup code
 CAR_processParams <- function(model, target, adj, weights, num) {
@@ -190,7 +183,6 @@ CAR_processParams <- function(model, target, adj, weights, num) {
 }
 
 
-## internal only
 ## evaluates the conditional density of scalar components of dcar_normal() nodes:
 ## p(x_i | x_-i, tau), where x[1:N] ~ dcar_normal()
 CAR_evaluateDensity <- nimbleFunction(
