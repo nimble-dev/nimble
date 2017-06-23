@@ -9,7 +9,7 @@
 # Avoid running these blacklisted tests, since they take too long.
 blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.R')
 # Avoid running these tests since they test experimental features.
-blacklist <- c(blacklist, 'test-ADfunctions.R', 'test-ADmodels.R')
+blacklist <- c(blacklist, 'test-ADfunctions.R', 'test-ADmodels.R', 'test-externalCalls.R')
 cat('SKIPPING', blacklist, sep = '\n  ')
 
 allTests <- list.files('packages/nimble/inst/tests')
