@@ -1,101 +1,14 @@
-##source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context("Testing of core R functions in NIMBLE code")
 
+RwarnLevel <- options('warn')$warn
+options(warn = -1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = TRUE)
+
+
 ## fix result_type in nimbleEigen.h
-
-gen_runFunCore <- function(input) {
-    runFun <- function() {}
-    formalsList <- input$args
-    if(is.null(names(formalsList)))
-        if(length(formalsList) > 0)
-            names(formalsList) <- paste0('arg', seq_along(input$args))
-    formals(runFun) <- formalsList
-    tmp <- quote({})
-    tmp[[2]] <- input$expr
-    tmp[[3]] <- quote(return(out))
-    tmp[[4]] <- substitute(returnType(OUT), list(OUT = input$outputType))
-    body(runFun) <- tmp
-    return(runFun)
-}
-
-test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot like test_math but a bit more flexible
-  if(verbose) cat("### Testing", input$name, "###\n")
-  runFun <- gen_runFunCore(input)
-  nfR <- nimbleFunction(run = runFun)
-  nfC <- compileNimble(nfR, dirName = dirName)
-  nArgs <- length(input$args)
-  evalEnv <- new.env()
-  eval(input$setArgVals, envir = evalEnv)
-  savedArgs <- as.list(evalEnv)
-  seedToUse <- if(is.null(input[['seed']])) 31415927 else input[['seed']]
-  set.seed(seedToUse)
-  eval(input$expr, envir = evalEnv)
-  savedOutputs <- as.list(evalEnv)
-  list2env(savedArgs, envir = evalEnv)
-  if(nArgs == 5) {
-      set.seed(seedToUse)
-      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
-  }  
-  if(nArgs == 4) {
-      set.seed(seedToUse)
-      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
-  }  
-
-  if(nArgs == 3) {
-      set.seed(seedToUse)
-      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
-  }  
-  if(nArgs == 2) {
-      set.seed(seedToUse)
-      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2)
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2)
-  }
-  if(nArgs == 1) {
-      set.seed(seedToUse)
-      out_nfR = nfR(evalEnv$arg1)
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC(evalEnv$arg1)
-  }
-  if(nArgs == 0) {
-      set.seed(seedToUse)
-      out_nfR = nfR()
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC()
-  }
-  out <- savedOutputs$out
-  attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
-  checkEqual <- input[['checkEqual']]
-  if(is.null(checkEqual)) checkEqual <- FALSE
-  if(!checkEqual) {
-      try(test_that(paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
-                    expect_identical(out, out_nfR)))
-      try(test_that(paste0("Identical test of math (direct R vs. C++ nimbleFunction): ", input$name),
-                    expect_identical(out, out_nfC)))
-  } else {
-      try(test_that(paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
-                    expect_equal(out, out_nfR)))
-      try(test_that(paste0("Equal test of math (direct R vs. C++ nimbleFunction): ", input$name),
-                    expect_equal(out, out_nfC)))
-  }
-  # unload DLL as R doesn't like to have too many loaded
-  if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
-  invisible(NULL)
-
-}
 
 cTests <- list(
     list(name = "c(double, double)", expr = quote(out <- c(arg1, arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
@@ -353,8 +266,8 @@ diagTests <- list(
          setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(2))),
     list(name = "diag(vector expression)", expr = quote(out <- diag(arg1 + arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(10,20, 30))}), outputType = quote(double(2))),
-    list(name = "diag(vector) with epxression", expr = quote(out <- exp(diag(arg1)) + arg2), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
-         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(11:13)}), outputType = quote(double(2))),
+    list(name = "diag(vector) with expression", expr = quote(out <- exp(diag(arg1)) + arg2), args = list(arg1 = quote(double(1)), arg2 = quote(double(2))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- matrix(as.numeric(11:19), nrow = 3)}), outputType = quote(double(2))), ## ISSUE HERE
 
     ## diag(matrix)
     list(name = "diag(square matrix)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(2))),
@@ -481,18 +394,11 @@ seqTests <- list(
          setArgVals = quote({}), outputType = quote(double(1))),
     list(name = "seq(.1, 10, length.out = 11)", expr = quote(out <- seq(.1, 10, length.out = 11)), args = list(),
          setArgVals = quote({}), outputType = quote(double(1))),
+    list(name = "seq(.1, by = 10, length.out = 11)", expr = quote(out <- seq(.1, by = 10, length.out = 11)), args = list(),
+         setArgVals = quote({}), outputType = quote(double(1))),
     list(name = "seq(.1, 10, length.out = 11) in expression", expr = quote(out <- log(seq(.1, 10, length.out = 11)) + 2 + rep(1, 11)), args = list(),
          setArgVals = quote({}), outputType = quote(double(1)))
-
-    ## need to handle this case
-##    list(name = "seq(.1, 10, by = .1)", expr = quote(out <- seq(.1, by = 0.1, length.out = 11)), args = list(),
-##         setArgVals = quote({}), outputType = quote(double(1)))
-    ## need to handle decreasing colon sequenences
 )
-## STATUS: need to handle by and length.out case.
-## need to handle decreasing colon sequences
-## need to cast from integer to double.  
-
 
 nonSeqIndexTests <- list(
     ##1
@@ -813,20 +719,170 @@ logicalTests <- list(
          expr = quote({out <- matrix(rep(100, length(arg1)), nrow = dim(arg1)[1]); out[arg2 < 5, 30:40] <- (arg1[arg2 < 5, 30:40]^2) + 1}),
          args = list(arg1 = quote(double(2)), arg2 = quote(double(1))),
          setArgVals = quote({arg1 <- matrix(seq(1, 8, length = 10000), nrow = 100); arg2 <- seq(2, 9, length = 100)}),
-         outputType = quote(double(2)))
+         outputType = quote(double(2)), checkEqual = TRUE)
 )
 
- 
+returnTests <- list(
+    list(name = "return(rnorm scalar)",
+         expr = quote({}),
+         return = quote(return(rnorm(1))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double())),
+    list(name = "return(rnorm vector)",
+         expr = quote({}),
+         return = quote(return(rnorm(4))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))),
+    list(name = "return(rep(...))",
+         expr = quote({}),
+         return = quote(return(rep(1.23, 4))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))),
+    list(name = "return(seq(...))",
+         expr = quote({}),
+         return = quote(return(seq(from = .1, to = .5, by = .15))),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))),
+    list(name = "return(A + B scalar)",
+         expr = quote({A <- .1; B <- .2}),
+         return = quote(return(A + B)),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(0))),
+    list(name = "return(A + B vector)",
+         expr = quote({A <- rep(.1, 3); B <- rep(.2, 3)}),
+         return = quote(return(A + B)),
+         args = list(),
+         setArgVals = quote({}),
+         outputType = quote(double(1))) 
+)
+
+cTestsResults <- test_coreRfeature_batch(cTests, 'cTests') ##lapply(cTests, test_coreRfeature)
+blockTestsResults <- test_coreRfeature_batch(blockTests, 'blockTests') ##lapply(blockTests, test_coreRfeature)
+repTestsResults <- test_coreRfeature_batch(repTests, 'repTests') ## lapply(repTests, test_coreRfeature)
+diagTestsResults <- test_coreRfeature_batch(diagTests, 'diagTests') ## lapply(diagTests, test_coreRfeature)
+recyclingRuleTestsResults <- test_coreRfeature_batch(recyclingRuleTests, 'recyclingRuleTests') ## lapply(recyclingRuleTests, test_coreRfeature)
+rRecyclingRuleTestsResults <- test_coreRfeature_batch(rRecyclingRuleTests, 'rRecyclingRuleTests') ## lapply(rRecyclingRuleTests, test_coreRfeature)
+seqTestsResults <- test_coreRfeature_batch(seqTests, 'seqTests') ## lapply(seqTests, test_coreRfeature)
+nonSeqIndexTestsResults <- test_coreRfeature_batch(nonSeqIndexTests, 'nonSeqIndexTests') ## lapply(nonSeqIndexTests, test_coreRfeature)
+indexChainTestsResults <- test_coreRfeature_batch(indexChainTests, 'indexChainTests') ## lapply(indexChainTests, test_coreRfeature)
+logicalTestsResults <- test_coreRfeature_batch(logicalTests, 'logicalTests') ## lapply(logicalTests, test_coreRfeature)
+returnTestResults <- test_coreRfeature_batch(returnTests, 'returnTests') ## lapply(returnTests, test_coreRfeature)
 
 
+## Some tests of using coreR features in BUGS models
 
-lapply(cTests, test_coreRfeature)
-lapply(blockTests, test_coreRfeature)
-lapply(repTests, test_coreRfeature)
-lapply(diagTests, test_coreRfeature)
-lapply(recyclingRuleTests, test_coreRfeature)
-lapply(rRecyclingRuleTests, test_coreRfeature)
-lapply(seqTests, test_coreRfeature)
-lapply(nonSeqIndexTests, test_coreRfeature)
-lapply(indexChainTests, test_coreRfeature)
-lapply(logicalTests, test_coreRfeature)
+test_that('c(a, 1.1) in BUGS works', {
+    mc <- nimbleCode({
+        a ~ dnorm(0,1)
+        b[1:2] <- c(a, 1.1)
+    })
+    
+    m <- nimbleModel(mc, inits = list(a = 2))
+    expect_identical(as.numeric(m$b), c(2, 1.1))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), c(2, 1.1))
+}
+)
+
+##
+
+test_that('c(1.2, 1.1) in BUGS works', {
+    mc <- nimbleCode({
+        b[1:2] <- c(1.2, 1.1)
+    })
+    m <- nimbleModel(mc)
+    expect_identical(as.numeric(m$b), c(1.2, 1.1))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), c(1.2, 1.1))
+}
+)
+
+##
+
+test_that('rep(a, 2) in BUGS works', {
+    mc <- nimbleCode({
+        a ~ dnorm(0,1)
+        b[1:2] <- rep(a, 2)
+    })
+    
+    m <- nimbleModel(mc, inits = list(a = 1.2))
+    expect_identical(as.numeric(m$b), c(1.2, 1.2))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), c(1.2, 1.2))
+}
+)
+
+##
+
+test_that('rep(1,2)  in BUGS works', {
+    mc <- nimbleCode({
+        b[1:2] <- rep(1, 2)
+    })
+    m <- nimbleModel(mc)
+    expect_identical(as.numeric(m$b), rep(1, 2))
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), rep(1, 2))
+}
+)
+
+
+##
+
+test_that('2:3   in BUGS works', {
+    mc <- nimbleCode({
+        b[1:2] <- 2:3 
+    })
+    m <- nimbleModel(mc)
+    expect_equal(as.numeric(m$b), 2:3 )
+    m$b <- as.numeric(rep(NA, 2))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_equal(as.numeric(cm$b), 2:3 )
+}
+)
+
+##
+
+test_that('seq(1.2, 2.3, length = 3) in BUGS works', {
+    mc <- nimbleCode({
+        b[1:3] <- seq(1.2, 2.3, length = 3)
+    })
+    m <- nimbleModel(mc)
+    expect_identical(as.numeric(m$b), seq(1.2, 2.3, length = 3) )
+    m$b <- as.numeric(rep(NA, 3))
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(as.numeric(cm$b), seq(1.2, 2.3, length = 3) )
+}
+)
+
+##
+
+test_that('diag(3) in BUGS works', {
+    mc <- nimbleCode({
+        b[1:3, 1:3] <- diag(3)
+    })
+    m <- nimbleModel(mc)
+    expect_equal(m$b, diag(3))
+    m$b <- matrix(100, nrow = 3, ncol = 3)
+    cm <- compileNimble(m)
+    cm$calculate()
+    expect_identical(cm$b, diag(3))
+}
+)
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

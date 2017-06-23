@@ -7,8 +7,8 @@
 
 class ModelBase : public NamedObjects{
 	public:
-	Values* _modelValues;
-	virtual Values* getModelValuesPtr(){ return _modelValues; }
+	Values* modelValues_;
+	virtual Values* getModelValuesPtr(){ return modelValues_; }
 	};
 
 extern "C" {
@@ -21,7 +21,6 @@ extern "C" {
   // is pointed to by rPtr
   
   SEXP derefPtr(SEXP SmultiPtr);
-  //SEXP setSinglePtrFromSinglePtr(SEXP SPtrTo, SEXP SPtrToSet);
  }
 
 

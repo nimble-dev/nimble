@@ -17,6 +17,7 @@ auxFuncVirtual <- nimbleFunctionVirtual(
 )
 
 auxLookFunc = nimbleFunction(
+    name = 'auxLookFunc',
   contains = auxFuncVirtual,
   setup = function(model, node){
   },
@@ -29,6 +30,7 @@ auxLookFunc = nimbleFunction(
 
 
 auxSimFunc = nimbleFunction(
+    name = 'auxSimFunc',
   contains = auxFuncVirtual,
   setup = function(model, node){},
   methods = list(
@@ -38,6 +40,7 @@ auxSimFunc = nimbleFunction(
 )
 
 auxFStep <- nimbleFunction(
+    name = 'auxFStep',
   contains = auxStepVirtual,
   setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names,
                    saveAll, smoothing, lookahead, silent = TRUE) {
@@ -186,6 +189,7 @@ return(0)
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (\code{TRUE}), or only for the most recent time point (\code{FALSE})}
 #'  \item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]) if \code{smoothing = TRUE}, or instead to save filtered samples from f(x[t]|y[1:t]) if \code{smoothing = FALSE}. \code{smoothing = TRUE} only works if \code{saveAll = TRUE}.}
 #'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time. This need only be set if the number of time points is less than or equal to the size of the latent state at each time point.}
+#'  \item{initModel}{A logical value indicating whether to initialize the model before running the filtering algorithm.  Defaults to TRUE.}
 #'  }
 #' 
 #' The auxiliary particle filter modifies the bootstrap filter (\code{\link{buildBootstrapFilter}})
@@ -222,6 +226,7 @@ return(0)
 #' hist(as.matrix(Cmy_Auxf$mvEWSamples, 'x'))
 #' }
 buildAuxiliaryFilter <- nimbleFunction(
+    name = 'buildAuxiliaryFilter',
   setup = function(model, nodes, control = list()) {
     
    
@@ -232,10 +237,12 @@ buildAuxiliaryFilter <- nimbleFunction(
     silent <- control[['silent']]
     timeIndex <- control[['timeIndex']]
     lookahead <- control[['lookahead']]
+    initModel <- control[['initModel']]
     if(is.null(silent)) silent <- TRUE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
     if(is.null(lookahead)) lookahead <- 'simulate'
+    if(is.null(initModel)) initModel <- TRUE
     if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to work")
     if(lookahead == "mean"){
       errors <- sapply(model$expandNodeNames(nodes), function(node){tryCatch(getParam(model, node, 'mean'), error=function(a){return("error")})})
@@ -321,7 +328,7 @@ buildAuxiliaryFilter <- nimbleFunction(
   run = function(m = integer(default = 10000)) {
     returnType(double())
     declare(logL, double())
-    my_initializeModel$run()
+    if(initModel == TRUE) my_initializeModel$run()
     resize(mvEWSamples, m) 
     resize(mvWSamples, m)  
     logL <- 0

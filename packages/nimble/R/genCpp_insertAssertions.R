@@ -12,7 +12,7 @@
 ## Since '{' is a call, with each line an argument, this is all just one call and so can replace the oringal A<-B call
 ## During C++ generation, such extra brackets are omitted 
 exprClasses_insertAssertions <- function(code) {
-    if(code$name != '{') return(invisible(NULL))
+    if(code$name != '{') return(invisible(NULL)) ## This function only iterates over lines enclosed in '{'
     for(i in seq_along(code$args)) {
         if(code$args[[i]]$isCall) {
             if(code$args[[i]]$name == 'for') {
@@ -34,7 +34,15 @@ exprClasses_insertAssertions <- function(code) {
             if(length(code$args[[i]]$assertions) > 0) {
                 toInsert <- lapply(code$args[[i]]$assertions, function(x) if(inherits(x, 'exprClass')) x else RparseTree2ExprClasses(x))
                 before <- unlist(lapply(toInsert, function(x) {if(x$name == 'after') FALSE else TRUE}))
-                newExpr <- newBracketExpr(args = c(toInsert[before], code$args[i], lapply(toInsert[!before], function(x) x$args[[1]])) )
+                if(nimbleOptions('experimentalNewSizeProcessing')) code$args[[i]]$assertions <- list()  ## Clear assertions field so it can be used by later compiler stages
+                newExpr <- newBracketExpr(args = c(lapply(toInsert[before], ## assertions will be inserted recursively IF they are in {}
+                                                          function(z) {exprClasses_insertAssertions(z); z}),
+                                                   code$args[i],
+                                                   lapply(toInsert[!before],
+                                                          function(x) {lapply(x$args[1],
+                                                                              function(z) {exprClasses_insertAssertions(z)}
+                                                                              ); x$args[[1]]}
+                                                          )))
                 setArg(code, i, newExpr)
             }
         }

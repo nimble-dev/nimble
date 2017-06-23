@@ -1,7 +1,5 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-nimbleOptions(showCompilerOutput = TRUE)
-
 ## Tests for copy() [implemented as nimCopy], values(), and values()<-
 ## These use some of the same internals (accessors), so they are in the same testing file.
 ## These tests use lists of nimbleFunctions, initialization code, and testing code.
@@ -527,19 +525,19 @@ copyTestCaseListValues <- list(
 )
 
 ## Iterate through the value tests
-runValuesTests <- function(testCaseList = copyTestCaseListValues, testModelCode = copyTestModelCode, testNFcodeList = copyTestNFcodeListValues, dirName = NULL, trace = FALSE) {
+runValuesTests <- function(testCaseList = copyTestCaseListValues, testModelCode = copyTestModelCode, testNFcodeList = copyTestNFcodeListValues, testNFconstantsList = copyTestConstants, testNFdataList = copyTestData, dirName = NULL, trace = FALSE) {
     for(copyTestCase in testCaseList) {
-        runOneValuesTest(copyTestCase, testModelCode = testModelCode, testNFcodeList = testNFcodeList, dirName = dirName, trace = trace)
+        runOneValuesTest(copyTestCase, testModelCode = testModelCode, testNFcodeList = testNFcodeList, testNFconstantsList = testNFconstantsList, testNFdataList = testNFdataList, dirName = dirName, trace = trace)
     }
 }
 
 ## run one value test case
-runOneValuesTest <- function(copyTestCase, testModelCode, testNFcodeList, dirName = NULL, trace = FALSE) {
+runOneValuesTest <- function(copyTestCase, testModelCode, testNFcodeList, testNFconstantsList, testNFdataList, dirName = NULL, trace = FALSE) {
     if(trace) writeLines(paste0('STARTING CASE ', copyTestCase$label))
     compileVec <- copyTestCase$compile
     for(compile in compileVec) {
         if(trace) writeLines(paste0('COMPILE = ', compile))
-        m <- nimbleModel(testModelCode, constants = copyTestConstants, data = copyTestData)
+        m <- nimbleModel(testModelCode, constants = testNFconstantsList, data = testNFdataList)
         set.seed(copyTestCase$seed)
         eval(copyTestCase$initCode)
         nf <- eval(testNFcodeList[[ copyTestCase$nfName ]])
@@ -555,3 +553,145 @@ runOneValuesTest <- function(copyTestCase, testModelCode, testNFcodeList, dirNam
 
 ## Master call for value() and value()<- tests
 runValuesTests(copyTestCaseListValues)
+
+###################
+### Testing for values() and values()<-  with indexing of node vector inside values()
+### The general layout that follows is similar to above but is completely separate 
+
+
+## List of comparison cases, similar to above but without comparing compiled to uncompiled (not applicable)
+copyTestCaseListValuesIndexed <- list(
+    getValues = list(
+        label = 'getValues',
+        nfName = 'nfGetValues',
+        seed = round(runif(1, 1, 10000)),
+        initCode = quote({simulate(m); calculate(m);
+                          nodes <- c('x0','d0','x1[2:3]','d1[2:3]','x2[2:3,2:3]','d2[2:3, 2:3]',
+                                       'x3[2:3,2:3,2:3]','d3[2:3,2:3,2:3]', 'x4[2:3,2:3,2:3,2:3]','d4[2:3,2:3,2:3,2:3]',
+                                   'v1[2:3]', 'w1[2:3,2:3]')}),
+        compile = c(FALSE, TRUE),
+        nfMcode = quote({nf(m, nodes = nodes)}),
+        testThatLines = quote({
+            for(i in seq_along(nodes)) {
+                P <- nfM$run(i)
+                test_that('getValues', expect_identical(P, as.numeric(m[[nodes[i]]])))
+            }
+        })
+    ),
+    setValues = list(
+        label = 'setValues',
+        nfName = 'nfSetValues',
+        seed = round(runif(1, 1, 10000)),
+        initCode = quote({simulate(m); calculate(m);
+                          nodes <- c('x0','d0','x1[2:3]','d1[2:3]','x2[2:3,2:3]','d2[2:3, 2:3]',
+                                     'x3[2:3,2:3,2:3]','d3[2:3,2:3,2:3]', 'x4[2:3,2:3,2:3,2:3]','d4[2:3,2:3,2:3,2:3]',
+                                     'v1[2:3]', 'w1[2:3,2:3]')}),
+        compile = c(FALSE, TRUE),
+        nfMcode = quote({nf(m, nodes = nodes)}),
+        testThatLines = quote({
+            for(i in seq_along(nodes)) {
+                oneName <- nodes[i]
+                P <- rnorm(length(m[[oneName]]))
+                nfM$run(P, i)
+                test_that('setValues', expect_identical(as.numeric(m[[oneName]]), P))
+            }
+        })
+    )
+)
+
+## List of nimbleFunction definitions to use
+copyTestNFcodeListValuesIndexed <- list(
+    nfGetValues = quote({
+        nimbleFunction(
+            setup = function(model, nodes){},
+            run = function(index = double(0)) {
+                P <- values(model, nodes[index])
+                return(P)
+                returnType(double(1))
+            })
+    }),
+    nfSetValues = quote({
+        nimbleFunction(
+            setup = function(model, nodes){},
+            run = function(P = double(1), index = double(0)) {
+                values(model, nodes[index]) <<- P
+            })
+    })
+)
+
+runValuesTests(copyTestCaseListValuesIndexed, testNFcodeList = copyTestNFcodeListValuesIndexed)
+
+
+## List of comparison cases, similar to above but without comparing compiled to uncompiled (not applicable)
+copyTestCaseListValuesIndexedLoop <- list(
+    getValues = list(
+        label = 'getValues',
+        nfName = 'nfGetValues',
+        seed = round(runif(1, 1, 10000)),
+        initCode = quote({simulate(m); calculate(m);
+                          nodes <- m$expandNodeNames('mu')}),
+        compile = c(FALSE, TRUE),
+        nfMcode = quote({nf(m, nodes = nodes)}),
+        testThatLines = quote({
+            P <- nfM$run()
+            test_that('getValues', expect_identical(as.numeric(P), as.numeric(m[['mu']])))
+        })
+    ),
+    setValues = list(
+        label = 'setValues',
+        nfName = 'nfSetValues',
+        seed = round(runif(1, 1, 10000)),
+        initCode = quote({simulate(m); calculate(m);
+                          nodes <- m$expandNodeNames('mu')}),
+        compile = c(FALSE, TRUE),
+        nfMcode = quote({nf(m, nodes = nodes)}),
+        testThatLines = quote({
+            P <- rnorm(length(m$expandNodeNames('mu')))
+            nfM$run(P)
+            test_that('setValues', expect_identical(as.numeric(P), as.numeric(m[['mu']])))
+        })
+        )
+)
+
+copyTestNFcodeListValuesIndexedLoop <- list(
+    nfGetValues = quote({
+        nimbleFunction(
+            setup = function(model, nodes){
+                nn <- length(nodes)
+            },
+            run = function() {
+                P <- numeric(nn)
+                for(i in 1:nn)
+                    P[i] <- values(model, nodes[i])[1]
+                return(P)
+                returnType(double(1))
+            })
+    }),
+    nfSetValues = quote({
+        nimbleFunction(
+            setup = function(model, nodes){
+                nn <- length(nodes)
+            },
+            run = function(P = double(1)) {
+                tmp <- numeric(1)
+                for(i in 1:nn) {
+                    tmp[1] <- P[i] 
+                    values(model, nodes[i]) <<- tmp
+                }
+            })
+    })
+)
+
+
+copyTestModelCode <- nimbleCode({
+    for(i in 1:n) {
+        y[i] ~ dnorm(mu[i], 1)
+        mu[i] ~ dnorm(0, 1)
+    }
+})
+
+n <- 10
+copyTestConstants <- list(n = n)
+copyTestData <- list(y = rnorm(10))
+
+runValuesTests(copyTestCaseListValuesIndexedLoop, testNFcodeList = copyTestNFcodeListValuesIndexedLoop)

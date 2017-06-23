@@ -13,6 +13,7 @@ bootStepVirtual <- nimbleFunctionVirtual(
 # uses weights from previous time point to calculate likelihood estimate.
 
 bootFStep <- nimbleFunction(
+    name = 'bootFStep',
   contains = bootStepVirtual,
   setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names, saveAll, smoothing, silent = FALSE) {
     notFirst <- iNode != 1
@@ -145,6 +146,7 @@ bootFStep <- nimbleFunction(
 #'  \item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]) if \code{smoothing = TRUE}, or instead to save filtered samples from f(x[t]|y[1:t]) if \code{smoothing = FALSE}.  \code{smoothing = TRUE} only works if \code{saveAll = TRUE}.}
 #'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
+#'  \item{initModel}{A logical value indicating whether to initialize the model before running the filtering algorithm.  Defaults to TRUE.}
 #' }
 #' 
 #'  The bootstrap filter starts by generating a sample of estimates from the 
@@ -178,6 +180,7 @@ bootFStep <- nimbleFunction(
 #' boot_X <- as.matrix(Cmy_BootF$mvEWSamples)
 #' }
 buildBootstrapFilter <- nimbleFunction(
+    name = 'buildBootstrapFilter',
   setup = function(model, nodes, control = list()) {
     
     #control list extraction
@@ -186,11 +189,12 @@ buildBootstrapFilter <- nimbleFunction(
     smoothing <- control[['smoothing']]
     silent <- control[['silent']]
     timeIndex <- control[['timeIndex']]
+    initModel <- control[['initModel']]
     if(is.null(thresh)) thresh <- .8
     if(is.null(silent)) silent <- TRUE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
-    
+    if(is.null(initModel)) initModel <- TRUE
     #latent state info
     varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
     if(length(unique(varName))>1){
@@ -269,7 +273,7 @@ buildBootstrapFilter <- nimbleFunction(
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
-    my_initializeModel$run()
+    if(initModel == TRUE) my_initializeModel$run()
     resize(mvWSamples, m)
     resize(mvEWSamples, m)
     threshNum <- ceiling(thresh*m)

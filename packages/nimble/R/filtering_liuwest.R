@@ -21,8 +21,10 @@ LWSetMeanVirtual <- nimbleFunctionVirtual(
 
 # Has a return_mean method which returns the mean of a normally distributed nimble node.
 paramMean <- nimbleFunction(
+    name = 'paramMean',
   contains = LWSetMeanVirtual,
   setup = function(model, node){
+    ## check that node has a normal distribution!
   },
     run = function() {
         model[[node]] <<- model$getParam(node, 'mean')
@@ -39,6 +41,7 @@ LWSetParVirtual <- nimbleFunctionVirtual(
 )
 
 doPars <- nimbleFunction(
+    name = 'doPars',
   contains = LWSetParVirtual,
   setup = function(parName, mvWSamples, mvEWSamples) {
   },
@@ -103,6 +106,7 @@ doPars <- nimbleFunction(
 
 
 LWStep <- nimbleFunction(
+    name = 'LWStep',
   contains = LWStepVirtual,
   setup = function(model, mvWSamples, mvEWSamples, nodes, paramVarDims, iNode, paramNodes, paramVars, names, saveAll, d, silent = FALSE) {
     notFirst <- iNode != 1
@@ -271,6 +275,7 @@ LWStep <- nimbleFunction(
 # the mean of all particles, and cholesVar, which returns the cholesky 
 # decomposition of the weighted MC covariance matrix
 LWparFunc <- nimbleFunction(
+    name = 'LWparFunc',
   setup = function(d, parDim, prevInd){
     # Calculate h^2 and a using specified discount factor d
     hsq <- 1-((3*d-1)/(2*d))^2 
@@ -331,8 +336,9 @@ LWparFunc <- nimbleFunction(
 #'  \item{d}{A discount factor for the Liu-West filter.  Should be close to,
 #'  but not above, 1.}
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
-#' \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
+#'  \item{initModel}{A logical value indicating whether to initialize the model before running the filtering algorithm.  Defaults to TRUE.}
 #' }
 #' 
 #'  The Liu and West filter samples from the posterior 
@@ -369,6 +375,7 @@ LWparFunc <- nimbleFunction(
 #' lw_sigma_x <- as.matrix(Cmy_LWF$mvEWSamples, 'sigma_x')
 #' }
 buildLiuWestFilter <- nimbleFunction(
+    name = 'buildLiuWestFilter',
   setup = function(model, nodes, params = NULL, control = list()){
     
     #control list extraction
@@ -376,10 +383,11 @@ buildLiuWestFilter <- nimbleFunction(
     silent <- control[['silent']]
     d <- control[['d']]
     timeIndex <- control[['timeIndex']]
+    initModel <- control[['initModel']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(d)) d <- .99
-    
+    if(is.null(initModel)) initModel <- TRUE
     #get latent state info
     varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
     if(length(unique(varName))>1){
@@ -484,7 +492,7 @@ buildLiuWestFilter <- nimbleFunction(
     
   },
   run = function(m = integer(default = 10000)) {
-    my_initializeModel$run()
+    if(initModel == TRUE) my_initializeModel$run()
     resize(mvWSamples, m)
     resize(mvEWSamples, m)
     

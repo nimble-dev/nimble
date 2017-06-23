@@ -149,7 +149,7 @@ code <- nimbleCode({
 
 set.seed(0)
 
-N <- 5
+N <- 10
 sigma_x <- 1
 sigma_y <- .1
 x <- rep(NA, N)

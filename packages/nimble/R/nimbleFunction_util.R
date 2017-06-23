@@ -33,7 +33,6 @@ is.Cnf <- function(f, inputIsName = FALSE) {
     return(FALSE)
 }
 
-
 is.nfGenerator <- function(f, inputIsName = FALSE) {
     if(inputIsName) f <- get(f)
     return(is.function(f) && 
@@ -92,6 +91,3 @@ getDefinition <- function(nf) {
     defList <- c(list(setup=nfEnv$setup, run=nfEnv$run), nfEnv$methods)
     defList
 }
-
-
-

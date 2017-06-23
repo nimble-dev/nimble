@@ -1,20 +1,24 @@
 ## The BUGSdeclClass contains the pulled-apart content of a BUGS declaration line
 
-## nimbleOrRfunctionNames is used to determine what can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
+## nimbleOrRfunctionNames is used to determine what (in BUGS code) can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
 nimbleOrRfunctionNames <- c('[','+','-','/','*','(','exp','log','pow','^','%%','%*%','t',
                             'equals','inprod','nimEquals',
                             'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'step', 'nimStep',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
                             'cube', 'abs', 'lgamma', 'loggam', 'log1p', 'lfactorial', ##'factorial', 'gamma',
-                            'ceiling', 'floor', 'round', 'trunc',
+                            'ceiling', 'floor', 'round', 'nimRound', 'trunc',
+                            'optim', 'nimOptim', 'optimDefaultControl', 'nimOptimDefaultControl',
                             'mean','sum','sd','var','max','min','prod',
                             'asRow', 'asCol',
-                            'chol', 'inverse', 'forwardsolve', 'backsolve', 'solve',   ## removed these from BUGS functions, pending problems with Eigen
-                            '>', '<', '>=', '<=', '==', '!=', '&', '|',
+                            'chol', 'inverse', 'forwardsolve', 'backsolve', 'solve', 'nimEigen', 'nimSvd',  ## removed these from BUGS functions, pending problems with Eigen
+                            '>', '<', '>=', '<=', '==', '!=', '&', '|', '$',
                             distributionFuns,
                             # these are allowed in DSL as special cases even though exp_nimble and t_nonstandard are the canonical NIMBLE distribution functions
                             paste0(c('d','r','q','p'), 't'),
-                            paste0(c('d','r','q','p'), 'exp'))
+                            paste0(c('d','r','q','p'), 'exp'),
+                            'nimC', 'nimRep', 'nimSeq', 'diag')
+
+functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq', 'diag')
 
 #' BUGSdeclClass contains the information extracted from one BUGS declaration
 BUGSdeclClass <- setRefClass('BUGSdeclClass',
@@ -337,6 +341,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     cLength <- length(code)
     if(cLength == 1) {
         if(is.name(code)) {
+            if(code == ''){
+              return(list(code = NULL, replaceable = TRUE, hasIndex = FALSE))
+            }
             if(any(code == indexNames)) {
                 return(list(code = NULL, replaceable = TRUE, hasIndex = TRUE))
             }
@@ -351,7 +358,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     if(is.call(code)) {
         indexingBracket <- code[[1]] == '['
         if(indexingBracket) {
-            if(is.call(code[[2]])) indexingBracket <- FALSE ## treat like any other function
+            if(is.call(code[[2]])){
+              indexingBracket <- FALSE
+            } 
         }
         if(indexingBracket) { ##if(code[[1]] == '[') {
             contents <- lapply(code[-c(1,2)], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
@@ -386,7 +395,10 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             }
         } else {
             if(cLength > 1) {
-                contents <- lapply(code[-1], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+                if(code[[1]] == '$')
+                  contents <- lapply(code[2],  function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+                else
+                  contents <- lapply(code[-1], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
                 contentsCode <- unlist(lapply(contents, function(x) x$code), recursive = FALSE)
                 contentsHasIndex <- unlist(lapply(contents, function(x) x$hasIndex))
                 ## if(code[[1]] == ':') return(list(code = contentsCode, ## need a new part of the list for hasIndexingBlock, or can I set hasIndex = TRUE
@@ -402,14 +414,13 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
             funName <- deparse(code[[1]])
             isRonly <- isRfunction &
-                !checkNimbleOrRfunctionNames(funName)
+                (!checkNimbleOrRfunctionNames(funName))
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName))
                     stop("R function '", funName,"' does not exist.")
                 unreplaceable <- sapply(contents[!contentsReplaceable], function(x) as.character(x$code))
                 stop("R function '", funName,"' has arguments that cannot be evaluated; either the function must be a nimbleFunction or values for the following inputs must be specified as constants in the model: ", paste(unreplaceable, collapse = ","), ".")
             }
-
             return(list(code = contentsCode,
                         replaceable = allContentsReplaceable & isRfunction,
                         hasIndex = any(contentsHasIndex)))
@@ -471,10 +482,13 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
             contentsReplaceable  <- list()
             allContentsReplaceable <- TRUE
         }
-        if(code[[1]] == ':')   return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2)) ## for newNodeFxns, use default replaceable = FALSE for any ':' expression.  old: , replaceable=allContentsReplaceable))
-        if(assignment)         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
+        if(deparse(code[[1]]) %in% functionsThatShouldNeverBeReplacedInBUGScode)
+            return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
+        if(assignment)
+            return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
         isRfunction <- !any(code[[1]] == nimbleFunctionNames)
         isRonly <- isRfunction & !checkNimbleOrRfunctionNames(deparse(code[[1]]))
+        if(deparse(code[[1]]) == '$') isRonly <- FALSE
         if(isRonly & !allContentsReplaceable) stop(paste0('Error, R function \"', deparse(code[[1]]),'\" has non-replaceable node values as arguments.  Must be a nimble function.'))
         if(isRfunction & allContentsReplaceable)   return(replaceAllCodeSuccessfully(code))
         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))

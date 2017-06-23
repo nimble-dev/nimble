@@ -169,7 +169,6 @@ outputCppCommentBlock2 <- function(ModifiedRmmCode, Indentation = '') {
 # @author Jagadish Babu
 # @keywords OutputCppParseTree
 # @seealso \code{\link{outputCppParseTree}}
-# @export
 outputCppArrayIndex2 <- function(ModifiedRmmCode, Indentation = '') { ## this has only one element inside the []
     partThree <- if(length(ModifiedRmmCode) == 3) outputCppParseTree2(ModifiedRmmCode[[3]],'') else NULL
     paste0(Indentation, outputCppParseTree2(ModifiedRmmCode[[2]], ''), '[', partThree, ']')
@@ -472,7 +471,7 @@ outputCppParseTree2 <- function(code, indent = '') {
     }
     
     dpc <- deparse(code)
-    if(is.name(code)) { ## && !(dpc %in% names(ModifiedRmmParseKeywords2))) { ## I'm not seeing when this last condition would matter
+    if(is.name(code)) {
         return(dpc)
     }
 

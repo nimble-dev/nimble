@@ -1,6 +1,22 @@
 language: r
+sudo: false
+cache: packages
 
-sudo: required
+# We parallelize the tests into baches, and only run one batch on OS X.
+matrix:
+  include:
+    - os: linux
+      env: NIMBLE_TEST_BATCH=1
+    - os: linux
+      env: NIMBLE_TEST_BATCH=2
+    - os: linux
+      env: NIMBLE_TEST_BATCH=3
+    - os: linux
+      env: NIMBLE_TEST_BATCH=4
+    - os: linux
+      env: NIMBLE_TEST_BATCH=5
+    - os: osx
+      env: NIMBLE_TEST_BATCH=1
 
 warnings_are_errors: true
 
@@ -15,35 +31,24 @@ branches:
   only:
     - devel
 
+latex: false  # Work around tlmgr issues.
+
+addons:
+  apt:
+    packages:
+      - time  # For /usr/bin/time profiling.
+
 install:
-##  - Rscript -e "install.packages('devtools', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('igraph', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('coda', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('testthat', repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('mvtnorm', repos = 'http://cran.us.r-project.org')"  ## needed for test-distributions.R
   - Rscript -e "install.packages('abind', repos = 'http://cran.us.r-project.org')"    ## needed for test-compareMCMCs.R
+  - Rscript -e "install.packages('covr', repos = 'http://cran.us.r-project.org')"  ## needed for code coverage reports
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
-script:
-  - Rscript packages/nimble/inst/tests/test-checkDSL.R
-  - Rscript packages/nimble/inst/tests/test-compareMCMCs.R
-  - Rscript packages/nimble/inst/tests/test-copy.R
-  - Rscript packages/nimble/inst/tests/test-declare.R
-  - Rscript packages/nimble/inst/tests/test-distributions.R
-  - Rscript packages/nimble/inst/tests/test-dsl_dists.R
-  - Rscript packages/nimble/inst/tests/test-filtering.R
-  - Rscript packages/nimble/inst/tests/test-getBound.R
-  - Rscript packages/nimble/inst/tests/test-getDependencies.R
-  - Rscript packages/nimble/inst/tests/test-getDistributionInfo.R
-  - Rscript packages/nimble/inst/tests/test-getParam.R
-  - Rscript packages/nimble/inst/tests/test-math.R
-  - Rscript packages/nimble/inst/tests/test-mcem.R
-  - Rscript packages/nimble/inst/tests/test-mcmc.R
-  - Rscript packages/nimble/inst/tests/test-misc.R
-  - Rscript packages/nimble/inst/tests/test-models.R
-  - Rscript packages/nimble/inst/tests/test-setData.R
-  - Rscript packages/nimble/inst/tests/test-size.R
-  - Rscript packages/nimble/inst/tests/test-trunc.R
-  - Rscript packages/nimble/inst/tests/test-user.R
+script: ./run_tests.R
 
+after_success:
+  - Rscript -e 'library(covr); if(R.version$os == "linux-gnu") codecov()'

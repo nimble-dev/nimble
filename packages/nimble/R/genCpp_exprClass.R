@@ -17,17 +17,19 @@ exprClass <- setRefClass('exprClass',
                              isAssign =  'ANY',		#'logical', ## it is an assignment (all assignments are also calls)
                              name =  'ANY',		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
                              nDim =  'ANY',		#'numeric', ## how many dimensions
-                             sizeExprs =  'ANY',		#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
+                             sizeExprs =  'ANY',	#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
                              type =  'ANY',		#'character', ## type label
                              args =  'ANY',		#'list', ## list of exprClass objects for the arguments
-                             eigMatrix =  'ANY',		#'logical', ## vs. Array.  Only used for Eigenized expressions
-                             toEigenize =  'ANY',		#'character', ##'yes', 'no', or 'maybe'
-                             caller = 'ANY', ## exprClass object for the call to which this is an argument (if any)
-                             callerArgID =  'ANY',		#'numeric', ## index in the calling object's args list for this object.
-                             assertions =  'ANY'		#'list'
+                             eigMatrix =  'ANY',	#'logical', ## vs. Array.  Only used for Eigenized expressions
+                             toEigenize =  'ANY',	#'character', ##'yes', 'no', or 'maybe'
+                             caller = 'ANY',            # exprClass object for the call to which this is an argument (if any)
+                             callerArgID =  'ANY',	#'numeric', ## index in the calling object's args list for this object.
+                             assertions =  'ANY',	#'list'
+                             cppADCode = 'ANY',         #'logical' ## is expr in code generated for cppad?
+                             aux = 'ANY'                # anything needed for specific operators
                              ),
                          methods = list(
-                             initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); callSuper(...)},
+                             initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); cppADCode <<- FALSE; callSuper(...)},
                              ## This displays the parse tree using indentation on multiple rows of output
                              ## It also checks that the caller and callerArgID fields are all correct
                              ## For deparsing, call nimDeparse
@@ -76,7 +78,7 @@ exprClass <- setRefClass('exprClass',
 exprTypeInfoClass <- setRefClass('exprTypeInfoClass',
                                  fields = list(
                                      nDim =  'ANY',		#'numeric',
-                                     sizeExprs =  'ANY',		#'list',
+                                     sizeExprs =  'ANY',	#'list',
                                      type =  'ANY'),		#'character'),
                                  methods = list(
                                  	initialize = function(...){sizeExprs <<- list();callSuper(...)},
@@ -94,7 +96,7 @@ addIndentToList <- function(x, indent) {
 ### Deparse from exprClass back to R code: not guaranteed to be identical, but valid.
 nimDeparse <- function(code, indent = '') {
     ## numeric case
-    if(is.numeric(code)) return(code)
+    if(is.numeric(code) | is.logical(code)) return(code)
     if(is.character(code)) return(paste0('\"', code, '\"'))
     if(is.null(code)) return('NULL')
     ## name
@@ -184,15 +186,17 @@ nimDeparse <- function(code, indent = '') {
         return(paste0(nimDeparse(code$args[[1]]),
                       '(', paste0(unlist(lapply(code$args[-1], nimDeparse) ), collapse = ', '), ')' ) )
     }
-    ## for a general function call
-    return( paste0(code$name, '(', paste0(unlist(lapply(code$args, nimDeparse) ), collapse = ', '), ')' ) )
+    ## for a general function call. Modified to preseve any argument names
+    deparsedArguments <- lapply(code$args, nimDeparse)
+    argumentText <- if(!is.null(names(deparsedArguments))) paste(names(deparsedArguments), deparsedArguments, sep = '=') else unlist(deparsedArguments)
+    return(paste0(code$name, '(', paste0(argumentText, collapse = ','), ')' ))
 }
 
 ## error trapping utilities to be used from the various processing steps
 exprClassProcessingErrorMsg <- function(code, msg) {
     contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()
     ans <- paste0(msg, '\n This occurred for: ', nimDeparse(code),'\n', collapse = '')
-    if(!is.null(contextCode)) ans <- paste(ans, '\n This was part of the call: ', contextCode, collapse = '')
+    if(!is.null(contextCode)) ans <- paste(ans, 'This was part of the call: ', contextCode, collapse = '')
     ans
 }
 
@@ -279,10 +283,14 @@ isCodeScalar <- function(code) {
 anyNonScalar <- function(code) {
     if(!inherits(code, 'exprClass')) return(FALSE)
     if(code$name == 'map') return(TRUE)
+    if(is.character(code$type))
+        if(code$type[1] == 'nimbleList') return(FALSE)
     if(code$isName) {
         return(!isCodeScalar(code))
     }
     if(code$isCall) {
+        if(code$name == 'nfVar') ## don't recurse just for nested member access
+            return(!isCodeScalar(code))
         skipFirst <- FALSE
         if(code$name == '[') skipFirst <- TRUE
         if(code$name == 'size') skipFirst <- TRUE

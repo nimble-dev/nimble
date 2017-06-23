@@ -23,9 +23,11 @@ struct graphNode {
   string name;
   bool touched; /* This is for arbitrary use by graph-traversing algorithms.  By convention it should be left at false for all nodes after completion of an algorithm. */
   unsigned int numChildren;
+  graphNode *nodeFunctionNode; /* If this is a split vertex, point to declared node it is part of.   Otherwise point to self.*/
   vector<graphNode*> children; /* pointers to child nodes */
   vector<int> childrenParentExpressionIDs; /* integer labels of how this node is used by child nodes. */
   vector<graphNode*> parents; /* pointers to parent nodes*/
+  int numPaths;  /* for use in path counting -- number of paths starting at the node and terminating at stochastic nodes */
   graphNode(int inputCgraphID, NODETYPE inputType, const string &inputName);
   void addChild(graphNode *toNode, int childParentExpressionID);
   void addParent(graphNode *fromNode);
@@ -37,6 +39,7 @@ public:
   unsigned int numNodes;
   void setNodes(const vector<int> &edgesFrom, const vector<int> &edgesTo,
 		const vector<int> &edgesFrom2ParentExprIDs,
+		const vector<int> &nodeFunctionIDs,
 		const vector<NODETYPE> &types,
 		const vector<string> &names,
 		int inputNumNodes);
@@ -45,17 +48,19 @@ public:
   vector<int> anyStochParents();
   bool anyStochParentsOneNode(vector<int> &anyStochParents, int CgraphID);
   vector<int> getDependencies(const vector<int> &Cnodes, const vector<int> &Comit, bool downstream);
-  void getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth);
+  void getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth, bool followLHSinferred = true);
+  int getDependencyPathCountOneNode(const int Cnode);
   ~nimbleGraph();
 };
 
 void nimbleGraphFinalizer(SEXP SgraphExtPtr);
 
 extern "C" {
-  SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes);
-  SEXP anyStochDependencies(SEXP SextPtr);
-  SEXP anyStochParents(SEXP SextPtr);
-  SEXP getDependencies(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream);
+  SEXP C_setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP SnodeFunctionIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes);
+  SEXP C_anyStochDependencies(SEXP SextPtr);
+  SEXP C_anyStochParents(SEXP SextPtr);
+  SEXP C_getDependencies(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream);
+  SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode);
 }
 
 #endif

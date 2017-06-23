@@ -24,6 +24,7 @@ ENKFFuncVirtual <- nimbleFunctionVirtual(
 
 #  returns mean and cov matrix for MVN data node
 enkfMultFunc = nimbleFunction(
+    name = 'enkfMultFunc',
   contains = ENKFFuncVirtual,
   setup = function(model, thisData){},
   methods = list(
@@ -40,6 +41,7 @@ enkfMultFunc = nimbleFunction(
 
 #  returns mean (as vector) and var (as matrix) for normal data node  
 enkfScalFunc = nimbleFunction(
+    name = 'enkfScalFunc',
   contains = ENKFFuncVirtual,
   setup = function(model, thisData){},
   methods = list(
@@ -66,6 +68,7 @@ enkfScalFunc = nimbleFunction(
 # Does not check to verify this.
 
 ENKFStep <- nimbleFunction(
+    name = 'ENKFStep',
   contains = ENKFStepVirtual,
   setup = function(model, mvSamples, nodes, iNode, xDim, yDim, saveAll, names, silent = FALSE) {
     notFirst <- iNode != 1
@@ -210,8 +213,9 @@ ENKFStep <- nimbleFunction(
 #' The \code{control()} list option is described in detail below:
 #' \describe{
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
-#' \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
+#'  \item{initModel}{A logical value indicating whether to initialize the model before running the filtering algorithm.  Defaults to TRUE.}
 #' }
 #' 
 #' Runs an Ensemble Kalman filter to estimate a latent state given observations at each time point.  The ensemble Kalman filter
@@ -237,15 +241,17 @@ ENKFStep <- nimbleFunction(
 #' }
 #' @export
 buildEnsembleKF <- nimbleFunction(
+    name = 'buildEnsembleKF',
   setup = function(model, nodes, control = list()) {
 
     #control list extraction
     saveAll <- control[['saveAll']]
     silent <- control[['silent']]
     timeIndex <- control[['timeIndex']]
+    initModel <- control[['initModel']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
-     
+    if(is.null(initModel)) initModel <- TRUE 
     #get latent state info
     varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
     if(length(unique(varName))>1){
@@ -319,7 +325,7 @@ buildEnsembleKF <- nimbleFunction(
     }
   },
   run = function(m = integer(default = 100)) {
-    my_initializeModel$run()
+    if(initModel == TRUE) my_initializeModel$run()
     resize(mvSamples, m) 
     for(iNode in seq_along(ENKFStepFunctions)) { 
       ENKFStepFunctions[[iNode]]$run(m)

@@ -3,6 +3,11 @@ require(testthat)
 require(methods)
 require(nimble)
 
+## Mark tests that are know to fail with `if(RUN_FAILING_TESTS)`.
+## By default these tests will not be run, but we will occasionally clean up by running them with
+## $ RUN_FAILING_TESTS=1 Rscript test-my-stuff.R
+RUN_FAILING_TESTS <- (nchar(Sys.getenv('RUN_FAILING_TESTS')) != 0)
+
 ## We can get problems on Windows with system(cmd) if cmd contains
 ## paths with spaces in directory names.  Solution is to make a cmd
 ## string with only local names (to avoid spaces) and indicate what
@@ -10,12 +15,281 @@ require(nimble)
 ## paths with spaces ok.
 system.in.dir <- function(cmd, dir = '.') {
     curDir <- getwd()
-    on.exit(setwd(curDir))
+    on.exit(setwd(curDir), add = TRUE)
     setwd(dir)
     if(.Platform$OS.type == "windows")
         shell(shQuote(cmd))
     else
         system(cmd)
+}
+
+## This is useful for working around scoping issues with nimbleFunctions using other nimbleFunctions.
+temporarilyAssignInGlobalEnv <- function(value) {
+    name <- deparse(substitute(value))
+    assign(name, value, envir = .GlobalEnv)
+    rmCommand <- substitute(remove(name, envir = .GlobalEnv))
+    do.call('on.exit', list(rmCommand, add = TRUE), envir = parent.frame())
+}
+
+withTempProject <- function(code) {
+    code <- substitute(code)
+    project <- nimble:::nimbleProjectClass()
+    nimbleOptions(nimbleProjectForTesting = project)
+    on.exit({
+        ## messages are suppressed by test_that, so "assign('.check', 1, globalenv())" can be used as a way to verify this code was called
+        .project <- nimbleOptions('nimbleProjectForTesting')
+        nimbleOptions(nimbleProject = NULL) ## clear this before clearCompiled step, in case clearCompiled() itself fails
+        .project$clearCompiled()
+    }, add = TRUE)
+    eval(code)
+}
+
+expect_compiles <- function(..., info = NULL) {
+    oldSCBL <- nimbleOptions('stopCompilationBeforeLinking')
+    nimbleOptions(stopCompilationBeforeLinking = TRUE)
+    nimbleOptions(forceO1 = TRUE)
+    on.exit({
+        assign('.check', 1, globalenv())
+        nimbleOptions(stopCompilationBeforeLinking = oldSCBL)
+        nimbleOptions(forceO1 = FALSE)
+    }, add = TRUE)
+    ans <- try(compileNimble(...)) ## expecting a thrown error
+    expect_identical(as.character(ans), 'Error : safely stopping before linking\n', info = info)
+}
+
+gen_runFunCore <- function(input) {
+    runFun <- function() {}
+    formalsList <- input$args
+    if(is.null(formalsList)) formalsList <- list()
+    if(is.null(names(formalsList)))
+        if(length(formalsList) > 0)
+            names(formalsList) <- paste0('arg', seq_along(input$args))
+    formals(runFun) <- formalsList
+    tmp <- quote({})
+    tmp[[2]] <- input$expr
+    tmp[[3]] <- if(is.null(input[['return']]))
+                    quote(return(out))
+                else
+                    input[['return']]
+    tmp[[4]] <- substitute(returnType(OUT), list(OUT = input$outputType))
+    body(runFun) <- tmp
+    return(runFun)
+}
+
+## Indexes the names of a list of input lists for test_coreRfeature
+indexNames <- function(x) {
+    i <- 1
+    lapply(x, function(z) {z$name <- paste(i, z$name); i <<- i + 1; z})
+}
+
+test_coreRfeature_batch <- function(input_batch, info = '', verbose = TRUE, dirName = NULL) {
+    test_that(info, {
+        test_coreRfeature_batch_internal(input_batch, verbose, dirName)
+    })
+}
+
+test_coreRfeature_batch_internal <- function(input_batch, verbose = TRUE, dirName = NULL) { ## a lot like test_math but a bit more flexible
+    names(input_batch) <- paste0('batch_case_', seq_along(input_batch))
+    runFuns <- lapply(input_batch, gen_runFunCore)
+    nfR <- nimbleFunction(setup = TRUE, methods = runFuns)()
+
+    nfC <- compileNimble(nfR, dirName = dirName)
+
+    for(i in seq_along(input_batch)) {
+        input <- input_batch[[i]]
+        if(verbose) cat("### Testing", input$name, "###\n")
+        funName <- names(input_batch)[i]
+        nArgs <- length(input$args)
+        evalEnv <- new.env()
+        eval(input$setArgVals, envir = evalEnv)
+        savedArgs <- as.list(evalEnv)
+        seedToUse <- if(is.null(input[['seed']])) 31415927 else input[['seed']]
+        set.seed(seedToUse)
+        eval(input$expr, envir = evalEnv)
+        savedOutputs <- as.list(evalEnv)
+        list2env(savedArgs, envir = evalEnv)
+        ## with R ref classes, lookup of methods via `[[` does not work until it has been done via `$`
+        ## force it via `$` here to allow simpler syntax below
+        forceFind <- eval(substitute(nfR$FUNNAME, list(FUNNAME = as.name(funName))))
+        forceFind <- eval(substitute(nfC$FUNNAME, list(FUNNAME = as.name(funName))))
+        if(nArgs == 5) {
+            set.seed(seedToUse)
+            out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
+            list2env(savedArgs, envir = evalEnv)
+            set.seed(seedToUse)
+            out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
+        }  
+        if(nArgs == 4) {
+            set.seed(seedToUse)
+            out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
+            list2env(savedArgs, envir = evalEnv)
+            set.seed(seedToUse)
+            out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
+        }  
+        if(nArgs == 3) {
+            set.seed(seedToUse)
+            out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
+            list2env(savedArgs, envir = evalEnv)
+            set.seed(seedToUse)
+            out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
+        }  
+        if(nArgs == 2) {
+            set.seed(seedToUse)
+            out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2)
+            list2env(savedArgs, envir = evalEnv)
+            set.seed(seedToUse)
+            out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2)
+        }
+        if(nArgs == 1) {
+            set.seed(seedToUse)
+            out_nfR = nfR[[funName]](evalEnv$arg1)
+            list2env(savedArgs, envir = evalEnv)
+            set.seed(seedToUse)
+            out_nfC = nfC[[funName]](evalEnv$arg1)
+        }
+        if(nArgs == 0) {
+            set.seed(seedToUse)
+            out_nfR = nfR[[funName]]()
+            list2env(savedArgs, envir = evalEnv)
+            set.seed(seedToUse)
+            out_nfC = nfC[[funName]]()
+        }
+        out <- savedOutputs$out
+        ## clearn any attributes except dim
+        dimOut <- attr(out, 'dim')
+        dimOutR <- attr(out_nfR, 'dim')
+        dimOutC <- attr(out_nfC, 'dim')
+        attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
+        attr(out, 'dim') <- dimOut
+        attr(out_nfR, 'dim') <- dimOutR
+        attr(out_nfC, 'dim') <- dimOutC
+        checkEqual <- input[['checkEqual']]
+        if(is.null(checkEqual)) checkEqual <- FALSE
+        if(is.null(input[['return']])) { ## use default 'out' object
+            if(!checkEqual) {
+                expect_identical(out, out_nfR, info = paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name))
+                expect_identical(out, out_nfC, info = paste0("Identical test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
+            } else {
+                expect_equal(out, out_nfR, info = paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name) )
+                expect_equal(out, out_nfC, info = paste0("Equal test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
+            }
+        } else { ## not using default return(out), so only compare out_nfR to out_nfC
+            if(!checkEqual) {
+                expect_identical(out_nfC, out_nfR, info = paste0("Identical test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name))
+            } else {
+                expect_identical(out_nfC, out_nfR, info = paste0("Equal test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name))
+            }
+        }
+    }
+    ## unload DLL as R doesn't like to have too many loaded
+    if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
+    invisible(NULL)
+}
+
+test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) {
+    test_that(input$name, {
+        test_coreRfeature_internal(input, verbose, dirName)
+    })
+}
+
+test_coreRfeature_internal <- function(input, verbose = TRUE, dirName = NULL) { ## a lot like test_math but a bit more flexible
+  if(verbose) cat("### Testing", input$name, "###\n")
+  runFun <- gen_runFunCore(input)
+  nfR <- nimbleFunction(run = runFun)
+  ## This try is safe because failure is caught by expect_equal below
+
+  expectCompilerFail <- FALSE
+  if(!is.null(input[['safeCompilerFail']]))
+      if(isTRUE(input[['safeCompilerFail']]))
+          expectCompilerFail <- TRUE
+  if(!expectCompilerFail) {
+      nfC <- compileNimble(nfR, dirName = dirName)
+  } else {
+      expect_error(nfC <- compileNimble(nfR, dirName = dirName))
+      return()
+  }
+  
+  nArgs <- length(input$args)
+  evalEnv <- new.env()
+  eval(input$setArgVals, envir = evalEnv)
+  savedArgs <- as.list(evalEnv)
+  seedToUse <- if(is.null(input[['seed']])) 31415927 else input[['seed']]
+  set.seed(seedToUse)
+  eval(input$expr, envir = evalEnv)
+  savedOutputs <- as.list(evalEnv)
+  list2env(savedArgs, envir = evalEnv)
+  if(nArgs == 5) {
+      set.seed(seedToUse)
+      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
+      list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
+      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
+  }  
+  if(nArgs == 4) {
+      set.seed(seedToUse)
+      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
+      list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
+      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
+  }  
+
+  if(nArgs == 3) {
+      set.seed(seedToUse)
+      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
+      list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
+      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
+  }  
+  if(nArgs == 2) {
+      set.seed(seedToUse)
+      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2)
+      list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
+      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2)
+  }
+  if(nArgs == 1) {
+      set.seed(seedToUse)
+      out_nfR = nfR(evalEnv$arg1)
+      list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
+      out_nfC = nfC(evalEnv$arg1)
+  }
+  if(nArgs == 0) {
+      set.seed(seedToUse)
+      out_nfR = nfR()
+      list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
+      out_nfC = nfC()
+  }
+  out <- savedOutputs$out
+  ## clearn any attributes except dim
+  dimOut <- attr(out, 'dim')
+  dimOutR <- attr(out_nfR, 'dim')
+  dimOutC <- attr(out_nfC, 'dim')
+  attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
+  attr(out, 'dim') <- dimOut
+  attr(out_nfR, 'dim') <- dimOutR
+  attr(out_nfC, 'dim') <- dimOutC
+  checkEqual <- input[['checkEqual']]
+  if(is.null(checkEqual)) checkEqual <- FALSE
+  if(is.null(input[['return']])) { ## use default 'out' object
+      if(!checkEqual) {
+          expect_identical(out, out_nfR, info = paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name))
+          expect_identical(out, out_nfC, info = paste0("Identical test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
+      } else {
+          expect_equal(out, out_nfR, info = paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name) )
+          expect_equal(out, out_nfC, info = paste0("Equal test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
+      }
+  } else { ## not using default return(out), so only compare out_nfR to out_nfC
+      if(!checkEqual) {
+          expect_identical(out_nfC, out_nfR, info = paste0("Identical test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name))
+      } else {
+          expect_identical(out_nfC, out_nfR, info = paste0("Equal test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name))
+      }
+  }
+  # unload DLL as R doesn't like to have too many loaded
+  if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
+  invisible(NULL)
 }
 
 gen_runFun <- function(input) {
@@ -41,14 +315,16 @@ make_input <- function(dim, size = 3, logicalArg) {
 }
 
 test_math <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
+    test_that(input$name, {
+        test_math_internal(input, verbose, size, dirName)
+    })
+}
+test_math_internal <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
   if(verbose) cat("### Testing", input$name, "###\n")
   runFun <- gen_runFun(input)
-  nfR <- nimbleFunction(  # formerly nfGen
-      #       setup = TRUE,
+  nfR <- nimbleFunction(  
              run = runFun)
-  #nfR <- nfGen()
-##  project <- nimble:::nimbleProjectClass(NULL, name = 'foo')
-  nfC <- compileNimble(nfR, dirName = dirName)##, project = project)
+  nfC <- compileNimble(nfR, dirName = dirName)
 
   nArgs <- length(input$inputDim)
   logicalArgs <- rep(FALSE, nArgs)
@@ -83,25 +359,64 @@ test_math <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
   attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
   if(is.logical(out)) out <- as.numeric(out)
   if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
-  try(test_that(paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name),
-                expect_equal(out, out_nfR)))
-  try(test_that(paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name),
-                expect_equal(out, out_nfC)))
+  expect_equal(out, out_nfR, info = paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name))
+  expect_equal(out, out_nfC, info = paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name))
   # unload DLL as R doesn't like to have too many loaded
-  if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
+  if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR)
   invisible(NULL)
 }
 
 
 ### Function for testing MCMC called from test_mcmc.R
 
-test_mcmc <- function(example, model, data = NULL, inits = NULL,
-                      verbose = TRUE, numItsR = 5, numItsC = 1000,
+test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NULL, knownFailures = list()) {
+    ## imitate processing test_mcmc_internal just to get a name for the test_that description
+    if(is.null(name)) {
+        if(!missing(example)) {
+            name <- example
+        } else {
+            if(is.character(model)) {
+                name <- model
+            } else {
+                name <- 'unnamed case'
+            }
+        }
+    }
+    name <- basename(name) ## name could be a pathed directory including tempdir(), which would change every time and hence appear as errors in line-by-line comparison with the gold file. So for futher purposes we use only the file name
+    ## `missing(example)` does not work inside the test_that
+    if(!missing(example)) {
+        ## classic-bugs example specified by name
+        dir = nimble:::getBUGSexampleDir(example)
+        if(missing(model)) model <- example
+        modelKnown <- TRUE
+    } else {
+        dir = ""
+        modelKnown <- !missing(model)
+    }
+
+    test_that(name, {
+        expect_true(modelKnown, 'Neither BUGS example nor model code supplied.')
+        Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = dir, useInits = TRUE,
+                                check = FALSE)
+        test_mcmc_internal(Rmodel, ..., name = name, knownFailures = knownFailures)
+    })
+}
+
+testIfNotKnownFailure <- function(knownFailure, expectation) {
+    expectation <- substitute(expectation)
+    if(is.null(knownFailure))
+        eval(expectation, envir = parent.frame())
+    else
+        eval(substitute(skip(REPORT), list(REPORT = knownFailure)), envir = parent.frame())
+}
+
+test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
+                      verbose = nimbleOptions('verbose'), numItsR = 5, numItsC = 1000,
                       basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
                       numItsC_results = numItsC,
                       resampleData = FALSE,
                       topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL, removeAllDefaultSamplers = FALSE,
-                      doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
+                      doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL, knownFailures = list()) {
   # There are three modes of testing:
   # 1) basic = TRUE: compares R and C MCMC values and, if requested by passing values in 'exactSample', will compare results to actual samples (you'll need to make sure the seed matches what was used to generate those samples)
   # 2) if you pass 'results', it will compare MCMC output to known posterior summaries within tolerance specified in resultsTolerance
@@ -114,7 +429,6 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     # single multivar sampler: samplers(type = "RW_block", target = 'x')
     # multiple multivar samplers: samplers(type = "RW_block", target = list('x', c('theta', 'mu')))
 
-
     setSampler <- function(var, conf) {
         currentTargets <- sapply(conf$samplerConfs, function(x) x$target)
                                         # remove already defined scalar samplers
@@ -123,9 +437,6 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                                         # look for cases where one is adding a blocked sampler specified on a variable and should remove scalar samplers for constituent nodes
         currentTargets <- sapply(conf$samplerConfs, function(x) x$target)
         inds <- which(sapply(unlist(var$target), function(x) Rmodel$expandNodeNames(x)) %in% currentTargets)
-                                        #      inds <- which(sapply(conf$samplerConfs, function(x)
-                                        #          gsub("\\[[0-9]+\\]", "", x$target))
-                                        #                         %in% var$target)
         conf$removeSamplers(inds, print = FALSE)
 
         if(is.list(var$target) && length(var$target) == 1) var$target <- var$target[[1]]
@@ -133,37 +444,16 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
             tmp <- conf$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) conf$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
     }
 
-    if(is.null(name)) {
-        if(!missing(example)) {
-            name <- example
-        } else {
-            if(is.character(model)) {
-                name <- model
-            } else {
-                name <- 'unnamed case'
-            }
-        }
-    }
-
-    cat("===== Starting MCMC test for ", name, ". =====\n", sep = "")
-
-    if(!missing(example)) {
-                                        # classic-bugs example specified by name
-  	dir = nimble:::getBUGSexampleDir(example)
-        if(missing(model)) model <- example
-        Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
-                                check = FALSE)
-    } else {
-                                        # code, data and inits specified directly where 'model' contains the code
-        example = deparse(substitute(model))
-        if(missing(model)) stop("Neither BUGS example nor model code supplied.")
-        Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE,
-                                check = FALSE)
-    }
+    testIfNotKnownFailure(knownFailures[['nameOK']],
+                          expect_false(is.null(name), info = 'name argument NULL'))
+        
+    ## leaving this message permanently on for now
+    cat("===== Starting MCMC test for ", name, ". =====\n", sep = "") ## for log file, for comparison to gold file
+    system(paste0("echo \"===== Starting MCMC test for ", name, ". =====\n\"", sep = "")) ## for travis log file, so it knows the process is not dead after 10 minutes of silence (message() does not work)
 
   if(doCpp) {
       Cmodel <- compileNimble(Rmodel)
-      cat('done compiling model\n')
+      if(verbose) cat('done compiling model\n')
   }
   if(!is.null(mcmcControl)) mcmcConf <- configureMCMC(Rmodel, control = mcmcControl) else mcmcConf <- configureMCMC(Rmodel)
   if(removeAllDefaultSamplers) mcmcConf$removeSamplers()
@@ -205,24 +495,19 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       }
 
       if(doR && doCpp && !is.null(R_samples)) {
-          context(paste0("testing ", example, " MCMC"))
-          try(
-              test_that(paste0("test of equality of output from R and C versions of ", example, " MCMC"), {
-                  expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
-              })
-              )
+          testIfNotKnownFailure(knownFailures[['R C samples match']],
+                                expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal")))
       }
-      if(is.null(R_samples)) {
-          cat("R MCMC failed.\n")
-      }
+      testIfNotKnownFailure(knownFailures[['R MCMC']],
+                            expect_false(is.null(R_samples), info = "R MCMC failed") )
 
       if(doCpp) {
           if(!is.null(exactSample)) {
               for(varName in names(exactSample))
-                  try(
-                      test_that(paste("Test of MCMC result against known samples for", example, ":", varName), {
-                          expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), round(exactSample[[varName]], 8)) })
-                      )
+                  testIfNotKnownFailure(knownFailures[['C samples match known samples']],
+                                        expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8),
+                                                     round(exactSample[[varName]], 8),
+                                                     info = paste0("Equality of compiled MCMC samples and known exact samples for variable ", varName)))
           }
       }
 
@@ -239,7 +524,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
   ## assume doR and doCpp from here down
   if(!is.null(results)) {
-     # do (potentially) longer run and compare results to inputs given
+      ## do (potentially) longer run and compare results to inputs given
     set.seed(seed)
     Cmcmc$run(numItsC_results)
     CmvSample <- nfVar(Cmcmc, 'mvSamples')
@@ -259,11 +544,9 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
           diff <- abs(postResult[matched] - results[[metric]][[varName]])
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
-            try(
-              test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, strInfo, ")"), {
-                expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
-              })
-              )
+            testIfNotKnownFailure(knownFailures[['MCMC match to known posterior']],
+                                  expect_true(diff[ind] < resultsTolerance[[metric]][[varName]][ind],
+                                              info = paste("Test of MCMC result against known posterior for :",  metric, "(", varName, strInfo, ")")))
           }
         }
       } else  { # 'cov'
@@ -274,11 +557,9 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
           diff <- c(abs(postResult - results[[metric]][[varName]]))
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
-            try(
-              test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo), {
-                expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
-              })
-              )
+            testIfNotKnownFailure(knownFailures[['MCMC match to known posterior cov']],
+                                  expect_true(diff[ind] < resultsTolerance[[metric]][[varName]][ind],
+                                              info = paste("Test of MCMC result against known posterior for:",  metric, "(", varName, ")", strInfo)))
           }
         }
       }
@@ -312,7 +593,6 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     sapply(topNodesElements, function(x) Cmodel[[x]] <- topLevelValues[[x]])
     # check this works as side effect
     nontopNodes <- Rmodel$getDependencies(topNodes, self = FALSE, includeData = TRUE, downstream = TRUE, stochOnly = FALSE)
-    # nonDataNodes <- Rmodel$getDependencies(topNodes, self = TRUE, includeData = FALSE, downstream = TRUE, stochOnly = TRUE)
     nonDataNodesElements <- Rmodel$getDependencies(topNodes, self = TRUE, includeData = FALSE, downstream = TRUE, stochOnly = TRUE, returnScalarComponents = TRUE)
     dataVars <- unique(nimble:::removeIndexing(Rmodel$getDependencies(topNodes, dataOnly = TRUE, downstream = TRUE)))
     set.seed(seed)
@@ -341,25 +621,22 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     coverage <- sum(covered) / length(nonDataNodesElements)
     tolerance <- 0.15
     if(verbose)
-      cat("Coverage for model", example, "is", coverage*100, "%.\n")
+        cat("Coverage for ", name, " is", coverage*100, "%.\n")
     miscoverage <- abs(coverage - 0.95)
-    try(
-      test_that(paste("Test of MCMC coverage on known parameter values for:", example), {
-                expect_lt(miscoverage, tolerance)
-              })
-      )
     if(miscoverage > tolerance || verbose) {
       cat("True values with 95% posterior interval:\n")
       print(cbind(trueVals, t(interval), covered))
     }
+    testIfNotKnownFailure(knownFailures[['coverage']],
+                          expect_true(miscoverage < tolerance,
+                                      info = paste("Test of MCMC coverage on known parameter values for:", name))
+                          )
   }
 
-  cat("===== Finished MCMC test for ", name, ". =====\n", sep = "")
+    if(verbose) cat("===== Finished MCMC test for ", name, ". =====\n", sep = "")
 
     if(doCpp) {
         if(.Platform$OS.type != "windows") {
-            ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rmcmc have the same project so they are interchangeable in these lines.
-            ##dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
             nimble:::clearCompiled(Rmodel)
         }
     }
@@ -368,7 +645,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
 
 test_filter <- function(example, model, data = NULL, inits = NULL,
-                        verbose = TRUE, numItsR = 5, numItsC = 10000,
+                        verbose = TRUE, numItsR = 3, numItsC = 10000,
                         basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
                         numItsC_results = numItsC,
                         seed = 0, filterType = NULL, latentNodes = NULL, filterControl = NULL,
@@ -507,9 +784,9 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
       return(c(mean = mean(vals), sd = sd(vals), quantile(vals, .025), quantile(vals, .975)))
 
     if(doCpp) {
-      if(verbose) {
-        try(print(apply(C_samples[, , drop = FALSE], 2, summarize_posterior)))
-      }
+      # if(verbose) {
+      #   try(print(apply(C_samples[, , drop = FALSE], 2, summarize_posterior)))
+      # }
     }
   }
 
@@ -544,7 +821,6 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         latentSampLength <- length(latentNames)
         latentDim <- latentSampLength/dim(C_weights)[2]
         samplesToWeightsMatch[latentIndices] <- rep(1:dim(C_weights)[2], each = latentDim )
-
       }
       for(metric in names(results)) {
         if(!metric %in% c('mean', 'median', 'sd', 'var', 'cov', 'll'))
@@ -601,6 +877,9 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
       }
     }
   }
+  if(verbose) {
+    try(print(apply(as.matrix(C_samples), 2, summarize_posterior)))  ## print summaries of equally weighted samples
+  }
   if(returnSamples) {
     if(exists('CmvSample'))
       returnVal <- as.matrix(CmvSample)
@@ -647,38 +926,52 @@ weightedMetricFunc <- function(index, samples, weights, metric, samplesToWeights
 }
 
 test_size <- function(input, verbose = TRUE) {
-    errorMsg <- paste0(ifelse(input$knownProblem, "KNOWN ISSUE: ", ""), "Result does not match ", input$expectPass)
+    if(is.null(input$expectPassWithConst)) input$expectPassWithConst <- input$expectPass
+    if(is.null(input$knownProblem)) input$knownProblem <- FALSE
+    if(is.null(input$knownProblemWithConst)) input$knownProblemWithConst <- input$knownProblem
+
     if(verbose) cat("### Testing", input$name, " with RHS variable ###\n")
-    result <- try(
+    code <- quote({
         m <- nimbleModel(code = input$expr, data = input$data, inits = input$inits)
-    )
-    try(test_that(paste0("Test 1 of size/dimension check: ", input$name),
-                  expect_equal(!is(result, "try-error"), input$expectPass,
-                              info = errorMsg)))
-    if(!is(result, "try-error")) {
-        result <- try(
-            { calculate(m); out <- calculate(m)} )
-        try(test_that(paste0("Test 2 of size/dimension check: ", input$name),
-                      expect_equal(!is(result, "try-error"), input$expectPass,
-                                  info = errorMsg)))
+        calculate(m)  ## Calculates from scratch.
+        calculate(m)  ## Uses cached value.
+    })
+    message = paste(input$name, 'with RHS', ifelse(input$expectPass, 'works', 'fails'), 'as expected')
+    if (input$knownProblem) message = paste(message, 'marked as KNOWN ISSUE')
+    if(xor(input$expectPass, input$knownProblem)) {
+        test_that(message, eval(code))
+    } else {
+        test_that(message, expect_error(eval(code)))
     }
+
     if(verbose) cat("### Testing", input$name, "with RHS constant ###\n")
-    if(!is.null(input$expectPassWithConst)) input$expectPass <- input$expectPassWithConst
-    result <- try(
+    code <- quote({
         m <- nimbleModel(code = input$expr, data = input$data, constants = input$inits)
-    )
-    try(test_that(paste0("Test 3 of size/dimension check: ", input$name),
-                  expect_equal(!is(result, "try-error"), input$expectPass,
-                              info = errorMsg)))
-    if(!is(result, "try-error")) {
-        result <- try(
-            { calculate(m); out <- calculate(m)} )
-        try(test_that(paste0("Test 4 of size/dimension check: ", input$name),
-                      expect_equal(!is(result, "try-error"), input$expectPass,
-                                  info = errorMsg)))
+        calculate(m)  ## Calculates from scratch.
+        calculate(m)  ## Uses cached value.
+    })
+    message = paste(input$name, 'with RHS', ifelse(input$expectPassWithConst, 'works', 'fails'), 'as expected')
+    if (input$knownProblemWithConst) message = paste(message, 'marked as KNOWN ISSUE')
+    if(xor(input$expectPassWithConst, input$knownProblemWithConst)) {
+        test_that(message, eval(code))
+    } else {
+        test_that(message, expect_error(eval(code)))
     }
+
     invisible(NULL)
 }
+
+# could redo test_size to always expect specific error, but not taking time to do that now
+test_size_specific_error <- function(input, verbose = TRUE) {
+    if(verbose) cat("### Testing", input$name, "###\n")
+    test_that(paste0("Test 1 of size/dimension check: ", input$name), {
+        expect_error(nimbleModel(code = input$expr, data = input$data, inits = input$inits),
+                     regexp = input$correctErrorMsg, info = paste("Result does not match", input$expectPass))
+    })
+
+    invisible(NULL)
+}
+
 
 test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     rtest <- test(model, node, bnd)
@@ -704,3 +997,41 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     invisible(NULL)
 }
  
+## utilities for saving test output to a reference file
+## and making the test a comparison of the file
+clearOldOutput <- function(filename) {
+    if(file.exists(filename)) file.remove(filename)
+}
+
+appendOutput <- function(filename, case, caseName, casePrefix = "") {
+    outputConnection <- file(filename, open = 'at')
+    writeLines(caseName, con = outputConnection)
+    outputAns <- lapply(case, function(x) writeLines(paste0(casePrefix, paste(x, collapse = " ")), con = outputConnection))
+    close(outputConnection)
+}
+
+writeOutput <- function(cases, filename) {
+    clearOldOutput(filename)
+    for(i in seq_along(cases)) appendOutput(filename, cases[[i]], names(cases)[i], casePrefix = paste0(i,": "))
+}
+
+compareFilesByLine <- function(trialResults, correctResults, main = "") {
+    test_that(paste0(main, ': same number of output lines'),
+          expect_equal(length(trialResults), length(correctResults)))
+    
+    linesToTest <- min(length(trialResults), length(correctResults))
+    mapply(function(lineno, trialLine, correctLine) {
+        test_that(paste0(main, ": output line #", lineno),
+                  expect_identical(trialLine, correctLine))
+    }, 1:linesToTest, trialResults, correctResults)
+    invisible(NULL)
+}
+
+compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
+    if(main == "") main <- paste0(trialFile, ' and ', correctFile, ' do not match\n')
+    diffOutput <- system2('diff', c(trialFile, correctFile), stdout = TRUE)
+    test_that(paste0(main, paste0(diffOutput, collapse = '\n')),
+              expect_true(length(diffOutput) == 0)
+              )
+    invisible(NULL)
+}

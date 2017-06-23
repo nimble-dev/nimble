@@ -26,6 +26,8 @@ extern "C" {
   SEXP C_rmvt_chol(SEXP, SEXP, SEXP, SEXP); 
   SEXP C_dwish_chol(SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_rwish_chol(SEXP, SEXP, SEXP);
+  SEXP C_dinvwish_chol(SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_rinvwish_chol(SEXP, SEXP, SEXP);
   SEXP C_dcat(SEXP, SEXP, SEXP);
   SEXP C_rcat(SEXP, SEXP);
   SEXP C_dmulti(SEXP, SEXP, SEXP, SEXP);
@@ -38,6 +40,12 @@ extern "C" {
   SEXP C_rexp_nimble(SEXP, SEXP);
   SEXP C_pexp_nimble(SEXP, SEXP, SEXP, SEXP);
   SEXP C_qexp_nimble(SEXP, SEXP, SEXP, SEXP);
+  SEXP C_dinvgamma(SEXP, SEXP, SEXP, SEXP);
+  SEXP C_rinvgamma(SEXP, SEXP, SEXP);
+  SEXP C_pinvgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_qinvgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_dsqrtinvgamma(SEXP, SEXP, SEXP, SEXP);
+  SEXP C_rsqrtinvgamma(SEXP, SEXP, SEXP);
 
 }
 
@@ -51,12 +59,14 @@ void rmulti(int*, double, double*, int);
 double ddirch(double*, double*, int, int);
 void rdirch(double*, double*, int);
 
-double dmnorm_chol(double*, double*, double*, int, double, int);
+double dmnorm_chol(double*, double*, double*, int, double, int, int);
 void rmnorm_chol(double *, double*, double*, int, double);
-double dmvt_chol(double*, double*, double*, double, int, double, int);
+double dmvt_chol(double*, double*, double*, double, int, double, int, int);
 void rmvt_chol(double *, double*, double*, double, int, double);
-double dwish_chol(double*, double*, double, int, double, int);
-void rwish_chol(double*, double*, double, int, double);
+double dwish_chol(double*, double*, double, int, double, int, int);
+void rwish_chol(double*, double*, double, int, double, int);
+double dinvwish_chol(double*, double*, double, int, double, int, int);
+void rinvwish_chol(double*, double*, double, int, double, int);
 
 double dinterval(double, double, double*, int, int);
 double rinterval(double, double*, int);
@@ -84,4 +94,16 @@ double dexp_nimble(double, double, int);
 double pexp_nimble(double, double, int, int);
 double qexp_nimble(double, double, int, int);
 
+double rinvgamma(double, double);
+double dinvgamma(double, double, double, int);
+double pinvgamma(double, double, double, int, int);
+double qinvgamma(double, double, double, int, int);
+
+double rsqrtinvgamma(double, double);
+double dsqrtinvgamma(double, double, double, int);
+
+double rflat();
+double dflat(double, int);
+double rhalfflat();
+double dhalfflat(double, int);
 #endif

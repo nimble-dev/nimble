@@ -7,6 +7,14 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        nimbleProjectForTesting = NULL,  ## only used by withTempProject and compileNimble in testing code.
+        stopCompilationBeforeLinking = NULL,
+        experimentalNewSizeProcessing = FALSE,
+        experimentalSelfLiftStage = FALSE,
+        enableSpecialHandling = FALSE,
+        pauseAfterWritingFiles = FALSE,
+        CppAD_directory = NA,
+        experimentalEnableDerivs = FALSE,
         convertSingleVectorsToScalarsInSetupArgs = TRUE,
         messagesWhenBuildingOrFinalizingCppObjects = FALSE,
         indexDrop = TRUE,
@@ -25,6 +33,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         checkModel = FALSE,
         checkNimbleFunction = TRUE,
         verbose = TRUE,
+        verboseErrors = FALSE,
 
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
         ## if this option is changed, then congugate sampler functions can be rebuilt using:
@@ -37,6 +46,13 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         ## rather than the older 'static' system.
         ## update May 2016: old (non-dynamic) system is no longer supported -DT
         ##useDynamicConjugacy = TRUE,
+
+        MCMCprogressBar = TRUE,
+
+        ## samplerAssignmentRules object that controls the default sampler assignments by configureMCMC.
+        ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
+        MCMCuseSamplerAssignmentRules = FALSE,
+        MCMCdefaultSamplerAssignmentRules = NULL,
         
         ## default settings for MCMC samplers
         MCMCcontrolDefaultList = list(
@@ -49,6 +65,11 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
             propCov = 'identity',
             sliceWidth = 1,
             sliceMaxSteps = 100,
+            factorBurnIn = 15000,
+            factorAdaptInterval = 1000,
+            scaleAdaptInterval = 200,
+            sliceBurnIn = 512,
+            sliceWidths = 'oneVec',
             pfNparticles = 1000,
             pfResample = FALSE,
             pfOptimizeNparticles = FALSE,
@@ -82,7 +103,8 @@ getNimbleOption <- function(x) {
 #' NIMBLE Options Settings
 #'
 #' Allow the user to set and examine a variety of global _options_
-#' that affect the way in which NIMBLE operates
+#' that affect the way in which NIMBLE operates. Call \code{nimbleOptions()}
+#' with no arguments to see a list of available opions.
 #' 
 #' @param ... any options to be defined as one or more 'name = value' pairs.
 #' Options can also be passed by giving a single unnamed argument that is a named list.

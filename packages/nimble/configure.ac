@@ -17,6 +17,11 @@ dnl    --configure-args='--with-eigen=/home/bob/local'
 dnl or by setting the environment variable EIGEN_DIR
 AC_ARG_WITH(eigen, [  --with-eigen            path for the directory containing Eigen/ directory with all of the #include files], EIGEN_DIR="${withval}")
 
+dnl Similarly, caller can specify their CppAD directory via
+dnl    --configure-args='--with-cppad=/home/bob/local/cppad'
+dnl or by setting the environment variable CPPAD_DIR
+AC_ARG_WITH(cppad, [  --with-cppad            path for the directory containing cppad/ directory], CPPAD_DIR="${withval}")
+
 AC_ARG_ENABLE(dylib, [  --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code],
                          ENABLE_LIB=${enableval}, 
 if ! test `uname` = "Linux" ; then
@@ -35,7 +40,6 @@ if test -n "${LIBNIMBLE}" ; then
   ENABLE_LIB=true
   echo "Enabling libnimble."
 fi
-
 
 if test -n "$EIGEN_DIR" ; then
   echo "Checking eigen directory $EIGEN_DIR"
@@ -58,6 +62,27 @@ if test -n "$EIGEN_DIR" ; then
   fi
 fi
 
+if test -n "$CPPAD_DIR" ; then
+  echo "Checking cppad directory CPPAD_DIR"
+  if ! test -d "$CPPAD_DIR" ; then
+     echo "$CPPAD_DIR is not a directory"
+  fi
+
+  if ! test -d "$CPPAD_DIR/cppad" ; then
+     echo "$CPPAD_DIR does not contain the directory cppad"
+     exit 1;
+  fi
+
+  if ! test -f "$CPPAD_DIR/cppad/configure.hpp" ; then
+     echo "$CPPAD_DIR/cppad does not contain the file configure.hpp"
+     exit 1;
+  fi
+fi
+
+if test -n "CPPAD_DIR" && ! test "${CPPAD_DIR}" = "" ; then
+   echo "Setting CPPFLAGS to find CppAD"
+   export CPPFLAGS="-I${CPPAD_DIR}"
+fi
 
 if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    echo "Setting CPPFLAGS to find Eigen"
@@ -86,13 +111,18 @@ dnl                rm -rf inst/Eigen_local
 		  EIGEN_DIR=""
                   ])
 
+dnl Somewhat confused if this is redundant with the CPPFLAGS entry above
+if test -n "CPPAD_DIR" ; then
+echo "Using CppAD directory ${CPPAD_DIR}"
+CPPAD_INC="-I$CPPAD_DIR"
+fi
 
 if test -n "$EIGEN_DIR" ; then
 echo "Using Eigen directory ${EIGEN_DIR}"
 EIGEN_INC="-I$EIGEN_DIR"
 fi
 
-
+AC_SUBST(CPPAD_INC)
 AC_SUBST(EIGEN_INC)
 AC_SUBST(NEED_MAKEVARS_FILE)
 AC_SUBST(R_PACKAGE_DIR)
@@ -162,5 +192,7 @@ else
   cp inst/CppCode/dists.cpp src
   cp inst/CppCode/RcppUtils.cpp src
   cp inst/CppCode/nimbleGraph.cpp src
+  cp inst/CppCode/eigenUsingClasses.cpp src
+
   (cd inst/CppCode ; ${MAKE} libnimble.a)
 fi

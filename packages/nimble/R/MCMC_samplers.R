@@ -22,6 +22,7 @@ sampler_BASE <- nimbleFunctionVirtual(
 #' @rdname samplers
 #' @export
 sampler_posterior_predictive <- nimbleFunction(
+    name = 'sampler_posterior_predictive',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
@@ -46,6 +47,7 @@ sampler_posterior_predictive <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_binary <- nimbleFunction(
+    name = 'sampler_binary',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
@@ -56,10 +58,11 @@ sampler_binary <- nimbleFunction(
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
     },
     run = function() {
-        currentProb <- exp(getLogProb(model, calcNodes))
+        currentLogProb <- getLogProb(model, calcNodes)
         model[[target]] <<- 1 - model[[target]]
-        otherProb <- exp(calculate(model, calcNodes))
-        if(!is.nan(otherProb) & runif(1,0,1) < otherProb/(currentProb+otherProb))
+        otherLogProb <- calculate(model, calcNodes)
+        acceptanceProb <- 1/(exp(currentLogProb - otherLogProb) + 1)
+        if(!is.nan(acceptanceProb) & runif(1,0,1) < acceptanceProb)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         else
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -78,6 +81,7 @@ sampler_binary <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW <- nimbleFunction(
+    name = 'sampler_RW',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -167,6 +171,7 @@ sampler_RW <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_block <- nimbleFunction(
+    name = 'sampler_RW_block',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -274,7 +279,6 @@ sampler_RW_block <- nimbleFunction(
 )
 
 
-
 #############################################################################
 ### RW_llFunction, does a RW, but using a generic log-likelihood function ###
 #############################################################################
@@ -282,6 +286,7 @@ sampler_RW_block <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_llFunction <- nimbleFunction(
+    name = 'sampler_RW_llFunction',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -294,7 +299,7 @@ sampler_RW_llFunction <- nimbleFunction(
         calcNodes <- model$getDependencies(target)
         ## nested function and function list definitions
         mvInternal <- modelValues(model)
-        RWControl <- list(adaptive = adaptive, adaptInterval = adaptInterval, scale = scale)
+        RWControl <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale, log=FALSE, reflective=FALSE)
         targetRWSamplerFunction <- sampler_RW(model, mvInternal, target, RWControl)
         my_setAndCalculateOne <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
@@ -328,6 +333,7 @@ sampler_RW_llFunction <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_slice <- nimbleFunction(
+    name = 'sampler_slice',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -417,6 +423,7 @@ sampler_slice <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_ess <- nimbleFunction(
+    name = 'sampler_ess',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
@@ -457,6 +464,172 @@ sampler_ess <- nimbleFunction(
 
 
 
+#####################################################################################
+### Automated factor slice sampler (discrete or continuous) #########################
+#####################################################################################
+
+#' @rdname samplers
+#' @export
+sampler_AF_slice <- nimbleFunction(
+    name = 'sampler_AF_slice',
+  contains = sampler_BASE,
+  setup = function(model, mvSaved, target, control) {
+    ## control list extraction
+    width         <- control$sliceWidths
+    maxSteps      <- control$sliceMaxSteps
+    factorBurnInIters   <- control$factorBurnIn     # number of iterations to use for factor adaptation
+    factorAdaptInterval <- control$factorAdaptInterval   # interval to use for factor adaptation
+    sliceAdaptIters     <- control$sliceBurnIn       # number of iterations to use for slice adaptation (note this gets reset every time factor adaptation is performed)
+    ## node list generation
+    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+    calcNodes      <- model$getDependencies(target)
+    
+    ## numeric value generation
+    sliceAdaptItersOriginal <- sliceAdaptIters
+    discrete      <- sapply(targetAsScalar, function(x){model$isDiscrete(x)})
+    anyDiscrete   <- any(discrete == TRUE)
+    d             <- length(targetAsScalar)
+    if(is.character(width) && width == 'oneVec')     width <- rep(1,d)
+    widthOriginal <- width
+    gammaMat      <- diag(length(targetAsScalar))                # matrix of orthogonal bases
+    empirSamp     <- matrix(0, nrow=factorAdaptInterval, ncol=d) # matrix of posterior samples
+    empirCov      <- empirSamp
+    sliceAdaptInterval   <- 1         # starts at one, doubles every time slice width adaptation is performed
+    sliceAdaptIndicator  <- rep(1, d) # all slice widths start off as needing to be adapted
+    nExpansions          <- rep(0, d) # keep track of number of expansions
+    nContracts           <- rep(0, d) # keep track of number of contractions
+    sliceAdaptTolerance  <- .1        # determine when slice width no longer needs to be adapted
+    sliceCounter         <- 0         # keep track of number of iterations since last slice adaptation
+    factorCounter        <- 0         # keep track of number of iterations since last factor adaptation
+    allSlicesAdapted     <- 0         # indicates whether all slice widths have finished adapting
+    
+    ## checks
+    if(class(width) != 'numeric')   stop('sliceWidths must be a numeric vector\n')
+    if(length(width) != d)          stop('sliceWidths must have length ', d, '\n')
+    if(length(targetAsScalar) < 2)  stop('automated factor slice sampler must be used on at least two target nodes')
+    
+    testMat <- matrix(0, nrow = 2, ncol = 2)
+    
+  },
+  run = function() {
+    for(i in 1:d){
+      eigenVec  <- gammaMat[,i]
+      currWidth <- width[i]
+      u  <- getLogProb(model, calcNodes) - rexp(1, 1) # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+      x0 <- values(model, target)                    # create random interval (L,R), of width 'width', around current value of target
+      Lbound <- -1.0 * runif(1, 0, 1) * currWidth
+      Rbound <- Lbound + currWidth
+      L <- x0 + Lbound*eigenVec
+      R <- x0 + Rbound*eigenVec
+      maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
+      maxStepsR <- maxSteps - 1 - maxStepsL
+
+      lp <- setAndCalculateTarget(L)
+      while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
+        Lbound <- Lbound - currWidth
+        L      <- x0 + Lbound*eigenVec
+        lp     <- setAndCalculateTarget(L)
+        maxStepsL      <- maxStepsL - 1
+        nExpansions[i] <<- nExpansions[i] + 1
+      }
+
+      lp <- setAndCalculateTarget(R)
+      while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
+        Rbound <- Rbound + currWidth
+        R      <- x0 + Rbound*eigenVec
+        lp     <- setAndCalculateTarget(R)
+        maxStepsR      <- maxStepsR - 1
+        nExpansions[i] <<- nExpansions[i] + 1
+      }
+      prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
+      x1   <- x0 + prop*eigenVec
+      lp   <- setAndCalculateTarget(x1)
+      while(is.nan(lp) | lp < u) {   # must be is.nan()
+        if(prop < 0) { Lbound <- prop}
+        else         { Rbound <- prop}
+        nContracts[i] <<- nContracts[i] + 1
+        prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
+        x1   <- x0 + prop*eigenVec
+        lp   <- setAndCalculateTarget(x1)
+      }
+    }
+    nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    if(allSlicesAdapted == 0)  widthAdapt()
+    if(factorBurnInIters > 0)  factorAdapt()
+  },
+  methods = list(
+    setAndCalculateTarget = function(values = double(1)) {
+      if(anyDiscrete == 1){
+        for(i in 1:d)
+          if(discrete[i] == 1) values[i] <- floor(values[i])
+      }
+      values(model, target) <<- values
+      lp <- calculate(model, calcNodes)
+      returnType(double())
+      return(lp)
+    },
+    factorAdapt = function() {
+      factorBurnInIters <<- factorBurnInIters - 1
+      factorCounter     <<- factorCounter + 1
+      empirSamp[factorCounter, 1:d] <<- values(model, target)
+        if(factorCounter == factorAdaptInterval){  # time to adapt factors
+          for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
+          empirCov <<- (t(empirSamp) %*% empirSamp) / (factorAdaptInterval-1)
+          gammaMat <<- eigen(empirCov)$vectors  # replace old factors with new factors
+          
+          sliceAdaptIndicator <<- integer(d, 1)  # reset all slice adaptive variables
+          nExpansions         <<- integer(d, 0)
+          nContracts          <<- integer(d, 0)
+          sliceAdaptInterval  <<- 1
+          sliceAdaptIters     <<- sliceAdaptItersOriginal
+          allSlicesAdapted    <<- 0
+          sliceCounter        <<- 0
+          factorCounter       <<- 0
+        }
+    },
+    widthAdapt = function() {
+      sliceCounter    <<- sliceCounter + 1
+      sliceAdaptIters <<- sliceAdaptIters - 1
+      if(sliceCounter == sliceAdaptInterval){  # time to adapt slice widths
+        for(i in 1:d){
+          if(sliceAdaptIndicator[i] == 1){   # find which widths are not finished adapting
+            if(nExpansions[i] == 0)
+              nExpansions[i] <<- 1
+
+            sliceAdaptRatio     <- nExpansions[i] / (nExpansions[i] + nContracts[i])
+            width[i]            <<- width[i] * 2 * sliceAdaptRatio
+            sliceAdaptInterval  <<- 2 * sliceAdaptInterval  # increase adapt interval
+            nExpansions[i]      <<- 0
+            nContracts[i]       <<- 0
+            if(sliceAdaptInterval > 16)  # once adapt interval is large enough, determine whether adaptation is finished
+              sliceAdaptIndicator[i] <<- (abs(sliceAdaptRatio - .5) > sliceAdaptTolerance)  # equals 1 if adaptation isn't finished
+          }
+        }
+        allSlicesAdapted <<- 1 -  ceiling(mean(sliceAdaptIndicator))  # equals 1 only if all slice adapt indicators are 0
+        sliceCounter     <<- 0
+      }
+      if(sliceAdaptIters <= 0)  # alternatively, if max iters have been reached, stop adapting
+        allSlicesAdapted <<- 1
+    },
+    reset = function() {
+      width                <<- widthOriginal
+      factorCounter        <<- 0
+      sliceCounter         <<- 0
+      sliceAdaptInterval   <<- 1
+      sliceAdaptIndicator  <<- integer(d, 1)
+      nExpansions          <<- integer(d, 0)
+      nContracts           <<- integer(d, 0)
+      sliceAdaptTolerance  <<- .1
+      sliceAdaptIters      <<- sliceAdaptItersOriginal
+      allSlicesAdapted     <<- 0
+    }
+  ), where = getLoadingNamespace()
+)
+
+
+
+
+
 ####################################################################
 ### crossLevel sampler #############################################
 ####################################################################
@@ -466,6 +639,7 @@ getPosteriorDensityFromConjSampler_virtual <- nimbleFunctionVirtual(
 )
 
 getPosteriorDensityFromConjSampler <- nimbleFunction(
+    name = 'getPosteriorDensityFromConjSampler',
     contains = getPosteriorDensityFromConjSampler_virtual,
     setup = function(conjugateSamplerFunction) {},
     run = function() {
@@ -478,6 +652,7 @@ getPosteriorDensityFromConjSampler <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_crossLevel <- nimbleFunction(
+    name = 'sampler_crossLevel',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -556,6 +731,7 @@ sampler_crossLevel <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_llFunction_block <- nimbleFunction(
+    name = 'sampler_RW_llFunction_block',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -584,7 +760,6 @@ sampler_RW_llFunction_block <- nimbleFunction(
         my_setAndCalculate <- setAndCalculate(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d)
-        storeLP0 <- -Inf
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
         if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
@@ -592,14 +767,14 @@ sampler_RW_llFunction_block <- nimbleFunction(
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
     run = function() {
-        modelLP0 <- storeLP0
+        modelLP0 <- llFunction$run()
         if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
         propValueVector <- generateProposalVector()
         my_setAndCalculate$run(propValueVector)
-        modelLP1 <- llFunction$run()+ getLogProb(model, target)
+        modelLP1 <- llFunction$run()
+        if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(adaptive)     adaptiveProcedure(jump)
-        if(jump) storeLP0 <<- modelLP1
     },
     methods = list(
         generateProposalVector = function() {
@@ -650,6 +825,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_PF <- nimbleFunction(
+    name = 'sampler_RW_PF',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -674,30 +850,36 @@ sampler_RW_PF <- nimbleFunction(
         latentDep <- model$getDependencies(latents)
         topParams <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE, topOnly=TRUE)
         ## numeric value generation
-        scaleOriginal <- scale
-        timesRan      <- 0
-        timesAccepted <- 0
-        timesAdapted  <- 0
-        prevLL        <- 0
-        nVarEsts      <- 0
-        itCount       <- 0
-        optimalAR     <- 0.44
-        gamma1        <- 0
-        storeLP0      <- -Inf
-        storeLLVar    <- 0
-        nVarReps      <- 7    # number of LL estimates to compute to get each LL variance estimate for m optimization
-        mBurnIn       <- 15   # number of LL variance estimates to compute before deciding optimal m
-        d             <- length(targetAsScalar)
-        if(optimizeM)    m <- 3000
+        scaleOriginal   <- scale
+        timesRan        <- 0
+        timesAccepted   <- 0
+        timesAdapted    <- 0
+        prevLL          <- 0
+        nVarEsts        <- 0
+        itCount         <- 0
+        optimalAR       <- 0.44
+        gamma1          <- 0
+        storeParticleLP <- -Inf
+        storeLLVar      <- 0
+        nVarReps        <- 7    # number of LL estimates to compute to get each LL variance estimate for m optimization
+        mBurnIn         <- 15   # number of LL variance estimates to compute before deciding optimal m
+        d               <- length(targetAsScalar)
+        if(optimizeM) m <- 3000
         ## nested function and function list definitions
-        my_setAndCalculate <- setAndCalculate(model, target)
-        my_calcAdaptationFactor <- calcAdaptationFactor(d)
+        my_setAndCalculate <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+        if(latentSamp == TRUE) { 
+          saveAllVal <- TRUE
+          smoothingVal <- TRUE
+        } else {
+          saveAllVal <- FALSE
+          smoothingVal <- FALSE
+        }
         if(filterType == 'auxiliary') {
-            my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = TRUE, smoothing = TRUE, lookahead = lookahead))
+            my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, lookahead = lookahead, initModel = FALSE))
         }
         else if(filterType == 'bootstrap') {
-            my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = TRUE, smoothing = TRUE))
+            my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, initModel = FALSE))
         }
         else   stop('filter type must be either bootstrap or auxiliary')
         particleMV <- my_particleFilter$mvEWSamples
@@ -710,11 +892,11 @@ sampler_RW_PF <- nimbleFunction(
             modelLP0 <- my_particleFilter$run(m)
             modelLP0 <- modelLP0 + getLogProb(model, target)
         }
-        else   modelLP0 <- storeLP0
+        else   modelLP0 <- storeParticleLP + getLogProb(model, target)
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
-        model[[target]] <<- propValue
-        modelLP1 <- my_particleFilter$run(m)
-        modelLP1 <- modelLP1 + getLogProb(model, target)
+        my_setAndCalculate$run(propValue)
+        particleLP <- my_particleFilter$run(m)
+        modelLP1 <- particleLP + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(jump & latentSamp){
             ## if we jump, randomly sample latent nodes from pf output and put into model so that they can be monitored
@@ -727,7 +909,7 @@ sampler_RW_PF <- nimbleFunction(
             ## if we don't jump, replace model latent nodes with saved latent nodes
             copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
         }
-        if(jump & !resample)  storeLP0 <<- modelLP1
+        if(jump & !resample)  storeParticleLP <<- particleLP
         if(jump & optimizeM) optimM()
         if(adaptive)     adaptiveProcedure(jump)
     },
@@ -752,8 +934,7 @@ sampler_RW_PF <- nimbleFunction(
                 m <<- m*storeLLVar/(0.92^2)
                 m <<- ceiling(m)
                 if(!resample) {  #reset LL with new m value after burn-in period
-                    modelLP0 <- my_particleFilter$run(m)
-                    storeLP0 <<- modelLP0 + getLogProb(model, target)
+                  storeParticleLP <<- my_particleFilter$run(m)
                 }
                 optimizeM <<- 0
             }
@@ -777,7 +958,7 @@ sampler_RW_PF <- nimbleFunction(
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
-            storeLP0 <<- -Inf
+            storeParticleLP <<- -Inf
             gamma1 <<- 0
         }
     ), where = getLoadingNamespace()
@@ -792,6 +973,7 @@ sampler_RW_PF <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_PF_block <- nimbleFunction(
+    name = 'sampler_RW_PF_block',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target,  control) {
         ## control list extraction
@@ -832,7 +1014,7 @@ sampler_RW_PF_block <- nimbleFunction(
         chol_propCov <- chol(propCov)
         chol_propCov_scale <- scale * chol_propCov
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
-        storeLP0    <- -Inf
+        storeParticleLP <- -Inf
         storeLLVar  <- 0
         nVarReps <- 7    # number of LL estimates to compute to get each LL variance estimate for m optimization
         mBurnIn  <- 15   # number of LL variance estimates to compute before deciding optimal m
@@ -848,10 +1030,10 @@ sampler_RW_PF_block <- nimbleFunction(
                                  smoothingVal <- FALSE
                              }
         if(filterType == 'auxiliary') {
-            my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, lookahead = lookahead))
+            my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, lookahead = lookahead, initModel = FALSE))
         }
         else if(filterType == 'bootstrap') {
-            my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal))
+            my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, initModel = FALSE))
         }
         else   stop('filter type must be either bootstrap or auxiliary')
         particleMV <- my_particleFilter$mvEWSamples
@@ -868,11 +1050,11 @@ sampler_RW_PF_block <- nimbleFunction(
             modelLP0 <- my_particleFilter$run(m)
             modelLP0 <- modelLP0 + getLogProb(model, target)
         }
-        else   modelLP0 <- storeLP0
+        else   modelLP0 <- storeParticleLP + getLogProb(model, target)
         propValueVector <- generateProposalVector()
         my_setAndCalculate$run(propValueVector)
-        modelLP1 <- my_particleFilter$run(m)
-        modelLP1 <- modelLP1 + getLogProb(model, target)
+        particleLP <- my_particleFilter$run(m)
+        modelLP1 <- particleLP + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(jump & latentSamp) {
             ## if we jump, randomly sample latent nodes from pf output and put
@@ -886,7 +1068,7 @@ sampler_RW_PF_block <- nimbleFunction(
             ## if we don't jump, replace model latent nodes with saved latent nodes
             copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
         }
-        if(jump & !resample)  storeLP0 <<- modelLP1
+        if(jump & !resample)  storeParticleLP <<- particleLP
         if(jump & optimizeM) optimM()
         if(adaptive)     adaptiveProcedure(jump)
     },
@@ -911,8 +1093,7 @@ sampler_RW_PF_block <- nimbleFunction(
                 m <<- m*storeLLVar/(0.92^2)
                 m <<- ceiling(m)
                 if(!resample){  #reset LL with new m value after burn-in period
-                    modelLP0 <- my_particleFilter$run(m)
-                    storeLP0 <<- modelLP0 + getLogProb(model, target)
+                  storeParticleLP <<- my_particleFilter$run(m)
                 }
                 optimizeM <<- 0
             }
@@ -948,7 +1129,7 @@ sampler_RW_PF_block <- nimbleFunction(
             scale   <<- scaleOriginal
             propCov <<- propCovOriginal
             chol_propCov <<- chol(propCov)
-            storeLP0 <<- -Inf
+            storeParticleLP <<- -Inf
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
@@ -965,7 +1146,8 @@ sampler_RW_PF_block <- nimbleFunction(
 
 #' @rdname samplers
 #' @export
-sampler_RW_multinomial <- nimbleFunction( 
+sampler_RW_multinomial <- nimbleFunction(
+    name = 'sampler_RW_multinomial',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -1089,6 +1271,82 @@ sampler_RW_multinomial <- nimbleFunction(
 
 
 
+#####################################################################################
+### RW_dirichlet sampler for multinomial distributions ##############################
+#####################################################################################
+
+#' @rdname samplers
+#' @export
+sampler_RW_dirichlet <- nimbleFunction(
+    name = 'sampler_RW_dirichlet',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        scaleOriginal <- control$scale
+        ## node list generation
+        calcNodes <- model$getDependencies(target)
+        depNodes  <- model$getDependencies(target, self = FALSE)
+        targetScalarNodes <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        ## numeric value generation
+        d <- length(targetScalarNodes)
+        thetaVec         <- rep(0, d)
+        scaleVec         <- rep(scaleOriginal, d)
+        timesRan         <- 0
+        timesAcceptedVec <- rep(0, d)
+        timesAdapted     <- 0
+        gamma1           <- 0
+        ## checks
+        if(length(model$expandNodeNames(target)) > 1)    stop('RW_dirichlet sampler only applies to one target node')
+        if(model$getDistribution(target) != 'ddirch')    stop('can only use RW_dirichlet sampler for dirichlet distributions')
+    },
+    run = function() {
+        if(thetaVec[1] == 0)   thetaVec <<- values(model, target)   ## initialization
+        alphaVec <- model$getParam(target, 'alpha')
+        for(i in 1:d) {
+            currentValue <- thetaVec[i]
+            propLogScale <- rnorm(1, mean = 0, sd = scaleVec[i])
+            propValue <- currentValue * exp(propLogScale)
+            thetaVecProp <- thetaVec
+            thetaVecProp[i] <- propValue
+            values(model, target) <<- thetaVecProp / sum(thetaVecProp)
+            logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, depNodes)
+            jump <- decide(logMHR)
+            if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
+            if(jump) { thetaVec <<- thetaVecProp
+                       nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+            } else   { nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE) }
+            model$calculate(target)                                                         ## update target logProb
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)    ##
+        }
+        if(adaptive) {
+            timesRan <<- timesRan + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRateVec <- timesAcceptedVec / timesRan
+                timesAdapted <<- timesAdapted + 1
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                adaptFactorVec <- exp(10 * gamma1 * (acceptanceRateVec - 0.44))   ## optimalAR = 0.44
+                scaleVec <<- scaleVec * adaptFactorVec
+                timesRan <<- 0
+                timesAcceptedVec <<- numeric(d, 0)
+            }
+        }
+    },
+    methods = list(
+        reset = function() {
+            thetaVec         <<- numeric(d, 0)
+            scaleVec         <<- numeric(d, scaleOriginal)
+            timesRan         <<- 0
+            timesAcceptedVec <<- numeric(d, 0)
+            timesAdapted     <<- 0
+            gamma1           <<- 0
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+
 #' MCMC Sampling Algorithms
 #'
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
@@ -1131,7 +1389,7 @@ sampler_RW_multinomial <- nimbleFunction(
 #' The RW_block sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (a coefficient for the entire proposal covariance matrix) and propCov (the multivariate normal proposal covariance matrix) throughout the course of MCMC execution.  If only the scale should undergo adaptation, this argument should be specified as TRUE. (default = TRUE)
-#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
+#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = TRUE, only the proposal scale is adapted. (default = FALSE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW_block sampler will perform its adaptation procedure, based on the past adaptInterval iterations. (default = 200)
 #' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
@@ -1167,6 +1425,19 @@ sampler_RW_multinomial <- nimbleFunction(
 #' The ess sampler performs elliptical slice sampling of a single node, which must follow a multivariate normal distribution (Murray, 2010).  The algorithm is an extension of slice sampling (Neal, 2003), generalized to the multivariate normal context.  An auxilliary variable is used to identify points on an ellipse (which passes through the current node value) as candidate samples, which are accepted contingent upon a likelihood evaluation at that point.  This algorithm requires no tuning parameters and therefore no period of adaptation, and may result in very efficient sampling from multivariate Gaussian distributions.
 #'
 #' The ess sampler accepts no control list arguments.
+#' 
+#' @section AF_slice sampler:
+#' 
+#' The automated factor slice sampler conducts a slice sampling algorithm on one or more model nodes.  The sampler uses the eigenvectors of the posterior covariance between these nodes as an orthogonal basis on which to perform its 'stepping Out' procedure.  The sampler is adaptive in updating both the width of the slices and the values of the eigenvectors.  The sampler can be applied to ay be applied to any set of continuous or discrete-valued model nodes, to any single continuous or discrete-valued multivariate model node, or to any combination thereof. 
+#
+#' The automated factor slice sampler accepts the following control list elements:
+#' \itemize{
+#' \item sliceWidths.  A numeric vector of initial slice widths.  The length of the vector must be equal to the sum of the lengths of all nodes being used by the automated factor slice sampler.  Defaults to a vector of 1's.
+#' \item factorBurnIn. The number of iterations for which the factors (eigenvectors) will continue to adapt to the posterior correlation.  (default =  15000)
+#' \item factorAdaptInterval.  The interval on which to perform factor adaptation. (default = 1000)
+#' \item sliceBurnIn.  The maximum number of iterations for which to adapt the slice widths for a given set of factors.  (default = 512)
+#' \item sliceMaxSteps.  The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
+#' }
 #'
 #' @section crossLevel sampler:
 #'
@@ -1189,7 +1460,7 @@ sampler_RW_multinomial <- nimbleFunction(
 #' The RW_llFunctionBlock sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default is TRUE)
-#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
+#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = TRUE, only the proposal scale is adapted. (default = FALSE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
@@ -1222,7 +1493,7 @@ sampler_RW_multinomial <- nimbleFunction(
 #' The \code{RW_PF_block} sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
-#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for \code{scale} (TRUE) or also for \code{provCov} (FALSE).  This argument is only relevant when \code{adaptive = TRUE}.  When \code{adaptScaleOnly = FALSE}, both \code{scale} and \code{propCov} undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When \code{adaptScaleOnly = FALSE}, only the proposal scale is adapted. (default = FALSE)
+#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for \code{scale} (TRUE) or also for \code{provCov} (FALSE).  This argument is only relevant when \code{adaptive = TRUE}.  When \code{adaptScaleOnly = FALSE}, both \code{scale} and \code{propCov} undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When \code{adaptScaleOnly = TRUE}, only the proposal scale is adapted. (default = FALSE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' \item scale. The initial value of the scalar multiplier for \code{propCov}.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the \code{'identity'}, in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default is \code{'identity'})
@@ -1245,6 +1516,17 @@ sampler_RW_multinomial <- nimbleFunction(
 #' \item adaptInterval.  The interval on which to perform adaptation.  A minimum value of 100 is required. (default = 200)
 #' }
 #'
+#' @section RW_dirichlet sampler:
+#'
+#' This sampler is designed for sampling non-conjugate Dirichlet distributions.  The sampler performs a series of Metropolis-Hastings updates (on the log scale) to each component of a gamma-reparameterization of the target Dirichlet distribution.  The acceptance or rejection of these proposals follows a standard Metropolis-Hastings procedure.
+#'
+#' The \code{RW_dirichlet} sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should independently adapt the scale (proposal standard deviation, on the log scale) for each componentwise Metropolis-Hasting update, to achieve a theoretically desirable acceptance rate for each. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
+#' \item scale. The initial value of the proposal standard deviation (on the log scale) for each component of the reparameterized Dirichlet distribution.  If adaptive = FALSE, the proposal standard deviations will never change. (default = 1)
+#' }
+#'
 #' @section posterior_predictive sampler:
 #'
 #' The posterior_predictive sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
@@ -1255,8 +1537,39 @@ sampler_RW_multinomial <- nimbleFunction(
 #'
 #' @name samplers
 #'
-#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_llFunction slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_llFunction sampler_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block
+#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block
 #'
+#' @examples
+#' ## y[1] ~ dbern() or dbinom():
+#' # mcmcConf$addSampler(target = 'y[1]', type = 'binary')   
+#' 
+#' # mcmcConf$addSampler(target = 'a', type = 'RW',
+#' #    control = list(log = TRUE, adaptive = FALSE, scale = 3))
+#' # mcmcConf$addSampler(target = 'b', type = 'RW',
+#' #    control = list(adaptive = TRUE, adaptInterval = 200))
+#' # mcmcConf$addSampler(target = 'p', type = 'RW',
+#' #    control = list(reflective = TRUE))
+#'
+#' ## a, b, and c all continuous-valued:
+#' # mcmcConf$addSampler(target = c('a', 'b', 'c'), type = 'RW_block')   
+#' 
+#' # mcmcConf$addSampler(target = 'p', type = 'RW_llFunction',
+#' #    control = list(llFunction = RllFun, includesTarget = FALSE))
+#' 
+#' # mcmcConf$addSampler(target = 'y[1]', type = 'slice',
+#' #    control = list(adaptive = FALSE, sliceWidth = 3))
+#' # mcmcConf$addSampler(target = 'y[2]', type = 'slice',
+#' #    control = list(adaptive = TRUE, sliceMaxSteps = 1))
+#' 
+#' # mcmcConf$addSampler(target = 'x[1:10]', type = 'ess')   ## x[1:10] ~ dmnorm()
+#' 
+#' # mcmcConf$addSampler(target = 'x[1:5]', type = 'RW_multinomial')   ## x[1:5] ~ dmulti()
+#' 
+#' # mcmcConf$addSampler(target = 'p[1:5]', type = 'RW_dirichlet')   ## p[1:5] ~ ddirch()
+#'
+#' ## y[1] is a posterior predictive node:
+#' # mcmcConf$addSampler(target = 'y[1]', type = 'posterior_predictive')   
+#' 
 #' @seealso \code{\link{configureMCMC}} \code{\link{addSampler}} \code{\link{buildMCMC}} \code{\link{runMCMC}}
 #'
 #' @author Daniel Turek
@@ -1277,6 +1590,7 @@ sampler_RW_multinomial <- nimbleFunction(
 #'
 #' Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University.
 #'
+#' Tibbits, M. M.,  Groendyke, C.,  Haran, M., and Liechty, J. C. (2014).  Automated Factor Slice Sampling.  \emph{Journal of Computational and Graphical Statistics}, 23(2), 543-563.
 NULL
 
 

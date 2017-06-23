@@ -5,11 +5,15 @@
 #include "R.h"
 #include<Rinternals.h>
 #include<Rmath.h>
+#include<limits>
 #include<string>
 #include<time.h>
 using std::string;
 
 //using namespace std;
+
+// A utility function that will return floor(x) unless x is within numerical imprecision of an integer, in which case it will return round(x)
+int floorOrEquivalent(double x);
 
 int rFunLength(int Arg);
 int rFunLength(double Arg);
@@ -22,9 +26,27 @@ class nimbleTimerClass_ {
   double endNimbleTimer() { return(((double)(clock() - t_start))/CLOCKS_PER_SEC); }
 };
 
+#if defined(__GNUG__) || defined(__clang__)
+#  define NIM_LIKELY(x) __builtin_expect(!!(x), 1)
+#  define NIM_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#  define NIM_LIKELY(x) (x)
+#  define NIM_UNLIKELY(x) (x)
+#endif
+
 #define PRINTF Rprintf
 #define NIMERROR error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
+/* #define NIM_ASSERT(cond, ...) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " __VA_ARGS__); }} */ /* future */
+#define NIM_ASSERT1(cond, msg) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg); }}
+#define NIM_ASSERT2(cond, msg, msgArg1) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1); }}
+#define NIM_ASSERT3(cond, msg, msgArg1, msgArg2) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1, msgArg2); }}
+#define NIM_ASSERT4(cond, msg, msgArg1, msgArg2, msgArg3) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1, msgArg2, msgArg3); }}
+
+#define NIM_ASSERT_SIZE(my_array, n)                                    \
+    NIM_ASSERT3(my_array.dimSize(0) == n,                               \
+                #my_array " has wrong size: expected %d, actual %d", n, \
+                my_array.dimSize(0));
 
 // code copied from nmath.h - useful utilities 
 # define MATHLIB_ERROR(fmt,x)		error(fmt,x);
@@ -114,6 +136,8 @@ bool decide(double lMHr);
 void nimStop(string msg);
 void nimStop();
 
+bool nimNot(bool x);
+
 // needed for link functions
 double ilogit(double x);
 double icloglog(double x);
@@ -135,4 +159,9 @@ int nimStep(double x);
 double cube(double x);
 double inprod(double v1, double v2);
 
+inline double nimble_NaN() {
+  return std::numeric_limits<double>::has_quiet_NaN
+    ? std::numeric_limits<double>::quiet_NaN()
+    : (0./0.);
+}
 #endif

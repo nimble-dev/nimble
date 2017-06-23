@@ -4,7 +4,7 @@ nimbleGraphClass <- setRefClass(
         graphExtPtr = 'ANY'
     ),
     methods = list(
-        setGraph = function(edgesFrom, edgesTo, edgesFrom2ParentExprIDs, types, names, numNodes) {
+        setGraph = function(edgesFrom, edgesTo, edgesFrom2ParentExprIDs, nodeFunctionIDs, types, names, numNodes) {
             edgesFrom2ParentExprIDs[ is.na(edgesFrom2ParentExprIDs) ] <- 0
             for(i in list(edgesFrom, edgesTo, edgesFrom2ParentExprIDs, numNodes)) {
                 if(length(i) > 0) {
@@ -14,13 +14,17 @@ nimbleGraphClass <- setRefClass(
                     }
                 }
             }
-            graphExtPtr <<- .Call('setGraph', edgesFrom, edgesTo, edgesFrom2ParentExprIDs, types, names, numNodes)
+            ## Some nodeFunctionIDs may be zero, if there really is no nodeFunction (e.g. RHSonly)
+            ## But on the C++ side we need these IDs to be self, so there is something valid.
+            boolZero <- nodeFunctionIDs == 0
+            nodeFunctionIDs[boolZero] <- (1:length(nodeFunctionIDs))[boolZero]
+            graphExtPtr <<- .Call(C_setGraph, edgesFrom, edgesTo, edgesFrom2ParentExprIDs, nodeFunctionIDs, types, names, numNodes)
         },
         anyStochDependencies = function() {
-           .Call("anyStochDependencies",graphExtPtr)
+           .Call(C_anyStochDependencies,graphExtPtr)
         },
         anyStochParents = function() {
-            .Call("anyStochParents",graphExtPtr)
+            .Call(C_anyStochParents,graphExtPtr)
         },
         getDependencies = function(nodes, omit = integer(), downstream = FALSE) {
             for(i in list(nodes, omit)) {
@@ -32,6 +36,11 @@ nimbleGraphClass <- setRefClass(
                 }
             }
 
-            .Call("getDependencies", graphExtPtr, nodes, omit, downstream)
+            .Call(C_getDependencies, graphExtPtr, nodes, omit, downstream)
+        },
+        getDependencyPathCountOneNode = function(node) {
+            if(length(node) > 1)
+                stop("getDependencyPathCountOneNode: argument 'node' should provide a single node.")
+            .Call(C_getDependencyPathCountOneNode, graphExtPtr, node)
         }
     ))

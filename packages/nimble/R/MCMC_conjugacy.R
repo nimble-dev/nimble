@@ -21,6 +21,59 @@ conjugacyRelationshipsInputList <- list(
              ## dcat      = list(param = 'prob', contribution_alpha = {tmp = rep(0,length(prob)); tmp[value]=1; tmp}')),
          posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'),
 
+    ## flat
+    list(prior = 'dflat',
+         link = 'linear',
+         dependents = list(
+             dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',      contribution_tau = 'coeff^2 * tau'),
+             dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
+         posterior = 'dnorm(mean = contribution_mean / contribution_tau,
+                            sd   = contribution_tau^(-0.5))'),
+                                        
+    ## halfflat - first possible conjugacy; user can achieve this with gamma(1, 0) as we handle that
+    ## list(prior = 'dhalfflat',
+    ##      link = 'multiplicative',
+    ##      dependents = list(
+    ##          dpois  = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
+    ##        dnorm  = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
+    ##          dlnorm = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
+    ##          dgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
+    ##          dinvgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_rate = 'coeff / value'                 ),
+    ##          dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
+    ##          dweib   = list(param = 'lambda',   contribution_shape = '1',     contribution_rate = 'coeff   * value^shape' )),
+    ##          ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
+    ##          ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
+    ##      posterior = 'dgamma(shape = 1 + contribution_shape,
+    ##                          scale = 1 / contribution_rate)'),
+
+    ## halfflat - second possible conjugacy; note that user will be able to do invgamma(-1,0) and
+    ## get conjugacy once we fix issue #314
+    ## list(prior = 'dinvgamma',
+    ##      link = 'multiplicative',
+    ##      dependents = list(
+    ##          dnorm  = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'),
+    ##          dlnorm = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
+    ##          dgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_scale = 'value / coeff'                 ),
+    ##          dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'     ),
+    ##          dexp   = list(param = 'scale',   contribution_shape = '1',     contribution_scale = 'value / coeff'            )),
+    ##          ## add ddexp
+    ##      posterior = 'dinvgamma(shape = -1 + contribution_shape,
+    ##                          rate = 1 / contribution_scale)'),
+
+    ## halfflat - third possible conjugacy - we use this because it corresponds to the
+    ## Gelman (2006) recommended uniform on sd scale prior for variance components
+    ## and current NIMBLE conjugacy system only allows one possible form of conjugacy
+    ## note that sd ~ U(0,Inf) equivalent to var ~ IG(-1/2, 0)
+    ## also note that if conj system could detect 'squared' dependency, then
+    ## we could allow dnorm with param = 'var'                                     
+    list(prior = 'dhalfflat',
+         link = 'multiplicative',
+         dependents = list(
+             dnorm  = list(param = 'sd',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff^2 * 2)'),
+             dlnorm = list(param = 'sdlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff^2 * 2)')),
+         posterior = 'dsqrtinvgamma(shape = -1/2 + contribution_shape,
+                             rate = 1 / contribution_scale)'),
+         
     ## gamma
     list(prior = 'dgamma',
          link = 'multiplicative',
@@ -29,12 +82,27 @@ conjugacyRelationshipsInputList <- list(
              dnorm  = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
              dlnorm = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
              dgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
-             dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 )),
+             dinvgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_rate = 'coeff / value'                 ),
+             dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
+             dweib   = list(param = 'lambda',   contribution_shape = '1',     contribution_rate = 'coeff   * value^shape' )),
              ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
-             ## dpar = list(...)    ## need to figure this out
+             ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
          posterior = 'dgamma(shape = prior_shape + contribution_shape,
                              scale = 1 / (prior_rate + contribution_rate))'),
 
+    ## invgamma
+    list(prior = 'dinvgamma',
+         link = 'multiplicative',
+         dependents = list(
+             dnorm  = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'),
+             dlnorm = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
+             dgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_scale = 'value / coeff'                 ),
+             dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'     ),
+             dexp   = list(param = 'scale',   contribution_shape = '1',     contribution_scale = 'value / coeff'            )),
+             ## add ddexp
+         posterior = 'dinvgamma(shape = prior_shape + contribution_shape,
+                             rate = 1 / (prior_scale + contribution_scale))'),
+    
     ## normal
     list(prior = 'dnorm',
          link = 'linear',
@@ -46,13 +114,15 @@ conjugacyRelationshipsInputList <- list(
 
     #####
     ## pareto
+    ## these are idiosyncratic enough that we probably want to skip them
     ## list(prior = 'dpar',      ##### waiting for dpar() distribution
     ##      link = 'multiplicative',
     ##      dependents = list(
-    ##          dunif = list(param = 'max', contribution_alpha = '1', contribution_not_used = 'coeff'),
-    ##          dpar  = list(param = 'c',   contribution_alpha = '-alpha')),
+    ##          dunif = list(param = 'max', contribution_alpha = '1', contribution_c = 'value/coeff'),  # only works if 0 is min of the unif so this will be hard to do
+    ## careful with next one - data seem to impose upper bound on posterior, so not clear this goes through
+    ##          dpar  = list(param = 'c',   contribution_alpha = '-alpha'), contribution_c = '0'),
     ##      posterior = 'dpar(alpha = prior_alpha + contribution_alpha,
-    ##                        c     = max(prior_c, max(dep_dunif_values/dep_dunif_coeff)))'),
+    ##                        c     = max(prior_c, contribution_c)'),
     #####
 
     ## multivariate-normal
@@ -60,7 +130,7 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
            ##dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, 1) %*% asCol(value-offset))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, 2)')),
+             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2)')),
          ## original less efficient posterior definition:
          ## posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
          ##                          cholesky   = chol(prior_prec + contribution_prec),
@@ -73,16 +143,31 @@ conjugacyRelationshipsInputList <- list(
 
     ## wishart
     list(prior = 'dwish',
-         link = 'linear',
+         ## changing to only use link='identity' case, since the link='linear' case was not correct.
+         ## -DT March 2017
+         ## link = 'linear',
+         link = 'identity',
          dependents = list(
              ## parentheses added to the contribution_R calculation:
              ## colVec * (rowVec * matrix)
              ## Chris is checking to see whether this makes a difference for Eigen
              ## -DT April 2016
-             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
+             ## changing to only use link='identity' case, since the link='linear' case was not correct
+             ## -DT March 2017
+             ## dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
+             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dwish_chol(cholesky    = chol(prior_R + contribution_R),
                                  df          = prior_df + contribution_df,
-                                 scale_param = 0)')
+                                 scale_param = 0)'),
+
+    ## inverse wishart
+    list(prior = 'dinvwish',
+         link = 'identity',
+         dependents = list(
+             dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
+         posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
+                                 df          = prior_df + contribution_df,
+                                 scale_param = 1)')
 
 )
 
@@ -116,7 +201,7 @@ conjugacyRelationshipsClass <- setRefClass(
             maps <- model$modelDef$maps
             nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
             declID2nodeIDs <- split(nodeIDs, nodeDeclIDs) ## nodeIDs grouped by declarationID
-            ansList <- list()
+            ansList <- ansList2 <- list()
             for(i in seq_along(declID2nodeIDs)) {         ## For each group of nodeIDs from the same declarationID
                 nodeIDsFromOneDecl <- declID2nodeIDs[[i]]
                 firstNodeName <- maps$graphID_2_nodeName[nodeIDsFromOneDecl[1]]
@@ -125,55 +210,93 @@ conjugacyRelationshipsClass <- setRefClass(
 
                 conjugacyObj <- conjugacys[[dist]]
                 if(is.null(conjugacyObj)) next
+                
+                # NO: insert logic here to check a single dependency and do next if can't be conjugate
+                #model$getDependencies('mu[1]',self=F,stochOnly=T)
+                #for( loop through deps )
+                #    conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
+                #    if(not conj) next
 
-                depPathsByNode <- lapply(nodeIDsFromOneDecl, getDependencyPaths, maps = maps)  ## make list (by nodeID) of lists of paths through graph
-                depPathsByNode <- depPathsByNode[!unlist(lapply(depPathsByNode, function(x) is.null(x) || (length(x)==0)))]
-                depPathsByNodeLabels <- lapply(depPathsByNode, function(z)                     ## make character labels that match for same path through graph
-                    unlist(lapply(z,
-                                  function(x)
-                                      paste(maps$graphID_2_declID[x[,1]], x[,2], collapse = '\r', sep='\r'))))
+                # now try to guess if finding paths will be more intensive than simply looking at target-dependent pairs, to avoid path finding when there is nested structure such as stick-breaking
+                numPaths <- sapply(nodeIDsFromOneDecl, model$getDependencyPathCountOneNode)
+                deps <- lapply(nodeIDsFromOneDecl, function(x) model$getDependencies(x, stochOnly = TRUE, self = FALSE))
+                numDeps <- sapply(deps, length)
 
-                depPathsByNodeUnlisted <- unlist(depPathsByNode, recursive = FALSE)
-                depPathsByNodeLabelsUnlisted <- unlist(depPathsByNodeLabels)
-              ##  uniquePaths <- unique(depPathsByNodeLabelsUnlisted)
-                uniquePathsUnlistedIndices <- split(seq_along(depPathsByNodeLabelsUnlisted), depPathsByNodeLabelsUnlisted)
-
-                conjDepTypes <- character(length(uniquePathsUnlistedIndices))
-                for(j in seq_along(uniquePathsUnlistedIndices)) {
-                    firstDepPath <- depPathsByNodeUnlisted[[ uniquePathsUnlistedIndices[[j]][1] ]]
-                    targetNode <- maps$graphID_2_nodeName[firstDepPath[1,1]]
-                    depNode <- maps$graphID_2_nodeName[firstDepPath[nrow(firstDepPath), 1]]
-                    oneDepType <- conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
-                    conjDepTypes[j] <- if(is.null(oneDepType)) "" else oneDepType
-                }
-
-                conjBool <- conjDepTypes != ""
-                names(conjDepTypes) <- names(conjBool) <- names(uniquePathsUnlistedIndices)
-                if(any(conjBool)) {
-                    targetNodes <- unlist(lapply(depPathsByNode, function(x) if(is.null(x)) '_NO_DEPS_' else maps$graphID_2_nodeName[x[[1]][1,1]]))
-                    ansList[[length(ansList)+1]] <- mapply(
-                        function(targetNode, depPathsOneNode, depPathsLabelsOneNode) {
-                            if(targetNode == '_NO_DEPS_') return(NULL) ## these should have already been weeded out
-                            if(all(conjBool[depPathsLabelsOneNode])) {
-                                depTypes <- conjDepTypes[depPathsLabelsOneNode]
-                                depEnds <- maps$graphID_2_nodeName[ unlist(lapply(depPathsOneNode, function(x) x[nrow(x)])) ]
+                if(max(numPaths) > sum(numDeps)) {
+                    # max(numPaths) is reasonable guess at number of unique (by node) paths (though it overestimates number of unique (by declaration ID) paths; if we have to evaluate conjugacy for more paths than we would by simply looking at all pairs of target-dependent nodes, then just use node pairs
+                    # note that it's not clear what criterion to use here since computational time is combination of time for finding all paths and then for evaluating conjugacy for unique (by declaration ID) paths, but the hope is to make a crude cut here that avoids path calculations when there would be a lot of them
+                    ansList[[length(ansList)+1]] <- lapply(seq_along(nodeIDsFromOneDecl),
+                        function(index) {
+                            targetNode <- maps$graphID_2_nodeName[nodeIDsFromOneDecl[index]]
+                            depEnds <- deps[[index]]
+                            depTypes <- sapply(depEnds, function(x) conjugacyObj$checkConjugacyOneDep(model, targetNode, x))
+                            if(!length(depTypes)) return(NULL)
+                            if(!any(sapply(depTypes, is.null))) {
                                 uniqueDepTypes <- unique(depTypes)
                                 control <- lapply(uniqueDepTypes,
                                                   function(oneType) {
                                                       boolMatch <- depTypes == oneType
-                                                      ## prevent multiple instances of same dependent node name
-                                                      ## (via different graph dependency paths   -DT Oct 2016
-                                                      ##depEnds[boolMatch]
-                                                      unique(depEnds[boolMatch])
+                                                      depEnds[boolMatch]
                                                   })
                                 names(control) <- uniqueDepTypes
-                                list(prior = conjugacyObj$prior, type = conjugacyObj$samplerType, target = targetNode, control = control)
-                            }
-                        },
-                        targetNodes, depPathsByNode, depPathsByNodeLabels, USE.NAMES = TRUE, SIMPLIFY = FALSE)
+                                return(list(prior = conjugacyObj$prior, type = conjugacyObj$samplerType, target = targetNode, control = control))
+                            } else return(NULL)
+                        })
+                    names(ansList[[length(ansList)]]) <- maps$graphID_2_nodeName[nodeIDsFromOneDecl]
+                    
+                } else {
+                # determine conjugacy based on unique (by declaration ID) paths
+                    depPathsByNode <- lapply(nodeIDsFromOneDecl, getDependencyPaths, maps = maps)  ## make list (by nodeID) of lists of paths through graph
+                    depPathsByNode <- depPathsByNode[!unlist(lapply(depPathsByNode, function(x) is.null(x) || (length(x)==0)))]
+                    depPathsByNodeLabels <- lapply(depPathsByNode, function(z)                     ## make character labels that match for same path through graph
+                        unlist(lapply(z,
+                                      function(x)
+                                          paste(maps$graphID_2_declID[x[,1]], x[,2], collapse = '\r', sep='\r'))))
+                    
+                    depPathsByNodeUnlisted <- unlist(depPathsByNode, recursive = FALSE)
+                    depPathsByNodeLabelsUnlisted <- unlist(depPathsByNodeLabels)
+                    ##  uniquePaths <- unique(depPathsByNodeLabelsUnlisted)
+                    uniquePathsUnlistedIndices <- split(seq_along(depPathsByNodeLabelsUnlisted), depPathsByNodeLabelsUnlisted)
+                    
+                    conjDepTypes <- character(length(uniquePathsUnlistedIndices))
+                    for(j in seq_along(uniquePathsUnlistedIndices)) {
+                        firstDepPath <- depPathsByNodeUnlisted[[ uniquePathsUnlistedIndices[[j]][1] ]]
+                        targetNode <- maps$graphID_2_nodeName[firstDepPath[1,1]]
+                        depNode <- maps$graphID_2_nodeName[firstDepPath[nrow(firstDepPath), 1]]
+                        oneDepType <- conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
+                        conjDepTypes[j] <- if(is.null(oneDepType)) "" else oneDepType
+                    }
+                    
+                    conjBool <- conjDepTypes != ""
+                    names(conjDepTypes) <- names(conjBool) <- names(uniquePathsUnlistedIndices)
+                    if(any(conjBool)) {
+                        targetNodes <- unlist(lapply(depPathsByNode, function(x) if(is.null(x)) '_NO_DEPS_' else maps$graphID_2_nodeName[x[[1]][1,1]]))
+                        ansList[[length(ansList)+1]] <- mapply(
+                            function(targetNode, depPathsOneNode, depPathsLabelsOneNode) {
+                                if(targetNode == '_NO_DEPS_') return(NULL) ## these should have already been weeded out
+                                if(all(conjBool[depPathsLabelsOneNode])) {
+                                    depTypes <- conjDepTypes[depPathsLabelsOneNode]
+                                    depEnds <- maps$graphID_2_nodeName[ unlist(lapply(depPathsOneNode, function(x) x[nrow(x)])) ]
+                                    uniqueDepTypes <- unique(depTypes)
+                                    control <- lapply(uniqueDepTypes,
+                                                      function(oneType) {
+                                                          boolMatch <- depTypes == oneType
+                                                          ## prevent multiple instances of same dependent node name
+                                                          ## (via different graph dependency paths   -DT Oct 2016
+                                                          ##depEnds[boolMatch]
+                                                          unique(depEnds[boolMatch])
+                                                      })
+                                    names(control) <- uniqueDepTypes
+                                    list(prior = conjugacyObj$prior, type = conjugacyObj$samplerType, target = targetNode, control = control)
+                                }
+                            },
+                            targetNodes, depPathsByNode, depPathsByNodeLabels, USE.NAMES = TRUE, SIMPLIFY = FALSE)
+                    }
                 }
             }
-            if(length(ansList) > 0) do.call('c', ansList) else ansList
+            if(length(ansList) > 0) ansList <- do.call('c', ansList)
+            ansList <- ansList[!sapply(ansList, is.null)]  # strips out any NULL values
+            if(!length(ansList)) return(list()) else return(ansList)  # replaces empty named list with empty list
         },
         ## older version of checkConjugacy(), which checks nodes one at a time (much slower)
         ## deprecated
@@ -579,7 +702,7 @@ conjugacyClass <- setRefClass(
                        },
                        `1` = {
                            functionBody$addCode({
-                               model[[target]] <<- model[[target]] * 0
+                               model[[target]] <<- rep(0, d)
                                model$calculate(calcNodesDeterm)
                            })
 
@@ -599,11 +722,13 @@ conjugacyClass <- setRefClass(
                                                          PARAM_NAME     = dependents[[distName]]$param))
                            }
 
+                           functionBody$addCode(unitVector <- rep(0, d))
+
                            forLoopBody <- codeBlockClass()
                            forLoopBody$addCode({
-                               unitVector <- model[[target]] * 0
                                unitVector[sizeIndex] <- 1
                                model[[target]] <<- unitVector
+                               unitVector[sizeIndex] <- 0
                                calculate(model, calcNodesDeterm)
                            })
 

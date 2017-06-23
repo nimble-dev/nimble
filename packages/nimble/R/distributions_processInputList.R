@@ -240,28 +240,41 @@ checkDistributionInput <- function(distributionInput) {
     invisible(NULL)
 }
 
+
 # check for log last in d, n as first in r, lower.tail, log.p in p,q
-checkDistributionFunctions <- function(distributionInput) {
+checkDistributionFunctions <- function(distributionInput, userEnv) {
     if(is.list(distributionInput)) {
         if(exists('Rdist', distributionInput))
             inputString <- distributionInput$Rdist else inputString <- distributionInput$BUGSdist
         densityName <- as.character(parse(text = inputString)[[1]][[1]])
     } else densityName <- distributionInput
     simulateName <- sub('^d', 'r', densityName)
-    if(!exists(densityName) || !exists(simulateName) ||
-        !is.rcf(get(densityName)) || !is.rcf(get(simulateName)))
-        stop(paste0("checkDistributionFunctions: Either density or random generation functions for ", densityName,
-                    " are not available as nimbleFunctions without setup code."))
-                                        # FIXME: deal with finding by R's scoping rules here and in genCpp_sizeProcessing (currently line 139)
+    if(!exists(densityName, where = userEnv) ||
+        !is.rcf(get(densityName, pos = userEnv)))
+        stop(paste0("checkDistributionFunctions: density function for ", densityName,
+                    " is not available as a nimbleFunction without setup code."))
+    if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {
+        cat(paste0("Warning: random generation function for ", densityName,
+                    " is not available as a nimbleFunction without setup code. NIMBLE is generating a placeholder function that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.\n"))
+        rargInfo <- environment(get(densityName, pos = userEnv))$nfMethodRCobject$argInfo
+        returnType <- deparse(unlist(rargInfo[[1]]))
+        rargInfo <- rargInfo[-length(rargInfo)]  # remove 'log' argument
+        rargInfo[[1]] <- quote(integer(0))
+        names(rargInfo)[1] <- 'n'
+        args <- paste(names(rargInfo), as.character(rargInfo), sep = "=", collapse = ', ')
+        # build nf from text as unclear how to pairlist info in rargInfo with substitute
+        nfCode <- paste0("nimbleFunction(run = function(", args, ") { stop('user-defined distribution ", densityName, " provided without random generation function.')\nreturnType(", returnType, ")})")
+        assign(simulateName, eval(parse(text = nfCode)), envir = userEnv)
+    }
 
-    dargs <- args <- formals(get(densityName))
+    dargs <- args <- formals(get(densityName, pos = userEnv))
     nArgs <- length(args)
     if(nArgs < 2) stop(paste0("checkDistributionFunctions: expecting at least two arguments ('x', 'log') as arguments for the density function for ", densityName, "."))
     if(names(args)[1] != "x") stop(paste0("checkDistributionFunctions: expecting 'x' as the first argument for the density function for ", densityName, "."))
     if(names(args)[nArgs] != "log") stop(paste0("checkDistributionFunctions: expecting 'log' as the last argument for the density function for ", densityName, "."))
     dargs <- dargs[-c(1,nArgs)]
     
-    rargs <- args <- formals(get(simulateName))
+    rargs <- args <- formals(get(simulateName, pos = userEnv))
     nArgs <- length(args)
     if(nArgs < 1) stop(paste0("checkDistributionFunctions: expecting at least one argument ('n') as arguments for the simulation function for ", densityName, "."))
     if(names(args)[1] != "n") stop(paste0("checkDistributionFunctions: expecting 'n' as the first argument for the simulation function for ", densityName, "."))
@@ -272,11 +285,11 @@ checkDistributionFunctions <- function(distributionInput) {
     if(!is.null(distributionInput) && is.list(distributionInput) && exists("pqAvail", distributionInput) && distributionInput$pqAvail) {
         cdfName <- sub('^d', 'p', densityName)
         quantileName <- sub('^d', 'q', densityName)
-        if(!is.rcf(get(cdfName)) || !is.rcf(get(quantileName)))
+        if(!is.rcf(get(cdfName, pos = userEnv)) || !is.rcf(get(quantileName, pos = userEnv)))
             stop(paste0("checkDistributionFunctions: Either distribution (CDF) or quantile (inverse CDF) functions for ", densityName,
                         " are not available as nimbleFunctions without setup code."))
 
-        pargs <- args <- formals(get(cdfName))
+        pargs <- args <- formals(get(cdfName, pos = userEnv))
         nArgs <- length(args)
         if(nArgs < 3) stop(paste0("checkDistributionFunctions: expecting at least three arguments ('q', 'lower.tail', and 'log.p') as arguments for the distribution function for ", densityName, "."))
         if(names(args)[1] != "q") stop(paste0("checkDistributionFunctions: expecting 'q' as the first argument for the distribution function for ", densityName, "."))
@@ -284,7 +297,7 @@ checkDistributionFunctions <- function(distributionInput) {
         if(names(args)[nArgs-1] != "lower.tail") stop(paste0("checkDistributionFunctions: expecting 'lower.tail' as the last argument for the distribution function for ", densityName, "."))
         pargs <- pargs[-c(1,nArgs-1,nArgs)]
         
-        qargs <- args <- formals(get(quantileName))
+        qargs <- args <- formals(get(quantileName, pos = userEnv))
         nArgs <- length(args)
         if(nArgs < 3) stop(paste0("checkDistributionFunctions: expecting at least three arguments ('p', 'lower.tail', and 'log.p') as arguments for the quantile function for ", densityName, "."))
         if(names(args)[1] != "p") stop(paste0("checkDistributionFunctions: expecting 'p' as the first argument for the quantile function for ", densityName, "."))
@@ -327,7 +340,7 @@ prepareDistributionInput <- function(dist) {
     simulateName <- sub('^d', 'r', dist)
     typeInfo <- get('nfMethodRCobject', environment(eval(as.name(simulateName))))$argInfo
     typeInfo <- typeInfo[names(typeInfo) != "n"]
-    rtypes <- numeric(0)
+    rtypes <- character(0)
     if(length(typeInfo))
         rtypes <- c(rtypes, paste0(names(typeInfo), ' = ', sapply(typeInfo, deparse)))
     if(!identical(out$types[-1], rtypes))
@@ -364,7 +377,8 @@ prepareDistributionInput <- function(dist) {
 #' Register distributional information so that NIMBLE can process
 #' user-supplied distributions in BUGS model code
 #'
-#' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, it should be a named list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}, and with the name of the list the same as that of the density function. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions. 
+#' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, it should be a named list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}, and with the name of the list the same as that of the density function. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions.
+#' @param userEnv environment in which to look for the nimbleFunctions that provide the distribution; this will generally not need to be set by the user as it will default to the environment from which this function was called.
 #' @author Christopher Paciorek
 #' @export
 #' @details
@@ -470,7 +484,7 @@ prepareDistributionInput <- function(dist) {
 #'         types = c('value = double(1)', 'alpha = double(1)')
 #'         )
 #'     ))
-registerDistributions <- function(distributionsInput) {
+registerDistributions <- function(distributionsInput, userEnv = parent.frame()) {
     if(missing(distributionsInput)) {
         cat("No distribution information supplied.\n")
     } else {
@@ -491,7 +505,7 @@ registerDistributions <- function(distributionsInput) {
 
         if(is.list(distributionsInput)) 
            sapply(distributionsInput, checkDistributionInput)
-        sapply(distributionsInput, checkDistributionFunctions)
+        sapply(distributionsInput, checkDistributionFunctions, userEnv = userEnv)
         if(is.character(distributionsInput)) {
           distributionsInput <- lapply(distributionsInput, prepareDistributionInput)
           names(distributionsInput) <- nms
@@ -586,8 +600,6 @@ getDistributionList <- function(dists) {
 #' @param includeValue a logical indicating whether to return the string 'value', which is the name of the node value
 #'
 #' @author Christopher Paciorek
-#' 
-#' @export
 #' @details
 #' NIMBLE provides various functions to give information about a BUGS distribution. In some cases, functions of the same name and similar functionality operate on the node(s) of a model as well (see \code{help(modelBaseClass)}).
 #' 
