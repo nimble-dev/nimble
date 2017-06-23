@@ -2,11 +2,21 @@ language: r
 sudo: false
 cache: packages
 
+# We parallelize the tests into baches, and only run one batch on OS X.
 matrix:
   include:
     - os: linux
+      env: NIMBLE_TEST_BATCH=1
+    - os: linux
+      env: NIMBLE_TEST_BATCH=2
+    - os: linux
+      env: NIMBLE_TEST_BATCH=3
+    - os: linux
+      env: NIMBLE_TEST_BATCH=4
+    - os: linux
+      env: NIMBLE_TEST_BATCH=5
     - os: osx
-      env: SKIP_EXPENSIVE_TESTS=TRUE
+      env: NIMBLE_TEST_BATCH=1
 
 warnings_are_errors: true
 
@@ -22,6 +32,11 @@ branches:
     - devel
 
 latex: false  # Work around tlmgr issues.
+
+addons:
+  apt:
+    packages:
+      - time  # For /usr/bin/time profiling.
 
 install:
   - Rscript -e "install.packages('igraph', repos = 'http://cran.us.r-project.org')"

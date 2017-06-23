@@ -24,6 +24,7 @@ ENKFFuncVirtual <- nimbleFunctionVirtual(
 
 #  returns mean and cov matrix for MVN data node
 enkfMultFunc = nimbleFunction(
+    name = 'enkfMultFunc',
   contains = ENKFFuncVirtual,
   setup = function(model, thisData){},
   methods = list(
@@ -40,6 +41,7 @@ enkfMultFunc = nimbleFunction(
 
 #  returns mean (as vector) and var (as matrix) for normal data node  
 enkfScalFunc = nimbleFunction(
+    name = 'enkfScalFunc',
   contains = ENKFFuncVirtual,
   setup = function(model, thisData){},
   methods = list(
@@ -66,6 +68,7 @@ enkfScalFunc = nimbleFunction(
 # Does not check to verify this.
 
 ENKFStep <- nimbleFunction(
+    name = 'ENKFStep',
   contains = ENKFStepVirtual,
   setup = function(model, mvSamples, nodes, iNode, xDim, yDim, saveAll, names, silent = FALSE) {
     notFirst <- iNode != 1
@@ -238,6 +241,7 @@ ENKFStep <- nimbleFunction(
 #' }
 #' @export
 buildEnsembleKF <- nimbleFunction(
+    name = 'buildEnsembleKF',
   setup = function(model, nodes, control = list()) {
 
     #control list extraction

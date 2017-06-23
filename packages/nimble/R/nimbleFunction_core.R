@@ -145,28 +145,41 @@ buildDerivMethods <- function(methodsList, enableDerivs) {
 }
 
 ## See https://github.com/nimble-dev/nimble/wiki/Developer-backdoor-to-manually-replace-generated-C
-`specialHandling<-` <- function(nf, value) {
-    if(is.rcf(nf)) {
-        environment(nf)[['.specialHandling']] <- value
-        return(nf)
+`specialHandling<-` <- function(x, value) {
+    if(is.rcf(x)) {
+        environment(x)[['.specialHandling']] <- value
+        return(x)
     }
-    stop('special handling only works for RCfunctions')
+    if(inherits(x, 'modelBaseClass')) {
+        assign('.specialHandling', value, x)
+        return(x)
+    }
+    stop('special handling only works for RCfunctions and models')
 }
 
 specialHandling <- function(nf) {
     if(is.rcf(nf)) {
         return(environment(nf)[['.specialHandling']])
     }
-    stop('special handling only works for RCfunctions')
+    if(inherits(x, 'modelBaseClass')) {
+        return(x$.specialHandling)
+    }
+    stop('special handling only works for RCfunctions and models')
 }
 
-filenameFromSpecialHandling <- function(nf, origFilename) {
-    if(is.rcf(nf)) {
-        SH <- specialHandling(nf)
+filenameFromSpecialHandling <- function(x, jnk) {
+    if(is.rcf(x)) {
+        SH <- specialHandling(x)
         if(is.null(SH)) return(NULL)
         return(SH$filename)
     }
-    stop('special handling only works for RCfunctions')
+    if(inherits(x, 'modelBaseClass')) {
+        if(exists('.specialHandling', envir = x))
+            return(x$.specialHandling)
+        else
+            return(NULL)
+    }
+    NULL
 }
 
 # for now export this as R<3.1.2 give warnings if don't

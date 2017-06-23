@@ -13,6 +13,7 @@ bootStepVirtual <- nimbleFunctionVirtual(
 # uses weights from previous time point to calculate likelihood estimate.
 
 bootFStep <- nimbleFunction(
+    name = 'bootFStep',
   contains = bootStepVirtual,
   setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names, saveAll, smoothing, silent = FALSE) {
     notFirst <- iNode != 1
@@ -179,6 +180,7 @@ bootFStep <- nimbleFunction(
 #' boot_X <- as.matrix(Cmy_BootF$mvEWSamples)
 #' }
 buildBootstrapFilter <- nimbleFunction(
+    name = 'buildBootstrapFilter',
   setup = function(model, nodes, control = list()) {
     
     #control list extraction

@@ -17,6 +17,7 @@ auxFuncVirtual <- nimbleFunctionVirtual(
 )
 
 auxLookFunc = nimbleFunction(
+    name = 'auxLookFunc',
   contains = auxFuncVirtual,
   setup = function(model, node){
   },
@@ -29,6 +30,7 @@ auxLookFunc = nimbleFunction(
 
 
 auxSimFunc = nimbleFunction(
+    name = 'auxSimFunc',
   contains = auxFuncVirtual,
   setup = function(model, node){},
   methods = list(
@@ -38,6 +40,7 @@ auxSimFunc = nimbleFunction(
 )
 
 auxFStep <- nimbleFunction(
+    name = 'auxFStep',
   contains = auxStepVirtual,
   setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names,
                    saveAll, smoothing, lookahead, silent = TRUE) {
@@ -223,6 +226,7 @@ return(0)
 #' hist(as.matrix(Cmy_Auxf$mvEWSamples, 'x'))
 #' }
 buildAuxiliaryFilter <- nimbleFunction(
+    name = 'buildAuxiliaryFilter',
   setup = function(model, nodes, control = list()) {
     
    

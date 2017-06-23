@@ -1414,7 +1414,7 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
         ## construct argList
         for(iRow in iRowRange) {
             currentVertexIDblock <- eval(accessExpr)
-            uniqueCurrentVertexIDs <- unique(currentVertexIDblock)
+            uniqueCurrentVertexIDs <- unique(c(currentVertexIDblock))
             if(length(uniqueCurrentVertexIDs)==1) { ## current block has only 1 ID
                 if( is.na(uniqueCurrentVertexIDs[1]) |      ## It's all unassigned OR
                    currentVertexCounts[ uniqueCurrentVertexIDs[1] ] != length(currentVertexIDblock) ) { ## It does not fully cover  existing vertexID

@@ -16,6 +16,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
                     makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
                     list(
+                        'next' = 'cppOutputNext',
                         eigenCast = 'cppOutputEigenCast',
                         memberData = 'cppOutputMemberData',
                         fill = 'cppOutputEigMemberFunctionNoTranslate',
@@ -86,7 +87,7 @@ nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch','cppLiteral
 
 ## Main function for generating C++ output
 nimGenerateCpp <- function(code, symTab = NULL, indent = '', showBracket = TRUE, asArg = FALSE) {
-    if(is.numeric(code)) return(code)
+    if(is.numeric(code)) return(if(is.nan(code)) "(nimble_NaN())" else code)
     if(is.character(code)) return(paste0('\"', gsub("\\n","\\\\n", code), '\"'))
     if(is.null(code)) return('R_NilValue')
     if(is.logical(code) ) return(if(code) 'true' else 'false')
@@ -121,6 +122,8 @@ exprName2Cpp <- function(code, symTab, asArg = FALSE) {
         return(code$name)
     }
 }
+
+cppOutputNext <- function(code, symTab) 'continue'
 
 cppOutputEigenCast <- function(code, symTab) {
     paste0( '(',nimGenerateCpp(code$args[[1]], symTab), ').cast<', code$args[[2]], '>()')
