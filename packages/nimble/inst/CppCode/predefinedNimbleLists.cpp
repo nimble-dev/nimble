@@ -46,7 +46,7 @@ SEXP EIGEN_EIGENCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
   PROTECT(SptrToSmartPtrBase =
               R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
   PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
-  PROTECT(Sans = allocVector(VECSXP, 2));
+  PROTECT(Sans = Rf_allocVector(VECSXP, 2));
   SET_VECTOR_ELT(Sans, 0, SptrToSmartPtrBase);
   SET_VECTOR_ELT(Sans, 1, SptrToPtr);
   UNPROTECT(3);
@@ -87,7 +87,7 @@ SEXP EIGEN_SVDCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
   PROTECT(SptrToSmartPtrBase =
               R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
   PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
-  PROTECT(Sans = allocVector(VECSXP, 2));
+  PROTECT(Sans = Rf_allocVector(VECSXP, 2));
   SET_VECTOR_ELT(Sans, 0, SptrToSmartPtrBase);
   SET_VECTOR_ELT(Sans, 1, SptrToPtr);
   UNPROTECT(3);
@@ -103,20 +103,20 @@ void OptimResultNimbleList::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_message;
   SEXP S_hessian;
   RObjectPointer = S_nimList_;
-  PROTECT(S_pxData = allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
-  PROTECT(S_par = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                 install("par")));
-  PROTECT(S_value = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                   install("value")));
-  PROTECT(S_counts = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                    install("counts")));
-  PROTECT(S_convergence = findVarInFrame(
-              PROTECT(GET_SLOT(S_nimList_, S_pxData)), install("convergence")));
-  PROTECT(S_message = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                     install("message")));
-  PROTECT(S_hessian = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                     install("hessian")));
+  PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
+  PROTECT(S_par = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                 Rf_install("par")));
+  PROTECT(S_value = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                   Rf_install("value")));
+  PROTECT(S_counts = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                    Rf_install("counts")));
+  PROTECT(S_convergence = Rf_findVarInFrame(
+              PROTECT(GET_SLOT(S_nimList_, S_pxData)), Rf_install("convergence")));
+  PROTECT(S_message = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                     Rf_install("message")));
+  PROTECT(S_hessian = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                     Rf_install("hessian")));
   SEXP_2_NimArr<1>(S_par, par);
   value = SEXP_2_double(S_value);
   SEXP_2_NimArr<1>(S_counts, counts);
@@ -134,25 +134,25 @@ SEXP OptimResultNimbleList::copyToSEXP() {
   SEXP S_message;
   SEXP S_hessian;
   if (!RCopiedFlag) {
-    PROTECT(S_pxData = allocVector(STRSXP, 1));
-    SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
+    PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+    SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
     PROTECT(S_par = NimArr_2_SEXP<1>(par));
     PROTECT(S_value = double_2_SEXP(value));
     PROTECT(S_counts = NimArr_2_SEXP<1>(counts));
     PROTECT(S_convergence = int_2_SEXP(convergence));
     PROTECT(S_message = string_2_STRSEXP(message));
     PROTECT(S_hessian = NimArr_2_SEXP<2>(hessian));
-    defineVar(install("par"), S_par,
+    Rf_defineVar(Rf_install("par"), S_par,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("value"), S_value,
+    Rf_defineVar(Rf_install("value"), S_value,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("counts"), S_counts,
+    Rf_defineVar(Rf_install("counts"), S_counts,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("convergence"), S_convergence,
+    Rf_defineVar(Rf_install("convergence"), S_convergence,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("message"), S_message,
+    Rf_defineVar(Rf_install("message"), S_message,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("hessian"), S_hessian,
+    Rf_defineVar(Rf_install("hessian"), S_hessian,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
     RCopiedFlag = true;
     UNPROTECT(13);
@@ -163,8 +163,8 @@ SEXP OptimResultNimbleList::copyToSEXP() {
 void OptimResultNimbleList::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
-  PROTECT(S_listName = allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, mkChar("OptimResultNimbleList"));
+  PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(S_listName, 0, Rf_mkChar("OptimResultNimbleList"));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
   RObjectPointer = S_newNimList;
   UNPROTECT(2);
@@ -218,7 +218,7 @@ SEXP OptimResultNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
   PROTECT(SptrToSmartPtrBase =
               R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
   PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
-  PROTECT(Sans = allocVector(VECSXP, 2));
+  PROTECT(Sans = Rf_allocVector(VECSXP, 2));
   SET_VECTOR_ELT(Sans, 0, SptrToSmartPtrBase);
   SET_VECTOR_ELT(Sans, 1, SptrToPtr);
   UNPROTECT(3);
@@ -245,42 +245,42 @@ void OptimControlNimbleList::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_temp;
   SEXP S_tmax;
   RObjectPointer = S_nimList_;
-  PROTECT(S_pxData = allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
-  PROTECT(S_trace = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                   install("trace")));
-  PROTECT(S_fnscale = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                     install("fnscale")));
-  PROTECT(S_parscale = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                      install("parscale")));
-  PROTECT(S_ndeps = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                   install("ndeps")));
-  PROTECT(S_maxit = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                   install("maxit")));
-  PROTECT(S_abstol = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                    install("abstol")));
-  PROTECT(S_reltol = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                    install("reltol")));
-  PROTECT(S_alpha = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                   install("alpha")));
-  PROTECT(S_beta = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                  install("beta")));
-  PROTECT(S_gamma = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                   install("gamma")));
-  PROTECT(S_REPORT = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                    install("REPORT")));
-  PROTECT(S_type = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                  install("type")));
-  PROTECT(S_lmm = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                 install("lmm")));
-  PROTECT(S_factr = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                   install("factr")));
-  PROTECT(S_pgtol = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                   install("pgtol")));
-  PROTECT(S_temp = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                  install("temp")));
-  PROTECT(S_tmax = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                  install("tmax")));
+  PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
+  PROTECT(S_trace = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                   Rf_install("trace")));
+  PROTECT(S_fnscale = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                     Rf_install("fnscale")));
+  PROTECT(S_parscale = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                      Rf_install("parscale")));
+  PROTECT(S_ndeps = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                   Rf_install("ndeps")));
+  PROTECT(S_maxit = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                   Rf_install("maxit")));
+  PROTECT(S_abstol = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                    Rf_install("abstol")));
+  PROTECT(S_reltol = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                    Rf_install("reltol")));
+  PROTECT(S_alpha = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                   Rf_install("alpha")));
+  PROTECT(S_beta = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                  Rf_install("beta")));
+  PROTECT(S_gamma = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                   Rf_install("gamma")));
+  PROTECT(S_REPORT = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                    Rf_install("REPORT")));
+  PROTECT(S_type = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                  Rf_install("type")));
+  PROTECT(S_lmm = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                 Rf_install("lmm")));
+  PROTECT(S_factr = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                   Rf_install("factr")));
+  PROTECT(S_pgtol = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                   Rf_install("pgtol")));
+  PROTECT(S_temp = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                  Rf_install("temp")));
+  PROTECT(S_tmax = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                  Rf_install("tmax")));
   trace = SEXP_2_int(S_trace);
   fnscale = SEXP_2_double(S_fnscale);
   SEXP_2_NimArr<1>(S_parscale, parscale);
@@ -320,8 +320,8 @@ SEXP OptimControlNimbleList::copyToSEXP() {
   SEXP S_temp;
   SEXP S_tmax;
   if (!RCopiedFlag) {
-    PROTECT(S_pxData = allocVector(STRSXP, 1));
-    SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
+    PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+    SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
     PROTECT(S_trace = int_2_SEXP(trace));
     PROTECT(S_fnscale = double_2_SEXP(fnscale));
     PROTECT(S_parscale = NimArr_2_SEXP<1>(parscale));
@@ -339,39 +339,39 @@ SEXP OptimControlNimbleList::copyToSEXP() {
     PROTECT(S_pgtol = double_2_SEXP(pgtol));
     PROTECT(S_temp = double_2_SEXP(temp));
     PROTECT(S_tmax = int_2_SEXP(tmax));
-    defineVar(install("trace"), S_trace,
+    Rf_defineVar(Rf_install("trace"), S_trace,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("fnscale"), S_fnscale,
+    Rf_defineVar(Rf_install("fnscale"), S_fnscale,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("parscale"), S_parscale,
+    Rf_defineVar(Rf_install("parscale"), S_parscale,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("ndeps"), S_ndeps,
+    Rf_defineVar(Rf_install("ndeps"), S_ndeps,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("maxit"), S_maxit,
+    Rf_defineVar(Rf_install("maxit"), S_maxit,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("abstol"), S_abstol,
+    Rf_defineVar(Rf_install("abstol"), S_abstol,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("reltol"), S_reltol,
+    Rf_defineVar(Rf_install("reltol"), S_reltol,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("alpha"), S_alpha,
+    Rf_defineVar(Rf_install("alpha"), S_alpha,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("beta"), S_beta,
+    Rf_defineVar(Rf_install("beta"), S_beta,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("gamma"), S_gamma,
+    Rf_defineVar(Rf_install("gamma"), S_gamma,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("REPORT"), S_REPORT,
+    Rf_defineVar(Rf_install("REPORT"), S_REPORT,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("type"), S_type,
+    Rf_defineVar(Rf_install("type"), S_type,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("lmm"), S_lmm,
+    Rf_defineVar(Rf_install("lmm"), S_lmm,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("factr"), S_factr,
+    Rf_defineVar(Rf_install("factr"), S_factr,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("pgtol"), S_pgtol,
+    Rf_defineVar(Rf_install("pgtol"), S_pgtol,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("temp"), S_temp,
+    Rf_defineVar(Rf_install("temp"), S_temp,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("tmax"), S_tmax,
+    Rf_defineVar(Rf_install("tmax"), S_tmax,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
     RCopiedFlag = true;
     UNPROTECT(35);
@@ -381,8 +381,8 @@ SEXP OptimControlNimbleList::copyToSEXP() {
 void OptimControlNimbleList::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
-  PROTECT(S_listName = allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, mkChar("OptimControlNimbleList"));
+  PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(S_listName, 0, Rf_mkChar("OptimControlNimbleList"));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
   RObjectPointer = S_newNimList;
   UNPROTECT(2);
@@ -447,7 +447,7 @@ SEXP OptimControlNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
   PROTECT(SptrToSmartPtrBase =
               R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
   PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
-  PROTECT(Sans = allocVector(VECSXP, 2));
+  PROTECT(Sans = Rf_allocVector(VECSXP, 2));
   SET_VECTOR_ELT(Sans, 0, SptrToSmartPtrBase);
   SET_VECTOR_ELT(Sans, 1, SptrToPtr);
   UNPROTECT(3);
@@ -461,16 +461,16 @@ void NIMBLE_ADCLASS::copyFromSEXP(SEXP S_nimList_) {
   SEXP S_hessian;
   SEXP S_thirdDerivs;
   RObjectPointer = S_nimList_;
-  PROTECT(S_pxData = allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
-  PROTECT(S_value = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                   install("value")));
-  PROTECT(S_gradient = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                      install("gradient")));
-  PROTECT(S_hessian = findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-                                     install("hessian")));
-  PROTECT(S_thirdDerivs = findVarInFrame(
-              PROTECT(GET_SLOT(S_nimList_, S_pxData)), install("thirdDerivs")));
+  PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
+  PROTECT(S_value = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                   Rf_install("value")));
+  PROTECT(S_gradient = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                      Rf_install("gradient")));
+  PROTECT(S_hessian = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+                                     Rf_install("hessian")));
+  PROTECT(S_thirdDerivs = Rf_findVarInFrame(
+              PROTECT(GET_SLOT(S_nimList_, S_pxData)), Rf_install("thirdDerivs")));
   SEXP_2_NimArr<1>(S_value, value);
   SEXP_2_NimArr<2>(S_gradient, gradient);
   SEXP_2_NimArr<3>(S_hessian, hessian);
@@ -484,19 +484,19 @@ SEXP NIMBLE_ADCLASS::copyToSEXP() {
   SEXP S_hessian;
   SEXP S_thirdDerivs;
   if (!RCopiedFlag) {
-    PROTECT(S_pxData = allocVector(STRSXP, 1));
-    SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
+    PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+    SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
     PROTECT(S_value = NimArr_2_SEXP<1>(value));
     PROTECT(S_gradient = NimArr_2_SEXP<2>(gradient));
     PROTECT(S_hessian = NimArr_2_SEXP<3>(hessian));
     PROTECT(S_thirdDerivs = NimArr_2_SEXP<4>(thirdDerivs));
-    defineVar(install("value"), S_value,
+    Rf_defineVar(Rf_install("value"), S_value,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("gradient"), S_gradient,
+    Rf_defineVar(Rf_install("gradient"), S_gradient,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("hessian"), S_hessian,
+    Rf_defineVar(Rf_install("hessian"), S_hessian,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
-    defineVar(install("thirdDerivs"), S_thirdDerivs,
+    Rf_defineVar(Rf_install("thirdDerivs"), S_thirdDerivs,
               PROTECT(GET_SLOT(RObjectPointer, S_pxData)));
     RCopiedFlag = true;
     UNPROTECT(9);
@@ -506,8 +506,8 @@ SEXP NIMBLE_ADCLASS::copyToSEXP() {
 void NIMBLE_ADCLASS::createNewSEXP() {
   SEXP S_newNimList;
   SEXP S_listName;
-  PROTECT(S_listName = allocVector(STRSXP, 1));
-  SET_STRING_ELT(S_listName, 0, mkChar("NIMBLE_ADCLASS"));
+  PROTECT(S_listName = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(S_listName, 0, Rf_mkChar("NIMBLE_ADCLASS"));
   PROTECT(S_newNimList = makeNewNimbleList(S_listName));
   RObjectPointer = S_newNimList;
   UNPROTECT(2);
@@ -558,7 +558,7 @@ SEXP NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input) {
   PROTECT(SptrToSmartPtrBase =
               R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));
   PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));
-  PROTECT(Sans = allocVector(VECSXP, 2));
+  PROTECT(Sans = Rf_allocVector(VECSXP, 2));
   SET_VECTOR_ELT(Sans, 0, SptrToSmartPtrBase);
   SET_VECTOR_ELT(Sans, 1, SptrToPtr);
   UNPROTECT(3);

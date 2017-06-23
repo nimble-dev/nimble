@@ -386,7 +386,7 @@ SEXP C_dinvwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_l
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(chol) || !isReal(df) || !isReal(scale_param) || !isLogical(return_log))
+  if(!Rf_isReal(x) || !Rf_isReal(chol) || !Rf_isReal(df) || !Rf_isReal(scale_param) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dinvwish_chol): invalid input type for one of the arguments.\n");
   int p = pow(LENGTH(chol), 0.5);
   int give_log = (int) LOGICAL(return_log)[0];
@@ -400,7 +400,7 @@ SEXP C_dinvwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_l
     RBREAK("Error (C_dinvwish_chol): inconsistent degrees of freedom and dimension.\n");
   
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, 1));  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
   REAL(ans)[0] = dinvwish_chol(c_x, c_chol, c_df, p, scale, give_log, 0); 
   UNPROTECT(1);
   return ans;
@@ -491,7 +491,7 @@ SEXP C_rinvwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(chol) || !isReal(df) || !isReal(scale_param))
+  if(!Rf_isReal(chol) || !Rf_isReal(df) || !Rf_isReal(scale_param))
     RBREAK("Error (C_rinvwish_chol): invalid input type for one of the arguments.\n");
   int n_chol = LENGTH(chol);
   int p = pow(n_chol, 0.5);
@@ -506,7 +506,7 @@ SEXP C_rinvwish_chol(SEXP chol, SEXP df, SEXP scale_param)
   GetRNGstate(); 
 
   SEXP ans;
-  PROTECT(ans = allocVector(REALSXP, n_chol));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_chol));  
   rinvwish_chol(REAL(ans), c_chol, c_df, p, scale, 0); 
   
   PutRNGstate();
@@ -1816,7 +1816,7 @@ double rsqrtinvgamma(double shape, double rate)
 }
 
 SEXP C_dsqrtinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
-  if(!isReal(x) || !isReal(shape) || !isReal(rate) || !isLogical(return_log)) 
+  if(!Rf_isReal(x) || !Rf_isReal(shape) || !Rf_isReal(rate) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_dsqrtinvgamma): invalid input type for one of the arguments.");
   int n_x = LENGTH(x);
   int n_shape = LENGTH(shape);
@@ -1828,7 +1828,7 @@ SEXP C_dsqrtinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
     return x;
   }
     
-  PROTECT(ans = allocVector(REALSXP, n_x));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
   double* c_x = REAL(x);
   double* c_shape = REAL(shape);
   double* c_rate = REAL(rate);
@@ -1854,7 +1854,7 @@ SEXP C_dsqrtinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
 }
   
 SEXP C_rsqrtinvgamma(SEXP n, SEXP shape, SEXP rate) {
-  if(!isInteger(n) || !isReal(shape) || !isReal(rate))
+  if(!Rf_isInteger(n) || !Rf_isReal(shape) || !Rf_isReal(rate))
     RBREAK("Error (C_rsqrtinvgamma): invalid input type for one of the arguments.");
   int n_shape = LENGTH(shape);
   int n_rate = LENGTH(rate);
@@ -1862,7 +1862,7 @@ SEXP C_rsqrtinvgamma(SEXP n, SEXP shape, SEXP rate) {
   SEXP ans;
     
   if(n_values == 0) {
-    PROTECT(ans = allocVector(REALSXP, 0));
+    PROTECT(ans = Rf_allocVector(REALSXP, 0));
     UNPROTECT(1);
     return ans;
   }
@@ -1872,7 +1872,7 @@ SEXP C_rsqrtinvgamma(SEXP n, SEXP shape, SEXP rate) {
     
   GetRNGstate(); 
     
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
   double* c_shape = REAL(shape);
   double* c_rate = REAL(rate);
   if(n_rate == 1 && n_shape == 1 && n_rate == 1) {

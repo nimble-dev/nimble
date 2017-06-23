@@ -192,7 +192,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         listElementTable$addSymbol(cppSEXP(name = "S_listName"))
                                       
                                         newListLine[[1]] <- substitute({PROTECT(S_listName <- Rf_allocVector(STRSXP, 1));
-                                          SET_STRING_ELT(S_listName, 0, mkChar(LISTNAME));}, 
+                                          SET_STRING_ELT(S_listName, 0, Rf_mkChar(LISTNAME));}, 
                                           list(LISTNAME = nimCompProc$nimbleListObj$className))
                                         newListLine[[2]] <- substitute(PROTECT(S_newNimList <- makeNewNimbleList(S_listName)),
                                                                            list())
@@ -224,7 +224,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
                                         envLine <- substitute({PROTECT(ENVNAME <- Rf_allocVector(STRSXP, 1));
-                                          SET_STRING_ELT(ENVNAME, 0, mkChar(".xData"));}, 
+                                          SET_STRING_ELT(ENVNAME, 0, Rf_mkChar(".xData"));}, 
                                           list(ENVNAME = as.name(environmentCPPName)))
                                         
                                         for(i in seq_along(elementNames)){
@@ -234,7 +234,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           conditionalLineList <- c(conditionalLineList, generateConditionalLines(nimCompProc$symTab$getSymbolObject(elementNames[i]),
                                                                                                                  listElementTable$getSymbolObject(Snames[i])))
                                           
-                                          copyToListLines[[i]] <- substitute(defineVar(install(ELEMENTNAME), VALUE, PROTECT(GET_SLOT(ROBJ, XDATA))),
+                                          copyToListLines[[i]] <- substitute(Rf_defineVar(Rf_install(ELEMENTNAME), VALUE, PROTECT(GET_SLOT(ROBJ, XDATA))),
                                                                              list(ELEMENTNAME = elementNames[i], VALUE = as.name(Snames[i]),
                                                                                   ROBJ = as.name('RObjectPointer'),
                                                                                   XDATA = as.name(environmentCPPName)))
@@ -272,13 +272,13 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
                                         envLine <- substitute({PROTECT(ENVNAME <- Rf_allocVector(STRSXP, 1));
-                                          SET_STRING_ELT(ENVNAME, 0, mkChar(".xData"));}, 
+                                          SET_STRING_ELT(ENVNAME, 0, Rf_mkChar(".xData"));}, 
                                           list(ENVNAME = as.name(environmentCPPName)))
 
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
-                                            copyFromListLines[[i]] <- substitute(PROTECT(SVAR <- findVarInFrame(PROTECT(GET_SLOT(S_nimList_, XDATA)), install(ARGNAME))),
+                                            copyFromListLines[[i]] <- substitute(PROTECT(SVAR <- Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, XDATA)), Rf_install(ARGNAME))),
                                                                                list(ARGNAME = argNames[i], 
                                                                                     SVAR = as.name(Snames[i]),
                                                                                     XDATA = as.name(environmentCPPName)))

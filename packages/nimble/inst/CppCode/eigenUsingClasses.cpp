@@ -7,7 +7,7 @@
 
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
-  NIM_ASSERT(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
+  NIM_ASSERT2(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
     "SEXP_2_NimArr<1, double> called for SEXP that is not a numeric or logical: actual type %s\n",
     Rf_type2str(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
@@ -16,7 +16,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
   if(Rf_isReal(Sn)) {
      std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());
   } else {
-    NIM_ASSERT(Rf_isInteger(Sn) || Rf_isLogical(Sn),
+    NIM_ASSERT2(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input of type %s to SEXP_2_NimArr<1, double>\n",
       Rf_type2str(TYPEOF(Sn)));
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
@@ -29,7 +29,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
 // Actually this is identical to above so could be done without specialization
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
-  NIM_ASSERT(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
+  NIM_ASSERT2(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
     "SEXP_2_NimArr<1, int> called for SEXP that is not a numeric or logical: actual type %s\n",
     Rf_type2str(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
@@ -38,7 +38,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
   if(Rf_isReal(Sn)) {
      std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());
   } else {
-    NIM_ASSERT(Rf_isInteger(Sn) || Rf_isLogical(Sn),
+    NIM_ASSERT2(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input of type %s to SEXP_2_NimArr<1, int>\n",
       Rf_type2str(TYPEOF(Sn)));
     int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
