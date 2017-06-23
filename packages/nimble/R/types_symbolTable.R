@@ -260,10 +260,18 @@ symbolBasic <-
                         else warning(paste("in genCppVar method for",name,"in symbolBasic class, type", type,"unrecognized\n"), FALSE)
                         
                         if(nDim == 0) {
-                            return(cppVar(baseType = cType,
-                                          name = name,
-                                          ptr = 0,
-                                          ref = FALSE))
+                            return(if(name != "pi")
+                                       cppVar(baseType = cType,
+                                              name = name,
+                                              ptr = 0,
+                                              ref = FALSE)
+                                   else
+                                       cppVarFull(baseType = cType,
+                                                  name = name,
+                                                  ptr = 0,
+                                                  ref = FALSE,
+                                                  constructor = "(M_PI)")
+                                       )
                         }
                         if(functionArg) {
                             return(cppNimArr(name = name,

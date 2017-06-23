@@ -237,26 +237,29 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.
                                        compileInfo$typeEnv[['nameSubList']] <<- nameSubList
-                                       
-                                       ## This attempts to prevent the traceback from being hidden by multiple layers of error trapping.
-                                       ## A better solution might be to avoid layered trapping so that options(error = recover) could function.
-                                       tryCatch(withCallingHandlers(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv),
-                                                                    error = function(e) {
-                                                                        stack <- sapply(sys.calls(), deparse)
-                                                                        .GlobalEnv$.nimble.traceback <- capture.output(traceback(stack))
-                                                                    }),
-                                                error = function(e) {
-                                                    eMessage <- if(!is.null(e$message)) paste0(as.character(e$message),"\n") else ""
-                                                    message <- paste(eMessage, 'There was some problem in the the setSizes processing step for this code:',
-                                                                     paste(deparse(compileInfo$origRcode), collapse = '\n'))
-                                                    if(getNimbleOption('verboseErrors')) {
-                                                        message <- paste(message,
-                                                                         'Internal Error:', e,
-                                                                         'Traceback:', paste0(.GlobalEnv$.nimble.traceback, collapse = '\n'),
-                                                                         sep = '\n')
-                                                    }
-                                                    stop(message, call. = FALSE)
-                                                })
+
+                                       ## exprClasses_setSizes contains lots of reticulated error trapping.
+                                       ## If options('error') is not NULL (typically options(error = recover)), let that take precedent for error trapping of exprClasses_setSizes.
+                                       ## Otherwise, wrap the setSizes call in our own error-trapping that outputs: any local message from a stop() inside a size handler,
+                                       ##    a message from here showing the larger block of code in which the error occurred, and, if nimbleOptions('verboseErrors') is TRUE, the call stack. 
+                                       if(!is.null(options('error'))) exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
+                                       else tryCatch(withCallingHandlers(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv),
+                                                                         error = function(e) {
+                                                                             stack <- sapply(sys.calls(), deparse)
+                                                                             .GlobalEnv$.nimble.traceback <- capture.output(traceback(stack))
+                                                                         }),
+                                                     error = function(e) {
+                                                         eMessage <- if(!is.null(e$message)) paste0(as.character(e$message),"\n") else ""
+                                                         message <- paste(eMessage, 'There was some problem in the the setSizes processing step for this code:',
+                                                                          paste(deparse(compileInfo$origRcode), collapse = '\n'))
+                                                         if(getNimbleOption('verboseErrors')) {
+                                                             message <- paste(message,
+                                                                              'Internal Error:', e,
+                                                                              'Traceback:', paste0(.GlobalEnv$.nimble.traceback, collapse = '\n'),
+                                                                              sep = '\n')
+                                                         }
+                                                         stop(message, call. = FALSE)
+                                                     })
                                        neededRCfuns <<- c(neededRCfuns, compileInfo$typeEnv[['neededRCfuns']])
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showType = TRUE) -- broken')
