@@ -83,6 +83,7 @@ CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList,
 
 ## helper to calculate number of islands -- recursive version, won't compile
 ##CAR_markVisited <- nimbleFunction(
+##    name = 'CAR_markVisited',
 ##    run = function(adj = double(1), num = double(1), visited = double(1), index = double()) {
 ##        if(visited[index] == 0) {
 ##            visited[index] <- 1
@@ -105,6 +106,7 @@ CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList,
 ##
 #### calculate number of islands -- recursive version, won't compile
 ##CAR_calcNumIslands <- nimbleFunction(
+##    name = 'CAR_calcNumIslands',
 ##    run = function(adj = double(1), num = double(1)) {
 ##        N <- dim(num)[1]
 ##        numIslands <- 0
@@ -125,6 +127,7 @@ CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList,
 ## calculate number of islands
 ## non-recursive nimbleFunction version
 CAR_calcNumIslands <- nimbleFunction(
+    name = 'CAR_calcNumIslands',
     run = function(adj = double(1), num = double(1)) {
         N <- dim(num)[1]
         numIslands <- 0
@@ -186,6 +189,7 @@ CAR_processParams <- function(model, target, adj, weights, num) {
 ## evaluates the conditional density of scalar components of dcar_normal() nodes:
 ## p(x_i | x_-i, tau), where x[1:N] ~ dcar_normal()
 CAR_evaluateDensity <- nimbleFunction(
+    name = 'CAR_evaluateDensity',
     setup = function(model, targetScalar, neighborNodes, neighborWeights) {
         targetDCAR <- model$expandNodeNames(targetScalar)
         island <- length(neighborNodes)==0

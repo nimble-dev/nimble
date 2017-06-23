@@ -1354,6 +1354,7 @@ sampler_RW_dirichlet <- nimbleFunction(
 ## posterior predictive sampler for scalar components of dcar_normal() nodes,
 ## i.e. those scalar components which have no stochastic dependencies
 CAR_scalar_postPred <- nimbleFunction(
+    name = 'CAR_scalar_postPred',
     contains = sampler_BASE,
     setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
         ## node list generation
@@ -1388,6 +1389,7 @@ CAR_scalar_postPred <- nimbleFunction(
 ## dnorm-dnorm conjugate sampler for scalar components of dcar_normal() nodes,
 ## i.e. those scalar components which only have dnorm() dependencies
 CAR_scalar_conjugate <- nimbleFunction(
+    name = 'CAR_scalar_conjugate',
     contains = sampler_BASE,
     setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
         ## node list generation
@@ -1458,6 +1460,7 @@ CAR_scalar_conjugate <- nimbleFunction(
 
 ## RW sampler for non-conjugate scalar components of dcar_normal() nodes
 CAR_scalar_RW <- nimbleFunction(
+    name = 'CAR_scalar_RW',
     contains = sampler_BASE,
     setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights, control) {
         ## control list extraction
@@ -1529,6 +1532,7 @@ CAR_scalar_RW <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_CAR_normal <- nimbleFunction(
+    name = 'sampler_CAR_normal',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
