@@ -880,7 +880,7 @@ dcar_normal <- function(x, adj, weights, num, tau, numIslands, sumToZero, log = 
     ##if(log) return(lp)
     ##return(exp(lp))
     ##
-    .Call('C_dcar_normal', as.double(x), as.double(adj), as.double(weights), as.double(num), as.double(tau), as.double(numIslands), as.double(sumToZero), as.logical(log))
+    .Call(C_dcar_normal, as.double(x), as.double(adj), as.double(weights), as.double(num), as.double(tau), as.double(numIslands), as.double(sumToZero), as.logical(log))
 }
 
 #' @rdname CAR-Normal
