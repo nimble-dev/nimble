@@ -3,21 +3,32 @@
 # This script is used to generate the C++ predefinedNimbleList.* files in nimble/inst.
 # You should run this script if you make changes to the internal representation of nimbleLists
 # or if you add a new predefined nimbleList type (i.e. with predefined = TRUE).
-#
-# Directions:
-# 1. Install clang-format.
-#    Ubuntu: sudo apt-get install clang-format
-#    OS X: brew install clang-format
-#    Windows: Download from http://llvm.org/builds
-# 2. Temporarily set GENERATE_STATIC_CODE = TRUE in the nimbleList function
-#    in nimbleList_core.R, and reinstall nimble.
-# 3. Run this script.
-# 4. Review changes this script has made to the predefinedNimbleLists.* files.
-# 5. Revert the temporary change to GENERATE_STATIC_CODE from step 2, and reinstall nimble.
+ 
+directions <- 'Directions:
+1. Install clang-format.
+   Ubuntu: sudo apt-get install clang-format
+   OS X: brew install clang-format
+   Windows: Download from http://llvm.org/builds
+2. Temporarily set GENERATE_STATIC_CODE <- TRUE in the nimbleList function
+   in nimbleList_core.R, and reinstall nimble.
+3. Run this script.
+4. Review changes this script has made to the predefinedNimbleLists.* files.
+5. Revert the temporary change to GENERATE_STATIC_CODE from step 2,
+   and reinstall nimble.
+'
 
 library(methods)
-library(nimble)
-library(methods)
+suppressPackageStartupMessages(library(nimble))
+
+# Warn user if script is being used incorrectly.
+(function(){
+    con <- file(file.path('nimble', 'R', 'nimbleList_core.R'))
+    lines <- readLines(con)
+    close(con)
+    if (sum(grep('GENERATE_STATIC_CODE <- TRUE', lines)) == 0) {
+        stop(directions, call. = FALSE)
+    }
+})()
 
 # This finds the latest generated .h and .cpp files.
 findGeneratedSources <- function() {
