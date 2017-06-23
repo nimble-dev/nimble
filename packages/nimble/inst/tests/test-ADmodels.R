@@ -30,7 +30,8 @@ test_that('Derivatives of model$calculate work for nimbleModel with scalar nodes
             rDerivs_chainRule <- nimDerivs(calculate(ADMod1, ADMod1$getDependencies('a')), wrtPars = 'a')
             expect_equal(rDerivs$value, rDerivs_chainRule$value)
             expect_equal(rDerivs$gradient, rDerivs_chainRule$gradient)
-            }
+            expect_equal(rDerivs$hessian, rDerivs_chainRule$hessian, tolerance = .00001)
+          }
 )
 
 test_that('Derivatives of model$calculate work for nimbleModel with multivariate nodes.',
@@ -62,9 +63,41 @@ test_that('Derivatives of model$calculate work for nimbleModel with multivariate
               return(outVal)
             }
             rDerivs <- nimDerivs(testFxn(a = c(2.1, 1.2), b = c(1, 2)))
+            
             rDerivs_chainRule <- nimDerivs(calculate(ADMod2, ADMod2$getDependencies('b')), wrtPars = c('a','b'))
             expect_equal(rDerivs$value, rDerivs_chainRule$value)
             expect_equal(rDerivs$gradient, rDerivs_chainRule$gradient)
+            expect_equal(rDerivs$hessian, rDerivs_chainRule$hessian, tolerance = .00001)
+            
+            
+            ADCode2 <- nimbleCode({
+              a[1] ~ dnorm(b[1], 1)
+              # c[1:2] <- b[1:2] + c(1,1)
+              b[1] ~ dnorm(1, 1)
+              # b[2] ~ dnorm(1, 1)
+            })
+            ADMod2 <- nimbleModel(
+              code = ADCode2, dimensions = list(a = 1, b = 1, c = 2), constants = list(diagMat = diag(2)),
+              inits = list(a = c(2.1), b  = c(1)))
+            
+            
+            testFxn <- function(a, b){
+              origa <- ADMod2$a
+              ADMod2$a <- a
+              origb <- ADMod2$b
+              ADMod2$b <- b
+              ADMod2$calculate(ADMod2$getDependencies('b'))
+              outVal <- calculate(ADMod2, 'a')
+              ADMod2$b <- origb
+              ADMod2$a <- origa
+              return(outVal)
+            }
+            rDerivs <- nimDerivs(testFxn(a = c(2.1), b = c(1)))
+            
+            rDerivs_chainRule <- nimDerivs(calculate(ADMod2, 'a'), wrtPars = c('a','b'))
+            expect_equal(rDerivs$value, rDerivs_chainRule$value)
+            expect_equal(rDerivs$gradient, rDerivs_chainRule$gradient)
+            expect_equal(rDerivs$hessian, rDerivs_chainRule$hessian, tolerance = .00001)
           }
 )
 
@@ -104,6 +137,7 @@ test_that('Derivatives of model$calculate work for nimbleModel with a for loop.'
             rDerivs_chainRule <- nimDerivs(calculate(ADMod3, ADMod3$getDependencies(c('mu', 'sigma'))), wrtPars = c('mu', 'sigma'))
             expect_equal(rDerivs$value, rDerivs_chainRule$value)
             expect_equal(rDerivs$gradient, rDerivs_chainRule$gradient)
+            expect_equal(rDerivs$hessian, rDerivs_chainRule$hessian, tolerance = .00001)
           }
 )
 
