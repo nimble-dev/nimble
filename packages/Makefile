@@ -21,7 +21,7 @@ check: build FORCE
 	R CMD check --as-cran nimble_$(VERSION).tar.gz
 
 test: FORCE
-	cd .. ; ./run_tests.R --parallel
+	cd .. ; ./run_tests.R
 
 # We are progressively delegating style to clang-format.
 # Some older C++ files are still styled manually.
