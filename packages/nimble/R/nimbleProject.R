@@ -1098,7 +1098,8 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     ## 2. Get project or make new project
     if(missing(project)) {
         if(reset) warning("reset = TRUE but no project was provided.  If you are trying to re-compiled something into the same project, give it as the project argument as well as a compilation item. For example, 'compileNimble(myFunction, project = myFunction, reset = TRUE)'")
-        project <- nimbleProjectClass(dirName, name = projectName)
+        if(!is.null(nimbleOptions()$nimbleProject)) project <- nimbleOptions()$nimbleProject
+        else project <- nimbleProjectClass(dirName, name = projectName)
     } else {
         project <- getNimbleProject(project, TRUE)
         if(!inherits(project, 'nimbleProjectClass'))

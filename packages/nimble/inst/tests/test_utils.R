@@ -15,7 +15,7 @@ RUN_FAILING_TESTS <- (nchar(Sys.getenv('RUN_FAILING_TESTS')) != 0)
 ## paths with spaces ok.
 system.in.dir <- function(cmd, dir = '.') {
     curDir <- getwd()
-    on.exit(setwd(curDir))
+    on.exit(setwd(curDir), add = TRUE)
     setwd(dir)
     if(.Platform$OS.type == "windows")
         shell(shQuote(cmd))
@@ -28,7 +28,33 @@ temporarilyAssignInGlobalEnv <- function(value) {
     name <- deparse(substitute(value))
     assign(name, value, envir = .GlobalEnv)
     rmCommand <- substitute(remove(name, envir = .GlobalEnv))
-    do.call('on.exit', list(rmCommand), envir = parent.frame())
+    do.call('on.exit', list(rmCommand, add = TRUE), envir = parent.frame())
+}
+
+withTempProject <- function(code) {
+    code <- substitute(code)
+    project <- nimble:::nimbleProjectClass()
+    nimbleOptions(nimbleProjectForTesting = project)
+    on.exit({
+        ## messages are suppressed by test_that, so "assign('.check', 1, globalenv())" can be used as a way to verify this code was called
+        .project <- nimbleOptions('nimbleProjectForTesting')
+        nimbleOptions(nimbleProject = NULL) ## clear this before clearCompiled step, in case clearCompiled() itself fails
+        .project$clearCompiled()
+    }, add = TRUE)
+    eval(code)
+}
+
+expect_compiles <- function(..., info = NULL) {
+    oldSCBL <- nimbleOptions('stopCompilationBeforeLinking')
+    nimbleOptions(stopCompilationBeforeLinking = TRUE)
+    nimbleOptions(forceO1 = TRUE)
+    on.exit({
+        assign('.check', 1, globalenv())
+        nimbleOptions(stopCompilationBeforeLinking = oldSCBL)
+        nimbleOptions(forceO1 = FALSE)
+    }, add = TRUE)
+    ans <- try(compileNimble(...)) ## expecting a thrown error
+    expect_identical(as.character(ans), 'Error : safely stopping before linking\n', info = info)
 }
 
 gen_runFunCore <- function(input) {
