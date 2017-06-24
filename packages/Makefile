@@ -1,14 +1,44 @@
-build: nimble/configure
-	@echo "Building nimble package in this directory"
-	(R CMD build nimble)
+.PHONY: FORCE
+
+VERSION=$(shell grep Version: nimble/DESCRIPTION | grep -o '[^ ]*$$')
+
+version: FORCE
+	@echo $(VERSION)
 
 configure: nimble/configure.ac
 	(cd nimble; autoconf)
 
-clang-format:
+nimble_$(VERSION).tar.gz: nimble/configure FORCE
+	@echo "Building nimble package in this directory"
+	(R CMD build nimble)
+
+build: nimble_$(VERSION).tar.gz
+
+install: nimble_$(VERSION).tar.gz
+	R CMD INSTALL nimble_$(VERSION).tar.gz
+
+check: build FORCE
+	R CMD check --as-cran nimble_$(VERSION).tar.gz
+
+test: FORCE
+	cd .. ; ./run_tests.R
+
+# We are progressively delegating style to clang-format.
+# Some older C++ files are still styled manually.
+clang-format: FORCE
 	clang-format -style=file \
 	  nimble/inst/include/nimble/NimArrBase.h \
 	  nimble/inst/include/nimble/NimArr.h \
 	  nimble/inst/include/nimble/predefinedNimbleLists.h \
 	  nimble/inst/CppCode/predefinedNimbleLists.cpp \
 	  -i
+
+# Keeps .Rproj.user/ and .Rhistory.
+clean: FORCE
+	git clean -dfx -e .R*
+
+mrproper: FORCE
+	git clean -dfx
+
+FORCE:
+
