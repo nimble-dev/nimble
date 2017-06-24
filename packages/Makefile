@@ -8,6 +8,10 @@ version: FORCE
 configure: nimble/configure.ac
 	(cd nimble; autoconf)
 
+# this rebuilds Rd files in man/ and rebuilds NAMESPACE
+man: FORCE
+	./prep_pkg.R
+
 nimble_$(VERSION).tar.gz: nimble/configure FORCE
 	@echo "Building nimble package in this directory"
 	(R CMD build nimble)
@@ -19,6 +23,9 @@ install: nimble_$(VERSION).tar.gz
 
 check: build FORCE
 	R CMD check --as-cran nimble_$(VERSION).tar.gz
+
+rhub: build FORCE
+	Rscript -e "library(rhub); check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))"
 
 test: FORCE
 	cd .. ; ./run_tests.R
