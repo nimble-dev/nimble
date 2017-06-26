@@ -35,7 +35,6 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         checkNimbleFunction = TRUE,
         verbose = TRUE,
         verboseErrors = FALSE,
-        useTensorflow = FALSE,
 
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
         ## if this option is changed, then congugate sampler functions can be rebuilt using:

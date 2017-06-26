@@ -69,19 +69,23 @@ TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
 }
 
 makeTFsetupExprs <- function(TFcontent, TFrunnerName) {
+    ## This uses the prefix NimTf_ so that we can assume that internal
+    ## symbols conflict with say a method written by a user during
+    ## generateCpp step (which operates by names only, not smart lookup
+    ## in classes etc).
     setupExprs <- list()
-    ## I believe the initialize will already be there
     for(v in TFcontent$inputNames) {
-        ## suggest a name like TFsetInput_ instead of setInput so that
-        ## we can assume it will never appear from user coding and hence we do not need to mangle and unmangle it to avoid
-        ## aliasing with say a method written by a user during generateCpp step (which operates by names only, not smart lookup in classes etc.)
         setupExprs[[ length(setupExprs) + 1]] <-
-            RparseTree2ExprClasses(substitute(TFsetInput_(TFRN, V), list(TFRN = as.name(TFrunnerName), V = as.name(v))))
+            RparseTree2ExprClasses(substitute(cppMemberFunction(NimTf_setInput(TFRN, V)),
+                                              list(TFRN = as.name(TFrunnerName), V = as.name(v))))
     }
-    setupExprs[[ length(setupExprs) + 1]] <- RparseTree2ExprClasses(substitute(TFrun_(TFRN), list(TFRN = as.name(TFrunnerName))))
+    setupExprs[[ length(setupExprs) + 1]] <-
+        RparseTree2ExprClasses(substitute(cppMemberFunction(NimTf_run(TFRN)),
+                                          list(TFRN = as.name(TFrunnerName))))
     for(v in TFcontent$outputNames) {
         setupExprs[[ length(setupExprs) + 1]] <-
-            RparseTree2ExprClasses(substitute(TFgetOutput_(TFRN, V), list(TFRN = as.name(TFrunnerName), V = as.name(v))))
+            RparseTree2ExprClasses(substitute(cppMemberFunction(NimTf_getOutput(TFRN, V)),
+                                              list(TFRN = as.name(TFrunnerName), V = as.name(v))))
     }
     setupExprs
 }
@@ -89,16 +93,16 @@ makeTFsetupExprs <- function(TFcontent, TFrunnerName) {
 makeTFconstruction <- function(TFcontent) {
     ## pasting code instead of creating a parse tree
     paste(
-        paste0(' = NimTfBuilder("',TFcontent$serializedGraph,'")'),
+        paste0(' = *NimTf_Builder("',TFcontent$serializedGraph,'")'),
         paste0(
-            paste0('.withInput("', TFcontent$inputNames, '")'),
+            paste0('.NimTf_withInput("', TFcontent$inputNames, '")'),
             collapse = "\n"
         ),
         paste0(
-            paste0('.withOutput("', TFcontent$outputNames, '")'),
+            paste0('.NimTf_withOutput("', TFcontent$outputNames, '")'),
             collapse = "\n"
         ),
-        '.build()',
+        '.NimTf_build()',
         sep="\n" )
 }
 
@@ -121,7 +125,7 @@ exprClasses2serializedTF <- function(code, symTab) {
     base64 <- import('base64')
     graph <- base64$b64encode(z$graph$as_graph_def()$SerializeToString())
 
-    ## Create invocation of NimTfBuilder().
+    ## Create invocation of NimTf_Builder().
     tfProxy <- tfProxyClass()
     for (var in c('ARG1_a_','ARG2_x_','ARG3_y_'))
         tfProxy$addInputVar(var)

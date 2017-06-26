@@ -687,7 +687,7 @@ symbolTensorflowRunner <-
                     initialize = function(...) callSuper(...),
                     show = function() writeLines(paste('symbolTensorflowRunner ', name)),
                     genCppVar = function(functionArg = FALSE) {
-                        cppVarFull(name = name, baseType = "NimTfRunner", static = TRUE, ptr = 1, constructor = constructor)
+                        cppVarFull(name = name, baseType = "NimTf_Runner", static = TRUE, ref = TRUE, constructor = constructor)
                     }
                 )
                 )

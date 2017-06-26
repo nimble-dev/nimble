@@ -12,9 +12,9 @@
 // This is passed as the deallocator of memory that is not owned.
 void fake_deallocator(void* data, size_t len, void* arg) {}  // Does nothing.
 
-NimTfRunner::NimTfRunner(const std::string& graphDefBase64,
-                         const std::vector<std::string>& inputNames,
-                         const std::vector<std::string>& outputNames)
+NimTf_Runner::NimTf_Runner(const std::string& graphDefBase64,
+                           const std::vector<std::string>& inputNames,
+                           const std::vector<std::string>& outputNames)
     : status_(TF_NewStatus()),
       graph_(TF_NewGraph()),
       session_(NULL),
@@ -58,7 +58,7 @@ NimTfRunner::NimTfRunner(const std::string& graphDefBase64,
   }
 }
 
-NimTfRunner::~NimTfRunner() {
+NimTf_Runner::~NimTf_Runner() {
   NIM_ASSERT_EQ(input_pos_, 0);
   NIM_ASSERT_EQ(output_pos_, outputs_.size());
 
@@ -71,7 +71,7 @@ NimTfRunner::~NimTfRunner() {
   TF_DeleteStatus(status_);
 }
 
-void NimTfRunner::setInput(double& scalar) {
+void NimTf_Runner::NimTf_setInput(double& scalar) {
   NIM_ASSERT_LT(input_pos_, inputs_.size());
   NIM_ASSERT_EQ(output_pos_, outputs_.size());
   input_values_[input_pos_] = TF_NewTensor(
@@ -79,7 +79,7 @@ void NimTfRunner::setInput(double& scalar) {
   input_pos_ += 1;
 }
 
-void NimTfRunner::setInput(NimArrBase<double>& nimArr) {
+void NimTf_Runner::NimTf_setInput(NimArrBase<double>& nimArr) {
   NIM_ASSERT1(!nimArr.isMap(), "Cannot handle mapped array");
   NIM_ASSERT_LT(input_pos_, inputs_.size());
   NIM_ASSERT_EQ(output_pos_, outputs_.size());
@@ -98,7 +98,7 @@ void NimTfRunner::setInput(NimArrBase<double>& nimArr) {
   input_pos_ += 1;
 }
 
-void NimTfRunner::run() {
+void NimTf_Runner::NimTf_run() {
   NIM_ASSERT_EQ(input_pos_, inputs_.size());
   NIM_ASSERT_EQ(output_pos_, outputs_.size());
 
@@ -125,7 +125,7 @@ void NimTfRunner::run() {
   output_pos_ = 0;
 }
 
-void NimTfRunner::getOutput(NimArrBase<double>& nimArr) {
+void NimTf_Runner::NimTf_getOutput(NimArrBase<double>& nimArr) {
   NIM_ASSERT1(!nimArr.isMap(), "Cannot handle mapped array");
   NIM_ASSERT_EQ(input_pos_, 0);
   NIM_ASSERT_LT(output_pos_, outputs_.size());
