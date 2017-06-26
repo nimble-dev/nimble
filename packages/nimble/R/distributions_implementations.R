@@ -828,9 +828,11 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' 
 #' @param x vector of values.
 #' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
-#' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.
+#' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.  If omitted, all weights are taken as unity.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
 #' @param tau scalar precision of the Gaussian CAR prior.
+#' @param c integer number of constraints to impose on the improper density function.  If omitted, c is calculated as the number of disjoint groups of spatial locations in the adjacency structure.
+#' @param sumToZero logical specifying whether to impose a sum-to-zero constraint (during MCMC sampling) to all spatial regions (default FALSE).  If FALSE, the overall process mean is included in the value of each location; if TRUE, the mean of all locations is enforced to be zero and a separate intercept term should be included in the model.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #'
 #' @author Daniel Turek
