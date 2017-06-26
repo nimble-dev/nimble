@@ -2161,35 +2161,6 @@ SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP c, S
 }
 
 
-//void car_markVisited(double* adj, double* num, bool* visited, int index) {
-//  if(!visited[index]) {
-//    visited[index] = true;
-//    int adjStartInd = 0;
-//    for(int i = 0; i < index; i++) {
-//      adjStartInd += (int) num[i];
-//    }
-//    for(int i = 0; i < (int) num[index]; i++) {
-//      car_markVisited(adj, num, visited, (int) adj[adjStartInd+i] - 1);
-//    }
-//  }
-//}
-//
-//int car_calcNumIslands(double* adj, double* num, int N) {
-//  int numIslands = 0;
-//  bool* visited = new bool[N];
-//  for(int i = 0; i < N; i++) {
-//    visited[i] = false;
-//  }
-//  for(int i = 0; i < N; i++) {
-//    if(!visited[i]) {
-//      numIslands++;
-//      car_markVisited(adj, num, visited, i);
-//    }
-//  }
-//  delete [] visited;
-//  return(numIslands);
-//}
-
 double dcar_normal(double* x, double* adj, double* weights, double* num, double tau, int c, int sumToZero, int N, int L, int give_log) {
   // This method implements the following density calculation:
   // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
