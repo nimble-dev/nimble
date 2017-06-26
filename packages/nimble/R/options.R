@@ -7,6 +7,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        nimbleProjectForTesting = NULL,  ## only used by withTempProject and compileNimble in testing code.
+        stopCompilationBeforeLinking = NULL,
         experimentalUseTensorflow = FALSE,
         experimentalNewSizeProcessing = FALSE,
         experimentalSelfLiftStage = FALSE,

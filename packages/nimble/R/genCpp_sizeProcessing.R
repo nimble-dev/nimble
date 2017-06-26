@@ -118,9 +118,17 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     }
                 } else {
                     code$type <- 'unknown'
-                    ##if(exists('.AllowUnknowns', envir = typeEnv)) 
-                        if(!typeEnv$.AllowUnknowns)
+                    if(!typeEnv$.AllowUnknowns)
+                        if(identical(code$name, 'pi')) { ## unique because it may be encountered anew on on RHS and be valid
+                            assign('pi', exprTypeInfoClass$new(nDim = 0, type = 'double', sizeExprs = list()), envir = typeEnv)
+                            symTab$addSymbol(symbolBasic(name = 'pi', type = 'double', nDim = 0))
+                            code$nDim <- 0
+                            code$type <- 'double'
+                            code$sizeExprs <- list()
+                            code$toEigenize <- 'maybe'
+                        } else {
                             warning(paste0("variable '",code$name,"' has not been created yet."), call.=FALSE) 
+                        }
                 }
             } else {
                 ## otherwise fill in type fields from typeEnv object

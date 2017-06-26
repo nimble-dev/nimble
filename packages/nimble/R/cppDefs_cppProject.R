@@ -261,9 +261,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        includes <- character()
                                        timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
 
-                                       dynamicRegistrationsDllName <- paste0("dynamicRegistrations_", timeStamp)
-                                       dynamicRegistrationsCppName <- paste0(dynamicRegistrationsDllName, ".cpp")
-
                                        mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
 
 				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
@@ -290,6 +287,27 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            SHLIBcmd <- paste(SHLIBcmd, nimbleUserNamespace$tensorflowWrapperDll[['path']])
                                        }
 
+                                       origSHLIBcmd <- SHLIBcmd
+                                       if(isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) {## used only for testing, when we want to go quickly and skip linking and bail out
+                                           ## get the dry run commands, run only those that contain -c for compile-only (don't link)
+                                           ## this is untested for a case with multiple .cpp files
+                                           dryRunCmd <- paste0(SHLIBcmd, " -n")
+                                           dryRunResult <- system(dryRunCmd, intern = TRUE)
+                                           compileOnlyLines <- dryRunResult[ grepl("-c", dryRunResult) ]
+                                           SHLIBcmd <- paste0(compileOnlyLines, collapse =  ";" )
+                                       }
+
+                                       if(isTRUE(nimbleOptions()$forceO1)) {
+                                           if(!isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) {
+                                               dryRunCmd <- paste0(SHLIBcmd, " -n")
+                                               dryRunResult <- system(dryRunCmd, intern = TRUE)
+                                               compileOnlyLines <- dryRunResult[ grepl("-c", dryRunResult) ]
+                                               SHLIBcmd <- paste0(compileOnlyLines, collapse =  ";" )
+                                           }
+                                           SHLIBcmd <- gsub("-O[1-9]", "-O1", SHLIBcmd)
+                                           SHLIBcmd <- paste0(SHLIBcmd, "; ", origSHLIBcmd)
+                                       }
+                                       
                                        if(!showCompilerOutput) { 
                                            logFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
                                            SHLIBcmd <- paste(SHLIBcmd, ">", logFile)
@@ -303,8 +321,10 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        else
                                            status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput)
 				       if(status != 0)
-                                          stop(structure(simpleError("Failed to create the shared library"),
-                                                         class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
+                                           stop(structure(simpleError("Failed to create the shared library"),
+                                                          class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
+                                       if(isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) stop("safely stopping before linking", call.=FALSE)
+
                                    },
                                    loadSO = function(name) {
                                        dll <<- dyn.load(getSOName(name, dirName), local = TRUE)
