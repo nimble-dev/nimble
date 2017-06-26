@@ -1120,6 +1120,61 @@ test_that('RW_dirichlet sampler more complicated', {
                 info = 'non-conjugate agreement between RW_dirichlet and component gamma sampling: sd')
 })
 
+
+## testing dcar_normal sampling
+test_that('dcar_normal sampling', {
+    cat('===== Starting MCMC test dcar_normal sampling. =====')
+
+    code <- nimbleCode({
+        alpha0 ~ dflat()
+        S[1:N] ~ car.normal(adj[1:L], weights[1:L], num[1:N], 3)
+        for(i in 1:N)
+            mu[i] <- alpha0 + S[i]
+        for(i in 1:2) {
+            log(lambda[i]) <- mu[i]
+            Y[i] ~ dpois(lambda[i])
+        }
+        Y[3] ~ dnorm(mu[3], 3)
+        ymean4 <- 5*mu[4]
+        Y[4] ~ dnorm(ymean4, 7)
+        ymean5 <- 2*mu[5]
+        Y[5] ~ dnorm(ymean5, 1)
+    })
+
+    constants <- list(N = 6,
+                      num = c(3,4,4,3,2,2),
+                      adj = c(2,3,4,   1,3,5,6,   1,2,4,5,   1,3,6,  2,3,   2,4),
+                      weights = rep(1, 18),
+                      L = 18)
+    data <- list(Y = c(10,12,15,20,24))
+    inits <- list(alpha0 = 0,
+                  S = c(0,0,0,0,0,0))
+
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel)
+    Rmcmc <- buildMCMC(conf)
+    Cmodel <- compileNimble(Rmodel)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+    
+    niter <- 20
+    set.seed(0); Rmcmc$run(niter)
+    set.seed(0); Cmcmc$run(niter)
+
+    Rsamples <- as.matrix(Rmcmc$mvSamples)
+    Csamples <- as.matrix(Cmcmc$mvSamples)
+
+    sampleNames <- colnames(Rsamples)
+
+    expect_true(all(Rsamples[, sampleNames] - Csamples[, sampleNames] == 0),
+                info = 'agreement between R and C sampling of dcar_normal')
+
+    expect_equal(as.numeric(Csamples[20, sampleNames]),
+                 c(1.639127, 1.815422, 1.676655, 5.099797, 2.345276, 7.018026, 2.696936),
+                 tolerance = 1e-6,
+                 info = 'exact sample values for dcar_normal')
+})
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
