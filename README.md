@@ -1,17 +1,18 @@
-NIMBLE
-======
+# NIMBLE
 
 [![Build Status](https://travis-ci.org/nimble-dev/nimble.svg?branch=devel)](https://travis-ci.org/nimble-dev/nimble)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/nimble-dev/nimble?branch=devel&svg=true)](https://ci.appveyor.com/project/nimble-dev/nimble)
-[![Coverage](https://codecov.io/github/nimble-dev/nimble/branch/devel/graphs/badge.svg)](https://codecov.io/github/nimble-dev/nimble) 
 [![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
 
-NIMBLE is an R package for programming with BUGS models and compiling parts of R.
+[Website](http://r-nimble.org/) |
+[Documentation](http://r-nimble.org/manuals/NimbleUserManual.pdf) |
+[Examples](https://r-nimble.org/examples) |
+[Developing](https://nimble-dev.github.io/nimble-docs)
 
-*   [Website](http://r-nimble.org/)
-*   [Examples](https://r-nimble.org/examples)
-*   [User manual](http://r-nimble.org/manuals/NimbleUserManual.pdf)
-*   [Developer documentation](https://nimble-dev.github.io/nimble-docs)
+NIMBLE is an R package for programming with BUGS models and compiling parts of R.
+[BUGS](https://www.mrc-bsu.cam.ac.uk/software/bugs) is a probabilistic programming language that makes it easy to rapidly develop hierarchical Bayesian models for statistical analysis.
+NIMBLE provides an implementation of the BUGS language in R together with a DSL for writing custom inference algorithms against BUGS models.
+NIMBLE's programming paradigm treats probabilistic graphical models as a basic programming construct.
 
 ## Installation
 
