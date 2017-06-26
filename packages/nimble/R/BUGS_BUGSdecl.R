@@ -78,7 +78,6 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                              methods = list(
                                  setup                          = function() {},
                                  setIndexVariableExprs          = function() {},
-                                 genUnknownIndexDeclarations    = function() {},
                                  genSymbolicParentNodes         = function() {},
                                  genReplacementsAndCodeReplaced = function() {},
                                  genAltParamsModifyCodeReplaced = function() {},
@@ -200,26 +199,11 @@ BUGSdeclClass$methods(setIndexVariableExprs = function(exprs) {
 })
 
 
-BUGSdeclClass$methods(genSymbolicParentNodes = function(constantsNamesList, context, nimFunNames, unknownIndexDeclInfo = NULL) {
+BUGSdeclClass$methods(genSymbolicParentNodes = function(constantsNamesList, context, nimFunNames, unknownIndexDeclInfo = NULL, contextID = NULL) {
     ## sets the field symbolicparentNodes
-    symbolicParentNodes <<- unique(getSymbolicParentNodes(valueExpr, constantsNamesList, context$indexVarExprs, nimFunNames)) 
+    symbolicParentNodes <<- unique(getSymbolicParentNodes(valueExpr, constantsNamesList, context$indexVarExprs, nimFunNames, contextID = contextID)) 
 })
 
-# HERE
-## BUGSdeclClass$methods(genUnknownIndexDeclarations = function(varInfo)
-##     ## creates analogous declInfo for new unknownIndex
-##     browser()
-##     unknownIndexDeclInfo <- list()
-##     for(parentExpr in symbolicParentNodes) {
-##         varName <- deparse(parentExpr[[2]])
-##         dynamicIndices <- detectDynamicIndices(parentExpr)
-##         if(length(dynamicIndices)) {
-            
-
-##         }
-##     }
-##     return(unknownIndexDeclInfo)
-## })
 
 
 ## move this to a util file when everything is working.  It is convenient here for now
@@ -235,14 +219,14 @@ makeIndexNamePieces <- function(indexCode) {
     ##      makeIndexNamePieces(quote(i:100))
 }
 
-BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNamesList, context, nimFunNames) { ## assuming codeReplaced is there
+BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNamesList, context, nimFunNames, contextID = NULL) { ## assuming codeReplaced is there
     ## generate hasBracket info
     targetExprReplaced <<- codeReplaced[[2]] ## shouldn't have any link functions at this point
     valueExprReplaced <<- codeReplaced[[3]]
     if(type == 'stoch') distributionName <<- as.character(valueExprReplaced[[1]])
     else distributionName <<- NA
     
-    symbolicParentNodesReplaced <<- unique(getSymbolicParentNodes(valueExprReplaced, constantsNamesList, c(context$indexVarExprs, replacementNameExprs), nimFunNames))
+    symbolicParentNodesReplaced <<- unique(getSymbolicParentNodes(valueExprReplaced, constantsNamesList, c(context$indexVarExprs, replacementNameExprs), nimFunNames, contextID = contextID))
     if(!nimbleOptions()$allowDynamicIndexing) {
         rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) 
             if(length(x) == 1) as.character(x) else as.character(x[[2]])))
@@ -345,16 +329,16 @@ BUGSdeclClass$methods(genBounds = function() {
     }
 })
 
-getSymbolicParentNodes <- function(code, constNames = list(), indexNames = list(), nimbleFunctionNames = list(), addDistNames = FALSE) {
+getSymbolicParentNodes <- function(code, constNames = list(), indexNames = list(), nimbleFunctionNames = list(), addDistNames = FALSE, contextID = NULL) {
     ## replaceConstants looks to see if name of a function exists in R
     ## getSymbolicVariables requires a list of nimbleFunctionNames.
     ## The latter could take the former approach
     if(addDistNames) nimbleFunctionNames <- c(nimbleFunctionNames, getAllDistributionsInfo('namesExprList'))
-    ans <- getSymbolicParentNodesRecurse(code, constNames, indexNames, nimbleFunctionNames)
+    ans <- getSymbolicParentNodesRecurse(code, constNames, indexNames, nimbleFunctionNames, contextID)
     return(ans$code)
 }
 
-getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames = list(), nimbleFunctionNames = list()) {
+getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames = list(), nimbleFunctionNames = list(), contextID = NULL) {
     ## Takes as input some code and returns the variables in it
     ## Expects one line of code, no '{'s
     ## However, indexNames (from for-loop indices) and constNames are not identified as separate variables
@@ -406,7 +390,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
         }
         if(indexingBracket) { ##if(code[[1]] == '[') {
             ## recurse on the index arguments
-            contents <- lapply(code[-c(1,2)], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+            contents <- lapply(code[-c(1,2)], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames, contextID))
             ## unpack the codes returned from recursion
             contentsCode <- unlist(lapply(contents, function(x) x$code), recursive = FALSE)
             ## unpack whether each index has an index
@@ -414,7 +398,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             ## unpack whether each index is replaceable
             contentsReplaceable <- unlist(lapply(contents, function(x) x$replaceable))
             ## recuse on the variable, e.g. mu in mu[i]
-            variable <- getSymbolicParentNodesRecurse(code[[2]], constNames, indexNames, nimbleFunctionNames)
+            variable <- getSymbolicParentNodesRecurse(code[[2]], constNames, indexNames, nimbleFunctionNames, contextID)
 
             ## error if it looks like mu[i][j] where i is a for-loop index
             if(variable$hasIndex) stop('Error: Variable', deparse(code[[2]]), 'on outside of [ contains a BUGS code index.')
@@ -443,9 +427,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                     else {
                         if(any(sapply(contentsCode, detectNonscalarIndex)))
                             stop("getSymbolicParentNodesRecurse: only scalar random indices are allowed; vector random indexing found in ", deparse(code))
-                        dynamicIndexParent <- code
+                        dynamicIndexParent <- addUnknownIndexToVarNameInBracketExpr(code, contextID)
                         dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ] <- as.numeric(NA)
-                        dynamicIndexParent <- addUnknownIndexToVarNameInBracketExpr(dynamicIndexParent)
                         contentsCode = lapply(contentsCode, addIndexWrapping)
                     }
                     return(list(code = c(contentsCode, list(dynamicIndexParent)),
@@ -457,9 +440,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             ## a regular call like foo(x)
             if(cLength > 1) {
                 if(code[[1]] == '$') ## a$x: recurse on a (when? maybe eigen(x)$values? ) 
-                    contents <- lapply(code[2],  function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+                    contents <- lapply(code[2],  function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames, contextID))
                 else ## foo(x): recurse on x
-                    contents <- lapply(code[-1], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+                    contents <- lapply(code[-1], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames, contextID))
                 ## unpack results of recursion
                 contentsCode <- unlist(lapply(contents, function(x) x$code), recursive = FALSE)
                 ## unpack hasIndex entries

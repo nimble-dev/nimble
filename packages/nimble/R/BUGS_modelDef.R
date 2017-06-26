@@ -892,7 +892,7 @@ modelDefClass$methods(genSymbolicParentNodes = function() {
     nimFunNames <- getAllDistributionsInfo('namesExprList')
 
     for(i in seq_along(declInfo)){
-        declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
+        declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames, contextID = declInfo[[i]]$contextID)
     }
 })
 
@@ -912,7 +912,8 @@ modelDefClass$methods(genReplacedTargetValueAndParentInfo = function() {
     nimFunNames <- distributions$namesExprList
     
     for(i in seq_along(declInfo)) {
-        declInfo[[i]]$genReplacedTargetValueAndParentInfo(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
+        declInfo[[i]]$genReplacedTargetValueAndParentInfo(constantsNamesList, contexts[[declInfo[[i]]$contextID]],
+                                                          nimFunNames, contextID = declInfo[[i]]$contextID)
     }
     NULL
 })
@@ -2280,7 +2281,7 @@ modelDefClass$methods(addUnknownIndexVars = function(debug = FALSE) {
                 varInfo[[lhsVar]]$varName <<- lhsVar
                 varInfo[[lhsVar]]$anyStoch <<- FALSE
                 unknownIndexNames <<- c(unknownIndexNames, lhsVar)
-            } else stop("addUnknownIndexVars: ", lhsVar, " already present in varInfo; something wrong here.")
+            } else stop("addUnknownIndexVars: ", lhsVar, " already present in varInfo. This code should not have been triggered.")
         }
 })
 
@@ -2300,7 +2301,8 @@ modelDefClass$methods(genUnknownIndexDeclarations = function() {
             for(p in seq_along(declInfo[[i]]$symbolicParentNodes)) {
                 parentExpr <- stripIndexWrapping(declInfo[[i]]$symbolicParentNodes[[p]])
                 dynamicIndices <- detectDynamicIndices(parentExpr)
-                if(sum(dynamicIndices)) {
+                if(sum(dynamicIndices) && !any(sapply(declInfo, function(x) identical(x$targetExpr, parentExpr)))) {
+                    ## don't create declaration if there is already one for the exact same unknownIndex target
                     BUGSdeclClassObject <- BUGSdeclClass$new()
                     lhsCode <- parentExpr
                     rhsCode <- lhsCode
@@ -2308,7 +2310,8 @@ modelDefClass$methods(genUnknownIndexDeclarations = function() {
                     newCode <- substitute(LHS <- RHS, list(LHS = lhsCode, RHS = rhsCode))
                     BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber)
                     BUGSdeclClassObject$setIndexVariableExprs(contexts[[declInfo[[i]]$contextID]]$indexVarExprs)
-                    BUGSdeclClassObject$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
+                    BUGSdeclClassObject$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames,
+                                                              contextID = declInfo[[i]]$contextID)
                     ##                    BUGSdeclClassObject$genReplacementsAndCodeReplaced(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
                     ##                    BUGSdeclClassObject$genReplacedTargetValueAndParentInfo(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
                     ## insert info that is usually done in genNodeInfo3; passing through genNodeInfo3 would be complicated as that operates by context
@@ -2617,8 +2620,8 @@ getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {
 }
 
 stripUnknownIndexFromVarName <- function(varName) {
-    if(length(grep("^\\..+_unknownIndex$", varName))) {
-        tmp <- sub("_unknownIndex", "", varName)
+    if(length(grep("^\\..+_unknownIndex.*", varName))) {
+        tmp <- sub("_unknownIndex.*", "", varName)
         return(sub("^\\.", "", tmp))
     } else return(varName)
 }
@@ -2628,11 +2631,12 @@ stripUnknownIndexFromVarNameInBracketExpr <- function(parentExpr) {
     return(parentExpr)
 }
 
-addUnknownIndexToVarName <- function(varName)
-    return(paste0(".", varName, "_unknownIndex"))
+addUnknownIndexToVarName <- function(varName, extraText, contextID = NULL)
+    return(paste0(".", varName, "_unknownIndex_", extraText,
+                  ifelse(is.null(contextID), "", paste0("_context", contextID))))
 
-addUnknownIndexToVarNameInBracketExpr <- function(parentExpr) {
-    parentExpr[[2]] <- as.name(addUnknownIndexToVarName(parentExpr[[2]]))
+addUnknownIndexToVarNameInBracketExpr <- function(parentExpr, contextID = NULL) {
+    parentExpr[[2]] <- as.name(addUnknownIndexToVarName(parentExpr[[2]], Rname2CppName(parentExpr), contextID))
     return(parentExpr)
 }
 
@@ -2640,3 +2644,4 @@ detectDynamicIndices <- function(expr) {
     if(length(expr) == 1 || expr[[1]] != "[") return(FALSE) # stop("whichDynamicIndices: 'expr' should be a bracket expression")
     return(sapply(expr[3:length(expr)], identical, quote(NA_real_)))
 }
+
