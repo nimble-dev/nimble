@@ -1,8 +1,32 @@
 
 
-#' Convert CAR lists of neighbors and weights to adj, weights, num format
+
+#' Convert CAR structural parameters to adjecency, weights, num format
+#'
+#' This will convert alternate representations of CAR process structure into
+#' (adj, weights, num) form required by dcar_normal.  Two alternate
+#' representations are handled:
+#'
+#' A single matrix argument will be interpreted as a matrix of symmetric un-normalized weights;
+#'
+#' Two lists will be interpreted as (the first) a list of numeric vectors
+#' specifying the adjacency (neighboring) indices of each CAR process component,
+#' and (the second) a list of numeric vectors giving the un-normalized weights
+#' for each of these neighboring relationships.
+#'
 #' @author Daniel Turek
 #' @export
+as.carAdjacency <- function(...) {
+    args <- list(...)
+    if(length(args) == 1) return(CAR_convertWeightMatrix(...))
+    if(length(args) == 2) return(CAR_convertNeighborWeightLists(...))
+    stop('wrong arguments to as.carAdjacency')
+}
+
+
+#### Convert CAR lists of neighbors and weights to adj, weights, num format
+#### @author Daniel Turek
+#### @export
 CAR_convertNeighborWeightLists <- function(neighborList, weightList) {
     adj <- unlist(neighborList)
     weights <- unlist(weightList)
@@ -11,9 +35,9 @@ CAR_convertNeighborWeightLists <- function(neighborList, weightList) {
 }
 
 
-#' Convert CAR weight matrix to adj, weights, num format
-#' @author Daniel Turek
-#' @export
+#### Convert CAR weight matrix to adj, weights, num format
+#### @author Daniel Turek
+#### @export
 CAR_convertWeightMatrix <- function(weightMatrix) {
     neighborList <- apply(weightMatrix, 1, function(row) which(row > 0))
     weightList <- apply(weightMatrix, 1, function(row) row[which(row > 0)])
