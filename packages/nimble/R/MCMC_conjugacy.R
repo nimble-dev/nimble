@@ -329,9 +329,10 @@ conjugacyRelationshipsClass <- setRefClass(
         ##    }
         ##    return(conjugateSamplerDefinitions)
         ##},
-        generateDynamicConjugateSamplerDefinition = function(prior, dependentCounts) {
+        generateDynamicConjugateSamplerDefinition = function(prior, dependentCounts, doDependentScreen = FALSE) {
             ## conjugateSamplerDefinitions[[paste0('sampler_conjugate_', conjugacyResult$prior)]]  ## using original (non-dynamic) conjugate sampler functions
-            conjugacys[[prior]]$generateConjugateSamplerDef(dynamic = TRUE, dependentCounts = dependentCounts)
+            conjugacys[[prior]]$generateConjugateSamplerDef(dynamic = TRUE, dependentCounts = dependentCounts,
+                                                            doDependentScreen = doDependentScreen)
         }
     )
 )
