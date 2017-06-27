@@ -1121,7 +1121,7 @@ test_that('RW_dirichlet sampler more complicated', {
 })
 
 
- testing dcar_normal sampling
+## testing dcar_normal sampling
 test_that('dcar_normal sampling', {
     cat('===== Starting MCMC test dcar_normal sampling. =====')
     
