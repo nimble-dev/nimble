@@ -20,7 +20,10 @@ test_that('Derivatives of dnorm function correctly.',
       ), enableDerivs = list('testMethod')
     )
     
+    
     ADfunInst <- ADfun1()
+    
+    ADfunInst$run(2)
     temporarilyAssignInGlobalEnv(ADfunInst)  
     cADfunInst <- compileNimble(ADfunInst)
     
