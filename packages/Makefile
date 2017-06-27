@@ -28,7 +28,8 @@ rhub: build FORCE
 	Rscript -e "library(rhub); check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))"
 
 test: FORCE
-	cd .. ; ./run_tests.R
+	cd .. ; ./install_requirements.R
+	cd .. ; ./run_tests.R --parallel
 
 # We are progressively delegating style to clang-format.
 # Some older C++ files are still styled manually.

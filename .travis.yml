@@ -39,12 +39,7 @@ addons:
       - time  # For /usr/bin/time profiling.
 
 install:
-  - Rscript -e "install.packages('igraph', repos = 'http://cran.us.r-project.org')"
-  - Rscript -e "install.packages('coda', repos = 'http://cran.us.r-project.org')"
-  - Rscript -e "install.packages('testthat', repos = 'http://cran.us.r-project.org')"
-  - Rscript -e "install.packages('mvtnorm', repos = 'http://cran.us.r-project.org')"  ## needed for test-distributions.R
-  - Rscript -e "install.packages('abind', repos = 'http://cran.us.r-project.org')"    ## needed for test-compareMCMCs.R
-  - Rscript -e "install.packages('covr', repos = 'http://cran.us.r-project.org')"  ## needed for code coverage reports
+  - ./install_requirements.R
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
