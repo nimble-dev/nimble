@@ -362,6 +362,9 @@ conjugacyClass <- setRefClass(
             link <<- cr$link
             initialize_addDependents(cr$dependents)
             needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
+            ## if(nimbleOptions()$allowDynamicIndexing) 
+            ##     if(link == 'identity')  ## added so that screen based on coeff == 0 to avoid adding contribution from non-dependent; FIXME: need to refine this so that only used if the node is dynamically-indexed; also note that don't need both offset and coeff so could improve by removing offset in this case
+            ##         needsLinearityCheck <<- TRUE
             posteriorObject <<- posteriorClass(cr$posterior, prior)
             model <<- NA
             },
@@ -433,18 +436,19 @@ conjugacyClass <- setRefClass(
         },
 
         ## workhorse for creating conjugate sampler nimble functions
-        generateConjugateSamplerDef = function(dynamic = FALSE, dependentCounts) {
+        generateConjugateSamplerDef = function(dynamic = FALSE, dependentCounts, doDependentScreen = FALSE) {
             if(!dynamic) stop('something went wrong, should never have dynamic = FALSE here')
             substitute(
                 nimbleFunction(contains = sampler_BASE,
                                setup    = SETUPFUNCTION,
-                               run      = RUNFUNTION,
+                               run      = RUNFUNCTION,
                                methods  = list(getPosteriorLogDensity = GETPOSTERIORLOGDENSITYFUNCTION,
                                                reset                  = function() {}),
                                where    = getLoadingNamespace()
                 ),
                 list(SETUPFUNCTION                  = genSetupFunction(dependentCounts = dependentCounts),
-                     RUNFUNTION                     = genRunFunction(dependentCounts = dependentCounts),
+                     RUNFUNCTION                     = genRunFunction(dependentCounts = dependentCounts,
+                                                                      doDependentScreen = doDependentScreen),
                      GETPOSTERIORLOGDENSITYFUNCTION = genGetPosteriorLogDensityFunction(dependentCounts = dependentCounts)
                 )
             )
@@ -518,7 +522,7 @@ conjugacyClass <- setRefClass(
             return(functionDef)
         },
 
-        genRunFunction = function(dependentCounts) {
+        genRunFunction = function(dependentCounts, doDependentScreen = FALSE) {
             functionBody <- codeBlockClass()
 
             ## only if we're verifying conjugate posterior distributions: get initial targetValue, and modelLogProb -- getLogProb(model, calcNodes)
@@ -530,7 +534,8 @@ conjugacyClass <- setRefClass(
                 })
             }
 
-            addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dependentCounts = dependentCounts)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
+            addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dependentCounts = dependentCounts,
+                                                 doDependentScreen = doDependentScreen)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
 
             ## generate new value, store, calculate, copy, etc...
             functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
@@ -580,7 +585,8 @@ conjugacyClass <- setRefClass(
             return(functionDef)
         },
 
-        addPosteriorQuantitiesGenerationCode = function(functionBody = functionBody, dependentCounts = dependentCounts) {
+        addPosteriorQuantitiesGenerationCode = function(functionBody = functionBody, dependentCounts = dependentCounts,
+                                                        doDependentScreen = FALSE) {
 
             ## get current value of prior parameters which appear in the posterior expression
             for(priorParam in posteriorObject$neededPriorParams) {
@@ -636,7 +642,8 @@ conjugacyClass <- setRefClass(
             }
 
             ## if we need to determine 'coeff' and/or 'offset'
-            if(needsLinearityCheck) {
+            if(needsLinearityCheck || (nimbleOptions()$allowDynamicIndexing
+                && link == 'identity' && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
@@ -855,7 +862,7 @@ conjugacyClass <- setRefClass(
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
-                    if(nimbleOptions()$allowDynamicIndexing) { ## FIXME: do so only have one if() here and only insert the check if the sampler involves a dynamic index
+                    if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) { ## FIXME: do so only have one if() here and only insert the check if the sampler involves a dynamic index
                         forLoopBody$addCode(if(COEFF_EXPR !=0) CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
                                             list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
 
@@ -1236,10 +1243,10 @@ compareConjugacyLists <- function(C1, C2) {
     }
 }
 
-createDynamicConjugateSamplerName <- function(prior, dependentCounts) {
+createDynamicConjugateSamplerName <- function(prior, dependentCounts, unknownIndex = FALSE) {
     ##depString <- paste0(dependentCounts, names(dependentCounts), collapse='_')  ## including the numbers of dependents
     depString <- paste0(names(dependentCounts), collapse='_')                     ## without the numbers of each type of dependent node
-    paste0('sampler_conjugate_', prior, '_', depString)
+    paste0('sampler_conjugate_', prior, '_', depString, ifelse(unknownIndex, '_unknownIndex', ''))
 }
 
 makeDeclareSizeField <- function(firstSize, secondSize, thirdSize, nDim) {
