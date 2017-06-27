@@ -81,12 +81,12 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
     } else {
         command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
     }
+    env <- 'MAKEFLAGS=-j1'  # Work around broken job pipe when GNU make is run under mclapply.
     if (logToFile) {
         logDir <- '/tmp/log/nimble'
         dir.create(logDir, recursive = TRUE, showWarnings = FALSE)
         stderr.log <- file.path(logDir, paste0('test-', name, '.stderr'))
         stdout.log <- file.path(logDir, paste0('test-', name, '.stdout'))
-        env <- 'MAKEFLAGS=-j1'  # Work around broken job pipe when GNU make is run under mclapply.
         if (system2(command[1], tail(command, -1),
                     stderr = stderr.log, stdout = stdout.log, env = env)) {
             cat('\x1b[31mFAILED\x1b[0m', test, 'See', stderr.log, stdout.log, '\n')
