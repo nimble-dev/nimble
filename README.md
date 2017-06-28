@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/nimble-dev/nimble.svg?branch=devel)](https://travis-ci.org/nimble-dev/nimble)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/nimble-dev/nimble?branch=devel&svg=true)](https://ci.appveyor.com/project/nimble-dev/nimble)
 [![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
+[![DOI](https://zenodo.org/badge/20771527.svg)](https://zenodo.org/badge/latestdoi/20771527)
 
 [Website](http://r-nimble.org/) |
 [Documentation](http://r-nimble.org/manuals/NimbleUserManual.pdf) |
@@ -27,7 +28,9 @@ Or use `R CMD INSTALL` after downloading from our [website](http://r-nimble.org/
 
 ## Citation
 
-NIMBLE Development Team. 2017. NIMBLE: An R Package for Programming with BUGS models, Version 0.6-5.   http://r-nimble.org.
+NIMBLE Development Team. 2017.
+NIMBLE: An R Package for Programming with BUGS models, Version 0.6-5.
+http://r-nimble.org.
 
 ## Acknowledgements
 
