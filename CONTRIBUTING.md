@@ -1,5 +1,11 @@
 # Guidelines for Contributing
 
+Nimble is managed across multiple repos:
+[nimble](https://github.com/nimble-dev/nimble) for code,
+[nimble-docs](https://github.com/nimble-dev/nimble) for documentation,
+and miscellaneous other repos under the [nimble-dev](https://github.com/nimble-dev) org.
+We welcome issues and pull requests to all of these repos.
+
 ## Opening an issue
 
 To file a bug or request a feature,
