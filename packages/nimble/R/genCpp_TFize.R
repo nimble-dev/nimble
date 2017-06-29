@@ -130,15 +130,18 @@ makeTFconstruction <- function(TFcontent) {
     )
 }
 
-
-
 exprClasses2serializedTF <- function(code, symTab) {
+    if (!require(tensorflow)) {
+        stop('Failed to load tensorflow package')
+    }
+    if (!require(reticulate)) {
+        stop('Failed to load reticulate package')
+    }
+    
     ## This prototype assumes arguments are 'ARG1_a_','ARG1_x_', and 'ARG1_y_' and output is 'z'.
     ## TODO Determine intputs, outputs, and tensorflow graph from `code`.
     
     ## Construct a tensorflow graph.
-    if (!require(tensorflow))
-        stop('Failed to load tensorflow package')
     tf$reset_default_graph()
     a <-
         tf$placeholder(name = 'ARG1_a_',
@@ -155,16 +158,15 @@ exprClasses2serializedTF <- function(code, symTab) {
     z <- tf$add(tf$multiply(a, x), y, name = 'z')
     
     ## Serialize the graph as a string.
-    if (!require(reticulate))
-        stop('Failed to load reticulate package')
-    base64 <- import('base64')
+    base64 <- reticulate::import('base64')
     graph <-
         base64$b64encode(z$graph$as_graph_def()$SerializeToString())
     
     ## Create invocation of NimTf_Builder().
     tfProxy <- tfProxyClass()
-    for (var in c('ARG1_a_', 'ARG2_x_', 'ARG3_y_'))
+    for (var in c('ARG1_a_', 'ARG2_x_', 'ARG3_y_')) {
         tfProxy$addInputVar(var)
+    }
     tfProxy$addOutputVar('z')
     tfProxy$setSerializedGraph(graph)
     

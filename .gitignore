@@ -16,4 +16,5 @@ MyMakevars
 #*.R
 .Rproj.user
 
+/packages/nimble/inst/CppCode/Makeconf
 /packages/nimble/inst/include/cppad/

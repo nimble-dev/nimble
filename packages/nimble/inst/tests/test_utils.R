@@ -303,6 +303,7 @@ gen_runFun <- function(input) {
   tmp[[3]] <- quote(return(out))
   tmp[[4]] <- parse(text = paste0("returnType(double(", input$outputDim, "))"))[[1]]
   body(runFun) <- tmp
+  cat(paste(deparse(runFun), collapse = '\n'), '\n')
   return(runFun)
 }
 

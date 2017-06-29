@@ -282,8 +282,10 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
                                            compileDynamicRegistrations(showCompilerOutput = showCompilerOutput)
                                        }
-                                       if(nimbleOptions('experimentalUseTensorflow') && is.null(nimbleUserNamespace$tensorflowWrapperDll)) {
-                                           compileTensorflowWrapper(showCompilerOutput = showCompilerOutput)
+                                       if(nimbleOptions('experimentalUseTensorflow')) {
+                                           if (is.null(nimbleUserNamespace$tensorflowWrapperDll)) {
+                                               compileTensorflowWrapper(showCompilerOutput = showCompilerOutput)
+                                           }
                                            SHLIBcmd <- paste(SHLIBcmd, nimbleUserNamespace$tensorflowWrapperDll[['path']])
                                        }
 
