@@ -345,3 +345,61 @@ int nimArr_rinterval(double t, double c) {
   int ans = rinterval(t, &c, 1);
   return(ans);
 }
+
+double nimArr_dcar_normal(NimArr<1, double> &x, NimArr<1, double> &adj, NimArr<1, double> &weights, NimArr<1, double> &num, double tau, int c, int sumToZero, int give_log) {
+  
+  //return give_log ? ML_POSINF: R_D__0;
+  
+  double *xptr, *adjptr, *weightsptr, *numptr;
+  NimArr<1, double> xCopy, adjCopy, weightsCopy, numCopy;
+  
+  xptr = nimArrCopyIfNeeded<1, double>(x, xCopy).getPtr();
+  adjptr = nimArrCopyIfNeeded<1, double>(adj, adjCopy).getPtr();
+  weightsptr = nimArrCopyIfNeeded<1, double>(weights, weightsCopy).getPtr();
+  numptr = nimArrCopyIfNeeded<1, double>(num, numCopy).getPtr();
+  
+  int N = x.size();
+  if(num.size() != N) {
+    _nimble_global_output<<"Error in nimArr_dcar_normal: x and num and different sizes.\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+  int L = adj.size();
+  if(weights.size() != L) {
+    _nimble_global_output<<"Error in nimArr_dcar_normal: adj and weights and different sizes.\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+
+  double ans = dcar_normal(xptr, adjptr, weightsptr, numptr, tau, c, sumToZero, N, L, give_log);
+  return(ans);
+}
+
+
+void nimArr_rcar_normal(NimArr<1, double> &ans, NimArr<1, double> &adj, NimArr<1, double> &weights, NimArr<1, double> &num, double tau, int c, int sumToZero) {
+  //
+  // it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
+  // since initializeModel() will call this simulate method if there are any NA's present,
+  // (which is allowed for island components), which over-writes all the other valid initial values.
+  //
+  //int n = num.size();
+  //NimArr<1, double> ansCopy;
+  //double *ansPtr;
+  //
+  //if(!ans.isMap()) {
+  //  ans.setSize(n);
+  //} else {
+  //  if(ans.size() != n) {
+  //    _nimble_global_output<<"Error in nimArr_rcar_normal: answer size ("<< ans.size() <<") does not match num size ("<<n<<").\n";
+  //    nimble_print_to_R(_nimble_global_output);
+  //  }
+  //}
+  //ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
+  //for(int i = 0; i < n; i++)
+  //  ansPtr[i] = R_NaN;
+  //
+  //if(ans.isMap()) {
+  //  ans = ansCopy;
+  //}
+  //
+}
+
+

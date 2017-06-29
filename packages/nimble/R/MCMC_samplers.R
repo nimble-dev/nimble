@@ -1346,6 +1346,254 @@ sampler_RW_dirichlet <- nimbleFunction(
 )
 
 
+#######################################################################################
+### CAR_normal sampler for conitionally autoregressive (dcar_normal) distributions  ###
+#######################################################################################
+
+
+## posterior predictive sampler for scalar components of dcar_normal() nodes,
+## i.e. those scalar components which have no stochastic dependencies
+CAR_scalar_postPred <- nimbleFunction(
+    name = 'CAR_scalar_postPred',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
+        ## node list generation
+        calcNodes <- c(targetScalar, model$getDependencies(targetScalar, self = FALSE))
+        ## numeric value generation
+        island <- length(neighborNodes)==0
+        ## nested function and function list definitions
+        dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
+        ## checks
+        targetDCAR <- model$expandNodeNames(targetScalar)
+        if(length(targetDCAR) != 1)                              stop('something went wrong')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+    },
+    run = function() {
+        if(is.na(model[[targetScalar]]) | is.nan(model[[targetScalar]])) {
+            model[[targetScalar]] <<- 0
+            model$calculate(calcNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        }
+        if(island) return()
+        newValue <- rnorm(1, mean = dcar$getMean(), sd = sqrt(1/dcar$getPrec()))
+        model[[targetScalar]] <<- newValue
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+## dnorm-dnorm conjugate sampler for scalar components of dcar_normal() nodes,
+## i.e. those scalar components which only have dnorm() dependencies
+CAR_scalar_conjugate <- nimbleFunction(
+    name = 'CAR_scalar_conjugate',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
+        ## node list generation
+        calcNodes <- c(targetScalar, model$getDependencies(targetScalar, self = FALSE))
+        calcNodesDeterm <- model$getDependencies(targetScalar, determOnly = TRUE)
+        depStochNodes_dnorm <- model$getDependencies(targetScalar, self = FALSE, stochOnly = TRUE)
+        nDependents <- length(depStochNodes_dnorm)
+        if(nDependents < 1) stop('something went wrong')
+        ## numeric value generation
+        if(!all(model$getDistribution(depStochNodes_dnorm) == 'dnorm')) stop('something went wrong')
+        linearityCheckExprList <- lapply(depStochNodes_dnorm, function(node) model$getParamExpr(node, 'mean'))
+        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansions=TRUE))
+        if(!all(sapply(linearityCheckExprList, function(expr) cc_nodeInExpr(targetScalar, expr)))) stop('something went wrong')
+        linearityCheckResultList <- lapply(linearityCheckExprList, function(expr) cc_checkLinearity(expr, targetScalar))
+        if(any(sapply(linearityCheckResultList, function(expr) is.null(expr)))) stop('something went wrong')
+        offsetList <- lapply(linearityCheckResultList, '[[', 'offset')
+        scaleList <- lapply(linearityCheckResultList, '[[', 'scale')
+        allIdentityLinks <- ifelse(all(sapply(offsetList, function(offset) offset == 0)) && sapply(scaleList, function(scale) scale == 1), 1, 0)
+        ##if(allIdentityLinks)  cat(paste0(targetScalar, ' conjugate sampler: skipping two-point method\n'))
+        ##if(!allIdentityLinks) cat(paste0(targetScalar, ' conjugate sampler: require two-point method\n'))
+        ## nested function and function list definitions
+        dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
+        ## checks
+        targetDCAR <- model$expandNodeNames(targetScalar)
+        if(length(targetDCAR) != 1)                              stop('something went wrong')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+    },
+    run = function() {
+        prior_mean <- dcar$getMean()
+        prior_tau <- dcar$getPrec()
+        dependent_values <- values(model, depStochNodes_dnorm)
+        dependent_taus <- numeric(nDependents)
+        for(i in 1:nDependents)
+            dependent_taus[i] <- model$getParam(depStochNodes_dnorm[i], 'tau')
+        if(allIdentityLinks) {   ## don't need to calculate coeff and offset
+            contribution_mean <- sum(dependent_values * dependent_taus)
+            contribution_tau <- sum(dependent_taus)
+        } else {                 ## use "two-point" method to calculate coeff and offset
+            dependent_offsets <- numeric(nDependents)
+            dependent_coeffs <- numeric(nDependents)
+            model[[targetScalar]] <<- 0
+            model$calculate(calcNodesDeterm)
+            for(i in 1:nDependents)
+                dependent_offsets[i] <- model$getParam(depStochNodes_dnorm[i], 'mean')
+            model[[targetScalar]] <<- 1
+            model$calculate(calcNodesDeterm)
+            for(i in 1:nDependents)
+                dependent_coeffs[i] <- model$getParam(depStochNodes_dnorm[i], 'mean') - dependent_offsets[i]
+            contribution_mean <- sum(dependent_coeffs * (dependent_values - dependent_offsets) * dependent_taus)
+            contribution_tau <- sum(dependent_coeffs^2 * dependent_taus)
+        }
+        ## from MCMC_conjugacy.R:
+        ## dnorm  = list(param = 'mean', contribution_mean = 'coeff * (value-offset) * tau', contribution_tau = 'coeff^2 * tau'),
+        ## posterior = 'dnorm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
+        ##                    sd   = (prior_tau + contribution_tau)^(-0.5))'
+        posterior_mean <- (prior_mean * prior_tau + contribution_mean) / (prior_tau + contribution_tau)
+        posterior_sd <- (prior_tau + contribution_tau)^(-0.5)
+        newValue <- rnorm(1, mean = posterior_mean, sd = posterior_sd)
+        model[[targetScalar]] <<- newValue
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+## RW sampler for non-conjugate scalar components of dcar_normal() nodes
+CAR_scalar_RW <- nimbleFunction(
+    name = 'CAR_scalar_RW',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights, control) {
+        ## control list extraction
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        scale         <- control$scale
+        ## node list generation
+        depNodes <- model$getDependencies(targetScalar, self = FALSE)
+        copyNodes <- c(targetScalar, depNodes)
+        ## numeric value generation
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        gamma1        <- 0
+        optimalAR     <- 0.44
+        ## nested function and function list definitions
+        dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
+        ## checks
+        targetDCAR <- model$expandNodeNames(targetScalar)
+        if(length(targetDCAR) != 1)                              stop('something went wrong')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+    },
+    run = function() {
+        if(is.na(model[[targetScalar]]) | is.nan(model[[targetScalar]])) {
+            model[[targetScalar]] <<- 0
+            model$calculate(copyNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodes, logProb = TRUE)
+        }
+        lp0 <- dcar$run() + model$getLogProb(depNodes)
+        propValue <- rnorm(1, mean = model[[targetScalar]], sd = scale)
+        model[[targetScalar]] <<- propValue
+        lp1 <- dcar$run() + model$calculate(depNodes)
+        logMHR <- lp1 - lp0
+        jump <- decide(logMHR)
+        if(jump) {
+            model$calculate(targetScalar)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodes, logProb = TRUE)
+        } else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodes, logProb = TRUE)
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    methods = list(
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                scale <<- scale * adaptFactor
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        reset = function() {
+            scale <<- scaleOriginal
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            gamma1 <<- 0
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+#' @rdname samplers
+#' @export
+sampler_CAR_normal <- nimbleFunction(
+    name = 'sampler_CAR_normal',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        useConjugacy  <- control$carUseConjugacy
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        scale         <- control$scale
+        RW_control <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale)
+        ## node list generation
+        target <- model$expandNodeNames(target)
+        targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        ## checks
+        if(length(target) > 1)                               stop('CAR_normal sampler only applies to one target node')
+        if(model$getDistribution(target) != 'dcar_normal')   stop('CAR_normal sampler only applies to dcar_normal distributions')
+        ## nested function and function list definitions
+        adj <- model$getParam(target, 'adj')
+        weights <- model$getParam(target, 'weights')
+        num <- model$getParam(target, 'num')
+        sumToZero <- model$getParam(target, 'sumToZero')
+        neighborLists <- CAR_processParams(model, target, adj, weights, num)
+        componentSamplerFunctions <- nimbleFunctionList(sampler_BASE)
+        for(i in seq_along(targetScalarComponents)) {
+            targetScalar <- targetScalarComponents[i]
+            nDependents <- length(model$getDependencies(targetScalar, self = FALSE, stochOnly = TRUE))
+            conjugate <- CAR_checkConjugacy(model, targetScalar)
+            neighborNodes <- neighborLists$neighborNodeList[[i]]
+            neighborWeights <- neighborLists$neighborWeightList[[i]]
+            ##if(length(neighborNodes)==0) cat(paste0('island node detected: ', targetScalar, '\n'))
+            if(nDependents == 0) {
+                ##cat(paste0('dcar() component node ', targetScalar, ': assigning posterior predictive sampler\n'))
+                componentSamplerFunctions[[i]] <- CAR_scalar_postPred(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
+            } else if(conjugate && useConjugacy) {
+                ##cat(paste0('dcar() component node ', targetScalar, ': assigning conjugate sampler\n'))
+                componentSamplerFunctions[[i]] <- CAR_scalar_conjugate(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
+            } else {
+                ##cat(paste0('dcar() component node ', targetScalar, ': assigning RW sampler\n'))
+                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborWeights, RW_control)
+            }
+        }
+    },
+    run = function() {
+        for(iSF in seq_along(componentSamplerFunctions))
+            componentSamplerFunctions[[iSF]]$run()
+        if(sumToZero) {
+            targetValues <- values(model, target)
+            values(model, target) <<- targetValues - mean(targetValues)
+            model$calculate(calcNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        }
+    },
+    methods = list(
+        reset = function() {
+            for(iSF in seq_along(componentSamplerFunctions))
+                componentSamplerFunctions[[iSF]]$reset()
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+
 
 #' MCMC Sampling Algorithms
 #'
@@ -1526,6 +1774,19 @@ sampler_RW_dirichlet <- nimbleFunction(
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
 #' \item scale. The initial value of the proposal standard deviation (on the log scale) for each component of the reparameterized Dirichlet distribution.  If adaptive = FALSE, the proposal standard deviations will never change. (default = 1)
 #' }
+#'
+#'
+#' @section CAR_normal sampler:
+#'
+#' The CAR_normal sampler operates uniquely on improper Gaussian conditional autoregressive (CAR) nodes, those with a dcar_normal prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler, however these component samplers are specialized to operate on dimensions of a dcar_normal distribution.
+#'
+#' The CAR_normal sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation for any component RW samplers.  Every adaptInterval MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
+#' \item scale. The initial value of the normal proposal standard deviation for any component RW samplers.  If adaptive = FALSE, scale will never change. (default = 1)
+#' }
+#'
 #'
 #' @section posterior_predictive sampler:
 #'

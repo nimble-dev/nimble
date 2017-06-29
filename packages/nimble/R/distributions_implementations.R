@@ -817,3 +817,82 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
     }
     .Call(C_rsqrtinvgamma, as.integer(n), as.double(shape), as.double(rate))
 }
+
+
+#' The CAR-Normal Distribution
+#'
+#'   Density function and random generation for the improper
+#'   Gaussian conditional autoregressive (CAR) distribution.
+#' 
+#' @name CAR-Normal
+#' 
+#' @param x vector of values.
+#' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.  If omitted, all weights are taken as unity.
+#' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
+#' @param tau scalar precision of the Gaussian CAR prior.
+#' @param c integer number of constraints to impose on the improper density function.  If omitted, c is calculated as the number of disjoint groups of spatial locations in the adjacency structure.
+#' @param sumToZero logical specifying whether to impose a sum-to-zero constraint (during MCMC sampling) to all spatial regions (default FALSE).  If FALSE, the overall process mean is included in the value of each location; if TRUE, the mean of all locations is enforced to be zero and a separate intercept term should be included in the model.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#'
+#' @author Daniel Turek
+#' 
+#' @export
+#' 
+#' @details 
+#'
+#' @return \code{dcar_normal} gives the density, and \code{rcar_normal} generates a vector of NaNs, since this distribution is improper.
+#' @references Banerjee, S., Carlin, B.P., and Gelfand, E.G. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' x <- c(1, 3, 3, 4)
+#' num <- c(1, 2, 2, 1)
+#' adj <- c(2, 1,3, 2,4, 3)
+#' weights <- c(1, 1, 1, 1, 1, 1)
+#' lp <- dcar_normal(x, adj, weights, num)
+NULL
+
+#' @rdname CAR-Normal
+#' @export
+dcar_normal <- function(x, adj, weights, num, tau, c, sumToZero, log = FALSE) {
+    CAR_checkAdjWeightsNum(adj, weights, num)
+    if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
+    if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
+    if(storage.mode(weights) != 'double')   storage.mode(weights) <- 'double'
+    if(storage.mode(num) != 'double')   storage.mode(num) <- 'double'
+    ##
+    ##k <- length(x)
+    ##c <- 1
+    ##lp <- 0
+    ##count <- 1
+    ##for(i in 1:k) {
+    ##    if(num[i] == 0)   c <- c + 1
+    ##    xi <- x[i]
+    ##    for(j in 1:num[i]) {
+    ##        xj <- x[adj[count]]
+    ##        lp <- lp + weights[count] * (xi-xj)^2
+    ##        count <- count + 1
+    ##    }
+    ##}
+    ##if(count != (length(adj)+1)) stop('something wrong')
+    ##lp <- lp / 2
+    ##lp <- lp * (-1/2) * tau
+    ##lp <- lp + (k-c)/2 * log(tau/2/pi)
+    ##if(log) return(lp)
+    ##return(exp(lp))
+    ##
+    .Call(C_dcar_normal, as.double(x), as.double(adj), as.double(weights), as.double(num), as.double(tau), as.double(c), as.double(sumToZero), as.logical(log))
+}
+
+#' @rdname CAR-Normal
+#' @export
+rcar_normal <- function(n = 1, adj, weights, num, tau, c, sumToZero) {
+    ## it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
+    ## since initializeModel() will call this simulate method if there are any NA's present,
+    ## (which is allowed for island components), which over-writes all the other valid initial values.
+    ##return(rep(NaN, length(num)))
+    currentValues <- eval(quote(model[[nodes]]), parent.frame(3))
+    return(currentValues)
+}
+
