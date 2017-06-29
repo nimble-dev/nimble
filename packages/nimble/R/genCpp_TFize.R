@@ -1,29 +1,29 @@
 TFrunnerLabelGenerator <- labelFunctionCreator("TFrunner")
 
+## This imitates exprClasses_eigenize.
+## It is possible they could later be combined and simply use different handler tables.
 exprClasses_TFize <-
     function(code, symTab, typeEnv, workEnv = new.env()) {
-        ## This imitates exprClasses_eigenize
-        ## It is possible they could later be combined and simply use different handler tables
         setupExprs <- list()
         if (code$isCall) {
             if (code$name == '{') {
                 for (i in seq_along(code$args)) {
-                    recurse <-
-                        FALSE                         ## Decide whether to recurse
+                    ## Decide whether to recurse
+                    recurse <- FALSE
                     if (code$args[[i]]$name == 'eigenize') {
-                        ## No "TFize" label yet
-                        removeExprClassLayer(code$args[[i]]) ## strip the eigenize()
+                        ## No "TFize" label yet.
+                        removeExprClassLayer(code$args[[i]]) ## Strip the eigenize().
                         recurse <- TRUE
                     }
                     if (code$args[[i]]$name %in% c('for', ifOrWhile, '{', 'nimSwitch'))
                         recurse <- TRUE
                     if (recurse) {
-                        ## return object collects setup calls...
+                        ## Return object collects setup calls...
                         setupCalls <-
                             unlist(
                                 exprClasses_TFize(code$args[[i]], symTab, typeEnv, workEnv = new.env())
                             ) ## a new line
-                        ## ... which are immediately inserted
+                        ## ... which are immediately inserted.
                         if (length(setupCalls) > 0) {
                             newExpr <- newBracketExpr(args = c(setupCalls, code$args[[i]]))
                             setArg(code, i, newExpr)
@@ -51,10 +51,11 @@ exprClasses_TFize <-
             if (code$name == '[') {
                 message('need to set up TFize (or determine unnecessary) for `[`')
             }
+            ## All other cases are handled by a single handler.
             setupExprs <-
                 c(setupExprs,
-                  TFize_oneStatement(code, symTab, typeEnv, workEnv)) ## A single handler
-            ## various further steps in exprClasses_eigenize may not be relevant - TBD.
+                  TFize_oneStatement(code, symTab, typeEnv, workEnv))
+            ## Various further steps in exprClasses_eigenize may not be relevant - TBD.
         }
         return(if (length(setupExprs) == 0)
             NULL
@@ -62,7 +63,7 @@ exprClasses_TFize <-
                 setupExprs)
     }
 
-## Manage tensorflow-ization of code (e.g. one statement)
+## Manage tensorflow-ization of code (e.g. one statement).
 TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
     TFcontent <- exprClasses2serializedTF(code, symTab)
     ## This code-generation problem is different than others we've supported:
@@ -78,7 +79,7 @@ TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
                                type = "symbolTensorflowRunner")
     symTab$addSymbol(TFrunnerSym)
     TFsetupExprs <- makeTFsetupExprs(TFcontent, TFrunnerName)
-    ## convert original code line to a comment
+    ## Convert original code line to a comment.
     original <- nimDeparse(code)
     code$name <- "cppComment"
     code$args <-
@@ -88,7 +89,7 @@ TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
 
 makeTFsetupExprs <- function(TFcontent, TFrunnerName) {
     ## This uses the prefix NimTf_ so that we can assume that internal
-    ## symbols conflict with say a method written by a user during
+    ## symbols will not conflict with, say, a method written by a user during
     ## generateCpp step (which operates by names only, not smart lookup
     ## in classes etc).
     setupExprs <- list()
@@ -113,7 +114,7 @@ makeTFsetupExprs <- function(TFcontent, TFrunnerName) {
 }
 
 makeTFconstruction <- function(TFcontent) {
-    ## pasting code instead of creating a parse tree
+    ## Paste code, instead of creating a parse tree.
     paste(
         paste0(' = *NimTf_Builder("', TFcontent$serializedGraph, '")'),
         paste0(
