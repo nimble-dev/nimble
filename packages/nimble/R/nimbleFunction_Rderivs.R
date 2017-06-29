@@ -1,7 +1,7 @@
-makeSingleArgWrapper <- function(nf, wrt, dropArgs, fxnEnv) {
+makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
   formalNames <- formalArgs(eval(nf[[1]], envir = fxnEnv)@.Data)
   wrtNames <- strsplit(wrt, '\\[')
-  wrtArgIndices <- sapply(wrtNames, function(x){return(which(x[1] == formalNames))})
+  wrtArgIndices <- c(sapply(wrtNames, function(x){return(which(x[1] == formalNames))}))
   flatteningInfo <- list()
   for(i in seq_along(wrt)){
     arg <- nf[[wrtArgIndices[i] + 1]]
@@ -9,7 +9,7 @@ makeSingleArgWrapper <- function(nf, wrt, dropArgs, fxnEnv) {
     if(length(wrtNames[[i]]) > 1){
       indText <-  paste0('[', wrtNames[[i]][[2]])
     }
-    argSym <- parse(text = paste0(arg, indText))[[1]]
+    argSym <- parse(text = paste0(deparse(arg), indText))[[1]]
     dimInfo <- dim(eval(argSym, envir = fxnEnv))
     if(is.null(dimInfo)) dimInfo <- length(eval(argSym, envir = fxnEnv))
     flatteningInfo[[i]] <- list()
@@ -19,18 +19,24 @@ makeSingleArgWrapper <- function(nf, wrt, dropArgs, fxnEnv) {
   wrappedFun <- function(x) {
     args <- list()
     nextInd <- 0
-    for(i in seq_along(wrtNames)){
-      thisSize <- prod(flatteningInfo[[i]][[1]]) ## total length
-      if(length(wrtNames[[i]]) > 1){
-        args[[wrtArgIndices[i]]] <-  eval(nf[[wrtArgIndices[i]+1]], envir = fxnEnv)
-        argBracketExpr <- parse(text = paste0('args[[wrtArgIndices[i]]]', flatteningInfo[[i]][[2]], ' <- x[nextInd + 1:thisSize]'))[[1]]
-        eval(argBracketExpr)
+    for(i in 1:(length(nf)-1)){
+      if(i %in% wrtArgIndices){
+        thisWrtIndex <- which(i == wrtArgIndices)
+        thisSize <- prod(flatteningInfo[[thisWrtIndex]][[1]]) ## total length
+        if(length(wrtNames[[thisWrtIndex]]) > 1){
+          args[[i]] <-  eval(nf[[i+1]], envir = fxnEnv)
+          argBracketExpr <- parse(text = paste0('args[[i]]', flatteningInfo[[thisWrtIndex]][[2]], ' <- x[nextInd + 1:thisSize]'))[[1]]
+          eval(argBracketExpr)
+        }
+        else{
+          args[[i]] <-  x[nextInd + 1:thisSize]
+        }
+        if(length( flatteningInfo[[thisWrtIndex]][[1]]) > 1 ) dim(  args[[i]]) <-  flatteningInfo[[thisWrtIndex]][[1]]
+        nextInd <- nextInd + thisSize
       }
       else{
-        args[[wrtArgIndices[i]]] <-  x[nextInd + 1:thisSize]
+       args[[i]] <- nf[[i+1]] 
       }
-      if(length( flatteningInfo[[i]][[1]]) > 1 ) dim(  args[[wrtArgIndices[i]]] ) <-  flatteningInfo[[i]][[1]]
-      nextInd <- nextInd + thisSize
     }
     c(do.call(paste(nf[[1]]), args, envir = fxnEnv))
   }
@@ -72,14 +78,20 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
                                nodeFunctionIndex = eval(derivFxnCall[['nodeFunctionIndex']], envir = fxnEnv),
                                order, wrt))
   }
+  if(deparse(derivFxnCall[[1]]) == 'model$calculate'){
+    return(nimDerivs_calculate(model = eval(derivFxnCall[[1]][[2]], envir = fxnEnv),
+                               nodes = eval(derivFxnCall[[2]], envir = fxnEnv),
+                               order = order, wrt = wrt))
+  }
   libError <- try(library('numDeriv'), silent = TRUE)
   if(inherits(libError, 'try-error')){
     stop("The 'numDeriv' package must be installed to use derivatives in uncompiled nimbleFunctions.")
   }
   if(is.null(wrt)){
     wrt <- formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv)@.Data)
+    wrt <- wrt[- which(wrt == dropArgs)]
   }
-  derivFxnList <- makeSingleArgWrapper(derivFxnCall, wrt, dropArgs, fxnEnv)
+  derivFxnList <- makeSingleArgWrapper(derivFxnCall, wrt, fxnEnv)
   singleArg <- derivFxnList[[2]]()
   derivList <- genD(derivFxnList[[1]], singleArg)
   outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
@@ -144,7 +156,7 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, calcNodesLineNums, wrtLineIn
         derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS),
                                      list(CALCCALL = calcWithArgsCall,
                                           DERIVORDERS = c(0, 1, 2),
-                                          DROPARGS = 1)))
+                                          DROPARGS = 'INDEXEDNODEINFO_')))
         argSizeInfo <- sapply(3:length(calcWithArgsCall), function(x){length(eval(calcWithArgsCall[[x]]))})
         if(isDeterm){
           derivList$value <- 0
@@ -307,7 +319,7 @@ convertCalcArgNameToModelNodeName <- function(calcArgName, sizeAndDimInfo){
   return(paste0('model$', thisName, indexBracketInfo))
 }
 
-nimDerivs_calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex, order, wrtPars){
+nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFunctionIndex = NULL, order, wrtPars){
   if(!is.null(nodeFxnVector)){
     stop('nfv case of nimDerivs_calculate not implemented yet.')
   }
@@ -315,6 +327,7 @@ nimDerivs_calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex, 
   nodes <- model$expandNodeNames(nodes)
   if(!all(nodes %in% wrtParsDeps)){
     print('Warning: not all calculate nodes depend on a wrtNode')
+    wrtParsDeps <- c(wrtParsDeps, nodes[which(!(nodes%in%wrtParsDeps))])
   }
   derivInfo <- nimble:::enhanceDepsForDerivs(model$expandNodeNames(wrtPars), wrtParsDeps, model)
   stochNodes <- nodes[model$getNodeType(nodes) == 'stoch']

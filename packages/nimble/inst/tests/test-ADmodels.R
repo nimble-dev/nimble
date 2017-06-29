@@ -88,7 +88,7 @@ test_that('Derivatives of model$calculate work for nimbleModel with a for loop.'
               code = ADCode3, dimensions = list(a = 2, b = 2, c = 2), constants = list(diagMat = diag(2)),
               data = list(y = simData), inits = list(mu = c(-1.5, 0.8), sigma = diag(2)))
             temporarilyAssignInGlobalEnv(ADMod3)  
-            # cADMod2 <- compileNimble(ADMod2)
+            #cADMod3 <- compileNimble(ADMod3)
             
             ## R derivatives are evaluated below.
             testFxn <- function(mu, sigma){
@@ -110,3 +110,68 @@ test_that('Derivatives of model$calculate work for nimbleModel with a for loop.'
           }
 )
 
+makeCalcWrapperFunction <- function(calcNodeName, wrtName){
+  argSaveLines <- list()
+  argSaveLines[[1]] <- substitute(origVals <- list())
+  for(i in seq_along(wrtName)){
+    argSaveLines[[i+1]] <- substitute({origVals[[I]] <- model[[WRTNAME]];
+                                      model[[WRTNAME]] <- WRTNAMEEXPR},
+                                     list(I = i,
+                                          WRTNAME = wrtName[[i]][1],
+                                          WRTNAMEEXPR = as.name(wrtName[[i]][1])))
+  }
+  calcLine <- list(substitute(model$calculate(model$getDependencies(DEPNAMES)),
+                              list(DEPNAMES = wrtName[[i]][1])))
+  callLine <-  list(substitute(outVal <- calculate(model, CALCNODENAME),
+                               list(CALCNODENAME = calcNodeName)))
+  argReplaceLines <- list()
+  for(i in seq_along(wrtName)){
+    argReplaceLines[[i]] <- substitute(model[[WRTNAME]] <- origVals[[I]],
+    list(I = i, WRTNAME = wrtName[[i]][1] ))
+  }
+  returnLine <- substitute(return(outVal))
+  calcWrapperFunction <- function(){}
+  body(calcWrapperFunction) <- nimble:::putCodeLinesInBrackets(c(argSaveLines, calcLine, callLine, argReplaceLines, returnLine))
+  calcFunctionArgNames <- list('model' = NA)
+  for(i in seq_along(wrtName)){
+    calcFunctionArgNames[[ wrtName[[i]][1]]] <- NA
+  }
+  formals(calcWrapperFunction) <- calcFunctionArgNames
+  return(calcWrapperFunction)
+}
+
+test_ADModelCalculate <- function(model, calcNodeNames = NULL, wrt = NULL, 
+                                  testR = TRUE, testCompiled = TRUE,  verbose = TRUE){
+  temporarilyAssignInGlobalEnv(model)  
+  if(testR){
+    for(i in seq_along(calcNodeNames)){
+      for(j in seq_along(wrt)){
+        wrtNames <- strsplit(wrt[[j]], '\\[')
+        RCalcADTestFunction <- makeCalcWrapperFunction(calcNodeNames[[i]], wrtNames)
+        argList <- list('model' = quote(model))
+        for(k in seq_along(wrtNames)){
+            argList[[wrtNames[[k]][1]]] <- model[[wrtNames[[k]][1]]]
+        }
+        argList <- c(list('RCalcADTestFunction'), argList)
+        fxnCall <- as.call(argList)
+        fxnCall[[1]] <- quote(RCalcADTestFunction)  
+        wrapperDerivs <- eval(substitute(nimDerivs(FXNCALL, wrt = WRT),
+                                         list(FXNCALL = fxnCall,
+                                              WRT = wrt[[j]])))
+        calcDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]])
+        browser()
+        expect_equal(wrapperDerivs$value, calcDerivs$value)
+        expect_equal(wrapperDerivs$gradient, calcDerivs$gradient, tolerance = .0001)
+        expect_equal(wrapperDerivs$hessian, calcDerivs$hessian, tolerance = .001)
+      }
+    }
+  }
+  
+  if(testCompiled){
+    expect_message(cModel <- compileNimble(model))
+  }
+}
+
+test_ADModelCalculate(ADMod1, calcNodeNames = list(c('a', 'y'), c('a'), c(ADMod1$getDependencies('a'))),
+                      wrt = list(c('a', 'y'), c('a[1]', 'y[1]'), c('a[1:2]', 'y[1:2]')), testR = TRUE,
+                                      testCompiled = FALSE)

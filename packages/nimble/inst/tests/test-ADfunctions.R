@@ -7,7 +7,7 @@ test_that('Derivatives of dnorm function correctly.',
     ADfun1 <- nimbleFunction(
       setup = function(){},
       run = function(y = double(1)) {
-        outList <- derivs(testMethod(y), wrt = 'x')
+        outList <- derivs(testMethod(y), wrt = 'x[1:2]')
         returnType(ADNimbleList())
         return(outList)
       },
