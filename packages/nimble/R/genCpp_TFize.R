@@ -65,20 +65,20 @@ exprClasses_TFize <-
 
 ## Manage tensorflow-ization of code (e.g. one statement).
 TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
-    TFcontent <- exprClasses2serializedTF(code, symTab)
+    TfBuilder <- exprClasses2serializedTF(code, symTab)
     ## This code-generation problem is different than others we've supported:
     ## We have a constructor that must happen as a constructor because it is for a
     ## static pointer.  But the cppVarFull::generate takes constructor as simple text
     ## and does not recursively generate constructor for exprClasses.  Hence
     ## for a first step now we will just paste together the constructor code
-    TFconstructor <- makeTFconstruction(TFcontent)
+    TFconstructor <- TfBuilder$generateConstructor()
     TFrunnerName <- TFrunnerLabelGenerator()
     TFrunnerSym <-
         symbolTensorflowRunner(name = TFrunnerName,
                                constructor = TFconstructor,
                                type = "symbolTensorflowRunner")
     symTab$addSymbol(TFrunnerSym)
-    TFsetupExprs <- makeTFsetupExprs(TFcontent, TFrunnerName)
+    TFsetupExprs <- makeTFsetupExprs(TfBuilder, TFrunnerName)
     ## Convert original code line to a comment.
     original <- nimDeparse(code)
     code$name <- "cppComment"
@@ -87,13 +87,13 @@ TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
     TFsetupExprs
 }
 
-makeTFsetupExprs <- function(TFcontent, TFrunnerName) {
+makeTFsetupExprs <- function(TfBuilder, TFrunnerName) {
     ## This uses the prefix NimTf_ so that we can assume that internal
     ## symbols will not conflict with, say, a method written by a user during
     ## generateCpp step (which operates by names only, not smart lookup
     ## in classes etc).
     setupExprs <- list()
-    for (v in TFcontent$inputNames) {
+    for (v in TfBuilder$inputNames) {
         setupExprs[[length(setupExprs) + 1]] <-
             RparseTree2ExprClasses(substitute(
                 cppMemberFunction(NimTf_setInput(TFRN, V)),
@@ -103,7 +103,7 @@ makeTFsetupExprs <- function(TFcontent, TFrunnerName) {
     setupExprs[[length(setupExprs) + 1]] <-
         RparseTree2ExprClasses(substitute(cppMemberFunction(NimTf_run(TFRN)),
                                           list(TFRN = as.name(TFrunnerName))))
-    for (v in TFcontent$outputNames) {
+    for (v in TfBuilder$outputNames) {
         setupExprs[[length(setupExprs) + 1]] <-
             RparseTree2ExprClasses(substitute(
                 cppMemberFunction(NimTf_getOutput(TFRN, V)),
@@ -113,21 +113,55 @@ makeTFsetupExprs <- function(TFcontent, TFrunnerName) {
     setupExprs
 }
 
-makeTFconstruction <- function(TFcontent) {
-    ## Paste code, instead of creating a parse tree.
-    paste(
-        paste0(' = *NimTf_Builder("', TFcontent$serializedGraph, '")'),
-        paste0(
-            paste0('.NimTf_withInput("', TFcontent$inputNames, '")'),
-            collapse = "\n"
-        ),
-        paste0(
-            paste0('.NimTf_withOutput("', TFcontent$outputNames, '")'),
-            collapse = "\n"
-        ),
-        '.NimTf_build()',
-        sep = "\n"
-    )
+## Recursively collects all names in an exprClass and create tf$placeholders for each.
+TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
+    if (is.null(placeholders)) {
+        placeholders = new.env()
+    }
+    if (code$isName) {
+        if (is.null(placeholders[[code$name]])) {
+            nimType2TfDtype = list('double' = tf$float64)
+            sym <- symTab$getSymbolObject(code$name)
+            dtype <- nimType2TfDtype[[sym$type]]
+            size <- as.list(rev(sym$size))  ## Note the transpose
+            for (i in 1:length(size)) {
+                if (is.na(size[i])) {
+                    size[i] <- NULL
+                }
+            }
+            placeholders[[code$name]] = tf$placeholder(name = code$name,
+                                                       dtype = dtype,
+                                                       shape = size)
+        }
+        return(placeholders)
+    }
+    if (code$isAssign) {
+        return(TfCollectPlaceholders(code$args[[2]], symTab, placeholders))
+    }
+    for (arg in code$args) {
+        if (class(arg) == 'exprClass') {
+            TfCollectPlaceholders(arg, symTab, placeholders)
+        }
+    }
+    return(placeholders)
+}
+
+TfTensorize <- function(code, placeholders) {
+    if (!is.environment(placeholders)) stop()
+
+    if (code$isName) {
+        return(placeholders[[code$name]])
+    }
+    if (code$name %in% c('+', '-', '*', '/')) {
+        args <- lapply(code$args, TfTensorize, placeholders)
+        return(do.call(code$name, args))
+    }
+    if (code$name == '%*%') {
+        lhs <- TfTensorize(code$args[[1]], placeholders)
+        rhs <- TfTensorize(code$args[[2]], placeholders)
+        return(tf$matmul(lhs, rhs))
+    }
+    stop(paste('Not implemented:', code))
 }
 
 exprClasses2serializedTF <- function(code, symTab) {
@@ -138,44 +172,35 @@ exprClasses2serializedTF <- function(code, symTab) {
         stop('Failed to load reticulate package')
     }
     
-    ## This prototype assumes arguments are 'ARG1_a_','ARG1_x_', and 'ARG1_y_' and output is 'z'.
-    ## TODO Determine intputs, outputs, and tensorflow graph from `code`.
-    
+    if (code$name != '<-') {
+        stop(paste('Not implemented:', code$name))
+    }
+    target <- code$args[[1]]
+    expr <- code$args[[2]]
+
     ## Construct a tensorflow graph.
     tf$reset_default_graph()
-    a <-
-        tf$placeholder(name = 'ARG1_a_',
-                       dtype = tf$float64,
-                       shape = list())
-    x <-
-        tf$placeholder(name = 'ARG2_x_',
-                       dtype = tf$float64,
-                       shape = list(NULL))
-    y <-
-        tf$placeholder(name = 'ARG3_y_',
-                       dtype = tf$float64,
-                       shape = list(NULL))
-    z <- tf$add(tf$multiply(a, x), y, name = 'z')
-    
+    placeholders <- TfCollectPlaceholders(expr, symTab)
+    tensor <- TfTensorize(expr, placeholders)
+    tensor <- tf$identity(tensor, name = target$name)
+
     ## Serialize the graph as a string.
     base64 <- reticulate::import('base64')
-    graph <-
-        base64$b64encode(z$graph$as_graph_def()$SerializeToString())
-    
-    ## Create invocation of NimTf_Builder().
-    tfProxy <- tfProxyClass()
-    for (var in c('ARG1_a_', 'ARG2_x_', 'ARG3_y_')) {
-        tfProxy$addInputVar(var)
+    graph <- base64$b64encode(tensor$graph$as_graph_def()$SerializeToString())
+
+    ## Create NimTf_Builder.
+    tfBuilder <- TfBuilder()
+    tfBuilder$setSerializedGraph(graph)
+    for (name in names(placeholders)) {
+        tfBuilder$addInputVar(name)
     }
-    tfProxy$addOutputVar('z')
-    tfProxy$setSerializedGraph(graph)
-    
-    return(tfProxy)
+    tfBuilder$addOutputVar(target$name)
+    return(tfBuilder)
 }
 
 ## This is a proxy for (or may evolved to contain) the tf graph
-tfProxyClass <- setRefClass(
-    Class = "tfProxyClass",
+TfBuilder <- setRefClass(
+    Class = "TfBuilder",
     fields = list(
         inputNames = 'ANY',
         ## character vector of arguments *representing canonical order*
@@ -202,7 +227,22 @@ tfProxyClass <- setRefClass(
         },
         setSerializedGraph = function(graphText) {
             serializedGraph <<- graphText
+        },
+        generateConstructor = function() {
+            ## Paste code, instead of creating a parse tree.
+            paste(
+                paste0(' = *NimTf_Builder("', serializedGraph, '")'),
+                paste0(
+                    paste0('.NimTf_withInput("', inputNames, '")'),
+                    collapse = "\n"
+                ),
+                paste0(
+                    paste0('.NimTf_withOutput("', outputNames, '")'),
+                    collapse = "\n"
+                ),
+                '.NimTf_build()',
+                sep = "\n"
+            )
         }
-        
     )
 )
