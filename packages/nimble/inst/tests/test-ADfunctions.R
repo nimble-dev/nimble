@@ -6,14 +6,14 @@ test_that('Derivatives of dnorm function correctly.',
   {
     ADfun1 <- nimbleFunction(
       setup = function(){},
-      run = function(x = double(0)) {
-        outList <- derivs(testMethod(x))
+      run = function(y = double(1)) {
+        outList <- derivs(testMethod(y), wrt = 'x')
         returnType(ADNimbleList())
         return(outList)
       },
       methods = list(
-        testMethod = function(x = double(0)) {
-          out <- dnorm(x,0,1)
+        testMethod = function(x = double(1)) {
+          out <- dnorm(x[1],0,1)
           returnType(double())
           return(out)
         }
@@ -23,7 +23,7 @@ test_that('Derivatives of dnorm function correctly.',
     
     ADfunInst <- ADfun1()
     
-    ADfunInst$run(2)
+    ADfunInst$run(c(2,-2))
     temporarilyAssignInGlobalEnv(ADfunInst)  
     cADfunInst <- compileNimble(ADfunInst)
     

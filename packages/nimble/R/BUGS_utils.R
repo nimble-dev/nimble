@@ -52,7 +52,6 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
         thisCodeExprList <- list()
         numInds <- length(code) - 2
         codeLength <- c()
-        # codeIndexExpr <- list()
         for(i in 1:numInds){
           if(is.call(code[[i+2]]) && deparse(code[[i+2]][[1]]) == ':'){
             if(is.numeric(code[[i+2]][[2]])){
@@ -68,7 +67,6 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
             else{
               codeEndInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[3]])]
             }
-            # codeIndexExpr[[i]]   <- list(code[[i+2]][[2]], code[[i+2]][[3]])
             thisCodeLength <- codeEndInds - codeStartInds + 1
             if(!all(thisCodeLength == thisCodeLength[1])){
               print("Error: AD not currently supported for ragged arrays in model code")
@@ -78,12 +76,10 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
           }
           else{
             codeLength <- c(codeLength, 1)
-            # codeIndexExpr[[i]] <- list(code[[i+2]])
           }
         }
         thisCodeExprList$lengths <- codeLength
         thisCodeExprList$nDim <- sum(codeLength > 1)
-        # thisCodeExprList$indexExpr <- codeIndexExpr
         if(is.null(allSizeAndDimList[[deparse(code[[2]])]])) allSizeAndDimList[[deparse(code[[2]])]][[1]] <- thisCodeExprList
         else allSizeAndDimList[[deparse(code[[2]])]][[length(allSizeAndDimList[[deparse(code[[2]])]]) + 1]] <- thisCodeExprList
         return(allSizeAndDimList)
