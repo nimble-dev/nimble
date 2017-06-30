@@ -180,11 +180,11 @@ tfTranslate <- function(name) {
                 tf$norm(x, ord = 2) / tf$sqrt(n_minus_one)
             },
             '%*%' = function(x, y) {
-                while (length(x$shape) < 2) {
-                    x <- tf$expand_dims(x, 0)
+                while (length(x$shape$as_list()) < 2) {
+                    x <- tf$expand_dims(x, 0L)
                 }
-                while (length(y$shape) < 2) {
-                    y <- tf$expand_dims(y, 0)
+                while (length(y$shape$as_list()) < 2) {
+                    y <- tf$expand_dims(y, 1L)
                 }
                 tf$matmul(y, x)  ## Note the transpose.
             }

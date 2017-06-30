@@ -23,7 +23,7 @@ test_that('Tensorflow implementation of axpy works', {
 })
 
 if (0)  ## Known failure.
-test_that('Tensorflow implementation can compile parentheses', {
+test_that('Tensorflow example', {
     skip_if_not_installed('tensorflow')
     nf <- nimbleFunction(
         run = function(arg1 = double(2), arg2 = double(1)) 
@@ -34,7 +34,9 @@ test_that('Tensorflow implementation can compile parentheses', {
         } 
     )
     cnf <- compileNimble(nf)
-    expect_equal(nf(x), cnf(x))
+    x <- matrix(1:6, 2, 3)
+    y <- 1:3
+    expect_equal(nf(x, y), cnf(x, y))
 })
 
 

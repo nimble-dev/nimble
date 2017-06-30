@@ -15,6 +15,7 @@ TEMP*
 MyMakevars
 #*.R
 .Rproj.user
+*.Rproj
 
 /packages/nimble/inst/CppCode/Makeconf
 /packages/nimble/inst/include/cppad/
