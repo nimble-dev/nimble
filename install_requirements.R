@@ -4,7 +4,6 @@ requirements <- c(
     'igraph',
     'coda',
     'testthat',
-    'tensorflow',
     'mvtnorm',  ## needed for test-distributions.R
     'abind',    ## needed for test-compareMCMCs.R
     'covr')     ## needed for code coverage reports
@@ -16,7 +15,12 @@ for (package in requirements) {
     }
 }
 
+## Tensorflow requires custom installation.
+install.packages('devtools')
+library(devtools)
+devtools::install_github('nimble-dev/r-tensorflow@upgrade-pip')
 library(tensorflow)
+install_tensorflow()
 tryCatch({
     ## Calling tf$ triggers loading of the python tensorflow library. 
     cat('Found Tensorflow version', tf$`__version__`, '\n')
