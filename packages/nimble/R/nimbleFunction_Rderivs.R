@@ -298,6 +298,26 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, calcNodesLineNums, wrtLineIn
       }
     }
   }
+  wrtIndex <- 1
+  ## Finally, we check to see which parts of the wrt parameters are returned.
+  ## E.g. if x[1:2] is a node in the model, but derivs were taken wrt x[1], we drop the gradient
+  ## and hessian information corresponding to x[2]
+  for(i in seq_along(wrtLineInfo)){
+    if(!is.na(wrtLineInfo[[i]]$correctIndices)){
+      theseIndices <- (wrtIndex:(wrtIndex + wrtLineInfo[[i]]$lineSize -1))[wrtLineInfo[[i]]$correctIndices]
+      allIndices <- c(1:(wrtIndex - 1), theseIndices)
+      if(!i == length(wrtLineInfo)){
+        allIndices <- c(allIndices, (wrtIndex + wrtLineInfo[[i]]$lineSize):length(outDerivList$gradient[1,]))
+      }
+      allIndices <- unique(allIndices)
+      outDerivList$gradient <- outDerivList$gradient[,allIndices, drop = FALSE]
+      outDerivList$hessian <- outDerivList$hessian[allIndices, allIndices, , drop = FALSE]
+      wrtIndex <- wrtIndex + length(theseIndices)
+    }
+    else{
+      wrtIndex <- wrtIndex + wrtLineInfo[[i]]$lineSize
+    }
+  }
   ## Reflect hessian across the diagonal
   outDerivList$hessian[lower.tri(outDerivList$hessian[,,1])] <-  outDerivList$hessian[upper.tri(outDerivList$hessian[,,1])]
   return(outDerivList)
@@ -343,11 +363,11 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
       correctIndices <- numeric(length(expandWrt))
       for(j in seq_along(expandWrt)){
         correctIndices[j] <- which(model$expandNodeNames(expandWrt[j], returnScalarComponents = TRUE) == 
-                                     model$expandNodeNames(model$expandNodeNames(wrtPars[i]), returnScalarComponents = TRUE)))
+                                     model$expandNodeNames(model$expandNodeNames(wrtPars[i]), returnScalarComponents = TRUE))
       }
     }
     else{
-      correctIndices <- NULL
+      correctIndices <- NA
     }
     wrtLineInfo[[i]]$correctIndices <- correctIndices
   }
