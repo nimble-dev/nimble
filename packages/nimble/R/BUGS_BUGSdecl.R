@@ -68,6 +68,8 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  replacementsEnv = 'ANY',
                                  nodeFunctionNames = 'ANY',
 
+                                 dynamicIndexInfo = 'ANY', ## store info on dynamicIndex expressions for use in restricting to valid index range in nodeFunctions
+
                                  outputSize = 'ANY', ## should match nrow(unrolledIndicesMatrix)
                                  origIDs = 'ANY',
                                  graphIDs = 'ANY',
@@ -425,11 +427,18 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 } else { ## non-replaceable indices are dynamic indices
                     if(!nimbleOptions()$allowDynamicIndexing) dynamicIndexParent <- code[[2]]
                     else {
+                        browser()
                         if(any(sapply(contentsCode, detectNonscalarIndex)))
                             stop("getSymbolicParentNodesRecurse: only scalar random indices are allowed; vector random indexing found in ", deparse(code))
+                        indexedVariable <- deparse(code[[2]])
                         dynamicIndexParent <- addUnknownIndexToVarNameInBracketExpr(code, contextID)
                         dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ] <- as.numeric(NA)
-                        contentsCode = lapply(contentsCode, addIndexWrapping)
+                        cnt <- 1
+                        for(iC in which(!contentsReplaceable)) {
+                            contentsCode[[cnt]] <- addIndexWrapping(contentsCode[[cnt]], code[[2+iC]],
+                                                                    indexedVariable, iC)
+                            cnt <- cnt + 1
+                        }
                     }
                     return(list(code = c(contentsCode, list(dynamicIndexParent)),
                                 replaceable = FALSE,
@@ -591,17 +600,22 @@ genLogProbNodeExprAndReplacements <- function(code, codeReplaced, indexVarExprs)
     list(logProbNodeExpr = logProbNodeExpr, replacements = replacements)
 }
 
-addIndexWrapping <- function(expr) {
+addIndexWrapping <- function(expr, indexingCode, indexedVariable, position) {
     if(expr[[1]] == '.USED_IN_INDEX') ## nested random indexing
         return(expr)
-    substitute(.USED_IN_INDEX(EXPR), list(EXPR = expr))
+    expr <- substitute(.USED_IN_INDEX(EXPR), list(EXPR = expr))
+    expr[3:5] <- list(indexingCode, indexedVariable, position)
+    return(expr)
 }
 
+usedInIndex <- function(expr)
+    if(length(expr) > 1 && expr[[1]] == ".USED_IN_INDEX") TRUE else FALSE
+
 stripIndexWrapping <- function(expr) 
-    if(length(expr) == 1 || expr[[1]] != quote(.USED_IN_INDEX)) return(expr) else return(expr[[2]])
+    if(length(expr) == 1 || !usedInIndex(expr)) return(expr) else return(expr[[2]])
 
 detectNonscalarIndex <- function(expr) {
-    if(length(expr) == 1) return(FALSE)
+    if(usedInIndex(expr) || length(expr) == 1) return(FALSE)  ## first condition because recursion means that we might already have processed the dynamic index
     if(length(expr) == 2) {  ## this can occur if we have mu[k[j[i]]]
         expr <- stripIndexWrapping(expr)
         if(length(expr) <= 2)

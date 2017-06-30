@@ -1554,11 +1554,21 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
 }
 
 
+## pull out dynamic indexing info for use in constraining range in nodeFunctions and then strip out USED_IN_INDEX tagging
 ## original plan was for some code here (if based on variables) or later (if based on vertices) to find the elements used in dynamic indexing for when we planned to dynamically update the graph
-## for now we simply strip out the USED_IN_INDEX() tagging
 modelDefClass$methods(findDynamicIndexParticipants = function() {
     if(nimbleOptions()$allowDynamicIndexing) {
+        browser()
         for(iDI in seq_along(declInfo)) {
+            declInfo[[iDI]]$dynamicIndexInfo <<- list()
+            for(iSPN in seq_along(declInfo[[iDI]]$symbolicParentNodes)) {
+                symbolicParent <- declInfo[[iDI]]$symbolicParentNodes[[iSPN]]
+                if(usedInIndex(symbolicParent))
+                    declInfo[[iDI]]$dynamicIndexInfo[[length(declInfo[[iDI]]$dynamicIndexInfo) + 1]] <<-
+                                                           list(indexCode = symbolicParent[[3]],
+                                                                indexedVariable = symbolicParent[[4]],
+                                                                indexedPosition = symbolicParent[[5]])
+            }
             declInfo[[iDI]]$symbolicParentNodes <<- lapply(declInfo[[iDI]]$symbolicParentNodes, stripIndexWrapping)
             declInfo[[iDI]]$symbolicParentNodesReplaced <<- lapply(declInfo[[iDI]]$symbolicParentNodesReplaced, stripIndexWrapping)
         }
