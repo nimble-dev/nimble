@@ -151,77 +151,109 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
 .tfLazyData <- new.env()
 tfTranslate <- function(name) {
     developing <- TRUE  ## TODO Switch to false when development stabilizes.
-    if (developing || is.null(.tfLazyData$tfTranslate)) {
-        .tfLazyData$tfTranslate <- list(
-            '+' = '+',
-            '-' = '-',
-            '*' = '*',
-            '/' = '/',
-            'abs' = tf$abs,
-            'cos' = tf$cos,
-            'sin' = tf$sin,
-            'tan' = tf$tan,
-            'acos' = tf$acos,
-            'asin' = tf$asin,
-            'atan' = tf$atan,
-            ## The hyperbolic functions requre very a recent tensorflow.
-            'cosh' = tf$cosh,
-            'sinh' = tf$sinh,
-            'tanh' = tf$tanh,
-            'acosh' = tf$acosh,
-            'asinh' = tf$asinh,
-            'atanh' = tf$atanh,
-            'exp' = tf$exp,
-            'log' = tf$log,
-            'pow' = tf$pow,
-            'sqrt' = tf$sqrt,
-            'square' = tf$square,
-            'cube' = function(x) tf$pow(x, 3L),
-            'cloglog' = function(x) tf$log(-tf$log1p(-x)),
-            'icloglog' = function(x) tf$constant(1, tf$float64) - tf$exp(-tf$exp(x)),
-            'logit' = function(x) tf$log(x / (tf$constant(1, tf$float64) - x)),
-            'ilogit' = tf$sigmoid,
-            'expit' = tf$sigmoid,
-            'inprod' = function(lhs, rhs) tf$reduce_sum(lhs * rhs),
-            'min' = tf$reduce_min,
-            'max' = tf$reduce_max,
-            'pmin' = tf$minimum,
-            'pmax' = tf$maximum,
-            't' = function(mat) tf$transpose(mat, c(1L, 0L)),
-            'asCol' = function(x) x,  # FIXME
-            'diagonal' = tf$matrix_diag,  ## TODO Decide between diag() and diag_part().
-            'det' = tf$matrix_determinant,
-            'logdet' = function(x) tf$log(tf$matrix_determinant(x)),
-            'inverse' = tf$matrix_inverse,
-            'sum' = tf$reduce_sum,
-            'mean' = tf$reduce_mean,
-            'var' = function(x) {
-                n_minus_one <- tf$cast(tf$size(x), tf$float64) - tf$constant(1, tf$float64)
-                tf$reduce_sum(tf$square(x - tf$reduce_mean(x))) / n_minus_one
-            },
-            'sd' = function(x) {
-                n_minus_one <- tf$cast(tf$size(x), tf$float64) - tf$constant(1, tf$float64)
-                tf$norm(x - tf$reduce_mean(x), ord = 2) / tf$sqrt(n_minus_one)
-            },
-            '%*%' = function(x, y) {
-                while (length(x$shape$as_list()) < 2) {
-                    x <- tf$expand_dims(x, 1L)
-                }
-                while (length(y$shape$as_list()) < 2) {
-                    y <- tf$expand_dims(y, 0L)
-                }
-                tf$matmul(y, x)  ## Note the transpose.
-            },
-            'backsolve' = function(r, x) {
-                ## TODO Decide whether to transpose.
-                tf$matrix_triangular_solve(r, x, lower = TRUE)
-            },
-            'forwardsolve' = function(l, x) {
-                ## TODO Decide whether to transpose.
-                tf$matrix_triangular_solve(l, x, lower = FALSE)
-            }
-        )
+    if (!developing && !is.null(.tfLazyData$tfTranslate)) {
+        return(.tfLazyData$tfTranslate[[name]])
     }
+    .tfLazyData$tfTranslate <- list(
+        '+' = '+',
+        '-' = '-',
+        '*' = '*',
+        '/' = '/',
+        'abs' = tf$abs,
+        'ceil' = tf$ceil,
+        'floor' = tf$floor,
+        'round' = tf$round,
+        'nimRound' = tf$round,
+        'trunc' = function(x) {
+            if (x$dtype == tf$int64) {
+                tf$truncatediv(x, tf$constant(1, tf$int64))
+            } else {
+                tf$cast(tf$cast(x, tf$int64), tf$float64)
+            }
+        },
+        'ftrunc' = function(x) tf$cast(tf$cast(x, tf$int64), tf$float64),
+        'cos' = tf$cos,
+        'sin' = tf$sin,
+        'tan' = tf$tan,
+        'acos' = tf$acos,
+        'asin' = tf$asin,
+        'atan' = tf$atan,
+        ## These hyperbolic functions requre very a recent tensorflow.
+        'cosh' = tf$cosh,
+        'sinh' = tf$sinh,
+        'tanh' = tf$tanh,
+        'acosh' = tf$acosh,
+        'asinh' = tf$asinh,
+        'atanh' = tf$atanh,
+        'exp' = tf$exp,
+        'log' = tf$log,
+        'log1p' = tf$log1p,
+        'pow' = tf$pow,
+        'sqrt' = tf$sqrt,
+        'square' = tf$square,
+        'cube' = function(x) tf$pow(x, 3L),
+        'gamma' = function(x) tf$exp(tf$lgamma(x)),
+        'gammafn' = function(x) tf$exp(tf$lgamma(x)),
+        'lgamma' = tf$lgamma,
+        'lgammafn' = tf$lgamma,
+        'loggam' = tf$lgamma,
+        'factorial' = function(x) tf$exp(tf$lgamma(tf$constant(1, tf$float64) + x)),
+        'lfactorial' = function(x) tf$lgamma(tf$constant(1, tf$float64) + x),
+        'cloglog' = function(x) tf$log(-tf$log1p(-x)),
+        'icloglog' = function(x) tf$constant(1, tf$float64) - tf$exp(-tf$exp(x)),
+        'logit' = function(x) tf$log(x / (tf$constant(1, tf$float64) - x)),
+        'ilogit' = tf$sigmoid,
+        'expit' = tf$sigmoid,
+        'probit' = function(x) {
+            one <- tf$constant(1.0, tf$float64)
+            two <- tf$constant(2.0, tf$float64)
+            ## tf$erfinv is implemented in C++ but not yet exposed in python.
+            tf$sqrt(two) * tf$erfinv(two * x - one)
+        },
+        'iprobit' = function(x) {
+            one <- tf$constant(1.0, tf$float64)
+            half <- tf$constant(0.5, tf$float64)
+            (one + tf$erf(x * tf$sqrt(half))) * half
+        },
+        'inprod' = function(lhs, rhs) tf$reduce_sum(lhs * rhs),
+        'min' = tf$reduce_min,
+        'max' = tf$reduce_max,
+        'pmin' = tf$minimum,
+        'pmax' = tf$maximum,
+        't' = function(mat) tf$transpose(mat, c(1L, 0L)),
+        'asCol' = function(x) x,  # FIXME
+        'diagonal' = tf$matrix_diag,  ## TODO Decide between diag() and diag_part().
+        'det' = tf$matrix_determinant,
+        'logdet' = function(x) tf$log(tf$matrix_determinant(x)),
+        'inverse' = tf$matrix_inverse,
+        'sum' = tf$reduce_sum,
+        'mean' = tf$reduce_mean,
+        'var' = function(x) {
+            n_minus_one <- tf$cast(tf$size(x), tf$float64) - tf$constant(1, tf$float64)
+            tf$reduce_sum(tf$square(x - tf$reduce_mean(x))) / n_minus_one
+        },
+        'sd' = function(x) {
+            n_minus_one <- tf$cast(tf$size(x), tf$float64) - tf$constant(1, tf$float64)
+            tf$norm(x - tf$reduce_mean(x), ord = 2) / tf$sqrt(n_minus_one)
+        },
+        '%*%' = function(x, y) {
+            while (length(x$shape$as_list()) < 2) {
+                x <- tf$expand_dims(x, 1L)
+            }
+            while (length(y$shape$as_list()) < 2) {
+                y <- tf$expand_dims(y, 0L)
+            }
+            tf$matmul(y, x)  ## Note the transpose.
+        },
+        'backsolve' = function(r, x) {
+            ## TODO Decide whether to transpose.
+            tf$matrix_triangular_solve(r, x, lower = TRUE)
+        },
+        'forwardsolve' = function(l, x) {
+            ## TODO Decide whether to transpose.
+            tf$matrix_triangular_solve(l, x, lower = FALSE)
+        }
+    )
     return(.tfLazyData$tfTranslate[[name]])
 }
 
