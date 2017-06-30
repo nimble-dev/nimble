@@ -867,6 +867,100 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
  #   if(.Platform$OS.type != 'windows') dyn.unload(project$cppProjects[[1]]$getSOName())
     invisible(NULL)
 }
+
+## Creates a wrapper function for a call to calculate(model, nodes).
+## Arguments:
+##  calcNodeName: A character vector of node names that will be used as the nodes argument in a call to calculate(model, nodes).
+##  wrtName:      A character vector of node names that will be arguments to the wrapper function.
+##
+## The returned wrapper function takes as arguments values for all parameters specified by the 'wrtName' argument,
+## and returns the value of a call to calculate(model, nodes) evaluated at those parameter values.  The
+## 'nodes' argument to the calculate function is specified by the 'calcNodeName' argument to makeADCalcWrapperFunction.
+
+makeADCalcWrapperFunction <- function(calcNodeName, wrtName){
+  argSaveLines <- list()
+  argSaveLines[[1]] <- substitute(origVals <- list())
+  for(i in seq_along(wrtName)){
+    argSaveLines[[i+1]] <- substitute({origVals[[I]] <- model[[WRTNAME]];
+    model[[WRTNAME]] <- WRTNAMEEXPR},
+    list(I = i,
+         WRTNAME = wrtName[[i]][1],
+         WRTNAMEEXPR = as.name(wrtName[[i]][1])))
+  }
+  calcLine <- list(substitute(model$calculate(model$getDependencies(DEPNAMES)),
+                              list(DEPNAMES = sapply(wrtName, function(x){return(x[1])}))))
+  callLine <-  list(substitute(outVal <- calculate(model, CALCNODENAME),
+                               list(CALCNODENAME = calcNodeName)))
+  argReplaceLines <- list()
+  for(i in seq_along(wrtName)){
+    argReplaceLines[[i]] <- substitute(model[[WRTNAME]] <- origVals[[I]],
+                                       list(I = i, WRTNAME = wrtName[[i]][1] ))
+  }
+  returnLine <- substitute(return(outVal))
+  calcWrapperFunction <- function(){}
+  body(calcWrapperFunction) <- nimble:::putCodeLinesInBrackets(c(argSaveLines, calcLine, callLine, argReplaceLines, returnLine))
+  calcFunctionArgNames <- list('model' = NA)
+  for(i in seq_along(wrtName)){
+    calcFunctionArgNames[[ wrtName[[i]][1]]] <- NA
+  }
+  formals(calcWrapperFunction) <- calcFunctionArgNames
+  return(calcWrapperFunction)
+}
+
+
+## Tests taking derivatives of calls to model$calculate(nodes) (or equivalently calculate(model, nodes))
+## Arguments:
+##   model:         The uncompiled nimbleModel object to use in the call to calculate(model, nodes).
+##   name:          The name of the model being tested.
+##   calcNodeNames: A list, each element of which should be a character vector.   List elements  
+##                  will be iterated through, and each element will be used as the 'nodes' argument
+##                  in the call to calculate(model, nodes).
+##   wrt:           A list, each element of which should be a character vector.  List elements will be iterated
+##                  through, and each element will be used as the 'wrt' argument in a call to nimDerivs(calculate(model, nodes), wrt)
+##   testR:         A logical argument.  If TRUE, the R version of nimDerivs will be checked for correct derivative calculations.
+##                  This is accomplished by comparing derivatives calculated using the chain rule to derivatives of a function that
+##                  wraps a call to calculate(model, nodes).
+##   testCompiled:  A logical argument.  Currently only checks whether the model can compile.
+##   verbose:       A logical argument.  Currently serves no purpose.
+test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, 
+                                  testR = TRUE, testCompiled = FALSE,  verbose = TRUE){
+  temporarilyAssignInGlobalEnv(model)  
+  if(testR){
+    for(i in seq_along(calcNodeNames)){
+      for(j in seq_along(wrt)){
+        wrtNames <- strsplit(wrt[[j]], '\\[')
+        RCalcADTestFunction <- makeADCalcWrapperFunction(calcNodeNames[[i]], wrtNames)
+        argList <- list('model' = quote(model))
+        for(k in seq_along(wrtNames)){
+          argList[[wrtNames[[k]][1]]] <- model[[wrtNames[[k]][1]]]
+        }
+        argList <- c(list('RCalcADTestFunction'), argList)
+        fxnCall <- as.call(argList)
+        fxnCall[[1]] <- quote(RCalcADTestFunction)  
+        test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes =', paste(calcNodeNames[[i]], collapse = ' '),
+                        'and wrt =', paste(wrt[[j]], collapse = ' ')), {
+                          wrapperDerivs <- eval(substitute(nimDerivs(FXNCALL, wrt = WRT),
+                                                           list(FXNCALL = fxnCall,
+                                                                WRT = wrt[[j]])))
+                          expect_is(wrapperDerivs$value, 'numeric')
+                          expect_is(wrapperDerivs$gradient, 'matrix')
+                          expect_is(wrapperDerivs$hessian, 'array')
+                          chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]])
+                          expect_is(chainRuleDerivs$value, 'numeric')
+                          expect_is(chainRuleDerivs$gradient, 'matrix')
+                          expect_is(chainRuleDerivs$hessian, 'array')
+                          browser()
+                          expect_equal(wrapperDerivs$value, chainRuleDerivs$value)
+                          expect_equal(wrapperDerivs$gradient, chainRuleDerivs$gradient, tolerance = .0001)
+                          expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = .001)
+                        })
+      }
+    }
+  }
+  if(testCompiled){
+    expect_message(cModel <- compileNimble(model))
+  }
+}
  
 ## utilities for saving test output to a reference file
 ## and making the test a comparison of the file

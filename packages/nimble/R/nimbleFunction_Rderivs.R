@@ -327,7 +327,7 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
   nodes <- model$expandNodeNames(nodes)
   if(!all(nodes %in% wrtParsDeps)){
     warning('not all calculate nodes depend on a wrtNode')
-    wrtParsDeps <- c(wrtParsDeps, nodes[which(!(nodes%in%wrtParsDeps))])
+    wrtParsDeps <- model$topologicallySortNodes(c(wrtParsDeps, nodes[which(!(nodes%in%wrtParsDeps))]))
   }
   derivInfo <- nimble:::enhanceDepsForDerivs(model$expandNodeNames(wrtPars), wrtParsDeps, model)
   stochNodes <- nodes[model$getNodeType(nodes) == 'stoch']
@@ -336,7 +336,20 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
   for(i in seq_along(model$expandNodeNames(wrtPars))){
     wrtLineInfo[[i]] <- list()
     wrtLineInfo[[i]]$lineNum <- which(model$expandNodeNames(wrtPars)[i] == derivInfo[[1]])
-    wrtLineInfo[[i]]$lineSize <- length(values(model, model$expandNodeNames(wrtPars)[i]))
+    wrtLineInfo[[i]]$lineSize <- length(model[[model$expandNodeNames(wrtPars[i])]])
+    if(!identical(model$expandNodeNames(wrtPars[i], returnScalarComponents = TRUE),
+                  model$expandNodeNames(model$expandNodeNames(wrtPars[i]), returnScalarComponents = TRUE))){
+      expandWrt <- model$expandNodeNames(wrtPars[i], returnScalarComponents = TRUE)
+      correctIndices <- numeric(length(expandWrt))
+      for(j in seq_along(expandWrt)){
+        correctIndices[j] <- which(model$expandNodeNames(expandWrt[j], returnScalarComponents = TRUE) == 
+                                     model$expandNodeNames(model$expandNodeNames(wrtPars[i]), returnScalarComponents = TRUE)))
+      }
+    }
+    else{
+      correctIndices <- NULL
+    }
+    wrtLineInfo[[i]]$correctIndices <- correctIndices
   }
   if(inherits(model, 'modelBaseClass') ){
     if(missing(nodes) ) 
