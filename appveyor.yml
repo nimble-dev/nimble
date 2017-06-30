@@ -44,7 +44,7 @@ test_script:
   - pip freeze
   - pip install --upgrade pip
   - pip install --upgrade setuptools
-  - pip install --upgrade sysconfig || echo 'Failed to upgrade sysconfig'
+  # - pip install --upgrade sysconfig || echo 'Failed to upgrade sysconfig'
   - Rscript install_requirements.R
   # The tests currently fail due to a problem sourcing test_utils.R.
   # - Rscript run_tests.R
