@@ -41,10 +41,11 @@ test_script:
   - echo %cd%
   - dir
   - python --version
-  - pip freeze
-  - pip install --upgrade pip
-  - pip install --upgrade setuptools
+  - pip freeze --all
+  - pip install --upgrade --ignore-installed pip
+  - pip install --upgrade --ignore-installed setuptools
   # - pip install --upgrade sysconfig || echo 'Failed to upgrade sysconfig'
+  - pip freeze --all
   - Rscript install_requirements.R
   # The tests currently fail due to a problem sourcing test_utils.R.
   # - Rscript run_tests.R

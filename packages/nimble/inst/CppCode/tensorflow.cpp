@@ -1,12 +1,12 @@
 #include <base64/base64.h>
 #include <nimble/tensorflow.h>
 
-#define TF_CHECK_OK(status)                                         \
-  {                                                                 \
-    if (TF_GetCode(status) != TF_OK) {                              \
-      NIMERROR("Tensorflow error at %s:%s: %s", __FILE__, __LINE__, \
-               TF_Message(status));                                 \
-    }                                                               \
+#define TF_CHECK_OK(status)                                           \
+  {                                                                   \
+    if (TF_GetCode(status) != TF_OK) {                                \
+      NIMERROR("Tensorflow error at " __FILE__ ":%d\n  %s", __LINE__, \
+               TF_Message(status));                                   \
+    }                                                                 \
   }
 
 // This is passed as the deallocator of memory that is not owned.
@@ -108,11 +108,10 @@ void NimTf_Runner::NimTf_run() {
     const int ntargets = 0;
     const TF_Operation** targets = NULL;
     TF_Buffer* run_metadata = NULL;
-    TF_SessionRun(session_, run_options,                                 //
-                  inputs_.data(), input_values_.data(), inputs_.size(),  //
-                  outputs_.data(), output_values_.data(),
-                  outputs_.size(),    //
-                  targets, ntargets,  //
+    TF_SessionRun(session_, run_options,                                    //
+                  inputs_.data(), input_values_.data(), inputs_.size(),     //
+                  outputs_.data(), output_values_.data(), outputs_.size(),  //
+                  targets, ntargets,                                        //
                   run_metadata, status_);
     TF_CHECK_OK(status_);
   }

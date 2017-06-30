@@ -6,6 +6,7 @@ context("Testing of Tensorflow-ization")
 nimbleOptions(experimentalUseTensorflow = TRUE)
 nimbleOptions(showCompilerOutput = TRUE)
 
+if(1)
 test_that('Tensorflow implementation of axpy works', {
     skip_if_not_installed('tensorflow')
     nf <- nimbleFunction(
@@ -25,7 +26,10 @@ test_that('Tensorflow implementation of axpy works', {
 if (0)  ## Known failure.
 test_that('Tensorflow example', {
     skip_if_not_installed('tensorflow')
+    nimbleOptions(debugCppLineByLine = TRUE)
+    nimbleOptions(pauseAfterWritingFiles = FALSE)
     nf <- nimbleFunction(
+        name = 'example',
         run = function(arg1 = double(2), arg2 = double(1)) 
         {
             out <- sd(arg1 %*% arg2)
@@ -33,13 +37,15 @@ test_that('Tensorflow example', {
             returnType(double(0))
         } 
     )
-    cnf <- compileNimble(nf)
+    cnf <- compileNimble(nf, dirName = file.path(Sys.getenv('HOME'), 'tmp'), projectName = 'tf',
+                         control = list(debugCpp = TRUE))
+    x <- matrix(1:4, 2, 2)
+    y <- 1:2
+    expect_equal(nf(x, y), cnf(x, y))
     x <- matrix(1:6, 2, 3)
     y <- 1:3
     expect_equal(nf(x, y), cnf(x, y))
 })
-
-
 
 if (0)  ## These math tests currently fail.
 test_that('Tensorflow backend works for basic math', {
