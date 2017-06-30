@@ -44,7 +44,9 @@ install:
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
-script: ./run_tests.R
+script:
+  - source $WORKON_HOME/r-tensorflow/bin/activate || echo 'Missing tensorflow'
+  - ./run_tests.R
 
 after_success:
   - Rscript -e 'library(covr); if(R.version$os == "linux-gnu") codecov()'
