@@ -40,6 +40,7 @@ after_build:
 test_script:
   - echo %cd%
   - dir
+  - Rscript install_requirements.R
   # The tests currently fail due to a problem sourcing test_utils.R.
   # - Rscript run_tests.R
 
