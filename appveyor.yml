@@ -30,6 +30,9 @@ before_build:
 
 build_script:
   - travis-tool.sh install_deps
+  - python --version
+  - pip freeze
+  - pip install --upgrade sysconfig
 
 after_build:
   - echo %cd%
