@@ -45,7 +45,8 @@ install:
   - R CMD INSTALL packages/nimble
 
 script:
-  - source $WORKON_HOME/r-tensorflow/bin/activate || echo 'Missing tensorflow'
+  - source /home/travis/.virtualenvs/r-tensorflow/bin/activate \
+    || echo 'Missing tensorflow'
   - ./run_tests.R
 
 after_success:
