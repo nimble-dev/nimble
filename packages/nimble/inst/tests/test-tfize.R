@@ -20,6 +20,21 @@ test_that('Tensorflow implementation of axpy works', {
     expect_equal(nf(a, x, y), cnf(a, x, y))
 })
 
+if (0)  # Known failure.
+test_that('Tensorflow implementation can compile parentheses', {
+    nf <- nimbleFunction(
+        run = function(arg1 = double(2), arg2 = double(1)) 
+        {
+            out <- sd(arg1 %*% arg2)
+            return(out)
+            returnType(double(0))
+        } 
+    )
+    cnf <- compileNimble(nf)
+    expect_equal(nf(x), cnf(x))
+})
+
+
 ## These math tests currently fail.
 if (0) {
     source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))

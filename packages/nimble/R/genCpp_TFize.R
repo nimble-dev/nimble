@@ -126,7 +126,7 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
             size <- as.list(rev(sym$size))  ## Note the transpose
             for (i in 1:length(size)) {
                 if (is.na(size[i])) {
-                    size[i] <- NULL
+                    size[i] <- list(NULL)
                 }
             }
             placeholders[[code$name]] = tf$placeholder(name = code$name,
@@ -146,22 +146,80 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
     return(placeholders)
 }
 
+## This constructs the tfTranslate list lazily,
+## since the tensorflow package may not be loaded.
+.tfLazyData <- new.env()
+tfTranslate <- function(name) {
+    # if (is.null(.tfLazyData$tfTranslate)) {
+        .tfLazyData$tfTranslate <- list(
+            '+' = '+',
+            '-' = '-',
+            '*' = '*',
+            '/' = '/',
+            'abs' = tf$abs,
+            'acos' = tf$acos,
+            'asin' = tf$asin,
+            'atan' = tf$atan,
+            'cos' = tf$cos,
+            'sin' = tf$sin,
+            'tan' = tf$tan,
+            'exp' = tf$exp,
+            'log' = tf$log,
+            'pow' = tf$pow,
+            'inprod' = function(lhs, rhs) tf$reduce_sum(lhs * rhs),
+            'pmin' = tf$minimum,
+            'pmax' = tf$maximum,
+            't' = function(mat) tf$transpose(mat, c(1L, 0L)),
+            'asCol' = function(x) x,  # FIXME
+            'diagonal' = tf$matrix_diag,  ## TODO Decide between diag() and diag_part().
+            'det' = tf$matrix_determinant,
+            'inverse' = tf$matrix_inverse,
+            'sd' = function(x) {
+                x <- x - tf$reduce_mean(x)
+                n_minus_one <- tf$cast(tf$size(x), tf$float64) - tf$constant(1, tf$float64)
+                tf$norm(x, ord = 2) / tf$sqrt(n_minus_one)
+            },
+            '%*%' = function(x, y) {
+                while (length(x$shape) < 2) {
+                    x <- tf$expand_dims(x, 0)
+                }
+                while (length(y$shape) < 2) {
+                    y <- tf$expand_dims(y, 0)
+                }
+                tf$matmul(y, x)  ## Note the transpose.
+            }
+        )
+    # }
+    return(.tfLazyData$tfTranslate[[name]])
+}
+
 TfTensorize <- function(code, placeholders) {
     if (!is.environment(placeholders)) stop()
-
-    if (code$isName) {
-        return(placeholders[[code$name]])
+    if (class(code) == 'exprClass') {
+        while (code$name == '(') {
+            code <- code$args[[1]]
+        }
+        if (code$isName) {
+            return(placeholders[[code$name]])
+        }
+        translated <- tfTranslate(code$name)
+        if (!is.null(translated)) {
+            print(code$args)
+            args <- lapply(code$args, TfTensorize, placeholders)
+            return(do.call(translated, args))
+        }
+        stop(paste('Not implemented:', code$name))
     }
-    if (code$name %in% c('+', '-', '*', '/')) {
-        args <- lapply(code$args, TfTensorize, placeholders)
-        return(do.call(code$name, args))
+    if (class(code) == 'numeric') {
+        return(tf$constant(code, dtype = tf$float64))
     }
-    if (code$name == '%*%') {
-        lhs <- TfTensorize(code$args[[1]], placeholders)
-        rhs <- TfTensorize(code$args[[2]], placeholders)
-        return(tf$matmul(lhs, rhs))
+    if (class(code) == 'integer') {
+        return(tf$constant(code, dtype = tf$int64))
     }
-    stop(paste('Not implemented:', code))
+    if (class(code) == 'logical') {
+        return(tf$constant(code, dtype = tf$bool))
+    }
+    stop(paste('Not implemented:', class(code)))
 }
 
 exprClasses2serializedTF <- function(code, symTab) {

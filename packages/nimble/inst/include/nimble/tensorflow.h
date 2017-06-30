@@ -54,6 +54,7 @@ class NimTf_Runner {
   void NimTf_setInput(double& scalar);
   void NimTf_setInput(NimArrBase<double>& nimArr);
   void NimTf_run();
+  void NimTf_getOutput(double& scalar);
   void NimTf_getOutput(NimArrBase<double>& nimArr);
 
  private:

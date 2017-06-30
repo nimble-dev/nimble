@@ -125,6 +125,17 @@ void NimTf_Runner::NimTf_run() {
   output_pos_ = 0;
 }
 
+void NimTf_Runner::NimTf_getOutput(double& scalar) {
+  NIM_ASSERT_EQ(input_pos_, 0);
+  NIM_ASSERT_LT(output_pos_, outputs_.size());
+  TF_Tensor* tensor = output_values_[output_pos_];
+  scalar = *static_cast<double*>(TF_TensorData(tensor));
+
+  // Clean up output values.
+  TF_DeleteTensor(tensor);
+  output_pos_ += 1;
+}
+
 void NimTf_Runner::NimTf_getOutput(NimArrBase<double>& nimArr) {
   NIM_ASSERT1(!nimArr.isMap(), "Cannot handle mapped array");
   NIM_ASSERT_EQ(input_pos_, 0);
@@ -136,8 +147,7 @@ void NimTf_Runner::NimTf_getOutput(NimArrBase<double>& nimArr) {
     // Note the transpose:
     NIM_ASSERT_EQ(nimArr.dimSize(i), TF_Dim(tensor, n - i - 1));
   }
-  memcpy(nimArr.getPtr(), TF_TensorData(output_values_[output_pos_]),
-         TF_TensorByteSize(output_values_[output_pos_]));
+  memcpy(nimArr.getPtr(), TF_TensorData(tensor), TF_TensorByteSize(tensor));
 
   // Clean up output values.
   TF_DeleteTensor(tensor);
