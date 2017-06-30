@@ -30,11 +30,11 @@ test_that('Tensorflow example', {
     nimbleOptions(pauseAfterWritingFiles = FALSE)
     nf <- nimbleFunction(
         name = 'example',
-        run = function(arg1 = double(2), arg2 = double(1)) 
+        run = function (arg1 = double(1)) 
         {
-            out <- sd(arg1 %*% arg2)
+            out <- cosh(arg1)
             return(out)
-            returnType(double(0))
+            returnType(double(1))
         } 
     )
     cnf <- compileNimble(nf, dirName = file.path(Sys.getenv('HOME'), 'tmp'), projectName = 'tf',
@@ -47,10 +47,19 @@ test_that('Tensorflow example', {
     expect_equal(nf(x, y), cnf(x, y))
 })
 
-if (0)  ## These math tests currently fail.
 test_that('Tensorflow backend works for basic math', {
     skip_if_not_installed('tensorflow')
     set.seed(0)
     sapply(testsVaried, test_math)
-    sapply(testsBasicMath, test_math)
+    sapply(testsReduction, test_math)
+    sapply(testsComparison, test_math)
+})
+
+if (1)  ## These tests currently fail.
+test_that('Tensorflow backend works for basic math', {
+    skip_if_not_installed('tensorflow')
+    set.seed(0)
+    sapply(testsBasicMath, test_math)  ## Fails "modulo of scalars" test.
+    sapply(testsMoreMath, test_math)  ## Fails "inverse logit of vector".
+    sapply(testsMatrix, test_math)  ## Fails "forwardsolve matrix-vector".
 })
