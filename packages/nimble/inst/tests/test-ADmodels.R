@@ -159,7 +159,6 @@ test_ADModelCalculate <- function(model, calcNodeNames = NULL, wrt = NULL,
                                          list(FXNCALL = fxnCall,
                                               WRT = wrt[[j]])))
         calcDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]])
-        browser()
         expect_equal(wrapperDerivs$value, calcDerivs$value)
         expect_equal(wrapperDerivs$gradient, calcDerivs$gradient, tolerance = .0001)
         expect_equal(wrapperDerivs$hessian, calcDerivs$hessian, tolerance = .001)

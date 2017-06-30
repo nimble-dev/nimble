@@ -44,8 +44,8 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
     singleArg <- c()
     for(i in seq_along(wrtNames)){
       if(length(wrtNames[[i]]) > 1){
-        arg <- nf[[wrtArgIndices[i]+1]]
-        singleArg <- c(singleArg, c(eval(parse(text =  paste0(arg, flatteningInfo[[i]][[2]]))[1], envir = fxnEnv)))
+        arg <- eval(nf[[wrtArgIndices[i]+1]], envir = fxnEnv)
+        singleArg <- c(singleArg, c(eval(parse(text =  paste0('arg', flatteningInfo[[i]][[2]]))[1])))
       }
       else{
         singleArg <- c(singleArg, c(eval(nf[[wrtArgIndices[i]+1]], envir = fxnEnv)))
@@ -326,7 +326,7 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
   wrtParsDeps <- model$getDependencies(wrtPars)
   nodes <- model$expandNodeNames(nodes)
   if(!all(nodes %in% wrtParsDeps)){
-    print('Warning: not all calculate nodes depend on a wrtNode')
+    warning('not all calculate nodes depend on a wrtNode')
     wrtParsDeps <- c(wrtParsDeps, nodes[which(!(nodes%in%wrtParsDeps))])
   }
   derivInfo <- nimble:::enhanceDepsForDerivs(model$expandNodeNames(wrtPars), wrtParsDeps, model)
@@ -341,7 +341,7 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
   if(inherits(model, 'modelBaseClass') ){
     if(missing(nodes) ) 
       nodes <- model$getMaps('nodeNamesLHSall')
-    nfv <- nodeFunctionVector(model, wrtParsDeps)
+    nfv <- nodeFunctionVector(model, wrtParsDeps, sortUnique = FALSE)
     return(rDeriv_CalcNodes(model, nfv, derivInfo, calcNodesLineNums, wrtLineInfo))
   }	
 }
