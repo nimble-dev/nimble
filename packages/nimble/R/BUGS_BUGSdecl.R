@@ -433,9 +433,10 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                         indexedVariable <- deparse(code[[2]])
                         dynamicIndexParent <- addUnknownIndexToVarNameInBracketExpr(code, contextID)
                         dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ] <- as.numeric(NA)
-                        cnt <- 1
+                        cnt <- 1 + length(contentsCode) - length(contentsReplaceable) ## accounts for additional content put in contentsCode when have nested indexing
                         for(iC in which(!contentsReplaceable)) {
-                            contentsCode[[cnt]] <- addIndexWrapping(contentsCode[[cnt]], code[[2+iC]],
+                            contentsCode[[cnt]] <- addIndexWrapping(
+                                contentsCode[[cnt]], code[[2+iC]],
                                                                     indexedVariable, iC)
                             cnt <- cnt + 1
                         }
