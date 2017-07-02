@@ -832,7 +832,7 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
 #' @param tau scalar precision of the Gaussian CAR prior.
 #' @param c integer number of constraints to impose on the improper density function.  If omitted, c is calculated as the number of disjoint groups of spatial locations in the adjacency structure.
-#' @param sumToZero logical specifying whether to impose a sum-to-zero constraint (during MCMC sampling) to all spatial regions (default FALSE).  If FALSE, the overall process mean is included in the value of each location; if TRUE, the mean of all locations is enforced to be zero and a separate intercept term should be included in the model.
+#' @param zero_mean integer specifying whether to impose a zero-mean constraint (during MCMC sampling) to all spatial regions (default 0).  If equal to 0, the overall process mean is included in the value of each location; if equal to 1, the mean of all locations is enforced to be zero and a separate intercept term should be included in the model.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #'
 #' @author Daniel Turek
@@ -855,7 +855,7 @@ NULL
 
 #' @rdname CAR-Normal
 #' @export
-dcar_normal <- function(x, adj, weights, num, tau, c, sumToZero, log = FALSE) {
+dcar_normal <- function(x, adj, weights, num, tau, c, zero_mean, log = FALSE) {
     CAR_checkAdjWeightsNum(adj, weights, num)
     if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
     if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
@@ -882,12 +882,12 @@ dcar_normal <- function(x, adj, weights, num, tau, c, sumToZero, log = FALSE) {
     ##if(log) return(lp)
     ##return(exp(lp))
     ##
-    .Call(C_dcar_normal, as.double(x), as.double(adj), as.double(weights), as.double(num), as.double(tau), as.double(c), as.double(sumToZero), as.logical(log))
+    .Call(C_dcar_normal, as.double(x), as.double(adj), as.double(weights), as.double(num), as.double(tau), as.double(c), as.double(zero_mean), as.logical(log))
 }
 
 #' @rdname CAR-Normal
 #' @export
-rcar_normal <- function(n = 1, adj, weights, num, tau, c, sumToZero) {
+rcar_normal <- function(n = 1, adj, weights, num, tau, c, zero_mean) {
     ## it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
     ## since initializeModel() will call this simulate method if there are any NA's present,
     ## (which is allowed for island components), which over-writes all the other valid initial values.

@@ -2136,8 +2136,8 @@ SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
   return ans;
 }
 
-SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP c, SEXP sumToZero, SEXP return_log) {
-  if(!isReal(x) || !isReal(adj) || !isReal(weights) || !isReal(num) || !isReal(tau) || !isReal(c) || !isReal(sumToZero) || !isLogical(return_log))
+SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP c, SEXP zero_mean, SEXP return_log) {
+  if(!isReal(x) || !isReal(adj) || !isReal(weights) || !isReal(num) || !isReal(tau) || !isReal(c) || !isReal(zero_mean) || !isLogical(return_log))
     RBREAK("Error (C_dcar_normal): invalid input type for one of the arguments.");
   
   int N = LENGTH(x);
@@ -2149,19 +2149,19 @@ SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP c, S
   double* c_num = REAL(num);
   double c_tau = REAL(tau)[0];
   int c_c = (int) REAL(c)[0];
-  int c_sumToZero = (int) REAL(sumToZero)[0];
+  int c_zero_mean = (int) REAL(zero_mean)[0];
   int give_log = (int) LOGICAL(return_log)[0];
   SEXP ans;
   
   PROTECT(ans = allocVector(REALSXP, 1));
-  REAL(ans)[0] = dcar_normal(c_x, c_adj, c_weights, c_num, c_tau, c_c, c_sumToZero, N, L, give_log);
+  REAL(ans)[0] = dcar_normal(c_x, c_adj, c_weights, c_num, c_tau, c_c, c_zero_mean, N, L, give_log);
   
   UNPROTECT(1);
   return ans;
 }
 
 
-double dcar_normal(double* x, double* adj, double* weights, double* num, double tau, int c, int sumToZero, int N, int L, int give_log) {
+double dcar_normal(double* x, double* adj, double* weights, double* num, double tau, int c, int zero_mean, int N, int L, int give_log) {
   // This method implements the following density calculation:
   // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
   // where tau is precision, c = (number of islands), and N is the length of x.
