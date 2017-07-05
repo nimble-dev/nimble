@@ -949,7 +949,6 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
                           expect_is(chainRuleDerivs$value, 'numeric')
                           expect_is(chainRuleDerivs$gradient, 'matrix')
                           expect_is(chainRuleDerivs$hessian, 'array')
-                          browser()
                           expect_equal(wrapperDerivs$value, chainRuleDerivs$value)
                           expect_equal(wrapperDerivs$gradient, chainRuleDerivs$gradient, tolerance = .0001)
                           expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = .001)

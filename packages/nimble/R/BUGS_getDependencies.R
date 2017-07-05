@@ -114,7 +114,6 @@ enhanceDepsForDerivs <- function(inputNodes, deps, model) {
     else{
       depIndex_2_parentDepIndices[[i]][[1]] <- 0
     }
-    
     ## Follow its descendents that are also in deps
     ## toNodes will be the children of thisNode
     toNodes <- maps$edgesFrom2To[[ thisNode ]]
