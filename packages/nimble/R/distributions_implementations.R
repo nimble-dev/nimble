@@ -841,7 +841,7 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' 
 #' @details 
 #'
-#' @return \code{dcar_normal} gives the density, and \code{rcar_normal} generates a vector of NaNs, since this distribution is improper.
+#' @return \code{dcar_normal} gives the density, and \code{rcar_normal} returns the current process values, since this distribution is improper.
 #' @references Banerjee, S., Carlin, B.P., and Gelfand, E.G. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
 #' @seealso \link{Distributions} for other standard distributions
 #' 
