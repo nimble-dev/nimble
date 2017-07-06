@@ -1558,16 +1558,15 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
 ## original plan was for some code here (if based on variables) or later (if based on vertices) to find the elements used in dynamic indexing for when we planned to dynamically update the graph
 modelDefClass$methods(findDynamicIndexParticipants = function() {
     if(nimbleOptions()$allowDynamicIndexing) {
-        browser()
         for(iDI in seq_along(declInfo)) {
             declInfo[[iDI]]$dynamicIndexInfo <<- list()
             for(iSPN in seq_along(declInfo[[iDI]]$symbolicParentNodes)) {
                 symbolicParent <- declInfo[[iDI]]$symbolicParentNodes[[iSPN]]
                 if(usedInIndex(symbolicParent))
                     declInfo[[iDI]]$dynamicIndexInfo[[length(declInfo[[iDI]]$dynamicIndexInfo) + 1]] <<-
-                                                           list(indexCode = symbolicParent[[3]],
-                                                                indexedVariable = symbolicParent[[4]],
-                                                                indexedPosition = symbolicParent[[5]])
+                        list(indexCode = symbolicParent[[3]],
+                             lower = varInfo[[symbolicParent[[4]]]]$mins[symbolicParent[[5]]],
+                             upper = varInfo[[symbolicParent[[4]]]]$maxs[symbolicParent[[5]]])
             }
             declInfo[[iDI]]$symbolicParentNodes <<- lapply(declInfo[[iDI]]$symbolicParentNodes, stripIndexWrapping)
             declInfo[[iDI]]$symbolicParentNodesReplaced <<- lapply(declInfo[[iDI]]$symbolicParentNodesReplaced, stripIndexWrapping)

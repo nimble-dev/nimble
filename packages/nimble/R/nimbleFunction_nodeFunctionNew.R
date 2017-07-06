@@ -1,4 +1,4 @@
-nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeExpr, type, setupOutputExprs, evaluate = TRUE, where = globalenv()) {
+nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeExpr, type, setupOutputExprs, dynamicIndexInfo = NULL, evaluate = TRUE, where = globalenv()) {
     if(!(type %in% c('stoch', 'determ')))       stop(paste0('invalid argument to nodeFunction(): type = ', type))
     setupOutputLabels <- nndf_makeNodeFunctionIndexLabels(setupOutputExprs) ## should perhaps move to the declInfo for preservation
     LHSrep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(LHS, setupOutputLabels)
@@ -6,6 +6,14 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeE
     altParamsRep <- lapply(altParams, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     boundsRep <- lapply(bounds, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     logProbNodeExprRep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(logProbNodeExpr, setupOutputLabels)
+    if(nimbleOptions()$allowDynamicIndexing) {
+        if(length(dynamicIndexInfo)) {
+            for(i in seq_along(dynamicIndexInfo))
+                dynamicIndexInfo[[i]]$indexCode <- nndf_replaceSetupOutputsWithIndexedNodeInfo(dynamicIndexInfo[[i]]$indexCode, setupOutputLabels)
+            dynamicIndexLimitsExpr <- nndf_generateDynamicIndexLimitsExpr(dynamicIndexInfo)
+        } else dynamicIndexLimitsExpr <- NULL
+    } else dynamicIndexLimitsExpr <- NULL
+    
     nodeFunctionTemplate <-
         substitute(
             nimbleFunction(##contains      = CONTAINS,
@@ -16,7 +24,7 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeE
                            where = where),
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
                  SETUPFUNCTION = nndf_createSetupFunction(),  ##nndf = new node function
-                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, altParamsRep, boundsRep, logProbNodeExprRep, type),
+                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, altParamsRep, boundsRep, logProbNodeExprRep, type, dynamicIndexLimitsExpr),
                  where         = where)
         )
     if(evaluate)    return(eval(nodeFunctionTemplate))     else       return(nodeFunctionTemplate)
@@ -72,7 +80,7 @@ indexedNodeInfoTableClass <- function(BUGSdecl) {
 }
 
 ## creates a list of the methods calculate, simulate, getParam, getBound, and getLogProb, corresponding to LHS, RHS, and type arguments
-nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, type) {
+nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, type, dynamicIndexLimitsExpr) {
     if(type == 'determ') {
         methodList <- eval(substitute(
             list(
@@ -95,9 +103,9 @@ nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, 
             ),
             list(LHS       = LHS,
                  LOGPROB   = logProbNodeExpr,
-                 STOCHSIM  = ndf_createStochSimulate(RHS),
-                 STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
-                 STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
+                 STOCHSIM  = ndf_createStochSimulate(RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr),
+                 STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr),
+                 STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr))))
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
@@ -222,3 +230,23 @@ nndf_generateGetBoundSwitchFunction <- function(typesListAll, boundIDs, type, nD
     attr(ans, 'srcref') <- NULL
     ans
 }
+
+nndf_generateDynamicIndexLimitsExpr <- function(dynamicIndexInfo) {
+    indivLimits <- lapply(dynamicIndexInfo, function(x) substitute(VAREXPR >= LOWER & VAREXPR <= UPPER,
+                        list(VAREXPR = x$indexCode,
+                             LOWER = x$lower,
+                             UPPER = x$upper)))
+    dynamicIndexLimitsExpr <- indivLimits[[1]]
+    if(length(indivLimits) > 1)
+        for(i in 2:length(indivLimits))
+            dynamicIndexLimitsExpr <- substitute(FIRST & SECOND,
+                                                 list(FIRST = dynamicIndexLimitsExpr,
+                                                      SECOND = indivLimits[[i]]))
+    ## FIXME: that puts extra () in the expression; could potentially also construct as
+    ## tmp <- quote(1 & 1)
+    ## tmp[[2]] <- dynamicIndexLimitsExpr
+    ## tmp[[3]] <- indivLimits[[i]]
+    ## check if () are stripped out in C++
+    return(dynamicIndexLimitsExpr)
+}
+

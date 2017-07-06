@@ -427,16 +427,20 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 } else { ## non-replaceable indices are dynamic indices
                     if(!nimbleOptions()$allowDynamicIndexing) dynamicIndexParent <- code[[2]]
                     else {
-                        browser()
                         if(any(sapply(contentsCode, detectNonscalarIndex)))
                             stop("getSymbolicParentNodesRecurse: only scalar random indices are allowed; vector random indexing found in ", deparse(code))
                         indexedVariable <- deparse(code[[2]])
                         dynamicIndexParent <- addUnknownIndexToVarNameInBracketExpr(code, contextID)
                         dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ] <- as.numeric(NA)
-                        cnt <- 1 + length(contentsCode) - length(contentsReplaceable) ## accounts for additional content put in contentsCode when have nested indexing
+                        cnt <- 1
+                        nonNestedContents <- which(!sapply(contentsCode, usedInIndex)) ## nested indexing can introduce contentsCode elements that have already been tagged with dynamic index info
+                        if(sum(!contentsReplaceable) != length(nonNestedContents))
+                            stop("getSymbolicParentNodesRecurse: bug in indexing of dynamic index parents.")
                         for(iC in which(!contentsReplaceable)) {
-                            contentsCode[[cnt]] <- addIndexWrapping(
-                                contentsCode[[cnt]], code[[2+iC]],
+                            if(cnt > length(contentsCode)) 
+                                stop("getSymbolicParentNodesRecurse: bug in indexing of dynamic index parents.")
+                            contentsCode[[nonNestedContents[cnt]]] <- addIndexWrapping(
+                                contentsCode[[nonNestedContents[cnt]]], code[[2+iC]],
                                                                     indexedVariable, iC)
                             cnt <- cnt + 1
                         }
