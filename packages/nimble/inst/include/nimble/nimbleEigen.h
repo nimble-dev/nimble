@@ -178,7 +178,7 @@ namespace Eigen{
 
 template<typename returnDerived>
 struct diagonal_impl {
-  typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
+  typedef Eigen::Index IndexReturn;
   template<typename DerivedSource>
   static CwiseNullaryOp<diagonalClass<IndexReturn, DerivedSource >, returnDerived > diagonal(const DerivedSource &s) {
     diagonalClass<IndexReturn, DerivedSource > obj(s);
@@ -363,7 +363,7 @@ namespace Eigen{
 
 template<typename returnDerived>
 struct concatenate_impl {
-  typedef typename Eigen::internal::traits<returnDerived>::Index Index;
+  typedef Eigen::Index Index;
   template<typename Derived1, typename Derived2>
     static CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2) {
     concatenateClass<Index, Derived1, Derived2> c(A1, A2);
@@ -470,7 +470,7 @@ namespace Eigen{
 
 template<typename returnDerived>
 struct rep_impl {
-  typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
+  typedef Eigen::Index IndexReturn;
 
   template<typename Derived1, typename DerivedEach> // timesIn can always be int here because if it is non-int this code isn't used
   static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int timesIn, const DerivedEach &each) {
@@ -521,7 +521,7 @@ public:
       //      length_out = 1 + static_cast<int>(floor(static_cast<double>(toIn) - static_cast<double>(from)) / static_cast<double>(byIn));
     };
   
-  typedef typename Eigen::internal::traits<DerivedOut>::Index Index;
+  typedef Eigen::Index Index;
   result_type operator()(Index i) const //Eigen::DenseIndex
   {
     //std::cout<<"IN 1 seq\n";
@@ -559,7 +559,7 @@ public:
     };
 
   
-  typedef typename Eigen::internal::traits<DerivedOut>::Index Index;
+  typedef Eigen::Index Index;
   result_type operator()(Index i) const //Eigen::DenseIndex
   {
     //std::cout<<"IN 1 seq\n";
@@ -589,7 +589,7 @@ public:
     {};
 
   
-  typedef typename Eigen::internal::traits<DerivedOut>::Index Index;
+  typedef Eigen::Index Index;
   result_type operator()(Index i) const //Eigen::DenseIndex
   {
     return( from + static_cast<int>(i) * by );
@@ -735,8 +735,8 @@ public:
 
 
 template <typename DerivedTarget, typename DerivedIndex1, typename DerivedIndex2>
-  coeffSetterClass<typename Eigen::internal::traits<DerivedTarget>::Index, DerivedTarget, DerivedIndex1, DerivedIndex2> coeffSetter(DerivedTarget &targetIn, const DerivedIndex1 &I1in, const DerivedIndex2 &I2in ) {
-  return coeffSetterClass<typename Eigen::internal::traits<DerivedTarget>::Index, DerivedTarget, DerivedIndex1, DerivedIndex2>(targetIn, I1in, I2in);
+  coeffSetterClass<Eigen::Index, DerivedTarget, DerivedIndex1, DerivedIndex2> coeffSetter(DerivedTarget &targetIn, const DerivedIndex1 &I1in, const DerivedIndex2 &I2in ) {
+  return coeffSetterClass<Eigen::Index, DerivedTarget, DerivedIndex1, DerivedIndex2>(targetIn, I1in, I2in);
 }
 // want coeffSetter(A, indices1, indices2) to work.  We pull out scalar type of A inside coeffSetterClass
   
@@ -788,7 +788,7 @@ namespace Eigen{
 
 template<typename returnDerived>
 struct nonseqIndexed_impl {
-  typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
+  typedef Eigen::Index IndexReturn;
   template<typename DerivedObj, typename DerivedI1, typename DerivedI2>
     static CwiseNullaryOp<nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2 >, returnDerived > nonseqIndexed(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) {
     nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2 > nonseqIndexedObj(s, i1, i2);
@@ -880,7 +880,7 @@ public: \
 \
 template<typename DerivedReturn>\
 struct FUNNAME ## _RR_impl {\
-  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  typedef Eigen::Index IndexReturn;\
   template<typename Derived1, typename Derived2>\
   static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >\
   FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2) {\
@@ -933,7 +933,7 @@ public:									\
 \
 template<typename DerivedReturn>\
 struct FUNNAME ## _RR_impl {\
-  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  typedef Eigen::Index IndexReturn;\
   template<typename DerivedN, typename Derived1, typename Derived2>	\
     static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, DerivedN, Derived1, Derived2>, DerivedReturn > \
     FUNNAME ## _RecyclingRule(const DerivedN &AN, const Derived1 &A1, const Derived2 &A2) { \
@@ -983,7 +983,7 @@ public:									\
 \
 template<typename DerivedReturn>\
 struct FUNNAME ## _RR_impl {\
-  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  typedef Eigen::Index IndexReturn;\
   template<typename DerivedN, typename Derived1>	\
     static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, DerivedN, Derived1>, DerivedReturn > \
     FUNNAME ## _RecyclingRule(const DerivedN &AN, const Derived1 &A1) { \
@@ -1027,7 +1027,7 @@ public: \
 \
 template<typename DerivedReturn>\
 struct FUNNAME ## _RR_impl {\
-  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  typedef Eigen::Index IndexReturn;\
   template<typename Derived1, typename Derived2>\
   static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >\
   FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2) {\
@@ -1078,7 +1078,7 @@ public: \
 \
 template<typename DerivedReturn>\
 struct FUNNAME ## _RR_impl {\
-  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  typedef Eigen::Index IndexReturn;\
   template<typename Derived1, typename Derived2, typename Derived3>			\
     static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3>, DerivedReturn > \
     FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) { \
@@ -1125,7 +1125,7 @@ public: \
 \
 template<typename DerivedReturn>\
 struct FUNNAME ## _RR_impl {\
-  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  typedef Eigen::Index IndexReturn;\
   template<typename Derived1, typename Derived2, typename Derived3>			\
     static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3>, DerivedReturn > \
     FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) { \
@@ -1175,7 +1175,7 @@ public: \
 \
 template<typename DerivedReturn>\
 struct FUNNAME ## _RR_impl {\
-  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  typedef Eigen::Index IndexReturn;\
   template<typename Derived1, typename Derived2, typename Derived3, typename Derived4>	\
     static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3, Derived4>, DerivedReturn > \
     FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) { \
@@ -1231,7 +1231,7 @@ public: \
 \
 template<typename DerivedReturn>\
 struct FUNNAME ## _RR_impl {\
-  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  typedef Eigen::Index IndexReturn;\
   template<typename Derived1, typename Derived2, typename Derived3, typename Derived4>	\
     static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3, Derived4>, DerivedReturn > \
     FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) { \
@@ -1285,7 +1285,7 @@ public: \
 \
 template<typename DerivedReturn>\
 struct FUNNAME ## _RR_impl {\
-  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  typedef Eigen::Index IndexReturn;\
   template<typename Derived1, typename Derived2, typename Derived3, typename Derived4>	\
     static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3, Derived4>, DerivedReturn > \
     FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) { \
@@ -1342,7 +1342,7 @@ public: \
 \
 template<typename DerivedReturn>\
 struct FUNNAME ## _RR_impl {\
-  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  typedef Eigen::Index IndexReturn;\
   template<typename Derived1, typename Derived2, typename Derived3, typename Derived4, typename Derived5>	\
     static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3, Derived4, Derived5>, DerivedReturn > \
     FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4, const Derived5 &A5) { \
@@ -1491,7 +1491,7 @@ namespace Eigen{
 
 template<typename returnDerived>
 struct newMatrix_impl {
-  typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
+  typedef Eigen::Index IndexReturn;
   template<typename DerivedObj>
   static CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived > newMatrix(const DerivedObj &s, bool initIn, bool recycle, int nRowIn, int nColIn) {
     newMatrixClass<IndexReturn, DerivedObj > obj(s, initIn, recycle, nRowIn, nColIn);
