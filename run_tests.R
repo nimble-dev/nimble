@@ -20,6 +20,7 @@ Environment Variables:
 
 # Parse command line options.
 argv <- commandArgs(trailingOnly = TRUE)
+argv <- argv[nchar(argv) > 0]
 optionDryRun <- ('--dry-run' %in% argv)
 optionParallel <- ('--parallel' %in% argv)
 if ('-h' %in% argv || '--help' %in% argv) {
