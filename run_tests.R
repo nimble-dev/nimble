@@ -20,7 +20,6 @@ Environment Variables:
 
 # Parse command line options.
 argv <- commandArgs(trailingOnly = TRUE)
-argv <- argv[nchar(argv) > 0]
 optionDryRun <- ('--dry-run' %in% argv)
 optionParallel <- ('--parallel' %in% argv)
 if ('-h' %in% argv || '--help' %in% argv) {
@@ -29,8 +28,14 @@ if ('-h' %in% argv || '--help' %in% argv) {
 }
 
 # Determine which tests to run.
-allTests <- paste0('test-', argv[!grepl('^-', argv)], '.R')
-if (length(allTests) == 0) {
+if (length(grep('^-', argv, invert = TRUE))) {
+    # Run only tests specified on commmand line.
+    allTests <- paste0('test-', argv[!grepl('^-', argv)], '.R')
+} else {
+    # Run a default set of tests.
+    allTests <- list.files('packages/nimble/inst/tests')
+    allTests <- allTests[grepl('test-.*\\.R', allTests)]
+
     # Avoid running these blacklisted tests, since they take too long.
     blacklist <- c(
         'test-Math2.R',
@@ -43,9 +48,6 @@ if (length(allTests) == 0) {
         'test-ADfunctions.R',
         'test-ADmodels.R')
     cat('SKIPPING', blacklist, sep = '\n  ')
-
-    allTests <- list.files('packages/nimble/inst/tests')
-    allTests <- allTests[grepl('test-.*\\.R', allTests)]
     allTests <- setdiff(allTests, blacklist)
 }
 
