@@ -23,14 +23,10 @@ ADCode2 <- nimbleCode({
 
 ADMod2 <- nimbleModel(
   code = ADCode2, dimensions = list(x = 2, y = 2, z = 2), constants = list(diagMat = diag(2)),
-  inits = list(x = c(2.1, 1.2), y  = c(1,2)))
+  inits = list(x = c(2.1, 1.2), y  = c(-.1,-.2)))
             
 test_ADModelCalculate(ADMod2, name = "ADMod2", calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod2$getDependencies('x'))),
                       wrt = list(c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), testR = TRUE)
-
-
-test_ADModelCalculate(ADMod2, name = "ADMod2", calcNodeNames = list(c('y')),
-                      wrt = list(c('x[2]', 'y[2]')), testR = TRUE)
 
 
             ADCode3 <- nimbleCode({
@@ -44,9 +40,9 @@ test_ADModelCalculate(ADMod2, name = "ADMod2", calcNodeNames = list(c('y')),
             
             simData <- matrix(0, nrow = 2, ncol = 2)
             ADMod3 <- nimbleModel(
-              code = ADCode3, dimensions = list(a = 2, b = 2, c = 2), constants = list(diagMat = diag(2)),
+              code = ADCode3, constants = list(diagMat = diag(2)),
               data = list(y = simData), inits = list(mu = c(-1.5, 0.8), sigma = diag(2)))
 
-test_ADModelCalculate(ADMod1, calcNodeNames = list(c('a', 'y'), c('y[2]'), c(ADMod1$getDependencies('a'))),
-                      wrt = list(c('a', 'y'), c('a[1]', 'y[1]'), c('a[1:2]', 'y[1:2]')), testR = TRUE,
+test_ADModelCalculate(ADMod3, calcNodeNames = list(c('mu', 'y'), c('y[2]'), c(ADMod3$getDependencies('mu'))),
+                      wrt = list(c('mu', 'y'), c('mu[1]', 'y[1]'), c('mu[1:2]', 'y[1:2]')), testR = TRUE,
                                       testCompiled = FALSE)
