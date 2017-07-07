@@ -18,7 +18,7 @@ should return a scalar result.}
 
 \item{...}{IGNORED}
 
-\item{method}{The method to be used. See `Details` section of \code\link{{optim}}. One of:
+\item{method}{The method to be used. See `Details` section of \code{\link{optim}}. One of:
 "Nelder-Mead", "BFGS", "CG", "L-BFGS-B".
 Note that the R methods "SANN", "Brent" are not supported.}
 
