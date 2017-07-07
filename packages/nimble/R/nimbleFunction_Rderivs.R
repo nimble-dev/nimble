@@ -3,6 +3,7 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
   wrtNames <- strsplit(wrt, '\\[')
   wrtArgIndices <- c(sapply(wrtNames, function(x){return(which(x[1] == formalNames))}))
   flatteningInfo <- list()
+  thisIndex <- 1
   for(i in seq_along(wrt)){
     arg <- nf[[wrtArgIndices[i] + 1]]
     indText <- ''
@@ -12,27 +13,34 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
     argSym <- parse(text = paste0(deparse(arg), indText))[[1]]
     dimInfo <- dim(eval(argSym, envir = fxnEnv))
     if(is.null(dimInfo)) dimInfo <- length(eval(argSym, envir = fxnEnv))
+    lineInds <- thisIndex:(thisIndex + prod(dimInfo) - 1)
     flatteningInfo[[i]] <- list()
     flatteningInfo[[i]][[1]] <- dimInfo
     flatteningInfo[[i]][[2]] <- indText
+    flatteningInfo[[i]][[3]] <- lineInds
+    thisIndex <- thisIndex + prod(dimInfo)
   }
   wrappedFun <- function(x) {
     args <- list()
-    nextInd <- 0
     for(i in 1:(length(nf)-1)){
       if(i %in% wrtArgIndices){
         thisWrtIndex <- which(i == wrtArgIndices)
         thisSize <- sum(sapply(flatteningInfo[thisWrtIndex], function(x){return(prod(x[[1]]))})) ## total length
-        if(length(wrtNames[[thisWrtIndex]]) > 1){
-          args[[i]] <-  eval(nf[[i+1]], envir = fxnEnv)
-          argBracketExpr <- parse(text = paste0('args[[i]]', flatteningInfo[[thisWrtIndex]][[2]], ' <- x[nextInd + 1:thisSize]'))[[1]]
-          eval(argBracketExpr)
-        }
-        else{
-          args[[i]] <-  x[nextInd + 1:thisSize]
-        }
-        if(length( flatteningInfo[[thisWrtIndex]][[1]]) > 1 ) dim(  args[[i]]) <-  flatteningInfo[[thisWrtIndex]][[1]]
-        nextInd <- nextInd + thisSize
+        if(length(wrtNames[[thisWrtIndex[1]]]) > 1){
+            args[[i]] <-  eval(nf[[i+1]], envir = fxnEnv)
+            argBracketExpr <- parse(text = paste0('args[[i]]', flatteningInfo[[thisWrtIndex[1]]][[2]], ' <- x[flatteningInfo[[thisWrtIndex[1]]][[3]]]'))[[1]]
+            eval(argBracketExpr)
+            if(length(thisWrtIndex) > 1){
+              for(j in 2:length(wrtNames[thisWrtIndex])){
+                argBracketExpr <- parse(text = paste0('args[[i]]', flatteningInfo[[thisWrtIndex[j]]][[2]], ' <- x[flatteningInfo[[thisWrtIndex[j]]][[3]]]'))[[1]]
+                eval(argBracketExpr)
+              }
+            }
+          }
+          else{
+            args[[i]] <-  x[flatteningInfo[[thisWrtIndex[1]]][[3]]]
+          }
+          if(length( flatteningInfo[[thisWrtIndex[1]]][[1]]) > 1 ) dim(  args[[i]]) <-  flatteningInfo[[thisWrtIndex[1]]][[1]]
       }
       else{
        args[[i]] <- nf[[i+1]] 
@@ -392,7 +400,6 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
     wrtLineInfo[[i]]$fromIndices <- wrtLineInfo[[i]]$lineIndices[which(fromToInds != 0)]
     thisIndex <- thisIndex + wrtLineInfo[[i]]$lineSize
   }
-
   if(inherits(model, 'modelBaseClass') ){
     if(missing(nodes) ) 
       nodes <- model$getMaps('nodeNamesLHSall')
