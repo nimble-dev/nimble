@@ -13,6 +13,23 @@ ADMod1 <- nimbleModel(code = ADCode1, data = list(y = numeric(2)), dimensions = 
 test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod1$getDependencies('x'))),
                       wrt = list(c('x', 'y'), c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), testR = TRUE)
 
+test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(c('x', 'y')),
+                      wrt = list(c('x[1]', 'y', 'x[2]')), testR = TRUE)
+
+Field "value":
+  [1] -5.675754
+Field "gradient":
+  [,1] [,2] [,3] [,4]
+[1,]   -2   -2    1    1
+Field "hessian":
+  , , 1
+
+[,1]          [,2]          [,3]          [,4]
+[1,] -1.999985e+00 -8.217969e-06  9.999926e-01 -6.736998e-07
+[2,] -8.217969e-06 -2.000002e+00 -3.443187e-06  1.000004e+00
+[3,]  9.999926e-01 -6.736998e-07 -1.000002e+00  4.111608e-06
+[4,] -3.443187e-06  1.000004e+00  4.111608e-06 -1.000008e+00
+
 
 ADCode2 <- nimbleCode({
   y[1:2] ~ dmnorm(z[1:2], diagMat[,])
