@@ -1,8 +1,14 @@
 language: r
-sudo: false
-cache: packages
 
-# We parallelize the tests into baches, and only run one batch on OS X.
+dist: trusty
+sudo: false
+
+cache:
+  packages: true
+  directories:
+    - $HOME/.cache/pip
+
+# We parallelize the tests into baches, and run only one batch on OS X.
 matrix:
   include:
     - os: linux
@@ -40,6 +46,7 @@ addons:
       - python-virtualenv  # For tensorflow::install_tensorflow().
 
 install:
+  - pip2.7 install --upgrade --ignore-installed --user travis pip setuptools wheel virtualenv
   - ./install_requirements.R
   - pip freeze
   - R CMD build packages/nimble
