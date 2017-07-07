@@ -485,6 +485,7 @@ sampler_AF_slice <- nimbleFunction(
     calcNodes      <- model$getDependencies(target)
     
     ## numeric value generation
+    factorBurnInItersOriginal <- factorBurnInIters
     sliceAdaptItersOriginal <- sliceAdaptIters
     discrete      <- sapply(targetAsScalar, function(x){model$isDiscrete(x)})
     anyDiscrete   <- any(discrete == TRUE)
@@ -615,6 +616,7 @@ sampler_AF_slice <- nimbleFunction(
     },
     reset = function() {
       width                <<- widthOriginal
+      factorBurnInIters    <<- factorBurnInItersOriginal
       factorCounter        <<- 0
       sliceCounter         <<- 0
       factorTimesAdapted   <<- 0
