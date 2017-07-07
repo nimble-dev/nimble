@@ -1105,7 +1105,7 @@ is.nan.vec <- function(x) any(is.nan(x))
 #' @export
 nimRound <- round
 
-#' EXPERIMENTAL Nimble wrapper around R's builtin \code{\link{optim}}.
+#' Nimble wrapper around R's builtin \code{\link{optim}}.
 #'
 #' @param par Initial values for the parameters to be optimized over.
 #' @param fn  A function to be minimized (or maximized), with first argument the
@@ -1149,7 +1149,7 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
     return(nimResult)
 }
 
-#' EXPERIMENTAL Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
+#' Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
 #'
 #' @return an empty \code{list}.
 #' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
@@ -1158,7 +1158,7 @@ optimDefaultControl <- function() {
     return(list())
 }
 
-#' EXPERIMENTAL Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
+#' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
 #'
 #' @return \code{\link{optimControlNimbleList}}
 #' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
