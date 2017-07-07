@@ -17,7 +17,7 @@ for (package in requirements) {
 
 ## Tensorflow requires custom installation.
 if(!require(tensorflow)) {
-    install.packages('devtools')
+    install.packages('devtools', repos = 'http://cran.us.r-project.org')
     library(devtools)
     devtools::install_github('nimble-dev/r-tensorflow@upgrade-pip')
 }
