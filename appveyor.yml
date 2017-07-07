@@ -16,6 +16,9 @@ branches:
   only:
     - devel
 
+platform:
+  - x64  # Required by tensorflow binary installation.
+
 environment:
   global:
     USE_RTOOLS: true
