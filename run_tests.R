@@ -1,31 +1,55 @@
 #!/usr/bin/env Rscript
 
-# This script runs most tests in nimble/inst/tests/ prioritized by duration.
-#
-# To run only some of the tests, define the environment variable NIMBLE_TEST_BATCH=N
-# where N is a number in 1,...,5.
-# To run tests in paralle, pass the argument --parallel, for example
-#
-#   ./run_tests.R --parallel  # Run tests in parallel.
-#
-# To see which tests will be run, pass the argument --dry-run, for example
-#
-#   ./run_tests.R --dry-run                        # Run all tests.                        
-#   $ NIMBLE_TEST_BATCH=1 ./run_tests.R --dry-run  # Run one batch of tests.
+help_message <-
+"Run tests in nimble/inst/tests/ prioritized by duration.
+Usage:
+  ./run_tests.R       [OPTIONS]   # Run the default set of tests.
+  ./run_tests.R NAMES [OPTIONS]   # Run a custom set of tests, e.g. 'math'
+
+Options:
+  --parallel  Runs test in parallel.
+  --dry-run   Prints which tests would be run, then exits.
+
+Environment Variables:
+  NIMBLE_TEST_BATCH=N
+    This allows distributed testing across machines. To run only one batch, set
+    the NIMBLE_TEST_BATCH=N where N is a number in 1,...,5. For example
+
+      NIMBLE_TEST_BATCH=1 ./run_tests.R --dry-run   # Run one batch of tests.
+"
 
 # Parse command line options.
-optionDryRun <- ('--dry-run' %in% commandArgs(trailingOnly = TRUE))
-optionParallel <- ('--parallel' %in% commandArgs(trailingOnly = TRUE))
+argv <- commandArgs(trailingOnly = TRUE)
+optionDryRun <- ('--dry-run' %in% argv)
+optionParallel <- ('--parallel' %in% argv)
+if ('-h' %in% argv || '--help' %in% argv) {
+    cat(help_message)
+    quit()
+}
 
-# Avoid running these blacklisted tests, since they take too long.
-blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.R')
-# Avoid running these tests since they test experimental features.
-blacklist <- c(blacklist, 'test-ADfunctions.R', 'test-ADmodels.R')
-cat('SKIPPING', blacklist, sep = '\n  ')
+# Determine which tests to run.
+if (length(grep('^-', argv, invert = TRUE))) {
+    # Run only tests specified on commmand line.
+    allTests <- paste0('test-', argv[!grepl('^-', argv)], '.R')
+} else {
+    # Run a default set of tests.
+    allTests <- list.files('packages/nimble/inst/tests')
+    allTests <- allTests[grepl('test-.*\\.R', allTests)]
 
-allTests <- list.files('packages/nimble/inst/tests')
-allTests <- allTests[grepl('test-.*\\.R', allTests)]
-allTests <- setdiff(allTests, blacklist)
+    # Avoid running these blacklisted tests, since they take too long.
+    blacklist <- c(
+        'test-Math2.R',
+        'test-Mcmc2.R',
+        'test-Mcmc3.R',
+        'test-Filtering2.R')
+    # Avoid running these tests since they test experimental features.
+    blacklist <- c(
+        blacklist,
+        'test-ADfunctions.R',
+        'test-ADmodels.R')
+    cat('SKIPPING', blacklist, sep = '\n  ')
+    allTests <- setdiff(allTests, blacklist)
+}
 
 # Sort tests by duration, running the shortest tests first.
 testTimes <- read.csv('test_times.csv', sep = '\t', header = TRUE, row.names = 'filename')
