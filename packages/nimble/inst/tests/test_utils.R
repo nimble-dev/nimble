@@ -878,31 +878,29 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
 ## 'nodes' argument to the calculate function is specified by the 'calcNodeName' argument to makeADCalcWrapperFunction.
 
 makeADCalcWrapperFunction <- function(calcNodeName, wrtName){
-  argSaveLines <- list()
-  argSaveLines[[1]] <- substitute(origVals <- list())
-  for(i in seq_along(wrtName)){
-    argSaveLines[[i+1]] <- substitute({origVals[[I]] <- model[[WRTNAME]];
-    model[[WRTNAME]] <- WRTNAMEEXPR},
-    list(I = i,
-         WRTNAME = wrtName[[i]][1],
-         WRTNAMEEXPR = as.name(wrtName[[i]][1])))
-  }
-  calcLine <- list(substitute(model$calculate(model$getDependencies(DEPNAMES)),
-                              list(DEPNAMES = sapply(wrtName, function(x){return(x[1])}))))
-  callLine <-  list(substitute(outVal <- calculate(model, CALCNODENAME),
-                               list(CALCNODENAME = calcNodeName)))
-  argReplaceLines <- list()
-  for(i in seq_along(wrtName)){
-    argReplaceLines[[i]] <- substitute(model[[WRTNAME]] <- origVals[[I]],
-                                       list(I = i, WRTNAME = wrtName[[i]][1] ))
-  }
-  returnLine <- substitute(return(outVal))
-  calcWrapperFunction <- function(){}
-  body(calcWrapperFunction) <- nimble:::putCodeLinesInBrackets(c(argSaveLines, calcLine, callLine, argReplaceLines, returnLine))
   calcFunctionArgNames <- list('model' = NA)
   for(i in seq_along(wrtName)){
     calcFunctionArgNames[[ wrtName[[i]][1]]] <- NA
   }
+  argSaveLines <- list()
+  argSaveLines[[1]] <- substitute(origVals <- list())
+  for(i in seq_along(calcFunctionArgNames[-1])){
+    argSaveLines[[i+1]] <- substitute({origVals[[I]] <- model[[ARGNAME]];
+    model[[ARGNAME]] <- ARGNAMEEXPR},
+    list(I = i,
+         ARGNAME = names(calcFunctionArgNames)[i+1],
+         ARGNAMEEXPR = as.name(names(calcFunctionArgNames)[i+1])))
+  }
+  callLine <-  list(substitute(outVal <- calculate(model, CALCNODENAME),
+                               list(CALCNODENAME = calcNodeName)))
+  argReplaceLines <- list()
+  for(i in seq_along(calcFunctionArgNames[-1])){
+    argReplaceLines[[i]] <- substitute(model[[ARGNAME]] <- origVals[[I]],
+                                       list(I = i, ARGNAME = names(calcFunctionArgNames)[i+1] ))
+  }
+  returnLine <- substitute(return(outVal))
+  calcWrapperFunction <- function(){}
+  body(calcWrapperFunction) <- nimble:::putCodeLinesInBrackets(c(argSaveLines, callLine, argReplaceLines, returnLine))
   formals(calcWrapperFunction) <- calcFunctionArgNames
   return(calcWrapperFunction)
 }

@@ -14,8 +14,9 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
     dimInfo <- dim(eval(argSym, envir = fxnEnv))
     if(is.null(dimInfo)) dimInfo <- length(eval(argSym, envir = fxnEnv))
     lineInds <- thisIndex:(thisIndex + prod(dimInfo) - 1)
+    argDimInfo <- dim(eval(nf[[wrtArgIndices[i] + 1]],envir = fxnEnv))
     flatteningInfo[[i]] <- list()
-    flatteningInfo[[i]][[1]] <- dimInfo
+    flatteningInfo[[i]][[1]] <- argDimInfo
     flatteningInfo[[i]][[2]] <- indText
     flatteningInfo[[i]][[3]] <- lineInds
     thisIndex <- thisIndex + prod(dimInfo)
@@ -109,9 +110,9 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
   singleDimMatUpperTriDiag <- upper.tri(singleDimMat, diag = TRUE)
   for(outDim in seq_along(derivList$f0)){
     singleDimMat[singleDimMatUpperTriDiag] <- outHessVals[outDim,]
+    singleDimMat[lower.tri(singleDimMat)] <-   t(singleDimMat)[lower.tri(singleDimMat)]
     outHess[,,outDim] <- singleDimMat
   }
-  outHess[lower.tri(outHess[,,1])] <-   outHess[upper.tri(outHess[,,1])]
   return(nimble:::ADNimbleList$new(value = derivList$f0,
                                    gradient = outGrad,
                                    hessian = outHess))
@@ -293,7 +294,6 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, calcNodesLineNums, wrtLineIn
                     
                   }
                   thisArgIndex_2 <- thisArgIndex_2 + argSizeInfo[k_2]
-                  
                 }
                 thisArgIndex <- thisArgIndex + argSizeInfo[k]
               }
@@ -338,7 +338,9 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, calcNodesLineNums, wrtLineIn
     }
     
     ## Reflect hessian across the diagonal
-    outDerivList$hessian[lower.tri(outDerivList$hessian[,,1])] <-  outDerivList$hessian[upper.tri(outDerivList$hessian[,,1])]
+    upperTriHess <- outDerivList$hessian[,,1]
+    upperTriHess[lower.tri(upperTriHess)] <-   t(upperTriHess)[lower.tri(upperTriHess)]
+    outDerivList$hessian[,,1] <-  upperTriHess
     return(outDerivList)
   }
   
@@ -349,7 +351,7 @@ convertToWrtArg <- function(wrtName, modelArgName, fxnArgName){
               argSize = length(values(model, wrtName))))
 }
 
-convertCalcArgNameToNodeName <- function(calcArgName, sizeAndDimInfo){
+convertCalcArgNameToModelNodeName <- function(calcArgName, sizeAndDimInfo){
   thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", calcArgName)) ## Extract 1, 2, etc. from end of arg name.
   thisName <- sub("_[0-9]+$","",calcArgName) ## Extract node name from beginning of arg name.
   indexBracketInfo <- paste0('[',
@@ -366,16 +368,18 @@ convertCalcArgNameToNodeName <- function(calcArgName, sizeAndDimInfo){
 }
 
 nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFunctionIndex = NULL, order, wrtPars){
+  if(missing(nodes) ) 
+    nodes <- model$getMaps('nodeNamesLHSall')
   if(!is.null(nodeFxnVector)){
     stop('nfv case of nimDerivs_calculate not implemented yet.')
   }
   wrtParsDeps <- model$getDependencies(wrtPars)
-  nodes <- model$expandNodeNames(nodes)
+  nodes <- model$expandNodeNames(nodes, sort = TRUE)
   if(!all(nodes %in% wrtParsDeps)){
     warning('not all calculate nodes depend on a wrtNode')
-    wrtParsDeps <- model$topologicallySortNodes(c(wrtParsDeps, nodes[which(!(nodes%in%wrtParsDeps))]))
   }
-  derivInfo <- nimble:::enhanceDepsForDerivs(model$expandNodeNames(wrtPars), wrtParsDeps, model)
+  nodesAndWrt <- model$expandNodeNames(c(nodes, model$expandNodeNames(wrtPars)), sort = TRUE)
+  derivInfo <- nimble:::enhanceDepsForDerivs(model$expandNodeNames(wrtPars), nodesAndWrt, model)
   stochNodes <- nodes[model$getNodeType(nodes) == 'stoch']
   calcNodesLineNums <- sapply(stochNodes, function(x){which(x == derivInfo[[1]])})
   wrtInds <- 1:sum(sapply(wrtPars, function(x){return(length(values(model, x)))}))
@@ -401,9 +405,7 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
     thisIndex <- thisIndex + wrtLineInfo[[i]]$lineSize
   }
   if(inherits(model, 'modelBaseClass') ){
-    if(missing(nodes) ) 
-      nodes <- model$getMaps('nodeNamesLHSall')
-    nfv <- nodeFunctionVector(model, wrtParsDeps, sortUnique = FALSE)
+    nfv <- nodeFunctionVector(model, nodesAndWrt, sortUnique = FALSE)
     return(rDeriv_CalcNodes(model, nfv, derivInfo, calcNodesLineNums, wrtLineInfo))
   }	
 }
