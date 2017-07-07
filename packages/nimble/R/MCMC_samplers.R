@@ -501,6 +501,7 @@ sampler_AF_slice <- nimbleFunction(
     sliceAdaptTolerance  <- .1        # determine when slice width no longer needs to be adapted
     sliceCounter         <- 0         # keep track of number of iterations since last slice adaptation
     factorCounter        <- 0         # keep track of number of iterations since last factor adaptation
+    factorTimesAdapted   <- 0         # keep track of number of times factors have adapted
     allSlicesAdapted     <- 0         # indicates whether all slice widths have finished adapting
     
     ## checks
@@ -585,6 +586,7 @@ sampler_AF_slice <- nimbleFunction(
           allSlicesAdapted    <<- 0
           sliceCounter        <<- 0
           factorCounter       <<- 0
+          factorTimesAdapted  <<- factorTimesAdapted + 1
         }
     },
     widthAdapt = function() {
@@ -615,6 +617,7 @@ sampler_AF_slice <- nimbleFunction(
       width                <<- widthOriginal
       factorCounter        <<- 0
       sliceCounter         <<- 0
+      factorTimesAdapted   <<- 0
       sliceAdaptInterval   <<- 1
       sliceAdaptIndicator  <<- integer(d, 1)
       nExpansions          <<- integer(d, 0)
