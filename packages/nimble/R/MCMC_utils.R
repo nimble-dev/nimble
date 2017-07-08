@@ -226,30 +226,11 @@ codeBlockClass <- setRefClass(
     
 )
 
-mcmc_generateControlListArgument <- function(requiredControlNames, samplerFunction, control, controlDefaults) {
-    if(missing(requiredControlNames)) {
-        if(is.character(samplerFunction)) {
-            if(exists(samplerFunction) && is.nfGenerator(eval(as.name(samplerFunction)))) {
-                samplerFunction <- eval(as.name(samplerFunction))
-            } else {
-                samplerFunction_type <- paste0('sampler_', samplerFunction)
-                if(exists(samplerFunction_type) && is.nfGenerator(eval(as.name(samplerFunction_type)))) {
-                    samplerFunction <- eval(as.name(samplerFunction_type))
-                } else stop(paste0('cannot find sampler type \'', type, '\''))
-            }
-        }
-        requiredControlNames <- mcmc_findControlListNamesInCode(samplerFunction)
-    }
-    if(missing(controlDefaults))
-        controlDefaults <- getNimbleOption('MCMCcontrolDefaultList')
-    if(missing(control))
-        control <- list()
+mcmc_generateControlListArgument <- function(control, controlDefaults) {
+    if(missing(control))           control         <- list()
+    if(missing(controlDefaults))   controlDefaults <- list()
     thisControlList <- controlDefaults           ## start with all the defaults
     thisControlList[names(control)] <- control   ## add in any controls provided as an argument
-    missingControlNames <- setdiff(requiredControlNames, names(thisControlList))
-    missingControlNames <- missingControlNames[!grepl('^dep_', missingControlNames)]   ## dependents for conjugate samplers are exempted from this check
-    if(length(missingControlNames) != 0)  stop(paste0('Required control names are missing for sampler: ', paste0(missingControlNames, collapse=', ')))
-    thisControlList <- thisControlList[requiredControlNames]
     return(thisControlList)
 }
 
@@ -261,14 +242,21 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
         if(grepl('^conjugate_d', names(ls)[1])) ls <- ls[1]    ## for conjugate samplers, remove all 'dep_dnorm', etc, control elements (don't print them!)
     ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
-    defaultOptions <- getNimbleOption('MCMCcontrolDefaultList')
+    ## to make displayControlDefaults argument work again, would need to code process
+    ## setup function of each sampler, find & extract the default control values, and pass
+    ## them ito this function.  Then set:
+    ## defaultOptions <- [the defaults for this one]
+    ## (the commented function below, mcmc_findControlListNamesInCode, is a helpful start).
+    ## old roxygen documentation for displayControlDefaults (from conf$print() method):
+    ## displayControlDefaults: A logical argument, specifying whether to display default values of control list elements (default FALSE).
+    ## -DT July 2017
     for(i in seq_along(ls)) {
         controlName <- names(ls)[i]
         controlValue <- ls[[i]]
         if(length(controlValue) == 0) next   ## remove length 0
-        if(!displayControlDefaults)
-            if(controlName %in% names(defaultOptions))   ## skip default control values
-                if(identical(controlValue, defaultOptions[[controlName]])) next
+        ##if(!displayControlDefaults)
+        ##    if(controlName %in% names(defaultOptions))   ## skip default control values
+        ##        if(identical(controlValue, defaultOptions[[controlName]])) next
         if(!displayNonScalars)
             if(is.numeric(controlValue) || is.logical(controlValue))
                 if(length(controlValue) > 1)
@@ -287,27 +275,28 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
 }
 
 
-mcmc_findControlListNamesInCode <- function(code) {
-    if(is.function(code))     return(mcmc_findControlListNamesInCode(body(code)))
-    if(is.name(code) || is.numeric(code) || is.logical(code) || is.character(code) || is.pairlist(code))     return(character())
-    
-    if(is.call(code)) {
-        if(code[[1]] == '$' && code[[2]] == 'control') {
-            if(is.name(code[[3]])) { return(as.character(code[[3]]))
-            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
-                                     return(character()) }
-        }
-        if(code[[1]] == '[[' && code[[2]] == 'control') {
-            if(is.character(code[[3]])) { return(as.character(code[[3]]))
-            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
-                                     return(character()) }
-        }
-        ## code is some call, other than $ or [[
-        return(unique(unlist(lapply(code, mcmc_findControlListNamesInCode))))
-    }
-    browser()
-    stop('not sure how to handle this code expression')
-}
+## obselete, since control defaults were moved to samper function setup code
+## -DT July 2017
+##mcmc_findControlListNamesInCode <- function(code) {
+##    if(is.function(code))     return(mcmc_findControlListNamesInCode(body(code)))
+##    if(is.name(code) || is.numeric(code) || is.logical(code) || is.character(code) || is.pairlist(code))     return(character())
+##    if(is.call(code)) {
+##        if(code[[1]] == '$' && code[[2]] == 'control') {
+##            if(is.name(code[[3]])) { return(as.character(code[[3]]))
+##            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
+##                                     return(character()) }
+##        }
+##        if(code[[1]] == '[[' && code[[2]] == 'control') {
+##            if(is.character(code[[3]])) { return(as.character(code[[3]]))
+##            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
+##                                     return(character()) }
+##        }
+##        ## code is some call, other than $ or [[
+##        return(unique(unlist(lapply(code, mcmc_findControlListNamesInCode))))
+##    }
+##    browser()
+##    stop('not sure how to handle this code expression')
+##}
 
 
 
