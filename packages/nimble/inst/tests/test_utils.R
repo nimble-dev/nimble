@@ -920,7 +920,7 @@ makeADCalcWrapperFunction <- function(calcNodeName, wrtName){
 ##                  wraps a call to calculate(model, nodes).
 ##   testCompiled:  A logical argument.  Currently only checks whether the model can compile.
 ##   verbose:       A logical argument.  Currently serves no purpose.
-test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, 
+test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
                                   testR = TRUE, testCompiled = FALSE,  verbose = TRUE){
   temporarilyAssignInGlobalEnv(model)  
   if(testR){
@@ -937,17 +937,16 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
         fxnCall[[1]] <- quote(RCalcADTestFunction)  
         test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes =', paste(calcNodeNames[[i]], collapse = ' '),
                         'and wrt =', paste(wrt[[j]], collapse = ' ')), {
-                          wrapperDerivs <- eval(substitute(nimDerivs(FXNCALL, wrt = WRT),
+                          wrapperDerivs <- eval(substitute(nimDerivs(FXNCALL, wrt = WRT, order = order),
                                                            list(FXNCALL = fxnCall,
                                                                 WRT = wrt[[j]])))
-                          expect_is(wrapperDerivs$value, 'numeric')
-                          expect_is(wrapperDerivs$gradient, 'matrix')
-                          expect_is(wrapperDerivs$hessian, 'array')
-                          chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]])
-                          expect_is(chainRuleDerivs$value, 'numeric')
-                          expect_is(chainRuleDerivs$gradient, 'matrix')
-                          expect_is(chainRuleDerivs$hessian, 'array')
-                          browser()
+                          # expect_is(wrapperDerivs$value, 'numeric')
+                          # expect_is(wrapperDerivs$gradient, 'matrix')
+                          # expect_is(wrapperDerivs$hessian, 'array')
+                          chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
+                          # expect_is(chainRuleDerivs$value, 'numeric')
+                          # expect_is(chainRuleDerivs$gradient, 'matrix')
+                          # expect_is(chainRuleDerivs$hessian, 'array')
                           expect_equal(wrapperDerivs$value, chainRuleDerivs$value)
                           expect_equal(wrapperDerivs$gradient, chainRuleDerivs$gradient, tolerance = .0001)
                           expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = .001)

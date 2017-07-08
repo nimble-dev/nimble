@@ -19,15 +19,12 @@ ADCode2 <- nimbleCode({
   x[1] ~ dnorm(1, 1)
   x[2] ~ dnorm(1, 1)
 })
-
 ADMod2 <- nimbleModel(
   code = ADCode2, dimensions = list(x = 2, y = 2, z = 2), constants = list(diagMat = diag(2)),
   inits = list(x = c(2.1, 1.2), y  = c(-.1,-.2)))
             
 test_ADModelCalculate(ADMod2, name = "ADMod2", calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod2$getDependencies('x'))),
                       wrt = list(c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), testR = TRUE)
-
-
 
 ADCode3 <- nimbleCode({
   for(i in 1:2){
