@@ -86,7 +86,7 @@ void setValuesIndexRange(NimArrBase<T> &nimArr, ManyVariablesMapAccessor &MVA, c
 
 
 template<typename Derived>
-double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical) { // remove default value of logical to fix function overloading issues
   double ans(0);
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
@@ -108,7 +108,7 @@ double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical
 }
   
 template<typename Derived>  
-  double calculateDiff(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  double calculateDiff(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   double ans(0);
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
@@ -130,7 +130,7 @@ template<typename Derived>
 }
 
 template<typename Derived>  
-  double getLogProb(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  double getLogProb(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   double ans(0);
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
@@ -152,7 +152,7 @@ template<typename Derived>
 }
 
 template<typename Derived>  
-  void simulate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  void simulate(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
   if(!logical) {
