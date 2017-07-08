@@ -244,8 +244,8 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
     ls2 <- list()
     ## to make displayControlDefaults argument work again, would need to code process
     ## setup function of each sampler, find & extract the default control values, and pass
-    ## them ito this function.  Then set:
-    ## defaultOptions <- [the defaults for this one]
+    ## them into this function.  Then set:
+    ## defaultOptions <- [the default list determined for this sampler]
     ## (the commented function below, mcmc_findControlListNamesInCode, is a helpful start).
     ## old roxygen documentation for displayControlDefaults (from conf$print() method):
     ## displayControlDefaults: A logical argument, specifying whether to display default values of control list elements (default FALSE).
@@ -275,7 +275,7 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
 }
 
 
-## obselete, since control defaults were moved to samper function setup code
+## obselete, since control defaults were moved to sampler function setup code
 ## -DT July 2017
 ##mcmc_findControlListNamesInCode <- function(code) {
 ##    if(is.function(code))     return(mcmc_findControlListNamesInCode(body(code)))
