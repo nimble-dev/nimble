@@ -9,16 +9,16 @@ context("Testing of math functions in NIMBLE code")
 source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
 
 set.seed(0)
-ans1 <- sapply(testsVaried, test_math)    ## 12
-ans2 <- sapply(testsBasicMath, test_math) ## 70
+ans1 <- sapply(testsVaried, test_math, 'math')    ## 12
+ans2 <- sapply(testsBasicMath, test_math, 'math') ## 70
 if(.Platform$OS.type == 'windows') {
     message("Since you are running on Windows, tests stopped prior to reaching max DLL limit.  Please use test-math2 to continue")
     stop()
 }
-ans3 <- sapply(testsMoreMath, test_math)  ## 41
-ans4 <- sapply(testsReduction, test_math) ## 13
-ans5 <- sapply(testsComparison, test_math)## 6
-ans6 <- sapply(testsMatrix, test_math)    ## 19
+ans3 <- sapply(testsMoreMath, test_math, 'math')  ## 41
+ans4 <- sapply(testsReduction, test_math, 'math') ## 13
+ans5 <- sapply(testsComparison, test_math, 'math')## 6
+ans6 <- sapply(testsMatrix, test_math, 'math')    ## 19
 
 
 
