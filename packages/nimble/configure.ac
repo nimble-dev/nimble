@@ -12,6 +12,20 @@ AC_PROG_CXX
 
 NEED_MAKEVARS_FILE=TRUE
 
+# Define -fPIC rather than -fpic when possibly, to overcome -fpic's limit on
+# the number of exported symbols.
+CXXPICFLAGS="-fPIC"
+case "${CXX}" in
+  ## Intel compilers
+  *icpc|*icc)
+    CXXPICFLAGS="-fpic"
+    ;;
+  ## Portland Group
+  *pgCC)
+    CXXPICFLAGS="-fpic"
+    ;;
+esac
+
 dnl The caller can specify where their Eigen/ directory is using, e.g.,
 dnl    --configure-args='--with-eigen=/home/bob/local'
 dnl or by setting the environment variable EIGEN_DIR
@@ -122,6 +136,7 @@ echo "Using Eigen directory ${EIGEN_DIR}"
 EIGEN_INC="-I$EIGEN_DIR"
 fi
 
+AC_SUBST(CXXPICFLAGS)
 AC_SUBST(CPPAD_INC)
 AC_SUBST(EIGEN_INC)
 AC_SUBST(NEED_MAKEVARS_FILE)

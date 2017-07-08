@@ -7,8 +7,12 @@ ifndef R_SHARE_DIR
  R_SHARE_DIR=$(R_HOME)/share
 endif
 
-# Don't have to succeed in including this if we are calling cleanup in the nimble package directory.
+## include raw package Makeconf first so that if subsequent removal of -g flags fails locally, raw Makeconf settings will be in place
 -include $(R_HOME)/etc$(R_ARCH)/Makeconf
+# Don't have to succeed in including this if we are calling cleanup in the nimble package directory.
+# Following two lines result in much smaller libnimble.a or equivalent by removing -g flags
+$(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
+-include ./Makeconf
 include ./Makevars
 
 ifndef OS
