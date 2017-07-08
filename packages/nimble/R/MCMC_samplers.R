@@ -488,7 +488,7 @@ sampler_AF_slice <- nimbleFunction(
         d                  <- length(targetAsScalar)
         discrete           <- sapply(targetAsScalar, function(x) model$isDiscrete(x))
         anyDiscrete        <- any(discrete)
-        gammaMatrix        <- diag(d)                # matrix of orthogonal bases
+        gammaMatrix        <- diag(d)         # matrix of orthogonal bases
         if(is.character(widthVec) && widthVec == 'oneVec')   widthVec <- rep(1,d)
         widthVecOriginal   <- widthVec
         nExpansions        <- rep(0, d)       # number of expansions
