@@ -10,6 +10,8 @@ DEVELOPER LEVEL CHANGES
 
 BUG FIXES
 
+-- several bugs fixed in the automated factor slice sampler (AF_slice sampler), having to due with correctly resetting the internal member variables when an MCMC is run multiple times
+
                            CHANGES IN VERSION 0.6-5 (June 2017)
 
 USER LEVEL CHANGES
