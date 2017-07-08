@@ -48,6 +48,7 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_dsqrtinvgamma, 4),
  FUN(C_rsqrtinvgamma, 3),
  FUN(C_dcar_normal, 8),
+ FUN(C_dcar_normal, 9),
  FUN(C_nimEigen, 3),
  FUN(C_nimSvd, 3),
  FUN(fastMatrixInsert, 4),

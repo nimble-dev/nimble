@@ -856,7 +856,7 @@ NULL
 #' @rdname CAR-Normal
 #' @export
 dcar_normal <- function(x, adj, weights, num, tau, c, zero_mean, log = FALSE) {
-    CAR_checkAdjWeightsNum(adj, weights, num)
+    CAR_normal_checkAdjWeightsNum(adj, weights, num)
     if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
     if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
     if(storage.mode(weights) != 'double')   storage.mode(weights) <- 'double'
@@ -889,6 +889,63 @@ dcar_normal <- function(x, adj, weights, num, tau, c, zero_mean, log = FALSE) {
 #' @export
 rcar_normal <- function(n = 1, adj, weights, num, tau, c, zero_mean) {
     ## it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
+    ## since initializeModel() will call this simulate method if there are any NA's present,
+    ## (which is allowed for island components), which over-writes all the other valid initial values.
+    ##return(rep(NaN, length(num)))
+    currentValues <- eval(quote(model[[nodes]]), parent.frame(3))
+    return(currentValues)
+}
+
+
+#' The CAR-Proper Distribution
+#'
+#'   Density function and random generation for the proper
+#'   Gaussian conditional autoregressive (CAR) distribution.
+#'
+#' @name CAR-Proper
+#'
+#' @param x vector of values.
+#' @param mu vector giving the mean for each spatial location.
+#' @param C vector of the same length as adj, giving the normalised weights associated with each pair of neighboring locations.  Note this differs from the dcar_normal weights argument, where unnormalised weights should be specified.
+#' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param num vector giving the number of neighbors of each spatial location, with length equal to the number of locations.
+#' @param M vector giving the diagnoal elements of the conditional variance matrix, with length equal to the number of locations.
+#' @param tau scalar precision of the Gaussian CAR prior.
+#' @param gamma scalar representing the overall degree of spatial dependence.  The value is constrained to lie withing the inverse minimum and maximum eigenvalues of M^(-0.5) %*% C %*% M^(0.5).  These bounds can be calculated using the deterministic functions min.bound(C, adj, num, M) and max.bound(C, adj, num, M).
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#'
+#' @author Daniel Turek
+#'
+#' @export
+#'
+#' @details
+#'
+#' @return \code{dcar_proper} gives the density, and \code{rcar_proper} returns the current process values <----- XXXXXXXXXXXXX probably not right.
+#' @references Banerjee, S., Carlin, B.P., and Gelfand, E.G. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#'
+#' @examples
+#' not done yet XXXXXXXXXXXXXXXX
+#' lp <- dcar_proper(...)
+NULL
+
+#' @rdname CAR-Proper
+#' @export
+dcar_proper <- function(x, mu, C, adj, num, M, tau, gamma, log = FALSE) {
+    CAR_proper_checkAdjNumCM(adj, num, C, M)
+    if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
+    if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
+    if(storage.mode(C) != 'double')   storage.mode(C) <- 'double'
+    if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
+    if(storage.mode(num) != 'double')   storage.mode(num) <- 'double'
+    if(storage.mode(M) != 'double')   storage.mode(M) <- 'double'
+    .Call(C_dcar_proper, as.double(x), as.double(mu), as.double(C), as.double(adj), as.double(num), as.double(M), as.double(tau), as.double(gamma), as.logical(log))
+}
+
+#' @rdname CAR-Proper
+#' @export
+rcar_proper <- function(n = 1, mu, C, adj, num, M, tau, gamma) {
+    ## it's important that simulation via rcar_proper() does *not* set all values to NA (or NaN),
     ## since initializeModel() will call this simulate method if there are any NA's present,
     ## (which is allowed for island components), which over-writes all the other valid initial values.
     ##return(rep(NaN, length(num)))

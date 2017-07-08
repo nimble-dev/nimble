@@ -2193,3 +2193,58 @@ double dcar_normal(double* x, double* adj, double* weights, double* num, double 
   return(exp(lp));
 }
 
+SEXP C_dcar_proper(SEXP x, SEXP mu, SEXP C, SEXP adj, SEXP num, SEXP M, SEXP tau, SEXP gamma, SEXP return_log) {
+  if(!isReal(x) || !isReal(mu) || !isReal(C) || !isReal(adj) || !isReal(num) || !isReal(M) || !isReal(tau) || !isReal(gamma) || !isLogical(return_log))
+    RBREAK("Error (C_dcar_proper): invalid input type for one of the arguments.");
+  
+  int N = LENGTH(x);
+  int L = LENGTH(adj);
+  
+  double* c_x = REAL(x);
+  double* c_mu = REAL(mu);
+  double* c_C = REAL(C);
+  double* c_adj = REAL(adj);
+  double* c_num = REAL(num);
+  double* c_M = REAL(M);
+  double c_tau = REAL(tau)[0];
+  double c_gamma = REAL(gamma)[0];
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+  
+  PROTECT(ans = allocVector(REALSXP, 1));
+  REAL(ans)[0] = dcar_proper(c_x, c_mu, c_C, c_adj, c_num, c_M, c_tau, c_gamma, N, L, give_log);
+  
+  UNPROTECT(1);
+  return ans;
+}
+
+double dcar_proper(double* x, double* mu, double* C, double* adj, double* num, double* M, double tau, double gamma, int N, int L, int give_log) {
+  // This method implements the following density calculation:
+  // XXXXXXX need to write this
+  // p(x1, ..., xn, tau, gamma, ...) = ...... ?????
+  if(tau < 0) {
+    return R_NaN;
+  }
+  double lp = 0;
+  // int count = 0;
+  // double xi, xj;
+  // for(int i = 0; i < N; i++) {
+  //   xi = x[i];
+  //   for(int j = 0; j < num[i]; j++) {
+  //     xj = x[ (int) adj[count] - 1 ];
+  //     lp += weights[count] * pow(xi-xj,2);
+  //     count++;
+  //   }
+  // }
+  // if(count != L) {
+  //   ML_ERR_return_NAN;
+  // }
+  // lp *= 1/2.0;     // accounts for double-summing over all (xi,xj) pairs
+  // lp *= (-1/2.0) * tau;
+  // lp += (N-c)/2.0 * (log(tau) - M_LN_2PI);
+  if(give_log) {
+    return(lp);
+  }
+  return(exp(lp));
+}
+

@@ -214,6 +214,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                         if(nodeDist == 'dmulti')       { addSampler(target = node, type = 'RW_multinomial');     next }
                         if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
+                        if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
@@ -788,8 +789,6 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             if(print) printRules()
         },
         addDefaultSamplerAssignmentRules = function() {
-            ## CAR models
-            addRule(quote(model$getDistribution(node) == 'dcar_normal'), 'CAR_normal')
             
 	    ## posterior predictive nodes
             addRule(quote(isEndNode), 'posterior_predictive')
@@ -803,7 +802,11 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             
 	    ## dirichlet
             addRule(quote(nodeDistribution == 'ddirch'), 'RW_dirichlet')
-
+            
+            ## CAR models
+            addRule(quote(model$getDistribution(node) == 'dcar_normal'), 'CAR_normal')
+            addRule(quote(model$getDistribution(node) == 'dcar_proper'), 'CAR_proper')
+            
             ## multivariate & multivariateNodesAsScalars: univariate RW
             addRule(quote(isMultivariate && multivariateNodesAsScalars),
                     quote(for(scalarNode in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
