@@ -20,6 +20,8 @@ USER LEVEL CHANGES
 
 DEVELOPER LEVEL CHANGES
 
+-- MCMC sampler control list default values are now internal to sampling algorithms, rather than a system-level option.
+
 -- Improvements added to testing system, including safeguarding against silent failures, use of gold files, batching of compiler tests, more expected failures, conversion to running all tests using test_package, and parallelization on Travis-CI.
 
 -- Names assigned to package-defined nimbleFunctions to improve C++ readability.
