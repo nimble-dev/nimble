@@ -312,7 +312,7 @@ template<typename NimArrOutput, typename DerivedBool>
   ans.reserve(BoolArg.size());
   bool nextBool;
   for(unsigned int i = 0; i < BoolArg.size(); i++ ) {
-    nextBool = nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedBool>::Flags & LinearAccessBit, int, DerivedBool, typename Eigen::internal::traits<DerivedBool>::Index >::getCoeff(BoolArg, i);
+    nextBool = nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedBool>::Flags & LinearAccessBit, int, DerivedBool, Eigen::Index >::getCoeff(BoolArg, i);
     if(nextBool) ans.push_back(i + 1); // That 1 makes it one-based indexing, which will then be adjusted back to zero-based when used for indexing something else
   }
   assignVectorToNimArr<NimArrOutput, std::vector<int> >(output, ans);

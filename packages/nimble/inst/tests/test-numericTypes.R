@@ -159,7 +159,9 @@ reductionTypeTestsMatrixSquare <- unlist(recursive = FALSE,
                                     x= lapply(nimble:::matrixSquareReductionOperators,
                                               function(x) {
                                                   mapply(makeReductionTypeTest,
-                                                         type = c('double','integer'),
+                                                         ## As of 2015-03-13, Eigen does not allow integer determinants.
+                                                         ## https://bitbucket.org/eigen/eigen/commits/678c42a8
+                                                         type = 'double',
                                                          nDim = rep(2, 2),
                                                          MoreArgs = list(name = x, funName = x),
                                                          SIMPLIFY = FALSE) 
