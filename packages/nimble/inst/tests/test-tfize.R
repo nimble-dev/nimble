@@ -4,7 +4,6 @@ source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
 context("Testing of Tensorflow-ization")
 
 nimbleOptions(experimentalUseTensorflow = TRUE)
-nimbleOptions(showCompilerOutput = TRUE)
 
 test_that('Tensorflow implementation of axpy works', {
     skip_if_not_installed('tensorflow')
@@ -49,12 +48,6 @@ test_that('Tensorflow backend works for basic math', {
     sapply(testsBasicMath, test_math, 'tensorflow')
     sapply(testsReduction, test_math, 'tensorflow')
     sapply(testsComparison, test_math, 'tensorflow')
-})
-
-if (0)  ## These tests currently fail.
-test_that('Tensorflow backend works for basic math', {
-    skip_if_not_installed('tensorflow')
-    set.seed(0)
-    sapply(testsMoreMath, test_math, 'tensorflow')  ## Fails "probit/iprobit of vector".
-    sapply(testsMatrix, test_math, 'tensorflow')  ## Fails "forwardsolve matrix-vector".
+    sapply(testsMoreMath, test_math, 'tensorflow')
+    sapply(testsMatrix, test_math, 'tensorflow')
 })

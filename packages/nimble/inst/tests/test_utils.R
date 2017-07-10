@@ -303,7 +303,6 @@ gen_runFun <- function(param) {
   tmp[[3]] <- quote(return(out))
   tmp[[4]] <- parse(text = paste0("returnType(double(", param$outputDim, "))"))[[1]]
   body(runFun) <- tmp
-  cat(paste(deparse(runFun), collapse = '\n'), '\n')
   return(runFun)
 }
 
@@ -380,12 +379,12 @@ test_math_internal <- function(param, info, verbose = TRUE, size = 3, dirName = 
   if(is.logical(out)) out <- as.numeric(out)
   if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
 
-  infoR <- paste0(info, ": (R vs Nimble DSL)")
-  wrap_if_matches(param$xfail, info, expect_failure, {
+  infoR <- paste0(info, ": R vs Nimble DSL")
+  wrap_if_matches(param$xfail, infoR, expect_failure, {
       expect_equal(out, out_nfR, info = infoR)
   })
-  infoC <- paste0(info, ": (R vs Nimble Cpp)")
-  wrap_if_matches(param$xfail, info, expect_failure, {
+  infoC <- paste0(info, ": R vs Nimble Cpp")
+  wrap_if_matches(param$xfail, infoC, expect_failure, {
       expect_equal(out, out_nfC, info = infoC)
   })
 
