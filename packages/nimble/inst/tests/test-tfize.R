@@ -45,16 +45,16 @@ test_that('Tensorflow example', {
 test_that('Tensorflow backend works for basic math', {
     skip_if_not_installed('tensorflow')
     set.seed(0)
-    sapply(testsVaried, test_math)
-    sapply(testsBasicMath, test_math)
-    sapply(testsReduction, test_math)
-    sapply(testsComparison, test_math)
+    sapply(testsVaried, test_math, 'tensorflow')
+    sapply(testsBasicMath, test_math, 'tensorflow')
+    sapply(testsReduction, test_math, 'tensorflow')
+    sapply(testsComparison, test_math, 'tensorflow')
 })
 
 if (0)  ## These tests currently fail.
 test_that('Tensorflow backend works for basic math', {
     skip_if_not_installed('tensorflow')
     set.seed(0)
-    sapply(testsMoreMath, test_math)  ## Fails "probit/iprobit of vector".
-    sapply(testsMatrix, test_math)  ## Fails "forwardsolve matrix-vector".
+    sapply(testsMoreMath, test_math, 'tensorflow')  ## Fails "probit/iprobit of vector".
+    sapply(testsMatrix, test_math, 'tensorflow')  ## Fails "forwardsolve matrix-vector".
 })
