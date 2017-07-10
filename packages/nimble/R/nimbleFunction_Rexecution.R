@@ -1113,7 +1113,7 @@ nimRound <- round
 #'            should return a scalar result.
 #' @param gr  A function to return the gradient for the "BFGS", "CG" and "L-BFGS-B" methods.
 #' @param ... IGNORED
-#' @param method The method to be used. See `Details` section of \code\link{{optim}}. One of:
+#' @param method The method to be used. See `Details` section of \code{\link{optim}}. One of:
 #'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B".
 #'               Note that the R methods "SANN", "Brent" are not supported.
 #' @param lower Vector or scalar of lower bounds for parameters.
