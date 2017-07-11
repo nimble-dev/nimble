@@ -425,7 +425,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
                 } else { ## non-replaceable indices are dynamic indices
-                    if(!nimbleOptions()$allowDynamicIndexing) dynamicIndexParent <- code[[2]]
+                    if(!nimbleOptions()$allowDynamicIndexing)
+                        warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ", deparse(code), ". This is now allowed in version 0.6-6 as an option, but you need to set 'nimbleOptions(allowDynamicIndexing = TRUE)'.")
+                        dynamicIndexParent <- code[[2]]
                     else {
                         if(any(sapply(contentsCode, detectNonscalarIndex)))
                             stop("getSymbolicParentNodesRecurse: only scalar random indices are allowed; vector random indexing found in ", deparse(code))

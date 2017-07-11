@@ -127,6 +127,19 @@ addArg <- function(code, value, name) {
 }
 
 
+ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced) {
+    if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+        code <- substitute(if(CONDITION) LHS <<- RHS
+                           else stop(TEXT),
+                           list(LHS = LHS,
+                                RHS = RHS,
+                                CONDITION = dynamicIndexLimitsExpr,
+                                TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced)))
+    } else code <- substitute(LHS <<- RHS,
+                              list(LHS = LHS,
+                                   RHS = RHS))
+    return(code)
+}
 
 ## changes 'dnorm(mean=1, sd=2)' into 'rnorm(1, mean=1, sd=2)'
 ndf_createStochSimulate <- function(RHS, dynamicIndexLimitsExpr) {

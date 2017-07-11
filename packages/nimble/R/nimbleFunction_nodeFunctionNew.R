@@ -24,7 +24,7 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeE
                            where = where),
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
                  SETUPFUNCTION = nndf_createSetupFunction(),  ##nndf = new node function
-                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, altParamsRep, boundsRep, logProbNodeExprRep, type, dynamicIndexLimitsExpr),
+                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, altParamsRep, boundsRep, logProbNodeExprRep, type, dynamicIndexLimitsExpr, RHS),
                  where         = where)
         )
     if(evaluate)    return(eval(nodeFunctionTemplate))     else       return(nodeFunctionTemplate)
@@ -80,17 +80,19 @@ indexedNodeInfoTableClass <- function(BUGSdecl) {
 }
 
 ## creates a list of the methods calculate, simulate, getParam, getBound, and getLogProb, corresponding to LHS, RHS, and type arguments
-nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, type, dynamicIndexLimitsExpr) {
+nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, type, dynamicIndexLimitsExpr, RHSnonReplaced) {
     if(type == 'determ') {
         methodList <- eval(substitute(
             list(
-                simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- RHS                                                 },
+                simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {  DETERMSIM                                                },
                 calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { simulate(INDEXEDNODEINFO_ = INDEXEDNODEINFO_);    returnType(double());   return(invisible(0)) },
                 calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {simulate(INDEXEDNODEINFO_ = INDEXEDNODEINFO_);  returnType(double());   return(invisible(0)) },
                 getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                returnType(double());   return(0)            }
             ),
             list(LHS=LHS,
-                 RHS=RHS)))
+                 RHS=RHS,
+                 DETERMSIM = ndf_createDetermSimulate(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced)
+                 )))
     }
     if(type == 'stoch') {
         methodList <- eval(substitute(
@@ -246,7 +248,7 @@ nndf_generateDynamicIndexLimitsExpr <- function(dynamicIndexInfo) {
     ## tmp <- quote(1 & 1)
     ## tmp[[2]] <- dynamicIndexLimitsExpr
     ## tmp[[3]] <- indivLimits[[i]]
-    ## check if () are stripped out in C++
+    ## check if () are stripped out in C++; if so then it doesn't matter anyway
     return(dynamicIndexLimitsExpr)
 }
 
