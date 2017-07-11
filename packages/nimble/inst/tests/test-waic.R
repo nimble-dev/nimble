@@ -12,10 +12,8 @@ schoolSATcode <- nimbleCode({
     thes[i] <- 1/(sigma[i])^2
     schoolobs[i] ~ dnorm(schoolmean[i],thes[i])
   }
-  mu ~ dnorm(0,alpha)
-  alpha <- .01
+  mu ~ dnorm(0,0.1) 
   itau   ~ dgamma(1e-3,0.225)
-  tau <- sqrt(1/itau)
 })
 
 schoolSATmodel <- nimbleModel(code = schoolSATcode,
@@ -28,12 +26,17 @@ compileNimble(schoolSATmodel)
 schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
 schoolSATmcmc <- buildMCMC(schoolSATmcmcConf)
 CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel)
+test_that("Test that WAIC returns -Inf if too few posterior samples are used: ",
+          expect_equal(CschoolSATmcmc$calculateWAIC(), -Inf))
 CschoolSATmcmc$run(50000)
-schoolWAICfunc <- calcWAIC(schoolSATmodel, schoolSATmcmc)
-CschoolWAICfunc <- compileNimble(schoolWAICfunc, project = schoolSATmodel)
-schoolWAIC <- CschoolWAICfunc$run(20000)
-
 ##below WAIC value from Gelman '13 "Understanding predictive information criteria for Bayesian models"
+test_that("Test that WAIC is accurate: ",
+          expect_equal(CschoolSATmcmc$calculateWAIC(), 61.8, tolerance = 2.0))
+
+schoolWAICfunc <- calculateWAIC(schoolSATmodel, schoolSATmcmc$mvSamples)
+### Error occurs here during compilation.  
+CschoolWAICfunc <- compileNimble(schoolWAICfunc, project = schoolSATmodel, showCompilerOutput = TRUE)
+schoolWAIC <- CschoolWAICfunc$run(20000)
 test_that("Test that WAIC is accurate: ",
           expect_equal(schoolWAIC, 61.8, tolerance = 2.0))
 

@@ -9,30 +9,30 @@ calcDataNF <- nimbleFunction(
   run = function(){
     returnType(double())
     return(model$calculate(node))
-  }
+  }, where = getLoadingNamespace()
 )
 
 
 #' Calculates WAIC from MCMC samples
 #' 
-#' Takes a NIMBLE model and a NIMBLE MCMC object.  Creates an algorithm that will calculate the WAIC from the posterior samples of the MCMC object.
+#' Takes a NIMBLE model and a NIMBLE modelValues object that contains posterior samples of parameters from that model.  Creates an algorithm that will calculate the WAIC from those posterior samples.
 #' 
 #' @param model a NIMBLE model 
-#' @param mcmc a NIMBLE MCMC object, created from a call to buildMCMC().  
+#' @param mvSamples a NIMBLE modelValues object with samples from the posterior distribution, such as the \code{mvSamples} modelValues object obtained after runnnig a nimble MCMC algorithm.  
 #'
 #'  @author Nicholas Michaud
 #' @export
 #' @details 
-#' Calling calcWAIC will produce an uncompiled (R) function object, say \code{Rwaic}.
+#' Calling calculateWAIC will produce an uncompiled (R) function object, say \code{Rwaic}.
 #' The  WAIC function has a single arugment:
 #'
 #' \code{burnin}: The number of iterations to subtract from the beginning of the posterior samples of the MCMC object.
 #' 
-#' The uncompiled (R) WAIC function may be compiled to a compiled WAIC object, taking care to compile in the same project as both the R model object and the MCMC object that were used as arguments to \code{calcWAIC()}, using: \code{Cwaic <- compileNimble(Rwaic, project=Rmodel)}
+#' The uncompiled (R) WAIC function may be compiled to a compiled WAIC object, taking care to compile in the same project as the R model object that was used as an argument to \code{calculateWAIC()}, using: \code{Cwaic <- compileNimble(Rwaic, project=Rmodel)}
 
 #' The compiled function will function identically to the uncompiled object, except acting on the compiled model object and compiled MCMC samples.
 
-#' The \code{run} method of \code{calcWAIC} calculates the WAIC of a given model.  The WAIC is calculated using the posterior samples from the provided NIMBLE MCMC object.  As such, the MCMC algorithm must have been run prior to calculating the WAIC.     
+#' The \code{run} method of \code{calculateWAIC} calculates the WAIC of a given model.  The WAIC is calculated using the posterior samples from the provided NIMBLE modelValues object.     
 #' The WAIC (Watanabe, 2010) is calculated from Equations 5, 12, and 13 in Gelman (2014).  Note that the set of all parameters monitored by \code{mcmc} will be treated as \eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014). 
 #'  All parameters downstream of the monitored parameters that are necessary to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of \eqn{theta}.
 #'
@@ -69,22 +69,22 @@ calcDataNF <- nimbleFunction(
 #' pumpMCMC <- buildMCMC(pumpConf)
 #' CpumpMCMC <- compileNimble(pumpMCMC, project = pump)
 #' CpumpMCMC$run(niter = 1000)
-#' pumpWAIC <- calcWAIC(pumpModel, pumpMCMC)
+#' mvSamples <- CpumpMCMC$mvSamples
+#' pumpWAIC <- calculateWAIC(pumpModel, mvSamples)
 #' CpumpWAIC <- compileNimble(pumpWAIC, project = pump)
 #' WAIC <- CpumpWAIC$run(burnIn = 500)
 #' }
 
-calcWAIC <- nimbleFunction(
-  setup = function(model, mcmc){
+calculateWAIC <- nimbleFunction(
+  setup = function(model, mvSamples){
     dataNodes <- model$getNodeNames(dataOnly = TRUE)
     dataCalcNFList <- nimbleFunctionList(dataCalcVirtual)
     for(i in seq_along(dataNodes)){
       dataCalcNFList[[i]] <- calcDataNF(model, dataNodes[i])
     }
     dataNodeLength <- length(dataNodes)
-    sampledNodes <- model$getVarNames(FALSE, colnames(as.matrix(mcmc$mvSamples)))
+    sampledNodes <- model$getVarNames(FALSE, colnames(as.matrix(mvSamples)))
     paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
-    mvSamples <- mcmc$mvSamples
   },
   run = function(burnIn = integer()){
     numMCMCSamples <- getsize(mvSamples) - burnIn

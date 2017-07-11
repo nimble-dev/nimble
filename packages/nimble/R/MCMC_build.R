@@ -27,6 +27,9 @@
 #' These may be accessed and converted into R matrix objects via:
 #' \code{as.matrix(mcmc$mvSamples)}
 #' \code{as.matrix(mcmc$mvSamples2)}
+#' 
+#' After the MCMC has been run, calling the \code{calculateWAIC()} method of the MCMC object will return the WAIC for the model, calculated using the posterior samples from the MCMC run.  For more information about the
+#' WAIC algorithm, see \code{\\help{calculateWAIC()}}.
 #'
 #' The uncompiled (R) MCMC function may be compiled to a compiled MCMC object, taking care to compile in the same project as the R model object, using:
 #' \code{Cmcmc <- compileNimble(Rmcmc, project=Rmodel)}
@@ -74,6 +77,8 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
+        
+        calcWAICFunction <- calculateWAIC(model, mvSamples)
     },
 
     run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
@@ -123,6 +128,13 @@ buildMCMC <- nimbleFunction(
         getTimes = function() {
             returnType(double(1))
             return(samplerTimes[1:(length(samplerTimes)-1)])
+        },
+        calculateWAIC = function(){
+          burnIn <- .1 * getsize(mvSamples)
+          burnIn <- round(burnIn)
+          returnType(double(0))
+          WAIC <- calcWAICFunction$run(burnIn)
+          return(WAIC)
         }),
     where = getLoadingNamespace()
 )
