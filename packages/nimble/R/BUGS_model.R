@@ -418,7 +418,7 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       }
                                       return(ans)                                      
                                   },
-expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE) {
+expandNodeNamesFromGraphIDs = function(graphID, returnScalarComponents = FALSE, returnType = 'names', sort = FALSE) {
     if(length(graphID)==0) return(if(returnType=='names') character() else numeric())
     if(sort) 
         graphID <- sort(graphID)
@@ -453,7 +453,7 @@ unique: should names be the unique names or should original ordering of nodes (a
 
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
                                       graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique)
-                                      expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType)
+                                      expandNodeNamesFromGraphIDs(graphID, returnScalarComponents, returnType, sort)
                                       ## if(sort) 
                                       ##     graphID <- sort(graphID)
                                       ## if(returnType == 'names'){
@@ -909,15 +909,19 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   }
                                                   
                                         # check sizes
-                                                  mats <- dims == 2
-                                                  vecs <- dims == 1
-                                                  matRows <- unlist(sapply(sizes[mats], `[`, 1))
-                                                  matCols <- unlist(sapply(sizes[mats], `[`, 2))
-                                                  if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
-                                                      if(dist %in% names(nimble:::distributionsInputList)) {
-                                                          stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
-                                                      } else {
-                                                          warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
+                                                  ## can exempt distributions from check that all non-scalar parameters have
+                                                  ## the same length or size in each dimension (e.g., for dcar_normal)
+                                                  if(!nimble:::isMixedSizes(dist)) {
+                                                      mats <- dims == 2
+                                                      vecs <- dims == 1
+                                                      matRows <- unlist(sapply(sizes[mats], `[`, 1))
+                                                      matCols <- unlist(sapply(sizes[mats], `[`, 2))
+                                                      if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
+                                                          if(dist %in% names(distributionsInputList)) {
+                                                              stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                          } else {
+                                                              warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
+                                                  }
                                                   
                                               }
                                       }
@@ -927,7 +931,8 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                           if(!nimble:::isValid(.self[[v]]))
                                               varsWithNAs <- c(varsWithNAs, v)
                                       if(!is.null(varsWithNAs))
-                                          message(' note that missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.', appendLF = FALSE)
+                                          if(isTRUE(nimbleOptions('verbose')))
+                                              message(' note that missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.', appendLF = FALSE)
                                   },
 
                                   check = function() {
@@ -1070,7 +1075,6 @@ insertSingleIndexBrackets <- function(code, varInfo) {
     return(code)
 }
 
-
 # for now export this as R<3.1.2 give warnings if don't
 
 #' Class \code{RmodelBaseClass}
@@ -1112,7 +1116,15 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
-
+                                           if(nimbleOptions('experimentalEnableDerivs')){
+                                             parents <- BUGSdecl$allParentVarNames()
+                                             selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
+                                             parents <- c(selfWithNoInds, parents)
+                                             parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix)
+                                             parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, BUGSdecl$unrolledIndicesMatrix,
+                                                                                               allSizeAndDimList = parentsSizeAndDims)
+                                           }
+                                           else parentsSizeAndDims <- list()
                                            altParams <- BUGSdecl$altParamExprs
                                            altParams <- lapply(altParams, nimble:::insertSingleIndexBrackets, modelDef$varInfo)
                                            bounds <- BUGSdecl$boundExprs
@@ -1127,7 +1139,11 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## make a unique name
                                            thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
-                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
+
+                                           
+                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, 
+                                                                                   parentsSizeAndDims = parentsSizeAndDims, logProbNodeExpr=logProbNodeExpr, type=type,
+                                                                                   setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
                                            nodeFunctionGeneratorNames[i] <<- thisNodeGeneratorName
@@ -1136,70 +1152,6 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                        }
                                    },
                                    
-                                   buildNodeFunctions_old = function(where = globalenv(), debug = FALSE) {
-                                       ## This creates the nodeFunctions, which are basically nimbleFunctions, for the model
-                                       if(debug) browser()
-                                       iNextNodeFunction <- 1
-                                       nodeFunctions <<- vector('list', length = modelDef$numNodeFunctions)  ## for the specialized instances
-                                       nodeFunctionGeneratorNames <<- character(modelDef$numNodeFunctions) ## possible error: should this be length(modelDef$declInfo)?
-                                       nodeGenerators <<- vector('list', length = length(modelDef$declInfo)) ## for the nimbleFunctions
-                                       for(i in seq_along(modelDef$declInfo)) {
-                                           BUGSdecl <- modelDef$declInfo[[i]]
-                                           if(BUGSdecl$numUnrolledNodes == 0) next
-                                           ## extract needed pieces
-                                           type <- BUGSdecl$type
-                                           code <- BUGSdecl$codeReplaced
-                                           code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
-                                           LHS <- code[[2]]
-                                           RHS <- code[[3]]
-                                           altParams <- BUGSdecl$altParamExprs
-                                           altParams <- lapply(altParams, nimble:::insertSingleIndexBrackets, modelDef$varInfo)
-                                           logProbNodeExpr <- BUGSdecl$logProbNodeExpr
-                                           logProbNodeExpr <- nimble:::insertSingleIndexBrackets(logProbNodeExpr, modelDef$logProbVarInfo)
-                                           setupOutputExprs <- BUGSdecl$replacementNameExprs
-
-                                           ## make a unique name
-                                           thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
-                                           ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
-                                           nfGenerator <- nimble:::nodeFunction(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
-                                           nodeGenerators[[i]] <<- nfGenerator
-
-                                           newNodeFunctionNames <- BUGSdecl$nodeFunctionNames
-                                           ## We include "_L[source line number]" in the names for the nodeGenerators so we can trace what line of BUGS code they came from
-                                           ## This propagates to the C++ class names
-                                           names(nodeGenerators)[i] <<- thisNodeGeneratorName
-
-                                           ## If it is a singleton with no replacements, we can build the node simply:
-                                           if(length(setupOutputExprs)==0) { 
-                                               nodeFunctions[[iNextNodeFunction]] <<- nfGenerator(.self)
-                                               nodeFunctionGeneratorNames[iNextNodeFunction] <<- thisNodeGeneratorName
-                                               names(nodeFunctions)[iNextNodeFunction] <<- newNodeFunctionNames
-                                               iNextNodeFunction <- iNextNodeFunction + 1
-                                               next
-                                           }
-
-                                           ## It is either within for loops (contexts) and/or has a replacement
-                                           ## so we construct code to call the nfGenerator with the needed arguments
-                                           
-
-                                           assign('MODEL_UNIQUE_NAME_', .self, envir = BUGSdecl$replacementsEnv)
-                                           BUGSdecl$replacementsEnv[['nfGenCall_UNIQUE_NAME_']] <- as.call(c(list(quote(nfGenerator_UNIQUE_NAME_)), list(model = quote(MODEL_UNIQUE_NAME_)), lapply(setupOutputExprs, function(z) substitute(x[[index_UNIQUE_NAME_]], list(x = z)))))
-                                           BUGSdecl$replacementsEnv[['nfGenerator_UNIQUE_NAME_']] <- nfGenerator
-                                           ## nfGenCall is code for a call to nfGenerator, like nfGenerator(MODEL_UNIQUE_NAME_, j = j[[index_UNIQUE_NAME_]]) 
-                                           evalq({
-                                               nfGenWrap_UNIQUE_NAME_ <- function(index_UNIQUE_NAME_) x
-                                               body(nfGenWrap_UNIQUE_NAME_) <- nfGenCall_UNIQUE_NAME_
-                                           }, envir = BUGSdecl$replacementsEnv)
-                                           
-                                           numNewFunctions <- BUGSdecl$outputSize
-                                           nodeFunctions[iNextNodeFunction-1+(1:numNewFunctions)] <<- evalq(lapply(1:outputSize, nfGenWrap_UNIQUE_NAME_), envir = BUGSdecl$replacementsEnv)
-                                           nodeFunctionGeneratorNames[iNextNodeFunction-1+(1:numNewFunctions)] <<- thisNodeGeneratorName
-                                           rm(list = c('MODEL_UNIQUE_NAME_', 'nfGenCall_UNIQUE_NAME_', 'nfGenerator_UNIQUE_NAME_', 'nfGenWrap_UNIQUE_NAME_'), envir = BUGSdecl$replacementsEnv)
-                                           
-                                           names(nodeFunctions)[iNextNodeFunction-1+(1:numNewFunctions)] <<- BUGSdecl$nodeFunctionNames
-                                           iNextNodeFunction <- iNextNodeFunction + numNewFunctions
-                                       }
-                                   },
                                     buildNodesList = function() {   ## DANGEROUS!!  CAUSES R Studio TO CRASH!!  Unless the option NOT to try to inspect objects is used.
                                         nodes <<- list2env(nodeFunctions)			#trying to speed things up
                                     #    nodes <<- lapply(nodes, function(nf) getFunctionEnvVar(nf, 'nfRefClassObject'))

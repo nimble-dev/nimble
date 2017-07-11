@@ -4,7 +4,8 @@
 \alias{nimOptim}
 \title{Nimble wrapper around R's builtin \code{\link{optim}}.}
 \usage{
-nimOptim(par, fn)
+nimOptim(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf,
+  upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE)
 }
 \arguments{
 \item{par}{Initial values for the parameters to be optimized over.}
@@ -12,6 +13,22 @@ nimOptim(par, fn)
 \item{fn}{A function to be minimized (or maximized), with first argument the
 vector of parameters over which minimization is to take place. It
 should return a scalar result.}
+
+\item{gr}{A function to return the gradient for the "BFGS", "CG" and "L-BFGS-B" methods.}
+
+\item{...}{IGNORED}
+
+\item{method}{The method to be used. See `Details` section of \code{\link{optim}}. One of:
+"Nelder-Mead", "BFGS", "CG", "L-BFGS-B".
+Note that the R methods "SANN", "Brent" are not supported.}
+
+\item{lower}{Vector or scalar of lower bounds for parameters.}
+
+\item{upper}{Vector or scalar of upper bounds for parameters.}
+
+\item{control}{A list of control parameters. See \code{Details} section of \code{\link{optim}}.}
+
+\item{hessian}{Logical. Should a Hessian matrix be returned?}
 }
 \value{
 \code{\link{optimResultNimbleList}}
@@ -22,3 +39,4 @@ Nimble wrapper around R's builtin \code{\link{optim}}.
 \seealso{
 \code{\link{optim}}
 }
+

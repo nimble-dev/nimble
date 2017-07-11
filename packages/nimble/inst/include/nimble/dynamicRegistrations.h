@@ -11,6 +11,7 @@
 #include <nimble/NamedObjects.h>
 #include <nimble/dllFinalizer.h>
 #include <nimble/smartPtrs.h>
+#include <nimble/predefinedNimbleLists.h>
 
 #include <R_ext/Rdynload.h>
 
@@ -26,38 +27,17 @@ R_CallMethodDef CallEntries[] = {
   FUN(getModelElementPtr, 2),
   FUN(getMVBuildName, 1),
   FUN(derefPtr, 1),
-  //  FUN(setSinglePtrFromSinglePtr, 2),
 
   // accessorClasses
-  //FUN(makeSingleVariableAccessor, 4),
-  //  FUN(makeSingleModelValuesAccessor, 5),
-  FUN(getModelAccessorValues, 1),
-  FUN(getMVAccessorValues, 1),
-  //  FUN(setNodeModelPtr, 3),
-  //FUN(newManyVariableAccessor, 1),
-  FUN(addSingleVariableAccessor, 4),
-  FUN(resizeManyModelVarAccessor, 2),
-  FUN(removeModelVariableAccessor, 3),
-  //FUN(newManyModelValuesAccessor, 1),
-  FUN(resizeManyModelValuesAccessor, 2),
-  FUN(addSingleModelValuesAccessor, 4),
-  FUN(removeModelValuesAccessor, 3),
   FUN(manualSetNRows, 2),
-  //FUN(getVarAndIndicesExtPtr, 2),
   FUN(getVarAndIndices, 1),
   FUN(varAndIndices2mapParts, 3),
   FUN(var2mapParts, 3),
-  FUN(populateNodeFxnVector_byGID, 3),
   FUN(populateNodeFxnVectorNew_byDeclID, 4),
   FUN(populateIndexedNodeInfoTable, 2),
   FUN(populateValueMapAccessorsFromNodeNames, 4),
   FUN(populateValueMapAccessors, 3),
-  FUN(populateNumberedObject_withSingleModelValuesAccessors, 5),
   FUN(populateCopierVector, 5),
-  FUN(populateNumberedObject_withSingleModelVariablesAccessors, 5),
-  FUN(populateModelVariablesAccessors_byGID, 5),
-  //  FUN(new_SingleModelValuesAccessor_NumberedObjects, 0),
-  //FUN(new_SingleModelVariablesAccessor_NumberedObjects, 0),
 
   //dists
   // these don't need to be linked into an on-the-fly dll because they will be in nimble.so
@@ -77,12 +57,7 @@ R_CallMethodDef CallEntries[] = {
   FUN(getMVElementAsList, 2),
   FUN(setMVElementFromList, 3),
   FUN(matrix2VecNimArr, 4),
-  //  FUN(printMVElement, 2),
   FUN(setMVElement, 3),
-  FUN(resizeNumListRow, 3),
-  FUN(setNumListRows, 3),
-  //FUN(setVarPointer, 3),
-  FUN(makeNumericList, 3),
   FUN(Nim_2_SEXP, 2),
   FUN(SEXP_2_Nim, 4),
   FUN(extract_double_2_SEXP, 2),
@@ -97,9 +72,10 @@ R_CallMethodDef CallEntries[] = {
   FUN(populate_SEXP_2_stringVector, 2),
   FUN(extract_stringVector_2_SEXP, 1),
 
+  FUN(setVecNimArrRows, 3),
+  
   FUN(setPtrVectorOfPtrs, 3),
   FUN(setOnePtrVectorOfPtrs, 3),
-  //FUN(getOnePtrVectorOfPtrs, 2),
   FUN(getEnvVar_Sindex, 3),
   FUN(getEnvVar, 2),
   FUN(setEnvVar_Sindex, 4),
@@ -121,17 +97,32 @@ R_CallMethodDef CallEntries[] = {
   FUN(RNimble_Ptr_ManualFinalizer, 1),
   FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 2),
   FUN(CountDllObjects, 1),
+
+  // predefinedNimbleList
+  FUN(new_EIGEN_EIGENCLASS, 0),
+  FUN(EIGEN_EIGENCLASS_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(EIGEN_EIGENCLASS_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_EIGEN_SVDCLASS, 0),
+  FUN(EIGEN_SVDCLASS_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(EIGEN_SVDCLASS_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_OptimResultNimbleList, 0),
+  FUN(OptimResultNimbleList_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(OptimResultNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+  
   {NULL, NULL, 0}
 };
 
 
+/* Reference prototype: */
 /* R_CMethodDef CEntries[] = { */
 /*   FUN(RegisterNimblePointer, 3), */
 /*   {NULL, NULL, 0} */
 /* } */
 
-// Something like this will be generated with each .so/.dll nimble creates
-// however it is required to be named R_init_SONAME, so it must be generated for each one.
+// Something like the following will be generated with each .so/.dll nimble creates.
+// It is required to be named R_init_SONAME, so it must be generated for each one.
 //
 // extern "C"
 // void

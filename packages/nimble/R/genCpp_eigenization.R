@@ -64,8 +64,6 @@ exprClasses_labelForEigenization <- function(code) {
 ## Eigenize ##
 ##############
 
-## EIGEN DOES NOT DO AUTOMATIC TYPE PROMOTION
-
 callsFromExternalUnaries <- as.character(unlist(lapply(eigProxyTranslateExternalUnary, function(x) if(length(x) < 4) x[1] else x[4])))
 
 eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or matrix
@@ -100,8 +98,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(coreRnonSeqBlockCalls, 'eigenize_nonSeq'),
     makeCallList(coreRmanipulationCalls, 'eigenize_nimbleNullaryClass'),
     makeCallList(c('nimCd','nimCi','nimCb'), 'eigenize_alwaysMatrix'),
-    list(##'t' = 'eigenize_cWiseUnaryEither',
-        ':' = 'eigenize_nimbleNullaryClass', ## at this point ':' is like a coreRmanipulationCall
+    list(':' = 'eigenize_nimbleNullaryClass', ## at this point ':' is like a coreRmanipulationCall
          eigenBlock = 'eigenize_eigenBlock',
          diagonal  = 'eigenize_cWiseUnaryMatrix',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
@@ -110,14 +107,13 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
          )
 )
 
-eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRisk. ## getParam always triggers an intermediate so it should never need handling here
-    makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dinvwish_chol', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam', 'getBound', 'getNodeFunctionIndexedInfo', 'concatenateTemp', 'MAKE_FIXED_VECTOR', 'hardCodedVectorInitializer'), 'eigenize_doNotRecurse'),
+eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRisk. getParam always triggers an intermediate so it should never need handling here
+    makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dinvwish_chol', 'nimArr_dcar_normal', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam', 'getBound', 'getNodeFunctionIndexedInfo', 'concatenateTemp', 'MAKE_FIXED_VECTOR', 'hardCodedVectorInitializer'), 'eigenize_doNotRecurse'),
     list(coeffSetter = 'eigenize_coeffSetter',
          nfVar = 'eigenize_nfVar',
          chainedCall = 'eigenize_chainedCall',
          '<-' = 'eigenize_assign_before_recurse',
-         mvAccessRow = 'eigenize_nfVar') )##,
-         ##setWhich = 'eigenize_setWhich') )
+         mvAccessRow = 'eigenize_nfVar') )
 
 eigenizeUseArgs <- c(
     list(
@@ -176,22 +172,6 @@ for(rop in reductionUnaryOperators) eigenizeTranslate[[rop]] <- paste0('eig', ro
 for(rop in matrixSquareReductionOperators) eigenizeTranslate[[rop]] <- paste0('eig', rop)
 for(rop in binaryMidLogicalOperators) eigenizeTranslate[[rop]] <- rop
 
-## scalar*matrix, matrix*scalar and matrix/scalar allowed
-## ditter with matrix *= scalar and matrix /= scalar
-## scalar+matrix and scalar-matrix NOT allowed
-
-## arrays CANNOT do scalar*matrix (or maybe they can?) but CAN do scalar+matrix
-
-## arrays have cWise min and max
-
-## lists we need:
-## cWiseUnaryArrayOnly
-## cWiseUnaryEither
-## cWiseBinaryArrayOnly
-## cWiseBinaryMatrixOnly
-## cWiseBinaryEither
-
-
 ## exprClasses_eigenize
 ##
 ## This does several things:
@@ -211,7 +191,6 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
     setupExprs <- list()
     if(code$isName) {
         ## Generate EigenMap and "new" assignment
-##        if(code$name != "") ## can happen in a blank index, e.g. x[,i] ## actually we'll fill in blanks in sizeIndexingBracket
             setupExprs <- c(setupExprs, eigenizeName(code, symTab, typeEnv, workEnv))
     }
     if(code$isCall) {
@@ -252,7 +231,6 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
         }
         if(code$name == '[') { ## If there is still A[i] in the code, it is because it is equivalent to a scalar and does not need eigenization
             if(code$nDim == 0) {
-##                writeLines(paste0('Not eigenizing ', nimDeparse(code)))
                 return(NULL)
             } else {
                 writeLines(paste0('Warning, in eigenizing ',nimDeparse(code), ' the [ is still there but nDim is not 0 (not a scalar).') )
@@ -293,10 +271,6 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
 eigenize_doNotRecurse <- function(code, symTab, typeEnv, workEnv) {
     invisible(NULL)
 }
-
-## eigenize_setWhich <- function(code, symTab, typeEnv, workEnv) {## first arg should be left as NimArr
-##     exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv)
-## }
 
 ## eigenizeHandlers
 eigenize_asRowOrCol <- function(code, symTab, typeEnv, workEnv) {
@@ -439,37 +413,26 @@ promoteArgTypes <- function(code) {
     argID <- 0
     newType <- 'double'
 
-    if(code$name == '<-') {argID <- 2; newType <- a1Type} ##return(eigenCast(code, 2, a1type))
+    if(code$name == '<-') {argID <- 2; newType <- a1type} 
     ## because we know arg types don't match, pairs of conditions are mutually exclusive
     if(argID == 0) {
-        if(a2type == 'double') { argID <- 1; newType <- 'double'} ##return(eigenCast(code, 1, 'double'))
-        if(a1type == 'double') {argID <-  2; newType <- 'double'} ## return(eigenCast(code, 2, 'double'))
+        if(a2type == 'double') { argID <- 1; newType <- 'double'}
+        if(a1type == 'double') {argID <-  2; newType <- 'double'}
     }
     if(argID == 0) {
-        if(a2type == 'integer') {argID <- 1; newType <- 'integer'} ##return(eigenCast(code, 1, 'integer'))
-        if(a1type == 'integer') {argID <- 2; newType <- 'integer'} ##return(eigenCast(code, 2, 'integer'))
+        if(a2type == 'integer') {argID <- 1; newType <- 'integer'}
+        if(a1type == 'integer') {argID <- 2; newType <- 'integer'}
     }
     if(argID == 0) {
         ## Last two should never be needed, but for completeness:
-        if(a2type == 'logical') {argID <- 1; newType <- 'logical'} ##return(eigenCast(code, 1, 'logical'))
-        if(a1type == 'logical') {argID <- 2; newType <- 'logical'} ##return(eigenCast(code, 2, 'logical'))
+        if(a2type == 'logical') {argID <- 1; newType <- 'logical'}
+        if(a1type == 'logical') {argID <- 2; newType <- 'logical'}
     }
     if(argID != 0)
         if(code$args[[argID]]$nDim > 0) 
             eigenCast(code, argID, newType)
         
     NULL
-
-    ## if(code$name == '<-') return(eigenCast(code, 2, a1type))
-    ## if(a2type == 'double') return(eigenCast(code, 1, 'double'))
-    ## if(a1type == 'double') return(eigenCast(code, 2, 'double'))
-    ## if(a2type == 'integer') return(eigenCast(code, 1, 'integer'))
-    ## if(a1type == 'integer') return(eigenCast(code, 2, 'integer'))
-    ## ## Should never get past here, but for completeness:
-    ## if(a2type == 'logical') return(eigenCast(code, 1, 'logical'))
-    ## if(a1type == 'logical') return(eigenCast(code, 2, 'logical'))
-
-
 }
 
 promoteTypes <- function(code) {
@@ -818,8 +781,6 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     if(is.null(targetSym)) stop(paste('Internal error: symbol not found:', code$name))
     if(inherits(targetSym, 'symbolNimbleList')) return(NULL)
     if(!exists('nDim', envir = targetSym, inherits = FALSE)) {
-       ## contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()
-        ## stop(paste0('in eigenizeName for ', nimDeparse(code), '. Symbol does not have an nDim.\n This occured within call\n', contextCode, collapse = ''), call. = FALSE)
         stop(exprClassProcessingErrorMsg(code, 'In eigenizeName: Symbol does not have an nDim.'), call. = FALSE)
     }
     if(targetSym$nDim == 0) return(NULL) ## it is a scalar

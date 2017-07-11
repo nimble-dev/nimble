@@ -440,6 +440,14 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      cppClass
                                  },
                                  compileRCfun = function( fun, filename = NULL, initialTypeInference = FALSE, control = list(debug = FALSE, debugCpp = FALSE, writeFiles = TRUE, returnAsList = FALSE), showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+                                     disableWrite <- FALSE
+                                     if(nimbleOptions('enableSpecialHandling')) {
+                                         SH <- filenameFromSpecialHandling(fun)
+                                         if(!is.null(filename)) {
+                                             filename <- SH
+                                             disableWrite <- TRUE
+                                         }
+                                     }
                                      if(is.rcf(fun)) fun <- environment(fun)$nfMethodRCobject
                                      addRCfun(fun) ## checks if it already exists and if it is an nfMethodRC ## redundant? done also in next step.
                                      cppClass <- needRCfunCppClass(fun, genNeededTypes = TRUE, initialTypeInference = initialTypeInference, control = control)
@@ -450,7 +458,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          cppProjects[[ className ]] <<- cppProj
                                          if(is.null(filename)) filename <- paste0(projectName, '_', className)
                                          cppProj$addClass( cppClass, className, filename )
-                                         cppProj$writeFiles(filename)
+                                         if(!disableWrite) cppProj$writeFiles(filename)
                                      }
                                      if(control$compileCpp) {
                                          cppProj$compileFile(filename, showCompilerOutput)
@@ -493,7 +501,16 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      ans
                                  },
                                  compileModel = function(model, filename = NULL,
-                                     control = list(debug = FALSE, debugCpp = FALSE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE), showCompilerOutput = nimbleOptions('showCompilerOutput'), where = globalenv()) {
+                                                         control = list(debug = FALSE, debugCpp = FALSE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE), showCompilerOutput = nimbleOptions('showCompilerOutput'), where = globalenv()) {
+                                     disableWrite <- FALSE
+                                     if(nimbleOptions('enableSpecialHandling')) {
+                                         filenames <- filenameFromSpecialHandling(model)
+                                         if(!is.null(filenames)) {
+                                             filename <- filenames$filename
+                                             nfFileName <- filenames$nfFileName
+                                             disableWrite <- TRUE
+                                         }
+                                     }
                                      if(is.character(model)) {
                                          tmp <- models[[model]]
                                          if(is.null(tmp)) stop(paste0("Model provided as name: ", model, " but it is not in this project."), call. = FALSE)
@@ -503,8 +520,12 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      modelDef <- model$getModelDef()
                                      modelDefName <- modelDef$name
                                      Cname <- Rname2CppName(modelDefName)
-                                     if(is.null(filename)) filename <- paste0(projectName, '_', Rname2CppName(modelDefName)) 
-                                     
+                                     if(!disableWrite) {
+                                         if(is.null(filename)) {
+                                             filename <- paste0(projectName, '_', Rname2CppName(modelDefName)) 
+                                         }
+                                         nfFileName <- paste0(projectName, '_', Rname2CppName(modelDefName),'_nfCode')
+                                     }
                                      modelCpp <- cppBUGSmodelClass(modelDef = modelDef, model = model,
                                                                    name = Cname, project = .self)
                                      ## buildAll will call back to the project to add its nimbleFunctions 
@@ -514,17 +535,19 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      cppProjects[[ modelDefName ]] <<- cppProj
                                      ## genModelValuesCppClass will back to the project to add its mv class
                                      mvc <- modelCpp$genModelValuesCppClass()
-                                     if(is.null(filename)) filename <- paste0(projectName, '_', modelDefName)
+                                     ##if(is.null(filename)) filename <- paste0(projectName, '_', modelDefName)
                                      cppProj$addClass(mvc, filename = filename)
                                      cppProj$addClass(modelCpp, modelDefName, filename)
                                      ##if compileNodes
-                                     nfFileName <- paste0(projectName, '_', Rname2CppName(modelDefName),'_nfCode')
+                                     ##nfFileName <- paste0(projectName, '_', Rname2CppName(modelDefName),'_nfCode')
                                      for(i in names(modelCpp$nodeFuns)) {
                                          cppProj$addClass(modelCpp$nodeFuns[[i]], filename = nfFileName)
                                      }
                                      if(control$writeFiles) {
-                                         cppProj$writeFiles(filename)
-                                         cppProj$writeFiles(nfFileName) ## if compileNodes
+                                         if(!disableWrite) {
+                                             cppProj$writeFiles(filename)
+                                             cppProj$writeFiles(nfFileName) ## if compileNodes
+                                         }
                                      } else return(cppProj)
                                      if(control$compileCpp) {
                                          compileList <- filename
@@ -821,13 +844,16 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                    if(!is.nl(nl)) stop("Can't instantiateNimbleList, nl is not a nimbleList")
                                    className <- nl$nimbleListDef$className
                                    nlCppDef <- getNimbleListCppDef(generatorName = className)
-                                   ok <- TRUE
+                                     ok <- TRUE
+                                     dllToUse <- if(isTRUE(nl.getDefinitionContent(nl.getGenerator(nl), 'predefined')))
+                                                     nimbleUserNamespace$sessionSpecificDll
+                                                 else dll
                                    if(asTopLevel) {
                                      if(is.null(nlCppDef$Rgenerator)) ok <- FALSE
-                                     else ans <- nlCppDef$Rgenerator(nl, dll = dll, project = .self)
+                                     else ans <- nlCppDef$Rgenerator(nl, dll = dllToUse, project = .self)
                                    } else {
                                      if(is.null(nlCppDef$CmultiInterface)) ok <- FALSE
-                                     else ans <- nlCppDef$CmultiInterface$addInstance(nl, dll = dll)
+                                     else ans <- nlCppDef$CmultiInterface$addInstance(nl, dll = dllToUse)
                                    }
                                    if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
                                    ans
@@ -1072,7 +1098,8 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     ## 2. Get project or make new project
     if(missing(project)) {
         if(reset) warning("reset = TRUE but no project was provided.  If you are trying to re-compiled something into the same project, give it as the project argument as well as a compilation item. For example, 'compileNimble(myFunction, project = myFunction, reset = TRUE)'")
-        project <- nimbleProjectClass(dirName, name = projectName)
+        if(!is.null(nimbleOptions()$nimbleProject)) project <- nimbleOptions()$nimbleProject
+        else project <- nimbleProjectClass(dirName, name = projectName)
     } else {
         project <- getNimbleProject(project, TRUE)
         if(!inherits(project, 'nimbleProjectClass'))

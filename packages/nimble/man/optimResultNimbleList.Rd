@@ -3,18 +3,18 @@
 \docType{data}
 \name{optimResultNimbleList}
 \alias{optimResultNimbleList}
-\title{optimResultNimbleList definition}
+\title{EXPERIMENTAL Data type for the return value of \code{\link{nimOptim}}}
 \format{An object of class \code{list} of length 1.}
 \usage{
 optimResultNimbleList
 }
 \description{
-\code{nimbleList} definition for the type of \code{nimbleList} returned by \code{\link{nimOptim}}.
+\code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} returned by \code{\link{nimOptim}}.
 }
 \section{Fields}{
 
 \describe{
-\item{\code{parpar}}{The best set of parameters found.}
+\item{\code{par}}{The best set of parameters found.}
 
 \item{\code{value}}{The value of fn corresponding to par.}
 
@@ -22,7 +22,7 @@ optimResultNimbleList
 
 \item{\code{convergence}}{An integer code. 0 indicates successful completion. Possible error codes are
 1 indicates that the iteration limit maxit had been reached.
-10 indicates degeneracy of the Nelder–Mead simplex.
+10 indicates degeneracy of the Nelder-Mead simplex.
 51 indicates a warning from the "L-BFGS-B" method; see component message for further details.
 52 indicates an error from the "L-BFGS-B" method; see component message for further details.}
 
@@ -30,11 +30,8 @@ optimResultNimbleList
 
 \item{\code{hessian}}{Only if argument hessian is true. A symmetric matrix giving an estimate of the Hessian at the solution found.}
 }}
-
 \seealso{
-\code{\link{nimOptim}}
-}
-\author{
-NIMBLE development team
+\code{\link{optim}}, \code{\link{nimOptim}}
 }
 \keyword{datasets}
+

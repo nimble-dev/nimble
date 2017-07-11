@@ -372,7 +372,6 @@ rCalcDiffNodes <- function(model, nfv){
 #' @param nodeFunctionIndex For internal NIMBLE use only
 #' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \code{\link{simulate}})
 #' @author NIMBLE development team
-#' @export
 #' @details
 #' These functions expands the nodes and then process them in the model in the order provided.  Expanding nodes means turning 'y[1:2]' into c('y[1]','y[2]') if y is a vector of scalar nodes.
 #' Calculation is defined for a stochastic node as executing the log probability (density) calculation and for a deterministic node as calculating whatever function was provided on the right-hand side of the model declaration.
@@ -854,7 +853,7 @@ nfMethod <- function(nf, methodName) {
 #' #[1] 3 3 4 4 4
 rankSample <- function(weights, size, output, silent = FALSE) {
     ##cat('in R version rankSample\n')
-    assign(as.character(substitute(output)), .Call('C_rankSample', as.numeric(weights), as.integer(size), as.integer(output), as.logical(silent)), envir = parent.frame())
+    assign(as.character(substitute(output)), .Call(C_rankSample, as.numeric(weights), as.integer(size), as.integer(output), as.logical(silent)), envir = parent.frame())
 }
 
 #' print function for use in nimbleFunctions
@@ -1106,21 +1105,20 @@ is.nan.vec <- function(x) any(is.nan(x))
 #' @export
 nimRound <- round
 
-#' EXPERIMENTAL Nimble wrapper around R's builtin \code{\link{optim}}.
+#' Nimble wrapper around R's builtin \code{\link{optim}}.
 #'
 #' @param par Initial values for the parameters to be optimized over.
 #' @param fn  A function to be minimized (or maximized), with first argument the
 #'            vector of parameters over which minimization is to take place. It
 #'            should return a scalar result.
 #' @param gr  A function to return the gradient for the "BFGS", "CG" and "L-BFGS-B" methods.
-#'            For the "SANN" method it specifies a function to generate a new candidate point.
-#'            If it is the string "NULL" a default Gaussian Markov kernel is used.
 #' @param ... IGNORED
-#' @param method The method to be used. See `Details` section of \code\link{{optim}}. One of:
-#'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B", "SANN", "Brent"
+#' @param method The method to be used. See `Details` section of \code{\link{optim}}. One of:
+#'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B".
+#'               Note that the R methods "SANN", "Brent" are not supported.
 #' @param lower Vector or scalar of lower bounds for parameters.
-#' @param lower Vector or scalar of upper bounds for parameters.
-#' @param control A list of control parameters. See ‘Details’ section of \code\link{{optim}}.
+#' @param upper Vector or scalar of upper bounds for parameters.
+#' @param control A list of control parameters. See \code{Details} section of \code{\link{optim}}.
 #' @param hessian Logical. Should a Hessian matrix be returned?
 #'
 #' @return \code{\link{optimResultNimbleList}}
@@ -1128,8 +1126,9 @@ nimRound <- round
 #' @export
 nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
                      control = nimOptimDefaultControl(), hessian = FALSE) {
-    # Tweak control value.
-    defaultControl <- optimControlNimbleList$new()
+    # Tweak parameters.
+    if (identical(gr, "NULL")) gr <- NULL
+    defaultControl <- nimOptimDefaultControl()
     Rcontrol <- list()
     for (name in defaultControl$nimbleListDef$types$vars) {
         if (!identical(control[[name]], defaultControl[[name]])) {
@@ -1150,6 +1149,15 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
     return(nimResult)
 }
 
+#' Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
+#'
+#' @return an empty \code{list}.
+#' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
+#' @export
+optimDefaultControl <- function() {
+    return(list())
+}
+
 #' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
 #'
 #' @return \code{\link{optimControlNimbleList}}
@@ -1157,7 +1165,6 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
 #' @export
 nimOptimDefaultControl <- function() {
     control <- optimControlNimbleList$new()
-    control$maxIt <- NULL
-    control$REPORT <- NULL
+    control$maxit <- NULL  ## The default value depends on method.
     return(control)
 }

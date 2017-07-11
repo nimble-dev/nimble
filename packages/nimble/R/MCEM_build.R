@@ -2,6 +2,7 @@
 # bootstrap method of "Markov Chain Monte Carlo in Statistical Mechanics"
 # by Mignani & Rosa, 2001 (p. 350)
 calc_asympVar = nimbleFunction(
+    name = 'calc_asympVar',
   setup = function(model, fixedNodes, sampledNodes, mvBlock, mvSample, burnIn = 0, numReps){
     calc_E_llk <- calc_E_llk_gen(model, fixedNodes = fixedNodes, sampledNodes = sampledNodes, burnIn = 0, mvSample = mvBlock)
   },
@@ -33,6 +34,7 @@ calc_asympVar = nimbleFunction(
 
 # Calculates Q function if diff = 0, calculates difference in Q functions if diff = 1.
 calc_E_llk_gen = nimbleFunction(
+    name = 'calc_E_llk_gen',
   setup = function(model, fixedNodes, sampledNodes, mvSample, burnIn = 0){
     fixedCalcNodes <- model$getDependencies(fixedNodes)	
     latentCalcNodes <- model$getDependencies(sampledNodes)
@@ -83,6 +85,7 @@ calc_E_llk_gen = nimbleFunction(
 
 ## helper function to extract ranges of nodes to be maximized
 getMCEMRanges <- nimbleFunction(
+    name = 'getMCEMRanges',
   setup = function(model, maxNodes, buffer){
     low_limits = rep(-Inf, length(maxNodes) ) 
     hi_limits  = rep(Inf,  length(maxNodes) ) 
@@ -103,7 +106,7 @@ getMCEMRanges <- nimbleFunction(
 #' 
 #' @param model a nimble model 
 #' @param latentNodes character vector of the names of the stochastic nodes to integrated out. Names can be expanded, but don't need to be. For example, if the model contains
-#' \code{x[1], x[2] and x[3]} then one could provide either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or \code{latentNodes = 'x'}. 
+#' \code{x[1], x[2] and x[3]} then one could provide either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or \code{latentNodes = 'x'}.
 #' @param burnIn burn-in used for MCMC sampler in E step
 #' @param mcmcControl	list passed to \code{configureMCMC}, which builds the MCMC sampler. See \code{help(configureMCMC)} for more details
 #' @param boxConstraints list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.  Any nodes that are not given constrains will have their constraints automatically determined by NIMBLE
@@ -123,7 +126,7 @@ getMCEMRanges <- nimbleFunction(
 #' an R list with two elements:
 #' \itemize{
 #' \item{\code{run}} {A function that when called runs the MCEM algorithm. This function takes the arguments listed in \code{run} Arguments below.}
-#' \item{\code{estimateCov}} {An experimental function that when called estimates the asymptotic covariance of the parameters.  The covariance is estimated using the method of Louis (1982).
+#' \item{\code{estimateCov}} {An EXPERIMENTAL function that when called estimates the asymptotic covariance of the parameters.  The covariance is estimated using the method of Louis (1982).
 #' This function takes the arguments listed in \code{estimateCov} Arguments below.}
 #' }
 #'
@@ -183,7 +186,7 @@ getMCEMRanges <- nimbleFunction(
 #' }
 #' # Could also use latentNodes = 'theta' and buildMCEM() would figure out this means 'theta[1:10]'
 #' 
-buildMCEM <- function(model, latentNodes, getAsympCov = TRUE, burnIn = 500 , mcmcControl = list(adaptInterval = 100),
+buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adaptInterval = 100),
                       boxConstraints = list(), buffer = 10^-6, alpha = 0.25, beta = 0.25, 
                       gamma = 0.05, C = 0.001, numReps = 300, verbose = TRUE) {
   latentNodes = model$expandNodeNames(latentNodes)
@@ -238,24 +241,26 @@ buildMCEM <- function(model, latentNodes, getAsympCov = TRUE, burnIn = 500 , mcm
   if(length(maxNodes) == 0)
     stop('no nodes to be maximized over')
   
-  
+  resetFunctions <- FALSE
   if(is(model, "RmodelBaseClass") ){
     Rmodel = model
     if(is(model$CobjectInterface, "uninitializedField")){
       cModel <- compileNimble(model)
     }
-    else
+    else{
       cModel = model$CobjectInterface
+      resetFunctions <- TRUE
+    }
   }
   else{
     cModel <- model
     Rmodel <- model$Rmodel
+    resetFunctions <- TRUE
   }
   
   zAlpha <- qnorm(alpha, 0, 1, lower.tail=FALSE)
   zBeta <- qnorm(beta, 0, 1, lower.tail=FALSE)
   zGamma <- qnorm(gamma, 0, 1, lower.tail=FALSE)
-  
   
   mcmc_Latent_Conf <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl) 
   Rmcmc_Latent <- buildMCMC(mcmc_Latent_Conf)
@@ -265,7 +270,7 @@ buildMCEM <- function(model, latentNodes, getAsympCov = TRUE, burnIn = 500 , mcm
   RvarCalc <- calc_asympVar(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvBlock, mvSample = sampledMV, numReps = numReps)
   RgetCov <- bootstrapGetCov(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV)
   
-  cmcmc_Latent = compileNimble(Rmcmc_Latent, project = Rmodel)
+  cmcmc_Latent = compileNimble(Rmcmc_Latent, project = Rmodel, resetFunctions = resetFunctions)
   cGetCov = compileNimble(RgetCov, project = Rmodel)  
   cvarCalc <- compileNimble(RvarCalc, project = Rmodel)
   cCalc_E_llk = compileNimble(Rcalc_E_llk, project = Rmodel)  
@@ -395,6 +400,7 @@ buildMCEM <- function(model, latentNodes, getAsympCov = TRUE, burnIn = 500 , mcm
 }
 
 bootstrapGetCov <- nimbleFunction(
+    name = 'bootstrapGetCov',
     setup = function(model, fixedNodes, sampledNodes, mvSample, burnIn = 0){
       fixedCalcNodes <- model$getDependencies(fixedNodes)	
       latentCalcNodes <- model$getDependencies(sampledNodes)

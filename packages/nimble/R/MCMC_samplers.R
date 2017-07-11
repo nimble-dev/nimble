@@ -22,6 +22,7 @@ sampler_BASE <- nimbleFunctionVirtual(
 #' @rdname samplers
 #' @export
 sampler_posterior_predictive <- nimbleFunction(
+    name = 'sampler_posterior_predictive',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
@@ -46,6 +47,7 @@ sampler_posterior_predictive <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_binary <- nimbleFunction(
+    name = 'sampler_binary',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
@@ -56,10 +58,11 @@ sampler_binary <- nimbleFunction(
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
     },
     run = function() {
-        currentProb <- exp(getLogProb(model, calcNodes))
+        currentLogProb <- getLogProb(model, calcNodes)
         model[[target]] <<- 1 - model[[target]]
-        otherProb <- exp(calculate(model, calcNodes))
-        if(!is.nan(otherProb) & runif(1,0,1) < otherProb/(currentProb+otherProb))
+        otherLogProb <- calculate(model, calcNodes)
+        acceptanceProb <- 1/(exp(currentLogProb - otherLogProb) + 1)
+        if(!is.nan(acceptanceProb) & runif(1,0,1) < acceptanceProb)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         else
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -78,6 +81,7 @@ sampler_binary <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW <- nimbleFunction(
+    name = 'sampler_RW',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -167,6 +171,7 @@ sampler_RW <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_block <- nimbleFunction(
+    name = 'sampler_RW_block',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -281,6 +286,7 @@ sampler_RW_block <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_llFunction <- nimbleFunction(
+    name = 'sampler_RW_llFunction',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -327,6 +333,7 @@ sampler_RW_llFunction <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_slice <- nimbleFunction(
+    name = 'sampler_slice',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -416,6 +423,7 @@ sampler_slice <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_ess <- nimbleFunction(
+    name = 'sampler_ess',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
@@ -463,160 +471,155 @@ sampler_ess <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_AF_slice <- nimbleFunction(
-  contains = sampler_BASE,
-  setup = function(model, mvSaved, target, control) {
-    ## control list extraction
-    width         <- control$sliceWidths
-    maxSteps      <- control$sliceMaxSteps
-    factorBurnInIters   <- control$factorBurnIn     # number of iterations to use for factor adaptation
-    factorAdaptInterval <- control$factorAdaptInterval   # interval to use for factor adaptation
-    sliceAdaptIters     <- control$sliceBurnIn       # number of iterations to use for slice adaptation (note this gets reset every time factor adaptation is performed)
-    ## node list generation
-    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    calcNodes      <- model$getDependencies(target)
-    
-    ## numeric value generation
-    sliceAdaptItersOriginal <- sliceAdaptIters
-    discrete      <- sapply(targetAsScalar, function(x){model$isDiscrete(x)})
-    anyDiscrete   <- any(discrete == TRUE)
-    d             <- length(targetAsScalar)
-    if(is.character(width) && width == 'oneVec')     width <- rep(1,d)
-    widthOriginal <- width
-    gammaMat      <- diag(length(targetAsScalar))                # matrix of orthogonal bases
-    empirSamp     <- matrix(0, nrow=factorAdaptInterval, ncol=d) # matrix of posterior samples
-    empirCov      <- empirSamp
-    sliceAdaptInterval   <- 1         # starts at one, doubles every time slice width adaptation is performed
-    sliceAdaptIndicator  <- rep(1, d) # all slice widths start off as needing to be adapted
-    nExpansions          <- rep(0, d) # keep track of number of expansions
-    nContracts           <- rep(0, d) # keep track of number of contractions
-    sliceAdaptTolerance  <- .1        # determine when slice width no longer needs to be adapted
-    sliceCounter         <- 0         # keep track of number of iterations since last slice adaptation
-    factorCounter        <- 0         # keep track of number of iterations since last factor adaptation
-    allSlicesAdapted     <- 0         # indicates whether all slice widths have finished adapting
-    
-    ## checks
-    if(class(width) != 'numeric')   stop('sliceWidths must be a numeric vector\n')
-    if(length(width) != d)          stop('sliceWidths must have length ', d, '\n')
-    if(length(targetAsScalar) < 2)  stop('automated factor slice sampler must be used on at least two target nodes')
-    
-    testMat <- matrix(0, nrow = 2, ncol = 2)
-    
-  },
-  run = function() {
-    for(i in 1:d){
-      eigenVec  <- gammaMat[,i]
-      currWidth <- width[i]
-      u  <- getLogProb(model, calcNodes) - rexp(1, 1) # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
-      x0 <- values(model, target)                    # create random interval (L,R), of width 'width', around current value of target
-      Lbound <- -1.0 * runif(1, 0, 1) * currWidth
-      Rbound <- Lbound + currWidth
-      L <- x0 + Lbound*eigenVec
-      R <- x0 + Rbound*eigenVec
-      maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
-      maxStepsR <- maxSteps - 1 - maxStepsL
-
-      lp <- setAndCalculateTarget(L)
-      while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
-        Lbound <- Lbound - currWidth
-        L      <- x0 + Lbound*eigenVec
-        lp     <- setAndCalculateTarget(L)
-        maxStepsL      <- maxStepsL - 1
-        nExpansions[i] <<- nExpansions[i] + 1
-      }
-
-      lp <- setAndCalculateTarget(R)
-      while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
-        Rbound <- Rbound + currWidth
-        R      <- x0 + Rbound*eigenVec
-        lp     <- setAndCalculateTarget(R)
-        maxStepsR      <- maxStepsR - 1
-        nExpansions[i] <<- nExpansions[i] + 1
-      }
-      prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
-      x1   <- x0 + prop*eigenVec
-      lp   <- setAndCalculateTarget(x1)
-      while(is.nan(lp) | lp < u) {   # must be is.nan()
-        if(prop < 0) { Lbound <- prop}
-        else         { Rbound <- prop}
-        nContracts[i] <<- nContracts[i] + 1
-        prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
-        x1   <- x0 + prop*eigenVec
-        lp   <- setAndCalculateTarget(x1)
-      }
-    }
-    nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-    if(allSlicesAdapted == 0)  widthAdapt()
-    if(factorBurnInIters > 0)  factorAdapt()
-  },
-  methods = list(
-    setAndCalculateTarget = function(values = double(1)) {
-      if(anyDiscrete == 1){
-        for(i in 1:d)
-          if(discrete[i] == 1) values[i] <- floor(values[i])
-      }
-      values(model, target) <<- values
-      lp <- calculate(model, calcNodes)
-      returnType(double())
-      return(lp)
+    name = 'sampler_AF_slice',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        widthVec            <- control$sliceWidths
+        maxSteps            <- control$sliceMaxSteps
+        adaptFactorMaxIter  <- control$sliceAdaptFactorMaxIter    # number of iterations to use for factor adaptation
+        adaptFactorInterval <- control$sliceAdaptFactorInterval   # interval to use for factor adaptation
+        adaptWidthMaxIter   <- control$sliceAdaptWidthMaxIter     # number of iterations to use for width adaptation (gets reset when factors adapt)
+        adaptWidthTolerance <- control$sliceAdaptWidthTolerance   # tolerance for when widths no longer need to adapt
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes      <- model$getDependencies(target)
+        ## numeric value generation
+        d                  <- length(targetAsScalar)
+        discrete           <- sapply(targetAsScalar, function(x) model$isDiscrete(x))
+        anyDiscrete        <- any(discrete)
+        gammaMatrix        <- diag(d)         # matrix of orthogonal bases
+        if(is.character(widthVec) && widthVec == 'oneVec')   widthVec <- rep(1,d)
+        widthVecOriginal   <- widthVec
+        nExpansions        <- rep(0, d)       # number of expansions
+        nContracts         <- rep(0, d)       # number of contractions
+        adaptFactorMaxIterOriginal <- adaptFactorMaxIter
+        factorCounter      <- 0               # number of iterations since last factor adaptation
+        factorTimesAdapted <- 0               # number of times factors have adapted
+        empirSamp          <- matrix(0, nrow=adaptFactorInterval, ncol=d)   # matrix of posterior samples
+        empirCov           <- diag(d)
+        allWidthsAdapted   <- 0               # indicates whether all widths have finished adapting
+        widthCounter       <- 0               # number of iterations since last width adaptation
+        adaptWidthMaxIterOriginal <- adaptWidthMaxIter
+        adaptWidthInterval <- 1               # interval to adapt widths; doubles each time widths are adaptated
+        widthIndicatorVec  <- rep(1, d)       # indicator of which widths are still adapting
+        ## checks
+        if(d <= 1)                         stop('AF_slice sampler must be used on at least two target nodes')
+        if(class(widthVec) != 'numeric')   stop('sliceWidths must be a numeric vector')
+        if(length(widthVec) != d)          stop('sliceWidths must have length = ', d)
     },
-    factorAdapt = function() {
-      factorBurnInIters <<- factorBurnInIters - 1
-      factorCounter     <<- factorCounter + 1
-      empirSamp[factorCounter, 1:d] <<- values(model, target)
-        if(factorCounter == factorAdaptInterval){  # time to adapt factors
-          for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
-          empirCov <<- (t(empirSamp) %*% empirSamp) / (factorAdaptInterval-1)
-          gammaMat <<- eigen(empirCov)$vectors  # replace old factors with new factors
-          
-          sliceAdaptIndicator <<- integer(d, 1)  # reset all slice adaptive variables
-          nExpansions         <<- integer(d, 0)
-          nContracts          <<- integer(d, 0)
-          sliceAdaptInterval  <<- 1
-          sliceAdaptIters     <<- sliceAdaptItersOriginal
-          allSlicesAdapted    <<- 0
-          sliceCounter        <<- 0
-          factorCounter       <<- 0
+    run = function() {
+        for(i in 1:d) {
+            eigenVec <- gammaMatrix[, i]
+            width <- widthVec[i]
+            u <- getLogProb(model, calcNodes) - rexp(1, 1)   # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+            x0 <- values(model, target)                      # create random interval (L,R), of width 'width', around current value of target
+            Lbound <- -1.0 * runif(1, 0, 1) * width
+            Rbound <- Lbound + width
+            L <- x0 + Lbound * eigenVec
+            R <- x0 + Rbound * eigenVec
+            maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
+            maxStepsR <- maxSteps - 1 - maxStepsL
+            lp <- setAndCalculateTarget(L)
+            while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
+                Lbound <- Lbound - width
+                L <- x0 + Lbound * eigenVec
+                lp <- setAndCalculateTarget(L)
+                maxStepsL <- maxStepsL - 1
+                nExpansions[i] <<- nExpansions[i] + 1
+            }
+            lp <- setAndCalculateTarget(R)
+            while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
+                Rbound <- Rbound + width
+                R <- x0 + Rbound * eigenVec
+                lp <- setAndCalculateTarget(R)
+                maxStepsR <- maxStepsR - 1
+                nExpansions[i] <<- nExpansions[i] + 1
+            }
+            prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
+            x1 <- x0 + prop * eigenVec
+            lp <- setAndCalculateTarget(x1)
+            while(is.nan(lp) | lp < u) {   # must be is.nan()
+                if(prop < 0) { Lbound <- prop }
+                else         { Rbound <- prop }
+                nContracts[i] <<- nContracts[i] + 1
+                prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
+                x1 <- x0 + prop * eigenVec
+                lp <- setAndCalculateTarget(x1)
+            }
         }
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(allWidthsAdapted == 0)   adaptWidths()
+        if(adaptFactorMaxIter > 0)  adaptFactors()
     },
-    widthAdapt = function() {
-      sliceCounter    <<- sliceCounter + 1
-      sliceAdaptIters <<- sliceAdaptIters - 1
-      if(sliceCounter == sliceAdaptInterval){  # time to adapt slice widths
-        for(i in 1:d){
-          if(sliceAdaptIndicator[i] == 1){   # find which widths are not finished adapting
-            if(nExpansions[i] == 0)
-              nExpansions[i] <<- 1
-
-            sliceAdaptRatio     <- nExpansions[i] / (nExpansions[i] + nContracts[i])
-            width[i]            <<- width[i] * 2 * sliceAdaptRatio
-            sliceAdaptInterval  <<- 2 * sliceAdaptInterval  # increase adapt interval
-            nExpansions[i]      <<- 0
-            nContracts[i]       <<- 0
-            if(sliceAdaptInterval > 16)  # once adapt interval is large enough, determine whether adaptation is finished
-              sliceAdaptIndicator[i] <<- (abs(sliceAdaptRatio - .5) > sliceAdaptTolerance)  # equals 1 if adaptation isn't finished
-          }
+    methods = list(
+        setAndCalculateTarget = function(targetValues = double(1)) {
+            if(anyDiscrete == 1)
+                for(i in 1:d)
+                    if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])
+            values(model, target) <<- targetValues
+            lp <- calculate(model, calcNodes)
+            returnType(double())
+            return(lp)
+        },
+        adaptFactors = function() {
+            adaptFactorMaxIter <<- adaptFactorMaxIter - 1
+            factorCounter <<- factorCounter + 1
+            empirSamp[factorCounter, 1:d] <<- values(model, target)
+            if(factorCounter == adaptFactorInterval) {
+                for(i in 1:d)   empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
+                empirCov <<- (t(empirSamp) %*% empirSamp) / (adaptFactorInterval - 1)
+                gammaMatrix <<- eigen(empirCov)$vectors  # replace old factors with new factors
+                factorTimesAdapted <<- factorTimesAdapted + 1
+                factorCounter      <<- 0
+                nExpansions        <<- rep(0, d)
+                nContracts         <<- rep(0, d)
+                allWidthsAdapted   <<- 0
+                widthCounter       <<- 0
+                adaptWidthMaxIter  <<- adaptWidthMaxIterOriginal
+                adaptWidthInterval <<- 1
+                widthIndicatorVec  <<- rep(1, d)
+            }
+        },
+        adaptWidths = function() {
+            adaptWidthMaxIter <<- adaptWidthMaxIter - 1
+            widthCounter <<- widthCounter + 1
+            if(widthCounter == adaptWidthInterval) {
+                for(i in 1:d) {
+                    if(widthIndicatorVec[i] == 1) {   # widths that are still adapting
+                        if(nExpansions[i] == 0)   nExpansions[i] <<- 1
+                        widthAdaptRatio <- nExpansions[i] / (nExpansions[i] + nContracts[i])
+                        widthVec[i] <<- widthVec[i] * 2 * widthAdaptRatio
+                        adaptWidthInterval <<- 2 * adaptWidthInterval   # double width adapt interval
+                        nExpansions[i] <<- 0
+                        nContracts[i] <<- 0
+                        if(adaptWidthInterval > 16)  # once adapt interval is large enough, determine whether adaptation is finished
+                            widthIndicatorVec[i] <<- (abs(widthAdaptRatio - .5) > adaptWidthTolerance)  # equals 1 if adaptation isn't finished
+                    }
+                }
+                allWidthsAdapted <<- 1 - ceiling(mean(widthIndicatorVec))  # equals 1 only if all slice adapt indicators are 0
+                widthCounter     <<- 0
+            }
+            if(adaptWidthMaxIter <= 0)  # alternatively, if max iters have been reached, stop adapting
+                allWidthsAdapted <<- 1
+        },
+        reset = function() {
+            gammaMatrix        <<- diag(d)
+            empirCov           <<- diag(d)
+            widthVec           <<- widthVecOriginal
+            nExpansions        <<- rep(0, d)
+            nContracts         <<- rep(0, d)
+            adaptFactorMaxIter <<- adaptFactorMaxIterOriginal
+            factorCounter      <<- 0
+            factorTimesAdapted <<- 0
+            allWidthsAdapted   <<- 0
+            widthCounter       <<- 0
+            adaptWidthMaxIter  <<- adaptWidthMaxIterOriginal
+            adaptWidthInterval <<- 1
+            widthIndicatorVec  <<- rep(1, d)
         }
-        allSlicesAdapted <<- 1 -  ceiling(mean(sliceAdaptIndicator))  # equals 1 only if all slice adapt indicators are 0
-        sliceCounter     <<- 0
-      }
-      if(sliceAdaptIters <= 0)  # alternatively, if max iters have been reached, stop adapting
-        allSlicesAdapted <<- 1
-    },
-    reset = function() {
-      width                <<- widthOriginal
-      factorCounter        <<- 0
-      sliceCounter         <<- 0
-      sliceAdaptInterval   <<- 1
-      sliceAdaptIndicator  <<- integer(d, 1)
-      nExpansions          <<- integer(d, 0)
-      nContracts           <<- integer(d, 0)
-      sliceAdaptTolerance  <<- .1
-      sliceAdaptIters      <<- sliceAdaptItersOriginal
-      allSlicesAdapted     <<- 0
-    }
-  ), where = getLoadingNamespace()
+    ), where = getLoadingNamespace()
 )
-
 
 
 
@@ -630,6 +633,7 @@ getPosteriorDensityFromConjSampler_virtual <- nimbleFunctionVirtual(
 )
 
 getPosteriorDensityFromConjSampler <- nimbleFunction(
+    name = 'getPosteriorDensityFromConjSampler',
     contains = getPosteriorDensityFromConjSampler_virtual,
     setup = function(conjugateSamplerFunction) {},
     run = function() {
@@ -642,6 +646,7 @@ getPosteriorDensityFromConjSampler <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_crossLevel <- nimbleFunction(
+    name = 'sampler_crossLevel',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -720,6 +725,7 @@ sampler_crossLevel <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_llFunction_block <- nimbleFunction(
+    name = 'sampler_RW_llFunction_block',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -813,6 +819,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_PF <- nimbleFunction(
+    name = 'sampler_RW_PF',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -960,6 +967,7 @@ sampler_RW_PF <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_PF_block <- nimbleFunction(
+    name = 'sampler_RW_PF_block',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target,  control) {
         ## control list extraction
@@ -1132,7 +1140,8 @@ sampler_RW_PF_block <- nimbleFunction(
 
 #' @rdname samplers
 #' @export
-sampler_RW_multinomial <- nimbleFunction( 
+sampler_RW_multinomial <- nimbleFunction(
+    name = 'sampler_RW_multinomial',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -1263,6 +1272,7 @@ sampler_RW_multinomial <- nimbleFunction(
 #' @rdname samplers
 #' @export
 sampler_RW_dirichlet <- nimbleFunction(
+    name = 'sampler_RW_dirichlet',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -1328,6 +1338,254 @@ sampler_RW_dirichlet <- nimbleFunction(
         }
     ), where = getLoadingNamespace()
 )
+
+
+#######################################################################################
+### CAR_normal sampler for conitionally autoregressive (dcar_normal) distributions  ###
+#######################################################################################
+
+
+## posterior predictive sampler for scalar components of dcar_normal() nodes,
+## i.e. those scalar components which have no stochastic dependencies
+CAR_scalar_postPred <- nimbleFunction(
+    name = 'CAR_scalar_postPred',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
+        ## node list generation
+        calcNodes <- c(targetScalar, model$getDependencies(targetScalar, self = FALSE))
+        ## numeric value generation
+        island <- length(neighborNodes)==0
+        ## nested function and function list definitions
+        dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
+        ## checks
+        targetDCAR <- model$expandNodeNames(targetScalar)
+        if(length(targetDCAR) != 1)                              stop('something went wrong')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+    },
+    run = function() {
+        if(is.na(model[[targetScalar]]) | is.nan(model[[targetScalar]])) {
+            model[[targetScalar]] <<- 0
+            model$calculate(calcNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        }
+        if(island) return()
+        newValue <- rnorm(1, mean = dcar$getMean(), sd = sqrt(1/dcar$getPrec()))
+        model[[targetScalar]] <<- newValue
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+## dnorm-dnorm conjugate sampler for scalar components of dcar_normal() nodes,
+## i.e. those scalar components which only have dnorm() dependencies
+CAR_scalar_conjugate <- nimbleFunction(
+    name = 'CAR_scalar_conjugate',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights) {
+        ## node list generation
+        calcNodes <- c(targetScalar, model$getDependencies(targetScalar, self = FALSE))
+        calcNodesDeterm <- model$getDependencies(targetScalar, determOnly = TRUE)
+        depStochNodes_dnorm <- model$getDependencies(targetScalar, self = FALSE, stochOnly = TRUE)
+        nDependents <- length(depStochNodes_dnorm)
+        if(nDependents < 1) stop('something went wrong')
+        ## numeric value generation
+        if(!all(model$getDistribution(depStochNodes_dnorm) == 'dnorm')) stop('something went wrong')
+        linearityCheckExprList <- lapply(depStochNodes_dnorm, function(node) model$getParamExpr(node, 'mean'))
+        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansions=TRUE))
+        if(!all(sapply(linearityCheckExprList, function(expr) cc_nodeInExpr(targetScalar, expr)))) stop('something went wrong')
+        linearityCheckResultList <- lapply(linearityCheckExprList, function(expr) cc_checkLinearity(expr, targetScalar))
+        if(any(sapply(linearityCheckResultList, function(expr) is.null(expr)))) stop('something went wrong')
+        offsetList <- lapply(linearityCheckResultList, '[[', 'offset')
+        scaleList <- lapply(linearityCheckResultList, '[[', 'scale')
+        allIdentityLinks <- ifelse(all(sapply(offsetList, function(offset) offset == 0)) && sapply(scaleList, function(scale) scale == 1), 1, 0)
+        ##if(allIdentityLinks)  cat(paste0(targetScalar, ' conjugate sampler: skipping two-point method\n'))
+        ##if(!allIdentityLinks) cat(paste0(targetScalar, ' conjugate sampler: require two-point method\n'))
+        ## nested function and function list definitions
+        dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
+        ## checks
+        targetDCAR <- model$expandNodeNames(targetScalar)
+        if(length(targetDCAR) != 1)                              stop('something went wrong')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+    },
+    run = function() {
+        prior_mean <- dcar$getMean()
+        prior_tau <- dcar$getPrec()
+        dependent_values <- values(model, depStochNodes_dnorm)
+        dependent_taus <- numeric(nDependents)
+        for(i in 1:nDependents)
+            dependent_taus[i] <- model$getParam(depStochNodes_dnorm[i], 'tau')
+        if(allIdentityLinks) {   ## don't need to calculate coeff and offset
+            contribution_mean <- sum(dependent_values * dependent_taus)
+            contribution_tau <- sum(dependent_taus)
+        } else {                 ## use "two-point" method to calculate coeff and offset
+            dependent_offsets <- numeric(nDependents)
+            dependent_coeffs <- numeric(nDependents)
+            model[[targetScalar]] <<- 0
+            model$calculate(calcNodesDeterm)
+            for(i in 1:nDependents)
+                dependent_offsets[i] <- model$getParam(depStochNodes_dnorm[i], 'mean')
+            model[[targetScalar]] <<- 1
+            model$calculate(calcNodesDeterm)
+            for(i in 1:nDependents)
+                dependent_coeffs[i] <- model$getParam(depStochNodes_dnorm[i], 'mean') - dependent_offsets[i]
+            contribution_mean <- sum(dependent_coeffs * (dependent_values - dependent_offsets) * dependent_taus)
+            contribution_tau <- sum(dependent_coeffs^2 * dependent_taus)
+        }
+        ## from MCMC_conjugacy.R:
+        ## dnorm  = list(param = 'mean', contribution_mean = 'coeff * (value-offset) * tau', contribution_tau = 'coeff^2 * tau'),
+        ## posterior = 'dnorm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
+        ##                    sd   = (prior_tau + contribution_tau)^(-0.5))'
+        posterior_mean <- (prior_mean * prior_tau + contribution_mean) / (prior_tau + contribution_tau)
+        posterior_sd <- (prior_tau + contribution_tau)^(-0.5)
+        newValue <- rnorm(1, mean = posterior_mean, sd = posterior_sd)
+        model[[targetScalar]] <<- newValue
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+## RW sampler for non-conjugate scalar components of dcar_normal() nodes
+CAR_scalar_RW <- nimbleFunction(
+    name = 'CAR_scalar_RW',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights, control) {
+        ## control list extraction
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        scale         <- control$scale
+        ## node list generation
+        depNodes <- model$getDependencies(targetScalar, self = FALSE)
+        copyNodes <- c(targetScalar, depNodes)
+        ## numeric value generation
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        gamma1        <- 0
+        optimalAR     <- 0.44
+        ## nested function and function list definitions
+        dcar <- CAR_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights)
+        ## checks
+        targetDCAR <- model$expandNodeNames(targetScalar)
+        if(length(targetDCAR) != 1)                              stop('something went wrong')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+    },
+    run = function() {
+        if(is.na(model[[targetScalar]]) | is.nan(model[[targetScalar]])) {
+            model[[targetScalar]] <<- 0
+            model$calculate(copyNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodes, logProb = TRUE)
+        }
+        lp0 <- dcar$run() + model$getLogProb(depNodes)
+        propValue <- rnorm(1, mean = model[[targetScalar]], sd = scale)
+        model[[targetScalar]] <<- propValue
+        lp1 <- dcar$run() + model$calculate(depNodes)
+        logMHR <- lp1 - lp0
+        jump <- decide(logMHR)
+        if(jump) {
+            model$calculate(targetScalar)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = copyNodes, logProb = TRUE)
+        } else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = copyNodes, logProb = TRUE)
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    methods = list(
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                scale <<- scale * adaptFactor
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        reset = function() {
+            scale <<- scaleOriginal
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            gamma1 <<- 0
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+#' @rdname samplers
+#' @export
+sampler_CAR_normal <- nimbleFunction(
+    name = 'sampler_CAR_normal',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        useConjugacy  <- control$carUseConjugacy
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        scale         <- control$scale
+        RW_control <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale)
+        ## node list generation
+        target <- model$expandNodeNames(target)
+        targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        ## checks
+        if(length(target) > 1)                               stop('CAR_normal sampler only applies to one target node')
+        if(model$getDistribution(target) != 'dcar_normal')   stop('CAR_normal sampler only applies to dcar_normal distributions')
+        ## nested function and function list definitions
+        adj <- model$getParam(target, 'adj')
+        weights <- model$getParam(target, 'weights')
+        num <- model$getParam(target, 'num')
+        zero_mean <- model$getParam(target, 'zero_mean')
+        neighborLists <- CAR_processParams(model, target, adj, weights, num)
+        componentSamplerFunctions <- nimbleFunctionList(sampler_BASE)
+        for(i in seq_along(targetScalarComponents)) {
+            targetScalar <- targetScalarComponents[i]
+            nDependents <- length(model$getDependencies(targetScalar, self = FALSE, stochOnly = TRUE))
+            conjugate <- CAR_checkConjugacy(model, targetScalar)
+            neighborNodes <- neighborLists$neighborNodeList[[i]]
+            neighborWeights <- neighborLists$neighborWeightList[[i]]
+            ##if(length(neighborNodes)==0) cat(paste0('island node detected: ', targetScalar, '\n'))
+            if(nDependents == 0) {
+                ##cat(paste0('dcar() component node ', targetScalar, ': assigning posterior predictive sampler\n'))
+                componentSamplerFunctions[[i]] <- CAR_scalar_postPred(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
+            } else if(conjugate && useConjugacy) {
+                ##cat(paste0('dcar() component node ', targetScalar, ': assigning conjugate sampler\n'))
+                componentSamplerFunctions[[i]] <- CAR_scalar_conjugate(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
+            } else {
+                ##cat(paste0('dcar() component node ', targetScalar, ': assigning RW sampler\n'))
+                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborWeights, RW_control)
+            }
+        }
+    },
+    run = function() {
+        for(iSF in seq_along(componentSamplerFunctions))
+            componentSamplerFunctions[[iSF]]$run()
+        if(zero_mean) {
+            targetValues <- values(model, target)
+            values(model, target) <<- targetValues - mean(targetValues)
+            model$calculate(calcNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        }
+    },
+    methods = list(
+        reset = function() {
+            for(iSF in seq_along(componentSamplerFunctions))
+                componentSamplerFunctions[[iSF]]$reset()
+        }
+    ), where = getLoadingNamespace()
+)
+
 
 
 
@@ -1417,9 +1675,10 @@ sampler_RW_dirichlet <- nimbleFunction(
 #' The automated factor slice sampler accepts the following control list elements:
 #' \itemize{
 #' \item sliceWidths.  A numeric vector of initial slice widths.  The length of the vector must be equal to the sum of the lengths of all nodes being used by the automated factor slice sampler.  Defaults to a vector of 1's.
-#' \item factorBurnIn. The number of iterations for which the factors (eigenvectors) will continue to adapt to the posterior correlation.  (default =  15000)
-#' \item factorAdaptInterval.  The interval on which to perform factor adaptation. (default = 1000)
-#' \item sliceBurnIn.  The maximum number of iterations for which to adapt the slice widths for a given set of factors.  (default = 512)
+#' \item sliceAdaptFactorMaxIter.  The number of iterations for which the factors (eigenvectors) will continue to adapt to the posterior correlation. (default = 15000)
+#' \item sliceAdaptFactorInterval.  The interval on which to perform factor adaptation. (default = 1000)
+#' \item sliceAdaptWidthMaxIter.  The maximum number of iterations for which to adapt the widths for a given set of factors. (default = 512)
+#' \item sliceAdaptWidthTolerance. The tolerance for when widths no longer need to adapt, between 0 and 0.5. (default = 0.1)
 #' \item sliceMaxSteps.  The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
 #' }
 #'
@@ -1510,6 +1769,19 @@ sampler_RW_dirichlet <- nimbleFunction(
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
 #' \item scale. The initial value of the proposal standard deviation (on the log scale) for each component of the reparameterized Dirichlet distribution.  If adaptive = FALSE, the proposal standard deviations will never change. (default = 1)
 #' }
+#'
+#'
+#' @section CAR_normal sampler:
+#'
+#' The CAR_normal sampler operates uniquely on improper Gaussian conditional autoregressive (CAR) nodes, those with a dcar_normal prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler, however these component samplers are specialized to operate on dimensions of a dcar_normal distribution.
+#'
+#' The CAR_normal sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation for any component RW samplers.  Every adaptInterval MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
+#' \item scale. The initial value of the normal proposal standard deviation for any component RW samplers.  If adaptive = FALSE, scale will never change. (default = 1)
+#' }
+#'
 #'
 #' @section posterior_predictive sampler:
 #'
