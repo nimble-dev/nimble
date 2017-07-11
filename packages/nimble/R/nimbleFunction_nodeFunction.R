@@ -134,7 +134,7 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
                            list(LHS = LHS,
                                 RHS = RHS,
                                 CONDITION = dynamicIndexLimitsExpr,
-                                TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced)))
+                                TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
     } else code <- substitute(LHS <<- RHS,
                               list(LHS = LHS,
                                    RHS = RHS))
