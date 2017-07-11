@@ -1,17 +1,24 @@
 # Guidelines for Contributing
 
 Nimble is managed across multiple repos:
-[nimble](https://github.com/nimble-dev/nimble) for code,
-[nimble-docs](https://github.com/nimble-dev/nimble) for documentation,
+[nimble](https://github.com/nimble-dev/nimble) for code and the user manual,
+[nimble-docs](https://github.com/nimble-dev/nimble-doc)
+for developer documentation,
 and miscellaneous other repos under the [nimble-dev](https://github.com/nimble-dev) org.
 We welcome issues and pull requests to all of these repos.
 
 ## Opening an issue
 
-To file a bug or request a feature,
+To file a bug or request a feature or documentation,
 [open an issue on Github](https://github.com/nimble-dev/nimble/issues/new).
 When possible, include a fully reproducible example demonstrating the error or unwanted behaviour.
 Please note your operating system, R version, and NIMBLE version (either CRAN X.X-X or git commit).
+
+```sh
+uname -a
+R --version
+Rscript -e "packageVersion('nimble')"
+```
 
 ## Submitting code via pull requests
 
@@ -25,6 +32,43 @@ To submit code:
     Travis CI tests pass, you can merge your PR.
     Prefer **Squash and Merge** over **Merge** unless your git history is
     exceptionally clean and each commit passes CI tests.
+
+## Documentation
+
+To keep documentation in sync with code, try to update the
+[User Manual](UserManual/)
+in the same pull request as the code that implements a change.
+This eases the job of reviewers, and makes it easier for users to use features that are experimental.
+
+To rebuild function help info after updating function documentation, run
+
+```sh
+cd packages
+make man
+```
+
+To rebuild the [NimbleUserManual.pdf](UserManual/NimbleUserManual.pdf)
+after adding sections, run
+
+```sh
+cd UserManual
+make
+```
+
+Take care to review the manual before submitting, since knitr silences
+execution errors when building the manual.
+
+### Experimental features
+
+To encourage sharing of code, we try to merge our branches early and often.
+This means that some experimental features will be in `devel` and `master`
+branches. If you are writing an experimental feature, please document the status
+by writing "EXPERIMENTAL" in the feature's documentation.
+
+Often we hide experimental features behind *feature toggles*.
+If your feature toggle is temporary or only partially tested, please name it
+`experimentalMyFeature` to indicate to users that the feature is still
+experimental.
 
 ## Testing
 
