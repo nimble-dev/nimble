@@ -204,7 +204,6 @@ SEXP getNRow(SEXP Sextptr){
 	else{
 		PRINTF("Data type of VecNimArr not currently supported\n");
 		_nimble_global_output<< "vecType = " << vecType << "\n"; nimble_print_to_R(_nimble_global_output);
-//		cout << "vecType DOUBLE = " << DOUBLE << "\n";
 		}
 	SEXP rNRow;
 	PROTECT(rNRow = allocVector(INTSXP, 1) ); 
@@ -385,7 +384,6 @@ SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{
   	}
     else if(vecType == INT){
 		VecNimArrBase<int> *matPtr = static_cast< VecNimArrBase<int>* >(typePtr);
-//		int nrowCpp = matPtr->size();
 		NimArrBase<int> *thisRow;
   		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
 		int outputLength = thisRow->size();
@@ -506,7 +504,6 @@ SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
 	return(returnStatus(false) ) ;
   }
   cSetMVElementSingle( typePtr, vecType, index, Svalue );
-  //SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
   return(returnStatus(true) );
  } 
  
@@ -527,7 +524,6 @@ SEXP NimArrDouble_2_SEXP(NimArrBase<double> &nimArrDbl){
 		int len = nimArrDbl.size();
 		SEXP Sans;  
 		PROTECT(Sans = allocVector(REALSXP, len));
-		//		std::copy(nimArrDbl.v.begin(), nimArrDbl.v.end() , REAL(Sans) );
 		std::copy(nimArrDbl.v, nimArrDbl.v + len , REAL(Sans) );  
   		int numDims = nimArrDbl.numDims();
   		if(numDims > 1) {
@@ -547,7 +543,6 @@ SEXP NimArrInt_2_SEXP(NimArrBase<int> &nimArrInt){
 		int len = nimArrInt.size();
 		SEXP Sans;  
 		PROTECT(Sans = allocVector(INTSXP, len));
-		//		std::copy(nimArrInt.v.begin(), nimArrInt.v.end() , INTEGER(Sans) );
 		std::copy(nimArrInt.v, nimArrInt.v + len , INTEGER(Sans) );  
   		int numDims = nimArrInt.numDims();
   		if(numDims > 1) {
@@ -567,7 +562,6 @@ SEXP NimArrBool_2_SEXP(NimArrBase<bool> &nimArrBl){
   int len = nimArrBl.size();
   SEXP Sans;  
   PROTECT(Sans = allocVector(LGLSXP, len));
-  //		std::copy(nimArrInt.v.begin(), nimArrInt.v.end() , INTEGER(Sans) );
   std::copy(nimArrBl.v, nimArrBl.v + len , LOGICAL(Sans) );  
   int numDims = nimArrBl.numDims();
   if(numDims > 1) {
@@ -739,7 +733,6 @@ SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize){
 }
 
 void VecNimArr_Finalizer(SEXP Sp) {
-  //  std::cout<< "In VecNimArr_Finalizer\n";
   NimVecType* np = static_cast<NimVecType*>(R_ExternalPtrAddr(Sp));
   if(np) delete np;
   R_ClearExternalPtr(Sp);
@@ -747,8 +740,6 @@ void VecNimArr_Finalizer(SEXP Sp) {
 }
 
 SEXP register_VecNimArr_Finalizer(SEXP Sp, SEXP Dll) {
-  //  std::cout<< "In register_VecNimArr_Finalizer\n";
-  //  R_RegisterCFinalizerEx(Sp, &VecNimArr_Finalizer, TRUE);
   RegisterNimbleFinalizer(Sp, Dll, &VecNimArr_Finalizer, R_NilValue);
   return(Sp);
 }
@@ -757,22 +748,15 @@ double nimMod(double a, double b) {
   return(fmod(a, b));
 }
 
-// bool compareOrderedPair(orderedPair a, orderedPair b) {  //function called for sort 
-//   return(a.value < b.value);
-// }
-
 void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output) {
   bool silent = false;
   rankSample(weights, n, output, silent);
 }
 
 void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output, bool& silent) {
-  //PRINTF("in VOID rankSample\n");
   output.setSize(n);
   int N = weights.size();
-  //GetRNGstate();
   rawSample(weights.getPtr(), n, N, output.getPtr(), false, silent);
-  //PutRNGstate();
 }
 
 

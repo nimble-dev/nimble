@@ -268,104 +268,6 @@ bool SEXP_2_bool(SEXP Sn, int i) {
   return(false);
 }
 
-// bool checkString(SEXP Ss, int len) {
-//   if(!isString(Ss)) {
-//     PRINTF("Error: something that was supposed to be a string is not\n"); 
-//     return(false);
-//   }
-//   if(LENGTH(Ss) < len) {
-//     PRINTF("Error: A string vector that was supposed to have length at least %i does not\n", len);
-//     return(false);
-//   }
-//   return(true);
-// }
-
-// bool checkNumeric(SEXP Sval, int len) {
-//   if(!isNumeric(Sval)) return(false);
-//   if(LENGTH(Sval) != len) return(false);
-//   return(true);
-// }
-
-// SEXP setVec(SEXP Sextptr, SEXP Svalue) {
-//   if(!isNumeric(Svalue)) {
-//     PRINTF("Error: Svalue is not a numeric!\n");
-//     return(R_NilValue);
-//   }
-//   if(!R_ExternalPtrAddr(Sextptr)) {
-//      RBREAK("Error: Sextptr is not a valid external pointer\n");
-//   }
-//   //  vector<double> *vecPtr = *static_cast< vector<double>** >(R_ExternalPtrAddr(Sextptr));
-//   NimArrBase<double> *vecPtr = *static_cast< NimArrBase<double>** >(R_ExternalPtrAddr(Sextptr));
-
-//  int nn = LENGTH(Svalue);
-//   int lengthCpp = vecPtr->size();
-//   if(nn != lengthCpp) {
-//     PRINTF("Error: length of Svalues does not match C++ vector length.  Using smaller.\n");
-//     if(nn > lengthCpp) nn = lengthCpp;
-//   }
-//   double *value = REAL(Svalue);
-//   std::copy(value, value + nn, &(vecPtr->v[0]) );	
-//   return(R_NilValue);
-// }
-  
-// SEXP getVec(SEXP Sextptr) {
-//   if(!R_ExternalPtrAddr(Sextptr)) {
-//     PRINTF("Error: Sextptr is not a valid external pointer\n");
-//     return(R_NilValue);
-//   }
-
-//   NimArrBase<double> *vecPtr = static_cast< NimArrBase<double> * >(R_ExternalPtrAddr(Sextptr));
-
-//   int len = vecPtr->size();
-//   SEXP Sans;  
-  
-//   PROTECT(Sans = allocVector(REALSXP, len));
-//   //std::copy(vecPtr->v.begin(), vecPtr->v.end() , REAL(Sans) );
-//   std::copy(vecPtr->v, vecPtr->v + len , REAL(Sans) );
-  
-//   int numDims = vecPtr->numDims();
-//   if(numDims > 1) {
-//     SEXP Sdim;
-//     PROTECT(Sdim = allocVector(INTSXP, numDims));
-//     for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = vecPtr->dimSize(idim);
-//     setAttrib(Sans, R_DimSymbol, Sdim);
-//     UNPROTECT(2);
-//   } else {
-//     UNPROTECT(1);
-//   } 
-//  return(Sans);
-// }
-
-// SEXP getVec_Integer(SEXP Sextptr) {
-//   if(!R_ExternalPtrAddr(Sextptr)) {
-//     PRINTF("Error: Sextptr is not a valid external pointer\n");
-//     return(R_NilValue);
-//   }
-//   NimArrBase<int> *vecPtr = *static_cast< NimArrBase<int> ** >(R_ExternalPtrAddr(Sextptr));
-//   SEXP Sans;
-//   int len = vecPtr->size();
-  
-//   PROTECT(Sans = allocVector(REALSXP, len));
-//   //  std::copy(vecPtr->v.begin(), vecPtr->v.end(), INTEGER(Sans) );
-//   std::copy(vecPtr->v, vecPtr->v + len, INTEGER(Sans) );  
-  
-//   int numDims = vecPtr->numDims();
-//   if(numDims > 1) {
-//     SEXP Sdim;
-//     PROTECT(Sdim = allocVector(INTSXP, numDims));
-//     for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = vecPtr->dimSize(idim);
-//     setAttrib(Sans, R_DimSymbol, Sdim);
-//     UNPROTECT(2);
-//   } else {
-//     UNPROTECT(1);
-//   } 
-//  return(Sans);
-// }
-
-// void dontDeleteFinalizer(SEXP ptr){
-// 	return;
-// }
-
 SEXP populate_SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
@@ -575,7 +477,6 @@ SEXP fastMatrixInsert(SEXP matrixInto, SEXP matrix, SEXP rowStart, SEXP colStart
 }
 
 SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims){
-  //int cStart = INTEGER(listStartIndex)[0] - 1;
 	int cNRows = INTEGER(RnRows)[0];
 	int len = 1;
 	for(int i = 0; i < LENGTH(dims); i++)
@@ -593,7 +494,6 @@ SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,
 }
 
 SEXP matrix2ListInt(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims){
-  //	int cStart = INTEGER(listStartIndex)[0] - 1;
 	int cNRows = INTEGER(RnRows)[0];
 	int len = 1;
 	for(int i = 0; i < LENGTH(dims); i++)
@@ -677,7 +577,6 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent
 }
 
 SEXP C_rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s) {
-  //PRINTF("in SEXP C_rankSample\n");
   int N = LENGTH(p);
   int c_samps = INTEGER(n)[0];
   bool silent = LOGICAL(s)[0];
@@ -701,10 +600,6 @@ void parseVar(const vector<string> &input, vector<string> &output) {
       output[i].assign( input[i].substr(iBegin, iEnd - iBegin) );
     else
       output[i].assign( string("") );
-    //    if(iBracket != std::string::npos)
-
-    //    else
-    //   output[i].assign( input[i] );
   }
 }
 
