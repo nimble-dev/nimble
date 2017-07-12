@@ -15,7 +15,7 @@ SEXP getModelValuesPtrFromModel (SEXP rPtr){
 }
 
 NimArrType** cGetModelElementPtr(SEXP Sextptr, SEXP Sname) {
-  if(!isString(Sname)) {
+  if(!Rf_isString(Sname)) {
     PRINTF("Error: Sname is not character!\n");
     return(NULL);
   }
@@ -50,9 +50,9 @@ SEXP getMVBuildName (SEXP rPtr){
 	string mVBuildName = (*modelValuesPtr).getMVBuildName();
 	if (mVBuildName == "missing")
 		PRINTF("Warning: buildName missing in modelValues! \nConstructor must assign the string buildName to the name which call a SEXP that builds modelValues object\n");
-	SEXP rName = allocVector(STRSXP, 1);
+	SEXP rName = Rf_allocVector(STRSXP, 1);
 	PROTECT(rName);
-	SEXP mvbn = mkChar(mVBuildName.c_str() );
+	SEXP mvbn = Rf_mkChar(mVBuildName.c_str() );
 	PROTECT(mvbn);
 	SET_STRING_ELT(rName, 0, mvbn );
 	UNPROTECT(2);
