@@ -32,7 +32,7 @@ distributionsInputList <- list(
     dcat    = list(BUGSdist = 'dcat(prob)',
                    Rdist    = 'dcat(prob)',
                    types    = c('prob = double(1)'),
-                   range    = c(1, Inf),
+                   range    = c(1, Inf), 
                    discrete = TRUE),
     
     ## construct used to enforce constraints - 0/1 random variable depending on if cond is TRUE

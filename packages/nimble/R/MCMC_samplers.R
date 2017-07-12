@@ -381,6 +381,9 @@ sampler_slice <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
+            ## FIXME: should we only do this if discrete?
+            ## if(value < model$getBound(target, 'lower') | value > model$getBound(target, 'upper') | calculate(model, target) == -Inf) return(-Inf)
+            if(calculate(model, target) == -Inf) return(-Inf) # deals with dynamic index out of bounds
             lp <- calculate(model, calcNodes)
             returnType(double())
             return(lp)

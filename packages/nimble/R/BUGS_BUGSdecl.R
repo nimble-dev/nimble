@@ -425,10 +425,10 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
                 } else { ## non-replaceable indices are dynamic indices
-                    if(!nimbleOptions()$allowDynamicIndexing)
+                    if(!nimbleOptions()$allowDynamicIndexing) {
                         warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ", deparse(code), ". This is now allowed in version 0.6-6 as an option, but you need to set 'nimbleOptions(allowDynamicIndexing = TRUE)'.")
                         dynamicIndexParent <- code[[2]]
-                    else {
+                    } else {
                         if(any(sapply(contentsCode, detectNonscalarIndex)))
                             stop("getSymbolicParentNodesRecurse: only scalar random indices are allowed; vector random indexing found in ", deparse(code))
                         indexedVariable <- deparse(code[[2]])
@@ -608,7 +608,7 @@ genLogProbNodeExprAndReplacements <- function(code, codeReplaced, indexVarExprs)
 }
 
 addIndexWrapping <- function(expr, indexingCode, indexedVariable, position) {
-    if(expr[[1]] == '.USED_IN_INDEX') ## nested random indexing
+    if(length(expr) > 1 && expr[[1]] == '.USED_IN_INDEX') ## nested random indexing
         return(expr)
     expr <- substitute(.USED_IN_INDEX(EXPR), list(EXPR = expr))
     expr[3:5] <- list(indexingCode, indexedVariable, position)

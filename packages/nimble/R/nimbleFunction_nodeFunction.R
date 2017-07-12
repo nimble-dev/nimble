@@ -134,7 +134,7 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
                            list(LHS = LHS,
                                 RHS = RHS,
                                 CONDITION = dynamicIndexLimitsExpr,
-                                TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced)))
+                                TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
     } else code <- substitute(LHS <<- RHS,
                               list(LHS = LHS,
                                    RHS = RHS))
@@ -234,12 +234,12 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, dy
         if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
             if(diff) {
                 code <- substitute(if(CONDITION) LocalNewLogProb <- STOCHCALC
-                                   else LocalNewLogProb <- -Inf,
+                                   else stop("dynamic indexes out of range"), # LocalNewLogProb <- -Inf,
                                    list(STOCHCALC = RHS,
                                         CONDITION = dynamicIndexLimitsExpr))
             } else {
                 code <- substitute(if(CONDITION) LOGPROB <<- STOCHCALC
-                                   else LOGPROB <<- -Inf,
+                                   else stop("dynamic indexes out of range"), # LOGPROB <<- -Inf,
                                    list(LOGPROB = logProbNodeExpr,
                                         STOCHCALC = RHS,
                                         CONDITION = dynamicIndexLimitsExpr))
