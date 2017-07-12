@@ -6,8 +6,14 @@
 ##  Pitt et al., 2012
 
 auxStepVirtual <- nimbleFunctionVirtual(
-  run = function(m = integer()) 
+  run = function(m = integer()) {
     returnType(double())
+  },
+  methods = list(
+    returnESS = function() {
+      returnType(double())
+    }
+  )
 )
 
 auxFuncVirtual <- nimbleFunctionVirtual(
@@ -17,6 +23,7 @@ auxFuncVirtual <- nimbleFunctionVirtual(
 )
 
 auxLookFunc = nimbleFunction(
+    name = 'auxLookFunc',
   contains = auxFuncVirtual,
   setup = function(model, node){
   },
@@ -29,6 +36,7 @@ auxLookFunc = nimbleFunction(
 
 
 auxSimFunc = nimbleFunction(
+    name = 'auxSimFunc',
   contains = auxFuncVirtual,
   setup = function(model, node){},
   methods = list(
@@ -38,6 +46,7 @@ auxSimFunc = nimbleFunction(
 )
 
 auxFStep <- nimbleFunction(
+    name = 'auxFStep',
   contains = auxStepVirtual,
   setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names,
                    saveAll, smoothing, lookahead, silent = TRUE) {
@@ -82,7 +91,8 @@ auxFStep <- nimbleFunction(
     else{
       for(i in 1:numLatentNodes)
         auxFuncList[[i]] <- auxSimFunc(model,  allLatentNodes)
-     }
+    }
+    ess <- 0
   },
   run = function(m = integer()) {
     returnType(double())
@@ -143,6 +153,7 @@ auxFStep <- nimbleFunction(
     }
     
     normWts <- exp(wts)/sum(exp(wts))
+    ess <<- 1/sum(normWts^2) 
     
     for(i in 1:m){
       ##  save weights for use in next timepoint's look-ahead step
@@ -166,7 +177,14 @@ auxFStep <- nimbleFunction(
     }
     return(log(outLL))
 return(0)
-  }, where = getLoadingNamespace()
+  }, 
+  methods = list(
+    returnESS = function() {
+      returnType(double(0))
+      return(ess)
+    }
+  ),
+  where = getLoadingNamespace()
 )
 
 
@@ -207,6 +225,10 @@ return(0)
 #'   The auxiliary particle filter uses a lookahead function to select promising particles before propagation.  This function can eithre be the expected
 #'   value of the latent state at the next time point (\code{lookahead = 'mean'}) or a simulation from the distribution of the latent state at the next time point (\code{lookahead = 'simulate'}), conditioned on the current particle.
 #'   
+#'  @section \code{returnESS()} Method:
+#'  Calling the \code{returnESS()} method of an auxiliary particle filter after that filter has been \code{run()} for a given model will return a vector of ESS (effective
+#'  sample size) values, one value for each time point.
+
 #' @export
 #' 
 #' @family particle filtering methods
@@ -219,10 +241,12 @@ return(0)
 #'    control = list(saveAll = TRUE, lookahead = 'mean'))
 #' Cmodel <- compileNimble(model)
 #' Cmy_AuxF <- compileNimble(my_AuxF, project = model)
-#' logLike <- Cmy_AuxF(m = 100000)
+#' logLike <- Cmy_AuxF$run(m = 100000)
+#' ESS <- Cmy_AuxF$returnESS(m = 100000)
 #' hist(as.matrix(Cmy_Auxf$mvEWSamples, 'x'))
 #' }
 buildAuxiliaryFilter <- nimbleFunction(
+    name = 'buildAuxiliaryFilter',
   setup = function(model, nodes, control = list()) {
     
    
@@ -320,6 +344,8 @@ buildAuxiliaryFilter <- nimbleFunction(
     for(iNode in seq_along(nodes))
       auxStepFunctions[[iNode]] <- auxFStep(model, mvEWSamples, mvWSamples, nodes,
                                             iNode, names, saveAll, smoothing, lookahead, silent)
+    
+    essVals <- rep(0, length(nodes))
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
@@ -330,7 +356,8 @@ buildAuxiliaryFilter <- nimbleFunction(
     logL <- 0
     for(iNode in seq_along(auxStepFunctions)) {
       logL <- logL + auxStepFunctions[[iNode]]$run(m)
-
+      essVals[iNode] <<- auxStepFunctions[[iNode]]$returnESS()
+      
       # when all particles have 0 weight, likelihood becomes NAN
       # this happens if top-level params have bad values - possible
       # during pmcmc for example
@@ -340,6 +367,13 @@ buildAuxiliaryFilter <- nimbleFunction(
     }
   
     return(logL)
-  },  where = getLoadingNamespace()
+  },
+  methods = list(
+    returnESS = function(){
+      returnType(double(1))
+      return(essVals)
+    }
+  ),where = getLoadingNamespace()
 )
+
 

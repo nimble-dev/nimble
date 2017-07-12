@@ -909,15 +909,19 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   }
                                                   
                                         # check sizes
-                                                  mats <- dims == 2
-                                                  vecs <- dims == 1
-                                                  matRows <- unlist(sapply(sizes[mats], `[`, 1))
-                                                  matCols <- unlist(sapply(sizes[mats], `[`, 2))
-                                                  if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
-                                                      if(dist %in% names(nimble:::distributionsInputList)) {
-                                                          stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
-                                                      } else {
-                                                          warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
+                                                  ## can exempt distributions from check that all non-scalar parameters have
+                                                  ## the same length or size in each dimension (e.g., for dcar_normal)
+                                                  if(!nimble:::isMixedSizes(dist)) {
+                                                      mats <- dims == 2
+                                                      vecs <- dims == 1
+                                                      matRows <- unlist(sapply(sizes[mats], `[`, 1))
+                                                      matCols <- unlist(sapply(sizes[mats], `[`, 2))
+                                                      if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
+                                                          if(dist %in% names(distributionsInputList)) {
+                                                              stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                          } else {
+                                                              warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
+                                                  }
                                                   
                                               }
                                       }
@@ -927,7 +931,8 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                           if(!nimble:::isValid(.self[[v]]))
                                               varsWithNAs <- c(varsWithNAs, v)
                                       if(!is.null(varsWithNAs))
-                                          message(' note that missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.', appendLF = FALSE)
+                                          if(isTRUE(nimbleOptions('verbose')))
+                                              message(' note that missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.', appendLF = FALSE)
                                   },
 
                                   check = function() {
@@ -1069,7 +1074,6 @@ insertSingleIndexBrackets <- function(code, varInfo) {
     if(!is.null(code)) message(paste('confused about reaching end of insertSingleBrackets with ', deparse(code)))
     return(code)
 }
-
 
 # for now export this as R<3.1.2 give warnings if don't
 

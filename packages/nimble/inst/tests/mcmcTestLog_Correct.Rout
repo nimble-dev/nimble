@@ -3073,3 +3073,4 @@ sd      0.6607385   0.5216073    1.807713
 [6] RW_dirichlet sampler: p1[1:4]
 [7] RW sampler: theta[4]
 thin = 1: alpha, theta, p1, p2
+===== Starting MCMC test dcar_normal sampling. =====Adding num,adj,weights as data for building model.
