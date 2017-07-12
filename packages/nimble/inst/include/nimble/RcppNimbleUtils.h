@@ -51,49 +51,46 @@ SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd);
 
 SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue);
 
-SEXP newSampObject();  //  Creates our new object from sampleClass (will be
-                       //  generated automatically later)
-                       //	Just for use in demos
-                       // 	To get a pointer to an element from sampleClass, use
-                       //	getModelObjectPtr (from the NamedObjects.cpp file)
+// Creates our new object from sampleClass (will be generated automatically
+// later).
+// Just for use in demos.
+// To get a pointer to an element from sampleClass, use
+// getModelObjectPtr (from the NamedObjects.cpp file).
+SEXP newSampObject();
 
-SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers);  //	Returns SEXP object with correct
-                                             //data type and dimensions.
-                                             //NumRefers
-//  should be an integer with the number of dereferencing required for rPtr
-//	So if rPtr is a pointer to a NimArr, NumRefers = 1
-//	If rPtr is a pointer to a pointer to a NimArr, NumRefers = 2
-//	Currently only NumRefers = 1 and 2 are allowed, but easily updated
-//	by extending "getNimTypePtr" function
+// Returns SEXP object with correct data type and dimensions.  NumRefers
+// should be an integer with the number of dereferencing required for rPtr
+// So if rPtr is a pointer to a NimArr, NumRefers = 1
+// If rPtr is a pointer to a pointer to a NimArr, NumRefers = 2
+// Currently only NumRefers = 1 and 2 are allowed, but easily updated
+// by extending "getNimTypePtr" function
+SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers);
 
-SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues,
-                SEXP allowResize);  //	Copies values from rValues to NimArr.
-                                    //Same behavior
-// 	with NumRefers as above. Also, type checking is done
-// 	by R.internals functions INTEGER and REAL
+//	Copies values from rValues to NimArr.
+// Same behavior with NumRefers as above. Also, type checking is done by
+// R.internals functions INTEGER and REAL
+SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize);
 
 SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
 SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
 
-SEXP getEnvVar_Sindex(
-    SEXP sString, SEXP sEnv,
-    SEXP sIndex);  // This is a utility for looking up a field of an environment
-                   // sString is a character vector with the field name we want
-                   // sEnv is the environment
-                   // sIndex is the index of the sString that contains the name
-                   // we actually want to use.
-//	Look up by sString[sIndex] is done to allow for easy looping
+// This is a utility for looking up a field of an environment sString is a
+// character vector with the field name we want sEnv is the environment sIndex
+// is the index of the sString that contains the name we actually want to use.
+// Look up by sString[sIndex] is done to allow for easy looping
 // Important Note: sIndex = 1 looks up the first name (i.e. use R indexing, not
-// C)
-SEXP getEnvVar(SEXP sString, SEXP sEnv);  // Same as above, but uses sIndex = 1
-                                          // (i.e. sString is a single character
-                                          // string)
+// C).
+SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex);
 
-SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal,
-                      SEXP sIndex);  // Same as getEnvVar_Sindex, but this
-                                     // function sets rather than gets
-SEXP setEnvVar(SEXP sString, SEXP sEnv,
-               SEXP sVal);  // Same as above but uses sIndex = 1
+// Same as above, but uses sIndex = 1 (i.e. sString is a single character
+// string)
+SEXP getEnvVar(SEXP sString, SEXP sEnv);
+
+// Same as getEnvVar_Sindex, but this function sets rather than gets
+SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex);
+
+// Same as above but uses sIndex = 1
+SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal);
 
 SEXP register_VecNimArr_Finalizer(SEXP Sp, SEXP Dll);
 }
@@ -124,8 +121,7 @@ NimArr<1, double> vectorDouble_2_NimArr(vector<double> input);
 /*
   Apparently partial specialization of function templates is not allowed.
   So these are witten for doubles, and when we get to integers and logicals we
-  can
-  use overlaoding or different names.
+  can use overlaoding or different names.
  */
 template <int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans);

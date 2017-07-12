@@ -31,20 +31,20 @@ SEXP string_2_STRSEXP(string v);
 void STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans);
 SEXP vectorString_2_STRSEXP(const vector<string> &v);
 
-vector<double> SEXP_2_vectorDouble(
-    SEXP Sn); /* Sn can be numeric or integer from R*/
+/* Sn can be numeric or integer from R*/
+vector<double> SEXP_2_vectorDouble(SEXP Sn);
 double SEXP_2_double(SEXP Sn, int i = 0); /* Ditto */
 SEXP double_2_SEXP(double v);
 SEXP vectorDouble_2_SEXP(const vector<double> &v);
 SEXP vectorInt_2_SEXP(const vector<int> &v);
 SEXP vectorInt_2_SEXP(const vector<int> &v, int offset);
 
-vector<int> SEXP_2_vectorInt(
-    SEXP Sn, int offset = 0); /* Sn can be numeric or integer from R */
-/* Offset is added to every value, so if the vectors are indices, offset = -1 is
- * useful */
-/* If Sn is numeric but not integer, a warning is issued if it contains
- * non-integers */
+// Sn can be numeric or integer from R.
+// Offset is added to every value, so if the vectors are indices,
+// offset = -1 is useful.
+// If Sn is numeric but not integer, a warning is issued if it contains
+// non-integers.
+vector<int> SEXP_2_vectorInt(SEXP Sn, int offset = 0);
 int SEXP_2_int(SEXP Sn, int i = 0, int offset = 0);
 SEXP int_2_SEXP(int i);
 bool SEXP_2_bool(SEXP Sn, int i = 0);

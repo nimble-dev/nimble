@@ -14,14 +14,13 @@ int floorOrEquivalent(double x) {
   double roundX = round(x);
   double sqrtEpsilon = sqrt(std::numeric_limits<double>::epsilon());
   bool shouldBeExactInteger(false);
-  if (fabs(x) > sqrtEpsilon) {  // This algorithm for numerical equivalence
-                                // imitates what happens in all.equal.numeric in
-                                // R
+  // This algorithm for numerical equivalence imitates what happens in
+  // all.equal.numeric in R
+  if (fabs(x) > sqrtEpsilon) {
     if (fabs(x - roundX) / fabs(x) < sqrtEpsilon) shouldBeExactInteger = true;
   } else {
-    if (fabs(x - roundX) < sqrtEpsilon)  // in the present context, this would
-                                         // mean length should be zero anyway
-      shouldBeExactInteger = true;
+    // in the present context, this would mean length should be zero anyway
+    if (fabs(x - roundX) < sqrtEpsilon) shouldBeExactInteger = true;
   }
   if (shouldBeExactInteger) return (static_cast<int>(roundX));
   return (floor(x));
@@ -33,8 +32,8 @@ int rFunLength(double Arg) { return Arg; }
 
 int rFunLength(bool Arg) { return Arg; }
 
-bool decide(double lMHr) {  // simple function accept or reject based on log
-                            // Metropolis-Hastings ratio
+// simple function accept or reject based on log Metropolis-Hastings ratio
+bool decide(double lMHr) {
   if (ISNAN(lMHr)) return (false);
   if (lMHr > 0) return (true);
   if (runif(0, 1) < exp(lMHr)) return (true);
@@ -58,10 +57,12 @@ int nimEquals(double x1, double x2) { return (x1 == x2 ? 1 : 0); }
 double nimbleIfElse(bool condition, double x1, double x2) {
   return (condition ? x1 : x2);
 }
-double lfactorial(double x) {
-  return (lgammafn(x + 1));
-}  //{return(lgamma1p(x));} not numerically equivalent to lgamma(x+1), which is
-   // what is done from R. lgamma seems to clean up numerical zeros
+
+// Note that {return(lgamma1p(x));} is not numerically equivalent to
+// lgamma(x+1), which is what is done from R. lgamma seems to clean up
+// numerical zeros
+double lfactorial(double x) { return (lgammafn(x + 1)); }
+
 double factorial(double x) { return (gammafn(1 + x)); }
 double logit(double x) { return (log(x / (1. - x))); }
 double nimRound(double x) { return (fround(x, 0.)); }

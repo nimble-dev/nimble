@@ -384,8 +384,8 @@ SEXP cGetMVElementOneRow(NimVecType *typePtr, nimType vecType, int index) {
     SEXP Sans;
     PROTECT(Sans = allocVector(REALSXP, outputLength));
     double *value = REAL(Sans);
-    std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength,
-              value);              /* copy should work now */
+    /* copy should work now */
+    std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength, value);
     if (thisRow->numDims() > 1) {  // using first row as representative
       SEXP Sdim;
       PROTECT(Sdim = allocVector(INTSXP, thisRow->numDims()));
@@ -405,8 +405,8 @@ SEXP cGetMVElementOneRow(NimVecType *typePtr, nimType vecType, int index) {
     SEXP Sans;
     PROTECT(Sans = allocVector(INTSXP, outputLength));
     int *value = INTEGER(Sans);
-    std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength,
-              value);              /* copy should work now */
+    /* copy should work now */
+    std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength, value);
     if (thisRow->numDims() > 1) {  // using first row as representative
       SEXP Sdim;
       PROTECT(Sdim = allocVector(INTSXP, thisRow->numDims()));

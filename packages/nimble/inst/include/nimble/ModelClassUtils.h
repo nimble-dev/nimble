@@ -12,21 +12,22 @@ class ModelBase : public NamedObjects {
 };
 
 extern "C" {
-SEXP getModelValuesPtrFromModel(
-    SEXP rPtr);  // gets pointer to modelvalues object in model
-SEXP getModelElementPtr(
-    SEXP Sextptr, SEXP Sname);  // Gets the ptr to an element of name Sname from
+// gets pointer to modelvalues object in model
+SEXP getModelValuesPtrFromModel(SEXP rPtr);
+// Gets the ptr to an element of name Sname from
 // the ModelValues object pointed to by Sextptr
+SEXP getModelElementPtr(SEXP Sextptr, SEXP Sname);
 
-SEXP getMVBuildName(SEXP rPtr);  // gets character string to feed to .Call
+// gets character string to feed to .Call
 // that builds a new ModelValue of the same type as
 // is pointed to by rPtr
+SEXP getMVBuildName(SEXP rPtr);
 
 SEXP derefPtr(SEXP SmultiPtr);
 }
 
-NimArrType** cGetModelElementPtr(
-    SEXP Sextptr, SEXP Sname);  // Gets the ptr to an element of name Sname from
+// Gets the ptr to an element of name Sname from
 // the ModelValues object pointed to by Sextptr
+NimArrType** cGetModelElementPtr(SEXP Sextptr, SEXP Sname);
 
 #endif

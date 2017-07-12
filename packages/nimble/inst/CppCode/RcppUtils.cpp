@@ -331,6 +331,9 @@ SEXP populate_SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar) {
   return (R_NilValue);
 }
 
+// Note: this is identical to above and one should be removed (ie. just
+// SEXP_2_scalar)
+// But our generated code calls both
 SEXP populate_SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar) {
   void* vPtr = R_ExternalPtrAddr(rPtr);
   if (vPtr == NULL) {
@@ -353,9 +356,7 @@ SEXP populate_SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar) {
     PRINTF(
         "R class not identified. Currently numeric and integers supported\n");
   return (R_NilValue);
-}  // Note: this is identical to above and one should be removed (ie. just
-   // SEXP_2_scalar)
-// But our generated code calls both
+}
 
 SEXP populate_SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar) {
   void* vPtr = R_ExternalPtrAddr(rPtr);
@@ -580,8 +581,8 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort,
   }
   if (badVals) {
     for (int i = 1; i <= c_samps; i++)
-      ans[i - 1] = ((i - 1) % N) +
-                   1;  // generates a cyclic uniform sample (DT, May 2015)
+      // generates a cyclic uniform sample (DT, May 2015)
+      ans[i - 1] = ((i - 1) % N) + 1;
     return;
   }
   cdf[N] = sum + 1;

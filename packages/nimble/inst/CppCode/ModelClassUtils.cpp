@@ -27,10 +27,9 @@ NimArrType** cGetModelElementPtr(SEXP Sextptr, SEXP Sname) {
   }
   string name = STRSEXP_2_string(Sname, 0);
   ModelBase* m = static_cast<ModelBase*>(R_ExternalPtrAddr(Sextptr));
-  return (static_cast<NimArrType**>(
-      m->getObjectPtr(name)));  // I think this has wrong pointer-depth -Perry.
-                                // getObjectPtr always returns an address, so it
-                                // is a **NimArr<>
+  // I think this has wrong pointer-depth -Perry.
+  // getObjectPtr always returns an address, so it is a **NimArr<>
+  return (static_cast<NimArrType**>(m->getObjectPtr(name)));
 }
 
 SEXP getModelElementPtr(SEXP Sextptr, SEXP Sname) {
