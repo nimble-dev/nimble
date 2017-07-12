@@ -2137,7 +2137,7 @@ SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
 }
 
 SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP c, SEXP zero_mean, SEXP return_log) {
-  if(!isReal(x) || !isReal(adj) || !isReal(weights) || !isReal(num) || !isReal(tau) || !isReal(c) || !isReal(zero_mean) || !isLogical(return_log))
+  if(!Rf_isReal(x) || !Rf_isReal(adj) || !Rf_isReal(weights) || !Rf_isReal(num) || !Rf_isReal(tau) || !Rf_isReal(c) || !Rf_isReal(zero_mean) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dcar_normal): invalid input type for one of the arguments.");
   
   int N = LENGTH(x);
@@ -2153,7 +2153,7 @@ SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP c, S
   int give_log = (int) LOGICAL(return_log)[0];
   SEXP ans;
   
-  PROTECT(ans = allocVector(REALSXP, 1));
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));
   REAL(ans)[0] = dcar_normal(c_x, c_adj, c_weights, c_num, c_tau, c_c, c_zero_mean, N, L, give_log);
   
   UNPROTECT(1);
