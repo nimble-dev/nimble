@@ -35,10 +35,12 @@ test: FORCE
 # Some older C++ files are still styled manually.
 clang-format: FORCE
 	clang-format -style=file \
-	  nimble/inst/include/nimble/NimArrBase.h \
-	  nimble/inst/include/nimble/NimArr.h \
-	  nimble/inst/include/nimble/predefinedNimbleLists.h \
+	  nimble/inst/CppCode/*Utils.cpp \
 	  nimble/inst/CppCode/predefinedNimbleLists.cpp \
+	  nimble/inst/include/nimble/*Utils.h \
+	  nimble/inst/include/nimble/NimArr.h \
+	  nimble/inst/include/nimble/NimArrBase.h \
+	  nimble/inst/include/nimble/predefinedNimbleLists.h \
 	  -i
 
 # Keeps .Rproj.user/ and .Rhistory.
