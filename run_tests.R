@@ -1,20 +1,55 @@
 #!/usr/bin/env Rscript
-# This script runs most tests in nimble/inst/tests/ prioritized by duration.
-# To run only some of the tests, define the environment variable NIMBLE_TEST_BATCH=N
-# where N is a number in 1,...,5.
-# To see which tests will be run, pass the argument --dry-run, for example
-#   ./run_tests.R --dry-run                        # Run all tests.                        
-#   $ NIMBLE_TEST_BATCH=1 ./run_tests.R --dry-run  # Run one batch of tests.
 
-# Avoid running these blacklisted tests, since they take too long.
-blacklist <- c('test-Math2.R', 'test-Mcmc2.R', 'test-Mcmc3.R', 'test-Filtering2.R')
-# Avoid running these tests since they test experimental features.
-blacklist <- c(blacklist, 'test-ADfunctions.R', 'test-ADmodels.R')
-cat('SKIPPING', blacklist, sep = '\n  ')
+help_message <-
+"Run tests in nimble/inst/tests/ prioritized by duration.
+Usage:
+  ./run_tests.R       [OPTIONS]   # Run the default set of tests.
+  ./run_tests.R NAMES [OPTIONS]   # Run a custom set of tests, e.g. 'math'
 
-allTests <- list.files('packages/nimble/inst/tests')
-allTests <- allTests[grepl('test-.*\\.R', allTests)]
-allTests <- setdiff(allTests, blacklist)
+Options:
+  --parallel  Runs test in parallel.
+  --dry-run   Prints which tests would be run, then exits.
+
+Environment Variables:
+  NIMBLE_TEST_BATCH=N
+    This allows distributed testing across machines. To run only one batch, set
+    the NIMBLE_TEST_BATCH=N where N is a number in 1,...,5. For example
+
+      NIMBLE_TEST_BATCH=1 ./run_tests.R --dry-run   # Run one batch of tests.
+"
+
+# Parse command line options.
+argv <- commandArgs(trailingOnly = TRUE)
+optionDryRun <- ('--dry-run' %in% argv)
+optionParallel <- ('--parallel' %in% argv)
+if ('-h' %in% argv || '--help' %in% argv) {
+    cat(help_message)
+    quit()
+}
+
+# Determine which tests to run.
+if (length(grep('^-', argv, invert = TRUE))) {
+    # Run only tests specified on commmand line.
+    allTests <- paste0('test-', argv[!grepl('^-', argv)], '.R')
+} else {
+    # Run a default set of tests.
+    allTests <- list.files('packages/nimble/inst/tests')
+    allTests <- allTests[grepl('test-.*\\.R', allTests)]
+
+    # Avoid running these blacklisted tests, since they take too long.
+    blacklist <- c(
+        'test-Math2.R',
+        'test-Mcmc2.R',
+        'test-Mcmc3.R',
+        'test-Filtering2.R')
+    # Avoid running these tests since they test experimental features.
+    blacklist <- c(
+        blacklist,
+        'test-ADfunctions.R',
+        'test-ADmodels.R')
+    cat('SKIPPING', blacklist, sep = '\n  ')
+    allTests <- setdiff(allTests, blacklist)
+}
 
 # Sort tests by duration, running the shortest tests first.
 testTimes <- read.csv('test_times.csv', sep = '\t', header = TRUE, row.names = 'filename')
@@ -46,33 +81,64 @@ if (!is.na(testBatch)) {
         }
     }
 }
-
 cat('PLANNING TO TEST', allTests, sep = '\n  ')
 cat('PREDICTED DURATION =', sum(testTimes[allTests, 'time']), 'sec\n')
-if ('--dry-run' %in% commandArgs(trailingOnly = TRUE)) quit()
+if (optionDryRun) quit()
 
 # Run under /usr/bin/time -v if possible, to gather timing information.
-if (system2('/usr/bin/time', c('-v', 'echo', 'Running tests under /usr/bin/time -v'))) {
-    cat('Warning: Unable to run tests under /usr/bin/time -v\n')
-    runner <- 'Rscript'
+runner <- 'Rscript'
+if (optionParallel || system2('/usr/bin/time', c('-v', 'echo'), stderr=NULL)) {
+    cat('Not running tests under /usr/bin/time -v\n')
 } else {
+    cat('Running tests under /usr/bin/time -v\n')
     runner <- c('/usr/bin/time', '-v', 'Rscript')
 }
 
 # Run each test in a separate process to avoid dll garbage overload.
-for (test in allTests) {
-    cat('--------------------------------------------------------------------------------\n')
+runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
+    if (!logToFile) cat('--------------------------------------------------------------------------------\n')
     cat('TESTING', test, '\n')
-    runViaTestthat <- TRUE
     if (runViaTestthat) {
         name <- gsub('test-(.*)\\.R', '\\1', test)
-        script = paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "^', name, '$")')
+        script <- paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "^', name, '$")')
         command <- c(runner, '-e', shQuote(script))
     } else {
         command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
     }
-    if(system2(command[1], tail(command, -1))) {
-        stop(paste('FAILED', test))
+    env <- 'MAKEFLAGS=-j1'  # Work around broken job pipe when GNU make is run under mclapply.
+    if (logToFile) {
+        logDir <- '/tmp/log/nimble'
+        dir.create(logDir, recursive = TRUE, showWarnings = FALSE)
+        stderr.log <- file.path(logDir, paste0('test-', name, '.stderr'))
+        stdout.log <- file.path(logDir, paste0('test-', name, '.stdout'))
+        if (system2(command[1], tail(command, -1),
+                    stderr = stderr.log, stdout = stdout.log, env = env)) {
+            cat('\x1b[31mFAILED\x1b[0m', test, 'See', stderr.log, stdout.log, '\n')
+            return(TRUE)
+        }
+    } else {
+        if (system2(command[1], tail(command, -1), env = env)) {
+            stop(paste('\x1b[31mFAILED\x1b[0m', test))
+        }
     }
-    cat('PASSED', test, '\n')
+    cat('\x1b[32mPASSED\x1b[0m', test, '\n')
+    return(FALSE)
+}
+
+if (optionParallel) {
+    if (!require(parallel)) stop('Missing parallel package, required for --parallel')
+    cores <- detectCores()
+    cat('PARALLELIZING OVER', cores, 'CORES\n')
+    failed <- mclapply(allTests, runTest, logToFile = TRUE,
+                       mc.cores = cores, mc.preschedule = FALSE, mc.cleanup = TRUE)
+    numFailed <- sum(unlist(failed))
+    if (numFailed == 0) {
+        cat('PASSED all tests\n')
+    } else {
+        stop(paste('FAILED', numFailed, 'tests'))
+    }
+} else {
+    for (test in allTests) {
+        runTest(test)
+    }
 }

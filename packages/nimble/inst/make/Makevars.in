@@ -1,6 +1,8 @@
 # lib=FALSE
 # from=Makevars.in
 
+CXXPICFLAGS = @CXXPICFLAGS@
+
 ifndef CPPAD_INC
 CPPAD_INC=@CPPAD_INC@
 endif

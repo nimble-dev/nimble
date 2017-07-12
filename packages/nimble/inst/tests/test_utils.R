@@ -15,7 +15,7 @@ RUN_FAILING_TESTS <- (nchar(Sys.getenv('RUN_FAILING_TESTS')) != 0)
 ## paths with spaces ok.
 system.in.dir <- function(cmd, dir = '.') {
     curDir <- getwd()
-    on.exit(setwd(curDir))
+    on.exit(setwd(curDir), add = TRUE)
     setwd(dir)
     if(.Platform$OS.type == "windows")
         shell(shQuote(cmd))
@@ -28,7 +28,33 @@ temporarilyAssignInGlobalEnv <- function(value) {
     name <- deparse(substitute(value))
     assign(name, value, envir = .GlobalEnv)
     rmCommand <- substitute(remove(name, envir = .GlobalEnv))
-    do.call('on.exit', list(rmCommand), envir = parent.frame())
+    do.call('on.exit', list(rmCommand, add = TRUE), envir = parent.frame())
+}
+
+withTempProject <- function(code) {
+    code <- substitute(code)
+    project <- nimble:::nimbleProjectClass()
+    nimbleOptions(nimbleProjectForTesting = project)
+    on.exit({
+        ## messages are suppressed by test_that, so "assign('.check', 1, globalenv())" can be used as a way to verify this code was called
+        .project <- nimbleOptions('nimbleProjectForTesting')
+        nimbleOptions(nimbleProject = NULL) ## clear this before clearCompiled step, in case clearCompiled() itself fails
+        .project$clearCompiled()
+    }, add = TRUE)
+    eval(code)
+}
+
+expect_compiles <- function(..., info = NULL) {
+    oldSCBL <- nimbleOptions('stopCompilationBeforeLinking')
+    nimbleOptions(stopCompilationBeforeLinking = TRUE)
+    nimbleOptions(forceO1 = TRUE)
+    on.exit({
+        assign('.check', 1, globalenv())
+        nimbleOptions(stopCompilationBeforeLinking = oldSCBL)
+        nimbleOptions(forceO1 = FALSE)
+    }, add = TRUE)
+    ans <- try(compileNimble(...)) ## expecting a thrown error
+    expect_identical(as.character(ans), 'Error : safely stopping before linking\n', info = info)
 }
 
 gen_runFunCore <- function(input) {
@@ -266,16 +292,16 @@ test_coreRfeature_internal <- function(input, verbose = TRUE, dirName = NULL) { 
   invisible(NULL)
 }
 
-gen_runFun <- function(input) {
+gen_runFun <- function(param) {
   runFun <- function() {}
-  formalsList <- vector('list', length(input$inputDim))
-  formalsList <- lapply(input$inputDim, function(x) parse(text = paste0("double(", x, ")"))[[1]])
-  names(formalsList) <- paste0('arg', seq_along(input$inputDim))
+  formalsList <- vector('list', length(param$inputDim))
+  formalsList <- lapply(param$inputDim, function(x) parse(text = paste0("double(", x, ")"))[[1]])
+  names(formalsList) <- paste0('arg', seq_along(param$inputDim))
   formals(runFun) <- formalsList
   tmp <- quote({})
-  tmp[[2]] <- input$expr
+  tmp[[2]] <- param$expr
   tmp[[3]] <- quote(return(out))
-  tmp[[4]] <- parse(text = paste0("returnType(double(", input$outputDim, "))"))[[1]]
+  tmp[[4]] <- parse(text = paste0("returnType(double(", param$outputDim, "))"))[[1]]
   body(runFun) <- tmp
   return(runFun)
 }
@@ -288,54 +314,81 @@ make_input <- function(dim, size = 3, logicalArg) {
   stop("not set for dimension greater than 2")
 }
 
-test_math <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
-    test_that(input$name, {
-        test_math_internal(input, verbose, size, dirName)
+wrap_if_matches <- function(pattern, string, wrapper, expr) {
+    if (!is.null(pattern) && grepl(paste0('^', pattern, '$'), string)) {
+        wrapper(expr)
+    } else {
+        expr
+    }
+}
+
+## This is a parametrized test, where `param` is a list with names:
+##   param$name - A descriptive test name.
+##   param$expr - A quoted expression `quote(out <- some_function_of(arg1, arg2, ...))`.
+##   param$Rcode - Optional R version of expr.
+##   param$inputDim - A vector of dimensions of the input `arg`s.
+##   param$outputDim - The dimension of the output `out.
+##   param$xfail - Optional regular expression of tests that are expected to fail.
+test_math <- function(param, caseName, verbose = TRUE, size = 3, dirName = NULL) {
+    info <- paste0(caseName, ': ', param$name)
+    test_that(info, {
+        wrap_if_matches(param$xfail, paste0(info, ': runs'), expect_error, {
+            test_math_internal(param, info, verbose, size, dirName)
+        })
     })
 }
-test_math_internal <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
-  if(verbose) cat("### Testing", input$name, "###\n")
-  runFun <- gen_runFun(input)
+
+test_math_internal <- function(param, info, verbose = TRUE, size = 3, dirName = NULL) {
+  if(verbose) cat("### Testing", param$name, "###\n")
+  runFun <- gen_runFun(param)
   nfR <- nimbleFunction(  
              run = runFun)
   nfC <- compileNimble(nfR, dirName = dirName)
 
-  nArgs <- length(input$inputDim)
+  nArgs <- length(param$inputDim)
   logicalArgs <- rep(FALSE, nArgs)
-  if("logicalArgs" %in% names(input))
-    logicalArgs <- input$logicalArgs
+  if("logicalArgs" %in% names(param))
+    logicalArgs <- param$logicalArgs
 
-  arg1 <- make_input(input$inputDim[1], size = size, logicalArgs[1])
+  arg1 <- make_input(param$inputDim[1], size = size, logicalArgs[1])
   if(nArgs > 1)
-      arg2 <- make_input(input$inputDim[2], size = size, logicalArgs[2])
+      arg2 <- make_input(param$inputDim[2], size = size, logicalArgs[2])
   if(nArgs > 2)
-      arg3 <- make_input(input$inputDim[3], size = size, logicalArgs[3])
+      arg3 <- make_input(param$inputDim[3], size = size, logicalArgs[3])
   if(nArgs > 3)
       stop("test_math not set up for >3 args yet")
   
-  if("Rcode" %in% names(input)) {      
-      eval(input$Rcode)
+  if("Rcode" %in% names(param)) {      
+      eval(param$Rcode)
   } else {
-      eval(input$expr)
+      eval(param$expr)
   }
   if(nArgs == 3) {
-      out_nfR = nfR(arg1, arg2, arg3)
-      out_nfC = nfC(arg1, arg2, arg3)
+      out_nfR <- nfR(arg1, arg2, arg3)
+      out_nfC <- nfC(arg1, arg2, arg3)
   }  
   if(nArgs == 2) {
-      out_nfR = nfR(arg1, arg2)
-      out_nfC = nfC(arg1, arg2)
+      out_nfR <- nfR(arg1, arg2)
+      out_nfC <- nfC(arg1, arg2)
   }
   if(nArgs == 1) {
-    out_nfR = nfR(arg1)
-    out_nfC = nfC(arg1)
+    out_nfR <- nfR(arg1)
+    out_nfC <- nfC(arg1)
   }
   attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
   if(is.logical(out)) out <- as.numeric(out)
   if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
-  expect_equal(out, out_nfR, info = paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name))
-  expect_equal(out, out_nfC, info = paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name))
-  # unload DLL as R doesn't like to have too many loaded
+
+  infoR <- paste0(info, ": (R vs Nimble DSL)")
+  wrap_if_matches(param$xfail, info, expect_failure, {
+      expect_equal(out, out_nfR, info = infoR)
+  })
+  infoC <- paste0(info, ": (R vs Nimble Cpp)")
+  wrap_if_matches(param$xfail, info, expect_failure, {
+      expect_equal(out, out_nfC, info = infoC)
+  })
+
+  # Unload DLL as R doesn't like to have too many loaded.
   if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR)
   invisible(NULL)
 }
@@ -624,7 +677,8 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
                         numItsC_results = numItsC,
                         seed = 0, filterType = NULL, latentNodes = NULL, filterControl = NULL,
                         doubleCompare = FALSE, filterType2 = NULL,
-                        doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL, dirName = NULL) {
+                        doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL, dirName = NULL, 
+                        knownFailures = list()) {
   # There are two modes of testing:
   # 1) basic = TRUE: compares R and C Particle Filter likelihoods and sampled states
   # 2) if you pass 'results', it will compare Filter output to known latent state posterior summaries, top-level parameter posterior summaries,
@@ -698,6 +752,9 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
           RmvSample2 <- nfVar(Rfilter, 'mvEWSamples')
           R_samples <- as.matrix(RmvSample)
           R_samples2 <- as.matrix(RmvSample2)
+          if(filterType != 'LiuWest'){
+            R_ESS <- Rfilter$returnESS()
+          }
         }
       } else R_samples <- NULL
     }
@@ -716,9 +773,16 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         C_samples2 <- as.matrix(CmvSample2)
         C_subSamples <- C_samples[, attributes(R_samples)$dimnames[[2]], drop = FALSE]
         C_subSamples2 <- C_samples2[, attributes(R_samples2)$dimnames[[2]], drop = FALSE]
+        if(filterType != 'LiuWest'){
+          C_ESS <- Rfilter$returnESS()
+          for(i in seq_along(length(C_ESS))){
+            testIfNotKnownFailure(knownFailures[['C ESS >= 0']],
+                                  expect_gte(C_ESS[i], 0))
+            testIfNotKnownFailure(knownFailures[['C ESS <= numIts']],
+                                  expect_lte(C_ESS[i], numItsR))
+          }
+        }
       }
-
-
       ## for some reason columns in different order in CmvSample...
     }
     if(doR && doCpp && !is.null(R_samples)) {
@@ -738,6 +802,11 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
             expect_equal(RfilterOut, CfilterOut, info = paste("R and C log likelihood estimates are not equal"))
           })
         )
+        if(filterType != 'LiuWest'){
+          testIfNotKnownFailure(knownFailures[['R C ESS match']],
+                                expect_equal(R_ESS, C_ESS, info = paste("R and C ESS are not equal")))
+          
+        }
       }
     }
 

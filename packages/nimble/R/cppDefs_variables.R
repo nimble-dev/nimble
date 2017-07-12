@@ -19,16 +19,16 @@ cppVar <- setRefClass('cppVar',
                 	          	  name <<- character()
 					    		callSuper(...)
                              	},
-                                 generate = function(printName = .self$name, ...) {
+                                 generate = function(printName = Rname2CppName(.self$name), ...) {
                                      ptrs <- if(length(ptr) > 0) paste(rep('*', ptr), collapse = '')
                                      if(length(printName) > 0) printName <- paste0(printName, collapse = ', ')
                                      cleanWhite(paste(baseType, ptrs, if(identical(ref, TRUE)) '&' else NULL, printName))
                                  },
                                  generateUse = function(...) {
-                                     name
+                                     Rname2CppName(name)
                                  },
                                  generateUseDeref = function(...) { 
-                                     paste0('(', paste(rep('*', max(0, ptr)), collapse = ''), name, ')') ## used to be ptr-asArg
+                                     paste0('(', paste(rep('*', max(0, ptr)), collapse = ''), Rname2CppName(name), ')') ## used to be ptr-asArg
                                  }
                                  )
                             )
@@ -72,7 +72,7 @@ cppVarFull <- setRefClass('cppVarFull',
                                   else callSuper(...)
                               }
                           },
-                          generate = function(printName = .self$name, ...) {
+                          generate = function(printName = Rname2CppName(.self$name), ...) {
                               if(silent) return(character())
                               bCP <- if(length(baseConst) > 0) { 
                                   if(length(baseConstPtr) > 0) paste(paste(rep('*', baseConstPtr), collapse = ''), 'const')

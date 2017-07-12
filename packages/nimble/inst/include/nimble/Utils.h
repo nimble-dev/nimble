@@ -5,6 +5,7 @@
 #include "R.h"
 #include<Rinternals.h>
 #include<Rmath.h>
+#include<limits>
 #include<string>
 #include<time.h>
 using std::string;
@@ -158,4 +159,9 @@ int nimStep(double x);
 double cube(double x);
 double inprod(double v1, double v2);
 
+inline double nimble_NaN() {
+  return std::numeric_limits<double>::has_quiet_NaN
+    ? std::numeric_limits<double>::quiet_NaN()
+    : (0./0.);
+}
 #endif

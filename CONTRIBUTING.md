@@ -1,11 +1,24 @@
 # Guidelines for Contributing
 
+Nimble is managed across multiple repos:
+[nimble](https://github.com/nimble-dev/nimble) for code and the user manual,
+[nimble-docs](https://github.com/nimble-dev/nimble-doc)
+for developer documentation,
+and miscellaneous other repos under the [nimble-dev](https://github.com/nimble-dev) org.
+We welcome issues and pull requests to all of these repos.
+
 ## Opening an issue
 
-To file a bug or request a feature,
+To file a bug or request a feature or documentation,
 [open an issue on Github](https://github.com/nimble-dev/nimble/issues/new).
 When possible, include a fully reproducible example demonstrating the error or unwanted behaviour.
 Please note your operating system, R version, and NIMBLE version (either CRAN X.X-X or git commit).
+
+```sh
+uname -a
+R --version
+Rscript -e "packageVersion('nimble')"
+```
 
 ## Submitting code via pull requests
 
@@ -20,7 +33,50 @@ To submit code:
     Prefer **Squash and Merge** over **Merge** unless your git history is
     exceptionally clean and each commit passes CI tests.
 
+## Documentation
+
+To keep documentation in sync with code, try to update the
+[User Manual](UserManual/)
+in the same pull request as the code that implements a change.
+This eases the job of reviewers, and makes it easier for users to use features that are experimental.
+
+To rebuild function help info after updating function documentation, run
+
+```sh
+cd packages
+make man
+```
+
+To rebuild the [NimbleUserManual.pdf](UserManual/NimbleUserManual.pdf)
+after adding sections, run
+
+```sh
+cd UserManual
+make
+```
+
+Take care to review the manual before submitting, since knitr silences
+execution errors when building the manual.
+
+### Experimental features
+
+To encourage sharing of code, we try to merge our branches early and often.
+This means that some experimental features will be in `devel` and `master`
+branches. If you are writing an experimental feature, please document the status
+by writing "EXPERIMENTAL" in the feature's documentation.
+
+Often we hide experimental features behind *feature toggles*.
+If your feature toggle is temporary or only partially tested, please name it
+`experimentalMyFeature` to indicate to users that the feature is still
+experimental.
+
 ## Testing
+
+We test on travis, but you can get lower latency by running tests locally in parallel.
+```sh
+cd $REPO/packages
+make test           # This runs tests in parallel.
+```
 
 ### Test all features and bugfixes
 
@@ -202,6 +258,20 @@ If in doubt, seek guidance from
 [Google's R Style Guide](https://google.github.io/styleguide/Rguide.xml) or
 [Hadley Wickham's style guide](http://adv-r.had.co.nz/Style.html).
 
+For C++, install and use [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html).
+```sh
+sudo apt-get install clang-format  # Linux.
+brew install clang-format          # OS X.
+```
+Then after editing, let the robots tidy up
+```sh
+clang-format -i my_file.h my_file.cpp
+```
+or in the `$REPO/packages` directory, add your files to the `clang-format` target and simply
+```sh
+make clang-format
+```
+
 ### Write clear comments
 
 Write clear concise comments aimed at other developers.
@@ -211,8 +281,33 @@ then write comment describing what your helper is and how to use it.
 Write comments grammatically:
 sentences should start with a capital letter and end with a period.
 
-### Avoid commented-out code
+### Avoid submitting commented-out code
 
 Avoid submitting commented-out code into the repo.
 If you really want to remember the code, then remove it from the repo with a descriptive commit message.
 If you really want the code to exist, then gate it by an `if()else` with an argument or global option.
+
+### Naming conventions
+
+Try to be consistent.  We try to use `camelCase`.
+```r
+## Write grammatically correct properly punctuated comments.
+## TODO(perrydv) This comment only makes sense for perrydv; ask him for details.
+
+myVariable <- c(1, 2, 3)                               ## Variable names are lower case.
+myFunction <- function(...) { return(list(...)) }      ## Function names are lower case.
+MyRefClass <- setRefClass(Class = 'MyRefClass', ...)   ## Class names are Capitalized.
+```
+```c++
+// Write grammatically correct properly punctuated comments.
+// TODO(fritzo) This comment only makes sense to fritzo; ask him for details.
+
+const double myVariable[] = {1, 2, 3};                 // Variable names are lower case.
+void myFunction(int arg) { return arg; }               // Function names are lowere case.
+class MyClass {                                        // Class names are upper case.
+ public:
+  void myMethod();
+ private:                                              // Try to keep member variables private.
+  myMemberVariable_;                                   // Member variables end with a trailing underscore _.
+};
+```

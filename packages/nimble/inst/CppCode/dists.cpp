@@ -858,6 +858,8 @@ SEXP C_rcat(SEXP n, SEXP prob) {
 
 }
   
+
+
 double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_param, int give_log, int overwrite_inputs) {
   char uplo('U');
   char transPrec('N');
@@ -2133,3 +2135,61 @@ SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
   UNPROTECT(1);
   return ans;
 }
+
+SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP c, SEXP zero_mean, SEXP return_log) {
+  if(!isReal(x) || !isReal(adj) || !isReal(weights) || !isReal(num) || !isReal(tau) || !isReal(c) || !isReal(zero_mean) || !isLogical(return_log))
+    RBREAK("Error (C_dcar_normal): invalid input type for one of the arguments.");
+  
+  int N = LENGTH(x);
+  int L = LENGTH(adj);
+  
+  double* c_x = REAL(x);
+  double* c_adj = REAL(adj);
+  double* c_weights = REAL(weights);
+  double* c_num = REAL(num);
+  double c_tau = REAL(tau)[0];
+  int c_c = (int) REAL(c)[0];
+  int c_zero_mean = (int) REAL(zero_mean)[0];
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+  
+  PROTECT(ans = allocVector(REALSXP, 1));
+  REAL(ans)[0] = dcar_normal(c_x, c_adj, c_weights, c_num, c_tau, c_c, c_zero_mean, N, L, give_log);
+  
+  UNPROTECT(1);
+  return ans;
+}
+
+
+double dcar_normal(double* x, double* adj, double* weights, double* num, double tau, int c, int zero_mean, int N, int L, int give_log) {
+  // This method implements the following density calculation:
+  // p(x1, ..., xn, tau) = (tau/2/pi)^((N-c)/2) * exp(-tau/2 * sum_{i != j) w_ij (xi-xj)^2 ),
+  // where tau is precision, c = (number of islands), and N is the length of x.
+  // This is the density on an N-c dimensional space, and improper on the remaining c dimensions.
+  if(tau < 0) {
+    return R_NaN;
+  }
+  //PRINTF("c is equal to %d\n", c);
+  double lp = 0;
+  int count = 0;
+  double xi, xj;
+  for(int i = 0; i < N; i++) {
+    xi = x[i];
+    for(int j = 0; j < num[i]; j++) {
+      xj = x[ (int) adj[count] - 1 ];
+      lp += weights[count] * pow(xi-xj,2);
+      count++;
+    }
+  }
+  if(count != L) {
+    ML_ERR_return_NAN;
+  }
+  lp *= 1/2.0;     // accounts for double-summing over all (xi,xj) pairs
+  lp *= (-1/2.0) * tau;
+  lp += (N-c)/2.0 * (log(tau) - M_LN_2PI);
+  if(give_log) {
+    return(lp);
+  }
+  return(exp(lp));
+}
+
