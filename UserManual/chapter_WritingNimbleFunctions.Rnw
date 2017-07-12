@@ -691,14 +691,43 @@ nimbleFunction from R.
 In contrast, directly debugging a compiled nimbleFunction is
 difficult, although those familiar with running R through a debugger
 and accessing the underlying C code may be able to operate similarly
-with NIMBLE code. 
+with NIMBLE code.
+We often resort to using \cd{print} statements for debugging compiled code.
+Expert users fluent in C++ may also try setting \cd{nimbleOptions(pauseAfterWritingFiles = TRUE)} and adding debugging code into the generated C++ files.
 
+\section{Timing nimbleFunctions with \cd{run.time}}
 
-\section{Some options for reducing memory usage}
+If your nimbleFunctions are correct but slow to run, you can use benchmarking tools to look for bottlenecks and to compare different implementations.
+If your functions are very long-running (say 1ms or more), then standard R benchmarking tools may suffice, e.g. the \cd{microbenchmark} package
 
+<<microbenchmark, eval=FALSE>>=
+library(microbenchmark)
+microbenchmark(myCompiledFunVersion1(1.234),
+               myCompiledFunVersion2(1.234))  # Beware R <--> C++ overhead!
+@
 
-NIMBLE can make a lot of objects in its processing, and some of them
-use R features such as reference classes that are not light in memory
+If your nimbleFunctions are very fast, say under 1ms, then \cd{microbenchmark} will be inacurate due to R-to-C++ conversion overhead (that won't happen in your actual functions).
+To get timing information in C++, NIMBLE provides a \cd{run.time} function that avoids the R-to-C++ overhead.
+
+<<run.time, eval=FALSE>>=
+myMicrobenchmark <- compileNimble(nimbleFunction(
+    run = function(iters = integer(0)){
+        time1 <- run.time({
+            for (t in 1:iters) myCompiledFunVersion1(1.234)
+        })
+        time2 <- run.time({
+            for (t in 1:iters) myCompiledFunVersion2(1.234)
+        })
+        return(c(time1, time2))
+        returnType(double(1))
+    }))
+print(myMicroBenchmark(100000))
+@
+
+\section{Reducing memory usage}
+
+NIMBLE can create a lot of objects in its processing, and some of them
+use R features such as reference classes that are heavy in memory
 usage.  We have noticed that building large models can use lots of
 memory.  To help alleviate this, we provide two options, which can be
 controlled via \cd{nimbleOptions}.
