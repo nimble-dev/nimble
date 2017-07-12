@@ -8,6 +8,7 @@
 #endif
 
 #include <R.h>
+#include <Eigen/Core>
 #include <cstring>
 #include <iostream>
 #include <string>
@@ -27,6 +28,14 @@
 /* #endif */
 
 using std::vector;
+
+// These wrappers help us use Eigen::internal components, while minimizing the
+// cost of updating if those components change in a future Eigen release.
+template <class T>
+inline T *nimble_malloc(size_t size) {
+  return static_cast<T *>(Eigen::internal::aligned_malloc(size * sizeof(T)));
+}
+inline void nimble_free(void *ptr) { Eigen::internal::aligned_free(ptr); }
 
 enum nimType { INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1 };
 
@@ -87,7 +96,7 @@ class NimArrBase : public NimArrType {
       if ((!copyValues) & fillZeros) fillAllValues(static_cast<T>(0));
       return;
     }
-    T *new_v = new T[l];
+    T *new_v = nimble_malloc<T>(l);
     if (own_v) {
       if (copyValues) {
         if (l < NAlength) {
@@ -101,7 +110,7 @@ class NimArrBase : public NimArrType {
       } else {
         if (fillZeros) std::fill(new_v, new_v + l, static_cast<T>(0));
       }
-      delete[] v;
+      nimble_free(v);
     }
     NAlength = l;
     v = new_v;
@@ -128,7 +137,7 @@ class NimArrBase : public NimArrType {
     }
   }
   virtual ~NimArrBase() {
-    if (own_v) delete[] v;
+    if (own_v) nimble_free(v);
   }
   // Do we ever use this case?
   NimArrBase(const NimArrBase<T> &other)
