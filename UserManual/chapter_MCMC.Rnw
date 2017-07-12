@@ -5,6 +5,7 @@ require(nimble)
 @ 
 
 \chapter{MCMC}
+\label{cha:mcmc}
 
 <<MCMCchunk0, echo = FALSE>>=
 ## source the code
