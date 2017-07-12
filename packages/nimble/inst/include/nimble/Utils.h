@@ -1,7 +1,6 @@
 #ifndef __UTILS
 #define __UTILS
 
-//#include <vector>
 #include "R.h"
 #include<Rinternals.h>
 #include<Rmath.h>
@@ -9,8 +8,6 @@
 #include<string>
 #include<time.h>
 using std::string;
-
-//using namespace std;
 
 // A utility function that will return floor(x) unless x is within numerical imprecision of an integer, in which case it will return round(x)
 int floorOrEquivalent(double x);
@@ -37,7 +34,7 @@ class nimbleTimerClass_ {
 #define PRINTF Rprintf
 #define NIMERROR error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
-/* #define NIM_ASSERT(cond, ...) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " __VA_ARGS__); }} */ /* future */
+
 #define NIM_ASSERT1(cond, msg) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg); }}
 #define NIM_ASSERT2(cond, msg, msgArg1) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1); }}
 #define NIM_ASSERT3(cond, msg, msgArg1, msgArg2) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1, msgArg2); }}
@@ -48,7 +45,7 @@ class nimbleTimerClass_ {
                 #my_array " has wrong size: expected %d, actual %d", n, \
                 my_array.dimSize(0));
 
-// code copied from nmath.h - useful utilities 
+// Code copied from nmath.h - useful utilities.
 # define MATHLIB_ERROR(fmt,x)		error(fmt,x);
 # define MATHLIB_WARNING(fmt,x)		warning(fmt,x)
 # define MATHLIB_WARNING2(fmt,x,x2)	warning(fmt,x,x2)
@@ -103,7 +100,7 @@ class nimbleTimerClass_ {
 }
 
 
-// code copied from dpq.h - useful utilities for return values of dist functions
+// Code copied from dpq.h - useful utilities for return values of dist functions.
                                                         /* "DEFAULT" */
                                                         /* --------- */
 #define R_D__0  (log_p ? ML_NEGINF : 0.)                /* 0 */
@@ -126,12 +123,8 @@ class nimbleTimerClass_ {
    }
 
 #define EIGEN_CHOL(x)       (x).selfadjointView<Eigen::Upper>().llt().matrixU()
-//#define EIGEN_SOLVE(x,y)    (x).lu().solve(y)
-//#define EIGEN_FS(x,y)       (x).triangularView<Eigen::Lower>().solve(y)
-//#define EIGEN_BS(x,y)       (x).triangularView<Eigen::Upper>().solve(y)
 
 bool decide(double lMHr);
-//void allocate(vector< vector <double> > *vv, int sampleSize, int variableSize);
 
 void nimStop(string msg);
 void nimStop();
@@ -143,19 +136,16 @@ double ilogit(double x);
 double icloglog(double x);
 double iprobit(double x);
 double probit(double x);
-//double abs(double x);
 double cloglog(double x);
 int nimEquals(double x1, double x2);
 double nimbleIfElse(bool condition, double x1, double x2);
 double lfactorial(double x);
 double factorial(double x);
-//double loggam(double x);
 double logit(double x);
 double nimRound(double x);
 double pairmax(double x1, double x2);
 double pairmin(double x1, double x2);
-//double phi(double x);
-int nimStep(double x); 
+int nimStep(double x);
 double cube(double x);
 double inprod(double v1, double v2);
 

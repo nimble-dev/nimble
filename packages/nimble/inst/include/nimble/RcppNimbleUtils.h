@@ -4,9 +4,6 @@
 #include "NimArr.h"
 #include "RcppUtils.h"
 
-//#include "RcppUtils.h"
-
-
 // all of this is in RcppUtils.h
 /* #include "R.h" */
 /* #include "Utils.h" */
@@ -31,19 +28,12 @@ double prod(double x);
 
 SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index);
 void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP Svalue);
- 
-//bool checkString(SEXP Ss, int len);
-//bool checkNumeric(SEXP Sval, int len);
 
 
 extern "C" {
   SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
   SEXP setSmartPtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
   SEXP setSmartPtrFromDoublePtr(SEXP SdoublePtr, SEXP SsinglePtr);
-
-  //  SEXP setVec(SEXP Sextptr, SEXP Svalue);
-  //  SEXP getVec(SEXP Sextptr);
-  //  SEXP getVec_Integer(SEXP Sextptr);
   
   SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);
   SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded);
@@ -74,11 +64,6 @@ extern "C" {
   SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize); //	Copies values from rValues to NimArr. Same behavior
 															  // 	with NumRefers as above. Also, type checking is done
 															  // 	by R.internals functions INTEGER and REAL
-															  
-  //  SEXP Nim_2_Nim(SEXP rPtrFrom, SEXP numRefFrom, SEXP rPtrTo, SEXP numRefTo);	
-												//  Copies from one NimArr to another. Type checks
-												//	For now, both NimArr's must be either double or int. We can add other
-												//  types or allow conversion by extending Nim_2_Nim and the cNim_2_Nim options 
 
   SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
@@ -149,7 +134,6 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
   NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, double> called for SEXP that is not a numeric: expected %d, actual %d\n",
     ndim, ndim, inputDims.size());
-  // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
   if(isReal(Sn)) {
@@ -159,7 +143,7 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
       "could not handle input of type %s to SEXP_2_NimArr<%d, double>\n",
       type2str(TYPEOF(Sn)), ndim);
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    std::copy(iSn, iSn + nn, ans.getPtr()); //v);
+    std::copy(iSn, iSn + nn, ans.getPtr());
   }
 }
 
@@ -173,7 +157,6 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
   NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, int> called for SEXP that is not a numeric: expected %d, actual %d\n",
     ndim, ndim, inputDims.size());
-  // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
   if(isReal(Sn)) {
@@ -183,7 +166,7 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
       "could not handle input type %s to SEXP_2_NimArr<%d, int>\n",
       type2str(TYPEOF(Sn)), ndim);
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    std::copy(iSn, iSn + nn, ans.getPtr()); //v);
+    std::copy(iSn, iSn + nn, ans.getPtr());
   }
 }
 
@@ -196,7 +179,6 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
   NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, bool> called for SEXP that is not a numeric: expected %d, actual %d\n",
     ndim, ndim, inputDims.size());
-  // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
   if(isReal(Sn)) {
@@ -206,7 +188,7 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
       "could not handle input type %s to SEXP_2_NimArr<%d, bool>\n",
       type2str(TYPEOF(Sn)), ndim);
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    std::copy(iSn, iSn + nn, ans.getPtr()); //v);
+    std::copy(iSn, iSn + nn, ans.getPtr());
   }
 }
 
@@ -281,8 +263,6 @@ void cNimArr_2_NimArr(NimArrBase<T> &nimFrom, NimArrBase<T> &nimTo);
 template <class T1, class T2>
 void cNimArr_2_NimArr_Index(NimArrBase<T1> &nimFrom, int fromBegin, NimArrBase<T2> &nimTo, int toBegin, int length);
 
-//void trashNamedObjectsPtr(SEXP rPtr);
-//void trashElementPtr(SEXP rPtr);
 void sampleFinalizer(SEXP ptr);
 template<int nDim, class T>
 void VecNimArrFinalizer(SEXP ptr);
@@ -294,16 +274,6 @@ int length(vector<T> vec)
 	{
 	return(vec.size());
 	}
-	
-/* class orderedPair	//simple class which is used to be sorted by value, but remember what the original order was. used in rawSample */
-/* 	{ */
-/* 	public: */
-/* 	double value; */
-/* 	int rank; */
-/* 	}; */
-
-/* bool compareOrderedPair(orderedPair a, orderedPair b);	 //function called for sort  */
-
 
 void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output);
 void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output, bool& silent);
