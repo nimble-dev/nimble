@@ -2,26 +2,70 @@
 #'
 #' Given C header information, a function that takes scalars or pointers can be called from a compiled nimbleFunction.  If non-scalar return values are needed, an argument can be selected to behave as the return value in nimble.
 #'
-#' @param fun
-#' @param returnType
-#' @param Cfun
-#' @param headerfile
-#' @param oFile
+#' @param prototype Argument type information.  This can be provided as an R function using \code{nimbleFunction} type declarations or as a list of \code{nimbleType} objects.  See examples below.
+#' @param returnType (Optional) Return object type information.  This can be provided similarly to \code{prototype} as either a \code{nimbleFunction} type declaration or as a \code{nimbleType} object.  In the latter case, the name will be ignored.  If omitted, the return type will be \code{void}.
+#' @param Cfun Name of the external function (character).
+#' @param headerfile Name (possibly including file path) of the header file where Cfun is declared.
+#' @param compiledfile Name (possibly including path) of the .o file where Cfun has been compiled.
 #'
 #' @author Perry de Valpine
 #' @export
-#' @details
+#' @details This is a beta feature with limited functionality.  The only argument types allowed in Cfun are \code{double}, \code{int}, and \code{bool}, corresponding to \code{nimbleFunction} types \code{double}, \code{integer}, and \code{logical}, respectively.
 #'
-#' @return
+#' If the dimensionality is greater than zero, the arguments in \code{Cfun} should be pointers.  This means it will typically be necessary to pass additional integer arguments telling \code{Cfun} the size(s) of non-scalar arguments.
 #'
-#' @seealso
+#' The return argument can only be a scalar or void.  Since non-scalar arguments are passed by pointer, you can use an argument to return results from \code{Cfun}.  If you wish to have a \code{nimbleFunction} that uses one argument as a return object, you can wrap the result of \code{nimbleExternalCall} in another \code{nimbleFunction} that allocates the return object.
+#'
+#' @return A \code{nimbleFunction} that takes the indicated input arguments, calls \code{Cfun}, and returns the result.
 #'
 #' @examples
 #' ## not run
-nimbleExternalCall <- function(fun, returnType = void(), Cfun, headerFile, oFile) {
+#' sink('add1.h')
+#' cat('
+#' extern "C" {
+#' void my_internal_function(double *p, double*ans, int n);
+#' }
+#' ')
+#' sink()
+
+#' sink('add1.cpp') 
+#' cat('
+#' #include <cstdio>
+#' #include "add1.h"
+#' void my_internal_function(double *p, double *ans, int n) {
+#'   printf("In my_internal_function\\n"); /* cat reduces the double slash to single slash */ 
+#'   for(int i = 0; i < n; i++) 
+#'     ans[i] = p[i] + 1.0;
+#' }
+#' ')
+#' sink()
+#' system('g++ add1.cpp -c -o add1.o')
+#' Radd1 <- nimbleExternalCall(function(x = double(1), ans = double(1), n = integer()){}, Cfun = #' 'my_internal_function', headerFile = 'add1.h', oFile = 'add1.o')
+#' ## If you need to use a function with non-scalar return object in model code, you can wrap it #' in another nimbleFunction like this:
+#' model_add1 <- nimbleFunction(
+#'     run = function(x = double(1)) {
+#'         ans <- numeric(length(x))
+#'         Radd1(x, ans, length(x))
+#'         return(ans)
+#'         returnType(double(1))
+#'     })
+#' demoCode <- nimbleCode({
+#'     for(i in 1:4) {x[i] ~ dnorm(0,1)} ## just to get a vector
+#'     y[1:4] <- model_add1(x[1:4])
+#' })
+#' demoModel <- nimbleModel(demoCode, inits = list(x = rnorm(4)))
+nimbleExternalCall <- function(prototype, returnType = void(), Cfun, headerFile, oFile) {
     ## construct a nimbleFunction to wrap a call to Cfun
     returnType <- substitute(returnType)
-    args <- formals(fun)
+    if(is.list(prototype)) {
+        args <- nimbleTypeList2argTypeList(prototype)
+        fun <- function(){}
+        formals(fun) <- args
+    } else {
+        if(!is.function(prototype)) stop("Invalid prototype argument")
+        fun <- prototype
+        args <- formals(fun)
+    }
     argsSymTab <- nimble:::argTypeList2symbolTable(args)
     argNames <- names(args)
     replacedArgNames <- argNames
@@ -45,6 +89,8 @@ nimbleExternalCall <- function(fun, returnType = void(), Cfun, headerFile, oFile
             unconvertLines[[ length(unconvertLines) + 1]] <- newUnconvertLine
         }
     }
+    if(inherits(returnType, 'nimbleType'))
+        returnType <- nimbleType2argType(returnType)[[1]]
     returnSymbol <- nimble:::argType2symbol(returnType)
     ## Make the call to Cfun, without yet a return value
     externalCallLine <- as.call(c(list(as.name(Cfun)), lapply(replacedArgNames, as.name)))
