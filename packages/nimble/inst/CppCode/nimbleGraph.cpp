@@ -30,7 +30,7 @@ void graphNode::addParent(graphNode *fromNode) {
 
 void SEXP_2_nodeType(SEXP Stypes, vector<NODETYPE> &ans) {
   //  enum NODETYPE {UNKNOWNTYPE, STOCH, DETERM, RHSONLY};
-  if(!isString(Stypes)) {
+  if(!Rf_isString(Stypes)) {
     PRINTF("Error:  called for SEXP that is not a string!\n");
     return;
   }
@@ -91,7 +91,7 @@ SEXP C_anyStochDependencies(SEXP SgraphExtPtr) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> ans(graphPtr->anyStochDependencies());
   SEXP Sans;
-  PROTECT(Sans = allocVector(LGLSXP, ans.size()));
+  PROTECT(Sans = Rf_allocVector(LGLSXP, ans.size()));
   int *SansPtr = INTEGER(Sans);
   for(unsigned int i = 0; i < ans.size(); i++) {
     if(ans[i] == 0) PRINTF("Element %i was not processed\n", i);
@@ -121,7 +121,7 @@ SEXP C_anyStochParents(SEXP SgraphExtPtr) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> ans(graphPtr->anyStochParents());
   SEXP Sans;
-  PROTECT(Sans = allocVector(LGLSXP, ans.size()));
+  PROTECT(Sans = Rf_allocVector(LGLSXP, ans.size()));
   int *SansPtr = INTEGER(Sans);
   for(unsigned int i = 0; i < ans.size(); i++) {
     if(ans[i] == 0) PRINTF("Element %i was not processed\n", i);
