@@ -38,7 +38,7 @@ void RNimble_PtrFinalizer(SEXP obj) {
 }
 
 string local_STRSEXP_2_string(SEXP Ss, int i) {
-  if(!isString(Ss)) {
+  if(!Rf_isString(Ss)) {
     PRINTF("Error: STRSEXP_2_string called for SEXP that is not a string!\n"); 
     return(string(""));
   }
@@ -79,7 +79,7 @@ void RegisterNimblePointer(SEXP ptr, SEXP Dll, R_CFinalizer_t finalizer, SEXP Sl
 
 SEXP CountDllObjects() {
   SEXP Sans;
-  PROTECT(Sans = allocVector(INTSXP, 1));
+  PROTECT(Sans = Rf_allocVector(INTSXP, 1));
   INTEGER(Sans)[0] = RnimblePtrs.size();
   UNPROTECT(1);
   return(Sans);
@@ -94,9 +94,9 @@ SEXP RNimble_Ptr_ManualFinalizer(SEXP obj) {
 SEXP local_vectorString_2_STRSEXP(const std::vector<string> &v) {
   SEXP Sans;
   int nn = v.size();
-  PROTECT(Sans = allocVector(STRSXP, nn));
+  PROTECT(Sans = Rf_allocVector(STRSXP, nn));
   for(int i = 0; i < nn; i++) {
-    SET_STRING_ELT(Sans, i, mkChar(v[i].c_str()));
+    SET_STRING_ELT(Sans, i, Rf_mkChar(v[i].c_str()));
   }
   UNPROTECT(1);
   return(Sans);
@@ -131,7 +131,7 @@ SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll, SEXP Sforce) {
       PRINTF("Warning: %i objects were found from a DLL\n", objectsFound);
   }
   //  SEXP Sans;
-  //  PROTECT(Sans = allocVector(INTSXP, 1));
+  //  PROTECT(Sans = Rf_allocVector(INTSXP, 1));
   //  INTEGER(Sans)[0] = objectsFound;
   //  UNPROTECT(1);
   //  return(Sans);

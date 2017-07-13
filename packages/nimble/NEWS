@@ -18,6 +18,8 @@ USER LEVEL CHANGES
 
 -- pi is now handled as a constant or variable in a nimbleFunction (but cannot be used as a constant in model code).
 
+-- returnESS() method added to the bootstrap filter and auxiliary particle filter.
+
 DEVELOPER LEVEL CHANGES
 
 -- MCMC sampler control list default values are now internal to sampling algorithms, rather than a system-level option.
