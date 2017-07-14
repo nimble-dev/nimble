@@ -23,22 +23,26 @@ test_that('Tensorflow implementation of axpy works', {
 if (0)  ## Known failure.
 test_that('Tensorflow example', {
     temporarilyEnableTensorflow()
-
     nimbleOptions(debugCppLineByLine = TRUE)
+    nimbleOptions(showCompilerOutput = TRUE)
     nimbleOptions(pauseAfterWritingFiles = FALSE)
+    nimbleOptions(experimentalNewSizeProcessing = TRUE)
+
     nf <- nimbleFunction(
         name = 'example',
-        run = function (arg1 = double(1)) 
+        run = function(arg1 = double(2))
         {
-            out <- cosh(arg1)
+            ## FIXME this fails due to an ininitialized size.
+            x <- arg1 %*% arg1
+            out <- x %*% x
             return(out)
-            returnType(double(1))
+            returnType(double(2))
         } 
     )
     cnf <- compileNimble(nf, dirName = file.path(Sys.getenv('HOME'), 'tmp'), projectName = 'tf',
                          control = list(debugCpp = TRUE))
     x <- matrix(1:4, 2, 2)
-    expect_equal(nf(x), cnf(x))  ## FIXME cnf(x) is flattened to a vector.
+    expect_equal(nf(x), cnf(x))
 })
 
 test_that('Tensorflow backend works for basic math', {
