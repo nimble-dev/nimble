@@ -29,13 +29,32 @@
 
 using std::vector;
 
+// This allows us to experiment with different allocators. In theory aligned
+// memory should improve Eigen performance, but microbenchmarks have failed to
+// substantiate this.
+#if !defined(NIMBLE_ALIGNED_MALLOC)
+#define NIMBLE_ALIGNED_MALLOC 0
+#endif  // !defined(NIMBLE_ALIGNED_MALLOC)
+
 // These wrappers help us use Eigen::internal components, while minimizing the
 // cost of updating if those components change in a future Eigen release.
 template <class T>
 inline T *nimble_malloc(size_t size) {
+#if NIMBLE_ALIGNED_MALLOC
   return static_cast<T *>(Eigen::internal::aligned_malloc(size * sizeof(T)));
+#else   // NIMBLE_ALIGNED_MALLOC
+  return new T[size];
+#endif  // NIMBLE_ALIGNED_MALLOC
 }
-inline void nimble_free(void *ptr) { Eigen::internal::aligned_free(ptr); }
+
+template <class T>
+inline void nimble_free(T *ptr) {
+#if NIMBLE_ALIGNED_MALLOC
+  Eigen::internal::aligned_free(ptr);
+#else   // NIMBLE_ALIGNED_MALLOC
+  delete[] ptr;
+#endif  // NIMBLE_ALIGNED_MALLOC
+}
 
 enum nimType { INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1 };
 
