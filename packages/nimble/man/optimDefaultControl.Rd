@@ -2,7 +2,7 @@
 % Please edit documentation in R/nimbleFunction_Rexecution.R
 \name{optimDefaultControl}
 \alias{optimDefaultControl}
-\title{EXPERIMENTAL Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).}
+\title{Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).}
 \usage{
 optimDefaultControl()
 }
@@ -10,7 +10,7 @@ optimDefaultControl()
 an empty \code{list}.
 }
 \description{
-EXPERIMENTAL Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
+Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
 }
 \seealso{
 \code{\link{nimOptim}}, \code{\link{optim}}

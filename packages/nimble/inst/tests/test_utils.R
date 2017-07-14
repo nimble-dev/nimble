@@ -677,7 +677,8 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
                         numItsC_results = numItsC,
                         seed = 0, filterType = NULL, latentNodes = NULL, filterControl = NULL,
                         doubleCompare = FALSE, filterType2 = NULL,
-                        doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL, dirName = NULL) {
+                        doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL, dirName = NULL, 
+                        knownFailures = list()) {
   # There are two modes of testing:
   # 1) basic = TRUE: compares R and C Particle Filter likelihoods and sampled states
   # 2) if you pass 'results', it will compare Filter output to known latent state posterior summaries, top-level parameter posterior summaries,
@@ -751,6 +752,9 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
           RmvSample2 <- nfVar(Rfilter, 'mvEWSamples')
           R_samples <- as.matrix(RmvSample)
           R_samples2 <- as.matrix(RmvSample2)
+          if(filterType != 'LiuWest'){
+            R_ESS <- Rfilter$returnESS()
+          }
         }
       } else R_samples <- NULL
     }
@@ -769,9 +773,16 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         C_samples2 <- as.matrix(CmvSample2)
         C_subSamples <- C_samples[, attributes(R_samples)$dimnames[[2]], drop = FALSE]
         C_subSamples2 <- C_samples2[, attributes(R_samples2)$dimnames[[2]], drop = FALSE]
+        if(filterType != 'LiuWest'){
+          C_ESS <- Rfilter$returnESS()
+          for(i in seq_along(length(C_ESS))){
+            testIfNotKnownFailure(knownFailures[['C ESS >= 0']],
+                                  expect_gte(C_ESS[i], 0))
+            testIfNotKnownFailure(knownFailures[['C ESS <= numIts']],
+                                  expect_lte(C_ESS[i], numItsR))
+          }
+        }
       }
-
-
       ## for some reason columns in different order in CmvSample...
     }
     if(doR && doCpp && !is.null(R_samples)) {
@@ -791,6 +802,11 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
             expect_equal(RfilterOut, CfilterOut, info = paste("R and C log likelihood estimates are not equal"))
           })
         )
+        if(filterType != 'LiuWest'){
+          testIfNotKnownFailure(knownFailures[['R C ESS match']],
+                                expect_equal(R_ESS, C_ESS, info = paste("R and C ESS are not equal")))
+          
+        }
       }
     }
 

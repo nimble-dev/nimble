@@ -31,6 +31,9 @@ test: FORCE
 	cd .. ; ./install_requirements.R
 	cd .. ; ./run_tests.R --parallel
 
+benchmark: FORCE
+	cd .. ; ./run_tests.R benchmarks
+
 # We are progressively delegating style to clang-format.
 # Some older C++ files are still styled manually.
 clang-format: FORCE

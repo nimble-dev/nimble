@@ -2,7 +2,7 @@
 % Please edit documentation in R/nimbleFunction_Rexecution.R
 \name{nimOptim}
 \alias{nimOptim}
-\title{EXPERIMENTAL Nimble wrapper around R's builtin \code{\link{optim}}.}
+\title{Nimble wrapper around R's builtin \code{\link{optim}}.}
 \usage{
 nimOptim(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf,
   upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE)
@@ -34,7 +34,7 @@ Note that the R methods "SANN", "Brent" are not supported.}
 \code{\link{optimResultNimbleList}}
 }
 \description{
-EXPERIMENTAL Nimble wrapper around R's builtin \code{\link{optim}}.
+Nimble wrapper around R's builtin \code{\link{optim}}.
 }
 \seealso{
 \code{\link{optim}}

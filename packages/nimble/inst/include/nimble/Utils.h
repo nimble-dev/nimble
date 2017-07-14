@@ -35,7 +35,7 @@ class nimbleTimerClass_ {
 #endif
 
 #define PRINTF Rprintf
-#define NIMERROR error
+#define NIMERROR Rf_error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
 
 // This requires the __VA_ARGS__ feature of C++11:
@@ -57,11 +57,11 @@ class nimbleTimerClass_ {
                 my_array.dimSize(0));
 
 // code copied from nmath.h - useful utilities 
-# define MATHLIB_ERROR(fmt,x)		error(fmt,x);
-# define MATHLIB_WARNING(fmt,x)		warning(fmt,x)
-# define MATHLIB_WARNING2(fmt,x,x2)	warning(fmt,x,x2)
-# define MATHLIB_WARNING3(fmt,x,x2,x3)	warning(fmt,x,x2,x3)
-# define MATHLIB_WARNING4(fmt,x,x2,x3,x4) warning(fmt,x,x2,x3,x4)
+# define MATHLIB_ERROR(fmt,x)		Rf_error(fmt,x);
+# define MATHLIB_WARNING(fmt,x)		Rf_warning(fmt,x)
+# define MATHLIB_WARNING2(fmt,x,x2)	Rf_warning(fmt,x,x2)
+# define MATHLIB_WARNING3(fmt,x,x2,x3)	Rf_warning(fmt,x,x2,x3)
+# define MATHLIB_WARNING4(fmt,x,x2,x3,x4) Rf_warning(fmt,x,x2,x3,x4)
 
 #define ML_POSINF	R_PosInf
 #define ML_NEGINF	R_NegInf
