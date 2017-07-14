@@ -234,7 +234,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 					     numArgs <- length(argNames)
 					     if(numArgs + !returnVoid > 0) {
 					       objects$addSymbol(cppSEXP(name = 'S_returnValue_LIST_1234'))
-					       allocVectorLine <- substitute(PROTECT(S_returnValue_LIST_1234 <- allocVector(VECSXP, nAp1)), list(nAp1 = numArgs + !returnVoid))
+					       allocVectorLine <- substitute(PROTECT(S_returnValue_LIST_1234 <- Rf_allocVector(VECSXP, nAp1)), list(nAp1 = numArgs + !returnVoid))
 					       conditionalLineList <- list()
 					       returnListLines <- list()
 					       if(numArgs > 0) {

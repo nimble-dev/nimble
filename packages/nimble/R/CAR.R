@@ -148,8 +148,9 @@ CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList,
 ##)
 
 
-## calculate number of islands
-## non-recursive nimbleFunction version
+##' Calculate number of islands (non-recursive nimbleFunction version).
+##'
+##' @export
 CAR_calcNumIslands <- nimbleFunction(
     name = 'CAR_calcNumIslands',
     run = function(adj = double(1), num = double(1)) {

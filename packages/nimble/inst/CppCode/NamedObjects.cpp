@@ -31,7 +31,7 @@ void* NamedObjects::getObjectPtr( string &name ) {
 
 //GlobalObjects globalObjects;
 SEXP getModelObjectPtr(SEXP Sextptr, SEXP Sname) {
-  if(!isString(Sname)) {
+  if(!Rf_isString(Sname)) {
     PRINTF("Error: Sname is not character!\n");
     return(R_NilValue);
   }
@@ -63,14 +63,14 @@ SEXP getAvailableNames(SEXP Sextptr) {
   SEXP Sans;
   int numNames = m->namedObjects.size();
   //  _nimble_global_output << "numNames = "<<numNames<<"\n"; nimble_print_to_R( _nimble_global_output);
-  PROTECT(Sans = allocVector(STRSXP, numNames));
+  PROTECT(Sans = Rf_allocVector(STRSXP, numNames));
   //  m->hw();
   map<string, void *>::iterator iNO = m->getNamedObjects().begin();
   for(int i = 0; i < numNames; ++i, ++iNO) {
     // _nimble_global_output << "starting "<<i<<"\n"; nimble_print_to_R( _nimble_global_output);
     //_nimble_global_output << iNO->first.c_str() <<" \n";
     //nimble_print_to_R( _nimble_global_output);
-    SET_STRING_ELT(Sans, i, mkChar(iNO->first.c_str()));
+    SET_STRING_ELT(Sans, i, Rf_mkChar(iNO->first.c_str()));
     //_nimble_global_output << "done with "<<i<<" "<<iNO->first<<" \n"; nimble_print_to_R( _nimble_global_output);
   }
   UNPROTECT(1);
@@ -115,7 +115,7 @@ SEXP resizeNumberedObjects(SEXP Snp, SEXP size){
 
 SEXP getSizeNumberedObjects(SEXP Snp){
 	NumberedObjects* np = static_cast<NumberedObjects*>(R_ExternalPtrAddr(Snp));
-	SEXP ans = ScalarInteger(np->numberedObjects.size());
+	SEXP ans = Rf_ScalarInteger(np->numberedObjects.size());
 	PROTECT(ans);
 	UNPROTECT(1);
 	return(ans);

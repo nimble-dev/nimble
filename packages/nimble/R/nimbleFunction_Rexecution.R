@@ -1105,7 +1105,7 @@ is.nan.vec <- function(x) any(is.nan(x))
 #' @export
 nimRound <- round
 
-#' EXPERIMENTAL Nimble wrapper around R's builtin \code{\link{optim}}.
+#' Nimble wrapper around R's builtin \code{\link{optim}}.
 #'
 #' @param par Initial values for the parameters to be optimized over.
 #' @param fn  A function to be minimized (or maximized), with first argument the
@@ -1113,7 +1113,7 @@ nimRound <- round
 #'            should return a scalar result.
 #' @param gr  A function to return the gradient for the "BFGS", "CG" and "L-BFGS-B" methods.
 #' @param ... IGNORED
-#' @param method The method to be used. See `Details` section of \code\link{{optim}}. One of:
+#' @param method The method to be used. See `Details` section of \code{\link{optim}}. One of:
 #'               "Nelder-Mead", "BFGS", "CG", "L-BFGS-B".
 #'               Note that the R methods "SANN", "Brent" are not supported.
 #' @param lower Vector or scalar of lower bounds for parameters.
@@ -1149,7 +1149,7 @@ nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = 
     return(nimResult)
 }
 
-#' EXPERIMENTAL Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
+#' Creates a deafult \code{control} argument for \code{\link{optim}} (just an empty list).
 #'
 #' @return an empty \code{list}.
 #' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
@@ -1158,7 +1158,7 @@ optimDefaultControl <- function() {
     return(list())
 }
 
-#' EXPERIMENTAL Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
+#' Creates a deafult \code{control} argument for \code{\link{nimOptim}}.
 #'
 #' @return \code{\link{optimControlNimbleList}}
 #' @seealso \code{\link{nimOptim}}, \code{\link{optim}}
