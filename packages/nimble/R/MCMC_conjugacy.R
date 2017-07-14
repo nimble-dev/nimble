@@ -864,8 +864,11 @@ conjugacyClass <- setRefClass(
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
                     if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) { ## FIXME: do so only have one if() here and only insert the check if the sampler involves a dynamic index
-                        forLoopBody$addCode(if(COEFF_EXPR !=0) CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
-                                            list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
+                        if(targetNdim == 0)
+                            forLoopBody$addCode(if(COEFF_EXPR != 0) CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                                                list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
+                        else forLoopBody$addCode(if(min(COEFF_EXPR) != 0 | max(COEFF_EXPR) != 0) CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                                                list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
 
                     } else forLoopBody$addCode(CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
                                         list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
@@ -990,9 +993,10 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL) {
             ## this deals with having mu[k[1]] (which won't pass through expandNodeNames), replacing k[1] with the index from targetNode
             if(!is.name(expr)) {
                 indexExprs <- expr[3:length(expr)]
-                numericIndices <- sapply(indexExprs, is.numeric)
-                if(!all(numericIndices)) {
-                    indexExprs[!numericIndices] <- parse(text = targetNode)[[1]][3:length(expr)][!numericIndices]
+                numericOrVectorIndices <- sapply(indexExprs,
+                      function(x) is.numeric(x) || (length(x) == 3 && x[[1]] == ':'))
+                if(!all(numericOrVectorIndices)) {
+                    indexExprs[!numericOrVectorIndices] <- parse(text = targetNode)[[1]][3:length(expr)][!numericOrVectorIndices]
                     expr[3:length(expr)] <- indexExprs
                 }
             }

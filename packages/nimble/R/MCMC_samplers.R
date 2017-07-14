@@ -337,6 +337,7 @@ sampler_slice <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         widthOriginal <- width
         timesRan      <- 0
@@ -381,10 +382,9 @@ sampler_slice <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
-            ## FIXME: should we only do this if discrete?
-            ## if(value < model$getBound(target, 'lower') | value > model$getBound(target, 'upper') | calculate(model, target) == -Inf) return(-Inf)
-            if(calculate(model, target) == -Inf) return(-Inf) # deals with dynamic index out of bounds
-            lp <- calculate(model, calcNodes)
+            lp <- calculate(model, target)
+            if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
+            lp <- lp + calculate(model, calcNodesNoSelf)
             returnType(double())
             return(lp)
         },
@@ -477,7 +477,8 @@ sampler_AF_slice <- nimbleFunction(
     ## node list generation
     targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
     calcNodes      <- model$getDependencies(target)
-    
+    calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+
     ## numeric value generation
     sliceAdaptItersOriginal <- sliceAdaptIters
     discrete      <- sapply(targetAsScalar, function(x){model$isDiscrete(x)})
@@ -558,7 +559,9 @@ sampler_AF_slice <- nimbleFunction(
           if(discrete[i] == 1) values[i] <- floor(values[i])
       }
       values(model, target) <<- values
-      lp <- calculate(model, calcNodes)
+      lp <- calculate(model, target)
+      if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
+      lp <- lp + calculate(model, calcNodesNoSelf)
       returnType(double())
       return(lp)
     },
