@@ -27,7 +27,6 @@
 #' }
 #' ')
 #' sink()
-
 #' sink('add1.cpp') 
 #' cat('
 #' #include <cstdio>
@@ -54,6 +53,7 @@
 #'     y[1:4] <- model_add1(x[1:4])
 #' })
 #' demoModel <- nimbleModel(demoCode, inits = list(x = rnorm(4)))
+#' CdemoModel <- compileNimble(demoModel)
 nimbleExternalCall <- function(prototype, returnType = void(), Cfun, headerFile, oFile) {
     ## construct a nimbleFunction to wrap a call to Cfun
     returnType <- substitute(returnType)
@@ -107,7 +107,7 @@ nimbleExternalCall <- function(prototype, returnType = void(), Cfun, headerFile,
     ## put all the lines together
     allLines <- c(list(as.name("{")), convertLines, list(externalCallLine), unconvertLines, returnLines)
     body(fun) <- as.call(allLines)
-    ans <- quote(nimbleFunction(run = fun))
+    ans <- quote(RCfunction(fun, check = FALSE))
     ans <- eval(ans)
     ## Stick header information into the nfMethodRC
     environment(ans)$nfMethodRCobject$externalHincludes <- paste0('\"',headerFile,'\"')
