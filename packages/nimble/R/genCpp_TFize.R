@@ -268,7 +268,6 @@ TfTensorize <- function(code, placeholders) {
         }
         translated <- tfTranslate(code$name)
         if (!is.null(translated)) {
-            print(code$args)
             args <- lapply(code$args, TfTensorize, placeholders)
             return(do.call(translated, args))
         }

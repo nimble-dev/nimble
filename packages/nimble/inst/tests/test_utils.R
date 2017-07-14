@@ -31,6 +31,18 @@ temporarilyAssignInGlobalEnv <- function(value) {
     do.call('on.exit', list(rmCommand, add = TRUE), envir = parent.frame())
 }
 
+## Use this inside test_that() tests that require tensorflow.
+## If tensorflow is not installed, then the test will be skipped.
+## If tensorflow is installed, then experimentalUseTensorflow will be be set to
+## TRUE for the duration of this one test.
+temporarilyEnableTensorflow <- function() {
+    skip_if_not_installed('tensorflow')
+    old <- nimbleOptions()$experimentalUseTensorflow
+    cleanup <- substitute(nimbleOptions(experimentalUseTensorflow = old))
+    do.call('on.exit', list(cleanup, add = TRUE), envir = parent.frame())
+    nimbleOptions(experimentalUseTensorflow = TRUE)
+}
+
 withTempProject <- function(code) {
     code <- substitute(code)
     project <- nimble:::nimbleProjectClass()

@@ -3,10 +3,9 @@ source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
 
 context("Testing of Tensorflow-ization")
 
-nimbleOptions(experimentalUseTensorflow = TRUE)
-
 test_that('Tensorflow implementation of axpy works', {
-    skip_if_not_installed('tensorflow')
+    temporarilyEnableTensorflow()
+
     nf <- nimbleFunction(
         run = function(a = double(), x = double(1), y = double(1)) {
             z <- a * x + y
@@ -23,7 +22,8 @@ test_that('Tensorflow implementation of axpy works', {
 
 if (0)  ## Known failure.
 test_that('Tensorflow example', {
-    skip_if_not_installed('tensorflow')
+    temporarilyEnableTensorflow()
+
     nimbleOptions(debugCppLineByLine = TRUE)
     nimbleOptions(pauseAfterWritingFiles = FALSE)
     nf <- nimbleFunction(
@@ -42,7 +42,8 @@ test_that('Tensorflow example', {
 })
 
 test_that('Tensorflow backend works for basic math', {
-    skip_if_not_installed('tensorflow')
+    temporarilyEnableTensorflow()
+
     set.seed(0)
     sapply(testsVaried, test_math, 'tensorflow')
     sapply(testsBasicMath, test_math, 'tensorflow')
