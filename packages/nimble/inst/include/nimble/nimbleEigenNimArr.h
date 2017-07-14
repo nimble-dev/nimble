@@ -86,7 +86,7 @@ void setValuesIndexRange(NimArrBase<T> &nimArr, ManyVariablesMapAccessor &MVA, c
 
 
 template<typename Derived>
-double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical) { // remove default value of logical to fix function overloading issues
+double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   double ans(0);
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
