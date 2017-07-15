@@ -324,14 +324,32 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
     return(fieldList)
 }
 
+## This simply looks in the dll and then looks everywhere
+## It is a band-aid solution for the problem that predefined nimbleLists can have their functions in the sessionSpecificDll
+## but what may be at hand is the project dll
+nimbleTryGetNativeSymbolInfo <- function(symName, dll) {
+    ans <- try(getNativeSymbolInfo(symName, dll), silent = TRUE)
+    if(inherits(ans, 'try-error')) {
+        ans <- try(getNativeSymbolInfo(symName), silent  = TRUE)
+        if(inherits(ans, 'try-error')) stop(paste0('Unable to find compiled function ', symName,'.'), call.=FALSE)
+    }
+    ans
+}
+
 #### functions that are similar to what is created in makeNFBindingFields but are standalone and look up pointers each time
 getSetNimbleList <- function(vptr, name, value, cppDef, dll) {
     ## When missing value, we need the cppDef from the symTab of the assignment target
     ## from this we can get the castFun and the catToPtrPairFun
     ## When receiving value, we don't need anything more 
     if(missing(value)) {
-        existingExtPtrs <- eval(call('.Call', getNativeSymbolInfo(cppDef$ptrCastToPtrPairFun$name, dll), vptr) )
-        cppDef$Rgenerator( dll = dll, existingExtPtrs = existingExtPtrs )        
+        ## This simply looks in the dll and then looks everywhere
+        ## It is a band-aid solution for the problem that predefined nimbleLists can have their functions in the sessionSpecificDll
+        ## but what may be at hand is the project dll
+        nativeSymInfo <- nimbleTryGetNativeSymbolInfo(cppDef$ptrCastToPtrPairFun$name, dll)
+        dllToUse <- if(!is.null(nativeSymInfo$package)) nativeSymInfo$package else dll
+        
+        existingExtPtrs <- eval(call('.Call', nativeSymInfo, vptr) )
+        cppDef$Rgenerator( dll = dllToUse, existingExtPtrs = existingExtPtrs )        
     } else {
         if(is.list(value)) {
             ptrToPtr <- value[[1]]$ptrToPtrList[[ value[[2]] ]]
@@ -762,7 +780,6 @@ copyFromRobjectViaActiveBindings <- function(Robj, cppNames, cppCopyTypes, .self
             next
         }
         else if(cppCopyTypes[[v]] == 'nodeFxnVec') {
-            ##populateNodeFxnVec(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v)
             populateNodeFxnVecNew(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v, dll = dll) 
             next
         }
@@ -825,15 +842,15 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
             warning("Problem in copyFromRobject.  There is an object to be copied that is NULL.  Going to browser.", call. = FALSE)
             browser()
         }
-        if(cppCopyTypes[[v]] == 'modelVar') {
+        switch(cppCopyTypes[[v]],
+        'modelVar' = {
             modelVar <- Robj[[v]] ## this is a singleVarAccessClass created by replaceModelSingles
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
             ##message('copying modelVar (copyFromRobject)')
             getSetModelVarPtr(v, eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, Cmodel$.basePtr, varName)), basePtr, dll = dll)
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'nimbleFunction') {
+        },
+        'nimbleFunction' = {
             modelVar <- Robj[[v]]
             Cnf <- nf_getRefClassObject(modelVar)$.CobjectInterface ##environment(modelVar)$.CobjectInterface
             if(is.list(Cnf)) {
@@ -841,20 +858,16 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
             } else {
                 valueBasePtr <- Cnf$.basePtr
             }
-            ##message('copying nimbleFunction (copyFromRobject)')
             getSetNimbleFunction(v, valueBasePtr, basePtr, dll = dll)
-            ## .self[[v]] <- Cnf
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'nimbleList') {
+        },
+        'nimbleList' = {
             modelVar <- Robj[[v]]
             Cnl <- modelVar$.CobjectInterface
             vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, v, dll = dll)
             cppDef <- symTab$getSymbolObject(v)$nlProc$cppDef
             getSetNimbleList(vptr, v, Cnl, cppDef, dll = dll)
-          next
-        }
-        else if(cppCopyTypes[[v]] == 'nimPtrList') {
+        },
+        'nimPtrList' = {
             if(is.null(Robj[[v]]$contentsList)) {
                 warning('Problem in copying a nimPtrList to C++ object. The contentsList is NULL. Going to browser', call. = FALSE)
                 browser()
@@ -865,15 +878,12 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
             }
             modelVar <- Robj[[v]] ## This is a nimPtrList 
             Cmv <- modelVar$CobjectInterface ## This was created above in build neededObjects
-            ##message('copying nimPtrList (copyFromRobject)')
             getSetNimPtrList(v, Cmv, basePtr, dll = dll)
-            ##.self[[v]] <- Cmv
-        }
-        else if(cppCopyTypes[[v]] == 'modelValues') { ## somewhat similar to modelVar
+        },
+        'modelValues' = { ## somewhat similar to modelVar
             rModelValues <- Robj[[v]]
             Cmv <- rModelValues$CobjectInterface
             if(!Cmv$initialized) {
-                ##cat('We are copying modelValues during copyFromRobject\n')
                 k = getsize(rModelValues)
                 resize(Cmv, k)
                 vNames = rModelValues[['varNames']]
@@ -882,89 +892,58 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
                 Cmv$symTab <- rModelValues$symTab
                 Cmv$initialized <- TRUE
             }
-            ##message('copying modelValues (copyFromRobject)')
             getSetModelValues(v, Cmv, basePtr, dll = dll)
-            ##            .self[[v]] <- Cmv
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'nodeFxnVec') {
+        },
+        'nodeFxnVec' = {
             populateNodeFxnVecNew(fxnPtr = basePtr, Robject = Robj, fxnVecName = v, dll = dll)
-            ## populateNodeFxnVec(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v) 
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'modelVarAccess'){
+        },
+        'modelVarAccess' = {
             populateManyModelVarMapAccess(fxnPtr = basePtr, Robject = Robj, manyAccessName = v, dll = dll)
-            ## populateManyModelVarMapAccess(fxnPtr = .self$.basePtr, Robject = Robj, manyAccessName = v)
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'modelValuesAccess'){
+        },
+        'modelValuesAccess' = {
             populateManyModelValuesMapAccess(fxnPtr = basePtr, Robject = Robj, manyAccessName = v, dll = dll)
-            ## populateManyModelValuesMapAccess(fxnPtr = .self$.basePtr, Robject = Robj, manyAccessName = v)
-            next
-        }
-        else if(cppCopyTypes[[v]] == "modelValuesPtr"){
+        },
+        "modelValuesPtr" = {
             curObj <- Robj[[v]]
             mvPtr = curObj$modelValues$CobjectInterface$componentExtptrs[[curObj$var]]
             getSetModelValuesPtr(v, mvPtr, basePtr, dll = dll)
-            ## .self[[v]] <<- mvPtr
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'numericList'){
+        },
+        'numericList' = {
             stop('numericList is not working\n')
-            ## rawPtr = .Call('getModelObjectPtr', .self$.basePtr, v)
-            ## .self[[v]] <<- numericList(buildType = 'C', extPtr = rawPtr)
-            ## nRows = Robj[[v]]$nRow
-            ## resize(.self[[v]], nRows)
-            ## for(i in 1:nRows){
-            ##     copyDims = max(c(1, dimOrLength[[v]][[i]]) )
-            ##     d1 = copyDims[1]
-            ##     d2 = copyDims[2]
-            ##     d3 = copyDims[3]
-            ##     setSize(.self[[v]], row = i, d1, d2, d3)
-            ##     .self[[v]][[i]] <<- Robj[[v]][[i]]
-            ## }
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'indexedNodeInfoTable') {
+        },
+        'indexedNodeInfoTable' = {
             populateIndexedNodeInfoTable(fxnPtr = basePtr, Robject = Robj, indexedNodeInfoTableName = v, dll = dll)
-        }
-        else if(cppCopyTypes[[v]] == 'characterVector') {
+        },
+        'characterVector' = {
             getSetCharacterVector(v, Robj[[v]], basePtr, dll = dll)
-            ##.self[[v]] <<- Robj[[v]]
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'characterScalar') {
+        },
+        'characterScalar' = {
             getSetCharacterScalar(v, Robj[[v]], basePtr, dll = dll)
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'numericVector') {
-            ##message('copying numericVector (copyFromRobject)')
+        },
+        'numericVector' = {
             getSetNumericVector(v, Robj[[v]], basePtr, dll = dll)
-            ##.self[[v]] <<- Robj[[v]]
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'doubleScalar') {
+        },
+        'doubleScalar' = {
             getSetDoubleScalar(v, Robj[[v]], basePtr, dll = dll)
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'integerScalar') {
+        },
+        'integerScalar' = {
             getSetIntegerScalar(v, Robj[[v]], basePtr, dll = dll)
-            next
-        }
-        else if(cppCopyTypes[[v]] == 'logicalScalar') {
+        },
+        'logicalScalar' = {
             getSetLogicalScalar(v, Robj[[v]], basePtr, dll = dll)
-            next
+        },
+        { ## default:
+            if(!(cppCopyTypes[[v]] %in% c('copierVector'))) {
+                warning(paste0("Note: cppCopyTypes not recognized. Type = ", cppCopyTypes[[v]], "\n"), call. = FALSE)
+            }
         }
-        else if(!(cppCopyTypes[[v]] %in% c('copierVector'))) {
-            warning(paste0("Note: cppCopyTypes not recognized. Type = ", cppCopyTypes[[v]], "\n"), call. = FALSE)
-        }
+        )
     }
     ## second pass is for initializations that require everything from first pass be done
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
         if(cppCopyTypes[[v]] == 'copierVector') {
             populateCopierVector(fxnPtr = basePtr, Robject = Robj, vecName = v, dll = dll)
-            ## populateCopierVector(fxnPtr = .self$.basePtr, Robject = Robj, vecName = v)
         }
     }
 }
@@ -1386,6 +1365,15 @@ CmultiNimbleListClass <- setRefClass('CmultiNimbleListClass',
                                                  } else {
                                                      if(is.null(dll)) stop('In addInstance, DLL was not set and so must be provided when calling', call. = FALSE)
                                                      dll <<- dll       ## should only occur first time addInstance is called
+                                                     ## experimental fix to handle predefined lists.  more general fix is to provide sessionSpecificDll as the dll
+                                                     ## natSymInfo <- try(getNativeSymbolInfo(compiledNodeFun$ptrCastFun$name, dll))
+                                                     ## if(inherits(natSymInfo, 'try-error')) {
+                                                     ##     natSymInfo <- try(getNativeSymbolInfo(compiledNodeFun$ptrCastFun$name))
+                                                     ##     if(inherits(natSymInfo, 'try-error')) {
+                                                     ##         stop(paste0('Problem loading compiled function ', compiledNodeFun$ptrCastFun$name))
+                                                     ##     }
+                                                     ## }
+                                                     ## castFunSymbolInfo <<- natSymInfo
                                                      castFunSymbolInfo <<- getNativeSymbolInfo(compiledNodeFun$ptrCastFun$name, dll)
                                                  }
                                                  newObjPtrs <- eval(parse(text = ".Call(basePtrCall)", keep.source = FALSE))

@@ -14,4 +14,7 @@ ignoreWork
 TEMP*
 MyMakevars
 #*.R
+*.Rproj
 .Rproj.user
+
+/packages/nimble/inst/include/cppad/

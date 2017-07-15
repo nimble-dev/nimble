@@ -30,6 +30,7 @@
 \alias{keywordInfoClass-Class}
 \alias{MakeCustomModelClass-Class}
 \alias{makeCustomModelValuesClass-Class}
+\alias{makeStaticInitClass-Class}
 \alias{mapsClass-Class}
 \alias{modelDefInfoClass-Class}
 \alias{mvInfoClass-Class}
@@ -59,8 +60,11 @@
 \alias{[,distributionsClass-method}
 \alias{[[,distributionsClass-method}
 \alias{[[,conjugacyRelationshipsClass-method}
+\alias{dsqrtinvgamma}
+\alias{rsqrtinvgamma}
 \alias{calc_dmnormConjugacyContributions}
 \alias{calc_dmnormAltParams}
+\alias{calc_dwishAltParams}
 \alias{getNodeFunctionIndexedInfo}
 \alias{singleModelValuesAccess}
 \alias{getNimbleProject}

@@ -87,6 +87,7 @@ distClass <- setRefClass(
         altParams = 'ANY',	#'list',    ## the (named) list of alternate parameters we'll have available, list elements are the expressions for each parameter 
         discrete = 'ANY',	#'logical',   ## logical, if the distribution is discrete
         pqAvail = 'ANY',        #'logical', ## if the p (CDF) and q (inverse CDF/quantile) functions are available
+        mixedSizes = 'ANY',     ##   if TRUE, then parameters of this distribution could have varied sizes, and is exempted from this check in model$checkBasics()
         range = 'ANY',          #'numeric',  ## lower and upper limits of distribution domain
         types = 'ANY',		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
         paramIDs = 'ANY'        #'integer'   ## named vector of unique integer ID for each parameter
@@ -111,6 +112,7 @@ distClass <- setRefClass(
             init_altParams(distInputList)
             discrete <<- if(is.null(distInputList$discrete))    FALSE    else    distInputList$discrete
             pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
+            mixedSizes <<- if(is.null(distInputList$mixedSizes))    FALSE    else    distInputList$mixedSizes
             init_range(distInputList)
             init_types(distInputList)
             init_paramIDs()
@@ -600,8 +602,6 @@ getDistributionList <- function(dists) {
 #' @param includeValue a logical indicating whether to return the string 'value', which is the name of the node value
 #'
 #' @author Christopher Paciorek
-#' 
-#' @export
 #' @details
 #' NIMBLE provides various functions to give information about a BUGS distribution. In some cases, functions of the same name and similar functionality operate on the node(s) of a model as well (see \code{help(modelBaseClass)}).
 #' 
@@ -723,6 +723,14 @@ pqDefined <- function(dist) {
    return(getDistributionInfo(dist)$pqAvail)
 } 
 
+## not user-facing. only for use in model$checkBasics(),
+## to avoid "same size check" for distribution parameters
+isMixedSizes <- function(dist) {
+    if(is.na(dist)) return(NA)
+    if(length(dist) > 1 || class(dist) != 'character')
+        stop("isMixedSizes: 'dist' should be a character vector of length 1")
+   return(getDistributionInfo(dist)$mixedSizes)
+}
 
 #' @export
 getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&

@@ -21,7 +21,9 @@ is.vectorized <- function(node) {
     else return(':' %in% all.names(node))
 }
 
-
+getCalcADFunName <- function(){
+  return('calculateWithArgs')
+}
 is.blank <- function(arg) {
     if(is.null(arg)) return(FALSE)
     return(identical(arg, quote(x[])[[3]]))
@@ -42,6 +44,56 @@ determineNodeIndexSizes <- function(node) {
     sizes <- unlist(lapply(indExprList, function(ind) max(eval(ind)) - min(eval(ind)) + 1))
     return(sizes)
 }
+
+makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NULL, allSizeAndDimList = list()){
+  if(is.call(code)){
+    if(deparse(code[[1]]) == '[') {
+      if(deparse(code[[2]]) %in% nodesToExtract){
+        thisCodeExprList <- list()
+        numInds <- length(code) - 2
+        codeLength <- c()
+        for(i in 1:numInds){
+          if(is.call(code[[i+2]]) && deparse(code[[i+2]][[1]]) == ':'){
+            if(is.numeric(code[[i+2]][[2]])){
+              codeStartInds <- code[[i+2]][[2]]
+            }
+            else{
+              codeStartInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[2]])]
+            }
+            if(is.numeric(code[[i+2]][[3]])){
+              codeEndInds <- code[[i+2]][[3]]
+            }
+            else{
+              codeEndInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[3]])]
+            }
+            thisCodeLength <- codeEndInds - codeStartInds + 1
+            if(!all(thisCodeLength == thisCodeLength[1])){
+              print("Error: AD not currently supported for ragged arrays in model code")
+              browser()
+            }
+            codeLength <- c(codeLength, thisCodeLength[1])
+          }
+          else{
+            codeLength <- c(codeLength, 1)
+          }
+        }
+        thisCodeExprList$lengths <- codeLength
+        thisCodeExprList$nDim <- sum(codeLength > 1)
+        if(is.null(allSizeAndDimList[[deparse(code[[2]])]])) allSizeAndDimList[[deparse(code[[2]])]][[1]] <- thisCodeExprList
+        else allSizeAndDimList[[deparse(code[[2]])]][[length(allSizeAndDimList[[deparse(code[[2]])]]) + 1]] <- thisCodeExprList
+        return(allSizeAndDimList)
+      }
+    }
+    if(length(code) > 1){
+      for(i in 2:length(code)){
+        allSizeAndDimList <- makeSizeAndDimList(code[[i]], nodesToExtract, indexedNodeInfo, allSizeAndDimList)
+      }
+    }
+  }
+  return(allSizeAndDimList)
+}
+
+
 
 ## This should add model$ in front of any names that are not already part of a '$' expression
 addModelDollarSign <- function(expr, exceptionNames = character(0)) {
@@ -67,6 +119,20 @@ addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     }
     return(expr)
 }
+
+removeIndices <- function(expr) {
+  if(is.call(expr)) {
+    if(expr[[1]] == '['){
+      return(expr[[2]])
+    } 
+    if(length(expr) > 1) {
+      expr[2:length(expr)] <- lapply(expr[-1], function(listElement) removeIndices(listElement))
+      return(expr)
+    }
+  }
+  return(expr)
+}
+
 
 # Determine if a piece of code contains a '['
 hasBracket <- function(code) {
@@ -156,10 +222,10 @@ Rname2CppName <- function(rName, colonsOK = TRUE) {
         if(grepl(':', rName))
             stop(paste0('trying to do name mashup on expression with colon (\':\') from ', rName))
     rName <- gsub(' ', '', rName)
-    rName <- gsub('\\.', 'p', rName) 
-    rName <- gsub("\"", "", rName)
-    rName <- gsub(',', '_', rName)   
-    rName <- gsub("`", "" , rName)
+    rName <- gsub('\\.', '_dot_', rName) 
+    rName <- gsub("\"", "_quote_", rName)
+    rName <- gsub(',', '_comma_', rName)   
+    rName <- gsub("`", "_backtick_" , rName)
     rName <- gsub('\\[', '_oB', rName)
     rName <- gsub('\\]', '_cB', rName)
     rName <- gsub('\\(', '_oP', rName)
@@ -178,7 +244,7 @@ Rname2CppName <- function(rName, colonsOK = TRUE) {
     rName <- gsub("&", "_and_", rName)
     rName <- gsub("%%", "_mod_", rName)
     rName <- gsub("%\\*%", "_matmult_", rName)
-    rName <- gsub("=", "_" , rName)
+    rName <- gsub("=", "_eq_" , rName)
     rName <- gsub("\\(", "_" , rName)
     rName <- gsub("\\+", "_plus_" , rName)
     rName <- gsub("-", "_minus_" , rName)

@@ -30,7 +30,6 @@ int prod(int x);
 double prod(double x);
 
 SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index);
-//SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int nrowCpp, int index);
 void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP Svalue);
  
 //bool checkString(SEXP Ss, int len);
@@ -46,6 +45,7 @@ extern "C" {
   //  SEXP getVec(SEXP Sextptr);
   //  SEXP getVec_Integer(SEXP Sextptr);
   
+  SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);
   SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded);
   SEXP getNRow(SEXP Sextptr);
   SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SEXP rowsTo);
@@ -57,17 +57,7 @@ extern "C" {
 
   SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd);
 
-  //  SEXP printMVElement(SEXP Sextptr, SEXP Sindex);
   SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue);
-
-  SEXP resizeNumListRow(SEXP Sextptr, SEXP Sindex, SEXP dims); 	// resizes a particular row of a numericlist
-
-//  SEXP setNumList(SEXP Sextptr, SEXP Sindex, SEXP Svalue);   automatically resizes. Might want to use later
-   SEXP setNumListRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);		// this sets the number of rows in a numericList (really, any VecNimArr)
-
-
-  //  SEXP setVarPointer(SEXP SextptrModelVar, SEXP SextptrStorageVar, SEXP Srownum);
-  SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows);
 
   SEXP newSampObject();	//  Creates our new object from sampleClass (will be generated automatically later)
 							//	Just for use in demos
@@ -92,9 +82,6 @@ extern "C" {
 
   SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
-  //SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si);
-  
-  
   
   SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex);// This is a utility for looking up a field of an environment
   														 // sString is a character vector with the field name we want
@@ -131,14 +118,13 @@ class vectorOfPtrsAccess : public vectorOfPtrsAccessBase {
   void *getVecPtr(int i) {return(static_cast<void *>( (*theVec)[i] ) ); }
 };
 
+NimArr<1, double> vectorDouble_2_NimArr(vector<double> input);
 
 /*
   Apparently partial specialization of function templates is not allowed.
   So these are witten for doubles, and when we get to integers and logicals we can 
   use overlaoding or different names.
  */
-
-
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans );
 template<int ndim>
@@ -156,23 +142,23 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans);
 
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
-  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+  NIM_ASSERT3(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
     "SEXP_2_NimArr<%d, double> called for SEXP that is not a numeric or logical: actual type %s\n",
-    ndim, type2str(TYPEOF(Sn)));
+    ndim, Rf_type2str(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
-  NIM_ASSERT(inputDims.size() == ndim,
+  NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, double> called for SEXP that is not a numeric: expected %d, actual %d\n",
     ndim, ndim, inputDims.size());
   // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
-  if(isReal(Sn)) {
+  if(Rf_isReal(Sn)) {
     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
-    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+    NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input of type %s to SEXP_2_NimArr<%d, double>\n",
-      type2str(TYPEOF(Sn)), ndim);
-    int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+      Rf_type2str(TYPEOF(Sn)), ndim);
+    int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
     std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
 }
@@ -180,46 +166,46 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
 // ACTUALLY THIS IS IDENTICAL CODE TO ABOVE, SO THEY COULD BE COMBINED WITHOUT TEMPLATE SPECIALIZATION
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
-  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+  NIM_ASSERT3(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
     "SEXP_2_NimArr<%d, int> called for SEXP that is not a numeric or logical: actual type %s\n",
-    ndim, type2str(TYPEOF(Sn)));
+    ndim, Rf_type2str(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
-  NIM_ASSERT(inputDims.size() == ndim,
+  NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, int> called for SEXP that is not a numeric: expected %d, actual %d\n",
     ndim, ndim, inputDims.size());
   // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
-  if(isReal(Sn)) {
+  if(Rf_isReal(Sn)) {
     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
-    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+    NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input type %s to SEXP_2_NimArr<%d, int>\n",
-      type2str(TYPEOF(Sn)), ndim);
-    int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+      Rf_type2str(TYPEOF(Sn)), ndim);
+    int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
     std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
 }
 
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
-  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+  NIM_ASSERT3(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
     "SEXP_2_NimArr<%d, bool> called for SEXP that is not a numeric or logical: actual type %s\n",
-    ndim, type2str(TYPEOF(Sn)));
+    ndim, Rf_type2str(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
-  NIM_ASSERT(inputDims.size() == ndim,
+  NIM_ASSERT4(inputDims.size() == ndim,
     "Wrong number of input dimensions in SEXP_2_NimArr<%d, bool> called for SEXP that is not a numeric: expected %d, actual %d\n",
     ndim, ndim, inputDims.size());
   // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
-  if(isReal(Sn)) {
+  if(Rf_isReal(Sn)) {
     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
-    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+    NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
       "could not handle input type %s to SEXP_2_NimArr<%d, bool>\n",
-      type2str(TYPEOF(Sn)), ndim);
-    int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+      Rf_type2str(TYPEOF(Sn)), ndim);
+    int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
     std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
 }
@@ -229,15 +215,15 @@ template<int ndim>
 SEXP NimArr_2_SEXP(NimArr<ndim, double> &val) {
   SEXP Sans;
   int outputLength = val.size();
-  PROTECT(Sans = allocVector(REALSXP, outputLength));
+  PROTECT(Sans = Rf_allocVector(REALSXP, outputLength));
   double *ans = REAL(Sans);
 
   std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
   if(val.numDims() > 1) {
     SEXP Sdim;
-    PROTECT(Sdim = allocVector(INTSXP, val.numDims() ) );
+    PROTECT(Sdim = Rf_allocVector(INTSXP, val.numDims() ) );
     for(int idim = 0; idim < val.numDims(); ++idim) INTEGER(Sdim)[idim] = val.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
+    Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     UNPROTECT(2);
   } else {
     UNPROTECT(1);
@@ -249,15 +235,15 @@ template<int ndim>
 SEXP NimArr_2_SEXP(NimArr<ndim, int> &val) {
   SEXP Sans;
   int outputLength = val.size();
-  PROTECT(Sans = allocVector(INTSXP, outputLength));
+  PROTECT(Sans = Rf_allocVector(INTSXP, outputLength));
   int *ans = INTEGER(Sans);
 
   std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
   if(val.numDims() > 1) {
     SEXP Sdim;
-    PROTECT(Sdim = allocVector(INTSXP, val.numDims() ) );
+    PROTECT(Sdim = Rf_allocVector(INTSXP, val.numDims() ) );
     for(int idim = 0; idim < val.numDims(); ++idim) INTEGER(Sdim)[idim] = val.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
+    Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     UNPROTECT(2);
   } else {
     UNPROTECT(1);
@@ -269,15 +255,15 @@ template<int ndim>
 SEXP NimArr_2_SEXP(NimArr<ndim, bool> &val) {
   SEXP Sans;
   int outputLength = val.size();
-  PROTECT(Sans = allocVector(LGLSXP, outputLength));
+  PROTECT(Sans = Rf_allocVector(LGLSXP, outputLength));
   int *ans = LOGICAL(Sans);
 
   std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
   if(val.numDims() > 1) {
     SEXP Sdim;
-    PROTECT(Sdim = allocVector(LGLSXP, val.numDims() ) );
+    PROTECT(Sdim = Rf_allocVector(LGLSXP, val.numDims() ) );
     for(int idim = 0; idim < val.numDims(); ++idim) LOGICAL(Sdim)[idim] = val.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
+    Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     UNPROTECT(2);
   } else {
     UNPROTECT(1);

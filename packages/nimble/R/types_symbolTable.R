@@ -260,10 +260,18 @@ symbolBasic <-
                         else warning(paste("in genCppVar method for",name,"in symbolBasic class, type", type,"unrecognized\n"), FALSE)
                         
                         if(nDim == 0) {
-                            return(cppVar(baseType = cType,
-                                          name = name,
-                                          ptr = 0,
-                                          ref = FALSE))
+                            return(if(name != "pi")
+                                       cppVar(baseType = cType,
+                                              name = name,
+                                              ptr = 0,
+                                              ref = FALSE)
+                                   else
+                                       cppVarFull(baseType = cType,
+                                                  name = name,
+                                                  ptr = 0,
+                                                  ref = FALSE,
+                                                  constructor = "(M_PI)")
+                                       )
                         }
                         if(functionArg) {
                             return(cppNimArr(name = name,
@@ -455,9 +463,11 @@ symbolNimbleList <-
                     initialize = function(...){callSuper(...); type <<- 'nimbleList'},
                     show = function() writeLines(paste('symbolNimbleList', name)),
                     genCppVar = function(...) {
+                        pointeeType <- nlProc$name
+                        if(is.null(pointeeType)) stop(paste('Internal error: nlProc is missing name:', name))
                         return(  cppVarFull(name = name,
                                             baseType = 'nimSmartPtr',
-                                            templateArgs = nlProc$name) )
+                                            templateArgs = pointeeType) )
                     }
                     ))
 

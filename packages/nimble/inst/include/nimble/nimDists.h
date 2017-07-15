@@ -16,6 +16,9 @@ void nimArr_rdirch(NimArr<1, double> &ans, NimArr<1, double> &alpha);
 double nimArr_dwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log, int overwrite_inputs);
 void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double prec_param, int overwrite_inputs);
 
+double nimArr_dinvwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log, int overwrite_inputs);
+void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double prec_param, int overwrite_inputs);
+
 double nimArr_dmulti(NimArr<1, double> &x, double size, NimArr<1, double> &prob, int give_log);
 void nimArr_rmulti(NimArr<1, double> &ans, double size, NimArr<1, double> &prob);
 
@@ -34,5 +37,7 @@ int nimArr_rinterval(double t, NimArr<1, double> &c);
 double nimArr_dinterval(double x, double t, double c, int give_log);
 int nimArr_rinterval(double t, double c);
 
+double nimArr_dcar_normal(NimArr<1, double> &x, NimArr<1, double> &adj, NimArr<1, double> &wgts, NimArr<1, double> &num, double tau, int c, int zero_mean, int give_log);
+void nimArr_rcar_normal(NimArr<1, double> &ans, NimArr<1, double> &adj, NimArr<1, double> &wgts, NimArr<1, double> &num, double tau, int c, int zero_mean);
 
 #endif

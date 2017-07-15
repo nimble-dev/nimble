@@ -79,7 +79,6 @@ MCMCconf <- setRefClass(
         thin2               = 'ANY',
         samplerConfs        = 'ANY',
         controlDefaults     = 'ANY',
-        controlNamesLibrary = 'ANY',
         namedSamplerLabelMaker = 'ANY',
         mvSamples1Conf      = 'ANY',
         mvSamples2Conf      = 'ANY'
@@ -91,6 +90,8 @@ MCMCconf <- setRefClass(
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
             useConjugacy = TRUE,
+            onlyRW = FALSE,
+            onlySlice = FALSE,
             multivariateNodesAsScalars = FALSE,
             warnNoSamplerAssigned = TRUE,
             print = FALSE) {
@@ -107,9 +108,8 @@ If missing, the default value is all non-data stochastic nodes.
 If NULL, then no samplers are added.
 
 control: An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
-For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\', 
-and also \'targetNode\' however this should not generally be provided as a control list element to configureMCMC().
-The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC) are in the NIMBLE system option \'MCMCcontrolDefaultList\'.
+For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\'.
+The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() or addSampler()) are contained in the setup code of each sampling algorithm.
 
 monitors: A character vector of node names or variable names, to record during MCMC sampling.
 This set of monitors will be recorded with thinning interval \'thin\', and the samples will be stored into the \'mvSamples\' object.
@@ -125,13 +125,17 @@ thin2: The thinning interval for \'monitors2\'.  Default value is one.
 
 useConjugacy: A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
 
+onlyRW: A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler, and terminal nodes are assigned a posterior_predictive sampler.
+
+onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
+
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 
 warnNoSamplerAssigned: A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
 
 print: A logical argument, specifying whether to print the ordered list of default samplers.
 '
-            samplerConfs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list(); monitors <<- character(); monitors2 <<- character();
+            samplerConfs <<- list(); controlDefaults <<- list(); monitors <<- character(); monitors2 <<- character();
             namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
             ##model <<- model
             if(is(model, 'RmodelBaseClass')) {
@@ -144,10 +148,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             thin  <<- thin
             thin2 <<- thin2
             samplerConfs    <<- list()
-            ## moved controlDefaultList to be a NIMBLE system option (as a single list: MCMCcontrolDefaultList)
-            controlDefaults <<- getNimbleOption('MCMCcontrolDefaultList')
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
-            controlNamesLibrary <<- list()
             if(identical(nodes, character())) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                                             } else             { if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
                                                                  nl_checkVarNamesInModel(model, removeIndexing(nodes))
@@ -156,73 +157,83 @@ print: A logical argument, specifying whether to print the ordered list of defau
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
             if(!(all(model$isStoch(nodes)))) { stop('assigning samplers to non-stochastic nodes: ', paste0(nodes[!model$isStoch(nodes)], collapse=', ')) }    ## ensure all target node(s) are stochastic
 
-            ## set up environment in which to evaluate sampler assignment rule conditions
-            ruleEvaluationEnv <- new.env()
-            ruleEvaluationEnv$model <- model
-            ruleEvaluationEnv$useConjugacy <- useConjugacy
-            ruleEvaluationEnv$multivariateNodesAsScalars <- multivariateNodesAsScalars
-            if(useConjugacy) ruleEvaluationEnv$conjugacyResults <- model$checkConjugacy(nodes)
-            rules$setEvaluationEnv(ruleEvaluationEnv)
-
-            for(node in nodes) {
-                ruleEvaluationEnv$node <- node     ## put current node into rule evaluation environment
-                rule <- rules$selectRuleToInvoke()
-                if(!is.null(rule)) {               ## matching rule was found
-                    sampler <- rule$getSampler()
-                    name <- rule$getName()
-                    if(is.call(sampler)) { eval(sampler, envir = ruleEvaluationEnv)
-                                       } else addSampler(target = node, type = sampler, name = name)
-                } else if(warnNoSamplerAssigned) {    ## no matching rule was found
-                    warning(paste0('No matching rule found, and no sampler assigned to node: ', node))
+            if(getNimbleOption('MCMCuseSamplerAssignmentRules')) {
+                ## use new system of samplerAssignmentRules
+                isEndNodeAll <- model$isEndNode(nodes)
+                isMultivariateAll <- model$isMultivariate(nodes)
+                isDiscreteAll <- model$isDiscrete(nodes)
+                isBinaryAll <- model$isBinary(nodes)
+                nodeDistributionsAll <- model$getDistribution(nodes)
+                if(useConjugacy) {
+                    conjugacyResultsAll <- model$checkConjugacy(nodes)
+                    isConjugateAll <- nodes %in% names(conjugacyResultsAll)
+                }
+                
+                ruleSelectFunction <- function() {}
+                body(ruleSelectFunction) <- rules$makeRuleSelectionCodeBlock()
+                
+                for(i in seq_along(nodes)) {
+                    node <- nodes[i]
+                    isEndNode <- isEndNodeAll[i]
+                    isMultivariate <- isMultivariateAll[i]
+                    isDiscrete <- isDiscreteAll[i]
+                    isBinary <- isBinaryAll[i]
+                    nodeDistribution <- nodeDistributionsAll[i]
+                    if(useConjugacy) isConjugate <- isConjugateAll[i]
+                    ruleSelectFunction()
+                }
+            } else {
+                ## use old (static) system for assigning default samplers
+                isEndNode <- model$isEndNode(nodes)
+                if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
+                
+                for(i in seq_along(nodes)) {
+                    node <- nodes[i]
+                    discrete <- model$isDiscrete(node)
+                    binary <- model$isBinary(node)
+                    nodeDist <- model$getDistribution(node)
+                    nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
+                    nodeLength <- length(nodeScalarComponents)
+                    
+                    ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
+                    if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
+                    
+                    ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
+                    if(nodeLength > 1) {
+                        if(useConjugacy) {
+                            conjugacyResult <- conjugacyResultsAll[[node]]
+                            if(!is.null(conjugacyResult)) {
+                                addConjugateSampler(conjugacyResult = conjugacyResult);     next }
+                        }
+                        if(nodeDist == 'dmulti')       { addSampler(target = node, type = 'RW_multinomial');     next }
+                        if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
+                        if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
+                        if(multivariateNodesAsScalars) {
+                            for(scalarNode in nodeScalarComponents) {
+                                if(onlySlice) addSampler(target = scalarNode, type = 'slice')
+                                else          addSampler(target = scalarNode, type = 'RW')    };     next }
+                        addSampler(target = node, type = 'RW_block');     next }
+                    
+                    if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW'   );     next }
+                    if(onlySlice)             { addSampler(target = node, type = 'slice');     next }
+                    
+                    ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
+                    if(useConjugacy) {
+                        conjugacyResult <- conjugacyResultsAll[[node]]
+                        if(!is.null(conjugacyResult)) {
+                            addConjugateSampler(conjugacyResult = conjugacyResult);     next }
+                    }
+                    
+                    ## if node is discrete 0/1 (binary), assign 'binary' sampler
+                    if(binary) { addSampler(target = node, type = 'binary');     next }
+                    
+                    ## if node distribution is discrete, assign 'slice' sampler
+                    if(discrete) { addSampler(target = node, type = 'slice');     next }
+                    
+                    ## default: 'RW' sampler
+                    addSampler(target = node, type = 'RW');     next
                 }
             }
-            
-            ## OLD SAMPLER ASSIGNMENT LOGIC
-            ##
-            ##isEndNode <- model$isEndNode(nodes)
-            ##if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
-            ## 
-            ##for(i in seq_along(nodes)) {
-            ##    node <- nodes[i]
-            ##    discrete <- model$isDiscrete(node)
-            ##    binary <- model$isBinary(node)
-            ##    nodeDist <- model$getDistribution(node)
-            ##    nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
-            ##    nodeLength <- length(nodeScalarComponents)
-            ##    
-            ##    ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
-            ##    if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
-            ##    
-            ##    ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
-            ##    if(nodeLength > 1) {
-            ##        if(useConjugacy) {
-            ##            conjugacyResult <- conjugacyResultsAll[[node]]
-            ##            if(!is.null(conjugacyResult)) {
-            ##                addConjugateSampler(conjugacyResult = conjugacyResult);     next }
-            ##        }
-            ##        if(nodeDist == 'dmulti')   { addSampler(target = node, type = 'RW_multinomial');     next }
-            ##        if(nodeDist == 'ddirch')   { addSampler(target = node, type = 'RW_dirichlet');       next }
-            ##        if(multivariateNodesAsScalars) {
-            ##            for(scalarNode in nodeScalarComponents) {
-            ##                addSampler(target = scalarNode, type = 'RW') };     next }
-            ##        addSampler(target = node, type = 'RW_block');     next }
-            ## 
-            ##    ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
-            ##    if(useConjugacy) {
-            ##        conjugacyResult <- conjugacyResultsAll[[node]]
-            ##        if(!is.null(conjugacyResult)) {
-            ##            addConjugateSampler(conjugacyResult = conjugacyResult);     next }
-            ##    }
-            ## 
-            ##    ## if node is discrete 0/1 (binary), assign 'binary' sampler
-            ##    if(binary) { addSampler(target = node, type = 'binary');     next }
-            ##    
-            ##    ## if node distribution is discrete, assign 'slice' sampler
-            ##    if(discrete) { addSampler(target = node, type = 'slice');     next }
-            ##    
-            ##    ## default: 'RW' sampler
-            ##    addSampler(target = node, type = 'RW');     next
-            ##}
             
             ##if(TRUE) { dynamicConjugateSamplerWrite(); message('don\'t forget to turn off writing dynamic sampler function file!') }
             if(print)   printSamplers()
@@ -260,10 +271,7 @@ target: The target node or nodes to be sampled.  This may be specified as a char
 
 type: The type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type=\'newSamplerType\', then either newSamplerType or sampler_newSamplertype must correspond to a nimbleFunction (i.e. a function returned by nimbleFunction, not a specialized nimbleFunction).  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this sampler.  The default value is \'RW\' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if \'target\' specifies more than one target node.
 
-control: A list of control arguments specific to the sampler function.
-These will override the defaults provided in the NIMBLE system option \'MCMCcontrolDefaultList\', and any specified in the control list argument to configureMCMC().
-An error results if the sampler function requires any control elements which are 
-not present in this argument, the control list argument to configureMCMC(), or in the NIMBLE system option \'MCMCcontrolDefaultList\'.
+control: A list of control arguments specific to the sampler function. These will override those specified in the control list argument to configureMCMC().
 
 print: Logical argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
 
@@ -309,10 +317,10 @@ Invisibly returns a list of the current sampler configurations, which are sample
 
             if(!(all(model$isStoch(target)))) { warning(paste0('No sampler assigned to non-stochastic node: ', paste0(target,collapse=', '))); return(invisible(samplerConfs)) }   ## ensure all target node(s) are stochastic
 
-            libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only
-            if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
-            requiredControlNames <- controlNamesLibrary[[libraryTag]]
-            thisControlList <- mcmc_generateControlListArgument(requiredControlNames=requiredControlNames, control=control, controlDefaults=controlDefaults)  ## should name arguments
+            ##libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only
+            ##if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
+            ##requiredControlNames <- controlNamesLibrary[[libraryTag]]
+            thisControlList <- mcmc_generateControlListArgument(control=control, controlDefaults=controlDefaults)  ## should name arguments
             
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=target, control=thisControlList, model=model)
@@ -374,8 +382,6 @@ Prints details of the MCMC samplers.
 Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely or in part) in the model variable \'x\'.  If omitted, then all samplers are printed.
-
-displayControlDefaults: A logical argument, specifying whether to display default values of control list elements (default FALSE).
 
 displayConjugateDependencies: A logical argument, specifying whether to display the dependency lists of conjugate samplers (default FALSE).
 
@@ -627,12 +633,33 @@ rule <- setRefClass(
 )
 
 
+addRuleToCodeBlock <- function(oldCode, rule) {
+    condition <- rule$getCondition()
+    sampler <- rule$getSampler()
+    name <- rule$getName()
+    if(is.call(sampler)) {
+        substitute(
+            if(CONDITION) { SAMPLER } else OLDCODE,
+            list(CONDITION = condition,
+                 SAMPLER = sampler,
+                 NAME = name,
+                 OLDCODE = oldCode))
+    } else {
+        substitute(
+            if(CONDITION) { addSampler(target = node, type = SAMPLER, name = NAME) } else OLDCODE,
+            list(CONDITION = condition,
+                 SAMPLER = sampler,
+                 NAME = name,
+                 OLDCODE = oldCode))
+    }
+}
 
 #' Class \code{samplerAssignmentRules}
 #' @aliases samplerAssignmentRules addRule reorder printRules
 #' @export
 #' @description
 #' Objects of this class specify an ordered set of rules for assigning MCMC sampling algorithms to the stochastic nodes in a BUGS model.
+#' This feature can be enabled by setting the NIMBLE option \code{MCMCuseSamplerAssignmentRules} to \code{TRUE}.
 #' The rules can be modified to alter under what circumstances various samplers are assigned, and with what precedence.
 #' When assigning samplers to each stochastic node, the set of rules is traversed beginning with the first, until a matching rule is found.
 #' When a matching rule is found, the sampler specified by that rule is assigned (or general code for sampler assignment is executed),
@@ -646,6 +673,10 @@ rule <- setRefClass(
 #' @author Daniel Turek
 #' @seealso \code{\link{configureMCMC}}
 #' @examples
+#' \dontrun{
+#' ## enable the use of samplerAssignmentRules:
+#' nimbleOptions(MCMCuseSamplerAssignmentRules = TRUE)
+#' 
 #' ## omitting empty=TRUE creates a copy of nimble's default rules
 #' my_rules <- samplerAssignmentRules(empty = TRUE)
 #' 
@@ -668,11 +699,11 @@ rule <- setRefClass(
 #' 
 #' ## reset configureMCMC() to use default rules
 #' nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
+#' }
 samplerAssignmentRules <- setRefClass(
     Class = 'samplerAssignmentRules',
     fields = list(
-        ruleList = 'list',       ## list of rule objects
-        evaluationEnv = 'environment'
+        ruleList = 'list'       ## list of rule objects
     ),
     methods = list(
         initialize = function(empty = FALSE, print = FALSE) {
@@ -689,30 +720,13 @@ print: Logical argument (default = FALSE).  If TRUE, the ordered list of sampler
             if(!empty) addDefaultSamplerAssignmentRules()
             if(print) printRules()
         },
-        setEvaluationEnv = function(env) {
-            evaluationEnv <<- env
-        },
-        selectRuleToInvoke = function() {
-            i <- 1
-            while(i <= length(ruleList)) {   ## using while() rather than for() to protect against ruleList=list()
-                e <- try(eval(ruleList[[i]]$getCondition(), envir=evaluationEnv), silent=TRUE)
-                if(inherits(e, 'try-error')) {
-                    msg <- paste0('evaluating condition of sampler assignment rule ', i, ', when node = ', evaluationEnv$node, ',\n',
-                                  strsplit(as.character(e), '\n')[[1]][2])
-                    stop(msg, call. = FALSE)
-                }
-                if(length(e) == 0) {
-                    msg <- paste0('condition evaluated as length = 0, from sampler assignment rule ', i, ', when node = ', evaluationEnv$node, '\n')
-                    stop(msg, call. = FALSE)
-                }
-                if(length(e) > 1) {
-                    msg <- paste0('condition evaluated as length > 1, from sampler assignment rule ', i, ', when node = ', evaluationEnv$node, '\n')
-                    warning(msg, call. = FALSE)
-                }
-                if(e) return(ruleList[[i]])
-                i <- i+1
-            }
-            return(NULL)     ## no matching rule found; return NULL
+        makeRuleSelectionCodeBlock = function() {
+            code <- quote(if(warnNoSamplerAssigned) {    ## no matching rule was found
+                warning(paste0('No matching rule found, and no sampler assigned to node: ', node))
+            })
+            for(i in rev(seq_along(ruleList)))   ## important to add rules in *reverse* order
+                code <- addRuleToCodeBlock(code, ruleList[[i]])
+            return(code)
         },
         addRule = function(condition, sampler, position, name, print = FALSE) {
             '
@@ -766,33 +780,43 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             if(print) printRules()
         },
         addDefaultSamplerAssignmentRules = function() {
+            ## CAR models
+            addRule(quote(model$getDistribution(node) == 'dcar_normal'), 'CAR_normal')
+            
 	    ## posterior predictive nodes
-            addRule(quote(model$isEndNode(node)), 'posterior_predictive')
+            addRule(quote(isEndNode), 'posterior_predictive')
             
 	    ## conjugate nodes
-            addRule(quote(useConjugacy && !is.null(conjugacyResults[[node]])),
-                    quote(addConjugateSampler(conjugacyResult = conjugacyResults[[node]])))
+            addRule(quote(useConjugacy && isConjugate),
+                    quote(addConjugateSampler(conjugacyResultsAll[[node]])))
             
 	    ## multinomial
-            addRule(quote(model$getDistribution(node) == 'dmulti'), 'RW_multinomial')
+            addRule(quote(nodeDistribution == 'dmulti'), 'RW_multinomial')
             
 	    ## dirichlet
-            addRule(quote(model$getDistribution(node) == 'ddirch'), 'RW_dirichlet')
+            addRule(quote(nodeDistribution == 'ddirch'), 'RW_dirichlet')
 
             ## multivariate & multivariateNodesAsScalars: univariate RW
-            addRule(quote(model$isMultivariate(node) && multivariateNodesAsScalars),
-                    quote(for(sn in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
-                        addSampler(target = sn, type = 'RW')
+            addRule(quote(isMultivariate && multivariateNodesAsScalars),
+                    quote(for(scalarNode in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
+                        if(onlySlice) addSampler(target = scalarNode, type = 'slice')
+                        else          addSampler(target = scalarNode, type = 'RW')
                     }))
             
             ## multivariate: RW_block
-            addRule(quote(model$isMultivariate(node)), 'RW_block')
+            addRule(quote(isMultivariate), 'RW_block')
 
+	    ## onlyRW argument
+            addRule(quote(onlyRW && !isDiscrete), 'RW')
+            
+	    ## onlySlice argument
+            addRule(quote(onlySlice), 'slice')
+            
 	    ## binary-valued nodes
-            addRule(quote(model$isBinary(node)), 'binary')
+            addRule(quote(isBinary), 'binary')
             
 	    ## discrete-valued nodes
-            addRule(quote(model$isDiscrete(node)), 'slice')
+            addRule(quote(isDiscrete), 'slice')
             
 	    ## default for continuous-valued nodes: RW
             addRule(TRUE, 'RW')
@@ -842,7 +866,7 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@param control An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
 #'For example, the standard Metropolis-Hastings random walk sampler (\link{sampler_RW}) utilizes control list elements \code{adaptive}, \code{adaptInterval}, and \code{scale}.
 #' (Internally it also uses \code{targetNode}, but this should not generally be provided as a control list element).
-#'The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are in the NIMBLE system option \code{MCMCcontrolDefaultList}.
+#'The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are in the setup code of the sampling algorithms.
 #'@param monitors A character vector of node names or variable names, to record during MCMC sampling.
 #'This set of monitors will be recorded with thinning interval \code{thin}, and the samples will be stored into the \code{mvSamples} object.
 #'The default value is all top-level stochastic nodes of the model -- those having no stochastic parent nodes.
@@ -852,6 +876,8 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@param thin The thinning interval for \code{monitors}.  Default value is one.
 #'@param thin2 The thinning interval for \code{monitors2}.  Default value is one.
 #'@param useConjugacy A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
+#'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal nodes are assigned a posterior_predictive sampler (\link{sampler_posterior_predictive}).
+#'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
 #'@param rules An object of class samplerAssignmentRules, which governs the assigment of MCMC sampling algorithms to stochastic model nodes.  The default set of sampler assignment rules is specified by the nimble option \'MCMCdefaultSamplerAssignmentRules\'.
 #'@param warnNoSamplerAssigned A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
@@ -865,13 +891,10 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@seealso \code{\link{samplerAssignmentRules}}, \code{\link{buildMCMC}}
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
-                          useConjugacy = TRUE, onlyRW, onlySlice, multivariateNodesAsScalars = FALSE,
+                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
                           print = FALSE, autoBlock = FALSE, oldConf,
                           rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
-
-    if(!missing(onlyRW))    warning('onlyRW argument has been deprecated')
-    if(!missing(onlySlice)) warning('onlySlice argument has been deprecated')
     
     if(class(rules) != 'samplerAssignmentRules') stop('rules argument must be a samplerAssignmentRules object')
 
@@ -890,6 +913,7 @@ configureMCMC <- function(model, nodes, control = list(),
     thisConf <- MCMCconf(model = model, nodes = nodes, control = control, rules = rules,
                          monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
                          useConjugacy = useConjugacy,
+                         onlyRW = onlyRW, onlySlice = onlySlice,
                          multivariateNodesAsScalars = multivariateNodesAsScalars,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
                          print = print)

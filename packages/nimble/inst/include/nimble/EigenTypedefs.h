@@ -54,6 +54,7 @@ public:
   EIGEN_SVDCLASS();
 };
 
+
 template<class Derived>
 nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(const Eigen::MatrixBase<Derived> &x, bool valuesOnly) {
     nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
@@ -100,7 +101,7 @@ void EIGEN_EIGEN_INTERNAL(const Eigen::MatrixBase<Derived> &x, bool valuesOnly, 
 	  Eig_eigVecs = solver.eigenvectors().rowwise().reverse();	
 	}
 	//	return(returnClass);
-};
+}
 
  template<class Derived> 
 void EIGEN_SVD_INTERNAL(const Eigen::MatrixBase<Derived> &x, int vectors, EIGEN_SVDCLASS_R *returnClass) { 
@@ -133,7 +134,7 @@ void EIGEN_SVD_INTERNAL(const Eigen::MatrixBase<Derived> &x, int vectors, EIGEN_
  	} 
 	Svd_d = svd.singularValues();  
  	//return(returnClass); 
- }; 
+ }
 
 
 template<class derived1, class derived2>
@@ -156,6 +157,13 @@ MatrixXd EIGEN_SOLVE(const MatrixBase<derived1> &x, const MatrixBase<derived2> &
   MatrixXd ans = x.lu().solve(ycopy);
   return(ans);
 }
+
+
+template <typename Type>
+struct EigenTemplateTypes {
+  typedef Matrix<Type, Dynamic, Dynamic> typeMatrixXd;
+  typedef Map<typeMatrixXd, Unaligned, EigStrDyn > typeEigenMapStrd;
+};
 
 template <typename Derived1, typename Derived2>
 double eigenInprod(const ArrayBase<Derived1>& v1, const ArrayBase<Derived2>& v2) { 
@@ -201,10 +209,5 @@ template <typename Derived>
 double logdet(const MatrixBase<Derived>& v) {
   return(log(v.determinant()));
 }
-
-
-
-SEXP makeNewNimbleList(SEXP S_listName);
-
 
 #endif

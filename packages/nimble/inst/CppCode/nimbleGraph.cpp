@@ -30,7 +30,7 @@ void graphNode::addParent(graphNode *fromNode) {
 
 void SEXP_2_nodeType(SEXP Stypes, vector<NODETYPE> &ans) {
   //  enum NODETYPE {UNKNOWNTYPE, STOCH, DETERM, RHSONLY};
-  if(!isString(Stypes)) {
+  if(!Rf_isString(Stypes)) {
     PRINTF("Error:  called for SEXP that is not a string!\n");
     return;
   }
@@ -58,7 +58,7 @@ void SEXP_2_nodeType(SEXP Stypes, vector<NODETYPE> &ans) {
   }
 }
 
-SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP SnodeFunctionIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes) {
+SEXP C_setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP SnodeFunctionIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes) {
   vector<int> edgesFrom = SEXP_2_vectorInt(SedgesFrom, -1); // -1 subtracted here
   vector<int> edgesTo = SEXP_2_vectorInt(SedgesTo, -1); // -1 substracted here
   vector<int> edgesFrom2ParentExprIDs = SEXP_2_vectorInt(SedgesFrom2ParentExprIDs);
@@ -89,11 +89,11 @@ nimbleGraph::~nimbleGraph() {
   }
 }
 
-SEXP anyStochDependencies(SEXP SgraphExtPtr) {
+SEXP C_anyStochDependencies(SEXP SgraphExtPtr) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> ans(graphPtr->anyStochDependencies());
   SEXP Sans;
-  PROTECT(Sans = allocVector(LGLSXP, ans.size()));
+  PROTECT(Sans = Rf_allocVector(LGLSXP, ans.size()));
   int *SansPtr = INTEGER(Sans);
   for(unsigned int i = 0; i < ans.size(); i++) {
     if(ans[i] == 0) PRINTF("Element %i was not processed\n", i);
@@ -103,7 +103,7 @@ SEXP anyStochDependencies(SEXP SgraphExtPtr) {
   return(Sans);
 }
 
-SEXP getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream) {
+SEXP C_getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
   vector<int> omit = SEXP_2_vectorInt(Somit, -1);
@@ -112,18 +112,18 @@ SEXP getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstrea
   return(vectorInt_2_SEXP(ans, 1)); // add 1 index for R
 }
 
-SEXP getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode) {
+SEXP C_getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   int node = SEXP_2_int(Snode, 0, -1); // subtract 1 index for C
   int result = graphPtr->getDependencyPathCountOneNode(node);
   return(int_2_SEXP(result)); 
 }
 
-SEXP anyStochParents(SEXP SgraphExtPtr) {
+SEXP C_anyStochParents(SEXP SgraphExtPtr) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> ans(graphPtr->anyStochParents());
   SEXP Sans;
-  PROTECT(Sans = allocVector(LGLSXP, ans.size()));
+  PROTECT(Sans = Rf_allocVector(LGLSXP, ans.size()));
   int *SansPtr = INTEGER(Sans);
   for(unsigned int i = 0; i < ans.size(); i++) {
     if(ans[i] == 0) PRINTF("Element %i was not processed\n", i);
@@ -324,8 +324,17 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
   n = Cnodes.size();
   graphNode *thisGraphNode;
   int thisGraphNodeID;
+  vector<int>::const_iterator omitFinder; 
   for(i = 0; i < n; i++) {
     thisGraphNodeID = Cnodes[i];
+
+    // Need to check Comit
+    // the touching of all Comit nodes still blocks them in the recursion
+    // but for the input nodes, we need to check if they are in Comit because
+    // being touched could also occur from another input node
+    omitFinder = std::find(Comit.begin(), Comit.end(), thisGraphNodeID);
+    if(omitFinder != Comit.end()) continue; // it was in omits
+    
     thisGraphNode = graphNodeVec[ thisGraphNodeID ];
 #ifdef _DEBUG_GETDEPS
     PRINTF("Working on input node %i\n", thisGraphNodeID);

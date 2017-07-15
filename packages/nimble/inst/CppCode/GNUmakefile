@@ -1,4 +1,4 @@
-SRC=RcppUtils.cpp EigenTypedefs.cpp eigenUsingClasses.cpp RcppNimbleUtils.cpp Utils.cpp NamedObjects.cpp ModelClassUtils.cpp accessorClasses.cpp dists.cpp nimDists.cpp dllFinalizer.cpp nimbleGraph.cpp smartPtrs.cpp
+SRC=RcppUtils.cpp EigenTypedefs.cpp eigenUsingClasses.cpp RcppNimbleUtils.cpp Utils.cpp NamedObjects.cpp ModelClassUtils.cpp accessorClasses.cpp dists.cpp nimDists.cpp dllFinalizer.cpp nimbleGraph.cpp smartPtrs.cpp predefinedNimbleLists.cpp nimOptim.cpp
 OBJECTS=$(SRC:%.cpp=%.o)
 
 # nimbleGraph.cpp is only needed in SRC for --enable-dylib=true, but it's not a big deal to leave include it either way
@@ -7,8 +7,13 @@ ifndef R_SHARE_DIR
  R_SHARE_DIR=$(R_HOME)/share
 endif
 
+## include raw package Makeconf first so that if subsequent removal of -g flags fails locally, raw Makeconf settings will be in place
+## Actually, this include makes OS X scream warnings about over-ridden make settings from second include below
+#-include $(R_HOME)/etc$(R_ARCH)/Makeconf
 # Don't have to succeed in including this if we are calling cleanup in the nimble package directory.
--include $(R_HOME)/etc$(R_ARCH)/Makeconf
+# Following two lines result in much smaller libnimble.a or equivalent by removing -g flags
+$(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
+-include ./Makeconf
 include ./Makevars
 
 ifndef OS

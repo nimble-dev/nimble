@@ -2,10 +2,10 @@
 cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                  contains = 'cppNamedObjectsClass',
                                  fields = list(
-                                     modelDef = 'ANY', ## a modelDefClass, but saying 'ANY' to avoid hassles,
-                                     model = 'ANY', ## an RmodelBaseClass, needed for the nodeFunctions
-                                     nodeFuns = 'ANY',		#list		 ## list of cppNimbleFunctionClass objects
-                                     CmodelValuesClassName = 'ANY'		#character
+                                     modelDef = 'ANY',               ## modelDefClass object
+                                     model = 'ANY',                  ## RmodelBaseClass object, needed for the nodeFunctions
+                                     nodeFuns = 'ANY',		     ## list of cppNimbleFunctionClass objects
+                                     CmodelValuesClassName = 'ANY'   ## character
                                      ),
                                  methods = list(
                                      initialize = function(...) {
@@ -46,14 +46,14 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                              nDim <- max(modelDef$logProbVarInfo[[v]]$nDim, 1) 
                                              addObject(cname, cppNimArrPtr(name = cname, nDim = nDim, type = 'double'))
                                          }
-                                         addObject('_defaultModelValues', cppVar(name = '_defaultModelValues', baseType = CmodelValuesClassName))
+                                         addObject('defaultModelValues_', cppVar(name = 'defaultModelValues_', baseType = CmodelValuesClassName))
                                      },
                                      ## buildConstructorFunctionDef adds a cppFunctionDef object for the constructor to the functionDefs field (inherited from cppNamespaceClass via cppNamedObjectsClass).  Most of this comprises the namedObjects assignments generated from  namedObjectsConstructorCodeBlock() inherited from cppNamedObjectsClass
                                      buildConstructorFunctionDef = function() {
 
-                                         lines12 <- cppLiteral(c("_defaultModelValues.resize(1);",
-                                                                 "pointAtAll(&_defaultModelValues, 0);",
-                                                                 "_modelValues = static_cast<Values *>(&_defaultModelValues);")) 
+                                         lines12 <- cppLiteral(c("defaultModelValues_.resize(1);",
+                                                                 "pointAtAll(&defaultModelValues_, 0);",
+                                                                 "modelValues_ = static_cast<Values *>(&defaultModelValues_);")) 
                                          
                                          code <- putCodeLinesInBrackets(list(lines12, namedObjectsConstructorCodeBlock())) 
                                          conFunDef <- cppFunctionDef(name = name,
@@ -91,79 +91,17 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                                                                                fromModel = TRUE,
                                                                                                generatorFunNames = model$nodeFunctionGeneratorNames,
                                                                                                alreadyAdded = TRUE) ## fromModel is redundant here
+                                         
                                      },
+                                    
                                      buildAll = function(buildNodeDefs = TRUE, where = globalenv(), ...) {
                                          makeCppNames() 
                                          buildVars()
                                          buildConstructorFunctionDef()
                                          buildSEXPgenerator(finalizer = 'namedObjects_Finalizer')
-                                         ##buildSEXPgenerator()
-                                         ##buildSEXPfinalizer()
                                          buildPointAtAll()
                                          if(buildNodeDefs) buildNodes(where = where, debugCpp = debugCpp)
                                      }
                                      )
                                  )
 
-compileBUGSmodel <- function(model, name, fileName, dirName, compileNodes = TRUE, writeFiles = !(model$cWritten), 
-                             compileCpp = !(model$compiled), loadSO = !(model$loaded), buildInterface = TRUE, 
-                             createModel = TRUE, returnInternals = FALSE, where = globalenv(), debugCpp = FALSE) {
-    ## Start assuming model is a model (not just a modelDef)
-    if(missing(name)) name <- model$getModelDef()$name
-    Cname <- Rname2CppName(name)
-    if(missing(fileName)) fileName <- Cname
-    if(missing(dirName))    dirName <- makeDefaultDirName()
-
-    if(inherits(model, 'RmodelBaseClass')) {
-        modelDef <- model$getModelDef()
-        modelDefCpp <- cppBUGSmodelClass$new(modelDef = modelDef, model = model, name = Cname) ## model is needed for nodeFunctions
-        modelDefCpp$buildAll(buildNodeDefs = compileNodes, where = where, debugCpp = debugCpp)
-    }
-    if(inherits(model, 'cppBUGSmodelClass')) {
-        modelDefCpp <- model
-    }
-    if(!inherits(model, 'cppProjectClass')) {
-        cppProj <- cppProjectClass$new(dirName = dirName)
-        mvc <- modelDefCpp$genModelValuesCppClass() 
-        cppProj$addClass(mvc, filename = Cname)
-        cppProj$addClass(modelDefCpp, Cname)
-        if(compileNodes) {
-            nfFileName <- paste0(Cname,'_nfCode')
-            for(i in names(modelDefCpp$nodeFuns)) {
-                cppProj$addClass(modelDefCpp$nodeFuns[[i]], filename = nfFileName)
-            }
-        }
-    } else {
-        cppProj <- model
-        Cname <- names(cppProj$cppDefs)[2]
-        if(compileNodes) nfFileName <- names(cppProj$cppDefs)[3] 
-    }
-
-    if(writeFiles) {
-        cppProj$writeFiles(Cname)
-        if(compileNodes) cppProj$writeFiles(nfFileName)
-        model$cWritten = TRUE
-    }
-    if(compileCpp) {
-        compileList <- Cname
-        if(compileNodes) compileList <- c(compileList, nfFileName)
-        cppProj$compileFile(compileList)
-        model$compiled = TRUE
-    }
-    if(loadSO) {
-        cppProj$loadSO(Cname)
-        model$loaded = TRUE
-    }
-    if(returnInternals) {
-        return(cppProj)
-    } else {
-        if(buildInterface) {
-            interfaceName <- paste0('C', Cname)
-            compiledModel <- cppProj$cppDefs[[2]] 
-            newCall <- paste0('new_',Cname) 
-            ans <- buildModelInterface(interfaceName, compiledModel, newCall, where = where, dll = cppProj$dll)
-            if(!createModel) return(ans) else return(ans(model, where, dll = cppProj$dll))
-        }
-        return(NULL)
-    }
-}

@@ -1,14 +1,15 @@
 virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                    fields = list(
-                                       name = 'ANY', ## character
-                                       setupSymTab = 'ANY',
-                                       nfGenerator =  'ANY',		#'function',
-                                       compileInfos =  'ANY',		#'list', ## A list of RCfunctionCompileClass objects
-                                       origMethods = 'ANY',
-                                       RCfunProcs =  'ANY',		#'list', ## A list of RCfunProcessing  or RCvirtualFunProcessing objects
-                                       nimbleProject = 'ANY',
-                                       cppDef = 'ANY'
-                                       ),
+                                       name = 'ANY',                    ## character
+                                       setupSymTab = 'ANY',             ## symbolTable
+                                       nfGenerator =  'ANY',		## 'function',
+                                       compileInfos =  'ANY',		## list of RCfunctionCompileClass objects
+                                       origMethods = 'ANY',             ## list of original methods
+                                       RCfunProcs =  'ANY',		## list of RCfunProcessing  or RCvirtualFunProcessing objects
+                                       nimbleProject = 'ANY',           ## nimbleProjectclass object
+                                       cppDef = 'ANY',                  ## cppNimbleFunctionClass or cppVirtualNimbleFunctionClass object
+                                       isNode = 'ANY'                  ## logical, is it a nodeFunction?
+                                   ),
                                    methods = list(
                                        show = function() {
                                            writeLines(paste0('virtualNFprocessing object ', name))
@@ -17,6 +18,8 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            nimbleProject <<- project
                                        		compileInfos <<- list()
                                        		RCfunProcs <<- list()
+                                       		
+                                       		isNode <<- isNode
 
                                            if(!is.null(f)) { ## This allows successful default instantiation by R when defining nfProcessing below -- crazy
                                                ## nfGenerator allowed if it is a nimbleFunctionVirtual
@@ -36,7 +39,9 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                RCfunProcs <<- list()
                                                for(i in seq_along(origMethods)) {
                                                    RCname <- names(origMethods)[i]
-                                                   RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname, const = isNode) else RCfunProcessing$new(origMethods[[i]], RCname, const = isNode)
+                                                   if(isNode && strsplit(RCname, '_', fixed = TRUE)[[1]][1] == getCalcADFunName()) constFlag <- FALSE
+                                                   else constFlag <- isNode
+                                                   RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname, const = constFlag) else RCfunProcessing$new(origMethods[[i]], RCname, const = constFlag)
                                                }
                                                compileInfos <<- lapply(RCfunProcs,
                                                                        function(x) x$compileInfo)
@@ -72,14 +77,14 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
 nfProcessing <- setRefClass('nfProcessing',
                             contains = 'virtualNFprocessing',
                             fields = list(
-                                instances = 'ANY',
-                                neededTypes =  'ANY',		#'list', ## A list of symbolTable entries of non-native types, such as derived models or modelValues, that will be needed
-                              neededObjectNames =  'ANY',		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
-                                newSetupOutputNames =  'ANY',		#'character',
-                                blockFromCppNames = 'ANY',
-                                newSetupCode =  'ANY',		#'list',
-                                newSetupCodeOneExpr = 'ANY',
-                                inModel =  'ANY'		#'logical'
+                                instances = 'ANY',           ## list of instances of the nimbleFunction to used for setup types and receive newSetupCode
+                                neededTypes =  'ANY',	     ## list of symbols for non-trivial types that will be needed for compilation, such as derived models or modelValues
+                              neededObjectNames =  'ANY',     ## character vector of the names of objects such as models or modelValues that need to exist during C++ instantiation and population so their contents can be pointed to 
+                                newSetupOutputNames =  'ANY', ## character vector of names of objects created by newSetupCode from "keyword processing"
+                                blockFromCppNames = 'ANY',    ## character vector of names of setup outputs that should not be propagated to C++
+                                newSetupCode =  'ANY',	      ## list of lines of setup code populated by keyword processing
+                                newSetupCodeOneExpr = 'ANY',  ## all lines of new setup code put into one expression for evaluation
+                                inModel =  'ANY'	      ## logical: whether this nfProcessing object is for a nodeFunction in a model
                               ),
                           methods = list(
                               show = function() {

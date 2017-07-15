@@ -1,4 +1,4 @@
-nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeExpr, type, setupOutputExprs, dynamicIndexInfo = NULL, evaluate = TRUE, where = globalenv()) {
+nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeAndDims, logProbNodeExpr, type, setupOutputExprs, dynamicIndexInfo = NULL, evaluate = TRUE, where = globalenv()) {
     if(!(type %in% c('stoch', 'determ')))       stop(paste0('invalid argument to nodeFunction(): type = ', type))
     setupOutputLabels <- nndf_makeNodeFunctionIndexLabels(setupOutputExprs) ## should perhaps move to the declInfo for preservation
     LHSrep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(LHS, setupOutputLabels)
@@ -6,6 +6,7 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeE
     altParamsRep <- lapply(altParams, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     boundsRep <- lapply(bounds, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     logProbNodeExprRep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(logProbNodeExpr, setupOutputLabels)
+    
     if(nimbleOptions()$allowDynamicIndexing) {
         if(length(dynamicIndexInfo)) {
             for(i in seq_along(dynamicIndexInfo))
@@ -14,6 +15,17 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeE
         } else dynamicIndexLimitsExpr <- NULL
     } else dynamicIndexLimitsExpr <- NULL
     
+    if(nimbleOptions('experimentalEnableDerivs')){
+      parents <- names(parentsSizeAndDims)
+      parentIndexInfoList <- nndf_extractNodeIndices(LHSrep, parents)
+      parentIndexInfoList <- nndf_extractNodeIndices(RHSrep, parents, indexExprList = parentIndexInfoList)
+      for(i in seq_along(parentIndexInfoList)){
+        for(j in seq_along(parentIndexInfoList[[i]])){
+          parentsSizeAndDims[[names(parentIndexInfoList)[i]]][[j]]$indexExpr <- parentIndexInfoList[[i]][[j]]$indexExpr 
+        }
+      }
+    }
+
     nodeFunctionTemplate <-
         substitute(
             nimbleFunction(##contains      = CONTAINS,
@@ -21,13 +33,21 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeE
                            methods       = METHODS,
                            name          = name,
                            check         = FALSE,
-                           where = where),
+                           enableDerivs  = CALCAD_LIST,
+                           where = where)
+          ,
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
                  SETUPFUNCTION = nndf_createSetupFunction(),  ##nndf = new node function
-                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, altParamsRep, boundsRep, logProbNodeExprRep, type, dynamicIndexLimitsExpr, RHS),
+                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, parentsSizeAndDims, altParamsRep, boundsRep, logProbNodeExprRep, type, dynamicIndexLimitsExpr, RHS),
+                 CALCAD_LIST   = if(nimbleOptions('experimentalEnableDerivs')) list(getCalcADFunName()) else list(),
                  where         = where)
         )
-    if(evaluate)    return(eval(nodeFunctionTemplate))     else       return(nodeFunctionTemplate)
+    if(evaluate){
+      returnFunc <- eval(nodeFunctionTemplate)
+      assign('parentsSizeAndDims', parentsSizeAndDims, envir = environment(returnFunc))      
+      return(returnFunc)
+    }
+    else       return(nodeFunctionTemplate)
 }
 
 nndf_makeNodeFunctionIndexLabels <- function(setupOutputExprs) {
@@ -39,6 +59,33 @@ nndf_makeNodeFunctionIndexLabels <- function(setupOutputExprs) {
 nndf_makeNodeFunctionIndexAccessCall <- function(index) {
     ## use name INDEXEDNODEINFO_
     substitute(getNodeFunctionIndexedInfo(INDEXEDNODEINFO_, INDEX), list(INDEX = index)) ## still needs unity decrement for c++
+}
+
+nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()){
+  if(is.call(code)){
+    if(deparse(code[[1]]) == '[') {
+      if(deparse(code[[2]]) %in% nodesToExtract){
+        thisIndexExpr <- list()
+        for(i in 1:(length(code)-2)){
+          if(is.call(code[[i + 2]]) && deparse(code[[i+2]][[1]]) == ':'){
+            thisIndexExpr <- c(thisIndexExpr, code[[i+2]][[2]])
+          }
+          else{
+            thisIndexExpr <- c(thisIndexExpr, code[[i+2]])
+          }
+        }
+        if(is.null(indexExprList[[deparse(code[[2]])]])) indexExprList[[deparse(code[[2]])]][[1]]$indexExpr <- thisIndexExpr
+        else indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]]) + 1]]$indexExpr <- thisIndexExpr
+        return(indexExprList)
+      }
+    }
+    if(length(code) > 1){
+      for(i in 2:length(code)){
+        indexExprList <- nndf_extractNodeIndices(code[[i]], nodesToExtract, indexExprList)
+      }
+    }
+  }
+  return(indexExprList)
 }
 
 nndf_replaceSetupOutputsWithIndexedNodeInfo <- function(code, setupOutputLabels) {
@@ -80,7 +127,7 @@ indexedNodeInfoTableClass <- function(BUGSdecl) {
 }
 
 ## creates a list of the methods calculate, simulate, getParam, getBound, and getLogProb, corresponding to LHS, RHS, and type arguments
-nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, type, dynamicIndexLimitsExpr, RHSnonReplaced) {
+nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bounds, logProbNodeExpr, type, dynamicIndexLimitsExpr, RHSnonReplaced) {
     if(type == 'determ') {
         methodList <- eval(substitute(
             list(
@@ -93,6 +140,16 @@ nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, 
                  RHS=RHS, # no longer used but kept for reference
                  DETERMSIM = ndf_createDetermSimulate(LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced)
                  )))
+        if(nimbleOptions('experimentalEnableDerivs')){
+          methodList[['CALCADFUNNAME']]  <- eval(substitute(
+            function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <- RHS;    returnType(double(THISDIM));   return(THISNAME) },
+            list(LHS=LHS,
+                 RHS=RHS,
+                 THISDIM =   as.numeric(parentsSizeAndDims[[1]][[1]]$nDim),
+                 THISNAME =  as.name(names(parentsSizeAndDims)[1])
+            )))
+        }
+
     }
     if(type == 'stoch') {
         methodList <- eval(substitute(
@@ -108,6 +165,12 @@ nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, 
                  STOCHSIM  = ndf_createStochSimulate(LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced),
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))))
+        if(nimbleOptions('experimentalEnableDerivs')){
+          methodList[['CALCADFUNNAME']]  <- eval(substitute(
+            function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR_AD;   returnType(double());   return(invisible(LOGPROB_AD)) },
+            list(LOGPROB_AD = as.name('logProb'),
+                 STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(as.name('logProb'), LHS, RHS, ADFunc = TRUE))))
+        }
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
@@ -147,6 +210,22 @@ nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, 
             boolThisCase <- typesNDims == nDimSupported ## & typesTypes == 'double' ## until (if ever) we have separate handling of integer params, these should be folded in with doubles.  We don't normally have any integer params, because we handle integers as doubles
             paramNamesToUse <- getParamNames(distName)[boolThisCase]
             caseName <- paste0("getParam_",nDimSupported,"D_double")
+
+            ## Special handling needed for dinterval
+            ## Second parameter is a vector but is expected to handle a scalar
+            ## It goes in nDimSupported == 1, but we need it's return type cast to vector
+            ## if it is in fact only a scalar. We do so by wrapping in c() if
+            ## it doesn't any `:` in it
+            if(nDimSupported == 1) {
+                allParams[paramNamesToUse] <- lapply(allParams[paramNamesToUse],
+                                                     function(x) {
+                                                         if(':' %in% all.names(x))
+                                                             x
+                                                         else
+                                                             substitute(c(X), list(X = x))
+                                                     })
+            }
+            
             if(length(paramNamesToUse) > 0)
                 methodList[[caseName]] <- nndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported)
         }
@@ -154,14 +233,60 @@ nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, 
         caseName <- paste0("getBound_",nDimSupported,"D_double")
         methodList[[caseName]] <- nndf_generateGetBoundSwitchFunction(bounds, seq_along(bounds), type = 'double', nDim = nDimSupported)
     }
+    parentsArgs <-c()
+    if(nimbleOptions('experimentalEnableDerivs')){
+      names(methodList)[names(methodList) == 'CALCADFUNNAME'] <-  getCalcADFunName() ## replace CALCADFUNNAME with real name
+      parentsArgs <- if(length(parentsSizeAndDims) > 0) list() else NULL
+      for(i in seq_along(parentsSizeAndDims)){
+        for(j in seq_along(parentsSizeAndDims[[i]])){
+          parentsArgs[[paste0(names(parentsSizeAndDims)[i], '_', j)]] <- substitute(double(PARDIM, PARSIZES), 
+                                                                                    list(PARDIM = as.numeric(parentsSizeAndDims[[i]][[j]]$nDim), 
+                                                                                         PARSIZES = nndf_makeParentSizeExpr(parentsSizeAndDims[[i]][[j]])))  
+          body(methodList[[getCalcADFunName()]]) <- nndf_addArgInfoToCalcAD(body(methodList[[getCalcADFunName()]]), names(parentsSizeAndDims)[i], j)
+        }
+      }
+      if(type == 'determ') body(methodList[[getCalcADFunName()]]) <- nndf_addArgInfoToCalcAD(body(methodList[[getCalcADFunName()]]), names(parentsSizeAndDims)[1], 1)
+      formals(methodList[[getCalcADFunName()]]) <- c(formals(methodList[[getCalcADFunName()]]), parentsArgs)
+    }
     ## add model$ in front of all names, except the setupOutputs
-    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"))
+  
+    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"), 
+                                                    ADexceptionNames = c(names(parentsArgs), 'logProb'))
     return(methodList)
 }
 
-nndf_addModelDollarSignsToMethods <- function(methodList, exceptionNames = character()) {
+nndf_addArgInfoToCalcAD <- function(code, argName, argNum){
+  for(i in seq_along(code)){
+    if(is.name(code[[i]]) && (deparse(code[[i]]) == argName)){
+      code[[i]] <- parse(text = paste0(deparse(code[[i]]), '_', argNum))[[1]]
+      return(code)
+    }
+    else if(length(code[[i]]) > 1){
+      didArgAdd <- nndf_addArgInfoToCalcAD(code[[i]], argName, argNum)
+      if(!is.null(didArgAdd)){ 
+        code[[i]] <- didArgAdd
+        return(code)
+      }
+    }
+  }
+  return(NULL)
+}
+
+nndf_makeParentSizeExpr <- function(sizeInfoList){
+  if(sizeInfoList$nDim == 0) return(parse(text = 'c(1)')[[1]])
+  else{
+    dimInds <- sizeInfoList$lengths[sizeInfoList$lengths > 1]
+    return(parse(text = paste0('c(', paste(dimInds, collapse = ', '), ')'))[[1]])
+  }
+}
+
+nndf_addModelDollarSignsToMethods <- function(methodList, exceptionNames = character(), ADexceptionNames = character()) {
     for(i in seq_along(methodList)) {
-        body(methodList[[i]]) <-addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))
+      if(names(methodList)[i] == getCalcADFunName()){
+        body(methodList[[i]]) <- removeIndices(body(methodList[[i]]))
+        body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, ADexceptionNames))
+      }
+      else  body(methodList[[i]]) <- addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames))
     }
     return(methodList)
 }

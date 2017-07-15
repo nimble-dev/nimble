@@ -59,10 +59,9 @@ nonNativeEigenCalls <- c('logdet','sd','var','inprod', coreRmanipulationCalls, c
 matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')
 matrixSquareOperators <- c('chol','inverse')
-nimbleListReturningOperators <- c('nimEigen', 'nimSvd')
+nimbleListReturningOperators <- c('nimEigen', 'nimSvd', 'getDerivs')  ## These use sizeNimbleListReturningFunction. Note that nimOptim is handled separately.
 matrixSolveOperators <- c('solve','forwardsolve','backsolve')
 passThroughOperators <- c('return')
-##keywordOperators <- c('for','if', 'while')
 
 returnTypeCodes <- list(
     double = 1L,
@@ -103,13 +102,9 @@ brackOperators <- list('[' = c('[',']'), '[[' = c('[[',']]'))
 
 ## see distributions_processInputList for some relevant lists of distributions functions 
 
-callToSkipInEigenization <- c('copy','setValues', 'setValuesIndexRange', 'getValues', 'getValuesIndexRange', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'calculateDiff', 'simulate', 'getLogProb', 'nimEquals', 'startNimbleTimer', 'endNimbleTimer')
-
-
-## used for nimDeparse &/or cppOutputs
+callToSkipInEigenization <- c('copy','setValues', 'setValuesIndexRange', 'getValues', 'getValuesIndexRange', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dinvwish_chol', 'nimArr_dcar_normal', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rinvwish_chol', 'nimArr_rcar_normal', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'calculateDiff', 'simulate', 'getLogProb', 'nimEquals', 'startNimbleTimer', 'endNimbleTimer')
 
 ## used for cppOutputs
-## eigProxyCalls <- c('eigTranspose', 'eigCos', 'eigSin', 'eigTan', 'eigAcos', 'eigAsin', 'eigExp', 'eigLog', 'eigCube', 'cwiseProduct', 'cwiseQuotient', 'eigArray', 'eigMatrix', 'eigInverse', 'setAll', 'eigEval')
 ## things here should have the inverse listing in the eigenizeTranslate list
 eigProxyTranslate <- c(eigTranspose = 'transpose',
                        eigCos = 'cos',
@@ -175,7 +170,6 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
                                        eigIprobit = c('iprobit', 'double', 'double'),
                                        eigGammafn = c('gammafn', 'double', 'double'),
                                        eigLgammafn = c('lgammafn', 'double', 'double'),
-                                       ##eigLgamma1p = c('lgamma1p', 'double', 'double'),
                                        eigLog1p = c('log1p', 'double', 'double'),
                                        eigLfactorial = c('lfactorial', 'double', 'double'),
                                        eigFactorial = c('factorial', 'double', 'double'),
@@ -198,7 +192,7 @@ cppCasts = list(as.numeric = 'double', as.integer = 'int')
 
 ## Used to decide when to put parentheses around LHS or RHS based on operator precendence.
 operatorRank <- c(
-    list('<-' = 100, '^' = 4),
+    list('<-' = 100, '^' = 4, '::' = 3),
     makeCallList(c('*','/','%*%', '%%'), 5),
     makeCallList(c('+', '-'), 6),
     makeCallList(c('>','<','<=', '>='), 7),

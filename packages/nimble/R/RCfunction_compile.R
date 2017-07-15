@@ -120,6 +120,7 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
     if(is.character(code)) return(code)
     if(is.numeric(code)) return(code)
     if(is.logical(code)) return(code)
+    if(is.null(code)) return(code)
     if(is.name(code)) {
         maybeAns <- subList[[as.character(code)]]
         return( if(is.null(maybeAns)) code else maybeAns )
@@ -234,23 +235,32 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        compileInfo$typeEnv[['.nimbleProject']] <<- nimbleProject
                                        passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
-
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.
-                                       tryCatch(withCallingHandlers(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv),
-                                                                    error = function(e) {
-                                                                        stack <- sapply(sys.calls(), deparse)
-                                                                        .GlobalEnv$.nimble.traceback <- capture.output(traceback(stack))
-                                                                    }),
-                                                error = function(e) {
-                                                    stop(paste('There was some problem in the the setSizes processing step for this code:',
-                                                               paste(deparse(compileInfo$origRcode), collapse = '\n'),
-                                                               'Internal Error:', e,
-                                                               'Traceback:', paste0(.GlobalEnv$.nimble.traceback, collapse = '\n'),
-                                                               sep = '\n'),
-                                                         call. = FALSE)
-                                                })
+                                       compileInfo$typeEnv[['nameSubList']] <<- nameSubList
+
+                                       ## exprClasses_setSizes contains lots of reticulated error trapping.
+                                       ## If options('error') is not NULL (typically options(error = recover)), let that take precedent for error trapping of exprClasses_setSizes.
+                                       ## Otherwise, wrap the setSizes call in our own error-trapping that outputs: any local message from a stop() inside a size handler,
+                                       ##    a message from here showing the larger block of code in which the error occurred, and, if nimbleOptions('verboseErrors') is TRUE, the call stack. 
+                                       if(!is.null(options('error'))) exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
+                                       else tryCatch(withCallingHandlers(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv),
+                                                                         error = function(e) {
+                                                                             stack <- sapply(sys.calls(), deparse)
+                                                                             .GlobalEnv$.nimble.traceback <- capture.output(traceback(stack))
+                                                                         }),
+                                                     error = function(e) {
+                                                         eMessage <- if(!is.null(e$message)) paste0(as.character(e$message),"\n") else ""
+                                                         message <- paste(eMessage, 'There was some problem in the the setSizes processing step for this code:',
+                                                                          paste(deparse(compileInfo$origRcode), collapse = '\n'))
+                                                         if(getNimbleOption('verboseErrors')) {
+                                                             message <- paste(message,
+                                                                              'Internal Error:', e,
+                                                                              'Traceback:', paste0(.GlobalEnv$.nimble.traceback, collapse = '\n'),
+                                                                              sep = '\n')
+                                                         }
+                                                         stop(message, call. = FALSE)
+                                                     })
                                        neededRCfuns <<- c(neededRCfuns, compileInfo$typeEnv[['neededRCfuns']])
-                                       
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showType = TRUE) -- broken')
                                            print('compileInfo$nimExpr$show(showAssertions = TRUE) -- possible broken')
@@ -258,10 +268,15 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
 
+                                       if(nimbleOptions('experimentalNewSizeProcessing')) {
+                                           exprClasses_setToEigenize(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
+                                       }
+
                                        tryResult <- try(exprClasses_insertAssertions(compileInfo$nimExpr))
                                        if(inherits(tryResult, 'try-error')) {
                                            stop(paste('There is some problem at the insertAdditions processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
                                        }
+                                       
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showAssertions = TRUE)')
                                            compileInfo$nimExpr$show(showAssertions = TRUE)
