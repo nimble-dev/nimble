@@ -598,7 +598,6 @@ sampler_AF_slice <- nimbleFunction(
             if(anyDiscrete == 1)
                 for(i in 1:d)
                     if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])            
-            }
             values(model, target) <<- targetValues
             lp <- calculate(model, target)
             if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds

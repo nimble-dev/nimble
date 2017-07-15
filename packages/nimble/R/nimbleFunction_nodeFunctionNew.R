@@ -169,7 +169,7 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
           methodList[['CALCADFUNNAME']]  <- eval(substitute(
             function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR_AD;   returnType(double());   return(invisible(LOGPROB_AD)) },
             list(LOGPROB_AD = as.name('logProb'),
-                 STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(as.name('logProb'), LHS, RHS, ADFunc = TRUE))))
+                 STOCHCALC_FULLEXPR_AD = ndf_createStochCalculate(as.name('logProb'), LHS, RHS, ADFunc = TRUE, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))))
         }
         if(FALSE) {
         if(nimbleOptions()$compileAltParamFunctions) {
