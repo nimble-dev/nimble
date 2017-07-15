@@ -1,10 +1,7 @@
-## This is not an active test file.
-## It is really a demo with a couple of tests shown at the end.
+## This test file also serves as a demo for experimental features: calling externally compiled code, and calling R functions from compiled nimbleFunctions.
 ## It covers rough draft functionality for calling external compiled functions and calling arbitrary R functions from within compiled nimbleFunction (including BUGS) code.
 
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-
-message('Ignore warnings from DSL checking. That system has not been updated for some new internal keywords used for external calls.')
 
 ## Calling external C:
 
@@ -45,7 +42,7 @@ Radd1p5 <- nimbleExternalCall(function(x = double(1), ans = double(1), n = integ
 ## The first argument uses the format of a nimbleFunction with argument type declarations, but the body of the function can be empty ('{}')
 ## You can choose any names for the arguments in R. They don't have to match the C code.
 ## Ignore the warning here and later warnings
-Radd1p5 ## this is a nimbleFunction with some internal special sauce, but from here on out it should behave like a nimbleFunction
+##Radd1p5 ## this is a nimbleFunction with some internal special sauce, but from here on out it should behave like a nimbleFunction
 ## We'll wait to use it in BUGS code
 
 temporarilyAssignInGlobalEnv(Radd1p5)
@@ -73,7 +70,7 @@ temporarilyAssignInGlobalEnv(add2p5)
 Radd2p5 <- nimbleRcall(function(x = double(1)){}, Rfun = 'add2p5', returnType = double(1), envir = .GlobalEnv)
 ## Similar to above.  The function prototype and the returnType represent a promise that add2p5 will always take and return these types.  Also an environment is needed and it defaults to R's global environment but I'm showing it explicitly.
 ## Again, ignore the more extensive warnings
-Radd2p5 ## this is also a nimbleFunction with more special sauce
+##Radd2p5 ## this is also a nimbleFunction with more special sauce
 temporarilyAssignInGlobalEnv(Radd2p5)
 
 ## Now let's use these in a model
@@ -84,11 +81,10 @@ demoCode <- nimbleCode({
     z[1:4] <- Radd2p5(x[1:4])
     })
 
-demoModel <- nimbleModel(demoCode, inits = list(x = rnorm(4)))
+demoModel <- nimbleModel(demoCode, inits = list(x = rnorm(4)), check = FALSE, calculate = FALSE)
 ## Again ignore the error during checking.  We'll have to trap and handle that, but right now I'm focused on core functionality.
 ## The model will not work uncompiled!
 
-nimbleOptions(showCompilerOutput = TRUE) ## so you can see what is happening
 CdemoModel <- compileNimble(demoModel, dirName = '.') ## last arg puts the C++ code in your working directory so you can look at it if you like
 
 CdemoModel$x
@@ -96,3 +92,36 @@ CdemoModel$calculate()
 expect_equal(CdemoModel$y - CdemoModel$x, rep(1.5, 4), info = 'external C call works in compiled BUGS code')
 expect_equal(CdemoModel$z - CdemoModel$x, rep(2.5, 4), info = 'external R call works in compiled BUGS code')
 
+## next test alternate modes of providing arguments
+
+sink('add1p5b.h')
+cat('
+extern "C" {
+  double my_internal_function(double *p, double*ans, int n);
+}
+')
+sink()
+
+sink('add1p5b.cpp') 
+cat('
+#include <cstdio>
+#include "add1p5b.h"
+
+double my_internal_function(double *p, double *ans, int n) {
+  printf("In my_internal_function\\n"); /* cat reduces the double slash to single slash */ 
+  for(int i = 0; i < n; i++) 
+    ans[i] = p[i] + 1.5;
+  return(1.23);
+}
+')
+sink()
+
+system('g++ add1p5b.cpp -c -o add1p5b.o')
+options(error = recover)
+Radd1p5b <- nimbleExternalCall(list(nimbleType(name = 'x', type = 'double', dim = 1),
+                                    nimbleType(name = 'ans', type = 'double', dim = 1),
+                                    nimbleType(name = 'n', type = 'integer', dim = 0)),
+                               Cfun = 'my_internal_function', headerFile = 'add1p5b.h', oFile = 'add1p5b.o',
+                               returnType = nimbleType(name = 'NOTUSED', type = 'double', dim = 0))
+temporarilyAssignInGlobalEnv(Radd1p5b)
+Cadd1p5b <- compileNimble(Radd1p5b, dirName = '.')

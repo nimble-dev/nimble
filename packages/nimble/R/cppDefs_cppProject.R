@@ -255,8 +255,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        outputSOfile <<- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
 
                                        if(!inherits(Oincludes, 'uninitializedField')) { ## will only be uninitialized if writeFiles was skipped due to specialHandling (developer backdoor)
-                                           quotedOincludes <- shQuote(paste0("\"", Oincludes, "\"")) ## painful invocation to handle spaces in paths
-                                           includes <- c(includes, quotedOincludes) ## normal operation will have Oincludes.
+                                           includes <- c(includes, Oincludes) ## normal operation will have Oincludes.
                                        }
                                        SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 

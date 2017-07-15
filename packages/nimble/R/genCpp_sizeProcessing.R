@@ -68,7 +68,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                    NimArr_2_SEXP = 'sizePROTECT', ## same need
                    Reval = 'sizeReval',
                     nimbleConvert = 'sizeNimbleConvert',
-                    nimbleUnconvert = 'sizeNimbleUnconvert'),
+                   nimbleUnconvert = 'sizeNimbleUnconvert',
+                   asReturnSymbol = 'sizeAsReturnSymbol'),
                makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
                makeCallList(scalar_distribution_pFuns, 'sizeRecyclingRule'),
                makeCallList(scalar_distribution_qFuns, 'sizeRecyclingRule'),
@@ -211,6 +212,22 @@ sizeProxyForDebugging <- function(code, symTab, typeEnv) {
     removeExprClassLayer(code$caller, 1)
     setNimbleOption('debugSizeProcessing', origValue)
     return(ans)
+}
+
+## This is used by nimbleExternalCall
+## When the external call is provided as foo, returning e.g. double(0),
+## we end up needing a line of code RETURNVALUE <- foo(args).
+## To get the type of RETURNVALUE, we wrap that as RETURNVALUE <- asReturnSymbol(foo(args), type, nDim)
+sizeAsReturnSymbol <- function(code, symTab, typeEnv) {
+    returnType <- code$args[[2]]
+    returnNDim <- code$args[[3]]
+    code$args <- list(code$args[[1]])
+    code$args[[1]]$type <- returnType
+    code$args[[1]]$nDim <- returnNDim
+    code$args[[1]]$toEigenize <- 'no'
+    code$args[[1]]$sizeExprs <- NULL
+    removeExprClassLayer(code, 1)
+    list()
 }
 
 productSizeExprs <- function(sizeExprs) {
