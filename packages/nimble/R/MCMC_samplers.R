@@ -69,7 +69,44 @@ sampler_binary <- nimbleFunction(
     ), where = getLoadingNamespace()
 )
 
-
+## FIXME: deal with DT new control defaults setup
+#' @rdname samplers
+#' @export
+sampler_cat <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes  <- model$getDependencies(target)
+        ## checks
+        if(length(targetAsScalar) > 1)  stop('cannot use cat sampler on more than one target node')
+        if(model$getDistribution(target) != 'dcat') stop('can only use cat sampler on node with dcat distribution')
+        maxval <- length(model$getParam(target, 'prob'))
+        probs <- numeric(maxval)
+    },
+    run = function() {
+        currentValue <- model[[target]]
+        probs[currentValue] <<- exp(getLogProb(model, calcNodes))
+        for(i in 1:maxval) {
+            if(i != currentValue) {
+                model[[target]] <<- i
+                probs[i] <<- exp(calculate(model, calcNodes))
+                if(is.nan(probs[i])) probs[i] <<- 0
+            }
+        }
+        newValue <- integer(1)
+        size <- integer(1,1)
+        rankSample(probs, size[1], newValue)
+        if(currentValue != newValue[1]) {
+            model[[target]] <<- newValue[1]
+            calculate(model, calcNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        } else nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
 
 ####################################################################
 ### scalar RW sampler with normal proposal distribution ############
