@@ -1039,6 +1039,34 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
  #   if(.Platform$OS.type != 'windows') dyn.unload(project$cppProjects[[1]]$getSOName())
     invisible(NULL)
 }
+
+## need code to deal with expected error:
+
+## should fail - multivariate index
+
+code = nimbleCode({
+    y[1:3] ~ dmnorm(mu[k[1:3]], pr[1:3,1:3])
+    mu[1:5] ~ dmnorm(z[1:5], pr[1:5,1:5])
+})
+
+m = nimbleModel(code, data = list(y=1:3), inits = list(mu=1:5))
+
+
+test_dynamic_indexing_model <- function(code, dynIndVars = NULL, data = NULL, inits = NULL, dims = NULL, expectError = FALSE, case = "") {
+    test_that(paste0('test of case: ', case), {
+        m <- nimbleModel(code, dimensions = dims, inits = inits, data = data)
+        expect_true(inherits(m, 'modelBaseClass'), info = "problem with model")
+        cm <- compileNimble(m)
+        expect_identical(class(cm), "Ccode", info = "problem with model compilation")
+        expect_identical(calculate(m), calculate(cm), info = "problem with R vs. C calculate with initial indexes")
+        for(i in 1:length(dynIndVars)) {
+            m[[paste0(dynIndVars[i], "[", 1, "]")]] <- 2
+            cm[[paste0(dynIndVars[i], "[", 1, "]")]] <- 2
+            expect_identical(calculate(m), calculate(cm), info = "problem with R vs. C calculate with revised indexes")
+        }
+    }
+}
+
  
 ## utilities for saving test output to a reference file
 ## and making the test a comparison of the file
