@@ -115,8 +115,6 @@ The default sampler assigned to a stochastic node is determined by the following
 
 These sampler assignment rules can be inspected, reordered, and easily modified using the system option \cd{nimbleOptions("MCMCdefaultSamplerAssignmentRules")}, and customized  \cd{samplerAssignmentRules} objects.
 
-The default control parameters governing each of these samplers can be inspected and modified with \cd{nimbleOptions("MCMCcontrolDefaultList")}.  %These default values are described in Section \ref{sec:samplers-provided}, along with the related sampling algorithms.
-
 Details of each sampler and its control parameters can be found by invoking \cd{help(samplers)} in R with \cd{nimble} loaded.
 
 \subsubsection{Sampler assignment rules}
@@ -185,7 +183,7 @@ Named elements in the \cd{control} argument will be used for all default sampler
 mcmcConf <- configureMCMC(Rmodel, control = list(scale = 3, adaptive = FALSE))
 @
 
-When adding samplers to a configuration, the default control list can be over-ridden.
+When adding samplers to a configuration using \cd{addSampler}, the default control list can also be over-ridden.
 
 \subsubsection{Adding samplers to the configuration: \cd{addSampler}}
 
@@ -198,7 +196,7 @@ The hierarchy of precedence for control list elements for samplers is:
 \begin{enumerate}
 \item The \cd{control} list argument to \cd{addSampler};
 \item The \cd{control} list argument to \cd{configureMCMC};
-\item The defaults, as defined in \cd{nimbleOptions("MCMCcontrolDefaultList")}.
+\item The default values, as defined in the sampling algorithm \cd{setup} function.
 \end{enumerate}
 
 Samplers added by \cd{addSampler} will be appended to the end of current sampler list.  Adding a sampler for a node will \emph{not} automatically remove any existing samplers on that node. 
@@ -807,7 +805,7 @@ output$summary
 
 \subsubsection{Efficiency}
 
-Using the \cd{MCMCsuite}e option \cd{calculateEfficiency = TRUE} will also provide several measures of MCMC sampling efficiency.  Additional summary statistics are provided for each node: the total number of samples collected (\cd{n}), the effective sample size resulting from these samples (\cd{ess}), and the effective sample size per second of algorithm runtime (\cd{efficiency}).
+Using the \cd{MCMCsuite} option \cd{calculateEfficiency = TRUE} will also provide several measures of MCMC sampling efficiency.  Additional summary statistics are provided for each node: the total number of samples collected (\cd{n}), the effective sample size resulting from these samples (\cd{ess}), and the effective sample size per second of algorithm runtime (\cd{efficiency}).
 
 In addition to these node-by-node measures of efficiency, an additional return list element is also provided.  This element, \cd{efficiency}, is itself a named list containing two elements: \cd{min} and \cd{mean}, which contain the minimal and mean efficiencies (effective sample size per second of algorithm run-time) across all monitored nodes, separately for each algorithm.
 

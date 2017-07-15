@@ -567,7 +567,8 @@ my_RW <- nimbleFunction(
     contains = sampler_BASE,
     
     setup = function(model, mvSaved, target, control) {
-        scale <- control$scale   ## proposal standard deviation
+        ## proposal standard deviation
+        scale <- if(!is.null(control$scale)) control$scale else 1
         calcNodes <- model$getDependencies(target)
     },
     
@@ -615,7 +616,7 @@ adhere exactly to the following:
 
 \begin{itemize}
   \item The nimbleFunction must include the contains statement \cd{contains = sampler\_BASE}.
-    \item The \cd{setup} function must have the exact four arguments
+    \item The \cd{setup} function must have the four arguments
       \cd{model, mvSaved, target, control}, in that order.
       \item The \cd{run} function must accept no arguments, and have
         no return value.  Further, after execution it must leave the \cd{mvSaved}
@@ -627,7 +628,9 @@ adhere exactly to the following:
 
 The purpose of the \cd{setup} function is generally two-fold.  First,
 to extract control parameters from the \cd{control} list; in the
-example, the proposal standard deviation \cd{scale}.  Second, to
+example, the proposal standard deviation \cd{scale}.  It is good
+practice to specify default values for any control parameters that are
+not provided in the \cd{control} argument, as done in the example.  Second, to
 generate any sets of nodes needed in the \cd{run} function.  In many
 sampling algorithms, as here, \cd{calcNodes} is used to represent the
 target node(s) and dependencies up to the first layer of
