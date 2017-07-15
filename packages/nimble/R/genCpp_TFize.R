@@ -123,11 +123,17 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
             nimType2TfDtype = list('double' = tf$float64)
             sym <- symTab$getSymbolObject(code$name)
             dtype <- nimType2TfDtype[[sym$type]]
-            if(class(sym$size) == 'uninitializedField') stop('Size has not been initialized')
-            size <- as.list(rev(sym$size))  ## Note the transpose
-            for (i in 1:length(size)) {
-                if (is.na(size[i])) {
+            if (class(sym$size) == 'uninitializedField') {
+                size <- as.list(rep(NA, sym$nDim))
+                for (i in 1:sym$nDim) {
                     size[i] <- list(NULL)
+                }
+            } else {
+                size <- as.list(rev(sym$size))  ## Note the transpose
+                for (i in 1:length(size)) {
+                    if (is.na(size[i])) {
+                        size[i] <- list(NULL)
+                    }
                 }
             }
             placeholders[[code$name]] = tf$placeholder(name = code$name,

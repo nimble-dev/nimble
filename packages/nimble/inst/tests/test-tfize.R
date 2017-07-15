@@ -20,8 +20,7 @@ test_that('Tensorflow implementation of axpy works', {
     expect_equal(nf(a, x, y), cnf(a, x, y))
 })
 
-if (0)  ## Known failure.
-test_that('Tensorflow example', {
+test_that('Tensorflow multiple statements', {
     temporarilyEnableTensorflow()
     nimbleOptions(debugCppLineByLine = TRUE)
     nimbleOptions(showCompilerOutput = TRUE)
@@ -32,7 +31,8 @@ test_that('Tensorflow example', {
         name = 'example',
         run = function(arg1 = double(2))
         {
-            ## FIXME this fails due to an ininitialized size.
+            ## This compiles into two separate tensorflow graphs, whereas
+            ## we want it to be fused into a single graph.
             x <- arg1 %*% arg1
             out <- x %*% x
             return(out)
