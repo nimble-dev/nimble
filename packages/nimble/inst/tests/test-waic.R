@@ -2,36 +2,66 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of calcWAIC")
 
+###  BUGS models from Chapter 5 of Gelman and Hill
+###  Below WAIC values from Gelman '13 "Understanding predictive 
+###  information criteria for Bayesian models"
 
-###  BUGS code from Chapter 5 of Gelman and Hill
-###  Below WAIC value from Gelman '13 "Understanding predictive information criteria for Bayesian models"
-
-sigma     <- c(15,10,16,11, 9,11,10,18)
-schoolobs <- c(28,8, -3, 7,-1, 1,18,12)
-
-schoolSATcode <- nimbleCode({
-  for(i in 1:N) {
-    schoolmean[i] ~ dnorm(mu,itau)
-    thes[i] <- 1/(sigma[i])^2
-    schoolobs[i] ~ dnorm(schoolmean[i],thes[i])
-  }
-  mu ~ dnorm(0,0.1) 
-  itau   ~ dgamma(1e-3,0.225)
+test_that("school model WAIC is accurate: ", {
+  sigma     <- c(15,10,16,11, 9,11,10,18)
+  schoolobs <- c(28,8, -3, 7,-1, 1,18,12)
+  schoolSATcode <- nimbleCode({
+    for(i in 1:N) {
+      schoolmean[i] ~ dnorm(mu,itau)
+      thes[i] <- 1/(sigma[i])^2
+      schoolobs[i] ~ dnorm(schoolmean[i],thes[i])
+    }
+    mu ~ dnorm(0,0.1) 
+    itau   ~ dgamma(1e-3,0.225)
+  })
+  schoolSATmodel <- nimbleModel(code = schoolSATcode,
+                                data=list(sigma = sigma,
+                                          schoolobs =schoolobs),
+                                constants = list(N = length(schoolobs)),
+                                inits = list(schoolmean = rep(3, 8),
+                                             mu = 3,
+                                             itau = .2))
+  temporarilyAssignInGlobalEnv(schoolSATmodel)
+  compileNimble(schoolSATmodel)
+  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
+  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf)
+  temporarilyAssignInGlobalEnv(schoolSATmcmc)
+  CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel)
+  CschoolSATmcmc$run(50000)
+  expect_equal(CschoolSATmcmc$calculateWAIC(), 61.8, tolerance = 2.0)
 })
 
-schoolSATmodel <- nimbleModel(code = schoolSATcode,
-                              data=list(sigma = sigma,
-                                        schoolobs =schoolobs),
-                              constants = list(N = length(schoolobs)))
-
-compileNimble(schoolSATmodel)
-
-schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
-schoolSATmcmc <- buildMCMC(schoolSATmcmcConf)
-CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel)
-test_that("Test that WAIC returns -Inf if too few posterior samples are used: ",
-          expect_equal(CschoolSATmcmc$calculateWAIC(), -Inf))
-CschoolSATmcmc$run(50000)
-test_that("Test that WAIC is accurate: ",
-          expect_equal(CschoolSATmcmc$calculateWAIC(), 61.8, tolerance = 2.0))
-
+test_that("voter model WAIC is accurate: ", {
+  y <- c(44.6, 57.76, 49.91, 61.34, 49.60, 61.79, 48.95, 44.70, 59.17, 53.94,
+       46.55, 54.74, 50.27, 51.24, 46.32)
+  growth <- c(2.4, 2.89, .85, 4.21, 3.02, 3.62, 1.08, -.39, 3.86, 2.27, .38,
+  1.04, 2.36, 1.72, .1)
+  N = length(y)
+  voterCode = nimbleCode({
+    for(i in 1:N){
+      y[i] ~ dnorm(beta_1 + growth[i]*beta_2, sd = sigma)
+    }
+    sigma ~ dunif(0,50)
+    beta_1 ~ dnorm(0, .01)
+    beta_2 ~ dnorm(0, .01)
+  })
+  dataList = list(y = y);
+  constList = list(growth = growth, N = N)
+  voterModel = nimbleModel(code = voterCode, data = dataList, 
+                           constants = constList,
+                           inits = list(beta_1 = 44, beta_2 = 3.75, 
+                                        sigma = 4.4))
+  temporarilyAssignInGlobalEnv(voterModel)
+  CvoterModel <- compileNimble(voterModel)
+  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1', 'beta_2',
+                                                          'sigma'))
+  votermcmc <- buildMCMC(votermcmcConf)
+  temporarilyAssignInGlobalEnv(votermcmc)
+  Cvotermcmc <- compileNimble(votermcmc, project = voterModel)
+  Cvotermcmc$run(50000)
+  expect_equal(Cvotermcmc$calculateWAIC(), 87.2, tolerance = 2.0)
+})
