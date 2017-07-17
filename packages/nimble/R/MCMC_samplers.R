@@ -1568,7 +1568,7 @@ sampler_CAR_normal <- nimbleFunction(
                 componentSamplerFunctions[[i]] <- CAR_scalar_conjugate(model, mvSaved, targetScalar, neighborNodes, neighborWeights, Mi = 0, proper = FALSE)
             } else {
                 ##cat(paste0('dcar() component node ', targetScalar, ': assigning RW sampler\n'))
-                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborWeights, Mi = 0, control = RW_control, proper = FALSE)
+                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborWeights, Mi = 0, control = control, proper = FALSE)
             }
         }
     },
@@ -1603,11 +1603,7 @@ sampler_CAR_proper <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        useConjugacy  <- control$carUseConjugacy
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        scale         <- control$scale
-        RW_control <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale)
+        useConjugacy  <- if(!is.null(control$carUseConjugacy)) control$carUseConjugacy else TRUE
         ## node list generation
         target <- model$expandNodeNames(target)
         targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -1638,7 +1634,7 @@ sampler_CAR_proper <- nimbleFunction(
                 componentSamplerFunctions[[i]] <- CAR_scalar_conjugate(model, mvSaved, targetScalar, neighborNodes, neighborCs, Mi = Mi, proper = TRUE)
             } else {
                 ##cat(paste0('dcar() component node ', targetScalar, ': assigning RW sampler\n'))
-                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborCs, Mi = Mi, control = RW_control, proper = TRUE)
+                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborCs, Mi = Mi, control = control, proper = TRUE)
             }
         }
     },
