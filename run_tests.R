@@ -46,8 +46,7 @@ if (length(grep('^-', argv, invert = TRUE))) {
     blacklist <- c(
         blacklist,
         'test-ADfunctions.R',
-        'test-ADmodels.R',
-        'test-externalCalls.R')
+        'test-ADmodels.R')
     cat('SKIPPING', blacklist, sep = '\n  ')
     allTests <- setdiff(allTests, blacklist)
 }
