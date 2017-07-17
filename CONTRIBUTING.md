@@ -1,17 +1,24 @@
 # Guidelines for Contributing
 
 Nimble is managed across multiple repos:
-[nimble](https://github.com/nimble-dev/nimble) for code,
-[nimble-docs](https://github.com/nimble-dev/nimble) for documentation,
+[nimble](https://github.com/nimble-dev/nimble) for code and the user manual,
+[nimble-docs](https://github.com/nimble-dev/nimble-doc)
+for developer documentation,
 and miscellaneous other repos under the [nimble-dev](https://github.com/nimble-dev) org.
 We welcome issues and pull requests to all of these repos.
 
 ## Opening an issue
 
-To file a bug or request a feature,
+To file a bug or request a feature or documentation,
 [open an issue on Github](https://github.com/nimble-dev/nimble/issues/new).
 When possible, include a fully reproducible example demonstrating the error or unwanted behaviour.
 Please note your operating system, R version, and NIMBLE version (either CRAN X.X-X or git commit).
+
+```sh
+uname -a
+R --version
+Rscript -e "packageVersion('nimble')"
+```
 
 ## Submitting code via pull requests
 
@@ -26,9 +33,46 @@ To submit code:
     Prefer **Squash and Merge** over **Merge** unless your git history is
     exceptionally clean and each commit passes CI tests.
 
+## Documentation
+
+To keep documentation in sync with code, try to update the
+[User Manual](UserManual/)
+in the same pull request as the code that implements a change.
+This eases the job of reviewers, and makes it easier for users to use features that are experimental.
+
+To rebuild function help info after updating function documentation, run
+
+```sh
+cd packages
+make man
+```
+
+To rebuild the [NimbleUserManual.pdf](UserManual/NimbleUserManual.pdf)
+after adding sections, run
+
+```sh
+cd UserManual
+make
+```
+
+Take care to review the generated `NimbleUserManual.pdf` before submitting, since knitr
+won't tell notify about execution errors that happend while building the manual.
+
+### Experimental features
+
+To encourage sharing of code, we try to merge our branches early and often.
+This means that some experimental features will be in `devel` and `master`
+branches. If you are writing an experimental feature, please document the status
+by writing "EXPERIMENTAL" in the feature's documentation.
+
+Often we hide experimental features behind *feature toggles*.
+If your feature toggle is temporary or only partially tested, please name it
+`experimentalMyFeature` to indicate to users that the feature is still
+experimental.
+
 ## Testing
 
-We test on travis, but you can get lower latency by running tests locally in parallel.
+We test on travis, but you can get quicker results by running tests locally in parallel.
 ```sh
 cd $REPO/packages
 make test           # This runs tests in parallel.
@@ -37,7 +81,8 @@ make test           # This runs tests in parallel.
 ### Test all features and bugfixes
 
 Add tests for every new feature.
-If your new feature is large, consider adding a new test file named `$REPO/packages/nimble/inst/tests/test-<my-new-feature>.R`.
+If your new feature is large, consider adding a new test file named
+`$REPO/packages/nimble/inst/tests/test-<my-new-feature>.R`.
 
 Add a regression test for every bug you fix.
 
@@ -209,6 +254,9 @@ Note that although can be using either `test_package()` or directly via `Rscript
 >
 > --<cite>Harold Abelson, Structure and Interpretation of Computer Programs</cite>
 
+Write code as if it is being published and will be read by your peers. (It is and will be.)
+Ask yourself "Would I write this way in a preprint"?
+
 Try to be consistent with the code you're modifying.
 If in doubt, seek guidance from
 [Google's R Style Guide](https://google.github.io/styleguide/Rguide.xml) or
@@ -236,12 +284,23 @@ and you want other developers to be able to use your code,
 then write comment describing what your helper is and how to use it.
 Write comments grammatically:
 sentences should start with a capital letter and end with a period.
+As yourself "Will my colleague be able to orient herself in this code with the aid of my comments"?
 
 ### Avoid submitting commented-out code
 
 Avoid submitting commented-out code into the repo.
 If you really want to remember the code, then remove it from the repo with a descriptive commit message.
 If you really want the code to exist, then gate it by an `if()else` with an argument or global option.
+
+To search git history for deleted code, use [`git grep`](https://git-scm.com/docs/git-grep). For example
+```sh
+$ git grep 'my_clever_sampler <- function' $(git log -g --pretty=format:%h)
+```
+You can even wrap this in the following shell script, say named `ggrep`:
+```sh
+#!/bin/sh
+git grep "$@" $(git log -g --pretty=format:%h)
+```
 
 ### Naming conventions
 
@@ -267,3 +326,37 @@ class MyClass {                                        // Class names are upper 
   myMemberVariable_;                                   // Member variables end with a trailing underscore _.
 };
 ```
+
+### Line width
+
+In new code, try to keep line width to a maximum of **80 columns**.
+This makes it much easier to use tooling:
+- Side-by-side diffs are often easier to review than unified diffs, and prefer narrow code.
+- `git blame` and `git grep` are clearer with narrow code.
+- Software integration and debugging are easier when developers can view many files at once.
+- Not everyone has an enormous screen: some developers respond to bugs using their phone.
+
+## Debugging
+
+Some Nimble errors are silenced by default.
+While developing Nimble, you should enable more verbose error reporting.
+To get verbose tracebacks, set the following (maybe in your `.Rprofile`)
+```r
+options(error = traceback)
+options(show.error.locations = TRUE)
+```
+Rstudio is known to silence Nimble tracebacks.
+The [recommmended workaround](https://support.rstudio.com/hc/en-us/community/posts/218745527/comments/223827227)
+is to disable `Tools -> Global Options -> General -> [ ] Use debug error handler only when my code contains errors?`.
+
+Make use of standard R debugging tools
+```r
+browser()                # Temporarily add this to code you are trying to debug.
+debug(nimble:::foo)      # Call this before running something.
+debugonce(nimble:::foo)  # Similar, but only debug on first call.
+```
+Nimble also has `nimbleOptions` that can be enabled for debugging:
+- `debugRCfunProcessing`
+- `debugNFProcessing`
+- `debugSizeProcessing`
+- `debugCppLineByLine`

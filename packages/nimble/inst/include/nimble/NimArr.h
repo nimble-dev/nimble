@@ -60,8 +60,8 @@ class NimArr<1, T> : public NimArrBase<T> {
     NimArrBase<T>::offset = 0;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
     if (other.boolMap) {
-      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
-      NimArrBase<T>::v = new T[size1];
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(size1);
       NimArrBase<T>::own_v = true;
       T *to(NimArrBase<T>::v);
       T *toEnd(to + size1);
@@ -73,8 +73,8 @@ class NimArr<1, T> : public NimArrBase<T> {
         from += otherStride;
       }
     } else {
-      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
-      NimArrBase<T>::v = new T[size1];
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(size1);
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + size1, NimArrBase<T>::v);
     }
@@ -98,8 +98,8 @@ class NimArr<1, T> : public NimArrBase<T> {
 
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
     if (other.boolMap) {
-      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
 
       T *to(NimArrBase<T>::v);
@@ -112,8 +112,8 @@ class NimArr<1, T> : public NimArrBase<T> {
         from += otherStride1;
       }
     } else {
-      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
@@ -127,7 +127,7 @@ class NimArr<1, T> : public NimArrBase<T> {
 
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
     if (other.boolMap) {
-      NimArrBase<T>::v = new T[size1];
+      NimArrBase<T>::v = nimble_malloc<T>(size1);
       NimArrBase<T>::own_v = true;
 
       T *to(NimArrBase<T>::v);
@@ -140,7 +140,7 @@ class NimArr<1, T> : public NimArrBase<T> {
         from += otherStride;
       }
     } else {
-      NimArrBase<T>::v = new T[size1];
+      NimArrBase<T>::v = nimble_malloc<T>(size1);
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + size1, NimArrBase<T>::v);
     }
@@ -150,7 +150,7 @@ class NimArr<1, T> : public NimArrBase<T> {
   NimArr<1, T>() : NimArrBase<T>() { setSize(0); }
 
   void setMap(NimArrBase<T> &source, int off, int str1, int is1) {
-    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -161,7 +161,7 @@ class NimArr<1, T> : public NimArrBase<T> {
 
   void setMap(NimArrBase<T> &source, int off, vector<int> &str,
               vector<int> &is) {
-    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -304,8 +304,8 @@ class NimArr<2, T> : public NimArrBase<T> {
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
     NimArrBase<T>::NAstrides[1] = stride2 = size1;
     if (other.boolMap) {
-      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
 
       T *to(NimArrBase<T>::v);
@@ -322,8 +322,8 @@ class NimArr<2, T> : public NimArrBase<T> {
         from += (-size1 * otherStride1) + otherStride2;
       }
     } else {
-      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
@@ -340,7 +340,7 @@ class NimArr<2, T> : public NimArrBase<T> {
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
     NimArrBase<T>::NAstrides[1] = stride2 = size1;
     if (other.boolMap) {
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
       T *to(NimArrBase<T>::v);
       T *from(*other.vPtr + other.offset);
@@ -356,7 +356,7 @@ class NimArr<2, T> : public NimArrBase<T> {
         from += (-size1 * otherStride1) + otherStride2;
       }
     } else {
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
@@ -367,7 +367,7 @@ class NimArr<2, T> : public NimArrBase<T> {
 
   void setMap(NimArrBase<T> &source, int off, int str1, int str2, int is1,
               int is2) {
-    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -381,7 +381,7 @@ class NimArr<2, T> : public NimArrBase<T> {
 
   void setMap(NimArrBase<T> &source, int off, vector<int> &str,
               vector<int> &is) {
-    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -546,8 +546,8 @@ class NimArr<3, T> : public NimArrBase<T> {
     NimArrBase<T>::NAstrides[1] = stride2 = size1;
     NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;
     if (other.boolMap) {
-      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
 
       T *to(NimArrBase<T>::v);
@@ -567,8 +567,8 @@ class NimArr<3, T> : public NimArrBase<T> {
         from += (-size2 * otherStride2) + otherStride3;
       }
     } else {
-      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
@@ -586,7 +586,7 @@ class NimArr<3, T> : public NimArrBase<T> {
     NimArrBase<T>::NAstrides[1] = stride2 = size1;
     NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;
     if (other.boolMap) {
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
 
       T *to(NimArrBase<T>::v);
@@ -606,7 +606,7 @@ class NimArr<3, T> : public NimArrBase<T> {
         from += (-size2 * otherStride2) + otherStride3;
       }
     } else {
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
@@ -617,7 +617,7 @@ class NimArr<3, T> : public NimArrBase<T> {
 
   void setMap(NimArrBase<T> &source, int off, int str1, int str2, int str3,
               int is1, int is2, int is3) {
-    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -634,7 +634,7 @@ class NimArr<3, T> : public NimArrBase<T> {
 
   void setMap(NimArrBase<T> &source, int off, vector<int> &str,
               vector<int> &is) {
-    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -824,8 +824,8 @@ class NimArr<4, T> : public NimArrBase<T> {
     NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;
     NimArrBase<T>::NAstrides[3] = stride4 = size1 * size2 * size3;
     if (other.boolMap) {
-      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
 
       T *to(NimArrBase<T>::v);
@@ -850,8 +850,8 @@ class NimArr<4, T> : public NimArrBase<T> {
         from += (-size3 * otherStride3) + otherStride4;
       }
     } else {
-      if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
@@ -871,7 +871,7 @@ class NimArr<4, T> : public NimArrBase<T> {
     NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;
     NimArrBase<T>::NAstrides[3] = stride4 = size1 * size2 * size3;
     if (other.boolMap) {
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
 
       T *to(NimArrBase<T>::v);
@@ -896,7 +896,7 @@ class NimArr<4, T> : public NimArrBase<T> {
       }
 
     } else {
-      NimArrBase<T>::v = new T[NimArrBase<T>::NAlength];
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
       NimArrBase<T>::own_v = true;
       std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
     }
@@ -907,7 +907,7 @@ class NimArr<4, T> : public NimArrBase<T> {
 
   void setMap(NimArrBase<T> &source, int off, int str1, int str2, int str3,
               int str4, int is1, int is2, int is3, int is4) {
-    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();
@@ -926,7 +926,7 @@ class NimArr<4, T> : public NimArrBase<T> {
 
   void setMap(NimArrBase<T> &source, int off, vector<int> &str,
               vector<int> &is) {
-    if (NimArrBase<T>::own_v) delete[] NimArrBase<T>::v;
+    if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
     NimArrBase<T>::vPtr = source.getVptr();

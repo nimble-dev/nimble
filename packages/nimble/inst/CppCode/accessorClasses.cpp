@@ -598,7 +598,7 @@ void dynamicMapCopyCheck(NimArrType *NAT, int offset, vector<int> &strides, vect
 }
 
 SEXP getListElement(SEXP list, const char *str){
-	SEXP ans = R_NilValue, names = getAttrib(list, R_NamesSymbol);
+	SEXP ans = R_NilValue, names = Rf_getAttrib(list, R_NamesSymbol);
 	PROTECT(ans);
 	PROTECT(names);
 	for(int i = 0; i < LENGTH(list); i++){
@@ -633,7 +633,7 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
 
 SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
   SEXP Sdim;
-  PROTECT(Sdim = getAttrib(StableContents, R_DimSymbol));
+  PROTECT(Sdim = Rf_getAttrib(StableContents, R_DimSymbol));
   if(LENGTH(Sdim) != 2) {PRINTF("Warning from populateIndexedNodeInfoTable: LENGTH(Sdim) != 2"); return(R_NilValue);}
   int nrow = INTEGER(Sdim)[0];
   int ncol = INTEGER(Sdim)[1];
@@ -644,8 +644,8 @@ SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
     if(ncol != 0) {PRINTF("Warning from populateIndexedNodeInfoTable: nrow == 0 but ncol != 0.");}
   } else {
 
-    if(!isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
-    if(isInteger(StableContents)) {
+    if(!Rf_isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
+    if(Rf_isInteger(StableContents)) {
       int *contentsPtr = INTEGER(StableContents);
       tablePtr->reserve(nrow);
       for(int i = 0; i < nrow; i++) {
@@ -767,10 +767,10 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
 
 SEXP varAndIndices2Rlist(const varAndIndicesClass &input) {
   SEXP Soutput, Sindices;
-  PROTECT(Soutput = allocVector(VECSXP, 2));
+  PROTECT(Soutput = Rf_allocVector(VECSXP, 2));
   SET_VECTOR_ELT(Soutput, 0, string_2_STRSEXP(input.varName));
   int numinds = input.indices.size();
-  PROTECT(Sindices = allocVector(VECSXP, numinds));
+  PROTECT(Sindices = Rf_allocVector(VECSXP, numinds));
   for(int i = 0; i < numinds; i++) {
     SET_VECTOR_ELT(Sindices, i, vectorInt_2_SEXP(input.indices[i]));
   }
@@ -781,7 +781,7 @@ SEXP varAndIndices2Rlist(const varAndIndicesClass &input) {
   newNames[1].assign("indices");
   SEXP SnewNames;
   PROTECT(SnewNames = vectorString_2_STRSEXP(newNames));
-  setAttrib(Soutput, R_NamesSymbol, SnewNames);
+  Rf_setAttrib(Soutput, R_NamesSymbol, SnewNames);
 
   UNPROTECT(3);
   return(Soutput);
@@ -848,7 +848,7 @@ void varAndIndices2mapParts(const varAndIndicesClass &varAndInds, int snDim, con
 
 SEXP mapInfo2Rlist(const mapInfoClass &input) {
   SEXP Soutput;
-  PROTECT(Soutput = allocVector(VECSXP, 3));
+  PROTECT(Soutput = Rf_allocVector(VECSXP, 3));
   SET_VECTOR_ELT(Soutput, 0, int_2_SEXP(input.offset));
   SET_VECTOR_ELT(Soutput, 1, vectorInt_2_SEXP(input.sizes));
   SET_VECTOR_ELT(Soutput, 2, vectorInt_2_SEXP(input.strides));
@@ -858,7 +858,7 @@ SEXP mapInfo2Rlist(const mapInfoClass &input) {
   newNames[2].assign("strides");
   SEXP SnewNames;
   PROTECT(SnewNames = vectorString_2_STRSEXP(newNames));
-  setAttrib(Soutput, R_NamesSymbol, SnewNames);
+  Rf_setAttrib(Soutput, R_NamesSymbol, SnewNames);
   UNPROTECT(2);
   return(Soutput);
 }
