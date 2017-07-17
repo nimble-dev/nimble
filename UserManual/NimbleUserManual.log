@@ -1,0 +1,1608 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex 2015.5.24)  14 JUL 2017 19:11
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**\nonstopmode \input ./NimbleUserManual.tex
+(./NimbleUserManual.tex
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/book.cls
+Document Class: book 2014/09/29 v1.4h Standard LaTeX document class
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/bk12.clo
+File: bk12.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@chapter=\count80
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@subparagraph=\count85
+\c@figure=\count86
+\c@table=\count87
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2014/10/28 v1.0g Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2014/10/28 v1.0p Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/latexconfig/graphics.cfg
+File: graphics.cfg 2010/04/23 v1.9 graphics configuration of TeX Live
+)
+Package graphics Info: Driver file: pdftex.def on input line 94.
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/pdftex-def/pdftex.def
+File: pdftex.def 2011/05/27 v0.06d Graphics/color for pdfTeX
+
+(/usr/local/texlive/2015/texmf-dist/tex/generic/oberdiek/infwarerr.sty
+Package: infwarerr 2010/04/08 v1.3 Providing info/warning/error messages (HO)
+)
+(/usr/local/texlive/2015/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
+Package: ltxcmds 2011/11/09 v1.22 LaTeX kernel commands for general use (HO)
+)
+\Gread@gobject=\count88
+))
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/graphics/color.sty
+Package: color 2014/10/28 v1.1a Standard LaTeX Color (DPC)
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/latexconfig/color.cfg
+File: color.cfg 2007/01/18 v1.5 color configuration of teTeX/TeXLive
+)
+Package color Info: Driver file: pdftex.def on input line 142.
+)
+(./framed.sty
+Package: framed 2011/10/22 v 0.96: framed or shaded text with page breaks
+\OuterFrameSep=\skip43
+\fb@frw=\dimen105
+\fb@frh=\dimen106
+\FrameRule=\dimen107
+\FrameSep=\dimen108
+) (/usr/local/texlive/2015/texmf-dist/tex/latex/base/alltt.sty
+Package: alltt 1997/06/16 v2.0g defines alltt environment
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/bbding/bbding.sty
+Package: bbding 1999/04/15 v1.01 Dingbats symbols
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2012/11/06 v6.83m Hypertext links for LaTeX
+
+(/usr/local/texlive/2015/texmf-dist/tex/generic/oberdiek/hobsub-hyperref.sty
+Package: hobsub-hyperref 2012/05/28 v1.13 Bundle oberdiek, subset hyperref (HO)
+
+
+(/usr/local/texlive/2015/texmf-dist/tex/generic/oberdiek/hobsub-generic.sty
+Package: hobsub-generic 2012/05/28 v1.13 Bundle oberdiek, subset generic (HO)
+Package: hobsub 2012/05/28 v1.13 Construct package bundles (HO)
+Package hobsub Info: Skipping package `infwarerr' (already loaded).
+Package hobsub Info: Skipping package `ltxcmds' (already loaded).
+Package: ifluatex 2010/03/01 v1.3 Provides the ifluatex switch (HO)
+Package ifluatex Info: LuaTeX not detected.
+Package: ifvtex 2010/03/01 v1.5 Detect VTeX and its facilities (HO)
+Package ifvtex Info: VTeX not detected.
+Package: intcalc 2007/09/27 v1.1 Expandable calculations with integers (HO)
+Package: ifpdf 2011/01/30 v2.3 Provides the ifpdf switch (HO)
+Package ifpdf Info: pdfTeX in PDF mode is detected.
+Package: etexcmds 2011/02/16 v1.5 Avoid name clashes with e-TeX commands (HO)
+Package etexcmds Info: Could not find \expanded.
+(etexcmds)             That can mean that you are not using pdfTeX 1.50 or
+(etexcmds)             that some package has redefined \expanded.
+(etexcmds)             In the latter case, load this package earlier.
+Package: kvsetkeys 2012/04/25 v1.16 Key value parser (HO)
+Package: kvdefinekeys 2011/04/07 v1.3 Define keys (HO)
+Package: pdftexcmds 2011/11/29 v0.20 Utility functions of pdfTeX for LuaTeX (HO
+)
+Package pdftexcmds Info: LuaTeX not detected.
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+Package: pdfescape 2011/11/25 v1.13 Implements pdfTeX's escape features (HO)
+Package: bigintcalc 2012/04/08 v1.3 Expandable calculations on big integers (HO
+)
+Package: bitset 2011/01/30 v1.1 Handle bit-vector datatype (HO)
+Package: uniquecounter 2011/01/30 v1.2 Provide unlimited unique counter (HO)
+)
+Package hobsub Info: Skipping package `hobsub' (already loaded).
+Package: letltxmacro 2010/09/02 v1.4 Let assignment for LaTeX macros (HO)
+Package: hopatch 2012/05/28 v1.2 Wrapper for package hooks (HO)
+Package: xcolor-patch 2011/01/30 xcolor patch
+Package: atveryend 2011/06/30 v1.8 Hooks at the very end of document (HO)
+Package atveryend Info: \enddocument detected (standard20110627).
+Package: atbegshi 2011/10/05 v1.16 At begin shipout hook (HO)
+Package: refcount 2011/10/16 v3.4 Data extraction from label references (HO)
+Package: hycolor 2011/01/30 v1.7 Color options for hyperref/bookmark (HO)
+)
+(/usr/local/texlive/2015/texmf-dist/tex/generic/ifxetex/ifxetex.sty
+Package: ifxetex 2010/09/12 v0.6 Provides ifxetex conditional
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/oberdiek/auxhook.sty
+Package: auxhook 2011/03/04 v1.3 Hooks for auxiliary files (HO)
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/oberdiek/kvoptions.sty
+Package: kvoptions 2011/06/30 v3.11 Key value format for package options (HO)
+)
+\@linkdim=\dimen109
+\Hy@linkcounter=\count89
+\Hy@pagecounter=\count90
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/hyperref/pd1enc.def
+File: pd1enc.def 2012/11/06 v6.83m Hyperref: PDFDocEncoding definition (HO)
+)
+\Hy@SavedSpaceFactor=\count91
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/latexconfig/hyperref.cfg
+File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive
+)
+Package hyperref Info: Option `unicode' set `true' on input line 4319.
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/hyperref/puenc.def
+File: puenc.def 2012/11/06 v6.83m Hyperref: PDF Unicode definition (HO)
+)
+Package hyperref Info: Hyper figures OFF on input line 4443.
+Package hyperref Info: Link nesting OFF on input line 4448.
+Package hyperref Info: Hyper index ON on input line 4451.
+Package hyperref Info: Plain pages OFF on input line 4458.
+Package hyperref Info: Backreferencing OFF on input line 4463.
+Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
+Package hyperref Info: Bookmarks ON on input line 4688.
+\c@Hy@tempcnt=\count92
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/url/url.sty
+\Urlmuskip=\muskip10
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+LaTeX Info: Redefining \url on input line 5041.
+\XeTeXLinkMargin=\dimen110
+\Fld@menulength=\count93
+\Field@Width=\dimen111
+\Fld@charsize=\dimen112
+Package hyperref Info: Hyper figures OFF on input line 6295.
+Package hyperref Info: Link nesting OFF on input line 6300.
+Package hyperref Info: Hyper index ON on input line 6303.
+Package hyperref Info: backreferencing OFF on input line 6310.
+Package hyperref Info: Link coloring OFF on input line 6315.
+Package hyperref Info: Link coloring with OCG OFF on input line 6320.
+Package hyperref Info: PDF/A mode OFF on input line 6325.
+LaTeX Info: Redefining \ref on input line 6365.
+LaTeX Info: Redefining \pageref on input line 6369.
+\Hy@abspage=\count94
+\c@Item=\count95
+\c@Hfootnote=\count96
+)
+
+Package hyperref Message: Driver (autodetected): hpdftex.
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/hyperref/hpdftex.def
+File: hpdftex.def 2012/11/06 v6.83m Hyperref driver for pdfTeX
+\Fld@listcount=\count97
+\c@bookmark@seq@number=\count98
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/oberdiek/rerunfilecheck.sty
+Package: rerunfilecheck 2011/04/15 v1.7 Rerun checks for auxiliary files (HO)
+Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
+82.
+)
+\Hy@SectionHShift=\skip44
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/multirow/multirow.sty
+\bigstrutjot=\dimen113
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/amsfonts/amsfonts.sty
+Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
+\@emptytoks=\toks15
+\symAMSa=\mathgroup4
+\symAMSb=\mathgroup5
+LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
+(Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/amsmath/amsmath.sty
+Package: amsmath 2013/01/14 v2.14 AMS math features
+\@mathmargin=\skip45
+
+For additional information on amsmath, use the `?' option.
+(/usr/local/texlive/2015/texmf-dist/tex/latex/amsmath/amstext.sty
+Package: amstext 2000/06/29 v2.01
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/amsmath/amsgen.sty
+File: amsgen.sty 1999/11/30 v2.0
+\@emptytoks=\toks16
+\ex@=\dimen114
+))
+(/usr/local/texlive/2015/texmf-dist/tex/latex/amsmath/amsbsy.sty
+Package: amsbsy 1999/11/29 v1.2d
+\pmbraise@=\dimen115
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/amsmath/amsopn.sty
+Package: amsopn 1999/12/14 v2.01 operator names
+)
+\inf@bad=\count99
+LaTeX Info: Redefining \frac on input line 210.
+\uproot@=\count100
+\leftroot@=\count101
+LaTeX Info: Redefining \overline on input line 306.
+\classnum@=\count102
+\DOTSCASE@=\count103
+LaTeX Info: Redefining \ldots on input line 378.
+LaTeX Info: Redefining \dots on input line 381.
+LaTeX Info: Redefining \cdots on input line 466.
+\Mathstrutbox@=\box26
+\strutbox@=\box27
+\big@size=\dimen116
+LaTeX Font Info:    Redeclaring font encoding OML on input line 566.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 567.
+\macc@depth=\count104
+\c@MaxMatrixCols=\count105
+\dotsspace@=\muskip11
+\c@parentequation=\count106
+\dspbrk@lvl=\count107
+\tag@help=\toks17
+\row@=\count108
+\column@=\count109
+\maxfields@=\count110
+\andhelp@=\toks18
+\eqnshift@=\dimen117
+\alignsep@=\dimen118
+\tagshift@=\dimen119
+\tagwidth@=\dimen120
+\totwidth@=\dimen121
+\lineht@=\dimen122
+\@envbody=\toks19
+\multlinegap=\skip46
+\multlinetaggap=\skip47
+\mathdisplay@stack=\toks20
+LaTeX Info: Redefining \[ on input line 2665.
+LaTeX Info: Redefining \] on input line 2666.
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/geometry/geometry.sty
+Package: geometry 2010/09/12 v5.6 Page Geometry
+\Gm@cnth=\count111
+\Gm@cntv=\count112
+\c@Gm@tempcnt=\count113
+\Gm@bindingoffset=\dimen123
+\Gm@wd@mp=\dimen124
+\Gm@odd@mp=\dimen125
+\Gm@even@mp=\dimen126
+\Gm@layoutwidth=\dimen127
+\Gm@layoutheight=\dimen128
+\Gm@layouthoffset=\dimen129
+\Gm@layoutvoffset=\dimen130
+\Gm@dimlist=\toks21
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/tools/verbatim.sty
+Package: verbatim 2014/10/28 v1.5q LaTeX2e package for verbatim enhancements
+\every@verbatim=\toks22
+\verbatim@line=\toks23
+\verbatim@in@stream=\read1
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/tools/longtable.sty
+Package: longtable 2014/10/28 v4.11 Multi-page Table package (DPC)
+\LTleft=\skip48
+\LTright=\skip49
+\LTpre=\skip50
+\LTpost=\skip51
+\LTchunksize=\count114
+\LTcapwidth=\dimen131
+\LT@head=\box28
+\LT@firsthead=\box29
+\LT@foot=\box30
+\LT@lastfoot=\box31
+\LT@cols=\count115
+\LT@rows=\count116
+\c@LT@tables=\count117
+\c@LT@chunks=\count118
+\LT@p@ftn=\toks24
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/enumitem/enumitem.sty
+Package: enumitem 2011/09/28 v3.5.2 Customized lists
+\labelindent=\skip52
+\enit@outerparindent=\dimen132
+\enit@toks=\toks25
+\enit@inbox=\box32
+\enitdp@description=\count119
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/natbib/natbib.sty
+Package: natbib 2010/09/13 8.31b (PWD, AO)
+\bibhang=\skip53
+\bibsep=\skip54
+LaTeX Info: Redefining \cite on input line 694.
+\c@NAT@ctr=\count120
+)
+(/usr/local/texlive/2015/texmf-dist/tex/latex/tools/multicol.sty
+Package: multicol 2015/03/31 v1.8m multicolumn formatting (FMi)
+\c@tracingmulticols=\count121
+\mult@box=\box33
+\multicol@leftmargin=\dimen133
+\c@unbalance=\count122
+\c@collectmore=\count123
+\doublecol@number=\count124
+\multicoltolerance=\count125
+\multicolpretolerance=\count126
+\full@width=\dimen134
+\page@free=\dimen135
+\premulticols=\dimen136
+\postmulticols=\dimen137
+\multicolsep=\skip55
+\multicolbaselineskip=\skip56
+\partial@page=\box34
+\last@line=\box35
+\maxbalancingoverflow=\dimen138
+\mult@rightbox=\box36
+\mult@grightbox=\box37
+\mult@gfirstbox=\box38
+\mult@firstbox=\box39
+\@tempa=\box40
+\@tempa=\box41
+\@tempa=\box42
+\@tempa=\box43
+\@tempa=\box44
+\@tempa=\box45
+\@tempa=\box46
+\@tempa=\box47
+\@tempa=\box48
+\@tempa=\box49
+\@tempa=\box50
+\@tempa=\box51
+\@tempa=\box52
+\@tempa=\box53
+\@tempa=\box54
+\@tempa=\box55
+\@tempa=\box56
+\c@columnbadness=\count127
+\c@finalcolumnbadness=\count128
+\last@try=\dimen139
+\multicolovershoot=\dimen140
+\multicolundershoot=\dimen141
+\mult@nat@firstbox=\box57
+\colbreak@box=\box58
+\mc@col@check@num=\count129
+)
+Package hyperref Info: Option `colorlinks' set `true' on input line 79.
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/upquote/upquote.sty
+Package: upquote 2012/04/19 v1.3 upright-quote and grave-accent glyphs in verba
+tim
+)
+(./NimbleUserManual.aux
+
+LaTeX Warning: Label `part:models' multiply defined.
+
+
+LaTeX Warning: Label `table:distributions' multiply defined.
+
+
+LaTeX Warning: Label `table:distributions-alternates' multiply defined.
+
+
+LaTeX Warning: Label `table:functions-bugs' multiply defined.
+
+
+LaTeX Warning: Label `table:functions-matrix-bugs' multiply defined.
+
+
+LaTeX Warning: Label `table:functions-dsl' multiply defined.
+
+
+LaTeX Warning: Label `table:functions-matrix-dsl' multiply defined.
+
+
+LaTeX Warning: Label `sec:conf-betw-scal' multiply defined.
+
+)
+\openout1 = `NimbleUserManual.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 81.
+LaTeX Font Info:    ... okay on input line 81.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 81.
+LaTeX Font Info:    ... okay on input line 81.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 81.
+LaTeX Font Info:    ... okay on input line 81.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 81.
+LaTeX Font Info:    ... okay on input line 81.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 81.
+LaTeX Font Info:    ... okay on input line 81.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 81.
+LaTeX Font Info:    ... okay on input line 81.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 81.
+LaTeX Font Info:    ... okay on input line 81.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 81.
+LaTeX Font Info:    ... okay on input line 81.
+ (/usr/local/texlive/2015/texmf-dist/tex/context/base/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count130
+\scratchdimen=\dimen142
+\scratchbox=\box59
+\nofMPsegments=\count131
+\nofMParguments=\count132
+\everyMPshowfont=\toks26
+\MPscratchCnt=\count133
+\MPscratchDim=\dimen143
+\MPnumerator=\count134
+\makeMPintoPDFobject=\count135
+\everyMPtoPDFconversion=\toks27
+) (/usr/local/texlive/2015/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
+Package: epstopdf-base 2010/02/09 v2.5 Base part for package epstopdf
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/oberdiek/grfext.sty
+Package: grfext 2010/08/19 v1.1 Manage graphics extensions (HO)
+)
+Package grfext Info: Graphics extension search list:
+(grfext)             [.png,.pdf,.jpg,.mps,.jpeg,.jbig2,.jb2,.PNG,.PDF,.JPG,.JPE
+G,.JBIG2,.JB2,.eps]
+(grfext)             \AppendGraphicsExtensions on input line 452.
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+\AtBeginShipoutBox=\box60
+Package hyperref Info: Link coloring ON on input line 81.
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/hyperref/nameref.sty
+Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
+
+(/usr/local/texlive/2015/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
+Package: gettitlestring 2010/12/03 v1.4 Cleanup title references (HO)
+)
+\c@section@level=\count136
+)
+LaTeX Info: Redefining \ref on input line 81.
+LaTeX Info: Redefining \pageref on input line 81.
+LaTeX Info: Redefining \nameref on input line 81.
+
+(./NimbleUserManual.out) (./NimbleUserManual.out)
+\@outlinefile=\write3
+\openout3 = `NimbleUserManual.out'.
+
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: <default>
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(72.26999pt, 469.75502pt, 72.26999pt)
+* v-part:(T,H,B)=(72.26999pt, 650.43001pt, 72.26999pt)
+* \paperwidth=614.295pt
+* \paperheight=794.96999pt
+* \textwidth=469.75502pt
+* \textheight=650.43001pt
+* \oddsidemargin=0.0pt
+* \evensidemargin=0.0pt
+* \topmargin=-31.8738pt
+* \headheight=12.0pt
+* \headsep=19.8738pt
+* \topskip=12.0pt
+* \footskip=30.0pt
+* \marginparwidth=47.0pt
+* \marginparsep=7.0pt
+* \columnsep=10.0pt
+* \skip\footins=10.8pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+LaTeX Font Info:    Try loading font information for U+msa on input line 106.
+(/usr/local/texlive/2015/texmf-dist/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Try loading font information for U+msb on input line 106.
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+)
+<nimble-icon.png, id=590, 241.8636pt x 236.3229pt>
+File: nimble-icon.png Graphic file (type png)
+ <use nimble-icon.png>
+Package pdftex.def Info: nimble-icon.png used on input line 106.
+(pdftex.def)             Requested size: 108.405pt x 105.92241pt.
+
+[1
+
+
+{/usr/local/texlive/2015/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <./nimbl
+e-icon.png (PNG copy)>] (./NimbleUserManual.tocpdfTeX warning (ext4): destinati
+on with the same identifier (name{page.1}) has been already used, duplicate ign
+ored
+<to be read again> 
+                   \relax 
+l.31 ...n NIMBLE's dialect of BUGS}{29}{chapter.5}
+                                                   [1
+
+] [2] [3])
+\tf@toc=\write4
+\openout4 = `NimbleUserManual.toc'.
+
+ [4] [5
+
+]
+Chapter 1.
+[6
+
+] [7]
+Chapter 2.
+Package color Info: Redefining color shadecolor on input line 256.
+LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <12> not available
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 258.
+LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 258
+.
+(/Library/Frameworks/R.framework/Resources/share/texmf/tex/latex/omscmtt.fd
+File: omscmtt.fd 
+)
+LaTeX Font Info:    Font shape `OMS/cmtt/m/n' in size <12> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 258.
+
+[8
+
+]
+Package color Info: Redefining color shadecolor on input line 286.
+ [9]
+Overfull \hbox (9.11823pt too wide) in paragraph at lines 348--355
+[]\OT1/cmr/m/n/12 Notice that in the list of nodes, NIM-BLE has in-tro-duced a 
+new node, \OT1/cmtt/m/n/12 lifted[]d1[]over[]beta\OT1/cmr/m/n/12 .
+ []
+
+Package color Info: Redefining color shadecolor on input line 361.
+<figure/plotPump-1.pdf, id=824, 505.89pt x 505.89pt>
+File: figure/plotPump-1.pdf Graphic file (type pdf)
+
+<use figure/plotPump-1.pdf>
+Package pdftex.def Info: figure/plotPump-1.pdf used on input line 366.
+(pdftex.def)             Requested size: 469.75502pt x 469.76265pt.
+Package color Info: Redefining color shadecolor on input line 389.
+ [10] [11 <./figure/plotPump-1.pdf>] [12]
+Package color Info: Redefining color shadecolor on input line 491.
+Package color Info: Redefining color shadecolor on input line 517.
+ [13]
+<figure/mcmcPump-1.pdf, id=849, 505.89pt x 180.675pt>
+File: figure/mcmcPump-1.pdf Graphic file (type pdf)
+
+<use figure/mcmcPump-1.pdf>
+Package pdftex.def Info: figure/mcmcPump-1.pdf used on input line 566.
+(pdftex.def)             Requested size: 469.75502pt x 167.77237pt.
+
+Overfull \hbox (17.62482pt too wide) in paragraph at lines 566--567
+[][] 
+ []
+
+<figure/mcmcPump-2.pdf, id=850, 505.89pt x 180.675pt>
+File: figure/mcmcPump-2.pdf Graphic file (type pdf)
+
+<use figure/mcmcPump-2.pdf>
+Package pdftex.def Info: figure/mcmcPump-2.pdf used on input line 572.
+(pdftex.def)             Requested size: 469.75502pt x 167.77237pt.
+
+Overfull \hbox (17.62482pt too wide) in paragraph at lines 572--573
+[][] 
+ []
+
+[14 <./figure/mcmcPump-1.pdf>]
+Package color Info: Redefining color shadecolor on input line 588.
+
+Overfull \hbox (5.72021pt too wide) in paragraph at lines 613--613
+[][]\OT1/cmtt/m/n/12 plot[][](samplesNew[ ,[] []"alpha"[][]], samplesNew[ ,[] [
+]"beta"[][]],[] []xlab[] []=[] []expression[][](alpha),[][] 
+ []
+
+<figure/mcmcPump2-1.pdf, id=862, 505.89pt x 180.675pt>
+File: figure/mcmcPump2-1.pdf Graphic file (type pdf)
+
+<use figure/mcmcPump2-1.pdf>
+Package pdftex.def Info: figure/mcmcPump2-1.pdf used on input line 619.
+(pdftex.def)             Requested size: 469.75502pt x 167.77237pt.
+
+Overfull \hbox (17.62482pt too wide) in paragraph at lines 619--620
+[][] 
+ []
+
+[15 <./figure/mcmcPump-2.pdf>]
+<figure/mcmcPump2-2.pdf, id=872, 505.89pt x 180.675pt>
+File: figure/mcmcPump2-2.pdf Graphic file (type pdf)
+
+<use figure/mcmcPump2-2.pdf>
+Package pdftex.def Info: figure/mcmcPump2-2.pdf used on input line 625.
+(pdftex.def)             Requested size: 469.75502pt x 167.77237pt.
+
+Overfull \hbox (17.62482pt too wide) in paragraph at lines 625--626
+[][] 
+ []
+
+Package color Info: Redefining color shadecolor on input line 644.
+[16 <./figure/mcmcPump2-1.pdf> <./figure/mcmcPump2-2.pdf>] [17]
+Package color Info: Redefining color shadecolor on input line 718.
+ [18]
+Overfull \hbox (0.24506pt too wide) in paragraph at lines 760--771
+\OT1/cmr/m/n/12 fer-ent ar-gu-ments. Above, \OT1/cmtt/m/n/12 simNodesTheta1to5 
+\OT1/cmr/m/n/12 has been made by call-ing \OT1/cmtt/m/n/12 simNodesMany
+ []
+
+Package color Info: Redefining color shadecolor on input line 779.
+[19]
+Package color Info: Redefining color shadecolor on input line 830.
+ [20]
+Chapter 3.
+[21
+
+]
+Overfull \hbox (3.17342pt too wide) in paragraph at lines 982--985
+[]\OT1/cmr/m/n/12 Programming with nim-ble-Func-tions in-volves a fun-da-men-ta
+l dis-tinc-tion be-tween two stages
+ []
+
+[22] [23]
+Chapter 4.
+[24
+
+]
+Package color Info: Redefining color shadecolor on input line 1128.
+ [25]
+Overfull \hbox (19.83376pt too wide) in paragraph at lines 1189--1193
+\OT1/cmtt/m/n/12 install.packages("nimble", configure.args = "--with-eigen=/pat
+h/to/eigen")\OT1/cmr/m/n/12 . 
+ []
+
+[26]
+Overfull \hbox (4.82002pt too wide) in paragraph at lines 1208--1209
+[][]\OT1/cmtt/m/n/12 R CMD INSTALL --configure-args=^^M--enable-dylib=true^^M n
+imble_VERSION.tar.gz 
+ []
+
+[27] [28
+
+]
+Chapter 5.
+[29
+
+] [30]
+Package color Info: Redefining color shadecolor on input line 1365.
+
+Overfull \vbox (1.21997pt too high) detected at line 1425
+ []
+
+[31] <figure/linearRegressionGraph-1.pdf, id=1065, 1445.4pt x 722.7pt>
+File: figure/linearRegressionGraph-1.pdf Graphic file (type pdf)
+
+<use figure/linearRegressionGraph-1.pdf>
+Package pdftex.def Info: figure/linearRegressionGraph-1.pdf used on input line 
+1426.
+(pdftex.def)             Requested size: 469.75502pt x 234.87471pt.
+Package color Info: Redefining color shadecolor on input line 1444.
+ [32]
+Package color Info: Redefining color shadecolor on input line 1475.
+ [33 <./figure/linearRegressionGraph-1.pdf>]
+Package color Info: Redefining color shadecolor on input line 1503.
+ [34]
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 1561
+.
+ (/usr/local/texlive/2015/texmf-dist/tex/latex/base/omscmr.fd
+File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <12> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 1561.
+
+Package color Info: Redefining color shadecolor on input line 1594.
+Package color Info: Redefining color shadecolor on input line 1608.
+
+[35] (./densityTableLong.tex
+Overfull \hbox (65.27626pt too wide) in alignment at lines 6--11
+ [] [] [] [] [] 
+ []
+
+
+Package amsmath Warning: Foreign command \atopwithdelims;
+(amsmath)                \frac or \genfrac should be used instead
+(amsmath)                 on input line 22.
+
+
+Overfull \vbox (3.49539pt too high) detected at line 31
+ []
+
+
+Overfull \vbox (1.6626pt too high) detected at line 38
+ []
+
+
+Overfull \hbox (65.27626pt too wide) in alignment at lines 11--69
+ [] [] [] [] [] 
+ []
+
+
+Overfull \hbox (65.27626pt too wide) in alignment at lines 69--125
+ [] [] [] [] [] 
+ []
+
+
+Overfull \hbox (65.27626pt too wide) in alignment at lines 125--161
+ [] [] [] [] [] 
+ []
+
+[36]) [37] (./parameterizationTableLong.tex
+Overfull \hbox (3.29123pt too wide) in alignment at lines 4--14
+ [] [] 
+ []
+
+
+Overfull \hbox (3.29123pt too wide) in alignment at lines 14--35
+ [] [] 
+ []
+
+
+Overfull \hbox (3.29123pt too wide) in alignment at lines 35--55
+ [] [] 
+ []
+
+
+Overfull \hbox (3.29123pt too wide) in alignment at lines 55--72
+ [] [] 
+ []
+
+[38])
+Overfull \hbox (12.71358pt too wide) in paragraph at lines 1688--1693
+\OT1/cmr/m/n/12 scale or co-vari-ance/scale ma-trix. For ex-am-ple, for the mul
+-ti-vari-ate nor-mal, if \OT1/cmtt/m/n/12 prec[]param=TRUE\OT1/cmr/m/n/12 ,
+ []
+
+[39] (./densityAliasesTable.tex [40])
+Overfull \hbox (48.42375pt too wide) in alignment at lines 1744--1753
+ [] [] [] [] [] 
+ []
+
+(./functionTableLong.tex
+LaTeX Font Info:    Try loading font information for U+ding on input line 15.
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/bbding/Uding.fd
+File: Uding.fd 1996/02/01 v1.0 BBding font definitions
+)
+Overfull \hbox (48.42375pt too wide) in alignment at lines 1753--36
+ [] [] [] [] [] 
+ []
+
+
+Overfull \hbox (48.42375pt too wide) in alignment at lines 36--61
+ [] [] [] [] [] 
+ []
+
+)
+Overfull \hbox (48.42375pt too wide) in alignment at lines 61--1755
+ [] [] [] [] [] 
+ []
+
+[41]
+Overfull \hbox (43.68216pt too wide) in alignment at lines 1762--1769
+ [] [] [] [] 
+ []
+
+(./functionTableMatrixLong.tex) (./eigenSvdTableMatrixElements.tex
+Overfull \hbox (43.68216pt too wide) in alignment at lines 1769--3
+ [] [] [] [] 
+ []
+
+)
+Overfull \hbox (43.68216pt too wide) in alignment at lines 3--1772
+ [] [] [] [] 
+ []
+
+[42] [43]
+Package color Info: Redefining color shadecolor on input line 1840.
+ [44]
+Package color Info: Redefining color shadecolor on input line 1877.
+Package color Info: Redefining color shadecolor on input line 1909.
+ [45] [46]
+Chapter 6.
+
+Overfull \hbox (9.41257pt too wide) in paragraph at lines 1956--1961
+\OT1/cmr/m/n/12 NIMBLE pro-vides two func-tions for cre-at-ing model ob-jects: 
+\OT1/cmtt/m/n/12 nimbleModel \OT1/cmr/m/n/12 and \OT1/cmtt/m/n/12 readBUGSmodel
+\OT1/cmr/m/n/12 .
+ []
+
+LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <14.4> not available
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 1964.
+
+Package color Info: Redefining color shadecolor on input line 1975.
+[47
+
+] [48]
+Package color Info: Redefining color shadecolor on input line 2072.
+ [49]
+Package color Info: Redefining color shadecolor on input line 2129.
+ [50]
+Package color Info: Redefining color shadecolor on input line 2199.
+ [51]
+Package color Info: Redefining color shadecolor on input line 2250.
+Package color Info: Redefining color shadecolor on input line 2291.
+ [52]
+Package color Info: Redefining color shadecolor on input line 2336.
+
+Overfull \hbox (24.44414pt too wide) in paragraph at lines 2358--2362
+[]\OT1/cmr/m/n/12 The \OT1/cmr/m/it/12 nodes \OT1/cmr/m/n/12 of this model are 
+\OT1/cmtt/m/n/12 a\OT1/cmr/m/n/12 , \OT1/cmtt/m/n/12 y[1] $\OML/cmm/m/it/12 ; [
+] ;$ \OT1/cmtt/m/n/12 y[5]\OT1/cmr/m/n/12 , \OT1/cmtt/m/n/12 z[1,1] $\OML/cmm/m
+/it/12 ; [] ;$ \OT1/cmtt/m/n/12 z[5, 3]\OT1/cmr/m/n/12 , and \OT1/cmtt/m/n/12 y
+.squared[1:5]\OT1/cmr/m/n/12 .
+ []
+
+
+Overfull \hbox (1.4295pt too wide) in paragraph at lines 2362--2369
+[]\OT1/cmtt/m/n/12 z[i,j] ~ dnorm(y[i], sd = 0.1)\OT1/cmr/m/n/12 , and []\OT1/c
+mtt/m/n/12 y.squared[1:5] <- y[1:5]^2\OT1/cmr/m/n/12 . Each node's
+ []
+
+[53]
+Package color Info: Redefining color shadecolor on input line 2382.
+ [54]
+Overfull \hbox (32.288pt too wide) in paragraph at lines 2426--2427
+[]\OT1/cmr/m/n/12 To de-ter-mine the de-pen-den-cies of one or more nodes in th
+e model, you can use \OT1/cmtt/m/n/12 getDependencies
+ []
+
+Package color Info: Redefining color shadecolor on input line 2436.
+Package color Info: Redefining color shadecolor on input line 2481.
+[55]
+Package color Info: Redefining color shadecolor on input line 2539.
+Package color Info: Redefining color shadecolor on input line 2560.
+ [56]
+Package color Info: Redefining color shadecolor on input line 2593.
+ [57] [58
+
+]
+Chapter 7.
+[59
+
+]
+Package color Info: Redefining color shadecolor on input line 2715.
+ [60]
+Overfull \hbox (14.1652pt too wide) in paragraph at lines 2741--2742
+[]\OT1/cmr/m/n/12 Details of each sam-pler and its con-trol pa-ram-e-ters can b
+e found by in-vok-ing \OT1/cmtt/m/n/12 help(samplers)
+ []
+
+Package color Info: Redefining color shadecolor on input line 2768.
+[61]
+Package color Info: Redefining color shadecolor on input line 2796.
+ [62]
+Package color Info: Redefining color shadecolor on input line 2814.
+
+Overfull \hbox (11.89522pt too wide) in paragraph at lines 2816--2816
+[][]\OT1/cmtt/m/n/12 mcmcConf[] []<-[] []configureMCMC[][](Rmodel,[] []control[
+] []=[] []list[][]([][]scale[] []=[] []3[][],[] []adaptive[] []=[] []FALSE[][])
+)[][] 
+ []
+
+Package color Info: Redefining color shadecolor on input line 2845.
+[63]
+Package color Info: Redefining color shadecolor on input line 2859.
+LaTeX Font Info:    Font shape `OMS/cmtt/m/it' in size <12> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 2872.
+
+Package color Info: Redefining color shadecolor on input line 2890.
+ [64]
+Overfull \hbox (6.14513pt too wide) in paragraph at lines 2912--2912
+[][]\OT1/cmr/bx/n/12 Customizing in-di-vid-ual sam-pler con-fig-u-ra-tions: \OT
+1/cmtt/m/n/12 getSamplers\OT1/cmr/bx/n/12 , \OT1/cmtt/m/n/12 setSamplers\OT1/cm
+r/bx/n/12 , \OT1/cmtt/m/n/12 setName\OT1/cmr/bx/n/12 ,
+ []
+
+
+Overfull \hbox (11.3246pt too wide) in paragraph at lines 2914--2915
+\OT1/cmr/m/n/12 Each sam-pler in an \OT1/cmtt/m/n/12 MCMCconf \OT1/cmr/m/n/12 o
+b-ject is rep-re-sented by a sam-pler con-fig-u-ra-tion as a \OT1/cmtt/m/n/12 s
+amplerConf
+ []
+
+Package color Info: Redefining color shadecolor on input line 2919.
+[65]
+Overfull \hbox (7.01323pt too wide) in paragraph at lines 2946--2946
+[][]\OT1/cmr/bx/n/12 Monitors and thin-ning in-ter-vals: \OT1/cmtt/m/n/12 print
+Monitors\OT1/cmr/bx/n/12 , \OT1/cmtt/m/n/12 getMonitors\OT1/cmr/bx/n/12 , \OT1/
+cmtt/m/n/12 addMonitors\OT1/cmr/bx/n/12 , \OT1/cmtt/m/n/12 setThin\OT1/cmr/bx/n
+/12 ,
+ []
+
+Package color Info: Redefining color shadecolor on input line 2954.
+
+Overfull \hbox (29.65048pt too wide) in paragraph at lines 2952--2954
+[]\OT1/cmr/m/n/12 Monitors may be added to the MCMC con-fig-u-ra-tion ei-ther i
+n the orig-i-nal call to \OT1/cmtt/m/n/12 configureMCMC
+ []
+
+Package color Info: Redefining color shadecolor on input line 2970.
+[66]
+Overfull \hbox (23.46295pt too wide) in paragraph at lines 2983--2984
+[]\OT1/cmr/m/n/12 The cur-rent lists of mon-i-tors and thin-ning in-ter-vals ma
+y be dis-played us-ing the \OT1/cmtt/m/n/12 printMonitors
+ []
+
+
+Overfull \hbox (3.5573pt too wide) in paragraph at lines 2983--2984
+\OT1/cmr/m/n/12 vec-tors by call-ing the \OT1/cmtt/m/n/12 resetMonitors \OT1/cm
+r/m/n/12 method. The meth-ods \OT1/cmtt/m/n/12 getMonitors \OT1/cmr/m/n/12 and 
+\OT1/cmtt/m/n/12 getMonitors2
+ []
+
+Package color Info: Redefining color shadecolor on input line 2989.
+Package color Info: Redefining color shadecolor on input line 3012.
+Package color Info: Redefining color shadecolor on input line 3024.
+Package color Info: Redefining color shadecolor on input line 3037.
+[67]
+Package color Info: Redefining color shadecolor on input line 3047.
+Package color Info: Redefining color shadecolor on input line 3057.
+Package color Info: Redefining color shadecolor on input line 3087.
+ [68]
+Package color Info: Redefining color shadecolor on input line 3102.
+Package color Info: Redefining color shadecolor on input line 3113.
+Package color Info: Redefining color shadecolor on input line 3124.
+Package color Info: Redefining color shadecolor on input line 3159.
+ [69]
+Underfull \hbox (badness 10000) in paragraph at lines 3201--3201
+[][][]\OT1/cmr/m/n/10 NIMBLE's in-ter-nal def-i-ni-tions of these re-la-tion-sh
+ips can be viewed with
+ []
+
+(./conjugacyTable.tex [70]) [71]
+Package color Info: Redefining color shadecolor on input line 3269.
+ [72]
+LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <17.28> not available
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 3312.
+
+Package color Info: Redefining color shadecolor on input line 3320.
+
+Overfull \hbox (11.89522pt too wide) in paragraph at lines 3343--3343
+[]                  []\OT1/cmtt/m/n/12 n[] []=[] []matrix[][]([][]c[][]([][]13[
+][],[] []12[][],[] []12[][],[] []11[][],[] []9[][],[] []10[][],[] []9[][],[]  [
+]9[][],[] []8[][],[] []11[][],[] []8[][],[] []10[][],[] []13[][],[][] 
+ []
+
+[73] [74] [75] [76]
+Package color Info: Redefining color shadecolor on input line 3537.
+ [77] [78]
+Underfull \hbox (badness 10000) in paragraph at lines 3611--3612
+
+ []
+
+[79]
+Underfull \hbox (badness 10000) in paragraph at lines 3625--3626
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3627--3628
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3638--3639
+
+ []
+
+Package color Info: Redefining color shadecolor on input line 3649.
+[80] [81]
+Chapter 8.
+Package color Info: Redefining color shadecolor on input line 3747.
+[82
+
+]
+Package color Info: Redefining color shadecolor on input line 3793.
+ [83]
+Package color Info: Redefining color shadecolor on input line 3811.
+Package color Info: Redefining color shadecolor on input line 3830.
+Package color Info: Redefining color shadecolor on input line 3850.
+ [84]
+Package color Info: Redefining color shadecolor on input line 3868.
+Package color Info: Redefining color shadecolor on input line 3899.
+ [85]
+Overfull \hbox (5.72021pt too wide) in paragraph at lines 3905--3905
+[]                    []\OT1/cmtt/m/n/12 control[] []<-[] []list[][]([][]propCo
+v[][]=[] []diag[][]([][]4[][]),[] []adaptScaleOnly[] []=[] []FALSE[][],[][] 
+ []
+
+
+Overfull \hbox (5.72021pt too wide) in paragraph at lines 3906--3906
+[]                                 []\OT1/cmtt/m/n/12 latents[] []=[] []"x"[][]
+,[] []pfOptimizeNparticles[] []=[] []TRUE[][]))[][] 
+ []
+
+Package color Info: Redefining color shadecolor on input line 3938.
+[86]
+Package color Info: Redefining color shadecolor on input line 3992.
+ [87]
+Overfull \hbox (9.37338pt too wide) in paragraph at lines 4045--4046
+\OT1/cmr/m/n/12 The sec-ond el-e-ment of the list re-turned by a call to \OT1/c
+mtt/m/n/12 buildMCEM \OT1/cmr/m/n/12 is a func-tion called \OT1/cmtt/m/n/12 est
+imateCov\OT1/cmr/m/n/12 ,
+ []
+
+Package color Info: Redefining color shadecolor on input line 4048.
+[88]
+Overfull \hbox (4.82396pt too wide) in paragraph at lines 4059--4059
+[][]\OT1/cmtt/m/it/12 ##alternatively, you can manually specify the MLE values 
+as a named vector.[][] 
+ []
+
+[89] [90
+
+] [91]
+Chapter 9.
+Package color Info: Redefining color shadecolor on input line 4130.
+[92
+
+]
+Overfull \hbox (22.18275pt too wide) in paragraph at lines 4164--4174
+\OT1/cmr/m/n/12 of ran-domly gen-er-ated ex-plana-tory vari-ables (\OT1/cmtt/m/
+n/12 X\OT1/cmr/m/n/12 ). We ran the nim-ble-Func-tion \OT1/cmtt/m/n/12 solveLea
+stSquares
+ []
+
+(./coreRtableLong.tex
+Overfull \hbox (11.07747pt too wide) in alignment at lines 4213--6
+ [] [] 
+ []
+
+)
+Overfull \hbox (11.07747pt too wide) in alignment at lines 6--4217
+ [] [] 
+ []
+
+[93]
+Overfull \hbox (4.8977pt too wide) in paragraph at lines 4236--4241
+[]\OT1/cmtt/m/n/12 matrix \OT1/cmr/m/n/12 cre-ates a 2-dimensional ma-trix ob-j
+ect of ei-ther floating-point (if \OT1/cmtt/m/n/12 type = "double"\OT1/cmr/m/n/
+12 ,
+ []
+
+[94]
+Overfull \hbox (48.42375pt too wide) in alignment at lines 4291--4300
+ [] [] [] [] [] 
+ []
+
+(./functionTableLong.tex
+Overfull \hbox (48.42375pt too wide) in alignment at lines 4300--36
+ [] [] [] [] [] 
+ []
+
+
+Overfull \hbox (48.42375pt too wide) in alignment at lines 36--61
+ [] [] [] [] [] 
+ []
+
+[95])
+Overfull \hbox (48.42375pt too wide) in alignment at lines 61--4302
+ [] [] [] [] [] 
+ []
+
+
+Overfull \hbox (63.37662pt too wide) in alignment at lines 4310--4317
+ [] [] [] [] 
+ []
+
+(./functionTableMatrixLong.tex) (./eigenSvdTableMatrixAsNimList.tex
+Overfull \hbox (63.37662pt too wide) in alignment at lines 4317--3
+ [] [] [] [] 
+ []
+
+)
+Overfull \hbox (63.37662pt too wide) in alignment at lines 3--4320
+ [] [] [] [] 
+ []
+
+[96] [97]
+Underfull \hbox (badness 10000) in paragraph at lines 4378--4379
+[]\OT1/cmtt/m/n/12 dt[]nonstandard(x, df, mu, sigma,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 4383--4384
+[]\OT1/cmtt/m/n/12 dmnorm[]chol(x, mean, cholesky,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 4384--4385
+[]\OT1/cmtt/m/n/12 dmvt[]chol(x, mu, cholesky, df,
+ []
+
+[98]
+Underfull \hbox (badness 10000) in paragraph at lines 4474--4475
+[]\OT1/cmtt/m/n/12 numeric, integer, logical $\OMS/cmsy/m/n/12 !$
+ []
+
+
+Overfull \hbox (9.4473pt too wide) in paragraph at lines 4474--4475
+\OT1/cmtt/m/n/12 nimNumeric, nimInteger, nimLogical 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 4475--4476
+[]\OT1/cmtt/m/n/12 matrix, array $\OMS/cmsy/m/n/12 !$ \OT1/cmtt/m/n/12 nimMatri
+x,
+ []
+
+[99]
+Package color Info: Redefining color shadecolor on input line 4525.
+Package color Info: Redefining color shadecolor on input line 4550.
+Package color Info: Redefining color shadecolor on input line 4569.
+ [100]
+Overfull \hbox (11.1239pt too wide) in paragraph at lines 4572--4572
+[][]\OT1/cmtt/m/it/12 ## myNumericVector will be of length 10, with all element
+s initialized to 2 [][] 
+ []
+
+Package color Info: Redefining color shadecolor on input line 4581.
+Package color Info: Redefining color shadecolor on input line 4601.
+Package color Info: Redefining color shadecolor on input line 4629.
+
+Overfull \hbox (12.1764pt too wide) in paragraph at lines 4637--4637
+[]        []\OT1/cmtt/m/n/12 Cmatrix[] []<-[] [](A[] []%*%[] []B)[,[][]1[][]][]
+          []\OT1/cmtt/m/it/12 ## error, vector assigned to matrix[][] 
+ []
+
+[101] [102]
+Package color Info: Redefining color shadecolor on input line 4831.
+ [103]
+Overfull \hbox (23.40929pt too wide) in paragraph at lines 4840--4843
+[]\OT1/cmr/m/n/12 Functions with re-turn val-ues must have their re-turn type e
+x-plic-itly de-clared us-ing \OT1/cmtt/m/n/12 returnType\OT1/cmr/m/n/12 ,
+ []
+
+[104]
+Chapter 10.
+Package color Info: Redefining color shadecolor on input line 4951.
+[105
+
+]
+Package color Info: Redefining color shadecolor on input line 4977.
+
+Overfull \hbox (25.29697pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 10.  CREATING USER-DEFINED BUGS DISTRIBUTIONS AND FUNC
+TIONS \OT1/cmr/m/n/12 106
+ []
+
+[106]
+Package color Info: Redefining color shadecolor on input line 5020.
+
+Overfull \hbox (5.72021pt too wide) in paragraph at lines 5070--5070
+[]            []\OT1/cmtt/m/n/12 sum[][]([][]lgamma[][](alpha))[] []+[] []sum[]
+[]([][]lgamma[][](alpha[] []+[] []x))[] []-[] []lgamma[][]([][]sum[][](alpha)[]
+ []+[][] 
+ []
+
+
+Overfull \hbox (1240.72083pt too wide) in paragraph at lines 5100--5100
+[]\OT1/cmtt/m/n/12 ## NIMBLE has registered ddirchmulti as a distribution based
+ on its use in BUGS code. Note that if you make changes to the nimbleFunctions 
+for the distribution, you must call ^^MderegisterDistributions^^M before using 
+the distribution in BUGS code for those changes to take effect.[] 
+ []
+
+
+Overfull \hbox (1209.84581pt too wide) in paragraph at lines 5102--5102
+[]\OT1/cmtt/m/n/12 ## NIMBLE has registered dmyexp as a distribution based on i
+ts use in BUGS code. Note that if you make changes to the nimbleFunctions for t
+he distribution, you must call ^^MderegisterDistributions^^M before using the d
+istribution in BUGS code for those changes to take effect.[] 
+ []
+
+
+Overfull \vbox (1.26994pt too high) detected at line 5104
+ []
+
+
+Overfull \hbox (25.29697pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 10.  CREATING USER-DEFINED BUGS DISTRIBUTIONS AND FUNC
+TIONS \OT1/cmr/m/n/12 107
+ []
+
+[107]
+Overfull \hbox (25.29697pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 10.  CREATING USER-DEFINED BUGS DISTRIBUTIONS AND FUNC
+TIONS \OT1/cmr/m/n/12 108
+ []
+
+[108]
+Overfull \hbox (35.32135pt too wide) in paragraph at lines 5126--5131
+\OT1/cmr/m/n/12 bu-tions for use in BUGS code. In some cir-cum-stances, you wil
+l need to call \OT1/cmtt/m/n/12 registerDistributions
+ []
+
+
+Overfull \hbox (31.19458pt too wide) in paragraph at lines 5140--5149
+\OT1/cmtt/m/n/12 TRUE \OT1/cmr/m/n/12 when you call \OT1/cmtt/m/n/12 registerDi
+stributions\OT1/cmr/m/n/12 . Here's an ex-am-ple of us-ing \OT1/cmtt/m/n/12 reg
+isterDistributions
+ []
+
+Package color Info: Redefining color shadecolor on input line 5151.
+
+Overfull \hbox (25.29697pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 10.  CREATING USER-DEFINED BUGS DISTRIBUTIONS AND FUNC
+TIONS \OT1/cmr/m/n/12 109
+ []
+
+[109]
+Overfull \hbox (9.33362pt too wide) in paragraph at lines 5185--5186
+[]\OT1/cmr/m/n/12 The func-tion name in the \OT1/cmtt/m/n/12 BUGSdist \OT1/cmr/
+m/n/12 en-try in the list pro-vided to \OT1/cmtt/m/n/12 registerDistributions
+ []
+
+
+Overfull \hbox (69.92216pt too wide) in paragraph at lines 5192--5193
+[]\OT1/cmr/m/n/12 Further de-tails on us-ing \OT1/cmtt/m/n/12 registerDistribut
+ions \OT1/cmr/m/n/12 can be found via R help on \OT1/cmtt/m/n/12 registerDistri
+butions\OT1/cmr/m/n/12 .
+ []
+
+
+Overfull \hbox (25.29697pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 10.  CREATING USER-DEFINED BUGS DISTRIBUTIONS AND FUNC
+TIONS \OT1/cmr/m/n/12 110
+ []
+
+[110]
+Chapter 11.
+Package color Info: Redefining color shadecolor on input line 5224.
+[111
+
+]
+Package color Info: Redefining color shadecolor on input line 5291.
+ [112]
+Overfull \hbox (55.12024pt too wide) in paragraph at lines 5300--5300
+[][]\OT1/cmtt/m/n/12 multiVarModel2[] []<-[] []nimbleModel[][](multiVarCode2,[]
+ []dimensions[] []=[] []list[][]([][]mu[] []=[] []5[][],[] []cov[] []=[] []c[][
+]([][]5[][],[][]5[][])),[][] 
+ []
+
+[113]
+Package color Info: Redefining color shadecolor on input line 5371.
+ [114]
+Package color Info: Redefining color shadecolor on input line 5442.
+ [115]
+Overfull \hbox (27.18321pt too wide) in paragraph at lines 5504--5514
+\OT1/cmr/m/n/12 (\OT1/cmtt/m/n/12 getDimension\OT1/cmr/m/n/12 ). For more ex-te
+n-sive in-for-ma-tion, please see the R help for \OT1/cmtt/m/n/12 getDistributi
+onInfo\OT1/cmr/m/n/12 . 
+ []
+
+Package color Info: Redefining color shadecolor on input line 5531.
+[116]
+Package color Info: Redefining color shadecolor on input line 5577.
+ [117]
+Package color Info: Redefining color shadecolor on input line 5672.
+ [118] [119]
+Package color Info: Redefining color shadecolor on input line 5795.
+ [120] [121]
+Package color Info: Redefining color shadecolor on input line 5904.
+Package color Info: Redefining color shadecolor on input line 5936.
+ [122]
+Chapter 12.
+Package color Info: Redefining color shadecolor on input line 5990.
+[123
+
+]
+Package color Info: Redefining color shadecolor on input line 6025.
+Package color Info: Redefining color shadecolor on input line 6060.
+ [124]
+Package color Info: Redefining color shadecolor on input line 6114.
+ [125]
+Package color Info: Redefining color shadecolor on input line 6159.
+ [126]
+Package color Info: Redefining color shadecolor on input line 6200.
+Package color Info: Redefining color shadecolor on input line 6225.
+Package color Info: Redefining color shadecolor on input line 6242.
+ [127]
+Package color Info: Redefining color shadecolor on input line 6272.
+Package color Info: Redefining color shadecolor on input line 6317.
+ [128]
+Package color Info: Redefining color shadecolor on input line 6356.
+Package color Info: Redefining color shadecolor on input line 6365.
+ [129]
+Package color Info: Redefining color shadecolor on input line 6380.
+Package color Info: Redefining color shadecolor on input line 6389.
+Package color Info: Redefining color shadecolor on input line 6402.
+ [130]
+Package color Info: Redefining color shadecolor on input line 6430.
+Package color Info: Redefining color shadecolor on input line 6445.
+ [131]
+Package color Info: Redefining color shadecolor on input line 6476.
+ [132] [133]
+Chapter 13.
+Package color Info: Redefining color shadecolor on input line 6568.
+[134
+
+]
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 135
+ []
+
+[135]
+Package color Info: Redefining color shadecolor on input line 6651.
+Package color Info: Redefining color shadecolor on input line 6664.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 136
+ []
+
+[136]
+Overfull \hbox (37.30148pt too wide) in paragraph at lines 6722--6725
+[]\OT1/cmr/m/n/12 Often these are ob-tained from the \OT1/cmtt/m/n/12 getNodeNa
+mes\OT1/cmr/m/n/12 , 
+ []
+
+Package color Info: Redefining color shadecolor on input line 6753.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 137
+ []
+
+[137]
+Package color Info: Redefining color shadecolor on input line 6816.
+
+Overfull \hbox (27.03928pt too wide) in paragraph at lines 6831--6831
+[]\OT1/cmr/bx/n/14.4 Driving mod-els: \OT1/cmtt/m/n/14.4 calculate\OT1/cmr/bx/n
+/14.4 , \OT1/cmtt/m/n/14.4 calculateDiff\OT1/cmr/bx/n/14.4 , \OT1/cmtt/m/n/14.4
+ simulate\OT1/cmr/bx/n/14.4 , \OT1/cmtt/m/n/14.4 getLogProb 
+ []
+
+Package color Info: Redefining color shadecolor on input line 6846.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 138
+ []
+
+[138]
+Package color Info: Redefining color shadecolor on input line 6880.
+
+Overfull \hbox (4.3242pt too wide) in paragraph at lines 6900--6900
+[]    []\OT1/cmtt/m/it/12 ## have different values for different models.  We ar
+e assigning values[][] 
+ []
+
+
+Overfull \hbox (12.92604pt too wide) in paragraph at lines 6904--6904
+[]        []\OT1/cmtt/m/n/12 notReallyANode[] []<-[] []^^My[2:4]^^M[]  []\OT1/c
+mtt/m/it/12 ## y[2:4] allowed even though not a node![][] 
+ []
+
+
+Overfull \hbox (6.87598pt too wide) in paragraph at lines 6911--6911
+[]        []\OT1/cmtt/m/n/12 tmp4[] []<-[] []model[][]$[][]y[[][]3[][]:[][]4[][
+]][]      []\OT1/cmtt/m/it/12 # 5. hard-coded access to a model variable[][] 
+ []
+
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 139
+ []
+
+[139]
+Package color Info: Redefining color shadecolor on input line 6952.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 140
+ []
+
+[140]
+Package color Info: Redefining color shadecolor on input line 6970.
+Package color Info: Redefining color shadecolor on input line 6987.
+Package color Info: Redefining color shadecolor on input line 7026.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 141
+ []
+
+[141]
+Package color Info: Redefining color shadecolor on input line 7070.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 142
+ []
+
+[142]
+Package color Info: Redefining color shadecolor on input line 7103.
+
+Overfull \vbox (0.6033pt too high) detected at line 7227
+ []
+
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 143
+ []
+
+[143]
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 144
+ []
+
+[144]
+Package color Info: Redefining color shadecolor on input line 7243.
+Package color Info: Redefining color shadecolor on input line 7252.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 145
+ []
+
+[145]
+Package color Info: Redefining color shadecolor on input line 7280.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 146
+ []
+
+[146]
+Package color Info: Redefining color shadecolor on input line 7334.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 147
+ []
+
+[147]
+Package color Info: Redefining color shadecolor on input line 7404.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 148
+ []
+
+[148]
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 149
+ []
+
+[149]
+Package color Info: Redefining color shadecolor on input line 7522.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 150
+ []
+
+[150]
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 151
+ []
+
+[151]
+Package color Info: Redefining color shadecolor on input line 7619.
+Package color Info: Redefining color shadecolor on input line 7643.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 152
+ []
+
+[152]
+Package color Info: Redefining color shadecolor on input line 7692.
+
+Overfull \hbox (6.92995pt too wide) in paragraph at lines 7705--7707
+[]\OT1/cmr/m/n/12 The \OT1/cmtt/m/n/12 setup \OT1/cmr/m/n/12 func-tion must hav
+e the four ar-gu-ments \OT1/cmtt/m/n/12 model, mvSaved, target, control\OT1/cmr
+/m/n/12 ,
+ []
+
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 153
+ []
+
+[153]
+Package color Info: Redefining color shadecolor on input line 7793.
+
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 154
+ []
+
+[154]
+Package color Info: Redefining color shadecolor on input line 7806.
+ (./NimbleUserManual.bbl
+Overfull \hbox (0.90273pt too wide) has occurred while \output is active
+\OT1/cmr/m/sl/12 CHAPTER 13.  WRITING NIMBLEFUNCTIONS THAT INTERACT WITH MODELS
+ \OT1/cmr/m/n/12 155
+ []
+
+[155]
+Missing character: There is no â in font cmr12!
+Missing character: There is no € in font cmr12!
+Missing character: There is no “ in font cmr12!
+Missing character: There is no â in font cmr12!
+Missing character: There is no € in font cmr12!
+Missing character: There is no “ in font cmr12!
+Missing character: There is no â in font cmr12!
+Missing character: There is no € in font cmr12!
+Missing character: There is no “ in font cmr12!
+Missing character: There is no â in font cmr12!
+Missing character: There is no € in font cmr12!
+Missing character: There is no “ in font cmr12!
+)
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 7856.
+ [156
+
+]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 7856.
+ (./NimbleUserManual.aux)
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 7856.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 7856.
+
+Package rerunfilecheck Info: File `NimbleUserManual.out' has not changed.
+(rerunfilecheck)             Checksum: 574EB5BB2C003855C68400E777C70829;34088.
+
+
+LaTeX Warning: There were multiply-defined labels.
+
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 7856.
+ )
+(\end occurred inside a group at level 1)
+
+### simple group (level 1) entered at line 7735 ({)
+### bottom level 
+Here is how much of TeX's memory you used:
+ 11571 strings out of 493089
+ 161681 string characters out of 6134842
+ 276846 words of memory out of 5000000
+ 14386 multiletter control sequences out of 15000+600000
+ 18098 words of font info for 72 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 29i,11n,33p,1106b,526s stack positions out of 5000i,500n,10000p,200000b,80000s
+ </Users/dturek/Library/texlive/2015/texmf-var/fonts/pk/ljfour/
+public/bbding/bbding10.600pk></usr/local/texlive/2015/texmf-dist/fonts/type1/pu
+blic/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/pub
+lic/amsfonts/cm/cmbxti10.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/pu
+blic/amsfonts/cm/cmex10.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/pub
+lic/amsfonts/cm/cmitt10.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/pub
+lic/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/publ
+ic/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/publi
+c/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/
+amsfonts/cm/cmmi7.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmmi8.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmr10.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfon
+ts/cm/cmr12.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts
+/cm/cmr17.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/c
+m/cmr6.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/c
+mr7.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8
+.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmsl12.
+pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.p
+fb></usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb
+></usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><
+/usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></
+usr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></u
+sr/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></us
+r/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr
+/local/texlive/2015/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
+Output written on NimbleUserManual.pdf (157 pages, 786100 bytes).
+PDF statistics:
+ 2063 PDF objects out of 2073 (max. 8388607)
+ 1846 compressed objects within 19 object streams
+ 511 named destinations out of 1000 (max. 500000)
+ 1204 words of extra memory for PDF output out of 10000 (max. 10000000)
+

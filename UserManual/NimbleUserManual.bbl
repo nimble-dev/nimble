@@ -1,0 +1,36 @@
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Andrieu, Doucet, and Holenstein}{Andrieu
+  et~al.}{2010}]{Andrieu_Doucet_Holenstein_2010}
+Andrieu, C., A.~Doucet, and R.~Holenstein (2010).
+\newblock Particle {M}arkov chain {M}onte {C}arlo methods.
+\newblock {\em Journal of the Royal Statistical Society: Series B (Statistical
+  Methodology)\/}~{\em 72\/}(3), 269–--342.
+
+\bibitem[\protect\citeauthoryear{George, Makov, and Smith}{George
+  et~al.}{1993}]{George_Makov_Smith_1993}
+George, E.~I., U.~E. Makov, and A.~F.~M. Smith (1993).
+\newblock Conjugate likelihood distributions.
+\newblock {\em Scandinavian Journal of Statistics\/}~{\em 20\/}(2),
+  147--–156.
+
+\bibitem[\protect\citeauthoryear{Lunn, Spiegelhalter, Thomas, and Best}{Lunn
+  et~al.}{2009}]{Lunn_Spiegelhalter_Thomas_Best_2009}
+Lunn, D., D.~Spiegelhalter, A.~Thomas, and N.~Best (2009).
+\newblock The {BUGS} project: Evolution, critique and future directions.
+\newblock {\em Statistics in Medicine\/}~{\em 28\/}(25), 3049--–3067.
+
+\bibitem[\protect\citeauthoryear{Neal}{Neal}{2003}]{Neal2003}
+Neal, R.~M. (2003).
+\newblock Slice sampling.
+\newblock {\em The Annals of Statistics\/}~{\em 31\/}(3), 705--741.
+
+\bibitem[\protect\citeauthoryear{Roberts and Sahu}{Roberts and
+  Sahu}{1997}]{Roberts_Sahu_1997}
+Roberts, G.~O. and S.~K. Sahu (1997).
+\newblock Updating schemes, correlation structure, blocking and
+  parameterization for the {G}ibbs sampler.
+\newblock {\em Journal of the Royal Statistical Society: Series B (Statistical
+  Methodology)\/}~{\em 59\/}(2), 291–317.
+
+\end{thebibliography}
