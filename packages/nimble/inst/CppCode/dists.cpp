@@ -2194,7 +2194,7 @@ double dcar_normal(double* x, double* adj, double* weights, double* num, double 
 }
 
 SEXP C_dcar_proper(SEXP x, SEXP mu, SEXP C, SEXP adj, SEXP num, SEXP M, SEXP tau, SEXP gamma, SEXP return_log) {
-  if(!isReal(x) || !isReal(mu) || !isReal(C) || !isReal(adj) || !isReal(num) || !isReal(M) || !isReal(tau) || !isReal(gamma) || !isLogical(return_log))
+  if(!Rf_isReal(x) || !Rf_isReal(mu) || !Rf_isReal(C) || !Rf_isReal(adj) || !Rf_isReal(num) || !Rf_isReal(M) || !Rf_isReal(tau) || !Rf_isReal(gamma) || !Rf_isLogical(return_log))
     RBREAK("Error (C_dcar_proper): invalid input type for one of the arguments.");
   
   int N = LENGTH(x);
@@ -2211,7 +2211,7 @@ SEXP C_dcar_proper(SEXP x, SEXP mu, SEXP C, SEXP adj, SEXP num, SEXP M, SEXP tau
   int give_log = (int) LOGICAL(return_log)[0];
   SEXP ans;
   
-  PROTECT(ans = allocVector(REALSXP, 1));
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));
   REAL(ans)[0] = dcar_proper(c_x, c_mu, c_C, c_adj, c_num, c_M, c_tau, c_gamma, N, L, give_log);
   
   UNPROTECT(1);
