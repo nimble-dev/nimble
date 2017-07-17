@@ -2,13 +2,43 @@
 
 USER LEVEL CHANGES
 
--- nimOptim
+-- optim (equivalently, nimOptim) added to compiler.
+
+-- next added to compiler.
+
+-- resetFunctions flag added to buildMCEM.
+
+-- Size of libnimble was massively reduced by avoiding generation of C++ debugging content.
+
+-- improved error management from compileNimble
+
+-- NaN is now handled correctly as a constant by compiler
+
+-- Variable names with "." are now handled correctly by the compiler.
+
+-- pi is now handled as a constant or variable in a nimbleFunction (but cannot be used as a constant in model code).
+
+-- returnESS() method added to the bootstrap filter and auxiliary particle filter.
 
 DEVELOPER LEVEL CHANGES
 
--- improvements to testing
+-- MCMC sampler control list default values are now internal to sampling algorithms, rather than a system-level option.
+
+-- Improvements added to testing system, including safeguarding against silent failures, use of gold files, batching of compiler tests, more expected failures, conversion to running all tests using test_package, and parallelization on Travis-CI.
+
+-- Names assigned to package-defined nimbleFunctions to improve C++ readability.
+
+-- Use of R registrations for C functions was cleaned up.
+
+-- Lots of vestigial code was cleaned up.
 
 BUG FIXES
+
+-- several bugs fixed in the automated factor slice sampler (AF_slice sampler), having to due with correctly resetting the internal member variables when an MCMC is run multiple times
+
+-- fixed harmless bug in managing split vertex numbering.
+
+-- Allow sum of length-zero vectors to compile correctly.
 
                            CHANGES IN VERSION 0.6-5 (June 2017)
 

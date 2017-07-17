@@ -837,8 +837,6 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #'
 #' @author Daniel Turek
 #' 
-#' @export
-#' 
 #' @details 
 #'
 #' @return \code{dcar_normal} gives the density, and \code{rcar_normal} returns the current process values, since this distribution is improper.

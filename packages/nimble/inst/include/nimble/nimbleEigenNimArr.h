@@ -86,7 +86,7 @@ void setValuesIndexRange(NimArrBase<T> &nimArr, ManyVariablesMapAccessor &MVA, c
 
 
 template<typename Derived>
-double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   double ans(0);
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
@@ -108,7 +108,7 @@ double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical
 }
   
 template<typename Derived>  
-  double calculateDiff(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  double calculateDiff(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   double ans(0);
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
@@ -130,7 +130,7 @@ template<typename Derived>
 }
 
 template<typename Derived>  
-  double getLogProb(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  double getLogProb(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   double ans(0);
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
@@ -152,7 +152,7 @@ template<typename Derived>
 }
 
 template<typename Derived>  
-  void simulate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  void simulate(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
   if(!logical) {
@@ -312,7 +312,7 @@ template<typename NimArrOutput, typename DerivedBool>
   ans.reserve(BoolArg.size());
   bool nextBool;
   for(unsigned int i = 0; i < BoolArg.size(); i++ ) {
-    nextBool = nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedBool>::Flags & LinearAccessBit, int, DerivedBool, typename Eigen::internal::traits<DerivedBool>::Index >::getCoeff(BoolArg, i);
+    nextBool = nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedBool>::Flags & LinearAccessBit, int, DerivedBool, Eigen::Index >::getCoeff(BoolArg, i);
     if(nextBool) ans.push_back(i + 1); // That 1 makes it one-based indexing, which will then be adjusted back to zero-based when used for indexing something else
   }
   assignVectorToNimArr<NimArrOutput, std::vector<int> >(output, ans);
