@@ -438,7 +438,7 @@ Obtaining samples as matrices is most common, but see Section \ref{sec:modelValu
 Once an MCMC algorithm has been run, as dscribed in \ref{sec:executing-the-mcmc-algorithm}, the WAIC \citep{Watanabe_2010} can be calculated from the posterior samples produced by the MCMC algorithm.  The WAIC is calculated by calling the member method \cd{mcmc\$calculateWAIC} (see \cd{help(buildMCMC)} in R).  The \cd{calculateWAIC} method has one required argument, \cd{burnIn}, the number of samples to remove from the beginning of the posterior samples for WAIC calculation.  \cd{burnIn} defaults to 0.
 
 <<eval=FALSE>>=
-Cmcmc$calculateWAIC(100)
+Cmcmc$calculateWAIC(burnIn = 100)
 @ 
 
 \section{Running multiple MCMC chains}
