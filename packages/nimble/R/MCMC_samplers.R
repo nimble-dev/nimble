@@ -72,25 +72,32 @@ sampler_binary <- nimbleFunction(
     ), where = getLoadingNamespace()
 )
 
-## FIXME: deal with DT new control defaults setup
+
+
+###########################################################################
+### categorical sampler for dcat distributions ############################
+###########################################################################
+
 #' @rdname samplers
 #' @export
-sampler_cat <- nimbleFunction(
+sampler_categorical <- nimbleFunction(
+    name = 'sampler_categorical',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes  <- model$getDependencies(target)
+        ## numeric value generation
+        k <- length(model$getParam(target, 'prob'))
+        probs <- numeric(k)
         ## checks
-        if(length(targetAsScalar) > 1)  stop('cannot use cat sampler on more than one target node')
-        if(model$getDistribution(target) != 'dcat') stop('can only use cat sampler on node with dcat distribution')
-        maxval <- length(model$getParam(target, 'prob'))
-        probs <- numeric(maxval)
+        if(length(targetAsScalar) > 1)  stop('cannot use categorical sampler on more than one target node')
+        if(model$getDistribution(target) != 'dcat') stop('can only use categorical sampler on node with dcat distribution')
     },
     run = function() {
         currentValue <- model[[target]]
         probs[currentValue] <<- exp(getLogProb(model, calcNodes))
-        for(i in 1:maxval) {
+        for(i in 1:k) {
             if(i != currentValue) {
                 model[[target]] <<- i
                 probs[i] <<- exp(calculate(model, calcNodes))
@@ -110,6 +117,8 @@ sampler_cat <- nimbleFunction(
         reset = function() { }
     ), where = getLoadingNamespace()
 )
+
+
 
 ####################################################################
 ### scalar RW sampler with normal proposal distribution ############

@@ -227,6 +227,9 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     ## if node is discrete 0/1 (binary), assign 'binary' sampler
                     if(binary) { addSampler(target = node, type = 'binary');     next }
                     
+                    ## for categorical nodes, assign a 'categorical' sampler
+                    if(nodeDist == 'dcat') { addSampler(target = node, type = 'categorical');     next }
+                    
                     ## if node distribution is discrete, assign 'slice' sampler
                     if(discrete) { addSampler(target = node, type = 'slice');     next }
                     
@@ -814,6 +817,9 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             
 	    ## binary-valued nodes
             addRule(quote(isBinary), 'binary')
+            
+	    ## categorical
+            addRule(quote(nodeDistribution == 'dcat'), 'categorical')
             
 	    ## discrete-valued nodes
             addRule(quote(isDiscrete), 'slice')
