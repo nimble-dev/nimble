@@ -23,7 +23,7 @@ template<int nDim, class T>
   void nimArrPtr_copyBackIfNeeded(T* tptr, NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
   if(tptr == orig.getPtr()) return;
   if(tptr != possibleCopy.getPtr()) {
-    PRINTF("Problem in unconverting from an external call\n");
+    NIMERROR("Problem in unconverting from an external call\n");
   }
   orig.mapCopy(possibleCopy);
 }

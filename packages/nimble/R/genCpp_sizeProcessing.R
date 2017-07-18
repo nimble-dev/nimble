@@ -1,7 +1,27 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rinvwish_chol', 'nimArr_rcar_normal', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'getValuesIndexRange',  'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr', 'dimNimArr', 'assignNimArrToNimArr')
-setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes', 'SEXP_2_NimArr', 'nimVerbatim')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
+                              'nimArr_rmvt_chol',
+                              'nimArr_rwish_chol',
+                              'nimArr_rinvwish_chol',
+                              'nimArr_rcar_normal',
+                              'nimArr_rmulti',
+                              'nimArr_rdirch',
+                              'getValues',
+                              'getValuesIndexRange',
+                              'initialize',
+                              'setWhich',
+                              'setRepVectorTimes',
+                              'assignVectorToNimArr',
+                              'dimNimArr',
+                              'assignNimArrToNimArr')
+setSizeNotNeededOperators <- c('setWhich',
+                               'setRepVectorTimes',
+                               'SEXP_2_NimArr',
+                               'nimVerbatim')
 
-operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
+operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map',
+                                                       'dim',
+                                                       'mvAccessRow',
+                                                       'nfVar')
 
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
@@ -214,7 +234,7 @@ sizeProxyForDebugging <- function(code, symTab, typeEnv) {
     return(ans)
 }
 
-## This is used by nimbleExternalCall
+## This is used by nimbleExternalCall.
 ## When the external call is provided as foo, returning e.g. double(0),
 ## we end up needing a line of code RETURNVALUE <- foo(args).
 ## To get the type of RETURNVALUE, we wrap that as RETURNVALUE <- asReturnSymbol(foo(args), type, nDim)

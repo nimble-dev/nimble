@@ -1,4 +1,4 @@
-#' Create a nimbleFunction that wraps a call to external compiled code
+#' EXPERIMENTAL Create a nimbleFunction that wraps a call to external compiled code
 #'
 #' Given C header information, a function that takes scalars or pointers can be called from a compiled nimbleFunction.  If non-scalar return values are needed, an argument can be selected to behave as the return value in nimble.
 #'
@@ -128,7 +128,7 @@ nimbleExternalCall <- function(prototype, returnType = void(), Cfun, headerFile,
     return(ans)
 }
 
-#' Make an R function callable from compiled nimbleFunctions (including nimbleModels).
+#' EXPERIMENTAL Make an R function callable from compiled nimbleFunctions (including nimbleModels).
 #'
 #' Normally compiled nimbleFunctions call other compiled nimbleFunctions.  nimbleRcall enables any R function (with viable argument types and return values) to be called (and evaluated in R) from compiled nimbleFunctions.
 #'

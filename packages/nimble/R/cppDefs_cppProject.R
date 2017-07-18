@@ -143,7 +143,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        selfCPP <- if(is.character(con)) paste0('"', con, '.cpp"') else '"[FILENAME].cpp"'
                                        CPPincludes <- CPPincludes[ CPPincludes != selfCPP ]
 
-                                       ## Eigen must be included before any R header files because they both define "length" (this may be moot, 7/17)
+                                      ## TODO Simplify Eigen include logic now that Nimble defines `R_NO_REMAP`.
                                        ## similar for cppad
                                        iEigenInclude <- grep("EigenTypedefs", CPPincludes)
                                        if(length(iEigenInclude) > 0) {
@@ -229,17 +229,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    },                                  
                                    compileFile = function(names, showCompilerOutput = nimbleOptions('showCompilerOutput'),
                                                           .useLib = UseLibraryMakevars) {
-                                       ## cppPermList appears to be deprecated.  Will remove this commented-out block if no problems arise.
-                                       ## cppPermList <- c('RcppUtils.cpp',
-                                       ##                  'Utils.cpp',
-                                       ##                  'NamedObjects.cpp',
-                                       ##                  'ModelClassUtils.cpp',
-                                       ##                  'accessorClasses.cpp',
-                                       ##                  'predefinedNimbleLists.cpp',
-                                       ##                  'nimOptim.cpp'
-                                       ##                  )
-                                       ## if(getNimbleOption('includeCPPdists')) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
-
                                        isWindows = (.Platform$OS.type == "windows")
 
                                        includes <- character()
