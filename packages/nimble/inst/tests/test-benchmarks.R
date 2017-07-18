@@ -35,9 +35,15 @@ test_that('Benchmarking matrix arithmetic', {
             returnType(double(0))
         })
     cBenchmark <- compileNimble(nimBenchmark)
-    cat('---------------------------------------\n')
+    tfBenchmark <- NULL
+    if (require('tensorflow')) {
+        temporarilyEnableTensorflow()
+        tfBenchmark <- compileNimble(nimBenchmark)
+    }
+
+    cat('-------------------------------------------------\n')
     cat('Benchmarking Matrix Arithmetic\n')
-    cat('  K   M   N DSL calls/ms C++ calls/ms\n')
+    cat('  K   M   N DSL calls/ms C++ calls/ms TF calls/ms\n')
     for (K in matrixSizes) {
         M <- K
         N <- K
@@ -45,10 +51,13 @@ test_that('Benchmarking matrix arithmetic', {
         y <- matrix(rnorm(M * N), M, N)
         nimPerSec <- benchmarkIters(function(iters) nimBenchmark(x, y, iters))
         cPerSec <- benchmarkIters(function(iters) cBenchmark(x, y, iters))
-        cat(sprintf('%3d %3d %3d %12.1f %12.1f\n',
-                    K, M, N, nimPerSec / 1e3, cPerSec / 1e3))
+        tfPerSec <- if (is.null(tfBenchmark)) NA else {
+            benchmarkIters(function(iters) tfBenchmark(x, y, iters))
+        }
+        cat(sprintf('%3d %3d %3d %12.1f %12.1f %11.1f\n',
+                    K, M, N, nimPerSec / 1e3, cPerSec / 1e3, tfPerSec / 1e3))
     }
-    cat('---------------------------------------\n')
+    cat('-------------------------------------------------\n')
 })
 
 test_that('Benchmarking matrix multiplication', {
@@ -63,9 +72,15 @@ test_that('Benchmarking matrix multiplication', {
             returnType(double(0))
         })
     cBenchmark <- compileNimble(nimBenchmark)
-    cat('---------------------------------------\n')
+    tfBenchmark <- NULL
+    if (require('tensorflow')) {
+        temporarilyEnableTensorflow()
+        tfBenchmark <- compileNimble(nimBenchmark)
+    }
+
+    cat('-------------------------------------------------\n')
     cat('Benchmarking Matrix Multiplication\n')
-    cat('  K   M   N DSL calls/ms C++ calls/ms\n')
+    cat('  K   M   N DSL calls/ms C++ calls/ms TF calls/ms\n')
     for (K in matrixSizes) {
         M <- K
         N <- K
@@ -73,10 +88,13 @@ test_that('Benchmarking matrix multiplication', {
         y <- matrix(rnorm(M * N), M, N)
         nimPerSec <- benchmarkIters(function(iters) nimBenchmark(x, y, iters))
         cPerSec <- benchmarkIters(function(iters) cBenchmark(x, y, iters))
-        cat(sprintf('%3d %3d %3d %12.1f %12.1f\n',
-                    K, M, N, nimPerSec / 1e3, cPerSec / 1e3))
+        tfPerSec <- if (is.null(tfBenchmark)) NA else {
+            benchmarkIters(function(iters) tfBenchmark(x, y, iters))
+        }
+        cat(sprintf('%3d %3d %3d %12.1f %12.1f %11.1f\n',
+                    K, M, N, nimPerSec / 1e3, cPerSec / 1e3, tfPerSec / 1e3))
     }
-    cat('---------------------------------------\n')
+    cat('-------------------------------------------------\n')
 })
 
 test_that('Benchmarking vectorized special functions', {
@@ -91,15 +109,24 @@ test_that('Benchmarking vectorized special functions', {
             returnType(double(0))
         })
     cBenchmark <- compileNimble(nimBenchmark)
-    cat('-------------------------------\n')
+    tfBenchmark <- NULL
+    if (require('tensorflow')) {
+        temporarilyEnableTensorflow()
+        tfBenchmark <- compileNimble(nimBenchmark)
+    }
+
+    cat('-------------------------------------------\n')
     cat('Benchmarking Special Functions\n')
-    cat('    N DSL calls/ms C++ calls/ms\n')
+    cat('    N DSL calls/ms C++ calls/ms TF calls/ms\n')
     for (N in vectorSizes) {
         x <- exp(-rnorm(N))
         nimPerSec <- benchmarkIters(function(iters) nimBenchmark(x, iters))
         cPerSec <- benchmarkIters(function(iters) cBenchmark(x, iters))
-        cat(sprintf('%5d %12.1f %12.1f\n',
-                    N, nimPerSec / 1e3, cPerSec / 1e3))
+        tfPerSec <- if (is.null(tfBenchmark)) NA else {
+            benchmarkIters(function(iters) tfBenchmark(x, iters))
+        }
+        cat(sprintf('%5d %12.1f %12.1f %11.1f\n',
+                    N, nimPerSec / 1e3, cPerSec / 1e3, tfPerSec / 1e3))
     }
-    cat('-------------------------------\n')
+    cat('-------------------------------------------\n')
 })
