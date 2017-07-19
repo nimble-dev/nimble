@@ -33,7 +33,8 @@ test: FORCE
 
 benchmark: FORCE
 	mkdir -p profile
-	R --quiet --slave --vanilla --file=benchmark.R
+	NIMBLE_BENCHMARK_DIR=$(PWD)/profile \
+	  R --quiet --slave --vanilla --file=benchmark.R
 
 profile: FORCE
 	mkdir -p profile

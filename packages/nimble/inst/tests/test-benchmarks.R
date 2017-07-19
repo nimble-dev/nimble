@@ -12,17 +12,18 @@ context('Benchmarking Nimble code')
 cat('\n')
 
 ## Computes number of iterations per second.
-## This increase iterations until test takes around 1 sec.
-benchmarkIters <- function(fun, minIters = 100L) {
+## This increases iterations until test takes around 1 sec.
+benchmarkIters <- function(fun, minIters = 10L) {
     minRunTimeSec = 0.1
     if (nchar(Sys.getenv('NIMBLE_BENCHMARK_SEC'))) {
         minRunTimeSec <- as.double(Sys.getenv('NIMBLE_BENCHMARK_SEC'))
     }
 
     iters <- minIters
+    fun(1)  # Warm-up.
     elapsed <- fun(iters)
     while (elapsed < minRunTimeSec) {
-        iters <- as.integer(iters * max(2, (minRunTimeSec / (elapsed + 1e-6)) ^ 0.8))
+        iters <- as.integer(iters * max(3, (minRunTimeSec / (elapsed + 1e-6)) ^ 0.8))
         elapsed <- fun(iters)
     }
     return(iters / elapsed)
@@ -50,9 +51,8 @@ makeVersions <- function(name, run) {
     return(versions)
 }
 
-matrixSizes <- c(1, 2, 3, 4, 5, 8, 10, 16, 32, 64, 100, 128, 256)
-vectorSizes <- c(1, 2, 3, 4, 5, 8, 10, 16, 32, 64, 100, 128, 256,
-                 512, 1000, 1024, 2048, 4096, 8192, 10000)
+matrixSizes <- c(1, 10, 100, 1000)
+vectorSizes <- c(1, 10, 100, 1000, 10000)
 
 test_that('Benchmarking matrix arithmetic', {
     versions <- makeVersions(
@@ -70,7 +70,7 @@ test_that('Benchmarking matrix arithmetic', {
 
     cat('-------------------------------------------------\n')
     cat('Benchmarking Matrix Arithmetic\n')
-    cat('  K   M   N DSL calls/ms C++ calls/ms TF calls/ms\n')
+    cat('   K    M    N DSL ops/sec C++ ops/sec TF ops/sec\n')
     for (K in matrixSizes) {
         M <- K
         N <- K
@@ -81,8 +81,8 @@ test_that('Benchmarking matrix arithmetic', {
         tfPerSec <- if (is.null(versions$tf)) NA else {
             benchmarkIters(function(iters) versions$tf(x, y, iters))
         }
-        cat(sprintf('%3d %3d %3d %12.1f %12.1f %11.1f\n',
-                    K, M, N, nimPerSec / 1e3, cPerSec / 1e3, tfPerSec / 1e3))
+        cat(sprintf('%4d %4d %4d %11.2g %11.2g %10.2g\n',
+                    K, M, N, nimPerSec, cPerSec, tfPerSec))
     }
     cat('-------------------------------------------------\n')
 })
@@ -102,7 +102,7 @@ test_that('Benchmarking matrix multiplication', {
 
     cat('-------------------------------------------------\n')
     cat('Benchmarking Matrix Multiplication\n')
-    cat('  K   M   N DSL calls/ms C++ calls/ms TF calls/ms\n')
+    cat('   K    M    N DSL ops/sec C++ ops/sec TF ops/sec\n')
     for (K in matrixSizes) {
         M <- K
         N <- K
@@ -113,8 +113,8 @@ test_that('Benchmarking matrix multiplication', {
         tfPerSec <- if (is.null(versions$tf)) NA else {
             benchmarkIters(function(iters) versions$tf(x, y, iters))
         }
-        cat(sprintf('%3d %3d %3d %12.1f %12.1f %11.1f\n',
-                    K, M, N, nimPerSec / 1e3, cPerSec / 1e3, tfPerSec / 1e3))
+        cat(sprintf('%4d %4d %4d %11.2g %11.2g %10.2g\n',
+                    K, M, N, nimPerSec, cPerSec, tfPerSec))
     }
     cat('-------------------------------------------------\n')
 })
@@ -132,9 +132,9 @@ test_that('Benchmarking vectorized special functions', {
             returnType(double(0))
         })
 
-    cat('-------------------------------------------\n')
+    cat('----------------------------------------\n')
     cat('Benchmarking Special Functions\n')
-    cat('    N DSL calls/ms C++ calls/ms TF calls/ms\n')
+    cat('    N DSL ops/sec C++ ops/sec TF ops/sec\n')
     for (N in vectorSizes) {
         x <- exp(-rnorm(N))
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, iters))
@@ -142,8 +142,8 @@ test_that('Benchmarking vectorized special functions', {
         tfPerSec <- if (is.null(versions$tf)) NA else {
             benchmarkIters(function(iters) versions$tf(x, iters))
         }
-        cat(sprintf('%5d %12.1f %12.1f %11.1f\n',
-                    N, nimPerSec / 1e3, cPerSec / 1e3, tfPerSec / 1e3))
+        cat(sprintf('%5d %11.1g %11.1g %10.1g\n',
+                    N, nimPerSec, cPerSec, tfPerSec))
     }
-    cat('-------------------------------------------\n')
+    cat('----------------------------------------\n')
 })
