@@ -32,7 +32,17 @@ test: FORCE
 	cd .. ; ./run_tests.R --parallel
 
 benchmark: FORCE
-	cd .. ; ./run_tests.R benchmarks
+	mkdir -p profile
+	R --quiet --slave --vanilla --file=benchmark.R
+
+profile: FORCE
+	mkdir -p profile
+	NIMBLE_BENCHMARK_DIR=$(PWD)/profile \
+	NIMBLE_BENCHMARK_SEC=10.0 \
+	  R --quiet --slave --vanilla --file=benchmark.R \
+	   --debugger=valgrind \
+	   --debugger-args="--tool=callgrind --callgrind-out-file=profile/callgrind.out"
+	kcachegrind profile/callgrind.out || callgrind_annotate profile/callgrind.out
 
 # We are progressively delegating style to clang-format.
 # Some older C++ files are still styled manually.

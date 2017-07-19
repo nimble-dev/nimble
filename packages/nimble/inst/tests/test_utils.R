@@ -43,6 +43,11 @@ temporarilyEnableTensorflow <- function() {
     nimbleOptions(experimentalUseTensorflow = TRUE)
 }
 
+withTensorflowEnabled <- function(arg) {
+    temporarilyEnableTensorflow()
+    return(arg)
+}
+
 withTempProject <- function(code) {
     code <- substitute(code)
     project <- nimble:::nimbleProjectClass()
