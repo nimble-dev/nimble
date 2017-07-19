@@ -13,6 +13,7 @@
 void fake_deallocator(void* data, size_t len, void* arg) {}  // Does nothing.
 
 NimTf_Runner::NimTf_Runner(const std::string& graphDefBase64,
+                           const std::string& configBase64,
                            const std::vector<std::string>& inputNames,
                            const std::vector<std::string>& outputNames)
     : status_(TF_NewStatus()),
@@ -39,7 +40,11 @@ NimTf_Runner::NimTf_Runner(const std::string& graphDefBase64,
 
   // Initialize session.
   {
+    std::string config;
+    Base64::Decode(configBase64, &config);
     TF_SessionOptions* options = TF_NewSessionOptions();
+    TF_SetConfig(options, config.data(), config.size(), status_);
+    TF_CHECK_OK(status_);
     session_ = TF_NewSession(graph_, options, status_);
     TF_CHECK_OK(status_);
     TF_DeleteSessionOptions(options);

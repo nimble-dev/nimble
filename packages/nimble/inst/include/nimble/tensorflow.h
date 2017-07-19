@@ -14,7 +14,8 @@
 //                         NimArr<double, 1> ARG2_x_,
 //                         NimArr<double, 1> ARG3_y_) {
 //    static NimTf_Runner& runner =
-//      NimTf_Builder("0123456789abcdef")  // The string is a graphDefBase64.
+//      NimTf_Builder("0123456789abcdef",  // This string is a graphDefBase64.
+//                    "0123456789abcdef")  // This string is a configBase64.
 //        .NimTf_withInput("ARG1_a_")
 //        .NimTf_withInput("ARG2_x_")
 //        .NimTf_withInput("ARG3_y_")
@@ -46,6 +47,7 @@ class NimTf_Runner {
 
  public:
   NimTf_Runner(const std::string& graphDefBase64,
+               const std::string& configBase64,
                const std::vector<std::string>& inputNames,
                const std::vector<std::string>& outputName);
   ~NimTf_Runner();
@@ -66,7 +68,8 @@ class NimTf_Runner {
 // Helper to construct static instances of NimTf_Runner.
 // Example usage:
 //  static NimTf_Runner& nimTf =
-//     *NimTf_Builder("0123456789abcdef")  // The string is a graphDefBase64.
+//     *NimTf_Builder("0123456789abcdef",  // The string is a graphDefBase64.
+//      .NimTF_withConfig("0123456789abcdef")  // The string is a configBase64.
 //      .NimTf_withInput("ARG1_a_")
 //      .NimTf_withInput("ARG2_x_")
 //      .NimTf_withInput("ARG3_y_")
@@ -77,6 +80,7 @@ class NimTf_Runner {
 // is common practice.
 class NimTf_Builder {
   std::string graphDefBase64_;
+  std::string configBase64_;
   std::vector<std::string> inputNames_;
   std::vector<std::string> outputNames_;
 
@@ -84,6 +88,10 @@ class NimTf_Builder {
   NimTf_Builder(const std::string& graphDefBase64)
       : graphDefBase64_(graphDefBase64) {}
 
+  NimTf_Builder& NimTf_withConfig(const std::string& configBase64) {
+    configBase64_ = configBase64;
+    return *this;
+  }
   NimTf_Builder& NimTf_withInput(const std::string& name) {
     inputNames_.push_back(name);
     return *this;
@@ -94,7 +102,8 @@ class NimTf_Builder {
   }
 
   NimTf_Runner* NimTf_build() {
-    return new NimTf_Runner(graphDefBase64_, inputNames_, outputNames_);
+    return new NimTf_Runner(graphDefBase64_, configBase64_, inputNames_,
+                            outputNames_);
   }
 };
 
