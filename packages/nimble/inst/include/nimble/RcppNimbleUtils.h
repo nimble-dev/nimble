@@ -305,7 +305,7 @@ int length(vector<T> vec)
 /* bool compareOrderedPair(orderedPair a, orderedPair b);	 //function called for sort  */
 
 
-void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output);
-void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output, bool& silent);
+void rankSample(NimArr<1, double>& weights, int n, NimArr<1, int>& output);
+void rankSample(NimArr<1, double>& weights, int n, NimArr<1, int>& output, bool silent);
 
 #endif

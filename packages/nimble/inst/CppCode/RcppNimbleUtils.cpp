@@ -764,12 +764,12 @@ double nimMod(double a, double b) {
 //   return(a.value < b.value);
 // }
 
-void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output) {
+void rankSample(NimArr<1, double> &weights, int n, NimArr<1, int> &output) {
   bool silent = false;
   rankSample(weights, n, output, silent);
 }
 
-void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output, bool& silent) {
+void rankSample(NimArr<1, double> &weights, int n, NimArr<1, int> &output, bool silent) {
   //PRINTF("in VOID rankSample\n");
   output.setSize(n);
   int N = weights.size();
