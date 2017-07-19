@@ -26,7 +26,7 @@ sampler_posterior_predictive <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
-        calcNodes  <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
     },
     run = function() {
         simulate(model, target)
@@ -52,7 +52,7 @@ sampler_binary <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes  <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use binary sampler on more than one target node')
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
@@ -92,7 +92,7 @@ sampler_RW <- nimbleFunction(
         scale         <- if(!is.null(control$scale))         control$scale         else 1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes  <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -428,7 +428,7 @@ sampler_ess <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         target <- model$expandNodeNames(target)
-        calcNodes  <- model$getDependencies(target, self = FALSE)
+        calcNodes <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         Pi <- pi
         ## nested function and function list definitions
@@ -483,7 +483,7 @@ sampler_AF_slice <- nimbleFunction(
         adaptWidthTolerance <- if(!is.null(control$sliceAdaptWidthTolerance)) control$sliceAdaptWidthTolerance else 0.1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes      <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
         ## numeric value generation
         d                  <- length(targetAsScalar)
         discrete           <- sapply(targetAsScalar, function(x) model$isDiscrete(x))
