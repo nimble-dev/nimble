@@ -185,13 +185,6 @@ tfTranslate <- function(name) {
         'acos' = tf$acos,
         'asin' = tf$asin,
         'atan' = tf$atan,
-        ## These hyperbolic functions requre very a recent tensorflow.
-        'cosh' = tf$cosh,
-        'sinh' = tf$sinh,
-        'tanh' = tf$tanh,
-        'acosh' = tf$acosh,
-        'asinh' = tf$asinh,
-        'atanh' = tf$atanh,
         'exp' = tf$exp,
         'log' = tf$log,
         'log1p' = tf$log1p,
@@ -261,6 +254,19 @@ tfTranslate <- function(name) {
             tf$matrix_triangular_solve(l, x, lower = FALSE)
         }
     )
+
+    ## These hyperbolic functions requre very a recent tensorflow.
+    tryCatch({
+        .tfLazyData$cosh <- tf$cosh
+        .tfLazyData$sinh <- tf$sinh
+        .tfLazyData$tanh <- tf$tanh
+        .tfLazyData$acosh <- tf$acosh
+        .tfLazyData$asinh <- tf$asinh
+        .tfLazyData$atanh <- tf$atanh
+    }, error = function(e) {
+        warning('Tensorflow hyperbolic functions are not available')
+    })
+
     return(.tfLazyData$tfTranslate[[name]])
 }
 
@@ -292,7 +298,7 @@ TfTensorize <- function(code, placeholders) {
     stop(paste('Not implemented:', class(code)))
 }
 
-exprClasses2serializedTF <- function(code, symTab) {
+exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     if (!require(tensorflow)) {
         stop('Failed to load tensorflow package')
     }
@@ -312,13 +318,20 @@ exprClasses2serializedTF <- function(code, symTab) {
     tensor <- TfTensorize(expr, placeholders)
     tensor <- tf$identity(tensor, name = target$name)
 
-    ## Serialize the graph as a string.
+    ## Configure the tensorflow session.
+    configProto <- tf$ConfigProto()
+    configProto$inter_op_parallelism_threads <- threads;
+    configProto$intra_op_parallelism_threads <- threads;
+
+    ## Serialize protos to strings.
     base64 <- reticulate::import('base64')
     graph <- base64$b64encode(tensor$graph$as_graph_def()$SerializeToString())
+    config <- base64$b64encode(configProto$SerializeToString())
 
     ## Create NimTf_Builder.
     tfBuilder <- TfBuilder()
     tfBuilder$setSerializedGraph(graph)
+    tfBuilder$setSerializedConfig(config)
     for (name in names(placeholders)) {
         tfBuilder$addInputVar(name)
     }
@@ -330,11 +343,12 @@ exprClasses2serializedTF <- function(code, symTab) {
 TfBuilder <- setRefClass(
     Class = "TfBuilder",
     fields = list(
-        inputNames = 'ANY',
         ## character vector of arguments *representing canonical order*
-        outputNames = 'ANY',
+        inputNames = 'ANY',
         ## initially, a single name
-        serializedGraph = 'ANY'
+        outputNames = 'ANY',
+        serializedGraph = 'ANY',
+        serializedConfig = 'ANY'
     ),
     methods = list(
         initialize = function() {
@@ -356,10 +370,14 @@ TfBuilder <- setRefClass(
         setSerializedGraph = function(graphText) {
             serializedGraph <<- graphText
         },
+        setSerializedConfig = function(configText) {
+            serializedConfig <<- configText
+        },
         generateConstructor = function() {
             ## Paste code, instead of creating a parse tree.
             paste(
                 paste0(' = *NimTf_Builder("', serializedGraph, '")'),
+                paste0('.NimTf_withConfig("', serializedConfig, '")'),
                 paste0(
                     paste0('.NimTf_withInput("', inputNames, '")'),
                     collapse = "\n"
