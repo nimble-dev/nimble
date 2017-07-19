@@ -314,9 +314,11 @@ make_input <- function(dim, size = 3, logicalArg) {
   stop("not set for dimension greater than 2")
 }
 
-wrap_if_matches <- function(pattern, string, wrapper, expr) {
+xfail_if_matches <- function(pattern, string, wrapper, expr) {
     if (!is.null(pattern) && grepl(paste0('^', pattern, '$'), string)) {
+        cat('BEGIN XFAIL\n', file = stderr())
         wrapper(expr)
+        cat('END XFAIL\n', file = stderr())
     } else {
         expr
     }
@@ -332,7 +334,7 @@ wrap_if_matches <- function(pattern, string, wrapper, expr) {
 test_math <- function(param, caseName, verbose = TRUE, size = 3, dirName = NULL) {
     info <- paste0(caseName, ': ', param$name)
     test_that(info, {
-        wrap_if_matches(param$xfail, paste0(info, ': runs'), expect_error, {
+        xfail_if_matches(param$xfail, paste0(info, ': runs'), expect_error, {
             test_math_internal(param, info, verbose, size, dirName)
         })
     })
@@ -380,11 +382,11 @@ test_math_internal <- function(param, info, verbose = TRUE, size = 3, dirName = 
   if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
 
   infoR <- paste0(info, ": (R vs Nimble DSL)")
-  wrap_if_matches(param$xfail, info, expect_failure, {
+  xfail_if_matches(param$xfail, info, expect_failure, {
       expect_equal(out, out_nfR, info = infoR)
   })
   infoC <- paste0(info, ": (R vs Nimble Cpp)")
-  wrap_if_matches(param$xfail, info, expect_failure, {
+  xfail_if_matches(param$xfail, info, expect_failure, {
       expect_equal(out, out_nfC, info = infoC)
   })
 
