@@ -827,6 +827,7 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' @name CAR-Normal
 #' 
 #' @param x vector of values.
+#' @param n number of observations.
 #' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.  If omitted, all weights are taken as unity.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
