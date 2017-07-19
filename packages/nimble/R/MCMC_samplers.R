@@ -104,10 +104,9 @@ sampler_categorical <- nimbleFunction(
                 if(is.nan(probs[i])) probs[i] <<- 0
             }
         }
-        newValue <- integer(1)
-        rankSample(probs, 1, newValue)
-        if(currentValue != newValue[1]) {
-            model[[target]] <<- newValue[1]
+        newValue <- rcat(1, probs)
+        if(newValue != currentValue) {
+            model[[target]] <<- newValue
             calculate(model, calcNodes)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         } else nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
