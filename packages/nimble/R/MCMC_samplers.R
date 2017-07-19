@@ -105,8 +105,7 @@ sampler_categorical <- nimbleFunction(
             }
         }
         newValue <- integer(1)
-        size <- integer(1,1)
-        rankSample(probs, size[1], newValue)
+        rankSample(probs, 1, newValue)
         if(currentValue != newValue[1]) {
             model[[target]] <<- newValue[1]
             calculate(model, calcNodes)
