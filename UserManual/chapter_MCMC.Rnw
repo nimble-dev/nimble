@@ -32,6 +32,7 @@ Configuring, building and running an MCMC algorithm for a NIMBLE model involves 
 \item Use \cd{buildMCMC} to build the MCMC object and its samplers either from the model (using default MCMC configuration) or from a customized MCMC configuration (Section \ref{sec:build-compile-mcmc}).
 \item Compile the MCMC object (and the model), unless one is debugging and wishes to run the uncompiled MCMC.
 \item Run the MCMC and extract the samples (Sections \ref{executing-the-mcmc-algorithm} and \ref{sec:extracting-samples}).
+\item Optionally, calculate the WAIC using the posterior samples (Section \ref{sec:WAIC}).
 \end{enumerate}
 
 NIMBLE provides several functions to simplify running one or multiple MCMCs:
@@ -430,6 +431,15 @@ mean(samplesMatrix[, "x[2]"])
 @
 
 Obtaining samples as matrices is most common, but see Section \ref{sec:modelValues-struct} for more about programming with modelValues objects, especially if you want to write nimbleFunctions to use the samples.
+
+\section{Calculating WAIC}
+\label{sec:WAIC}
+
+Once an MCMC algorithm has been run, as dscribed in \ref{sec:executing-the-mcmc-algorithm}, the WAIC \citep{Watanabe_2010} can be calculated from the posterior samples produced by the MCMC algorithm.  The WAIC is calculated by calling the member method \cd{mcmc\$calculateWAIC} (see \cd{help(buildMCMC)} in R).  The \cd{calculateWAIC} method has one required argument, \cd{burnIn}, the number of samples to remove from the beginning of the posterior samples for WAIC calculation.  \cd{burnIn} defaults to 0.
+
+<<eval=FALSE>>=
+Cmcmc$calculateWAIC(burnIn = 100)
+@ 
 
 \section{Running multiple MCMC chains}
 \label{sec:runMCMC}
