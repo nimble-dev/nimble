@@ -36,7 +36,22 @@ benchmark: FORCE
 	NIMBLE_BENCHMARK_DIR=$(PWD)/profile \
 	  R --quiet --slave --vanilla --file=benchmark.R
 
-profile: FORCE
+# This requires libgoogle-perftools-dev, pprof, and requires
+# building nimble with the following additions to ~/.R/Makvars:
+# LDFLAGS += -g
+# PKG_LIBS += -lprofiler
+profile-google: FORCE
+	CPUPROFILE=$(PWD)/profile/profile.log \
+	  NIMBLE_BENCHMARK_DIR=$(PWD)/profile \
+	  NIMBLE_BENCHMARK_SEC=0.5 \
+	  R --quiet --vanilla --slave --file=benchmark.R
+	PPROF_BINARY_PATH=$(PATH):$(shell R RHOME)/bin:$(PWD)/profile \
+	  pprof -web $(shell R RHOME)/bin/R $(PWD)/profile/profile.log
+
+# This requires valgrind, prefers kcachegrind, and requires
+# building nimble with the following additions to ~/.R/Makvars:
+# LDFLAGS += -g
+profile-callgrind: FORCE
 	mkdir -p profile
 	NIMBLE_BENCHMARK_DIR=$(PWD)/profile \
 	NIMBLE_BENCHMARK_SEC=10.0 \

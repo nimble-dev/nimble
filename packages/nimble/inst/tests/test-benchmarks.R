@@ -19,11 +19,13 @@ benchmarkIters <- function(fun, minIters = 10L) {
         minRunTimeSec <- as.double(Sys.getenv('NIMBLE_BENCHMARK_SEC'))
     }
 
+    # Check availability and warm-up.
+    if (is.na(fun(1))) return(NA)
+
     iters <- minIters
-    fun(1)  # Warm-up.
     elapsed <- fun(iters)
-    while (elapsed < minRunTimeSec) {
-        iters <- as.integer(iters * max(3, (minRunTimeSec / (elapsed + 1e-6)) ^ 0.8))
+    while (elapsed < minRunTimeSec && iters < 1000000) {
+        iters <- as.integer(iters * max(3, min(100, (minRunTimeSec / (elapsed + 1e-6)) ^ 0.8)))
         elapsed <- fun(iters)
     }
     return(iters / elapsed)
@@ -47,6 +49,8 @@ makeVersions <- function(name, run) {
             compileNimble(
                 nimbleFunction(run = run, name = paste0('tf_', name)),
                 projectName = 'tf', dirName = dirName))
+    } else {
+        versions$tf <- function(...) NA
     }
     return(versions)
 }
@@ -68,23 +72,20 @@ test_that('Benchmarking matrix arithmetic', {
             returnType(double(0))
         })
 
-    cat('-------------------------------------------------\n')
+    cat('--------------------------------------------\n')
     cat('Benchmarking Matrix Arithmetic\n')
-    cat('   K    M    N DSL ops/sec C++ ops/sec TF ops/sec\n')
-    for (K in matrixSizes) {
-        M <- K
-        N <- K
-        x <- matrix(rnorm(K * M), K, M)
+    cat('   M    N DSL ops/sec C++ ops/sec TF ops/sec\n')
+    for (M in matrixSizes) {
+        N <- M
+        x <- matrix(rnorm(M * N), M, N)
         y <- matrix(rnorm(M * N), M, N)
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, y, iters))
         cPerSec <- benchmarkIters(function(iters) versions$cpp(x, y, iters))
-        tfPerSec <- if (is.null(versions$tf)) NA else {
-            benchmarkIters(function(iters) versions$tf(x, y, iters))
-        }
-        cat(sprintf('%4d %4d %4d %11.2g %11.2g %10.2g\n',
-                    K, M, N, nimPerSec, cPerSec, tfPerSec))
+        tfPerSec <- benchmarkIters(function(iters) versions$tf(x, y, iters))
+        cat(sprintf('%4d %4d %11.2g %11.2g %10.2g\n',
+                    M, N, nimPerSec, cPerSec, tfPerSec))
     }
-    cat('-------------------------------------------------\n')
+    cat('--------------------------------------------\n')
 })
 
 test_that('Benchmarking matrix multiplication', {
@@ -110,9 +111,7 @@ test_that('Benchmarking matrix multiplication', {
         y <- matrix(rnorm(M * N), M, N)
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, y, iters))
         cPerSec <- benchmarkIters(function(iters) versions$cpp(x, y, iters))
-        tfPerSec <- if (is.null(versions$tf)) NA else {
-            benchmarkIters(function(iters) versions$tf(x, y, iters))
-        }
+        tfPerSec <- benchmarkIters(function(iters) versions$tf(x, y, iters))
         cat(sprintf('%4d %4d %4d %11.2g %11.2g %10.2g\n',
                     K, M, N, nimPerSec, cPerSec, tfPerSec))
     }
@@ -139,9 +138,7 @@ test_that('Benchmarking vectorized special functions', {
         x <- exp(-rnorm(N))
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, iters))
         cPerSec <- benchmarkIters(function(iters) versions$cpp(x, iters))
-        tfPerSec <- if (is.null(versions$tf)) NA else {
-            benchmarkIters(function(iters) versions$tf(x, iters))
-        }
+        tfPerSec <- benchmarkIters(function(iters) versions$tf(x, iters))
         cat(sprintf('%5d %11.1g %11.1g %10.1g\n',
                     N, nimPerSec, cPerSec, tfPerSec))
     }

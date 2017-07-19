@@ -1,4 +1,4 @@
 library(methods)
 library(testthat)
-library(nimble)
+suppressPackageStartupMessages(library(nimble))
 test_package("nimble", "^benchmarks$")
