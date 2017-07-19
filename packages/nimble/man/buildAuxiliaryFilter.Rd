@@ -44,6 +44,10 @@ propagation.
  
   The auxiliary particle filter uses a lookahead function to select promising particles before propagation.  This function can eithre be the expected
   value of the latent state at the next time point (\code{lookahead = 'mean'}) or a simulation from the distribution of the latent state at the next time point (\code{lookahead = 'simulate'}), conditioned on the current particle.
+  
+ @section \code{returnESS()} Method:
+ Calling the \code{returnESS()} method of an auxiliary particle filter after that filter has been \code{run()} for a given model will return a vector of ESS (effective
+ sample size) values, one value for each time point.
 }
 \examples{
 \dontrun{
@@ -52,7 +56,8 @@ my_AuxF <- buildAuxiliaryFilter(model, 'x[1:100]',
    control = list(saveAll = TRUE, lookahead = 'mean'))
 Cmodel <- compileNimble(model)
 Cmy_AuxF <- compileNimble(my_AuxF, project = model)
-logLike <- Cmy_AuxF(m = 100000)
+logLike <- Cmy_AuxF$run(m = 100000)
+ESS <- Cmy_AuxF$returnESS(m = 100000)
 hist(as.matrix(Cmy_Auxf$mvEWSamples, 'x'))
 }
 }
