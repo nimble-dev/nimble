@@ -23,7 +23,9 @@ compareOldAndNewCompilationRC <- function(input) {
     ## management of compilation through the control list is crude and leads to error we don't care about
     ## but the project does contain the result, so we can run this, catch the error to keep running
     ## and extract the result from the project
-    old <- try(compileNimble(foo, project = testProject, control = list(writeFiles = TRUE, compileCpp = FALSE, loadSO = FALSE)))
+    wrap_if_matches(input$xfail, 'math runs', expect_error, {
+        compileNimble(foo, project = testProject, control = list(writeFiles = TRUE, compileCpp = FALSE, loadSO = FALSE))
+    })
     filename <- testProject$RCfunInfos[['foo']][['cppClass']]$filename
     newfilename <- paste0(filename,'_original')
     pathedfilename <- file.path(tempdir(), 'nimble_generatedCode', filename)
@@ -33,7 +35,9 @@ compareOldAndNewCompilationRC <- function(input) {
     nimbleOptions(useRefactoredSizeProcessing = TRUE)
     nimble:::resetLabelFunctionCreators() ## sets any generated IDs back to 1
     testProject <- nimble:::nimbleProjectClass(name = 'for_comparison')
-    new <- try(compileNimble(foo, project = testProject, control = list(writeFiles = TRUE, compileCpp = FALSE, loadSO = FALSE)))
+    wrap_if_matches(input$xfail, 'math runs', expect_error, {
+        compileNimble(foo, project = testProject, control = list(writeFiles = TRUE, compileCpp = FALSE, loadSO = FALSE))
+    })
     filename <- testProject$RCfunInfos[['foo']][['cppClass']]$filename
     ## we could regenerate it, but might as well read it from the file
     refactored_pathedfilename <- file.path(tempdir(), 'nimble_generatedCode', filename)
