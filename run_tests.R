@@ -100,7 +100,11 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
     cat('TESTING', test, '\n')
     if (runViaTestthat) {
         name <- gsub('test-(.*)\\.R', '\\1', test)
-        script <- paste0('library(methods); library(testthat); library(nimble); test_package("nimble", "^', name, '$")')
+        script <- paste0('library(methods);',
+                         'library(testthat);',
+                         'library(nimble);',
+                         'tryCatch(test_package("nimble", "^', name, '$"),',
+                         'error = function(e) quit(status = 1))')
         command <- c(runner, '-e', shQuote(script))
     } else {
         command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
