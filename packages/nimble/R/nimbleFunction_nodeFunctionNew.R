@@ -59,10 +59,10 @@ nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()
         thisIndexExpr <- list()
         for(i in 1:(length(code)-2)){
           if(is.call(code[[i + 2]]) && deparse(code[[i+2]][[1]]) == ':'){
-            thisIndexExpr <- c(thisIndexExpr, code[[i+2]][[2]])
+            thisIndexExpr <- c(thisIndexExpr, list(c(code[[i+2]][[2]], code[[i+2]][[3]])))
           }
           else{
-            thisIndexExpr <- c(thisIndexExpr, code[[i+2]])
+            thisIndexExpr <- c(thisIndexExpr, list(code[[i+2]]))
           }
         }
         if(is.null(indexExprList[[deparse(code[[2]])]])) {

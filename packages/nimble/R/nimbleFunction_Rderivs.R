@@ -327,12 +327,13 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, calcNodesLineNums, wrtLineIn
           if(hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWRTSize, totalWRTSize, thisNodeSize))
         }
       }
-      if(isWrtLine){
+
+      if(!isDeterm){
         ## If this is a wrt node, we need to set the chainRule lists appropriately so that the chain rule
         ## will work for dependent nodes of this node.  That means taking the first and second derivs of the
         ## function f(x) = x, which will be the identity matrix and 0 respectively.
         chainRuleDerivList[[i]] <- matrix(0,nrow = thisNodeSize, ncol = totalWRTSize)
-        chainRuleDerivList[[i]][,wrtLineInfo[[thisWrtLine]]$lineIndices] <- diag(thisNodeSize)
+        if(isWrtLine)   chainRuleDerivList[[i]][,wrtLineInfo[[thisWrtLine]]$lineIndices] <- diag(thisNodeSize)
         if(hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWRTSize, totalWRTSize, thisNodeSize))
       }
       if(isCalcNodeLine){
