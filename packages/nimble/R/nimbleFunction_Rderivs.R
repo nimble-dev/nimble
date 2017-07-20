@@ -160,6 +160,7 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, calcNodesLineNums, wrtLineIn
   ## length 2, outIndexStartPoints would be c(1, 3) and outIndexEndPoints would be c(2,4)
   for(i in 1:numNodes) {
     if(length(calcNodesLineNums) > 0){
+      
       declID <- declIDs[i]
       isDeterm <- model$modelDef$declInfo[[declID]]$type == 'determ'
       thisWrtLine <- which(sapply(wrtLineInfo, function(x){return(x$lineNum == i)}))
@@ -167,9 +168,9 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, calcNodesLineNums, wrtLineIn
       isCalcNodeLine <- i %in% calcNodesLineNums
       sizeAndDimInfo <- environment(model$nodeFunctions[[declID]]$.generatorFunction)[['parentsSizeAndDims']]
       formalArgNames <- formals(model$nodeFunctions[[ declID ]]$calculateWithArgs)
-      modelArgNames <- lapply(names(formalArgNames)[-1],
-                              function(x){parse(text = convertCalcArgNameToModelNodeName(x, sizeAndDimInfo))[[1]]})
       unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+      modelArgNames <- lapply(names(formalArgNames)[-1],
+                              function(x){parse(text = convertCalcArgNameToModelNodeName(x, sizeAndDimInfo, unrolledIndicesMatrixRow))[[1]]})
       calcWithArgs <- model$nodeFunctions[[ declID ]]$calculateWithArgs
       calcWithArgsCall <- as.call(c(list(as.name('calcWithArgs'), unrolledIndicesMatrixRow), modelArgNames))
       thisNodeSize <- length(eval(calcWithArgsCall[[3]]))   
@@ -356,14 +357,15 @@ convertToWrtArg <- function(wrtName, modelArgName, fxnArgName){
               argSize = length(values(model, wrtName))))
 }
 
-convertCalcArgNameToModelNodeName <- function(calcArgName, sizeAndDimInfo){
+convertCalcArgNameToModelNodeName <- function(calcArgName, sizeAndDimInfo, unrolledIndicesMatrixRow){
   thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", calcArgName)) ## Extract 1, 2, etc. from end of arg name.
   thisName <- sub("_[0-9]+$","",calcArgName) ## Extract node name from beginning of arg name.
   indexBracketInfo <- paste0('[',
                              paste0(sapply(sizeAndDimInfo[[thisName]][[thisModelElementNum]]$indexExpr, function(x){
                                if(length(x) == 1) return(deparse(x[[1]]))
                                else if( deparse(x[[1]]) == 'getNodeFunctionIndexedInfo'){
-                                 x[[2]] <- parse(text = 'unrolledIndicesMatrixRow')[[1]]
+                                 rowNum <- x[[3]]
+                                 x <- eval(parse(text = paste0('unrolledIndicesMatrixRow[',rowNum,']'))[[1]])
                                } 
                                else{
                                  return(paste0(deparse(x[[1]]), ':', deparse(x[[2]])))
@@ -388,7 +390,8 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
     warning('not all calculate nodes depend on a wrtNode')
   }
   nodesAndWrt <- model$expandNodeNames(c(nodes, model$expandNodeNames(wrtPars)), sort = TRUE)
-  derivInfo <- nimble:::enhanceDepsForDerivs(model$expandNodeNames(wrtPars), nodesAndWrt, model)
+  nfv <- nodeFunctionVector(model, nodesAndWrt, sortUnique = FALSE)
+  derivInfo <- nimble:::enhanceDepsForDerivs(model$expandNodeNames(wrtPars), nodesAndWrt, model, nfv)
   stochNodes <- nodes[model$getNodeType(nodes) == 'stoch']
   calcNodesLineNums <- sapply(stochNodes, function(x){which(x == derivInfo[[1]])})
   wrtInds <- 1:sum(sapply(wrtPars, function(x){return(length(values(model, x)))}))
@@ -413,7 +416,6 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
     wrtLineInfo[[i]]$fromIndices <- wrtLineInfo[[i]]$lineIndices[which(fromToInds != 0)]
     thisIndex <- thisIndex + wrtLineInfo[[i]]$lineSize
   }
-  nfv <- nodeFunctionVector(model, nodesAndWrt, sortUnique = FALSE)
   return(rDeriv_CalcNodes(model, nfv, derivInfo, calcNodesLineNums, wrtLineInfo, order))
 }
 

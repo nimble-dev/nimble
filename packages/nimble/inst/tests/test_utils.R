@@ -1098,6 +1098,8 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
   if(testR){
     for(i in seq_along(calcNodeNames)){
       for(j in seq_along(wrt)){
+        browser()
+        
         wrtNames <- strsplit(wrt[[j]], '\\[')
         RCalcADTestFunction <- makeADCalcWrapperFunction(calcNodeNames[[i]], wrtNames)
         argList <- list('model' = quote(model))

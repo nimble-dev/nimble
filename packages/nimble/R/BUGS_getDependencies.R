@@ -65,7 +65,7 @@ gd_allNeighbors <- function(graph, nodes) stop("shouldn't be calling gd_allNeigh
 
 
 
-enhanceDepsForDerivs <- function(inputNodes, deps, model) {
+enhanceDepsForDerivs <- function(inputNodes, deps, model, nfv) {
   ## This function takes a set of dependencies and returns a list with the original dependencies and a
   ## set of enhanced information needed for chain-ruling derivatives
   ##
@@ -79,8 +79,7 @@ enhanceDepsForDerivs <- function(inputNodes, deps, model) {
   maps <- model$modelDef$maps
   
   ## get the BUGS declaration ID for every node
-  declIDs <- maps$graphID_2_declID[depIDs]
-  
+
   ## initialize the enhanced information
   ## Elements of depIndex_2_parentDepIndices correspond to elements of deps
   ## depIndex_2_parentDepIndices[[i]] will have one of two formats:
@@ -93,9 +92,44 @@ enhanceDepsForDerivs <- function(inputNodes, deps, model) {
   ##       depIndex_2_parentDepIndices[[2]] will be c(0, 3)
   ##           The 0 means that beta is not part of deps
   ##           The 3 means that x[4] is deps[3]
-  declIDlengths <- sapply(declIDs, function(x){
-    length(model$expandNodeNames(lapply( model$modelDef$declInfo[[x]]$symbolicParentNodesReplaced, deparse))) + 1
+  indexingInfo <- nfv$indexingInfo
+  declIDs <- indexingInfo$declIDs
+  numNodes <- length(declIDs)
+  unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
+  
+  ### A function that substitutes correct values of unrolledIndicesMatrix into symbolicParentNodesReplaced
+  recurseReplaceIndices <- function(code, unrolledIndicesRow){
+    replaceNames <- names(unrolledIndicesRow)
+    if(length(code) > 1){
+      for(i in seq_along(code)){
+        if(length(code[[i]]) > 1){
+          code[[i]] <- recurseReplaceIndices(code[[i]], unrolledIndicesRow)
+        }
+        else if(deparse(code[[i]]) %in% replaceNames){
+          code[[i]] <- unrolledIndicesRow[deparse(code[[i]])]
+        }
+      }
+    }
+    else if(deparse(code) %in% replaceNames){
+      code <- unrolledIndicesRow[deparse(code)]
+    }
+    return(code)
+  }
+  
+  declIDlengths <- sapply(1:numNodes, function(x){
+    length(model$expandNodeNames(
+      lapply(model$modelDef$declInfo[[declIDs[x]]]$symbolicParentNodesReplaced, function(y){
+        if(!unrolledIndicesMatrixRows[x] == 0){
+          deparse(recurseReplaceIndices(y,
+                                        model$modelDef$declInfo[[declIDs[x]]]$unrolledIndicesMatrix[unrolledIndicesMatrixRows[x],]))
+        }
+        else{
+          deparse(y)
+        }
+        }))) + 1
   })
+  
+
   depIndex_2_parentDepIndices <- lapply(declIDlengths, function(x){
     outList <- list()
     for(i in 1:x){

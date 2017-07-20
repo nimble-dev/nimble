@@ -57,7 +57,6 @@ nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()
     if(deparse(code[[1]]) == '[') {
       if(deparse(code[[2]]) %in% nodesToExtract){
         thisIndexExpr <- list()
-        browser()
         for(i in 1:(length(code)-2)){
           if(is.call(code[[i + 2]]) && deparse(code[[i+2]][[1]]) == ':'){
             thisIndexExpr <- c(thisIndexExpr, code[[i+2]][[2]])
@@ -66,8 +65,13 @@ nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()
             thisIndexExpr <- c(thisIndexExpr, code[[i+2]])
           }
         }
-        if(is.null(indexExprList[[deparse(code[[2]])]])) indexExprList[[deparse(code[[2]])]][[1]]$indexExpr <- thisIndexExpr
-        else indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]]) + 1]]$indexExpr <- thisIndexExpr
+        if(is.null(indexExprList[[deparse(code[[2]])]])) {
+          indexExprList[[deparse(code[[2]])]][[1]]$indexExpr <- thisIndexExpr
+        }
+        else{
+          indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]]) + 1]] <- list()
+          indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]])]]$indexExpr <- thisIndexExpr
+        }
         return(indexExprList)
       }
     }
