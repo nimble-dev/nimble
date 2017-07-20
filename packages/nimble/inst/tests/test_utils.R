@@ -979,7 +979,7 @@ test_size <- function(input, verbose = TRUE) {
         calculate(m)  ## Calculates from scratch.
         calculate(m)  ## Uses cached value.
     })
-    message = paste(input$name, 'with RHS', ifelse(input$expectPass, 'works', 'fails'), 'as expected')
+    message = paste(input$name, 'with RHS variable', ifelse(input$expectPass, 'works', 'fails'), 'as expected')
     if (input$knownProblem) message = paste(message, 'marked as KNOWN ISSUE')
     if(xor(input$expectPass, input$knownProblem)) {
         test_that(message, eval(code))
@@ -993,7 +993,7 @@ test_size <- function(input, verbose = TRUE) {
         calculate(m)  ## Calculates from scratch.
         calculate(m)  ## Uses cached value.
     })
-    message = paste(input$name, 'with RHS', ifelse(input$expectPassWithConst, 'works', 'fails'), 'as expected')
+    message = paste(input$name, 'with RHS constant', ifelse(input$expectPassWithConst, 'works', 'fails'), 'as expected')
     if (input$knownProblemWithConst) message = paste(message, 'marked as KNOWN ISSUE')
     if(xor(input$expectPassWithConst, input$knownProblemWithConst)) {
         test_that(message, eval(code))
