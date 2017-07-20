@@ -344,7 +344,7 @@ wrap_if_matches <- function(pattern, string, wrapper, expr) {
 test_math <- function(param, caseName, verbose = TRUE, size = 3, dirName = NULL) {
     info <- paste0(caseName, ': ', param$name)
     test_that(info, {
-        wrap_if_matches(param$xfail, paste0(info, ': runs'), expect_error, {
+        wrap_if_matches(param$xfail, paste0(info, ': compiles and runs'), expect_error, {
             test_math_internal(param, info, verbose, size, dirName)
         })
     })
