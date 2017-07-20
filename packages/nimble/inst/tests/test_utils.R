@@ -3,6 +3,18 @@ require(testthat)
 require(methods)
 require(nimble)
 
+## These make it clear that error messages are expected.
+expect_failure <- function(...) {
+    cat('BEGIN XFAIL\n', file = stderr())
+    testthat:::expect_failure(...)
+    cat('END XFAIL\n', file = stderr())
+}
+expect_error <- function(...) {
+    cat('BEGIN XFAIL\n', file = stderr())
+    testthat:::expect_error(...)
+    cat('END XFAIL\n', file = stderr())
+}
+
 ## Mark tests that are know to fail with `if(RUN_FAILING_TESTS)`.
 ## By default these tests will not be run, but we will occasionally clean up by running them with
 ## $ RUN_FAILING_TESTS=1 Rscript test-my-stuff.R
@@ -314,11 +326,9 @@ make_input <- function(dim, size = 3, logicalArg) {
   stop("not set for dimension greater than 2")
 }
 
-xfail_if_matches <- function(pattern, string, wrapper, expr) {
+wrap_if_matches <- function(pattern, string, wrapper, expr) {
     if (!is.null(pattern) && grepl(paste0('^', pattern, '$'), string)) {
-        cat('BEGIN XFAIL\n', file = stderr())
         wrapper(expr)
-        cat('END XFAIL\n', file = stderr())
     } else {
         expr
     }
@@ -334,7 +344,7 @@ xfail_if_matches <- function(pattern, string, wrapper, expr) {
 test_math <- function(param, caseName, verbose = TRUE, size = 3, dirName = NULL) {
     info <- paste0(caseName, ': ', param$name)
     test_that(info, {
-        xfail_if_matches(param$xfail, paste0(info, ': runs'), expect_error, {
+        wrap_if_matches(param$xfail, paste0(info, ': runs'), expect_error, {
             test_math_internal(param, info, verbose, size, dirName)
         })
     })
@@ -382,11 +392,11 @@ test_math_internal <- function(param, info, verbose = TRUE, size = 3, dirName = 
   if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
 
   infoR <- paste0(info, ": (R vs Nimble DSL)")
-  xfail_if_matches(param$xfail, info, expect_failure, {
+  wrap_if_matches(param$xfail, info, expect_failure, {
       expect_equal(out, out_nfR, info = infoR)
   })
   infoC <- paste0(info, ": (R vs Nimble Cpp)")
-  xfail_if_matches(param$xfail, info, expect_failure, {
+  wrap_if_matches(param$xfail, info, expect_failure, {
       expect_equal(out, out_nfC, info = infoC)
   })
 
