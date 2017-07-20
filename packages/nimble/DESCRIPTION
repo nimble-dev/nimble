@@ -17,7 +17,7 @@ Suggests:
     testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2
 URL: http://r-nimble.org
 SystemRequirements: GNU make
-License: BSD_3_clause + file LICENSE
+License: BSD_3_clause + file LICENSE | GPL (>= 2)
 Note: For convenience, the package includes the necessary header files for the
     Eigen distribution. (This is all that is needed to use that functionality.)
     You can use an alternative installation of Eigen on your system or the one
