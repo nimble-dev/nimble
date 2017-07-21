@@ -88,22 +88,23 @@ cat('PLANNING TO TEST', allTests, sep = '\n  ')
 cat('PREDICTED DURATION =', sum(testTimes[allTests, 'time']), 'sec\n')
 if (optionDryRun) quit()
 
-# Run under exec_wait if sys package is installed, to allow clean interrupts.
-if (require(sys)) {
-    sys_shQuote <- function(x) x  # exec_wait doesn't like shQuote.
-} else {
-    cat('Missing suggested package sys, falling back to system2\n')
-    exec_wait <- system2
-    sys_shQuote <- shQuote
-}
-
 # Run under /usr/bin/time -v if possible, to gather timing information.
 runner <- 'Rscript'
-if (optionParallel || exec_wait('/usr/bin/time', c('-v', 'echo'), std_err = FALSE)) {
+if (optionParallel || system2('/usr/bin/time', c('-v', 'echo'), stderr = FALSE)) {
     cat('Not running tests under /usr/bin/time -v\n')
 } else {
     cat('Running tests under /usr/bin/time -v\n')
     runner <- c('/usr/bin/time', '-v', 'Rscript')
+}
+
+Run under exec_wait if sys package is installed, to support CTRL+C interrupts.
+if (require(sys)) {
+    custom_system2 <- sys::exec_wait
+    custom_shQuote <- function(x) x  # exec_wait doesn't like shQuote.
+} else {
+    cat('Missing suggested package sys, falling back to system2\n')
+    custom_system2 <- system2
+    custom_shQuote <- shQuote
 }
 
 # Run each test in a separate process to avoid dll garbage overload.
@@ -118,7 +119,7 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
                          'tryCatch(test_package("nimble", "^', name, '$",',
                          '                      reporter = ', reporter, '),',
                          '  error = function(e) quit(status = 1))')
-        command <- c(runner, '-e', sys_shQuote(script))
+        command <- c(runner, '-e', custom_shQuote(script))
     } else {
         command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
     }
@@ -128,12 +129,12 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
         dir.create(logDir, recursive = TRUE, showWarnings = FALSE)
         stderr.log <- file.path(logDir, paste0('test-', name, '.stderr'))
         stdout.log <- file.path(logDir, paste0('test-', name, '.stdout'))
-        if (exec_wait(command[1], tail(command, -1), stderr.log, stdout.log)) {
+        if (custom_system2(command[1], tail(command, -1), stderr.log, stdout.log)) {
             cat('\x1b[31mFAILED\x1b[0m', test, 'See', stderr.log, stdout.log, '\n')
             return(TRUE)
         }
     } else {
-        if (exec_wait(command[1], tail(command, -1))) {
+        if (custom_system2(command[1], tail(command, -1))) {
             stop(paste('\x1b[31mFAILED\x1b[0m', test))
         }
     }
