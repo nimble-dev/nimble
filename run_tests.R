@@ -8,7 +8,9 @@ Usage:
 
 Options:
   --parallel  Runs test in parallel.
-  --dry-run   Prints which tests would be run, then exits.
+  --stop      Stop after the first failure.
+  --dry-run   Prints which tests would be run, then exits. This is useful to
+              see what tests are available.
 
 Environment Variables:
   NIMBLE_TEST_BATCH=N
@@ -22,6 +24,7 @@ Environment Variables:
 argv <- commandArgs(trailingOnly = TRUE)
 optionDryRun <- ('--dry-run' %in% argv)
 optionParallel <- ('--parallel' %in% argv)
+reporter <- if ('--stop' %in% argv) 'c("stop", "summary")' else '"summary"'
 if ('-h' %in% argv || '--help' %in% argv) {
     cat(help_message)
     quit()
@@ -103,8 +106,9 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
         script <- paste0('library(methods);',
                          'library(testthat);',
                          'library(nimble);',
-                         'tryCatch(test_package("nimble", "^', name, '$"),',
-                         'error = function(e) quit(status = 1))')
+                         'tryCatch(test_package("nimble", "^', name, '$",',
+                         '                      reporter = ', reporter, '),',
+                         '  error = function(e) quit(status = 1))')
         command <- c(runner, '-e', shQuote(script))
     } else {
         command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
