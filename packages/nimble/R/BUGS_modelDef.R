@@ -165,7 +165,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv
     findDynamicIndexParticipants() ## strip out USED_IN_INDEX() wrapping; if we move to dynamically updating the graph, this will be augmented to find variable elements involved in dynamic indexing (this may need to be split in two pieces as we may need this info at the vertex level, in which case some processing is needed after genExpandedNodeAndParentNames3)
     addFullDimExtentToUnknownIndexDeclarations() ## update unknownIndex declarations with full extent of relevant parent variable; this splits parent variable and does edge determination (from parent variable to unknownIndex variable) but without splitting based on unknown indices
     genExpandedNodeAndParentNames3(debug = debug) ## heavy processing: all graphIDs, maps, graph, nodeNames etc. built here
-    stripUnknownIndexInfo()     
+    stripUnknownIndexInfo()               ## removes unknownIndex declarations and vars
     maps$setPositions3()                  ## Determine top, latent and end nodes
     buildSymbolTable()                    ## 
     genIsDataVarInfo()                    ## only the maxs is ever used, in newModel
@@ -2348,11 +2348,11 @@ modelDefClass$methods(addUnknownIndexVars = function(debug = FALSE) {
 })
 
 
-
+## This removes temporary declarations and vars created because of dynamic indexing.
 modelDefClass$methods(stripUnknownIndexInfo = function() {
     if(nimbleOptions()$allowDynamicIndexing) {
         declInfo[sapply(declInfo, function(x) x$type == 'unknownIndex')] <<- NULL
-        ## sapply(unknownIndexNames, function(x) varInfo[[x]] <<- NULL) ## needed for isData stuff since we have unknownIndex vars as part of graph
+        sapply(unknownIndexNames, function(x) varInfo[[x]] <<- NULL) # At one point, this was needed for isData stuff since we have unknownIndex vars as part of graph, but doesn't seem to be needed anymore.
     }
 })
 
