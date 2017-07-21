@@ -9,6 +9,9 @@
 #include<sstream>
 #include<algorithm>
 
+// Work around R's unqualified use of `error` in the `ERROR` macro
+// (see $R_SOURCE/src/include/R_ext/RS.h).
+#define error Rf_error
 
 // This is used when we have a NimArr<>* in a model and a NimArr<>** that needs to point to it.
 // We assume we have an extptr to each
@@ -60,7 +63,7 @@ for loops, etc. */
 SEXP returnStatus(bool OK)
 	{
 	SEXP ans;
-    PROTECT(ans = allocVector(LGLSXP, 1) );
+    PROTECT(ans = Rf_allocVector(LGLSXP, 1) );
     LOGICAL(ans)[0] = OK;
     UNPROTECT(1);
     return(ans);
@@ -133,7 +136,7 @@ SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1){
 
 /* Add blank rows to C model values */
 SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded){
-    if(!isInteger(numAdded)) {
+    if(!Rf_isInteger(numAdded)) {
         PRINTF("Error: numAdded is not an integer!\n");
         return(returnStatus(false) );
     }
@@ -207,7 +210,7 @@ SEXP getNRow(SEXP Sextptr){
 //		cout << "vecType DOUBLE = " << DOUBLE << "\n";
 		}
 	SEXP rNRow;
-	PROTECT(rNRow = allocVector(INTSXP, 1) ); 
+	PROTECT(rNRow = Rf_allocVector(INTSXP, 1) ); 
 	INTEGER(rNRow)[0] = nRow;
 	UNPROTECT(1);
     return(rNRow);
@@ -337,7 +340,7 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
 }	
 
 SEXP getMVElement(SEXP Sextptr, SEXP Sindex){
-	if(!isInteger(Sindex)) {
+	if(!Rf_isInteger(Sindex)) {
     	PRINTF("Error: Sindex is not an integer!\n");
     	return(returnStatus(false) ) ;
 	}
@@ -368,14 +371,14 @@ SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{
   		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
 		int outputLength = thisRow->size();
   		SEXP Sans;
-  		PROTECT(Sans = allocVector(REALSXP, outputLength));
+  		PROTECT(Sans = Rf_allocVector(REALSXP, outputLength));
 		double *value = REAL(Sans);
   		std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength, value); /* copy should work now */
   		if(thisRow->numDims() > 1) { // using first row as representative
     		SEXP Sdim;
-    		PROTECT(Sdim = allocVector(INTSXP, thisRow->numDims()));
+    		PROTECT(Sdim = Rf_allocVector(INTSXP, thisRow->numDims()));
     		for(int idim = 0; idim < thisRow->numDims(); ++idim) INTEGER(Sdim)[idim] = thisRow->dimSize(idim);
-    			setAttrib(Sans, R_DimSymbol, Sdim);
+    			Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     		UNPROTECT(2);
   		}
   		else {
@@ -390,14 +393,14 @@ SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{
   		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
 		int outputLength = thisRow->size();
   		SEXP Sans;
-  		PROTECT(Sans = allocVector(INTSXP, outputLength));
+  		PROTECT(Sans = Rf_allocVector(INTSXP, outputLength));
 		int *value = INTEGER(Sans);
   		std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength, value); /* copy should work now */
   		if(thisRow->numDims() > 1) { // using first row as representative
     		SEXP Sdim;
-    		PROTECT(Sdim = allocVector(INTSXP, thisRow->numDims()));
+    		PROTECT(Sdim = Rf_allocVector(INTSXP, thisRow->numDims()));
     		for(int idim = 0; idim < thisRow->numDims(); ++idim) INTEGER(Sdim)[idim] = thisRow->dimSize(idim);
-    			setAttrib(Sans, R_DimSymbol, Sdim);
+    			Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     		UNPROTECT(2);
   		}
   		else {
@@ -474,7 +477,7 @@ SEXP setMVElementFromList(SEXP vNimPtr, SEXP rList, SEXP Sindices){
  SEXP getMVElementAsList(SEXP SextPtr, SEXP Sindices){
  	int nIndice = LENGTH(Sindices);
  	SEXP sList;
- 	PROTECT(sList = allocVector(VECSXP, nIndice) );
+ 	PROTECT(sList = Rf_allocVector(VECSXP, nIndice) );
  	NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(SextPtr));
 	nimType vecType = (*typePtr).getNimType();
 	for(int i = 0; i < nIndice; i++)
@@ -484,7 +487,7 @@ SEXP setMVElementFromList(SEXP vNimPtr, SEXP rList, SEXP Sindices){
  }
 
 SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
-    if(!isInteger(Sindex)) {
+    if(!Rf_isInteger(Sindex)) {
     PRINTF("Error: Sindex is not an integer!\n");
 	return(returnStatus(false) ) ;
   }
@@ -516,7 +519,7 @@ SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
  	vector<int> cDims = (*nimVecPtr).getRowDims(0);
 	int nDims = cDims.size();
  	SEXP Sans;
- 	PROTECT(Sans = allocVector(INTSXP, nDims) );
+ 	PROTECT(Sans = Rf_allocVector(INTSXP, nDims) );
  	for(int i = 0; i < nDims; i++)
  		INTEGER(Sans)[i] = cDims[i];
  	UNPROTECT(1);
@@ -526,15 +529,15 @@ SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
 SEXP NimArrDouble_2_SEXP(NimArrBase<double> &nimArrDbl){
 		int len = nimArrDbl.size();
 		SEXP Sans;  
-		PROTECT(Sans = allocVector(REALSXP, len));
+		PROTECT(Sans = Rf_allocVector(REALSXP, len));
 		//		std::copy(nimArrDbl.v.begin(), nimArrDbl.v.end() , REAL(Sans) );
 		std::copy(nimArrDbl.v, nimArrDbl.v + len , REAL(Sans) );  
   		int numDims = nimArrDbl.numDims();
   		if(numDims > 1) {
 		  SEXP Sdim;
-		  PROTECT(Sdim = allocVector(INTSXP, numDims));
+		  PROTECT(Sdim = Rf_allocVector(INTSXP, numDims));
 		  for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = nimArrDbl.dimSize(idim);
-		  setAttrib(Sans, R_DimSymbol, Sdim);
+		  Rf_setAttrib(Sans, R_DimSymbol, Sdim);
 		  UNPROTECT(2);
   		}
   		else {
@@ -546,15 +549,15 @@ SEXP NimArrDouble_2_SEXP(NimArrBase<double> &nimArrDbl){
 SEXP NimArrInt_2_SEXP(NimArrBase<int> &nimArrInt){
 		int len = nimArrInt.size();
 		SEXP Sans;  
-		PROTECT(Sans = allocVector(INTSXP, len));
+		PROTECT(Sans = Rf_allocVector(INTSXP, len));
 		//		std::copy(nimArrInt.v.begin(), nimArrInt.v.end() , INTEGER(Sans) );
 		std::copy(nimArrInt.v, nimArrInt.v + len , INTEGER(Sans) );  
   		int numDims = nimArrInt.numDims();
   		if(numDims > 1) {
     		SEXP Sdim;
-    		PROTECT(Sdim = allocVector(INTSXP, numDims));
+    		PROTECT(Sdim = Rf_allocVector(INTSXP, numDims));
     		for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = nimArrInt.dimSize(idim);
-			setAttrib(Sans, R_DimSymbol, Sdim);
+			Rf_setAttrib(Sans, R_DimSymbol, Sdim);
 		    UNPROTECT(2);
   		}
   		else {
@@ -566,15 +569,15 @@ SEXP NimArrInt_2_SEXP(NimArrBase<int> &nimArrInt){
 SEXP NimArrBool_2_SEXP(NimArrBase<bool> &nimArrBl){
   int len = nimArrBl.size();
   SEXP Sans;  
-  PROTECT(Sans = allocVector(LGLSXP, len));
+  PROTECT(Sans = Rf_allocVector(LGLSXP, len));
   //		std::copy(nimArrInt.v.begin(), nimArrInt.v.end() , INTEGER(Sans) );
   std::copy(nimArrBl.v, nimArrBl.v + len , LOGICAL(Sans) );  
   int numDims = nimArrBl.numDims();
   if(numDims > 1) {
     SEXP Sdim;
-    PROTECT(Sdim = allocVector(INTSXP, numDims));
+    PROTECT(Sdim = Rf_allocVector(INTSXP, numDims));
     for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = nimArrBl.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
+    Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     UNPROTECT(2);
   }
   else {
@@ -607,11 +610,11 @@ void SEXP_2_NimArrDouble (SEXP rValues, NimArrBase<double> &NimArrDbl){
     PRINTF("Warning: R object of different size than NimArrDouble. R obj has size %i but NimArrDbl has size %i.\n", rLength, NimArrDbl.size());
     return;
   }
-  if(isReal(rValues) ) {
+  if(Rf_isReal(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrDbl[i] = REAL(rValues)[i];
   }
-  else if(isInteger(rValues) | isLogical(rValues) ) {
+  else if(Rf_isInteger(rValues) | Rf_isLogical(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrDbl[i] = INTEGER(rValues)[i];
   }
@@ -628,11 +631,11 @@ void SEXP_2_NimArrInt (SEXP rValues, NimArrBase<int> &NimArrInt){
     return;		
   }
   
-  if(isInteger(rValues) | isLogical(rValues) ) {
+  if(Rf_isInteger(rValues) | Rf_isLogical(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrInt[i] = INTEGER(rValues)[i];
   }
-  else if(isReal(rValues) ) {
+  else if(Rf_isReal(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrInt[i] = REAL(rValues)[i];
   }
@@ -650,11 +653,11 @@ void SEXP_2_NimArrBool (SEXP rValues, NimArrBase<bool> &NimArrBl){
   }
 
   // In R, Logical is represented as integer
-  if(isInteger(rValues) | isLogical(rValues)) {
+  if(Rf_isInteger(rValues) | Rf_isLogical(rValues)) {
     for(int i = 0; i < rLength; i++)
       NimArrBl[i] = INTEGER(rValues)[i];
   }
-  else if(isReal(rValues) ) {
+  else if(Rf_isReal(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrBl[i] = REAL(rValues)[i];
   }
@@ -761,12 +764,12 @@ double nimMod(double a, double b) {
 //   return(a.value < b.value);
 // }
 
-void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output) {
+void rankSample(NimArr<1, double> &weights, int n, NimArr<1, int> &output) {
   bool silent = false;
   rankSample(weights, n, output, silent);
 }
 
-void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output, bool& silent) {
+void rankSample(NimArr<1, double> &weights, int n, NimArr<1, int> &output, bool silent) {
   //PRINTF("in VOID rankSample\n");
   output.setSize(n);
   int N = weights.size();
@@ -817,23 +820,23 @@ SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd){
 SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex){
 	SEXP ans;
 	int cIndex = INTEGER(sIndex)[0] - 1;
-	ans = findVar(install(CHAR(STRING_ELT(sString, cIndex ))), sEnv);
+	ans = Rf_findVar(Rf_install(CHAR(STRING_ELT(sString, cIndex ))), sEnv);
 	PROTECT(ans);
 	UNPROTECT(1);
 	return(ans);
 	}
 
 SEXP getEnvVar(SEXP sString, SEXP sEnv){
-  	return(getEnvVar_Sindex(sString, sEnv, ScalarInteger(1)));
+  	return(getEnvVar_Sindex(sString, sEnv, Rf_ScalarInteger(1)));
 }
 
 SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex){
 	int cIndex = INTEGER(sIndex)[0] - 1;
-	setVar(install(CHAR(STRING_ELT(sString, cIndex ))), sVal, sEnv);
+	Rf_setVar(Rf_install(CHAR(STRING_ELT(sString, cIndex ))), sVal, sEnv);
 	return(R_NilValue);
 }
 
  SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal){						
-  	return(setEnvVar_Sindex(sString, sEnv, sVal, ScalarInteger(1)));
+  	return(setEnvVar_Sindex(sString, sEnv, sVal, Rf_ScalarInteger(1)));
   }
   

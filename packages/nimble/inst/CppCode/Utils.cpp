@@ -1,8 +1,5 @@
 #include<limits>
 #include "nimble/Utils.h"
-#define PRINTF Rprintf
-#define NIMERROR error
-#define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
 
 // A utility function that will return floor(x) unless x is within numerical imprecision of an integer, in which case it will return round(x)
 int floorOrEquivalent(double x) {

@@ -1,5 +1,5 @@
 try({
-    packageMakeconfFile <- file.path(R.home('etc'), 'Makeconf')
+    packageMakeconfFile <- file.path(R.home('etc'), .Platform$r_arch, 'Makeconf')
     if(file.exists(packageMakeconfFile)) {
         file.copy(packageMakeconfFile, 'Makeconf')
         lines <- readLines('Makeconf')

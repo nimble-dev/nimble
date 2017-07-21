@@ -812,6 +812,7 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' @name CAR-Normal
 #' 
 #' @param x vector of values.
+#' @param n number of observations.
 #' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.  If omitted, all weights are taken as unity.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
@@ -833,12 +834,12 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' num <- c(1, 2, 2, 1)
 #' adj <- c(2, 1,3, 2,4, 3)
 #' weights <- c(1, 1, 1, 1, 1, 1)
-#' lp <- dcar_normal(x, adj, weights, num)
+#' lp <- dcar_normal(x, adj, weights, num, tau = 1)
 NULL
 
 #' @rdname CAR-Normal
 #' @export
-dcar_normal <- function(x, adj, weights, num, tau, c, zero_mean, log = FALSE) {
+dcar_normal <- function(x, adj, weights, num, tau, c = CAR_calcNumIslands(adj, num), zero_mean = 0, log = FALSE) {
     CAR_checkAdjWeightsNum(adj, weights, num)
     if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
     if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
@@ -870,7 +871,7 @@ dcar_normal <- function(x, adj, weights, num, tau, c, zero_mean, log = FALSE) {
 
 #' @rdname CAR-Normal
 #' @export
-rcar_normal <- function(n = 1, adj, weights, num, tau, c, zero_mean) {
+rcar_normal <- function(n = 1, adj, weights, num, tau, c = CAR_calcNumIslands(adj, num), zero_mean = 0) {
     ## it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
     ## since initializeModel() will call this simulate method if there are any NA's present,
     ## (which is allowed for island components), which over-writes all the other valid initial values.
