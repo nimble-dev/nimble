@@ -88,9 +88,18 @@ cat('PLANNING TO TEST', allTests, sep = '\n  ')
 cat('PREDICTED DURATION =', sum(testTimes[allTests, 'time']), 'sec\n')
 if (optionDryRun) quit()
 
+# Run under exec_wait if sys package is installed, to allow clean interrupts.
+if (!require(sys)) {
+    sys_shQuote <- function(x) x  # exec_wait doesn't like shQuote.
+} else {
+    cat('Missing suggested package sys, falling back to system2\n')
+    exec_wait <- system2
+    sys_shQuote <- shQuote
+}
+
 # Run under /usr/bin/time -v if possible, to gather timing information.
 runner <- 'Rscript'
-if (optionParallel || system2('/usr/bin/time', c('-v', 'echo'), stderr=NULL)) {
+if (optionParallel || exec_wait('/usr/bin/time', c('-v', 'echo'), std_err = FALSE)) {
     cat('Not running tests under /usr/bin/time -v\n')
 } else {
     cat('Running tests under /usr/bin/time -v\n')
@@ -109,23 +118,22 @@ runTest <- function(test, logToFile = FALSE, runViaTestthat = TRUE) {
                          'tryCatch(test_package("nimble", "^', name, '$",',
                          '                      reporter = ', reporter, '),',
                          '  error = function(e) quit(status = 1))')
-        command <- c(runner, '-e', shQuote(script))
+        command <- c(runner, '-e', sys_shQuote(script))
     } else {
         command <- c(runner, file.path('packages', 'nimble', 'inst', 'tests', test))
     }
-    env <- 'MAKEFLAGS=-j1'  # Work around broken job pipe when GNU make is run under mclapply.
+    Sys.setenv(MAKEFLAGS = '-j1')  # Work around broken job pipe when GNU make is run under mclapply.
     if (logToFile) {
         logDir <- '/tmp/log/nimble'
         dir.create(logDir, recursive = TRUE, showWarnings = FALSE)
         stderr.log <- file.path(logDir, paste0('test-', name, '.stderr'))
         stdout.log <- file.path(logDir, paste0('test-', name, '.stdout'))
-        if (system2(command[1], tail(command, -1),
-                    stderr = stderr.log, stdout = stdout.log, env = env)) {
+        if (exec_wait(command[1], tail(command, -1), stderr.log, stdout.log)) {
             cat('\x1b[31mFAILED\x1b[0m', test, 'See', stderr.log, stdout.log, '\n')
             return(TRUE)
         }
     } else {
-        if (system2(command[1], tail(command, -1), env = env)) {
+        if (exec_wait(command[1], tail(command, -1))) {
             stop(paste('\x1b[31mFAILED\x1b[0m', test))
         }
     }
