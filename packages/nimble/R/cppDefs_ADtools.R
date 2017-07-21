@@ -312,7 +312,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
               sizeList <- lapply(thisSizes, function(x) list(1, x))
             }
             names(sizeList) <- indexVarNames[1:length(sizeList)]
-            newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisModelName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
+            newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
             copyIntoIndepVarCode[[ivn+1]] <- newRcode 
             totalIndependentLength <- totalIndependentLength + prod(thisSizes)
         } 
