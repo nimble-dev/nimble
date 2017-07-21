@@ -89,7 +89,7 @@ cat('PREDICTED DURATION =', sum(testTimes[allTests, 'time']), 'sec\n')
 if (optionDryRun) quit()
 
 # Run under exec_wait if sys package is installed, to allow clean interrupts.
-if (!require(sys)) {
+if (require(sys)) {
     sys_shQuote <- function(x) x  # exec_wait doesn't like shQuote.
 } else {
     cat('Missing suggested package sys, falling back to system2\n')
