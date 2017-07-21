@@ -97,7 +97,7 @@ if (optionParallel || system2('/usr/bin/time', c('-v', 'echo'), stderr = FALSE))
     runner <- c('/usr/bin/time', '-v', 'Rscript')
 }
 
-Run under exec_wait if sys package is installed, to support CTRL+C interrupts.
+# Run under exec_wait if sys package is installed, to support CTRL+C interrupts.
 if (require(sys)) {
     custom_system2 <- sys::exec_wait
     custom_shQuote <- function(x) x  # exec_wait doesn't like shQuote.
