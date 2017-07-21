@@ -25,7 +25,7 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 
 #' create a nimbleType object
 #'
-#' create a nimbleType object, with information on the name, type, and dimension of an object to be placed in a \link{nimbleList} 
+#' Create a nimbleType object, with information on the name, type, and dimension of an object to be placed in a \code{\link{nimbleList}}.
 #'
 #' @param name The name of the object, given as a character string.
 #' @param type The type of the object, given as a character string.
@@ -37,10 +37,10 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #'
 #' @details
 #' 
-#' This function creates \code{nimbleType} objects, which can be used to define the elements of a \link{nimbleList}.  
+#' This function creates \code{nimbleType} objects, which can be used to define the elements of a \code{\link{nimbleList}}.  
 #' 
 #' The \code{type} argument can be chosen from among \code{character}, \code{double}, \code{integer}, and \code{logical},
-#' or can be the name of a previously created \link{nimbleList} definition.
+#' or can be the name of a previously created \code{\link{nimbleList} definition}.
 #' 
 #' See the NIMBLE User Manual for additional examples.
 #' 
@@ -81,7 +81,7 @@ nimbleType <- setRefClass(
 #'
 #' @details
 #' This function creates a definition for a nimbleList.  The \code{types} argument defines the names, types, and dimensions of the elements of the nimbleList.  Elements of nimbleLists can be either basic types (e.g., \code{integer}, \code{double}) or other nimbleList definitions.   
-#' The \code{types} argument can be either a series of expressions of the form \code{name = type(dim)}, or a list of \link{nimbleType} objects.
+#' The \code{types} argument can be either a series of expressions of the form \code{name = type(dim)}, or a list of \code{\link{nimbleType}} objects.
 #' 
 #' \code{nimbleList} returns a definition, which can be used to create instances of this type of nimbleList via the \code{new()} member function. 
 #' 

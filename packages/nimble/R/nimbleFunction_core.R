@@ -16,7 +16,7 @@ nf_refClassLabelMaker <- labelFunctionCreator('nfRefClass')
 #'
 #' @details See the NIMBLE User Manual section on nimbleFunctionLists for explanation of how to use a virtual nimbleFunction.
 #'
-#' @seealso \link{nimbleFunction}
+#' @seealso \code{\link{nimbleFunction}}
 #' 
 #' @return An object that can be passed as the \code{contains} argument to \code{nimbleFunction} or as the argument to \code{nimbleFunctionList}
 nimbleFunctionVirtual <- function(contains = NULL,
@@ -43,7 +43,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' @param run An optional NIMBLE function definition the executes the primary job of the nimbleFunction
 #' @param methods An optional named list of NIMBLE function definitions for other class methods.
 #' @param globalSetup For internal use only
-#' @param contains An optional object returned from \link{nimbleFunctionVirtual} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
+#' @param contains An optional object returned from \code{\link{nimbleFunctionVirtual}} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
 #' @param enableDerivs EXPERIMENTAL A list of names of function methods to enable derivatives for.  Currently only for developer use.
 #' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
 #' @param check Boolean indicating whether to check the run code for function calls that NIMBLE cannot compile. Checking can be turned off for all calls to \code{nimbleFunction} using \code{nimbleOptions(checkNimbleFunction = FALSE)}.
