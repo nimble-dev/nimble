@@ -264,7 +264,10 @@ nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()
           }
         }
         if(is.null(indexExprList[[deparse(code[[2]])]])) indexExprList[[deparse(code[[2]])]][[1]]$indexExpr <- thisIndexExpr
-        else indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]]) + 1]]$indexExpr <- thisIndexExpr
+        else{
+          indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]]) + 1]] <- list()
+          indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]])]]$indexExpr <- thisIndexExpr
+        }
         return(indexExprList)
       }
     }

@@ -69,8 +69,9 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
             }
             thisCodeLength <- codeEndInds - codeStartInds + 1
             if(!all(thisCodeLength == thisCodeLength[1])){
-              print("Error: AD not currently supported for ragged arrays in model code")
-              browser()
+              stop("Error: AD not currently supported for ragged arrays in model 
+                    code.  Set nimbleOptions(experimentalEnableDerivs = FALSE) 
+                    to build this model.")
             }
             codeLength <- c(codeLength, thisCodeLength[1])
           }
@@ -87,7 +88,7 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
     }
     if(length(code) > 1){
       for(i in 2:length(code)){
-        allSizeAndDimList <- makeSizeAndDimList(code[[i]], nodesToExtract, indexedNodeInfo, allSizeAndDimList)
+        allSizeAndDimList <- makeSizeAndDimList(code[[i]], nodesToExtract, unrolledIndicesMatrix, allSizeAndDimList)
       }
     }
   }

@@ -334,7 +334,7 @@ rDeriv_CalcNodes <- function(model, nfv, derivInfo, calcNodesLineNums, wrtLineIn
         ## function f(x) = x, which will be the identity matrix and 0 respectively.
         chainRuleDerivList[[i]] <- matrix(0,nrow = thisNodeSize, ncol = totalWRTSize)
         if(isWrtLine)   chainRuleDerivList[[i]][,wrtLineInfo[[thisWrtLine]]$lineIndices] <- diag(thisNodeSize)
-        if(hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWRTSize, totalWRTSize, thisNodeSize))
+        if(isWrtLine && hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWRTSize, totalWRTSize, thisNodeSize))
       }
       if(isCalcNodeLine){
         if(valueFlag) outDerivList$value <- outDerivList$value + derivList$value

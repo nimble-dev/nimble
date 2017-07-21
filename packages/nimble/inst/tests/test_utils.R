@@ -1091,15 +1091,14 @@ makeADCalcWrapperFunction <- function(calcNodeName, wrtName){
 ##                  This is accomplished by comparing derivatives calculated using the chain rule to derivatives of a function that
 ##                  wraps a call to calculate(model, nodes).
 ##   testCompiled:  A logical argument.  Currently only checks whether the model can compile.
+##   tolerance:     A numeric argument, the tolerance to use when comparing wrapperDerivs to chainRuleDerivs.
 ##   verbose:       A logical argument.  Currently serves no purpose.
 test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
-                                  testR = TRUE, testCompiled = FALSE,  verbose = TRUE){
+                                  testR = TRUE, testCompiled = FALSE, tolerance = .001,  verbose = TRUE){
   temporarilyAssignInGlobalEnv(model)  
   if(testR){
     for(i in seq_along(calcNodeNames)){
       for(j in seq_along(wrt)){
-        browser()
-        
         wrtNames <- strsplit(wrt[[j]], '\\[')
         RCalcADTestFunction <- makeADCalcWrapperFunction(calcNodeNames[[i]], wrtNames)
         argList <- list('model' = quote(model))
@@ -1108,7 +1107,7 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
         }
         argList <- c(list('RCalcADTestFunction'), argList)
         fxnCall <- as.call(argList)
-        fxnCall[[1]] <- quote(RCalcADTestFunction)  
+        fxnCall[[1]] <- quote(RCalcADTestFunction)
         test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes =', paste(calcNodeNames[[i]], collapse = ' '),
                         'and wrt =', paste(wrt[[j]], collapse = ' ')), {
                           wrapperDerivs <- eval(substitute(nimDerivs(FXNCALL, wrt = WRT, order = order),
@@ -1122,8 +1121,8 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
                           # expect_is(chainRuleDerivs$gradient, 'matrix')
                           # expect_is(chainRuleDerivs$hessian, 'array')
                           expect_equal(wrapperDerivs$value, chainRuleDerivs$value)
-                          expect_equal(wrapperDerivs$gradient, chainRuleDerivs$gradient, tolerance = .0001)
-                          expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = .001)
+                          expect_equal(wrapperDerivs$gradient, chainRuleDerivs$gradient, tolerance = tolerance)
+                          expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = tolerance)
                         })
       }
     }

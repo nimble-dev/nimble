@@ -22,7 +22,6 @@ ADCode2 <- nimbleCode({
 ADMod2 <- nimbleModel(
   code = ADCode2, dimensions = list(x = 2, y = 2, z = 2), constants = list(diagMat = diag(2)),
   inits = list(x = c(2.1, 1.2), y  = c(-.1,-.2)))
-          
 test_ADModelCalculate(ADMod2, name = "ADMod2", calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod2$getDependencies('x'))),
                       wrt = list(c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), testR = TRUE, testCompiled = FALSE)
 
@@ -38,7 +37,6 @@ simData <- matrix(1:4, nrow = 2, ncol = 2)
 ADMod3 <- nimbleModel(
   code = ADCode3, constants = list(diagMat = diag(2)),
   data = list(y = simData), inits = list(mu = c(-1.5, 0.8), sigma = diag(2)))
-
 test_ADModelCalculate(ADMod3, calcNodeNames = list(c('mu', 'y'), c('y[2]'), c(ADMod3$getDependencies(c('mu', 'sigma')))),
                       wrt = list(c('mu', 'y'), c('sigma[1,1]', 'y[1]'), c('mu[1:2]', 'sigma[1:2, 2]')), testR = TRUE,
                       testCompiled = FALSE)
@@ -58,10 +56,28 @@ ADCode4 <- nimbleCode({
 testdata = list(y = c(0,1,2))
 ADMod4 <- nimbleModel(
   code = ADCode4, data = list(y = c(0,1,2)), inits = list(x0 = 0))
-
 ADMod4$simulate(ADMod4$getDependencies('x'))
-
 test_ADModelCalculate(ADMod4, calcNodeNames = list(c('y'), c('y[2]'), c(ADMod4$getDependencies(c('x', 'x0')))),
                       wrt = list(c('x0'), c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), testR = TRUE,
                       testCompiled = FALSE)
 
+
+dir = nimble:::getBUGSexampleDir('equiv')
+Rmodel <- readBUGSmodel('equiv', data = NULL, inits = list(tau = c(.2, .2), pi = 1, phi = 1, mu = 1), dir = dir, useInits = TRUE,
+                        check = FALSE)
+simulate(Rmodel, Rmodel$getDependencies('d'))
+
+## Higher tolerance for more complex chain rule calculations in this model.
+test_ADModelCalculate(Rmodel, calcNodeNames = list(Rmodel$getDependencies('tau'), Rmodel$getDependencies('sigma'),  Rmodel$getDependencies('d'),
+                                                   Rmodel$getDependencies('d[1]')),
+                      wrt = list(c('tau'), c('sigma'), c('d'), c('d[2]')), testR = TRUE,
+                      testCompiled = FALSE, tolerance = .5)
+
+
+## Ragged arrays not supported for derivs yet.
+# dir = nimble:::getBUGSexampleDir('bones')
+# Rmodel <- readBUGSmodel('bones', data = NULL, inits = NULL, dir = dir, useInits = TRUE,
+#                         check = FALSE)
+# test_ADModelCalculate(Rmodel, calcNodeNames = list(Rmodel$getDependencies('theta'), Rmodel$getDependencies('grade')),
+#                       wrt = list(c('theta'), c('grade'), c('theta', 'grade'), c('grade[1, 2]')), testR = TRUE,
+#                       testCompiled = FALSE)

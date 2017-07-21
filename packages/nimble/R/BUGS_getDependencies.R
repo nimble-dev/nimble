@@ -171,6 +171,12 @@ enhanceDepsForDerivs <- function(inputNodes, deps, model, nfv) {
       }
     }
   }
+  ### next let's do wrt info
+  
+  
+  outList <- list()
+  outList[['depNames']] <- deps
+  outList[['parentIndices']] <- depIndex_2_parentDepIndices
   list(deps, depIndex_2_parentDepIndices)
 }
 
