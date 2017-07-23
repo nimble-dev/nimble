@@ -1040,32 +1040,66 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     invisible(NULL)
 }
 
-## need code to deal with expected error:
-
-## should fail - multivariate index
-
-code = nimbleCode({
-    y[1:3] ~ dmnorm(mu[k[1:3]], pr[1:3,1:3])
-    mu[1:5] ~ dmnorm(z[1:5], pr[1:5,1:5])
-})
-
-m = nimbleModel(code, data = list(y=1:3), inits = list(mu=1:5))
-
-
-test_dynamic_indexing_model <- function(code, dynIndVars = NULL, data = NULL, inits = NULL, dims = NULL, expectError = FALSE, case = "") {
-    test_that(paste0('test of case: ', case), {
-        m <- nimbleModel(code, dimensions = dims, inits = inits, data = data)
-        expect_true(inherits(m, 'modelBaseClass'), info = "problem with model")
-        cm <- compileNimble(m)
-        expect_identical(class(cm), "Ccode", info = "problem with model compilation")
-        expect_identical(calculate(m), calculate(cm), info = "problem with R vs. C calculate with initial indexes")
-        for(i in 1:length(dynIndVars)) {
-            m[[paste0(dynIndVars[i], "[", 1, "]")]] <- 2
-            cm[[paste0(dynIndVars[i], "[", 1, "]")]] <- 2
-            expect_identical(calculate(m), calculate(cm), info = "problem with R vs. C calculate with revised indexes")
-        }
-    }
+expandNames <- function(var, ...) {
+    tmp <- as.matrix(expand.grid(...))
+    indChars <- apply(tmp, 1, paste0, collapse=', ')
+    sort(paste0(var, "[", indChars, "]"))
 }
+
+# FIXME
+tdim <- test_dynamic_indexing_model <- function(param) {
+        if(!is.null(param$expectFailure) && param$expectFailure) {
+            cat("begin XFAIL: ",  param$case, "\n")
+            expect_error(test_that(param$case, test_dynamic_indexing_model_internal(param)))
+            cat("end XFAIL\n")
+        } else
+            test_that(param$case, test_dynamic_indexing_model_internal(param))
+        invisible(NULL)
+}
+                
+test_dynamic_indexing_model_internal <- function(param) {
+        if(!is.null(param$expectError) && param$expectError) {
+            expect_error(m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data), "only scalar random indices are allowed", info = "expected error not generated")
+        } else {
+            m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data)
+            expect_true(inherits(m, 'modelBaseClass'), info = "problem creating model")
+            for(i in seq_along(param$expectedDeps)) 
+                expect_identical(m$getDependencies(param$expectedDeps[[i]]$parent),
+                    param$expectedDeps[[i]]$result, info = paste0("dependencies don't match expected in dependency of ", param$expectedDeps[[i]]$parent))
+            cm <- compileNimble(m)
+            expect_true(class(cm) == "Ccode", info = "compiled model object improperly formed")
+            expect_identical(calculate(m), calculate(cm), info = "problem with R vs. C calculate with initial indexes")
+            for(i in seq_along(param$validIndexes)) {
+                for(j in seq_along(param$invalidIndexes[[i]]$var)) {
+                    m[[param$validIndexes[[i]]$var[j]]] <- param$validIndexes[[i]]$value[j]
+                    cm[[param$validIndexes[[i]]$var[j]]] <- param$validIndexes[[i]]$value[j]
+                }
+                expect_true(is.numeric(calculate(cm)), 1, info = paste0("problem with C calculate with valid indexes, case: ", i))
+                expect_true(is.numeric(calculateDiff(cm)), info = paste0("problem with C calculateDiff with valid indexes, case: ", i))              
+                expect_identical(calculate(m), calculate(cm), info = paste0("problem with R vs. C calculate with valid indexes, case: ", i))
+                deps <- m$getDependencies(param$invalidIndexes[[i]]$var, self = FALSE)
+                expect_true(is.null(simulate(cm, deps, includeData = TRUE)), info = paste0("problem with C simulate with valid indexes, case: ", i))
+                ## Reset values so can models have same values for comparisons in later iterations.
+                cm$setInits(param$inits)
+                cm$setData(param$data)
+                cm$calculate()
+            }
+            for(i in seq_along(param$invalidIndexes)) {
+                for(j in seq_along(param$invalidIndexes[[i]]$var)) {
+                    m[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
+                    
+                    cm[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
+                }
+                expect_error(calculate(m), "dynamic index out of bounds", info = paste0("problem with lack of error in R calculate with invalid indexes, case: ", i))
+                expect_error(calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of error in C calculate with invalid indexes, case: ", i))
+                expect_error(calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of error in C calculateDiff with invalid indexes, case: ", i))
+                deps <- m$getDependencies(param$invalidIndexes[[i]]$var, self = FALSE)
+                expect_error(simulate(cm, deps, includeData = TRUE), "dynamic index out of bounds", info = paste0("problem with lack of error in C simulate with invalid indexes, case: ", i))
+            }
+        }
+    invisible(NULL)
+}
+
 
  
 ## utilities for saving test output to a reference file

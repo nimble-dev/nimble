@@ -527,7 +527,7 @@ modelDefClass$methods(checkMultivarExpr = function() {
         BUGSdecl <- declInfo[[i]]
         if(BUGSdecl$type != 'stoch') next
         dist <- deparse(BUGSdecl$valueExpr[[1]])
-        types <- distributionsInputList[[dist]]$types
+        types <- nimble:::distributionsInputList[[dist]]$types
         if(is.null(types)) next
         tmp <- strsplit(types, " = ")
         nms <- sapply(tmp, `[[`, 1)
@@ -1003,7 +1003,11 @@ modelDefClass$methods(genNodeInfo3 = function(debug = FALSE) {
         }
 
         ## Pick out which parts of the context (which for loop indices) are used in this BUGSdecl
-        useContext <- unlist(lapply(context$singleContexts, function(x) isNameInExprList(x$indexVarExpr, BUGSdecl$indexExpr)))
+        if(nimbleOptions()$allowDynamicIndexing) {
+            ## We need NA as indexExpr for useContext to correctly determine not to use context for dynamic indexes.
+            indexExprWithNA <- lapply(BUGSdecl$indexExpr, function(x) if(isDynamicIndex(x)) as.numeric(NA) else x)
+            useContext <- unlist(lapply(context$singleContexts, function(x) isNameInExprList(x$indexVarExpr, indexExprWithNA)))
+        } else useContext <- unlist(lapply(context$singleContexts, function(x) isNameInExprList(x$indexVarExpr, BUGSdecl$indexExpr)))
         ## We want to do something like cbind(i, i_plus_1, j) to make a matrix of unrolled indices
         ## To do that we need to construct the cbind expression with the name expressions needed and then eval it in replacementsEnv
 
@@ -1346,7 +1350,7 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
     ## 1. Determine which indexExprs are in parentExpr
     useContext <- unlist(lapply(indexExprs, isNameInExprList, parentExpr))
     if(nimbleOptions()$allowDynamicIndexing) {
-        dynamicIndices <- detectDynamicIndices(parentExpr)
+        dynamicIndices <- detectDynamicIndexes(parentExpr)
         numDynamicIndices <- sum(dynamicIndices)
         if(numDynamicIndices) {
             stop("splitVertices: no unknown (NA) indices should be detected here; please contact the NIMBLE development team.")
@@ -1543,7 +1547,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
     if(nimbleOptions()$allowDynamicIndexing) {
         ## replace NA with 1 to index into first element, since for unknownIndex vars there should be only one vertex
         for(iii in seq_along(parentIndexNamePieces))
-            if(length(parentIndexNamePieces[[iii]]) == 1 && is.na(parentIndexNamePieces[[iii]]))
+            if(length(parentIndexNamePieces[[iii]]) == 1 && isDynamicIndex(parentIndexNamePieces[[iii]]))
                 parentIndexNamePieces[[iii]] <- 1
         if(length(parentExprReplaced) >= 3) {
             indexExprs <- parentExprReplaced[3:length(parentExprReplaced)]
@@ -1605,19 +1609,32 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
 }
 
 
-## pull out dynamic indexing info for use in constraining range in nodeFunctions and then strip out USED_IN_INDEX tagging
+## pull out dynamic indexing info for use in constraining range in nodeFunctions and then strip out USED_IN_INDEX tagging and replace .DYN_INDEX tagged indexing code with NA
 ## original plan was for some code here (if based on variables) or later (if based on vertices) to find the elements used in dynamic indexing for when we planned to dynamically update the graph
 modelDefClass$methods(findDynamicIndexParticipants = function() {
     if(nimbleOptions()$allowDynamicIndexing) {
         for(iDI in seq_along(declInfo)) {
+            if(declInfo[[iDI]]$type == "unknownIndex") next
             declInfo[[iDI]]$dynamicIndexInfo <<- list()
             for(iSPN in seq_along(declInfo[[iDI]]$symbolicParentNodes)) {
                 symbolicParent <- declInfo[[iDI]]$symbolicParentNodes[[iSPN]]
-                if(usedInIndex(symbolicParent))
-                    declInfo[[iDI]]$dynamicIndexInfo[[length(declInfo[[iDI]]$dynamicIndexInfo) + 1]] <<-
-                        list(indexCode = symbolicParent[[3]],
-                             lower = varInfo[[symbolicParent[[4]]]]$mins[symbolicParent[[5]]],
-                             upper = varInfo[[symbolicParent[[4]]]]$maxs[symbolicParent[[5]]])
+                dynamicIndexes <- detectDynamicIndexes(symbolicParent)
+                ## We do not yet check bounds of inner indexes in nested indexing. To do so we need to
+                ## find dynamic indexing within a USED_IN_INDEX() and add to dynamicIndexInfo;
+                ## then in nodeFunctions we need nested if statements so inner index is checked first.
+                ## That being said, compiled execution will error out with appropriate out of bounds error
+                ## because C++ will put an out-of-bound value in for 'k' in k[d[0]] or k[d[1342134]].
+                if(any(dynamicIndexes)) {
+                    indexedVar <- deparse(symbolicParent[[2]])
+                    for(iIndex in which(dynamicIndexes)) {
+                        declInfo[[iDI]]$dynamicIndexInfo[[length(declInfo[[iDI]]$dynamicIndexInfo) + 1]] <<-
+                            list(indexCode = stripDynamicallyIndexedWrapping(symbolicParent[[2+iIndex]]),
+                                 lower = varInfo[[indexedVar]]$mins[iIndex],
+                                 upper = varInfo[[indexedVar]]$maxs[iIndex])
+                        declInfo[[iDI]]$symbolicParentNodes[[iSPN]][[2+iIndex]] <<- as.numeric(NA) ## Indexing code is not needed anymore.
+                        declInfo[[iDI]]$symbolicParentNodesReplaced[[iSPN]][[2+iIndex]] <<- as.numeric(NA) ## Indexing code is not needed anymore.
+                    }
+                }
             }
             declInfo[[iDI]]$symbolicParentNodes <<- lapply(declInfo[[iDI]]$symbolicParentNodes, stripIndexWrapping)
             declInfo[[iDI]]$symbolicParentNodesReplaced <<- lapply(declInfo[[iDI]]$symbolicParentNodesReplaced, stripIndexWrapping)
@@ -1634,7 +1651,7 @@ modelDefClass$methods(addFullDimExtentToUnknownIndexDeclarations = function() {
                 targetExpr <- declInfo[[iDI]]$targetExpr
                 targetExprReplaced <- declInfo[[iDI]]$targetExprReplaced
                 varName <- declInfo[[iDI]]$rhsVars[1] # deparse(parentExpr[[2]])
-                dynamicIndices <- detectDynamicIndices(parentExpr)
+                dynamicIndices <- detectDynamicIndexes(parentExpr)
                 ranges <- data.frame(rbind(varInfo[[varName]]$mins[dynamicIndices], varInfo[[varName]]$maxs[dynamicIndices]))
                 fullExtent <- lapply(ranges, function(x) 
                     substitute(X:Y, list(X = x[1], Y = x[2])))
@@ -2304,7 +2321,7 @@ modelDefClass$methods(genVarInfo3 = function() {
                     } else {
                         ## If the index is dynamic (marked by NA), there is nothing to learn about index range of the variable.
                         if(nimbleOptions()$allowDynamicIndexing)
-                            if(is.na(indexNamePieces)) {
+                            if(isDynamicIndex(indexNamePieces)) {
                                 varInfo[[rhsVar]]$mins[iDim] <<- min(varInfo[[rhsVar]]$mins[iDim], 1) ## o.w., never changed from 1e5 if only on RHS and in 'dimensions' input
                                 varInfo[[rhsVar]]$maxs[iDim] <<- max(varInfo[[rhsVar]]$maxs[iDim], 1) ## o.w., can end up with (1,0) as (min,max) before 'dimensions' are used
                                 next
@@ -2362,7 +2379,7 @@ modelDefClass$methods(genUnknownIndexDeclarations = function() {
         for(i in seq_along(declInfo)){
             for(p in seq_along(declInfo[[i]]$symbolicParentNodes)) {
                 parentExpr <- stripIndexWrapping(declInfo[[i]]$symbolicParentNodes[[p]])
-                dynamicIndices <- detectDynamicIndices(parentExpr)
+                dynamicIndices <- detectDynamicIndexes(parentExpr)
                 if(sum(dynamicIndices) && !any(sapply(declInfo, function(x) identical(x$targetExpr, parentExpr)))) {
                     ## don't create declaration if there is already one for the exact same unknownIndex target
                     BUGSdeclClassObject <- BUGSdeclClass$new()
@@ -2702,8 +2719,9 @@ addUnknownIndexToVarNameInBracketExpr <- function(parentExpr, contextID = NULL) 
     return(parentExpr)
 }
 
-detectDynamicIndices <- function(expr) {
+detectDynamicIndexes <- function(expr) {
     if(length(expr) == 1 || expr[[1]] != "[") return(FALSE) # stop("whichDynamicIndices: 'expr' should be a bracket expression")
-    return(sapply(expr[3:length(expr)], identical, quote(NA_real_)))
+    return(sapply(expr[3:length(expr)], isDynamicIndex)) ## FIXME: identical, quote(NA_real_)))
+  ## FIXME  return(sapply(expr[3:length(expr)], identical, quote(NA_real_)))
 }
 

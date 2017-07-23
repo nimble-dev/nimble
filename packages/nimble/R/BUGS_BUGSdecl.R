@@ -214,7 +214,12 @@ BUGSdeclClass$methods(genSymbolicParentNodes = function(constantsNamesList, cont
 
 ## move this to a util file when everything is working.  It is convenient here for now
 makeIndexNamePieces <- function(indexCode) {
-    if(length(indexCode) == 1) return(if(is.numeric(indexCode)) indexCode else as.character(indexCode))
+    if(nimbleOptions()$allowDynamicIndexing) {
+        if(length(indexCode) == 1) return(if(is.numeric(indexCode)) indexCode else as.character(indexCode))
+        ## It is easiest to have indexNamePieces be NA when dynamically indexed rather than retaining
+        ## the indexing code.
+        if(length(indexCode) == 2 && indexCode[[1]] == ".DYN_INDEXED") return(as.numeric(NA))
+    } else if(length(indexCode) == 1) return(if(is.numeric(indexCode)) indexCode else as.character(indexCode))
     ## Diagnostic for messed up indexing here
     if(as.character(indexCode[[1]] != ':')) stop(paste0("Error processing model: something is wrong with the index ", deparse(indexCode),". Note that any variables in index expressions must be provided as constants.  NIMBLE does not yet allow indices that are model nodes."), call. = FALSE)
     p1 <- indexCode[[2]]
@@ -362,9 +367,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     ##                and something replaceable in an index represents static indexing, not dynamic indexing
     ## - hasIndex: is there an index inside
     ## numeric constant
-    if(is.numeric(code)) {
+    if(is.numeric(code) || (nimbleOptions()$allowDynamicIndexing && length(code) > 1 && code[[1]] == ".DYN_INDEXED")) 
+        ## Check for .DYN_INDEXED deals with processing of code when we add unknownIndex declarations.
         return(list(code = NULL, replaceable = TRUE, hasIndex = FALSE))
-    }
     cLength <- length(code)
     ## a single name:
     if(cLength == 1) {
@@ -430,26 +435,34 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 hasIndex = any(contentsHasIndex)))
                 } else { ## non-replaceable indices are dynamic indices
                     if(!nimbleOptions()$allowDynamicIndexing) {
-                        warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ", deparse(code), ". This is now allowed in version 0.6-6 as an option, but you need to set 'nimbleOptions(allowDynamicIndexing = TRUE)'.")
+                        warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ", deparse(code), ". This is now allowed in version 0.6-6 as an optional beta feature. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
                         dynamicIndexParent <- code[[2]]
                     } else {
                         if(any(sapply(contentsCode, detectNonscalarIndex)))
                             stop("getSymbolicParentNodesRecurse: only scalar random indices are allowed; vector random indexing found in ", deparse(code))
                         indexedVariable <- deparse(code[[2]])
                         dynamicIndexParent <- addUnknownIndexToVarNameInBracketExpr(code, contextID)
-                        dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ] <- as.numeric(NA)
-                        cnt <- 1
-                        nonNestedContents <- which(!sapply(contentsCode, usedInIndex)) ## nested indexing can introduce contentsCode elements that have already been tagged with dynamic index info
-                        if(sum(!contentsReplaceable) != length(nonNestedContents))
-                            stop("getSymbolicParentNodesRecurse: bug in indexing of dynamic index parents.")
-                        for(iC in which(!contentsReplaceable)) {
-                            if(cnt > length(contentsCode)) 
-                                stop("getSymbolicParentNodesRecurse: bug in indexing of dynamic index parents.")
-                            contentsCode[[nonNestedContents[cnt]]] <- addIndexWrapping(
-                                contentsCode[[nonNestedContents[cnt]]], code[[2+iC]],
-                                                                    indexedVariable, iC)
-                            cnt <- cnt + 1
-                        }
+                        ## Instead of inserting NA, leave indexing code but with indication it is a
+                        ## dynamic index so can detect that later. We need the indexing code so we
+                        ## can add it to declInfo$dynamicIndexInfo for range checking.
+                        dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ] <- 
+                            lapply(dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ], addDynamicallyIndexedWrapping)
+                            ## was: as.numeric(NA)
+                        contentsCode = lapply(contentsCode, addIndexWrapping)
+
+                        ## FIXME:
+                        ## cnt <- 1
+                        ## nonNestedContents <- which(!sapply(contentsCode, usedInIndex)) ## nested indexing can introduce contentsCode elements that have already been tagged with dynamic index info
+                        ## if(sum(!contentsReplaceable) != length(nonNestedContents))
+                        ##     stop("getSymbolicParentNodesRecurse: bug in indexing of dynamic index parents.")
+                        ## for(iC in which(!contentsReplaceable)) {
+                        ##     if(cnt > length(contentsCode)) 
+                        ##         stop("getSymbolicParentNodesRecurse: bug in indexing of dynamic index parents.")
+                        ##     contentsCode[[nonNestedContents[cnt]]] <- addIndexWrapping(
+                        ##         contentsCode[[nonNestedContents[cnt]]], code[[2+iC]],
+                        ##                                             indexedVariable, iC)
+                        ##     cnt <- cnt + 1
+                        ## }
                     }
                     return(list(code = c(contentsCode, list(dynamicIndexParent)),
                                 replaceable = FALSE,
@@ -505,7 +518,9 @@ checkNimbleOrRfunctionNames <- function(functionName) {
 ## The replaceVariableLHS arg avoids replacement of x[i] if x[i] is on the LHS of <- or ~
 genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFunctionNames, replaceVariableLHS = TRUE, debug = FALSE) {
     if(debug) browser()
-    if(is.numeric(code))  return(list(codeReplaced = code, replacements = list(), replaceable = TRUE))
+    if(is.numeric(code) || (nimbleOptions()$allowDynamicIndexing && length(code) > 1 && code[[1]] == '.DYN_INDEXED'))
+        ## Check for .DYN_INDEXED deals with processing of code when we add unknownIndex declarations.
+        return(list(codeReplaced = code, replacements = list(), replaceable = TRUE))
     cLength <- length(code)
     if(cLength == 1) {
         if(is.name(code)) {
@@ -613,16 +628,34 @@ genLogProbNodeExprAndReplacements <- function(code, codeReplaced, indexVarExprs)
     list(logProbNodeExpr = logProbNodeExpr, replacements = replacements)
 }
 
-addIndexWrapping <- function(expr, indexingCode, indexedVariable, position) {
+addIndexWrapping <- function(expr) {
     if(length(expr) > 1 && expr[[1]] == '.USED_IN_INDEX') ## nested random indexing
         return(expr)
-    expr <- substitute(.USED_IN_INDEX(EXPR), list(EXPR = expr))
-    expr[3:5] <- list(indexingCode, indexedVariable, position)
-    return(expr)
+    substitute(.USED_IN_INDEX(EXPR), list(EXPR = expr))
 }
+
+addDynamicallyIndexedWrapping <- function(expr) {
+    substitute(.DYN_INDEXED(EXPR), list(EXPR = expr))
+}
+
+stripDynamicallyIndexedWrapping <- function(expr) {
+    if(length(expr) == 1 || !isDynamicIndex(expr)) return(expr) else return(expr[[2]])
+}
+
+# FIXME
+## addIndexWrapping <- function(expr, indexingCode, indexedVariable, position) {
+##     if(length(expr) > 1 && expr[[1]] == '.USED_IN_INDEX') ## nested random indexing
+##         return(expr)
+##     expr <- substitute(.USED_IN_INDEX(EXPR), list(EXPR = expr))
+##     expr[3:5] <- list(indexingCode, indexedVariable, position)
+##     return(expr)
+## }
 
 usedInIndex <- function(expr)
     if(length(expr) > 1 && expr[[1]] == ".USED_IN_INDEX") TRUE else FALSE
+
+isDynamicIndex <- function(expr)
+    if((length(expr) > 1 && expr[[1]] == ".DYN_INDEXED") || identical(expr, quote(NA_real_))) TRUE else FALSE
 
 stripIndexWrapping <- function(expr) 
     if(length(expr) == 1 || !usedInIndex(expr)) return(expr) else return(expr[[2]])
@@ -634,5 +667,5 @@ detectNonscalarIndex <- function(expr) {
         if(length(expr) <= 2)
             stop("detectNonscalarIndex: unexpected expression ", expr)
     }
-    return(max(sapply(expr[3:length(expr)], length)) > 1)
+    return(max(sapply(expr[3:length(expr)], function(x) ifelse(isDynamicIndex(x), 1, length(x)))) > 1)
 }
