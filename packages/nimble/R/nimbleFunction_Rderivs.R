@@ -98,6 +98,8 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
   }
   if(is.null(wrt)){
     wrt <- formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv)@.Data)
+  }
+  if(!is.null(dropArgs)){
     wrt <- wrt[- which(wrt == dropArgs)]
   }
   derivFxnList <- makeSingleArgWrapper(derivFxnCall, wrt, fxnEnv)
@@ -106,7 +108,6 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
   hessianFlag <- 2 %in% order
   gradientFlag <- 1 %in% order
   valueFlag <- 0 %in% order
-  
   if(hessianFlag){
     derivList <- genD(derivFxnList[[1]], singleArg)
     if(valueFlag) outVal <- derivList$f0 
