@@ -360,7 +360,7 @@ nndf_generateGetBoundSwitchFunction <- function(typesListAll, boundIDs, type, nD
 
 nndf_generateDynamicIndexLimitsExpr <- function(dynamicIndexInfo) {
     indivLimits <- lapply(dynamicIndexInfo, function(x) substitute(VAREXPR >= LOWER & VAREXPR <= UPPER,
-                        list(VAREXPR = x$indexCode,
+                              list(VAREXPR =  x$indexCode,
                              LOWER = x$lower,
                              UPPER = x$upper)))
     dynamicIndexLimitsExpr <- indivLimits[[1]]

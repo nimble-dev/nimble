@@ -1043,6 +1043,7 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
 expandNames <- function(var, ...) {
     tmp <- as.matrix(expand.grid(...))
     indChars <- apply(tmp, 1, paste0, collapse=', ')
+    ## Use of sort here only puts names in same order as NIMBLE if have no double-digit indexes.
     sort(paste0(var, "[", indChars, "]"))
 }
 
@@ -1059,12 +1060,12 @@ tdim <- test_dynamic_indexing_model <- function(param) {
                 
 test_dynamic_indexing_model_internal <- function(param) {
         if(!is.null(param$expectError) && param$expectError) {
-            expect_error(m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data), "only scalar random indices are allowed", info = "expected error not generated")
+            expect_error(m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data), param$expectErrorMsg, info = "expected error not generated")
         } else {
             m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data)
             expect_true(inherits(m, 'modelBaseClass'), info = "problem creating model")
             for(i in seq_along(param$expectedDeps)) 
-                expect_identical(m$getDependencies(param$expectedDeps[[i]]$parent),
+                expect_identical(m$getDependencies(param$expectedDeps[[i]]$parent, stochOnly = TRUE),
                     param$expectedDeps[[i]]$result, info = paste0("dependencies don't match expected in dependency of ", param$expectedDeps[[i]]$parent))
             cm <- compileNimble(m)
             expect_true(class(cm) == "Ccode", info = "compiled model object improperly formed")
@@ -1090,7 +1091,7 @@ test_dynamic_indexing_model_internal <- function(param) {
                     
                     cm[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
                 }
-                expect_error(calculate(m), "dynamic index out of bounds", info = paste0("problem with lack of error in R calculate with invalid indexes, case: ", i))
+                expect_error(calculate(m), info = paste0("problem with lack of error in R calculate with invalid indexes, case: ", i))  ## When NA is given, R calculate fails with missing value and dynamic index error not flagged explicitly
                 expect_error(calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of error in C calculate with invalid indexes, case: ", i))
                 expect_error(calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of error in C calculateDiff with invalid indexes, case: ", i))
                 deps <- m$getDependencies(param$invalidIndexes[[i]]$var, self = FALSE)

@@ -1625,14 +1625,16 @@ modelDefClass$methods(findDynamicIndexParticipants = function() {
                 ## That being said, compiled execution will error out with appropriate out of bounds error
                 ## because C++ will put an out-of-bound value in for 'k' in k[d[0]] or k[d[1342134]].
                 if(any(dynamicIndexes)) {
-                    indexedVar <- deparse(symbolicParent[[2]])
+                    indexedVar <- stripUnknownIndexFromVarName(deparse(symbolicParent[[2]]))
+                    numSPNR <- length(declInfo[[iDI]]$symbolicParentNodesReplaced)
                     for(iIndex in which(dynamicIndexes)) {
                         declInfo[[iDI]]$dynamicIndexInfo[[length(declInfo[[iDI]]$dynamicIndexInfo) + 1]] <<-
                             list(indexCode = stripDynamicallyIndexedWrapping(symbolicParent[[2+iIndex]]),
                                  lower = varInfo[[indexedVar]]$mins[iIndex],
                                  upper = varInfo[[indexedVar]]$maxs[iIndex])
                         declInfo[[iDI]]$symbolicParentNodes[[iSPN]][[2+iIndex]] <<- as.numeric(NA) ## Indexing code is not needed anymore.
-                        declInfo[[iDI]]$symbolicParentNodesReplaced[[iSPN]][[2+iIndex]] <<- as.numeric(NA) ## Indexing code is not needed anymore.
+                        if(iSPN <= numSPNR)
+                            declInfo[[iDI]]$symbolicParentNodesReplaced[[iSPN]][[2+iIndex]] <<- as.numeric(NA) ## Indexing code is not needed anymore.
                     }
                 }
             }
@@ -2721,7 +2723,6 @@ addUnknownIndexToVarNameInBracketExpr <- function(parentExpr, contextID = NULL) 
 
 detectDynamicIndexes <- function(expr) {
     if(length(expr) == 1 || expr[[1]] != "[") return(FALSE) # stop("whichDynamicIndices: 'expr' should be a bracket expression")
-    return(sapply(expr[3:length(expr)], isDynamicIndex)) ## FIXME: identical, quote(NA_real_)))
-  ## FIXME  return(sapply(expr[3:length(expr)], identical, quote(NA_real_)))
+    return(sapply(expr[3:length(expr)], isDynamicIndex)) 
 }
 

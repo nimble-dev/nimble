@@ -1,266 +1,295 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-context("Testing of default MCMC")
+context("Testing of dynamic indexing")
 
-RwarnLevel <- options('warn')$warn
-options(warn = -1)
-nimbleVerboseSetting <- nimbleOptions('verbose')
+source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = 'nimble'))
 
-testsDynIndex <- list(
-    list(
-        case = 'basic dynamic index',
-        code = nimbleCode({
-            for(i in 1:4) {
-                y[i] ~ dnorm(mu[k[i]], sd = 1)
-            }
-            for(j in 1:5) {
-                mu[j] ~ dnorm(0, 1)
-            }
-        }), 
-        dims = list(mu = 5), inits = list(mu = rnorm(5), k = rep(1,4)), 
-        data = list(y = rnorm(4)),
-        expectedDeps = list(list(parent = 'k[1]', result = 'y[1]'),
-                            list(parent = 'mu[1]', result = c('mu[1]', paste0('y[',1:4,']'))),
-                            list(parent = 'mu', result = c(paste0('mu[',1:5,']'),
-                                                           paste0('y[',1:4,']')))),
-        validIndexes =list(list(var = 'k[1]', value = 1),
-                             list(var = 'k[1]', value = 5)),
-        invalidIndexes =list(list(var = 'k[1]', value = 0),
-                             list(var = 'k[1]', value = NA),
-                             list(var = 'k[1]', value = 6))
-    ),
-    list( 
-        case = 'dynamic index of multivariate node',
-        code = nimbleCode({
-            for(i in 1:4) {
-                y[i] ~ dnorm(mu[k[i]], sd = 1)
-            }
-            for(j in 1:5) {
-                mu[1:5] ~ dmnorm(z[1:5], pr[1:5,1:5])
-            }
-        }), 
-        dims = list(mu = 5), inits = list(mu = rnorm(5), k = rep(1,4),
-                                          z = rep(0,5), pr = diag(5)), 
-        data = list(y = rnorm(4)),
-        expectedDeps = list(list(parent = 'k[1]', result = 'y[1]'),
-                            list(parent = 'mu[1]', result = c('mu[1:5]', paste0('y[',1:4,']'))),
-                            list(parent = 'mu', result = c(paste0('mu[1:5]'),
-                                                           paste0('y[',1:4,']')))),
-        validIndexes =list(list(var = 'k[1]', value = 1),
-                           list(var = 'k[1]', value = 5)),
-        invalidIndexes =list(list(var = 'k[1]', value = 0),
-                             list(var = 'k[1]', value = 6))
-    ),
-    list(
-        case = 'dynamic index functional',
-        code = nimbleCode({
-            for(i in 1:4) {
-                y[i] ~ dnorm(mu[k[i]+1], sd = 1)
-            }
-            for(j in 1:5) {
-                mu[j] ~ dnorm(0, 1)
-            }
-        }), 
-        dims = list(mu = 5), inits = list(mu = rnorm(5), k = rep(1,4)), 
-        data = list(y = rnorm(4)),
-        expectedDeps = list(list(parent = 'k[1]', result = 'y[1]'),
-                            list(parent = 'mu[1]', result = c('mu[1]', paste0('y[',1:4,']'))),
-                            list(parent = 'mu', result = c(paste0('mu[', 1:5, ']'),
-                                                           paste0('y[',1:4,']')))),
-        validIndexes =list(list(var = 'k[1]', value = 0),
-                           list(var = 'k[1]', value = 4)),
-        invalidIndexes =list(list(var = 'k[1]', value = -1),
-                             list(var = 'k[1]', value = 5))
+ans1 <- sapply(testsDynIndex, test_dynamic_indexing_model)
+ans2 <- sapply(testsInvalidDynIndex, test_dynamic_indexing_model)
+ans3 <- sapply(testsInvalidDynIndexExpectedFailures, test_dynamic_indexing_model)
 
-    ),
-    list(
-        case = 'dynamic index multiple input functional',
-        code = nimbleCode({
-            for(i in 1:4) {
-                y[i] ~ dnorm(mu[k[i]+j[i]], sd = 1)
-            }
-            for(j in 1:5) {
-                mu[j] ~ dnorm(0, 1)
-            }
-        }), 
-        dims = list(mu = 5), inits = list(mu = rnorm(5), k = rep(1,4), j = rep(1,4)), 
-        data = list(y = rnorm(4)),
-        expectedDeps = list(list(parent = 'k[1]', result = 'y[1]'),
-                            list(parent = 'j[2]', result = 'y[2]'),
-                            list(parent = 'mu[1]', result = c('mu[1]', paste0('y[',1:4,']'))),
-                            list(parent = 'mu', result = c(paste0('mu[', 1:5, ']'),
-                                                           paste0('y[',1:4,']')))),
-        validIndexes =list(list(var = c('k[1]','j[1]'), value = c(0,2))),
-        invalidIndexes =list(list(var = c('k[1]', 'j[1]'), value = c(0,6)))
-    ),
-    list(  
-        case = 'dynamic index multiple input functional, multivariate indexing',
-        code = nimbleCode({
-            for(i in 1:4) {
-                y[i] ~ dnorm(mu[k[i], 2, k[i]+j[i]], sd = 1)
-            }
-            for(j in 1:5) 
-                for(l in 1:3) 
-                    for(m in 1:8)
-                mu[j,l,m] ~ dnorm(0, 1)
-        }), 
-        inits = list(mu = array(rnorm(120), c(5,3,8)), k = rep(1,4), j = rep(1:4)), 
-        data = list(y = rnorm(4)),
-        expectedDeps = list(list(parent = 'k[1]', result = 'y[1]'),
-                            list(parent = 'j[2]', result = 'y[2]'),
-                            list(parent = 'mu[1,1,1]', result = c('mu[1, 1, 1]')),
-                            list(parent = 'mu[1,2,1]', result = c('mu[1, 2, 1]',
-                                 expandNames('y', 1:4))),
-                            list(parent = 'mu', result = c(expandNames('mu', 1:5, 1:3, 1:8),
-                                                           expandNames('y',1:4)))),
-        validIndexes =list(list(var = c('k[1]','j[1]'), value = c(3,5))),
-        invalidIndexes =list(list(var = c('k[1]', 'j[1]'), value = c(3,6)),
-                             list(var = c('k[1]', 'j[1]'), value = c(6,2)))
-    )
-    list( 
-        case = 'dynamic index, multivariate node indexing',
-        code = nimbleCode({
-            for(i in 1:4) 
-                y[i, 1:3] ~ dmnorm(mu[k[i], 1:3], pr[1:3, 1:3])
-            for(i in 1:3)
-                mu[i, 1:3] ~ dmnorm(z[1:3], pr[1:3, 1:3])
-        }), 
-        inits = list(mu = matrix(rnorm(9), 3), k = rep(1, 4), z = rep(0, 3),
-                     pr = diag(3)),
-        data = list(y = matrix(rnorm(12), 4, 3)),
-        expectedDeps = list(list(parent = 'k[1]', result = 'y[1, 1:3]'),
+## check conjugacy detection
 
-                            list(parent = 'mu[1,2]', result = c('mu[1, 1:3]',
-                                                                expandNames('y', 1:4, "1:3"))),
-                            list(parent = 'mu', result = c(expandNames('mu', 1:3, "1:3"),
-                                                           expandNames('y', 1:4, "1:3")))),
-        validIndexes =list(list(var = c('k[1]'), value = 3)),
-        invalidIndexes =list(list(var = c('k[1]'), value = 0),
-                             list(var = c('k[1]'), value = 4))
-    ),                             
-    list( 
-        case = 'dynamic index, crossed multivariate node indexing',
-        code = nimbleCode({
-            for(i in 1:4) {
-                y[i, 1:3] ~ dmnorm(mu[k[i], 1:3], pr[1:3, 1:3])
-            }
-            for(i in 1:3)
-                mu[1:3, i] ~ dmnorm(z[1:3], pr[1:3, 1:3])
-        }), 
-        inits = list(mu = matrix(rnorm(9), 3), k = rep(1, 4), z = rep(0, 3),
-                     pr = diag(3)),
-        data = list(y = matrix(rnorm(12), 4, 3)),
-        expectedDeps = list(list(parent = 'k[1]', result = 'y[1, 1:3]'),
-                            list(parent = 'mu[2,2]', result = c('mu[1:3, 2]',
-                                                                expandNames('y', 1:4, "1:3"))),
-                            list(parent = 'mu', result = c(expandNames('mu', "1:3", 1:3),
-                                                           expandNames('y', 1:4, "1:3")))),
-        validIndexes =list(list(var = c('k[1]'), value = 3)),
-        invalidIndexes =list(list(var = c('k[1]'), value = 0),
-                             list(var = c('k[1]'), value = 4))
-    ),     
-    list(  # This should pass, but only if we don't test bounds for nested index, d[i].
-        case = 'dynamic index multiple input functional, multiple indexing, with incorrect nested index',
-        code = nimbleCode({
-            for(i in 1:4) {
-                y[i] ~ dnorm(mu[k[d[i]], 2, k[i]+j[i]], sd = 1)
-            }
-            ## k[i]+j[i] \in 1:8; d[i] \in 1:2; k[i] \in 1:5
-            for(ii in 1:5) 
-                for(jj in 1:3) 
-                    for(kk in 1:8)
-                        mu[ii,jj,kk] ~ dnorm(0, 1)
-            for(i in 1:4)
-                k[i] ~ dcat(p[1:5])
-        }), 
-        inits = list(mu = array(rnorm(120), c(5,3,8)), k = rep(1,4), j = rep(1, 4), d = rep(1,4)),
-        data = list(y = rnorm(4)),
-        expectedDeps = list(list(parent = 'd[2]', result = 'y[2]'),
-                            list(parent = 'k[2]', result = c('k[2]', expandNames('y', 1:4))),
-                            list(parent = 'j[2]', result = 'y[2]'),
-                            list(parent = 'mu[1,1,1]', result = c('mu[1, 1, 1]')),
-                            list(parent = 'mu[1,2,1]', result = c('mu[1, 2, 1]',
-                                                                  expandNames('y', 1:4))),
-                            list(parent = 'mu', result = c(expandNames('mu', 1:5, 1:3, 1:8),
-                                                           expandNames('y', 1:4)))),
-        validIndexes =list(list(var = c('d[1]', 'k[1]','j[1]'), value = c(2,5,2))),
-        invalidIndexes =list(list(var = c('d[1]', 'k[1]','j[1]'), value = c(1,5,4)),
-                             list(var = c('d[1]', 'k[1]','j[1]'), value = c(1,6,2)))
-    )
-    
-)
-
-
-testsInvalidDynIndex <- list(
-    list(
-        case = 'vector dynamic index',
-        code = nimbleCode({
-            y[1:3] ~ dmnorm(mu[k[1:3]], pr[1:3,1:3])
-            mu[1:5] ~ dmnorm(z[1:5], pr[1:5,1:5])
-        }), 
-        inits = list(mu = rnorm(5)), 
-        data = list(y = rnorm(3)),
-        expectError = TRUE
-    )
-)
-
-
-## These are cases NIMBLE fails on that we are aware of. XFAIL should be reported.
-testsInvalidDynIndexExpectedFailures <- list(
-    list(  # This should pass with correct error trapping but it does not because we don't test bounds for nested index, d[i], so failure occurs in R execution (C execution fails gracefully because of how C++ handles k[d[0]].
-        case = 'dynamic index multiple input functional, multiple indexing, with nested index',
-        code = nimbleCode({
-            for(i in 1:4) {
-                y[i] ~ dnorm(mu[k[d[i]], 2, k[i]+j[i]], sd = 1)
-            }
-            ## k[i]+j[i] \in 1:8; d[i] \in 1:2; k[i] \in 1:5
-            for(ii in 1:5) 
-                for(jj in 1:3) 
-                    for(kk in 1:8)
-                        mu[ii,jj,kk] ~ dnorm(0, 1)
-            for(i in 1:4)
-                k[i] ~ dcat(p[1:5])
-        }), 
-        inits = list(mu = array(rnorm(120), c(5,3,8)), k = rep(1,4), j = rep(1, 4), d = rep(1,4)),
-        data = list(y = rnorm(4)),
-        invalidIndexes =list(list(var = c('d[1]', 'k[1]','j[1]'), value = c(5,4,4))),
-        expectFailure = TRUE
-    )
-
-
-)
-
-
-test_that('Addition works', {
-      fun <- nimbleFunction(run = function(x = double(0)) {
-          returnType(double(0))
-          return(x + x)
-      })
-      expect_equal(fun(0), compileNimble(fun)(0))
-})
-
-test_that('One equals zero', {
-      expect_failure(
-          expect_equal(1, 0),
-          info = 'KNOWN ISSUE https://github.com/nimble-dev/nimble/issues/10'
-      )
+test_that("Testing conjugacy detection with dynamic indexing", { 
+          code = nimbleCode({
+              for(i in 1:4) 
+                  y[i] ~ dnorm(mu[k[i]], sd = 1)
+              for(j in 1:5) 
+                  mu[j] ~ dnorm(0, 1)
+          })
+          m = nimbleModel(code, data = list(y = rnorm(4)),
+                          inits = list(k = rep(1,4)))
+          conf <- configureMCMC(m)
+          expect_match(conf$getSamplers()[[1]]$name, "conjugate_dnorm_dnorm",
+                       info = "failed to detect normal-normal conjugacy")
+          code = nimbleCode({
+              for(i in 1:4) 
+                  y[i] ~ dpois(mu[k[i]])
+              for(j in 1:5)
+                  mu[j] ~ dnorm(0, 1)
+          })
+          m = nimbleModel(code, data = list(y = rpois(4, 1)),
+                          inits = list(k = rep(1,4)))
+          conf <- configureMCMC(m)
+          expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
+                       info = "incorrectly detected conjugacy")
+          code = nimbleCode({
+              for(i in 1:4) 
+                  y[i] ~ T(dnorm(mu[k[i]], sd = 1), 0, 1)
+              for(j in 1:5) 
+                  mu[j] ~ dnorm(0, 1)
+          })
+          m = nimbleModel(code, data = list(y = rnorm(4)),
+                          inits = list(k = rep(1,4)))
+          conf <- configureMCMC(m)
+          expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
+                       info = "incorrectly detected conjugacy")
+          code = nimbleCode({
+              for(i in 1:4) 
+                  y[i] ~ dnorm(mu[k[i]], sd = 1)
+              for(j in 1:5) 
+                  mu[j] ~ T(dnorm(0, 1), 0 ,1)
+          })
+          m = nimbleModel(code, data = list(y = rnorm(4)),
+                          inits = list(k = rep(1,4)))
+          conf <- configureMCMC(m)
+          expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
+                       info = "incorrectly detected conjugacy")
 })
 
 
-  test_that('Function works with vectors', {
-      sizes <- c(1,2,3,10,100)
-      for (size in sizes) {
-          x <- rep(1, size)
-          y <- rep(2, size)
-          expect_equal(x + x, y, info = paste(' where size =', size))
-      })
-  }
+## MCMC testing
 
-test_that('Compiler fails when no returnType is provided', {
-      nf <- nimbleFunction(run = function(){ return(0) })
-      expect_error(compileNimble(nf))
-  })
+models <- c('hearts')
+
+### test BUGS examples - models and MCMC
+sapply(models, testBUGSmodel, useInits = TRUE)
+sapply(models, test_mcmc, numItsC = 1000)
+
+## beta0C is beta0 in inits file
+system.in.dir(paste("sed 's/beta0/beta0C/g' cervix-inits.R > ", file.path(tempdir(), "cervix-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
+## need missing x's to have initial values or initial model$calculate fails
+## FIXME: replace hard-coded 1's with auto-generated
+system.in.dir(paste("echo 'x <- 
+c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)'  >> ", file.path(tempdir(), "cervix-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
+
+test_that('cervix model and MCMC test', {
+    testBUGSmodel('cervix', dir = "", model = system.file('classic-bugs','vol2','cervix','cervix.bug', package = 'nimble'), data = system.file('classic-bugs','vol2','cervix','cervix-data.R', package = 'nimble'),  inits = file.path(tempdir(), "cervix-inits.R"),  useInits = TRUE)
+    test_mcmc(model = system.file('classic-bugs','vol2','cervix','cervix.bug', package = 'nimble'), name = 'cervix', inits = file.path(tempdir(), "cervix-inits.R"), data = system.file('classic-bugs', 'vol2', 'cervix','cervix-data.R', package = 'nimble'), numItsC = 1000)
+})
+
+## There are some issues with using the model as provided in the BUGS example because of use of zeros
+## to exclude categories in dirichlet-distributed vector.
+test_that('biops model and MCMC test', {
+    system.in.dir(paste("echo 'var\n
+    biopsies[ns,4], #  grades observed in ith session (multinomial)\n
+    nbiops[ns],     # total number of biopsies in ith session\n
+    truex[ns],       # true state in ith session\n
+    error[4,4],     # error matrix in taking biopsies\n
+    prior[4,4],     # prior parameters for rows of error[,]\n
+    p[4];           # underlying   incidence of true  states\n
+model {\n
+   for (i in 1:ns){\n
+      truex[i]       ~ dcat(p[]);\n
+      biopsies[i,]  ~ dmulti(error[truex[i],],nbiops[i]); \n
+   }\n
+   error[1, 1:4] <- c(1, 0, 0, 0)\n
+    error[2, 1:2] ~ ddirch(prior[2, 1:2])\n
+    error[3, 1:3] ~ ddirch(prior[3, 1:3])\n
+    error[4, 1:4] ~ ddirch(prior[4, 1:4])\n
+   p[]       ~ ddirch(prior[4,]);     # prior for p\n
+   }' >> ", file.path(tempdir(), "biops.bug")), dir = system.file('classic-bugs','vol2','biops', package = 'nimble'))
+    system.in.dir(paste("sed 's/true/truex/g' biops-inits.R > ", file.path(tempdir(), "biops-inits.R")), dir = system.file('classic-bugs','vol2','biops', package = 'nimble'))
+system.in.dir(paste("echo 'error <- matrix(c(1,0,0,0, .5, .5, 0, 0, 1/3,1/3,1/3,0,1/4,1/4,1/4,1/4), 4,4, byrow=T)'  >> ", file.path(tempdir(), "biops-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
+    testBUGSmodel('biops', dir = "", model = file.path(tempdir(), "biops.bug"), data = system.file('classic-bugs','vol2','biops','biops-data.R', package = 'nimble'),  inits = file.path(tempdir(), "biops-inits.R"),  useInits = TRUE)
+    test_mcmc(model = file.path(tempdir(), "biops.bug"), name = 'biops', inits = file.path(tempdir(), "biops-inits.R"), data = system.file('classic-bugs', 'vol2', 'biops','biops-data.R', package = 'nimble'), numItsC = 1000)
+})
 
 
+test_that('basic mixture model with conjugacy', {
+    n <- 1000
+    d <- 4
+    set.seed(2)
+    mns <- c(-.9, .2, 1.6, -1.1)
+    p <- c(.45, .14, .05, .36)
+    sds <- c(.3, .5, .3, .1)
+    k <- sample(1:d, n, replace = TRUE, prob = p)
+    y <- rnorm(n, mns[k], sds[k])
+    code <- nimbleCode({
+        for(i in 1:n) {
+            y[i] ~ dnorm(mu[k[i]], sd = sigma[k[i]])
+            k[i] ~ dcat(p[1:d])
+        }
+        for(j in 1:d) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+            sigma[j] ~ dgamma(a, b)
+        }
+        mu0 ~ dnorm(0, sd = 100)
+        tau ~ dhalfflat()
+        a ~ dhalfflat()
+        b ~ dhalfflat()
+        p[1:d] ~ ddirch(alpha[1:d])
+    })
+        
+    test_mcmc(name = 'basic mixture model with conjugacy',
+              model = code, seed = 1, numItsC_results = 20000,
+              data = list(d=d,n=n,y=y),
+              inits = list(sigma = rep(1,4), mu = c(-1, 0, 1, 2),
+                           p = rep(.25, 4), k = sample(1:4, n, replace = TRUE),
+                           mu0 = 0, a = 1, b = 1, tau = 1, alpha = rep(1, 4)),
+              results = list(mean = list("mu[1]" = mns[3],
+                                         "mu[2]" = mns[4],
+                                         "mu[3]" = mns[1],
+                                         "mu[4]" = mns[2],
+                                         "p[1]" = p[3],
+                                         "p[2]" = p[4],
+                                         "p[3]" = p[1],
+                                         "p[4]" = p[2])),
+              resultsTolerance = list("mu[1]" = .7,
+                                      "mu[2]" = .02,
+                                      "mu[3]" = .02,
+                                      "mu[4]" = .3,
+                                      "p[1]" = .08,
+                                      "p[2]" = .02,
+                                      "p[3]" = .05,
+                                      "p[4]" = .05)
+              )
+})
 
-    # test case where necessary dims not provided
+test_that('basic mixture model without conjugacy', {
+    n <- 1000; d <- 4
+    set.seed(2)
+    mns <- c(8, 15, 0.5, 4)
+    p <- c(.45, .14, .05, .36)
+    k <- sample(1:d, n, replace = TRUE, prob = p)
+    y <- rpois(n, mns[k])
+    code <- nimbleCode({
+        for(i in 1:n) {
+            y[i] ~ dpois(mu[k[i]])
+            k[i] ~ dcat(p[1:d])
+        }
+        for(j in 1:d) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+        }
+        mu0 ~ dnorm(0, sd = 100)
+        tau ~ dhalfflat()
+        p[1:d] ~ ddirch(alpha[1:d])
+    })
+    test_mcmc(model = code, seed = 1, numItsC_results = 20000,
+              data = list(d=d,n=n,y=y),
+              inits = list(mu = rep(3, 4),
+                           p = rep(.25, 4), k = sample(1:4, n, replace = TRUE),
+                           mu0 = 4, tau = 1, alpha = rep(1, 4)),
+              results = list(mean = list("mu[1]" = mns[3],
+                                         "mu[2]" = mns[4],
+                                         "mu[3]" = mns[2],
+                                         "mu[4]" = mns[1],
+                                         "p[1]" = p[3],
+                                         "p[2]" = p[4],
+                                         "p[3]" = p[2],
+                                         "p[4]" = p[1])),
+              resultsTolerance = list("mu[1]" = .5,
+                                      "mu[2]" = 1,
+                                      "mu[3]" = 1.5,
+                                      "mu[4]" = 2,
+                                      "p[1]" = .03,
+                                      "p[2]" = .15,
+                                      "p[3]" = .05,
+                                      "p[4]" = .15)
+              )
+})
+
+# HERE
+test_that('basic multivariate mixture model with conjugacy', {
+    n <- 1000; d <- 4
+    set.seed(2)
+    mns <- cbind(c(1, 1, -1, -1), c(1, -1, 1, -1))
+    p <- c(.45, .14, .05, .36)
+    k <- sample(1:d, n, replace = TRUE, prob = p)
+    y <- cbind(rnorm(n), rnorm(n))
+    y <- y + mns[k, ]
+    code <- nimbleCode({
+        for(i in 1:n) {
+            y[i] ~ dpois(mu[k[i]])
+            k[i] ~ dcat(p[1:d])
+        }
+        for(j in 1:d) {
+            mu[j] ~ dnorm(mu0, sd = tau)
+        }
+        mu0 ~ dnorm(0, sd = 100)
+        tau ~ dhalfflat()
+        p[1:d] ~ ddirch(alpha[1:d])
+    })
+        # chnage to 1000
+    test_mcmc(model = code, seed = 1, numItsC = 20000, numItsC_results = 20000,
+              data = list(y = y, n = n, d = d),
+              inits = list(mu = cbind(rnorm(4), rnorm(4)), k = sample(1:4, n, replace = TRUE),
+                           p = rep(.25, 4), alpha = rep(1,4)),
+
+              )
+})

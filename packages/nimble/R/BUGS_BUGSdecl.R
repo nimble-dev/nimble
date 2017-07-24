@@ -241,10 +241,15 @@ BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNa
     if(!nimbleOptions()$allowDynamicIndexing) {
         rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) 
             if(length(x) == 1) as.character(x) else as.character(x[[2]])))
-    } else rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) {
-        x <- stripIndexWrapping(x) ## handles dynamic index wrapping
-        if(length(x) == 1) as.character(x) else as.character(x[[2]])
-    }))
+    } else {
+        ## This use of symbolicParentNodes and not symbolicParentNodesReplaced
+        ## deals with fact that 'd' inserted in front of digits in symbolicParentNodesReplaced
+        ## in naming when we have something like k[9-i] but not in symbolicParentNodes or in varInfo names
+        rhsVars <<- unlist(lapply(symbolicParentNodes[seq_along(symbolicParentNodesReplaced)],  function(x) {
+            x <- stripIndexWrapping(x) ## handles dynamic index wrapping
+            if(length(x) == 1) as.character(x) else as.character(x[[2]])
+        }))
+    }
 
     ## note that makeIndexNamePieces is designed only for indices that are a single name or number, a `:` operator with single name or number for each argument,
     ##     or an NA (for a dynamic index)
@@ -660,6 +665,12 @@ isDynamicIndex <- function(expr)
 stripIndexWrapping <- function(expr) 
     if(length(expr) == 1 || !usedInIndex(expr)) return(expr) else return(expr[[2]])
 
+isVectorIndex <- function(expr) {
+    if(isDynamicIndex(expr)) return(FALSE)
+    if(length(expr) > 1 && expr[[1]] == ":") return(TRUE)
+    return(FALSE)
+}
+
 detectNonscalarIndex <- function(expr) {
     if(usedInIndex(expr) || length(expr) == 1) return(FALSE)  ## first condition because recursion means that we might already have processed the dynamic index
     if(length(expr) == 2) {  ## this can occur if we have mu[k[j[i]]]
@@ -667,5 +678,6 @@ detectNonscalarIndex <- function(expr) {
         if(length(expr) <= 2)
             stop("detectNonscalarIndex: unexpected expression ", expr)
     }
-    return(max(sapply(expr[3:length(expr)], function(x) ifelse(isDynamicIndex(x), 1, length(x)))) > 1)
+    return(any(sapply(expr[3:length(expr)], isVectorIndex)))
+      ##  max(sapply(expr[3:length(expr)], function(x) ifelse(isDynamicIndex(x), 1, length(x)))) > 1)
 }
