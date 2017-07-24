@@ -17,7 +17,8 @@ require(nimble)
 NIMBLE supports several distributions to represent
 spatially dependent processes.  At present, these
 consist of variations of conditional autoregressive (CAR) model
-structures.
+structures. (In version \ver, only the improper intrinsic Gaussian CAR (ICAR) model is 
+provided but in our next release we expect to have a proper Gaussian CAR model as well.)
 
 NIMBLE provides BUGS distributions to represent these
 spatially-dependent model structures, as well as MCMC support for sampling them.
@@ -26,20 +27,15 @@ spatially-dependent model structures, as well as MCMC support for sampling them.
 
 \section{Intrinsic Gaussian CAR Model: \cd{dcar\_normal}}
 
-The intrinsic Gaussian conditional autoregressive (CAR) model for
+The intrinsic Gaussian conditional autoregressive (ICAR) model for
 spatially-dependent regions is implemented in NIMBLE as the \cd{dcar\_normal}
 distribution.
 
-{\color{red}CJP: Could you add some tehnical details here about the 
-  distribution itself, its impropriety, that you can't simulate from it, 
-  and only using it as a prior or for a latent process, etc?
-  
-Or anything else
-that serves as an appropriate introduction to the intrinsic CAR distribution?}
+ICAR models are improper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on CAR models, please see \citep{Rue_Held_2005}, \citep{Banerjee_etal_2015}, and \citep{Paciorek_2009}. Since the distribution is improper it should not be used as the distribution for data values, but rather to specify a prior for an unknown process. 
 
 \subsection{Specification and Density}
 
-NIMBLE uses the same parameterisation as WinBUGS / GeoBUGS for the \cd{dcar\_normal} distribution, providing 
+NIMBLE uses the same parameterization as WinBUGS / GeoBUGS for the \cd{dcar\_normal} distribution, providing 
 compatibility with existing WinBUGS code.  NIMBLE also provides the WinBUGS name \cd{car.normal} as an alias.
 
 \subsubsection*{Specification}
