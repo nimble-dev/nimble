@@ -832,14 +832,17 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
 #' @param tau scalar precision of the Gaussian CAR prior.
 #' @param c integer number of constraints to impose on the improper density function.  If omitted, \code{c} is calculated as the number of disjoint groups of spatial locations in the adjacency structure. Note that \code{c} should be equal to the number of eigenvalues of the precision matrix that are zero. For example if the neighborhood structure is based on a second-order Markov random field in one dimension has two zero eigenvalue and in two dimensinos has three zero eigenvalues. See Rue and Held (2005) for more information.
-#' @param zero_mean integer specifying whether to set the mean of all locations to zero during MCMC sampling (default \code{FALSE}).  If equal to \code{FALSE}, the overall process mean is included implicitly in the value of each location; if equal to \code{TRUE}, the mean of all locations is set to zero at each MCMC iteration, and a separate intercept term should be included in the model. Note that centering as implemented in NIMBLE follows the ad hoc approach of \pkg{WinBUGS} and does not sample under the constraint that the mean is zero as discussed on p. 36 of Rue and Held (2005). 
+#' @param zero_mean integer specifying whether to set the mean of all locations to zero during MCMC sampling (default \code{FALSE}).  If equal to \code{FALSE}, the overall process mean is included implicitly in the value of each location; if equal to \code{TRUE}, then during MCMC sampling, the mean of all locations is set to zero at each MCMC iteration, and a separate intercept term should be included in the model. Note that centering during MCMC as implemented in NIMBLE follows the ad hoc approach of \pkg{WinBUGS} and does not sample under the constraint that the mean is zero as discussed on p. 36 of Rue and Held (2005). 
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #'
 #' @author Daniel Turek
 #' 
 #' @details 
 #'
+#' Note that because the distribution is improper, \code{rcar_normal} does not generated a sample from the distribution, though as discussed in Rue and Held (2005), it is possible to generate a sample from the distribution under constraints imposed based on the eigenvalues of the precision matrix that are zero.
+#' 
 #' @return \code{dcar_normal} gives the density, and \code{rcar_normal} returns the current process values, since this distribution is improper.
+#' 
 #' @references
 #' Banerjee, S., Carlin, B.P., and Gelfand, A.E. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
 #'

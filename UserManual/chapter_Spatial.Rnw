@@ -31,7 +31,7 @@ The intrinsic Gaussian conditional autoregressive (ICAR) model for
 spatially-dependent regions is implemented in NIMBLE as the \cd{dcar\_normal}
 distribution.
 
-ICAR models are improper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on CAR models, please see \citep{Rue_Held_2005}, \citep{Banerjee_etal_2015}, and \citep{Paciorek_2009}. Since the distribution is improper it should not be used as the distribution for data values, but rather to specify a prior for an unknown process. 
+ICAR models are improper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on CAR models, please see \citep{Rue_Held_2005}, \citep{Banerjee_etal_2015}, and \citep{Paciorek_2009}. Since the distribution is improper it should not be used as the distribution for data values, but rather to specify a prior for an unknown process. As discussed in the references above, the distribution can be seen to be a proper density in a reduced dimension subspace; thus the impropriety only holds on one or more linear combinations of the latent process values. 
 
 \subsection{Specification and Density}
 
@@ -78,13 +78,11 @@ These conversions should be done in R, and the resulting \cd{adj}, \cd{weights},
 
 \subsubsection*{Density}
 
-For process values $x = (x_1, \ldots, x_N)$ and precsion $\tau$, the improper CAR density is given as:
+For process values $x = (x_1, \ldots, x_N)$ and precision $\tau$, the improper CAR density is given as:
 
-$$p(x, \tau) \propto \tau^{(N-c)/2} \; e^{ -\tfrac{\tau}{2} \sum_{i,j} w_{ij} \, (x_i-x_j)^2 }$$
+$$p(x | \tau) \propto \tau^{(N-c)/2} \; e^{ -\tfrac{\tau}{2} \sum_{i\ne j} w_{ij} \, (x_i-x_j)^2 }$$
 
-\noindent where the summation is taken over all $(i,j)$ pairs for which region $i$ is a neighbor of region $j$, with the weight between regions $i$ and $j$ given by $w_{ij}$.
-
-{\color{red}CJP: Do you want to add anything else here about the impropriety, or the role played by \cd{c}, the number of constraints?}
+\noindent where the summation over all $(i,j)$ pairs, with the weight between regions $i$ and $j$ given by $w_{ij}$, is equivalent to summing over all pairs for which region $i$ is a neighbor of region $j$.  Note that the value of $c$ modifies the power to which the precision is raised, accounting for the impropriety of the density based on the number of zero eigenvalues in the implicit precision matrix for $x$. 
 
 For the purposes of MCMC sampling the individual CAR process values, the resulting conditional prior of region $i$ is:
 
@@ -99,44 +97,47 @@ $$p(x_i | x_{-i}, \tau) \sim \text{Normal} \left( \tfrac{1}{w_{i+}} \textstyle\s
 NIMBLE's MCMC engine provides a sampler for performing sequential univariate updates on the components of a \cd{dcar\_normal} distribution.  The \cd{CAR\_normal} sampler internally assigns one of three specialized univariate samplers to each component, based on inspection of the model structure:
 
 \begin{enumerate}
-\item A conjugate sampler in the case of conjugate Normal dependencies
-\item A random walk Metropolis-Hastings sampler in the case of non-conjugate dependencies
-\item A posterior predictive sampler in the case of no dependencies
+\item A conjugate sampler in the case of conjugate Normal dependencies. 
+\item A random walk Metropolis-Hastings sampler in the case of non-conjugate dependencies.
+\item A posterior predictive sampler in the case of no dependencies.
 \end{enumerate}
 
 Note that these univariate CAR samplers are not the same as NIMBLE's standard \cd{conjugate}, \cd{RW}, and \cd{posterior\_predictive}  samplers, but rather specialized versions for operating on a CAR distribution.  Details of these assignments are strictly internal to the \cd{CAR\_normal} sampler.
 
+In future versions of NIMBLE we expect to provide block samplers that sample the entire vector $x$ as a single sample; this may provide improved MCMC performance by accounting for dependence between elements of $x$, particularly when conjugacy is available.
 
-\subsubsection*{Zero-Neighbor Regions}
+\subsubsection*{Regions with No Neighbors}
 
 Regions with no neighbors (defined by a 0 appearing in the \cd{num} parameter) are a special case.  The corresponding neighborhood $\mathcal{N}$ contains no elements, and hence the conditional prior is improper and uninformative, tantamount to a \cd{dflat} prior distribution.  Thus, the posterior distribution is entirely determined by the dependent nodes, if any.  Sampling of these zero-neighbor regions proceeds as:
 
 \begin{itemize}
 \item In the conjugate case, sampling proceeds according to the conjugate posterior.
 \item In the non-conjugate case, sampling proceeds using random walk Metropolis-Hastings, where the posterior is determined entirely by the dependencies.
-\item In the case of no dependents, the posterior is entirely undefined.  Here, no changes will be made to the process value, and it will remain equal to its initial value throughout.  By virture of having no neighbors, this region does not contribute to the density evaluation of the CAR node nor to the conditional prior of any other regions, hence it's value (even \cd{NA}) is of no consequence.
+\item In the case of no dependents, the posterior is entirely undefined.  Here, no changes will be made to the process value, and it will remain equal to its initial value throughout.  By virture of having no neighbors, this region does not contribute to the density evaluation of the CAR node nor to the conditional prior of any other regions, hence its value (even \cd{NA}) is of no consequence.
 \end{itemize}
 
-This behaviour is different from that of WinBUGS, where the value of zero-neighbor regions is set to and fixed at zero.
+This behavior is different from that of WinBUGS, where the value of zero-neighbor regions is set to and fixed at zero.
 
 
 \subsubsection*{Initial Values}
 
-Valid initial values should be provided for all elements of the CAR process prior to MCMC sampling.  This ensures that the conditional prior distribution is well-defined for each region.  A simple and safe choice of initial values is setting all components of the process equal to zero, as is done in the example.
+Valid initial values should be provided for all elements of the process specified by a CAR structure before running an MCMC.  This ensures that the conditional prior distribution is well-defined for each region.  A simple and safe choice of initial values is setting all components of the process equal to zero, as is done in the example.
 
-For compatibility with WinBUGS, NIMBLE also allows an initial value of \cd{NA} to be provided for zero-neighbor regions.  This particular initalisation is required in WinBUGS, so all existing WinBUGS code will follow this practise.
+For compatibility with WinBUGS, NIMBLE also allows an initial value of \cd{NA} to be provided for zero-neighbor regions.  This particular initialization is required in WinBUGS, so this allows users to make use of existing WinBUGS code.
 
 
 \subsubsection*{Zero-Mean Constraint}
  
-The zero-mean constraint on CAR process values is imposed during MCMC sampling, if the argument \cd{zero\_mean = 1}.  Following the univariate updates on each component, the mean is subtracted away from all process values, resulting in a zero-mean process.
+The zero-mean constraint on CAR process values is imposed during MCMC sampling, if the argument \cd{zero\_mean = TRUE}, mimicing the behavior of WinBUGS.  Following the univariate updates on each component, the mean is subtracted away from all process values, resulting in a zero-mean process.
 
+Note that this is \emph{not} equivalent to sampling under the constraint that the mean is zero (see p. 36 of \citep{Rue_Held_2005}) so should be treated as an ad hoc approach and employed with caution. 
 
+When the constraint is not imposed, the mean of the process is implicit in the process values, with an implicit improper flat prior on the mean. 
 
 
 \subsection{Example}
 
-Here we provide an example model using the intrinsic Gaussian \cd{dcar\_normal} distribution.  We specify \cd{zero\_mean = 1} to enforce a zero-mean constraint on the CAR process, and therefore include a separate intercept term \cd{alpha} in the model.  The CAR process values are used in a spatially-dependent Poisson regression.
+Here we provide an example model using the intrinsic Gaussian \cd{dcar\_normal} distribution.  We specify \cd{zero\_mean = TRUE} to enforce a zero-mean constraint on the CAR process, and therefore include a separate intercept term \cd{alpha} in the model.  The CAR process values are used in a spatially-dependent Poisson regression.
 
 <<dcar_normal_Chunk, results = "hide", message = FALSE>>=
 code <- nimbleCode({
@@ -145,7 +146,7 @@ code <- nimbleCode({
     tau ~ dgamma(0.001, 0.001)
     for(k in 1:L)
         weights[k] <- 1
-    s[1:N] ~ dcar_normal(adj[1:L], weights[1:L], num[1:N], tau, zero_mean=1)
+    s[1:N] ~ dcar_normal(adj[1:L], weights[1:L], num[1:N], tau, zero_mean = TRUE)
     for(i in 1:N) {
         log(lambda[i]) <- alpha + beta*x[i] + s[i]
         y[i] ~ dpois(lambda[i])
@@ -163,7 +164,7 @@ Rmodel <- nimbleModel(code, constants, data, inits)
 @
   
 The resulting model may be carried through to MCMC sampling (see chapter \ref{cha:mcmc}).
-
+NIMBLE will assign appropriate default MCMC samplers to the elements of $x$.
 
   
     
