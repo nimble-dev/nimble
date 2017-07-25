@@ -7,13 +7,13 @@ ifndef R_SHARE_DIR
  R_SHARE_DIR=$(R_HOME)/share
 endif
 
-## include raw package Makeconf first so that if subsequent removal of -g flags fails locally, raw Makeconf settings will be in place
-## Actually, this include makes OS X scream warnings about over-ridden make settings from second include below
-#-include $(R_HOME)/etc$(R_ARCH)/Makeconf
-# Don't have to succeed in including this if we are calling cleanup in the nimble package directory.
-# Following two lines result in much smaller libnimble.a or equivalent by removing -g flags
+# The following two lines attempt to reduce the size of libnimble.a or equivalent by removing -g flags.
+# It is OK if the R script silently fails; in that case Makeconf will simply not be found.
+# Note that we don't precede this with a fallback `-include $(R_HOME)/etc$(R_ARCH)/Makeconf`,
+# since that causes "make variable override" warnings on OS X.
 $(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
 -include ./Makeconf
+
 include ./Makevars
 
 ifndef OS
