@@ -832,13 +832,15 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
 #' @param tau scalar precision of the Gaussian CAR prior.
 #' @param c integer number of constraints to impose on the improper density function.  If omitted, \code{c} is calculated as the number of disjoint groups of spatial locations in the adjacency structure. Note that \code{c} should be equal to the number of eigenvalues of the precision matrix that are zero. For example if the neighborhood structure is based on a second-order Markov random field in one dimension has two zero eigenvalue and in two dimensinos has three zero eigenvalues. See Rue and Held (2005) for more information.
-#' @param zero_mean integer specifying whether to set the mean of all locations to zero during MCMC sampling (default \code{0}).  If equal to \code{0}, the overall process mean is included implicitly in the value of each location; if equal to \code{1}, then during MCMC sampling, the mean of all locations is set to zero at each MCMC iteration, and a separate intercept term should be included in the model. Note that centering during MCMC as implemented in NIMBLE follows the ad hoc approach of \pkg{WinBUGS} and does not sample under the constraint that the mean is zero as discussed on p. 36 of Rue and Held (2005).
+#' @param zero_mean integer specifying whether to set the mean of all locations to zero during MCMC sampling (default \code{FALSE}).  If \code{FALSE}, the overall process mean is included implicitly in the value of each location; if \code{TRUE}, then during MCMC sampling, the mean of all locations is set to zero at each MCMC iteration, and a separate intercept term should be included in the model. Note that centering during MCMC as implemented in NIMBLE follows the ad hoc approach of \pkg{WinBUGS} and does not sample under the constraint that the mean is zero as discussed on p. 36 of Rue and Held (2005).  See details.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #'
 #' @author Daniel Turek
 #' 
 #' @details 
 #'
+#' When specifying a CAR distribution in BUGS model code, the \cd{zero_mean} parameter should be specified as either 0 or 1 (rather than TRUE or FALSE).
+#' 
 #' Note that because the distribution is improper, \code{rcar_normal} does not generated a sample from the distribution, though as discussed in Rue and Held (2005), it is possible to generate a sample from the distribution under constraints imposed based on the eigenvalues of the precision matrix that are zero.
 #' 
 #' @return \code{dcar_normal} gives the density, and \code{rcar_normal} returns the current process values, since this distribution is improper.
