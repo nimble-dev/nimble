@@ -8,7 +8,7 @@ autoBlock(Rmodel, autoIt = 20000, run = list("all", "default"),
   setSeed = TRUE, verbose = FALSE, makePlots = FALSE, round = TRUE)
 }
 \arguments{
-\item{Rmodel}{A NIMBLE model object, created from \link{nimbleModel}.}
+\item{Rmodel}{A NIMBLE model object, created from \code{\link{nimbleModel}}.}
 
 \item{autoIt}{The number of MCMC iterations to run intermediate MCMC algorithms, through the course of the procedure.  Default 20,000.}
 

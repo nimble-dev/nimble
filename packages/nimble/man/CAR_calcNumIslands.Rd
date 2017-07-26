@@ -2,11 +2,19 @@
 % Please edit documentation in R/CAR.R
 \name{CAR_calcNumIslands}
 \alias{CAR_calcNumIslands}
-\title{Calculate number of islands (non-recursive nimbleFunction version).}
+\title{Calculate number of islands (distinct connected groups) of CAR adjacency matrix.}
 \usage{
 CAR_calcNumIslands(adj, num)
 }
+\arguments{
+\item{adj}{vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.}
+
+\item{num}{vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.}
+}
 \description{
-Calculate number of islands (non-recursive nimbleFunction version).
+Calculate number of islands (distinct connected groups) of CAR adjacency matrix.
+}
+\author{
+Daniel Turek
 }
 
