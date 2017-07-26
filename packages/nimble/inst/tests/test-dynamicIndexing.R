@@ -4,6 +4,9 @@ context("Testing of dynamic indexing")
 
 source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = 'nimble'))
 
+## check variations on use of dynamic indexing in BUGS code including building and compiling,
+## dependencies, and valid and invalid dynamic index values
+
 ans1 <- sapply(testsDynIndex, test_dynamic_indexing_model)
 ans2 <- sapply(testsInvalidDynIndex, test_dynamic_indexing_model)
 ans3 <- sapply(testsInvalidDynIndexExpectedFailures, test_dynamic_indexing_model)
@@ -144,7 +147,7 @@ test_that('cervix model and MCMC test', {
 })
 
 ## There are some issues with using the model as provided in the BUGS example because of use of zeros
-## to exclude categories in dirichlet-distributed vector.
+## to exclude categories in dirichlet-distributed vector, therefore recreate BUGS code here.
 test_that('biops model and MCMC test', {
     system.in.dir(paste("echo 'var\n
     biopsies[ns,4], #  grades observed in ith session (multinomial)\n
@@ -202,22 +205,22 @@ test_that('basic mixture model with conjugacy', {
               inits = list(sigma = rep(1,4), mu = c(-1, 0, 1, 2),
                            p = rep(.25, 4), k = sample(1:4, n, replace = TRUE),
                            mu0 = 0, a = 1, b = 1, tau = 1, alpha = rep(1, 4)),
-              results = list(mean = list("mu[1]" = mns[3],
-                                         "mu[2]" = mns[4],
-                                         "mu[3]" = mns[1],
-                                         "mu[4]" = mns[2],
-                                         "p[1]" = p[3],
-                                         "p[2]" = p[4],
-                                         "p[3]" = p[1],
-                                         "p[4]" = p[2])),
-              resultsTolerance = list("mu[1]" = .7,
-                                      "mu[2]" = .02,
-                                      "mu[3]" = .02,
-                                      "mu[4]" = .3,
-                                      "p[1]" = .08,
-                                      "p[2]" = .02,
-                                      "p[3]" = .05,
-                                      "p[4]" = .05)
+              results = list(mean = list("mu_1" = mns[3],
+                                         "mu_2" = mns[4],
+                                         "mu_3" = mns[1],
+                                         "mu_4" = mns[2],
+                                         "p_1" = p[3],
+                                         "p_2" = p[4],
+                                         "p_3" = p[1],
+                                         "p_4" = p[2])),
+              resultsTolerance = list(mean = list("mu_1" = .7,
+                                                  "mu_2" = .02,
+                                                  "mu_3" = .02,
+                                                  "mu_4" = .3,
+                                                  "p_1" = .08,
+                                                  "p_2" = .02,
+                                                  "p_3" = .05,
+                                                  "p_4" = .05))
               )
 })
 
@@ -240,7 +243,8 @@ test_that('basic mixture model without conjugacy', {
         tau ~ dhalfflat()
         p[1:d] ~ ddirch(alpha[1:d])
     })
-    test_mcmc(model = code, seed = 1, numItsC_results = 20000,
+    test_mcmc(name = 'basic mixture model without conjugacy',
+              model = code, seed = 1, numItsC_results = 20000,
               data = list(d=d,n=n,y=y),
               inits = list(mu = rep(3, 4),
                            p = rep(.25, 4), k = sample(1:4, n, replace = TRUE),
@@ -253,43 +257,63 @@ test_that('basic mixture model without conjugacy', {
                                          "p[2]" = p[4],
                                          "p[3]" = p[2],
                                          "p[4]" = p[1])),
-              resultsTolerance = list("mu[1]" = .5,
-                                      "mu[2]" = 1,
-                                      "mu[3]" = 1.5,
-                                      "mu[4]" = 2,
-                                      "p[1]" = .03,
-                                      "p[2]" = .15,
-                                      "p[3]" = .05,
-                                      "p[4]" = .15)
+              resultsTolerance = list(mean = list("mu[1]" = .5,
+                                                  "mu[2]" = 1,
+                                                  "mu[3]" = 1.5,
+                                                  "mu[4]" = 2,
+                                                  "p[1]" = .03,
+                                                  "p[2]" = .15,
+                                                  "p[3]" = .05,
+                                                  "p[4]" = .15))
               )
 })
 
-# HERE
 test_that('basic multivariate mixture model with conjugacy', {
     n <- 1000; d <- 4
     set.seed(2)
-    mns <- cbind(c(1, 1, -1, -1), c(1, -1, 1, -1))
+    mns <- cbind(c(1.5, 1.5, -1.5, -1.5), c(1.5, -1.5, 1.5, -1.5))
     p <- c(.45, .14, .05, .36)
     k <- sample(1:d, n, replace = TRUE, prob = p)
     y <- cbind(rnorm(n), rnorm(n))
     y <- y + mns[k, ]
     code <- nimbleCode({
         for(i in 1:n) {
-            y[i] ~ dpois(mu[k[i]])
+            y[i, 1:2] ~ dmnorm(mu[k[i], 1:2], pr[1:2, 1:2])
             k[i] ~ dcat(p[1:d])
         }
-        for(j in 1:d) {
-            mu[j] ~ dnorm(mu0, sd = tau)
+        for(i in 1:d) {
+                mu[i, 1:2] ~ dmnorm(z[1:2], pr0[1:2, 1:2])
         }
-        mu0 ~ dnorm(0, sd = 100)
-        tau ~ dhalfflat()
+        pr[1, 1] ~ dhalfflat()
+        pr[2, 2] ~ dhalfflat()
+        pr[1, 2] <- 0
+        pr[2, 1] <- 0
         p[1:d] ~ ddirch(alpha[1:d])
     })
-        # chnage to 1000
-    test_mcmc(model = code, seed = 1, numItsC = 20000, numItsC_results = 20000,
-              data = list(y = y, n = n, d = d),
+    test_mcmc(name = 'basic multivariate mixture model with conjugacy',
+              model = code, seed = 1, numItsC_results = 20000,
+              data = list(y = y, z = rep(0, 2), pr0 = diag(rep(1e-4, 2)), n = n, d = d),
               inits = list(mu = cbind(rnorm(4), rnorm(4)), k = sample(1:4, n, replace = TRUE),
-                           p = rep(.25, 4), alpha = rep(1,4)),
-
+                           p = rep(.25, 4), alpha = rep(1,4), pr = diag(2)),
+              results = list(mean = list("mu[1, 1]" = mns[2,1], "mu[1, 2]" = mns[2,2], 
+                                         "mu[2, 1]" = mns[3,1], "mu[2, 2]" = mns[3,2],
+                                         "mu[3, 1]" = mns[1,1], "mu[3, 2]" = mns[1,2],
+                                         "mu[4, 1]" = mns[4,1], "mu[4, 2]" = mns[4,2],
+                                         "p[1]" = p[2],
+                                         "p[2]" = p[3],
+                                         "p[3]" = p[1],
+                                         "p[4]" = p[4],
+                                         "pr[1, 1]" = 1,
+                                         "pr[2, 2]" = 1)),
+              resultsTolerance = list(mean = list("mu[1, 1]" = .2, "mu[1, 2]" = .1, 
+                                         "mu[2, 1]" = .6, "mu[2, 2]" = .05,
+                                         "mu[3, 1]" = .05, "mu[3, 2]" = .1,
+                                         "mu[4, 1]" = .05, "mu[4, 2]" = .2,
+                                         "p[1]" = .04,
+                                         "p[2]" = .01,
+                                         "p[3]" = .01,
+                                         "p[4]" = .03,
+                                         "pr[1, 1]" = .1,
+                                         "pr[2, 2]" = .1)),
               )
 })

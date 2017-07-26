@@ -530,14 +530,16 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
           CmvSample <- nfVar(Cmcmc, 'mvSamples')
           C_samples <- as.matrix(CmvSample)
           ## for some reason columns in different order in CmvSample...
-          C_subSamples <- C_samples[seq_len(numItsR), attributes(R_samples)$dimnames[[2]], drop = FALSE]
+          if(doR)
+              C_subSamples <- C_samples[seq_len(numItsR), attributes(R_samples)$dimnames[[2]], drop = FALSE]
       }
 
       if(doR && doCpp && !is.null(R_samples)) {
           testIfNotKnownFailure(knownFailures[['R C samples match']],
                                 expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal")))
       }
-      testIfNotKnownFailure(knownFailures[['R MCMC']],
+      if(doR)
+          testIfNotKnownFailure(knownFailures[['R MCMC']],
                             expect_false(is.null(R_samples), info = "R MCMC failed") )
 
       if(doCpp) {
@@ -577,7 +579,7 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
         for(varName in names(results[[metric]])) {
           varName <- gsub("_([0-9]+)", "\\[\\1\\]", varName) # allow users to use theta_1 instead of "theta[1]" in defining their lists
           samplesNames <- dimnames(C_samples)[[2]]
-          if(!grepl(varName, "\\[", fixed = TRUE))
+          if(!grepl("\\[", varName, fixed = TRUE))
              samplesNames <- gsub("\\[.*\\]", "", samplesNames)
           matched <- which(varName == samplesNames)
           diff <- abs(postResult[matched] - results[[metric]][[varName]])
