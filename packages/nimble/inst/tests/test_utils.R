@@ -577,11 +577,11 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
       if(metric != 'cov') {
         postResult <- apply(C_samples, 2, metric)
         for(varName in names(results[[metric]])) {
-          varName <- gsub("_([0-9]+)", "\\[\\1\\]", varName) # allow users to use theta_1 instead of "theta[1]" in defining their lists
           samplesNames <- dimnames(C_samples)[[2]]
-          if(!grepl("\\[", varName, fixed = TRUE))
-             samplesNames <- gsub("\\[.*\\]", "", samplesNames)
+          if(!grepl("[", varName, fixed = TRUE))
+              samplesNames <- gsub("\\[.*\\]", "", samplesNames)
           matched <- which(varName == samplesNames)
+          print(paste0("matching: ", matched)) ## FIXME
           diff <- abs(postResult[matched] - results[[metric]][[varName]])
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
@@ -889,11 +889,11 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
           else
             postResult <- apply(C_samples, 2, metric)
           for(varName in names(results[[metric]])) {
-            varName <- gsub("_([0-9]+)", "\\[\\1\\]", varName) # allow users to use theta_1 instead of "theta[1]" in defining their lists
             samplesNames <- dimnames(C_samples)[[2]]
-            if(!grepl(varName, "\\[", fixed = TRUE))
+            if(!grepl(varName, "[", fixed = TRUE))
               samplesNames <- gsub("\\[.*\\]", "", samplesNames)
             matched <- which(varName == samplesNames)
+          print(paste0("matching: ", matched)) ## FIXME
             diff <- abs(postResult[matched] - results[[metric]][[varName]])
             for(ind in seq_along(diff)) {
               strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
