@@ -547,13 +547,13 @@ testsInvalidDynIndex <- list(
         inits = list(mu = rnorm(5)),
         expectError = TRUE,
         expectErrorMsg = "arguments that cannot be evaluated"
-    ),
+    )
 )
 
 
 ## These are cases NIMBLE fails on that we are aware of. XFAIL should be reported.
-testsInvalidDynIndexExpectedFailures <- list(
-    list(  # This should pass with correct error trapping but it does not because we don't test bounds for nested index, d[i], so failure occurs in R execution (C execution fails gracefully because of how C++ handles k[d[0]].
+testsInvalidDynIndexValue <- list(
+    list(  # This correctly finds errors in nested index, but in R execution it fails non-gracefully.  (C execution fails gracefully because of how C++ handles k[d[0]].
         case = 'dynamic index multiple input functional, multiple indexing, with invalid nested index',
         code = nimbleCode({
             for(i in 1:4) {
@@ -567,10 +567,9 @@ testsInvalidDynIndexExpectedFailures <- list(
             for(i in 1:4)
                 k[i] ~ dcat(p[1:5])
         }), 
-        inits = list(mu = array(rnorm(120), c(5,3,8)), k = rep(1,4), j = rep(1, 4), d = rep(1,4)),
+        inits = list(mu = array(rnorm(120), c(5,3,8)), k = rep(1,4), j = rep(1, 4), d = rep(1,4), p = rep(1/5, 5)),
         data = list(y = rnorm(4)),
-        invalidIndexes =list(list(var = c('d[1]', 'k[1]','j[1]'), value = c(5,4,4))),
-        expectFailure = TRUE
+        invalidIndexes =list(list(var = c('d[1]', 'k[1]','j[1]'), value = c(5,4,4)))
     )
 )
 

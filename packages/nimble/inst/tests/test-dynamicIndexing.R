@@ -9,7 +9,7 @@ source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = '
 
 ans1 <- sapply(testsDynIndex, test_dynamic_indexing_model)
 ans2 <- sapply(testsInvalidDynIndex, test_dynamic_indexing_model)
-ans3 <- sapply(testsInvalidDynIndexExpectedFailures, test_dynamic_indexing_model)
+ans3 <- sapply(testsInvalidDynIndexValue, test_dynamic_indexing_model)
 
 ## check conjugacy detection
 
@@ -35,6 +35,7 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                           inits = list(k = rep(1,4)))
           conf <- configureMCMC(m)
           expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
+
                        info = "incorrectly detected conjugacy")
           code = nimbleCode({
               for(i in 1:4) 
