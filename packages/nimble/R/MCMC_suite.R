@@ -189,7 +189,7 @@ MCMCsuite <- function(
 #' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 #' Trace plots and density plots for the MCMC samples may also be generated and saved.
 #'
-#' @seealso \link{MCMCsuite}
+#' @seealso \code{\link{MCMCsuite}}
 #' 
 #' @author Daniel Turek
 #' @export

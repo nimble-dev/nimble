@@ -3,6 +3,18 @@ require(testthat)
 require(methods)
 require(nimble)
 
+## These make it clear that error messages are expected.
+expect_failure <- function(...) {
+    cat('BEGIN XFAIL\n', file = stderr())
+    testthat:::expect_failure(...)
+    cat('END XFAIL\n', file = stderr())
+}
+expect_error <- function(...) {
+    cat('BEGIN XFAIL\n', file = stderr())
+    testthat:::expect_error(...)
+    cat('END XFAIL\n', file = stderr())
+}
+
 ## Mark tests that are know to fail with `if(RUN_FAILING_TESTS)`.
 ## By default these tests will not be run, but we will occasionally clean up by running them with
 ## $ RUN_FAILING_TESTS=1 Rscript test-my-stuff.R
@@ -332,7 +344,7 @@ wrap_if_matches <- function(pattern, string, wrapper, expr) {
 test_math <- function(param, caseName, verbose = TRUE, size = 3, dirName = NULL) {
     info <- paste0(caseName, ': ', param$name)
     test_that(info, {
-        wrap_if_matches(param$xfail, paste0(info, ': runs'), expect_error, {
+        wrap_if_matches(param$xfail, paste0(info, ': compiles and runs'), expect_error, {
             test_math_internal(param, info, verbose, size, dirName)
         })
     })
@@ -979,7 +991,7 @@ test_size <- function(input, verbose = TRUE) {
         calculate(m)  ## Calculates from scratch.
         calculate(m)  ## Uses cached value.
     })
-    message = paste(input$name, 'with RHS', ifelse(input$expectPass, 'works', 'fails'), 'as expected')
+    message = paste(input$name, 'with RHS variable', ifelse(input$expectPass, 'works', 'fails'), 'as expected')
     if (input$knownProblem) message = paste(message, 'marked as KNOWN ISSUE')
     if(xor(input$expectPass, input$knownProblem)) {
         test_that(message, eval(code))
@@ -993,7 +1005,7 @@ test_size <- function(input, verbose = TRUE) {
         calculate(m)  ## Calculates from scratch.
         calculate(m)  ## Uses cached value.
     })
-    message = paste(input$name, 'with RHS', ifelse(input$expectPassWithConst, 'works', 'fails'), 'as expected')
+    message = paste(input$name, 'with RHS constant', ifelse(input$expectPassWithConst, 'works', 'fails'), 'as expected')
     if (input$knownProblemWithConst) message = paste(message, 'marked as KNOWN ISSUE')
     if(xor(input$expectPassWithConst, input$knownProblemWithConst)) {
         test_that(message, eval(code))

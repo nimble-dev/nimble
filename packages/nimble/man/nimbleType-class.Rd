@@ -13,13 +13,13 @@
 \item{dim}{The dimension of the object, given as an integer.  This can be left blank if the object is a nimbleList.}
 }
 \description{
-create a nimbleType object, with information on the name, type, and dimension of an object to be placed in a \link{nimbleList}
+Create a nimbleType object, with information on the name, type, and dimension of an object to be placed in a \code{\link{nimbleList}}.
 }
 \details{
-This function creates \code{nimbleType} objects, which can be used to define the elements of a \link{nimbleList}.  
+This function creates \code{nimbleType} objects, which can be used to define the elements of a \code{\link{nimbleList}}.  
 
 The \code{type} argument can be chosen from among \code{character}, \code{double}, \code{integer}, and \code{logical},
-or can be the name of a previously created \link{nimbleList} definition.
+or can be the name of a previously created \code{\link{nimbleList} definition}.
 
 See the NIMBLE User Manual for additional examples.
 }

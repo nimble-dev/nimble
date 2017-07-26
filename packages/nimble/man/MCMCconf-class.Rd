@@ -19,8 +19,8 @@
 \alias{setThin2}
 \title{Class \code{MCMCconf}}
 \description{
-Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \link{configureMCMC}.
-Given an MCMCconf object, the actual MCMC function can be built by calling \link{buildMCMC}\code{(conf)}.
+Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \code{\link{configureMCMC}}.
+Given an MCMCconf object, the actual MCMC function can be built by calling \code{\link{buildMCMC}(conf)}.
 See documentation below for method initialize() for details of creating an MCMCconf object.
 }
 \section{Methods}{
@@ -56,10 +56,7 @@ target: The target node or nodes to be sampled.  This may be specified as a char
 
 type: The type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type='newSamplerType', then either newSamplerType or sampler_newSamplertype must correspond to a nimbleFunction (i.e. a function returned by nimbleFunction, not a specialized nimbleFunction).  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the 'name' argument may also be supplied to provide a meaningful name for this sampler.  The default value is 'RW' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if 'target' specifies more than one target node.
 
-control: A list of control arguments specific to the sampler function.
-These will override the defaults provided in the NIMBLE system option 'MCMCcontrolDefaultList', and any specified in the control list argument to configureMCMC().
-An error results if the sampler function requires any control elements which are 
-not present in this argument, the control list argument to configureMCMC(), or in the NIMBLE system option 'MCMCcontrolDefaultList'.
+control: A list of control arguments specific to the sampler function. These will override those specified in the control list argument to configureMCMC().
 
 print: Logical argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
 
@@ -108,9 +105,8 @@ If missing, the default value is all non-data stochastic nodes.
 If NULL, then no samplers are added.
 
 control: An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
-For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements 'adaptive', 'adaptInterval', 'scale', 
-and also 'targetNode' however this should not generally be provided as a control list element to configureMCMC().
-The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC) are in the NIMBLE system option 'MCMCcontrolDefaultList'.
+For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements 'adaptive', 'adaptInterval', 'scale'.
+The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() or addSampler()) are contained in the setup code of each sampling algorithm.
 
 monitors: A character vector of node names or variable names, to record during MCMC sampling.
 This set of monitors will be recorded with thinning interval 'thin', and the samples will be stored into the 'mvSamples' object.
@@ -147,8 +143,6 @@ Details: See the initialize() function
 Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers('x') will print all samplers whose target is model node 'x', or whose targets are contained (entirely or in part) in the model variable 'x'.  If omitted, then all samplers are printed.
-
-displayControlDefaults: A logical argument, specifying whether to display default values of control list elements (default FALSE).
 
 displayConjugateDependencies: A logical argument, specifying whether to display the dependency lists of conjugate samplers (default FALSE).
 

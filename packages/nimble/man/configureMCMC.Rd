@@ -12,7 +12,7 @@ configureMCMC(model, nodes, control = list(), monitors, thin = 1,
   warnNoSamplerAssigned = TRUE, ...)
 }
 \arguments{
-\item{model}{A NIMBLE model object, created from \link{nimbleModel}}
+\item{model}{A NIMBLE model object, created from \code{\link{nimbleModel}}}
 
 \item{nodes}{An optional character vector, specifying the nodes and/or variables for which samplers should be created.
 Nodes may be specified in their indexed form, \code{y[1, 3]}.  Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]}, \code{x[2]}, etc.
@@ -22,7 +22,7 @@ If NULL, then no samplers are added.}
 \item{control}{An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
 For example, the standard Metropolis-Hastings random walk sampler (\link{sampler_RW}) utilizes control list elements \code{adaptive}, \code{adaptInterval}, and \code{scale}.
 (Internally it also uses \code{targetNode}, but this should not generally be provided as a control list element).
-The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are in the NIMBLE system option \code{MCMCcontrolDefaultList}.}
+The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are in the setup code of the sampling algorithms.}
 
 \item{monitors}{A character vector of node names or variable names, to record during MCMC sampling.
 This set of monitors will be recorded with thinning interval \code{thin}, and the samples will be stored into the \code{mvSamples} object.
@@ -57,7 +57,7 @@ The default value is an empty character vector, i.e. no values will be recorded.
 \item{...}{Additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}}
 }
 \description{
-Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \link{buildMCMC}. The assignment of sampling algorithms may be controlled using the \code{rules} argument, if provided.
+Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \code{\link{buildMCMC}}. The assignment of sampling algorithms may be controlled using the \code{rules} argument, if provided.
 }
 \details{
 See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object

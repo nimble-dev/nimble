@@ -14,6 +14,8 @@
 #' and (the second) a list of numeric vectors giving the un-normalized weights
 #' for each of these neighboring relationships.
 #'
+#' @param ... Either: a symmetric matrix of un-normalized weights, or two lists specifying adjacency indices and the corresponding un-normalized weights.
+#'
 #' @author Daniel Turek
 #' @export
 as.carAdjacency <- function(...) {
@@ -148,9 +150,13 @@ CAR_checkNeighborIndWeightLists <- function(neighborIndList, neighborWeightList,
 ##)
 
 
-##' Calculate number of islands (non-recursive nimbleFunction version).
-##'
-##' @export
+#' Calculate number of islands (distinct connected groups) of CAR adjacency matrix.
+#' 
+#' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
+#' 
+#' @author Daniel Turek
+#' @export
 CAR_calcNumIslands <- nimbleFunction(
     name = 'CAR_calcNumIslands',
     run = function(adj = double(1), num = double(1)) {

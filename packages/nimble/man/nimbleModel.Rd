@@ -10,7 +10,7 @@ nimbleModel(code, constants = list(), data = list(), inits = list(),
   name, userEnv = parent.frame())
 }
 \arguments{
-\item{code}{code for the model in the form returned by \link{nimbleCode} or (equivalently) \code{quote}}
+\item{code}{code for the model in the form returned by \code{\link{nimbleCode}} or (equivalently) \code{quote}}
 
 \item{constants}{named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.}
 

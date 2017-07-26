@@ -8,7 +8,7 @@
 #'
 #' @seealso configureMCMC buildMCMC
 #'
-#' @param Rmodel A NIMBLE model object, created from \link{nimbleModel}.
+#' @param Rmodel A NIMBLE model object, created from \code{\link{nimbleModel}}.
 #'
 #' @param autoIt The number of MCMC iterations to run intermediate MCMC algorithms, through the course of the procedure.  Default 20,000.
 #'
