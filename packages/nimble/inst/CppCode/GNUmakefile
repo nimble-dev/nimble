@@ -11,8 +11,8 @@ endif
 # It is OK if the R script silently fails; in that case Makeconf will simply not be found.
 # Note that we don't precede this with a fallback `-include $(R_HOME)/etc$(R_ARCH)/Makeconf`,
 # since that causes "make variable override" warnings on OS X.
-$(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
--include ./Makeconf
+##$(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
+##-include ./Makeconf
 
 include ./Makevars
 
