@@ -581,7 +581,6 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
           if(!grepl("[", varName, fixed = TRUE))
               samplesNames <- gsub("\\[.*\\]", "", samplesNames)
           matched <- which(varName == samplesNames)
-          print(paste0("matching: ", matched)) ## FIXME
           diff <- abs(postResult[matched] - results[[metric]][[varName]])
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
@@ -893,7 +892,6 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
             if(!grepl(varName, "[", fixed = TRUE))
               samplesNames <- gsub("\\[.*\\]", "", samplesNames)
             matched <- which(varName == samplesNames)
-          print(paste0("matching: ", matched)) ## FIXME
             diff <- abs(postResult[matched] - results[[metric]][[varName]])
             for(ind in seq_along(diff)) {
               strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")

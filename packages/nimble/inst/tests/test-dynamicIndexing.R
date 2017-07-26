@@ -205,22 +205,22 @@ test_that('basic mixture model with conjugacy', {
               inits = list(sigma = rep(1,4), mu = c(-1, 0, 1, 2),
                            p = rep(.25, 4), k = sample(1:4, n, replace = TRUE),
                            mu0 = 0, a = 1, b = 1, tau = 1, alpha = rep(1, 4)),
-              results = list(mean = list("mu_1" = mns[3],
-                                         "mu_2" = mns[4],
-                                         "mu_3" = mns[1],
-                                         "mu_4" = mns[2],
-                                         "p_1" = p[3],
-                                         "p_2" = p[4],
-                                         "p_3" = p[1],
-                                         "p_4" = p[2])),
-              resultsTolerance = list(mean = list("mu_1" = .7,
-                                                  "mu_2" = .02,
-                                                  "mu_3" = .02,
-                                                  "mu_4" = .3,
-                                                  "p_1" = .08,
-                                                  "p_2" = .02,
-                                                  "p_3" = .05,
-                                                  "p_4" = .05))
+              results = list(mean = list("mu[1]" = mns[3],
+                                         "mu[2]" = mns[4],
+                                         "mu[3]" = mns[1],
+                                         "mu[4]" = mns[2],
+                                         "p[1]" = p[3],
+                                         "p[2]" = p[4],
+                                         "p[3]" = p[1],
+                                         "p[4]" = p[2])),
+              resultsTolerance = list(mean = list("mu[1]" = .7,
+                                                  "mu[2]" = .02,
+                                                  "mu[3]" = .02,
+                                                  "mu[4]" = .3,
+                                                  "p[1]" = .08,
+                                                  "p[2]" = .02,
+                                                  "p[3]" = .05,
+                                                  "p[4]" = .05))
               )
 })
 
@@ -284,8 +284,12 @@ test_that('basic multivariate mixture model with conjugacy', {
         for(i in 1:d) {
                 mu[i, 1:2] ~ dmnorm(z[1:2], pr0[1:2, 1:2])
         }
-        pr[1, 1] ~ dhalfflat()
-        pr[2, 2] ~ dhalfflat()
+        ## if put a positive prior on diag elements directly can get negative samples and
+        ## failure in R MCMC because of Cholesky
+        myvars[1] ~ dunif(-2, 4)
+        myvars[2] ~ dunif(-2, 4)
+        pr[1, 1] <- exp(myvars[1])
+        pr[2, 2] <- exp(myvars[2])
         pr[1, 2] <- 0
         pr[2, 1] <- 0
         p[1:d] ~ ddirch(alpha[1:d])
@@ -294,7 +298,7 @@ test_that('basic multivariate mixture model with conjugacy', {
               model = code, seed = 1, numItsC_results = 20000,
               data = list(y = y, z = rep(0, 2), pr0 = diag(rep(1e-4, 2)), n = n, d = d),
               inits = list(mu = cbind(rnorm(4), rnorm(4)), k = sample(1:4, n, replace = TRUE),
-                           p = rep(.25, 4), alpha = rep(1,4), pr = diag(2)),
+                           p = rep(.25, 4), alpha = rep(1,4), myvars = rep(1,2)),
               results = list(mean = list("mu[1, 1]" = mns[2,1], "mu[1, 2]" = mns[2,2], 
                                          "mu[2, 1]" = mns[3,1], "mu[2, 2]" = mns[3,2],
                                          "mu[3, 1]" = mns[1,1], "mu[3, 2]" = mns[1,2],
@@ -303,8 +307,8 @@ test_that('basic multivariate mixture model with conjugacy', {
                                          "p[2]" = p[3],
                                          "p[3]" = p[1],
                                          "p[4]" = p[4],
-                                         "pr[1, 1]" = 1,
-                                         "pr[2, 2]" = 1)),
+                                         "myvars[1]" = 0,
+                                         "myvars[2]" = 0)),
               resultsTolerance = list(mean = list("mu[1, 1]" = .2, "mu[1, 2]" = .1, 
                                          "mu[2, 1]" = .6, "mu[2, 2]" = .05,
                                          "mu[3, 1]" = .05, "mu[3, 2]" = .1,
@@ -313,7 +317,7 @@ test_that('basic multivariate mixture model with conjugacy', {
                                          "p[2]" = .01,
                                          "p[3]" = .01,
                                          "p[4]" = .03,
-                                         "pr[1, 1]" = .1,
-                                         "pr[2, 2]" = .1)),
+                                         "myvars[1]" = .1,
+                                         "myvars[2]" = .1)),
               )
 })
