@@ -161,8 +161,8 @@ specialHandling <- function(nf) {
     if(is.rcf(nf)) {
         return(environment(nf)[['.specialHandling']])
     }
-    if(inherits(x, 'modelBaseClass')) {
-        return(x$.specialHandling)
+    if(inherits(nf, 'modelBaseClass')) {
+        return(nf$.specialHandling)
     }
     stop('special handling only works for RCfunctions and models')
 }

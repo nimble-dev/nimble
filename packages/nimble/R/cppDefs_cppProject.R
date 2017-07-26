@@ -1,7 +1,4 @@
 ## Classes for a cppProject
-setOldClass("DLLInfo")
-setClassUnion("DLLInfoOrNULL", c("NULL", "DLLInfo"))
-
 cppCodeFileClass <- setRefClass('cppCodeFileClass',
                              fields = list(
                                  filename = 'ANY',	#character
