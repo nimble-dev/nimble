@@ -14,6 +14,8 @@ endif
 ##$(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
 ##-include ./Makeconf
 
+## reverting back to this include of Makeconf
+-include $(R_HOME)/etc$(R_ARCH)/Makeconf
 include ./Makevars
 
 ifndef OS
