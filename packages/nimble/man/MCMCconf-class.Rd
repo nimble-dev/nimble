@@ -19,8 +19,8 @@
 \alias{setThin2}
 \title{Class \code{MCMCconf}}
 \description{
-Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \link{configureMCMC}.
-Given an MCMCconf object, the actual MCMC function can be built by calling \link{buildMCMC}\code{(conf)}.
+Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \code{\link{configureMCMC}}.
+Given an MCMCconf object, the actual MCMC function can be built by calling \code{\link{buildMCMC}(conf)}.
 See documentation below for method initialize() for details of creating an MCMCconf object.
 }
 \section{Methods}{

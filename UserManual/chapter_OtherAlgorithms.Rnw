@@ -79,6 +79,9 @@ cBootF <- compileNimble(rBootF,project = rTimeModel)
 parNum <- 5000
 ## Run bootstrap filter, which returns estimate of model log-likelihood
 bootLLEst <- cBootF$run(parNum)
+### The bootstrap filter can also return an estimate of the effective 
+### sample size (ESS) at each time point
+bootESS <- cBootF$returnESS()
 @
   Next, we provide an example of building and running the auxiliary particle filter. Note that a filter cannot be built on a model that already has a filter specialized to it, so we create a new copy of our state space model first.
   
@@ -94,6 +97,9 @@ rAuxF <- buildAuxiliaryFilter(auxTimeModel, "x",
 cAuxF <- compileNimble(rAuxF,project = auxTimeModel)
 ## Run auxiliary filter, which returns estimate of model log-likelihood
 auxLLEst <- cAuxF$run(parNum)
+### The auxiliary filter can also return an estimate of the effective 
+### sample size (ESS) at each time point
+auxESS <- cAuxF$returnESS()
 @
   
 Now we give an example of building and running the Liu and West filter, which can sample from the posterior distribution of top-level parameters as well as latent states.  The Liu and West filter accepts an additional \cd{params} argument, specifying the top-level parameters to be sampled. 

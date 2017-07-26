@@ -21,7 +21,7 @@ create a nimbleList from a nimbleList definition
 }
 \details{
 This function creates a definition for a nimbleList.  The \code{types} argument defines the names, types, and dimensions of the elements of the nimbleList.  Elements of nimbleLists can be either basic types (e.g., \code{integer}, \code{double}) or other nimbleList definitions.   
-The \code{types} argument can be either a series of expressions of the form \code{name = type(dim)}, or a list of \link{nimbleType} objects.
+The \code{types} argument can be either a series of expressions of the form \code{name = type(dim)}, or a list of \code{\link{nimbleType}} objects.
 
 \code{nimbleList} returns a definition, which can be used to create instances of this type of nimbleList via the \code{new()} member function. 
 
