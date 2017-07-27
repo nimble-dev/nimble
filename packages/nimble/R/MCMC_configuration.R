@@ -135,7 +135,6 @@ warnNoSamplerAssigned: A logical argument, with default value TRUE.  This specif
 
 print: A logical argument, specifying whether to print the ordered list of default samplers.
 '
-            
             samplerConfs <<- list(); controlDefaults <<- list(); monitors <<- character(); monitors2 <<- character();
             namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
             ##model <<- model
@@ -228,6 +227,9 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     ## if node is discrete 0/1 (binary), assign 'binary' sampler
                     if(binary) { addSampler(target = node, type = 'binary');     next }
                     
+                    ## for categorical nodes, assign a 'categorical' sampler
+                    if(nodeDist == 'dcat') { addSampler(target = node, type = 'categorical');     next }
+                    
                     ## if node distribution is discrete, assign 'slice' sampler
                     if(discrete) { addSampler(target = node, type = 'slice');     next }
                     
@@ -249,9 +251,12 @@ print: A logical argument, specifying whether to print the ordered list of defau
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
             names(dependentCounts) <- gsub('^dep_', '', names(dependentCounts))
+            ## FIXME: add check here of whether node is dynamically indexed and if so pass doDependentScreen flag to do screening
+            ## add _unknownIndex to samplers where we do the screen
+            ## have generate...Definition take arg about whether to do screen
             conjSamplerName <- createDynamicConjugateSamplerName(prior = prior, dependentCounts = dependentCounts)
             if(!dynamicConjugateSamplerExists(conjSamplerName)) {
-                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts)
+                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts, doDependentScreen = nimbleOptions()$allowDynamicIndexing)  
                 dynamicConjugateSamplerAdd(conjSamplerName, conjSamplerDef)
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
@@ -812,6 +817,9 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             
 	    ## binary-valued nodes
             addRule(quote(isBinary), 'binary')
+            
+	    ## categorical
+            addRule(quote(nodeDistribution == 'dcat'), 'categorical')
             
 	    ## discrete-valued nodes
             addRule(quote(isDiscrete), 'slice')

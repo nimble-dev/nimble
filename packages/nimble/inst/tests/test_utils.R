@@ -536,14 +536,16 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
           CmvSample <- nfVar(Cmcmc, 'mvSamples')
           C_samples <- as.matrix(CmvSample)
           ## for some reason columns in different order in CmvSample...
-          C_subSamples <- C_samples[seq_len(numItsR), attributes(R_samples)$dimnames[[2]], drop = FALSE]
+          if(doR)
+              C_subSamples <- C_samples[seq_len(numItsR), attributes(R_samples)$dimnames[[2]], drop = FALSE]
       }
 
       if(doR && doCpp && !is.null(R_samples)) {
           testIfNotKnownFailure(knownFailures[['R C samples match']],
                                 expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal")))
       }
-      testIfNotKnownFailure(knownFailures[['R MCMC']],
+      if(doR)
+          testIfNotKnownFailure(knownFailures[['R MCMC']],
                             expect_false(is.null(R_samples), info = "R MCMC failed") )
 
       if(doCpp) {
@@ -581,10 +583,9 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
       if(metric != 'cov') {
         postResult <- apply(C_samples, 2, metric)
         for(varName in names(results[[metric]])) {
-          varName <- gsub("_([0-9]+)", "\\[\\1\\]", varName) # allow users to use theta_1 instead of "theta[1]" in defining their lists
           samplesNames <- dimnames(C_samples)[[2]]
-          if(!grepl(varName, "\\[", fixed = TRUE))
-             samplesNames <- gsub("\\[.*\\]", "", samplesNames)
+          if(!grepl("[", varName, fixed = TRUE))
+              samplesNames <- gsub("\\[.*\\]", "", samplesNames)
           matched <- which(varName == samplesNames)
           diff <- abs(postResult[matched] - results[[metric]][[varName]])
           for(ind in seq_along(diff)) {
@@ -893,9 +894,8 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
           else
             postResult <- apply(C_samples, 2, metric)
           for(varName in names(results[[metric]])) {
-            varName <- gsub("_([0-9]+)", "\\[\\1\\]", varName) # allow users to use theta_1 instead of "theta[1]" in defining their lists
             samplesNames <- dimnames(C_samples)[[2]]
-            if(!grepl(varName, "\\[", fixed = TRUE))
+            if(!grepl(varName, "[", fixed = TRUE))
               samplesNames <- gsub("\\[.*\\]", "", samplesNames)
             matched <- which(varName == samplesNames)
             diff <- abs(postResult[matched] - results[[metric]][[varName]])
@@ -1057,6 +1057,69 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
  #   if(.Platform$OS.type != 'windows') dyn.unload(project$cppProjects[[1]]$getSOName())
     invisible(NULL)
 }
+
+expandNames <- function(var, ...) {
+    tmp <- as.matrix(expand.grid(...))
+    indChars <- apply(tmp, 1, paste0, collapse=', ')
+    ## Use of sort here only puts names in same order as NIMBLE if have no double-digit indexes.
+    sort(paste0(var, "[", indChars, "]"))
+}
+
+# FIXME
+tdim <- test_dynamic_indexing_model <- function(param) {
+        if(!is.null(param$expectFailure) && param$expectFailure) {
+            cat("begin XFAIL: ",  param$case, "\n")
+            expect_error(test_that(param$case, test_dynamic_indexing_model_internal(param)))
+            cat("end XFAIL\n")
+        } else
+            test_that(param$case, test_dynamic_indexing_model_internal(param))
+        invisible(NULL)
+}
+                
+test_dynamic_indexing_model_internal <- function(param) {
+        if(!is.null(param$expectError) && param$expectError) {
+            expect_error(m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data), param$expectErrorMsg, info = "expected error not generated")
+        } else {
+            m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data)
+            expect_true(inherits(m, 'modelBaseClass'), info = "problem creating model")
+            for(i in seq_along(param$expectedDeps)) 
+                expect_identical(m$getDependencies(param$expectedDeps[[i]]$parent, stochOnly = TRUE),
+                    param$expectedDeps[[i]]$result, info = paste0("dependencies don't match expected in dependency of ", param$expectedDeps[[i]]$parent))
+            cm <- compileNimble(m)
+            expect_true(class(cm) == "Ccode", info = "compiled model object improperly formed")
+            expect_identical(calculate(m), calculate(cm), info = "problem with R vs. C calculate with initial indexes")
+            for(i in seq_along(param$validIndexes)) {
+                for(j in seq_along(param$invalidIndexes[[i]]$var)) {
+                    m[[param$validIndexes[[i]]$var[j]]] <- param$validIndexes[[i]]$value[j]
+                    cm[[param$validIndexes[[i]]$var[j]]] <- param$validIndexes[[i]]$value[j]
+                }
+                expect_true(is.numeric(calculate(cm)), 1, info = paste0("problem with C calculate with valid indexes, case: ", i))
+                expect_true(is.numeric(calculateDiff(cm)), info = paste0("problem with C calculateDiff with valid indexes, case: ", i))              
+                expect_identical(calculate(m), calculate(cm), info = paste0("problem with R vs. C calculate with valid indexes, case: ", i))
+                deps <- m$getDependencies(param$invalidIndexes[[i]]$var, self = FALSE)
+                expect_true(is.null(simulate(cm, deps, includeData = TRUE)), info = paste0("problem with C simulate with valid indexes, case: ", i))
+                ## Reset values so can models have same values for comparisons in later iterations.
+                cm$setInits(param$inits)
+                cm$setData(param$data)
+                cm$calculate()
+            }
+            for(i in seq_along(param$invalidIndexes)) {
+                for(j in seq_along(param$invalidIndexes[[i]]$var)) {
+                    m[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
+                    
+                    cm[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
+                }
+                expect_error(calculate(m), info = paste0("problem with lack of error in R calculate with invalid indexes, case: ", i))  ## When NA is given, R calculate fails with missing value and dynamic index error not flagged explicitly
+                expect_error(calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of error in C calculate with invalid indexes, case: ", i))
+                expect_error(calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of error in C calculateDiff with invalid indexes, case: ", i))
+                deps <- m$getDependencies(param$invalidIndexes[[i]]$var, self = FALSE)
+                expect_error(simulate(cm, deps, includeData = TRUE), "dynamic index out of bounds", info = paste0("problem with lack of error in C simulate with invalid indexes, case: ", i))
+            }
+        }
+    invisible(NULL)
+}
+
+
  
 ## utilities for saving test output to a reference file
 ## and making the test a comparison of the file
