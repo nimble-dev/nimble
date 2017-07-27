@@ -6,9 +6,11 @@
 \alias{rcar_normal}
 \title{The CAR-Normal Distribution}
 \usage{
-dcar_normal(x, adj, weights, num, tau, c, zero_mean, log = FALSE)
+dcar_normal(x, adj, weights, num, tau, c = CAR_calcNumIslands(adj, num),
+  zero_mean = 0, log = FALSE)
 
-rcar_normal(n = 1, adj, weights, num, tau, c, zero_mean)
+rcar_normal(n = 1, adj, weights, num, tau, c = CAR_calcNumIslands(adj, num),
+  zero_mean = 0)
 }
 \arguments{
 \item{x}{vector of values.}
@@ -26,6 +28,8 @@ rcar_normal(n = 1, adj, weights, num, tau, c, zero_mean)
 \item{zero_mean}{integer specifying whether to impose a zero-mean constraint (during MCMC sampling) to all spatial regions (default 0).  If equal to 0, the overall process mean is included in the value of each location; if equal to 1, the mean of all locations is enforced to be zero and a separate intercept term should be included in the model.}
 
 \item{log}{logical; if TRUE, probability density is returned on the log scale.}
+
+\item{n}{number of observations.}
 }
 \value{
 \code{dcar_normal} gives the density, and \code{rcar_normal} returns the current process values, since this distribution is improper.
@@ -42,7 +46,7 @@ x <- c(1, 3, 3, 4)
 num <- c(1, 2, 2, 1)
 adj <- c(2, 1,3, 2,4, 3)
 weights <- c(1, 1, 1, 1, 1, 1)
-lp <- dcar_normal(x, adj, weights, num)
+lp <- dcar_normal(x, adj, weights, num, tau = 1)
 }
 \author{
 Daniel Turek

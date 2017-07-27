@@ -143,7 +143,7 @@ exprClasses_setToEigenize <- function(code, symTab, typeEnv) { ## input code is 
                 browser()
                 RCfunProc <- typeEnv$.nimbleProject$compileRCfun(obj, initialTypeInference = TRUE)
                 
-                return(toEigenRCfunction(code, symTab, typeEnv, nfmObj, RCfunProc))
+                return(toEigenRCfunction(code, symTab, typeEnv)) ## These additional arguments are not part of the function signature: ', nfmObj, RCfunProc))'
             }
         }
     }

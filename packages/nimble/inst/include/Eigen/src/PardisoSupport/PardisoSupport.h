@@ -32,6 +32,8 @@
 #ifndef EIGEN_PARDISOSUPPORT_H
 #define EIGEN_PARDISOSUPPORT_H
 
+#include <stdint.h>
+
 namespace Eigen { 
 
 template<typename _MatrixType> class PardisoLU;
@@ -52,9 +54,9 @@ namespace internal
     }
   };
   template<>
-  struct pardiso_run_selector<long long int>
+  struct pardiso_run_selector<int64_t int>
   {
-    typedef long long int IndexType;
+    typedef int64_t int IndexType;
     static IndexType run( _MKL_DSS_HANDLE_t pt, IndexType maxfct, IndexType mnum, IndexType type, IndexType phase, IndexType n, void *a,
                       IndexType *ia, IndexType *ja, IndexType *perm, IndexType nrhs, IndexType *iparm, IndexType msglvl, void *b, void *x)
     {

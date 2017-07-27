@@ -297,7 +297,7 @@ See Section \ref{sec:user-distributions} to learn how to write new distributions
 
 \paragraph{Improper distributions}
 
-Note that \cd{dflat} and \cd{dhalfflat} specify improper prior distributions
+Note that \cd{dcar\_normal}, \cd{dflat} and \cd{dhalfflat} specify improper prior distributions
 and should only be used when the posterior distribution of the model is known to be proper.
 Also for these distributions, the density function returns the unnormalized density
 and the simulation function returns \cd{NaN} so these distributions

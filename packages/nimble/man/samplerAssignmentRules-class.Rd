@@ -16,7 +16,7 @@ When assigning samplers to each stochastic node, the set of rules is traversed b
 When a matching rule is found, the sampler specified by that rule is assigned (or general code for sampler assignment is executed),
 and the assignment process proceeds to the next stochastic node.  That is, a maximum of one rule can be invoked for each stochastic node.
 If no matching rule is found, an (optional) warning is issued and no sampler is assigned.
-Objects of this class may be passed using the \code{rules} argument to \link{configureMCMC} to customize the sampler assignment process.
+Objects of this class may be passed using the \code{rules} argument to \code{\link{configureMCMC}} to customize the sampler assignment process.
 See documentation below for method \code{initialize()} for details of creating a samplerAssignmentRules object, 
 and methods \code{addRule()} and \code{reorder()} for adding and modifying the sampler assignment rules.
 The default behaviour of \code{configureMCMC} can be modified by setting the nimble option \'MCMCsamplerAssignmentRules\' to a customized samplerAssignmentRules object.

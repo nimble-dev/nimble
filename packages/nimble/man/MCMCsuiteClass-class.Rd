@@ -31,6 +31,6 @@ output <- MCMCsuite(code,
 Daniel Turek
 }
 \seealso{
-\link{MCMCsuite}
+\code{\link{MCMCsuite}}
 }
 
