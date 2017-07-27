@@ -1,7 +1,7 @@
 %% See http://yihui.name/knitr/demo/child/ for documentation on the parent/child document system of knitr
 %
 % Rscript -e "library(knitr);  knit2pdf('includesSpatialOnly.Rnw')"; open -a "Google Chrome" includesSpatialOnly.pdf
-% 
+%
 
 
 \Sexpr{set_parent('NimbleUserManual.Rnw')}

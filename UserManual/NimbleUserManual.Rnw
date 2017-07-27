@@ -24,7 +24,7 @@
 
 \def\cd#1{\texttt{#1}}
 \def\nm#1{\textit{#1}}
-\newcommand{\ver}{0.6-5}
+\newcommand{\ver}{0.6-6}
 
 \hypersetup{colorlinks=true, linkcolor=red, urlcolor=blue}
 
@@ -54,7 +54,7 @@ opts_chunk$set(eval = TRUE, message = FALSE) ## turned off message() output
 \end{figure}
 \href{http://R-nimble.org}
      {http://R-nimble.org} \\
-\href{https://github.com/nimble-dev/nimble-docs/blob/master/UserManual}
+\href{https://github.com/nimble-dev/nimble/blob/master/UserManual}
      {https://github.com/nimble-dev/nimble-docs}
 }
 \maketitle
