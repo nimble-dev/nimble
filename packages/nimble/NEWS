@@ -42,7 +42,9 @@ DEVELOPER LEVEL CHANGES
 
 -- Un-referenced scalar arguments to rankSample.
 
--- We now use -fPIC rather than -fpic in most cases. 
+-- We now use -fPIC rather than -fpic in most cases.
+
+-- Updated the version of Eigen that we use to version 3.3.4.
 
 BUG FIXES
 
