@@ -1,20 +1,24 @@
-                           CHANGES IN VERSION 0.6-6 (August 2017)
+                           CHANGES IN VERSION 0.6-6 (July 2017)
 
 USER LEVEL CHANGES
 
--- optim (equivalently, nimOptim) added to compiler.
+-- One can now use dynamic indexes in BUGS code - indexes of a variable no longer have to be constants but can be other nodes or functions of other nodes. This allows mixture models with unknown membership. For this release, this is a beta feature and needs to be enabled with nimbleOptions(allowDynamicIndexing = TRUE).
 
--- next added to compiler.
+-- The Intrinsic Gaussian conditional autoregressive (ICAR) distribution can now be used in BUGS code using the dcar_normal distribution, which behaves similarly to BUGS' car.normal distribution. Specialized MCMC samplers will be assigned to nodes that have this distribution. 
 
-- new feature nimbleExternalCall to call separately compiled code from a nimbleFunction or model (marked experimental for now).
+-- Enabled use of optim (equivalently, nimOptim) in nimbleFunctions.
 
-- new feature nimbleRcall to call an R function from a compiled nimbleFunction or model.
+-- One can now calculate WAIC for model selection using the calculateWAIC method for MCMC objects.
 
--- calculateWAIC() method added to buildMCMC objects.
+-- There is a new nimbleExternalCall function that allows one to call separately compiled code from a nimbleFunction or a model (this feature is experimental for now).
 
--- resetFunctions flag added to buildMCEM.
+-- There is a new nimbleExternalCall function that allows one to call an R function from a compiled nimbleFunction or model (this feature is experimental for now).
 
--- improved error management from compileNimble
+-- Enabled use of next in nimbleFunctions.
+
+-- A resetFunctions flag have been added to buildMCEM.
+
+-- Improved error management from compileNimble
 
 -- NaN is now handled correctly as a constant by compiler
 
@@ -22,7 +26,7 @@ USER LEVEL CHANGES
 
 -- pi is now handled as a constant or variable in a nimbleFunction (but cannot be used as a constant in model code).
 
--- returnESS() method added to the bootstrap filter and auxiliary particle filter.
+-- There is a new returnESS method added for the bootstrap filter and auxiliary particle filter.
 
 DEVELOPER LEVEL CHANGES
 
@@ -36,11 +40,17 @@ DEVELOPER LEVEL CHANGES
 
 -- Lots of vestigial code was cleaned up.
 
+-- Un-referenced scalar arguments to rankSample.
+
+-- We now use -fPIC rather than -fpic in most cases. 
+
 BUG FIXES
 
--- several bugs fixed in the automated factor slice sampler (AF_slice sampler), having to due with correctly resetting the internal member variables when an MCMC is run multiple times
+-- Several bugs fixed in the automated factor slice sampler (AF_slice sampler), having to do with correctly resetting the internal member variables when an MCMC is run multiple times
 
--- fixed harmless bug in managing split vertex numbering.
+-- Fixed harmless bug in managing split vertex numbering.
+
+-- Fixed bugs in test-mcmc that resulted in ignoring comparisons against known results for node names with brackets or underscores.
 
 -- Allow sum of length-zero vectors to compile correctly.
 
