@@ -36,6 +36,8 @@
 #ifndef EIGEN_HALF_CUDA_H
 #define EIGEN_HALF_CUDA_H
 
+#include <stdint.h>
+
 #if __cplusplus > 199711L
 #define EIGEN_EXPLICIT_CAST(tgt_type) explicit operator tgt_type()
 #else
@@ -118,12 +120,6 @@ struct half : public half_impl::half_base {
   }
   EIGEN_DEVICE_FUNC EIGEN_EXPLICIT_CAST(unsigned long) const {
     return static_cast<unsigned long>(half_impl::half_to_float(*this));
-  }
-  EIGEN_DEVICE_FUNC EIGEN_EXPLICIT_CAST(long long) const {
-    return static_cast<long long>(half_impl::half_to_float(*this));
-  }
-  EIGEN_DEVICE_FUNC EIGEN_EXPLICIT_CAST(unsigned long long) const {
-    return static_cast<unsigned long long>(half_to_float(*this));
   }
   EIGEN_DEVICE_FUNC EIGEN_EXPLICIT_CAST(float) const {
     return half_impl::half_to_float(*this);
