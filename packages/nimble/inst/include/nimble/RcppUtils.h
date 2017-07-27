@@ -22,6 +22,9 @@ using namespace std;
 #define Inf R_PosInf
 #define NA 0
 
+#define SET_NEXT_LANG_ARG(SLANG, ARGNAME) SETCAR(SLANG, ARGNAME); \
+  SLANG = CDR(SLANG);
+
 void nimble_print_to_R(std::ostringstream &input);
 
 
