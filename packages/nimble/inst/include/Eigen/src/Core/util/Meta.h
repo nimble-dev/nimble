@@ -11,6 +11,8 @@
 #ifndef EIGEN_META_H
 #define EIGEN_META_H
 
+#include <stdint.h>
+
 #if defined(__CUDA_ARCH__)
 #include <cfloat>
 #include <math_constants.h>
@@ -243,23 +245,23 @@ template<> struct numeric_limits<unsigned long>
   EIGEN_DEVICE_FUNC
   static unsigned long (min)() { return 0; }
 };
-template<> struct numeric_limits<long long>
+template<> struct numeric_limits<int64_t>
 {
   EIGEN_DEVICE_FUNC
-  static long long epsilon() { return 0; }
+  static int64_t epsilon() { return 0; }
   EIGEN_DEVICE_FUNC
-  static long long (max)() { return LLONG_MAX; }
+  static int64_t (max)() { return LLONG_MAX; }
   EIGEN_DEVICE_FUNC
-  static long long (min)() { return LLONG_MIN; }
+  static int64_t (min)() { return LLONG_MIN; }
 };
-template<> struct numeric_limits<unsigned long long>
+template<> struct numeric_limits<uint64_t>
 {
   EIGEN_DEVICE_FUNC
-  static unsigned long long epsilon() { return 0; }
+  static uint64_t epsilon() { return 0; }
   EIGEN_DEVICE_FUNC
-  static unsigned long long (max)() { return ULLONG_MAX; }
+  static uint64_t (max)() { return ULLONG_MAX; }
   EIGEN_DEVICE_FUNC
-  static unsigned long long (min)() { return 0; }
+  static uint64_t (min)() { return 0; }
 };
 
 }

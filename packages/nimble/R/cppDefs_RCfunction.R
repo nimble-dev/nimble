@@ -86,6 +86,9 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                            objectDefs = localArgs)
                                      if(is.null(RCfunProc$compileInfo$returnSymbol)) stop("returnType not valid.  If a nimbleList is being returned, returnType must be the name of the nimbleList definition.")
                                      returnType <<- RCfunProc$compileInfo$returnSymbol$genCppVar()
+                                     ## For external calls:
+                                     CPPincludes <<- c(CPPincludes, RCfunProc$RCfun$externalCPPincludes)
+                                     Hincludes <<- c(Hincludes, RCfunProc$RCfun$externalHincludes)
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
