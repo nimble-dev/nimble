@@ -251,12 +251,12 @@ print: A logical argument, specifying whether to print the ordered list of defau
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
             names(dependentCounts) <- gsub('^dep_', '', names(dependentCounts))
-            ## FIXME: add check here of whether node is dynamically indexed and if so pass flag to do screening
+            ## FIXME: add check here of whether node is dynamically indexed and if so pass doDependentScreen flag to do screening
             ## add _unknownIndex to samplers where we do the screen
-            ## have generate...Definition take arg about whether to do screen - make doDependen
+            ## have generate...Definition take arg about whether to do screen
             conjSamplerName <- createDynamicConjugateSamplerName(prior = prior, dependentCounts = dependentCounts)
             if(!dynamicConjugateSamplerExists(conjSamplerName)) {
-                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts, doDependentScreen = nimbleOptions()$allowDynamicIndexing)  # doDependentScreen = T/F here
+                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts, doDependentScreen = nimbleOptions()$allowDynamicIndexing)  
                 dynamicConjugateSamplerAdd(conjSamplerName, conjSamplerDef)
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)

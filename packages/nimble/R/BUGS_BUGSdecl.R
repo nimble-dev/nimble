@@ -452,22 +452,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                         ## can add it to declInfo$dynamicIndexInfo for range checking.
                         dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ] <- 
                             lapply(dynamicIndexParent[-c(1, 2)][ !contentsReplaceable ], addDynamicallyIndexedWrapping)
-                            ## was: as.numeric(NA)
                         contentsCode = lapply(contentsCode, addIndexWrapping)
-
-                        ## FIXME:
-                        ## cnt <- 1
-                        ## nonNestedContents <- which(!sapply(contentsCode, usedInIndex)) ## nested indexing can introduce contentsCode elements that have already been tagged with dynamic index info
-                        ## if(sum(!contentsReplaceable) != length(nonNestedContents))
-                        ##     stop("getSymbolicParentNodesRecurse: bug in indexing of dynamic index parents.")
-                        ## for(iC in which(!contentsReplaceable)) {
-                        ##     if(cnt > length(contentsCode)) 
-                        ##         stop("getSymbolicParentNodesRecurse: bug in indexing of dynamic index parents.")
-                        ##     contentsCode[[nonNestedContents[cnt]]] <- addIndexWrapping(
-                        ##         contentsCode[[nonNestedContents[cnt]]], code[[2+iC]],
-                        ##                                             indexedVariable, iC)
-                        ##     cnt <- cnt + 1
-                        ## }
                     }
                     return(list(code = c(contentsCode, list(dynamicIndexParent)),
                                 replaceable = FALSE,
@@ -647,15 +632,6 @@ stripDynamicallyIndexedWrapping <- function(expr) {
     if(length(expr) == 1 || !isDynamicIndex(expr)) return(expr) else return(expr[[2]])
 }
 
-# FIXME
-## addIndexWrapping <- function(expr, indexingCode, indexedVariable, position) {
-##     if(length(expr) > 1 && expr[[1]] == '.USED_IN_INDEX') ## nested random indexing
-##         return(expr)
-##     expr <- substitute(.USED_IN_INDEX(EXPR), list(EXPR = expr))
-##     expr[3:5] <- list(indexingCode, indexedVariable, position)
-##     return(expr)
-## }
-
 usedInIndex <- function(expr)
     if(length(expr) > 1 && expr[[1]] == ".USED_IN_INDEX") TRUE else FALSE
 
@@ -679,5 +655,4 @@ detectNonscalarIndex <- function(expr) {
             stop("detectNonscalarIndex: unexpected expression ", expr)
     }
     return(any(sapply(expr[3:length(expr)], isVectorIndex)))
-      ##  max(sapply(expr[3:length(expr)], function(x) ifelse(isDynamicIndex(x), 1, length(x)))) > 1)
 }

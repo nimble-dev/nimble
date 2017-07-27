@@ -372,9 +372,6 @@ conjugacyClass <- setRefClass(
             link <<- cr$link
             initialize_addDependents(cr$dependents)
             needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
-            ## if(nimbleOptions()$allowDynamicIndexing) 
-            ##     if(link == 'identity')  ## added so that screen based on coeff == 0 to avoid adding contribution from non-dependent; FIXME: need to refine this so that only used if the node is dynamically-indexed; also note that don't need both offset and coeff so could improve by removing offset in this case
-            ##         needsLinearityCheck <<- TRUE
             posteriorObject <<- posteriorClass(cr$posterior, prior)
             model <<- NA
             },
