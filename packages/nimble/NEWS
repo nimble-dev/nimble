@@ -6,9 +6,13 @@ USER LEVEL CHANGES
 
 -- next added to compiler.
 
--- resetFunctions flag added to buildMCEM.
+- new feature nimbleExternalCall to call separately compiled code from a nimbleFunction or model (marked experimental for now).
 
--- Size of libnimble was massively reduced by avoiding generation of C++ debugging content.
+- new feature nimbleRcall to call an R function from a compiled nimbleFunction or model.
+
+-- calculateWAIC() method added to buildMCMC objects.
+
+-- resetFunctions flag added to buildMCEM.
 
 -- improved error management from compileNimble
 
