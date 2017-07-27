@@ -12,6 +12,8 @@ includes*nly*
 # Latex output files
 *.aux
 *.out
+*.bbl
+*.blg
 *.log
 *.toc
 *.bbl
