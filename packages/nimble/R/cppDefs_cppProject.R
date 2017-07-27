@@ -140,7 +140,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        selfCPP <- if(is.character(con)) paste0('"', con, '.cpp"') else '"[FILENAME].cpp"'
                                        CPPincludes <- CPPincludes[ CPPincludes != selfCPP ]
 
-                                       ## Eigen must be included before any R header files because they both define "length"
+                                      ## TODO Simplify Eigen include logic now that Nimble defines `R_NO_REMAP`.
                                        ## similar for cppad
                                        iEigenInclude <- grep("EigenTypedefs", CPPincludes)
                                        if(length(iEigenInclude) > 0) {
@@ -153,7 +153,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        ## at this point strip out CPPincludes other than EigenTypedefs that have .cpp and gsub .cpp to .o
                                        boolConvertCppIncludeToOinclude <- grepl("\\.cpp", CPPincludes)
-                                       ##if(length(iEigenInclude) > 0) boolConvertCppIncludeToOinclude[1] <- FALSE
                                        Oincludes <<- gsub("\\.cpp", ".o", CPPincludes[boolConvertCppIncludeToOinclude])
                                        CPPincludes <- CPPincludes[!boolConvertCppIncludeToOinclude]
 
@@ -168,9 +167,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                               cppDefs = cppPieces,
                                                               ifndefName = ifndefName)
                                        selfInclude <- if(is.character(con)) paste0('"', con, '.h', '"') else '"[FILENAME].h"'
-                                       CPPincludes <- c(CPPincludes, selfInclude) ## selfInclude has to come last because Rinternals.h makes a name conflict with Eigen
-                                       
-                                     ##  CPPincludes <- c(CPPincludes, ('\"nimble/dynamicRegistrations.cpp\"'))
+                                       CPPincludes <- c(CPPincludes, selfInclude) ## selfInclude has to come last because Rinternals.h makes a name conflict with Eigen (this may be moot, 7/17)
                                        
                                        cppIfndefName <- paste0(ifndefName,'_CPP')
                                        cppFile <- cppCPPfileClass(filename = filename,
@@ -229,16 +226,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    },                                  
                                    compileFile = function(names, showCompilerOutput = nimbleOptions('showCompilerOutput'),
                                                           .useLib = UseLibraryMakevars) {
-                                       cppPermList <- c('RcppUtils.cpp',
-                                                        'Utils.cpp',
-                                                        'NamedObjects.cpp',
-                                                        'ModelClassUtils.cpp',
-                                                        'accessorClasses.cpp',
-                                                        'predefinedNimbleLists.cpp',
-                                                        'nimOptim.cpp'
-                                                        )
-                                       if(getNimbleOption('includeCPPdists')) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
-
                                        isWindows = (.Platform$OS.type == "windows")
 
                                        includes <- character()
@@ -253,7 +240,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                                              
                                        outputSOfile <<- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
 
-                                       if(!inherits(Oincludes, 'uninitializedField')) { ## will only be unitialized if writeFiles was skipped due to specialHandling (developer backdoor)
+                                       if(!inherits(Oincludes, 'uninitializedField')) { ## will only be uninitialized if writeFiles was skipped due to specialHandling (developer backdoor)
                                            includes <- c(includes, Oincludes) ## normal operation will have Oincludes.
                                        }
                                        SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
@@ -265,17 +252,18 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(is.null(nimbleUserNamespace$sessionSpecificDll)) compileDynamicRegistrations(showCompilerOutput = showCompilerOutput)
 
                                        origSHLIBcmd <- SHLIBcmd
-                                       if(isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) {## used only for testing, when we want to go quickly and skip linking and bail out
+                                       if(isTRUE(nimbleOptions('stopCompilationBeforeLinking'))) {## used only for testing, when we want to go quickly and skip linking and bail out
                                            ## get the dry run commands, run only those that contain -c for compile-only (don't link)
-                                           ## this is untested for a case with multiple .cpp files
+                                           ## this has only been tested with single .cpp files, not multiple .cpp files
                                            dryRunCmd <- paste0(SHLIBcmd, " -n")
                                            dryRunResult <- system(dryRunCmd, intern = TRUE)
                                            compileOnlyLines <- dryRunResult[ grepl("-c", dryRunResult) ]
                                            SHLIBcmd <- paste0(compileOnlyLines, collapse =  ";" )
                                        }
 
-                                       if(isTRUE(nimbleOptions()$forceO1)) {
-                                           if(!isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) {
+                                       if(isTRUE(nimbleOptions('forceO1'))) { ## replace -On flags with -O1 to reduce compiler time due to higher optimization levels 
+                                           ## If force01 is TRUE and we did not already strip out -c flags, do so now
+                                           if(!isTRUE(nimbleOptions('stopCompilationBeforeLinking'))) {
                                                dryRunCmd <- paste0(SHLIBcmd, " -n")
                                                dryRunResult <- system(dryRunCmd, intern = TRUE)
                                                compileOnlyLines <- dryRunResult[ grepl("-c", dryRunResult) ]

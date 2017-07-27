@@ -8,6 +8,26 @@
 template <int ndim, class T>
 class NimArr;
 
+// needed for externalCalls
+template<int nDim, class T>
+T* nimArrPtr_copyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
+  if(orig.isMap()) {
+    possibleCopy = orig;
+    return(possibleCopy.getPtr());
+  } else {
+    return(orig.getPtr());
+  }
+}
+
+template<int nDim, class T>
+  void nimArrPtr_copyBackIfNeeded(T* tptr, NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
+  if(tptr == orig.getPtr()) return;
+  if(tptr != possibleCopy.getPtr()) {
+    NIMERROR("Problem in unconverting from an external call\n");
+  }
+  orig.mapCopy(possibleCopy);
+}
+
 // Here is the specialization for 1 dimensions (for any type, T = double, int or
 // bool).
 template <class T>

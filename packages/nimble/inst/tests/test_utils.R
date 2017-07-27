@@ -56,17 +56,23 @@ withTempProject <- function(code) {
     eval(code)
 }
 
-expect_compiles <- function(..., info = NULL) {
+expect_compiles <- function(..., info = NULL, link = FALSE, force01 = TRUE) {
     oldSCBL <- nimbleOptions('stopCompilationBeforeLinking')
-    nimbleOptions(stopCompilationBeforeLinking = TRUE)
-    nimbleOptions(forceO1 = TRUE)
+    nimbleOptions(stopCompilationBeforeLinking = !link)
+    oldForce01 <- nimbleOptions('force01')
+    nimbleOptions(forceO1 = force01)
     on.exit({
         assign('.check', 1, globalenv())
         nimbleOptions(stopCompilationBeforeLinking = oldSCBL)
-        nimbleOptions(forceO1 = FALSE)
+        nimbleOptions(forceO1 = oldForce01)
     }, add = TRUE)
-    ans <- try(compileNimble(...)) ## expecting a thrown error
-    expect_identical(as.character(ans), 'Error : safely stopping before linking\n', info = info)
+    if(!link) {
+        ans <- try(compileNimble(...)) ## expecting a thrown error
+        expect_identical(as.character(ans), 'Error : safely stopping before linking\n', info = info)
+    } else {
+        ans <- compileNimble(...)
+        ans
+    }
 }
 
 gen_runFunCore <- function(input) {
