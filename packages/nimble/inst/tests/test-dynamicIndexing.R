@@ -7,6 +7,8 @@ options(warn = -1)
 
 source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = 'nimble'))
 
+nimbleOptions(allowDynamicIndexing = TRUE)
+
 ## check variations on use of dynamic indexing in BUGS code including building and compiling,
 ## dependencies, and valid and invalid dynamic index values
 
@@ -330,3 +332,5 @@ test_that('basic multivariate mixture model with conjugacy', {
 }
 
 options(warn = RwarnLevel)
+
+nimbleOptions(allowDynamicIndexing = FALSE)
