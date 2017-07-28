@@ -12,7 +12,7 @@ library(methods)
 NIMBLE allows you to define your own functions and distributions as \nm{nimbleFunction}s for use in BUGS code. As a result, NIMBLE frees you from being constrained to the functions and distributions discussed in Chapter \ref{cha:writing-models}.  For example, instead of setting up a Dirichlet prior with multinomial data and needing to use MCMC, one could recognize that this results in a Dirichlet-multinomial distribution for the data and provide that as a user-defined distribution instead.
 
 Since NIMBLE allows you to wrap calls to external compiled code or arbitrary R functions as nimbleFunctions (experimental features
-in \ver), and since you can define model functions and distributions as nimbleFunctions, you can combine these features to build external compiled code or arbitrary R functions into a model.  See (\ref{sec:calling-external-code}-\ref{sec:calling-R-code}).
+in Version \ver), and since you can define model functions and distributions as nimbleFunctions, you can combine these features to build external compiled code or arbitrary R functions into a model.  See (\ref{sec:calling-external-code}-\ref{sec:calling-R-code}).
 
 Further, while NIMBLE at the moment does not allow the use of random
 indices, such as is common in clustering contexts, you may be able to

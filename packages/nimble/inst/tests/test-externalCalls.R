@@ -38,7 +38,7 @@ void my_internal_function(double *p, double *ans, int n) {
 
     ## now to create a nimbleFunction that interfaces to add1p5:
 
-    expect_silent(Radd1p5 <- nimbleExternalCall(function(x = double(1), ans = double(1), n = integer()){}, Cfun = 'my_internal_function', headerFile = 'add1p5.h', oFile = 'add1p5.o'))
+    expect_silent(Radd1p5 <- nimbleExternalCall(function(x = double(1), ans = double(1), n = integer()){}, returnType = void(), Cfun = 'my_internal_function', headerFile = 'add1p5.h', oFile = 'add1p5.o'))
     ## The first argument uses the format of a nimbleFunction with argument type declarations, but the body of the function can be empty ('{}')
     ## You can choose any names for the arguments in R. They don't have to match the C code.
     ## Ignore the warning here and later warnings

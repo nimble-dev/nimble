@@ -93,7 +93,7 @@ Table \ref{table:functions-coreR}.
 \end{longtable}
 }
 
-Other R functions with numeric arguments and return value can be called during compiled execution by wrapping them as a \cd{nimbleRcall} (see \ref{sec:calling-R-code}).
+Other R functions with numeric arguments and return value can be called during compiled execution by wrapping them as a \cd{nimbleRcall} (see Section \ref{sec:calling-R-code}).
 
 Next we cover some of these functions in more detail. 
 
@@ -646,9 +646,9 @@ Now if \cd{foo} modifies \cd{x} internally, it is modifying the same
 \section{Calling external compiled code}
 \label{sec:calling-external-code}
 
-If you have a function in your own compiled C or C++ code and an appropriate header file, you can generate a nimbleFunction that wraps access to that function, which can then be used in other nimbleFunctions.  This feature is experimental and has limited flexibility in \ver.  See \cd{help(nimbleExternalCall)} for an example.  This also contains an example of using an externally compiled function in the BUGS code of a model.
+If you have a function in your own compiled C or C++ code and an appropriate header file, you can generate a nimbleFunction that wraps access to that function, which can then be used in other nimbleFunctions.  This feature is experimental and has limited flexibility in Version \ver.  See \cd{help(nimbleExternalCall)} for an example.  This also contains an example of using an externally compiled function in the BUGS code of a model.
 
 \section{Calling uncompiled R functions from compiled \cd{nimbleFunctions}}
 \label{sec:calling-R-code}
 
-Sometimes one may want to combine R functions with compiled nimbleFunctions.  Obviously a compiled nimbleFunction can be called from R.  As an experimental feature in \ver, an R function with numeric inputs and output can be called from compiled nimbleFunctions.  The call to the R function is wrapped in a nimbleFunction returned by \cd{nimbleRcall}.  See \cd{help(nimbleRcall)} for an example, including an example of using the resulting function in the BUGS code of a model.
+Sometimes one may want to combine R functions with compiled nimbleFunctions.  Obviously a compiled nimbleFunction can be called from R.  As an experimental feature in Version \ver, an R function with numeric inputs and output can be called from compiled nimbleFunctions.  The call to the R function is wrapped in a nimbleFunction returned by \cd{nimbleRcall}.  See \cd{help(nimbleRcall)} for an example, including an example of using the resulting function in the BUGS code of a model.

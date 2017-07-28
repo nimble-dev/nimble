@@ -17,7 +17,7 @@ require(nimble)
 NIMBLE supports several distributions to represent
 spatially dependent processes.  At present, these
 consist of variations of conditional autoregressive (CAR) model
-structures. (In version \ver, only the improper intrinsic Gaussian CAR (ICAR) model is 
+structures. (In Version \ver, only the improper intrinsic Gaussian CAR (ICAR) model is 
 provided but in our next release we expect to have a proper Gaussian CAR model as well.)
 
 NIMBLE provides BUGS distributions to represent these

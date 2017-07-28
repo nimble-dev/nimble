@@ -24,6 +24,7 @@
 \alias{sampler_RW_llFunction_block}
 \alias{sampler_RW_multinomial}
 \alias{sampler_binary}
+\alias{sampler_categorical}
 \alias{sampler_crossLevel}
 \alias{sampler_ess}
 \alias{sampler_posterior_predictive}
@@ -37,6 +38,8 @@ sampler_BASE()
 sampler_posterior_predictive(model, mvSaved, target, control)
 
 sampler_binary(model, mvSaved, target, control)
+
+sampler_categorical(model, mvSaved, target, control)
 
 sampler_RW(model, mvSaved, target, control)
 
@@ -275,13 +278,13 @@ The \code{RW_dirichlet} sampler accepts the following control list elements:
 \section{CAR_normal sampler}{
 
 
-The CAR_normal sampler operates uniquely on improper Gaussian conditional autoregressive (CAR) nodes, those with a dcar_normal prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler, however these component samplers are specialized to operate on dimensions of a dcar_normal distribution.
+The CAR_normal sampler operates uniquely on improper (intrinsic) Gaussian conditional autoregressive (CAR) nodes, those with a \code{dcar_normal} prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler; however these component samplers are specialized to operate on dimensions of a \code{dcar_normal} distribution.
 
 The CAR_normal sampler accepts the following control list elements:
 \itemize{
-\item adaptive. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = TRUE)
-\item adaptInterval. The interval on which to perform adaptation for any component RW samplers.  Every adaptInterval MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
-\item scale. The initial value of the normal proposal standard deviation for any component RW samplers.  If adaptive = FALSE, scale will never change. (default = 1)
+\item \code{adaptive}. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = \code{TRUE})
+\item \code{adaptInterval}. The interval on which to perform adaptation for any component RW samplers.  Every \code{adaptInterval} MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the \code{scale} variable, based upon the sampler's achieved acceptance rate over the past \code{adaptInterval} iterations. (default = 200)
+\item \code{scale}. The initial value of the normal proposal standard deviation for any component RW samplers.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
 }
 }
 

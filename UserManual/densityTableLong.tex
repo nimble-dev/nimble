@@ -13,18 +13,18 @@
       \multirow{2}{*}{$p^x (1 - p)^{1 -x}$} & 
       $0$ & $1$ \\
        & $0 < p < 1$ \\
-      Beta & \verb+dbeta(shape1 = a, shape2 = b)+ & 
+      Beta & \verb+dbeta(shape1 = a, + & 
       \multirow{2}{*}{
         $\frac{\textstyle x^{a-1}(1-x)^{b-1}}{\textstyle \beta(a,b)}$
       } & $0$ & $1$ \\
-      & $a > 0$, $b > 0$ \\
+      & shape2 = b), $a > 0$, $b > 0$ \\
       Binomial  & \verb+dbin(prob = p, size = n)+ & 
       \multirow{2}{*}{${n \choose x}  p^x (1-p)^{n-x}$}
         & $0$ & $n$ \\
        & $0 < p < 1$, $n \in \mathbb{N}^*$ \\
-      Intrinsic   & \cd{dcar\_normal(adj, weights, num, } & \multirow{2}{*}{
+      Intrinsic   & \cd{dcar\_normal(adj, weights, } & \multirow{2}{*}{
         see chapter \ref{cha:spatial} for details} & & \\
-      CAR          & \cd{tau, c, zero\_mean)}                      & & &\\
+      CAR          & \cd{num, tau, c, zero\_mean)}                      & & &\\
       Categorical & \verb+dcat(prob = p)+ & \multirow{2}{*}{$\frac{\textstyle p_x}{\textstyle \sum_i p_i}$} & $1$ & $N$ \\
        & $p \in (\mathbb{R}^+)^N$  \\
        Chi-square & \verb+dchisq(df = k)+ & 
