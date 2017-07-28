@@ -20,15 +20,15 @@ test_that('Derivatives of dnorm function correctly.',
       ), enableDerivs = list('testMethod')
     )
     
-    
     ADfunInst <- ADfun1()
-    
-    ADfunInst$run(c(2,-2))
+    x <- matrix(c(2, -2))
+    Rderivs <- ADfunInst$run(x)
     temporarilyAssignInGlobalEnv(ADfunInst)  
     cADfunInst <- compileNimble(ADfunInst)
+    cderivs <- cADfunInst$run(x)
+    expect_equal(cderivs$value, Rderivs$value)
+    expect_equal(cderivs$gradient, Rderivs$gradient)
+    expect_equal(cderivs$hessian, Rderivs$hessian)
     
-    Rderiv <- D(expression((1/(sqrt(2*pi)))*exp(-(x^2)/2)), 'x') ## Can be replaced by NIMBLE's R version of derivs in the future.
-    x <- 1.4
-    expect_equal(cADfunInst$run(x)$gradient[1], eval(Rderiv)) ## Temporary simple test to make sure compilation and gradient calculation work.
   }
 )
