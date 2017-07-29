@@ -99,11 +99,6 @@ probably best at this point also to merge master onto devel
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote
 
-# make tag for nimble-docs too
-git tag -a v$VERSION -m "NIMBLE version $VERSION release, April 6, 2016"
-git push --tags    ## this is how you push *tags* to the remote
-
-
 ### building binaries
 
 make sure there is no libnimble.{a,dylib,so} in inst/CppCode or it will be copied over and interfere with the libnimble created during the build process
