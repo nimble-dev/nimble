@@ -827,6 +827,7 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' @name CAR-Normal
 #' 
 #' @param x vector of values.
+#' @param n number of observations.
 #' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.  If omitted, all weights are taken to be one.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
@@ -839,7 +840,7 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' 
 #' @details 
 #'
-#' When specifying a CAR distribution in BUGS model code, the \cd{zero_mean} parameter should be specified as either 0 or 1 (rather than TRUE or FALSE).
+#' When specifying a CAR distribution in BUGS model code, the \code{zero_mean} parameter should be specified as either 0 or 1 (rather than TRUE or FALSE).
 #' 
 #' Note that because the distribution is improper, \code{rcar_normal} does not generated a sample from the distribution, though as discussed in Rue and Held (2005), it is possible to generate a sample from the distribution under constraints imposed based on the eigenvalues of the precision matrix that are zero.
 #' 

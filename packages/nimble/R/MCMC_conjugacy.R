@@ -338,9 +338,10 @@ conjugacyRelationshipsClass <- setRefClass(
         ##    }
         ##    return(conjugateSamplerDefinitions)
         ##},
-        generateDynamicConjugateSamplerDefinition = function(prior, dependentCounts) {
+        generateDynamicConjugateSamplerDefinition = function(prior, dependentCounts, doDependentScreen = FALSE) {
             ## conjugateSamplerDefinitions[[paste0('sampler_conjugate_', conjugacyResult$prior)]]  ## using original (non-dynamic) conjugate sampler functions
-            conjugacys[[prior]]$generateConjugateSamplerDef(dynamic = TRUE, dependentCounts = dependentCounts)
+            conjugacys[[prior]]$generateConjugateSamplerDef(dynamic = TRUE, dependentCounts = dependentCounts,
+                                                            doDependentScreen = doDependentScreen)
         }
     )
 )
@@ -395,7 +396,7 @@ conjugacyClass <- setRefClass(
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
             dependentObj <- dependents[[depNodeDist]]
             linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr)
+            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode)
             if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
             if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
             linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
@@ -446,18 +447,19 @@ conjugacyClass <- setRefClass(
         },
 
         ## workhorse for creating conjugate sampler nimble functions
-        generateConjugateSamplerDef = function(dynamic = FALSE, dependentCounts) {
+        generateConjugateSamplerDef = function(dynamic = FALSE, dependentCounts, doDependentScreen = FALSE) {
             if(!dynamic) stop('something went wrong, should never have dynamic = FALSE here')
             substitute(
                 nimbleFunction(contains = sampler_BASE,
                                setup    = SETUPFUNCTION,
-                               run      = RUNFUNTION,
+                               run      = RUNFUNCTION,
                                methods  = list(getPosteriorLogDensity = GETPOSTERIORLOGDENSITYFUNCTION,
                                                reset                  = function() {}),
                                where    = getLoadingNamespace()
                 ),
                 list(SETUPFUNCTION                  = genSetupFunction(dependentCounts = dependentCounts),
-                     RUNFUNTION                     = genRunFunction(dependentCounts = dependentCounts),
+                     RUNFUNCTION                     = genRunFunction(dependentCounts = dependentCounts,
+                                                                      doDependentScreen = doDependentScreen),
                      GETPOSTERIORLOGDENSITYFUNCTION = genGetPosteriorLogDensityFunction(dependentCounts = dependentCounts)
                 )
             )
@@ -533,7 +535,7 @@ conjugacyClass <- setRefClass(
             return(functionDef)
         },
 
-        genRunFunction = function(dependentCounts) {
+        genRunFunction = function(dependentCounts, doDependentScreen = FALSE) {
             functionBody <- codeBlockClass()
 
             ## only if we're verifying conjugate posterior distributions: get initial targetValue, and modelLogProb -- getLogProb(model, calcNodes)
@@ -545,7 +547,8 @@ conjugacyClass <- setRefClass(
                 })
             }
 
-            addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dependentCounts = dependentCounts)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
+            addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dependentCounts = dependentCounts,
+                                                 doDependentScreen = doDependentScreen)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
 
             ## generate new value, store, calculate, copy, etc...
             functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
@@ -595,7 +598,8 @@ conjugacyClass <- setRefClass(
             return(functionDef)
         },
 
-        addPosteriorQuantitiesGenerationCode = function(functionBody = functionBody, dependentCounts = dependentCounts) {
+        addPosteriorQuantitiesGenerationCode = function(functionBody = functionBody, dependentCounts = dependentCounts,
+                                                        doDependentScreen = FALSE) {
 
             ## get current value of prior parameters which appear in the posterior expression
             for(priorParam in posteriorObject$neededPriorParams) {
@@ -638,7 +642,8 @@ conjugacyClass <- setRefClass(
             }
 
             ## if we need to determine 'coeff' and/or 'offset'
-            if(needsLinearityCheck) {
+            if(needsLinearityCheck || (nimbleOptions()$allowDynamicIndexing
+                && link == 'identity' && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
@@ -837,7 +842,14 @@ conjugacyClass <- setRefClass(
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
-                    forLoopBody$addCode(CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                    if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) { ## FIXME: do so only have one if() here and only insert the check if the sampler involves a dynamic index
+                        if(targetNdim == 0)
+                            forLoopBody$addCode(if(COEFF_EXPR != 0) CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                                                list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
+                        else forLoopBody$addCode(if(min(COEFF_EXPR) != 0 | max(COEFF_EXPR) != 0) CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                                                list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
+
+                    } else forLoopBody$addCode(CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
                                         list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
                 }
                 functionBody$addCode(for(iDep in 1:N_DEP) FORLOOPBODY,
@@ -953,9 +965,21 @@ cc_makeRDistributionName     <- function(distName)     return(paste0('r', substr
 
 
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
-cc_expandDetermNodesInExpr <- function(model, expr, skipExpansions=FALSE) {
+cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansions=FALSE) {
     if(is.numeric(expr)) return(expr)     # return numeric
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) { # expr is a name, or an indexed name
+        if(nimbleOptions()$allowDynamicIndexing) {
+            ## this deals with having mu[k[1]] (which won't pass through expandNodeNames), replacing k[1] with the index from targetNode
+            if(!is.name(expr)) {
+                indexExprs <- expr[3:length(expr)]
+                numericOrVectorIndices <- sapply(indexExprs,
+                      function(x) is.numeric(x) || (length(x) == 3 && x[[1]] == ':'))
+                if(!all(numericOrVectorIndices)) {
+                    indexExprs[!numericOrVectorIndices] <- parse(text = targetNode)[[1]][3:length(expr)][!numericOrVectorIndices]
+                    expr[3:length(expr)] <- indexExprs
+                }
+            }
+        }
         exprText <- deparse(expr)
         expandedNodeNamesRaw <- model$expandNodeNames(exprText)
         ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
@@ -971,19 +995,19 @@ cc_expandDetermNodesInExpr <- function(model, expr, skipExpansions=FALSE) {
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
                 newExpr <- model$getValueExpr(exprText)
-                return(cc_expandDetermNodesInExpr(model, newExpr, skipExpansions))
+                return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansions))
             }
             if(type == 'RHSonly') return(expr)
             stop('something went wrong with Daniel\'s understanding of newNimbleModel')
         }
         newExpr <- cc_createStructureExpr(model, exprText)
         for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], skipExpansions)
+            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
         return(newExpr)
     }
     if(is.call(expr)) {
         for(i in seq_along(expr)[-1])
-            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], skipExpansions)
+            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansions)
         return(expr)
     }
     stop(paste0('something went wrong processing: ', deparse(expr)))
@@ -1020,7 +1044,7 @@ cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansions=FALSE
     paramsList <- as.list(model$getValueExpr(depNode)[-1])       # extracts the list of all parameters, for the distribution of depNode
     timesFound <- 0   ## for success, we'll find targetNode in only *one* parameter expression
     for(i in seq_along(paramsList)) {
-        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], skipExpansions)
+        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansions)
         if(cc_vectorizedComponentCheck(targetNode, expr))   return(FALSE)
         if(cc_nodeInExpr(targetNode, expr))     { timesFound <- timesFound + 1 }    ## we found 'targetNode'
     }
@@ -1193,10 +1217,10 @@ compareConjugacyLists <- function(C1, C2) {
     }
 }
 
-createDynamicConjugateSamplerName <- function(prior, dependentCounts) {
+createDynamicConjugateSamplerName <- function(prior, dependentCounts, unknownIndex = FALSE) {
     ##depString <- paste0(dependentCounts, names(dependentCounts), collapse='_')  ## including the numbers of dependents
     depString <- paste0(names(dependentCounts), collapse='_')                     ## without the numbers of each type of dependent node
-    paste0('sampler_conjugate_', prior, '_', depString)
+    paste0('sampler_conjugate_', prior, '_', depString, ifelse(unknownIndex, '_unknownIndex', ''))
 }
 
 makeDeclareSizeField <- function(firstSize, secondSize, thirdSize, nDim) {

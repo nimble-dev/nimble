@@ -47,6 +47,8 @@ void SEXP_2_nodeType(SEXP Stypes, vector<NODETYPE> &ans) {
       ans[i] = RHSONLY;
     else if(oneString == "LHSinferred")
       ans[i] = LHSINFERRED;
+    else if(oneString == "unknownIndex")
+      ans[i] = UNKNOWNINDEX;
     else if(oneString == "unknown")
       ans[i] = UNKNOWNTYPE;
     else {

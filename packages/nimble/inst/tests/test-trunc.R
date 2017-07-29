@@ -243,8 +243,8 @@ try(test_that("Test that MCMC respects second interval: ", expect_that(max(smp[ 
 try(test_that("Test that MCMC respects third interval: ", expect_that(min(smp[ , 'y[12]']), is_more_than(bnd[2]), info = "imputed observation in third interval is too small")))
 
 test_mcmc(model = code, data = c(data, constants), inits = inits,
-          results = list(mean = list(mu = 44.77, 'y[12]' = 44.85), sd = list(mu = 2.8, 'y[12]' = 2.9)),
-          resultsTolerance = list(mean = list(mu = 0.5, 'y[12]' = .15), sd = list(mu = .05, 'y[12]' = .1)), name = 'test of interval censoring')
+          results = list(mean = list(mu = 44.77, 'y[12]' = 56.3), sd = list(mu = 2.8, 'y[12]' = 5.3)),
+          resultsTolerance = list(mean = list(mu = 0.5, 'y[12]' = 1.5), sd = list(mu = .05, 'y[12]' = .4)), name = 'test of interval censoring')
 
 
 # test of dconstraint

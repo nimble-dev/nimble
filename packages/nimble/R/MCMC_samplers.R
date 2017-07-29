@@ -74,6 +74,50 @@ sampler_binary <- nimbleFunction(
 
 
 
+###########################################################################
+### categorical sampler for dcat distributions ############################
+###########################################################################
+
+#' @rdname samplers
+#' @export
+sampler_categorical <- nimbleFunction(
+    name = 'sampler_categorical',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes  <- model$getDependencies(target)
+        ## numeric value generation
+        k <- length(model$getParam(target, 'prob'))
+        probs <- numeric(k)
+        ## checks
+        if(length(targetAsScalar) > 1)  stop('cannot use categorical sampler on more than one target node')
+        if(model$getDistribution(target) != 'dcat') stop('can only use categorical sampler on node with dcat distribution')
+    },
+    run = function() {
+        currentValue <- model[[target]]
+        probs[currentValue] <<- exp(getLogProb(model, calcNodes))
+        for(i in 1:k) {
+            if(i != currentValue) {
+                model[[target]] <<- i
+                probs[i] <<- exp(calculate(model, calcNodes))
+                if(is.nan(probs[i])) probs[i] <<- 0
+            }
+        }
+        newValue <- rcat(1, probs)
+        if(newValue != currentValue) {
+            model[[target]] <<- newValue
+            calculate(model, calcNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        } else nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+
 ####################################################################
 ### scalar RW sampler with normal proposal distribution ############
 ####################################################################
@@ -344,6 +388,7 @@ sampler_slice <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         widthOriginal <- width
         timesRan      <- 0
@@ -388,7 +433,9 @@ sampler_slice <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
-            lp <- calculate(model, calcNodes)
+            lp <- calculate(model, target)
+            if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
+            lp <- lp + calculate(model, calcNodesNoSelf)
             returnType(double())
             return(lp)
         },
@@ -483,7 +530,8 @@ sampler_AF_slice <- nimbleFunction(
         adaptWidthTolerance <- if(!is.null(control$sliceAdaptWidthTolerance)) control$sliceAdaptWidthTolerance else 0.1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
+        calcNodes      <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         d                  <- length(targetAsScalar)
         discrete           <- sapply(targetAsScalar, function(x) model$isDiscrete(x))
@@ -556,9 +604,11 @@ sampler_AF_slice <- nimbleFunction(
         setAndCalculateTarget = function(targetValues = double(1)) {
             if(anyDiscrete == 1)
                 for(i in 1:d)
-                    if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])
+                    if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])            
             values(model, target) <<- targetValues
-            lp <- calculate(model, calcNodes)
+            lp <- calculate(model, target)
+            if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
+            lp <- lp + calculate(model, calcNodesNoSelf)
             returnType(double())
             return(lp)
         },
