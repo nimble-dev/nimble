@@ -19,7 +19,6 @@ test_that('Derivatives of dnorm function correctly.',
         }
       ), enableDerivs = list('testMethod')
     )
-    
     ADfunInst <- ADfun1()
     x <- matrix(c(2, -2))
     Rderivs <- ADfunInst$run(x)
@@ -29,6 +28,5 @@ test_that('Derivatives of dnorm function correctly.',
     expect_equal(cderivs$value, Rderivs$value)
     expect_equal(cderivs$gradient, Rderivs$gradient)
     expect_equal(cderivs$hessian, Rderivs$hessian)
-    
   }
 )
