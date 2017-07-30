@@ -918,13 +918,19 @@ rcar_normal <- function(n = 1, adj, weights, num, tau, c, zero_mean) {
 #'
 #' @details
 #'
-#' @return \code{dcar_proper} gives the density, and \code{rcar_proper} returns the current process values <----- XXXXXXXXXXXXX probably not right.
+#' @return \code{dcar_proper} gives the density, and \code{rcar_proper} generates random deviates.
 #' @references Banerjee, S., Carlin, B.P., and Gelfand, E.G. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
 #' @seealso \link{Distributions} for other standard distributions
 #'
 #' @examples
-#' not done yet XXXXXXXXXXXXXXXX
-#' lp <- dcar_proper(...)
+#' x <- c(1, 3, 3, 4)
+#' mu <- rep(3, 4)
+#' C <- c(1, 1, 1, 1, 1, 1)
+#' adj <- c(2, 1,3, 2,4, 3)
+#' num <- c(1, 2, 2, 1)
+#' M <- rep(1, 4)
+#' gamma <- (min.bound(C, adj, num, M) + max.bound(C, adj, num, M)) / 2
+#' lp <- dcar_proper(x, mu, C, adj, num, M, tau = 1, gamma = gamma)
 NULL
 
 #' @rdname CAR-Proper
