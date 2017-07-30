@@ -140,9 +140,42 @@ CAR_proper_checkNeighborIndList <- function(neighborIndList, targetAsScalar) {
 }
 
 
-##' Calculate number of islands (non-recursive nimbleFunction version).
-##'
-##' @export
+## checking of the validity of the adj, weights, and num parameters to dcar_normal(),
+## also processes these arguments into lists, easily usable in nimbleFunction setup code
+CAR_normal_processParams <- function(model, target, adj, weights, num) {
+    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+    if(length(targetAsScalar) != length(num)) stop('num argument to dcar_normal() must be same length as dcar_normal() node')
+    CAR_normal_checkAdjWeightsNum(adj, weights, num)
+    subsetIndList <- CAR_calcSubsetIndList(adj, num)
+    neighborIndList <- lapply(subsetIndList, function(ind) adj[ind])
+    neighborNodeList <- lapply(neighborIndList, function(ind) targetAsScalar[ind])
+    neighborWeightList <- lapply(subsetIndList, function(ind) weights[ind])
+    names(neighborIndList) <- names(neighborNodeList) <- names(neighborWeightList) <- targetAsScalar
+    CAR_normal_checkNeighborIndWeightLists(neighborIndList, neighborWeightList, targetAsScalar)
+    return(list(neighborIndList=neighborIndList, neighborNodeList=neighborNodeList, neighborWeightList=neighborWeightList))
+}
+
+
+## checking of the validity of the C, adj, num parameters to dcar_proper(),
+## also processes these arguments into lists, easily usable in nimbleFunction setup code
+CAR_proper_processParams <- function(model, target, C, adj, num, M) {
+    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+    if(length(targetAsScalar) != length(num)) stop('num argument to dcar_proper() must be same length as dcar_proper() node')
+    CAR_proper_checkAdjNumCM(adj, num, C, M)
+    subsetIndList <- CAR_calcSubsetIndList(adj, num)
+    neighborIndList <- lapply(subsetIndList, function(ind) adj[ind])
+    neighborNodeList <- lapply(neighborIndList, function(ind) targetAsScalar[ind])
+    neighborCList <- lapply(subsetIndList, function(ind) C[ind])
+    names(neighborIndList) <- names(neighborNodeList) <- names(neighborCList) <- targetAsScalar
+    CAR_proper_checkNeighborIndList(neighborIndList, targetAsScalar)
+    return(list(neighborIndList=neighborIndList, neighborNodeList=neighborNodeList, neighborCList=neighborCList))
+}
+
+
+#' Calculate number of islands (non-recursive nimbleFunction version).
+#'
+#' @author Daniel Turek
+#' @export
 CAR_calcNumIslands <- nimbleFunction(
     name = 'CAR_calcNumIslands',
     run = function(adj = double(1), num = double(1)) {
@@ -187,36 +220,81 @@ CAR_calcNumIslands <- nimbleFunction(
 )
 
 
-## checking of the validity of the adj, weights, and num parameters to dcar_normal(),
-## also processes these arguments into lists, easily usable in nimbleFunction setup code
-CAR_normal_processParams <- function(model, target, adj, weights, num) {
-    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    if(length(targetAsScalar) != length(num)) stop('num argument to dcar_normal() must be same length as dcar_normal() node')
-    CAR_normal_checkAdjWeightsNum(adj, weights, num)
-    subsetIndList <- CAR_calcSubsetIndList(adj, num)
-    neighborIndList <- lapply(subsetIndList, function(ind) adj[ind])
-    neighborNodeList <- lapply(neighborIndList, function(ind) targetAsScalar[ind])
-    neighborWeightList <- lapply(subsetIndList, function(ind) weights[ind])
-    names(neighborIndList) <- names(neighborNodeList) <- names(neighborWeightList) <- targetAsScalar
-    CAR_normal_checkNeighborIndWeightLists(neighborIndList, neighborWeightList, targetAsScalar)
-    return(list(neighborIndList=neighborIndList, neighborNodeList=neighborNodeList, neighborWeightList=neighborWeightList))
-}
+#' Calculate the lower and upper bounds for the gamma parameter of the dcar_proper distribution
+#' 
+#' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).  The lower and upper bounds are returned in a numeric vector.
+#' 
+#' @seealso \code{\link{min.bound}} \code{\link{max.bound}}
+#' 
+#' @author Daniel Turek
+#' @export
+CAR_calcBounds <- nimbleFunction(
+    name = 'CAR_calcBounds',
+    run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
+        print('in: CAR_calcBounds()')
+        print('XXXXX still should *check* that this function works correctly')
+        ## construct Cmatrix using C, adj, num:
+        Cmatrix <- array(0, dim = c(N, N))
+        N <- dim(num)[1]
+        for(i in 1:N) {
+            nNeighbors <- num[i]
+            if(nNeighbors > 0) {
+                adjStartInd <- 1
+                if(i > 1) adjStartInd <- adjStartInd + sum(num[1:(i-1)])
+                for(adjIndex in adjStartInd:(adjStartInd+nNeighbors-1)) {
+                    j <- adj[adjIndex]
+                    Cmatrix[i, j] <- C[adjIndex]
+                    Cmatrix[j, i] <- C[adjIndex]
+                }
+            }
+        }
+        x <- diag(M^-0.5) %*% Cmatrix %*% diag(M^0.5)
+        eigenvalues <- eigen(x, only.values = TRUE)$values
+        lower <- 1 / max(eigenvalues)
+        upper <- 1 / min(eigenvalues)
+        bounds <- c(lower, upper)
+        returnType(double(1))
+        return(bounds)
+    }
+)
 
 
-## checking of the validity of the C, adj, num parameters to dcar_proper(),
-## also processes these arguments into lists, easily usable in nimbleFunction setup code
-CAR_proper_processParams <- function(model, target, C, adj, num, M) {
-    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    if(length(targetAsScalar) != length(num)) stop('num argument to dcar_proper() must be same length as dcar_proper() node')
-    CAR_proper_checkAdjNumCM(adj, num, C, M)
-    subsetIndList <- CAR_calcSubsetIndList(adj, num)
-    neighborIndList <- lapply(subsetIndList, function(ind) adj[ind])
-    neighborNodeList <- lapply(neighborIndList, function(ind) targetAsScalar[ind])
-    neighborCList <- lapply(subsetIndList, function(ind) C[ind])
-    names(neighborIndList) <- names(neighborNodeList) <- names(neighborCList) <- targetAsScalar
-    CAR_proper_checkNeighborIndList(neighborIndList, targetAsScalar)
-    return(list(neighborIndList=neighborIndList, neighborNodeList=neighborNodeList, neighborCList=neighborCList))
-}
+#' Calculate the lower bound for the gamma parameter of the dcar_proper distribution
+#' 
+#' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).
+#' 
+#' @seealso \code{\link{max.bound}} \code{\link{CAR_calcBounds}}
+#' 
+#' @author Daniel Turek
+#' @export
+min.bound <- nimbleFunction(
+    name = 'min.bound',
+    run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
+        print('in: min.bound()')
+        bounds <- CAR_calcBounds(C, adj, num, M)
+        returnType(double(0))
+        return(bounds[1])
+    }
+)
+
+
+#' Calculate the upper bound for the gamma parameter of the dcar_proper distribution
+#' 
+#' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).
+#' 
+#' @seealso \code{\link{min.bound}} \code{\link{CAR_calcBounds}}
+#' 
+#' @author Daniel Turek
+#' @export
+max.bound <- nimbleFunction(
+    name = 'max.bound',
+    run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
+        print('in: max.bound()')
+        bounds <- CAR_calcBounds(C, adj, num, M)
+        returnType(double(0))
+        return(bounds[2])
+    }
+)
 
 
 CAR_evaluateDensity_base <- nimbleFunctionVirtual(
