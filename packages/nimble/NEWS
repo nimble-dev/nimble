@@ -12,7 +12,7 @@ USER LEVEL CHANGES
 
 -- There is a new nimbleExternalCall function that allows one to call separately compiled code from a nimbleFunction or a model (this feature is experimental for now).
 
--- There is a new nimbleExternalCall function that allows one to call an R function from a compiled nimbleFunction or model (this feature is experimental for now).
+-- There is a new nimbleRCall function that allows one to call an R function from a compiled nimbleFunction or model (this feature is experimental for now).
 
 -- Enabled use of next in nimbleFunctions.
 
