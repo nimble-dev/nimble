@@ -457,15 +457,14 @@ conjugacyClass <- setRefClass(
                                                reset                  = function() {}),
                                where    = getLoadingNamespace()
                 ),
-                list(SETUPFUNCTION                  = genSetupFunction(dependentCounts = dependentCounts),
-                     RUNFUNCTION                     = genRunFunction(dependentCounts = dependentCounts,
-                                                                      doDependentScreen = doDependentScreen),
-                     GETPOSTERIORLOGDENSITYFUNCTION = genGetPosteriorLogDensityFunction(dependentCounts = dependentCounts)
+                list(SETUPFUNCTION                  = genSetupFunction(dependentCounts = dependentCounts, doDependentScreen = doDependentScreen),
+                     RUNFUNCTION                    = genRunFunction(dependentCounts = dependentCounts, doDependentScreen = doDependentScreen),
+                     GETPOSTERIORLOGDENSITYFUNCTION = genGetPosteriorLogDensityFunction(dependentCounts = dependentCounts, doDependentScreen = doDependentScreen)
                 )
             )
         },
 
-        genSetupFunction = function(dependentCounts) {
+        genSetupFunction = function(dependentCounts, doDependentScreen = FALSE) {
             functionBody <- codeBlockClass()
 
             functionBody$addCode({
@@ -514,7 +513,7 @@ conjugacyClass <- setRefClass(
             
             ## more new array() setup outputs, instead of declare() statements, for offset and coeff variables
             ## July 2017
-            if(needsLinearityCheck) {
+            if(needsLinearityCheck || (nimbleOptions()$allowDynamicIndexing && link == 'identity' && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
                 for(iDepCount in seq_along(dependentCounts)) {
@@ -547,8 +546,8 @@ conjugacyClass <- setRefClass(
                 })
             }
 
-            addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dependentCounts = dependentCounts,
-                                                 doDependentScreen = doDependentScreen)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
+            ## adds code to generate the quantities prior_xxx, and contribution_xxx
+            addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dependentCounts = dependentCounts, doDependentScreen = doDependentScreen)
 
             ## generate new value, store, calculate, copy, etc...
             functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
@@ -578,10 +577,11 @@ conjugacyClass <- setRefClass(
             return(functionDef)
         },
 
-        genGetPosteriorLogDensityFunction = function(dependentCounts) {
+        genGetPosteriorLogDensityFunction = function(dependentCounts, doDependentScreen = FALSE) {
             functionBody <- codeBlockClass()
 
-            addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dependentCounts = dependentCounts)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
+            ## adds code to generate the quantities prior_xxx, and contribution_xxx
+            addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dependentCounts = dependentCounts, doDependentScreen = doDependentScreen)
 
             ## calculate and return the (log)density for the current value of target
             functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
@@ -598,8 +598,7 @@ conjugacyClass <- setRefClass(
             return(functionDef)
         },
 
-        addPosteriorQuantitiesGenerationCode = function(functionBody = functionBody, dependentCounts = dependentCounts,
-                                                        doDependentScreen = FALSE) {
+        addPosteriorQuantitiesGenerationCode = function(functionBody = functionBody, dependentCounts = dependentCounts, doDependentScreen = FALSE) {
 
             ## get current value of prior parameters which appear in the posterior expression
             for(priorParam in posteriorObject$neededPriorParams) {
@@ -642,8 +641,7 @@ conjugacyClass <- setRefClass(
             }
 
             ## if we need to determine 'coeff' and/or 'offset'
-            if(needsLinearityCheck || (nimbleOptions()$allowDynamicIndexing
-                && link == 'identity' && doDependentScreen)) {
+            if(needsLinearityCheck || (nimbleOptions()$allowDynamicIndexing && link == 'identity' && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
