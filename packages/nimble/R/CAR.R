@@ -234,8 +234,8 @@ CAR_calcBounds <- nimbleFunction(
         print('in: CAR_calcBounds()')
         print('XXXXX still should *check* that this function works correctly')
         ## construct Cmatrix using C, adj, num:
-        Cmatrix <- array(0, dim = c(N, N))
         N <- dim(num)[1]
+        Cmatrix <- array(0, dim = c(N, N))
         for(i in 1:N) {
             nNeighbors <- num[i]
             if(nNeighbors > 0) {
@@ -244,7 +244,6 @@ CAR_calcBounds <- nimbleFunction(
                 for(adjIndex in adjStartInd:(adjStartInd+nNeighbors-1)) {
                     j <- adj[adjIndex]
                     Cmatrix[i, j] <- C[adjIndex]
-                    Cmatrix[j, i] <- C[adjIndex]
                 }
             }
         }
