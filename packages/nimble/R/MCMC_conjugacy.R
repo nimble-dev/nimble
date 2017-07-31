@@ -326,7 +326,8 @@ conjugacyClass <- setRefClass(
         DEP_VALUES_VAR_INDEXED = 'ANY',   ## in the code for generating the conjugate sampler functions
         DEP_PARAM_VAR_INDEXED  = 'ANY',   ##
         DEP_OFFSET_VAR         = 'ANY',   ##
-        DEP_COEFF_VAR          = 'ANY'    ##
+        DEP_COEFF_VAR          = 'ANY',   ##
+        CONTRIB_NAME           = 'ANY'    ##
     ),
     methods = list(
         initialize = function(cr) {
@@ -451,6 +452,16 @@ conjugacyClass <- setRefClass(
                             DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), as.name(paste0('dep_', distName, '_nodeSizeMax')), targetNdim),
                             DECLARE_SIZE_COEFF  = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), quote(d),                                          targetCoeffNdim)))
                 }
+            }
+
+            ## adding declarations for the contribution terms, to remove Windows compiler warnings, DT August 2015
+            ## moved these numeric() and array() declarations for contributino terms to setup outputs, July 2017
+            for(contributionName in posteriorObject$neededContributionNames) {
+                contribNdim <- posteriorObject$neededContributionDims[[contributionName]]
+                functionBody$addCode(CONTRIB_NAME2 <- CONTRIB_INITIAL_DECLARATION,                   ## the 2's here are *only* to prevent warnings about
+                                     list(CONTRIB_NAME2               = as.name(contributionName),   ## local assignment '<-' versus '<<-'
+                                          CONTRIB_INITIAL_DECLARATION = switch(as.character(contribNdim),
+                                              `0` = 0, `1` = quote(rep(0, length = d)), `2` = quote(array(0, dim = c(d, d))), stop())))
             }
             
             functionDef <- quote(function(model, mvSaved, target, control) {})
@@ -723,13 +734,14 @@ conjugacyClass <- setRefClass(
 
             targetNdim <- getDimension(prior)
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
-            ## adding declarations for the contribution terms, to remove Windows compiler warnings, DT August 2015
+            ## contribution terms have been moved to setup function outputs,
+            ## but we still need to *zero these variables out* before adding contribution terms into them
             for(contributionName in posteriorObject$neededContributionNames) {
                 contribNdim <- posteriorObject$neededContributionDims[[contributionName]]
-                functionBody$addCode(CONTRIB_NAME <- CONTRIB_INITIAL_DECLARATION,
-                                     list(CONTRIB_NAME                = as.name(contributionName),
-                                          CONTRIB_INITIAL_DECLARATION = switch(as.character(contribNdim),
-                                              `0` = 0, `1` = quote(numeric(length = d)), `2` = quote(array(dim = c(d, d))), stop())))
+                functionBody$addCode(CONTRIB_NAME <<- CONTRIB_ZERO_OUT,
+                                     list(CONTRIB_NAME     = as.name(contributionName),
+                                          CONTRIB_ZERO_OUT = switch(as.character(contribNdim),
+                                              `0` = 0, `1` = quote(rep(0, length = d)), `2` = quote(array(0, dim = c(d, d))), stop())))
             }
 
             for(iDepCount in seq_along(dependentCounts)) {
@@ -767,12 +779,12 @@ conjugacyClass <- setRefClass(
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
                     if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) { ## FIXME: do so only have one if() here and only insert the check if the sampler involves a dynamic index
                         if(targetNdim == 0)
-                            forLoopBody$addCode(if(COEFF_EXPR != 0) CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                            forLoopBody$addCode(if(COEFF_EXPR != 0) CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
                                                 list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
-                        else forLoopBody$addCode(if(min(COEFF_EXPR) != 0 | max(COEFF_EXPR) != 0) CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                        else forLoopBody$addCode(if(min(COEFF_EXPR) != 0 | max(COEFF_EXPR) != 0) CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
                                                 list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
 
-                    } else forLoopBody$addCode(CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                    } else forLoopBody$addCode(CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
                                         list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
                 }
                 functionBody$addCode(for(iDep in 1:N_DEP) FORLOOPBODY,
