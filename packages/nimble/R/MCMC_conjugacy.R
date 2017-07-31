@@ -734,7 +734,7 @@ conjugacyClass <- setRefClass(
 
             targetNdim <- getDimension(prior)
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
-            ## contribution terms have been moved to setup function outputs,
+            ## contribution terms have been moved to be setup function outputs,
             ## but we still need to *zero these variables out* before adding contribution terms into them
             for(contributionName in posteriorObject$neededContributionNames) {
                 contribNdim <- posteriorObject$neededContributionDims[[contributionName]]
