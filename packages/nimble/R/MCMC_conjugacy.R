@@ -298,46 +298,6 @@ conjugacyRelationshipsClass <- setRefClass(
             ansList <- ansList[!sapply(ansList, is.null)]  # strips out any NULL values
             if(!length(ansList)) return(list()) else return(ansList)  # replaces empty named list with empty list
         },
-        ## older version of checkConjugacy(), which checks nodes one at a time (much slower)
-        ## deprecated
-        ## -DT Nov. 2016
-        ##checkConjugacy = function(model, nodes) {
-        ##    ## checks conjugacy of multiple nodes at once.
-        ##    ## the return object is a named list, containing the conjugacyResult lists
-        ##    ## *only* for nodes which are conjugate
-        ##    conjugacyResultsAll <- list()
-        ##    declarationIDs <- model$getDeclID(nodes)
-        ##    nodesSplitByDeclaration <- split(nodes, declarationIDs)
-        ##    for(theseNodes in nodesSplitByDeclaration)
-        ##        conjugacyResultsAll <- c(conjugacyResultsAll, checkConjugacy_singleDeclaration(model, theseNodes))
-        ##    return(conjugacyResultsAll)
-        ##},
-        ##checkConjugacy_singleDeclaration = function(model, nodes) {
-        ##    ##browser()   ## removed by DT, July 2015, not sure why this was here
-        ##    if(model$isTruncated(nodes[1])) return(list())   ## we say non-conjugate if the targetNode is truncated
-        ##    dist <- model$getDistribution(nodes[1])
-        ##    if(!dist %in% names(conjugacys)) return(list())
-        ##    conjugacyObj <- conjugacys[[dist]]
-        ##    ## temporary -- but works fine!
-        ##    retList <- list()
-        ##    for(node in nodes) {
-        ##        result <- conjugacyObj$checkConjugacy(model, node)
-        ##        if(!is.null(result))   retList[[node]] <- result
-        ##    }
-        ##    return(retList)
-        ##    ## END temporary -- but works fine!
-        ##    ## next line: this would be the new, more efficient approach -- not yet implemented
-        ##    ##conjugacyObj$checkConjugacyAll(model, nodes) -- not yet implemented
-        ##},
-        ## update May 2016: old (non-dynamic) system is no longer supported -DT
-        ##generateConjugateSamplerDefinitions = function() {
-        ##    conjugateSamplerDefinitions <- list()
-        ##    for(conjugacyObj in conjugacys) {  # conjugacyObj is a conjugacyClass object
-        ##        samplerName <- cc_makeConjugateSamplerName(conjugacyObj$samplerType)
-        ##        conjugateSamplerDefinitions[[samplerName]] <- conjugacyObj$generateConjugateSamplerDef()    ## workhorse for creating conjugate sampler nimble functions
-        ##    }
-        ##    return(conjugateSamplerDefinitions)
-        ##},
         generateDynamicConjugateSamplerDefinition = function(prior, dependentCounts, doDependentScreen = FALSE) {
             ## conjugateSamplerDefinitions[[paste0('sampler_conjugate_', conjugacyResult$prior)]]  ## using original (non-dynamic) conjugate sampler functions
             conjugacys[[prior]]$generateConjugateSamplerDef(dynamic = TRUE, dependentCounts = dependentCounts,
@@ -404,41 +364,6 @@ conjugacyClass <- setRefClass(
             if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
             return(paste0('dep_', depNodeDist))
         },
-        ## workhorse for checking conjugacy
-        ## is this still used?????? (since transition to the "new" checkConjugacy, which
-        ## checks multiple nodes from BUGS declarations at a time)
-        ## should investigate if still used.  I'm honestly not certain.
-        ## -DT Nov. 2016
-        ## trying commenting it out...  -DT July 2017
-        ##checkConjugacy = function(model, targetNode) {
-        ##    if(model$getDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
-        ##    control <- list()
-        ## 
-        ##    depNodes <- model$getDependencies(targetNode, stochOnly = TRUE, self = FALSE)
-        ##    if(length(depNodes) == 0)  return(NULL)   # no dependent stochastic nodes: not conjugate, return NULL
-        ## 
-        ##    for(depNode in depNodes) {
-        ##        if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
-        ##        depNodeDist <- model$getDistribution(depNode)
-        ##        if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
-        ##        dependentObj <- dependents[[depNodeDist]]
-        ##        linearityCheckExpr <- model$getNodeExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-        ##        linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr)
-        ##        ## next line prevents the following potential error:
-        ##        ## when targetNode doesn't appear in 'param' expr (hence passes the linearlity check),
-        ##        ## and targetNode appears in *exactly one* other parameter expr (hence passing cc_otherParamsCheck()),
-        ##        ## which also explains why depNode is identified as a dependent node in the first place.
-        ##        ## we simply ensure that targetNode actually does appear in the conjugate parameter expression,
-        ##        ## thus the conjugacy check will fail if targetNode appears in any other parameter expressions (failing in cc_otherParamsCheck())
-        ##        if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
-        ##        if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure non of it's components appear in expr
-        ##        linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
-        ##        if(!cc_linkCheck(linearityCheck, link))                           return(NULL)
-        ##        if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
-        ##        control <- addDependentNodeToControl(control, depNodeDist, depNode)
-        ##    }
-        ##    return(list(type=samplerType, target=targetNode, control=control))   # all dependent nodes passed the conjugacy check
-        ##},
 
         addDependentNodeToControl = function(control, depNodeDist, depNode) {
             listName <- paste0('dep_', depNodeDist)
@@ -1256,18 +1181,6 @@ makeIndexedVariable <- function(varName, nDim, indexExpr, secondSize, thirdSize)
 
 ## this is still *necessary* (and exported):
 conjugacyRelationshipsObject <- conjugacyRelationshipsClass(conjugacyRelationshipsInputList)
-
-
-## update May 2016: old (non-dynamic) system is no longer supported -DT
-## this is still created (and exported) because it's handy:
-##conjugateSamplerDefinitions <- conjugacyRelationshipsObject$generateConjugateSamplerDefinitions()
-# Rebuild conjugate sampler functions
-##buildConjugateSamplerFunctions <- function(writeToFile = NULL) {
-##    conjugacyRelationshipsObject <- conjugacyRelationshipsClass(conjugacyRelationshipsInputList)
-##    conjugateSamplerDefinitions <- conjugacyRelationshipsObject$generateConjugateSamplerDefinitions()
-##    createNamedObjectsFromList(conjugateSamplerDefinitions, writeToFile = writeToFile, envir = parent.frame())
-##}
-##buildConjugateSamplerFunctions(writeToFile = 'TEMP_conjugateSamplerDefinitions.R')
 
 
 ## here after is for handling of dynamic conjugate sampler function
