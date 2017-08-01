@@ -76,7 +76,7 @@ update documentation page with link to updated manual
 
 add info on new release to release notes page
 
-update version numbering on license and citation page and 'What is Nimble' page
+update version numbering on license and citation page
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
 
@@ -98,11 +98,6 @@ probably best at this point also to merge master onto devel
 
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote
-
-# make tag for nimble-docs too
-git tag -a v$VERSION -m "NIMBLE version $VERSION release, April 6, 2016"
-git push --tags    ## this is how you push *tags* to the remote
-
 
 ### building binaries
 
