@@ -442,31 +442,46 @@ double nimArr_dcar_proper(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<1,
 
 
 void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1, double> &C, NimArr<1, double> &adj, NimArr<1, double> &num, NimArr<1, double> &M, double tau, double gamma) {
-  //
-  // it's important that simulation via rcar_proper() does *not* set all values to NA (or NaN),
-  // since initializeModel() will call this simulate method if there are any NA's present,
-  // (which is allowed for island components), which over-writes all the other valid initial values.
-  //
-  //int n = num.size();
-  //NimArr<1, double> ansCopy;
-  //double *ansPtr;
-  //
-  //if(!ans.isMap()) {
-  //  ans.setSize(n);
-  //} else {
-  //  if(ans.size() != n) {
-  //    _nimble_global_output<<"Error in nimArr_rcar_proper: answer size ("<< ans.size() <<") does not match num size ("<<n<<").\n";
-  //    nimble_print_to_R(_nimble_global_output);
-  //  }
-  //}
-  //ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
-  //for(int i = 0; i < n; i++)
-  //  ansPtr[i] = R_NaN;
-  //
-  //if(ans.isMap()) {
-  //  ans = ansCopy;
-  //}
-  //
+
+  double *ansptr, *muptr, *Cptr, *adjptr, *numptr, *Mptr;
+  NimArr<1, double> ansCopy, muCopy, CCopy, adjCopy, numCopy, MCopy;
+  
+  int N = num.size();
+  int L = adj.size();
+  
+  if(!ans.isMap()) {
+    ans.setSize(N);
+  } else {
+    if(ans.size() != N) {
+      _nimble_global_output<<"Error in nimArr_rcar_proper: answer size ("<< ans.size() <<") does not match num size ("<<N<<").\n";
+      nimble_print_to_R(_nimble_global_output);
+    }
+  }
+  if(mu.size() != N) {
+    _nimble_global_output<<"Error in nimArr_rcar_proper: mu size ("<< mu.size() <<") does not match num size ("<<N<<").\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+  if(C.size() != L) {
+    _nimble_global_output<<"Error in nimArr_rcar_proper: C size ("<< C.size() <<") does not match adj size ("<<L<<").\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+  if(M.size() != N) {
+    _nimble_global_output<<"Error in nimArr_rcar_proper: M size ("<< M.size() <<") does not match num size ("<<N<<").\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+  
+  ansptr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
+  muptr = nimArrCopyIfNeeded<1, double>(mu, muCopy).getPtr();
+  Cptr = nimArrCopyIfNeeded<1, double>(C, CCopy).getPtr();
+  adjptr = nimArrCopyIfNeeded<1, double>(adj, adjCopy).getPtr();
+  numptr = nimArrCopyIfNeeded<1, double>(num, numCopy).getPtr();
+  Mptr = nimArrCopyIfNeeded<1, double>(M, MCopy).getPtr();
+  
+  rcar_proper(ansptr, muptr, Cptr, adjptr, numptr, Mptr, tau, gamma, N, L);
+  
+  if(ans.isMap()) {
+    ans = ansCopy;
+  }
 }
 
 

@@ -949,11 +949,13 @@ dcar_proper <- function(x, mu, C, adj, num, M, tau, gamma, log = FALSE) {
 #' @rdname CAR-Proper
 #' @export
 rcar_proper <- function(n = 1, mu, C, adj, num, M, tau, gamma) {
-    ## it's important that simulation via rcar_proper() does *not* set all values to NA (or NaN),
-    ## since initializeModel() will call this simulate method if there are any NA's present,
-    ## (which is allowed for island components), which over-writes all the other valid initial values.
-    ##return(rep(NaN, length(num)))
-    currentValues <- eval(quote(model[[nodes]]), parent.frame(3))
-    return(currentValues)
+    if(n != 1) warning('rcar_proper only handles n = 1 at the moment')
+    CAR_proper_checkAdjNumCM(adj, num, C, M)
+    if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
+    if(storage.mode(C) != 'double')   storage.mode(C) <- 'double'
+    if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
+    if(storage.mode(num) != 'double')   storage.mode(num) <- 'double'
+    if(storage.mode(M) != 'double')   storage.mode(M) <- 'double'
+    .Call(C_rcar_proper, as.integer(n), as.double(mu), as.double(C), as.double(adj), as.double(num), as.double(M), as.double(tau), as.double(gamma))
 }
 

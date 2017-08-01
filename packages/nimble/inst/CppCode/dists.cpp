@@ -2248,3 +2248,53 @@ double dcar_proper(double* x, double* mu, double* C, double* adj, double* num, d
   return(exp(lp));
 }
 
+
+SEXP C_rcar_proper(SEXP n, SEXP mu, SEXP C, SEXP adj, SEXP num, SEXP M, SEXP tau, SEXP gamma) {
+  if(!Rf_isInteger(n) || !Rf_isReal(mu) || !Rf_isReal(C) || !Rf_isReal(adj) || !Rf_isReal(num) || !Rf_isReal(M) || !Rf_isReal(tau) || !Rf_isReal(gamma))
+    RBREAK("Error (C_rcar_proper): invalid input type for one of the arguments.");
+  
+  int N = LENGTH(mu);
+  int L = LENGTH(adj);
+  
+  double* c_mu = REAL(mu);
+  double* c_C = REAL(C);
+  double* c_adj = REAL(adj);
+  double* c_num = REAL(num);
+  double* c_M = REAL(M);
+  double c_tau = REAL(tau)[0];
+  double c_gamma = REAL(gamma)[0];
+  
+  SEXP ans;
+  
+  GetRNGstate();
+  
+  PROTECT(ans = Rf_allocVector(REALSXP, N));
+  
+  rcar_proper(REAL(ans), c_mu, c_C, c_adj, c_num, c_M, c_tau, c_gamma, N, L);
+  
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+
+
+void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, double* M, double tau, double gamma, int N, int L) {
+
+#ifdef IEEE_754
+  if (R_isnancpp(mu, N) || R_isnancpp(C, L) || R_isnancpp(adj, L) || R_isnancpp(num, N) || R_isnancpp(M, N) || R_isnancpp(tau) || R_isnancpp(gamma)) {
+    for(int i = 0; i < N; i++) {
+      ans[i] = R_NaN;
+    }
+    return;
+  }
+#endif
+
+  int i;
+  
+  // NEED TO WRITE THIS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  for(i = 0; i < N; i++) {
+    ans[i] = 2.1;
+  }
+  
+}
+
