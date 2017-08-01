@@ -13,6 +13,18 @@
 // (see $R_SOURCE/src/include/R_ext/RS.h).
 #define error Rf_error
 
+void SEXP_2_NimArr(SEXP Sn, double &x) {x = SEXP_2_double(Sn);}
+void SEXP_2_NimArr(SEXP Sn, int &x) {x = SEXP_2_int(Sn);}
+void SEXP_2_NimArr(SEXP Sn, bool &x) {x = SEXP_2_bool(Sn);}
+void SEXP_2_NimArr(SEXP Sn, std::string &x) {x = STRSEXP_2_string(Sn);}
+void SEXP_2_NimArr(SEXP Sn, std::vector<std::string> &x) {STRSEXP_2_vectorString(Sn, x);}
+
+SEXP NimArr_2_SEXP(double x) {return(double_2_SEXP(x));}
+SEXP NimArr_2_SEXP(int x) {return(int_2_SEXP(x));}
+SEXP NimArr_2_SEXP(bool x) {return(bool_2_SEXP(x));}
+SEXP NimArr_2_SEXP(std::string &x) {return(string_2_STRSEXP(x));}
+SEXP NimArr_2_SEXP(const std::vector<std::string> &x) {return(vectorString_2_STRSEXP(x));}
+
 // This is used when we have a NimArr<>* in a model and a NimArr<>** that needs to point to it.
 // We assume we have an extptr to each
 SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {

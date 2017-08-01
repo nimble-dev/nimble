@@ -917,7 +917,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                       matRows <- unlist(sapply(sizes[mats], `[`, 1))
                                                       matCols <- unlist(sapply(sizes[mats], `[`, 2))
                                                       if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
-                                                          if(dist %in% names(distributionsInputList)) {
+                                                          if(dist %in% names(nimble:::distributionsInputList)) {
                                                               stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
                                                           } else {
                                                               warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or if size of variable differs from sizes of parameters.")                                                                                                                                   }
@@ -1134,16 +1134,19 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            setupOutputExprs <- BUGSdecl$replacementNameExprs
                                            ## ensure they are in the same order as the columns of the unrolledIndicesMatrix, because that is assumed in nodeFunctionNew
                                            ## This can be necessary in a case like for(j in ...) for(i in ...) x[i,j] ~ ...; because x uses inner index first
+
+                                           dynamicIndexInfo <- BUGSdecl$dynamicIndexInfo
+                                           if(nimbleOptions()$allowDynamicIndexing) {
+                                               for(iI in seq_along(dynamicIndexInfo))
+                                                   dynamicIndexInfo[[iI]]$indexCode <- nimble:::insertSingleIndexBrackets(dynamicIndexInfo[[iI]]$indexCode, modelDef$varInfo)
+                                           } 
+                                           
                                            if(nrow(BUGSdecl$unrolledIndicesMatrix) > 0)
                                                setupOutputExprs <- setupOutputExprs[ colnames(BUGSdecl$unrolledIndicesMatrix) ]
                                            ## make a unique name
                                            thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
-
-                                           
-                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, 
-                                                                                   parentsSizeAndDims = parentsSizeAndDims, logProbNodeExpr=logProbNodeExpr, type=type,
-                                                                                   setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
+                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, parentsSizeAndDims = parentsSizeAndDims, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, dynamicIndexInfo = dynamicIndexInfo, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
                                            nodeFunctionGeneratorNames[i] <<- thisNodeGeneratorName

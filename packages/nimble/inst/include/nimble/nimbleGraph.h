@@ -10,7 +10,7 @@ using std::vector;
 using std::string;
 
 /* NODETYPE labels the type of node, regardless of where it is in the graph */
-enum NODETYPE {UNKNOWNTYPE, STOCH, DETERM, RHSONLY, LHSINFERRED};
+enum NODETYPE {UNKNOWNTYPE, STOCH, DETERM, RHSONLY, LHSINFERRED, UNKNOWNINDEX};
 /* NODEROLE labels how a node fits in the graph */
 enum NODEROLE {UNKNOWNROLE, TOP, LATENT, END, DATA};
 

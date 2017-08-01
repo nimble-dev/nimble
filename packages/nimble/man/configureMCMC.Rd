@@ -12,7 +12,7 @@ configureMCMC(model, nodes, control = list(), monitors, thin = 1,
   warnNoSamplerAssigned = TRUE, ...)
 }
 \arguments{
-\item{model}{A NIMBLE model object, created from \link{nimbleModel}}
+\item{model}{A NIMBLE model object, created from \code{\link{nimbleModel}}}
 
 \item{nodes}{An optional character vector, specifying the nodes and/or variables for which samplers should be created.
 Nodes may be specified in their indexed form, \code{y[1, 3]}.  Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]}, \code{x[2]}, etc.
@@ -57,7 +57,7 @@ The default value is an empty character vector, i.e. no values will be recorded.
 \item{...}{Additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}}
 }
 \description{
-Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \link{buildMCMC}. The assignment of sampling algorithms may be controlled using the \code{rules} argument, if provided.
+Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \code{\link{buildMCMC}}. The assignment of sampling algorithms may be controlled using the \code{rules} argument, if provided.
 }
 \details{
 See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object

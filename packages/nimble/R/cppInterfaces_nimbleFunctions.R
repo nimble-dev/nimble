@@ -1435,7 +1435,7 @@ CmultiNimbleListClass <- setRefClass('CmultiNimbleListClass',
 #'
 #' @details The member data of a nimbleFunction are the objects created in \code{setup} code that are used in \code{run} code or other member functions.
 #'
-#' Whether multi-interfaces are used for nested nimbleFunctions is controlled by the \code{buildInterfacesForCompiledNestedNimbleFunctions} option in \link{nimbleOptions}.
+#' Whether multi-interfaces are used for nested nimbleFunctions is controlled by the \code{buildInterfacesForCompiledNestedNimbleFunctions} option in \code{\link{nimbleOptions}}.
 #'
 #' To see an example of a multi-interface, see \code{samplerFunctions} in a compiled MCMC interface object.
 #'

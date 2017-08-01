@@ -18,7 +18,7 @@ nimbleFunction(setup = NULL, run = function() { }, methods = list(),
 
 \item{globalSetup}{For internal use only}
 
-\item{contains}{An optional object returned from \link{nimbleFunctionVirtual} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform}
+\item{contains}{An optional object returned from \code{\link{nimbleFunctionVirtual}} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform}
 
 \item{enableDerivs}{EXPERIMENTAL A list of names of function methods to enable derivatives for.  Currently only for developer use.}
 

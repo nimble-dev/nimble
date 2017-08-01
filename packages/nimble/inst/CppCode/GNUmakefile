@@ -7,13 +7,7 @@ ifndef R_SHARE_DIR
  R_SHARE_DIR=$(R_HOME)/share
 endif
 
-# The following two lines attempt to reduce the size of libnimble.a or equivalent by removing -g flags.
-# It is OK if the R script silently fails; in that case Makeconf will simply not be found.
-# Note that we don't precede this with a fallback `-include $(R_HOME)/etc$(R_ARCH)/Makeconf`,
-# since that causes "make variable override" warnings on OS X.
-$(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
--include ./Makeconf
-
+-include $(R_HOME)/etc$(R_ARCH)/Makeconf
 include ./Makevars
 
 ifndef OS
