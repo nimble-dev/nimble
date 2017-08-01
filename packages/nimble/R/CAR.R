@@ -87,7 +87,7 @@ CAR_proper_checkAdjNumCM <- function(adj, num, C, M) {
             if(sum(C[ind]) != 1) stop(paste0('C (normalised weights) for component ', i, 'of dcar_proper distribution must sum to one'))
             for(ind.value in ind) {
                 j <- adj[ind.value]
-                if(C[ind.value]*M[j] != C[subsetIndList[[j]]][which(subsetIndList[[j]]==i)]*M[i])
+                if(C[ind.value]*M[j] != C[subsetIndList[[j]]][which(adj[subsetIndList[[j]]]==i)]*M[i])
                     stop('failing dcar_proper() symmetry constraint Cij*Mjj = Cji*Mii for components i = ', i, ' and j = ', j)
             }
         }
