@@ -6,7 +6,9 @@ requirements <- c(
     'testthat',
     'mvtnorm',  ## needed for test-distributions.R
     'abind',    ## needed for test-compareMCMCs.R
-    'covr')     ## needed for code coverage reports
+    'ggplot2',  ## needed for test-compareMCMCs.R
+    'covr'      ## needed for code coverage reports
+    )     
 
 for (package in requirements) {
     if (!suppressPackageStartupMessages(require(package,

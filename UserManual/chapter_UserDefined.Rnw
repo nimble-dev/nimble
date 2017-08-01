@@ -11,6 +11,9 @@ library(methods)
 
 NIMBLE allows you to define your own functions and distributions as \nm{nimbleFunction}s for use in BUGS code. As a result, NIMBLE frees you from being constrained to the functions and distributions discussed in Chapter \ref{cha:writing-models}.  For example, instead of setting up a Dirichlet prior with multinomial data and needing to use MCMC, one could recognize that this results in a Dirichlet-multinomial distribution for the data and provide that as a user-defined distribution instead.
 
+Since NIMBLE allows you to wrap calls to external compiled code or arbitrary R functions as nimbleFunctions (experimental features
+in Version \ver), and since you can define model functions and distributions as nimbleFunctions, you can combine these features to build external compiled code or arbitrary R functions into a model.  See (\ref{sec:calling-external-code}-\ref{sec:calling-R-code}).
+
 Further, while NIMBLE at the moment does not allow the use of random
 indices, such as is common in clustering contexts, you may be able to
 analytically integrate over the random indices, resulting in a mixture
@@ -188,10 +191,10 @@ can't obtain automatically from the nimbleFunctions you write.
 The cases in which you'll need to explicitly call
 \cd{registerDistributions} are when you want to do any of the following:
 \begin{itemize}
-  \item provide alternative parameterizations,
-    \item indicate a distribution is discrete, and
-      \item provide the range of possible values for a distribution.
-        \end{itemize}
+\item provide alternative parameterizations,
+\item indicate a distribution is discrete, and
+\item provide the range of possible values for a distribution.
+\end{itemize}
         
 If you would like to allow for
 multiple parameterizations, you can do this via the \cd{Rdist} element

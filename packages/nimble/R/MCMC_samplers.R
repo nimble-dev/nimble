@@ -26,7 +26,7 @@ sampler_posterior_predictive <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
-        calcNodes  <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
     },
     run = function() {
         simulate(model, target)
@@ -52,7 +52,7 @@ sampler_binary <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes  <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use binary sampler on more than one target node')
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
@@ -74,6 +74,50 @@ sampler_binary <- nimbleFunction(
 
 
 
+###########################################################################
+### categorical sampler for dcat distributions ############################
+###########################################################################
+
+#' @rdname samplers
+#' @export
+sampler_categorical <- nimbleFunction(
+    name = 'sampler_categorical',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes  <- model$getDependencies(target)
+        ## numeric value generation
+        k <- length(model$getParam(target, 'prob'))
+        probs <- numeric(k)
+        ## checks
+        if(length(targetAsScalar) > 1)  stop('cannot use categorical sampler on more than one target node')
+        if(model$getDistribution(target) != 'dcat') stop('can only use categorical sampler on node with dcat distribution')
+    },
+    run = function() {
+        currentValue <- model[[target]]
+        probs[currentValue] <<- exp(getLogProb(model, calcNodes))
+        for(i in 1:k) {
+            if(i != currentValue) {
+                model[[target]] <<- i
+                probs[i] <<- exp(calculate(model, calcNodes))
+                if(is.nan(probs[i])) probs[i] <<- 0
+            }
+        }
+        newValue <- rcat(1, probs)
+        if(newValue != currentValue) {
+            model[[target]] <<- newValue
+            calculate(model, calcNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        } else nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+
 ####################################################################
 ### scalar RW sampler with normal proposal distribution ############
 ####################################################################
@@ -85,14 +129,14 @@ sampler_RW <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        logScale      <- control$log
-        reflective    <- control$reflective
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        scale         <- control$scale
+        logScale      <- if(!is.null(control$log))           control$log           else FALSE
+        reflective    <- if(!is.null(control$reflective))    control$reflective    else FALSE
+        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
+        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
+        scale         <- if(!is.null(control$scale))         control$scale         else 1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes  <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -175,11 +219,11 @@ sampler_RW_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive       <- control$adaptive
-        adaptScaleOnly <- control$adaptScaleOnly
-        adaptInterval  <- control$adaptInterval
-        scale          <- control$scale
-        propCov        <- control$propCov
+        adaptive       <- if(!is.null(control$adaptive))       control$adaptive       else TRUE
+        adaptScaleOnly <- if(!is.null(control$adaptScaleOnly)) control$adaptScaleOnly else FALSE
+        adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
+        scale          <- if(!is.null(control$scale))          control$scale          else 1
+        propCov        <- if(!is.null(control$propCov))        control$propCov        else 'identity'
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -290,11 +334,11 @@ sampler_RW_llFunction <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive       <- control$adaptive
-        adaptInterval  <- control$adaptInterval
-        scale          <- control$scale
-        llFunction     <- control$llFunction
-        includesTarget <- control$includesTarget
+        adaptive       <- if(!is.null(control$adaptive))       control$adaptive       else TRUE
+        adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
+        scale          <- if(!is.null(control$scale))          control$scale          else 1
+        llFunction     <- if(!is.null(control$llFunction))     control$llFunction     else stop('RW_llFunction sampler missing required control argument: llFunction')
+        includesTarget <- if(!is.null(control$includesTarget)) control$includesTarget else stop('RW_llFunction sampler missing required control argument: includesTarget')
         ## node list generation
         calcNodes <- model$getDependencies(target)
         ## nested function and function list definitions
@@ -337,13 +381,14 @@ sampler_slice <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        width         <- control$sliceWidth
-        maxSteps      <- control$sliceMaxSteps
+        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
+        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
+        width         <- if(!is.null(control$sliceWidth))    control$sliceWidth    else 1
+        maxSteps      <- if(!is.null(control$sliceMaxSteps)) control$sliceMaxSteps else 100
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         widthOriginal <- width
         timesRan      <- 0
@@ -388,7 +433,9 @@ sampler_slice <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
-            lp <- calculate(model, calcNodes)
+            lp <- calculate(model, target)
+            if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
+            lp <- lp + calculate(model, calcNodesNoSelf)
             returnType(double())
             return(lp)
         },
@@ -428,7 +475,7 @@ sampler_ess <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         target <- model$expandNodeNames(target)
-        calcNodes  <- model$getDependencies(target, self = FALSE)
+        calcNodes <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         Pi <- pi
         ## nested function and function list definitions
@@ -475,15 +522,16 @@ sampler_AF_slice <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        widthVec            <- control$sliceWidths
-        maxSteps            <- control$sliceMaxSteps
-        adaptFactorMaxIter  <- control$sliceAdaptFactorMaxIter    # number of iterations to use for factor adaptation
-        adaptFactorInterval <- control$sliceAdaptFactorInterval   # interval to use for factor adaptation
-        adaptWidthMaxIter   <- control$sliceAdaptWidthMaxIter     # number of iterations to use for width adaptation (gets reset when factors adapt)
-        adaptWidthTolerance <- control$sliceAdaptWidthTolerance   # tolerance for when widths no longer need to adapt
+        widthVec            <- if(!is.null(control$sliceWidths))              control$sliceWidths              else 'oneVec'
+        maxSteps            <- if(!is.null(control$sliceMaxSteps))            control$sliceMaxSteps            else 100
+        adaptFactorMaxIter  <- if(!is.null(control$sliceAdaptFactorMaxIter))  control$sliceAdaptFactorMaxIter  else 15000
+        adaptFactorInterval <- if(!is.null(control$sliceAdaptFactorInterval)) control$sliceAdaptFactorInterval else 1000
+        adaptWidthMaxIter   <- if(!is.null(control$sliceAdaptWidthMaxIter))   control$sliceAdaptWidthMaxIter   else 512
+        adaptWidthTolerance <- if(!is.null(control$sliceAdaptWidthTolerance)) control$sliceAdaptWidthTolerance else 0.1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes      <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         d                  <- length(targetAsScalar)
         discrete           <- sapply(targetAsScalar, function(x) model$isDiscrete(x))
@@ -556,9 +604,11 @@ sampler_AF_slice <- nimbleFunction(
         setAndCalculateTarget = function(targetValues = double(1)) {
             if(anyDiscrete == 1)
                 for(i in 1:d)
-                    if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])
+                    if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])            
             values(model, target) <<- targetValues
-            lp <- calculate(model, calcNodes)
+            lp <- calculate(model, target)
+            if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
+            lp <- lp + calculate(model, calcNodesNoSelf)
             returnType(double())
             return(lp)
         },
@@ -650,11 +700,7 @@ sampler_crossLevel <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive       <- control$adaptive
-        adaptScaleOnly <- control$adaptScaleOnly
-        adaptInterval  <- control$adaptInterval
-        scale          <- control$scale
-        propCov        <- control$propCov
+        adaptive <- if(!is.null(control$adaptive)) control$adaptive else TRUE
         ## node list generation
         target       <- model$expandNodeNames(target)
         lowNodes     <- model$getDependencies(target, self = FALSE, stochOnly = TRUE, includeData = FALSE)
@@ -662,8 +708,7 @@ sampler_crossLevel <- nimbleFunction(
         calcNodes    <- model$getDependencies(c(target, lowNodes))
         ## nested function and function list definitions
         mvInternal <- modelValues(model)
-        RWblockControl <- list(adaptive = adaptive, adaptScaleOnly = adaptScaleOnly, adaptInterval = adaptInterval, scale = scale, propCov = propCov)
-        topRWblockSamplerFunction <- sampler_RW_block(model, mvInternal, target, RWblockControl)
+        topRWblockSamplerFunction <- sampler_RW_block(model, mvInternal, target, control)
         lowConjugateSamplerFunctions <- nimbleFunctionList(sampler_BASE)
         lowConjugateGetLogDensityFunctions <- nimbleFunctionList(getPosteriorDensityFromConjSampler_virtual)
         for(iLN in seq_along(lowNodes)) {
@@ -729,13 +774,13 @@ sampler_RW_llFunction_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive       <- control$adaptive
-        adaptScaleOnly <- control$adaptScaleOnly
-        adaptInterval  <- control$adaptInterval
-        scale          <- control$scale
-        propCov        <- control$propCov
-        llFunction     <- control$llFunction
-        includesTarget <- control$includesTarget
+        adaptive       <- if(!is.null(control$adaptive))       control$adaptive       else TRUE
+        adaptScaleOnly <- if(!is.null(control$adaptScaleOnly)) control$adaptScaleOnly else FALSE
+        adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
+        scale          <- if(!is.null(control$scale))          control$scale          else 1
+        propCov        <- if(!is.null(control$propCov))        control$propCov        else 'identity'
+        llFunction     <- if(!is.null(control$llFunction))     control$llFunction     else stop('RW_llFunction_block sampler missing required control argument: llFunction')
+        includesTarget <- if(!is.null(control$includesTarget)) control$includesTarget else stop('RW_llFunction_block sampler missing required control argument: includesTarget')
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -823,15 +868,15 @@ sampler_RW_PF <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive       <- control$adaptive
-        adaptInterval  <- control$adaptInterval
-        scale          <- control$scale
-        m              <- control$pfNparticles
-        resample       <- control$pfResample
-        filterType     <- control$pfType
-        lookahead      <- control$pfLookahead
-        optimizeM      <- as.integer(control$pfOptimizeNparticles)
-        latents        <- control$latents
+        adaptive       <- if(!is.null(control$adaptive))             control$adaptive             else TRUE
+        adaptInterval  <- if(!is.null(control$adaptInterval))        control$adaptInterval        else 200
+        scale          <- if(!is.null(control$scale))                control$scale                else 1
+        m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
+        resample       <- if(!is.null(control$pfResample))           control$pfResample           else FALSE
+        filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
+        lookahead      <- if(!is.null(control$pfLookahead))          control$pfLookahead          else 'simulate'
+        optimizeM      <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
+        latents        <- if(!is.null(control$latents))              control$latents              else stop('RW_PF sampler missing required control argument: latents')
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -844,6 +889,7 @@ sampler_RW_PF <- nimbleFunction(
         latentDep <- model$getDependencies(latents)
         topParams <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE, topOnly=TRUE)
         ## numeric value generation
+        optimizeM       <- as.integer(optimizeM)
         scaleOriginal   <- scale
         timesRan        <- 0
         timesAccepted   <- 0
@@ -971,17 +1017,17 @@ sampler_RW_PF_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target,  control) {
         ## control list extraction
-        adaptive       <- control$adaptive
-        adaptScaleOnly <- control$adaptScaleOnly
-        adaptInterval  <- control$adaptInterval
-        scale          <- control$scale
-        propCov        <- control$propCov
-        m              <- control$pfNparticles
-        resample       <- control$pfResample
-        filterType     <- control$pfType
-        lookahead      <- control$pfLookahead
-        optimizeM      <- as.integer(control$pfOptimizeNparticles)
-        latents        <- control$latents
+        adaptive       <- if(!is.null(control$adaptive))             control$adaptive             else TRUE
+        adaptScaleOnly <- if(!is.null(control$adaptScaleOnly))       control$adaptScaleOnly       else FALSE
+        adaptInterval  <- if(!is.null(control$adaptInterval))        control$adaptInterval        else 200
+        scale          <- if(!is.null(control$scale))                control$scale                else 1
+        propCov        <- if(!is.null(control$propCov))              control$propCov              else 'identity'
+        m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
+        resample       <- if(!is.null(control$pfResample))           control$pfResample           else FALSE
+        filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
+        lookahead      <- if(!is.null(control$pfLookahead))          control$pfLookahead          else 'simulate'
+        optimizeM      <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
+        latents        <- if(!is.null(control$latents))              control$latents              else stop('RW_PF sampler missing required control argument: latents')
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -995,6 +1041,7 @@ sampler_RW_PF_block <- nimbleFunction(
         topParams <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE, topOnly=TRUE)
         target <- model$expandNodeNames(target)
         ## numeric value generation
+        optimizeM     <- as.integer(optimizeM)
         scaleOriginal <- scale
         timesRan      <- 0
         timesAccepted <- 0
@@ -1145,8 +1192,8 @@ sampler_RW_multinomial <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
+        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
+        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         targetAllNodes <- unique(model$expandNodeNames(target))
@@ -1276,9 +1323,9 @@ sampler_RW_dirichlet <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        scaleOriginal <- control$scale
+        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
+        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
+        scaleOriginal <- if(!is.null(control$scale))         control$scale         else 1
         ## node list generation
         calcNodes <- model$getDependencies(target)
         depNodes  <- model$getDependencies(target, self = FALSE)
@@ -1458,9 +1505,9 @@ CAR_scalar_RW <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights, control) {
         ## control list extraction
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        scale         <- control$scale
+        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
+        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
+        scale         <- if(!is.null(control$scale))         control$scale         else 1
         ## node list generation
         depNodes <- model$getDependencies(targetScalar, self = FALSE)
         copyNodes <- c(targetScalar, depNodes)
@@ -1530,11 +1577,7 @@ sampler_CAR_normal <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        useConjugacy  <- control$carUseConjugacy
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        scale         <- control$scale
-        RW_control <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale)
+        useConjugacy  <- if(!is.null(control$carUseConjugacy)) control$carUseConjugacy else TRUE
         ## node list generation
         target <- model$expandNodeNames(target)
         targetScalarComponents <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -1564,7 +1607,7 @@ sampler_CAR_normal <- nimbleFunction(
                 componentSamplerFunctions[[i]] <- CAR_scalar_conjugate(model, mvSaved, targetScalar, neighborNodes, neighborWeights)
             } else {
                 ##cat(paste0('dcar() component node ', targetScalar, ': assigning RW sampler\n'))
-                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborWeights, RW_control)
+                componentSamplerFunctions[[i]] <- CAR_scalar_RW(model, mvSaved, targetScalar, neighborNodes, neighborWeights, control)
             }
         }
     },
@@ -1597,7 +1640,7 @@ sampler_CAR_normal <- nimbleFunction(
 #' 
 #' @param mvSaved \code{modelValues} object to be used to store MCMC samples
 #' @param target node(s) on which the sampler will be used
-#' @param control named list that controls the precise behavior of the sampler, with elements specific to \code{samplertype}.  The default values for control list elements are determined by the NIMBLE system option \code{'MCMCcontrolDefaultList'}.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the \code{control} argument) appear below.
+#' @param control named list that controls the precise behavior of the sampler, with elements specific to \code{samplertype}.  The default values for control list are specified in the setup code of each sampling algorithm.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the \code{control} argument) appear below.
 #'
 #' @section \code{sampler_base}: base class for new samplers
 #'
@@ -1773,13 +1816,13 @@ sampler_CAR_normal <- nimbleFunction(
 #'
 #' @section CAR_normal sampler:
 #'
-#' The CAR_normal sampler operates uniquely on improper Gaussian conditional autoregressive (CAR) nodes, those with a dcar_normal prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler, however these component samplers are specialized to operate on dimensions of a dcar_normal distribution.
+#' The CAR_normal sampler operates uniquely on improper (intrinsic) Gaussian conditional autoregressive (CAR) nodes, those with a \code{dcar_normal} prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler; however these component samplers are specialized to operate on dimensions of a \code{dcar_normal} distribution.
 #'
 #' The CAR_normal sampler accepts the following control list elements:
 #' \itemize{
-#' \item adaptive. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = TRUE)
-#' \item adaptInterval. The interval on which to perform adaptation for any component RW samplers.  Every adaptInterval MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
-#' \item scale. The initial value of the normal proposal standard deviation for any component RW samplers.  If adaptive = FALSE, scale will never change. (default = 1)
+#' \item \code{adaptive}. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = \code{TRUE})
+#' \item \code{adaptInterval}. The interval on which to perform adaptation for any component RW samplers.  Every \code{adaptInterval} MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the \code{scale} variable, based upon the sampler's achieved acceptance rate over the past \code{adaptInterval} iterations. (default = 200)
+#' \item \code{scale}. The initial value of the normal proposal standard deviation for any component RW samplers.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
 #' }
 #'
 #'

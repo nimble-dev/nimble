@@ -7,6 +7,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        allowDynamicIndexing = FALSE,
         nimbleProjectForTesting = NULL,  ## only used by withTempProject and compileNimble in testing code.
         stopCompilationBeforeLinking = NULL,
         experimentalUseTensorflow = FALSE,
@@ -53,32 +54,35 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         ## samplerAssignmentRules object that controls the default sampler assignments by configureMCMC.
         ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
         MCMCuseSamplerAssignmentRules = FALSE,
-        MCMCdefaultSamplerAssignmentRules = NULL,
+        MCMCdefaultSamplerAssignmentRules = NULL
         
         ## default settings for MCMC samplers
-        MCMCcontrolDefaultList = list(
-            log = FALSE,
-            reflective = FALSE,
-            adaptive = TRUE,
-            adaptScaleOnly = FALSE,
-            adaptInterval = 200,
-            scale = 1,
-            propCov = 'identity',
-            sliceWidth = 1,
-            sliceMaxSteps = 100,
-            sliceAdaptFactorMaxIter = 15000,  ##factorBurnIn = 15000,
-            sliceAdaptFactorInterval = 1000,  ##factorAdaptInterval = 1000,
-            sliceAdaptWidthMaxIter = 512,     ##sliceBurnIn = 512,
-            sliceAdaptWidthTolerance = 0.1,
-            scaleAdaptInterval = 200,
-            sliceWidths = 'oneVec',
-            pfNparticles = 1000,
-            pfResample = FALSE,
-            pfOptimizeNparticles = FALSE,
-            pfType = 'bootstrap',
-            pfLookahead = 'simulate',
-            carUseConjugacy = TRUE
-        )
+        ## control list defaults for MCMC samplers are
+        ## now part of the sampler functions (setup code).
+        ## -DT July 2017
+        ##MCMCcontrolDefaultList = list(
+        ##    log = FALSE,
+        ##    reflective = FALSE,
+        ##    adaptive = TRUE,
+        ##    adaptScaleOnly = FALSE,
+        ##    adaptInterval = 200,
+        ##    scale = 1,
+        ##    propCov = 'identity',
+        ##    sliceWidth = 1,
+        ##    sliceMaxSteps = 100,
+        ##    sliceAdaptFactorMaxIter = 15000,  ##factorBurnIn = 15000,
+        ##    sliceAdaptFactorInterval = 1000,  ##factorAdaptInterval = 1000,
+        ##    sliceAdaptWidthMaxIter = 512,     ##sliceBurnIn = 512,
+        ##    sliceAdaptWidthTolerance = 0.1,
+        ##    scaleAdaptInterval = 200,
+        ##    sliceWidths = 'oneVec',
+        ##    pfNparticles = 1000,
+        ##    pfResample = FALSE,
+        ##    pfOptimizeNparticles = FALSE,
+        ##    pfType = 'bootstrap',
+        ##    pfLookahead = 'simulate',
+        ##    carUseConjugacy = TRUE
+        ##)
     )
 )
 

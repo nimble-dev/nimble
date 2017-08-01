@@ -61,7 +61,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          as.integer = 'cppOutputCast',
                          as.numeric = 'cppOutputCast',
                          numListAccess = 'cppOutputNumList',
-                         blank = 'cppOutputBlank',
+                        blank = 'cppOutputBlank',
+                        nimVerbatim = 'cppOutputSkip',
                          callC = 'cppOutputEigBlank', ## not really eigen, but this just jumps over a layer in the parse tree
                          eigBlank = 'cppOutputEigBlank',
                          voidPtr = 'cppOutputVoidPtr',
@@ -145,6 +146,8 @@ cppOutputVoidPtr <- function(code, symTab) {
 }
 
 cppOutputBlank <- function(code, symTab) NULL
+
+cppOutputSkip <- function(code, symTab) nimGenerateCpp(code$args[[1]], symTab)
 
 cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')

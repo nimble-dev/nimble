@@ -93,9 +93,9 @@ Table \ref{table:functions-coreR}.
 \end{longtable}
 }
 
-Next we cover some of these functions in more detail. 
+Other R functions with numeric arguments and return value can be called during compiled execution by wrapping them as a \cd{nimbleRcall} (see Section \ref{sec:calling-R-code}).
 
-% PdV: What follows is reduced from some previous content.  I wonder if some examples would be clearer. CJP: I think it's probably fine given the pointer to \ref{sec:chang-sizes-exist}
+Next we cover some of these functions in more detail. 
 
 \subsubsection{\cd{numeric}, \cd{integer}, \cd{logical}, \cd{matrix}
   and \cd{array}}
@@ -211,9 +211,6 @@ from nimbleFunctions (and in BUGS model code), but care is needed in the syntax,
   \item For multivariate distributions (multivariate normal,
     Dirichlet, and Wishart),  ``r'' functions only return one random
 draw at a time, and the first argument must always be 1.
-%%\item For the multivariate normal and Wishart distributions the \cd{prec\_param} or
-%%\cd{scale\_param} argument must be provided, indicating when a
-%%covariance or precision matrix has been given.  %% this is stated below.
 \item R's recycling rule (re-use of an argument as needed to accommodate
   longer values of other arguments) is generally followed, but the
   returned object is always a scalar or a vector, not a matrix or
@@ -499,65 +496,6 @@ a programmer may expect a vector, since they know the result will have
 one column.  To make it a vector, simply extract the first column.
 More information about such handling is provided in the next section.
 
-
-% \subsection{Creating non-scalar variables: \cd{numeric}, \cd{integer}, \cd{logical}, \cd{matrix}, \cd{array}, and \cd{nimbleList}}
-% \label{sec:decl-local-vars}
-
-% When local variables in run code are created by assignment, their types will be 
-% automatically inferred.  For example, \cd{x <- A \%*\% B} will create 
-% \cd{x} as a matrix.  However, if a variable is to be filled by indexed 
-% assignment, then it must be explicitly created or re-sized first.  For 
-% example, in the following code \cd{x} must be created before being 
-% filled by indexed assignment:
-
-% <<exampleDeclare, eval=FALSE>>=
-
-% ## NOTE: must create x as a matrix here, first 
-
-% for(i in 1:10) 
-%     for(j in 1:5) 
-%         x[i, j] <- foo(y[i, j]) 
-% @
-
-% Scalar variables never need to be created in advance. 
-
-% NIMBLE provides several functions for creating non-scalar variables. 
-% These functions are similar to those of R, but they take additional 
-% arguments to set an initialization value, indicate floating-point or
-% integer elements, and/or indicate no initialization
-% is needed\footnote{Skipping initialization is more efficient, but
-%   this will typically be noticeable only for functions called many,
-%   many times.}. \cd{numeric}, \cd{integer}, and \cd{logical} create floating-point, integer, and logical
-% vectors (1-dimensional objects), respectively.  \cd{matrix} creates 2-dimensional
-% objects, and \cd{array} creates objects of 1, 2 or more dimensions.
-% The latter two functions can be used for floating-point, integer, or logical objects.
-
-% After a variable has been created, its size may be changed either by
-% non-indexed assignment or by \cd{setSize}, as illustrated below.
-% Note that \cd{setSize} cannot change the number of dimensions of a
-% variable, and it does \emph{not} necessarily preserve the contents of
-% the variable.
-
-
-
-
-% \subsection{Querying sizes}
-% \label{sec:query-chang-sizes}
-
-% Sizes can be queried as follows:
-% \begin{itemize}
-% \item \cd{length} behaves like R's \cd{length} function.  It
-%   returns the \textit{entire} length of X.  That means if X is
-%   multivariate, \cd{length} returns the product of the sizes in
-%   each dimension.
-% \item \cd{dim}, which has synonym \cd{nimDim}, behaves like R's
-%   \cd{dim} function for matrices or arrays, and like R's
-%   \cd{length} function for vectors.  In other words, regardless of
-%   whether the number of dimensions is 1 or more, it returns a vector
-%   of the sizes. 
-% \end{itemize}
-
-
 \subsubsection{Understanding dimensions and sizes from linear algebra}
 \label{sec:manag-dimens-sizes}
 
@@ -651,8 +589,6 @@ code that will crash is to do things like \cd{Y[5:10, 20:30] <-
 prevent crashes, but in Version \ver\ we limit ourselves to trying to provide
 useful information.
 
-
-
 \section{Declaring argument and return types}
 \label{sec:decl-argum-return}
 
@@ -689,8 +625,6 @@ Functions with return values must have their return type explicitly declared usi
 no return value, which is the default if no \cd{returnType} statement
 is included.  
 
-
-
 \section{Compiled nimbleFunctions pass arguments by reference}
 \label{sec:comp-nimbl-pass}
 
@@ -709,63 +643,12 @@ Now if \cd{foo} modifies \cd{x} internally, it is modifying the same
   debugging.  However, debugging of how nimbleFunctions interact via
   arguments requires testing the compiled versions.
   
-%  nimbleLists are always passed by reference, whether compiled or uncompiled.
+\section{Calling external compiled code}
+\label{sec:calling-external-code}
 
-% \section{The nimbleList data structure}
-% \label{sec:nimbl-data-struct}
+If you have a function in your own compiled C or C++ code and an appropriate header file, you can generate a nimbleFunction that wraps access to that function, which can then be used in other nimbleFunctions.  This feature is experimental and has limited flexibility in Version \ver.  See \cd{help(nimbleExternalCall)} for an example.  This also contains an example of using an externally compiled function in the BUGS code of a model.
 
-% \subsubsection{nimbleLists}
+\section{Calling uncompiled R functions from compiled \cd{nimbleFunctions}}
+\label{sec:calling-R-code}
 
-% \cd{nimbleList}s can be created from a \cd{nimbleList} definition as discussed in Section \ref{sec:nimbleLists}. 
-
-% \subsection{Basics}
-% \label{sec:basics}
-
-% There are several general points that will be useful before describing
-% the NIMBLE language in more detail.
-% \begin{itemize}
-% \item NIMBLE language functions are not R functions.  In many cases we
-%   have used syntax identical or nearly so to R, and in most cases we
-%   have provided a matching R function, but it is important not to
-%   confuse the NIMBLE language definition with the behavior of the
-%   corresponding R function. 
-  
-% \item Like R, NIMBLE uses 1-based indexing.  For example, the first
-%   element of a vector \cd{x} is \cd{x[1]}, not \cd{x[0]}.
-
-% \item As in R, function calls in NIMBLE can provide arguments by name
-%   or in a default order.  
-
-% \item NIMBLE is the opposite of R for argument passing.  R nearly
-%   always uses pass-by-value (formally call-by-value).  NIMBLE nearly always uses
-%   pass-by-reference (or pointer).  That means that in compiled
-%   execution only, changing the value of a variable that was a function
-%   input will change the value in the calling function.  Thus it is
-%   possible to write a nimbleFunction that returns information by
-%   modifying an argument.  Yes, that's a big difference in behavior!
-  
-%   Although compiled nimbleFunctions can modify arguments, the R
-%   interface to a compiled nimbleFunction performs a copy to protect the
-%   original R argument from modification.  (If you want to see arguments
-%   -- potentially modified -- as well as any return value from R, you can
-%   modify the \cd{control} argument to compileNimble to include
-%   ``\cd{returnAsList = TRUE}''.  Then the returned object will be a
-%   list with the nimbleFunction's return value as the last element.)
-%   {\color{red} perhaps this should be its own subsection with a single sentence as a bullet here?}
-  
-%   \item Variables in the NIMBLE language are typed, and types must be
-%     declared for arguments and return values. 
-
-% \item BUGS model nodes are implemented as nimbleFunctions with member
-%   functions for \cd{calculate}, \cd{calculateDiff}, \cd{simulate}, 
-%   \cd{getLogProb}, \cd{getParam}, and \cd{getBound}.
-  
-%   \item nimbleFunctions cannot generally be copied safely. Instead
-%     rerun \cd{nimbleFunction} and record the result in a new object.
-%     {\color{red} useful to say here? Is there a case in which one
-%       would want to copy an RC function?}
-    
-
-% \end{itemize}
-
-
+Sometimes one may want to combine R functions with compiled nimbleFunctions.  Obviously a compiled nimbleFunction can be called from R.  As an experimental feature in Version \ver, an R function with numeric inputs and output can be called from compiled nimbleFunctions.  The call to the R function is wrapped in a nimbleFunction returned by \cd{nimbleRcall}.  See \cd{help(nimbleRcall)} for an example, including an example of using the resulting function in the BUGS code of a model.
