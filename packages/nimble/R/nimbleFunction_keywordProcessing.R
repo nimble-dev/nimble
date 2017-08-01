@@ -776,7 +776,7 @@ matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- nimOptim
 matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
-matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
+matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['nimDerivs']] <- nimDerivs
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
