@@ -1264,6 +1264,16 @@ RnimbleList <- testInst$run()
 CtestInst <- compileNimble(testInst)
 CnimbleList <- CtestInst$run()
 
+## test for eigenValues and eigenVectors
+expect_equal(diag(2), RnimbleList$testEigen$vectors%*%diag(RnimbleList$testEigen$values)%*%solve(RnimbleList$testEigen$vectors))
+expect_equal(CnimbleList$testEigen$vectors, RnimbleList$testEigen$vectors)
+expect_equal(CnimbleList$testEigen$values, RnimbleList$testEigen$values)
+test_that("return object (from c++) is nimbleList.",
+          {
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
 ########
 ## Test #2 for svd() function.  Use nimSvd() to specify a nl element.
 ########
@@ -1296,8 +1306,6 @@ expect_equal(RnimbleList$v, CnimbleList$v)
 expect_equal(testInst$testList27$testSvd$d, CtestInst$testList27$testSvd$d)
 expect_equal(testInst$testList27$testSvd$u, CtestInst$testList27$testSvd$u)
 expect_equal(testInst$testList27$testSvd$v, CtestInst$testList27$testSvd$v)
-
-
 test_that("return object (from c++) is nimbleList.",
           {
             expect_identical(is.nl(CnimbleList), TRUE)
@@ -1307,32 +1315,59 @@ test_that("return object (from c++) is nimbleList.",
 ## Test #3 for eigen() function.  Use eigen() with a non-symmetric matrix.
 ########
 
-cat("### nimbleList Test 26 ###\n")
-
+cat("### nimbleList Test 28 ###\n")
 
 nlTestFunc28 <- nimbleFunction(
   setup = function(){
-    testListDef28 <- nimbleList(testEigen = eigenNimbleList())
-    testList28 <- testListDef26$new()
-    testMat <- matrix(c(1:4), nrow = 2)
+    testMat <- matrix(c(1.0, 2.0, 3.0, 4.0), nrow = 2)
   },
   run = function(){
     eigenOut <- eigen(testMat)
-    testList28$testEigen <<- eigenOut
-    returnType(testListDef28())
-    return(testList28)
+    returnType(eigenNimbleList())
+    return(eigenOut)
   }
 )
 
-testInst <- nlTestFunc26()
+testInst <- nlTestFunc28()
 RnimbleList <- testInst$run()
 CtestInst <- compileNimble(testInst)
 CnimbleList <- CtestInst$run()
 
+## test for eigenValues and eigenVectors
+expect_equal(matrix(c(1.0, 2.0, 3.0, 4.0), nrow = 2), RnimbleList$vectors%*%diag(RnimbleList$values)%*%solve(RnimbleList$vectors))
+expect_equal(CnimbleList$vectors, RnimbleList$vectors)
+expect_equal(CnimbleList$values, RnimbleList$values)
+test_that("return object (from c++) is nimbleList.",
+          {
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
 ########
-## Test #2 for svd() function.  Use nimSvd() to specify a nl element.
+## Test #3 for svd() function.  Use svd() with a non-symmetric matrix.
 ########
 
+cat("### nimbleList Test 29 ###\n")
+
+nlTestFunc29 <- nimbleFunction(
+  setup = function(){
+    testMat <- matrix(c(1.0, 2.0, 3.0, 4.0), nrow = 2)
+  },
+  run = function(){
+    svdOut <- svd(testMat)
+    returnType(svdNimbleList())
+    return(svdOut)
+  }
+)
+
+testInst <- nlTestFunc29()
+RnimbleList <- testInst$run()
+CtestInst <- compileNimble(testInst)
+CnimbleList <- CtestInst$run()
+
+expect_equal(matrix(c(1.0, 2.0, 3.0, 4.0), nrow = 2), RnimbleList$u%*%diag(RnimbleList$d)%*%solve(RnimbleList$v))
+expect_equal(RnimbleList$u, CnimbleList$u)
+expect_equal(RnimbleList$d, CnimbleList$d)
+expect_equal(RnimbleList$v, CnimbleList$v)
 
 ########
 ## Testing for use of eigen() in BUGS models
