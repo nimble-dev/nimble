@@ -252,8 +252,9 @@ CAR_calcBounds <- nimbleFunction(
         lower <- 1 / max(eigenvalues)
         upper <- 1 / min(eigenvalues)
         bounds <- c(lower, upper)
+        orderedBounds <- c(min(bounds), max(bounds))
         returnType(double(1))
-        return(bounds)
+        return(orderedBounds)
     }
 )
 
