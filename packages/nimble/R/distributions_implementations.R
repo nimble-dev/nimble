@@ -853,7 +853,7 @@ NULL
 
 #' @rdname CAR-Normal
 #' @export
-dcar_normal <- function(x, adj, weights, num, tau, c, zero_mean, log = FALSE) {
+dcar_normal <- function(x, adj, weights = adj/adj, num, tau, c = CAR_calcNumIslands(adj, num), zero_mean = 0, log = FALSE) {
     CAR_normal_checkAdjWeightsNum(adj, weights, num)
     if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
     if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
@@ -885,7 +885,7 @@ dcar_normal <- function(x, adj, weights, num, tau, c, zero_mean, log = FALSE) {
 
 #' @rdname CAR-Normal
 #' @export
-rcar_normal <- function(n = 1, adj, weights, num, tau, c, zero_mean) {
+rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNumIslands(adj, num), zero_mean = 0) {
     ## it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
     ## since initializeModel() will call this simulate method if there are any NA's present,
     ## (which is allowed for island components), which over-writes all the other valid initial values.
