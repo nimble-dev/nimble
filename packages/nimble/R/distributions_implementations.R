@@ -119,9 +119,10 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2)){
 #' Computes eigenvalues and eigenvectors of a numeric matrix.  
 #' 
 #' @param x a  numeric matrix (double or integer) whose spectral decomposition is to be computed.
-#' @param symmetric if TRUE, the matrix is guarranteed to be symmetric, and only its lower triangle (diagonal included) is used.  Otherwise, the matrix
+#' @param symmetric if \code{TRUE}, the matrix is guarranteed to be symmetric, and only its lower triangle (diagonal included) is used.  Otherwise, the matrix
 #' is checked for symmetry.  Default is \code{FALSE}.
-#' @param only.values if TRUE, only the eigenvalues are computed, otherwise both eigenvalues and eigenvectors are computed; default is \code{FALSE}.
+#' @param only.values if \code{TRUE}, only the eigenvalues are computed, otherwise both eigenvalues and eigenvectors are computed. 
+#' Setting \code{only.values = TRUE} can speed up eigendecompositions, especially for large matrices.  Default is \code{FALSE}.
 #'
 #' @aliases eigen
 #'
