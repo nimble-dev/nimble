@@ -65,3 +65,34 @@ test_that("voter model WAIC is accurate: ", {
   Cvotermcmc$run(50000)
   expect_equal(Cvotermcmc$calculateWAIC(), 87.2, tolerance = 2.0)
 })
+
+
+test_that("Radon model WAIC is accurate: ", {
+  url <- "http://stat.columbia.edu/~gelman/arm/examples/arsenic/wells.dat"
+  wells <- read.table(url)
+  wells$dist100 <- with(wells, dist / 100)
+  X <- model.matrix(~ dist100 + arsenic, wells)
+  radonCode = nimbleCode({
+    for(i in 1:3){
+      beta[i] ~ dnorm(0, 1)
+    }
+    coefs[1:N] <- X[1:N, 1:3] %*% beta[1:3]
+    for(i in 1:N){
+      y[i] ~ dbern(ilogit(coefs[i]))
+    }
+  })
+  dataList = list(y = wells$switch);
+  constList = list(N = nrow(X), 
+                   X = X)
+  radonModel = nimbleModel(code = radonCode, data = dataList, 
+                           constants = constList,
+                           inits = list(beta = rep(1, 3)))
+  temporarilyAssignInGlobalEnv(radonModel)
+  CradonModel <- compileNimble(radonModel)
+  radonmcmcConf <- configureMCMC(radonModel, monitors = c('beta'))
+  radonmcmc <- buildMCMC(radonmcmcConf)
+  temporarilyAssignInGlobalEnv(radonmcmc)
+  Cradonmcmc <- compileNimble(radonmcmc, project = radonModel)
+  Cradonmcmc$run(10000)
+  expect_equal(Cradonmcmc$calculateWAIC(1000), 3937, tolerance = 10)
+})
