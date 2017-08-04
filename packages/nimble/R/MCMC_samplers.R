@@ -26,7 +26,7 @@ sampler_posterior_predictive <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## node list generation
-        calcNodes  <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
     },
     run = function() {
         simulate(model, target)
@@ -52,7 +52,7 @@ sampler_binary <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes  <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use binary sampler on more than one target node')
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
@@ -66,6 +66,50 @@ sampler_binary <- nimbleFunction(
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         else
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+
+###########################################################################
+### categorical sampler for dcat distributions ############################
+###########################################################################
+
+#' @rdname samplers
+#' @export
+sampler_categorical <- nimbleFunction(
+    name = 'sampler_categorical',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes  <- model$getDependencies(target)
+        ## numeric value generation
+        k <- length(model$getParam(target, 'prob'))
+        probs <- numeric(k)
+        ## checks
+        if(length(targetAsScalar) > 1)  stop('cannot use categorical sampler on more than one target node')
+        if(model$getDistribution(target) != 'dcat') stop('can only use categorical sampler on node with dcat distribution')
+    },
+    run = function() {
+        currentValue <- model[[target]]
+        probs[currentValue] <<- exp(getLogProb(model, calcNodes))
+        for(i in 1:k) {
+            if(i != currentValue) {
+                model[[target]] <<- i
+                probs[i] <<- exp(calculate(model, calcNodes))
+                if(is.nan(probs[i])) probs[i] <<- 0
+            }
+        }
+        newValue <- rcat(1, probs)
+        if(newValue != currentValue) {
+            model[[target]] <<- newValue
+            calculate(model, calcNodes)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        } else nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
     },
     methods = list(
         reset = function() { }
@@ -92,7 +136,7 @@ sampler_RW <- nimbleFunction(
         scale         <- if(!is.null(control$scale))         control$scale         else 1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes  <- model$getDependencies(target)
+        calcNodes <- model$getDependencies(target)
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -344,6 +388,7 @@ sampler_slice <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         widthOriginal <- width
         timesRan      <- 0
@@ -388,7 +433,9 @@ sampler_slice <- nimbleFunction(
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
-            lp <- calculate(model, calcNodes)
+            lp <- calculate(model, target)
+            if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
+            lp <- lp + calculate(model, calcNodesNoSelf)
             returnType(double())
             return(lp)
         },
@@ -428,7 +475,7 @@ sampler_ess <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## node list generation
         target <- model$expandNodeNames(target)
-        calcNodes  <- model$getDependencies(target, self = FALSE)
+        calcNodes <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         Pi <- pi
         ## nested function and function list definitions
@@ -484,6 +531,7 @@ sampler_AF_slice <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes      <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         d                  <- length(targetAsScalar)
         discrete           <- sapply(targetAsScalar, function(x) model$isDiscrete(x))
@@ -556,9 +604,11 @@ sampler_AF_slice <- nimbleFunction(
         setAndCalculateTarget = function(targetValues = double(1)) {
             if(anyDiscrete == 1)
                 for(i in 1:d)
-                    if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])
+                    if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])            
             values(model, target) <<- targetValues
-            lp <- calculate(model, calcNodes)
+            lp <- calculate(model, target)
+            if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
+            lp <- lp + calculate(model, calcNodesNoSelf)
             returnType(double())
             return(lp)
         },
@@ -1835,27 +1885,26 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section CAR_normal sampler:
 #'
-#' The CAR_normal sampler operates uniquely on intrinsic (improper) Gaussian conditional autoregressive (CAR) nodes, those with a dcar_normal prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler, however these component samplers are specialized to operate on dimensions of a dcar_normal distribution.
+#' The CAR_normal sampler operates uniquely on improper (intrinsic) Gaussian conditional autoregressive (CAR) nodes, those with a \code{dcar_normal} prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler; however these component samplers are specialized to operate on dimensions of a \code{dcar_normal} distribution.
 #'
 #' The CAR_normal sampler accepts the following control list elements:
 #' \itemize{
-#' \item carUseConjugacy. A logical argument, specifying whether to assign conjugate samplers for conjugate components of the target node. If FALSE, a RW sampler would be assigned instead. (default = TRUE)
-#' \item adaptive. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = TRUE)
-#' \item adaptInterval. The interval on which to perform adaptation for any component RW samplers.  Every adaptInterval MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
-#' \item scale. The initial value of the normal proposal standard deviation for any component RW samplers.  If adaptive = FALSE, scale will never change. (default = 1)
+#' \item \code{carUseConjugacy}. A logical argument, specifying whether to assign conjugate samplers for conjugate components of the target node. If \code{FALSE}, a RW sampler would be assigned instead. (default = TRUE)
+#' \item \code{adaptive}. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = \code{TRUE})
+#' \item \code{adaptInterval}. The interval on which to perform adaptation for any component RW samplers.  Every \code{adaptInterval} MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the \code{scale} variable, based upon the sampler's achieved acceptance rate over the past \code{adaptInterval} iterations. (default = 200)
+#' \item \code{scale}. The initial value of the normal proposal standard deviation for any component RW samplers.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
 #' }
-#'
 #'
 #' @section CAR_proper sampler:
 #'
-#' The CAR_proper sampler operates uniquely on proper Gaussian conditional autoregressive (CAR) nodes, those with a dcar_proper prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler, however these component samplers are specialized to operate on dimensions of a dcar_proper distribution.
+#' The CAR_proper sampler operates uniquely on proper Gaussian conditional autoregressive (CAR) nodes, those with a \code{dcar_proper} prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler, however these component samplers are specialized to operate on dimensions of a \code{dcar_proper} distribution.
 #'
 #' The CAR_proper sampler accepts the following control list elements:
 #' \itemize{
-#' \item carUseConjugacy. A logical argument, specifying whether to assign conjugate samplers for conjugate components of the target node. If FALSE, a RW sampler would be assigned instead. (default = TRUE)
-#' \item adaptive. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = TRUE)
-#' \item adaptInterval. The interval on which to perform adaptation for any component RW samplers.  Every adaptInterval MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
-#' \item scale. The initial value of the normal proposal standard deviation for any component RW samplers.  If adaptive = FALSE, scale will never change. (default = 1)
+#' \item \code{carUseConjugacy}. A logical argument, specifying whether to assign conjugate samplers for conjugate components of the target node. If \code{FALSE}, a RW sampler would be assigned instead. (default = \code{TRUE})
+#' \item \code{adaptive}. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = \code{TRUE})
+#' \item \code{adaptInterval}. The interval on which to perform adaptation for any component RW samplers.  Every adaptInterval MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
+#' \item \code{scale}. The initial value of the normal proposal standard deviation for any component RW samplers.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
 #' }
 #'
 #'

@@ -5,8 +5,8 @@
 [![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
 [![DOI](https://zenodo.org/badge/20771527.svg)](https://zenodo.org/badge/latestdoi/20771527)
 
-[Website](http://r-nimble.org/) |
-[Documentation](http://r-nimble.org/manuals/NimbleUserManual.pdf) |
+[Website](https://r-nimble.org/) |
+[Documentation](https://r-nimble.org/manuals/NimbleUserManual.pdf) |
 [Examples](https://r-nimble.org/examples) |
 [Developing](https://nimble-dev.github.io/nimble-docs)
 
@@ -17,20 +17,30 @@ NIMBLE's programming paradigm treats probabilistic graphical models as a basic p
 
 ## Installation
 
-NIMBLE can be installed in the usual fashion from CRAN, but Mac users need to have Xcode installed and Windows users need Rtools installed. Please see the User Manual for more details.
+### Install prerequisites
 
-One can also install from the package version on our website; in general there is no need to do this, but some additional functionality in `compareMCMCs` and `MCMCsuite` is only available through the version on our website. To install from the website, invoke:
+NIMBLE needs a C++ compiler and the GNU `make` utility.
+Additionally, Mac users need to have Xcode installed and Windows users need Rtools installed.
+See the [User Manual](https://r-nimble.org/manuals/NimbleUserManual.pdf#page=26) for more details.
+
+### Install NIMBLE
+
+The easiest way to install NIMBLE is via CRAN:
+```r
+install.packages("nimble")
 ```
+
+To install with extra functionality in `compareMCMCs` and `MCMCsuite`, install through the NIBMLE website:
+```r
 install.packages("nimble", type = "source", repos = "http://r-nimble.org")
 ```
-
-Or use `R CMD INSTALL` after downloading from our [website](http://r-nimble.org/download-nimble).
 
 ## Citation
 
 NIMBLE Development Team. 2017.
-NIMBLE: An R Package for Programming with BUGS models, Version 0.6-5.
-http://r-nimble.org.
+NIMBLE: An R Package for Programming with BUGS models, Version 0.6-6.
+https://r-nimble.org,
+https://zenodo.org/record/820704.
 
 ## Acknowledgements
 

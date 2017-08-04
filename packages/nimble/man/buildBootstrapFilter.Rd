@@ -48,13 +48,19 @@ Each of the \code{control()} list options are described in detail here:
  states in the \code{mvWSamples} modelValues object, with corresponding logged weights in \code{mvWSamples['wts',]}.
  An equally weighted sample from the posterior can be found in the \code{mvEWsamp} \code{modelValues} object.
 }
+\section{\code{returnESS()} Method}{
+
+ Calling the \code{returnESS()} method of a bootstrap filter after that filter has been \code{run()} for a given model will return a vector of ESS (effective
+ sample size) values, one value for each time point.
+}
 \examples{
 \dontrun{
 model <- nimbleModel(code = ...)
 my_BootF <- buildBootstrapFilter(model, 'x[1:100]')
 Cmodel <- compileNimble(model)
 Cmy_BootF <- compileNimble(my_BootF, project = model)
-logLike <- Cmy_BootF(m = 100000)
+logLike <- Cmy_BootF$run(m = 100000)
+ESS <- Cmy_BootF$returnESS()
 boot_X <- as.matrix(Cmy_BootF$mvEWSamples)
 }
 }

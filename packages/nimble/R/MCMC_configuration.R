@@ -47,8 +47,8 @@ samplerConf <- setRefClass(
 #' @aliases MCMCconf addSampler removeSamplers setSamplers printSamplers getSamplers addMonitors addMonitors2 resetMonitors getMonitors getMonitors2 printMonitors setThin setThin2
 #' @export
 #' @description
-#' Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \link{configureMCMC}.
-#' Given an MCMCconf object, the actual MCMC function can be built by calling \link{buildMCMC}\code{(conf)}.
+#' Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \code{\link{configureMCMC}}.
+#' Given an MCMCconf object, the actual MCMC function can be built by calling \code{\link{buildMCMC}(conf)}.
 #' See documentation below for method initialize() for details of creating an MCMCconf object.
 #' @author Daniel Turek
 #' @seealso \code{\link{configureMCMC}}
@@ -135,7 +135,6 @@ warnNoSamplerAssigned: A logical argument, with default value TRUE.  This specif
 
 print: A logical argument, specifying whether to print the ordered list of default samplers.
 '
-            
             samplerConfs <<- list(); controlDefaults <<- list(); monitors <<- character(); monitors2 <<- character();
             namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
             ##model <<- model
@@ -229,6 +228,9 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     ## if node is discrete 0/1 (binary), assign 'binary' sampler
                     if(binary) { addSampler(target = node, type = 'binary');     next }
                     
+                    ## for categorical nodes, assign a 'categorical' sampler
+                    if(nodeDist == 'dcat') { addSampler(target = node, type = 'categorical');     next }
+                    
                     ## if node distribution is discrete, assign 'slice' sampler
                     if(discrete) { addSampler(target = node, type = 'slice');     next }
                     
@@ -250,9 +252,12 @@ print: A logical argument, specifying whether to print the ordered list of defau
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
             names(dependentCounts) <- gsub('^dep_', '', names(dependentCounts))
+            ## FIXME: add check here of whether node is dynamically indexed and if so pass doDependentScreen flag to do screening
+            ## add _unknownIndex to samplers where we do the screen
+            ## have generate...Definition take arg about whether to do screen
             conjSamplerName <- createDynamicConjugateSamplerName(prior = prior, dependentCounts = dependentCounts)
             if(!dynamicConjugateSamplerExists(conjSamplerName)) {
-                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts)
+                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts, doDependentScreen = nimbleOptions()$allowDynamicIndexing)  
                 dynamicConjugateSamplerAdd(conjSamplerName, conjSamplerDef)
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
@@ -664,7 +669,7 @@ addRuleToCodeBlock <- function(oldCode, rule) {
 #' When a matching rule is found, the sampler specified by that rule is assigned (or general code for sampler assignment is executed),
 #' and the assignment process proceeds to the next stochastic node.  That is, a maximum of one rule can be invoked for each stochastic node.
 #' If no matching rule is found, an (optional) warning is issued and no sampler is assigned.
-#' Objects of this class may be passed using the \code{rules} argument to \link{configureMCMC} to customize the sampler assignment process.
+#' Objects of this class may be passed using the \code{rules} argument to \code{\link{configureMCMC}} to customize the sampler assignment process.
 #' See documentation below for method \code{initialize()} for details of creating a samplerAssignmentRules object, 
 #' and methods \code{addRule()} and \code{reorder()} for adding and modifying the sampler assignment rules.
 #' The default behaviour of \code{configureMCMC} can be modified by setting the nimble option \'MCMCsamplerAssignmentRules\' to a customized samplerAssignmentRules object.
@@ -816,6 +821,9 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
 	    ## binary-valued nodes
             addRule(quote(isBinary), 'binary')
             
+	    ## categorical
+            addRule(quote(nodeDistribution == 'dcat'), 'categorical')
+            
 	    ## discrete-valued nodes
             addRule(quote(isDiscrete), 'slice')
             
@@ -857,9 +865,9 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 
 #' Build the MCMCconf object for construction of an MCMC object
 #'
-#' Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \link{buildMCMC}. The assignment of sampling algorithms may be controlled using the \code{rules} argument, if provided.
+#' Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \code{\link{buildMCMC}}. The assignment of sampling algorithms may be controlled using the \code{rules} argument, if provided.
 #'
-#'@param model A NIMBLE model object, created from \link{nimbleModel}
+#'@param model A NIMBLE model object, created from \code{\link{nimbleModel}}
 #'@param nodes An optional character vector, specifying the nodes and/or variables for which samplers should be created.
 #'Nodes may be specified in their indexed form, \code{y[1, 3]}.  Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]}, \code{x[2]}, etc.
 #'If missing, the default value is all non-data stochastic nodes.

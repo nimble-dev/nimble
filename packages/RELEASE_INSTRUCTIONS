@@ -16,6 +16,8 @@ Make sure src/Makevars.win is present.
 
 ./prep_pkg.R # this creates man pages and updates NAMESPACE
 
+## note that an error: "section title spans multiple lines" will occur in roxygenization if any "@section" line does not have a ":" at the end of the line
+
 R CMD build nimble
 R CMD check --as-cran nimble_${VERSION}.tar.gz
 # officially this should be done on a development build of R, but now can be done formally using rhub (see below), so doing on your own machine in a release version of R just serves as a first pass
@@ -29,6 +31,8 @@ types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dis
 for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
 done
+
+Note that test-size results are simply showing warnings from model building that are labeled based on the test message - what is marked as a KNOWN PROBLEM is not _all_ of the tests that are KNOWN PROBLEMS, just those that happen to generate warnings. 
 
 run tests on all OS ideally
 
@@ -72,7 +76,7 @@ update documentation page with link to updated manual
 
 add info on new release to release notes page
 
-update version numbering on license and citation page and 'What is Nimble' page
+update version numbering on license and citation page
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
 
@@ -94,11 +98,6 @@ probably best at this point also to merge master onto devel
 
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote
-
-# make tag for nimble-docs too
-git tag -a v$VERSION -m "NIMBLE version $VERSION release, April 6, 2016"
-git push --tags    ## this is how you push *tags* to the remote
-
 
 ### building binaries
 

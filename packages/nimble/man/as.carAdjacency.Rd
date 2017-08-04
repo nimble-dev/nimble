@@ -6,6 +6,9 @@
 \usage{
 as.carAdjacency(...)
 }
+\arguments{
+\item{...}{Either: a symmetric matrix of un-normalized weights, or two lists specifying adjacency indices and the corresponding un-normalized weights.}
+}
 \description{
 This will convert alternate representations of CAR process structure into
 (adj, weights, num) form required by dcar_normal.  Two alternate

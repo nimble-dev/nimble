@@ -38,8 +38,8 @@ typedef __vector __bool int          Packet4bi;
 typedef __vector short int           Packet8i;
 typedef __vector unsigned char       Packet16uc;
 typedef __vector double              Packet2d;
-typedef __vector unsigned long long  Packet2ul;
-typedef __vector long long           Packet2l;
+typedef __vector uint64_t  Packet2ul;
+typedef __vector int64_t           Packet2l;
 
 typedef struct {
 	Packet2d  v4f[2];

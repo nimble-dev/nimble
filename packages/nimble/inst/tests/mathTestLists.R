@@ -39,7 +39,7 @@ testsBasicMath = list(
   list(name = 'log of vector', expr = quote(out <- log(abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'sqrt of vector', expr = quote(out <- sqrt(abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'abs of vector', expr = quote(out <- abs(arg1)), inputDim = 1, outputDim = 1),
-  list(name = 'step of vector', expr = quote(out <- step(arg1)), inputDim = 1, outputDim = 1, Rcode = quote(out <- as.numeric(arg1 > 0)), xfail = 'math.*runs'), ## FAILS on compileNimble(nfR) with Eigen error.
+  list(name = 'step of vector', expr = quote(out <- step(arg1)), inputDim = 1, outputDim = 1, Rcode = quote(out <- as.numeric(arg1 > 0)), xfail = 'math.*compiles.*'), ## FAILS on compileNimble(nfR) with Eigen error.
   list(name = 'cube of vector', expr = quote(out <- cube(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'cos of vector', expr = quote(out <- cos(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'acos of cos of vector', expr = quote(out <- acos(cos(arg1))), inputDim = 1, outputDim = 1),
@@ -52,7 +52,7 @@ testsBasicMath = list(
   list(name = 'tanh of vector', expr = quote(out <- tanh(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'acosh of vector', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'asinh of vector', expr = quote(out <- asinh(arg1)), inputDim = 1, outputDim = 1),
-  list(name = 'atanh of vector', expr = quote(out <- atanh(arg1%%1)), inputDim = 1, outputDim = 1, xfail = 'math.*runs'), ## FAILS - issue here is probably that modulo on vecs doesn't work but need to restrict domain for atanh
+  list(name = 'atanh of vector', expr = quote(out <- atanh(arg1%%1)), inputDim = 1, outputDim = 1, xfail = 'math.*compiles.*'), ## FAILS - issue here is probably that modulo on vecs doesn't work but need to restrict domain for atanh
   ###
   list(name = 'scalar + scalar', expr = quote(out <- arg1 + arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'diff of scalars', expr = quote(out <- arg1 - arg2), inputDim = c(0,0), outputDim = 0),
@@ -70,8 +70,8 @@ testsBasicMath = list(
   list(name = 'diff of vectors', expr = quote(out <- arg1 - arg2), inputDim = c(1,1), outputDim = 1),
   list(name = 'product of vectors', expr = quote(out <- arg1 * arg2), inputDim = c(1,1), outputDim = 1),
   list(name = 'ratio of vectors', expr = quote(out <- arg1 / arg2), inputDim = c(1,1), outputDim = 1),
-  list(name = 'power of vectors via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*runs'), ## FAILS with Eigen casting
-  list(name = 'power of vectors via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,1), outputDim = 1, xfail = 'math.*runs'), ## FAILS with Eigen casting
+  list(name = 'power of vectors via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles.*'), ## FAILS with Eigen casting
+  list(name = 'power of vectors via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles.*'), ## FAILS with Eigen casting
   list(name = 'modulo of vectors', expr = quote(out <- arg1 %% arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*runs'), ## FAILS with Eigen casting
   list(name = 'pmin of vectors', expr = quote(out <- pmin(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
   list(name = 'pmax of vectors', expr = quote(out <- pmax(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
