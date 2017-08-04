@@ -40,7 +40,7 @@ int nimArr_rinterval(double t, double c);
 double nimArr_dcar_normal(NimArr<1, double> &x, NimArr<1, double> &adj, NimArr<1, double> &wgts, NimArr<1, double> &num, double tau, int c, int zero_mean, int give_log);
 void nimArr_rcar_normal(NimArr<1, double> &ans, NimArr<1, double> &adj, NimArr<1, double> &wgts, NimArr<1, double> &num, double tau, int c, int zero_mean);
 
-double nimArr_dcar_proper(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<1, double> &C, NimArr<1, double> &adj, NimArr<1, double> &num, NimArr<1, double> &M, double tau, double gamma, int give_log);
-void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1, double> &C, NimArr<1, double> &adj, NimArr<1, double> &num, NimArr<1, double> &M, double tau, double gamma);
+double nimArr_dcar_proper(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<1, double> &C, NimArr<1, double> &adj, NimArr<1, double> &num, NimArr<1, double> &M, double tau, double gamma, NimArr<1, double> &evs, int give_log);
+void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1, double> &C, NimArr<1, double> &adj, NimArr<1, double> &num, NimArr<1, double> &M, double tau, double gamma, NimArr<1, double> &evs);
 
 #endif

@@ -703,7 +703,7 @@ modelDefClass$methods(replaceAllConstants = function() {
     }
 })
 
-neverReplaceable <- list(chol = TRUE, inverse = TRUE, CAR_calcNumIslands = TRUE) ## only the names matter, any non-null value will do.
+neverReplaceable <- list(chol = TRUE, inverse = TRUE, CAR_calcNumIslands = TRUE, CAR_calcEVs = TRUE) ## only the names matter, any non-null value will do.
 
 replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) {
     ## This takes as input a call and an environment or list of constants (only names matter)
@@ -788,6 +788,8 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
 
 liftedCallsDoNotAddIndexing <- c('CAR_calcNumIslands')
 
+liftedCallsGetIndexingFromArgumentNumbers <- list(CAR_calcEVs = c(3))
+
 modelDefClass$methods(liftExpressionArgs = function() {
     ## overwrites declInfo (*and adds*), lifts any expressions in distribution arguments to new nodes
     newDeclInfo <- list()
@@ -847,6 +849,7 @@ isExprLiftable <- function(paramExpr) {
         if(paramExpr[[1]] == 'chol')        return(TRUE)    ## do lift calls to chol(...)
         if(paramExpr[[1]] == 'inverse')     return(TRUE)    ## do lift calls to inverse(...)
         if(paramExpr[[1]] == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
+        if(paramExpr[[1]] == 'CAR_calcEVs') return(TRUE)    ## do lift calls to CAR_calcEVs(...)
         if(length(paramExpr) == 1)          return(FALSE)   ## don't generally lift function calls:   fun(...) ## this comment seems incorrect
         if(getCallText(paramExpr) == '[')   return(FALSE)   ## don't lift simply indexed expressions:  x[...]
         ## if(getCallText(paramExpr) == '[') { ## these lines are for future handling of foo()[]
@@ -859,10 +862,21 @@ isExprLiftable <- function(paramExpr) {
     stop(paste0('error, I need to figure out how to process this parameter expression: ', deparse(paramExpr)))
 }
 addNecessaryIndexingToNewNode <- function(newNodeNameExpr, paramExpr, indexVarExprs) {
+    if(is.call(paramExpr) && deparse(paramExpr[[1]]) %in% names(liftedCallsGetIndexingFromArgumentNumbers))
+        return(addNecessaryIndexingFromArgumentNumbers(newNodeNameExpr, paramExpr, indexVarExprs))
     usedIndexVarsList <- indexVarExprs[indexVarExprs %in% all.vars(paramExpr)]    # this extracts any index variables which appear in 'paramExpr'
     vectorizedIndexExprsList <- extractAnyVectorizedIndexExprs(paramExpr)    # creates a list of any vectorized (:) indexing expressions appearing in 'paramExpr'
     neededIndexExprsList <- c(usedIndexVarsList, vectorizedIndexExprsList)
     if(length(neededIndexExprsList) == 0)  return(newNodeNameExpr)  # no index variables, or vectorized indexing, return the (un-indexed) name expression
+    newNodeNameExprIndexed <- substitute(NAME[], list(NAME = newNodeNameExpr))
+    newNodeNameExprIndexed[3:(2+length(neededIndexExprsList))] <- neededIndexExprsList
+    return(newNodeNameExprIndexed)
+}
+addNecessaryIndexingFromArgumentNumbers <- function(newNodeNameExpr, paramExpr, indexVarExprs) {
+    paramExprCallName <-  as.character(paramExpr[[1]])
+    argNumbers <- liftedCallsGetIndexingFromArgumentNumbers[[paramExprCallName]]
+    argList <- as.list(paramExpr[argNumbers + 1])    ## +1 to skip past the function name (first element)
+    neededIndexExprsList <-  lapply(argList, function(x) x[[3]])
     newNodeNameExprIndexed <- substitute(NAME[], list(NAME = newNodeNameExpr))
     newNodeNameExprIndexed[3:(2+length(neededIndexExprsList))] <- neededIndexExprsList
     return(newNodeNameExprIndexed)

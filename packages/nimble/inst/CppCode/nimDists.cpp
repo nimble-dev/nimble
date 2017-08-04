@@ -403,12 +403,12 @@ void nimArr_rcar_normal(NimArr<1, double> &ans, NimArr<1, double> &adj, NimArr<1
 }
 
 
-double nimArr_dcar_proper(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<1, double> &C, NimArr<1, double> &adj, NimArr<1, double> &num, NimArr<1, double> &M, double tau, double gamma, int give_log) {
+double nimArr_dcar_proper(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<1, double> &C, NimArr<1, double> &adj, NimArr<1, double> &num, NimArr<1, double> &M, double tau, double gamma, NimArr<1, double> &evs, int give_log) {
   
   //return give_log ? ML_POSINF: R_D__0;
   
-  double *xptr, *muptr, *Cptr, *adjptr, *numptr, *Mptr;
-  NimArr<1, double> xCopy, muCopy, CCopy, adjCopy, numCopy, MCopy;
+  double *xptr, *muptr, *Cptr, *adjptr, *numptr, *Mptr, *evsptr;
+  NimArr<1, double> xCopy, muCopy, CCopy, adjCopy, numCopy, MCopy, evsCopy;
   
   xptr = nimArrCopyIfNeeded<1, double>(x, xCopy).getPtr();
   muptr = nimArrCopyIfNeeded<1, double>(mu, muCopy).getPtr();
@@ -416,6 +416,7 @@ double nimArr_dcar_proper(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<1,
   adjptr = nimArrCopyIfNeeded<1, double>(adj, adjCopy).getPtr();
   numptr = nimArrCopyIfNeeded<1, double>(num, numCopy).getPtr();
   Mptr = nimArrCopyIfNeeded<1, double>(M, MCopy).getPtr();
+  evsptr = nimArrCopyIfNeeded<1, double>(evs, evsCopy).getPtr();
   
   int N = x.size();
   if(mu.size() != N) {
@@ -430,21 +431,25 @@ double nimArr_dcar_proper(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<1,
     _nimble_global_output<<"Error in nimArr_dcar_proper: x and M and different sizes.\n";
     nimble_print_to_R(_nimble_global_output);
   }
+  if(evs.size() != N) {
+    _nimble_global_output<<"Error in nimArr_dcar_proper: x and evs and different sizes.\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
   int L = adj.size();
   if(C.size() != L) {
     _nimble_global_output<<"Error in nimArr_dcar_proper: adj and C and different sizes.\n";
     nimble_print_to_R(_nimble_global_output);
   }
 
-  double ans = dcar_proper(xptr, muptr, Cptr, adjptr, numptr, Mptr, tau, gamma, N, L, give_log);
+  double ans = dcar_proper(xptr, muptr, Cptr, adjptr, numptr, Mptr, tau, gamma, evsptr, N, L, give_log);
   return(ans);
 }
 
 
-void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1, double> &C, NimArr<1, double> &adj, NimArr<1, double> &num, NimArr<1, double> &M, double tau, double gamma) {
+void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1, double> &C, NimArr<1, double> &adj, NimArr<1, double> &num, NimArr<1, double> &M, double tau, double gamma, NimArr<1, double> &evs) {
 
-  double *ansptr, *muptr, *Cptr, *adjptr, *numptr, *Mptr;
-  NimArr<1, double> ansCopy, muCopy, CCopy, adjCopy, numCopy, MCopy;
+  double *ansptr, *muptr, *Cptr, *adjptr, *numptr, *Mptr, *evsptr;
+  NimArr<1, double> ansCopy, muCopy, CCopy, adjCopy, numCopy, MCopy, evsCopy;
   
   int N = num.size();
   int L = adj.size();
@@ -469,6 +474,10 @@ void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1,
     _nimble_global_output<<"Error in nimArr_rcar_proper: M size ("<< M.size() <<") does not match num size ("<<N<<").\n";
     nimble_print_to_R(_nimble_global_output);
   }
+  if(evs.size() != N) {
+    _nimble_global_output<<"Error in nimArr_rcar_proper: evs size ("<< evs.size() <<") does not match num size ("<<N<<").\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
   
   ansptr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
   muptr = nimArrCopyIfNeeded<1, double>(mu, muCopy).getPtr();
@@ -476,8 +485,9 @@ void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1,
   adjptr = nimArrCopyIfNeeded<1, double>(adj, adjCopy).getPtr();
   numptr = nimArrCopyIfNeeded<1, double>(num, numCopy).getPtr();
   Mptr = nimArrCopyIfNeeded<1, double>(M, MCopy).getPtr();
+  evsptr = nimArrCopyIfNeeded<1, double>(evs, evsCopy).getPtr();
   
-  rcar_proper(ansptr, muptr, Cptr, adjptr, numptr, Mptr, tau, gamma, N, L);
+  rcar_proper(ansptr, muptr, Cptr, adjptr, numptr, Mptr, tau, gamma, evsptr, N, L);
   
   if(ans.isMap()) {
     ans = ansCopy;

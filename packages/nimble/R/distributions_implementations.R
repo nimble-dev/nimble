@@ -910,6 +910,7 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' @param M vector giving the diagnoal elements of the conditional variance matrix, with length equal to the number of locations.
 #' @param tau scalar precision of the Gaussian CAR prior.
 #' @param gamma scalar representing the overall degree of spatial dependence.  The value is constrained to lie withing the inverse minimum and maximum eigenvalues of M^(-0.5) %*% C %*% M^(0.5).  These bounds can be calculated using the deterministic functions min.bound(C, adj, num, M) and max.bound(C, adj, num, M).
+#' @param evs vector of eigen values of the normalised adjacency matrix implied by C, adj, and num.  This parameter should not be provided; it will always be calculated using the adjacency parameters.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #'
 #' @author Daniel Turek
@@ -935,7 +936,7 @@ NULL
 
 #' @rdname CAR-Proper
 #' @export
-dcar_proper <- function(x, mu, C, adj, num, M, tau, gamma, log = FALSE) {
+dcar_proper <- function(x, mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num), log = FALSE) {
     CAR_proper_checkAdjNumCM(adj, num, C, M)
     if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
     if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
@@ -943,12 +944,13 @@ dcar_proper <- function(x, mu, C, adj, num, M, tau, gamma, log = FALSE) {
     if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
     if(storage.mode(num) != 'double')   storage.mode(num) <- 'double'
     if(storage.mode(M) != 'double')   storage.mode(M) <- 'double'
-    .Call(C_dcar_proper, as.double(x), as.double(mu), as.double(C), as.double(adj), as.double(num), as.double(M), as.double(tau), as.double(gamma), as.logical(log))
+    if(storage.mode(evs) != 'double')   storage.mode(evs) <- 'double'
+    .Call(C_dcar_proper, as.double(x), as.double(mu), as.double(C), as.double(adj), as.double(num), as.double(M), as.double(tau), as.double(gamma), as.double(evs), as.logical(log))
 }
 
 #' @rdname CAR-Proper
 #' @export
-rcar_proper <- function(n = 1, mu, C, adj, num, M, tau, gamma) {
+rcar_proper <- function(n = 1, mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num)) {
     if(n != 1) warning('rcar_proper only handles n = 1 at the moment')
     CAR_proper_checkAdjNumCM(adj, num, C, M)
     if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
@@ -956,6 +958,7 @@ rcar_proper <- function(n = 1, mu, C, adj, num, M, tau, gamma) {
     if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
     if(storage.mode(num) != 'double')   storage.mode(num) <- 'double'
     if(storage.mode(M) != 'double')   storage.mode(M) <- 'double'
-    .Call(C_rcar_proper, as.integer(n), as.double(mu), as.double(C), as.double(adj), as.double(num), as.double(M), as.double(tau), as.double(gamma))
+    if(storage.mode(evs) != 'double')   storage.mode(evs) <- 'double'
+    .Call(C_rcar_proper, as.integer(n), as.double(mu), as.double(C), as.double(adj), as.double(num), as.double(M), as.double(tau), as.double(gamma), as.double(evs))
 }
 

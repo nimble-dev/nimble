@@ -78,16 +78,16 @@ CAR_proper_checkAdjNumCM <- function(adj, num, C, M) {
     if(sum(num) != length(adj)) stop('length of adj argument to dcar_proper() must be equal to total number of neighbors specified in num argument')
     if(length(adj) != length(C)) stop('length of adj and C arguments to dcar_proper() must be the same')
     if(any(C <= 0)) stop('C argument to dcar_proper() should only contain positive values')
-    if(any(C > 1)) stop('C argument to dcar_proper() values cannot exceed one (normalised weights)')
+    ##if(any(C > 1)) stop('C argument to dcar_proper() values cannot exceed one (normalised weights)')   ## winBUGS example contradicts this
     if(any(M <= 0)) stop('M argument to dcar_proper() should only contain positive values (conditional variances)')
     subsetIndList <- CAR_calcSubsetIndList(adj, num)
     for(i in seq_along(subsetIndList)) {
         ind <- subsetIndList[[i]]
         if(length(ind) > 0) {
-            if(sum(C[ind]) != 1) stop(paste0('C (normalised weights) for component ', i, 'of dcar_proper distribution must sum to one'))
+            ##if(sum(C[ind]) != 1) stop(paste0('C (normalised weights) for component ', i, 'of dcar_proper distribution must sum to one'))    ## winBUGS example contradicts this
             for(ind.value in ind) {
                 j <- adj[ind.value]
-                if(C[ind.value]*M[j] != C[subsetIndList[[j]]][which(adj[subsetIndList[[j]]]==i)]*M[i])
+                if(round(C[ind.value]*M[j] - C[subsetIndList[[j]]][which(adj[subsetIndList[[j]]]==i)]*M[i], 10) != 0)
                     stop('failing dcar_proper() symmetry constraint Cij*Mjj = Cji*Mii for components i = ', i, ' and j = ', j)
             }
         }
@@ -220,6 +220,34 @@ CAR_calcNumIslands <- nimbleFunction(
 )
 
 
+#' Generates the normalised adjacency matrix for dcar_proper() distribution
+#' 
+#' Using the sparse representation of the normalised adajacency matrix, generate the full matrix.  This uses the C, adj, and num parameteres of the dcar_proper() distribution.
+#' 
+#' @author Daniel Turek
+#' @export
+CAR_makeCmatrix <- nimbleFunction(
+    name = 'CAR_makeCmatrix',
+    run = function(C = double(1), adj = double(1), num = double(1)) {
+        N <- dim(num)[1]
+        L <- dim(adj)[1]
+        Cmatrix <- array(0, dim = c(N, N))
+        count <- 1
+        for(i in 1:N) {
+            if(num[i] > 0) {
+                for(j in 1:num[i]) {
+                    Cmatrix[i, adj[count]] <- C[count]
+                    count <- count + 1
+                }
+            }
+        }
+        if(count != L+1)   stop('something went wrong')
+        returnType(double(2))
+        return(Cmatrix)
+    }
+)
+
+
 #' Calculate the lower and upper bounds for the gamma parameter of the dcar_proper distribution
 #' 
 #' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).  The lower and upper bounds are returned in a numeric vector.
@@ -231,22 +259,10 @@ CAR_calcNumIslands <- nimbleFunction(
 CAR_calcBounds <- nimbleFunction(
     name = 'CAR_calcBounds',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
-        print('in: CAR_calcBounds()')
-        print('XXXXX still should *check* that this function works correctly')
-        ## construct Cmatrix using C, adj, num:
+        print('in: CAR_calcBounds()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
         N <- dim(num)[1]
-        Cmatrix <- array(0, dim = c(N, N))
-        for(i in 1:N) {
-            nNeighbors <- num[i]
-            if(nNeighbors > 0) {
-                adjStartInd <- 1
-                if(i > 1) adjStartInd <- adjStartInd + sum(num[1:(i-1)])
-                for(adjIndex in adjStartInd:(adjStartInd+nNeighbors-1)) {
-                    j <- adj[adjIndex]
-                    Cmatrix[i, j] <- C[adjIndex]
-                }
-            }
-        }
+        L <- dim(adj)[1]
+        Cmatrix <- CAR_makeCmatrix(C[1:L], adj[1:L], num[1:N])
         x <- diag(M^-0.5) %*% Cmatrix %*% diag(M^0.5)
         eigenvalues <- eigen(x, only.values = TRUE)$values
         lower <- 1 / max(eigenvalues)
@@ -270,7 +286,7 @@ CAR_calcBounds <- nimbleFunction(
 min.bound <- nimbleFunction(
     name = 'min.bound',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
-        print('in: min.bound()')
+        print('in: min.bound()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
         bounds <- CAR_calcBounds(C, adj, num, M)
         returnType(double(0))
         return(bounds[1])
@@ -289,10 +305,32 @@ min.bound <- nimbleFunction(
 max.bound <- nimbleFunction(
     name = 'max.bound',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
-        print('in: max.bound()')
+        print('in: max.bound()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
         bounds <- CAR_calcBounds(C, adj, num, M)
         returnType(double(0))
         return(bounds[2])
+    }
+)
+
+
+#' Calculates the eigenvalues of the normalised adjacency matrix C
+#' 
+#' This function calculates the evs parameter values for the dcar_proper distribution, and should never need to be invoked directly.
+#' 
+#' @author Daniel Turek
+#' @export
+CAR_calcEVs <- nimbleFunction(
+    name = 'CAR_calcEVs',
+    run = function(C = double(1), adj = double(1), num = double(1)) {
+        print('*********** IN CAR_calcEVs() *******************')    ## XXXXXXX delete
+        N <- dim(num)[1]
+        L <- dim(adj)[1]
+        Cmatrix <- CAR_makeCmatrix(C[1:L], adj[1:L], num[1:N])
+        evs <- eigen(Cmatrix)$values
+        print('eigen values calculated as:')    ## XXXXXXXXXXXXXXXXXXXXXXXX
+        print(evs)                              ## XXXXXXXXXXXXXXXXXXXXXXXX
+        returnType(double(1))
+        return(evs)
     }
 )
 

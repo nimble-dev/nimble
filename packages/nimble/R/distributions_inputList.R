@@ -182,8 +182,9 @@ distributionsInputList <- list(
                        mixedSizes = TRUE,
                        alias    = 'car.normal'),
     
-    dcar_proper = list(BUGSdist = 'dcar_proper(mu, C, adj, num, M, tau, gamma)',
-                       types    = c('value = double(1)', 'mu = double(1)', 'C = double(1)', 'adj = double(1)', 'num = double(1)', 'M = double(1)', 'tau = double(0)', 'gamma = double(0)'),
+    dcar_proper = list(BUGSdist = 'dcar_proper(mu, C, adj, num, M, tau, gamma, evs)',
+                       Rdist    = c('dcar_proper(mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num))'),
+                       types    = c('value = double(1)', 'mu = double(1)', 'C = double(1)', 'adj = double(1)', 'num = double(1)', 'M = double(1)', 'tau = double(0)', 'gamma = double(0)', 'evs = double(1)'),
                        mixedSizes = TRUE,
                        alias    = 'car.proper'),
 
