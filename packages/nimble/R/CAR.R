@@ -252,7 +252,7 @@ CAR_makeCmatrix <- nimbleFunction(
 #' 
 #' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).  The lower and upper bounds are returned in a numeric vector.
 #' 
-#' @seealso \code{\link{min.bound}} \code{\link{max.bound}}
+#' @seealso \code{\link{CAR_calcMinBound}} \code{\link{CAR_calcMaxBound}}
 #' 
 #' @author Daniel Turek
 #' @export
@@ -279,14 +279,14 @@ CAR_calcBounds <- nimbleFunction(
 #' 
 #' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).
 #' 
-#' @seealso \code{\link{max.bound}} \code{\link{CAR_calcBounds}}
+#' @seealso \code{\link{CAR_calcMaxBound}} \code{\link{CAR_calcBounds}}
 #' 
 #' @author Daniel Turek
 #' @export
-min.bound <- nimbleFunction(
-    name = 'min.bound',
+CAR_calcMinBound <- nimbleFunction(
+    name = 'CAR_calcMinBound',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
-        print('in: min.bound()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
+        print('in: CAR_calcMinBound()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
         bounds <- CAR_calcBounds(C, adj, num, M)
         returnType(double(0))
         return(bounds[1])
@@ -298,19 +298,41 @@ min.bound <- nimbleFunction(
 #' 
 #' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).
 #' 
-#' @seealso \code{\link{min.bound}} \code{\link{CAR_calcBounds}}
+#' @seealso \code{\link{CAR_calcMinBound}} \code{\link{CAR_calcBounds}}
 #' 
 #' @author Daniel Turek
 #' @export
-max.bound <- nimbleFunction(
-    name = 'max.bound',
+CAR_calcMaxBound <- nimbleFunction(
+    name = 'CAR_calcMaxBound',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
-        print('in: max.bound()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
+        print('in: CAR_calcMaxBound()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
         bounds <- CAR_calcBounds(C, adj, num, M)
         returnType(double(0))
         return(bounds[2])
     }
 )
+
+
+#' Calculate the lower bound for the gamma parameter of the dcar_proper distribution
+#' 
+#' This function is provided as an alias, for compatibility with WinBUGS.
+#' 
+#' @seealso \code{\link{CAR_calcMinBound}} \code{\link{CAR_calcMaxBound}} \code{\link{CAR_calcBounds}}
+#' 
+#' @author Daniel Turek
+#' @export
+min.bound <- CAR_calcMinBound
+
+
+#' Calculate the upper bound for the gamma parameter of the dcar_proper distribution
+#' 
+#' This function is provided as an alias, for compatibility with WinBUGS.
+#' 
+#' @seealso \code{\link{CAR_calcMinBound}} \code{\link{CAR_calcMaxBound}} \code{\link{CAR_calcBounds}}
+#' 
+#' @author Daniel Turek
+#' @export
+max.bound <- CAR_calcMaxBound
 
 
 #' Calculates the eigenvalues of the normalised adjacency matrix C

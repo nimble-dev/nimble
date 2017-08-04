@@ -909,7 +909,7 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the number of locations.
 #' @param M vector giving the diagnoal elements of the conditional variance matrix, with length equal to the number of locations.
 #' @param tau scalar precision of the Gaussian CAR prior.
-#' @param gamma scalar representing the overall degree of spatial dependence.  The value is constrained to lie withing the inverse minimum and maximum eigenvalues of M^(-0.5) %*% C %*% M^(0.5).  These bounds can be calculated using the deterministic functions min.bound(C, adj, num, M) and max.bound(C, adj, num, M).
+#' @param gamma scalar representing the overall degree of spatial dependence.  The value is constrained to lie withing the inverse minimum and maximum eigenvalues of M^(-0.5) %*% C %*% M^(0.5).  These bounds can be calculated using the deterministic functions CAR_calcMinBound(C, adj, num, M) and CAR_calcMaxBound(C, adj, num, M).
 #' @param evs vector of eigen values of the normalised adjacency matrix implied by C, adj, and num.  This parameter should not be provided; it will always be calculated using the adjacency parameters.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #'
@@ -930,7 +930,7 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' adj <- c(2, 1,3, 2,4, 3)
 #' num <- c(1, 2, 2, 1)
 #' M <- rep(1, 4)
-#' gamma <- (min.bound(C, adj, num, M) + max.bound(C, adj, num, M)) / 2
+#' gamma <- (CAR_calcMinBound(C, adj, num, M) + CAR_calcMaxBound(C, adj, num, M)) / 2
 #' lp <- dcar_proper(x, mu, C, adj, num, M, tau = 1, gamma = gamma)
 NULL
 
