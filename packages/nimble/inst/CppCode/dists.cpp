@@ -2226,11 +2226,6 @@ double dcar_proper(double* x, double* mu, double* C, double* adj, double* num, d
   if(tau < 0) {
     return R_NaN;
   }
-  double ee;                                    // XXXXXXXXXXXXXXXXXXX
-  for(int i = 0; i < N; i++) {                  // XXXXXXXXXXXXXXXXXXX
-    ee = evs[i];                                // XXXXXXXXXXXXXXXXXXX
-    PRINTF("eigenvalue is equal to %f\n", ee);  // XXXXXXXXXXXXXXXXXXX
-  }                                             // XXXXXXXXXXXXXXXXXXX
   double lp = 0;
   double xi, xj;
   int i, j, index;
