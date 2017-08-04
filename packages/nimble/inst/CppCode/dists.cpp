@@ -2319,20 +2319,12 @@ void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, d
       count++;
     }
   }
-  //for(i = 0; i < N*N; i++) {                // XXXXXXXXXXXXXXXXXXX
-  //  PRINTF("Q[i] is equal to %f\n", Q[i]);  // XXXXXXXXXXXXXXXXXXX
-  //}                                         // XXXXXXXXXXXXXXXXXXX
   
   // F77_CALL(dpotrf)( UPLO, N, A, LDA, INFO ) does Choleskey factorization of a symmetric pos. def. matrix
   // http://www.netlib.org/lapack/double/dpotrf.f
   char uplo('U');
   int info(0);
   F77_CALL(dpotrf)(&uplo, &N, Q, &N, &info);
-  
-  //PRINTF("\n=================AFTER CHOLESKY=======================%f\n", Q[0]);  // XXXXXXXXXXXXXXXXXXX
-  //for(i = 0; i < N*N; i++) {                // XXXXXXXXXXXXXXXXXXX
-  //  PRINTF("Q[i] is equal to %f\n", Q[i]);  // XXXXXXXXXXXXXXXXXXX
-  //}                                         // XXXXXXXXXXXXXXXXXXX
   
   if(!R_FINITE_VEC(Q, N*N)) {
     for(i = 0; i < N; i++) {
@@ -2342,41 +2334,18 @@ void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, d
     return;
   }
   
-  // (lower-triangular Cholesky factor of covariance) %*% (column vector of z's)
   for(i = 0; i < N; i++) {
     ans[i] = norm_rand();
   }
-  
-  //PRINTF("\n=================GENERQATE RNORMS()=======================%f\n", Q[0]);  // XXXXXXXXXXXXXXXXXXX
-  //for(i = 0; i < N; i++) {                      // XXXXXXXXXXXXXXXXXXX
-  //  PRINTF("ans[i] is equal to %f\n", ans[i]);  // XXXXXXXXXXXXXXXXXXX
-  //}                                             // XXXXXXXXXXXXXXXXXXX
-  
   // upper-triangular solve or (transpose) multiply
   char transPrec('N');
   char diag('N');
   int lda(N);
   int incx(1);
   F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &N, Q, &lda, ans, &incx);
-  
-  //PRINTF("\n=================AFTER MULTIPLY BY CHOL(Q)=======================%f\n", Q[0]);  // XXXXXXXXXXXXXXXXXXX
-  //for(i = 0; i < N; i++) {                      // XXXXXXXXXXXXXXXXXXX
-  //  PRINTF("ans[i] is equal to %f\n", ans[i]);  // XXXXXXXXXXXXXXXXXXX
-  //}                                             // XXXXXXXXXXXXXXXXXXX
-  
   for(i = 0; i < N; i++) {
     ans[i] += mu[i];
   }
-  
-  //PRINTF("\n=================AFTER ADDING MEAN mu)=======================%f\n", Q[0]);  // XXXXXXXXXXXXXXXXXXX
-  //for(i = 0; i < N; i++) {                      // XXXXXXXXXXXXXXXXXXX
-  //  PRINTF("ans[i] is equal to %f\n", ans[i]);  // XXXXXXXXXXXXXXXXXXX
-  //}                                             // XXXXXXXXXXXXXXXXXXX
-  
-  //for(i = 0; i < N; i++) {   // XXXXXXXXXXXXXXXXXXXXX
-  //  ans[i] = 2.1;            // XXXXXXXXXXXXXXXXXXXXX
-  //}                          // XXXXXXXXXXXXXXXXXXXXX
-  
   delete [] Q;
 }
 
