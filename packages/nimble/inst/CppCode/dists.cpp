@@ -2302,30 +2302,31 @@ void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, d
   
   int i, j;
   
-  double* Q = new double[N*N];    // precison Q = tau * M^-1 %*% (I - gamma*C)
+  double* Qchol = new double[N*N];    // precison Q = tau * M^-1 %*% (I - gamma*C)
   for(i = 0; i < N*N; i++) {
-    Q[i] = 0;
+    Qchol[i] = 0;
   }
   int count = 0;
   for(i = 0; i < N; i++) {
-    Q[ i*(N+1) ] = tau / M[i];    // main diagonal
+    Qchol[ i*(N+1) ] = tau / M[i];    // main diagonal
     for(j = 0; j < num[i]; j++) {
-      Q[  i  +  N*((int) adj[count] - 1)  ] = -tau * gamma * C[count] / M[i];
+      Qchol[  i  +  N*((int) adj[count] - 1)  ] = -tau * gamma * C[count] / M[i];
       count++;
     }
   }
   
+  // now take chol(precision), and write that into Qchol
   // F77_CALL(dpotrf)( UPLO, N, A, LDA, INFO ) does Choleskey factorization of a symmetric pos. def. matrix
   // http://www.netlib.org/lapack/double/dpotrf.f
   char uplo('U');
   int info(0);
-  F77_CALL(dpotrf)(&uplo, &N, Q, &N, &info);
+  F77_CALL(dpotrf)(&uplo, &N, Qchol, &N, &info);
   
-  if(!R_FINITE_VEC(Q, N*N)) {
+  if(!R_FINITE_VEC(Qchol, N*N)) {
     for(i = 0; i < N; i++) {
       ans[i] = R_NaN;
     }
-    delete [] Q;
+    delete [] Qchol;
     return;
   }
   
@@ -2337,11 +2338,11 @@ void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, d
   char diag('N');
   int lda(N);
   int incx(1);
-  F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &N, Q, &lda, ans, &incx);
+  F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &N, Qchol, &lda, ans, &incx);
   for(i = 0; i < N; i++) {
     ans[i] += mu[i];
   }
-  delete [] Q;
+  delete [] Qchol;
 }
 
 
