@@ -235,8 +235,8 @@ CAR_calcNumIslands <- nimbleFunction(
 #' 
 #' @author Daniel Turek
 #' @export
-CAR_makeC <- nimbleFunction(
-    name = 'CAR_makeC',
+CAR_calcC <- nimbleFunction(
+    name = 'CAR_calcC',
     run = function(adj = double(1), num = double(1), M = double(1)) {
         N <- dim(num)[1]
         L <- dim(adj)[1]
@@ -263,8 +263,8 @@ CAR_makeC <- nimbleFunction(
 #' 
 #' @author Daniel Turek
 #' @export
-CAR_makeCmatrix <- nimbleFunction(
-    name = 'CAR_makeCmatrix',
+CAR_calcCmatrix <- nimbleFunction(
+    name = 'CAR_calcCmatrix',
     run = function(C = double(1), adj = double(1), num = double(1)) {
         N <- dim(num)[1]
         L <- dim(adj)[1]
@@ -299,7 +299,7 @@ CAR_calcBounds <- nimbleFunction(
         print('in: CAR_calcBounds()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
         N <- dim(num)[1]
         L <- dim(adj)[1]
-        Cmatrix <- CAR_makeCmatrix(C[1:L], adj[1:L], num[1:N])
+        Cmatrix <- CAR_calcCmatrix(C[1:L], adj[1:L], num[1:N])
         x <- diag(M^-0.5) %*% Cmatrix %*% diag(M^0.5)
         eigenvalues <- eigen(x, only.values = TRUE)$values
         lower <- 1 / max(eigenvalues)
@@ -384,7 +384,7 @@ CAR_calcEVs <- nimbleFunction(
         print('*********** IN CAR_calcEVs() *******************')    ## XXXXXXX delete
         N <- dim(num)[1]
         L <- dim(adj)[1]
-        Cmatrix <- CAR_makeCmatrix(C[1:L], adj[1:L], num[1:N])
+        Cmatrix <- CAR_calcCmatrix(C[1:L], adj[1:L], num[1:N])
         evs <- eigen(Cmatrix)$values
         print('eigen values calculated as:')    ## XXXXXXXXXXXXXXXXXXXXXXXX
         print(evs)                              ## XXXXXXXXXXXXXXXXXXXXXXXX
