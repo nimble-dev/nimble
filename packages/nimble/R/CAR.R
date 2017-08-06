@@ -225,6 +225,38 @@ CAR_calcNumIslands <- nimbleFunction(
 )
 
 
+#' Generates the C argument of the dcar_proper distribution
+#' 
+#' Generate a sparse vector representation of the normalised adajacency matrix, as is required as the C argument of the dcar_proper() distribution.
+#' 
+#' The values in C are derived from the CAR neighboring relationships, as specified by adj and num, and the conditional variances of each region, as specified by M.  It is also guaranteed to satisfy the symmetry constraint imposed on C and M.
+#' 
+#' Note, values in C may be larger than one.  The values in C can be modified by any constant factor, and this will be compensated for by the gamma parameter, assuming it is assigned a prior distribution defined on the appropriate range defined by CAR_calcMinBound and CAR_calcMaxBound.
+#' 
+#' @author Daniel Turek
+#' @export
+CAR_makeC <- nimbleFunction(
+    name = 'CAR_makeC',
+    run = function(adj = double(1), num = double(1), M = double(1)) {
+        N <- dim(num)[1]
+        L <- dim(adj)[1]
+        C <- rep(0, length = L)
+        count <- 1
+        for(i in 1:N) {
+            if(num[i] > 0) {
+                for(j in 1:num[i]) {
+                    C[count] <- sqrt(M[i]/M[adj[count]])
+                    count <- count + 1
+                }
+            }
+        }
+        if(count != L+1)   stop('something went wrong')
+        returnType(double(1))
+        return(C)
+    }
+)
+
+
 #' Generates the normalised adjacency matrix for dcar_proper() distribution
 #' 
 #' Using the sparse representation of the normalised adajacency matrix, generate the full matrix.  This uses the C, adj, and num parameteres of the dcar_proper() distribution.
