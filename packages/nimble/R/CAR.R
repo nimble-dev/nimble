@@ -394,6 +394,29 @@ CAR_calcEVs <- nimbleFunction(
 )
 
 
+#' Calculates the eigenvalues of the normalised adjacency matrix C
+#' 
+#' This function calculates the evs parameter values for the dcar_proper distribution, and should never need to be invoked directly.  This version constructs the C vector using adj, num, and M.
+#' 
+#' @author Daniel Turek
+#' @export
+CAR_calcEVM <- nimbleFunction(
+    name = 'CAR_calcEVM',
+    run = function(adj = double(1), num = double(1), M = double(1)) {
+        print('*********** IN CAR_calcEV+++ M () *******************')    ## XXXXXXX delete
+        N <- dim(num)[1]
+        L <- dim(adj)[1]
+        C <- CAR_calcC(adj[1:L], num[1:N], M[1:N])
+        Cmatrix <- CAR_calcCmatrix(C[1:L], adj[1:L], num[1:N])
+        evs <- eigen(Cmatrix)$values
+        print('eigen values calculated as:')    ## XXXXXXXXXXXXXXXXXXXXXXXX
+        print(evs)                              ## XXXXXXXXXXXXXXXXXXXXXXXX
+        returnType(double(1))
+        return(evs)
+    }
+)
+
+
 CAR_evaluateDensity_base <- nimbleFunctionVirtual(
     run = function() { returnType(double()) },
     methods = list(
