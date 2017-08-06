@@ -914,7 +914,7 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #'
 #' @param x vector of values.
 #' @param mu vector giving the mean for each spatial location.
-#' @param C vector of the same length as adj, giving the normalised weights associated with each pair of neighboring locations.  Note this differs from the dcar_normal weights argument, where unnormalised weights should be specified.
+#' @param C vector of the same length as adj, giving the normalised weights associated with each pair of neighboring locations.  Note this differs from the dcar_normal weights argument, where unnormalised weights should be specified.  If omitted, a default value is calculated using adj, num, and M.  This default will satisfy the symmetry constraint on C and M, that M^-1 %*% C is symmetric.
 #' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the number of locations.
 #' @param M vector giving the diagnoal elements of the conditional variance matrix, with length equal to the number of locations.
@@ -936,17 +936,17 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' @examples
 #' x <- c(1, 3, 3, 4)
 #' mu <- rep(3, 4)
-#' C <- c(1, 1, 1, 1, 1, 1)
 #' adj <- c(2, 1,3, 2,4, 3)
 #' num <- c(1, 2, 2, 1)
 #' M <- rep(1, 4)
+#' C <- CAR_calcC(adj, num, M)
 #' gamma <- (CAR_calcMinBound(C, adj, num, M) + CAR_calcMaxBound(C, adj, num, M)) / 2
 #' lp <- dcar_proper(x, mu, C, adj, num, M, tau = 1, gamma = gamma)
 NULL
 
 #' @rdname CAR-Proper
 #' @export
-dcar_proper <- function(x, mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num), log = FALSE) {
+dcar_proper <- function(x, mu, C = CAR_calcC(adj, num, M), adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num), log = FALSE) {
     CAR_proper_checkAdjNumCM(adj, num, C, M)
     if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
     if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
@@ -960,7 +960,7 @@ dcar_proper <- function(x, mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, 
 
 #' @rdname CAR-Proper
 #' @export
-rcar_proper <- function(n = 1, mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num)) {
+rcar_proper <- function(n = 1, mu, C = CAR_calcC(adj, num, M), adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num)) {
     if(n != 1) warning('rcar_proper only handles n = 1 at the moment')
     CAR_proper_checkAdjNumCM(adj, num, C, M)
     if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
