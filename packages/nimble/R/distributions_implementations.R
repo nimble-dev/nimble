@@ -913,14 +913,14 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' @name CAR-Proper
 #'
 #' @param x vector of values.
-#' @param mu vector giving the mean for each spatial location.
-#' @param C vector of the same length as adj, giving the normalised weights associated with each pair of neighboring locations.  Note this differs from the dcar_normal weights argument, where unnormalised weights should be specified.  If omitted, a default value is calculated using adj, num, and M.  This default will satisfy the symmetry constraint on C and M, that M^-1 %*% C is symmetric.
+#' @param mu vector of means of each spatial location.
+#' @param C vector of the same length as adj, giving the weights associated with each pair of neighboring locations.  See details.
 #' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the number of locations.
-#' @param M vector giving the diagnoal elements of the conditional variance matrix, with length equal to the number of locations.
+#' @param M vector giving the diagnoal elements of the conditional variance matrix, with length equal to the number of locations.  See details.
 #' @param tau scalar precision of the Gaussian CAR prior.
-#' @param gamma scalar representing the overall degree of spatial dependence.  The value is constrained to lie withing the inverse minimum and maximum eigenvalues of M^(-0.5) %*% C %*% M^(0.5).  These bounds can be calculated using the deterministic functions CAR_calcMinBound(C, adj, num, M) and CAR_calcMaxBound(C, adj, num, M).
-#' @param evs vector of eigen values of the normalised adjacency matrix implied by C, adj, and num.  This parameter should not be provided; it will always be calculated using the adjacency parameters.
+#' @param gamma scalar representing the overall degree of spatial dependence.  See details.
+#' @param evs vector of eigen values of the adjacency matrix implied by C, adj, and num.  This parameter should not be provided; it will always be calculated using the adjacency parameters.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #'
 #' @author Daniel Turek
@@ -928,6 +928,10 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' @export
 #'
 #' @details
+#'
+#' The C and M parameters must jointly satisfy a symmetry constraint: that M^-1 %*% C is symmetric, where M is a diagonal matrix and C is the weight matrix.  A vector C that satisfies this constraint can be generated using the function CAR_calcC(adj, num, M).
+#'
+#' The value of gamma is constrained to lie withing the inverse minimum and maximum eigenvalues of M^(-0.5) %*% C %*% M^(0.5), where M is a diagonal matrix and C is the weight matrix.  These bounds can be calculated using the deterministic functions CAR_calcMinBound(C, adj, num, M) and CAR_calcMaxBound(C, adj, num, M), or simultaneously using CAR_calcBounds(C, adj, num, M).
 #'
 #' @return \code{dcar_proper} gives the density, and \code{rcar_proper} generates random deviates.
 #' @references Banerjee, S., Carlin, B.P., and Gelfand, E.G. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
@@ -940,13 +944,14 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #' num <- c(1, 2, 2, 1)
 #' M <- rep(1, 4)
 #' C <- CAR_calcC(adj, num, M)
+#' tau <- 1
 #' gamma <- (CAR_calcMinBound(C, adj, num, M) + CAR_calcMaxBound(C, adj, num, M)) / 2
-#' lp <- dcar_proper(x, mu, C, adj, num, M, tau = 1, gamma = gamma)
+#' lp <- dcar_proper(x, mu, C, adj, num, M, tau, gamma)
 NULL
 
 #' @rdname CAR-Proper
 #' @export
-dcar_proper <- function(x, mu, C = CAR_calcC(adj, num, M), adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num), log = FALSE) {
+dcar_proper <- function(x, mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num), log = FALSE) {
     CAR_proper_checkAdjNumCM(adj, num, C, M)
     if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
     if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
@@ -960,7 +965,7 @@ dcar_proper <- function(x, mu, C = CAR_calcC(adj, num, M), adj, num, M, tau, gam
 
 #' @rdname CAR-Proper
 #' @export
-rcar_proper <- function(n = 1, mu, C = CAR_calcC(adj, num, M), adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num)) {
+rcar_proper <- function(n = 1, mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num)) {
     if(n != 1) warning('rcar_proper only handles n = 1 at the moment')
     CAR_proper_checkAdjNumCM(adj, num, C, M)
     if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
