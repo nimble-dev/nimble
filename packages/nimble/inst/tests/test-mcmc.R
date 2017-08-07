@@ -1175,6 +1175,73 @@ test_that('dcar_normal sampling', {
 })
 
 
+
+
+## testing dcar_proper sampling
+test_that('dcar_proper sampling', {
+    cat('===== Starting MCMC test dcar_proper sampling. =====')
+
+    code <- nimbleCode({
+        tau ~ dgamma(0.001, 0.001)
+        gamma ~ dunif(gMin, gMax)
+        x[1:N] ~ dcar_proper(mu[1:N], C[1:L], adj[1:L], num[1:N], M[1:N], tau, gamma)
+        for(i in 1:N) {
+            y[1] ~ dnorm(x[1], 1)
+            y[2] ~ dnorm(3*x[2] + 5, 10)
+            y[3] ~ dnorm(x[3]^2, 1)
+            y[4] ~ dnorm(x[4]^2, 10)
+        }
+    })
+
+    mu <- 1:4
+    adj <- c(2, 1, 3, 2, 4, 3)
+    num <- c(1, 2, 2, 1)
+    M <- 1:4
+    C <- CAR_calcC(adj, num, M)
+    bounds <- CAR_calcBounds(C, adj, num, M)
+    tau <- 1
+    gamma <- as.numeric(quantile(bounds, 0.8))
+    constants <- list(mu = mu, C = C, adj = adj, num = num, M = M, N = 4, L = 6, gMin = bounds[1], gMax = bounds[2])
+    data <- list(y = c(3, 6, 8, 10))
+    inits <- list(tau = tau, gamma = gamma, x = rep(0, 4))
+
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Cmodel <- compileNimble(Rmodel)
+
+    expect_equal(calculate(Rmodel), -558.0239,    ## XXXXXXXX  (I think will be same)
+                 tol = 1E-5,
+                 info = 'calculate for dcar_proper()')
+
+    expect_equal(calculate(Cmodel), -558.0239,    ## XXXXXXXX  (I think will be same)
+                 tol = 1E-5,
+                 info = 'calculate for dcar_proper(), compiled')
+
+    conf <- configureMCMC(Rmodel)
+    conf$addMonitors('x')
+    Rmcmc <- buildMCMC(conf)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+    niter <- 20
+    set.seed(0); Rmcmc$run(niter)
+    set.seed(0); Cmcmc$run(niter)
+
+    Rsamples <- as.matrix(Rmcmc$mvSamples)
+    Csamples <- as.matrix(Cmcmc$mvSamples)
+
+    sampleNames <- colnames(Rsamples)
+
+    expect_true(all(Rsamples[, sampleNames] - Csamples[, sampleNames] == 0),
+                info = 'agreement between R and C sampling of dcar_proper')
+
+    expect_equal(as.numeric(Csamples[20, sampleNames]),   ## CHANGE XXXX (don't know!!!)
+                 c(0.4914947, -0.2432658, 2.1232828, 0.2775687, 2.6971765, -3.2730476),
+                 tolerance = 1e-6,
+                 info = 'exact sample values for dcar_proper')
+})
+
+
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
