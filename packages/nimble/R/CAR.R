@@ -296,7 +296,6 @@ CAR_calcCmatrix <- nimbleFunction(
 CAR_calcBounds <- nimbleFunction(
     name = 'CAR_calcBounds',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
-        print('in: CAR_calcBounds()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
         N <- dim(num)[1]
         L <- dim(adj)[1]
         Cmatrix <- CAR_calcCmatrix(C[1:L], adj[1:L], num[1:N])
@@ -323,7 +322,6 @@ CAR_calcBounds <- nimbleFunction(
 CAR_calcMinBound <- nimbleFunction(
     name = 'CAR_calcMinBound',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
-        print('in: CAR_calcMinBound()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
         bounds <- CAR_calcBounds(C, adj, num, M)
         returnType(double(0))
         return(bounds[1])
@@ -342,7 +340,6 @@ CAR_calcMinBound <- nimbleFunction(
 CAR_calcMaxBound <- nimbleFunction(
     name = 'CAR_calcMaxBound',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
-        print('in: CAR_calcMaxBound()')      ## XXXXXXXXXXXXXXXXXXXXXX  delete
         bounds <- CAR_calcBounds(C, adj, num, M)
         returnType(double(0))
         return(bounds[2])
@@ -381,13 +378,10 @@ max.bound <- CAR_calcMaxBound
 CAR_calcEVs <- nimbleFunction(
     name = 'CAR_calcEVs',
     run = function(C = double(1), adj = double(1), num = double(1)) {
-        print('*********** IN CAR_calcEVs() *******************')    ## XXXXXXX delete
         N <- dim(num)[1]
         L <- dim(adj)[1]
         Cmatrix <- CAR_calcCmatrix(C[1:L], adj[1:L], num[1:N])
         evs <- eigen(Cmatrix)$values
-        print('eigen values calculated as:')    ## XXXXXXXXXXXXXXXXXXXXXXXX
-        print(evs)                              ## XXXXXXXXXXXXXXXXXXXXXXXX
         returnType(double(1))
         return(evs)
     }
