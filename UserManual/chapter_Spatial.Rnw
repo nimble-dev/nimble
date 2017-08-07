@@ -14,14 +14,11 @@ require(nimble)
 \label{cha:spatial}
 
 
-NIMBLE supports several distributions to represent
-spatially dependent processes.  At present, these
-consist of two variations of conditional autoregressive (CAR) model
+NIMBLE supports two variations of conditional autoregressive (CAR) model
 structures: the improper intrinsic Gaussian CAR (ICAR) model, and
-a proper Gaussian CAR model.
-
-NIMBLE provides BUGS distributions to represent these
-spatially-dependent model structures, as well as MCMC support for sampling them.
+a proper Gaussian CAR model.  This includes distributions to represent these
+spatially-dependent model structures in a BUGS model,
+as well as specialised MCMC samplers for these distributions.
 
  
 
@@ -43,17 +40,6 @@ compatibility with existing WinBUGS code.  NIMBLE also provides the WinBUGS name
 The \cd{dcar\_normal} distribution is specified for a set of \cd{N} spatially dependent regions as:
 
 $$\texttt{x[1:N] $\sim$ dcar\_normal(adj, weights, num, tau, c, zero\_mean)}$$
-
-%\noindent in terms of parameters:
-% 
-%\begin{description}
-%\item [\cd{adj}] Vector giving indicies of the adjacent regions (neighbors) of each region.  This is a sparse representation of the full adjacency matrix.
-%\item [\cd{weights}] Vector of the same length as \cd{adj}, giving the unnormalized weights associated with each pair of adjacent regions.  If \cd{weights} is omitted, all weights are taken as unity.
-%\item [\cd{num}] Vector of length \cd{N} giving the number of neighbors of each region.
-%\item [\cd{tau}] Scalar precision.
-%\item [\cd{c}] Integer number of constraints to impose on the improper density function.  If omitted, \cd{c} is calculated as the number of disjoint groups of regions in the adjacency structure.
-%\item [\cd{zero\_mean}] Integer specifying whether to impose a zero-mean constraint during MCMC sampling.  If equal to 1, the mean of all CAR process values is enforced to be zero, and a separate intercept term should be included in the model.  Default is 0.
-%\end{description}
 
 The \cd{adj}, \cd{weights} and \cd{num} parameters define the adjacency structure and associated weights of the spatially-dependent field.  See \cd{help(CAR-Normal)} for details of these parameters.  When specifying a CAR distribution, these parameters must have constant values.  They do not necessarily have to be specified as \cd{constants} when creating a model object using \cd{nimbleModel}, but they should be defined in a static way: as right-hand-side only variables with initial values provided as \cd{constants}, \cd{data} or \cd{inits}, or using fixed numerical deterministic declarations.  Each of these two approaches for specifying values are shown in the example.
 
