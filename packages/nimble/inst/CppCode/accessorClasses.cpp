@@ -634,17 +634,26 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
 SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
   SEXP Sdim;
   PROTECT(Sdim = Rf_getAttrib(StableContents, R_DimSymbol));
-  if(LENGTH(Sdim) != 2) {PRINTF("Warning from populateIndexedNodeInfoTable: LENGTH(Sdim) != 2"); return(R_NilValue);}
+  if(LENGTH(Sdim) != 2) {
+    PRINTF("Warning from populateIndexedNodeInfoTable: LENGTH(Sdim) != 2");
+    UNPROTECT(1);
+    return R_NilValue;
+  }
   int nrow = INTEGER(Sdim)[0];
   int ncol = INTEGER(Sdim)[1];
   vector<indexedNodeInfo> *tablePtr = static_cast<vector<indexedNodeInfo> *>(R_ExternalPtrAddr(StablePtr));
   if(nrow == 0) {
     void *vptr=0;
     tablePtr->push_back(indexedNodeInfo(static_cast<int *>(vptr), 0, 0));
-    if(ncol != 0) {PRINTF("Warning from populateIndexedNodeInfoTable: nrow == 0 but ncol != 0.");}
+    if(ncol != 0) {
+      PRINTF("Warning from populateIndexedNodeInfoTable: nrow == 0 but ncol != 0.");
+    }
   } else {
-
-    if(!Rf_isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
+    if(!Rf_isNumeric(StableContents)) {
+      PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric");
+      UNPROTECT(1);
+      return R_NilValue;
+    }
     if(Rf_isInteger(StableContents)) {
       int *contentsPtr = INTEGER(StableContents);
       tablePtr->reserve(nrow);
@@ -660,7 +669,7 @@ SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
     }
   }
   UNPROTECT(1);
-  return(R_NilValue);
+  return R_NilValue;
 }
 
 SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP SintIsFromMV, SEXP SintIsToMV) {
