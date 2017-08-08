@@ -1208,11 +1208,11 @@ test_that('dcar_proper sampling', {
     Rmodel <- nimbleModel(code, constants, data, inits)
     Cmodel <- compileNimble(Rmodel)
 
-    expect_equal(calculate(Rmodel), -558.0239,    ## XXXXXXXX  (I think will be same)
+    expect_equal(calculate(Rmodel), -557.7978,
                  tol = 1E-5,
                  info = 'calculate for dcar_proper()')
 
-    expect_equal(calculate(Cmodel), -558.0239,    ## XXXXXXXX  (I think will be same)
+    expect_equal(calculate(Cmodel), -557.7978,
                  tol = 1E-5,
                  info = 'calculate for dcar_proper(), compiled')
 
@@ -1233,8 +1233,8 @@ test_that('dcar_proper sampling', {
     expect_true(all(Rsamples[, sampleNames] - Csamples[, sampleNames] == 0),
                 info = 'agreement between R and C sampling of dcar_proper')
 
-    expect_equal(as.numeric(Csamples[20, sampleNames]),   ## CHANGE XXXX (don't know!!!)
-                 c(0.4914947, -0.2432658, 2.1232828, 0.2775687, 2.6971765, -3.2730476),
+    expect_equal(as.numeric(Csamples[20, sampleNames]),
+                 c(0.3957632, 0.4388424, 1.5625223, 0.2071691, 2.6513380, -3.1753125),
                  tolerance = 1e-6,
                  info = 'exact sample values for dcar_proper')
 })
