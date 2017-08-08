@@ -137,16 +137,18 @@ void  EIGEN_EIGENCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
  	UNPROTECT(7);
  }
 
-SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {
+SEXP C_nimEigen(SEXP S_x, SEXP S_symmetric, SEXP S_valuesOnly, SEXP returnList) {
   int* dims = INTEGER(Rf_getAttrib(S_x, R_DimSymbol));
   if(!Rf_isMatrix(S_x) || dims[0] != dims[1])
     RBREAK("Error (C_nimEigen): 'x' must be a square matrix.\n");
   NimArr<2, double> x;
   bool valuesOnly;
+  bool symmetric;
   SEXP_2_NimArr<2>(S_x, x);
   valuesOnly = SEXP_2_bool(S_valuesOnly);
+  symmetric = SEXP_2_bool(S_symmetric);
   Eigen::Map<Eigen::MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
-  EIGEN_EIGENCLASS_R C_eigenClass = *EIGEN_EIGEN_R(Eig_x, valuesOnly);
+  EIGEN_EIGENCLASS_R C_eigenClass = *EIGEN_EIGEN_R(Eig_x, symmetric, valuesOnly);
   C_eigenClass.RObjectPointer = returnList;
   C_eigenClass.copyToSEXP();
   return(returnList);

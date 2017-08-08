@@ -56,9 +56,9 @@ public:
 
 
 template<class Derived>
-nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(const Eigen::MatrixBase<Derived> &x, bool valuesOnly) {
+nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(const Eigen::MatrixBase<Derived> &x,  bool symmetric, bool valuesOnly) {
     nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
-    EIGEN_EIGEN_INTERNAL(x, valuesOnly, returnClass.getRealPtr());
+    EIGEN_EIGEN_INTERNAL(x, symmetric, valuesOnly, returnClass.getRealPtr());
     return(returnClass);
 }
 
@@ -71,9 +71,9 @@ nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(const Eigen::MatrixBase<Derived> &x, int
 
 
 template<class Derived>
-nimSmartPtr<EIGEN_EIGENCLASS_R>   EIGEN_EIGEN_R(const Eigen::MatrixBase<Derived> &x, bool valuesOnly) {
+nimSmartPtr<EIGEN_EIGENCLASS_R>   EIGEN_EIGEN_R(const Eigen::MatrixBase<Derived> &x,  bool symmetric, bool valuesOnly) {
     nimSmartPtr<EIGEN_EIGENCLASS_R> returnClass = new EIGEN_EIGENCLASS_R;
-    EIGEN_EIGEN_INTERNAL(x, valuesOnly, returnClass.getRealPtr());
+    EIGEN_EIGEN_INTERNAL(x, symmetric, valuesOnly, returnClass.getRealPtr());
     return(returnClass);
 }
 
@@ -85,22 +85,72 @@ nimSmartPtr<EIGEN_SVDCLASS_R>   EIGEN_SVD_R(const Eigen::MatrixBase<Derived> &x,
 }
 
 template<class Derived>
-void EIGEN_EIGEN_INTERNAL(const Eigen::MatrixBase<Derived> &x, bool valuesOnly, EIGEN_EIGENCLASS_R *returnClass) {
-  // nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
-  returnClass->getValues().initialize(0, 0, x.rows());
+bool EIGEN_CHECKSYMMETRY(const Eigen::MatrixBase<Derived> &x) {
+	for(int i = 0; i<x.rows(); i++){
+		for(int j = i + 1; j<x.rows(); j++){
+			if(x(i,j) != x(j,i)){
+				return(false);
+			}
+		}
+	}
+	return(true);
+}
+
+
+template<class Derived>
+void EIGEN_EIGEN_INTERNAL(const Eigen::MatrixBase<Derived> &x,  bool symmetric, bool valuesOnly, EIGEN_EIGENCLASS_R *returnClass) {
+    returnClass->getValues().initialize(0, 0, x.rows());
 	Map<VectorXd> Eig_eigVals(returnClass->getValues().getPtr(),x.rows());
+	if(!valuesOnly){
+		returnClass->getVectors().initialize(0, 0, x.rows(), x.cols());
+	}
 	if(x.rows() != x.cols()) {
 	 _nimble_global_output <<"Run-time size error: expected matrix argument to eigen() to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
 	}
     Eigen::DecompositionOptions eigOpts = valuesOnly ? EigenvaluesOnly : ComputeEigenvectors;
-	SelfAdjointEigenSolver<MatrixXd> solver(x, eigOpts); // The MatrixXd here doesn't seem generic, but I couldn't get it to work otherwise and it would be odd to do an Eigen decomposition on anything else. -Perry
-	Eig_eigVals = solver.eigenvalues().reverse();
-	if(!valuesOnly){
-	  returnClass->getVectors().initialize(0, 0, x.rows(), x.cols());
-	  Map<MatrixXd> Eig_eigVecs(returnClass->getVectors().getPtr(),x.rows(),x.cols());
-	  Eig_eigVecs = solver.eigenvectors().rowwise().reverse();	
+	if(!symmetric){
+		symmetric = EIGEN_CHECKSYMMETRY(x);
 	}
-	//	return(returnClass);
+	if(symmetric){ 
+		SelfAdjointEigenSolver<MatrixXd> solver1(x, eigOpts); // The MatrixXd here doesn't seem generic, but I couldn't get it to work otherwise and it would be odd to do an Eigen decomposition on anything else. -Perry
+		Eig_eigVals = solver1.eigenvalues().reverse();
+		if(!valuesOnly){
+			Map<MatrixXd> Eig_eigVecs(returnClass->getVectors().getPtr(),x.rows(),x.cols());
+			Eig_eigVecs = solver1.eigenvectors().rowwise().reverse();	
+		}
+	}
+	else{ 
+		EigenSolver<MatrixXd> solver2(x, eigOpts); 
+		vector<pair<double,int> > sortIndices;
+		for(int i = 0; i<x.rows(); i++){
+			sortIndices.push_back(make_pair(abs(solver2.eigenvalues().real()(i)),i));
+		}
+		std::sort(sortIndices.begin(),sortIndices.end());
+		std::reverse(sortIndices.begin(), sortIndices.end());
+		for(int i = 0; i < x.rows() ; ++i){
+			if(solver2.eigenvalues().imag()(sortIndices[i].second) != 0){
+				_nimble_global_output <<"Run-time warning: matrix used in call to nimEigen() has a complex eigenvalue."<<"\n"; nimble_print_to_R(_nimble_global_output);
+				Eig_eigVals(i) = NAN;
+			}
+			else{
+				Eig_eigVals(i) = solver2.eigenvalues().real()(sortIndices[i].second);
+			}
+		}
+		if(!valuesOnly){
+			Map<MatrixXd> Eig_eigVecs(returnClass->getVectors().getPtr(),x.rows(),x.cols());
+			MatrixXd sorted_eigVecs(x.rows(), x.rows());
+			for(int i = 0; i<x.rows(); i++){
+				sorted_eigVecs.col(i) = solver2.eigenvectors().real().col(sortIndices[i].second);
+				for(int j = 0; j<x.rows(); j++){
+					if(solver2.eigenvectors().imag()(j, sortIndices[i].second) != 0){
+						_nimble_global_output <<"Run-time warning: matrix matrix used in call to nimEigen() has a complex valued eigenvector."<<"\n"; nimble_print_to_R(_nimble_global_output);
+						sorted_eigVecs(j, i) = NAN;
+					}
+				}
+			}
+			Eig_eigVecs = sorted_eigVecs;
+		}
+	} 
 }
 
  template<class Derived> 
