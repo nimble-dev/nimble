@@ -41,7 +41,7 @@ class EIGEN_SVDCLASS_R : public pointedToBase {
 };
 
 extern "C" {
-SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList);
+SEXP C_nimEigen(SEXP S_x, SEXP S_symmetric, SEXP S_valuesOnly, SEXP returnList);
 SEXP C_nimSvd(SEXP S_x, SEXP S_vectors, SEXP returnList);
 }
 
