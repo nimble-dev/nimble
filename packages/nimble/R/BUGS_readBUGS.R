@@ -1,8 +1,19 @@
 # code for creating BUGS model from a variety of input formats
 # pieces written by Daniel Turek and Christopher Paciorek
 
-BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), calculate = TRUE, userEnv = parent.frame()) {
-    if(missing(name)) name <- deparse(substitute(code))
+BUGSmodel <- function(code,
+                      name = NULL,
+                      constants = list(),
+                      dimensions = list(),
+                      data = list(),
+                      inits = list(),
+                      returnModel = FALSE,
+                      where = globalenv(),
+                      debug = FALSE,
+                      check = getNimbleOption('checkModel'),
+                      calculate = TRUE,
+                      userEnv = parent.frame()) {
+    if(is.null(name)) name <- deparse(substitute(code))
     if(length(constants) && sum(names(constants) == ""))
       stop("BUGSmodel: 'constants' must be a named list")
     if(length(dimensions) && sum(names(dimensions) == ""))
@@ -75,7 +86,18 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' constants = list(prior_sd = 1)
 #' data = list(x = 4)
 #' Rmodel <- nimbleModel(code, constants = constants, data = data)
-nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), calculate = TRUE, name, userEnv = parent.frame())
+nimbleModel <- function(code,
+                        constants = list(),
+                        data = list(),
+                        inits = list(),
+                        dimensions = list(),
+                        returnDef = FALSE,
+                        where = globalenv(),
+                        debug = FALSE,
+                        check = getNimbleOption('checkModel'),
+                        calculate = TRUE,
+                        name = NULL,
+                        userEnv = parent.frame())
     BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug, check, calculate, userEnv)
 
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
