@@ -44,6 +44,9 @@ clang-format: FORCE
 	  nimble/inst/CppCode/predefinedNimbleLists.cpp \
 	  -i
 
+license: FORCE
+	Rscript update_license.R
+
 # Keeps .Rproj.user/ and .Rhistory.
 clean: FORCE
 	git clean -dfx -e .R*

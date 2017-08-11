@@ -42,6 +42,20 @@ NIMBLE: An R Package for Programming with BUGS models, Version 0.6-6.
 https://r-nimble.org,
 https://zenodo.org/record/820704.
 
+## Licenses
+
+Nimble is released under a mixture of licenses,
+and depends on additional third-party libraries with compatible licenses.
+
+- Nimble's non-C++ code (R, bash, Make, etc.) is released under
+  [Revised BSD](LICENSE).
+- Nimble's C++ code is released under
+  [GPL 2](https://www.gnu.org/licenses/gpl-2.0.html).
+- Nimble's [User Manual](UserManual) is released under the
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license.
+- The [Eigen C++ library](http://eigen.tuxfamily.org) included with Nimble is
+  licensed under [MPL 2](https://www.mozilla.org/en-US/MPL/2.0/).
+
 ## Acknowledgements
 
 The development of NIMBLE has been funded by:
