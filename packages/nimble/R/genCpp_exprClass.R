@@ -10,82 +10,95 @@
 ## In places it is still convenient to use R parse trees, or to generate
 ## code in an R parse tree and then call RparseTree2ExprClasses to convert it
 exprClass <- setRefClass('exprClass',
-                         fields = list(
-                             expr = 'ANY', ## optional for the original R expr. Not used much except at setup
-                             isName = 'ANY',		#'logical', ## is it a name
-                             isCall = 'ANY',		# 'logical', ## is it a call
-                             isAssign =  'ANY',		#'logical', ## it is an assignment (all assignments are also calls)
-                             name =  'ANY',		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
-                             nDim =  'ANY',		#'numeric', ## how many dimensions
-                             sizeExprs =  'ANY',	#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
-                             type =  'ANY',		#'character', ## type label
-                             args =  'ANY',		#'list', ## list of exprClass objects for the arguments
-                             eigMatrix =  'ANY',	#'logical', ## vs. Array.  Only used for Eigenized expressions
-                             toEigenize =  'ANY',	#'character', ##'yes', 'no', or 'maybe'
-                             caller = 'ANY',            # exprClass object for the call to which this is an argument (if any)
-                             callerArgID =  'ANY',	#'numeric', ## index in the calling object's args list for this object.
-                             assertions =  'ANY',	#'list'
-                             cppADCode = 'ANY',         #'logical' ## is expr in code generated for cppad?
-                             aux = 'ANY'                # anything needed for specific operators
-                             ),
-                         methods = list(
-                             initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); cppADCode <<- FALSE; callSuper(...)},
-                             ## This displays the parse tree using indentation on multiple rows of output
-                             ## It also checks that the caller and callerArgID fields are all correct
-                             ## For deparsing, call nimDeparse
-                             show = function(indent = '', showType = FALSE, showAssertions = FALSE, showToEigenize = FALSE) {
-                                 ## optionally include size information
-                                 sizeDisp <- if(showType) { 
-                                     if(inherits(type, 'uninitializedField')) {
-                                         paste0(' \t| type = (uninitializedField)(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
-                                     } else {
-                                         paste0(' \t| type = ', type,'(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
-                                     }
-                                 } else
-                                     character()
-
-                                 assertDisp <- if(showAssertions & length(assertions) > 0) {
-                                     paste(' \t| assert:',paste(unlist(lapply(assertions, deparse)), collapse = ', '))
-                                 } else character()
-
-                                 toEigenizeDisp <- if(showToEigenize) {
-                                     paste(' \t| ', toEigenize)
-                                 } else character()
-                                 ## write self label
-                                 writeLines(paste0(indent, name, sizeDisp, assertDisp, toEigenizeDisp))
-                                 ## Iterate through arguments and show them with more indenting
-                                 for(i in seq_along(args)) {
-                                     if(inherits(args[[i]], 'exprClass')) {
-                                         args[[i]]$show(paste0(indent, '  '), showType, showAssertions, showToEigenize)
-                                         ## check caller and callerArgID validity
-                                         if(!identical(args[[i]]$caller, .self) |
-                                            args[[i]]$callerArgID != i)
-                                             writeLines(paste0(indent, '****',
-                                                               'Warning: caller and/or callerID are not set correctly.'))
-                                     } else {
-                                         writeLines(paste0(indent, '  ', if(is.null(args[[i]])) 'NULL' else args[[i]]))
-                                     }
-                                 }
-                                 ## close brackets
-                                 if(name=='{') writeLines(paste0(indent,'}'))
-                             }
-                             )
-                         )
+    fields = list(
+        expr = 'ANY', ## optional for the original R expr. Not used much except at setup
+        isName = 'ANY',		#'logical', ## is it a name
+        isCall = 'ANY',		# 'logical', ## is it a call
+        isAssign =  'ANY',		#'logical', ## it is an assignment (all assignments are also calls)
+        name =  'ANY',		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
+        nDim =  'ANY',		#'numeric', ## how many dimensions
+        sizeExprs =  'ANY',	#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
+        type =  'ANY',		#'character', ## type label
+        args =  'ANY',		#'list', ## list of exprClass objects for the arguments
+        eigMatrix =  'ANY',	#'logical', ## vs. Array.  Only used for Eigenized expressions
+        toEigenize =  'ANY',	#'character', ##'yes', 'no', or 'maybe'
+        caller = 'ANY',            # exprClass object for the call to which this is an argument (if any)
+        callerArgID =  'ANY',	#'numeric', ## index in the calling object's args list for this object.
+        assertions =  'ANY',	#'list'
+        cppADCode = 'ANY',         #'logical' ## is expr in code generated for cppad?
+        aux = 'ANY'                # anything needed for specific operators
+    ),
+    methods = list(
+        initialize = function(...) {
+            sizeExprs <<- list()
+            args <<- list()
+            toEigenize <<- 'unknown'
+            assertions <<- list()
+            eigMatrix <<- logical()
+            cppADCode <<- FALSE
+            callSuper(...)
+        },
+        ## This displays the parse tree using indentation on multiple rows of output
+        ## It also checks that the caller and callerArgID fields are all correct
+        ## For deparsing, call nimDeparse
+        show = function(indent = '', showType = FALSE, showAssertions = FALSE, showToEigenize = FALSE) {
+            ## optionally include size information
+            sizeDisp <- if(showType) { 
+                if(inherits(type, 'uninitializedField')) {
+                    paste0(' \t| type = (uninitializedField)(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
+                } else {
+                    paste0(' \t| type = ', type,'(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
+                }
+            } else
+                character()
+    
+            assertDisp <- if(showAssertions & length(assertions) > 0) {
+                paste(' \t| assert:',paste(unlist(lapply(assertions, deparse)), collapse = ', '))
+            } else character()
+    
+            toEigenizeDisp <- if(showToEigenize) {
+                paste(' \t| ', toEigenize)
+            } else character()
+            ## write self label
+            writeLines(paste0(indent, name, sizeDisp, assertDisp, toEigenizeDisp))
+            ## Iterate through arguments and show them with more indenting
+            for(i in seq_along(args)) {
+                if(inherits(args[[i]], 'exprClass')) {
+                    args[[i]]$show(paste0(indent, '  '), showType, showAssertions, showToEigenize)
+                    ## check caller and callerArgID validity
+                    if(!identical(args[[i]]$caller, .self) |
+                       args[[i]]$callerArgID != i)
+                        writeLines(paste0(indent, '****',
+                                          'Warning: caller and/or callerID are not set correctly.'))
+                } else {
+                    writeLines(paste0(indent, '  ', if(is.null(args[[i]])) 'NULL' else args[[i]]))
+                }
+            }
+            ## close brackets
+            if(name=='{') writeLines(paste0(indent,'}'))
+        }
+    )
+)
 
 ## This class is for keeping track of symbolic dimension and size information
-## for a variable name, including any known changes as code processing progresses
-## It differs from the information in the symbol table in that the latter is static: it is not modified as a result of code processing
+## for a variable name, including any known changes as code processing progresses.
+## This differs from the information in the symbol table in that the latter is static: it is not modified as a result of code processing.
 exprTypeInfoClass <- setRefClass('exprTypeInfoClass',
-                                 fields = list(
-                                     nDim =  'ANY',		#'numeric',
-                                     sizeExprs =  'ANY',	#'list',
-                                     type =  'ANY'),		#'character'),
-                                 methods = list(
-                                 	initialize = function(...){sizeExprs <<- list();callSuper(...)},
-                                     show = function() {
-                                         writeLines(paste0('exprTypeInfoClass: nDim = ', nDim, '. type = ', type,'. sizeExprs = ', paste0( lapply(sizeExprs, deparse), collapse = ',')))
-                                     })
-                                 )
+    fields = list(
+        nDim =  'ANY',		#'numeric',
+        sizeExprs =  'ANY',	#'list',
+        type =  'ANY'		#'character'
+    ),
+    methods = list(
+    	initialize = function(...) {
+            sizeExprs <<- list()
+            callSuper(...)
+        },
+        show = function() {
+            writeLines(paste0('exprTypeInfoClass: nDim = ', nDim, '. type = ', type,'. sizeExprs = ', paste0( lapply(sizeExprs, deparse), collapse = ',')))
+        }
+    )
+)
 
 ## Add indendation to every character() element in a list, doing so recursively for any nested list()
 addIndentToList <- function(x, indent) {
