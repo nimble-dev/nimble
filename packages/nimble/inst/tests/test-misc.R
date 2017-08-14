@@ -156,3 +156,29 @@ test_that("pi case 3", {
     expect_equal(cnf(), c(10.1, 20.2), info = 'pi case 1 compiled')
     }
 )
+
+test_that('step(inprod(-, -)) compiles', {
+    nf <- nimbleFunction(
+        run = function() {
+            x <- rep(0, 4)
+            z <- step(inprod(x, x))
+        }
+    )
+    expect_error(
+        cnf <- compileNimble(nf, showCompilerOutput = TRUE),
+        info = 'Known Failure: https://github.com/nimble-dev/nimble/issues/538'
+    )
+})
+
+test_that('sin(inprod(-, -)) compiles', {
+    nf <- nimbleFunction(
+        run = function() {
+            x <- rep(0, 4)
+            z <- sin(inprod(x, x))
+        }
+    )
+    expect_error(
+        cnf <- compileNimble(nf, showCompilerOutput = TRUE),
+        info = 'Known Failure: https://github.com/nimble-dev/nimble/issues/538'
+    )
+})

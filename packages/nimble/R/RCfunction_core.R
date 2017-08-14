@@ -16,6 +16,7 @@ otherDSLcalls <- c("{",
                    "nimDerivs",
                    "void")
 
+# TODO(perrydv) Should inprod be added to this list?
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
                     cat = 'nimCat',
