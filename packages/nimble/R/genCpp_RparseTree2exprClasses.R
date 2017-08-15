@@ -20,7 +20,7 @@ embedListInRbracket <- function(code) {
 ## caller and callerArgID are for recursion, not to be used on first entry
 RparseTree2ExprClasses <- function(code, caller = NULL, callerArgID = numeric()) { ## input code is R parse tree
     ## name:
-    if(is.name(code)) return(exprClass(expr = code, isName = TRUE, isCall = FALSE, isAssign = FALSE, name = as.character(code), caller = caller, callerArgID = callerArgID))
+    if(is.name(code)) return(exprClass$new(expr = code, isName = TRUE, isCall = FALSE, isAssign = FALSE, name = as.character(code), caller = caller, callerArgID = callerArgID))
     ## call
     if(is.call(code)) {
         if(is.call(code[[1]])) { ## chained calls like a(b)(c) or a[[b]](c).  We wrap these as chainedCall(a(b), c) or chainedCall(a[[b]], c)
@@ -30,7 +30,7 @@ RparseTree2ExprClasses <- function(code, caller = NULL, callerArgID = numeric())
         isAssign <- name %in% c('<-','=','<<-')
         args <- vector('list', length = length(code)-1)
         ## build the object
-        ans <- exprClass(expr = code, isName = FALSE, isCall = TRUE, isAssign = isAssign, name = name, args = args, caller = caller, callerArgID = callerArgID)
+        ans <- exprClass$new(expr = code, isName = FALSE, isCall = TRUE, isAssign = isAssign, name = name, args = args, caller = caller, callerArgID = callerArgID)
 
         ## Ensure that bodies of for and if are in { expressions.  Makes for less special-case checking in later processing
         if(name == 'for') {
