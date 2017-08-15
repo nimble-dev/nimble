@@ -461,8 +461,8 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
             ## Construct:
             ## concatenateTemp(ConcatenateInterm_1),
             ##   concatenateTemp is not output to C++. It is a placeholder
-            newExpr <- exprClass(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = "concatenateTemp", nDim = 1, sizeExprs = list(thisLength), type = 'double')
-            setArg(newExpr, 1, exprClass(isName = TRUE, isCall = FALSE, isAssign = FALSE, name = newTempVecName, nDim = 1, sizeExprs = list(thisLength), type = 'double'))
+            newExpr <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = "concatenateTemp", nDim = 1, sizeExprs = list(thisLength), type = 'double')
+            setArg(newExpr, 1, exprClass$new(isName = TRUE, isCall = FALSE, isAssign = FALSE, name = newTempVecName, nDim = 1, sizeExprs = list(thisLength), type = 'double'))
 
             ## hardCodedVectorInitializer is a wrapper for the "contents1, contents2, ..." below 
             valuesExpr <- quote(hardCodedVectorInitializer())
@@ -521,7 +521,7 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
 
     newExprList <- vector(numArgGroups, mode = 'list')
     for(i in seq_along(splitArgIDs)) {
-        newExprList[[i]] <- exprClass(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'nimC', nDim = 1, toEigenize = 'yes', type = 'double')
+        newExprList[[i]] <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'nimC', nDim = 1, toEigenize = 'yes', type = 'double')
         for(j in seq_along(splitArgIDs[[i]])) setArg(newExprList[[i]], j, newArgs[[splitArgIDs[[i]][j]]])
     }
 
@@ -2305,7 +2305,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                     if(!indexIsScalar) warning("There is nested indexing with drop=FALSE where an index must be scalar but isn't")
                 } else {
                     ## construct i[k], which is really nimNonseqIndexedi(i, k)
-                    newExpr <- exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
+                    newExpr <- exprClass$new(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
                     newExpr$type <- 'integer'
                     indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
                     newExpr$sizeExprs <- if(!indexIsScalar) c(code$args[[iInd + 1]]$sizeExprs) else list(1)

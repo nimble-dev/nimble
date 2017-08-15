@@ -1,4 +1,5 @@
 ## Small class for information on compilation of each nf method
+
 RCfunctionCompileClass <- setRefClass(
     'RCfunctionCompileClass',
     fields = list(
@@ -230,7 +231,7 @@ RCfunProcessing <- setRefClass(
                     writeLines('Debugging RCfunProcessing (nimbleOptions()$debugRCfunProcessing is set to TRUE)') 
                 }
             }
-            
+          
             if(debug) {
                 writeLines('**** READY to start RCfunProcessing::process *****')
                 browser()
@@ -238,7 +239,7 @@ RCfunProcessing <- setRefClass(
             
             if(is.null(nimbleProject))
                 nimbleProject <- get('nimbleProject', envir = RCfun)
-            
+
             if(!initialTypeInferenceDone) {
                 
                 if(!is.null(nimbleOptions()$debugCppLineByLine)) {
@@ -255,10 +256,12 @@ RCfunProcessing <- setRefClass(
                 
                 if(inherits(compileInfo$origLocalSymTab,
                             'uninitializedField')) {
+
                     setupSymbolTables()
                 }
                 initialTypeInferenceDone <<- TRUE
             }
+
             if(initialTypeInferenceOnly)
                 return(NULL);
             
@@ -318,6 +321,7 @@ RCfunProcessing <- setRefClass(
             compileInfo$typeEnv[['.AllowUnknowns']] <<- TRUE ## will be FALSE for RHS recursion in setSizes
             compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
             compileInfo$typeEnv[['.nimbleProject']] <<- nimbleProject
+
             passedArgNames <-
                 as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
             names(passedArgNames) <-
