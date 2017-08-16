@@ -10,17 +10,43 @@
 [Examples](https://r-nimble.org/examples) |
 [Developing](https://nimble-dev.github.io/nimble-docs)
 
-NIMBLE is an R package for programming with BUGS models and compiling parts of R.
-[BUGS](https://www.mrc-bsu.cam.ac.uk/software/bugs) is a probabilistic programming language that makes it easy to rapidly develop hierarchical Bayesian models for statistical analysis.
-NIMBLE provides an implementation of the BUGS language in R together with a DSL for writing custom inference algorithms against BUGS models.
-NIMBLE's programming paradigm treats probabilistic graphical models as a basic programming construct.
+NIMBLE is an R package for hierarchical statistical modeling (aka
+graphical modeling).  It enables writing general models along with
+methods such as Markov chain Monte Carlo (MCMC), particle filtering
+(aka sequential Monte Carlo), and other general methods.
+
+For writing statistical models, NIMBLE adopts and extends the BUGS
+language, making it largely compatible with
+[BUGS](https://www.mrc-bsu.cam.ac.uk/software/bugs) and
+[JAGS](http://mcmc-jags.sourceforge.net/).  NIMBLE makes BUGS
+extensible, allowing users to add new functions and new distributions.
+
+For writing algorithms (aka analysis methods), NIMBLE provides a
+model-generic programming system, based on two-stage evaluation,
+within R.  This provides control over models as generic objects and
+mathematical manipulation of model variables. In this way, NIMBLE's
+programming paradigm treats probabilistic graphical models as a basic
+programming construct.
+
+Both models and algorithms are compiled via generating customized C++
+and providing seamless interfaces to compiled C++ from R.
+
+NIMBLE's most developed methods are for MCMC.  Users can easily
+customize sampler configurations from R and write new samplers in
+NIMBLE's algorithm programming system.
+
+Developers of new computational statistical methods can build them in
+NIMBLE to gain the benefits of its graphical modeling language,
+compilation, and distribution via [CRAN](https://cran.r-project.org/).
 
 ## Installation
 
 ### Install prerequisites
 
 NIMBLE needs a C++ compiler and the GNU `make` utility.
-Additionally, Mac users need to have Xcode installed and Windows users need Rtools installed.
+Typically, Mac users can obtain these by installing Xcode, including
+command line utilities, while Windows users can obtain them by
+installing [Rtools](https://cran.r-project.org/bin/windows/Rtools/).
 See the [User Manual](https://r-nimble.org/manuals/NimbleUserManual.pdf#page=26) for more details.
 
 ### Install NIMBLE
