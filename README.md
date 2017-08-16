@@ -22,11 +22,10 @@ language, making it largely compatible with
 extensible, allowing users to add new functions and new distributions.
 
 For writing algorithms (aka analysis methods), NIMBLE provides a
-model-generic programming system, based on two-stage evaluation,
-within R.  This provides control over models as generic objects and
-mathematical manipulation of model variables. In this way, NIMBLE's
-programming paradigm treats probabilistic graphical models as a basic
-programming construct.
+model-generic programming system embedded within R.  This provides
+control over models as generic objects and mathematical manipulation
+of model variables. In this way, NIMBLE's programming paradigm treats
+probabilistic graphical models as a basic programming construct.
 
 Both models and algorithms are compiled via generating customized C++
 and providing seamless interfaces to compiled C++ from R.
