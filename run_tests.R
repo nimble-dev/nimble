@@ -44,7 +44,8 @@ if (length(grep('^-', argv, invert = TRUE))) {
         'test-Math2.R',
         'test-Mcmc2.R',
         'test-Mcmc3.R',
-        'test-Filtering2.R')
+        'test-Filtering2.R',
+        'test-benchmark-building-steps.R')
     # Avoid running these tests since they test experimental features.
     blacklist <- c(
         blacklist,
