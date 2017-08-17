@@ -32,7 +32,7 @@ timeSteps <- function(code, data = list(), constants = list(), inits = list()) {
     )[3]
     times['Build MCMC (No Conj)'] <- system.time(
         RMCMC <-
-            buildMCMC(MCMCconfNoCon)
+            buildMCMC(MCMCconfNoConj)
     )[3]
     times['Compile MCMC'] <- system.time(
         CMCMC <-
