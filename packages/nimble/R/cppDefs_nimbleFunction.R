@@ -343,6 +343,11 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   }
                                                   return(cppInterfaceObject)
                                               },
+                                              addCopyFromRobject = function() {
+                                                  copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name)
+                                                  functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
+                                                  SEXPmemberInterfaceFuns[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectInterfaceDef
+                                              },
                                               buildAll = function(where = where) {
                                                   baseClassObj <- environment(nfProc$nfGenerator)$contains
                                                   
@@ -354,7 +359,53 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   }
                                                   if(nimbleOptions('experimentalEnableDerivs') && length(environment(nfProc$nfGenerator)$enableDerivs) > 0) addADclassContent()
 
+                                                  addCopyFromRobject()
+                                                  
                                                   callSuper(where)
                                               }
                                           ),
                                       )
+
+makeCopyFromRobjectDef <- function(className) {
+    ## Make method for copying from R object
+    copyFromRobjectDef <- RCfunctionDef()
+    copyFromRobjectDef$name <- 'copyFromRobject'
+    copyFromRobjectDef$returnType <- cppVoid()
+    copyFromRobjectDef$args <- symbolTable()
+    localVars <- symbolTable()
+    RobjectVarSym <- cppSEXP(name = 'Robject')
+    copyFromRobjectDef$args$addSymbol(RobjectVarSym)
+    hwCalls <- list(cppLiteral("std::cout<<\"hello world\\n\";"))
+    allRcode <- do.call('call',
+                        c(list('{'),
+                          hwCalls),
+                        quote = TRUE
+                        )
+    allCode <- RparseTree2ExprClasses(allRcode)
+    copyFromRobjectDef$code <- cppCodeBlock(code = allCode,
+                                            objectDefs = localVars)
+
+    ## Make SEXP interface function to call from R 
+    SEXPinterfaceCname <- paste0("CALL_", className, "_copyFromRobject")
+    interfaceArgs <- symbolTable()
+    interfaceArgs$addSymbol(RobjectVarSym)
+    interfaceArgs$addSymbol(cppSEXP(name = 'SextPtrToObject'))
+
+    RHScall <- as.call(list(as.name('copyFromRobject'),
+                            as.name('Robject')))
+    castedCall <- substitute(cppMemberDereference(
+        template(static_cast, cppPtrType(CN))(R_ExternalPtrAddr(SextPtrToObject)), RHS),
+        list(CN = as.name(className), RHS = RHScall))
+    returnLine <- quote(return(R_NilValue))
+    
+    interfaceCode <- embedListInRbracket(list(castedCall, returnLine))
+    copyFromRobjectInterfaceDef <- cppFunctionDef(name = SEXPinterfaceCname,
+                                                  args = interfaceArgs,
+                                                  code = cppCodeBlock(code = RparseTree2ExprClasses(interfaceCode),
+                                                                      objectDefs = localVars), ## also empty local vars
+                                                  returnType = cppSEXP(),
+                                                  externC = TRUE)
+        
+    list(copyFromRobjectDef = copyFromRobjectDef,
+         copyFromRobjectInterfaceDef = copyFromRobjectInterfaceDef)
+}
