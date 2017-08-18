@@ -344,7 +344,10 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   return(cppInterfaceObject)
                                               },
                                               addCopyFromRobject = function() {
-                                                  copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name)
+                                                  ## The next line creates the cppCopyTypes exactly the same way as in buildNimbleObjInterface
+                                                  ## and CmultiNimbleObjClass::initialize.
+                                                  cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
+                                                  copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes)
                                                   functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
                                                   SEXPmemberInterfaceFuns[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectInterfaceDef
                                               },
@@ -366,7 +369,18 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                           ),
                                       )
 
-makeCopyFromRobjectDef <- function(className) {
+makeSingleCopyCall <- function(varName, cppCopyType) {
+    switch(cppCopyType,
+           'numericVector' = {
+               cppLiteral(paste0("COPY_NUMERIC_VECTOR_FROM_R_OBJECT(\"", varName, "\");"))
+           },
+           'nodeFxnVec' = {
+               cppLiteral(paste0("COPY_NODE_FXN_VECTOR_FROM_R_OBJECT(\"", varName, "\");"))
+           },
+           NULL)
+}
+
+makeCopyFromRobjectDef <- function(className, cppCopyTypes) {
     ## Make method for copying from R object
     copyFromRobjectDef <- RCfunctionDef()
     copyFromRobjectDef$name <- 'copyFromRobject'
@@ -376,9 +390,24 @@ makeCopyFromRobjectDef <- function(className) {
     RobjectVarSym <- cppSEXP(name = 'Robject')
     copyFromRobjectDef$args$addSymbol(RobjectVarSym)
     hwCalls <- list(cppLiteral("std::cout<<\"hello world\\n\";"))
+
+    copyCalls <- list()
+    varNames <- names(cppCopyTypes)
+    for(i in seq_along(cppCopyTypes)) {
+        copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]])
+    }
+
+    unprotectCount <- 2 + length(copyCalls) ## 2 from SETUP_S_xData
+    ## copyCalls <- list(cppLiteral("SETUP_S_xData;"),
+    ##                   cppLiteral("COPY_NUMERIC_VECTOR_FROM_R_OBJECT(Robject, \"v\");"),
+    ##                   cppLiteral(paste0("UNPROTECT(",unprotectCount,");"))
+    ##                   )
     allRcode <- do.call('call',
                         c(list('{'),
-                          hwCalls),
+                          hwCalls,
+                          list(cppLiteral("SETUP_S_xData;")),
+                          copyCalls,
+                          list(cppLiteral(paste0("UNPROTECT(",unprotectCount,");")))),
                         quote = TRUE
                         )
     allCode <- RparseTree2ExprClasses(allRcode)

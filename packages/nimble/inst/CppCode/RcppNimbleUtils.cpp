@@ -722,56 +722,71 @@ SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers){
 	return(R_NilValue);
 }
 
-SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize){
+void SEXP_2_Nim_internal(NimArrType* nimTypePtr,
+			 SEXP rValues,
+			 bool resize = true) {
     vector<int> sexpDims = getSEXPdims( rValues );
     int sexpNumDims = sexpDims.size();
-    bool resize = (LOGICAL(allowResize)[0] == TRUE);
+    
+    if(!nimTypePtr)
+      return;
+    
+    if((*nimTypePtr).getNimType() == INT){
+      NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
+      int nimNumDims = (*nimBase).numDims();
+      if(nimNumDims != sexpNumDims) {
+	if((LENGTH(rValues) != (*nimBase).size()) & 
+	   (sexpNumDims != 1)){
+	  PRINTF("Incorrect number of dimensions in copying\n");
+	  return;
+	}
+      }
+      if(resize)
+	(*nimBase).setSize(sexpDims);
+      SEXP_2_NimArrInt(rValues,  (*nimBase) ) ;
+    }
+    if((*nimTypePtr).getNimType() == DOUBLE){
+      
+      NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
+      int nimNumDims = (*nimBase).numDims();
+      
+      if(nimNumDims != sexpNumDims){
+	if((LENGTH(rValues) != (*nimBase).size()) &
+	   (sexpNumDims != 1)){
+	  PRINTF("Incorrect number of dimensions in copying\n");
+	  return;
+	}
+      }
+      if((resize) & (nimNumDims == sexpNumDims))
+	(*nimBase).setSize(sexpDims);
+      SEXP_2_NimArrDouble( rValues, (*nimBase) ) ;
+    }
+    if((*nimTypePtr).getNimType() == BOOL){
+      NimArrBase<bool>* nimBase = static_cast<NimArrBase<bool> *>(nimTypePtr);
+      int nimNumDims = (*nimBase).numDims();
+      if(nimNumDims != sexpNumDims){
+	if((LENGTH(rValues) != (*nimBase).size()) &
+	   (sexpNumDims != 1)){
+	  PRINTF("Incorrect number of dimensions in copying\n");
+	  return;
+	}
+      }
+      if(resize)
+	(*nimBase).setSize(sexpDims);
+      SEXP_2_NimArrBool(rValues,  (*nimBase) ) ;
+    }
+}
 
-	NimArrType* nimTypePtr = getNimTypePtr(rPtr, NumRefers);
-	if(!nimTypePtr)
-		return(R_NilValue);
-	if((*nimTypePtr).getNimType() == INT){
-	  NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
-	  int nimNumDims = (*nimBase).numDims();
-	  if(nimNumDims != sexpNumDims){
-            if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-	      PRINTF("Incorrect number of dimensions in copying\n");
-	      return(R_NilValue);
-            }
-	  }
-	  if(resize == true)
-            (*nimBase).setSize(sexpDims);
-	  SEXP_2_NimArrInt(rValues,  (*nimBase) ) ;
-	}
-	if((*nimTypePtr).getNimType() == DOUBLE){
-	  
-	  NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
-	  int nimNumDims = (*nimBase).numDims();
-	  
-	  if(nimNumDims != sexpNumDims){
-            if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-	      PRINTF("Incorrect number of dimensions in copying\n");
-	      return(R_NilValue);
-            }
-	  }
-	  if((resize == true) & (nimNumDims == sexpNumDims))
-            (*nimBase).setSize(sexpDims);
-	  SEXP_2_NimArrDouble( rValues, (*nimBase) ) ;
-	}
-	if((*nimTypePtr).getNimType() == BOOL){
-	  NimArrBase<bool>* nimBase = static_cast<NimArrBase<bool> *>(nimTypePtr);
-	  int nimNumDims = (*nimBase).numDims();
-	  if(nimNumDims != sexpNumDims){
-            if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-	      PRINTF("Incorrect number of dimensions in copying\n");
-	      return(R_NilValue);
-            }
-	  }
-	  if(resize == true)
-            (*nimBase).setSize(sexpDims);
-	  SEXP_2_NimArrBool(rValues,  (*nimBase) ) ;
-	}
-	return(R_NilValue);
+void SEXP_2_Nim_for_copyFromRobject(void *NimArrPtr, SEXP rValues) {
+  NimArrType* nimTypePtr = static_cast<NimArrType*>(NimArrPtr);
+  SEXP_2_Nim_internal(nimTypePtr, rValues);
+}
+
+SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize){
+    bool resize = (LOGICAL(allowResize)[0] == TRUE);
+    NimArrType* nimTypePtr = getNimTypePtr(rPtr, NumRefers);
+    SEXP_2_Nim_internal(nimTypePtr, rValues, resize);
+    return(R_NilValue);
 }
 
 void VecNimArr_Finalizer(SEXP Sp) {

@@ -2550,7 +2550,8 @@ modelDefClass$methods(printDI = function() {
 modelDefClass$methods(graphIDs2indexedNodeInfo = function(graphIDs) {
     declIDs <- maps$graphID_2_declID[graphIDs]
     rowIndices <- maps$graphID_2_unrolledIndicesMatrixRow[graphIDs]
-    list(declIDs = declIDs, unrolledIndicesMatrixRows = rowIndices)
+    ## populateNodeFxnVectorNew_copyFromRobject relies on the following order (not names)
+    list(declIDs = as.integer(declIDs), unrolledIndicesMatrixRows = as.integer(rowIndices))
 })
 
 modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, unique = TRUE){
