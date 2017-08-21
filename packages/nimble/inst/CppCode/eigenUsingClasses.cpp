@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #include <nimble/EigenTypedefs.h>
 #include <nimble/eigenUsingClasses.h>
 #include <nimble/RcppNimbleUtils.h>
@@ -137,16 +158,18 @@ void  EIGEN_EIGENCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
  	UNPROTECT(7);
  }
 
-SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {
+SEXP C_nimEigen(SEXP S_x, SEXP S_symmetric, SEXP S_valuesOnly, SEXP returnList) {
   int* dims = INTEGER(Rf_getAttrib(S_x, R_DimSymbol));
   if(!Rf_isMatrix(S_x) || dims[0] != dims[1])
     RBREAK("Error (C_nimEigen): 'x' must be a square matrix.\n");
   NimArr<2, double> x;
   bool valuesOnly;
+  bool symmetric;
   SEXP_2_NimArr<2>(S_x, x);
   valuesOnly = SEXP_2_bool(S_valuesOnly);
+  symmetric = SEXP_2_bool(S_symmetric);
   Eigen::Map<Eigen::MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
-  EIGEN_EIGENCLASS_R C_eigenClass = *EIGEN_EIGEN_R(Eig_x, valuesOnly);
+  EIGEN_EIGENCLASS_R C_eigenClass = *EIGEN_EIGEN_R(Eig_x, symmetric, valuesOnly);
   C_eigenClass.RObjectPointer = returnList;
   C_eigenClass.copyToSEXP();
   return(returnList);

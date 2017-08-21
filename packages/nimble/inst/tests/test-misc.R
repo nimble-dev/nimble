@@ -2,18 +2,19 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of miscellaneous functionality.")
 
-oldmsg <- geterrmessage()
+test_that("Test of full model check", {
+    oldmsg <- geterrmessage()
 
-code <- nimbleCode({
-    y ~ dnorm(mu, 1)
-    mu ~ dnorm(0, 1)
+    code <- nimbleCode({
+        y ~ dnorm(mu, 1)
+        mu ~ dnorm(0, 1)
+    })
+    try(m <- nimbleModel(code, data = list(y = 0), check = TRUE, name = 'test'))
+
+    errmsg <- geterrmessage()    
+
+    expect_equal(oldmsg, errmsg, info = "found error in running full model check")
 })
-
-try(m <- nimbleModel(code, data = list(y = 0), check = TRUE))
-
-errmsg <- geterrmessage()    
-
-test_that("Test of full model check", expect_equal(oldmsg, errmsg, info = "found error in running full model check"))
 
 test_that("No nimKeyword appears in specificCallReplacements", {
     duplicates <- intersect(names(nimble:::nimKeyWords), names(nimble:::specificCallReplacements))
@@ -48,7 +49,7 @@ test_that("keyword next works", {
     expect_equal(cnfRes, c(3, 4), info = 'keyword next compiled')
 })
 
-test_that("literal NaN", {
+test_that("literal double NaN", {
     nf <- nimbleFunction(
         run = function() {
             ans <- NaN
@@ -58,6 +59,54 @@ test_that("literal NaN", {
     cnf <- compileNimble(nf)
     expect_true(is.nan(nf()), 'NaN uncompiled')
     expect_true(is.nan(cnf()), 'NaN compiled')
+})
+
+test_that("literal double NA", {
+    nf <- nimbleFunction(
+        run = function() {
+            ans <- NA
+            return(ans)
+            returnType(double())
+        })
+    expect_true(is.na(nf()), 'NA uncompiled')
+
+    # Known failure https://github.com/nimble-dev/nimble/issues/487
+    expect_error({
+        cnf <- compileNimble(nf)
+        expect_true(is.na(cnf()), 'NA compiled')
+    }, info = 'Literal NA is not supported in C++ code')
+})
+
+test_that('is.nan of scalar', {
+    nf <- nimbleFunction(
+        run = function(x = double(0)) {
+            return(is.nan(x))
+            returnType(logical())
+        })
+    cnf <- compileNimble(nf)
+    for (x in c(0, 1, -Inf, Inf, NaN, -1.234)) {
+        expect_identical(nf(x), cnf(x), info = paste('x =', x))
+    }
+
+    # Known failure https://github.com/nimble-dev/nimble/issues/487
+    x <- NA
+    expect_identical(nf(x), cnf(x), info = paste('x =', x))
+})
+
+test_that('is.na of scalar', {
+    nf <- nimbleFunction(
+        run = function(x = double(0)) {
+            return(is.na(x))
+            returnType(logical())
+        })
+    cnf <- compileNimble(nf)
+    for (x in c(0, 1, -Inf, Inf, NA, -1.234)) {
+        expect_identical(nf(x), cnf(x), info = paste('x =', x))
+    }
+    
+    # Known failure https://github.com/nimble-dev/nimble/issues/487
+    x <- NaN
+    expect_failure(expect_identical(nf(x), cnf(x), info = paste('x =', x)))
 })
 
 test_that("pi case 1", {
