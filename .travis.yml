@@ -30,7 +30,6 @@ notifications:
 branches:
   only:
     - devel
-    - car
 
 latex: false  # Work around tlmgr issues.
 
