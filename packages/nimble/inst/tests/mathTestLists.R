@@ -8,10 +8,10 @@ testsVaried = list(
   list(name = "matrix absolute value with scalar addition", expr = quote(out <- abs(arg1 - 2)), inputDim = c(2), outputDim = 2),
   list(name = "vector pmin", expr = quote(out <- pmin(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
   list(name = "vector pmax", expr = quote(out <- pmax(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
-  list(name = "sd with addition", expr = quote(out <- sd(arg1) + 3), inputDim = c(1), outputDim = 0),
-  list(name = "sd of vector with addition", expr = quote(out <- sd(arg1 + 3)), inputDim = c(1), outputDim = 0),
-  list(name = "sd of matrix-vector multiply", expr = quote(out <- sd(arg1 %*% arg2)), inputDim = c(2,1), outputDim = 0),
-  list(name = "var of vector", expr = quote(out <- var(arg1)), inputDim = c(1), outputDim = 0),
+  list(name = "sd with addition", expr = quote(out <- sd(arg1) + 3), inputDim = c(1), outputDim = 0, xfail = 'tensorflow.*compiles.*'),
+  list(name = "sd of vector with addition", expr = quote(out <- sd(arg1 + 3)), inputDim = c(1), outputDim = 0, xfail = 'tensorflow.*compiles.*'),
+  list(name = "sd of matrix-vector multiply", expr = quote(out <- sd(arg1 %*% arg2)), inputDim = c(2,1), outputDim = 0, xfail = 'tensorflow.*compiles.*'),
+  list(name = "var of vector", expr = quote(out <- var(arg1)), inputDim = c(1), outputDim = 0, xfail = 'tensorflow.*compiles.*'),
   list(name = "log determinant", expr = quote(out <- logdet(arg1)), inputDim = c(2), outputDim = 0)
   )
 
