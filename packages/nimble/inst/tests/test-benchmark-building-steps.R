@@ -45,24 +45,40 @@ test_that('Benchmarking model and MCMC building and compiling steps',
 {
     caseNames <- character()
 
-    caseNames[1] <- 'theta->mu[1:1000]->y[1:1000]'
+    ## 1000 is a good size for full benchmarking
+    Benchmark1length <- 10
+    ## following will be like 'theta->mu[1:10]->y[1:10]'
+    caseNames[1] <- paste0('theta->mu[1:',
+                           Benchmark1length,
+                           ']->y[1:',
+                           Benchmark1length,
+                           ']')
     code1 <- nimbleCode({
         theta ~ dnorm(0,1)
-        for(i in 1:1000) mu[i] ~ dnorm(theta, sd = 1)
-        for(i in 1:1000) y[i] ~ dnorm(mu[i], sd = 1)
+        for(i in 1:Benchmark1length) mu[i] ~ dnorm(theta, sd = 1)
+        for(i in 1:Benchmark1length) y[i] ~ dnorm(mu[i], sd = 1)
     })
     y1 <- rnorm(1000, 0, 2)
     
     profile1 <- timeSteps(code = code1, data = list(y = y1))
 
-    caseNames[2] <- 'theta->mu[1:100]->y[1:100, 1:20]'
+    ## 100x20 is a good size for full benchmarking
+    Benchmark2dims <- c(5, 2)
+    ## following will be like 'theta->mu[1:5]->y[1:5, 1:2]'
+    caseNames[2] <- paste0('theta->mu[1:',
+                           Benchmark2dims[1],
+                           ']->y[1:',
+                           Benchmark2dims[1],
+                           '1:',
+                           Benchmark2dims[2],
+                           ']')
     code2 <- nimbleCode({
         theta ~ dnorm(0,1)
-        for(i in 1:100) mu[i] ~ dnorm(theta, sd = 1)
-        for(i in 1:100)
-            for(j in 1:20) y[i, j] ~ dnorm(mu[i], sd = 1)
+        for(i in 1:Benchmark2dims[1]) mu[i] ~ dnorm(theta, sd = 1)
+        for(i in 1:Benchmark2dims[1])
+            for(j in 1:Benchmark2dims[2]) y[i, j] ~ dnorm(mu[i], sd = 1)
     })
-    y2 <- matrix(rnorm(2000, 0, 2), nrow = 100)
+    y2 <- matrix(rnorm(prod(Benchmark2dims), 0, 2), nrow = Benchmark2dims[1])
     profile2 <- timeSteps(code = code2, data = list(y = y2))
 
     results <- rbind(profile1, profile2)
