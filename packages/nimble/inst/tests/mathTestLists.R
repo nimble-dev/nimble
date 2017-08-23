@@ -149,7 +149,7 @@ testsReduction = list(
   list(name = 'sum of matrix', expr = quote(out <- sum(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'mean of matrix', expr = quote(out <- mean(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'sd of matrix', expr = quote(out <- sd(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'var of matrix', expr = quote(out <- var(arg1)), inputDim = 2, outputDim = 0),
+  list(name = 'var of matrix', expr = quote(out <- var(arg1)), inputDim = 2, outputDim = 0, xfail = 'math.*compiles.*'),  # Not supported
   list(name = 'prod of matrix', expr = quote(out <- prod(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), xfail = 'math.*runs') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions differ => FAILS
   )
