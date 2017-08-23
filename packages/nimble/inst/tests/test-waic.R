@@ -69,7 +69,8 @@ test_that("voter model WAIC is accurate: ", {
 
 test_that("Radon model WAIC is accurate: ", {
   url <- "http://stat.columbia.edu/~gelman/arm/examples/arsenic/wells.dat"
-  wells <- read.table(url)
+  wells <- try(read.table(url), silent = TRUE)
+  if (inherits(wells, 'try-error')) skip("No internet connection")
   wells$dist100 <- with(wells, dist / 100)
   X <- model.matrix(~ dist100 + arsenic, wells)
   radonCode = nimbleCode({
