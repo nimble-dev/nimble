@@ -87,7 +87,6 @@ buildMCMC <- nimbleFunction(
         
         ## WAIC setup below:
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
-        logProbNodes <- paste0('logProb_', dataNodes)
         dataNodeLength <- length(dataNodes)
         sampledNodes <- model$getVarNames(FALSE, colnames(as.matrix(mvSamples)))
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
@@ -155,7 +154,9 @@ buildMCMC <- nimbleFunction(
             copy(mvSamples, model, nodesTo = sampledNodes, row = i + burnIn)
             model$simulate(paramDeps)
             model$calculate(dataNodes)
-            logPredProbs[i,] <- values(model, logProbNodes)
+            for(j in 1:dataNodeLength){
+              logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
+            }
           }
           for(j in 1:dataNodeLength){
             maxLogPred <- max(logPredProbs[,j]) 
