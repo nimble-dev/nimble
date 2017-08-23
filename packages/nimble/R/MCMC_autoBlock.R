@@ -293,7 +293,7 @@ autoBlockClass <- setRefClass(
             for(i in seq_along(CmcmcList)) {
                 if(setSeed) set.seed(0)
                 abModel$resetCmodelInitialValues()
-                timingList[[i]] <- as.numeric(system.time(CmcmcList[[i]]$run(niter))[3])
+                timingList[[i]] <- as.numeric(system.time(CmcmcList[[i]]$run(niter, progressBar = FALSE))[3])
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[i]])
                 essList[[i]] <- apply(burnedSamples, 2, effectiveSize)
                 essList[[i]] <- essList[[i]][essList[[i]] > 0]  ## exclude nodes with ESS=0 -- for discrete nodes which are fixed to a certain value; making work with discrete nodes

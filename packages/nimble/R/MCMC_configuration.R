@@ -938,7 +938,7 @@ makeNewConfFromOldConf <- function(oldMCMCconf){
     newMCMCconf$thin2 <- oldMCMCconf$thin2
     newMCMCconf$samplerConfs <- oldMCMCconf$samplerConfs
     newMCMCconf$controlDefaults <- oldMCMCconf$controlDefaults
-    newMCMCconf$controlNamesLibrary <- oldMCMCconf$controlNamesLibrary
+    newMCMCconf$namedSamplerLabelMaker <- oldMCMCconf$namedSamplerLabelMaker
     newMCMCconf$mvSamples1Conf <- oldMCMCconf$mvSamples1Conf
     newMCMCconf$mvSamples2Conf <- oldMCMCconf$mvSamples2Conf
     return(newMCMCconf)	

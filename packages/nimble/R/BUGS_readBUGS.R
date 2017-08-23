@@ -1,8 +1,19 @@
 # code for creating BUGS model from a variety of input formats
 # pieces written by Daniel Turek and Christopher Paciorek
 
-BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), calculate = TRUE, userEnv = parent.frame()) {
-    if(missing(name)) name <- deparse(substitute(code))
+BUGSmodel <- function(code,
+                      name = NULL,
+                      constants = list(),
+                      dimensions = list(),
+                      data = list(),
+                      inits = list(),
+                      returnModel = FALSE,
+                      where = globalenv(),
+                      debug = FALSE,
+                      check = getNimbleOption('checkModel'),
+                      calculate = TRUE,
+                      userEnv = parent.frame()) {
+    if(is.null(name)) name <- deparse(substitute(code))
     if(length(constants) && sum(names(constants) == ""))
       stop("BUGSmodel: 'constants' must be a named list")
     if(length(dimensions) && sum(names(dimensions) == ""))
@@ -43,7 +54,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 
 #' Create a NIMBLE model from BUGS code
 #'
-#' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model or model definition.
+#' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model (see \code{\link{modelBaseClass}}) or model definition.
 #'
 #' @param code code for the model in the form returned by \code{\link{nimbleCode}} or (equivalently) \code{quote}
 #' @param constants named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
@@ -60,7 +71,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' @author NIMBLE development team
 #' @export
 #' @details
-#' See the User Manual or \code{help(modelBaseClass)} for information about manipulating NIMBLE models created by \code{nimbleModel}, including methods that operate on models, such as \code{getDependencies}.
+#' See the User Manual or \code{help(\link{modelBaseClass})} for information about manipulating NIMBLE models created by \code{nimbleModel}, including methods that operate on models, such as \code{getDependencies}.
 #'
 #' The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the User Manual for more information.
 #'
@@ -75,7 +86,18 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' constants = list(prior_sd = 1)
 #' data = list(x = 4)
 #' Rmodel <- nimbleModel(code, constants = constants, data = data)
-nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), calculate = TRUE, name, userEnv = parent.frame())
+nimbleModel <- function(code,
+                        constants = list(),
+                        data = list(),
+                        inits = list(),
+                        dimensions = list(),
+                        returnDef = FALSE,
+                        where = globalenv(),
+                        debug = FALSE,
+                        check = getNimbleOption('checkModel'),
+                        calculate = TRUE,
+                        name = NULL,
+                        userEnv = parent.frame())
     BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug, check, calculate, userEnv)
 
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
