@@ -58,7 +58,7 @@ test_that('Benchmarking model and MCMC building and compiling steps',
         for(i in 1:Benchmark1length) mu[i] ~ dnorm(theta, sd = 1)
         for(i in 1:Benchmark1length) y[i] ~ dnorm(mu[i], sd = 1)
     })
-    y1 <- rnorm(1000, 0, 2)
+    y1 <- rnorm(Benchmark1length, 0, 2)
     
     profile1 <- timeSteps(code = code1, data = list(y = y1))
 
