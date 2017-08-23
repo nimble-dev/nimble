@@ -47,9 +47,9 @@ test_script:
   - pip freeze --all
   - pip install --upgrade --ignore-installed pip
   - pip install --upgrade --ignore-installed setuptools
-  # - pip install --upgrade sysconfig || echo 'Failed to upgrade sysconfig'
   - pip freeze --all
-  - Rscript install_requirements.R
+  # This script currently fails due to tensorflow installation problems.
+  # - Rscript install_requirements.R
   # The tests currently fail due to a problem sourcing test_utils.R.
   # - Rscript run_tests.R
 
