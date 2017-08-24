@@ -71,8 +71,11 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
 #' EXPERIMENTAL Computes the value, gradient, and Hessian of a given  \code{nimbleFunction} method.  
 #' 
 #' @param nimFxn a call to a \code{nimbleFunction} method with arguments included.
-#' @param order an integer vector with values within the set {0, 1, 2}, corresponding to whether the function value, gradient, and Hessian should be returned respectively.
+#' @param order an integer vector with values within the set {0, 1, 2}, corresponding to whether the function value, gradient, and Hessian should be returned respectively.  Defaults to \code{c(0, 1, 2)}.
+#' @param dropArgs a vector of integers specifying any arguments to \code{nimFxn} that derivatives should not be taken with respect to.  For example, \code{dropArgs = 2} means that the second argument to \code{nimFxn} will not have derivatives taken with respect to it.  Defaults to an empty vector. 
+#' @param wrt a character vector of node names to take derivatives with respect to.  If left empty, derivatives will be taken with respect to all arguments to \code{nimFxn}.
 #' 
+#' @return a \code{nimbleList} with elements \code{value}, \code{gradient}, and \code{hessian}.
 #' @export
 nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = NULL){
   fxnEnv <- parent.frame()
