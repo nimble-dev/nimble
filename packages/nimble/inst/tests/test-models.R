@@ -20,7 +20,7 @@ test_that('unnecessary data do not break model building', {
                 nimbleCode({
                     a ~ dnorm(0,1)
                 }),
-                data = 123
+                data = data
             )
         )
 
