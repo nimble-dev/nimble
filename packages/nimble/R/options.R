@@ -112,7 +112,8 @@ getNimbleOption <- function(x) {
 #' that affect the way in which NIMBLE operates. Call \code{nimbleOptions()}
 #' with no arguments to see a list of available opions.
 #' 
-#' @param ... any options to be defined as one or more \code{name = value} pairs.
+#' @param ... any options to be defined as one or more \code{name = value} pairs
+#' or as a single \code{list} of \code{name=value} pairs.
 #' @author Christopher Paciorek
 #' @export
 #'
@@ -137,16 +138,27 @@ getNimbleOption <- function(x) {
 #' nimbleOptions(showCompilerOutput = TRUE,
 #'               verboseErrors = TRUE)       # Sets temporary options.
 #' # ...do stuff...
-#' do.call(nimbleOptions, old)               # Restores old options.
+#' nimbleOptions(old)                        # Restores old options.
 nimbleOptions <- function(...) {
     args <- list(...)
-    if(!(length(args) && is.null(names(args))))
-        if(length(args)) {
-            for(i in seq_along(args))
-                setNimbleOption(names(args)[[i]], args[[i]])
-            return(invisible(args))
-        } else return(as.list(.nimbleOptions))
-    args <- unlist(args)
+    if (!length(args)) {
+        # Get all nimble options.
+        return(as.list(.nimbleOptions))
+    }
+    if (length(args) == 1 && is.null(names(args)) && is.list(args[[1]])) {
+        # Unpack a single list of many args.
+        args <- args[[1]]
+    }
+    if (is.null(names(args))) {
+        # Get some nimble options.
+        args <- unlist(args)
+    } else {
+        # Set some nimble options.
+        for(i in seq_along(args)) {
+            setNimbleOption(names(args)[[i]], args[[i]])
+        }
+        args <- names(args)
+    }
     out <- as.list(.nimbleOptions)[args]
     if(length(out) == 1) out <- out[[1]]
     return(out)
