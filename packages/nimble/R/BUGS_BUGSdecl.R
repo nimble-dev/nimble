@@ -1114,23 +1114,19 @@ stripDynamicallyIndexedWrapping <- function(expr) {
 }
 
 usedInIndex <- function(expr)
-    if(length(expr) > 1 && expr[[1]] == ".USED_IN_INDEX")
-        TRUE
-    else
-        FALSE
+    length(expr) > 1 && expr[[1]] == ".USED_IN_INDEX"
 
-isDynamicIndex <- function(expr)
-    if((length(expr) > 1 && expr[[1]] == ".DYN_INDEXED") ||
-       identical(expr, quote(NA_real_)))
-        TRUE
-    else
-        FALSE
+isDynamicIndex <- function(expr) {
+(length(expr) > 1 && expr[[1]] == ".DYN_INDEXED") ||
+    identical(expr, quote(NA_real_))
+}
 
-stripIndexWrapping <- function(expr) 
+stripIndexWrapping <- function(expr) { 
     if(length(expr) == 1 || !usedInIndex(expr))
         return(expr)
     else
         return(expr[[2]])
+}
 
 isVectorIndex <- function(expr) {
     if(isDynamicIndex(expr))
