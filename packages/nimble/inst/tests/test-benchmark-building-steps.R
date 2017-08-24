@@ -60,7 +60,11 @@ test_that('Benchmarking model and MCMC building and compiling steps',
     })
     y1 <- rnorm(Benchmark1length, 0, 2)
     
-    profile1 <- timeSteps(code = code1, data = list(y = y1))
+    profile1 <- timeSteps(code = code1,
+                          data = list(y = y1),
+                          constants = list(
+                              Benchmark1length = Benchmark1length)
+                          )
 
     ## 100x20 is a good size for full benchmarking
     Benchmark2dims <- c(5, 2)
@@ -79,7 +83,11 @@ test_that('Benchmarking model and MCMC building and compiling steps',
             for(j in 1:Benchmark2dims[2]) y[i, j] ~ dnorm(mu[i], sd = 1)
     })
     y2 <- matrix(rnorm(prod(Benchmark2dims), 0, 2), nrow = Benchmark2dims[1])
-    profile2 <- timeSteps(code = code2, data = list(y = y2))
+    profile2 <- timeSteps(code = code2,
+                          data = list(y = y2),
+                          constants = list(
+                              Benchmark2dims = Benchmark2dims)
+                          )
 
     results <- rbind(profile1, profile2)
     rownames(results) <- caseNames
