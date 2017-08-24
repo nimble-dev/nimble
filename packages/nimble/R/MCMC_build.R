@@ -38,7 +38,7 @@
 #' 
 #' \code{calculateWAIC()} has a single arugment:
 #'
-#' \code{burnIn}: The number of iterations to subtract from the beginning of the posterior samples of the MCMC object for WAIC calculation.  Defaults to 0.
+#' \code{nburnin}: The number of iterations to subtract from the beginning of the posterior samples of the MCMC object for WAIC calculation.  Defaults to 0.
 #' 
 #' The \code{calculateWAIC} method calculates the WAIC of the model that the MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from Equations 5, 12, and 13 in Gelman (2014).  Note that the set of all parameters monitored by the mcmc object will be treated as \eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014).  All parameters downstream of the monitored parameters that are necessary to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of \eqn{theta}.
 #'
@@ -140,8 +140,18 @@ buildMCMC <- nimbleFunction(
             returnType(double(1))
             return(samplerTimes[1:(length(samplerTimes)-1)])
         },
-        calculateWAIC = function(burnIn = integer(default = 0)){
-          numMCMCSamples <- getsize(mvSamples) - burnIn
+        calculateWAIC = function(nburnin = integer(default = 100),
+                                 burnIn = integer(default = -100)){
+          if(burnIn != -100){
+            print("Warning, `burnIn` argument is deprecated and will not be 
+                   supported in future versions of NIMBLE.  
+                   Please use the `nburnin` argument instead.")
+            if(nburnin == 100){ ## If nburnin has not been changed from default, 
+                               ## we replace with `burnIn` value here. 
+              nburnin <- burnIn
+            }
+          }
+          numMCMCSamples <- getsize(mvSamples) - nburnin
           if((numMCMCSamples) < 2){
             print('Error, need more than 1 post burn-in MCMC sample.')
             return(-Inf)
@@ -160,7 +170,8 @@ buildMCMC <- nimbleFunction(
           }
           for(j in 1:dataNodeLength){
             maxLogPred <- max(logPredProbs[,j]) 
-            thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
+            thisDataLogAvgProb <- maxLogPred + 
+              log(mean(exp(logPredProbs[,j] - maxLogPred)))
             logAvgProb <- logAvgProb + thisDataLogAvgProb
             pointLogPredVar <- sd(logPredProbs[,j])^2
             pWAIC <- pWAIC + pointLogPredVar
