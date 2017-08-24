@@ -62,7 +62,7 @@ buildMCMC <- nimbleFunction(
     name = 'MCMC',
     setup = function(conf, ...) {
     	if(inherits(conf, 'modelBaseClass'))
-    		conf <- configureMCMC(conf, ...)
+            conf <- configureMCMC(conf, ...)
 
     	else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
 
@@ -90,7 +90,7 @@ buildMCMC <- nimbleFunction(
         dataNodeLength <- length(dataNodes)
         sampledNodes <- model$getVarNames(FALSE, colnames(as.matrix(mvSamples)))
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
-        },
+    },
 
     run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
         if(simulateAll)     simulate(model)    ## default behavior excludes data nodes
@@ -140,47 +140,46 @@ buildMCMC <- nimbleFunction(
             returnType(double(1))
             return(samplerTimes[1:(length(samplerTimes)-1)])
         },
-        calculateWAIC = function(nburnin = integer(default = 100),
-                                 burnIn = integer(default = 0)){
-          if(burnIn != 0){
-            print("Warning, `burnIn` argument is deprecated and will not be 
-                   supported in future versions of NIMBLE.  
-                   Please use the `nburnin` argument instead.")
-            if(nburnin == 100){ ## If nburnin has not been changed from default, 
-                               ## we replace with `burnIn` value here. 
-              nburnin <- burnIn
+        calculateWAIC = function(nburnin = integer(default = 0),
+                                 burnIn = integer(default = 0)) {
+            if(burnIn != 0){
+              print("Warning, `burnIn` argument is deprecated and will not be 
+                    supported in future versions of NIMBLE.  
+                    Please use the `nburnin` argument instead.")
+              if(nburnin == 0){ ## If nburnin has not been changed from 
+                                  ## default, we replace with `burnIn` value here. 
+                nburnin <- burnIn
+              }
             }
-          }
-          numMCMCSamples <- getsize(mvSamples) - nburnin
-          if((numMCMCSamples) < 2){
-            print('Error, need more than 1 post burn-in MCMC sample.')
-            return(-Inf)
-          }
-          logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
-          logAvgProb <- 0
-          pWAIC <- 0
-          currentVals <- values(model, sampledNodes)
-          for(i in 1:numMCMCSamples){
-            copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburnin)
-            model$simulate(paramDeps)
-            model$calculate(dataNodes)
-            for(j in 1:dataNodeLength){
-              logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
+            numMCMCSamples <- getsize(mvSamples) - nburnin
+            if((numMCMCSamples) < 2) {
+                print('Error, need more than one post burn-in MCMC samples')
+                return(-Inf)
             }
-          }
-          for(j in 1:dataNodeLength){
-            maxLogPred <- max(logPredProbs[,j]) 
-            thisDataLogAvgProb <- maxLogPred + 
-              log(mean(exp(logPredProbs[,j] - maxLogPred)))
-            logAvgProb <- logAvgProb + thisDataLogAvgProb
-            pointLogPredVar <- sd(logPredProbs[,j])^2
-            pWAIC <- pWAIC + pointLogPredVar
-          }
-          WAIC <- -2*(logAvgProb- pWAIC)
-          values(model, sampledNodes) <<- currentVals
-          model$calculate(paramDeps)
-          returnType(double())
-          return(WAIC)
+            logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
+            logAvgProb <- 0
+            pWAIC <- 0
+            currentVals <- values(model, sampledNodes)
+            for(i in 1:numMCMCSamples) {
+                copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburnin)
+                model$simulate(paramDeps)
+                model$calculate(dataNodes)
+                for(j in 1:dataNodeLength) {
+                    logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
+                }
+            }
+            for(j in 1:dataNodeLength) {
+                maxLogPred <- max(logPredProbs[,j])
+                thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
+                logAvgProb <- logAvgProb + thisDataLogAvgProb
+                pointLogPredVar <- var(logPredProbs[,j])
+                pWAIC <- pWAIC + pointLogPredVar
+            }
+            WAIC <- -2*(logAvgProb - pWAIC)
+            values(model, sampledNodes) <<- currentVals
+            model$calculate(paramDeps)
+            returnType(double())
+            return(WAIC)
         }),
     where = getLoadingNamespace()
 )
