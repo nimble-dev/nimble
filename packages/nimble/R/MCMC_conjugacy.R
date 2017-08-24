@@ -11,15 +11,12 @@ conjugacyRelationshipsInputList <- list(
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
 
-    ## Dirichlet - added by CJP 1/14/15
-    ## at moment can't do dcat because of limitations of conjugacy processing relying on nimble code
+    ## dirichlet
     list(prior = 'ddirch',
          link = 'identity',
          dependents = list(
-             dmulti    = list(param = 'prob', contribution_alpha = 'value'),
-             dcat      = list(param = 'prob', contribution_alpha = 'calc_dcatConjugacyContributions(length(prob), value)')),
-             ## dcat      = list(param = 'prob', contribution_alpha = as.numeric((1:length(prob)) == value)'),
-             ## dcat      = list(param = 'prob', contribution_alpha = {tmp = rep(0,length(prob)); tmp[value]=1; tmp}')),
+             dmulti = list(param = 'prob', contribution_alpha = 'value'),
+             dcat   = list(param = 'prob', contribution_alpha = 'calc_dcatConjugacyContributions(prob, value)')),
          posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'),
 
     ## flat
@@ -412,13 +409,23 @@ conjugacyClass <- setRefClass(
                 }, list(DEP_NODENAMES    = as.name(paste0(  'dep_', distName, '_nodeNames')),
                         N_DEP            = as.name(paste0('N_dep_', distName)),
                         DEP_CONTROL_NAME = as.name(paste0(  'dep_', distName))))
-                if(getDimension(distName) > 0) {
+                if(any(getDimension(distName, includeParams = TRUE) > 0)) {
+                    if(getDimension(distName) > 0) {  ## usual case: dependent node is multivariate -> get sizes from dependent node names
+                        functionBody$addCode({
+                            DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(determineNodeIndexSizes(node)), USE.NAMES = FALSE)
+                        }, list(DEP_NODESIZES   = as.name(paste0('dep_', distName, '_nodeSizes')),
+                                DEP_NODENAMES   = as.name(paste0('dep_', distName, '_nodeNames'))))
+                    } else {  ## unusual case: dependent is univariate -> get sizes from dependent node's param (e.g., ddirch-dcat conjugacy)
+                        functionBody$addCode({
+                            DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(nimDim(model$getParam(node, MULTIVARIATE_PARAM_NAME))), USE.NAMES = FALSE)
+                        }, list(DEP_NODESIZES           = as.name(paste0('dep_', distName, '_nodeSizes')),
+                                DEP_NODENAMES           = as.name(paste0('dep_', distName, '_nodeNames')),
+                                MULTIVARIATE_PARAM_NAME = names(which.max(getDimension(distName, includeParams = TRUE)))))
+                    }
                     functionBody$addCode({
-                        DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(determineNodeIndexSizes(node)), USE.NAMES = FALSE)
                         if(length(DEP_NODESIZES) == 1) DEP_NODESIZES <- c(DEP_NODESIZES, -1)    ## guarantee to be a vector, for indexing and size processing
                         DEP_NODESIZEMAX <- max(DEP_NODESIZES)
                     }, list(DEP_NODESIZES   = as.name(paste0('dep_', distName, '_nodeSizes')),
-                            DEP_NODENAMES   = as.name(paste0('dep_', distName, '_nodeNames')),
                             DEP_NODESIZEMAX = as.name(paste0('dep_', distName, '_nodeSizeMax'))))
                 }
                 
@@ -551,10 +558,8 @@ conjugacyClass <- setRefClass(
 
                 forLoopBody <- codeBlockClass()
 
-                ##functionBody$addCode(thisNodeSize <- 0) ## annoyingly this is to avoid a windows compiler warning about possible uninitialized use of thisNodeSize
                 ## get *value* of each dependent node
-                ## NEWNODEFXN
-                if(getDimension(distName) > 0) {
+                if(any(getDimension(distName, includeParams = TRUE) > 0)) {
                     forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                         list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
                 }
@@ -565,7 +570,6 @@ conjugacyClass <- setRefClass(
                 for(param in neededParams) {
                     depNodeParamNdim <- getDimension(distName, param)
                     ## get *parameter values* for each dependent node
-                    ## NEWNODEFXN
                     forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
                                         list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(thisNodeSize)),
                                              DEP_NODENAMES = as.name(paste0('dep_', distName,'_nodeNames')),
@@ -591,7 +595,6 @@ conjugacyClass <- setRefClass(
 
                            for(iDepCount in seq_along(dependentCounts)) {
                                distName <- names(dependentCounts)[iDepCount]
-                               ## NEWNODEFXN
                                functionBody$addCode(
                                    for(iDep in 1:N_DEP)
                                        DEP_OFFSET_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
@@ -608,7 +611,6 @@ conjugacyClass <- setRefClass(
 
                            for(iDepCount in seq_along(dependentCounts)) {
                                distName <- names(dependentCounts)[iDepCount]
-                               ## NEWNODEFXN
                                functionBody$addCode(
                                    for(iDep in 1:N_DEP)
                                        DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep],
@@ -627,7 +629,6 @@ conjugacyClass <- setRefClass(
 
                            for(iDepCount in seq_along(dependentCounts)) {
                                distName <- names(dependentCounts)[iDepCount]
-                               ## NEWNODEFXN - forgot to copy and comment old code
                                functionBody$addCode({
                                    for(iDep in 1:N_DEP) {
                                        thisNodeSize <- DEP_NODESIZES[iDep]
@@ -653,7 +654,6 @@ conjugacyClass <- setRefClass(
 
                            for(iDepCount in seq_along(dependentCounts)) {
                                distName <- names(dependentCounts)[iDepCount]
-                               ## NEWNODEFXN
                                forLoopBody$addCode({
                                    for(iDep in 1:N_DEP) {
                                        thisNodeSize <- DEP_NODESIZES[iDep]
@@ -766,7 +766,7 @@ conjugacyClass <- setRefClass(
                 
                 forLoopBody <- codeBlockClass()
 
-                if(getDimension(distName) > 0) {
+                if(any(getDimension(distName, includeParams = TRUE) > 0)) {
                     if(targetNdim == 1) ## 1D
                         forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
