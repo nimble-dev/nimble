@@ -162,7 +162,7 @@ buildMCMC <- nimbleFunction(
                 maxLogPred <- max(logPredProbs[,j])
                 thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
                 logAvgProb <- logAvgProb + thisDataLogAvgProb
-                pointLogPredVar <- sd(logPredProbs[,j])^2
+                pointLogPredVar <- var(logPredProbs[,j])
                 pWAIC <- pWAIC + pointLogPredVar
             }
             WAIC <- -2*(logAvgProb - pWAIC)
