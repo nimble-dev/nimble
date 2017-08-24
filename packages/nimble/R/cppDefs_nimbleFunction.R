@@ -349,7 +349,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
                                                   copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes)
                                                   functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
-                                                  SEXPmemberInterfaceFuns[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectInterfaceDef
+                                                  ## SEXPmemberInterfaceFuns[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectInterfaceDef
                                               },
                                               buildAll = function(where = where) {
                                                   baseClassObj <- environment(nfProc$nfGenerator)$contains
@@ -374,6 +374,15 @@ makeSingleCopyCall <- function(varName, cppCopyType) {
            'numericVector' = {
                cppLiteral(paste0("COPY_NUMERIC_VECTOR_FROM_R_OBJECT(\"", varName, "\");"))
            },
+           'doubleScalar' = {
+               cppLiteral(paste0("COPY_DOUBLE_SCALAR_FROM_R_OBJECT(\"", varName, "\");"))
+           },
+           'integerScalar' = {
+               cppLiteral(paste0("COPY_INTEGER_SCALAR_FROM_R_OBJECT(\"", varName, "\");"))
+           },
+           'logicalScalar' = {
+               cppLiteral(paste0("COPY_LOGICAL_SCALAR_FROM_R_OBJECT(\"", varName, "\");"))
+           },
            'nodeFxnVec' = {
                cppLiteral(paste0("COPY_NODE_FXN_VECTOR_FROM_R_OBJECT(\"", varName, "\");"))
            },
@@ -389,52 +398,61 @@ makeCopyFromRobjectDef <- function(className, cppCopyTypes) {
     localVars <- symbolTable()
     RobjectVarSym <- cppSEXP(name = 'Robject')
     copyFromRobjectDef$args$addSymbol(RobjectVarSym)
-    hwCalls <- list(cppLiteral("std::cout<<\"hello world\\n\";"))
-
     copyCalls <- list()
     varNames <- names(cppCopyTypes)
     for(i in seq_along(cppCopyTypes)) {
         copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]])
     }
 
-    unprotectCount <- 2 + length(copyCalls) ## 2 from SETUP_S_xData
-    ## copyCalls <- list(cppLiteral("SETUP_S_xData;"),
-    ##                   cppLiteral("COPY_NUMERIC_VECTOR_FROM_R_OBJECT(Robject, \"v\");"),
-    ##                   cppLiteral(paste0("UNPROTECT(",unprotectCount,");"))
-    ##                   )
-    allRcode <- do.call('call',
-                        c(list('{'),
-                          hwCalls,
-                          list(cppLiteral("SETUP_S_xData;")),
-                          copyCalls,
-                          list(cppLiteral(paste0("UNPROTECT(",unprotectCount,");")))),
-                        quote = TRUE
-                        )
+    if(length(copyCalls) == 0) {
+        ## create an empty function
+        allRcode <- do.call('call',
+                            list('{'),
+                            quote = TRUE
+                            )
+    } else {
+        unprotectCount <- 2 + length(copyCalls) ## 2 from SETUP_S_xData
+        ## copyCalls <- list(cppLiteral("SETUP_S_xData;"),
+        ##                   cppLiteral("COPY_NUMERIC_VECTOR_FROM_R_OBJECT(Robject, \"v\");"),
+        ##                   cppLiteral(paste0("UNPROTECT(",unprotectCount,");"))
+        ##                   )
+        allRcode <- do.call('call',
+                            c(list('{'),
+                              list(cppLiteral("SETUP_S_xData;")),
+                              copyCalls,
+                              list(cppLiteral(paste0("UNPROTECT(",unprotectCount,");")))),
+                            quote = TRUE
+                            )
+    }
     allCode <- RparseTree2ExprClasses(allRcode)
     copyFromRobjectDef$code <- cppCodeBlock(code = allCode,
                                             objectDefs = localVars)
 
-    ## Make SEXP interface function to call from R 
-    SEXPinterfaceCname <- paste0("CALL_", className, "_copyFromRobject")
-    interfaceArgs <- symbolTable()
-    interfaceArgs$addSymbol(RobjectVarSym)
-    interfaceArgs$addSymbol(cppSEXP(name = 'SextPtrToObject'))
+    ## This may become unnecessary.
+    ## For now temporarily disabling it:
+    ##
+    ## ## Make SEXP interface function to call from R:
+    ## SEXPinterfaceCname <- paste0("CALL_", className, "_copyFromRobject")
+    ## interfaceArgs <- symbolTable()
+    ## interfaceArgs$addSymbol(RobjectVarSym)
+    ## interfaceArgs$addSymbol(cppSEXP(name = 'SextPtrToObject'))
 
-    RHScall <- as.call(list(as.name('copyFromRobject'),
-                            as.name('Robject')))
-    castedCall <- substitute(cppMemberDereference(
-        template(static_cast, cppPtrType(CN))(R_ExternalPtrAddr(SextPtrToObject)), RHS),
-        list(CN = as.name(className), RHS = RHScall))
-    returnLine <- quote(return(R_NilValue))
+    ## RHScall <- as.call(list(as.name('copyFromRobject'),
+    ##                         as.name('Robject')))
+    ## castedCall <- substitute(cppMemberDereference(
+    ##     template(static_cast, cppPtrType(CN))(R_ExternalPtrAddr(SextPtrToObject)), RHS),
+    ##     list(CN = as.name(className), RHS = RHScall))
+    ## returnLine <- quote(return(R_NilValue))
     
-    interfaceCode <- embedListInRbracket(list(castedCall, returnLine))
-    copyFromRobjectInterfaceDef <- cppFunctionDef(name = SEXPinterfaceCname,
-                                                  args = interfaceArgs,
-                                                  code = cppCodeBlock(code = RparseTree2ExprClasses(interfaceCode),
-                                                                      objectDefs = localVars), ## also empty local vars
-                                                  returnType = cppSEXP(),
-                                                  externC = TRUE)
+    ## interfaceCode <- embedListInRbracket(list(castedCall, returnLine))
+    ## copyFromRobjectInterfaceDef <- cppFunctionDef(name = SEXPinterfaceCname,
+    ##                                               args = interfaceArgs,
+    ##                                               code = cppCodeBlock(code = RparseTree2ExprClasses(interfaceCode),
+    ##                                                                   objectDefs = localVars), ## also empty local vars
+    ##                                               returnType = cppSEXP(),
+    ##                                               externC = TRUE)
         
-    list(copyFromRobjectDef = copyFromRobjectDef,
-         copyFromRobjectInterfaceDef = copyFromRobjectInterfaceDef)
+    ## list(copyFromRobjectDef = copyFromRobjectDef,
+    ##      copyFromRobjectInterfaceDef = copyFromRobjectInterfaceDef)
+    list(copyFromRobjectDef = copyFromRobjectDef)
 }

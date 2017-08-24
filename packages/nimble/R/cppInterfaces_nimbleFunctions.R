@@ -838,6 +838,9 @@ copyFromRobjectViaActiveBindings <- function(Robj, cppNames, cppCopyTypes, .self
 copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) {
     ## Experimental: copy some elements from C++ copyFromRobject method
     ## Currently this includes numericVector and nodeFxnVector
+    .Call(nimbleUserNamespace$sessionSpecificDll$copyFromRobject,
+          basePtr,
+          Robj)
     
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
@@ -930,13 +933,19 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
             ## getSetNumericVector(v, Robj[[v]], basePtr, dll = dll)
         },
         'doubleScalar' = {
-            getSetDoubleScalar(v, Robj[[v]], basePtr, dll = dll)
+            NULL
+            ## Experimental
+            ## getSetDoubleScalar(v, Robj[[v]], basePtr, dll = dll)
         },
         'integerScalar' = {
-            getSetIntegerScalar(v, Robj[[v]], basePtr, dll = dll)
+            NULL
+            ## Experimental
+            ## getSetIntegerScalar(v, Robj[[v]], basePtr, dll = dll)
         },
         'logicalScalar' = {
-            getSetLogicalScalar(v, Robj[[v]], basePtr, dll = dll)
+            NULL
+            ## Experimental
+            ## getSetLogicalScalar(v, Robj[[v]], basePtr, dll = dll)
         },
         { ## default:
             if(!(cppCopyTypes[[v]] %in% c('copierVector'))) {

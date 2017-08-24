@@ -45,9 +45,32 @@
 #define COPY_NODE_FXN_VECTOR_FROM_R_OBJECT(varName) \
   { \
   std::string svarName(varName); \
-  PRINTF("TRYING\n"); \
   populateNodeFxnVectorNew_copyFromRobject(getObjectPtr(svarName),\
 					   PROTECT(Rf_findVarInFrame(S_xData, \
+								     Rf_install(varName)))); \
+  }
+
+#define COPY_DOUBLE_SCALAR_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  populate_SEXP_2_double_for_copyFromRobject(getObjectPtr(svarName),\
+					     PROTECT(Rf_findVarInFrame(S_xData, \
+								     Rf_install(varName)))); \
+  }
+
+#define COPY_INTEGER_SCALAR_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  populate_SEXP_2_int_for_copyFromRobject(getObjectPtr(svarName),\
+					     PROTECT(Rf_findVarInFrame(S_xData, \
+								     Rf_install(varName)))); \
+  }
+
+#define COPY_LOGICAL_SCALAR_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  populate_SEXP_2_bool_for_copyFromRobject(getObjectPtr(svarName),\
+					     PROTECT(Rf_findVarInFrame(S_xData, \
 								     Rf_install(varName)))); \
   }
 
