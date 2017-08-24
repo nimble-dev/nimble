@@ -141,8 +141,8 @@ buildMCMC <- nimbleFunction(
             return(samplerTimes[1:(length(samplerTimes)-1)])
         },
         calculateWAIC = function(nburnin = integer(default = 100),
-                                 burnIn = integer(default = -100)){
-          if(burnIn != -100){
+                                 burnIn = integer(default = 0)){
+          if(burnIn != 0){
             print("Warning, `burnIn` argument is deprecated and will not be 
                    supported in future versions of NIMBLE.  
                    Please use the `nburnin` argument instead.")
