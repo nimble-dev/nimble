@@ -140,16 +140,12 @@ buildMCMC <- nimbleFunction(
             returnType(double(1))
             return(samplerTimes[1:(length(samplerTimes)-1)])
         },
-        calculateWAIC = function(nburnin = integer(default = 0),
-                                 burnIn = integer(default = 0)) {
-            if(burnIn != 0){
-              print("Warning, `burnIn` argument is deprecated and will not be 
-                    supported in future versions of NIMBLE.  
-                    Please use the `nburnin` argument instead.")
-              if(nburnin == 0){ ## If nburnin has not been changed from 
-                                  ## default, we replace with `burnIn` value here. 
-                nburnin <- burnIn
-              }
+        calculateWAIC = function(nburnin = integer(default = 0), burnIn = integer(default = 0)) {
+            if(burnIn != 0) {
+                print("Warning, `burnIn` argument is deprecated and will not be supported in future versions of NIMBLE. Please use the `nburnin` argument instead.")
+                if(nburnin == 0) {  ## if nburnin has not been changed from default, we replace with `burnIn` value here.
+                    nburnin <- burnIn
+                }
             }
             numMCMCSamples <- getsize(mvSamples) - nburnin
             if((numMCMCSamples) < 2) {
@@ -185,7 +181,7 @@ buildMCMC <- nimbleFunction(
 )
 
 
-# This is a function that will weed out missing indices from the monitors
+## This is a function that will weed out missing indices from the monitors
 processMonitorNames <- function(model, nodes){
 	isLogProbName <- grepl('logProb', nodes)
 	expandedNodeNames <- model$expandNodeNames(nodes[!isLogProbName])
