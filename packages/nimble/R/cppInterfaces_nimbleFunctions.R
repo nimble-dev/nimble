@@ -836,6 +836,9 @@ copyFromRobjectViaActiveBindings <- function(Robj, cppNames, cppCopyTypes, .self
 }
 
 copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) {
+    ## Experimental: copy some elements from C++ copyFromRobject method
+    ## Currently this includes numericVector and nodeFxnVector
+    
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
         if(is.null(Robj[[v]])) {
@@ -847,7 +850,6 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
             modelVar <- Robj[[v]] ## this is a singleVarAccessClass created by replaceModelSingles
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
-            ##message('copying modelVar (copyFromRobject)')
             getSetModelVarPtr(v, eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, Cmodel$.basePtr, varName)), basePtr, dll = dll)
         },
         'nimbleFunction' = {
@@ -895,7 +897,9 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
             getSetModelValues(v, Cmv, basePtr, dll = dll)
         },
         'nodeFxnVec' = {
-            populateNodeFxnVecNew(fxnPtr = basePtr, Robject = Robj, fxnVecName = v, dll = dll)
+            NULL
+            ## Experimental.
+            ##populateNodeFxnVecNew(fxnPtr = basePtr, Robject = Robj, fxnVecName = v, dll = dll)
         },
         'modelVarAccess' = {
             populateManyModelVarMapAccess(fxnPtr = basePtr, Robject = Robj, manyAccessName = v, dll = dll)
@@ -921,7 +925,9 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
             getSetCharacterScalar(v, Robj[[v]], basePtr, dll = dll)
         },
         'numericVector' = {
-            getSetNumericVector(v, Robj[[v]], basePtr, dll = dll)
+            NULL
+            ## Experimental
+            ## getSetNumericVector(v, Robj[[v]], basePtr, dll = dll)
         },
         'doubleScalar' = {
             getSetDoubleScalar(v, Robj[[v]], basePtr, dll = dll)
