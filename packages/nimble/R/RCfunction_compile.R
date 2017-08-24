@@ -419,12 +419,15 @@ RCfunProcessing <- setRefClass(
                 browser()
             }
 
-            tryResult <- try(
-                exprClasses_eigenize(compileInfo$nimExpr,
-                                     compileInfo$newLocalSymTab, compileInfo$typeEnv))
             if(nimbleOptions('experimentalUseTensorflow')) {
-                exprClasses_TFize(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
+                exprClasses_TFize(compileInfo$nimExpr,
+                                  compileInfo$newLocalSymTab,
+                                  compileInfo$typeEnv)
             } else {
+                tryResult <- try(
+                    exprClasses_eigenize(compileInfo$nimExpr,
+                                         compileInfo$newLocalSymTab,
+                                         compileInfo$typeEnv))
                 if(inherits(tryResult, 'try-error')) {
                     stop(
                         paste('There is some problem at the Eigen processing step for this code:\n',
