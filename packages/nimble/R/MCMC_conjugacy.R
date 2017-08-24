@@ -392,7 +392,6 @@ conjugacyClass <- setRefClass(
         },
 
         genSetupFunction = function(dependentCounts, doDependentScreen = FALSE) {
-            browser()
             functionBody <- codeBlockClass()
 
             functionBody$addCode({
