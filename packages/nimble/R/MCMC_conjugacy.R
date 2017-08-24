@@ -16,7 +16,8 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'ddirch',
          link = 'identity',
          dependents = list(
-             dmulti    = list(param = 'prob', contribution_alpha = 'value')),
+             dmulti    = list(param = 'prob', contribution_alpha = 'value'),
+             dcat      = list(param = 'prob', contribution_alpha = 'calc_dcatConjugacyContribution(length(prob), value)')),
              ## dcat      = list(param = 'prob', contribution_alpha = as.numeric((1:length(prob)) == value)'),
              ## dcat      = list(param = 'prob', contribution_alpha = {tmp = rep(0,length(prob)); tmp[value]=1; tmp}')),
          posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'),
@@ -391,6 +392,7 @@ conjugacyClass <- setRefClass(
         },
 
         genSetupFunction = function(dependentCounts, doDependentScreen = FALSE) {
+            browser()
             functionBody <- codeBlockClass()
 
             functionBody$addCode({

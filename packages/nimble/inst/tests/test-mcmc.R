@@ -471,6 +471,37 @@ test_that('Dirichlet-multinomial with replication setup', {
 # p's and alphas.  cross-level sampler would probably work well here,
 # or, of course, integrating over the p's
 
+test_that('Dirichlet-categorical conjugacy setup', {
+### Dirichlet-categorical conjugacy
+
+# single multinomial represented as categorical
+    set.seed(0)
+    n <- 100
+    alpha <- c(10, 30, 15, 60, 1)
+    K <- length(alpha)
+    p <- c(.12, .24, .09, .54, .01)
+    y <- rmulti(1, n, p)
+    y <- rep(seq_along(y), times = y)
+    
+    code <- function() {
+        for(i in 1:n)
+          y[i] ~ dcat(p[1:K])
+        p[1:K] ~ ddirch(alpha[1:K])
+        for(i in 1:K) {
+            alpha[i] ~ dgamma(.001, .001);
+        }
+    }
+    
+    inits <- list(p = rep(1/K, K), alpha = rep(K, K))
+    data <- list(n = n, K = K, y = y)
+    
+    test_mcmc(model = code, name = 'Dirichlet-categorical example', data= data, seed = 0, numItsC = 10000,
+              inits = inits,
+              results = list(mean = list(p = p)),
+              resultsTolerance = list(mean = list(p = rep(.06, K))))
+})
+
+
 ### block sampler on MVN node
 test_that('block sampler on MVN node setup', {
     code <- nimbleCode({

@@ -67,3 +67,14 @@ calc_dwishAltParams <- nimbleFunction(
 )
 
 
+## This is used in conjugacy definition for ddirch, to calculate 'contribution'
+## terms from dcat dependents. 
+calc_dcatConjugacyContributions <- nimbleFunction(
+    name = 'calc_dcatConjugacyContributions',
+    run = function(n = double(0), value = double(0)) {
+        ans <- numeric(n)
+        ans[value] <- value
+        return(ans)
+        returnType(double(1))
+    }
+)
