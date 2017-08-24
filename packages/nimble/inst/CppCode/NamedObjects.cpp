@@ -98,16 +98,6 @@ SEXP getAvailableNames(SEXP Sextptr) {
   return(Sans);
 }
 
-SEXP copyFromRobject(SEXP Sextptr, SEXP Robject) {
-  if(!R_ExternalPtrAddr(Sextptr)) {
-    PRINTF("Error: Sextptr is not a a valid external pointer\n");
-  }
-  NamedObjects *m;
-  m = static_cast< NamedObjects *>(R_ExternalPtrAddr(Sextptr));
-  m->copyFromRobject(Robject);
-  return(R_NilValue);
-}
-
 void* NumberedObjects::getObjectPtr(int index){
 	return(numberedObjects[index]);
 }

@@ -37,13 +37,6 @@ public:
   map< string, void * > &getNamedObjects() {return(namedObjects);}
   void NO_hw();
   virtual void* getObjectPtr( string &name );
-  virtual void copyFromRobject( SEXP Robject ) {
-    /* Base class method should never be called,
-       but we implement it to avoid making this an abstract base class.
-       There are derived classes that may not implement copyFromRobject,
-       but in such cases copyFromRobject should also never be used. */
-    PRINTF("Warning: C++ copying from R object is not working correctly\n");
-  };
   virtual ~NamedObjects() {//PRINTF("In NamedObjects destructor\n");
   };
 };
@@ -51,7 +44,6 @@ public:
 extern "C" {
   SEXP getModelObjectPtr(SEXP Sextptr, SEXP Sname); /* should rename to getObjectPtr*/
   SEXP getAvailableNames(SEXP Sextptr);
-  SEXP copyFromRobject(SEXP Sextptr, SEXP Robject);
 }
 
 class NumberedObjects {

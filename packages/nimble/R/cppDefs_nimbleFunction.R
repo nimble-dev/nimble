@@ -145,6 +145,14 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            genNeededTypes(debugCpp = debugCpp, fromModel = fromModel)
                                            objectDefs <<- symbolTable2cppVars(ncp$getSymbolTable())
                                        },
+                                       addCopyFromRobject = function() {
+                                           ## The next line creates the cppCopyTypes exactly the same way as in buildNimbleObjInterface
+                                           ## and CmultiNimbleObjClass::initialize.
+                                           cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
+                                           copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes)
+                                           functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
+                                           SEXPmemberInterfaceFuns[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectInterfaceDef
+                                       },
                                        buildAll = function(where = where) {
                                            makeCppNames()
                                            buildConstructorFunctionDef()
@@ -316,7 +324,14 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                              getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                          else
                                                              SEXPgeneratorFun$name
-                                                  CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
+                                                  copyFromRobject_sym <- if(!is.null(dll))
+                                                                             getNativeSymbolInfo(SEXPmemberInterfaceFuns[['copyFromRobject']]$name, dll)
+                                                                         else
+                                                                             SEXPmemberInterfaceFuns[['copyFromRobject']]$name
+                                                  CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self,
+                                                                                                basePtrCall = sym,
+                                                                                                copyFromRobjectCall = copyFromRobject_sym,
+                                                                                                project = nimbleProject)
                                               },
                                               buildRgenerator = function(where = globalenv(), dll = NULL) {
                                                   sym <- if(!is.null(dll))
@@ -342,14 +357,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       cppInterfaceObject <- CmultiInterface$addInstance(R_NimbleFxn, dll)
                                                   }
                                                   return(cppInterfaceObject)
-                                              },
-                                              addCopyFromRobject = function() {
-                                                  ## The next line creates the cppCopyTypes exactly the same way as in buildNimbleObjInterface
-                                                  ## and CmultiNimbleObjClass::initialize.
-                                                  cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
-                                                  copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes)
-                                                  functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
-                                                  ## SEXPmemberInterfaceFuns[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectInterfaceDef
                                               },
                                               buildAll = function(where = where) {
                                                   baseClassObj <- environment(nfProc$nfGenerator)$contains
@@ -428,31 +435,27 @@ makeCopyFromRobjectDef <- function(className, cppCopyTypes) {
     copyFromRobjectDef$code <- cppCodeBlock(code = allCode,
                                             objectDefs = localVars)
 
-    ## This may become unnecessary.
-    ## For now temporarily disabling it:
-    ##
-    ## ## Make SEXP interface function to call from R:
-    ## SEXPinterfaceCname <- paste0("CALL_", className, "_copyFromRobject")
-    ## interfaceArgs <- symbolTable()
-    ## interfaceArgs$addSymbol(RobjectVarSym)
-    ## interfaceArgs$addSymbol(cppSEXP(name = 'SextPtrToObject'))
+    ## Make SEXP interface function to call from R:
+    SEXPinterfaceCname <- paste0("CALL_", className, "_copyFromRobject")
+    interfaceArgs <- symbolTable()
+    interfaceArgs$addSymbol(RobjectVarSym)
+    interfaceArgs$addSymbol(cppSEXP(name = 'SextPtrToObject'))
 
-    ## RHScall <- as.call(list(as.name('copyFromRobject'),
-    ##                         as.name('Robject')))
-    ## castedCall <- substitute(cppMemberDereference(
-    ##     template(static_cast, cppPtrType(CN))(R_ExternalPtrAddr(SextPtrToObject)), RHS),
-    ##     list(CN = as.name(className), RHS = RHScall))
-    ## returnLine <- quote(return(R_NilValue))
+    RHScall <- as.call(list(as.name('copyFromRobject'),
+                            as.name('Robject')))
+    castedCall <- substitute(cppMemberDereference(
+        template(static_cast, cppPtrType(CN))(R_ExternalPtrAddr(SextPtrToObject)), RHS),
+        list(CN = as.name(className), RHS = RHScall))
+    returnLine <- quote(return(R_NilValue))
     
-    ## interfaceCode <- embedListInRbracket(list(castedCall, returnLine))
-    ## copyFromRobjectInterfaceDef <- cppFunctionDef(name = SEXPinterfaceCname,
-    ##                                               args = interfaceArgs,
-    ##                                               code = cppCodeBlock(code = RparseTree2ExprClasses(interfaceCode),
-    ##                                                                   objectDefs = localVars), ## also empty local vars
-    ##                                               returnType = cppSEXP(),
-    ##                                               externC = TRUE)
+    interfaceCode <- embedListInRbracket(list(castedCall, returnLine))
+    copyFromRobjectInterfaceDef <- cppFunctionDef(name = SEXPinterfaceCname,
+                                                  args = interfaceArgs,
+                                                  code = cppCodeBlock(code = RparseTree2ExprClasses(interfaceCode),
+                                                                      objectDefs = localVars), ## also empty local vars
+                                                  returnType = cppSEXP(),
+                                                  externC = TRUE)
         
-    ## list(copyFromRobjectDef = copyFromRobjectDef,
-    ##      copyFromRobjectInterfaceDef = copyFromRobjectInterfaceDef)
-    list(copyFromRobjectDef = copyFromRobjectDef)
+    list(copyFromRobjectDef = copyFromRobjectDef,
+         copyFromRobjectInterfaceDef = copyFromRobjectInterfaceDef)
 }

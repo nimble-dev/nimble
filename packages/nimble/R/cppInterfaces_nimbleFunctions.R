@@ -838,9 +838,9 @@ copyFromRobjectViaActiveBindings <- function(Robj, cppNames, cppCopyTypes, .self
 copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) {
     ## Experimental: copy some elements from C++ copyFromRobject method
     ## Currently this includes numericVector and nodeFxnVector
-    .Call(nimbleUserNamespace$sessionSpecificDll$copyFromRobject,
-          basePtr,
-          Robj)
+    ##.Call(nimbleUserNamespace$sessionSpecificDll$copyFromRobject,
+    ##      basePtr,
+    ##      Robj)
     
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
@@ -1194,17 +1194,19 @@ CmultiNimbleObjClass <- setRefClass('CmultiNimbleObjClass',
                                                   cppNames = 'ANY',
                                                   cppCopyTypes = 'ANY',
                                                   basePtrCall = 'ANY',
+                                                  copyFromRobjectCall = 'ANY',
                                                   dll = 'ANY',
                                                   RobjectList = 'ANY',
                                                   compiledNodeFun = 'ANY'    ## a cppNimbleFunctionClass or cppNimbleListClass
                                                   ),
                                     methods = list(
-                                        initialize = function(compiledNodeFun, basePtrCall, project, ...) { ## need to set dll, nimbleProject
+                                        initialize = function(compiledNodeFun, basePtrCall, copyFromRobjectCall, project, ...) { ## need to set dll, nimbleProject
                                             nimbleProject <<- project
                                             finalizationPtrList <<- list()
                                             RobjectList <<- list()
                                             dll <<- NULL
                                             compiledNodeFun <<- compiledNodeFun
+                                            copyFromRobjectCall <<- copyFromRobjectCall
                                             ## basePtrCall is the result of getNativeSymbolInfo with the dll if possible from cppDefs_nimbleFunction.R
                                             basePtrCall <<- basePtrCall
                                             callSuper(...)
@@ -1265,8 +1267,8 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                              show = function() {
                                                  cat(paste0('CmultiNimbleFunctionClass object\n'))
                                              },
-                                             initialize = function(compiledNodeFun, basePtrCall, project, ...) { ## need to set dll, nimbleProject
-                                                 callSuper(compiledNodeFun = compiledNodeFun, basePtrCall = basePtrCall, project = project, ...)
+                                             initialize = function(compiledNodeFun, basePtrCall, copyFromRobjectCall, project, ...) { ## need to set dll, nimbleProject
+                                                 callSuper(compiledNodeFun = compiledNodeFun, basePtrCall = basePtrCall, copyFromRobjectCall = copyFromRobjectCall, project = project, ...)
                                                  neededObjectsList <<- list()
                                                  basePtrList <<- list()
                                                  namedObjectsPtrList <<- list()
@@ -1296,7 +1298,8 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  if(isNF) compiledNodeFun$nimCompProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
                                                  # avoid R CMD check problem with registration:
                                                  ##newBasePtr
-                                                 newObjPtrs <- eval(parse(text = ".Call(basePtrCall)", keep.source = FALSE))
+                                                 newObjPtrs <- eval(call('.Call', basePtrCall))
+                                                 ##newObjPtrs <- eval(parse(text = ".Call(basePtrCall)", keep.source = FALSE))
                                                  newBasePtr <- newObjPtrs[[1]] ## terminology confusing because this is the derived C++ class
                                                  newNamedObjectsPtr <- newObjPtrs[[ extPtrTypeIndex['NamedObjects'] ]] ## this is the base C++ class
                                                  if(is.null(newNamedObjectsPtr)) stop('Problem: Cannot find right external pointer information')
@@ -1318,7 +1321,15 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
 
                                                  newNeededObjects <- nimbleInternalFunctions$buildNeededObjects(newRobject, compiledNodeFun, list(), dll, nimbleProject)
                                                  neededObjectsList[[length(neededObjectsList) + 1]] <<- newNeededObjects
-                                                 nimble:::copyFromRobject(newRobject, cppNames, cppCopyTypes, newNamedObjectsPtr, symTab = compiledNodeFun$nimCompProc$getSymbolTable(), dll) #newBasePtr, probably really need both for different cases
+
+                                                 eval(call('.Call', copyFromRobjectCall, newRobject, newBasePtr))
+                                                 
+                                                 nimble:::copyFromRobject(newRobject,
+                                                                          cppNames,
+                                                                          cppCopyTypes,
+                                                                          newNamedObjectsPtr,
+                                                                          symTab = compiledNodeFun$nimCompProc$getSymbolTable(),
+                                                                          dll) #newBasePtr, probably really need both for different cases
                                                  if(getNimbleOption('clearNimbleFunctionsAfterCompiling')) compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
                                                  list(.self, length(basePtrList)) ## (this object, index)
                                              },
@@ -1409,7 +1420,12 @@ CmultiNimbleListClass <- setRefClass('CmultiNimbleListClass',
                                                  newRobject$.CobjectInterface <- list(.self, length(ptrToPtrList)) ## second element is its index
                                                  RobjectList[[length(RobjectList)+1]] <<- newRobject
                                                  namedObjectsPtr <- eval(call('.Call',castFunSymbolInfo, newPtrToPtr))
-                                                 nimble:::copyFromRobject(newRobject, cppNames, cppCopyTypes, namedObjectsPtr, symTab = compiledNodeFun$nimCompProc$getSymbolTable(), dll) #newNamedObjectsPointer was previously newBasePtr, probably really need both for different cases
+                                                 nimble:::copyFromRobject(newRobject,
+                                                                          cppNames,
+                                                                          cppCopyTypes,
+                                                                          namedObjectsPtr,
+                                                                          symTab = compiledNodeFun$nimCompProc$getSymbolTable(),
+                                                                          dll) #newNamedObjectsPointer was previously newBasePtr, probably really need both for different cases
                                                  list(.self, length(ptrToSmartPtrList)) ## (this object, index)
                                              },
                                              clearInstance = function(index) { ## this is called when a Cmulti interface was built and later needs to be replaced with a full interface
