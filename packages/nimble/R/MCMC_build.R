@@ -56,7 +56,7 @@
 #' Cmcmc$run(10000)
 #' samples <- as.matrix(Cmcmc$mvSamples)
 #' head(samples)
-#' WAIC <- Cmcmc$calculateWAIC(burnIn = 1000)
+#' WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 #' }
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
@@ -161,7 +161,7 @@ buildMCMC <- nimbleFunction(
           pWAIC <- 0
           currentVals <- values(model, sampledNodes)
           for(i in 1:numMCMCSamples){
-            copy(mvSamples, model, nodesTo = sampledNodes, row = i + burnIn)
+            copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburnin)
             model$simulate(paramDeps)
             model$calculate(dataNodes)
             for(j in 1:dataNodeLength){
