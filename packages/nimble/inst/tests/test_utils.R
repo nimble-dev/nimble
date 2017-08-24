@@ -53,7 +53,6 @@ temporarilyEnableTensorflow <- function() {
     cleanup <- substitute(do.call(nimbleOptions, old))
     do.call(on.exit, list(cleanup, add = TRUE), envir = parent.frame())
     nimbleOptions(experimentalUseTensorflow = TRUE)
-    nimbleOptions(showCompilerOutput = TRUE)
 }
 
 withTensorflowEnabled <- function(arg) {

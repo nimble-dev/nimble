@@ -56,7 +56,7 @@ makeVersions <- function(name, run) {
 }
 
 matrixSizes <- c(1, 10, 100, 1000)
-vectorSizes <- c(1, 10, 100, 1000, 10000)
+vectorSizes <- c(1, 10, 100, 1000, 10000, 100000)
 
 test_that('Benchmarking matrix arithmetic', {
     versions <- makeVersions(
@@ -131,16 +131,16 @@ test_that('Benchmarking vectorized special functions', {
             returnType(double(0))
         })
 
-    cat('----------------------------------------\n')
+    cat('-----------------------------------------\n')
     cat('Benchmarking Special Functions\n')
-    cat('    N DSL ops/sec C++ ops/sec TF ops/sec\n')
+    cat('     N DSL ops/sec C++ ops/sec TF ops/sec\n')
     for (N in vectorSizes) {
         x <- exp(-rnorm(N))
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, iters))
         cPerSec <- benchmarkIters(function(iters) versions$cpp(x, iters))
         tfPerSec <- benchmarkIters(function(iters) versions$tf(x, iters))
-        cat(sprintf('%5d %11.1g %11.1g %10.1g\n',
+        cat(sprintf('%6d %11.1g %11.1g %10.1g\n',
                     N, nimPerSec, cPerSec, tfPerSec))
     }
-    cat('----------------------------------------\n')
+    cat('-----------------------------------------\n')
 })

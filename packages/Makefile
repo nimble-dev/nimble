@@ -34,6 +34,7 @@ test: FORCE
 benchmark: FORCE
 	mkdir -p profile
 	NIMBLE_BENCHMARK_DIR=$(PWD)/profile \
+	  TF_CPP_MIN_LOG_LEVEL=3 \
 	  R --quiet --slave --vanilla --file=benchmark.R
 
 # This requires libgoogle-perftools-dev, pprof, and requires
