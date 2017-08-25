@@ -6,7 +6,7 @@ calc_dcatConjugacyContributions <- nimbleFunction(
     run = function(prob = double(1), value = double(0)) {
         n <- dim(prob)[1]
         ans <- numeric(n)
-        ans[value] <- value
+        ans[value] <- 1
         return(ans)
         returnType(double(1))
     }
