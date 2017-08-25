@@ -501,6 +501,9 @@ test_that('Dirichlet-categorical conjugacy setup', {
               resultsTolerance = list(mean = list(p = rep(.06, K))))
 })
 
+## also note that MCMC results here should be identical to those from
+## Dirichlet-multinomial case two tests up from this
+
 
 ### block sampler on MVN node
 test_that('block sampler on MVN node setup', {
