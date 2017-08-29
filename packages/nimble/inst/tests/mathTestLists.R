@@ -39,7 +39,7 @@ testsBasicMath = list(
   list(name = 'log of vector', expr = quote(out <- log(abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'sqrt of vector', expr = quote(out <- sqrt(abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'abs of vector', expr = quote(out <- abs(arg1)), inputDim = 1, outputDim = 1),
-  list(name = 'step of vector', expr = quote(out <- step(arg1)), inputDim = 1, outputDim = 1, Rcode = quote(out <- as.numeric(arg1 > 0)), xfail = 'math.*compiles.*'), ## FAILS on compileNimble(nfR) with Eigen error.
+  list(name = 'step of vector', expr = quote(out <- step(arg1)), inputDim = 1, outputDim = 1, Rcode = quote(out <- as.numeric(arg1 > 0)), xfail = '.*compiles.*'), ## FAILS on compileNimble(nfR) with Eigen error.
   list(name = 'cube of vector', expr = quote(out <- cube(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'cos of vector', expr = quote(out <- cos(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'acos of cos of vector', expr = quote(out <- acos(cos(arg1))), inputDim = 1, outputDim = 1),
@@ -47,12 +47,12 @@ testsBasicMath = list(
   list(name = 'asin of sin of vector', expr = quote(out <- asin(sin(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'tan of vector', expr = quote(out <- tan(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'atan of tan of vector', expr = quote(out <- atan(tan(arg1))), inputDim = 1, outputDim = 1),
-  list(name = 'cosh of vector', expr = quote(out <- cosh(arg1)), inputDim = 1, outputDim = 1, xfail = 'tensorflow.*runs'),
-  list(name = 'sinh of vector', expr = quote(out <- sinh(arg1)), inputDim = 1, outputDim = 1, xfail = 'tensorflow.*runs'),
-  list(name = 'tanh of vector', expr = quote(out <- tanh(arg1)), inputDim = 1, outputDim = 1, xfail = 'tensorflow.*runs'),
-  list(name = 'acosh of vector', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 1, outputDim = 1, xfail = 'tensorflow.*runs'),
-  list(name = 'asinh of vector', expr = quote(out <- asinh(arg1)), inputDim = 1, outputDim = 1, xfail = 'tensorflow.*runs'),
-  list(name = 'atanh of vector', expr = quote(out <- atanh(arg1%%1)), inputDim = 1, outputDim = 1, xfail = 'math.*compiles.*'), ## FAILS - issue here is probably that modulo on vecs doesn't work but need to restrict domain for atanh
+  list(name = 'cosh of vector', expr = quote(out <- cosh(arg1)), inputDim = 1, outputDim = 1),
+  list(name = 'sinh of vector', expr = quote(out <- sinh(arg1)), inputDim = 1, outputDim = 1),
+  list(name = 'tanh of vector', expr = quote(out <- tanh(arg1)), inputDim = 1, outputDim = 1),
+  list(name = 'acosh of vector', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 1, outputDim = 1),
+  list(name = 'asinh of vector', expr = quote(out <- asinh(arg1)), inputDim = 1, outputDim = 1),
+  list(name = 'atanh of vector', expr = quote(out <- atanh(arg1%%1)), inputDim = 1, outputDim = 1, xfail = 'math.*compiles.*|tensorflow.*runs'), ## FAILS - issue here is probably that modulo on vecs doesn't work but need to restrict domain for atanh
   ###
   list(name = 'scalar + scalar', expr = quote(out <- arg1 + arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'diff of scalars', expr = quote(out <- arg1 - arg2), inputDim = c(0,0), outputDim = 0),
@@ -149,9 +149,9 @@ testsReduction = list(
   list(name = 'sum of matrix', expr = quote(out <- sum(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'mean of matrix', expr = quote(out <- mean(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'sd of matrix', expr = quote(out <- sd(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'var of matrix', expr = quote(out <- var(arg1)), inputDim = 2, outputDim = 0, xfail = 'math.*compiles.*'),  # Not supported
+  list(name = 'var of matrix', expr = quote(out <- var(arg1)), inputDim = 2, outputDim = 0, xfail = '.*compiles.*'),  # Not supported
   list(name = 'prod of matrix', expr = quote(out <- prod(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), xfail = 'math.*runs') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions differ => FAILS
+  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), xfail = '.*runs') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions differ => FAILS
   )
 
 testsComparison = list(

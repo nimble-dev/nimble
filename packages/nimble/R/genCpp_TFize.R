@@ -185,6 +185,12 @@ tfTranslate <- function(name) {
         'acos' = tf$acos,
         'asin' = tf$asin,
         'atan' = tf$atan,
+        'cosh' = tf$cosh,
+        'sinh' = tf$sinh,
+        'tanh' = tf$tanh,
+        'acosh' = tf$acosh,
+        'asinh' = tf$asinh,
+        'atanh' = tf$atanh,
         'exp' = tf$exp,
         'log' = tf$log,
         'log1p' = tf$log1p,
@@ -227,6 +233,7 @@ tfTranslate <- function(name) {
         'logdet' = function(x) tf$log(tf$matrix_determinant(x)),
         'inverse' = tf$matrix_inverse,
         'sum' = tf$reduce_sum,
+        'prod' = tf$reduce_prod,
         'mean' = tf$reduce_mean,
         'var' = function(x) {
             n_minus_one <- tf$cast(tf$size(x), tf$float64) - tf$constant(1, tf$float64)
@@ -254,18 +261,6 @@ tfTranslate <- function(name) {
             tf$matrix_triangular_solve(l, x, lower = FALSE)
         }
     )
-
-    ## These hyperbolic functions requre very a recent tensorflow.
-    tryCatch({
-        .tfLazyData$cosh <- tf$cosh
-        .tfLazyData$sinh <- tf$sinh
-        .tfLazyData$tanh <- tf$tanh
-        .tfLazyData$acosh <- tf$acosh
-        .tfLazyData$asinh <- tf$asinh
-        .tfLazyData$atanh <- tf$atanh
-    }, error = function(e) {
-        warning('Tensorflow hyperbolic functions are not available')
-    })
 
     return(.tfLazyData$tfTranslate[[name]])
 }
