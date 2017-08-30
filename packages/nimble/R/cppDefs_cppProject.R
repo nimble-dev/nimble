@@ -266,13 +266,19 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
                                            compileDynamicRegistrations(showCompilerOutput = showCompilerOutput)
                                        }
-                                       cat('DEBUG 1 SHLIBcmd =', SHLIBcmd, '\n')  # DEBUG
                                        if(nimbleOptions('experimentalUseTensorflow')) {
                                            if (is.null(nimbleUserNamespace$tensorflowWrapperDll)) {
                                                compileTensorflowWrapper(showCompilerOutput = showCompilerOutput)
                                            }
-                                           SHLIBcmd <- paste(SHLIBcmd, nimbleUserNamespace$tensorflowWrapperDll[['path']])
-                                           cat('DEBUG 2 SHLIBcmd =', SHLIBcmd, '\n')  # DEBUG
+                                           # Version 1. Works locally, fails on travis.
+                                           # SHLIBcmd <- paste(SHLIBcmd, nimbleUserNamespace$tensorflowWrapperDll[['path']])
+                                           # Version 2. Fails.
+                                           # pkgLibs <- nimbleUserNamespace$tensorflowWrapperDll[['path']]
+				           # createMakevars(.useLib = .useLib, dir = dirName, .force = TRUE, pkgLibs = pkgLibs)
+                                           # Version 3. Fails.
+                                           # Sys.setenv(PKG_LIBS = nimbleUserNamespace$tensorflowWrapperDll[['path']])
+                                           # Version 4.
+                                           SHLIBcmd <- paste(SHLIBcmd, file.path(system.file(package = 'nimble'), 'CppCode', 'tensorflow.cpp'))
                                        }
 
                                        origSHLIBcmd <- SHLIBcmd
