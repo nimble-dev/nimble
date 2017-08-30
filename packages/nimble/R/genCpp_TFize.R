@@ -157,10 +157,14 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
 ## since the tensorflow package may not be loaded.
 .tfLazyData <- new.env()
 tfTranslate <- function(name) {
-    developing <- TRUE  ## TODO Switch to false when development stabilizes.
+    developing <- FALSE  ## Switch to TRUE while developing.
     if (!developing && !is.null(.tfLazyData$tfTranslate)) {
         return(.tfLazyData$tfTranslate[[name]])
     }
+    ## This translates R's functions to tensorflow functions, which are
+    ## implemented in Python and wrapped by the reticulate package.
+    ## For documentation, see the tensorflow python api docs at:
+    ## https://www.tensorflow.org/api_docs/python/tf
     .tfLazyData$tfTranslate <- list(
         '+' = '+',
         '-' = '-',
@@ -213,7 +217,7 @@ tfTranslate <- function(name) {
         'probit' = function(x) {
             one <- tf$constant(1.0, tf$float64)
             two <- tf$constant(2.0, tf$float64)
-            ## tf$erfinv is implemented in C++ but not yet exposed in python.
+            ## tf$erfinv is implemented in C++ but not yet exposed in python as of tensorflow 1.3.0.
             tf$sqrt(two) * tf$erfinv(two * x - one)
         },
         'iprobit' = function(x) {
@@ -227,7 +231,7 @@ tfTranslate <- function(name) {
         'pmin' = tf$minimum,
         'pmax' = tf$maximum,
         't' = function(mat) tf$transpose(mat, c(1L, 0L)),
-        'asCol' = function(x) x,  # FIXME
+        'asCol' = function(x) x,  ## TODO Does this suffice?
         'diagonal' = tf$matrix_diag,  ## TODO Decide between diag() and diag_part().
         'det' = tf$matrix_determinant,
         'logdet' = function(x) tf$log(tf$matrix_determinant(x)),
@@ -293,6 +297,7 @@ TfTensorize <- function(code, placeholders) {
     stop(paste('Not implemented:', class(code)))
 }
 
+## Setting threads=0 lets tensorflow choose the number of threads.
 exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     if (!require(tensorflow)) {
         stop('Failed to load tensorflow package')
@@ -317,8 +322,8 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     configProto <- tf$ConfigProto()
     configProto$inter_op_parallelism_threads <- threads;
     configProto$intra_op_parallelism_threads <- threads;
-    # This works despite the error.
-    # See https://github.com/rstudio/reticulate/issues/92
+    ## This works despite the error.
+    ## See https://github.com/rstudio/reticulate/issues/92
     try(configProto$gpu_options$allow_growth <- TRUE)
 
     ## Serialize protos to strings.
@@ -337,33 +342,22 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     return(tfBuilder)
 }
 
-## This is a proxy for (or may evolved to contain) the tf graph
+## This is a wrapper class around the C++ class TfBuilder.
+## The purpose is to build a tensorflow graph and session.
 TfBuilder <- setRefClass(
     Class = "TfBuilder",
     fields = list(
-        ## character vector of arguments *representing canonical order*
-        inputNames = 'ANY',
-        ## initially, a single name
-        outputNames = 'ANY',
         serializedGraph = 'ANY',
-        serializedConfig = 'ANY'
+        serializedConfig = 'ANY',
+        ## Character vector of arguments in canonical order.
+        inputNames = 'ANY',
+        ## Character vector of outputs in canonical order.
+        outputNames = 'ANY'
     ),
     methods = list(
         initialize = function() {
             inputNames <<- outputNames <<- character()
             serializedGraph <<- character()
-        },
-        addInputVar = function(name, type = 'double', output = FALSE) {
-            ## not sure if nDim is needed
-            if (!(name %in% inputNames)) {
-                inputNames <<- append(inputNames, name)
-            }
-        },
-        addOutputVar = function(name, type = 'double', output = FALSE) {
-            ## not sure if nDim is needed
-            if (!(name %in% outputNames)) {
-                outputNames <<- append(outputNames, name)
-            }
         },
         setSerializedGraph = function(graphText) {
             serializedGraph <<- graphText
@@ -371,8 +365,18 @@ TfBuilder <- setRefClass(
         setSerializedConfig = function(configText) {
             serializedConfig <<- configText
         },
+        addInputVar = function(name) {
+            inputNames <<- append(inputNames, name)
+        },
+        addOutputVar = function(name) {
+            outputNames <<- append(outputNames, name)
+        },
         generateConstructor = function() {
             ## Paste code, instead of creating a parse tree.
+            ## Note that we have decided to use the static pointer trick to avoid
+            ## crashes due to out-of-order destructors or unlinking. This
+            ## solution leaks memory (including GPU memory), but it is tricky and
+            ## error-prone to implement a non-leaking solution.
             paste(
                 paste0(' = *NimTf_Builder("', serializedGraph, '")'),
                 paste0('.NimTf_withConfig("', serializedConfig, '")'),
