@@ -270,15 +270,18 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            if (is.null(nimbleUserNamespace$tensorflowWrapperDll)) {
                                                compileTensorflowWrapper(showCompilerOutput = showCompilerOutput)
                                            }
-                                           # Version 1. Works locally, fails on travis.
-                                           # SHLIBcmd <- paste(SHLIBcmd, nimbleUserNamespace$tensorflowWrapperDll[['path']])
-                                           # Version 2. Fails.
-                                           # pkgLibs <- nimbleUserNamespace$tensorflowWrapperDll[['path']]
-				           # createMakevars(.useLib = .useLib, dir = dirName, .force = TRUE, pkgLibs = pkgLibs)
-                                           # Version 3. Fails.
-                                           # Sys.setenv(PKG_LIBS = nimbleUserNamespace$tensorflowWrapperDll[['path']])
-                                           # Version 4.
-                                           SHLIBcmd <- paste(SHLIBcmd, file.path(system.file(package = 'nimble'), 'CppCode', 'tensorflow.cpp'))
+                                           compileOnce <- FALSE  # TODO Compile tensorflow.cpp once and link against the .so file.
+                                           if (compileOnce) {
+                                               # This passes the the tensorflow wrapper .so as a compiler flag to R CMD SHLIB.
+                                               # This fails on travis because passing this linker flag overrides PKG_LIBS from Makevars.
+                                               # For more details, see http://www.hep.by/gnu/r-patched/r-exts/R-exts_96.html
+                                               # "Supplying linker commands as arguments to R CMD SHLIB will take precedence over PKG_LIBS in `Makevars'."
+                                               SHLIBcmd <- paste(SHLIBcmd, nimbleUserNamespace$tensorflowWrapperDll[['path']])
+                                           } else {
+                                               # This recompiles the tensorflow.cpp wrapper each time it is needed.
+                                               # This is inefficient, but works for now.
+                                               SHLIBcmd <- paste(SHLIBcmd, file.path(system.file(package = 'nimble'), 'CppCode', 'tensorflow.cpp'))
+                                           }
                                        }
 
                                        origSHLIBcmd <- SHLIBcmd
