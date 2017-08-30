@@ -400,7 +400,7 @@ RCfunProcessing <- setRefClass(
                 writeLines('***** READY FOR labelForEigenization *****')
                 browser()
             }
-
+            
             tryResult <- try(
                 exprClasses_labelForEigenization(compileInfo$nimExpr)
             )

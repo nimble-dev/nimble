@@ -80,7 +80,13 @@ cppMidOperators[['|']] <- ' || '
 for(v in c('$', ':')) cppMidOperators[[v]] <- NULL
 for(v in assignmentOperators) cppMidOperators[[v]] <- ' = '
 
-nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch','cppLiteral', 'cppComment')
+nimCppKeywordsThatFillSemicolon <- c(
+    '{',
+    'for',
+    ifOrWhile,
+    'nimSwitch',
+    'cppLiteral',
+    'cppComment')
 
 ## In the following list, the names are names in the parse tree (i.e. the name field in an exprClass object)
 ## and the elements are the name of the function to use to generate output for that name

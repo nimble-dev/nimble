@@ -7,7 +7,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                  ), 
                              methods = list(
                                  initialize = function(...) {
-                                     SEXPinterfaceCname <<- character()
+                                 	 SEXPinterfaceCname <<- character()
                                      Hincludes <<- c(Hincludes,
                                                      nimbleIncludeFile("NimArr.h"),
                                                      "<Rinternals.h>",

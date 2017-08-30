@@ -36,13 +36,11 @@ exprClass <- setRefClass('exprClass',
             assertions <<- list()
             eigMatrix <<- logical()
             cppADCode <<- FALSE
-            aux <<- list()
             callSuper(...)
         },
         ## This displays the parse tree using indentation on multiple rows of output
         ## It also checks that the caller and callerArgID fields are all correct
         ## For deparsing, call nimDeparse
-
         show = function(indent = '', showType = FALSE, showAssertions = FALSE, showToEigenize = FALSE) {
             ## optionally include size information
             sizeDisp <- if(showType) { 
