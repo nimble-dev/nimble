@@ -778,8 +778,8 @@ test_that('unary_function( inprod(vector1, vector2) ) compiles and works', {
     Cnf <- try(compileNimble(Rnf))
     expect_false(inherits(Cnf, 'try-error'),
                  info = 'step(inprod(a, b)) does not compile')
-    expect_equal(Cnf(),
-                 Rnf(),
+    expect_equal(Cnf$run(),
+                 Rnf$run(),
                  info = 'step(inprod(a, b)) compiles but gives wrong answer')
 }
 )
