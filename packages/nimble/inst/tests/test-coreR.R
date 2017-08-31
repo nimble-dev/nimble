@@ -761,6 +761,29 @@ returnTests <- list(
          outputType = quote(double(1))) 
 )
 
+## Regression test for Issue #563
+test_that('unary_function( inprod(vector1, vector2) ) compiles and works', {
+    nfDef <- nimbleFunction(
+        setup = function() {},
+        run = function() {
+            a <- rep(0, 5)
+            b <- rep(0, 5)
+            c <- step(inprod(a, b))
+            return(c)
+            returnType(integer())
+        }
+    )
+    Rnf <- nfDef()
+    ## safe use of try followed by expectation of type
+    Cnf <- try(compileNimble(Rnf))
+    expect_false(inherits(Cnf, 'try-error'),
+                 info = 'step(inprod(a, b)) does not compile')
+    expect_equal(Cnf(),
+                 Rnf(),
+                 info = 'step(inprod(a, b)) compiles but gives wrong answer')
+}
+)
+
 cTestsResults <- test_coreRfeature_batch(cTests, 'cTests') ##lapply(cTests, test_coreRfeature)
 blockTestsResults <- test_coreRfeature_batch(blockTests, 'blockTests') ##lapply(blockTests, test_coreRfeature)
 repTestsResults <- test_coreRfeature_batch(repTests, 'repTests') ## lapply(repTests, test_coreRfeature)
