@@ -69,13 +69,16 @@ exprClasses_insertAssertions <- function(code) {
                 if(length(beforeContents) > 0) {
                     ## The "while" is now embedded in newExpr, so it is in a different place in the AST.
                     newWhileBody <- newBracketExpr(
-                        args = list(code$
-                                    args[[i]]$ ## entry in original {
-                                    args[[length(beforeContents)+1]]$ ## entry in newExpr {
-                                    args[[2]],  ## body of while clause
-                                    beforeContents) ## new piece
+                        args = c(code$
+                                 args[[i]]$ ## entry in original {
+                                 args[[length(beforeContents)+1]]$ ## entry in newExpr {
+                                 args[2],  ## body of while clause, as list
+                                 lapply(beforeContents, copyExprClass)) ## new piece
                     )
-                    setArg(code$args[[i]], 2, newWhileBody)
+                    setArg(
+                        code$args[[i]]$args[[length(beforeContents)+1]],
+                        2,
+                        newWhileBody)
                 }
             }
         }
