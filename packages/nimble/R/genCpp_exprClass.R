@@ -100,16 +100,6 @@ exprTypeInfoClass <- setRefClass('exprTypeInfoClass',
     )
 )
 
-updateCallersExprClass <- function(code) {
-    for(i in seq_along(code$args)) {
-        if(inherits(code$args[[i]], 'exprClass')) {
-            code$args[[i]]$caller <- code
-            updateCallersExprClass(code$args[[i]])
-        }
-    }
-    code
-}
-
 copyExprClass <- function(original) {
     result <- original$copy(shallow = TRUE)
     ## shallow=FALSE does not deep-copy on list elements, so it is
