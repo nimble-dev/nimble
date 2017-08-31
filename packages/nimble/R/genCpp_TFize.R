@@ -322,9 +322,11 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     configProto <- tf$ConfigProto()
     configProto$inter_op_parallelism_threads <- threads;
     configProto$intra_op_parallelism_threads <- threads;
-    ## This works despite the error.
-    ## See https://github.com/rstudio/reticulate/issues/92
-    try(configProto$gpu_options$allow_growth <- TRUE)
+    ## This tryCatch works around the following bug in reticulate:
+    ## https://github.com/rstudio/reticulate/issues/92
+    tryCatch({
+        configProto$gpu_options$allow_growth <- TRUE
+    }, error = function(e) invisible(NULL))
 
     ## Serialize protos to strings.
     base64 <- reticulate::import('base64')
