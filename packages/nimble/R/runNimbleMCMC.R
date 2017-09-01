@@ -11,7 +11,7 @@
 #' and generates summary statistics.  This default behavior can be
 #' altered via a variety of arguments.  Following execution of the
 #' MCMC algorithms, returns a named list containing \code{samples} and
-#' \code{summary}
+#' \code{summary}. If runMCMC = FALSE, returns the model components.
 #'
 #' @param code The quoted code expression representing the model, such
 #'     as the return value from a call to \code{nimbleCode}).  No
@@ -44,6 +44,9 @@
 #' @param burnin Number of initial, post-thinning, MCMC iterations to discard.
 #' Default value is 10.
 #'
+#' #' @param nchains Number MCMC chains to run.
+#' Default value is 3.
+#'
 #' @param thin Thinning interval for the MCMC samples.  This applies
 #'     to all MCMC algorithms in the suite.  The thinning occurs prior
 #'     to the burnin samples being discarded.  Default value is 1.
@@ -63,6 +66,10 @@
 #' @return Returns a named list containing elements:
 #' samples: A matrix containing samples from each MCMC algorithm.
 #' summary: A matrix containing summary statistics for each variable and algorithm.
+#' If runMCMC = FALSE, returns a named list containing elements:
+#' R.model: NIMBLE model created by a call to  \code{nimbleModel()}
+#' C.mcmc: compiled NIMBLE model and MCMC created by a call to  \code{compileNimble()}
+#' mcmc.spec: defaut MCMC configuration for a given model created by a call to  \code{configureMCMC()}
 #'
 #' @examples
 #' \dontrun{
@@ -80,18 +87,18 @@
 #' @author L. Ponisio
 #' @export
 
-runNimbleMCMC <- function(code, ## model created by nimbleCode()
+runNimbleMCMC <- function(code,
                           constants,
                           data,
-                          inits, ## inital values for parameters to estimate
-                          monitors, ## vector of parameters to monitor
-                          niter = 1000, ## number of samples
+                          inits,
+                          monitors,
+                          niter = 1000,
                           thin=1,
                           burin=10,
                           nchains=3,
                           check = FALSE,
                           debug = FALSE,
-                          runMCMC = TRUE, ...){ ## thinning rate
+                          runMCMC = TRUE, ...){
     ## build model
     R.model <- nimbleModel(code = code,
                            constants = constants,
@@ -117,7 +124,15 @@ runNimbleMCMC <- function(code, ## model created by nimbleCode()
     if(runMCMC){
         ## run model
         message('running model')
-        samplesList <- runMCMC(C.mcmc, niter = niter, nburnin = burnin, nchains = nchains)
-    }
-    return(C.mcmc)
+        samplesList <- runMCMC(C.mcmc, niter = niter, nburnin =
+                                                          burnin, nchains = nchains)
+        return(samplesList)
+    } else{
+        model.components <- list(R.model = R.model,
+                                 mcmc.spec = mcmc.spec,
+                                 C.mcmc = C.mcmc)
+        return(model.components)
+        }
 }
+
+
