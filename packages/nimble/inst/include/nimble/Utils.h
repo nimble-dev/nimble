@@ -165,6 +165,7 @@ void nimStop();
 
 bool nimNot(bool x);
 
+// TODO(perrydv) Which functions are needed for link functions? All of these?
 // needed for link functions
 double ilogit(double x);
 double icloglog(double x);
@@ -184,7 +185,6 @@ double pairmin(double x1, double x2);
 //double phi(double x);
 int nimStep(double x); 
 double cube(double x);
-double inprod(double v1, double v2);
 
 inline double nimble_NaN() {
   return std::numeric_limits<double>::has_quiet_NaN
