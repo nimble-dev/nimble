@@ -731,13 +731,7 @@ sampler_HMC <- nimbleFunction(
                     qNew <- btNL$q3
             n <- n + btNL$n
             qDiff <- qR - qL
-            ## once github issue #538 "Error compiling step(inprod(x, y))" is resolved, use this line:
-            ##s <- btNL$s * step(inprod(qDiff, pL)) * step(inprod(qDiff, pR))
-            ## until then, here's the workaround:
-            temp1 <- inprod(qDiff, pL)                ## workaround   XXXXXXXXXXXXXXXXXX
-            temp2 <- inprod(qDiff, pR)                ## workaround   XXXXXXXXXXXXXXXXXX
-            s <- btNL$s * step(temp1) * step(temp2)   ## workaround   XXXXXXXXXXXXXXXXXX
-            ## END workaround
+            s <- btNL$s * step(inprod(qDiff, pL)) * step(inprod(qDiff, pR))
             j <- j + 1
         }
         values(model, target) <<- qNew
@@ -815,13 +809,7 @@ sampler_HMC <- nimbleFunction(
                     if(runif(1) < btNL2$n / (btNL1$n + btNL2$n))   btNL1$q3 <- btNL2$q3
                     btNL1$n <- btNL1$n + btNL2$n
                     qDiff <- btNL1$q2-btNL1$q1
-                    ## once github issue #538 "Error compiling step(inprod(x, y))" is resolved, use this line:
-                    ##btNL1$s <- btNL2$s * step(inprod(qDiff, btNL1$p1)) * step(inprod(qDiff, btNL1$p2))
-                    ## until then, here's the workaround:
-                    temp1 <- inprod(qDiff, btNL1$p1)                 ## workaround   XXXXXXXXXXXXXXXXXX
-                    temp2 <- inprod(qDiff, btNL1$p2)                 ## workaround   XXXXXXXXXXXXXXXXXX
-                    btNL1$s <- btNL2$s * step(temp1) * step(temp2)   ## workaround   XXXXXXXXXXXXXXXXXX
-                    ## END workaround
+                    btNL1$s <- btNL2$s * step(inprod(qDiff, btNL1$p1)) * step(inprod(qDiff, btNL1$p2))
                     btNL1$a <- btNL1$a + btNL2$a
                     btNL1$na <- btNL1$na + btNL2$na
                 }
