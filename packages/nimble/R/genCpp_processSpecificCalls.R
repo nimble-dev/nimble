@@ -136,8 +136,8 @@ declareHandler <- function(code, symTab) {
     if(length(typeDeclExpr$args) > 1) {
         newExprs <- vector('list', length(newNames))
         for(i in seq_along(newNames)) {
-            nameExpr <- exprClass(name = newNames[i], isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
-            newExprs[[i]] <- exprClass(name = 'setSize', isCall = TRUE, isName = FALSE,
+            nameExpr <- exprClass$new(name = newNames[i], isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
+            newExprs[[i]] <- exprClass$new(name = 'setSize', isCall = TRUE, isName = FALSE,
                                        isAssign = FALSE, args = c(list(nameExpr), sizeExprs),
                                        caller = code$caller, callerArgID = code$callerArgID)
             for(j in seq_along(newExprs[[i]]$args)) {
@@ -150,7 +150,7 @@ declareHandler <- function(code, symTab) {
         newBrackExpr <- newBracketExpr(newExprs)
         setArg(code$caller, code$callerArgID, newBrackExpr)
     } else {
-        code$caller$args[[code$callerArgID]] <- exprClass(name = 'blank', isCall = TRUE, isName = FALSE, isAssign = FALSE, args = list(),
+        code$caller$args[[code$callerArgID]] <- exprClass$new(name = 'blank', isCall = TRUE, isName = FALSE, isAssign = FALSE, args = list(),
                                                           caller = code$caller, callerArgID = code$callerArgID)
     }
 }

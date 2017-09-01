@@ -1,17 +1,3 @@
-dataCalcVirtual <- nimbleFunctionVirtual(
-  run = function() 
-    returnType(double())
-)
-
-calcDataNF <- nimbleFunction(
-  contains = dataCalcVirtual,
-  setup = function(model, node){},
-  run = function(){
-    returnType(double())
-    return(model$calculate(node))
-  }, where = getLoadingNamespace()
-)
-
 
 #' Create an MCMC function, from an MCMCconf object
 #'
@@ -52,7 +38,7 @@ calcDataNF <- nimbleFunction(
 #' 
 #' \code{calculateWAIC()} has a single arugment:
 #'
-#' \code{burnIn}: The number of iterations to subtract from the beginning of the posterior samples of the MCMC object for WAIC calculation.  Defaults to 0.
+#' \code{nburnin}: The number of iterations to subtract from the beginning of the posterior samples of the MCMC object for WAIC calculation.  Defaults to 0.
 #' 
 #' The \code{calculateWAIC} method calculates the WAIC of the model that the MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from Equations 5, 12, and 13 in Gelman (2014).  Note that the set of all parameters monitored by the mcmc object will be treated as \eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014).  All parameters downstream of the monitored parameters that are necessary to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of \eqn{theta}.
 #'
@@ -70,13 +56,13 @@ calcDataNF <- nimbleFunction(
 #' Cmcmc$run(10000)
 #' samples <- as.matrix(Cmcmc$mvSamples)
 #' head(samples)
-#' WAIC <- Cmcmc$calculateWAIC(burnIn = 1000)
+#' WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 #' }
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
     setup = function(conf, ...) {
     	if(inherits(conf, 'modelBaseClass'))
-    		conf <- configureMCMC(conf, ...)
+            conf <- configureMCMC(conf, ...)
 
     	else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
 
@@ -101,14 +87,10 @@ buildMCMC <- nimbleFunction(
         
         ## WAIC setup below:
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
-        dataCalcNFList <- nimbleFunctionList(dataCalcVirtual)
-        for(i in seq_along(dataNodes)){
-          dataCalcNFList[[i]] <- calcDataNF(model, dataNodes[i])
-        }
         dataNodeLength <- length(dataNodes)
         sampledNodes <- model$getVarNames(FALSE, colnames(as.matrix(mvSamples)))
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
-        },
+    },
 
     run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
         if(reset) {
@@ -158,29 +140,38 @@ buildMCMC <- nimbleFunction(
             returnType(double(1))
             return(samplerTimes[1:(length(samplerTimes)-1)])
         },
-        calculateWAIC = function(burnIn = integer(default = 0)){
-            numMCMCSamples <- getsize(mvSamples) - burnIn
-            if((numMCMCSamples) < 2){
-              print('Error, need more than 1 post burn-in MCMC sample.')
-              return(-Inf)
+        calculateWAIC = function(nburnin = integer(default = 0), burnIn = integer(default = 0)) {
+            if(burnIn != 0) {
+                print("Warning, `burnIn` argument is deprecated and will not be supported in future versions of NIMBLE. Please use the `nburnin` argument instead.")
+                if(nburnin == 0) {  ## if nburnin has not been changed from default, we replace with `burnIn` value here.
+                    nburnin <- burnIn
+                }
             }
-            logPredProbs <- numeric(numMCMCSamples)
+            numMCMCSamples <- getsize(mvSamples) - nburnin
+            if((numMCMCSamples) < 2) {
+                print('Error, need more than one post burn-in MCMC samples')
+                return(-Inf)
+            }
+            logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
             logAvgProb <- 0
             pWAIC <- 0
             currentVals <- values(model, sampledNodes)
-            for(i in 1:dataNodeLength){
-              meanPredProb <- 0
-              for(j in 1:numMCMCSamples){
-                copy(mvSamples, model, nodesTo = sampledNodes, row = j + burnIn)
+            for(i in 1:numMCMCSamples) {
+                copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburnin)
                 model$simulate(paramDeps)
-                logPredProbs[j] <- dataCalcNFList[[i]]$run()
-              }
-              meanPredProb <- mean(exp(logPredProbs))
-              pointLogPredVar <- sd(logPredProbs)^2
-              pWAIC <- pWAIC + pointLogPredVar
-              logAvgProb <- logAvgProb + log(meanPredProb)
+                model$calculate(dataNodes)
+                for(j in 1:dataNodeLength) {
+                    logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
+                }
             }
-            WAIC <- -2*(logAvgProb- pWAIC)
+            for(j in 1:dataNodeLength) {
+                maxLogPred <- max(logPredProbs[,j])
+                thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
+                logAvgProb <- logAvgProb + thisDataLogAvgProb
+                pointLogPredVar <- var(logPredProbs[,j])
+                pWAIC <- pWAIC + pointLogPredVar
+            }
+            WAIC <- -2*(logAvgProb - pWAIC)
             values(model, sampledNodes) <<- currentVals
             model$calculate(paramDeps)
             returnType(double())
@@ -190,7 +181,7 @@ buildMCMC <- nimbleFunction(
 )
 
 
-# This is a function that will weed out missing indices from the monitors
+## This is a function that will weed out missing indices from the monitors
 processMonitorNames <- function(model, nodes){
 	isLogProbName <- grepl('logProb', nodes)
 	expandedNodeNames <- model$expandNodeNames(nodes[!isLogProbName])

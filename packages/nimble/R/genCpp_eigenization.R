@@ -642,7 +642,7 @@ eigenize_cWiseAddSub <- function(code, symTab, typeEnv, workEnv) {
 }
 
 eigenizeArrayize <- function(code) {
-    newExpr <- exprClass(name = 'eigArray', args = list(code), eigMatrix = FALSE,
+    newExpr <- exprClass$new(name = 'eigArray', args = list(code), eigMatrix = FALSE,
                          isName = FALSE, isCall = TRUE, isAssign = FALSE,
                          nDim = code$nDim, sizeExprs = code$sizeExprs, type = code$type,
                          caller = code$caller, callerArgID = code$callerArgID)
@@ -652,7 +652,7 @@ eigenizeArrayize <- function(code) {
 }
 
 eigenizeMatricize <- function(code) {
-    newExpr <- exprClass(name = 'eigMatrix', args = list(code), eigMatrix = TRUE,
+    newExpr <- exprClass$new(name = 'eigMatrix', args = list(code), eigMatrix = TRUE,
                          isName = FALSE, isCall = TRUE, isAssign = FALSE,
                          nDim = code$nDim, sizeExprs = code$sizeExprs, type = code$type,
                          caller = code$caller, callerArgID = code$callerArgID)

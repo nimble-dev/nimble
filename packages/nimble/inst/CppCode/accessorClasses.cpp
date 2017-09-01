@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #include "nimble/accessorClasses.h"
 #include "nimble/RcppUtils.h"
 #include<sstream>
@@ -634,17 +655,26 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
 SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
   SEXP Sdim;
   PROTECT(Sdim = Rf_getAttrib(StableContents, R_DimSymbol));
-  if(LENGTH(Sdim) != 2) {PRINTF("Warning from populateIndexedNodeInfoTable: LENGTH(Sdim) != 2"); return(R_NilValue);}
+  if(LENGTH(Sdim) != 2) {
+    PRINTF("Warning from populateIndexedNodeInfoTable: LENGTH(Sdim) != 2");
+    UNPROTECT(1);
+    return R_NilValue;
+  }
   int nrow = INTEGER(Sdim)[0];
   int ncol = INTEGER(Sdim)[1];
   vector<indexedNodeInfo> *tablePtr = static_cast<vector<indexedNodeInfo> *>(R_ExternalPtrAddr(StablePtr));
   if(nrow == 0) {
     void *vptr=0;
     tablePtr->push_back(indexedNodeInfo(static_cast<int *>(vptr), 0, 0));
-    if(ncol != 0) {PRINTF("Warning from populateIndexedNodeInfoTable: nrow == 0 but ncol != 0.");}
+    if(ncol != 0) {
+      PRINTF("Warning from populateIndexedNodeInfoTable: nrow == 0 but ncol != 0.");
+    }
   } else {
-
-    if(!Rf_isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
+    if(!Rf_isNumeric(StableContents)) {
+      PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric");
+      UNPROTECT(1);
+      return R_NilValue;
+    }
     if(Rf_isInteger(StableContents)) {
       int *contentsPtr = INTEGER(StableContents);
       tablePtr->reserve(nrow);
@@ -660,7 +690,7 @@ SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
     }
   }
   UNPROTECT(1);
-  return(R_NilValue);
+  return R_NilValue;
 }
 
 SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP SintIsFromMV, SEXP SintIsToMV) {
