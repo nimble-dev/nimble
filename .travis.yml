@@ -11,16 +11,16 @@ cache:
 # We parallelize the tests into baches, and run only one batch on OS X.
 matrix:
   include:
-    #- os: linux
-    #  env: NIMBLE_TEST_BATCH=1
-    #- os: linux
-    #  env: NIMBLE_TEST_BATCH=2
-    #- os: linux
-    #  env: NIMBLE_TEST_BATCH=3
-    #- os: linux
-    #  env: NIMBLE_TEST_BATCH=4
-    #- os: linux
-    #  env: NIMBLE_TEST_BATCH=5
+    - os: linux
+      env: NIMBLE_TEST_BATCH=1
+    - os: linux
+      env: NIMBLE_TEST_BATCH=2
+    - os: linux
+      env: NIMBLE_TEST_BATCH=3
+    - os: linux
+      env: NIMBLE_TEST_BATCH=4
+    - os: linux
+      env: NIMBLE_TEST_BATCH=5
     - os: osx
       env: NIMBLE_TEST_BATCH=1
 
