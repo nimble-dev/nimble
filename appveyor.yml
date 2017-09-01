@@ -16,6 +16,9 @@ branches:
   only:
     - devel
 
+platform:
+  - x64  # Required by tensorflow binary installation.
+
 environment:
   global:
     USE_RTOOLS: true
@@ -40,6 +43,13 @@ after_build:
 test_script:
   - echo %cd%
   - dir
+  - python --version
+  - pip freeze --all
+  - pip install --upgrade --ignore-installed pip
+  - pip install --upgrade --ignore-installed setuptools
+  - pip freeze --all
+  # This script currently fails due to tensorflow installation problems.
+  # - Rscript install_requirements.R
   # The tests currently fail due to a problem sourcing test_utils.R.
   # - Rscript run_tests.R
 

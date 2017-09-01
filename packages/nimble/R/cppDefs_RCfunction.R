@@ -19,7 +19,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                        '<math.h>',
                                                        nimbleIncludeFile("EigenTypedefs.h"),
                                                        nimbleIncludeFile("Utils.h"),
-                                                       nimbleIncludeFile("accessorClasses.h"))
+                                                       nimbleIncludeFile("accessorClasses.h"),
+                                                       if(nimbleOptions('experimentalUseTensorflow')) nimbleIncludeFile("tensorflow.h") else character())
                                      CPPusings <<- c(CPPusings) 
                                      callSuper(...)
                                  },
