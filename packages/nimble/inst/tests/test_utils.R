@@ -43,6 +43,23 @@ temporarilyAssignInGlobalEnv <- function(value) {
     do.call('on.exit', list(rmCommand, add = TRUE), envir = parent.frame())
 }
 
+## Use this inside test_that() tests that require tensorflow.
+## If tensorflow is not installed, then the test will be skipped.
+## If tensorflow is installed, then experimentalUseTensorflow will be be set to
+## TRUE for the duration of this one test.
+temporarilyEnableTensorflow <- function() {
+    skip_if_not_installed('tensorflow')
+    old <- nimbleOptions()
+    cleanup <- substitute(do.call(nimbleOptions, old))
+    do.call(on.exit, list(cleanup, add = TRUE), envir = parent.frame())
+    nimbleOptions(experimentalUseTensorflow = TRUE)
+}
+
+withTensorflowEnabled <- function(arg) {
+    temporarilyEnableTensorflow()
+    return(arg)
+}
+
 withTempProject <- function(code) {
     code <- substitute(code)
     project <- nimble:::nimbleProjectClass()
@@ -397,12 +414,12 @@ test_math_internal <- function(param, info, verbose = TRUE, size = 3, dirName = 
   if(is.logical(out)) out <- as.numeric(out)
   if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
 
-  infoR <- paste0(info, ": (R vs Nimble DSL)")
-  wrap_if_matches(param$xfail, info, expect_failure, {
+  infoR <- paste0(info, ": R vs Nimble DSL")
+  wrap_if_matches(param$xfail, infoR, expect_failure, {
       expect_equal(out, out_nfR, info = infoR)
   })
-  infoC <- paste0(info, ": (R vs Nimble Cpp)")
-  wrap_if_matches(param$xfail, info, expect_failure, {
+  infoC <- paste0(info, ": R vs Nimble Cpp")
+  wrap_if_matches(param$xfail, infoC, expect_failure, {
       expect_equal(out, out_nfC, info = infoC)
   })
 
