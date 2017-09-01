@@ -201,19 +201,31 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
 }
 
 ## This function recurses through a block of code and expands any submodels
-codeProcessModelMacros <- function(code, envir = parent.frame()) {
+codeProcessModelMacros <- function(code,
+                                   recursionLabels = character()) {
+    expandRecursionLabels <- function(possibleMacroName,
+                                      labels = character()) {
+        paste0(possibleMacroName,
+               if(length(labels) > 0)
+                   paste0('(expanded from ',
+                          paste(labels, collapse = '-->'),
+                          ')')                          
+               else
+                   character()
+               )
+    }
     codeLength <- length(code)
     ## First check if this is the start of a curly-bracketed block
     if(code[[1]] == '{') {
         if(codeLength > 1)
             ## Recurse on each line
             for(i in 2:codeLength)
-                code[[i]] <- codeProcessModelMacros(code[[i]], envir)
+                code[[i]] <- codeProcessModelMacros(code[[i]])
         return(code)
     }
     ## If this is a for loop, recurse on the body of the loop
     if(code[[1]] == 'for') {
-        code[[4]] <- codeProcessModelMacros(code[[4]], envir)
+        code[[4]] <- codeProcessModelMacros(code[[4]])
         return(code)
     }
     ## Check if this line invokes a submodel.
@@ -225,28 +237,49 @@ codeProcessModelMacros <- function(code, envir = parent.frame()) {
     ## The first version is more BUGS-like.
     ## The second version allows more full control.
 
-    ## Check for first version:
+    ## Initialize possibleMacroName assuming version (ii):
     possibleMacroName <- deparse(code[[1]])
+    ## If it is really version (i), possibleMacroName will be
+    ## ~ or <- and should be updated to the call on the right-hand side:
     if(possibleMacroName %in% c('<-', '~')) {
         possibleMacroName <- deparse(code[[3]][[1]])
     }
     if(exists(possibleMacroName)) { ## may need to provide an envir argument
         possibleMacro <- get(possibleMacroName) ## ditto
         if(inherits(possibleMacro, "model_macro")) {
-            expandedInfo <- possibleMacro$process(code)
+            expandedInfo <- try(possibleMacro$process(code))
+            if(inherits(expandedInfo, 'try-error'))
+                stop(paste0("Model macro ",
+                            expandRecursionLabels(
+                                possibleMacroName,
+                                recursionLabels
+                            ),
+                            " failed."),
+                     call. = FALSE)
             if(!is.list(expandedInfo))
-                stop(paste0("submodel ",
-                            possibleMacroName,
+                stop(paste0("Model macro ",
+                            expandRecursionLabels(
+                                possibleMacroName,
+                                recursionLabels
+                            ),
                             " should return a list with an element named ",
-                            "'code'.  It did not return a list."))
+                            "'code'.  It did not return a list."),
+                     call. = FALSE)
             if(!is.call(expandedInfo[['code']]))
-                stop(paste0("submodel ",
-                            possibleMacroName,
+                stop(paste0("Model macro ",
+                            expandRecursionLabels(
+                                possibleMacroName,
+                                recursionLabels
+                            ),
                             " should return a list with an element named ",
-                            "'code' that is a call."))
-            ## possibly extract other content in the future
-            recursedNewCode <- codeProcessModelMacros(expandedInfo$code, envir)
-            return(recursedNewCode)
+                            "'code' that is a call."),
+                     call. = FALSE)
+            ## Return object is a list so we can ossibly extract other
+            ## content in the future.  We recurse on the returned code
+            ## to expand macros that it might contain.
+            code <- codeProcessModelMacros(expandedInfo$code,
+                                           c(recursionLabels, possibleMacroName)
+                                           )
         }
     }
     code

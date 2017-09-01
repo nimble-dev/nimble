@@ -6,9 +6,9 @@ context("Testing model macros")
 
 test_that('Macro expansion 1',
 {
-    ## This converts a ~ testMacro1(b)
+    ## This converts a ~ testMacro(b)
     ## to inputs as (stoch = TRUE, LHS = a, b)
-    testMacro1 <- nimble:::model_macro_builder(
+    testMacro <- nimble:::model_macro_builder(
         function(stoch, LHS, RHSarg) {
             ans <- substitute(
                 OP(LHS, dnorm(RHSarg, 1)),
@@ -20,18 +20,18 @@ test_that('Macro expansion 1',
         use3pieces = TRUE, ## default
         unpackArgs = TRUE  ## default
     )
-    temporarilyAssignInGlobalEnv(testMacro1)
+    temporarilyAssignInGlobalEnv(testMacro)
     
     expect_identical(
         nimble:::codeProcessModelMacros(
-            quote(x[1] ~ testMacro1(y[1]))
+            quote(x[1] ~ testMacro(y[1]))
         ),
         quote(x[1] ~ dnorm(y[1], 1))
     )
     
     model1 <- nimbleModel(
         nimbleCode({
-            x[1] ~ testMacro1(y[1])
+            x[1] ~ testMacro(y[1])
         })
     )
     expect_identical(
@@ -42,13 +42,13 @@ test_that('Macro expansion 1',
     model2 <- nimbleModel(
         nimbleCode({
             for(i in 1:3)
-                x[i] ~ testMacro1(y[i])
+                x[i] ~ testMacro(y[i])
             for(j in 1:3) {
-                a[j] ~ testMacro1(b[j])
+                a[j] ~ testMacro(b[j])
             }
             for(i in 1:3)
                 for(j in 1:3)
-                    f[i,j] ~ testMacro1(g[i])
+                    f[i,j] ~ testMacro(g[i])
         })
     )
     expandedCode <- model2$getCode()
@@ -69,11 +69,12 @@ test_that('Macro expansion 1',
 
 test_that('Macro expansion 2',
 {
-    ## Like testMacro1 but with unpackArgs = FALSE.
-    ## This takes a ~ testMacro2(b) with arguments (stoch = TRUE, LHS = a, RHS = b)
-    testMacro2 <- nimble:::model_macro_builder(
+    ## Like testMacro above but with unpackArgs = FALSE.
+    ## This takes a ~ testMacro(b) with arguments (stoch = TRUE, LHS = a, RHS = b)
+    testMacro <- nimble:::model_macro_builder(
         function(stoch, LHS, RHS) {
-            if(RHS[[1]] != "testMacro2") stop("Problem with how testMacro2 was called")
+            if(RHS[[1]] != "testMacro")
+                stop("Problem with how testMacro was called")
             RHS[[1]] <- as.name('step') ## something valid
             ans <- substitute(
                 OP(LHS, dnorm(RHS, 1)),
@@ -86,11 +87,11 @@ test_that('Macro expansion 2',
         unpackArgs = FALSE  ## NON-default
     )
     
-    temporarilyAssignInGlobalEnv(testMacro2)
+    temporarilyAssignInGlobalEnv(testMacro)
 
     expect_identical(
         nimble:::codeProcessModelMacros(
-            quote(x[1] ~ testMacro2(y[1]))
+            quote(x[1] ~ testMacro(y[1]))
         ),
         quote(x[1] ~ dnorm(step(y[1]), 1))
     )
@@ -98,7 +99,7 @@ test_that('Macro expansion 2',
     
     model <- nimbleModel(
         nimbleCode({
-            x[1] ~ testMacro2(y[1])
+            x[1] ~ testMacro(y[1])
         })
     )
     expect_identical(
@@ -110,9 +111,9 @@ test_that('Macro expansion 2',
 test_that('Macro expansion 3',
 {
     ## Like expansion 1, but with multiple named arguments.
-    ## This takes a ~ testMacro3(newVar = b, newIndex = 3)
+    ## This takes a ~ testMacro(newVar = b, newIndex = 3)
     ## as arguments (stoch = TRUE, LHS = a, newVar = b, newIndex = 3)
-    testMacro3 <- nimble:::model_macro_builder(
+    testMacro <- nimble:::model_macro_builder(
         function(stoch, LHS, newIndex, newVar) {
         RHS <- substitute(
             X[I],
@@ -130,18 +131,18 @@ test_that('Macro expansion 3',
         unpackArgs = TRUE  ## default
     )
 
-    temporarilyAssignInGlobalEnv(testMacro3)
+    temporarilyAssignInGlobalEnv(testMacro)
     
     expect_identical(
         nimble:::codeProcessModelMacros(
-            quote(x[1] ~ testMacro3(newVar = z, newIndex = 5))
+            quote(x[1] ~ testMacro(newVar = z, newIndex = 5))
         ),
         quote(x[1] ~ dnorm(z[5], 1))
     )
 
     model <- nimbleModel(
         nimbleCode({
-            x[1] ~ testMacro3(newVar = z, newIndex = 5)
+            x[1] ~ testMacro(newVar = z, newIndex = 5)
         })
     )
     expect_identical(
@@ -153,10 +154,10 @@ test_that('Macro expansion 3',
 test_that('Macro expansion 4',
 {
     ## set use3pieces FALSE, unpackArgs FALSE.
-    ## This takes a ~ testMacro4(b) as a single argument,
-    ## (code = a ~ testMacro4(b)).
+    ## This takes a ~ testMacro(b) as a single argument,
+    ## (code = a ~ testMacro(b)).
     ## It does not even need to be in a line with '~' or '<-'.
-    testMacro4 <- nimble:::model_macro_builder(
+    testMacro <- nimble:::model_macro_builder(
         function(code) {
             code[[3]][[1]] <- as.name('dnorm')
             list(code = code)
@@ -165,18 +166,18 @@ test_that('Macro expansion 4',
         unpackArgs = FALSE  ## NON-default
     )
 
-    temporarilyAssignInGlobalEnv(testMacro4)
+    temporarilyAssignInGlobalEnv(testMacro)
 
     expect_identical(
         nimble:::codeProcessModelMacros(
-            quote(x[1] ~ testMacro4(y[1], 1))
+            quote(x[1] ~ testMacro(y[1], 1))
         ),
         quote(x[1] ~ dnorm(y[1], 1))
     )
     
     model <- nimbleModel(
         nimbleCode({
-            x[1] ~ testMacro4(y[1], 1)
+            x[1] ~ testMacro(y[1], 1)
         })
     )
     expect_identical(
@@ -190,8 +191,8 @@ test_that('Macro expansion 5',
 {
     ## This takes a line of code split into arguments.
     ## It is designed for a line without '~' or '<-'.
-    ## It takes testMacro5(arg1, arg2, arg3)
-    testMacro5 <- nimble:::model_macro_builder(
+    ## It takes testMacro(arg1, arg2, arg3)
+    testMacro <- nimble:::model_macro_builder(
         function(arg1, arg2, arg3) {
             code <- substitute(A <- B + C, list(A = arg1, B = arg2, C = arg3))
             list(code = code)
@@ -200,23 +201,131 @@ test_that('Macro expansion 5',
         unpackArgs = TRUE  ## default
     )
 
-    temporarilyAssignInGlobalEnv(testMacro5)
+    temporarilyAssignInGlobalEnv(testMacro)
     
     expect_identical(
         nimble:::codeProcessModelMacros(
-            quote(testMacro5(x[1], y[2], z[i, j]))
+            quote(testMacro(x[1], y[2], z[i, j]))
         ),
         quote(x[1] <- y[2] + z[i, j])
     )
 
     model <- nimbleModel(
         nimbleCode({
-            testMacro5(a[1], b[2], c[3])
+            testMacro(a[1], b[2], c[3])
         })
     )
     expect_identical(
         model$getCode()[[2]],
         quote(a[1] <- b[2] + c[3])
     )
+})
+
+test_that('Macro expansion 6 (recursive macro expansion)',
+{
+    testMacroInner <- nimble:::model_macro_builder(
+        function(stoch, LHS, RHSarg) {
+            ans <- substitute(
+                OP(LHS, dnorm(RHSarg, 1)),
+                list(LHS = LHS, RHSarg = RHSarg,
+                     OP = if(stoch) as.name('~') else as.name('<-'))
+            )
+            list(code = ans)
+        },
+        use3pieces = TRUE, ## default
+        unpackArgs = TRUE  ## default
+    )
+    temporarilyAssignInGlobalEnv(testMacroInner)
+    
+    ## a ~ testMacroOuter(b)
+    ## becomes a ~ testMacroInner(b)
+    testMacroOuter <- nimble:::model_macro_builder(
+        function(code) {
+            code[[3]][[1]] <- as.name('testMacroInner')
+            list(code = code)
+        },
+        use3pieces = FALSE, ## NON-default
+        unpackArgs = FALSE  ## NON-default
+    )
+    temporarilyAssignInGlobalEnv(testMacroOuter)
+    
+    expect_identical(
+        nimble:::codeProcessModelMacros(
+            quote(x[1] ~ testMacroOuter(y[1]))
+        ),
+        quote(x[1] ~ dnorm(y[1], 1))
+    )
+
+
+    model <- nimbleModel(
+        nimbleCode({
+            x[1] ~ testMacroOuter(y[1])
+        })
+    )
+
+    expect_identical(
+        model$getCode()[[2]],
+        quote(x[1] ~ dnorm(y[1], 1))
+    )
+})
+
+test_that(paste0('Macro expansion 7 (correct trapping of ',
+                 'failure inrecursive macro expansion)'),
+{
+    ## test of failure in recursive expansion
+    ## test of recursive expansion:
+    ## This a ~ testMacroInner(b)
+    ## with inputs as (stoch = TRUE, LHS = a, b)
+    testMacroInner <- nimble:::model_macro_builder(
+        function(stoch, LHS, RHSarg) {
+            ans <- substitute(
+                OP(LHS, dnorm(RHSarg, 1)),
+                list(LHS = LHS, RHSarg = RHSarg,
+                     OP = if(stoch) as.name('~') else as.name('<-'))
+            )
+            list(code = ans)
+        },
+        use3pieces = TRUE, ## default
+        unpackArgs = TRUE  ## default
+    )
+
+    ## a ~ testMacroOuter(b)
+    ## becomes a ~ testMacroInner(b)
+    testMacroOuter <- nimble:::model_macro_builder(
+        function(code) {
+            code[[3]][[1]] <- as.name('testMacroInner')
+            list(code = code)
+        },
+        use3pieces = FALSE, ## NON-default
+        unpackArgs = FALSE  ## NON-default
+    )
+
+    ## The expect_failure mechanism does not allow to check the error
+    ## message returned from successful error-trapping.  Hence we use
+    ## this try(), which is potentially dangerous for masking errors
+    ## but in this case is safe because we follow it with an
+    ## expectation that an error did occur.
+    ans <- try(nimble:::codeProcessModelMacros(
+        quote(x[1] ~ testMacroOuter(y[1], 1)
+              ## second arg triggers
+              ## failure for testing
+              )))
+    expect_true(inherits(ans, 'try-error'),
+                'failure occurred when intended')
+    expect_identical(as.character(ans),
+                     "Error : Model macro testMacroInner(expanded from testMacroOuter) failed.\n")
+
+    
+    ans <- try(
+        nimbleModel(
+            nimbleCode({
+                x[1] ~ testMacroOuter(y[1], 1)
+            })
+        )
+    )
+    expect_true(inherits(ans, 'try-error'),
+                'failure occurred when intended')
+    expect_identical(as.character(ans),
+                     "Error : Model macro testMacroInner(expanded from testMacroOuter) failed.\n")
 })
 
