@@ -7,7 +7,7 @@
 nimbleModel(code, constants = list(), data = list(), inits = list(),
   dimensions = list(), returnDef = FALSE, where = globalenv(),
   debug = FALSE, check = getNimbleOption("checkModel"), calculate = TRUE,
-  name, userEnv = parent.frame())
+  name = NULL, userEnv = parent.frame())
 }
 \arguments{
 \item{code}{code for the model in the form returned by \code{\link{nimbleCode}} or (equivalently) \code{quote}}
@@ -35,10 +35,10 @@ nimbleModel(code, constants = list(), data = list(), inits = list(),
 \item{userEnv}{environment in which if-then-else statements in BUGS code will be evaluated if needed information not found in \code{constants}; intended primarily for internal use only}
 }
 \description{
-processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model or model definition.
+processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model (see \code{\link{modelBaseClass}}) or model definition.
 }
 \details{
-See the User Manual or \code{help(modelBaseClass)} for information about manipulating NIMBLE models created by \code{nimbleModel}, including methods that operate on models, such as \code{getDependencies}.
+See the User Manual or \code{help(\link{modelBaseClass})} for information about manipulating NIMBLE models created by \code{nimbleModel}, including methods that operate on models, such as \code{getDependencies}.
 
 The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the User Manual for more information.
 

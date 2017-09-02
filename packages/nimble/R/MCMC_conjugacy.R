@@ -821,7 +821,11 @@ dependentClass <- setRefClass(
         },
         initialize_neededParamsForPosterior = function() {
             posteriorVars <- unique(unlist(lapply(contributionExprs, all.vars)))
-            neededParamsForPosterior <<- unique(c(param, posteriorVars[!(posteriorVars %in% c('value', 'coeff', 'offset'))]))
+            ## Formerly, we always included the target 'param' in 'neededParamsForPosterior'.
+            ## Not certain why, it wasn't necessary in many cases, e.g., dbeta-dbinom conjugacy.  Excluding it now.
+            ## -DT, August 2017
+            ##neededParamsForPosterior <<- unique(c(param, posteriorVars[!(posteriorVars %in% c('value', 'coeff', 'offset'))]))
+            neededParamsForPosterior <<- setdiff(posteriorVars, c('value', 'coeff', 'offset'))
         }
     )
 )
