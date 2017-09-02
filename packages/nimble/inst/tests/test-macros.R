@@ -270,7 +270,7 @@ test_that('Macro expansion 6 (recursive macro expansion)',
 })
 
 test_that(paste0('Macro expansion 7 (correct trapping of ',
-                 'failure inrecursive macro expansion)'),
+                 'failure in recursive macro expansion)'),
 {
     ## test of failure in recursive expansion
     ## test of recursive expansion:
@@ -288,7 +288,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
         use3pieces = TRUE, ## default
         unpackArgs = TRUE  ## default
     )
-
+    temporarilyAssignInGlobalEnv(testMacroInner)
     ## a ~ testMacroOuter(b)
     ## becomes a ~ testMacroInner(b)
     testMacroOuter <- nimble:::model_macro_builder(
@@ -299,6 +299,7 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
         use3pieces = FALSE, ## NON-default
         unpackArgs = FALSE  ## NON-default
     )
+    temporarilyAssignInGlobalEnv(testMacroOuter)
 
     ## The expect_failure mechanism does not allow to check the error
     ## message returned from successful error-trapping.  Hence we use
@@ -329,3 +330,73 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
                      "Error : Model macro testMacroInner(expanded from testMacroOuter) failed.\n")
 })
 
+test_that('duplicate variables from macro expansion error-trapped correctly',
+{
+    ## from roxygen example
+    flat_normal_priors <- nimble:::model_macro_builder(
+        function(...) {
+            allVars <- list(...)
+            priorDeclarations <- lapply(allVars,
+                                        function(x)
+                                            substitute(VAR ~ dnorm(0, sd = 1000),
+                                                       list(VAR = x)))
+            newCode <- quote({})
+            newCode[2:(length(allVars)+1)] <- priorDeclarations
+            list(code = newCode)
+        },
+        use3pieces = FALSE,
+        unpackArgs = TRUE
+    )
+    temporarilyAssignInGlobalEnv(flat_normal_priors)
+    ## Safe use of try due to immediate next test
+    model <- try(nimbleModel(
+        nimbleCode(
+        {
+            flat_normal_priors(mu, beta, gamma)
+            mu ~ dexp(4)
+        }
+        ))
+        )
+
+    expect_true(inherits(model, 'try-error'),
+                'error with duplicate name from macro expansion trapped\n')
+    expect_true(grepl("There are multiple definitions for nodes:mu",
+                      as.character(model)),
+                'error with duplicate name emits correct message\n')
+})
+
+test_that('duplicate nested indices from macro expansion error-trapped correctly',
+{
+    all_dnorm <- nimble:::model_macro_builder(
+        function(stoch, LHS, RHSvar, start, end, sd = 1) {
+            newCode <- substitute(
+                for(i in START:END) {
+                    LHS[i] ~ dnorm(RHSvar[i], SD)
+                },
+                list(START = start,
+                     END = end,
+                     LHS = LHS,
+                     RHSvar = RHSvar,
+                     SD = sd))
+            list(code = newCode)
+        },
+        use3pieces = TRUE,
+        unpackArgs = TRUE 
+    )
+    temporarilyAssignInGlobalEnv(all_dnorm)
+    ## Safe use of try due to immediately next test
+    model <- try(nimbleModel(
+        nimbleCode(
+        {
+            for(i in 1:3)
+                x ~ all_dnorm(mu, start = 1, end = 10)        
+        }
+        ))
+        )
+    
+    expect_true(inherits(model, 'try-error'),
+                'error with duplicate nested indices from macro expansion trapped\n')
+    expect_true(grepl("Variable i used multiple times as for loop index",
+                      as.character(model)),
+                'error with duplicate nested indices emits correct message\n')
+})
