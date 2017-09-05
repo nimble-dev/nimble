@@ -73,11 +73,11 @@ buildMCMC <- nimbleFunction(
         for(i in seq_along(conf$samplerConfs))
             samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
 
-        monitors  <- processMonitorNames(model, conf$monitors)
+        monitors <- processMonitorNames(model, conf$monitors)
         monitors2 <- processMonitorNames(model, conf$monitors2)
-        thin  <- conf$thin
+        thin <- conf$thin
         thin2 <- conf$thin2
-        mvSamplesConf  <- conf$getMvSamplesConf(1)
+        mvSamplesConf <- conf$getMvSamplesConf(1)
         mvSamples2Conf <- conf$getMvSamplesConf(2)
         mvSamples <- modelValues(mvSamplesConf)
         mvSamples2 <- modelValues(mvSamples2Conf)
@@ -99,13 +99,13 @@ buildMCMC <- nimbleFunction(
             nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
             for(i in seq_along(samplerFunctions))
                 samplerFunctions[[i]]$reset()
-            mvSamples_offset  <- 0
+            mvSamples_offset <- 0
             mvSamples2_offset <- 0
             resize(mvSamples,  niter/thin)
             resize(mvSamples2, niter/thin2)
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
         } else {
-            mvSamples_offset  <- getsize(mvSamples)
+            mvSamples_offset <- getsize(mvSamples)
             mvSamples2_offset <- getsize(mvSamples2)
             resize(mvSamples,  mvSamples_offset  + niter/thin)
             resize(mvSamples2, mvSamples2_offset + niter/thin2)
@@ -125,7 +125,7 @@ buildMCMC <- nimbleFunction(
             else 
                 for(i in seq_along(samplerFunctions))
                     samplerFunctions[[i]]$run()
-            if(iter %% thin  == 0)
+            if(iter %% thin == 0)
                 nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thin,  nodes = monitors)
             if(iter %% thin2 == 0)
                 nimCopy(from = model, to = mvSamples2, row = mvSamples2_offset + iter/thin2, nodes = monitors2)

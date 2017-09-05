@@ -25,7 +25,7 @@ bootFStep <- nimbleFunction(
     thisNode <- nodes[iNode]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+    thisData <- model$getDependencies(thisNode, dataOnly = TRUE)
     t <- iNode  # current time point
     # Get names of xs node for current and previous time point (used in copy)
     if(saveAll == 1){
@@ -70,7 +70,7 @@ bootFStep <- nimbleFunction(
       simulate(model, thisNode)
       copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row = i)
       calculate(model, thisDeterm)
-      wts[i]  <- calculate(model, thisData)
+      wts[i] <- calculate(model, thisData)
       if(is.nan(wts[i])){
         out[1] <- -Inf
         out[2] <- 0
@@ -235,7 +235,7 @@ buildBootstrapFilter <- nimbleFunction(
                    rep(",", info$nDim - timeIndex),"]", sep="")
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimensions of latent states varies')
-    vars <- model$getVarNames(nodes =  nodes)  # need var names too
+    vars <- model$getVarNames(nodes = nodes)  # need var names too
     
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
     if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to work")
@@ -257,7 +257,7 @@ buildBootstrapFilter <- nimbleFunction(
       size$wts <- length(dims)
       if(smoothing == TRUE)
         size$wts <- 1  ##  only need one weight per particle (at time T) if smoothing == TRUE
-      mvWSamples  <- modelValues(modelValuesConf(vars = names,
+      mvWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -275,7 +275,7 @@ buildBootstrapFilter <- nimbleFunction(
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- 1
-      mvWSamples  <- modelValues(modelValuesConf(vars = names,
+      mvWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       names <- names[1]

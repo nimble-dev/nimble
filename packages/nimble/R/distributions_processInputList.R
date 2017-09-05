@@ -4,11 +4,11 @@ distributionsClass <- setRefClass(
     Class = 'distributionsClass',
     
     fields = list(
-        distObjects   = 'ANY',		#'list',      ## a list of distClass objects, names of each element are the BUGS distribution name
-        namesVector   = 'ANY',		#'character',      ## a character vector of the (BUGS) names of all distributions
+        distObjects = 'ANY',		#'list',      ## a list of distClass objects, names of each element are the BUGS distribution name
+        namesVector = 'ANY',		#'character',      ## a character vector of the (BUGS) names of all distributions
         namesExprList = 'ANY',		#'list',   ## a list of the expressions of the (BUGS) names of all distributions
-        matchCallEnv  = 'ANY',		#'environment',   ## an environment containing distribution functions which run match.call()
-        translations  = 'ANY'		#'list'   ## a list of the (R) d-dist and r-dist function names. element names are BUGS distributions
+        matchCallEnv = 'ANY',		#'environment',   ## an environment containing distribution functions which run match.call()
+        translations = 'ANY'		#'list'   ## a list of the (R) d-dist and r-dist function names. element names are BUGS distributions
     ),
     
     methods = list(

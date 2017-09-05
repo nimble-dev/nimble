@@ -55,7 +55,7 @@ auxFStep <- nimbleFunction(
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
     thisNode <- nodes[iNode]
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE) 
+    thisData <- model$getDependencies(thisNode, dataOnly = TRUE) 
     #current time point
     t <- iNode
     # Get names of x and xs node for current and previous time point,
@@ -140,7 +140,7 @@ auxFStep <- nimbleFunction(
       simulate(model, thisNode)  # simulate from x_t+1 | x_t
       copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row=i)
       calculate(model, thisDeterm)
-      ll[i]  <- calculate(model, thisData)  # get p(y_t+1 | x_t+1)
+      ll[i] <- calculate(model, thisData)  # get p(y_t+1 | x_t+1)
       if(is.nan(ll[i])){
         return(-Inf)
       }
@@ -293,7 +293,7 @@ buildAuxiliaryFilter <- nimbleFunction(
                    rep(",", info$nDim - timeIndex),"]", sep="")
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimensions of latent states varies')
-    vars <- model$getVarNames(nodes =  nodes)  # need var names too
+    vars <- model$getVarNames(nodes = nodes)  # need var names too
     
     my_initializeModel <- initializeModel(model, silent = silent)
     
@@ -316,7 +316,7 @@ buildAuxiliaryFilter <- nimbleFunction(
       if(smoothing == T){
         size$wts <- 1 ##  only need one weight per particle (at time T) if smoothing == TRUE
       }
-      mvWSamples  <- modelValues(modelValuesConf(vars = names,
+      mvWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -334,7 +334,7 @@ buildAuxiliaryFilter <- nimbleFunction(
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- 1
-      mvWSamples  <- modelValues(modelValuesConf(vars = names,
+      mvWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
     }

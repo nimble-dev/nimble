@@ -506,7 +506,7 @@ nimCopy_keywordInfo <- keywordInfoClass(
             }
             runCode <- substitute(nimCopy(copierVector = COPIER_VECTOR, rowFrom = ROWFROM, rowTo = ROWTO, unused = UNUSED), 
                                   list(COPIER_VECTOR = as.name(copierVector_name),
-                                       ROWFROM = rowFromArg, ROWTO = rowToArg, UNUSED  = unusedArg))
+                                       ROWFROM = rowFromArg, ROWTO = rowToArg, UNUSED = unusedArg))
         }
         runCode <- runCode[as.character(runCode) != 'NA']
         return(runCode)
@@ -954,9 +954,9 @@ copierVector_setupCodeTemplate <- setupCodeTemplateClass(
     makeCodeSubList = function(resultName, argList) {
         list(COPIERNAME = as.name(resultName),
              ACCESS_FROM = as.name(argList$accessFrom_name),
-             ACCESS_TO   = as.name(argList$accessTo_name),
-             ISMVFROM    = as.integer(argList$isMVfrom),
-             ISMVTO      = as.integer(argList$isMVto)) 
+             ACCESS_TO = as.name(argList$accessTo_name),
+             ISMVFROM = as.integer(argList$isMVfrom),
+             ISMVTO = as.integer(argList$isMVto)) 
     })
     
 
@@ -1094,7 +1094,7 @@ singleModelIndexAccess_SetupTemplate <- setupCodeTemplateClass(
 	
 map_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are code, model
-	makeName  = code2Name_fromArgList,
+	makeName = code2Name_fromArgList,
 	makeOtherNames = function(name, argList){
 		output <- character()
 		output[1] = paste0(name, '_strides')

@@ -308,7 +308,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   # process initial values
 
   if(useInits) {
-    initsFile <-  NULL
+    initsFile <- NULL
     if(is.character(inits)) {
       initsFile <- if(skip.file.path) inits else file.path(dir, inits)
       if(!file.exists(initsFile))
@@ -354,7 +354,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   # process data and constants input
   # since data and constants are mixed together in JAGS and BUGS, we take the same approach here (unfortunately)
 
-  dataFile <-  NULL
+  dataFile <- NULL
   if(is.character(data)) {
     dataFile <- if(skip.file.path) data else file.path(dir, data)
     if(!file.exists(dataFile))

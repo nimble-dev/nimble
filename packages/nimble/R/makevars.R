@@ -67,9 +67,9 @@ function(target, vars = character(), .useLib = UseLibraryMakevars)
     cppad_inc <- paste0("'-I\"", nimbleOptions('CppADdir'), "\"'")
     vars = c(EIGEN_INC = "", ## AutoconfInfo$eigenInc, ## we used to generate an AutoconfInfo list. We'll need a new mechanism if a local Makevars needs to be generated and the user has non-nimble-provided Eigen
              CPPAD_INC = "", ##cppad_inc,  ## Currently, require cppad folder to be placed within include folder.  Todo: get CppAD_directory functional.
-             NIMBLE_INC_DIR =  system.file("include", package = "nimble"),
-             NIMBLE_LIB_DIR =  system.file("CppCode", package = "nimble"),        
-             NIMBLE_DIR =  system.file(package = "nimble"),
+             NIMBLE_INC_DIR = system.file("include", package = "nimble"),
+             NIMBLE_LIB_DIR = system.file("CppCode", package = "nimble"),        
+             NIMBLE_DIR = system.file(package = "nimble"),
              RPATH = sprintf("-rpath %s", system.file("CppCode", package = "nimble")),
              vars)
     varDefs = mapply(function(id, val) paste(id, val, sep = "="), names(vars), vars)

@@ -19,7 +19,7 @@ BUGScontextClass <- setRefClass('BUGScontextClass',
                                     ),
                                 
                                 methods = list(
-                                    setup             = function() {},
+                                    setup = function() {},
                                     genIndexVarValues = function() {},
                                     embedCodeInForLoop = function() {}
                                 )

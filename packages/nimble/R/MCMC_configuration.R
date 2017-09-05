@@ -2,11 +2,11 @@
 samplerConf <- setRefClass(
     Class = 'samplerConf',
     fields = list(
-        name            = 'ANY',
+        name = 'ANY',
         samplerFunction = 'ANY',
-        target          = 'ANY',
-        control         = 'ANY',
-        targetAsScalar  = 'ANY'
+        target = 'ANY',
+        control = 'ANY',
+        targetAsScalar = 'ANY'
     ),
     methods = list(
         initialize = function(name, samplerFunction, target, control, model) {
@@ -72,22 +72,22 @@ MCMCconf <- setRefClass(
     Class = 'MCMCconf',                           
     
     fields = list(
-        model               = 'ANY',
-        monitors            = 'ANY',
-        monitors2           = 'ANY',
-        thin                = 'ANY',
-        thin2               = 'ANY',
-        samplerConfs        = 'ANY',
-        controlDefaults     = 'ANY',
+        model = 'ANY',
+        monitors = 'ANY',
+        monitors2 = 'ANY',
+        thin = 'ANY',
+        thin2 = 'ANY',
+        samplerConfs = 'ANY',
+        controlDefaults = 'ANY',
         namedSamplerLabelMaker = 'ANY',
-        mvSamples1Conf      = 'ANY',
-        mvSamples2Conf      = 'ANY'
+        mvSamples1Conf = 'ANY',
+        mvSamples2Conf = 'ANY'
     ),
     
     methods = list(
         
         initialize = function(model, nodes, control = list(), rules,
-            monitors,                thin  = 1,
+            monitors,                thin = 1,
             monitors2 = character(), thin2 = 1,
             useConjugacy = TRUE,
             onlyRW = FALSE,
@@ -539,7 +539,7 @@ Details: See the initialize() function
             return(monitors2)
         },
 
-        setThin  = function(thin, print = TRUE) {
+        setThin = function(thin, print = TRUE) {
             '
 Sets the value of thin.
 
@@ -572,7 +572,7 @@ Details: See the initialize() function
             return(invisible(NULL))
         },
         
-        getMvSamplesConf  = function(ind = 1){
+        getMvSamplesConf = function(ind = 1){
             
             if(isMvSamplesReady(ind) == TRUE) {
                 if(ind == 1) return(mvSamples1Conf)

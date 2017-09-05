@@ -88,7 +88,7 @@ mixedEffData <- list(y = c(248.4, 254.8, 380.4, 332.7, 329.1, -31.7, 2.8,
                            289.3, 207.3, 68.7, 149.6, 157.3, 243.5, 174.2, 
                            133.5, 199.8, 284.8, 272, 240.8, 328, 309, 372.4,
                            32.6, 282.9, 167.5, 217.1, 175.5, 183.6, 145.1),
-                     x =  c(-0.4, -0.5, 1.4, 0.8, 0.5, -1.9, -2, -0.5, -0.1,
+                     x = c(-0.4, -0.5, 1.4, 0.8, 0.5, -1.9, -2, -0.5, -0.1,
                             -1.3, 1.5, 1.2, -0.6, 0.6, -0.7, -0.8, 1.1, -0.2,
                             0.4, 0.1, 1.4, -0.5, -0.9, -0.6, -0.3, 0.4, 0.4, 
                             0.3, 1.3, -0.5, -1.8, -0.3, -0.5, 0.6, -0.3, -1.3, 
@@ -106,8 +106,8 @@ mixedEffMLEs <- c( mu.int = 221.79, mu.slope = 60.6,  sigma.int = 24.69, sigma.s
 mixedEffCov <- mixedEffMCEM$estimateCov(mixedEffMLEs)
 lme4Cov <- matrix(c(87.16, 22.2, 22.2, 135.3), nrow = 2)
 ## test that st.devs and sqrt of covs are close enough to truth.  we only examine cov of mu.int and mu.slope
-try(test_that("Test that asymptotic cov. is correct: ", expect_equal(sqrt(lme4Cov[1,1]), sqrt(mixedEffCov[1,1]), tolerance =  2)))
-try(test_that("Test that asymptotic cov. is correct: ", expect_equal(sqrt(lme4Cov[2,2]), sqrt(mixedEffCov[2,2]), tolerance =  2)))
+try(test_that("Test that asymptotic cov. is correct: ", expect_equal(sqrt(lme4Cov[1,1]), sqrt(mixedEffCov[1,1]), tolerance = 2)))
+try(test_that("Test that asymptotic cov. is correct: ", expect_equal(sqrt(lme4Cov[2,2]), sqrt(mixedEffCov[2,2]), tolerance = 2)))
 try(test_that("Test that asymptotic cov. is correct: ", expect_equal(sign(lme4Cov[2,1]), sign(mixedEffCov[2,1]))))
 try(test_that("Test that asymptotic cov. is correct: ", expect_equal(sqrt(abs(lme4Cov[2,1])), sqrt(abs(mixedEffCov[2,1])),
                                                                      tolerance = 1)))

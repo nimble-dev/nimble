@@ -120,7 +120,7 @@ insertEigenTranspose <- function(code) {
     newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'eigTranspose', args = list(1))
     newExpr2$sizeExprs <- c(code$sizeExprs[2], code$sizeExprs[1])
     newExpr2$toEigenize <- 'yes' 
-    newExpr2$nDim <-  code$nDim
+    newExpr2$nDim <- code$nDim
     newExpr2$type <- code$type
     setArg(newExpr2, 1, code)
     newExpr2
@@ -246,7 +246,7 @@ nimArrMapExpr <- function(code, symTab, typeEnv, newName) {
     sizeExprs <- code$args[[4]]
     strides <- code$args[[5]]
 
-    if(needStartOffset) offsetRexpr <- substitute(getOffset(A) + chainedCall(template(static_cast, int), B), list(A =  as.name(varName), B = code$args[[3]]))
+    if(needStartOffset) offsetRexpr <- substitute(getOffset(A) + chainedCall(template(static_cast, int), B), list(A = as.name(varName), B = code$args[[3]]))
     else offsetRexpr <- substitute( chainedCall(template(static_cast, int), OE), list(OE = code$args[[3]]) )
     
     ## Need to build up this expression
@@ -342,7 +342,7 @@ eigenizeNameStrided <- function(code, symTab, typeEnv, workEnv) {
     setArg(code$caller, code$callerArgID, newExprClass)
 
     if(!thisMapAlreadySet) {
-        if(needStartOffset) offsetRexpr <- substitute(getOffset(A) + chainedCall(template(static_cast, int), B), list(A =  as.name(varName), B = code$args[[3]]))
+        if(needStartOffset) offsetRexpr <- substitute(getOffset(A) + chainedCall(template(static_cast, int), B), list(A = as.name(varName), B = code$args[[3]]))
         else offsetRexpr <- substitute(chainedCall(template(static_cast, int), B), list(B = code$args[[3]]))
         return(RparseTree2ExprClasses(
             EigenNewExpr(EigenName, varName, offsetRexpr, makeEigenTypeLabel(TRUE, targetSym$type),

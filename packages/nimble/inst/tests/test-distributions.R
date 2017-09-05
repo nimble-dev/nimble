@@ -322,7 +322,7 @@ dfun <- function(W, S, nu) {
          (nu+k+1)*sum(log(diag(chol(W)))) -0.5*sum(diag(S %*% solve(W))))
 }
                   
-dens3 <-  dfun(draws1[,,1], C, df)
+dens3 <- dfun(draws1[,,1], C, df)
 
 try(test_that("Test that dinvwish_chol gives correct results: ", {
               expect_equal(dens1-dens3, 0, tol = 0.000001,

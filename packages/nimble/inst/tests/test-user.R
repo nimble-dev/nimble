@@ -231,7 +231,7 @@ lambda = 2.5
 n2 <- 50
 y3 <- rpois(n2, lambda)
 
-upper <-  3
+upper <- 3
 
 sz <- 100
 alpha <- 10*c(1,2,3)
@@ -240,7 +240,7 @@ P <- length(alpha)
 y <- p <- matrix(0, nrow = m, ncol = P)
 for( i in 1:m ) {
     p[i, ] <- rdirch(1, alpha)
-    y[i, ] <- rmultinom(1, size = sz, prob  = p[i,])
+    y[i, ] <- rmultinom(1, size = sz, prob = p[i,])
 }
 
 data1 <- list(y1 = y1, y2 = y2, n1 = n1)

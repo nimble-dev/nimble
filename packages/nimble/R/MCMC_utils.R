@@ -171,7 +171,7 @@ calcAdaptationFactor <- nimbleFunction(
         if(paramDimension > 5)     paramDimension <- 5
         optimalAR <- acceptanceRates[paramDimension]
         timesAdapted <- 0
-        gamma1       <- 0
+        gamma1 <- 0
     },
     run = function(acceptanceRate = double()) {
         timesAdapted <<- timesAdapted + 1
@@ -201,8 +201,8 @@ calcAdaptationFactor <- nimbleFunction(
 #' @description
 #' Classes used internally in NIMBLE and not expected to be called directly by users.
 codeBlockClass <- setRefClass(
-    Class   = 'codeBlockClass',
-    fields  = list(codeBlock = 'ANY'),
+    Class = 'codeBlockClass',
+    fields = list(codeBlock = 'ANY'),
     methods = list(
         
         initialize = function()     codeBlock <<- quote({}),
@@ -227,7 +227,7 @@ codeBlockClass <- setRefClass(
 )
 
 mcmc_generateControlListArgument <- function(control, controlDefaults) {
-    if(missing(control))           control         <- list()
+    if(missing(control))           control <- list()
     if(missing(controlDefaults))   controlDefaults <- list()
     thisControlList <- controlDefaults           ## start with all the defaults
     thisControlList[names(control)] <- control   ## add in any controls provided as an argument

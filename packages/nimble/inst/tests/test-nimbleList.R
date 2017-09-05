@@ -34,7 +34,7 @@ nlTestFunc1 <- nimbleFunction(
 
 testInst <- nlTestFunc1()
 RnimbleList <- testInst$run()
-CtestInst <- compileNimble(testInst, control = list(debug =  F))
+CtestInst <- compileNimble(testInst, control = list(debug = F))
 CnimbleList <- CtestInst$run()
 
 ## test for correct values of R nimbleList
@@ -70,7 +70,7 @@ nlTestFunc2 <- nimbleFunction(
 
 testInst <- nlTestFunc2()
 RnimbleList <- testInst$run()
-CtestInst <- compileNimble(testInst, control = list(debug =  F))
+CtestInst <- compileNimble(testInst, control = list(debug = F))
 CnimbleList <- CtestInst$run()
 
 ## test for correct values of R nimbleList
@@ -489,11 +489,11 @@ testList8 <- testListDef8$new(nlMatrix = diag(2))
 
 testInst <- nlTestFunc8()
 RnimbleList <- testInst$run(testList8)
-CtestInst <- compileNimble(testInst, control = list(debug =  F))
+CtestInst <- compileNimble(testInst, control = list(debug = F))
 CnimbleList <- CtestInst$run(testList8)
 
 ## test for correct values of R nimbleList
-expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,10,1),nrow =  2))
+expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,10,1),nrow = 2))
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
 ## test for identical values of testList4 and CnimbleList
@@ -540,7 +540,7 @@ testList9 <- testListDef9$new(a = 0)
 
 testInst <- nlTestFunc9()
 RnimbleList <- testInst$run(testList9)
-CtestInst <- compileNimble(testInst, control = list(debug =  F))
+CtestInst <- compileNimble(testInst, control = list(debug = F))
 CnimbleList <- CtestInst$run(testList9)
 
 ## test for correct values of R nimbleList
@@ -580,12 +580,12 @@ testList10 <- testListDef10$new(nlMatrix = diag(2))
 testInst <- nlTestFunc10()
 RnimbleList <- testInst$run(testList10)
 RnimbleList <- testInst$run(RnimbleList)
-CtestInst <- compileNimble(testInst, control = list(debug =  F))
+CtestInst <- compileNimble(testInst, control = list(debug = F))
 CnimbleList <- CtestInst$run(testList10)
 CnimbleList <- CtestInst$run(CnimbleList)
 
 ## test for correct values of R nimbleList
-expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,40,1),nrow =  2))
+expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,40,1),nrow = 2))
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
 ##test for identical values of testList6 and CnimbleList
@@ -624,11 +624,11 @@ testList11b <- testListDef11$new(nlMatrix = matrix(2, nrow = 2, ncol = 2))
 
 testInst <- nlTestFunc11()
 RnimbleList <- testInst$run(testList11a, testList11b)
-CtestInst <- compileNimble(testInst, control = list(debug =  F))
+CtestInst <- compileNimble(testInst, control = list(debug = F))
 CnimbleList <- CtestInst$run(testList11a, testList11b)
 
 ## test for correct values of R nimbleList
-expect_identical(RnimbleList$nlMatrix, matrix(c(16,16,16,16),nrow =  2))
+expect_identical(RnimbleList$nlMatrix, matrix(c(16,16,16,16),nrow = 2))
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
 ## test for identical values of testList7a and CnimbleList
@@ -666,7 +666,7 @@ testList12 <- testListDef12$new(nlMatrix = matrix(1, nrow = 2, ncol = 2))
 
 testInst <- nlTestFunc12()
 RnimbleList <- testInst$run(testList12)
-CtestInst <- compileNimble(testInst, control = list(debug =  F))
+CtestInst <- compileNimble(testInst, control = list(debug = F))
 CnimbleList <- CtestInst$run(testList12)
 
 ## test for correct values of R nimbleList
@@ -709,11 +709,11 @@ nlTestFunc13 <- nimbleFunction(
 
 testInst <- nlTestFunc13()
 RnimbleList <- testInst$run(testList13a, testList13b)
-CtestInst <- compileNimble(testInst, control = list(debug =  F))
+CtestInst <- compileNimble(testInst, control = list(debug = F))
 CnimbleList <- CtestInst$run(testList13a, testList13b)
 
 ## test for correct values of R nimbleList
-expect_identical(RnimbleList$nlMatrix, matrix(c(2,2,2,2),nrow =  2))
+expect_identical(RnimbleList$nlMatrix, matrix(c(2,2,2,2),nrow = 2))
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
 ## test for identical values of testList13b and CnimbleList

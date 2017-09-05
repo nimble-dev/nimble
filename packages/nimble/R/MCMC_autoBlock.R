@@ -221,10 +221,10 @@ autoBlockClass <- setRefClass(
                 } else stop('don\'t understand element in run list')
                 switch(type,
                        
-                       none =    { confList <- list(createConfFromGroups(abModel$nodeGroupScalars))
+                       none = { confList <- list(createConfFromGroups(abModel$nodeGroupScalars))
                                    runConfListAndSaveBest(confList, 'none') },
 
-                       all =     { confList <- list(createConfFromGroups(abModel$nodeGroupAllBlocked))
+                       all = { confList <- list(createConfFromGroups(abModel$nodeGroupAllBlocked))
                                    runConfListAndSaveBest(confList, 'all') },
 
                        default = { ##confList <- list(configureMCMC(oldConf = abModel$initialMCMCconf))
@@ -237,16 +237,16 @@ autoBlockClass <- setRefClass(
                                    confList <- list(createConfFromGroups(groups))
                                    runConfListAndSaveBest(confList, 'default') },
 
-                       blocks =  { confList <- list(createConfFromGroups(abModel$createGroups(runListElement)))
+                       blocks = { confList <- list(createConfFromGroups(abModel$createGroups(runListElement)))
                                    name <- if(runListName == '') 'customBlocks' else runListName
                                    runConfListAndSaveBest(confList, name) },
 
-                       conf =    { Rmodel <- abModel$Rmodel  ## just hoping that the customConf will find this
+                       conf = { Rmodel <- abModel$Rmodel  ## just hoping that the customConf will find this
                                    confList <- list(eval(runListElement, envir=environment()))
                                    name <- if(runListName == '') 'customConf' else runListName
                                    runConfListAndSaveBest(confList, name) },
 
-                       auto =    { autoIt <- 0
+                       auto = { autoIt <- 0
                                    while((autoIt < 2) || ((!groupingsEquiv(grouping[[it]], grouping[[it-1]])) && (min(essPT[[it]]) > min(essPT[[it-1]])))) {
                                        candidateGroupsList <- if(autoIt==0) list(abModel$nodeGroupScalars)  else determineCandidateGroupsFromCurrentSample()
                                        confList <- lapply(candidateGroupsList, function(groups) createConfFromGroups(groups))
@@ -522,7 +522,7 @@ createDFfromABlist <- function(lst, niter) {
         }
     }
     df$timePer10k <- df$timing * 10000/niter
-    df$essPer10k  <- df$ess    * 10000/niter * 2
+    df$essPer10k <- df$ess    * 10000/niter * 2
     df$Efficiency <- df$essPer10k / df$timePer10k
     df$mcmc <- gsub('-.+', '', df$blocking)
     return(df)
@@ -588,11 +588,11 @@ printMinTimeABS <- function(df, round=TRUE, addAutoMax=TRUE, sortOutput=FALSE) {
         if(sortOutput) dfOut <- dfOut[sort(dfOut$essPT,index.return=TRUE)$ix, ]
         dimnames(dfOut)[[1]] <- 1:(dim(dfOut)[1])
         if(round) {
-            dfOut$timing     <- round(dfOut$timing, 2)
+            dfOut$timing <- round(dfOut$timing, 2)
             dfOut$timePer10k <- round(dfOut$timePer10k, 2)
-            dfOut$ess        <- round(dfOut$ess, 1)
-            dfOut$essPer10k  <- round(dfOut$essPer10k, 1)
-            dfOut$essPT      <- round(dfOut$essPT, 1)
+            dfOut$ess <- round(dfOut$ess, 1)
+            dfOut$essPer10k <- round(dfOut$essPer10k, 1)
+            dfOut$essPT <- round(dfOut$essPT, 1)
             dfOut$Efficiency <- round(dfOut$Efficiency, 1)
         }
         if(addAutoMax && ('auto0' %in% blockings)) {
@@ -634,8 +634,8 @@ reduceDF <- function(df, addAutoMax=TRUE, sortOutput=TRUE, round=TRUE) {
     if(sortOutput) dfOut <- dfOut[sort(dfOut$Efficiency,index.return=TRUE)$ix, ]
     dimnames(dfOut)[[1]] <- 1:(dim(dfOut)[1])
     if(round) {
-        dfOut$S          <- round(dfOut$S, 2)
-        dfOut$C          <- round(dfOut$C, 2)
+        dfOut$S <- round(dfOut$S, 2)
+        dfOut$C <- round(dfOut$C, 2)
         dfOut$Efficiency <- round(dfOut$Efficiency, 2)
     }
     return(dfOut)

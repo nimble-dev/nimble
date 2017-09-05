@@ -61,7 +61,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
             className <- thisSymbol$nlProc$cppDef$name
            nlName <- paste0(".",vn,"_CnimbleList")
            fieldList[[nlName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleList
-           fieldList[[vn]] <-  eval(substitute(
+           fieldList[[vn]] <- eval(substitute(
                function(x) {
                    if(missing(x)) {
                        NLNAME
@@ -330,7 +330,7 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
 nimbleTryGetNativeSymbolInfo <- function(symName, dll) {
     ans <- try(getNativeSymbolInfo(symName, dll), silent = TRUE)
     if(inherits(ans, 'try-error')) {
-        ans <- try(getNativeSymbolInfo(symName), silent  = TRUE)
+        ans <- try(getNativeSymbolInfo(symName), silent = TRUE)
         if(inherits(ans, 'try-error')) stop(paste0('Unable to find compiled function ', symName,'.'), call.=FALSE)
     }
     ans
@@ -969,7 +969,7 @@ buildNimbleListInterface <- function(refName,  compiledNimbleObj, basePtrCall, w
     if(!isListObj) stop('compiledNimbleObj must be a nimbleList')
     ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
     cppNames <- compiledNimbleObj$objectDefs$getSymbolNames()
-    NLBF <-  makeNimbleListBindingFields(symTab, cppNames, castFunName)
+    NLBF <- makeNimbleListBindingFields(symTab, cppNames, castFunName)
     defaults$cppCT <- makeNimbleFxnCppCopyTypes(symTab, cppNames)
     defaults$basePtrCall <- basePtrCall
     defaults$extPtrTypeIndex <- compiledNimbleObj$getExtPtrTypeIndex()
@@ -1054,7 +1054,7 @@ buildNimbleListInterface <- function(refName,  compiledNimbleObj, basePtrCall, w
     methodsList[[length(methodsList) + 1]] <- getNamedObjectsPtr
     names(methodsList)[length(methodsList)] <- 'getNamedObjectsPtr'
 
-    eval(substitute( newClass <-  setRefClass(refName,
+    eval(substitute( newClass <- setRefClass(refName,
                                               fields = FIELDS,
                                               contains = 'CnimbleListBase',
                                               methods = ML,
@@ -1080,7 +1080,7 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
     }
     ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
     cppNames <- compiledNimbleObj$objectDefs$getSymbolNames()
-    NFBF <-  makeNFBindingFields(symTab, cppNames)
+    NFBF <- makeNFBindingFields(symTab, cppNames)
     defaults$cppCT <- makeNimbleFxnCppCopyTypes(symTab, cppNames)
     defaults$basePtrCall <- basePtrCall
     defaults$extPtrTypeIndex <- compiledNimbleObj$getExtPtrTypeIndex()
@@ -1147,13 +1147,13 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
 
     methodsList[[length(methodsList) + 1]] <- fun
     names(methodsList)[length(methodsList)] <- 'initialize'
-    showTxt <-  "Function"
+    showTxt <- "Function"
     methodsList[[length(methodsList) + 1]] <- substitute(function() {
         writeLines(paste0("Derived CnimbleFunctionBase object (compiled nimbleFunction) for nimbleFunction with class ", 
                            CLASSNAME))
     }, list(CLASSNAME = nlClassName)) ## former subs removed, left substitute call for future modifications
     names(methodsList)[length(methodsList)] <- 'show'
-    eval(substitute( newClass <-  setRefClass(refName,
+    eval(substitute( newClass <- setRefClass(refName,
                                               fields = FIELDS,
                                               contains = 'CnimbleFunctionBase',
                                               methods = ML,

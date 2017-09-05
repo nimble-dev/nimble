@@ -99,7 +99,7 @@ nimbleType <- setRefClass(
 nimbleList <- function(...,
                        name = NA,
                        predefined = FALSE,
-                       where =  getNimbleFunctionEnvironment()) {
+                       where = getNimbleFunctionEnvironment()) {
     ## This has a role like nimbleFunction but a much simpler implementation
     ## It returns a function that simply makes a regular R list and
     ## attaches two attributes, one to mark it as a nimbleList (for efficienct checking
@@ -114,7 +114,7 @@ nimbleList <- function(...,
   ## 3 possibilities: arguments as expressions, arguments as list created within call,
   ## arguments as list created outside of call
   
-    Call <-  match.call(expand.dots = TRUE)
+    Call <- match.call(expand.dots = TRUE)
     if(any(names(Call) == 'name')){
       Call <- Call[-which(names(Call) == 'name')]
     }
@@ -137,14 +137,14 @@ nimbleList <- function(...,
       for(iArg in 2:length(Call)){
         argList[[iArg-1]] <- list(name = names(Call)[iArg],
                                             type = deparse(Call[[iArg]][[1]]))
-        argList[[iArg-1]]$dim  <- if(length(Call[[iArg]])>1) deparse(Call[[iArg]][[2]])
+        argList[[iArg-1]]$dim <- if(length(Call[[iArg]])>1) deparse(Call[[iArg]][[2]])
                                             else 0
       }
     }
     
     types <- list(vars = sapply(argList, function(x){return(x$name)}),
-                  types =  sapply(argList, function(x){return(x$type)}),
-                  dims =  sapply(argList, function(x){return(x$dim)}))
+                  types = sapply(argList, function(x){return(x$type)}),
+                  dims = sapply(argList, function(x){return(x$dim)}))
     if(is.na(name)) name <- nf_refClassLabelMaker()
     nlDefClassObject <- nimbleListDefClass(types = types, className = name, predefined = predefined) 
     basicTypes <- c("double", "integer", "character", "logical")
@@ -175,9 +175,9 @@ nimbleList <- function(...,
           ## initialize uninitialized fields
           for(i in nonInitializeFields){
             thisType <- nimbleListDef$types$types[i]
-            thisDim <-  nimbleListDef$types$dims[i]
+            thisDim <- nimbleListDef$types$dims[i]
             if(thisType == 'character'){
-              initValue  <- ""
+              initValue <- ""
             }
             else if(thisType %in% c('integer', 'double')){
               if(thisDim == 0)
@@ -243,7 +243,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                 name = 'ANY',
                                 nlGenerator = 'ANY',
                                 nestedListGens = 'ANY',
-                                neededObjectNames =  'ANY'		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
+                                neededObjectNames = 'ANY'		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
                             ),
                             methods = list(
                                 show = function() {
@@ -310,7 +310,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                     }
                                     else{
                                      nimbleListObjType <- nimbleListObj$types$types[i]
-                                     nimbleListObjDim <-  as.numeric(nimbleListObj$types$dims[i])
+                                     nimbleListObjDim <- as.numeric(nimbleListObj$types$dims[i])
                                      symTab$addSymbol(argType2symbol(call(nimbleListObjType, nimbleListObjDim),
                                                                      neededTypes, nimbleListObjVar))
                                     }
@@ -351,7 +351,7 @@ eigenNimbleList <- nimbleList(list(nimbleType('values', 'double', 1),
 #' 
 #' @seealso  \code{\link{nimSvd}} 
 
-svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
+svdNimbleList <- nimbleList(list(nimbleType('d', 'double', 1),
                                   nimbleType('u', 'double', 2),
                                   nimbleType('v', 'double', 2)), name = "EIGEN_SVDCLASS", predefined = TRUE)
 
@@ -367,7 +367,7 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #' @export
 #' @seealso \code{\link{nimDerivs}}
 
-ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
+ADNimbleList <- nimbleList(list(nimbleType('value', 'double', 1),
                                  nimbleType('gradient', 'double', 2),
                                  nimbleType('hessian', 'double', 3),
                                  nimbleType('thirdDerivs', 'double', 4)),

@@ -1830,7 +1830,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         if(inherits(test, 'try-error')) browser()
                     }
                     assert[[ length(assert) + 1]] <- 0 ## copyValues = false
-                    assert[[ length(assert) + 1]] <- 0 ## fillZeros  = false
+                    assert[[ length(assert) + 1]] <- 0 ## fillZeros = false
                     assert <- list(assert)
                 } else { ## We have an indexed LHS of an eigenizable expression
                     ## need special handling if it is a row assignment like x[i,] <- ...
@@ -1962,7 +1962,7 @@ sizeasDoublePtr <- function(code, symTab, typeEnv) {
                             subList )
 
     if(!symTab$symbolExists( ptrName ))
-        symTab$addSymbol( symbolPtr(name =  ptrName, type = 'double') )
+        symTab$addSymbol( symbolPtr(name = ptrName, type = 'double') )
     if(!symTab$symbolExists( copyName )) {
         symTab$addSymbol( symbolBasic(name = copyName, type = 'double', nDim = nDim) )
     }

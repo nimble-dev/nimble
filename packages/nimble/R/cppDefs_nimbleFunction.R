@@ -9,7 +9,7 @@ cppVirtualNimbleFunctionClass <- setRefClass('cppVirtualNimbleFunctionClass',
         initialize = function(nfProc, ...) {
             callSuper(...)
             if(!missing(nfProc)) processNFproc(nfProc)
-            useGenerator <<-  FALSE
+            useGenerator <<- FALSE
             baseClassObj <- environment(nfProc$nfGenerator)$contains
             if(is.null(baseClassObj)) {
                 addInheritance("NamedObjects")

@@ -34,9 +34,9 @@ code <- nimbleCode({
     for(i in 1:4)
         mu_y[i,1:5] <- asCol(a[i,1:5]) + B[i,1:5,1:5] %*% asCol(x[1:5])
     y[1,1:5] ~ dmnorm(mu_y[1,1:5], prec = M_y[1,1:5,1:5])
-    y[2,1:5] ~ dmnorm(mu_y[2,1:5], cov  = M_y[2,1:5,1:5])
+    y[2,1:5] ~ dmnorm(mu_y[2,1:5], cov = M_y[2,1:5,1:5])
     y[3,1:5] ~ dmnorm(mu_y[3,1:5], prec = M_y[3,1:5,1:5])
-    y[4,1:5] ~ dmnorm(mu_y[4,1:5], cov  = M_y[4,1:5,1:5])
+    y[4,1:5] ~ dmnorm(mu_y[4,1:5], cov = M_y[4,1:5,1:5])
 })
 constants <- list(prior_mean=prior_mean, prior_cov=prior_cov, a=a, B=B, M_y=M_y)
 data <- list(y=y)
@@ -67,9 +67,9 @@ dif <- as.numeric(Rsamples - Csamples)
 test_that('R and C equiv', expect_lt(max(abs(dif)), 1E-15))
 
 y_prec <- array(NA, c(4,5,5))
-y_prec[1,,] <-       M_y[1,,]
+y_prec[1,,] <- M_y[1,,]
 y_prec[2,,] <- solve(M_y[2,,])
-y_prec[3,,] <-       M_y[3,,]
+y_prec[3,,] <- M_y[3,,]
 y_prec[4,,] <- solve(M_y[4,,])
 contribution_mean <- array(NA, c(4,5))
 for(i in 1:4)   contribution_mean[i,] <- t(B[i,,]) %*% y_prec[i,,] %*% (y[i,] - a[i,])

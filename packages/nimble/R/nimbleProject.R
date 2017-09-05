@@ -8,14 +8,14 @@ nfCompilationInfoClass <- setRefClass('nfCompilationInfoClass',
         nfGenerator = 'ANY', ## a nfGenerator, which is a function with special stuff in its environment
         cppDef = 'ANY',       ## a cppNimbleFunctionClass object
         labelMaker = 'ANY',    ## a label maker function
-        virtual =  'ANY',		#'logical',
+        virtual = 'ANY',		#'logical',
         RinitTypesProcessed = 'ANY',		# 'logical', ## setupTypesForUsingFunction() 
-        Rcompiled =  'ANY',		#'logical',
-        written =  'ANY',		#'logical',
-        cppCompiled =  'ANY',		#'logical',
-        loaded =  'ANY',		#'logical',
-        fromModel =  'ANY',		#'logical',
-        Rinstances =  'ANY'		#'list'
+        Rcompiled = 'ANY',		#'logical',
+        written = 'ANY',		#'logical',
+        cppCompiled = 'ANY',		#'logical',
+        loaded = 'ANY',		#'logical',
+        fromModel = 'ANY',		#'logical',
+        Rinstances = 'ANY'		#'list'
     ),
     methods = list(
         initialize = function(...){Rinstances <<- list(); callSuper(...)},
@@ -28,9 +28,9 @@ nlCompilationInfoClass <- setRefClass('nlCompilationInfoClass',
     fields = list(
         nlProc = 'ANY',
         cppDef = 'ANY',       ## a cppNimbleFunctionClass object
-        written =  'ANY',		#'logical'
+        written = 'ANY',		#'logical'
         loaded = 'ANY',
-        cppCompiled =  'ANY',		#'logical'
+        cppCompiled = 'ANY',		#'logical'
         labelMaker = 'ANY', ## a label maker function
         RinitTypesProcessed = 'ANY',		# 'logical', ## setupTypesForUsingFunction() 
         Rcompiled = 'ANY'   # 'logical'
@@ -43,10 +43,10 @@ nlCompilationInfoClass <- setRefClass('nlCompilationInfoClass',
 mvInfoClass <- setRefClass('mvInfoClass',
     fields = list(
         mvConf = 'ANY', ## a custom modelValues class
-        cppClassName =  'ANY',		#'character',
+        cppClassName = 'ANY',		#'character',
         cppClass = 'ANY', ## a cppModelValuesClass object,
-        fromModel =  'ANY',		#'logical',
-        RmvObjs =  'ANY'		#'list'
+        fromModel = 'ANY',		#'logical',
+        RmvObjs = 'ANY'		#'list'
         ),
     methods = list(
         initialize = function(...) {
@@ -60,11 +60,11 @@ mvInfoClass <- setRefClass('mvInfoClass',
 RCfunInfoClass <- setRefClass('RCfunInfoClass',
     fields = list(
         nfMethodRCobj = 'ANY', ## an mfMethodRC
-        RCfunProc     = 'ANY', ## an RCfunProcessing or NULL
-        cppClass      = 'ANY',  ## an RCfunctionDef or NULL
+        RCfunProc = 'ANY', ## an RCfunProcessing or NULL
+        cppClass = 'ANY',  ## an RCfunctionDef or NULL
         RinitTypesProcessed = 'ANY',
-        Rcompiled           = 'ANY',
-        fromModel     =  'ANY'		#'logical'
+        Rcompiled = 'ANY',
+        fromModel = 'ANY'		#'logical'
     )
 )
 
@@ -76,20 +76,20 @@ modelDefInfoClass <- setRefClass('modelDefInfoClass',
 
 nimbleProjectClass <- setRefClass('nimbleProjectClass',
     fields = list(
-        RCfunInfos         =  'ANY',		#'list', ## a list of RCfunInfoClass objects
-        RCfunCppInterfaces =  'ANY',		#'list', 
-        mvInfos            =  'ANY',		#'list', ## a list of mvInfoClass objects
-        modelDefInfos      =  'ANY',		#'list',
-        models             =  'ANY',		#'list',
-        nimbleFunctions    =  'ANY',		#'list',
-        nimbleLists        =  'ANY',   #'list',
-        nfCompInfos        =  'ANY',		#'list', ## list of nfCompilationInfoClass objects
-        nlCompInfos        =  'ANY',   #'list', ## list of nfCompilationInfoClass objects
-        cppProjects        =  'ANY',		#'list', ## list of cppProjectClass objects, 1 for each dll to be produced
-        dirName            =  'ANY',		#'character',
-        nimbleLabel        =  'ANY',		#'character',
-        refClassDefsEnv    =  'ANY',		#'environment',
-        projectName        =  'ANY'		#'character'
+        RCfunInfos = 'ANY',		#'list', ## a list of RCfunInfoClass objects
+        RCfunCppInterfaces = 'ANY',		#'list', 
+        mvInfos = 'ANY',		#'list', ## a list of mvInfoClass objects
+        modelDefInfos = 'ANY',		#'list',
+        models = 'ANY',		#'list',
+        nimbleFunctions = 'ANY',		#'list',
+        nimbleLists = 'ANY',   #'list',
+        nfCompInfos = 'ANY',		#'list', ## list of nfCompilationInfoClass objects
+        nlCompInfos = 'ANY',   #'list', ## list of nfCompilationInfoClass objects
+        cppProjects = 'ANY',		#'list', ## list of cppProjectClass objects, 1 for each dll to be produced
+        dirName = 'ANY',		#'character',
+        nimbleLabel = 'ANY',		#'character',
+        refClassDefsEnv = 'ANY',		#'environment',
+        projectName = 'ANY'		#'character'
     ),
     methods = list(
         show = function() {
@@ -234,7 +234,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
         addModelValuesClass = function(mvConf, fromModel = FALSE) {
             mvClassName <- environment(mvConf)$className
             if(!is.null(mvInfos[[mvClassName]])) stop('Trying to add a modelValues class with the same name as one already in this project', call. = FALSE)
-            mvInfos[[mvClassName]] <<-  mvInfoClass(cppClassName = mvClassName, cppClass = NULL, mvConf = mvConf, fromModel = fromModel)
+            mvInfos[[mvClassName]] <<- mvInfoClass(cppClassName = mvClassName, cppClass = NULL, mvConf = mvConf, fromModel = fromModel)
         },
         getModelValuesCppDef = function(mvConf, NULLok = FALSE) {
             mvClassName <- environment(mvConf)$className

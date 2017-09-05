@@ -197,7 +197,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         newListLine[[2]] <- substitute(PROTECT(S_newNimList <- makeNewNimbleList(S_listName)),
                                                                            list())
                                         newListLine[[3]] <- quote(cppLiteral('RObjectPointer = S_newNimList;'))
-                                        newListLine[[4]] <-   substitute(UNPROTECT(2), list())
+                                        newListLine[[4]] <- substitute(UNPROTECT(2), list())
                                         allCode <- embedListInRbracket(c(newListLine))
                                         functionDefs[[paste0(name, "_createNewSEXP")]] <<- cppFunctionDef(name = "createNewSEXP",
                                                                                                     args = interfaceArgs,
@@ -257,7 +257,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                                                   nimbleIncludeFile("smartPtrs.h")))
                                       },
                                       buildCopyFromSexp = function(){
-                                        functionArgName <-  Rname2CppName(paste0('S_nimList_'))
+                                        functionArgName <- Rname2CppName(paste0('S_nimList_'))
                                         interfaceArgs <- symbolTable()
                                         interfaceArgs$addSymbol(cppSEXP(name = functionArgName))
                                         objects <- symbolTable2cppVars(nimCompProc$symTab)
@@ -267,7 +267,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         Snames <- character(length(argNames))
                                         returnType <- "void"
                                         listElementTable <- symbolTable()
-                                        storeSexpLine <- list(quote(cppLiteral('RObjectPointer =  S_nimList_;')))
+                                        storeSexpLine <- list(quote(cppLiteral('RObjectPointer = S_nimList_;')))
 
                                         environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
@@ -282,7 +282,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                                list(ARGNAME = argNames[i], 
                                                                                     SVAR = as.name(Snames[i]),
                                                                                     XDATA = as.name(environmentCPPName)))
-                                            copyLine <-  buildCopyLineFromSEXP(listElementTable$getSymbolObject(Snames[i]),
+                                            copyLine <- buildCopyLineFromSEXP(listElementTable$getSymbolObject(Snames[i]),
                                                                                nimCompProc$symTab$getSymbolObject(argNames[i]))
                                             copyLines <- c(copyLines, copyLine)
                                         }
@@ -312,7 +312,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           elementSymTab <- nimCompProc$symTab$getSymbolObject(elementNames[i])
                                           isList <- inherits(elementSymTab, 'symbolNimbleList')
                                           if(isList){
-                                            resetRCopiedFlag  <- paste0(elementSymTab$name,"->resetFlags();")
+                                            resetRCopiedFlag <- paste0(elementSymTab$name,"->resetFlags();")
                                             resetRCopiedFlagLine <- substitute(cppLiteral(resetText), list(resetText = resetRCopiedFlag))
                                             resetNestedFlagLines <- c(resetNestedFlagLines,
                                                                  resetRCopiedFlagLine)

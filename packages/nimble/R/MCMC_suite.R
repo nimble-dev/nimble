@@ -147,31 +147,31 @@
 #' @export
 MCMCsuite <- function(
                       code,
-            constants           = list(),
-            data                = list(),
-            inits               = list(),
-            monitors            = character(),
-            niter               = 10000,
-            burnin              = 2000,
-            thin                = 1,
-            summaryStats        = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
+            constants = list(),
+            data = list(),
+            inits = list(),
+            monitors = character(),
+            niter = 10000,
+            burnin = 2000,
+            thin = 1,
+            summaryStats = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
             calculateEfficiency = FALSE,
-            MCMCs               = 'nimble',
-            MCMCdefs            = list(),
-            winbugs_directory   = 'C:/WinBUGS14',
-            winbugs_program     = 'WinBUGS',
-            openbugs_directory  = 'C:/OpenBUGS323',
-            openbugs_program    = 'OpenBUGS',
-            stan_model          = '',
-            stan_inits          = NULL,
-            stan_data           = NULL,
-            stanNameMaps        = list(),
-            makePlot            = TRUE,
-            savePlot            = TRUE,
-            plotName            = 'MCMCsuite',
-            setSeed             = TRUE,
-            check               = getNimbleOption('checkModel'),
-            debug               = FALSE) {
+            MCMCs = 'nimble',
+            MCMCdefs = list(),
+            winbugs_directory = 'C:/WinBUGS14',
+            winbugs_program = 'WinBUGS',
+            openbugs_directory = 'C:/OpenBUGS323',
+            openbugs_program = 'OpenBUGS',
+            stan_model = '',
+            stan_inits = NULL,
+            stan_data = NULL,
+            stanNameMaps = list(),
+            makePlot = TRUE,
+            savePlot = TRUE,
+            plotName = 'MCMCsuite',
+            setSeed = TRUE,
+            check = getNimbleOption('checkModel'),
+            debug = FALSE) {
     ## aliased in MCMCsuiteClass
     suite <- MCMCsuiteClass(code, constants, data, inits, monitors, niter, burnin, thin, summaryStats, calculateEfficiency,
                             MCMCs, MCMCdefs, winbugs_directory, winbugs_program, openbugs_directory, openbugs_program,
@@ -286,31 +286,31 @@ MCMCsuiteClass <- setRefClass(
         
         initialize = function(
             code,
-            constants           = list(),
-            data                = list(),
-            inits               = list(),
-            monitors            = character(),
-            niter               = 10000,
-            burnin              = 2000,
-            thin                = 1,
-            summaryStats        = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
+            constants = list(),
+            data = list(),
+            inits = list(),
+            monitors = character(),
+            niter = 10000,
+            burnin = 2000,
+            thin = 1,
+            summaryStats = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
             calculateEfficiency = FALSE,
-            MCMCs               = 'nimble',
-            MCMCdefs            = list(),
-            winbugs_directory   = 'C:/WinBUGS14',
-            winbugs_program     = 'WinBUGS',
-            openbugs_directory  = 'C:/OpenBUGS323',
-            openbugs_program    = 'OpenBUGS',
-            stan_model          = '',
-            stan_inits          = NULL,
-            stan_data           = NULL,
-            stanNameMaps        = list(),
-            makePlot            = TRUE,
-            savePlot            = TRUE,
-            plotName            = 'MCMCsuite',
-            setSeed             = TRUE,
-            check               = getNimbleOption('checkModel'),
-            debug               = FALSE) {
+            MCMCs = 'nimble',
+            MCMCdefs = list(),
+            winbugs_directory = 'C:/WinBUGS14',
+            winbugs_program = 'WinBUGS',
+            openbugs_directory = 'C:/OpenBUGS323',
+            openbugs_program = 'OpenBUGS',
+            stan_model = '',
+            stan_inits = NULL,
+            stan_data = NULL,
+            stanNameMaps = list(),
+            makePlot = TRUE,
+            savePlot = TRUE,
+            plotName = 'MCMCsuite',
+            setSeed = TRUE,
+            check = getNimbleOption('checkModel'),
+            debug = FALSE) {
             
             if(debug) browser()
             code <<- code
@@ -334,7 +334,7 @@ MCMCsuiteClass <- setRefClass(
             openbugs_program <<- openbugs_program
             stan_model <<- stan_model
             if(is.null(stan_inits)) stan_inits <- gsub('stan$', 'init.R', stan_model)
-            if(is.null(stan_data))  stan_data  <- gsub('stan$', 'data.R', stan_model)
+            if(is.null(stan_data))  stan_data <- gsub('stan$', 'data.R', stan_model)
             StanNameMaps <<- stanNameMaps
             makePlot <<- makePlot
             savePlot <<- savePlot
@@ -399,11 +399,11 @@ MCMCsuiteClass <- setRefClass(
         },
         
         setMCMCdefs = function(newMCMCdefs) {
-            MCMCdefs <<- list(nimble        = quote(configureMCMC(Rmodel)),
+            MCMCdefs <<- list(nimble = quote(configureMCMC(Rmodel)),
                               nimble_noConj = quote(configureMCMC(Rmodel, useConjugacy = FALSE)),
-                              nimble_RW     = quote(configureMCMC(Rmodel, onlyRW       = TRUE)),
-                              nimble_slice  = quote(configureMCMC(Rmodel, onlySlice    = TRUE)),
-                              autoBlock     = quote(configureMCMC(Rmodel, autoBlock    = TRUE)))
+                              nimble_RW = quote(configureMCMC(Rmodel, onlyRW = TRUE)),
+                              nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)),
+                              autoBlock = quote(configureMCMC(Rmodel, autoBlock = TRUE)))
             MCMCdefs[names(newMCMCdefs)] <<- newMCMCdefs
             MCMCdefNames <<- names(MCMCdefs)
         },

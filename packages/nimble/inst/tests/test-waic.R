@@ -7,7 +7,7 @@ context("Testing of calcWAIC")
 ###  information criteria for Bayesian models"
 
 test_that("school model WAIC is accurate: ", {
-  sigma     <- c(15,10,16,11, 9,11,10,18)
+  sigma <- c(15,10,16,11, 9,11,10,18)
   schoolobs <- c(28,8, -3, 7,-1, 1,18,12)
   schoolSATcode <- nimbleCode({
     for(i in 1:N) {

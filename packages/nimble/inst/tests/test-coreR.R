@@ -109,7 +109,7 @@ blockTests <- list(
          setArgVals = quote(arg1 <- matrix(as.numeric(1:25), nrow = 5)), outputType = quote(double(1))),
     list(name = "fullx1 block non-arg", expr = quote({temp <- arg1;out <- temp[, 3] + 2}), args = list(arg1 = quote(double(2))),
          setArgVals = quote(arg1 <- matrix(as.numeric(1:25), nrow = 5)), outputType = quote(double(1))),
-    ## not dropping a dimension (scalar index but with drop  = FALSE)
+    ## not dropping a dimension (scalar index but with drop = FALSE)
     list(name = "3x1 block drop = FALSE", expr = quote(out <- arg1[2:4, 3, drop = FALSE] + 2), args = list(arg1 = quote(double(2))),
          setArgVals = quote(arg1 <- matrix(as.numeric(1:25), nrow = 5)), outputType = quote(double(2))),
     list(name = "1x3 block drop = FALSE", expr = quote(out <- arg1[3, 2:4, drop = FALSE] + 2), args = list(arg1 = quote(double(2))), ## OOPS THIS IS NOT OK

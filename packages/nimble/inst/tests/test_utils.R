@@ -543,7 +543,7 @@ test_mcmc_internal <- function(Rmodel, ##data = NULL, inits = NULL,
           set.seed(seed);
           RmcmcOut <- try(Rmcmc$run(numItsR))
           if(!is(RmcmcOut, "try-error")) {
-            RmvSample  <- nfVar(Rmcmc, 'mvSamples')
+            RmvSample <- nfVar(Rmcmc, 'mvSamples')
             R_samples <- as.matrix(RmvSample)
           } else R_samples <- NULL
       }
@@ -780,11 +780,11 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
       RfilterOut <- try(Rfilter$run(numItsR))
       if(!is(RfilterOut, "try-error")) {
         if(filterType == "ensembleKF"){
-          RmvSample  <- nfVar(Rfilter, 'mvSamples')
+          RmvSample <- nfVar(Rfilter, 'mvSamples')
           R_samples <- as.matrix(RmvSample)
         }
         else{
-          RmvSample  <- nfVar(Rfilter, 'mvWSamples')
+          RmvSample <- nfVar(Rfilter, 'mvWSamples')
           RmvSample2 <- nfVar(Rfilter, 'mvEWSamples')
           R_samples <- as.matrix(RmvSample)
           R_samples2 <- as.matrix(RmvSample2)
