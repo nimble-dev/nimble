@@ -50,21 +50,10 @@ makeTypeTemplateFunction = function(newName, .self) {
     newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = TRUE)
     localArgs <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
-    newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs, cppADCode = TRUE,
-                                      generatorSymTab = .self$code$objectDefs)
+    newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs, 
+                                      generatorSymTab = .self$code$objectDefs, cppADCode = TRUE)
     newCppFunDef
 }
-
-recurseSetCppADExprs <- function(code, logicVal = TRUE){
-  if(inherits(code, 'exprClass')){
-      code$cppADCode <- logicVal
-    for(i in seq_along(code$args)){
-      recurseSetCppADExprs(code$args[[i]], logicVal)
-    }
-  }
-}
-
-
 
 ## This makes the function to be called once for CppAD taping
 ## It sets up AD variables, copies from regular variables into them

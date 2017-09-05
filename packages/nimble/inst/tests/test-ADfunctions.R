@@ -30,3 +30,5 @@ test_that('Derivatives of dnorm function correctly.',
     expect_equal(cderivs$hessian, Rderivs$hessian)
   }
 )
+
+

@@ -4,7 +4,6 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
   ## The code below matches the wrt arguemnts provided to the call to nimDerivs
   ## to the formal arguments taken by the nimbleFunction, and gets dimension and
   ## indexing information about each of these wrt arguments. 
-  browser()
   formalNames <- formalArgs(eval(nf[[1]], envir = fxnEnv)@.Data)
   wrtNames <- strsplit(wrt, '\\[')
   wrtArgIndices <- c(sapply(wrtNames, function(x){return(which(x[1] == formalNames))}))
@@ -120,7 +119,9 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
     wrt <- formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv)@.Data)
   }
   if(!is.null(dropArgs)){
-    wrt <- wrt[- which(wrt == dropArgs)]
+    removeArgs <- which(wrt == dropArgs)
+    if(length(removeArgs) > 0)
+      wrt <- wrt[-removeArgs]
   }
   derivFxnList <- makeSingleArgWrapper(derivFxnCall, wrt, fxnEnv)
   singleArg <- derivFxnList[[2]]()

@@ -25,11 +25,10 @@ exprClass <- setRefClass('exprClass',
                              caller = 'ANY',            # exprClass object for the call to which this is an argument (if any)
                              callerArgID =  'ANY',	#'numeric', ## index in the calling object's args list for this object.
                              assertions =  'ANY',	#'list'
-                             cppADCode = 'ANY',         #'logical' ## is expr in code generated for cppad?
                              aux = 'ANY'                # anything needed for specific operators
                              ),
                          methods = list(
-                             initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); cppADCode <<- FALSE; callSuper(...)},
+                             initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); callSuper(...)},
                              ## This displays the parse tree using indentation on multiple rows of output
                              ## It also checks that the caller and callerArgID fields are all correct
                              ## For deparsing, call nimDeparse
