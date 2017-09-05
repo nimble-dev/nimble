@@ -1,4 +1,10 @@
+
+
 makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
+  ## The code below matches the wrt arguemnts provided to the call to nimDerivs
+  ## to the formal arguments taken by the nimbleFunction, and gets dimension and
+  ## indexing information about each of these wrt arguments. 
+  browser()
   formalNames <- formalArgs(eval(nf[[1]], envir = fxnEnv)@.Data)
   wrtNames <- strsplit(wrt, '\\[')
   wrtArgIndices <- c(sapply(wrtNames, function(x){return(which(x[1] == formalNames))}))
@@ -21,6 +27,10 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
     flatteningInfo[[i]][[3]] <- lineInds
     thisIndex <- thisIndex + prod(dimInfo)
   }
+  ## The wrappedFun created below is a wrapper for a call to the nimFxn argument
+  ## to nimDerivs.  The wrapped version takes a single vector argument x, as 
+  ## required by the numDeriv package.  It then unpacks the elements of the 
+  ## vector x, using them as arguments to the nimFxn as appropriate.
   wrappedFun <- function(x) {
     args <- list()
     for(i in 1:(length(nf)-1)){
@@ -49,6 +59,9 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
     }
     c(do.call(paste(nf[[1]]), args, envir = fxnEnv))
   }
+  ## The makeSingleArg function created below extracts the values of the 
+  ## variables specified in the wrt arguemnt to nimDerivs and concatenates them
+  ## into a single vector.
   makeSingleArg <- function(){
     singleArg <- c()
     for(i in seq_along(wrtNames)){
@@ -74,6 +87,10 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
 #' @param order an integer vector with values within the set {0, 1, 2}, corresponding to whether the function value, gradient, and Hessian should be returned respectively.  Defaults to \code{c(0, 1, 2)}.
 #' @param dropArgs a vector of integers specifying any arguments to \code{nimFxn} that derivatives should not be taken with respect to.  For example, \code{dropArgs = 2} means that the second argument to \code{nimFxn} will not have derivatives taken with respect to it.  Defaults to an empty vector. 
 #' @param wrt a character vector of node names to take derivatives with respect to.  If left empty, derivatives will be taken with respect to all arguments to \code{nimFxn}.
+#' 
+#' @details Derivatives for uncompiled nimbleFunctions are calculated using the
+#' \code{numDeriv} package.  If this package is not installed, an error will
+#' be issued.
 #' 
 #' @return a \code{nimbleList} with elements \code{value}, \code{gradient}, and \code{hessian}.
 #' @export
