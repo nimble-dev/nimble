@@ -555,7 +555,7 @@ runOneValuesTest <- function(copyTestCase, testModelCode, testNFcodeList, testNF
 runValuesTests(copyTestCaseListValues)
 
 ###################
-### Testing for values() and values()<-  with indexing of node vector inside values()
+### Testing for values() and values()<- with indexing of node vector inside values()
 ### The general layout that follows is similar to above but is completely separate 
 
 

@@ -115,7 +115,7 @@ LWStep <- nimbleFunction(
     thisNode <- nodes[iNode]
     parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+    thisData <- model$getDependencies(thisNode, dataOnly = TRUE)
     isLast <- (iNode == length(nodes))
             
     t <- iNode  # current time point
@@ -232,7 +232,7 @@ LWStep <- nimbleFunction(
       simulate(model, thisNode)
       copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, rowTo = i)
       calculate(model, thisDeterm)
-      l[i]  <- exp(calculate(model, thisData))
+      l[i] <- exp(calculate(model, thisData))
       if(is.nan(l[i])) l[i] <- 0
       #rescale weights by pre-sampling weight
       if(notFirst)
@@ -252,7 +252,7 @@ LWStep <- nimbleFunction(
      }   
      if(isLast){
        for(i in 1:m){
-         wts[i] <-  exp(mvWSamples['wts',i][currInd])
+         wts[i] <- exp(mvWSamples['wts',i][currInd])
        }
        rankSample(wts, m, ids, silent)
        for(i in 1:m){
@@ -412,7 +412,7 @@ buildLiuWestFilter <- nimbleFunction(
     # if unspecified, parameter nodes are specified as all stochastic top level nodes which
     # are not in the set of latent nodes above
     if(all(is.null(params))){
-      params <-  model$getNodeNames(stochOnly=TRUE, includeData=FALSE,
+      params <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE,
                                            topOnly=TRUE)
       parLatents <- sapply(params, function(x){return(model$getVarNames(nodes = x) %in% latentVars)})
       params <- params[!parLatents]
@@ -424,7 +424,7 @@ buildLiuWestFilter <- nimbleFunction(
       stop('parameters cannot be latent states')
     if(!all(params%in%model$getNodeNames(stochOnly=TRUE)))
       stop('parameters must be stochastic nodes')
-    paramVars <-  model$getVarNames(nodes =  params)  # need var names too
+    paramVars <- model$getVarNames(nodes = params)  # need var names too
     pardimcheck <- sapply(paramVars, function(n){
       if(length(nimDim(model[[n]]))>1)
         stop("Liu and West filter doesn't work for matrix valued top level parameters")
@@ -433,7 +433,7 @@ buildLiuWestFilter <- nimbleFunction(
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent 
                                       states varies')
-    paramDims <-   sapply(params, function(n) nimDim(model[[n]]))
+    paramDims <- sapply(params, function(n) nimDim(model[[n]]))
     
     my_initializeModel <- initializeModel(model, silent = silent)
     
@@ -454,7 +454,7 @@ buildLiuWestFilter <- nimbleFunction(
       type <- c(type, "double")
       size$wts <- length(dims)
       
-      mvWSamples  <- modelValues(modelValuesConf(vars = names,
+      mvWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -474,7 +474,7 @@ buildLiuWestFilter <- nimbleFunction(
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- 1
-      mvWSamples  <- modelValues(modelValuesConf(vars = names,
+      mvWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
     }

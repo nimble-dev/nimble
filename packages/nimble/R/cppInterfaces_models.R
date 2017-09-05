@@ -177,7 +177,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
      warning("creating an initialization method that calls a C routine without any DLL information")
 
     # add basePtrCall as arg for initialize and substitute on parsed text string to avoid CRAN issues with .Call registration
-  eval(substitute(      newClass <-  setRefClass(refName,
+  eval(substitute(      newClass <- setRefClass(refName,
                                             fields = FIELDS,
                                             contains = "CmodelBaseClass",
                                             methods = list(initialize = function(model, defaults, basePtrCall, ..., dll = NULL) { ## model is an optional R model

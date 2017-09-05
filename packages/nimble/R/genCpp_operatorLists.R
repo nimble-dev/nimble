@@ -76,7 +76,7 @@ unaryOrNonaryOperators <- list()
 assignmentOperators <- c('<-','<<-','=')
 
 reductionUnaryDoubleOperatorsEither <- c('mean', 'prod','squaredNorm')
-reductionUnaryPromoteOperatorsEither <-  c('min','max', 'sum')
+reductionUnaryPromoteOperatorsEither <- c('min','max', 'sum')
 reductionUnaryLogicalOperatorsEither <- c('any','all')
 
 reductionUnaryOperatorsEither <- c(reductionUnaryDoubleOperatorsEither,

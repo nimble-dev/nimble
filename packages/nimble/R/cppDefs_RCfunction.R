@@ -251,7 +251,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 					                                           list(Im1 = i-1, THISSEXP = as.name(Snames[i]))))
 					           isList <- inherits(argSymTab, 'symbolNimbleList')
 					           if(isList){
-					             resetRCopiedFlag  <- paste0(argSymTab$name,"->resetFlags();")
+					             resetRCopiedFlag <- paste0(argSymTab$name,"->resetFlags();")
 					             resetRCopiedFlagLine <- substitute(cppLiteral(resetText), list(resetText = resetRCopiedFlag))
 					             returnListLines <- c(returnListLines,
 					                                  resetRCopiedFlagLine)
@@ -270,7 +270,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 					                                         list(I = numArgs, THISSEXP = as.name('S_returnValue_1234'))))
 					         isList <- inherits(returnSymTab, 'symbolNimbleList')
 					         if(isList){
-					           resetRCopiedFlag  <- paste0(returnSymTab$name,"->resetFlags();")
+					           resetRCopiedFlag <- paste0(returnSymTab$name,"->resetFlags();")
 					           resetRCopiedFlagLine <- substitute(cppLiteral(resetText), list(resetText = resetRCopiedFlag))
 					           returnListLines <- c(returnListLines,
 					                                resetRCopiedFlagLine)
@@ -307,13 +307,13 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                              ))
 
 
-SEXPscalarConvertFunctions <- list(double  = 'SEXP_2_double',
+SEXPscalarConvertFunctions <- list(double = 'SEXP_2_double',
                                    integer = 'SEXP_2_int',
                                    logical = 'SEXP_2_bool',
                                    character = 'STRSEXP_2_string')
 
 
-toSEXPscalarConvertFunctions <- list(double  = 'double_2_SEXP',
+toSEXPscalarConvertFunctions <- list(double = 'double_2_SEXP',
                                      integer = 'int_2_SEXP',
                                      logical = 'bool_2_SEXP',
                                      character = 'string_2_STRSEXP')
@@ -321,9 +321,9 @@ toSEXPscalarConvertFunctions <- list(double  = 'double_2_SEXP',
 buildCopyLineFromSEXP <- function(fromSym, toSym) {
     if(inherits(toSym, c('symbolNimbleList', 'symbolNimbleListGenerator'))){
       ans <- list()
-      ansText  <- paste0(toSym$name, " = new ",toSym$nlProc$name, ";")
+      ansText <- paste0(toSym$name, " = new ",toSym$nlProc$name, ";")
       ans[[1]] <- substitute(cppLiteral(answerText), list(answerText = ansText))
-      ansText  <- paste0(toSym$name, "->copyFromSEXP(", fromSym$name, ");")
+      ansText <- paste0(toSym$name, "->copyFromSEXP(", fromSym$name, ");")
       ans[[2]] <- substitute(cppLiteral(answerText), list(answerText = ansText))
       return(ans)
     }
@@ -359,8 +359,8 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
 
 buildCopyLineToSEXP <- function(fromSym, toSym, writeCall = FALSE, conditionalText = "") {
     if(inherits(fromSym, c('symbolNimbleList', 'symbolNimbleListGenerator'))){
-      if(writeCall == TRUE)  ansText  <- paste0(conditionalText, fromSym$name, "->createNewSEXP();")
-      else ansText  <- paste0(conditionalText,  'PROTECT(', toSym$name, ' = ', fromSym$name, "->copyToSEXP());")
+      if(writeCall == TRUE)  ansText <- paste0(conditionalText, fromSym$name, "->createNewSEXP();")
+      else ansText <- paste0(conditionalText,  'PROTECT(', toSym$name, ' = ', fromSym$name, "->copyToSEXP());")
       ans <- substitute(cppLiteral(answerText), list(answerText = ansText))
       return(ans)
     }
@@ -400,10 +400,10 @@ generateConditionalLines <- function(LHSSymTab,
   isList <- inherits(LHSSymTab, 'symbolNimbleList')
   if(isList){
     conditionalText <- paste0('if (!(*',  LHSSymTab$name, ').RObjectPointer) ')
-    conditionalLines <-  c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab,
+    conditionalLines <- c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab,
                                             writeCall = TRUE, conditionalText = conditionalText))
   }
-  conditionalLines <-  c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab,
+  conditionalLines <- c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab,
                                                 writeCall = FALSE))
   return(conditionalLines)
 }

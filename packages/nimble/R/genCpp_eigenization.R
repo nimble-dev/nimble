@@ -100,7 +100,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(c('nimCd','nimCi','nimCb'), 'eigenize_alwaysMatrix'),
     list(':' = 'eigenize_nimbleNullaryClass', ## at this point ':' is like a coreRmanipulationCall
          eigenBlock = 'eigenize_eigenBlock',
-         diagonal  = 'eigenize_cWiseUnaryMatrix',
+         diagonal = 'eigenize_cWiseUnaryMatrix',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
          'chol' = 'eigenize_matrixOps',
          RRtest_add = 'eigenize_recyclingRuleFunction'
@@ -417,7 +417,7 @@ promoteArgTypes <- function(code) {
     ## because we know arg types don't match, pairs of conditions are mutually exclusive
     if(argID == 0) {
         if(a2type == 'double') { argID <- 1; newType <- 'double'}
-        if(a1type == 'double') {argID <-  2; newType <- 'double'}
+        if(a1type == 'double') {argID <- 2; newType <- 'double'}
     }
     if(argID == 0) {
         if(a2type == 'integer') {argID <- 1; newType <- 'integer'}

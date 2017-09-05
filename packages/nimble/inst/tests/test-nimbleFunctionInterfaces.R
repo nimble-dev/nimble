@@ -92,10 +92,10 @@ f2$b1 <- cf2$b1 <- c(FALSE, TRUE, FALSE, FALSE)
 f2$b2 <- cf2$b2 <- matrix(rep(c(FALSE, TRUE, FALSE), 3), nrow = 3)
 f2$is <- cf2$is <- as.integer(200)
 f2$i1 <- cf2$i1 <- as.integer(2003:2010)
-f2$i2 <- cf2$i2 <-  matrix(as.integer(4321 + 1:9), nrow = 3)
+f2$i2 <- cf2$i2 <- matrix(as.integer(4321 + 1:9), nrow = 3)
 f2$ds <- cf2$ds <- 843.1
 f2$d1 <- cf2$d1 <- seq(5834.1, 60654.2, length = 4)
-f2$d2 <- cf2$d2 <-  matrix(seq(4912.1, 5593.9, length = 9), nrow = 3)
+f2$d2 <- cf2$d2 <- matrix(seq(4912.1, 5593.9, length = 9), nrow = 3)
 
 f2$si <- cf2$si <- 'hello again'
 f2$s1 <- cf2$s1 <- c('hw again', 'goodbye again', 'and another thing')

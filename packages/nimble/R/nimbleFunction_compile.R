@@ -2,10 +2,10 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
     fields = list(
         name = 'ANY',                    ## character
         setupSymTab = 'ANY',             ## symbolTable
-        nfGenerator =  'ANY',		## 'function',
-        compileInfos =  'ANY',		## list of RCfunctionCompileClass objects
+        nfGenerator = 'ANY',		## 'function',
+        compileInfos = 'ANY',		## list of RCfunctionCompileClass objects
         origMethods = 'ANY',             ## list of original methods
-        RCfunProcs =  'ANY',		## list of RCfunProcessing  or RCvirtualFunProcessing objects
+        RCfunProcs = 'ANY',		## list of RCfunProcessing  or RCvirtualFunProcessing objects
         nimbleProject = 'ANY',           ## nimbleProjectclass object
         cppDef = 'ANY',                  ## cppNimbleFunctionClass or cppVirtualNimbleFunctionClass object
         isNode = 'ANY'                  ## logical, is it a nodeFunction?
@@ -78,13 +78,13 @@ nfProcessing <- setRefClass('nfProcessing',
     contains = 'virtualNFprocessing',
     fields = list(
         instances = 'ANY',           ## list of instances of the nimbleFunction to used for setup types and receive newSetupCode
-        neededTypes =  'ANY',	     ## list of symbols for non-trivial types that will be needed for compilation, such as derived models or modelValues
-        neededObjectNames =  'ANY',     ## character vector of the names of objects such as models or modelValues that need to exist during C++ instantiation and population so their contents can be pointed to 
-        newSetupOutputNames =  'ANY', ## character vector of names of objects created by newSetupCode from "keyword processing"
+        neededTypes = 'ANY',	     ## list of symbols for non-trivial types that will be needed for compilation, such as derived models or modelValues
+        neededObjectNames = 'ANY',     ## character vector of the names of objects such as models or modelValues that need to exist during C++ instantiation and population so their contents can be pointed to 
+        newSetupOutputNames = 'ANY', ## character vector of names of objects created by newSetupCode from "keyword processing"
         blockFromCppNames = 'ANY',    ## character vector of names of setup outputs that should not be propagated to C++
-        newSetupCode =  'ANY',	      ## list of lines of setup code populated by keyword processing
+        newSetupCode = 'ANY',	      ## list of lines of setup code populated by keyword processing
         newSetupCodeOneExpr = 'ANY',  ## all lines of new setup code put into one expression for evaluation
-        inModel =  'ANY'	      ## logical: whether this nfProcessing object is for a nodeFunction in a model
+        inModel = 'ANY'	      ## logical: whether this nfProcessing object is for a nodeFunction in a model
     ),
     methods = list(
         show = function() {

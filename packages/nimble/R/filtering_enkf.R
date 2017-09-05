@@ -76,7 +76,7 @@ ENKFStep <- nimbleFunction(
     thisNode <- nodes[iNode]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+    thisData <- model$getDependencies(thisNode, dataOnly = TRUE)
     t <- iNode  # current time point
     yObs <- c(sapply(thisData, function(x) model[[x]])) #all dependent data for this time point
     # Get names of xs node for current and previous time point (used in copy)
@@ -289,7 +289,7 @@ buildEnsembleKF <- nimbleFunction(
     
     # Create mv variables for x state.  If saveAll=TRUE, 
     # the  x states will be recorded at each time point.
-    vars <- model$getVarNames(nodes =  nodes)  # need var names too
+    vars <- model$getVarNames(nodes = nodes)  # need var names too
     modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[vars]
     if(saveAll){
       names <- sapply(modelSymbolObjects, function(x)return(x$name))

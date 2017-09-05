@@ -291,7 +291,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            dryRunCmd <- paste0(SHLIBcmd, " -n")
                                            dryRunResult <- system(dryRunCmd, intern = TRUE)
                                            compileOnlyLines <- dryRunResult[ grepl("-c", dryRunResult) ]
-                                           SHLIBcmd <- paste0(compileOnlyLines, collapse =  ";" )
+                                           SHLIBcmd <- paste0(compileOnlyLines, collapse = ";" )
                                        }
 
                                        if(isTRUE(nimbleOptions('forceO1'))) { ## replace -On flags with -O1 to reduce compiler time due to higher optimization levels 
@@ -300,7 +300,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                dryRunCmd <- paste0(SHLIBcmd, " -n")
                                                dryRunResult <- system(dryRunCmd, intern = TRUE)
                                                compileOnlyLines <- dryRunResult[ grepl("-c", dryRunResult) ]
-                                               SHLIBcmd <- paste0(compileOnlyLines, collapse =  ";" )
+                                               SHLIBcmd <- paste0(compileOnlyLines, collapse = ";" )
                                            }
                                            SHLIBcmd <- gsub("-O[1-9]", "-O1", SHLIBcmd)
                                            SHLIBcmd <- paste0(SHLIBcmd, "; ", origSHLIBcmd)

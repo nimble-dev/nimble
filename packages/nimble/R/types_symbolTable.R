@@ -101,7 +101,7 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
     ##     ##  isANeededType <- unlist(lapply(neededTypes, function(x) return(type == x$name)))
     ##     isANeededType <- unlist(lapply(neededTypes, `[[`, 'name')) == type
     ##     if(any(isANeededType == 1)){
-    ##         listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow  = TRUE)
+    ##         listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow = TRUE)
     ##         listST$name <- name
     ##         return(listST)
     ##     } 
@@ -143,7 +143,7 @@ resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject)
     existingNeededTypeNames <- unlist(lapply(neededTypes, `[[`, 'name'))
     isANeededType <- existingNeededTypeNames == type
     if(any(isANeededType)) {
-        listST <- neededTypes[[which(isANeededType)[1]]]$copy(shallow  = TRUE)
+        listST <- neededTypes[[which(isANeededType)[1]]]$copy(shallow = TRUE)
         listST$name <- name
         return(list(listST, newNeededType))
         ##symTab$addSymbol(listST, allowReplace = TRUE)
@@ -247,7 +247,7 @@ symbolTable2cppVars <- function(symTab, arguments = character(), include, parent
 }
 
 symbolBase <- 
-    setRefClass(Class  = 'symbolBase',
+    setRefClass(Class = 'symbolBase',
                 fields = list(name = 'ANY', 		#'character',
                               type = 'ANY' 	),	#'character'),
                 methods = list(
@@ -276,9 +276,9 @@ symbolUnknown <- setRefClass(Class = 'symbolUnknown',
 ## nDim = 0 must have size = 1 and means it is a true scalar -- NOT sure this is correct anymore...
 ## nDim = 1 with size = 1 means it is a 1D vector that happens to be length 1
 symbolBasic <-
-    setRefClass(Class    = 'symbolBasic',
+    setRefClass(Class = 'symbolBasic',
                 contains = 'symbolBase',
-                fields   = list(nDim  = 'ANY', 		#'numeric',
+                fields = list(nDim = 'ANY', 		#'numeric',
                                 size = 'ANY'), 		#'numeric'),
                 methods = list(
                     show = function() {
@@ -364,8 +364,8 @@ symbolSEXP <- setRefClass(
 symbolString <- setRefClass(
     Class = "symbolString",
     contains = "symbolBasic", ## inheriting from symbolBasic instead of symbolBase make initSizes work smoothly
-    ## fields   = list(
-    ##     nDim  = 'ANY',
+    ## fields = list(
+    ##     nDim = 'ANY',
     ##     size = 'ANY'), 
     methods = list(
         show = function() writeLines(paste('symbolString', name)),
@@ -388,7 +388,7 @@ symbolNimbleTimer <- setRefClass(
         }))
 
 symbolNimArrDoublePtr <- 
-    setRefClass(Class    = 'symbolNimArrDoublePtr',
+    setRefClass(Class = 'symbolNimArrDoublePtr',
                 contains = 'symbolBasic',
                 methods = list(
                     show = function() writeLines(paste('symbolNimArrDoublePtr', name)),
@@ -405,7 +405,7 @@ symbolNimArrDoublePtr <-
     )
 
 symbolVecNimArrPtr <- 
-    setRefClass(Class    = 'symbolVecNimArrPtr',
+    setRefClass(Class = 'symbolVecNimArrPtr',
                 contains = 'symbolBase', ## Important that this is not symbolBase or it will be thought to be directly numeric
                 fields = list(
                     nDim = 'ANY', 		#'numeric',
@@ -480,7 +480,7 @@ symbolMemberFunction <-
     setRefClass(Class = 'symbolMemberFunction',
                 contains = 'symbolBase',
                 fields = list(nfMethodRCobj = 'ANY',
-                              RCfunProc     = 'ANY'), ## added so that we can access returnType and argument types (origLocalSymbolTable)
+                              RCfunProc = 'ANY'), ## added so that we can access returnType and argument types (origLocalSymbolTable)
                 methods = list(
                     initialize = function(...) {callSuper(...); type <<- 'Ronly'},
                     show = function() writeLines(paste('symbolMemberFunction', name)),
@@ -557,7 +557,7 @@ symbolModelVariableAccessorVector <-
                     )
                 )
 
-symbolModelValuesAccessorVector <-  
+symbolModelValuesAccessorVector <- 
     setRefClass(Class = 'symbolModelValuesAccessorVector',
                 contains = 'symbolBase',
                 methods = list(
@@ -757,8 +757,8 @@ symbolInt <- function(name, size = numeric(), nDim = length(size)) {
 }
 
 symbolTable <- 
-    setRefClass(Class   = 'symbolTable',
-                fields  = list(symbols  = 'ANY', 		#'list',
+    setRefClass(Class = 'symbolTable',
+                fields = list(symbols = 'ANY', 		#'list',
                     parentST = 'ANY',
                     dimAndSizeList = 'ANY',
                     dimAndSizeListMade = 'ANY'),
@@ -780,7 +780,7 @@ symbolTable <-
                     },
                     
                     ## add a symbol RC object to this symbolTable; checks for valid symbolRC object, and duplicate symbol names
-                    addSymbol  = function(symbolRCobject, allowReplace = FALSE) {
+                    addSymbol = function(symbolRCobject, allowReplace = FALSE) {
                       ##  if(!is(symbolRCobject, 'symbolBase'))   stop('adding non-symbol object to symbolTable')
                         name <- symbolRCobject$name
                         if(!allowReplace) if(name %in% getSymbolNames())            warning(paste0('duplicate symbol name: ', name))
@@ -797,8 +797,8 @@ symbolTable <-
                     ## symbol accessor functions
                     getLength = function() return(length(symbols)),
                     getSymbolObjects = function()      return(symbols),
-                    getSymbolNames   = function()      if(is.null(names(symbols))) return(character(0)) else return(names(symbols)),
-                    getSymbolObject  = function(name, inherits = FALSE) {
+                    getSymbolNames = function()      if(is.null(names(symbols))) return(character(0)) else return(names(symbols)),
+                    getSymbolObject = function(name, inherits = FALSE) {
                         ans <- symbols[[name]]
                         if(is.null(ans)) if(inherits) if(!is.null(parentST)) ans <- parentST$getSymbolObject(name, TRUE)
                         return(ans)
@@ -817,9 +817,9 @@ symbolTable <-
                         if(!dimAndSizeListMade) initDimAndSizeList()
                         dimAndSizeList[names]
                     },
-                    getSymbolType    = function(name)               return(symbols[[name]]$type),
-                    getSymbolField   = function(name, field)        return(symbols[[name]][[field]]),
-                    setSymbolField   = function(name, field, value) symbols[[name]][[field]] <<- value,
+                    getSymbolType = function(name)               return(symbols[[name]]$type),
+                    getSymbolField = function(name, field)        return(symbols[[name]][[field]]),
+                    setSymbolField = function(name, field, value) symbols[[name]][[field]] <<- value,
                     
                     ## parentST accessor functions
                     getParentST = function()   return(parentST),

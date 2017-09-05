@@ -14,17 +14,17 @@ exprClass <- setRefClass('exprClass',
         expr = 'ANY', ## optional for the original R expr. Not used much except at setup
         isName = 'ANY',		#'logical', ## is it a name
         isCall = 'ANY',		# 'logical', ## is it a call
-        isAssign =  'ANY',		#'logical', ## it is an assignment (all assignments are also calls)
-        name =  'ANY',		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
-        nDim =  'ANY',		#'numeric', ## how many dimensions
-        sizeExprs =  'ANY',	#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
-        type =  'ANY',		#'character', ## type label
-        args =  'ANY',		#'list', ## list of exprClass objects for the arguments
-        eigMatrix =  'ANY',	#'logical', ## vs. Array.  Only used for Eigenized expressions
-        toEigenize =  'ANY',	#'character', ##'yes', 'no', or 'maybe'
+        isAssign = 'ANY',		#'logical', ## it is an assignment (all assignments are also calls)
+        name = 'ANY',		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
+        nDim = 'ANY',		#'numeric', ## how many dimensions
+        sizeExprs = 'ANY',	#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
+        type = 'ANY',		#'character', ## type label
+        args = 'ANY',		#'list', ## list of exprClass objects for the arguments
+        eigMatrix = 'ANY',	#'logical', ## vs. Array.  Only used for Eigenized expressions
+        toEigenize = 'ANY',	#'character', ##'yes', 'no', or 'maybe'
         caller = 'ANY',            # exprClass object for the call to which this is an argument (if any)
-        callerArgID =  'ANY',	#'numeric', ## index in the calling object's args list for this object.
-        assertions =  'ANY',	#'list'
+        callerArgID = 'ANY',	#'numeric', ## index in the calling object's args list for this object.
+        assertions = 'ANY',	#'list'
         cppADCode = 'ANY',         #'logical' ## is expr in code generated for cppad?
         aux = 'ANY'                # anything needed for specific operators
     ),
@@ -85,9 +85,9 @@ exprClass <- setRefClass('exprClass',
 ## This differs from the information in the symbol table in that the latter is static: it is not modified as a result of code processing.
 exprTypeInfoClass <- setRefClass('exprTypeInfoClass',
     fields = list(
-        nDim =  'ANY',		#'numeric',
-        sizeExprs =  'ANY',	#'list',
-        type =  'ANY'		#'character'
+        nDim = 'ANY',		#'numeric',
+        sizeExprs = 'ANY',	#'list',
+        type = 'ANY'		#'character'
     ),
     methods = list(
     	initialize = function(...) {

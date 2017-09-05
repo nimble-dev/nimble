@@ -308,7 +308,7 @@ genName2 <- function(x) x
 # @keywords OutputCppParseTree
 # @seealso \code{\link{outputCppParseTree}}
 # @export
-outputCppOpenBracketInvisible  <- function(ModifiedRmmCode, Indentation = '') {
+outputCppOpenBracketInvisible <- function(ModifiedRmmCode, Indentation = '') {
   ## curly bracket, all elements in the parse tree are new lines
   BlockLength <- length(ModifiedRmmCode)
   if(BlockLength > 1)
@@ -325,7 +325,7 @@ outputCppOpenBracketInvisible  <- function(ModifiedRmmCode, Indentation = '') {
   return(outputCppCode)
 }
 
-outputCppOpenBracket2  <- function(ModifiedRmmCode, Indentation = '') {
+outputCppOpenBracket2 <- function(ModifiedRmmCode, Indentation = '') {
   ## curly bracket, all elements in the parse tree are new lines
   BlockLength <- length(ModifiedRmmCode)
   outputCppCode <- vector('list', length = BlockLength+1) 
@@ -399,8 +399,8 @@ outputCppScopeResolution2 <- function(ModifiedRmmCode, Indentation = '\t') {
 # @export
 outputCppFor2 <- function(ModifiedRmmCode, Indentation = '') {
   loopVar <- outputCppParseTree2(ModifiedRmmCode[[2]], '')
-  Begin <-  outputCppParseTree2(ModifiedRmmCode[[3]], '')
-  End <-  outputCppParseTree2(ModifiedRmmCode[[4]], '')
+  Begin <- outputCppParseTree2(ModifiedRmmCode[[3]], '')
+  End <- outputCppParseTree2(ModifiedRmmCode[[4]], '')
   cppForBody <- outputCppParseTree2(ModifiedRmmCode[[5]], paste0(Indentation,' '))
   ans <- list(paste0(Indentation, 'for(', loopVar, ' = ', Begin, '; ', loopVar, ' <= ', End, '; ', loopVar, '++) {'),
               cppForBody,
@@ -444,7 +444,7 @@ outputCppWhile2 <- function(ModifiedRmmCode, Indentation = '\t') {
 # @keywords OutputCppParseTree
 # @seealso \code{\link{outputCppParseTree}}, \code{\link{outputCppIf}}
 # @export
-outputCppIfElse2  <- function(ModifiedRmmCode, Indentation = '') {
+outputCppIfElse2 <- function(ModifiedRmmCode, Indentation = '') {
     codeLength <- length(ModifiedRmmCode)
     if(!(codeLength == 3 | codeLength == 4)) stop(paste0('Error outputting \"', deparse(ModifiedRmmCode), '\". Length of if-then-else code must be 3 or 4'))
     outputCppBlock <- vector('list', if(codeLength == 3) 3 else 5)

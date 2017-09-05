@@ -47,7 +47,7 @@
 #' sink()
 #' system('g++ add1.cpp -c -o add1.o')
 #' Radd1 <- nimbleExternalCall(function(x = double(1), ans = double(1),
-#' n = integer()){}, Cfun =  'my_internal_function',
+#' n = integer()){}, Cfun = 'my_internal_function',
 #' headerFile = file.path(getwd(), 'add1.h'), returnType = void(),
 #' oFile = file.path(getwd(), 'add1.o'))
 #' ## If you need to use a function with non-scalar return object in model code,

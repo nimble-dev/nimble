@@ -21,8 +21,8 @@ nf_refClassLabelMaker <- labelFunctionCreator('nfRefClass')
 #' @return An object that can be passed as the \code{contains} argument to \code{nimbleFunction} or as the argument to \code{nimbleFunctionList}
 nimbleFunctionVirtual <- function(contains = NULL,
                                   run = function() { },
-                                  methods     = list(),
-                                  name        = NA) {
+                                  methods = list(),
+                                  name = NA) {
     virtual <- TRUE
     if(is.na(name)) name <- nf_refClassLabelMaker()
     className <- name
@@ -65,15 +65,15 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' See the NIMBLE User Manual for examples.
 #'
 #' For more information about the \code{contains} argument, see the section on nimbleFunctionLists.
-nimbleFunction <- function(setup         = NULL,
-                           run           = function() { },
-                           methods       = list(),
-                           globalSetup   = NULL,
-                           contains      = NULL,
-                           enableDerivs  = list(),
-                           name          = NA,
-                           check         = getNimbleOption('checkNimbleFunction'),
-                           where         = getNimbleFunctionEnvironment()
+nimbleFunction <- function(setup = NULL,
+                           run = function() { },
+                           methods = list(),
+                           globalSetup = NULL,
+                           contains = NULL,
+                           enableDerivs = list(),
+                           name = NA,
+                           check = getNimbleOption('checkNimbleFunction'),
+                           where = getNimbleFunctionEnvironment()
                            ) {
     if(is.logical(setup)) if(setup) setup <- function() {} else setup <- NULL
 
@@ -101,7 +101,7 @@ nimbleFunction <- function(setup         = NULL,
     ## create the reference class definition
     
     nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
-    nfRefClass    <- eval(nfRefClassDef)
+    nfRefClass <- eval(nfRefClassDef)
     .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
     .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, if(!is.null(globalSetup)) nf_assignmentLHSvars(body(globalSetup)) else character(0))
     .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)
@@ -127,7 +127,7 @@ buildDerivMethods <- function(methodsList, enableDerivs) {
                                                                                     enableDerivs[[i]], ', this is not a valid method of the nimbleFunction.'))
         derivMethodIndex <- which(names(methodsList) == enableDerivs[[i]])
         derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
-        argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer_')
+        argTransferName <- paste0(enableDerivs[[i]], '_ADargumentTransfer_')
         if(enableDerivs[i] == getCalcADFunName()) isNode <- TRUE else isNode <- FALSE
         if(!isNode)     newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]]))))
         else     newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
@@ -209,14 +209,14 @@ nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabel
     finalMethodList[['show']] <- eval(substitute(function() writeLines(paste0('reference class object for nimble function class ', className)),
                                                  list(className = className)))
     substitute(
-        setRefClass(Class   = NFREFCLASS_CLASSNAME,
-                    fields  = NFREFCLASS_FIELDS,
+        setRefClass(Class = NFREFCLASS_CLASSNAME,
+                    fields = NFREFCLASS_FIELDS,
                     methods = NFREFCLASS_METHODS, 
                     contains = 'nimbleFunctionBase',	#	$runRelated
-                    where   = where),
+                    where = where),
         list(NFREFCLASS_CLASSNAME = className,
-             NFREFCLASS_FIELDS    = nf_createRefClassDef_fields(setup, methodList, globalSetup, declaredSetupOutputNames),
-             NFREFCLASS_METHODS   = finalMethodList
+             NFREFCLASS_FIELDS = nf_createRefClassDef_fields(setup, methodList, globalSetup, declaredSetupOutputNames),
+             NFREFCLASS_METHODS = finalMethodList
             )
         )
 }

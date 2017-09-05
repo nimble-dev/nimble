@@ -45,7 +45,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   getGraph = function() graph,
                                   setGraph = function(value) graph <<- value,
                                   plotGraph = function() igraph::plot.igraph(graph),
-                                  plot      = function() plotGraph(),
+                                  plot = function() plotGraph(),
                                   getModelDef = function() modelDef,
                                   setModelDef = function(value) modelDef <<- value,
                                   getMaps = function(mapName, all = FALSE){
@@ -1135,7 +1135,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            RHS <- code[[3]]
                                            if(nimbleOptions('experimentalEnableDerivs')){
                                              parents <- BUGSdecl$allParentVarNames()
-                                             selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
+                                             selfWithNoInds <- strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
                                              parents <- c(selfWithNoInds, parents)
                                              parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix)
                                              parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, BUGSdecl$unrolledIndicesMatrix,

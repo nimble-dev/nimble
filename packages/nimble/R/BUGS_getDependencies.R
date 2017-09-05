@@ -28,7 +28,7 @@ gd_getDependencies_IDs <- function(graph, maps, nodes, omit, downstream) {
         fullNodesDeps <- if(length(fullNodesForRecursion) > 0) unlist(maps$edgesFrom2To[fullNodesForRecursion]) else integer(0) ## get dependencies of x[1:10]
         
         fullNodesDepsLHSinferred <- maps$types[fullNodesDeps] == 'LHSinferred' ## filter out LHSinferred dependencies, e.g. x[2]
-        fullNodesDeps <-  fullNodesDeps[!fullNodesDepsLHSinferred]
+        fullNodesDeps <- fullNodesDeps[!fullNodesDepsLHSinferred]
         fullNodesDeps <- setdiff(fullNodesDeps, omit) ## filter omits
         
         newNodes <- c(newNodes, fullNodesDeps)

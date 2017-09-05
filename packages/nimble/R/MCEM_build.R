@@ -22,7 +22,7 @@ calc_asympVar = nimbleFunction(
         }
       }
       #as per Caffo, calculate both Q functions using the same samples from the latent variables
-      svals[r]  <- calc_E_llk$run(theta, oldTheta, 1) 
+      svals[r] <- calc_E_llk$run(theta, oldTheta, 1) 
     }
     svalsSD <- sd(svals)
     svalsVar <- svalsSD^2
@@ -88,10 +88,10 @@ getMCEMRanges <- nimbleFunction(
     name = 'getMCEMRanges',
   setup = function(model, maxNodes, buffer){
     low_limits = rep(-Inf, length(maxNodes) ) 
-    hi_limits  = rep(Inf,  length(maxNodes) ) 
+    hi_limits = rep(Inf,  length(maxNodes) ) 
     for(i in 1:length(model$expandNodeNames(maxNodes))){
       low_limits[i] = getBound(model, model$expandNodeNames(maxNodes)[i], 'lower') + abs(buffer)
-      hi_limits[i]  = getBound(model, model$expandNodeNames(maxNodes)[i], 'upper')  - abs(buffer)
+      hi_limits[i] = getBound(model, model$expandNodeNames(maxNodes)[i], 'upper')  - abs(buffer)
     }
     return(list(low_limits, hi_limits))
   }, where = getLoadingNamespace()
@@ -204,7 +204,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
 
   limits <- getMCEMRanges(model, maxNodes, buffer)
   low_limits = limits[[1]]
-  hi_limits  = limits[[2]]
+  hi_limits = limits[[2]]
   
   ## will be assign()'ed from within run() for use in getAsymptoticCov
   paramMLEs <- NA
@@ -417,7 +417,7 @@ bootstrapGetCov <- nimbleFunction(
     grad <- numeric(paramLengths)
     derivxy <- matrix(0, nrow = paramLengths, ncol = paramLengths)
     meanGrad <- numeric(paramLengths)
-    meanGradGrad <-  matrix(0, nrow = paramLengths, ncol = paramLengths)
+    meanGradGrad <- matrix(0, nrow = paramLengths, ncol = paramLengths)
     meanDerivxy <- matrix(0, nrow = paramLengths, ncol = paramLengths)
     for(i in (burnIn+1):nSamples){
       values(model, fixedNodes) <<- theta

@@ -41,17 +41,17 @@ nimKeyWords <- list(copy = 'nimCopy',
 nfMethodRCinterface <- setRefClass(
     Class = 'nfMethodRCinterface',
     fields = list(
-        argInfo    = 'ANY',
-        arguments  = 'ANY',
+        argInfo = 'ANY',
+        arguments = 'ANY',
         returnType = 'ANY',
         uniqueName = 'character'))
 
 nfMethodRC <- setRefClass(
-    Class   = 'nfMethodRC',
+    Class = 'nfMethodRC',
     contains = 'nfMethodRCinterface',
-    fields  = list(
-        template   = 'ANY',
-        code       = 'ANY',
+    fields = list(
+        template = 'ANY',
+        code = 'ANY',
         neededRCfuns = 'ANY',		#list
         externalHincludes = 'ANY',
         externalCPPincludes = 'ANY'
@@ -141,8 +141,8 @@ nfMethodRC <- setRefClass(
             }
             ans
         },
-        getArgInfo       = function() { return(argInfo)    },
-        getReturnType    = function() { return(returnType) })
+        getArgInfo = function() { return(argInfo)    },
+        getReturnType = function() { return(returnType) })
 )
 
 nf_checkDSLcode <- function(code, methodNames, setupVarNames) {

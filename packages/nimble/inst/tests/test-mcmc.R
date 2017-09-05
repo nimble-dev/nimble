@@ -624,9 +624,9 @@ test_that('another MVN conjugate sampler setup', {
         for(i in 1:4)
             mu_y[i,1:5] <- asCol(a[i,1:5]) + B[i,1:5,1:5] %*% asCol(x[1:5])
         y[1,1:5] ~ dmnorm(mu_y[1,1:5], prec = M_y[1,1:5,1:5])
-        y[2,1:5] ~ dmnorm(mu_y[2,1:5], cov  = M_y[2,1:5,1:5])
+        y[2,1:5] ~ dmnorm(mu_y[2,1:5], cov = M_y[2,1:5,1:5])
         y[3,1:5] ~ dmnorm(mu_y[3,1:5], prec = M_y[3,1:5,1:5])
-        y[4,1:5] ~ dmnorm(mu_y[4,1:5], cov  = M_y[4,1:5,1:5])
+        y[4,1:5] ~ dmnorm(mu_y[4,1:5], cov = M_y[4,1:5,1:5])
     })
     constants <- list(prior_mean=prior_mean, prior_cov=prior_cov, a=a, B=B, M_y=M_y)
     data <- list(y=y)
@@ -653,9 +653,9 @@ test_that('another MVN conjugate sampler setup', {
     expect_true(max(abs(dif)) < 1E-15, info = 'R and C equiv')
     
     y_prec <- array(NA, c(4,5,5))
-    y_prec[1,,] <-       M_y[1,,]
+    y_prec[1,,] <- M_y[1,,]
     y_prec[2,,] <- solve(M_y[2,,])
-    y_prec[3,,] <-       M_y[3,,]
+    y_prec[3,,] <- M_y[3,,]
     y_prec[4,,] <- solve(M_y[4,,])
     contribution_mean <- array(NA, c(4,5))
     for(i in 1:4)   contribution_mean[i,] <- t(B[i,,]) %*% y_prec[i,,] %*% (y[i,] - a[i,])
@@ -904,18 +904,18 @@ test_that('RW_multinomial sampler', {
     })
     
     set.seed(0)
-    nGroups   <- 5
-    N         <- 1E6
-    pVecX     <- rdirch(1, rep(1, nGroups))
-    pVecY     <- rdirch(1, rep(1, nGroups))
-    X         <- rmultinom(1, N, pVecX)[,1]
-    Y         <- rmultinom(1, N, pVecY)[,1]
-    Z         <- rbeta(nGroups, 1+X, 1+Y)
-    Xini      <- rmultinom(1, N, sample(pVecX))[,1]
-    Yini      <- rmultinom(1, N, sample(pVecY))[,1]
+    nGroups <- 5
+    N <- 1E6
+    pVecX <- rdirch(1, rep(1, nGroups))
+    pVecY <- rdirch(1, rep(1, nGroups))
+    X <- rmultinom(1, N, pVecX)[,1]
+    Y <- rmultinom(1, N, pVecY)[,1]
+    Z <- rbeta(nGroups, 1+X, 1+Y)
+    Xini <- rmultinom(1, N, sample(pVecX))[,1]
+    Yini <- rmultinom(1, N, sample(pVecY))[,1]
     Constants <- list(nGroups=nGroups)
-    Inits     <- list(X=Xini, Y=Yini, pVecX=pVecX, pVecY=pVecY, N=N)
-    Data      <- list(Z=Z)
+    Inits <- list(X=Xini, Y=Yini, pVecX=pVecX, pVecY=pVecY, N=N)
+    Data <- list(Z=Z)
     modelTest <- nimbleModel(codeTest, constants=Constants, inits=Inits, data=Data, check=TRUE)
     cModelTest <- compileNimble(modelTest)
     
@@ -923,18 +923,18 @@ test_that('RW_multinomial sampler', {
     samplers <- mcmcTestConfig$getSamplers()
     test_that('assign RW_multinomial sampler', expect_equal(samplers[[1]]$name, 'RW_multinomial'))
     test_that('assign RW_multinomial sampler', expect_equal(samplers[[2]]$name, 'RW_multinomial'))
-    mcmcTest  <- buildMCMC(mcmcTestConfig)
+    mcmcTest <- buildMCMC(mcmcTestConfig)
     cMcmcTest <- compileNimble(mcmcTest, project=modelTest)
     
     ## Optionally resample data
-    cModelTest$N      <- N <- 1E3
+    cModelTest$N <- N <- 1E3
     (cModelTest$pVecX <- sort(rdirch(1, rep(1, nGroups))))
     (cModelTest$pVecY <- sort(rdirch(1, rep(1, nGroups))))
     simulate(cModelTest, "X", includeData=TRUE); (X <- cModelTest$X)
     simulate(cModelTest, "Y", includeData=TRUE); (Y <- cModelTest$Y)
     simulate(cModelTest, "Z", includeData=TRUE); (Z <- cModelTest$Z)
     
-    niter  <- 1E4
+    niter <- 1E4
     cMcmcTest$run(niter)
     samples <- as.matrix(cMcmcTest$mvSamples)
     
@@ -1011,7 +1011,7 @@ test_that('RW_multinomial sampler on distribution of size 2', {
     conf$addSampler(target = 'x', type = 'RW_multinomial', print = nimbleOptions('verbose'))
     conf$addSampler(target = 'y', type = 'slice', print = nimbleOptions('verbose'))
     if(nimbleOptions('verbose')) conf$printSamplers()
-    Rmcmc  <- buildMCMC(conf)
+    Rmcmc <- buildMCMC(conf)
     Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
     
     Cmcmc$run(100000)

@@ -25,20 +25,20 @@ codeTest <- nimbleCode ({
 })
 
 ## CONSTANTS, INITS & DATA 
-nGroups   <- 5
-N         <- 1E6
-pVecX     <- rdirch(1, rep(1, nGroups)) ## rep(1/nGroups, nGroups)
-pVecY     <- rdirch(1, rep(1, nGroups)) ## rep(1/nGroups, nGroups)
-X         <- rmultinom(1, N, pVecX)[,1]
-Y         <- rmultinom(1, N, pVecY)[,1]
-Z         <- rbeta(nGroups, 1+X, 1+Y)
+nGroups <- 5
+N <- 1E6
+pVecX <- rdirch(1, rep(1, nGroups)) ## rep(1/nGroups, nGroups)
+pVecY <- rdirch(1, rep(1, nGroups)) ## rep(1/nGroups, nGroups)
+X <- rmultinom(1, N, pVecX)[,1]
+Y <- rmultinom(1, N, pVecY)[,1]
+Z <- rbeta(nGroups, 1+X, 1+Y)
                                         # Resample X and Y to make the MCMC more challenging
-Xini      <- rmultinom(1, N, sample(pVecX))[,1]
-Yini      <- rmultinom(1, N, sample(pVecY))[,1]
+Xini <- rmultinom(1, N, sample(pVecX))[,1]
+Yini <- rmultinom(1, N, sample(pVecY))[,1]
 ## Lists for nimbleModel
 Constants <- list(nGroups=nGroups)                     ## Can't modify after compilation
-Inits     <- list(X=Xini, Y=Yini, pVecX=pVecX, pVecY=pVecY, N=N) ## Can modify after compilation
-Data      <- list(Z=Z)                                           ## Can modify after compilation
+Inits <- list(X=Xini, Y=Yini, pVecX=pVecX, pVecY=pVecY, N=N) ## Can modify after compilation
+Data <- list(Z=Z)                                           ## Can modify after compilation
 
 
 ## ASSEMBLE NIMBLE MODEL
@@ -69,11 +69,11 @@ mcmcTestConfig$addSampler(target = 'X', type = 'RW_multinomial', control = list(
 mcmcTestConfig$addSampler(target = 'Y', type = 'RW_multinomial', control = list(adaptive=TRUE, adaptInterval=100)) 
 mcmcTestConfig$printSamplers()
 ## BUILD & COMPILE MCMC
-mcmcTest  <- buildMCMC(mcmcTestConfig) 
+mcmcTest <- buildMCMC(mcmcTestConfig) 
 cMcmcTest <- compileNimble(mcmcTest, project=modelTest)
 
 ## Optionally resample data
-cModelTest$N      <- N <- 1E3
+cModelTest$N <- N <- 1E3
 (cModelTest$pVecX <- sort(rdirch(1, rep(1, nGroups)))) 
 (cModelTest$pVecY <- sort(rdirch(1, rep(1, nGroups)))) 
 simulate(cModelTest, "X", includeData=TRUE); (X <- cModelTest$X)
@@ -88,13 +88,13 @@ RESET <- TRUE
 ##############
 ## Run MCMC ##
 ##############
-niter  <- 1E4
+niter <- 1E4
 print(sysT <- system.time(cMcmcTest$run(niter, reset = RESET))) 
-Tail   <- tail(samples <- as.matrix(cMcmcTest$mvSamples), 25)
+Tail <- tail(samples <- as.matrix(cMcmcTest$mvSamples), 25)
 if (nrow(samples)>niter)
     samples <- samples[-(1:niter),]
 dim(as.matrix(cMcmcTest$mvSamples))
-RESET  <- FALSE ## TRUE
+RESET <- FALSE ## TRUE
 iColsX <- 1:nGroups
 iColsY <- iColsX + nGroups
 ##############

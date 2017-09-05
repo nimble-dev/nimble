@@ -11,10 +11,10 @@ varInfoClass <- setRefClass('varInfoClass',
 graphNode <- setRefClass(
     Class = 'graphNode',
     fields = list(
-        nodeName         = 'ANY',
-        graphID          = 'ANY',
-        type             = 'ANY',
-        originNodeName   = 'ANY',
+        nodeName = 'ANY',
+        graphID = 'ANY',
+        type = 'ANY',
+        originNodeName = 'ANY',
         nodeFunctionName = 'ANY'
     )
 )
@@ -70,47 +70,47 @@ modelDefClass <- setRefClass('modelDefClass',
                                  setupModel = function(code, constants, dimensions, debug) {},
                                  
                                  ## the following are all run, in this order, by setupModel():
-                                 setModelValuesClassName        = function() {},
-                                 assignBUGScode                 = function() {},
-                                 assignConstants                = function() {},
-                                 assignDimensions               = function() {},
-                                 initializeContexts             = function() {},
-                                 processBUGScode                = function() {},
-                                 splitConstantsAndData          = function() {},
-                                 addMissingIndexing             = function() {},
-                                 processBoundsAndTruncation     = function() {},
-                                 expandDistributions            = function() {},
-                                 checkMultivarExpr              = function() {},
-                                 processLinks                   = function() {},
-                                 reparameterizeDists            = function() {},
-                                 replaceAllConstants            = function() {},
-                                 liftExpressionArgs             = function() {},
-                                 addRemainingDotParams          = function() {},
-                                 addIndexVarsToDeclInfo         = function() {},
-                                 genSymbolicParentNodes         = function() {},
-                                 genUnknownIndexDeclarations    = function() {},
+                                 setModelValuesClassName = function() {},
+                                 assignBUGScode = function() {},
+                                 assignConstants = function() {},
+                                 assignDimensions = function() {},
+                                 initializeContexts = function() {},
+                                 processBUGScode = function() {},
+                                 splitConstantsAndData = function() {},
+                                 addMissingIndexing = function() {},
+                                 processBoundsAndTruncation = function() {},
+                                 expandDistributions = function() {},
+                                 checkMultivarExpr = function() {},
+                                 processLinks = function() {},
+                                 reparameterizeDists = function() {},
+                                 replaceAllConstants = function() {},
+                                 liftExpressionArgs = function() {},
+                                 addRemainingDotParams = function() {},
+                                 addIndexVarsToDeclInfo = function() {},
+                                 genSymbolicParentNodes = function() {},
+                                 genUnknownIndexDeclarations = function() {},
                                  genReplacementsAndCodeReplaced = function() {},
                                  genAltParamsModifyCodeReplaced = function() {},
-                                 genBounds                      = function() {},
+                                 genBounds = function() {},
                                  genReplacedTargetValueAndParentInfo = function() {},
-                                 removeEmptyBUGSdeclarations    = function() {},
-                                 genIsDataVarInfo               = function() {},
-                                 genVarNames                    = function() {},
-                                 buildSymbolTable               = function() {},
-                                 genGraphNodesList              = function() {},
+                                 removeEmptyBUGSdeclarations = function() {},
+                                 genIsDataVarInfo = function() {},
+                                 genVarNames = function() {},
+                                 buildSymbolTable = function() {},
+                                 genGraphNodesList = function() {},
                                                                   
-                                 newModel                       = function() {},
-                                 fixRStudioHanging              = function() {},
-                                 printDI                        = function() {},
+                                 newModel = function() {},
+                                 fixRStudioHanging = function() {},
+                                 printDI = function() {},
                                  
-                                 genNodeInfo3                   = function() {},
-                                 genVarInfo3                    = function() {},
+                                 genNodeInfo3 = function() {},
+                                 genVarInfo3 = function() {},
                                  # put check of var dims here?
-                                 addUnknownIndexVars            = function() {},
-                                 findDynamicIndexParticipants   = function() {},
+                                 addUnknownIndexVars = function() {},
+                                 findDynamicIndexParticipants = function() {},
                                  addFullDimExtentToUnknownIndexDeclarations = function() {},
                                  genExpandedNodeAndParentNames3 = function() {},
-                                 stripUnknownIndexInfo          = function() {},
+                                 stripUnknownIndexInfo = function() {},
                                  #These functions are NOT run inside of setupModel
                                  nodeName2GraphIDs = function(){},
                                  graphIDs2indexedNodeInfo = function(){},
@@ -561,7 +561,7 @@ modelDefClass$methods(processLinks = function() {
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
             BUGSdeclClassObject$setup(code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
-            newDeclInfo[[nextNewDeclInfoIndex]]     <- BUGSdeclClassObject
+            newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
             BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
@@ -2085,7 +2085,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         newSplit <- splitVertexIDsToElementIDs(vars_2_vertexID[[vN]], nextElementID)
         vars_2_elementID[[vN]] <- newSplit[[1]]
         nextElementID <- newSplit[[2]]
-        origElementID_2_vertexID <-  c(origElementID_2_vertexID, newSplit[[3]])
+        origElementID_2_vertexID <- c(origElementID_2_vertexID, newSplit[[3]])
         origElementID_2_vertexID[unique(newSplit[[3]])] <- 0 ## remove IDs that were replaced
     }
     ##  make the element IDs contiguous and match the sorting
@@ -2137,7 +2137,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         vars_2_nodeID_noNAs[[vN]] <- vars_2_nodeID[[vN]]
         boolNA <- is.na(vars_2_nodeID_noNAs[[vN]])
         if(any(boolNA))
-            vars_2_nodeID_noNAs[[vN]][boolNA] <-  vars_2_vertexID[[vN]][boolNA] 
+            vars_2_nodeID_noNAs[[vN]][boolNA] <- vars_2_vertexID[[vN]][boolNA] 
     }
 
     ## 12. Set up things needed for maps.
@@ -2525,7 +2525,7 @@ modelDefClass$methods(fixRStudioHanging = function(model) {
                     unique(sapply(model$nodeFunctions, function(nf) as.character(class(nf)))))
     for(name in c(classNames, "modelDefClass", "igraph")) {
         eval(substitute(NAME <- METHOD,
-                        list(NAME   = as.name(paste0('str.', name)),
+                        list(NAME = as.name(paste0('str.', name)),
                              METHOD = nullStrMethod)),
              envir = globalenv())
     }
@@ -2590,7 +2590,7 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 pl
 ## ##    if(!identical(output[!is.na(output)], as.character(output2[!is.na(output2)]))) browser()
 ##     output <- output[!is.na(output)]
 
-    graphIDs2 <- unique(parseEvalNumericMany(nodeName, env =  maps$vars2GraphID_functions))
+    graphIDs2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions))
     output2 <- maps$graphID_2_logProbName[graphIDs2]
     output2 <- output2[!is.na(output2)]
 

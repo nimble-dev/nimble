@@ -267,7 +267,7 @@ toEigenAssignLHS <- function(code, symTab, typeEnv, NoEigenizeMap = FALSE) {
                         if(inherits(test, 'try-error')) browser()
                     }
                     assert[[ length(assert) + 1]] <- 0 ## copyValues = false
-                    assert[[ length(assert) + 1]] <- 0 ## fillZeros  = false
+                    assert[[ length(assert) + 1]] <- 0 ## fillZeros = false
                     assert <- list(assert)
                 } else { ## We have an indexed LHS of an eigenizable expression
                     ## need special handling if it is a row assignment like x[i,] <- ...

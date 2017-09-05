@@ -4,7 +4,7 @@
 addArg <- function(code, value, name) {
     newArgIndex <- length(code) + 1
     code[newArgIndex] <- value
-    names(code)[newArgIndex] <-  name
+    names(code)[newArgIndex] <- name
     return(code)
 }
 

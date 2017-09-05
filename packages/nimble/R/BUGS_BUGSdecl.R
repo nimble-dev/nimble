@@ -154,12 +154,12 @@ BUGSdeclClass <- setRefClass(
     ),   
     
     methods = list(
-        setup                          = function() {},
-        setIndexVariableExprs          = function() {},
-        genSymbolicParentNodes         = function() {},
+        setup = function() {},
+        setIndexVariableExprs = function() {},
+        genSymbolicParentNodes = function() {},
         genReplacementsAndCodeReplaced = function() {},
         genAltParamsModifyCodeReplaced = function() {},
-        genBounds                      = function() {},
+        genBounds = function() {},
         
         genReplacedTargetValueAndParentInfo = function() {},
         
@@ -179,7 +179,7 @@ BUGSdeclClass <- setRefClass(
             unique(unlist(lapply(indexedNodeInfo, `[[`, 'parentNodeExprs')))
         },
         allEdges = function() {
-            edgesIn  <- unlist(
+            edgesIn <- unlist(
                 lapply(
                     indexedNodeInfo, 
                     function(x) {
@@ -929,7 +929,7 @@ genReplacementsAndCodeRecurse <- function(code,
                 lapply(contents, function(x) x$codeReplaced)
             contentsReplacements <-
                 lapply(contents, function(x) x$replacements)
-            contentsReplaceable  <-
+            contentsReplaceable <-
                 unlist(lapply(contents, function(x) x$replaceable))
             if(replaceVariableLHS) {
                 variable <-
@@ -979,13 +979,13 @@ genReplacementsAndCodeRecurse <- function(code,
             }
             contentsCodeReplaced <- lapply(contents, function(x) x$codeReplaced)
             contentsReplacements <- lapply(contents, function(x) x$replacements)
-            contentsReplaceable  <-
+            contentsReplaceable <-
                 unlist(lapply(contents, function(x) x$replaceable))
             allContentsReplaceable <- all(contentsReplaceable)
         } else {
             contentsCodeReplaced <- list()
             contentsReplacements <- list()
-            contentsReplaceable  <- list()
+            contentsReplaceable <- list()
             allContentsReplaceable <- TRUE
         }
         if(deparse(code[[1]]) %in%
