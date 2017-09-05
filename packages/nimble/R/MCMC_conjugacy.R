@@ -355,7 +355,7 @@ conjugacyClass <- setRefClass(
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
             dependentObj <- dependents[[depNodeDist]]
             linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode)
+            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr)
             if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
             if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
             linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
@@ -901,7 +901,7 @@ cc_makeRDistributionName     <- function(distName)     return(paste0('r', substr
 
 
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
-cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansions=FALSE) {
+cc_expandDetermNodesInExpr <- function(model, expr, skipExpansions=FALSE) {
     if(is.numeric(expr)) return(expr)     # return numeric
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) { # expr is a name, or an indexed name
         if(nimbleOptions()$allowDynamicIndexing) {
@@ -911,9 +911,21 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                 numericOrVectorIndices <- sapply(indexExprs,
                       function(x) is.numeric(x) || (length(x) == 3 && x[[1]] == ':'))
                 if(!all(numericOrVectorIndices)) {
-                    indexExprs[!numericOrVectorIndices] <- parse(text = targetNode)[[1]][3:length(expr)][!numericOrVectorIndices]
-                    expr[3:length(expr)] <- indexExprs
-                }
+                    ## need expressions for indices and for variable fully-expanded in
+                    ## non-constant index positions
+                    varInfo <- model$modelDef$varInfo[[deparse(expr[[2]])]]
+                    ranges <- data.frame(rbind(varInfo$mins[!numericOrVectorIndices],
+                                               varInfo$maxs[!numericOrVectorIndices]))
+                    fullExtent <- lapply(ranges, function(x) 
+                        substitute(X:Y, list(X = x[1], Y = x[2])))
+                    expr[which(!numericOrVectorIndices)+2] <- fullExtent
+                    ## sapply business gets rid of () at end of index expression
+                    newExpr <- as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
+                    for(i in seq_along(newExpr)[-1])
+                        newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], skipExpansions)
+                    browser()
+                    return(newExpr)
+                }  ## else continue with processing as in non-dynamic index case
             }
         }
         exprText <- deparse(expr)
@@ -931,19 +943,19 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
                 newExpr <- model$getValueExpr(exprText)
-                return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansions))
+                return(cc_expandDetermNodesInExpr(model, newExpr, skipExpansions))
             }
             if(type == 'RHSonly') return(expr)
             stop('something went wrong with Daniel\'s understanding of newNimbleModel')
         }
         newExpr <- cc_createStructureExpr(model, exprText)
         for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
+            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], skipExpansions)
         return(newExpr)
     }
     if(is.call(expr)) {
         for(i in seq_along(expr)[-1])
-            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansions)
+            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], skipExpansions)
         return(expr)
     }
     stop(paste0('something went wrong processing: ', deparse(expr)))
@@ -980,7 +992,7 @@ cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansions=FALSE
     paramsList <- as.list(model$getValueExpr(depNode)[-1])       # extracts the list of all parameters, for the distribution of depNode
     timesFound <- 0   ## for success, we'll find targetNode in only *one* parameter expression
     for(i in seq_along(paramsList)) {
-        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansions)
+        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], skipExpansions)
         if(cc_vectorizedComponentCheck(targetNode, expr))   return(FALSE)
         if(cc_nodeInExpr(targetNode, expr))     { timesFound <- timesFound + 1 }    ## we found 'targetNode'
     }
