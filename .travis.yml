@@ -1,8 +1,14 @@
 language: r
-sudo: false
-cache: packages
 
-# We parallelize the tests into baches, and only run one batch on OS X.
+dist: trusty
+sudo: false
+
+cache:
+  packages: true
+  directories:
+    - $HOME/.cache/pip
+
+# We parallelize the tests into baches, and run only one batch on OS X.
 matrix:
   include:
     - os: linux
@@ -16,7 +22,7 @@ matrix:
     - os: linux
       env: NIMBLE_TEST_BATCH=5
     - os: osx
-      env: NIMBLE_TEST_BATCH=1
+      env: NIMBLE_TEST_BATCH=1 NIMBLE_USE_TENSORFLOW=0
 
 warnings_are_errors: true
 
@@ -37,13 +43,20 @@ addons:
   apt:
     packages:
       - time  # For /usr/bin/time profiling.
+      - python-virtualenv  # For tensorflow::install_tensorflow().
 
 install:
+  - pip2.7 install --upgrade --ignore-installed --user travis pip setuptools wheel virtualenv
   - ./install_requirements.R
+  - pip freeze
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
-script: ./run_tests.R
+script:
+  - source /home/travis/.virtualenvs/r-tensorflow/bin/activate \
+    || echo 'Missing tensorflow'
+  - pip freeze
+  - ./run_tests.R
 
 after_success:
   - Rscript -e 'library(covr); if(R.version$os == "linux-gnu") codecov()'

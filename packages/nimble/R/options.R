@@ -10,6 +10,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         allowDynamicIndexing = FALSE,
         nimbleProjectForTesting = NULL,  ## only used by withTempProject and compileNimble in testing code.
         stopCompilationBeforeLinking = NULL,
+        experimentalUseTensorflow = FALSE,
         experimentalNewSizeProcessing = FALSE,
         experimentalSelfLiftStage = FALSE,
         enableSpecialHandling = FALSE,

@@ -2577,11 +2577,26 @@ sizeUnaryCwise <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     ## lift intermediates
     a1 <- code$args[[1]]
+    
     if(inherits(a1, 'exprClass')) {
         if(!nimbleOptions('experimentalNewSizeProcessing') ) {
-            if(a1$toEigenize == 'no') {
-                asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-                a1 <- code$args[[1]]
+            if(a1$nDim == 0) {
+                ## Argument is scalar.
+                ## If it results from vector operation (e.g. inprod)
+                ## lift that to an intermediate
+                if(a1$toEigenize == 'yes') {
+                    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+                    a1 <- code$args[[1]]
+                }
+            } else {
+                ## Argument is non-scalar.  In this case, the
+                ## expression will be eigenized, so we must lift the
+                ## argument to an intermediate if it *can't* be
+                ## eigenized.
+                if(a1$toEigenize == 'no') {
+                    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+                    a1 <- code$args[[1]]
+                }
             }
         }
         code$nDim <- a1$nDim
