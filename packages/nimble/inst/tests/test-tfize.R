@@ -56,3 +56,64 @@ test_that('Tensorflow backend works for basic math', {
     sapply(testsMoreMath, test_math, 'tensorflow')
     sapply(testsMatrix, test_math, 'tensorflow')
 })
+
+test_that('Tensorflow works with nimDerivs()', {
+    temporarilyEnableTensorflow()
+    nimbleOptions(debugCppLineByLine = TRUE)
+    nimbleOptions(showCompilerOutput = TRUE)
+    nimbleOptions(pauseAfterWritingFiles = FALSE)
+    nimbleOptions(experimentalNewSizeProcessing = TRUE)
+    
+    nf1 <- nimbleFunction(
+        name = 'example',
+        run = function(x = double(1)) {
+            return(sum(x))
+            returnType(double(0))
+        }
+    )
+    nf2 <- nimbleFunction(
+        name = 'example_gradient',
+        run = function(arg1 = double(1)) {
+            return(nimDerivs(nf1, order = c(0, 1)))
+            returnType(ADNimbleList())
+        }
+    )
+    dirName <- file.path(Sys.getenv('HOME'), 'tmp')
+    cnf1 <- compileNimble(nf1, dirName = dirName, projectName = 'tf',
+                          control = list(debugCpp = TRUE))
+    cnf2 <- compileNimble(nf2, dirName = dirName, projectName = 'tf',
+                          control = list(debugCpp = TRUE))
+    x <- c(-2, -1, 0, 1, 2)
+    dx <- c(-4, -2, 0, 2, 4)
+    expect_equal(cnf(x), dx)
+})
+
+test_that('Tensorflow can compute derivatives', {
+    nimbleOptions(experimentalEnableDerivs = TRUE,
+                  experimentalUseTensorflow = FALSE)
+
+    ADfun <- nimbleFunction(
+        setup = function(){},
+        run = function(x = double(0)) {
+            outList <- derivs(testMethod(x))
+            returnType(ADNimbleList())
+            return(outList)
+        },
+        methods = list(
+            testMethod = function(x = double(0)) {
+                out <- dnorm(x,0,1)
+                returnType(double())
+                return(out)
+            }
+        ),
+        enableDerivs = list('testMethod')
+    )
+    
+    ADfunInst <- ADfun()
+    temporarilyAssignInGlobalEnv(ADfunInst)
+    cADfunInst <- compileNimble(ADfunInst, showCompilerOutput = TRUE)
+    
+    Rderiv <- D(expression((1/(sqrt(2*pi)))*exp(-(x^2)/2)), 'x') ## Can be replaced by NIMBLE's R version of derivs in the future.
+    x <- 1.4
+    expect_equal(cADfunInst$run(x)$gradient[1], eval(Rderiv)) ## Temporary simple test to make sure compilation and gradient calculation work.
+})

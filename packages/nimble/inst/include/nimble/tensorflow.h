@@ -28,6 +28,10 @@
 #include <string>
 #include <vector>
 
+#if NIMBLE_HAVE_CPPAD
+#include <cppad/cppad.h>
+#endif  // NIMBLE_HAVE_CPPAD
+
 // This class runs a single tensorflow graph. Instances should be created as
 // static local variables of a nimbleFunction.
 // Example usage:
@@ -65,12 +69,13 @@ class NimTf_Runner {
 
   int input_pos_;
   int output_pos_;
+  int gradient_pos_;
 
  public:
   NimTf_Runner(const std::string& graphDefBase64,
                const std::string& configBase64,
                const std::vector<std::string>& inputNames,
-               const std::vector<std::string>& outputName);
+               const std::vector<std::string>& outputNames);
   ~NimTf_Runner();
 
   // These must be called in strict order.
@@ -79,6 +84,14 @@ class NimTf_Runner {
   void NimTf_run();
   void NimTf_getOutput(double& scalar);
   void NimTf_getOutput(NimArrBase<double>& nimArr);
+
+  // These must be called in strict order (for gradient computation).
+  void NimTf_setInput(const std::vector<int>& dims, const double* data);
+  void NimTf_runGradient();
+  void NimTf_getGradient(const std::vector<int>& dims, double* data);
+
+  int num_inputs() const { return inputs_.size(); }
+  int num_outputs() const { return outputs_.size(); }
 
  private:
   // Safety measures:
@@ -127,5 +140,39 @@ class NimTf_Builder {
                             outputNames_);
   }
 };
+
+#if NIMBLE_HAVE_CPPAD
+
+// Helper to register a NimTf_Runner with CppAD.
+// Note that this currently computes only function values and gradients of
+// scalar functions (RR^n -> RR), and does not support Jacobians or Hessians.
+class NimTf_op : public CppAD::atomic_base<double> {
+ public:
+  typedef CppAD::AD<double> ad_double;
+
+  NimTf_op(NimTf_Runner& runner);
+
+  void NimTf_setInput(ad_double& scalar);
+  void NimTf_setInput(NimArrBase<ad_double>& nimArr);
+  void NimTf_run();
+  void NimTf_getOutput(ad_double& scalar);
+  void NimTf_getOutput(NimArrBase<ad_double>& nimArr);
+
+ private:
+  virtual bool forward(size_t p, size_t q, const CppAD::vector<bool>& vx,
+                       CppAD::vector<bool>& vy, const CppAD::vector<double>& tx,
+                       CppAD::vector<double>& ty);
+
+  virtual bool reverse(size_t q, const CppAD::vector<double>& tx,
+                       const CppAD::vector<double>& ty,
+                       CppAD::vector<double>& px,
+                       const CppAD::vector<double>& py);
+
+  NimTf_Runner& runner_;
+  CppAD::vector<ad_double> packed_arg_;
+  CppAD::vector<ad_double> packed_result_;
+};
+
+#endif  // NIMBLE_HAVE_CPPAD
 
 #endif  // __NIMBLE_TENSORFLOW_H

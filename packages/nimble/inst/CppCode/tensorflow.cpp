@@ -45,7 +45,8 @@ NimTf_Runner::NimTf_Runner(const std::string& graphDefBase64,
       outputs_(outputNames.size()),
       output_values_(outputNames.size()),
       input_pos_(0),
-      output_pos_(outputNames.size()) {
+      output_pos_(outputNames.size()),
+      gradient_pos_(inputNames.size()) {
   // Initialize graph.
   {
     std::string graphDef;
@@ -178,3 +179,138 @@ void NimTf_Runner::NimTf_getOutput(NimArrBase<double>& nimArr) {
   TF_DeleteTensor(tensor);
   output_pos_ += 1;
 }
+
+void NimTf_Runner::NimTf_setInput(const std::vector<int>& dims,
+                                  const double* data) {
+  NIMERROR("TODO")
+}
+
+void NimTf_Runner::NimTf_runGradients() { NIMERROR("TODO") }
+
+void NimTf_Runner::NimTf_getGradient(const std::vector<int>& dims,
+                                     double* data) {
+  NIMERROR("TODO")
+}
+
+#if NIMBLE_HAVE_CPPAD
+
+NimTf_op::NimTf_op(NimTf_Runner& runner)
+    : CppAD::atomic_base<double>("tensorflow"), runner_(runner) {
+  NIM_ASSERT_EQ(runner.num_outputs(), 1);
+}
+
+void NimTf_op::NimTf_setInput(ad_double& scalar) {
+  packed_arg_.push_back(0);
+  packed_arg_.push_back(scalar);
+}
+
+void NimTf_op::NimTf_setInput(NimArrBase<ad_double>& nimArr) {
+  const int n = nimArr.numDims();
+  packed_arg_.push_back(n);
+  size_t size = 1;
+  for (int i = 0; i < n; ++i) {
+    size_t dim = nimArr.dimSize(i);
+    packed_arg_.push_back(n);
+    size *= dim;
+  }
+  for (size_t i = 0; i < size; ++i) {
+    packed_arg_.push_back(i);
+  }
+}
+
+void NimTf_op::NimTf_run() {
+  packed_result_.resize(1);
+  (*this)(packed_arg_, packed_result_);
+}
+
+void NimTf_op::NimTf_getOutput(ad_double& scalar) {
+  scalar = packed_result_[0];
+}
+
+void NimTf_op::NimTf_getOutput(NimArrBase<ad_double>& nimArr) {
+  const int n = TF_NumDims(tensor);
+  for (int i = 0; i < n; ++i) {
+    NIM_ASSERT_EQ(nimArr.dimSize(i), 1);
+  }
+  nimArr.getPtr()[0] = packed_result_[0];
+}
+
+bool NimTf_op::forward(size_t p, size_t q, const CppAD::vector<bool>& vx,
+                       CppAD::vector<bool>& vy, const CppAD::vector<double>& tx,
+                       CppAD::vector<double>& ty) {
+  // This implements only computation of a single scalar value (no derivatives).
+  if (p != 0) return false;
+  if (q != 0) return false;
+  NIM_ASSERT_EQ(ty.size(), 1);
+
+  // Set inputs.
+  size_t pos = 0;
+  for (int i = 0; i < num_inputs(); ++i) {
+    const int numDims = static_cast<int>(tx[pos++]);
+    std::vector<size_t> dims;
+    size_t size = 1;
+    for (int j = 0; j < n; ++j) {
+      const int dim = static_cast<int>(tx[pos++]);
+      dims.push_back(dim);
+      size *= dim;
+    }
+    runner_.setInput(dims, tx.data() + pos);
+    pos += size;
+  }
+
+  // Run the tensorflow graph.
+  runner_.run();
+
+  // Get outputs.
+  vy[0] = true;
+  runner_.getOutput(ty[0]);
+}
+
+bool NimTf_op::reverse(size_t q, const CppAD::vector<double>& tx,
+                       const CppAD::vector<double>& ty,
+                       CppAD::vector<double>& px,
+                       const CppAD::vector<double>& py) {
+  // This implements only computation of a single scalar gradient.
+  if (q != 1) return false;
+  NIM_ASSERT_EQ(ty.size(), 1);
+
+  // Set inputs.
+  size_t pos = 0;
+  for (int i = 0; i < num_inputs(); ++i) {
+    const int numDims = static_cast<int>(tx[pos++]);
+    std::vector<size_t> dims;
+    size_t size = 1;
+    for (int j = 0; j < n; ++j) {
+      const int dim = static_cast<int>(tx[pos++]);
+      dims.push_back(dim);
+      size *= dim;
+    }
+    runner_.setInput(dims, tx.data() + pos);
+    pos += size;
+  }
+
+  // Run the tensorflow graph.
+  runner_.runGradient();
+
+  // Get outputs.
+  px.resize(0);
+  px.resize(tx.size(), 0);
+  pos = 0;
+  for (int i = 0; i < num_inputs(); ++i) {
+    const int numDims = static_cast<int>(tx[pos++]);
+    std::vector<size_t> dims;
+    size_t size = 1;
+    for (int j = 0; j < n; ++j) {
+      const int dim = static_cast<int>(tx[pos++]);
+      dims.push_back(dim);
+      size *= dim;
+    }
+    runner_.getGradient(dims, px.data() + pos);
+    for (int j = 0; j < size; ++j) {
+      px[pos + j] *= py[0];
+    }
+    pos += size;
+  }
+}
+
+#endif  // NIMBLE_HAVE_CPPAD

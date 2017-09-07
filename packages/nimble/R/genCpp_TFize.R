@@ -269,7 +269,9 @@ tfTranslate <- function(name) {
     return(.tfLazyData$tfTranslate[[name]])
 }
 
-TfTensorize <- function(code, placeholders) {
+## Translates code from exprClasses format to tensorflow graph format.
+## Returns a tensorflow Tensor that is the final result of the code.
+TfTensorizeExpr <- function(code, placeholders) {
     if (!is.environment(placeholders)) stop()
     if (class(code) == 'exprClass') {
         while (code$name == '(') {
@@ -280,7 +282,7 @@ TfTensorize <- function(code, placeholders) {
         }
         translated <- tfTranslate(code$name)
         if (!is.null(translated)) {
-            args <- lapply(code$args, TfTensorize, placeholders)
+            args <- lapply(code$args, TfTensorizeExpr, placeholders)
             return(do.call(translated, args))
         }
         stop(paste('Not implemented:', code$name))
@@ -297,8 +299,11 @@ TfTensorize <- function(code, placeholders) {
     stop(paste('Not implemented:', class(code)))
 }
 
+## Creates a TfBuilder object representing the given code.
+## This can optionally compute gradients wrt given placeholders.
 ## Setting threads=0 lets tensorflow choose the number of threads.
-exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
+exprClasses2serializedTF <- function(code, symTab, gradients_wrt = c(),
+                                     threads = 0L) {
     if (!require(tensorflow)) {
         stop('Failed to load tensorflow package')
     }
@@ -315,7 +320,7 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     ## Construct a tensorflow graph.
     tf$reset_default_graph()
     placeholders <- TfCollectPlaceholders(expr, symTab)
-    tensor <- TfTensorize(expr, placeholders)
+    tensor <- TfTensorizeExpr(expr, placeholders)
     tensor <- tf$identity(tensor, name = target$name)
 
     ## Configure the tensorflow session.
@@ -330,7 +335,8 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
 
     ## Serialize protos to strings.
     base64 <- reticulate::import('base64')
-    graph <- base64$b64encode(tensor$graph$as_graph_def()$SerializeToString())
+    graph <- tf$get_default_graph()
+    graph <- base64$b64encode(graph$as_graph_def()$SerializeToString())
     config <- base64$b64encode(configProto$SerializeToString())
 
     ## Create NimTf_Builder.
@@ -341,6 +347,16 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
         tfBuilder$addInputVar(name)
     }
     tfBuilder$addOutputVar(target$name)
+
+    ## Optionally compute gradients.
+    for (wrt in gradients_wrt) {
+        if (!wrt %in% names(placeholders)) {
+            stop(paste('Gradient wrt unknown variable:', wrt))
+        }
+        gradient <- tf$gradients(target, placeholders[wrt],
+                                 name = paste0(target$name, '_gradient_', wrt))
+        tfBuilder$addOutputVar(gradient$name)
+    }
     return(tfBuilder)
 }
 
