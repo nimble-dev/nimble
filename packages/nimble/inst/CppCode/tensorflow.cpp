@@ -185,7 +185,7 @@ void NimTf_Runner::NimTf_setInput(const std::vector<int>& dims,
   NIMERROR("TODO")
 }
 
-void NimTf_Runner::NimTf_runGradients() { NIMERROR("TODO") }
+void NimTf_Runner::NimTf_runGradient() { NIMERROR("TODO") }
 
 void NimTf_Runner::NimTf_getGradient(const std::vector<int>& dims,
                                      double* data) {
