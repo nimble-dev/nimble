@@ -13,10 +13,6 @@ ADMod1 <- nimbleModel(code = ADCode1, data = list(y = numeric(2)), dimensions = 
 test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod1$getDependencies('x'))),
                       wrt = list(c('x', 'y'), c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]'), c('x[1]', 'y', 'x[2]')), testR = TRUE)
 
-test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(c('x', 'y')),
-                      wrt = list(c('x', 'y')), testR = TRUE)
-
-
 ADCode2 <- nimbleCode({
   y[1:2] ~ dmnorm(z[1:2], diagMat[,])
   z[1:2] <- x[1:2] + c(1,1)
@@ -41,10 +37,10 @@ simData <- matrix(1:4, nrow = 2, ncol = 2)
 ADMod3 <- nimbleModel(
   code = ADCode3, constants = list(diagMat = diag(2)),
   data = list(y = simData), inits = list(mu = c(-1.5, 0.8), sigma = diag(2)))
-test_ADModelCalculate(ADMod3, calcNodeNames = list(c('mu', 'y'), c('y[2]'), c(ADMod3$getDependencies(c('mu', 'sigma')))),
-                      wrt = list(c('mu', 'y'), c('sigma[1,1]', 'y[1]'), c('mu[1:2]', 'sigma[1:2, 2]')), testR = TRUE,
+test_ADModelCalculate(ADMod3, calcNodeNames = list(c('mu', 'y'), c('y[1, 2]'), c(ADMod3$getDependencies(c('mu', 'sigma'))),
+                                                   c('sigma', 'y')),
+                      wrt = list(c('mu', 'y'), c('sigma[1,1]', 'y[1, 2]'), c('mu[1:2]', 'sigma[1:2, 2]')), testR = TRUE,
                       testCompiled = FALSE)
-
 
 ### State Space Model Test
 
@@ -59,11 +55,13 @@ ADCode4 <- nimbleCode({
 })
 testdata = list(y = c(0,1,2))
 ADMod4 <- nimbleModel(
-  code = ADCode4, data = list(y = c(0,1,2)), inits = list(x0 = 0))
+  code = ADCode4, data = list(y = 0.5+1:3), inits = list(x0 = 1.23, x = -1:3))
 ADMod4$simulate(ADMod4$getDependencies('x'))
 test_ADModelCalculate(ADMod4, calcNodeNames = list(c('y'), c('y[2]'), c(ADMod4$getDependencies(c('x', 'x0')))),
-                      wrt = list(c('x0'), c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), testR = TRUE,
+                      wrt = list(c('x0'), c('x[0]', 'x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), testR = TRUE,
                       testCompiled = FALSE)
+
+
 
 
 dir = nimble:::getBUGSexampleDir('equiv')
