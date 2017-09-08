@@ -73,33 +73,41 @@ nimDerivsInfoClass <- setRefClass(
       calcNodeNames = 'ANY',
       parentIndicesList = 'ANY',
       stochNodeIndicators = 'ANY',
-      calcNodeIndicators = 'ANY,'
+      calcNodeIndicators = 'ANY',
       WRTNodeIndicators = 'ANY',
       WRTToIndices = 'ANY',
       WRTFromIndices = 'ANY',
+      WRTLineIndices = 'ANY',
       WRTLineSize = 'ANY',
-      WRTLineNum = 'ANY',
+      WRTLineNums = 'ANY',
+      lineWRTArgsAsCharacters = 'ANY',
+      lineWRTArgSizeInfo = 'ANY',
+      calcWithArgsCalls = 'ANY',
       model =  'ANY'
     ),
     methods = list(
-      initialize = function(WRTNodeNames = NA, calcNodeNames = NA, model = NA, ...){
+      initialize = function(wrtNodes = NA, calcNodes = NA, thisModel = NA, ...){
+        model <<- thisModel
+        calcNodeNames <<- model$expandNodeNames(calcNodes)
+        WRTNodeNames <<- model$expandNodeNames(wrtNodes)
+        
+        callSuper(...)
         ## This function takes a set of dependencies and returns a list with the original dependencies and a
         ## set of enhanced information needed for chain-ruling derivatives
         ##
         ## allWRTAndCalcNodeNames is a vector of nodes returned by model$getDependencies(wrtNodes)
-        ## inputNodes should also be in allWRTAndCalcNodeNames  
-        ## 
-        
+        ## inputNodes should also be in allWRTAndCalcNodeNames
+        ##
         ## convert inputNodes and deps from character to integer IDs
-        allWrtAndCalcNodeNames <<- model$expandNodeNames(c(wrtNodes, calcNodeNames), sort = TRUE)
+        allWRTAndCalcNodeNames <<- model$expandNodeNames(c(WRTNodeNames, calcNodeNames), sort = TRUE)
         nfv <- nodeFunctionVector(model, allWRTAndCalcNodeNames, sortUnique = FALSE)
-        wrtNodes <- model$modelDef$nodeName2GraphIDs(model$expandNodeNames(wrtNodes))
-        depIDs <- model$modelDef$nodeName2GraphIDs(allWRTAndCalcNodeNames) 
+        wrtNodes <- model$modelDef$nodeName2GraphIDs(model$expandNodeNames(WRTNodeNames))
+        depIDs <- model$modelDef$nodeName2GraphIDs(allWRTAndCalcNodeNames)
         calcNodes <-  model$modelDef$nodeName2GraphIDs(model$expandNodeNames(calcNodeNames))
         maps <- model$modelDef$maps
-        
+
         ## get the BUGS declaration ID for every node
-        
+
         ## initialize the enhanced information
         ## Elements of depIndex_2_parentDepIndices correspond to elements of deps
         ## depIndex_2_parentDepIndices[[i]] will have one of two formats:
@@ -137,17 +145,17 @@ nimDerivsInfoClass <- setRefClass(
           }
           return(outList)}
         )
-        
+
         stochNodeIndicators <<- model$getNodeType(allWRTAndCalcNodeNames) == 'stoch'
-        wrtNodeIndicators <<- numeric(length(allWRTAndCalcNodeNames))
+        WRTNodeIndicators <<- numeric(length(allWRTAndCalcNodeNames))
         calcNodeIndicators <<- numeric(length(allWRTAndCalcNodeNames))
         ## For each input depsID
         for(i in seq_along(depIDs)) {
           thisNode <- depIDs[i]
           if(thisNode %in% wrtNodes) {
             depIndex_2_parentDepIndices[[i]][[1]] <- -which(wrtNodes == thisNode) ## e.g. set -2 for 2nd wrt node
-            wrtNodeIndicators[i] <<- 1
-          } 
+            WRTNodeIndicators[i] <<- 1
+          }
           else{
             depIndex_2_parentDepIndices[[i]][[1]] <- 0
           }
@@ -155,7 +163,7 @@ nimDerivsInfoClass <- setRefClass(
             calcNodeIndicators[i] <<- 1
           }
           else{
-            calcNodeIndicators[i] <- 0
+            calcNodeIndicators[i] <<- 0
           }
         }
         for(i in seq_along(depIDs)) {
@@ -172,11 +180,11 @@ nimDerivsInfoClass <- setRefClass(
             if(thisToNode %in% depIDs) {
               ## Populate an entry in the results
               iThisToNode <- which(depIDs == thisToNode)
-              if(wrtNodeIndicators[iThisToNode] == 1 || 
-                 (calcNodeIndicators[iThisToNode] == 1 && 
-                  (wrtNodeIndicators[i] == 1 || stochNodeIndicators[i] == 0))){
+              if(WRTNodeIndicators[iThisToNode] == 1 ||
+                 (calcNodeIndicators[iThisToNode] == 1 &&
+                  (WRTNodeIndicators[i] == 1 || stochNodeIndicators[i] == 0))){
                 thisParentExprID <- parentExprIDs[iTo]
-                if(length(depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 && 
+                if(length(depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 &&
                    depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]][1] == 0){
                   depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]] <- i
                 }
@@ -187,27 +195,27 @@ nimDerivsInfoClass <- setRefClass(
             }
           }
         }
-        
+
         parentIndicesList <<- depIndex_2_parentDepIndices
-        
+
         ### next let's do wrt info
         scalarWrtNames <- model$expandNodeNames(WRTNodeNames, returnScalarComponents = TRUE)
-        wrtToIndices <<- list()
-        wrtFromIndices <<- list()
-        wrtLineIndices <<- list()
-        wrtLineSize <<- list()
-        wrtLineNums <<- numeric(length(allWRTAndCalcNodeNames))
+        WRTToIndices <<- list()
+        WRTFromIndices <<- list()
+        WRTLineIndices <<- list()
+        WRTLineSize <<- list()
+        WRTLineNums <<- numeric(length(model$expandNodeNames(WRTNodeNames)))
         thisIndex <- 1
-        
+
         for(i in seq_along(model$expandNodeNames(WRTNodeNames))){
           ## which node is it? let's say unnecessary for now
           ##wrtLineInfo[[i]]$lineNum <- which(model$expandNodeNames(WRTNodeNames)[i] == derivInfo[[1]])
           ## length of the node
-          wrtLineSize[[i]] <<- length(model[[model$expandNodeNames(WRTNodeNames)[i]]])
-          wrtLineNums[i] <<- which(model$expandNodeNames(WRTNodeNames)[i] == allWRTAndCalcNodeNames)
+          WRTLineSize[[i]] <<- length(model[[model$expandNodeNames(WRTNodeNames)[i]]])
+          WRTLineNums[i] <<- which(model$expandNodeNames(WRTNodeNames)[i] == allWRTAndCalcNodeNames)
           ## function below, for each scalar element of the i'th wrt par, returns the index
           ## of that element in the vector of all wrt pars.
-          thisWrtNodeInds <- sapply(model$expandNodeNames(model$expandNodeNames(WRTNodeNames)[i], 
+          thisWrtNodeInds <- sapply(model$expandNodeNames(model$expandNodeNames(WRTNodeNames)[i],
                                                           returnScalarComponents = TRUE),
                                     function(x){
                                       outInd <- which(x == scalarWrtNames)
@@ -217,18 +225,18 @@ nimDerivsInfoClass <- setRefClass(
                                       else{return(0)}
                                     }
           )
-          
+
           ## toIndices are the indices of the returned deriv element (e.g. gradient)
           ## that this wrt param will map to
-          wrtToIndices[[i]] <<- thisWrtNodeInds[which(thisWrtNodeInds != 0)]
+          WRTToIndices[[i]] <<- thisWrtNodeInds[which(thisWrtNodeInds != 0)]
           ## lineIndices are the full indices of this wrt node (could be longer than toIndices if only one element of a multivar node is used for wrt)
-          wrtLineIndices[[i]] <<- thisIndex:(thisIndex + wrtLineSize[[i]] - 1)
+          WRTLineIndices[[i]] <<- thisIndex:(thisIndex + WRTLineSize[[i]] - 1)
           ## fromIndices are the elements of the calculated derivative that will be placed into the toIndices of the output deriv.
-          wrtFromIndices[[i]] <<- wrtLineIndices[[i]][which(thisWrtNodeInds != 0)]
-          thisIndex <- thisIndex + wrtLineSize[[i]]
+          WRTFromIndices[[i]] <<- WRTLineIndices[[i]][which(thisWrtNodeInds != 0)]
+          thisIndex <- thisIndex + WRTLineSize[[i]]
         }
-        
-        
+
+
         ## Next lets get line wrt info.  Do both as characters (for R) and as indices (for C++)! with a flag to control which is returned.
         ## Then update the explainDerivContent function.  May also make more sense to make this function a ref class w/ fields for different return vals and such.
         lineWRTArgsAsCharacters <<- list()
@@ -236,28 +244,31 @@ nimDerivsInfoClass <- setRefClass(
         calcWithArgsCalls  <<- list()
         for(i in seq_along(depIndex_2_parentDepIndices)){
           if(calcNodeIndicators[i] == 1){
-            lineWRTArgsAsCharacters[[i]] <<- c()
-            lineWRTArgSizeInfo[[i]]      <<- numeric(length(derivInfo[[2]][[i]]))
-            
+            lineWRTArgSizeInfo[[i]]      <<- numeric(length(depIndex_2_parentDepIndices[[i]]))
             sizeAndDimInfo <- environment(model$nodeFunctions[[declIDs[i]]]$.generatorFunction)[['parentsSizeAndDims']]
             formalArgNames <- formals(model$nodeFunctions[[declIDs[i]]]$calculateWithArgs)
+            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declIDs[i]]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
             modelArgNames <- lapply(names(formalArgNames)[-1],
                                     function(x){parse(text = convertCalcArgNameToModelNodeName(x, sizeAndDimInfo, unrolledIndicesMatrixRow))[[1]]})
-            calcWithArgs <- model$nodeFunctions[[ declID ]]$calculateWithArgs
-            calcWithArgsCalls[[i]] <- as.call(c(list(as.name('calcWithArgs'), unrolledIndicesMatrixRow), modelArgNames))
-            
-            for(j in seq_along(depIndex_2_parentDepIndices[[i]]){
-              if(j == 1 && wrtNodeIndicators[[i]] == 1){
-                thisWrtLine <- which(wrtLineNums == i)
+            calcWithArgsCalls[[i]] <<- as.call(c(list(as.name('calcWithArgs'), unrolledIndicesMatrixRow), modelArgNames))
+            for(j in seq_along(depIndex_2_parentDepIndices[[i]])){
+              if(j == 1 && WRTNodeIndicators[[i]] == 1){
+                thisWrtLine <- which(WRTLineNums == i)
                 lineWRTArgsAsCharacters[[i]]  <<- names(formalArgNames[2])
-                lineWRTArgSizeInfo[[i]][1]  <<- wrtLineSize[[thisWrtLine]]
+                lineWRTArgSizeInfo[[i]][1]  <<- WRTLineSize[[thisWrtLine]]
               }
               else if(depIndex_2_parentDepIndices[[i]][[j]][1] > 0){
                 for(k in 1:length(depIndex_2_parentDepIndices[[i]][[j]])){
                   wrtInfoList <-  convertToWrtArg(allWRTAndCalcNodeNames[depIndex_2_parentDepIndices[[i]][[j]][k]],
-                                                  modelArgNames[[k]],
-                                                  names(formalArgNames)[k+1]) 
-                  lineWRTArgsAsCharacters[[i]] <<- c(lineWRTArgsAsCharacters[[i]], wrtInfoList$wrtArg)
+                                                  modelArgNames[[j]],
+                                                  names(formalArgNames)[j+1],
+                                                  thisModel)
+                  if(length(lineWRTArgsAsCharacters) < i){
+                    lineWRTArgsAsCharacters[[i]] <<- wrtInfoList$wrtArg
+                  }
+                  else{
+                    lineWRTArgsAsCharacters[[i]] <<- c(lineWRTArgsAsCharacters[[i]], wrtInfoList$wrtArg)
+                  }
                   lineWRTArgSizeInfo[[i]][j] <<- lineWRTArgSizeInfo[[i]][j] + wrtInfoList$argSize
                 }
               }
@@ -267,28 +278,12 @@ nimDerivsInfoClass <- setRefClass(
             lineWRTArgsAsCharacters[[i]] <<- NA
             lineWRTArgSizeInfo[[i]]      <<- NA
             calcWithArgsCalls[[i]] <<-   NA
-            
           }
         }
-        
-        
-        outList <- list()
-        outList[['allWrtAndCalcNodes']] <- allWrtAndCalcNodes
-        outList[['parentIndices']] <- depIndex_2_parentDepIndices
-        outList[['stochasticIndicators']] <- stochNodeIndicators
-        outList[['calcNodeIndicators']] <- calcNodeIndicators
-        outList[['wrtNodeIndicators']] <- wrtNodeIndicators
-        outList[['wrtToIndices']] <- wrtToIndices
-        outList[['wrtFromIndices']] <- wrtFromIndices
-        outList[['wrtLineIndices']] <- wrtLineIndices
-        outList[['wrtLineSize']] <- wrtLineSize
-        outList[['wrtLineNums']] <- wrtLineNums
-        outList
-        
       },
-      
-      ### A function that substitutes correct values of unrolledIndicesMatrix
-      ### into symbolicParentNodesReplaced.
+
+      # ### A function that substitutes correct values of unrolledIndicesMatrix
+      # ### into symbolicParentNodesReplaced.
       recurseReplaceIndices = function(code, unrolledIndicesRow){
         replaceNames <- names(unrolledIndicesRow)
         if(length(code) > 1){
@@ -306,13 +301,13 @@ nimDerivsInfoClass <- setRefClass(
         }
         return(code)
       },
-      
+      # 
       ## A function that converts the name of an argument to a calculateWithArgs
       ## function to a character string representing that argument in the model,
-      ## a possible example:  
+      ## a possible example:
       ## calcArgName = 'y_1'
       ## function output = model$y[1:2]
-      convertCalcArgNameToModelNodeName <- function(calcArgName, sizeAndDimInfo, unrolledIndicesMatrixRow){
+      convertCalcArgNameToModelNodeName = function(calcArgName, sizeAndDimInfo, unrolledIndicesMatrixRow){
         thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", calcArgName)) ## Extract 1, 2, etc. from end of arg name.
         thisName <- sub("_[0-9]+$","",calcArgName) ## Extract node name from beginning of arg name.
         indexBracketInfo <- paste0('[',
@@ -321,29 +316,27 @@ nimDerivsInfoClass <- setRefClass(
                                      else if( deparse(x[[1]]) == 'getNodeFunctionIndexedInfo'){
                                        rowNum <- x[[3]]
                                        x <- eval(parse(text = paste0('unrolledIndicesMatrixRow[',rowNum,']'))[[1]])
-                                     } 
+                                     }
                                      else{
                                        return(paste0(deparse(x[[1]]), ':', deparse(x[[2]])))
                                      }}), collapse = ', '),
                                    ']')
         return(paste0('model$', thisName, indexBracketInfo))
-      }
-      
-      ## A function that takes a wrt name supplied by a user and returns a
-      ## wrt name that can be used in a call to nimDerivs(calcWithArgs()).
-      ## function output:  a list with elements:
-      ##    wrtArg:  a character string denoting the actual WRT argument
-      ##             that will be given to the call to nimDerivs(calcWithArgs())
-      ##    argSize: the flattened length of that argument
-      convertToWrtArg <- function(wrtName, modelArgName, fxnArgName){
-        modelName <- strsplit(deparse(modelArgName), "\\$")[[1]][2]
-        overlapPars <- sapply(model$expandNodeNames(wrtName, returnScalarComponents = TRUE), function(x){which(x == model$expandNodeNames(modelName, returnScalarComponents = TRUE))})
-        return(list(wrtArg = paste0(fxnArgName, '[c(', paste(overlapPars, collapse = ', ') ,')]'),
-                    argSize = length(values(model, wrtName))))
       },
-      
+      # A function that takes a wrt name supplied by a user and returns a
+      # wrt name that can be used in a call to nimDerivs(calcWithArgs()).
+      # function output:  a list with elements:
+      #    wrtArg:  a character string denoting the actual WRT argument
+      #             that will be given to the call to nimDerivs(calcWithArgs())
+      #    argSize: the flattened length of that argument
+      convertToWrtArg = function(wrtName, modelArgName, fxnArgName, thisModel){
+        modelName <- strsplit(deparse(modelArgName), "\\$")[[1]][2]
+        overlapPars <- sapply(thisModel$expandNodeNames(wrtName, returnScalarComponents = TRUE), function(x){which(x == thisModel$expandNodeNames(modelName, returnScalarComponents = TRUE))})
+        return(list(wrtArg = paste0(fxnArgName, '[c(', paste(overlapPars, collapse = ', ') ,')]'),
+                    argSize = length(values(thisModel, wrtName))))
+      },
       ## Explains some of the elements of the nimDerivsInfoClass
-      explainDerivContent <- function(enhancedDeps, model) {
+      explainDerivContent = function(enhancedDeps) {
         writeLines('The following calculations would be done from this input:')
         deps <- enhancedDeps[[1]]
         depIDs <- if(!is.integer(deps)) model$modelDef$nodeName2GraphIDs(deps) else deps
@@ -521,7 +514,7 @@ nimDerivsInfoClass <- setRefClass(
 #     ## lineIndices are the full indices of this wrt node (could be longer than toIndices if only one element of a multivar node is used for wrt)
 #     wrtLineIndices[[i]] <- thisIndex:(thisIndex + wrtLineSize[[i]] - 1)
 #     ## fromIndices are the elements of the calculated derivative that will be placed into the toIndices of the output deriv.
-#     wrtFromIndices[[i]] <- wrtLineIndices[[i]][which(thisWrtNodeInds != 0)]
+#     WRTFromIndices[[i]] <- wrtLineIndices[[i]][which(thisWrtNodeInds != 0)]
 #     thisIndex <- thisIndex + wrtLineSize[[i]]
 #   }
 #   
@@ -568,7 +561,7 @@ nimDerivsInfoClass <- setRefClass(
 #   outList[['calcNodeIndicators']] <- calcNodeIndicators
 #   outList[['wrtNodeIndicators']] <- wrtNodeIndicators
 #   outList[['wrtToIndices']] <- wrtToIndices
-#   outList[['wrtFromIndices']] <- wrtFromIndices
+#   outList[['WRTFromIndices']] <- WRTFromIndices
 #   outList[['wrtLineIndices']] <- wrtLineIndices
 #   outList[['wrtLineSize']] <- wrtLineSize
 #   outList[['wrtLineNums']] <- wrtLineNums
