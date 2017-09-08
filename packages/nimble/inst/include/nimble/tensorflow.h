@@ -3,17 +3,17 @@
  * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
  * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
  * Duncan Temple Lang.
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, a copy is available at
  * https://www.R-project.org/Licenses/
@@ -28,8 +28,10 @@
 #include <string>
 #include <vector>
 
+#define NIMBLE_HAVE_CPPAD 1  // DO NOT SUBMIT.
+
 #if NIMBLE_HAVE_CPPAD
-#include <cppad/cppad.h>
+#include <cppad/cppad.hpp>
 #endif  // NIMBLE_HAVE_CPPAD
 
 // This class runs a single tensorflow graph. Instances should be created as
@@ -67,6 +69,9 @@ class NimTf_Runner {
   std::vector<TF_Output> outputs_;
   std::vector<TF_Tensor*> output_values_;
 
+  std::vector<TF_Output> gradients_;
+  std::vector<TF_Tensor*> gradient_values_;
+
   int input_pos_;
   int output_pos_;
   int gradient_pos_;
@@ -86,9 +91,10 @@ class NimTf_Runner {
   void NimTf_getOutput(NimArrBase<double>& nimArr);
 
   // These must be called in strict order (for gradient computation).
-  void NimTf_setInput(const std::vector<int>& dims, const double* data);
+  // These should only be called by a NimTf_op object.
+  void NimTf_setInput(const std::vector<int64_t>& dims, double* data);
   void NimTf_runGradient();
-  void NimTf_getGradient(const std::vector<int>& dims, double* data);
+  void NimTf_getGradient(const std::vector<int64_t>& dims, double* data);
 
   int num_inputs() const { return inputs_.size(); }
   int num_outputs() const { return outputs_.size(); }
@@ -152,6 +158,7 @@ class NimTf_op : public CppAD::atomic_base<double> {
 
   NimTf_op(NimTf_Runner& runner);
 
+  // These must be called in strict order.
   void NimTf_setInput(ad_double& scalar);
   void NimTf_setInput(NimArrBase<ad_double>& nimArr);
   void NimTf_run();

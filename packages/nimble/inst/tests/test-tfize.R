@@ -3,6 +3,8 @@ source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
 
 context("Testing of Tensorflow-ization")
 
+nimbleOptions(showCompilerOutput = TRUE)  # DO NOT SUBMIT
+
 test_that('Tensorflow implementation of axpy works', {
     temporarilyEnableTensorflow()
 

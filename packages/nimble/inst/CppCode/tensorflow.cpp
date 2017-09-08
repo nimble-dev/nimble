@@ -3,17 +3,17 @@
  * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
  * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
  * Duncan Temple Lang.
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, a copy is available at
  * https://www.R-project.org/Licenses/
@@ -44,6 +44,8 @@ NimTf_Runner::NimTf_Runner(const std::string& graphDefBase64,
       input_values_(inputNames.size()),
       outputs_(outputNames.size()),
       output_values_(outputNames.size()),
+      gradients_(inputNames.size()),
+      gradient_values_(inputNames.size()),
       input_pos_(0),
       output_pos_(outputNames.size()),
       gradient_pos_(inputNames.size()) {
@@ -87,7 +89,8 @@ NimTf_Runner::NimTf_Runner(const std::string& graphDefBase64,
 
 NimTf_Runner::~NimTf_Runner() {
   NIM_ASSERT_EQ(input_pos_, 0);
-  NIM_ASSERT_EQ(output_pos_, outputs_.size());
+  NIM_ASSERT_EQ(output_pos_, num_outputs());
+  NIM_ASSERT_EQ(gradient_pos_, num_inputs());
 
   // Clean up.
   TF_CloseSession(session_, status_);
@@ -99,8 +102,10 @@ NimTf_Runner::~NimTf_Runner() {
 }
 
 void NimTf_Runner::NimTf_setInput(double& scalar) {
-  NIM_ASSERT_LT(input_pos_, inputs_.size());
-  NIM_ASSERT_EQ(output_pos_, outputs_.size());
+  NIM_ASSERT_LT(input_pos_, num_inputs());
+  NIM_ASSERT_EQ(output_pos_, num_outputs());
+  NIM_ASSERT_EQ(gradient_pos_, num_inputs());
+
   input_values_[input_pos_] = TF_NewTensor(
       TF_DOUBLE, NULL, 0, &scalar, sizeof(double), fake_deallocator, NULL);
   input_pos_ += 1;
@@ -108,8 +113,10 @@ void NimTf_Runner::NimTf_setInput(double& scalar) {
 
 void NimTf_Runner::NimTf_setInput(NimArrBase<double>& nimArr) {
   NIM_ASSERT1(!nimArr.isMap(), "Cannot handle mapped array");
-  NIM_ASSERT_LT(input_pos_, inputs_.size());
-  NIM_ASSERT_EQ(output_pos_, outputs_.size());
+  NIM_ASSERT_LT(input_pos_, num_inputs());
+  NIM_ASSERT_EQ(output_pos_, num_outputs());
+  NIM_ASSERT_EQ(gradient_pos_, num_inputs());
+
   static std::vector<int64_t> dims;
   const int n = nimArr.numDims();
   dims.resize(n);
@@ -125,9 +132,26 @@ void NimTf_Runner::NimTf_setInput(NimArrBase<double>& nimArr) {
   input_pos_ += 1;
 }
 
+void NimTf_Runner::NimTf_setInput(const std::vector<int64_t>& dims,
+                                  double* data) {
+  NIM_ASSERT_LT(input_pos_, num_inputs());
+  NIM_ASSERT_EQ(output_pos_, num_outputs());
+  NIM_ASSERT_EQ(gradient_pos_, num_inputs());
+
+  size_t byteSize = sizeof(double);
+  for (int i = 0; i < dims.size(); ++i) {
+    byteSize *= dims[i];
+  }
+  input_values_[input_pos_] =
+      TF_NewTensor(TF_DOUBLE, dims.data(), dims.size(), data, byteSize,
+                   fake_deallocator, NULL);
+  input_pos_ += 1;
+}
+
 void NimTf_Runner::NimTf_run() {
-  NIM_ASSERT_EQ(input_pos_, inputs_.size());
-  NIM_ASSERT_EQ(output_pos_, outputs_.size());
+  NIM_ASSERT_EQ(input_pos_, num_inputs());
+  NIM_ASSERT_EQ(output_pos_, num_outputs());
+  NIM_ASSERT_EQ(gradient_pos_, num_inputs());
 
   // Run the graph.
   {
@@ -135,10 +159,10 @@ void NimTf_Runner::NimTf_run() {
     const int ntargets = 0;
     const TF_Operation** targets = NULL;
     TF_Buffer* run_metadata = NULL;
-    TF_SessionRun(session_, run_options,                                    //
-                  inputs_.data(), input_values_.data(), inputs_.size(),     //
-                  outputs_.data(), output_values_.data(), outputs_.size(),  //
-                  targets, ntargets,                                        //
+    TF_SessionRun(session_, run_options,                                  //
+                  inputs_.data(), input_values_.data(), num_inputs(),     //
+                  outputs_.data(), output_values_.data(), num_outputs(),  //
+                  targets, ntargets,                                      //
                   run_metadata, status_);
     TF_CHECK_OK(status_);
   }
@@ -151,9 +175,38 @@ void NimTf_Runner::NimTf_run() {
   output_pos_ = 0;
 }
 
+void NimTf_Runner::NimTf_runGradient() {
+  NIM_ASSERT_EQ(input_pos_, num_inputs());
+  NIM_ASSERT_EQ(output_pos_, num_outputs());
+  NIM_ASSERT_EQ(gradient_pos_, num_inputs());
+
+  // Run the graph.
+  {
+    const TF_Buffer* run_options = NULL;
+    const int ntargets = 0;
+    const TF_Operation** targets = NULL;
+    TF_Buffer* run_metadata = NULL;
+    TF_SessionRun(session_, run_options,                                     //
+                  inputs_.data(), input_values_.data(), num_inputs(),        //
+                  gradients_.data(), gradient_values_.data(), num_inputs(),  //
+                  targets, ntargets,                                         //
+                  run_metadata, status_);
+    TF_CHECK_OK(status_);
+  }
+
+  // Clean up input values.
+  for (int i = 0; i < input_values_.size(); ++i) {
+    TF_DeleteTensor(input_values_[i]);
+  }
+  input_pos_ = 0;
+  gradient_pos_ = 0;
+}
+
 void NimTf_Runner::NimTf_getOutput(double& scalar) {
   NIM_ASSERT_EQ(input_pos_, 0);
-  NIM_ASSERT_LT(output_pos_, outputs_.size());
+  NIM_ASSERT_LT(output_pos_, num_outputs());
+  NIM_ASSERT_EQ(gradient_pos_, num_inputs());
+
   TF_Tensor* tensor = output_values_[output_pos_];
   scalar = *static_cast<double*>(TF_TensorData(tensor));
 
@@ -165,7 +218,9 @@ void NimTf_Runner::NimTf_getOutput(double& scalar) {
 void NimTf_Runner::NimTf_getOutput(NimArrBase<double>& nimArr) {
   NIM_ASSERT1(!nimArr.isMap(), "Cannot handle mapped array");
   NIM_ASSERT_EQ(input_pos_, 0);
-  NIM_ASSERT_LT(output_pos_, outputs_.size());
+  NIM_ASSERT_LT(output_pos_, num_outputs());
+  NIM_ASSERT_EQ(gradient_pos_, num_inputs());
+
   TF_Tensor* tensor = output_values_[output_pos_];
   const int n = TF_NumDims(tensor);
   NIM_ASSERT_EQ(nimArr.numDims(), TF_NumDims(tensor));
@@ -180,16 +235,23 @@ void NimTf_Runner::NimTf_getOutput(NimArrBase<double>& nimArr) {
   output_pos_ += 1;
 }
 
-void NimTf_Runner::NimTf_setInput(const std::vector<int>& dims,
-                                  const double* data) {
-  NIMERROR("TODO")
-}
-
-void NimTf_Runner::NimTf_runGradient() { NIMERROR("TODO") }
-
-void NimTf_Runner::NimTf_getGradient(const std::vector<int>& dims,
+void NimTf_Runner::NimTf_getGradient(const std::vector<int64_t>& dims,
                                      double* data) {
-  NIMERROR("TODO")
+  NIM_ASSERT_EQ(input_pos_, 0);
+  NIM_ASSERT_EQ(output_pos_, num_outputs());
+  NIM_ASSERT_LT(gradient_pos_, num_inputs());
+
+  TF_Tensor* tensor = gradient_values_[gradient_pos_];
+  const int n = TF_NumDims(tensor);
+  NIM_ASSERT_EQ(dims.size(), TF_NumDims(tensor));
+  for (int i = 0; i < n; ++i) {
+    NIM_ASSERT_EQ(dims[i], TF_Dim(tensor, n - i - 1));  // Note the transpose.
+  }
+  memcpy(data, TF_TensorData(tensor), TF_TensorByteSize(tensor));
+
+  // Clean up gradient values.
+  TF_DeleteTensor(tensor);
+  gradient_pos_ += 1;
 }
 
 #if NIMBLE_HAVE_CPPAD
@@ -207,13 +269,13 @@ void NimTf_op::NimTf_setInput(ad_double& scalar) {
 void NimTf_op::NimTf_setInput(NimArrBase<ad_double>& nimArr) {
   const int n = nimArr.numDims();
   packed_arg_.push_back(n);
-  size_t size = 1;
+  int64_t size = 1;
   for (int i = 0; i < n; ++i) {
-    size_t dim = nimArr.dimSize(i);
+    int64_t dim = nimArr.dimSize(i);
     packed_arg_.push_back(n);
     size *= dim;
   }
-  for (size_t i = 0; i < size; ++i) {
+  for (int64_t i = 0; i < size; ++i) {
     packed_arg_.push_back(i);
   }
 }
@@ -221,6 +283,7 @@ void NimTf_op::NimTf_setInput(NimArrBase<ad_double>& nimArr) {
 void NimTf_op::NimTf_run() {
   packed_result_.resize(1);
   (*this)(packed_arg_, packed_result_);
+  packed_arg_.clear();
 }
 
 void NimTf_op::NimTf_getOutput(ad_double& scalar) {
@@ -228,7 +291,7 @@ void NimTf_op::NimTf_getOutput(ad_double& scalar) {
 }
 
 void NimTf_op::NimTf_getOutput(NimArrBase<ad_double>& nimArr) {
-  const int n = TF_NumDims(tensor);
+  const int n = nimArr.numDims();
   for (int i = 0; i < n; ++i) {
     NIM_ASSERT_EQ(nimArr.dimSize(i), 1);
   }
@@ -243,27 +306,38 @@ bool NimTf_op::forward(size_t p, size_t q, const CppAD::vector<bool>& vx,
   if (q != 0) return false;
   NIM_ASSERT_EQ(ty.size(), 1);
 
+  // TODO Is it safe to allow tensorflow to mutate this input data?
+  double* mutable_tx = const_cast<double*>(tx.data());
+
   // Set inputs.
   size_t pos = 0;
-  for (int i = 0; i < num_inputs(); ++i) {
+  for (int i = 0; i < runner_.num_inputs(); ++i) {
+    // Set array numDims.
     const int numDims = static_cast<int>(tx[pos++]);
-    std::vector<size_t> dims;
-    size_t size = 1;
-    for (int j = 0; j < n; ++j) {
+
+    // Set array dims.
+    std::vector<int64_t> dims;
+    int64_t size = 1;
+    for (int j = 0; j < numDims; ++j) {
       const int dim = static_cast<int>(tx[pos++]);
       dims.push_back(dim);
       size *= dim;
     }
-    runner_.setInput(dims, tx.data() + pos);
+    std::reverse(dims.begin(), dims.end());  // Note the transpose.
+
+    // Set array data.
+    runner_.NimTf_setInput(dims, mutable_tx + pos);
     pos += size;
   }
 
   // Run the tensorflow graph.
-  runner_.run();
+  runner_.NimTf_run();
 
   // Get outputs.
   vy[0] = true;
-  runner_.getOutput(ty[0]);
+  runner_.NimTf_getOutput(ty[0]);
+
+  return true;
 }
 
 bool NimTf_op::reverse(size_t q, const CppAD::vector<double>& tx,
@@ -274,43 +348,63 @@ bool NimTf_op::reverse(size_t q, const CppAD::vector<double>& tx,
   if (q != 1) return false;
   NIM_ASSERT_EQ(ty.size(), 1);
 
+  // TODO Is it safe to allow tensorflow to mutate this input data?
+  double* mutable_tx = const_cast<double*>(tx.data());
+
   // Set inputs.
   size_t pos = 0;
-  for (int i = 0; i < num_inputs(); ++i) {
+  for (int i = 0; i < runner_.num_inputs(); ++i) {
+    // Set array numDims.
     const int numDims = static_cast<int>(tx[pos++]);
-    std::vector<size_t> dims;
-    size_t size = 1;
-    for (int j = 0; j < n; ++j) {
+
+    // Set array dims.
+    std::vector<int64_t> dims;
+    int size = 1;
+    for (int j = 0; j < numDims; ++j) {
       const int dim = static_cast<int>(tx[pos++]);
       dims.push_back(dim);
       size *= dim;
     }
-    runner_.setInput(dims, tx.data() + pos);
+    std::reverse(dims.begin(), dims.end());  // Note the transpose.
+
+    // Set array data.
+    runner_.NimTf_setInput(dims, mutable_tx + pos);
     pos += size;
   }
 
   // Run the tensorflow graph.
-  runner_.runGradient();
+  runner_.NimTf_runGradient();
 
   // Get outputs.
-  px.resize(0);
-  px.resize(tx.size(), 0);
+  px.resize(tx.size());
   pos = 0;
-  for (int i = 0; i < num_inputs(); ++i) {
-    const int numDims = static_cast<int>(tx[pos++]);
-    std::vector<size_t> dims;
-    size_t size = 1;
-    for (int j = 0; j < n; ++j) {
-      const int dim = static_cast<int>(tx[pos++]);
+  for (int i = 0; i < runner_.num_inputs(); ++i) {
+    // Get array numDims.
+    px[pos] = 0;
+    const int numDims = static_cast<int>(tx[pos]);
+    pos += 1;
+
+    // Get array dims.
+    std::vector<int64_t> dims;
+    int64_t size = 1;
+    for (int j = 0; j < numDims; ++j) {
+      px[pos] = 0;
+      const int dim = static_cast<int>(tx[pos]);
       dims.push_back(dim);
       size *= dim;
+      pos += 1;
     }
-    runner_.getGradient(dims, px.data() + pos);
+    std::reverse(dims.begin(), dims.end());  // Note the transpose.
+
+    // Get array data.
+    runner_.NimTf_getGradient(dims, px.data() + pos);
     for (int j = 0; j < size; ++j) {
       px[pos + j] *= py[0];
     }
     pos += size;
   }
+
+  return true;
 }
 
 #endif  // NIMBLE_HAVE_CPPAD
