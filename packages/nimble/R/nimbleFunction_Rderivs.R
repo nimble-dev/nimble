@@ -157,29 +157,6 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
   return(outList)
 }
   
-convertToWrtArg <- function(wrtName, modelArgName, fxnArgName){
-  modelName <- strsplit(deparse(modelArgName), "\\$")[[1]][2]
-  overlapPars <- sapply(model$expandNodeNames(wrtName, returnScalarComponents = TRUE), function(x){which(x == model$expandNodeNames(modelName, returnScalarComponents = TRUE))})
-  return(list(wrtArg = paste0(fxnArgName, '[c(', paste(overlapPars, collapse = ', ') ,')]'),
-              argSize = length(values(model, wrtName))))
-}
-
-convertCalcArgNameToModelNodeName <- function(calcArgName, sizeAndDimInfo, unrolledIndicesMatrixRow){
-  thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", calcArgName)) ## Extract 1, 2, etc. from end of arg name.
-  thisName <- sub("_[0-9]+$","",calcArgName) ## Extract node name from beginning of arg name.
-  indexBracketInfo <- paste0('[',
-                             paste0(sapply(sizeAndDimInfo[[thisName]][[thisModelElementNum]]$indexExpr, function(x){
-                               if(length(x) == 1) return(deparse(x[[1]]))
-                               else if( deparse(x[[1]]) == 'getNodeFunctionIndexedInfo'){
-                                 rowNum <- x[[3]]
-                                 x <- eval(parse(text = paste0('unrolledIndicesMatrixRow[',rowNum,']'))[[1]])
-                               } 
-                               else{
-                                 return(paste0(deparse(x[[1]]), ':', deparse(x[[2]])))
-                               }}), collapse = ', '),
-                             ']')
- return(paste0('model$', thisName, indexBracketInfo))
-}
 
 nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFunctionIndex = NULL, order, wrtPars){
   if(all(order == 0)) return(calculate(model, nodes))
@@ -198,7 +175,7 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
   }
   # nodesAndWrt <- model$expandNodeNames(c(nodes, model$expandNodeNames(wrtPars)), sort = TRUE)
   # nfv <- nodeFunctionVector(model, nodesAndWrt, sortUnique = FALSE)
-  derivInfo <- nimble:::enhanceDepsForDerivsV2(wrtPars, nodes, model)
+  derivInfo <- nimDerivsInfoClass$new(wrtPars, nodes, model)
   hessianFlag <- 2 %in% order
   gradientFlag <- 1 %in% order || hessianFlag ## note that to calculate Hessians using chain rule, must have gradients. 
   if(gradientFlag && !(1 %in% order)) order <- c(order, 1)
@@ -212,38 +189,31 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
   chainRuleDerivList <- list()
   if(hessianFlag) chainRuleHessianList <- list()
   ## totalOutWRTSize is the sum of the lengths of all ouput wrt parameters.
-  totalOutWRTSize <- sum(sapply(derivInfo[['wrtToIndices']], function(x){return(length(x))}))
+  totalOutWRTSize <- sum(sapply(derivInfo$wrtToIndices, function(x){return(length(x))}))
   ## outDerivList will be returned from this function.
   outDerivList <- nimble:::ADNimbleList$new()
   if(valueFlag) outDerivList$value = 0
   outDerivList$gradient = matrix(0, ncol = totalOutWRTSize, nrow = 1)
   if(hessianFlag) outDerivList$hessian = array(0, dim = c(totalOutWRTSize, totalOutWRTSize, 1))
-  totalWRTSize <-  sum(sapply(derivInfo[['wrtLineSize']], function(x){return(x)}))
-  allWRTLines <-derivInfo[['wrtLineNums']]
+  totalWRTSize <-  sum(sapply(derivInfo$wrtLineSize, function(x){return(x)}))
+  allWRTLines <-derivInfo$wrtLineNums
   ## Below we get the start and end indices of all wrt parameters.
   ## For example, if we are taking derivatives with respect to 'a' and 'b', both of 
   ## length 2, outIndexStartPoints would be c(1, 3) and outIndexEndPoints would be c(2,4)
-  calcNodesLineNums <- which(derivInfo[['calcNodeIndicators']] == 1)
+  calcNodesLineNums <- which(derivInfo$calcNodeIndicators == 1)
   for(i in seq_along(declIDs)){
     if(length(calcNodesLineNums) > 0){
       declID <- declIDs[i]
-      isDeterm <- derivInfo[['stochasticIndicators']][i] == 0
+      isDeterm <- derivInfo$stochasticIndicators[i] == 0
       thisWrtLine <- which(allWRTLines == i)
-      isWrtLine <-  derivInfo[['wrtNodeIndicators']][i] == 1
-      isCalcNodeLine <- i %in% calcNodesLineNums
+      isWrtLine <-  derivInfo$wrtNodeIndicators[i] == 1
+      isCalcNodeLine <- i %in% derivInfo$calcNodeIndicators[i]
       ## Below shouldn't be necessary in c++ chain rule code. 
-      sizeAndDimInfo <- environment(model$nodeFunctions[[declID]]$.generatorFunction)[['parentsSizeAndDims']]
-      formalArgNames <- formals(model$nodeFunctions[[ declID ]]$calculateWithArgs)
-      unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
-      modelArgNames <- lapply(names(formalArgNames)[-1],
-                              function(x){parse(text = convertCalcArgNameToModelNodeName(x, sizeAndDimInfo, unrolledIndicesMatrixRow))[[1]]})
-      calcWithArgs <- model$nodeFunctions[[ declID ]]$calculateWithArgs
-      calcWithArgsCall <- as.call(c(list(as.name('calcWithArgs'), unrolledIndicesMatrixRow), modelArgNames))
       thisNodeSize <- length(eval(calcWithArgsCall[[3]]))   
       ## If this node is either a calulate node or a deterministic dependency of a wrt node,
       ## we need to take derivatives of its calculateWithArgs function.  The derivative function
       ## call is evaluated below.
-      if(isCalcNodeLine || isDeterm){
+      if(isCalcNodeLine){
         
         ## Below we construct two lists:
         ## parentGradients, a list of all the gradients of the parent nodes of each argument of this node.
@@ -257,21 +227,11 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
             ## The first argument (k = 1) of a node's calculateWithArgs function will always be the node itself.
             ## If this node is a wrt node, we want to set the parent gradient of the first arg (the derivative of this node wrt itself)
             ## to the identity.
-            thisWRTArgs <- c(thisWRTArgs, names(formalArgNames[k+1]))
-            parentGradients[[k]] <- matrix(0, nrow = derivInfo[['wrtLineSize']][[thisWrtLine]],
+            parentGradients[[k]] <- matrix(0, nrow = derivInfo$wrtLineSize[[thisWrtLine]],
                                            ncol = totalWRTSize)
-            parentGradients[[k]][, derivInfo[['wrtLineIndices']][[thisWrtLine]]] <- diag(derivInfo[['wrtLineSize']][[thisWrtLine]])
-            argSizeInfo[k] <- derivInfo[['wrtLineSize']][[thisWrtLine]]
+            parentGradients[[k]][, derivInfo$wrtLineIndices[[thisWrtLine]]] <- diag(derivInfo$wrtLineSize[[thisWrtLine]])
           }
           else if(derivInfo[[2]][[i]][[k]][1] > 0){
-            for(j in 1:length(derivInfo[[2]][[i]][[k]])){
-              wrtInfoList <-  convertToWrtArg(derivInfo[[1]][derivInfo[[2]][[i]][[k]][j]],
-                                              modelArgNames[[k]],
-                                              names(formalArgNames)[k+1]) 
-              thisWRTArgs <- c(thisWRTArgs, wrtInfoList$wrtArg )
-              argSizeInfo[k] <- argSizeInfo[k] + wrtInfoList$argSize
-            }
-
             ## Otherwise, if argument k has parents that depend on a wrt node, grab the parent gradients (which will have already been calculated)
             ## and combine them into a single matrix.
             parentGradientsList <- chainRuleDerivList[derivInfo[[2]][[i]][[k]]]
@@ -301,7 +261,7 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
                                        list(CALCCALL = calcWithArgsCall,
                                             DERIVORDERS = order,
                                             DROPARGS = 'INDEXEDNODEINFO_',
-                                            WRT = thisWRTArgs)))
+                                            WRT = derivInfo$lineWRTArgsAsCharacters[[i]])))
           if(isDeterm){
             derivList$value <- 0
             model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)
@@ -331,16 +291,16 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
             for(k in seq_along(derivInfo[[2]][[i]])){
               if(!is.null(parentGradients[[k]])){
                 ## Calculate derivs of this node (i) wrt this parameter (j) for this parent node (k) via chain rule. 
-                chainRuleDerivList[[i]][,derivInfo[['wrtLineIndices']][[j]]] <- chainRuleDerivList[[i]][,derivInfo[['wrtLineIndices']][[j]]] +
-                  derivList$gradient[,(thisArgIndex + 1):(thisArgIndex + argSizeInfo[k]), drop = FALSE]%*%parentGradients[[k]][,derivInfo[['wrtLineIndices']][[j]], drop = FALSE]
+                chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[j]]] <- chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[j]]] +
+                  derivList$gradient[,(thisArgIndex + 1):(thisArgIndex + argSizeInfo[k]), drop = FALSE]%*%parentGradients[[k]][,derivInfo$wrtLineIndices[[j]], drop = FALSE]
                 
               }
               thisArgIndex <- thisArgIndex + argSizeInfo[k]
             }
             if(derivOutputFlag == TRUE){
               ## If this line is included in output, add the derivative of this line (i) wrt this param (j).
-              outDerivList$gradient[, derivInfo[['wrtToIndices']][[j]]] <- outDerivList$gradient[, derivInfo[['wrtToIndices']][[j]]]  +  
-                chainRuleDerivList[[i]][,derivInfo[['wrtFromIndices']][[j]]]
+              outDerivList$gradient[, derivInfo$wrtToIndices[[j]]] <- outDerivList$gradient[, derivInfo$wrtToIndices[[j]]]  +  
+                chainRuleDerivList[[i]][,derivInfo$wrtFromIndices[[j]]]
             }
             if(hessianFlag){
               ## The Hessian is calculated below using Faà di Bruno's formula.
@@ -350,8 +310,8 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
                 ## Iterate over this line's parent nodes.
                 for(k in seq_along(derivInfo[[2]][[i]])){
                   if(!is.null(parentHessians[[k]])){
-                    for(dim1 in derivInfo[['wrtLineIndices']][[j]]){
-                      for(dim2 in derivInfo[['wrtLineIndices']][[j_2]]){
+                    for(dim1 in derivInfo$wrtLineIndices[[j]]){
+                      for(dim2 in derivInfo$wrtLineIndices[[j_2]]){
                         chainRuleHessianList[[i]][dim1, dim2, ] <- chainRuleHessianList[[i]][dim1, dim2, ] +
                           c(derivList$gradient[ ,(thisArgIndex + 1):(thisArgIndex + argSizeInfo[k]), drop = FALSE]%*%parentHessians[[k]][dim1, dim2, , drop = FALSE])
                       }
@@ -362,9 +322,9 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
                     if(!is.null(parentGradients[[k]])){
                       if(!is.null(parentGradients[[k_2]])){
                         for(dim3 in 1:dim(derivList$hessian)[3]){
-                          chainRuleHessianList[[i]][derivInfo[['wrtLineIndices']][[j]], derivInfo[['wrtLineIndices']][[j_2]], dim3] <- chainRuleHessianList[[i]][derivInfo[['wrtLineIndices']][[j]], derivInfo[['wrtLineIndices']][[j_2]], dim3] +
-                            t(parentGradients[[k]][, derivInfo[['wrtLineIndices']][[j]], drop = FALSE])%*%derivList$hessian[(thisArgIndex + 1):(thisArgIndex + argSizeInfo[k]),(thisArgIndex_2 + 1):(thisArgIndex_2 + argSizeInfo[k_2]), dim3]%*%
-                            parentGradients[[k_2]][, derivInfo[['wrtLineIndices']][[j_2]], drop = FALSE]
+                          chainRuleHessianList[[i]][derivInfo$wrtLineIndices[[j]], derivInfo$wrtLineIndices[[j_2]], dim3] <- chainRuleHessianList[[i]][derivInfo$wrtLineIndices[[j]], derivInfo$wrtLineIndices[[j_2]], dim3] +
+                            t(parentGradients[[k]][, derivInfo$wrtLineIndices[[j]], drop = FALSE])%*%derivList$hessian[(thisArgIndex + 1):(thisArgIndex + argSizeInfo[k]),(thisArgIndex_2 + 1):(thisArgIndex_2 + argSizeInfo[k_2]), dim3]%*%
+                            parentGradients[[k_2]][, derivInfo$wrtLineIndices[[j_2]], drop = FALSE]
                         }
                       }
                       
@@ -375,8 +335,8 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
                 }
                 if(derivOutputFlag == TRUE){
                   ## If this line is included in output, add the Hessian of this line (i) wrt this param #1 (j) and this param #2 (j_2).
-                  outDerivList$hessian[derivInfo[['wrtToIndices']][[j]], derivInfo[['wrtToIndices']][[j_2]], ] <-  outDerivList$hessian[derivInfo[['wrtToIndices']][[j]], derivInfo[['wrtToIndices']][[j_2]], ]   +
-                    chainRuleHessianList[[i]][derivInfo[['wrtFromIndices']][[j]], derivInfo[['wrtFromIndices']][[j_2]],]
+                  outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ] <-  outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ]   +
+                    chainRuleHessianList[[i]][derivInfo$wrtFromIndices[[j]], derivInfo$wrtFromIndices[[j_2]],]
                 }
               }
             }
@@ -397,7 +357,7 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
         ## will work for dependent nodes of this node.  That means taking the first and second derivs of the
         ## function f(x) = x, which will be the identity matrix and 0 respectively.
         chainRuleDerivList[[i]] <- matrix(0,nrow = thisNodeSize, ncol = totalWRTSize)
-        if(isWrtLine)   chainRuleDerivList[[i]][,derivInfo[['wrtLineIndices']][[thisWrtLine]]] <- diag(thisNodeSize)
+        if(isWrtLine)   chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[thisWrtLine]]] <- diag(thisNodeSize)
         if(isWrtLine && hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWRTSize, totalWRTSize, thisNodeSize))
         if(isCalcNodeLine){
           if(valueFlag) outDerivList$value <- outDerivList$value + derivList$value

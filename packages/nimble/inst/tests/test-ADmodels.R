@@ -42,6 +42,7 @@ test_ADModelCalculate(ADMod3, calcNodeNames = list(c('mu', 'y'), c('y[1, 2]'), c
                       wrt = list(c('mu', 'y'), c('sigma[1,1]', 'y[1, 2]'), c('mu[1:2]', 'sigma[1:2, 2]')), testR = TRUE,
                       testCompiled = FALSE)
 
+
 ### State Space Model Test
 
 ADCode4 <- nimbleCode({
@@ -60,6 +61,7 @@ ADMod4$simulate(ADMod4$getDependencies('x'))
 test_ADModelCalculate(ADMod4, calcNodeNames = list(c('y'), c('y[2]'), c(ADMod4$getDependencies(c('x', 'x0')))),
                       wrt = list(c('x0'), c('x[0]', 'x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), testR = TRUE,
                       testCompiled = FALSE)
+
 
 
 
