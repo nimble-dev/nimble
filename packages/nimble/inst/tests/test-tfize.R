@@ -60,37 +60,6 @@ test_that('Tensorflow backend works for basic math', {
 })
 
 test_that('Tensorflow works with nimDerivs()', {
-    temporarilyEnableTensorflow()
-    nimbleOptions(debugCppLineByLine = TRUE)
-    nimbleOptions(showCompilerOutput = TRUE)
-    nimbleOptions(pauseAfterWritingFiles = FALSE)
-    nimbleOptions(experimentalNewSizeProcessing = TRUE)
-    
-    nf1 <- nimbleFunction(
-        name = 'example',
-        run = function(x = double(1)) {
-            return(sum(x))
-            returnType(double(0))
-        }
-    )
-    nf2 <- nimbleFunction(
-        name = 'example_gradient',
-        run = function(arg1 = double(1)) {
-            return(nimDerivs(nf1, order = c(0, 1)))
-            returnType(ADNimbleList())
-        }
-    )
-    dirName <- file.path(Sys.getenv('HOME'), 'tmp')
-    cnf1 <- compileNimble(nf1, dirName = dirName, projectName = 'tf',
-                          control = list(debugCpp = TRUE))
-    cnf2 <- compileNimble(nf2, dirName = dirName, projectName = 'tf',
-                          control = list(debugCpp = TRUE))
-    x <- c(-2, -1, 0, 1, 2)
-    dx <- c(-4, -2, 0, 2, 4)
-    expect_equal(cnf(x), dx)
-})
-
-test_that('Tensorflow can compute derivatives', {
     nimbleOptions(experimentalEnableDerivs = TRUE,
                   experimentalUseTensorflow = FALSE)
 
