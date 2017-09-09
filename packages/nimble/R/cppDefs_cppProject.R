@@ -10,7 +10,7 @@ cppCodeFileClass <- setRefClass('cppCodeFileClass',
                              	initialize = function(...){filename <<- character(); includes <<- character(); usings <<- character(); cppDefs <<- list(); callSuper(...)},
 
                                  writeIncludes = function(con = stdout()) {
-                                     writeLines('#define R_NO_REMAP', con)
+                                     writeLines(c('#ifndef R_NO_REMAP', '#define R_NO_REMAP', '#endif'), con)
                                      if(length(includes) > 0) writeLines(paste0('#include ', includes), con)
                                  },
                                  writeUsings = function(con = stdout()) {
