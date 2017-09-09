@@ -16,7 +16,7 @@ test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(c('x', 'y'),
 
 
 test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(('y[2]')),
-                      wrt = list(c('x[2]')), testR = TRUE)
+                      wrt = list(c('x[2]', 'y[2]')), testR = TRUE)
 
 
 

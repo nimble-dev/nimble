@@ -8,7 +8,7 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeA
     boundsRep <- lapply(bounds, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     logProbNodeExprRep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(logProbNodeExpr, setupOutputLabels)
     if(nimbleOptions('experimentalEnableDerivs')){
-      parents <- names(parentsSizeAndDims)		
+      parents <- names(parentsSizeAndDims)
       parentIndexInfoList <- nndf_extractNodeIndices(LHSrep, parents)		
       parentIndexInfoList <- nndf_extractNodeIndices(RHSrep, parents, indexExprList = parentIndexInfoList)		
       for(i in seq_along(parentIndexInfoList)){		
