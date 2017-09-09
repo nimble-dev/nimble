@@ -10,8 +10,8 @@ cppCodeFileClass <- setRefClass('cppCodeFileClass',
                              	initialize = function(...){filename <<- character(); includes <<- character(); usings <<- character(); cppDefs <<- list(); callSuper(...)},
 
                                  writeIncludes = function(con = stdout()) {
+                                     writeLines('#define R_NO_REMAP', con)
                                      if(length(includes) > 0) writeLines(paste0('#include ', includes), con)
-                                     writeLines('#undef eval', con) ## remove R headers' #define eval Rf_eval
                                  },
                                  writeUsings = function(con = stdout()) {
                                      if(length(usings) > 0) writeLines(paste0('using ', usings,';'), con)
@@ -257,12 +257,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(!inherits(Oincludes, 'uninitializedField')) { ## will only be uninitialized if writeFiles was skipped due to specialHandling (developer backdoor)
                                            includes <- c(includes, Oincludes) ## normal operation will have Oincludes.
                                        }
-                                       SHLIBcmd <- paste(file.path(R.home('bin'), 'R'),
-                                                         'CMD SHLIB',
-                                                         '-DR_NO_REMAP',
-                                                         paste(c(mainfiles, includes), collapse = ' '),
-                                                         '-o',
-                                                         basename(outputSOfile))
+                                       SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
                                        cur = getwd()
                                        setwd(dirName)
