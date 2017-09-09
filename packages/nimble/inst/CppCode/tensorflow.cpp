@@ -48,7 +48,8 @@ NimTf_Runner::NimTf_Runner(const std::string& graphDefBase64,
       gradient_values_(inputNames.size()),
       input_pos_(0),
       output_pos_(outputNames.size()),
-      gradient_pos_(inputNames.size()) {
+      gradient_pos_(inputNames.size()),
+      has_gradients_(true) {
   // Initialize graph.
   {
     std::string graphDef;
@@ -84,6 +85,17 @@ NimTf_Runner::NimTf_Runner(const std::string& graphDefBase64,
   for (int i = 0; i < outputNames.size(); ++i) {
     outputs_[i].oper = TF_GraphOperationByName(graph_, outputNames[i].c_str());
     outputs_[i].index = 0;
+  }
+
+  // Set gradients.
+  for (int i = 0; i < inputNames.size(); ++i) {
+    const std::string name = inputNames[i] + "_gradient";
+    gradients_[i].oper = TF_GraphOperationByName(graph_, name.c_str());
+    gradients_[i].index = 0;
+    if (gradients_[i].oper == NULL) {
+      has_gradients_ = false;
+      break;
+    }
   }
 }
 
@@ -176,6 +188,7 @@ void NimTf_Runner::NimTf_run() {
 }
 
 void NimTf_Runner::NimTf_runGradient() {
+  NIM_ASSERT1(has_gradients_, "Tensorflow graph is missing gradients");
   NIM_ASSERT_EQ(input_pos_, num_inputs());
   NIM_ASSERT_EQ(output_pos_, num_outputs());
   NIM_ASSERT_EQ(gradient_pos_, num_inputs());

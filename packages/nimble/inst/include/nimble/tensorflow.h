@@ -75,6 +75,7 @@ class NimTf_Runner {
   int input_pos_;
   int output_pos_;
   int gradient_pos_;
+  bool has_gradients_;
 
  public:
   NimTf_Runner(const std::string& graphDefBase64,
