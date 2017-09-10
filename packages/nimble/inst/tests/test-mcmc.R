@@ -1209,6 +1209,35 @@ test_that('dcar_normal sampling', {
 })
 
 
+## testing dmnorm-dnorm conjugacies we don't detect
+
+test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
+    code = nimbleCode({
+        y[1:3] ~ dmnorm(mu[1:3], pr[1:3,1:3])
+        for(i in 1:3)
+            mu[i] ~ dnorm(0,1)
+        pr[1:3,1:3] ~ dwish(pr0[1:3,1:3], 5)
+    })
+    m = nimbleModel(code, inits = list(pr0 = diag(3), pr = diag(3)))
+    conf <- configureMCMC(m)
+    expect_failure(expect_match(conf$getSamplers()[[1]]$name, "conjugate_dmnorm_dnorm",
+         info = "failed to detect dmnorm-dnorm conjugacy"),
+         info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dmnorm dependents of dnorm target")
+
+    code = nimbleCode({
+        for(i in 1:3)
+            y[i] ~ dnorm(mu[i], var = s0)
+        mu[1:3] ~ dmnorm(z[1:3],pr[1:3,1:3])
+        s0 ~ dinvgamma(1,1)
+    })
+    m = nimbleModel(code, inits = list(z = rep(0,3), pr = diag(3)))
+    conf <- configureMCMC(m)
+    expect_failure(expect_match(conf$getSamplers()[[2]]$name, "conjugate_dnorm_dmnorm",
+         info = "failed to detect dmnorm-dnorm conjugacy"),
+         info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dnorm dependents of dmnorm target")
+
+}
+
 sink(NULL)
 
 if(!generatingGoldFile) {
