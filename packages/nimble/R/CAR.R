@@ -483,8 +483,3 @@ CAR_proper_evaluateDensity <- nimbleFunction(
 
 
 
-
-
-
-
-
