@@ -89,7 +89,7 @@ test_that('Tensorflow works with nimDerivs()', {
     # FIXME This fails with:
     # Error in nimType2TfDtype[[sym$type]] : 
     #   attempt to select less than one element in get1index
-    # where the interim concatenate symbol is missing from symTab
+    # where code$name = "ConcatenateInterm_6" is missing from symTab
     # (hence sym == NULL, sym$type == NULL).
     withTensorflowEnabled(
         tf_fun <- compileNimble(fun1, showCompilerOutput = TRUE, resetFunctions = TRUE)

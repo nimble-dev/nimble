@@ -71,12 +71,19 @@ TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
     ## static pointer.  But the cppVarFull::generate takes constructor as simple text
     ## and does not recursively generate constructor for exprClasses.  Hence
     ## for a first step now we will just paste together the constructor code
-    TFconstructor <- TfBuilder$generateConstructor()
+    TFconstructor <- TfBuilder$generateConstructor(code$cppADCode)
     TFrunnerName <- TFrunnerLabelGenerator()
-    TFrunnerSym <-
-        symbolTensorflowRunner(name = TFrunnerName,
+    if (code$cppADCode) {
+        TFrunnerSym <-
+            symbolTensorflowOp(name = TFrunnerName,
                                constructor = TFconstructor,
-                               type = "symbolTensorflowRunner")
+                               type = "symbolTensorflowOp")
+    } else {
+        TFrunnerSym <-
+            symbolTensorflowRunner(name = TFrunnerName,
+                                   constructor = TFconstructor,
+                                   type = "symbolTensorflowRunner")
+    }
     symTab$addSymbol(TFrunnerSym)
     TFsetupExprs <- makeTFsetupExprs(TfBuilder, TFrunnerName)
     ## Convert original code line to a comment.
@@ -123,6 +130,7 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
         if (is.null(placeholders[[code$name]])) {
             nimType2TfDtype = list('double' = tf$float64)
             sym <- symTab$getSymbolObject(code$name)
+            if (is.null(sym)) stop(paste('Symbol not found in symbol table:', code$name))
             dtype <- nimType2TfDtype[[sym$type]]
             if (class(sym$size) == 'uninitializedField') {
                 size <- as.list(rep(NA, sym$nDim))
@@ -323,22 +331,26 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     tensor <- TfTensorizeExpr(expr, placeholders)
     tensor <- tf$identity(tensor, name = target$name)
 
-    ## Add a gradient for each input arg.
+    ## Optionally add a gradient for each input arg.
     ## Note that the gradients only make sense when the target tensor has size 1
     ## (i.e. when it is either a scalar or a tensor with a single entry).
     ## When the target has size greater than 1, then the gradients are wrt the
     ## sum of all target entries. For details on tf.gradients, see
     ## https://www.tensorflow.org/api_docs/python/tf/gradients
-    placeholders <- as.list(placeholders)
-    placeholderValues <- as.list(placeholders)
-    placeholderNames <- names(placeholderValues)
-    names(placeholderValues) <- NULL
-    gradients <- tf$gradients(tensor, placeholderValues)
-    if (length(gradients) != length(placeholderNames)) stop('programmer error')
-    for (i in seq_along(gradients)) {
-        ## This suffixed name is expected by include/nimble/tensorflow.hpp:
-        name <- paste0(placeholderNames[i], '_gradient')
-        tf$identity(gradients[i], name = name)
+    if (code$cppADCode) {
+        placeholders <- as.list(placeholders)
+        placeholderValues <- as.list(placeholders)
+        placeholderNames <- names(placeholderValues)
+        names(placeholderValues) <- NULL
+        gradients <- tf$gradients(tensor, placeholderValues)
+        if (length(gradients) != length(placeholderNames)) {
+            stop('programmer error')
+        }
+        for (i in seq_along(gradients)) {
+            ## This suffixed name is expected by include/nimble/tensorflow.hpp:
+            name <- paste0(placeholderNames[i], '_gradient')
+            tf$identity(gradients[i], name = name)
+        }
     }
 
     ## Configure the tensorflow session.
@@ -398,7 +410,7 @@ TfBuilder <- setRefClass(
         addOutputVar = function(name) {
             outputNames <<- append(outputNames, name)
         },
-        generateConstructor = function() {
+        generateConstructor = function(cppADCode) {
             ## Paste code, instead of creating a parse tree.
             ## Note that we have decided to use the static pointer trick to avoid
             ## crashes due to out-of-order destructors or unlinking. This
@@ -415,7 +427,7 @@ TfBuilder <- setRefClass(
                     paste0('.NimTf_withOutput("', outputNames, '")'),
                     collapse = "\n"
                 ),
-                '.NimTf_build()',
+                if (cppADCode) '.NimTf_op()' else '.NimTf_runner()',
                 sep = "\n"
             )
         }

@@ -269,17 +269,17 @@ void NimTf_Runner::NimTf_getGradient(const std::vector<int64_t>& dims,
 
 #if NIMBLE_HAVE_CPPAD
 
-NimTf_op::NimTf_op(NimTf_Runner& runner)
+NimTf_Op::NimTf_Op(NimTf_Runner& runner)
     : CppAD::atomic_base<double>("tensorflow"), runner_(runner) {
   NIM_ASSERT_EQ(runner.num_outputs(), 1);
 }
 
-void NimTf_op::NimTf_setInput(ad_double& scalar) {
+void NimTf_Op::NimTf_setInput(ad_double& scalar) {
   packed_arg_.push_back(0);
   packed_arg_.push_back(scalar);
 }
 
-void NimTf_op::NimTf_setInput(NimArrBase<ad_double>& nimArr) {
+void NimTf_Op::NimTf_setInput(NimArrBase<ad_double>& nimArr) {
   const int n = nimArr.numDims();
   packed_arg_.push_back(n);
   int64_t size = 1;
@@ -293,17 +293,17 @@ void NimTf_op::NimTf_setInput(NimArrBase<ad_double>& nimArr) {
   }
 }
 
-void NimTf_op::NimTf_run() {
+void NimTf_Op::NimTf_run() {
   packed_result_.resize(1);
   (*this)(packed_arg_, packed_result_);
   packed_arg_.clear();
 }
 
-void NimTf_op::NimTf_getOutput(ad_double& scalar) {
+void NimTf_Op::NimTf_getOutput(ad_double& scalar) {
   scalar = packed_result_[0];
 }
 
-void NimTf_op::NimTf_getOutput(NimArrBase<ad_double>& nimArr) {
+void NimTf_Op::NimTf_getOutput(NimArrBase<ad_double>& nimArr) {
   const int n = nimArr.numDims();
   for (int i = 0; i < n; ++i) {
     NIM_ASSERT_EQ(nimArr.dimSize(i), 1);
@@ -311,7 +311,7 @@ void NimTf_op::NimTf_getOutput(NimArrBase<ad_double>& nimArr) {
   nimArr.getPtr()[0] = packed_result_[0];
 }
 
-bool NimTf_op::forward(size_t p, size_t q, const CppAD::vector<bool>& vx,
+bool NimTf_Op::forward(size_t p, size_t q, const CppAD::vector<bool>& vx,
                        CppAD::vector<bool>& vy, const CppAD::vector<double>& tx,
                        CppAD::vector<double>& ty) {
   // This implements only computation of a single scalar value (no derivatives).
@@ -353,7 +353,7 @@ bool NimTf_op::forward(size_t p, size_t q, const CppAD::vector<bool>& vx,
   return true;
 }
 
-bool NimTf_op::reverse(size_t q, const CppAD::vector<double>& tx,
+bool NimTf_Op::reverse(size_t q, const CppAD::vector<double>& tx,
                        const CppAD::vector<double>& ty,
                        CppAD::vector<double>& px,
                        const CppAD::vector<double>& py) {
