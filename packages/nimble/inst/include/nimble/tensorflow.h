@@ -28,8 +28,6 @@
 #include <string>
 #include <vector>
 
-#define NIMBLE_HAVE_CPPAD 1  // DO NOT SUBMIT.
-
 #if NIMBLE_HAVE_CPPAD
 #include <cppad/cppad.hpp>
 #endif  // NIMBLE_HAVE_CPPAD
