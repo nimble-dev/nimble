@@ -1235,8 +1235,7 @@ test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
     expect_failure(expect_match(conf$getSamplers()[[2]]$name, "conjugate_dnorm_dmnorm",
          info = "failed to detect dmnorm-dnorm conjugacy"),
          info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dnorm dependents of dmnorm target")
-
-}
+})
 
 sink(NULL)
 
