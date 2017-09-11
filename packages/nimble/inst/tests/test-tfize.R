@@ -60,31 +60,44 @@ test_that('Tensorflow backend works for basic math', {
 })
 
 test_that('Tensorflow works with nimDerivs()', {
-    nimbleOptions(experimentalEnableDerivs = TRUE,
-                  experimentalUseTensorflow = FALSE)
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    nimbleOptions(verboseErrors = TRUE)
 
-    ADfun <- nimbleFunction(
-        setup = function(){},
-        run = function(x = double(0)) {
-            outList <- derivs(testMethod(x))
-            returnType(ADNimbleList())
-            return(outList)
-        },
-        methods = list(
-            testMethod = function(x = double(0)) {
-                out <- dnorm(x,0,1)
-                returnType(double())
-                return(out)
-            }
-        ),
-        enableDerivs = list('testMethod')
+    make_fun <- function() {
+        nimbleFunction(
+            setup = function(){},
+            run = function(x = double(0)) {
+                outList <- derivs(testMethod(x))
+                returnType(ADNimbleList())
+                return(outList)
+            },
+            methods = list(
+                testMethod = function(x = double(0)) {
+                    out <- log(x)
+                    returnType(double(0))
+                    return(out)
+                }
+            ),
+            enableDerivs = list('testMethod')
+        )()
+    }
+    fun1 <- make_fun()
+    fun2 <- make_fun()
+    temporarilyAssignInGlobalEnv(fun1)
+    temporarilyAssignInGlobalEnv(fun2)
+
+    # FIXME This fails with:
+    # Error in nimType2TfDtype[[sym$type]] : 
+    #   attempt to select less than one element in get1index
+    # where the interim concatenate symbol is missing from symTab
+    # (hence sym == NULL, sym$type == NULL).
+    withTensorflowEnabled(
+        tf_fun <- compileNimble(fun1, showCompilerOutput = TRUE, resetFunctions = TRUE)
     )
+    c_fun <- compileNimble(fun2, showCompilerOutput = TRUE)
     
-    ADfunInst <- ADfun()
-    temporarilyAssignInGlobalEnv(ADfunInst)
-    cADfunInst <- compileNimble(ADfunInst, showCompilerOutput = TRUE)
-    
-    Rderiv <- D(expression((1/(sqrt(2*pi)))*exp(-(x^2)/2)), 'x') ## Can be replaced by NIMBLE's R version of derivs in the future.
+    Rderiv <- D(expression(log(x)), 'x')
     x <- 1.4
-    expect_equal(cADfunInst$run(x)$gradient[1], eval(Rderiv)) ## Temporary simple test to make sure compilation and gradient calculation work.
+    expect_equal(c_fun$run(x)$gradient[1], eval(Rderiv))
+    expect_equal(tf_fun$run(x)$gradient[1], eval(Rderiv))
 })
