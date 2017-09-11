@@ -320,7 +320,7 @@ TfTensorizeExpr <- function(code, placeholders) {
 }
 
 ## Creates a TfBuilder object representing the given code.
-## This can optionally compute gradients wrt given placeholders.
+## Also computes gradients wrt each input, if possible.
 ## Setting threads=0 lets tensorflow choose the number of threads.
 exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     if (!require(tensorflow)) {
@@ -388,7 +388,6 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
         tfBuilder$addInputVar(name)
     }
     tfBuilder$addOutputVar(target$name)
-
     return(tfBuilder)
 }
 
