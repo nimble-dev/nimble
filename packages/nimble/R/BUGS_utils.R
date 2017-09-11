@@ -220,11 +220,15 @@ Rname2CppName <- function(rName, colonsOK = TRUE) {
     ## which were largely redundant
     if (!is.character(rName))
         rName <- deparse(rName)
-    if( colonsOK)
+
+    if( colonsOK) {
+        # Substitute single colons but preserve double colons.
+        rName <- gsub('::', '_DOUBLE_COLON_', rName)
         rName <- gsub(':', 'to', rName)  # replace colons with 'to'
-    else
-        if(grepl(':', rName))
-            stop(paste0('trying to do name mashup on expression with colon (\':\') from ', rName))
+        rName <- gsub('_DOUBLE_COLON_', '::', rName)
+    } else if(grepl(':', rName)) {
+        stop(paste0('trying to do name mashup on expression with colon (\':\') from ', rName))
+    }
     rName <- gsub(' ', '', rName)
     rName <- gsub('\\.', '_dot_', rName) 
     rName <- gsub("\"", "_quote_", rName)

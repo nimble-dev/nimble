@@ -36,6 +36,27 @@ Note that the R methods "SANN", "Brent" are not supported.}
 \description{
 Nimble wrapper around R's builtin \code{\link{optim}}.
 }
+\examples{
+\dontrun{
+objectiveFunction <- nimbleFunction(
+    run = function(par = double(1)) {
+        return(sum(par) * exp(-sum(par ^ 2) / 2))
+        returnType(double(0))
+    }
+)
+optimizer <- nimbleFunction(
+    run = function(method = character(0), fnscale = double(0)) {
+        control <- optimDefaultControl()
+        control$fnscale <- fnscale
+        par <- c(0.1, -0.1)
+        return(optim(par, objectiveFunction, method = method, control = control))
+        returnType(optimResultNimbleList())
+    }
+)
+cOptimizer <- compileNimble(optimizer)
+cOptimizer(method = 'BFGS', fnscale = -1)
+}
+}
 \seealso{
 \code{\link{optim}}
 }

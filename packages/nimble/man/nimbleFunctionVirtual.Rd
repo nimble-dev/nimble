@@ -29,6 +29,6 @@ See the NIMBLE User Manual section on nimbleFunctionLists for explanation of how
 NIMBLE development team
 }
 \seealso{
-\link{nimbleFunction}
+\code{\link{nimbleFunction}}
 }
 

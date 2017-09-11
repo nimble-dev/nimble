@@ -1,7 +1,4 @@
 ## Classes for a cppProject
-setOldClass("DLLInfo")
-setClassUnion("DLLInfoOrNULL", c("NULL", "DLLInfo"))
-
 cppCodeFileClass <- setRefClass('cppCodeFileClass',
                              fields = list(
                                  filename = 'ANY',	#character
@@ -13,8 +10,8 @@ cppCodeFileClass <- setRefClass('cppCodeFileClass',
                              	initialize = function(...){filename <<- character(); includes <<- character(); usings <<- character(); cppDefs <<- list(); callSuper(...)},
 
                                  writeIncludes = function(con = stdout()) {
+                                     writeLines(c('#ifndef R_NO_REMAP', '#define R_NO_REMAP', '#endif'), con)
                                      if(length(includes) > 0) writeLines(paste0('#include ', includes), con)
-                                     writeLines('#undef eval', con) ## remove R headers' #define eval Rf_eval
                                  },
                                  writeUsings = function(con = stdout()) {
                                      if(length(usings) > 0) writeLines(paste0('using ', usings,';'), con)
@@ -143,7 +140,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        selfCPP <- if(is.character(con)) paste0('"', con, '.cpp"') else '"[FILENAME].cpp"'
                                        CPPincludes <- CPPincludes[ CPPincludes != selfCPP ]
 
-                                       ## Eigen must be included before any R header files because they both define "length"
+                                      ## TODO Simplify Eigen include logic now that Nimble defines `R_NO_REMAP`.
                                        ## similar for cppad
                                        iEigenInclude <- grep("EigenTypedefs", CPPincludes)
                                        if(length(iEigenInclude) > 0) {
@@ -156,7 +153,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        ## at this point strip out CPPincludes other than EigenTypedefs that have .cpp and gsub .cpp to .o
                                        boolConvertCppIncludeToOinclude <- grepl("\\.cpp", CPPincludes)
-                                       ##if(length(iEigenInclude) > 0) boolConvertCppIncludeToOinclude[1] <- FALSE
                                        Oincludes <<- gsub("\\.cpp", ".o", CPPincludes[boolConvertCppIncludeToOinclude])
                                        CPPincludes <- CPPincludes[!boolConvertCppIncludeToOinclude]
 
@@ -171,9 +167,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                               cppDefs = cppPieces,
                                                               ifndefName = ifndefName)
                                        selfInclude <- if(is.character(con)) paste0('"', con, '.h', '"') else '"[FILENAME].h"'
-                                       CPPincludes <- c(CPPincludes, selfInclude) ## selfInclude has to come last because Rinternals.h makes a name conflict with Eigen
-                                       
-                                     ##  CPPincludes <- c(CPPincludes, ('\"nimble/dynamicRegistrations.cpp\"'))
+                                       CPPincludes <- c(CPPincludes, selfInclude) ## selfInclude has to come last because Rinternals.h makes a name conflict with Eigen (this may be moot, 7/17)
                                        
                                        cppIfndefName <- paste0(ifndefName,'_CPP')
                                        cppFile <- cppCPPfileClass(filename = filename,
@@ -206,19 +200,14 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            "}")
                                        writeLines(contentLines, con = dynamicRegistrationsCppName)
                                    },
-                                   compileDynamicRegistrations = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
-                                       timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
-                                       
-                                       dynamicRegistrationsDllName <- paste0("dynamicRegistrations_", timeStamp)
-                                       dynamicRegistrationsCppName <- paste0(dynamicRegistrationsDllName, ".cpp")
-                                       
-                                       writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dynamicRegistrationsDllName)
-                                       ssDllName <- file.path(dirName, paste0(dynamicRegistrationsDllName, .Platform$dynlib.ext))
-                                       ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', dynamicRegistrationsCppName, '-o', basename(ssDllName))
+                                   compileStaticCode = function(dllName, cppName, showCompilerOutput) {
+                                       ssDllName <- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
+                                       ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', cppName, '-o', basename(ssDllName))
                                        if(!showCompilerOutput) {
-                                           logFile <- paste0("dynamicRegistrations_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
+                                           logFile <- paste0(dllName, ".log")
                                            ssdSHLIBcmd <- paste(ssdSHLIBcmd, ">", logFile)
-                                           ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
+                                           ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console.
+                                           ## Redirecting it to a file seems to cure this.
                                        }
                                        isWindows = (.Platform$OS.type == "windows")
                                        if(isWindows)
@@ -228,20 +217,29 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(status != 0) 
                                            stop(structure(simpleError("Failed to create the shared library"),
                                                           class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
-                                       nimbleUserNamespace$sessionSpecificDll <- dyn.load(ssDllName, local = TRUE)
-                                   },                                  
+                                       return(dyn.load(ssDllName, local = TRUE))
+                                   },
+                                   compileDynamicRegistrations = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+                                       timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
+                                       dllName <- paste0("dynamicRegistrations_", timeStamp)
+                                       cppName <- paste0(dllName, ".cpp")
+                                       writeDynamicRegistrationsDotCpp(cppName, dllName)
+                                       nimbleUserNamespace$sessionSpecificDll <- compileStaticCode(dllName, cppName, showCompilerOutput)
+                                   },
+                                   compileTensorflowWrapper = function(showCompilerOutput = nimbleOptions('showCompilerOutput')) {
+                                       # Load prerequisite DLLs.
+                                       if(!require(tensorflow)) stop('tensorflow package must be installed. Try "install.packages(\"tensorflow\")"')
+                                       tfPath <- tf$`__path__`  # This line triggers loading of _pywrap_tensorflow_internal.so.
+                                       tensorflowDllPath <- file.path(tfPath, 'python', '_pywrap_tensorflow_internal.so')
+                                       if(!file.exists(tensorflowDllPath))  stop(paste('Missing shared library', tensorflowDllPath))
+
+                                       timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
+                                       dllName <- paste0("nimble-tensorflow_", timeStamp)
+                                       cppName <- file.path(system.file(package = 'nimble'), 'CppCode', 'tensorflow.cpp')
+                                       nimbleUserNamespace$tensorflowWrapperDll <- compileStaticCode(dllName, cppName, showCompilerOutput)
+                                   },
                                    compileFile = function(names, showCompilerOutput = nimbleOptions('showCompilerOutput'),
                                                           .useLib = UseLibraryMakevars) {
-                                       cppPermList <- c('RcppUtils.cpp',
-                                                        'Utils.cpp',
-                                                        'NamedObjects.cpp',
-                                                        'ModelClassUtils.cpp',
-                                                        'accessorClasses.cpp',
-                                                        'predefinedNimbleLists.cpp',
-                                                        'nimOptim.cpp'
-                                                        )
-                                       if(getNimbleOption('includeCPPdists')) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
-
                                        isWindows = (.Platform$OS.type == "windows")
 
                                        includes <- character()
@@ -256,7 +254,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                                              
                                        outputSOfile <<- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
 
-                                       if(!inherits(Oincludes, 'uninitializedField')) { ## will only be unitialized if writeFiles was skipped due to specialHandling (developer backdoor)
+                                       if(!inherits(Oincludes, 'uninitializedField')) { ## will only be uninitialized if writeFiles was skipped due to specialHandling (developer backdoor)
                                            includes <- c(includes, Oincludes) ## normal operation will have Oincludes.
                                        }
                                        SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
@@ -265,20 +263,40 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        setwd(dirName)
                                        on.exit(setwd(cur))
 
-                                       if(is.null(nimbleUserNamespace$sessionSpecificDll)) compileDynamicRegistrations(showCompilerOutput = showCompilerOutput)
+                                       if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
+                                           compileDynamicRegistrations(showCompilerOutput = showCompilerOutput)
+                                       }
+                                       if(nimbleOptions('experimentalUseTensorflow')) {
+                                           if (is.null(nimbleUserNamespace$tensorflowWrapperDll)) {
+                                               compileTensorflowWrapper(showCompilerOutput = showCompilerOutput)
+                                           }
+                                           compileOnce <- FALSE  # TODO Compile tensorflow.cpp once and link against the .so file.
+                                           if (compileOnce) {
+                                               # This passes the the tensorflow wrapper .so as a compiler flag to R CMD SHLIB.
+                                               # This fails on travis because passing this linker flag overrides PKG_LIBS from Makevars.
+                                               # For more details, see http://www.hep.by/gnu/r-patched/r-exts/R-exts_96.html
+                                               # "Supplying linker commands as arguments to R CMD SHLIB will take precedence over PKG_LIBS in `Makevars'."
+                                               SHLIBcmd <- paste(SHLIBcmd, nimbleUserNamespace$tensorflowWrapperDll[['path']])
+                                           } else {
+                                               # This recompiles the tensorflow.cpp wrapper each time it is needed.
+                                               # This is inefficient, but works for now.
+                                               SHLIBcmd <- paste(SHLIBcmd, file.path(system.file(package = 'nimble'), 'CppCode', 'tensorflow.cpp'))
+                                           }
+                                       }
 
                                        origSHLIBcmd <- SHLIBcmd
-                                       if(isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) {## used only for testing, when we want to go quickly and skip linking and bail out
+                                       if(isTRUE(nimbleOptions('stopCompilationBeforeLinking'))) {## used only for testing, when we want to go quickly and skip linking and bail out
                                            ## get the dry run commands, run only those that contain -c for compile-only (don't link)
-                                           ## this is untested for a case with multiple .cpp files
+                                           ## this has only been tested with single .cpp files, not multiple .cpp files
                                            dryRunCmd <- paste0(SHLIBcmd, " -n")
                                            dryRunResult <- system(dryRunCmd, intern = TRUE)
                                            compileOnlyLines <- dryRunResult[ grepl("-c", dryRunResult) ]
                                            SHLIBcmd <- paste0(compileOnlyLines, collapse =  ";" )
                                        }
 
-                                       if(isTRUE(nimbleOptions()$forceO1)) {
-                                           if(!isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) {
+                                       if(isTRUE(nimbleOptions('forceO1'))) { ## replace -On flags with -O1 to reduce compiler time due to higher optimization levels 
+                                           ## If force01 is TRUE and we did not already strip out -c flags, do so now
+                                           if(!isTRUE(nimbleOptions('stopCompilationBeforeLinking'))) {
                                                dryRunCmd <- paste0(SHLIBcmd, " -n")
                                                dryRunResult <- system(dryRunCmd, intern = TRUE)
                                                compileOnlyLines <- dryRunResult[ grepl("-c", dryRunResult) ]

@@ -1121,6 +1121,26 @@ nimRound <- round
 #' @return \code{\link{optimResultNimbleList}}
 #' @seealso \code{\link{optim}}
 #' @export
+#' @examples
+#' \dontrun{
+#' objectiveFunction <- nimbleFunction(
+#'     run = function(par = double(1)) {
+#'         return(sum(par) * exp(-sum(par ^ 2) / 2))
+#'         returnType(double(0))
+#'     }
+#' )
+#' optimizer <- nimbleFunction(
+#'     run = function(method = character(0), fnscale = double(0)) {
+#'         control <- optimDefaultControl()
+#'         control$fnscale <- fnscale
+#'         par <- c(0.1, -0.1)
+#'         return(optim(par, objectiveFunction, method = method, control = control))
+#'         returnType(optimResultNimbleList())
+#'     }
+#' )
+#' cOptimizer <- compileNimble(optimizer)
+#' cOptimizer(method = 'BFGS', fnscale = -1)
+#' }
 nimOptim <- function(par, fn, gr = "NULL", ..., method = "Nelder-Mead", lower = -Inf, upper = Inf,
                      control = nimOptimDefaultControl(), hessian = FALSE) {
     # Tweak parameters.

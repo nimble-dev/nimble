@@ -15,8 +15,10 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer','push_back'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
                     makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
+                    makeCallList(c("TFsetInput_", "TFgetOutput_", "TFrun_"), 'cppOutputMemberFunctionDeref'),
                     list(
                         'next' = 'cppOutputNext',
+                        cppComment = 'cppOutputComment',
                         eigenCast = 'cppOutputEigenCast',
                         memberData = 'cppOutputMemberData',
                         fill = 'cppOutputEigMemberFunctionNoTranslate',
@@ -59,7 +61,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          as.integer = 'cppOutputCast',
                          as.numeric = 'cppOutputCast',
                          numListAccess = 'cppOutputNumList',
-                         blank = 'cppOutputBlank',
+                        blank = 'cppOutputBlank',
+                        nimVerbatim = 'cppOutputSkip',
                          callC = 'cppOutputEigBlank', ## not really eigen, but this just jumps over a layer in the parse tree
                          eigBlank = 'cppOutputEigBlank',
                          voidPtr = 'cppOutputVoidPtr',
@@ -77,7 +80,13 @@ cppMidOperators[['|']] <- ' || '
 for(v in c('$', ':')) cppMidOperators[[v]] <- NULL
 for(v in assignmentOperators) cppMidOperators[[v]] <- ' = '
 
-nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch','cppLiteral')
+nimCppKeywordsThatFillSemicolon <- c(
+    '{',
+    'for',
+    ifOrWhile,
+    'nimSwitch',
+    'cppLiteral',
+    'cppComment')
 
 ## In the following list, the names are names in the parse tree (i.e. the name field in an exprClass object)
 ## and the elements are the name of the function to use to generate output for that name
@@ -143,6 +152,8 @@ cppOutputVoidPtr <- function(code, symTab) {
 }
 
 cppOutputBlank <- function(code, symTab) NULL
+
+cppOutputSkip <- function(code, symTab) nimGenerateCpp(code$args[[1]], symTab)
 
 cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')
@@ -466,4 +477,6 @@ cppOutputTemplate <- function(code, symTab) {
 }
 
 cppOutputLiteral <- function(code, symTab) code$args[[1]]
+
+cppOutputComment <- function(code, symTab) paste0("/* ", code$args[[1]], " */")
 

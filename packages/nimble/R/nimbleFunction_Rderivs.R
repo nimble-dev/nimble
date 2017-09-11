@@ -163,9 +163,6 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars){
   }
   if(missing(nodes) ) 
     nodes <- model$getMaps('nodeNamesLHSall')
-  if(!is.null(nodeFxnVector)){
-    stop('nfv case of nimDerivs_calculate not implemented yet.')
-  }
   wrtParsDeps <- model$getDependencies(wrtPars)
   nodes <- model$expandNodeNames(nodes, sort = TRUE)
   if(!all(nodes %in% wrtParsDeps)){

@@ -64,6 +64,7 @@ NIMBLE extends the BUGS language in the following ways:
    deterministic, declarations.\footnote{But beware of the possibility
      of needing to set values for ``lifted'' nodes created by NIMBLE.}
  \item Data values can be reset, and which parts of a model are flagged as data can be changed, allowing one model to be used for different data sets without rebuilding the model each time.
+   \item As of Version 0.6-6 we now support stochastic/dynamic indexes as a beta release feature. More specifically in earlier versions all indexes needed to be constants. Now indexes can be other nodes or functions of other nodes. For a given dimension of a node being indexed, if the index is not constant, it must be a scalar value. So expressions such as \cd{mu[k[i], 3]} or \cd{mu[k[i], 1:3]} or \cd{mu[k[i], j[i]]} are allowed, but not \cd{mu[k[i]:(k[i]+1)]}. Nested dynamic indexes such as \cd{mu[k[j[i]]]} are also allowed. 
   \end{enumerate}
   
 \subsection{Not-yet-supported features of BUGS and JAGS}
@@ -72,9 +73,6 @@ NIMBLE extends the BUGS language in the following ways:
 In this release, the following are not supported.
 
 \begin{enumerate}
-\item Stochastic indices (but see Chapter \ref{cha:user-defined} for a
-  description of how you could handle some cases with user-defined
-  functions or distributions).
 \item The appearance of the same node on the left-hand side of both a
   \cd{<-} and a \cd{$\sim$} declaration (used in WinBUGS for data
   assignment for the value of a stochastic node).
@@ -201,8 +199,7 @@ Notes on the comment-numbered lines are:
 \item \cd{y} follows a normal distribution with the same mean as \cd{x} but a named standard deviation parameter instead of a precision parameter (sd = 1/sqrt(precision)).
 \item \cd{z[i, j]} follows an exponential distribution with parameter
   \cd{r[ blockID[i] ]}.  This shows how for-loops can be used for indexing of variables containing
-  multiple nodes.  Nested indexing can be used if the nested indices
-  (\cd{blockID}) are provided as constants when the model is defined (via \cd{nimbleModel} or \cd{readBUGSmodel}).  Variables that define for-loop indices (\cd{N} and \cd{M}) must also be provided as constants.  
+  multiple nodes.  Variables that define for-loop indices (\cd{N} and \cd{M}) must also be provided as constants.  
 \item The arbitrary block \cd{mvx[8:10, i]} follows a multivariate
   normal distribution, with a named covariance matrix instead of BUGS'
   default of a precision matrix.  As in R, curly braces for for-loop
@@ -227,7 +224,10 @@ Examples of allowed indexing include:
 \item \verb|x[i:j, ]|     \# blank indices indicating the full range
 \item \verb|x[3*i+7]|     \# computed indices
 \item \verb|x[(3*i):(5*i+1)]|  \# computed lower and upper ends of an index range
-\end{itemize}
+\item \verb|x[k[i]+1]|             \# a dynamic (and computed) index
+\item \verb|x[k[j[i]]]|         \# nested dynamic indexes
+\item \verb|x[k[i], 1:3]|     \# nested indexing of rows or columns
+  \end{itemize}
  
 NIMBLE does not allow multivariate nodes to be used without
 square brackets, which is an incompatibility with JAGS.  Therefore a statement like \cd{xbar <- mean(x)} in JAGS must be converted to
@@ -297,7 +297,7 @@ See Section \ref{sec:user-distributions} to learn how to write new distributions
 
 \paragraph{Improper distributions}
 
-Note that \cd{dflat} and \cd{dhalfflat} specify improper prior distributions
+Note that \cd{dcar\_normal}, \cd{dflat} and \cd{dhalfflat} specify improper prior distributions
 and should only be used when the posterior distribution of the model is known to be proper.
 Also for these distributions, the density function returns the unnormalized density
 and the simulation function returns \cd{NaN} so these distributions

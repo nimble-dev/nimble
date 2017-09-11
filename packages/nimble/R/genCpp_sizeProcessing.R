@@ -1,88 +1,147 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rinvwish_chol', 'nimArr_rcar_normal', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'getValuesIndexRange', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr', 'dimNimArr', 'assignNimArrToNimArr')
-setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes')
-operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
+                              'nimArr_rmvt_chol',
+                              'nimArr_rwish_chol',
+                              'nimArr_rinvwish_chol',
+                              'nimArr_rcar_normal',
+                              'nimArr_rmulti',
+                              'nimArr_rdirch',
+                              'getValues',
+                              'getValuesIndexRange',
+                              'initialize',
+                              'setWhich',
+                              'setRepVectorTimes',
+                              'assignVectorToNimArr',
+                              'dimNimArr',
+                              'assignNimArrToNimArr')
 
-sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
-               makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
-               makeCallList(binaryOrUnaryOperators, 'sizeBinaryUnaryCwise'),
-               makeCallList(unaryOperators, 'sizeUnaryCwise'), 
-               makeCallList(unaryOrNonaryOperators, 'sizeUnaryNonaryCwise'),
-               makeCallList(assignmentOperators, 'sizeAssign'), 
-               makeCallList(reductionUnaryOperators, 'sizeUnaryReduction'), 
-               makeCallList(matrixSquareReductionOperators, 'sizeMatrixSquareReduction'),
-               makeCallList(reductionBinaryOperators, 'sizeBinaryReduction'),
-               makeCallList(matrixMultOperators, 'sizeMatrixMult'), 
-               makeCallList(matrixFlipOperators, 'sizeTranspose'),
-               makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
-               makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
-               makeCallList(nimbleListReturningOperators, 'sizeNimbleListReturningFunction'),
-               nimOptim = 'sizeOptim',
-               nimOptimDefaultControl = 'sizeOptimDefaultControl',
-               list('debugSizeProcessing' = 'sizeProxyForDebugging',
-                    diag = 'sizeDiagonal',
-                    dim = 'sizeDim',
-                    RRtest_add = 'sizeRecyclingRule',
-                    which = 'sizeWhich',
-                    nimC = 'sizeConcatenate',
-                    nimRep = 'sizeRep',
-                    nimSeqBy = 'sizeSeq',
-                    nimSeqLen = 'sizeSeq',
-                    nimSeqByLen = 'sizeSeq',
-                    'return' = 'sizeReturn',
-                    'asRow' = 'sizeAsRowOrCol',
-                    'asCol' = 'sizeAsRowOrCol',
-                    makeNewNimbleListObject = 'sizeNewNimbleList',
-                    getParam = 'sizeGetParam',
-                    getBound = 'sizeGetBound',
-                    nimSwitch = 'sizeSwitch',
-                    asDoublePtr = 'sizeasDoublePtr',
-                   '[' = 'sizeIndexingBracket',
-                   '[[' = 'sizeDoubleBracket', ## for nimbleFunctionList, this will always  go through chainedCall(nfList[[i]], 'foo')(arg1, arg2)
-                    chainedCall = 'sizeChainedCall',
-                    nfVar = 'sizeNFvar',
-                    map = 'sizemap', 
-                    ':' = 'sizeColonOperator',
-                    ##dim = 'sizeDimOperator',
-                    'if' = 'recurseSetSizes', ##OK
-                    'while' = 'recurseSetSizes',
-                    callC = 'sizecallC', 
-                    'for' = 'sizeFor', 
-                    cppPointerDereference = 'sizeCppPointerDereference',
-                    values = 'sizeValues',
-                    '(' = 'sizeUnaryCwise',
-                    setSize = 'sizeSetSize', ## OK but not done for numericLists
-                    resizeNoPtr = 'sizeResizeNoPtr', ## may not be used any more 
-                    nimArr_rcat = 'sizeScalarRecurse',
-                    nimArr_rinterval = 'sizeScalarRecurse',
-                    nimPrint = 'sizeforceEigenize',
-                    nimDerivs = 'sizeNimDerivs',
-                    ##nimCat = 'sizeforceEigenize',
-                    as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
-                    as.numeric = 'sizeUnaryCwise',
-                    nimArrayGeneral = 'sizeNimArrayGeneral',
-                    setAll = 'sizeOneEigenCommand',
-                    voidPtr = 'sizeVoidPtr',
-                    run.time = 'sizeRunTime'),
-               makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
-               makeCallList(scalar_distribution_pFuns, 'sizeRecyclingRule'),
-               makeCallList(scalar_distribution_qFuns, 'sizeRecyclingRule'),
-               makeCallList(scalar_distribution_rFuns, 'sizeRecyclingRuleRfunction'),
-               makeCallList(distributionFuns[!(distributionFuns %in% c(scalar_distribution_dFuns, scalar_distribution_pFuns, scalar_distribution_qFuns, scalar_distribution_rFuns))], 'sizeScalarRecurse'),
-               # R dist functions that are not used by NIMBLE but we allow in DSL
-               makeCallList(paste0(c('d','q','p'), 't'), 'sizeRecyclingRule'),
-               rt = 'sizeRecyclingRuleRfunction',
-               makeCallList(paste0(c('d','q','p'), 'exp'), 'sizeRecyclingRule'),
-               rexp = 'sizeRecyclingRuleRfunction',
-               makeCallList(c('isnan','ISNAN','ISNA'), 'sizeScalarRecurse'),
-               makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dinvwish_chol', 'nimArr_dcar_normal', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
-               makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rinvwish_chol', 'nimArr_rcar_normal', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
-               makeCallList(c('decide', 'size', 'getsize','getNodeFunctionIndexedInfo', 'endNimbleTimer'), 'sizeScalar'),
-               makeCallList(c('calculate','calculateDiff', 'getLogProb'), 'sizeScalarModelOp'),
-               simulate = 'sizeSimulate',
-               makeCallList(c('blank', 'nfMethod', 'getPtr', 'startNimbleTimer'), 'sizeUndefined')
-               )
+setSizeNotNeededOperators <- c('setWhich',
+                               'setRepVectorTimes',
+                               'SEXP_2_NimArr',
+                               'nimVerbatim')
 
-scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical', ISNA = 'logical', '!' = 'logical', getNodeFunctionIndexedInfo = 'double', endNimbleTimer = 'double')
+operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map',
+                                                       'dim',
+                                                       'mvAccessRow',
+                                                       'nfVar')
+
+sizeCalls <- c(
+    makeCallList(binaryOperators, 'sizeBinaryCwise'),
+    makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
+    makeCallList(binaryOrUnaryOperators, 'sizeBinaryUnaryCwise'),
+    makeCallList(unaryOperators, 'sizeUnaryCwise'), 
+    makeCallList(unaryOrNonaryOperators, 'sizeUnaryNonaryCwise'),
+    makeCallList(assignmentOperators, 'sizeAssign'), 
+    makeCallList(reductionUnaryOperators, 'sizeUnaryReduction'), 
+    makeCallList(matrixSquareReductionOperators, 'sizeMatrixSquareReduction'),
+    makeCallList(reductionBinaryOperators, 'sizeBinaryReduction'),
+    makeCallList(matrixMultOperators, 'sizeMatrixMult'), 
+    makeCallList(matrixFlipOperators, 'sizeTranspose'),
+    makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
+    makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
+    makeCallList(nimbleListReturningOperators, 'sizeNimbleListReturningFunction'),
+    nimOptim = 'sizeOptim',
+    nimOptimDefaultControl = 'sizeOptimDefaultControl',
+    list('debugSizeProcessing' = 'sizeProxyForDebugging',
+         diag = 'sizeDiagonal',
+         dim = 'sizeDim',
+         RRtest_add = 'sizeRecyclingRule',
+         which = 'sizeWhich',
+         nimC = 'sizeConcatenate',
+         nimRep = 'sizeRep',
+         nimSeqBy = 'sizeSeq',
+         nimSeqLen = 'sizeSeq',
+         nimSeqByLen = 'sizeSeq',
+         'return' = 'sizeReturn',
+         'asRow' = 'sizeAsRowOrCol',
+         'asCol' = 'sizeAsRowOrCol',
+         makeNewNimbleListObject = 'sizeNewNimbleList',
+         getParam = 'sizeGetParam',
+         getBound = 'sizeGetBound',
+         nimSwitch = 'sizeSwitch',
+         '[' = 'sizeIndexingBracket',
+         '[[' = 'sizeDoubleBracket', ## for nimbleFunctionList, this will always  go through chainedCall(nfList[[i]], 'foo')(arg1, arg2)
+         chainedCall = 'sizeChainedCall',
+         nfVar = 'sizeNFvar',
+         map = 'sizemap', 
+         ':' = 'sizeColonOperator',
+         'if' = 'recurseSetSizes', ##OK
+         'while' = 'recurseSetSizes',
+         'for' = 'sizeFor', 
+         cppPointerDereference = 'sizeCppPointerDereference',
+         values = 'sizeValues',
+         '(' = 'sizeUnaryCwise',
+         setSize = 'sizeSetSize', 
+         resizeNoPtr = 'sizeResizeNoPtr', ## may not be used any more 
+         nimArr_rcat = 'sizeScalarRecurse',
+         nimArr_rinterval = 'sizeScalarRecurse',
+         nimPrint = 'sizeforceEigenize',
+         nimDerivs = 'sizeNimDerivs',
+         as.integer = 'sizeUnaryCwise', 
+         as.numeric = 'sizeUnaryCwise',
+         nimArrayGeneral = 'sizeNimArrayGeneral',
+         setAll = 'sizeOneEigenCommand',
+         voidPtr = 'sizeVoidPtr',
+         run.time = 'sizeRunTime',
+         PROTECT = 'sizePROTECT',
+         NimArr_2_SEXP = 'sizePROTECT', 
+         Reval = 'sizeReval',
+         nimbleConvert = 'sizeNimbleConvert',
+         nimbleUnconvert = 'sizeNimbleUnconvert',
+         asReturnSymbol = 'sizeAsReturnSymbol'),
+    makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
+    makeCallList(scalar_distribution_pFuns, 'sizeRecyclingRule'),
+    makeCallList(scalar_distribution_qFuns, 'sizeRecyclingRule'),
+    makeCallList(scalar_distribution_rFuns, 'sizeRecyclingRuleRfunction'),
+    makeCallList(distributionFuns[
+        !(distributionFuns %in% c(scalar_distribution_dFuns,
+                                  scalar_distribution_pFuns,
+                                  scalar_distribution_qFuns,
+                                  scalar_distribution_rFuns))
+    ], 'sizeScalarRecurse'),
+    ## R dist functions that are not used by NIMBLE but we allow in DSL
+    makeCallList(paste0(c('d','q','p'), 't'), 'sizeRecyclingRule'),
+    rt = 'sizeRecyclingRuleRfunction',
+    makeCallList(paste0(c('d','q','p'), 'exp'), 'sizeRecyclingRule'),
+    rexp = 'sizeRecyclingRuleRfunction',
+    makeCallList(c('isnan','ISNAN','ISNA'), 'sizeScalarRecurse'),
+    makeCallList(c('nimArr_dmnorm_chol',
+                   'nimArr_dmvt_chol',
+                   'nimArr_dwish_chol',
+                   'nimArr_dinvwish_chol',
+                   'nimArr_dcar_normal',
+                   'nimArr_dmulti',
+                   'nimArr_dcat',
+                   'nimArr_dinterval',
+                   'nimArr_ddirch'), 'sizeScalarRecurse'),
+    makeCallList(c('nimArr_rmnorm_chol',
+                   'nimArr_rmvt_chol',
+                   'nimArr_rwish_chol',
+                   'nimArr_rinvwish_chol',
+                   'nimArr_rcar_normal',
+                   'nimArr_rmulti',
+                   'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
+    makeCallList(c('decide',
+                   'size',
+                   'getsize',
+                   'getNodeFunctionIndexedInfo',
+                   'endNimbleTimer'), 'sizeScalar'),
+    makeCallList(c('calculate',
+                   'calculateDiff',
+                   'getLogProb'), 'sizeScalarModelOp'),
+    simulate = 'sizeSimulate',
+    makeCallList(c('blank',
+                   'nfMethod',
+                   'getPtr',
+                   'startNimbleTimer'), 'sizeUndefined') ##'nimFunListAccess'
+)
+
+scalarOutputTypes <- list(decide = 'logical',
+                          size = 'integer',
+                          isnan = 'logical',
+                          ISNA = 'logical',
+                          '!' = 'logical',
+                          getNodeFunctionIndexedInfo = 'double',
+                          endNimbleTimer = 'double')
 
 ## exprClasses_setSizes fills in the type information of exprClass code
 ## code is an exprClas object
@@ -120,14 +179,24 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     code$type <- 'unknown'
                     if(!typeEnv$.AllowUnknowns)
                         if(identical(code$name, 'pi')) { ## unique because it may be encountered anew on on RHS and be valid
-                            assign('pi', exprTypeInfoClass$new(nDim = 0, type = 'double', sizeExprs = list()), envir = typeEnv)
-                            symTab$addSymbol(symbolBasic(name = 'pi', type = 'double', nDim = 0))
+                            assign('pi',
+                                   exprTypeInfoClass$new(nDim = 0,
+                                                         type = 'double',
+                                                         sizeExprs = list()),
+                                   envir = typeEnv)
+                            symTab$addSymbol(
+                                symbolBasic(name = 'pi',
+                                            type = 'double',
+                                            nDim = 0))
                             code$nDim <- 0
                             code$type <- 'double'
                             code$sizeExprs <- list()
                             code$toEigenize <- 'maybe'
                         } else {
-                            warning(paste0("variable '",code$name,"' has not been created yet."), call.=FALSE) 
+                            warning(paste0("variable '",
+                                           code$name,
+                                           "' has not been created yet."),
+                                    call.=FALSE) 
                         }
                 }
             } else {
@@ -158,8 +227,10 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
             ## recurse over lines
             for(i in seq_along(code$args)) {
                 if(inherits(code$args[[i]], 'exprClass')) {
-                    newAsserts <- exprClasses_setSizes(code$args[[i]], symTab, typeEnv)
-                    code$args[[i]]$assertions <- if(is.null(newAsserts)) list() else newAsserts
+                    newAsserts <-
+                        exprClasses_setSizes(code$args[[i]], symTab, typeEnv)
+                    code$args[[i]]$assertions <-
+                        if(is.null(newAsserts)) list() else newAsserts
                 }
             }
             return(invisible(NULL))
@@ -168,7 +239,12 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
         if(!is.null(sizeCall)) {
             if(.nimbleOptions$debugSizeProcessing) {
                 browser()
-                eval(substitute(debugonce(XYZ), list(XYZ = as.name(sizeCall))))
+                eval(
+                    substitute(
+                        debugonce(XYZ),
+                        list(XYZ = as.name(sizeCall))
+                    )
+                )
             }
             test0 <- eval(call(sizeCall, code, symTab, typeEnv))
             return(test0)
@@ -183,12 +259,19 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
             if(is.rcf(obj)) { ## it is an RC function
                 nfmObj <- environment(obj)$nfMethodRCobject
                 uniqueName <- nfmObj$uniqueName
-                if(length(uniqueName)==0) stop(exprClassProcessingErrorMsg(code, 'In size processing: A no-setup nimbleFunction with no internal name is being called.'), call. = FALSE)
+                if(length(uniqueName)==0)
+                    stop(
+                        exprClassProcessingErrorMsg(
+                            code,
+                            'In size processing: A no-setup nimbleFunction with no internal name is being called.'),
+                        call. = FALSE)
                 if(is.null(typeEnv$neededRCfuns[[uniqueName]])) {
                     typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
                 }
                 ## new with nimbleLists: we need to initiate compilation here so we can get full returnType information, including of nimbleLists
-                RCfunProc <- typeEnv$.nimbleProject$compileRCfun(obj, initialTypeInference = TRUE)
+                RCfunProc <-
+                    typeEnv$.nimbleProject$compileRCfun(obj,
+                                                        initialTypeInference = TRUE)
                 return(sizeRCfunction(code, symTab, typeEnv, nfmObj, RCfunProc))
             }
         }
@@ -205,6 +288,22 @@ sizeProxyForDebugging <- function(code, symTab, typeEnv) {
     removeExprClassLayer(code$caller, 1)
     setNimbleOption('debugSizeProcessing', origValue)
     return(ans)
+}
+
+## This is used by nimbleExternalCall.
+## When the external call is provided as foo, returning e.g. double(0),
+## we end up needing a line of code RETURNVALUE <- foo(args).
+## To get the type of RETURNVALUE, we wrap that as RETURNVALUE <- asReturnSymbol(foo(args), type, nDim)
+sizeAsReturnSymbol <- function(code, symTab, typeEnv) {
+    returnType <- code$args[[2]]
+    returnNDim <- code$args[[3]]
+    code$args <- list(code$args[[1]])
+    code$args[[1]]$type <- returnType
+    code$args[[1]]$nDim <- returnNDim
+    code$args[[1]]$toEigenize <- 'no'
+    code$args[[1]]$sizeExprs <- NULL
+    removeExprClassLayer(code, 1)
+    list()
 }
 
 productSizeExprs <- function(sizeExprs) {
@@ -418,8 +517,8 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
             ## Construct:
             ## concatenateTemp(ConcatenateInterm_1),
             ##   concatenateTemp is not output to C++. It is a placeholder
-            newExpr <- exprClass(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = "concatenateTemp", nDim = 1, sizeExprs = list(thisLength), type = 'double')
-            setArg(newExpr, 1, exprClass(isName = TRUE, isCall = FALSE, isAssign = FALSE, name = newTempVecName, nDim = 1, sizeExprs = list(thisLength), type = 'double'))
+            newExpr <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = "concatenateTemp", nDim = 1, sizeExprs = list(thisLength), type = 'double')
+            setArg(newExpr, 1, exprClass$new(isName = TRUE, isCall = FALSE, isAssign = FALSE, name = newTempVecName, nDim = 1, sizeExprs = list(thisLength), type = 'double'))
 
             ## hardCodedVectorInitializer is a wrapper for the "contents1, contents2, ..." below 
             valuesExpr <- quote(hardCodedVectorInitializer())
@@ -478,7 +577,7 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
 
     newExprList <- vector(numArgGroups, mode = 'list')
     for(i in seq_along(splitArgIDs)) {
-        newExprList[[i]] <- exprClass(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'nimC', nDim = 1, toEigenize = 'yes', type = 'double')
+        newExprList[[i]] <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'nimC', nDim = 1, toEigenize = 'yes', type = 'double')
         for(j in seq_along(splitArgIDs[[i]])) setArg(newExprList[[i]], j, newArgs[[splitArgIDs[[i]][j]]])
     }
 
@@ -1401,12 +1500,6 @@ sizeforceEigenize <- function(code, symTab, typeEnv) {
     if(length(asserts) == 0) NULL else asserts
 }
 
-## toEigen: N.B. Deprecated (see external-c-calls in development)
-sizecallC <- function(code, symTab, typeEnv) {
-    asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
-    asserts
-}
-
 ## This is for when the programmer has directly written "resize(Z, 3, dim(A)[1])".
 ## When the resize is automatically generated, it skips size inference
 
@@ -1629,7 +1722,18 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         ## This should be ok without sizeExprs content
                         assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type = RHStype), envir = typeEnv)
                         symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
-                    } 
+                    }
+                    ## a path for arbitrary symbols
+                    else if(RHStype == "custom") {                        
+                        ConlySym <- RHS$sizeExprs$copy() ## trick to put a symbol object here. use a copy in case this expr is from simple assignment, not creation
+                        ConlySym$name <- LHS$name
+                        symTab$addSymbol(ConlySym)
+
+                        code$type <- "custom"
+                        code$sizeExprs <- ConlySym ## in case there is chained assignment
+
+                        return(invisible(NULL))
+                    }
                     else if(RHStype == "nimbleList") {
                       ## I think we have the nlProc in the RHS sizeExprs in some cases?
                       LHSnlProc <- symTab$getSymbolObject(RHS$name)$nlProc
@@ -1647,6 +1751,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: LHS is not in typeEnv or symTab and cannot be added now.')), call. = FALSE)
                 }
             } else { ## yes in symTab
+                ## this is another path for arbitrary symbols, but not sure it's used.
                 ## This case is ok.  It is in the symbol table but not the typeEnv.  So it is something like ptr <- getPtr(A)
                  if(!nimbleOptions('experimentalNewSizeProcessing')) {
                 code$toEigenize <- 'no'
@@ -1783,8 +1888,62 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     return(assert)
 }
 
+sizePROTECT <- function(code, symTab, typeEnv) {
+    ## Do not recurse.
+    code$type <- "custom"
+    code$sizeExprs <- symbolSEXP(type = 'custom') ## trick to put a symbol object into sizeExprs for later use
+    return(invisible(NULL))
+}
 
+sizeReval <- function(code, symTab, typeEnv) {
+    code$name <- 'Rf_eval'
+    return(sizePROTECT(code, symTab, typeEnv))
+}
 
+sizeNimbleConvert <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv) ## should not normally have an expression other than variable name as the argument, but do this for safety
+    nDim <- code$args[[1]]$nDim
+    type <- code$args[[1]]$type
+    if(!code$caller$name %in% assignmentOperators) stop(exprClassProcessingErrorMsg(code, 'nimbleConvert can only be used in simple assignment.'), call. = FALSE)
+
+    targetString <- nimDeparse(code$args[[1]])
+    targetName <- Rname2CppName(targetString)
+    targetExpr <- parse(text = targetString, keep.source = FALSE)[[1]]
+    copyName <- paste0(targetName, '_nimbleContigCopy')
+    subList <- list(var = targetExpr, copy = as.name(copyName))
+    newCode <- substitute( nimArrPtr_copyIfNeeded(var, copy),
+                             subList )
+    ## only necessary if the result is needed
+    if(!symTab$symbolExists( copyName )) {
+        symTab$addSymbol(  symbolBasic(name = copyName, type = type, nDim = nDim) )
+        assign(copyName, exprTypeInfoClass$new(nDim = nDim, type = type), envir = typeEnv)
+    }
+    newCode <- RparseTree2ExprClasses(newCode)
+    newCode$type <- "custom"
+    newCode$sizeExprs <- symbolPtr(type = type) ## trick to put a symbol object into sizeExprs for later use
+    setArg(code$caller, code$callerArgID, newCode)
+    
+    asserts
+}
+
+sizeNimbleUnconvert <- function(code, symTab, typeEnv) {
+    ptrString <- nimDeparse(code$args[[1]])
+    ptrName <- Rname2CppName(ptrString)
+    ptrExpr <- parse(text = ptrString, keep.source = FALSE)[[1]]
+
+    targetString <- nimDeparse(code$args[[2]])
+    targetName <- Rname2CppName(targetString)
+    targetExpr <- parse(text = targetString, keep.source = FALSE)[[1]]
+
+    copyName <- paste0(targetName, '_nimbleContigCopy')
+    subList <- list(ptr = ptrExpr, var = targetExpr, copy = as.name(copyName))
+    newCode <- substitute( nimArrPtr_copyBackIfNeeded(ptr, var, copy),
+                             subList )
+
+    newCode <- RparseTree2ExprClasses(newCode)
+    setArg(code$caller, code$callerArgID, newCode)
+    NULL
+}
 
 sizeasDoublePtr <- function(code, symTab, typeEnv) {
     ## This could also handle copies from ints to doubles, which would ALWAYS require a copy
@@ -1807,8 +1966,7 @@ sizeasDoublePtr <- function(code, symTab, typeEnv) {
     if(!symTab$symbolExists( copyName )) {
         symTab$addSymbol( symbolBasic(name = copyName, type = 'double', nDim = nDim) )
     }
-    
-    
+        
     codeBefore <- RparseTree2ExprClasses(codeBefore)
     exprClasses_initSizes(codeBefore, symTab, NULL, typeEnv)
     asserts <- c(asserts, exprClasses_setSizes(codeBefore, symTab, typeEnv))
@@ -2203,7 +2361,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                     if(!indexIsScalar) warning("There is nested indexing with drop=FALSE where an index must be scalar but isn't")
                 } else {
                     ## construct i[k], which is really nimNonseqIndexedi(i, k)
-                    newExpr <- exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
+                    newExpr <- exprClass$new(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
                     newExpr$type <- 'integer'
                     indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
                     newExpr$sizeExprs <- if(!indexIsScalar) c(code$args[[iInd + 1]]$sizeExprs) else list(1)
@@ -2416,11 +2574,26 @@ sizeUnaryCwise <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     ## lift intermediates
     a1 <- code$args[[1]]
+    
     if(inherits(a1, 'exprClass')) {
         if(!nimbleOptions('experimentalNewSizeProcessing') ) {
-            if(a1$toEigenize == 'no') {
-                asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-                a1 <- code$args[[1]]
+            if(a1$nDim == 0) {
+                ## Argument is scalar.
+                ## If it results from vector operation (e.g. inprod)
+                ## lift that to an intermediate
+                if(a1$toEigenize == 'yes') {
+                    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+                    a1 <- code$args[[1]]
+                }
+            } else {
+                ## Argument is non-scalar.  In this case, the
+                ## expression will be eigenized, so we must lift the
+                ## argument to an intermediate if it *can't* be
+                ## eigenized.
+                if(a1$toEigenize == 'no') {
+                    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+                    a1 <- code$args[[1]]
+                }
             }
         }
         code$nDim <- a1$nDim

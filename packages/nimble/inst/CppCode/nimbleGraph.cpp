@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #include "nimble/nimbleGraph.h"
 
 graphNode::graphNode(int inputCgraphID, NODETYPE inputType, const string &inputName ) :
@@ -47,6 +68,8 @@ void SEXP_2_nodeType(SEXP Stypes, vector<NODETYPE> &ans) {
       ans[i] = RHSONLY;
     else if(oneString == "LHSinferred")
       ans[i] = LHSINFERRED;
+    else if(oneString == "unknownIndex")
+      ans[i] = UNKNOWNINDEX;
     else if(oneString == "unknown")
       ans[i] = UNKNOWNTYPE;
     else {

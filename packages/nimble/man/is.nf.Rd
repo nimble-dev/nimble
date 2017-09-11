@@ -15,6 +15,6 @@ is.nf(f, inputIsName = FALSE)
 Checks an object to determine if it is a nimbleFunction (i.e., a function created by \code{nimbleFunction} using setup code).
 }
 \seealso{
-\link{nimbleFunction} for how to create a nimbleFunction
+\code{\link{nimbleFunction}} for how to create a nimbleFunction
 }
 

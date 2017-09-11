@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #ifndef __UTILS
 #define __UTILS
 
@@ -38,11 +59,17 @@ class nimbleTimerClass_ {
 #define NIMERROR Rf_error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
 /* #define NIM_ASSERT(cond, ...) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " __VA_ARGS__); }} */ /* future */
-#define NIM_ASSERT1(cond, msg) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg); }}
-#define NIM_ASSERT2(cond, msg, msgArg1) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1); }}
-#define NIM_ASSERT3(cond, msg, msgArg1, msgArg2) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1, msgArg2); }}
-#define NIM_ASSERT4(cond, msg, msgArg1, msgArg2, msgArg3) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: ", msg, msgArg1, msgArg2, msgArg3); }}
+#define NIM_ASSERT1(cond, msg) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " msg); }}
+#define NIM_ASSERT2(cond, msg, msgArg1) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " msg, msgArg1); }}
+#define NIM_ASSERT3(cond, msg, msgArg1, msgArg2) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " msg, msgArg1, msgArg2); }}
+#define NIM_ASSERT4(cond, msg, msgArg1, msgArg2, msgArg3) { if(NIM_UNLIKELY(!(cond))) { NIMERROR("Error: " msg, msgArg1, msgArg2, msgArg3); }}
 
+#define NIM_ASSERT_REL(x, rel, y)                                            \
+  NIM_ASSERT3((x)rel(y), "Expected " #x " " #rel " " #y "; actual %d vs %d", \
+              (x), (y))
+#define NIM_ASSERT_EQ(x, y) NIM_ASSERT_REL(x, ==, y)
+#define NIM_ASSERT_LT(x, y) NIM_ASSERT_REL(x, <, y)
+#define NIM_ASSERT_LE(x, y) NIM_ASSERT_REL(x, <=, y)
 #define NIM_ASSERT_SIZE(my_array, n)                                    \
     NIM_ASSERT3(my_array.dimSize(0) == n,                               \
                 #my_array " has wrong size: expected %d, actual %d", n, \

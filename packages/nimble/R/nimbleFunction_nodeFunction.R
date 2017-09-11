@@ -9,16 +9,43 @@ addArg <- function(code, value, name) {
 }
 
 
+ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced) {
+    if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+        ## error gracefully if dynamic index too small or large; we don't catch non-integers within the bounds though
+        code <- substitute(if(CONDITION) LHS <<- RHS
+                           else stop(TEXT),
+                           list(LHS = LHS,
+                                RHS = RHS,
+                                CONDITION = dynamicIndexLimitsExpr,
+                                TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+    } else code <- substitute(LHS <<- RHS,
+                              list(LHS = LHS,
+                                   RHS = RHS))
+    return(code)
+}
 
 ## changes 'dnorm(mean=1, sd=2)' into 'rnorm(1, mean=1, sd=2)'
-ndf_createStochSimulate <- function(RHS) {
+ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced) {
     BUGSdistName <- as.character(RHS[[1]])
     RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
-    RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'
-    if("lower" %in% names(RHS) || "upper" %in% names(RHS))
+    RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'    
+    if("lower" %in% names(RHS) || "upper" %in% names(RHS)) {
         RHS <- ndf_createStochSimulateTrunc(RHS, discrete = getAllDistributionsInfo('discrete')[BUGSdistName])
-    return(RHS)
+    } 
+    if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+        code <- substitute(if(CONDITION) LHS <<- RHS
+                           else stop(TEXT),
+                           list(LHS = LHS,
+                                RHS = RHS,
+                                CONDITION = dynamicIndexLimitsExpr,
+                                TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+    } else {
+        code <- substitute(LHS <<- RHS,
+                           list(LHS = LHS,
+                                RHS = RHS))
+    }
+    return(code)
 }
 
 
@@ -89,38 +116,60 @@ ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
 }
 
 ## changes 'dnorm(mean=1, sd=2)' into 'dnorm(LHS, mean=1, sd=2, log=TRUE)'
-ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, ADFunc = FALSE) {
+ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, ADFunc = FALSE, dynamicIndexLimitsExpr, RHSnonReplaced) {
     BUGSdistName <- as.character(RHS[[1]])
     RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$densityName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS
     if("lower" %in% names(RHS) || "upper" %in% names(RHS)) {
-        return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS, diff = diff, discrete = getAllDistributionsInfo('discrete')[BUGSdistName]))
+        return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS, diff = diff, discrete = getAllDistributionsInfo('discrete')[BUGSdistName], dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))
     } else {
-          userDist <- BUGSdistName %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
-          RHS <- addArg(RHS, 1, 'log')  # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
-          if(diff) {
-              code <- substitute(LocalNewLogProb <- STOCHCALC,
-                                 list(##LOGPROB = logProbNodeExpr,
-                                      STOCHCALC = RHS))
-          } 
-          else if(ADFunc){
-            code <- substitute(LOGPROB <- STOCHCALC,
-                               list(LOGPROB = logProbNodeExpr,
-                                    STOCHCALC = RHS))
-            
-          }
-          else{
-            code <- substitute(LOGPROB <<- STOCHCALC,
-                               list(LOGPROB = logProbNodeExpr,
-                                    STOCHCALC = RHS))
-          }
-          return(code)
+        userDist <- BUGSdistName %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
+        RHS <- addArg(RHS, 1, 'log')  # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
+        if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+            if(diff) {
+                code <- substitute(if(CONDITION) LocalNewLogProb <- STOCHCALC
+                                   else stop(TEXT), # LocalNewLogProb <- -Inf,
+                                   list(STOCHCALC = RHS,
+                                        CONDITION = dynamicIndexLimitsExpr,
+                                        TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+            } else if(ADFunc){  ## don't want global assignment for _AD_ functions.
+                code <- substitute(if(CONDITION) LOGPROB <- STOCHCALC
+                                   else stop(TEXT),
+                                   list(LOGPROB = logProbNodeExpr,
+                                        STOCHCALC = RHS,
+                                        CONDITION = dynamicIndexLimitsExpr,
+                                        TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+            } else {
+
+                code <- substitute(if(CONDITION) LOGPROB <<- STOCHCALC
+                                   else stop(TEXT), # LOGPROB <<- -Inf,
+                                   list(LOGPROB = logProbNodeExpr,
+                                        STOCHCALC = RHS,
+                                        CONDITION = dynamicIndexLimitsExpr,
+                                        TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+            }
+        } else {
+            if(diff) {
+                code <- substitute(LocalNewLogProb <- STOCHCALC,
+                                   list(
+                                       STOCHCALC = RHS))
+            } else if(ADFunc){  ## don't want global assignment for _AD_ functions.
+                code <- substitute(LOGPROB <- STOCHCALC,
+                                   list(LOGPROB = logProbNodeExpr,
+                                        STOCHCALC = RHS))
+            } else{
+                code <- substitute(LOGPROB <<- STOCHCALC,
+                                   list(LOGPROB = logProbNodeExpr,
+                                        STOCHCALC = RHS))
+            }
+        }
+        return(code)
     }
 }
 
 ## changes 'dnorm(mean=1, sd=2, lower=0, upper=3)' into correct truncated calculation
-ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, discrete = FALSE) {
+ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, discrete = FALSE, dynamicIndexLimitsExpr, RHSnonReplaced) {
     lowerPosn <- which("lower" == names(RHS))
     upperPosn <- which("upper" == names(RHS))
     lower <- RHS[[lowerPosn]]
@@ -163,47 +212,111 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
 
     RHS <- addArg(RHS, 1, logName)  # add log=1 now that pdist() created without 'log'
 
-    if(diff) {
-        if(discrete && lower != -Inf) {
-            substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
-                                   LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
-                               else LocalNewLogProb <- -Inf)
+                code <- substitute(if(CONDITION) LocalNewLogProb <- STOCHCALC
+                                   else stop(TEXT), # LocalNewLogProb <- -Inf,
+                                   list(STOCHCALC = RHS,
+                                        CONDITION = dynamicIndexLimitsExpr,
+                                        TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+
+    
+    if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+        if(diff) {
+            if(discrete && lower != -Inf) {
+                substCode <- quote(if(CONDITION) {
+                                       if(LOWER <= VALUE & VALUE <= UPPER)
+                                           LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
+                                       else LocalNewLogProb <- -Inf
+                                   } else stop(TEXT))
+            } else {
+                substCode <- quote(if(CONDITION) {
+                                       if(LOWER <= VALUE & VALUE <= UPPER)
+                                           LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
+                                       else LocalNewLogProb <- -Inf
+                                       } else stop(TEXT))
+            }
+            code <- eval(substitute(substitute(e, 
+                                               list(
+                                                   LOWER = lower,
+                                                   UPPER = upper,
+                                                   VALUE = LHS,
+                                                   DENSITY = RHS,
+                                                   PDIST_LOWER = PDIST_LOWER,
+                                                   PDIST_UPPER = PDIST_UPPER,
+                                                   DDIST_LOWER = DDIST_LOWER,
+                                                   CONDITION = dynamicIndexLimitsExpr,
+                                                   TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))
+                                               )), list( e = substCode)))
         } else {
-              substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
-                                     LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
-                                 else LocalNewLogProb <- -Inf)
-          }
-        code <- eval(substitute(substitute(e, 
-                           list(
-                               LOWER = lower,
-                               UPPER = upper,
-                               VALUE = LHS,
-                               DENSITY = RHS,
-                               PDIST_LOWER = PDIST_LOWER,
-                               PDIST_UPPER = PDIST_UPPER,
-                               DDIST_LOWER = DDIST_LOWER
-                               )), list( e = substCode)))
+            if(discrete && lower != -Inf) {
+                substCode <- quote(if(CONDITION) {
+                                       if(LOWER <= VALUE & VALUE <= UPPER)
+                                           LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
+                                       else LOGPROB <<- -Inf
+                                       } else stop(TEXT))
+            } else {
+                substCode <- quote(if(CONDITION) {
+                                       if(LOWER <= VALUE & VALUE <= UPPER)
+                                         LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
+                                   else LOGPROB <<- -Inf
+                                   } else stop(TEXT))
+            }
+            code <- eval(substitute(substitute(e, 
+                                               list(
+                                                   LOWER = lower,
+                                                   UPPER = upper,
+                                                   VALUE = LHS,
+                                                   LOGPROB = logProbNodeExpr,
+                                                   DENSITY = RHS,
+                                                   PDIST_LOWER = PDIST_LOWER,
+                                                   PDIST_UPPER = PDIST_UPPER,
+                                                   DDIST_LOWER = DDIST_LOWER,
+                                                   CONDITION = dynamicIndexLimitsExpr,
+                                                   TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))
+                                               )), list(e = substCode)))
+        }
     } else {
-          if(discrete && lower != -Inf) {
-              substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
-                                     LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
-                                 else LOGPROB <<- -Inf)
-          } else {
+        if(diff) {
+            if(discrete && lower != -Inf) {
+                substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                                       LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
+                                   else LocalNewLogProb <- -Inf)
+            } else {
+                substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                                       LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
+                                   else LocalNewLogProb <- -Inf)
+            }
+            code <- eval(substitute(substitute(e, 
+                                               list(
+                                                   LOWER = lower,
+                                                   UPPER = upper,
+                                                   VALUE = LHS,
+                                                   DENSITY = RHS,
+                                                   PDIST_LOWER = PDIST_LOWER,
+                                                   PDIST_UPPER = PDIST_UPPER,
+                                                   DDIST_LOWER = DDIST_LOWER
+                                               )), list( e = substCode)))
+        } else {
+            if(discrete && lower != -Inf) {
+                substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                                       LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
+                                   else LOGPROB <<- -Inf)
+            } else {
                 substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
                                        LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
                                    else LOGPROB <<- -Inf)
             }
-        code <- eval(substitute(substitute(e, 
-                           list(
-                               LOWER = lower,
-                               UPPER = upper,
-                               VALUE = LHS,
-                               LOGPROB = logProbNodeExpr,
-                               DENSITY = RHS,
-                               PDIST_LOWER = PDIST_LOWER,
-                               PDIST_UPPER = PDIST_UPPER,
-                               DDIST_LOWER = DDIST_LOWER
-                           )), list(e = substCode)))
+            code <- eval(substitute(substitute(e, 
+                                               list(
+                                                   LOWER = lower,
+                                                   UPPER = upper,
+                                                   VALUE = LHS,
+                                                   LOGPROB = logProbNodeExpr,
+                                                   DENSITY = RHS,
+                                                   PDIST_LOWER = PDIST_LOWER,
+                                                   PDIST_UPPER = PDIST_UPPER,
+                                                   DDIST_LOWER = DDIST_LOWER
+                                               )), list(e = substCode)))
+        }
     }
     return(code)
 }

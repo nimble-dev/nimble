@@ -16,7 +16,6 @@ test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(c('x', 'y'),
 test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(c('x', 'y')),
                       wrt = list(c('x[1]', 'y[1]')), testR = TRUE)
 
-
 ADCode2 <- nimbleCode({
   y[1:2] ~ dmnorm(z[1:2], diagMat[,])
   z[1:2] <- x[1:2] + c(1,1)
@@ -71,7 +70,6 @@ dir = nimble:::getBUGSexampleDir('equiv')
 Rmodel <- readBUGSmodel('equiv', data = NULL, inits = list(tau = c(.2, .2), pi = 1, phi = 1, mu = 1), dir = dir, useInits = TRUE,
                         check = FALSE)
 simulate(Rmodel, Rmodel$getDependencies('d'))
-
 ## Higher tolerance for more complex chain rule calculations in this model.
 test_ADModelCalculate(Rmodel, calcNodeNames = list(Rmodel$getDependencies('tau'), Rmodel$getDependencies('sigma'),  Rmodel$getDependencies('d'),
                                                    Rmodel$getDependencies('d[1]')),

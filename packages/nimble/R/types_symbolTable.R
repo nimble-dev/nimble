@@ -11,9 +11,46 @@ buildSymbolTable <- function(vars, type, size){
     return(symTab)
 }
 
+nimbleTypeList2argTypeList <- function(NTL) {
+    ## convert a list of nimbleType objects to a list of type declarations suitable for `formals` of a function
+    do.call('c', lapply(NTL, nimbleType2argType))
+}
+
+nimbleType2argType <- function(NT) {
+    type <- NT$type
+    if(!(type %in% c('double','integer','logical'))) stop(paste0('Invalid type \"',type,'\"'))
+    nDim <- NT$dim
+    name <- NT[['name']]
+    structure(list(substitute(TYPE(NDIM), list(TYPE = as.name(type), NDIM = as.numeric(nDim)))),
+           names = name)
+}
+
+nimbleTypeList2symbolTable <- function(NTL) {
+    ## This is a lightweight analog to argTypeList2symbolTable but takes input in different format.
+    ## NTL is a list of nimbleType objects.  This allows programmatic construction of objects.
+    ## Currently only basic types including 'double','integer', and 'logical' with an nDim are supported.
+    ## Return object is a symbol table.
+    symTab <- symbolTable()
+    for(i in seq_along(NTL)) {
+        symTab$addSymbol(nimbleType2symbol(NTL[[i]]) )
+    }
+    symTab
+}
+
+## Convert one nimbleType object to a symbol object.
+## Only basic types are supported.
+nimbleType2symbol <- function(NT) {
+    type <- NT$type
+    if(!(type %in% c('double','integer','logical'))) stop(paste0('Invalid type \"',type,'\"'))
+    nDim <- NT$dim
+    name <- NT$name
+    size = as.numeric(rep(NA, nDim))
+    symbolBasic(name = name, type = type, nDim = nDim, size = size)
+}
 
 argTypeList2symbolTable <- function(ATL, neededTypes, origNames) {
-    ## ATL is the type of argument type list from run-time args to a nimble function
+    ## ATL is the argument-type list from run-time args to a nimble function
+    ## This function creates a symbolTable from the argument-type list.
     symTab <- symbolTable()
     for(i in seq_along(ATL)) {
         symTab$addSymbol(argType2symbol(ATL[[i]], neededTypes, names(ATL)[i], origNames[i]))
@@ -21,12 +58,11 @@ argTypeList2symbolTable <- function(ATL, neededTypes, origNames) {
     symTab
 }
 
-## This takes an unevaluated expression as input (AT), such as
+## This takes an unevaluated "argument type" expression as input (AT), such as
 ## double(), double(2), or double(2, c(5,5))
 ## The first argument is the number of dimensions, defaulting to 0 (indicated scalar)
 ## The second argument is a vector of the sizes, defaulting to rep(NA, nDim)
 ## If only some sizes are known, something like double(2, c(5, NA)) should be valid, but we'll have to check later handling to be sure.
-
 argType2symbol <- function(AT, neededTypes, name = character(), origName = "") {
     ans <- try(argType2symbolInternal(AT, neededTypes, name))
     if(inherits(ans, 'try-error')) stop(paste0("Invalid type type declaration for ",origName,"."), call.=FALSE)
@@ -284,6 +320,17 @@ symbolBasic <-
                                              type = cType))
                         }
                         })
+    )
+
+symbolSEXP <- setRefClass(
+    Class = "symbolSEXP",
+    contains = "symbolBase",
+    methods = list(
+        show = function() writeLines(paste('symbolSEXP', name)),
+         genCppVar = function(...) {
+             cppVar(name = name,
+                    baseType = "SEXP")
+        })
     )
 
 symbolPtr <- setRefClass(
@@ -678,6 +725,19 @@ symbolInternalType <-
                         }
                     })
                 )
+
+symbolTensorflowRunner <-
+    setRefClass(Class = "symbolTensorflowRunner",
+                contains = "symbolBase",
+                fields = list(constructor = "ANY"),
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolTensorflowRunner ', name)),
+                    genCppVar = function(functionArg = FALSE) {
+                        cppVarFull(name = name, baseType = "NimTf_Runner", static = TRUE, ref = TRUE, constructor = constructor)
+                    }
+                )
+    )
 
 ## nDim is set to length(size) unless provided, which is how scalar (nDim = 0) must be set
 symbolDouble <- function(name, size = numeric(), nDim = length(size)) {

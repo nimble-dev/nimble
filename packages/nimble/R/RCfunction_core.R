@@ -38,122 +38,175 @@ nimKeyWords <- list(copy = 'nimCopy',
                     optimDefaultControl = 'nimOptimDefaultControl',
                     derivs = 'nimDerivs')
 
-nfMethodRCinterface <- setRefClass(Class = 'nfMethodRCinterface',
-                                   fields = list(
-                                       argInfo    = 'ANY',
-                                       arguments  = 'ANY',
-                                       returnType = 'ANY',
-                                       uniqueName = 'character'))
-nfMethodRC <- 
-    setRefClass(Class   = 'nfMethodRC',
-                contains = 'nfMethodRCinterface',
-                fields  = list(
-                    template   = 'ANY',
-                    code       = 'ANY',
-                    neededRCfuns = 'ANY'		#list
-                ),
-                methods = list(
-                    initialize = function(method, name, check = FALSE, methodNames = NULL, setupVarNames = NULL) {
-                        if(!missing(name)) uniqueName <<- name ## only needed for a pure RC function. Not needed for a nimbleFunction method
-                        neededRCfuns <<- list()	
-                        argInfo <<- formals(method)
-                        code <<- nf_changeNimKeywords(body(method))  ## changes all nimble keywords, e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at bottom
-                        if(code[[1]] != '{')  code <<- substitute({CODE}, list(CODE=code))
-                        if(check && "package:nimble" %in% search()) # don't check nimble package nimbleFunctions
-                            nf_checkDSLcode(code, methodNames, setupVarNames)
-                        generateArgs()
-                        generateTemplate() ## used for argument matching
-                        removeAndSetReturnType()
-                    },
-                    generateArgs = function() {
-                        argsList <- nf_createAList(names(argInfo))
-                        for(i in seq_along(argsList)) { if('default' %in% names(argInfo[[i]]))      argsList[[i]] <- argInfo[[i]]$default }
-                        arguments <<- as.pairlist(argsList)
-                    },
-                    generateTemplate = function() {
-                        functionAsList <- list(as.name('function'))
-                        functionAsList[2] <- list(NULL)
-                        if(!is.null(args)) functionAsList[[2]] <- arguments
-                        functionAsList[[3]] <- quote({})
-                        template <<- eval(as.call(functionAsList))
-                    },
-                    removeAndSetReturnType = function() {
-                        returnLineNum <- 0
-                        for(i in seq_along(code)) {
-                            if(length(code[[i]]) > 1) {
-                                if(is.name(code[[i]][[1]])) {
-                                    if(code[[i]][[1]] == 'returnType') {
-                                        returnLineNum <- i
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if(sum(all.names(code) == 'returnType') > 1) stop('multiple returnType() declarations in nimbleFunction method; only one allowed')
-                        if(returnLineNum == 0) {   ## no returnType() declaration found; default behavior
-                            returnTypeDeclaration <- quote(void())
-                        } else {                   ## returnType() declaration was found
-                            returnTypeDeclaration <- code[[returnLineNum]][[2]]
-                            code[returnLineNum] <<- NULL
-                        }
-                        ## a very patchy solution: switch nimInteger back to integer
-                        if(as.character(returnTypeDeclaration[[1]]) == 'nimInteger') returnTypeDeclaration[[1]] <- as.name('integer')
-                        if(as.character(returnTypeDeclaration[[1]]) == 'nimLogical') returnTypeDeclaration[[1]] <- as.name('logical')
-                        returnType <<- returnTypeDeclaration
-                    },
-                    generateFunctionObject = function(keep.nfMethodRC = FALSE) {
-                        functionAsList <- list(as.name('function'))
-                        functionAsList[2] <- list(NULL)
-                        if(!is.null(args)) functionAsList[[2]] <- arguments
-                        functionAsList[[3]] <- code
-                        ans <- eval(parse(text=deparse(as.call(functionAsList)), keep.source = FALSE)[[1]])
-                        environment(ans) <- new.env()
-                        if(keep.nfMethodRC) {environment(ans)$nfMethodRCobject <- .self}
-                        ans
-                    },
-                    getArgInfo       = function() { return(argInfo)    },
-                    getReturnType    = function() { return(returnType) })
-    )
+nfMethodRCinterface <- setRefClass(
+    Class = 'nfMethodRCinterface',
+    fields = list(
+        argInfo    = 'ANY',
+        arguments  = 'ANY',
+        returnType = 'ANY',
+        uniqueName = 'character'))
 
-
+nfMethodRC <- setRefClass(
+    Class   = 'nfMethodRC',
+    contains = 'nfMethodRCinterface',
+    fields  = list(
+        template   = 'ANY',
+        code       = 'ANY',
+        neededRCfuns = 'ANY',		#list
+        externalHincludes = 'ANY',
+        externalCPPincludes = 'ANY'
+    ),
+    methods = list(
+        initialize = function(method,
+                              name,
+                              check = FALSE,
+                              methodNames = NULL,
+                              setupVarNames = NULL) {
+            ## uniqueName is only needed for a pure RC function.
+            ## It is not needed for a nimbleFunction method.
+            if(!missing(name)) uniqueName <<- name 
+            neededRCfuns <<- list()	
+            argInfo <<- formals(method)
+             ## nf_changeNimKeywords changes all nimble keywords,
+             ## e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at
+             ## bottom
+            code <<- nf_changeNimKeywords(body(method)) 
+            if(code[[1]] != '{')
+                code <<- substitute({CODE}, list(CODE=code))
+            ## check all code except nimble package nimbleFunctions
+            if(check && "package:nimble" %in% search()) 
+                nf_checkDSLcode(code, methodNames, setupVarNames)
+            generateArgs()
+            generateTemplate() ## used for argument matching
+            removeAndSetReturnType()
+            ## Includes for .h and .cpp files when making external calls:
+            ## If needed, these will be populated by nimbleExternalCall
+            externalHincludes <<- externalCPPincludes <<- list() 
+        },
+        generateArgs = function() {
+            argsList <- nf_createAList(names(argInfo))
+            for(i in seq_along(argsList)) {
+                if('default' %in% names(argInfo[[i]]))
+                    argsList[[i]] <- argInfo[[i]]$default }
+            arguments <<- as.pairlist(argsList)
+        },
+        generateTemplate = function() {
+            functionAsList <- list(as.name('function'))
+            functionAsList[2] <- list(NULL)
+            if(!is.null(args)) functionAsList[[2]] <- arguments
+            functionAsList[[3]] <- quote({})
+            template <<- eval(as.call(functionAsList))
+        },
+        removeAndSetReturnType = function() {
+            returnLineNum <- 0
+            for(i in seq_along(code)) {
+                if(length(code[[i]]) > 1) {
+                    if(is.name(code[[i]][[1]])) {
+                        if(code[[i]][[1]] == 'returnType') {
+                            returnLineNum <- i
+                            break;
+                        }
+                    }
+                }
+            }
+            if(sum(all.names(code) == 'returnType') > 1)
+                stop('multiple returnType() declarations in nimbleFunction method; only one allowed')
+            if(returnLineNum == 0) {
+                ## no returnType() declaration was found;
+                ## create default behavior.
+                returnTypeDeclaration <- quote(void())
+            } else {
+                ## returnType() declaration was found
+                returnTypeDeclaration <- code[[returnLineNum]][[2]]
+                code[returnLineNum] <<- NULL
+            }
+            ## a very patchy solution: switch nimInteger back to integer
+            if(as.character(returnTypeDeclaration[[1]]) == 'nimInteger')
+                returnTypeDeclaration[[1]] <- as.name('integer')
+            if(as.character(returnTypeDeclaration[[1]]) == 'nimLogical')
+                returnTypeDeclaration[[1]] <- as.name('logical')
+            returnType <<- returnTypeDeclaration
+        },
+        generateFunctionObject = function(keep.nfMethodRC = FALSE) {
+            functionAsList <- list(as.name('function'))
+            functionAsList[2] <- list(NULL)
+            if(!is.null(args)) functionAsList[[2]] <- arguments
+            functionAsList[[3]] <- code
+            ans <- eval(
+                parse(text=deparse(as.call(functionAsList)),
+                      keep.source = FALSE)[[1]])
+            environment(ans) <- new.env()
+            if(keep.nfMethodRC) {
+                environment(ans)$nfMethodRCobject <- .self
+            }
+            ans
+        },
+        getArgInfo       = function() { return(argInfo)    },
+        getReturnType    = function() { return(returnType) })
+)
 
 nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
-    validCalls <- c(names(sizeCalls), otherDSLcalls, names(specificCallReplacements), nimKeyWords, methodNames, setupVarNames)
-    calls <- setdiff(all.names(code), all.vars(code))
+    validCalls <- c(names(sizeCalls),
+                    otherDSLcalls,
+                    names(specificCallReplacements),
+                    nimKeyWords,
+                    methodNames,
+                    setupVarNames)
+    calls <- setdiff(all.names(code),
+                     all.vars(code))
     
-    # find cases of x$y() and x[]$y() and x[[]]$y() (this also unnecessarily finds x$y, x[]$y, x[[]]$y)
-    # this relies on all.names returning symbols from parse tree in particular order
+    ## Find cases of x$y() and x[]$y() and x[[]]$y().
+    ##
+    ## (This also unnecessarily finds x$y, x[]$y, x[[]]$y.)
+    ##
+    ## This step relies on all.names returning symbols from parse tree
+    ## in particular order
     names <- all.names(code)
     dollarsLhs <- dollarsRhs <- NULL
     dollars <- which(names == "$")
     if(length(dollars)) {
         dollarsLhs <- dollars+1
         dollarsRhs <- dollars+2
-        dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] <- dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] + 1 # account for index
+        dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] <-
+            dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] + 1 # account for index
         while(sum(names[dollarsLhs] %in% c('[', '[['))) {
-            # bracket appears between $ and the lhs,rhs of the $
-            dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] <- dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] + 1
-            dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] <- dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] + 1
+            ## bracket appears between $ and the lhs,rhs of the $
+            dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] <-
+                dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] + 1
+            dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] <-
+                dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] + 1
         }
         dollarsLhs <- unique(names[dollarsLhs[dollarsLhs <= length(names)]])
         dollarsRhs <- unique(names[dollarsRhs[dollarsRhs <= length(names)]])
     } 
-
-    # don't check RHS of $ to ensure it is a valid nf method because no current way to easily find the methods of nf's defined in setup code
+    
+    ## don't check RHS of $ to ensure it is a valid nf method because no current way to easily find the methods of nf's defined in setup code
     nonDSLcalls <- calls[!(calls %in% c(validCalls, dollarsRhs))]
     if(length(nonDSLcalls)) {
         objInR <- sapply(nonDSLcalls, exists)
         nonDSLnonR <- nonDSLcalls[!objInR]
         nonDSLinR <- nonDSLcalls[objInR]
         if(length(nonDSLinR))
-            # nf and nimbleFunctionList cases probably will never occur as these need to be passed as setup args or created in setup
-            # problem with passing inputIsName when run through roxygen...
-            nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, function(x) is.nf(x, inputIsName = TRUE)) |
-                                     sapply(nonDSLinR, function(x) is(get(x), 'nimbleFunctionList')) |
-                                     sapply(nonDSLinR, function(x) is.rcf(x, inputIsName = TRUE)) |
-                                     sapply(nonDSLinR, function(x) is.nlGenerator(x, inputIsName = TRUE)))]
+            ## nf and nimbleFunctionList cases probably will never
+            ## occur as these need to be passed as setup args or
+            ## created in setup
+            ##
+            ## problem with passing inputIsName when run through roxygen...
+            nonDSLinR <-
+                nonDSLinR[!(sapply(nonDSLinR,
+                                   function(x)
+                                       is.nf(x, inputIsName = TRUE)) |
+                            sapply(nonDSLinR,
+                                   function(x)
+                                       is(get(x), 'nimbleFunctionList')) |
+                            sapply(nonDSLinR,
+                                   function(x)
+                                       is.rcf(x, inputIsName = TRUE)) |
+                            sapply(nonDSLinR,
+                                   function(x)
+                                       is.nlGenerator(x, inputIsName = TRUE)))]
         if(length(nonDSLinR))
-           warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists: ", paste(nonDSLinR, collapse = ', '), "."), call. = FALSE)
+            warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists: ", paste(nonDSLinR, collapse = ', '), "."), call. = FALSE)
         if(length(nonDSLnonR))
             warning(paste0("For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists before compilation: ", paste(nonDSLnonR, collapse = ', '), "."), call. = FALSE)
     }

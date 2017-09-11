@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #include "nimble/NimArrBase.h"
 #include "nimble/NamedObjects.h"
 #include "nimble/RcppNimbleUtils.h"
@@ -12,6 +33,18 @@
 // Work around R's unqualified use of `error` in the `ERROR` macro
 // (see $R_SOURCE/src/include/R_ext/RS.h).
 #define error Rf_error
+
+void SEXP_2_NimArr(SEXP Sn, double &x) {x = SEXP_2_double(Sn);}
+void SEXP_2_NimArr(SEXP Sn, int &x) {x = SEXP_2_int(Sn);}
+void SEXP_2_NimArr(SEXP Sn, bool &x) {x = SEXP_2_bool(Sn);}
+void SEXP_2_NimArr(SEXP Sn, std::string &x) {x = STRSEXP_2_string(Sn);}
+void SEXP_2_NimArr(SEXP Sn, std::vector<std::string> &x) {STRSEXP_2_vectorString(Sn, x);}
+
+SEXP NimArr_2_SEXP(double x) {return(double_2_SEXP(x));}
+SEXP NimArr_2_SEXP(int x) {return(int_2_SEXP(x));}
+SEXP NimArr_2_SEXP(bool x) {return(bool_2_SEXP(x));}
+SEXP NimArr_2_SEXP(std::string &x) {return(string_2_STRSEXP(x));}
+SEXP NimArr_2_SEXP(const std::vector<std::string> &x) {return(vectorString_2_STRSEXP(x));}
 
 // This is used when we have a NimArr<>* in a model and a NimArr<>** that needs to point to it.
 // We assume we have an extptr to each
