@@ -13,11 +13,8 @@ ADMod1 <- nimbleModel(code = ADCode1, data = list(y = numeric(2)), dimensions = 
 test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod1$getDependencies('x'))),
                       wrt = list(c('x', 'y'), c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]'), c('x[1]', 'y', 'x[2]')), testR = TRUE)
 
-
-
-test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(('y[2]')),
-                      wrt = list(c('x[2]', 'y[2]')), testR = TRUE)
-
+test_ADModelCalculate(ADMod1, name = "ADMod1", calcNodeNames = list(c('x', 'y')),
+                      wrt = list(c('x[1]', 'y[1]')), testR = TRUE)
 
 
 ADCode2 <- nimbleCode({

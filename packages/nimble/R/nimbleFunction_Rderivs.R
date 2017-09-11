@@ -178,10 +178,11 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
   gradientFlag <- 1 %in% order || hessianFlag ## note that to calculate Hessians using chain rule, must have gradients. 
   if(gradientFlag && !(1 %in% order)) order <- c(order, 1)
   valueFlag <- 0 %in% order
-  declIDs <- nodeFunctionVector(model, model$expandNodeNames(c(nodes, 
-                                     model$expandNodeNames(wrtPars)), 
-                                     sort = TRUE), 
-                                     sortUnique = FALSE)$indexingInfo$declIDs
+  nfv <-  nodeFunctionVector(model, model$expandNodeNames(c(nodes, 
+                                                            model$expandNodeNames(wrtPars)), 
+                                                          sort = TRUE), 
+                             sortUnique = FALSE)
+  declIDs <- nfv$indexingInfo$declIDs
   chainRuleDerivList <- list()
   if(hessianFlag) chainRuleHessianList <- list()
   ## totalOutWRTSize is the sum of the lengths of all ouput wrt parameters.
@@ -209,7 +210,7 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
       ## we need to take derivatives of its calculateWithArgs function.  The derivative function
       ## call is evaluated below.
       thisNodeSize <- length(values(model, derivInfo$allWRTAndCalcNodeNames[i]))  
-      
+      unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[nfv$indexingInfo$unrolledIndicesMatrixRows[i], ]
       if(isCalcNodeLine){
         calcWithArgs <- model$nodeFunctions[[declID]]$calculateWithArgs
         
@@ -252,7 +253,6 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
             }
           }
         }
-        browser()
         if(!is.na(derivInfo$lineWRTArgsAsCharacters[[i]][1])){
           derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS, WRT),
                                        list(CALCCALL = derivInfo$calcWithArgsCalls[[i]],
