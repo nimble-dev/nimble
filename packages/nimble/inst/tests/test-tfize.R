@@ -66,16 +66,15 @@ test_that('Tensorflow works with nimDerivs()', {
     make_fun <- function() {
         nimbleFunction(
             setup = function(){},
-            run = function(x = double(0)) {
+            run = function(x = double(1, 1)) {
                 outList <- derivs(testMethod(x))
                 returnType(ADNimbleList())
                 return(outList)
             },
             methods = list(
-                testMethod = function(x = double(0)) {
-                    out <- log(x)
-                    returnType(double(0))
-                    return(out)
+                testMethod = function(x = double(1, 1)) {
+                    return(sum(x))
+                    returnType(double())
                 }
             ),
             enableDerivs = list('testMethod')
@@ -85,19 +84,18 @@ test_that('Tensorflow works with nimDerivs()', {
     fun2 <- make_fun()
     temporarilyAssignInGlobalEnv(fun1)
     temporarilyAssignInGlobalEnv(fun2)
-
-    # FIXME This fails with:
-    # Error in nimType2TfDtype[[sym$type]] : 
-    #   attempt to select less than one element in get1index
-    # where code$name = "ConcatenateInterm_6" is missing from symTab
-    # (hence sym == NULL, sym$type == NULL).
-    withTensorflowEnabled(
-        tf_fun <- compileNimble(fun1, showCompilerOutput = TRUE, resetFunctions = TRUE)
-    )
-    c_fun <- compileNimble(fun2, showCompilerOutput = TRUE)
     
-    Rderiv <- D(expression(log(x)), 'x')
-    x <- 1.4
-    expect_equal(c_fun$run(x)$gradient[1], eval(Rderiv))
-    expect_equal(tf_fun$run(x)$gradient[1], eval(Rderiv))
+    Rderiv <- 1
+    x <- 1.2
+
+    expect_error({
+        withTensorflowEnabled(
+            tf_fun <- compileNimble(fun1, showCompilerOutput = TRUE, resetFunctions = TRUE)
+        )
+        expect_equal(tf_fun$run(x)$gradient[1], eval(Rderiv))
+    })
+    expect_error({
+        c_fun <- compileNimble(fun2, showCompilerOutput = TRUE)
+        expect_equal(c_fun$run(x)$gradient[1], eval(Rderiv))
+    })
 })

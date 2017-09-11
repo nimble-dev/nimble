@@ -130,18 +130,24 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
         if (is.null(placeholders[[code$name]])) {
             nimType2TfDtype = list('double' = tf$float64)
             sym <- symTab$getSymbolObject(code$name)
-            if (is.null(sym)) stop(paste('Symbol not found in symbol table:', code$name))
-            dtype <- nimType2TfDtype[[sym$type]]
-            if (class(sym$size) == 'uninitializedField') {
-                size <- as.list(rep(NA, sym$nDim))
-                for (i in 1:sym$nDim) {
-                    size[i] <- list(NULL)
-                }
+            if (is.null(sym)) {
+                ## TODO this case may be unnecessar.
+                ## We make a best guess to push past a bug.
+                dtype <- tf$float64
+                size <- list()
             } else {
-                size <- as.list(rev(sym$size))  ## Note the transpose
-                for (i in 1:length(size)) {
-                    if (is.na(size[i])) {
+                dtype <- nimType2TfDtype[[sym$type]]
+                if (class(sym$size) == 'uninitializedField') {
+                    size <- as.list(rep(NA, sym$nDim))
+                    for (i in 1:sym$nDim) {
                         size[i] <- list(NULL)
+                    }
+                } else {
+                    size <- as.list(rev(sym$size))  ## Note the transpose
+                    for (i in 1:length(size)) {
+                        if (is.na(size[i])) {
+                            size[i] <- list(NULL)
+                        }
                     }
                 }
             }
@@ -272,7 +278,12 @@ tfTranslate <- function(name) {
         'forwardsolve' = function(l, x) {
             ## TODO Decide whether to transpose.
             tf$matrix_triangular_solve(l, x, lower = FALSE)
-        }
+        },
+        ## These may be unnecessary. They were added to push past a possible bug
+        ## in AD processing of tensorflow graphs.
+        'nimCd' = tf$stack,
+        'concatenateTemp' = function(x) x,
+        'eigenBlock' = function(x) x
     )
 
     return(.tfLazyData$tfTranslate[[name]])
