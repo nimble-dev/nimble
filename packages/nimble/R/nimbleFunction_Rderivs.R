@@ -218,7 +218,6 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
         ## parentHessians, a list of all the hessians of the parent nodes of this node.  
         parentGradients <- vector('list', length = length(derivInfo$parentIndicesList[[i]]))
         if(hessianFlag) parentHessians <- vector('list', length = length(derivInfo$parentIndicesList[[i]]))
-        argSizeInfo <- numeric(length(derivInfo$parentIndicesList[[i]]))
         for(k in seq_along(derivInfo$parentIndicesList[[i]])){
           if(k == 1 && isWrtLine){
             ## The first argument (k = 1) of a node's calculateWithArgs function will always be the node itself.
@@ -253,7 +252,8 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
             }
           }
         }
-        if(!is.null(derivInfo$lineWRTArgsAsCharacters[[i]])){
+        browser()
+        if(!is.na(derivInfo$lineWRTArgsAsCharacters[[i]][1])){
           derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS, WRT),
                                        list(CALCCALL = derivInfo$calcWithArgsCalls[[i]],
                                             DERIVORDERS = order,
@@ -290,17 +290,15 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
               if(!is.null(parentGradients[[k]])){
                 ## Calculate derivs of this node (i) wrt this parameter (j) for this parent node (k) via chain rule. 
                 chainRuleDerivList[[i]][,derivInfo$WRTLineIndices[[j]]] <- chainRuleDerivList[[i]][,derivInfo$WRTLineIndices[[j]]] +
-                  derivList$gradient[,(thisArgIndex + 1):(thisArgIndex + argSizeInfo[k]), drop = FALSE]%*%parentGradients[[k]][,derivInfo$WRTLineIndices[[j]], drop = FALSE]
+                  derivList$gradient[,(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWRTArgSizeInfo[[i]][k]), drop = FALSE]%*%parentGradients[[k]][,derivInfo$WRTLineIndices[[j]], drop = FALSE]
                 
               }
-              thisArgIndex <- thisArgIndex + argSizeInfo[k]
+              thisArgIndex <- thisArgIndex + derivInfo$lineWRTArgSizeInfo[[i]][k]
             }
             if(derivOutputFlag == TRUE){
-              browser()
-              
               ## If this line is included in output, add the derivative of this line (i) wrt this param (j).
               outDerivList$gradient[, derivInfo$WRTToIndices[[j]]] <- outDerivList$gradient[, derivInfo$WRTToIndices[[j]]]  +  
-               h[,derivInfo$WRTFromIndices[[j]]]
+                chainRuleDerivList[[i]][,derivInfo$WRTFromIndices[[j]]]
             }
             if(hessianFlag){
               ## The Hessian is calculated below using Faà di Bruno's formula.
@@ -313,7 +311,7 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
                     for(dim1 in derivInfo$WRTLineIndices[[j]]){
                       for(dim2 in derivInfo$WRTLineIndices[[j_2]]){
                         chainRuleHessianList[[i]][dim1, dim2, ] <- chainRuleHessianList[[i]][dim1, dim2, ] +
-                          c(derivList$gradient[ ,(thisArgIndex + 1):(thisArgIndex + argSizeInfo[k]), drop = FALSE]%*%parentHessians[[k]][dim1, dim2, , drop = FALSE])
+                          c(derivList$gradient[ ,(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWRTArgSizeInfo[[i]][k]), drop = FALSE]%*%parentHessians[[k]][dim1, dim2, , drop = FALSE])
                       }
                     }
                   }
@@ -323,15 +321,15 @@ nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFun
                       if(!is.null(parentGradients[[k_2]])){
                         for(dim3 in 1:dim(derivList$hessian)[3]){
                           chainRuleHessianList[[i]][derivInfo$WRTLineIndices[[j]], derivInfo$WRTLineIndices[[j_2]], dim3] <- chainRuleHessianList[[i]][derivInfo$WRTLineIndices[[j]], derivInfo$WRTLineIndices[[j_2]], dim3] +
-                            t(parentGradients[[k]][, derivInfo$WRTLineIndices[[j]], drop = FALSE])%*%derivList$hessian[(thisArgIndex + 1):(thisArgIndex + argSizeInfo[k]),(thisArgIndex_2 + 1):(thisArgIndex_2 + argSizeInfo[k_2]), dim3]%*%
+                            t(parentGradients[[k]][, derivInfo$WRTLineIndices[[j]], drop = FALSE])%*%derivList$hessian[(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWRTArgSizeInfo[[i]][k]),(thisArgIndex_2 + 1):(thisArgIndex_2 + derivInfo$lineWRTArgSizeInfo[[i]][k_2]), dim3]%*%
                             parentGradients[[k_2]][, derivInfo$WRTLineIndices[[j_2]], drop = FALSE]
                         }
                       }
                       
                     }
-                    thisArgIndex_2 <- thisArgIndex_2 + argSizeInfo[k_2]
+                    thisArgIndex_2 <- thisArgIndex_2 + derivInfo$lineWRTArgSizeInfo[[i]][k_2]
                   }
-                  thisArgIndex <- thisArgIndex + argSizeInfo[k]
+                  thisArgIndex <- thisArgIndex + derivInfo$lineWRTArgSizeInfo[[i]][k]
                 }
                 if(derivOutputFlag == TRUE){
                   ## If this line is included in output, add the Hessian of this line (i) wrt this param #1 (j) and this param #2 (j_2).
