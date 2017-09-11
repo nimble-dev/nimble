@@ -340,32 +340,32 @@ nimDerivsInfoClass <- setRefClass(
       ## Explains some of the elements of the nimDerivsInfoClass
       explainDerivContent = function(enhancedDeps) {
         writeLines('The following calculations would be done from this input:')
-        deps <- enhancedDeps[[1]]
-        depIDs <- if(!is.integer(deps)) model$modelDef$nodeName2GraphIDs(deps) else deps
+        deps <- allWRTAndCalcNodeNames
+        depIDs <- model$modelDef$nodeName2GraphIDs(deps)
         declIDs <- model$modelDef$maps$graphID_2_declID[depIDs]
-        derivInfo <- enhancedDeps[[2]]
         for(i in seq_along(depIDs)) {
+          description <- c()
+          derivInfo <- parentIndicesList
           thisDerivInfo <- derivInfo[[i]]
-          if(length(thisDerivInfo) > 0) {
-            if(all(thisDerivInfo < 0)) { ## initiating node
-              if(length(thisDerivInfo) > 1) stop('Problem with thisDerivInfo')
-              description <- paste0('Input parameter ', -thisDerivInfo)
-            } else {
-              used <- thisDerivInfo > 0
-              if(sum(used) > 0) {
-                argumentNames <- lapply( model$modelDef$declInfo[[ declIDs[i] ]]$symbolicParentNodesReplaced, deparse)
-                description <- paste0('Argument ', seq_along(thisDerivInfo)[used], ' (', argumentNames[used],') comes from calculation ', thisDerivInfo[used])
-              }
-              else
-                description <- "(No arguments are from previous calculations)\n"
+          argumentNames <- lapply( model$modelDef$declInfo[[ declIDs[i] ]]$symbolicParentNodesReplaced, deparse)
+          for(j in seq_along(thisDerivInfo)){
+            if(j == 1 && thisDerivInfo[[j]][1] < 0){
+              description <- paste0('WRT parameter ', -thisDerivInfo[[1]][1])
             }
-          } else
-            description <- ""
+            else{
+              if(thisDerivInfo[[j]][1] > 0){
+                description <- c(description, 
+                                 paste0('Argument ', j, ' (', argumentNames[j - 1],') comes from calculation(s) ', thisDerivInfo[[j]], collapse = ' '))
+              }
+            }
+          }
+          if(length(description) == 0){
+            description <- "(No arguments are WRT or deterministic arguments from previous calculations)\n"
+          }
           BUGSline <- deparse(model$modelDef$declInfo[[ declIDs[i] ]]$codeReplaced)
           output <- paste0(i,': ', deps[i], ' (from ', BUGSline, ')\n', paste0('\t', description, collapse = '\n'))
           writeLines(output)
         }
       }
-      
     )
 )

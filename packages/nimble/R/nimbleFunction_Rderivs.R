@@ -102,8 +102,6 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
     derivFxnCall <- match.call(calculate, derivFxnCall)
     return(nimDerivs_calculate(model = eval(derivFxnCall[['model']], envir = fxnEnv),
                                nodes = eval(derivFxnCall[['nodes']], envir = fxnEnv),
-                               nodeFxnVector = eval(derivFxnCall[['nodeFxnVector']], envir = fxnEnv),
-                               nodeFunctionIndex = eval(derivFxnCall[['nodeFunctionIndex']], envir = fxnEnv),
                                order, wrt))
   }
   if(deparse(derivFxnCall[[1]]) == 'model$calculate'){
@@ -158,7 +156,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
 }
   
 
-nimDerivs_calculate <- function(model, nodes = NA, nodeFxnVector = NULL, nodeFunctionIndex = NULL, order, wrtPars){
+nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars){
   if(all(order == 0)) return(calculate(model, nodes))
   if(!inherits(model, 'modelBaseClass') ){
     stop('model argument must be a nimbleModel.')
