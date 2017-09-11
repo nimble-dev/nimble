@@ -114,6 +114,7 @@ makeTFsetupExprs <- function(TfBuilder, TFrunnerName) {
 }
 
 ## Recursively collects all names in an exprClass and create tf$placeholders for each.
+## Returns an environment mapping placeholder names to tensorflow tensors.
 TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
     if (is.null(placeholders)) {
         placeholders = new.env()
@@ -302,8 +303,7 @@ TfTensorizeExpr <- function(code, placeholders) {
 ## Creates a TfBuilder object representing the given code.
 ## This can optionally compute gradients wrt given placeholders.
 ## Setting threads=0 lets tensorflow choose the number of threads.
-exprClasses2serializedTF <- function(code, symTab, gradients_wrt = c(),
-                                     threads = 0L) {
+exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     if (!require(tensorflow)) {
         stop('Failed to load tensorflow package')
     }
@@ -322,6 +322,24 @@ exprClasses2serializedTF <- function(code, symTab, gradients_wrt = c(),
     placeholders <- TfCollectPlaceholders(expr, symTab)
     tensor <- TfTensorizeExpr(expr, placeholders)
     tensor <- tf$identity(tensor, name = target$name)
+
+    ## Add a gradient for each input arg.
+    ## Note that the gradients only make sense when the target tensor has size 1
+    ## (i.e. when it is either a scalar or a tensor with a single entry).
+    ## When the target has size greater than 1, then the gradients are wrt the
+    ## sum of all target entries. For details on tf.gradients, see
+    ## https://www.tensorflow.org/api_docs/python/tf/gradients
+    placeholders <- as.list(placeholders)
+    placeholderValues <- as.list(placeholders)
+    placeholderNames <- names(placeholderValues)
+    names(placeholderValues) <- NULL
+    gradients <- tf$gradients(tensor, placeholderValues)
+    if (length(gradients) != length(placeholderNames)) stop('programmer error')
+    for (i in seq_along(gradients)) {
+        ## This suffixed name is expected by include/nimble/tensorflow.hpp:
+        name <- paste0(placeholderNames[i], '_gradient')
+        tf$identity(gradients[i], name = name)
+    }
 
     ## Configure the tensorflow session.
     configProto <- tf$ConfigProto()
@@ -348,15 +366,6 @@ exprClasses2serializedTF <- function(code, symTab, gradients_wrt = c(),
     }
     tfBuilder$addOutputVar(target$name)
 
-    ## Optionally compute gradients.
-    for (wrt in gradients_wrt) {
-        if (!wrt %in% names(placeholders)) {
-            stop(paste('Gradient wrt unknown variable:', wrt))
-        }
-        gradient <- tf$gradients(target, placeholders[wrt],
-                                 name = paste0(target$name, '_gradient_', wrt))
-        tfBuilder$addOutputVar(gradient$name)
-    }
     return(tfBuilder)
 }
 
