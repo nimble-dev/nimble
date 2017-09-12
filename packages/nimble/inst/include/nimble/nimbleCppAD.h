@@ -113,7 +113,7 @@ class nimbleFunctionCppADbase {
 			}
 			if(ordersFound[1] == true){
 				for(size_t i = 0; i < n; i++){
-					gradient_ans[n*dy_ind + i] = cppad_derivOut[i*maxOrder + 0];
+					gradient_ans[i*q + dy_ind] = cppad_derivOut[i*maxOrder + 0];
 				}
 			}
 		}
