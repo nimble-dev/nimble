@@ -146,6 +146,12 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
   derivFxnCall <- fxnCall[['nimFxn']]
   wrtNames <- sapply(wrt, function(x){strsplit(x, '\\[')[[1]][1]})
+  ## Below are two checks to see if the nimFxn argument is a model calculate call.
+  ## If so, one of two paths will be taken:
+  ##  1) If chainRuleDerivs = FALSE, a wrapper function will be made and nimDerivs
+  ##     will be called again on that wrapper function.
+  ##  2) If chainRuleDerivs = TRUE, derivatives will be calculated using the chain rule,
+  ##     via the nimDerivs_calculate function.
   if(deparse(derivFxnCall[[1]]) == 'calculate'){
     if(chainRuleDerivs == TRUE){
       derivFxnCall <- match.call(calculate, derivFxnCall)
@@ -209,16 +215,23 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
     if(length(removeArgs) > 0)
       wrt <- wrt[-removeArgs]
   }
+  ## derivFxnList will be a list with two elements:
+  ## The first element is a wrapper function to the nimFxn that the numDeriv 
+  ## package will actually take derivatives of.
+  ## The second element is a function that will take all arguments to the nimFxn
+  ## and wrap them into a single vector argument.
   derivFxnList <- makeSingleArgWrapper(derivFxnCall, wrt, fxnEnv)
   singleArg <- derivFxnList[[2]]()
-  
   hessianFlag <- 2 %in% order
-  gradientFlag <- 1 %in% order
+  jacobianFlag <- 1 %in% order
   valueFlag <- 0 %in% order
   if(hessianFlag){
+    ## If hessians are requested, derivatives taken using numDeriv's genD() 
+    ## function.  After that, we extract the various derivative elements and 
+    ## arrange them properly.
     derivList <- genD(derivFxnList[[1]], singleArg)
     if(valueFlag) outVal <- derivList$f0 
-    if(gradientFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
+    if(jacobianFlag) outGrad <- derivList$D[,1:derivList$p, drop = FALSE]
     outHessVals <- derivList$D[,(derivList$p + 1):dim(derivList$D)[2], drop = FALSE]
     outHess <- array(NA, dim = c(derivList$p, derivList$p, length(derivList$f0)))
     singleDimMat <- matrix(NA, nrow = derivList$p, ncol = derivList$p)
@@ -229,16 +242,20 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
       outHess[,,outDim] <- singleDimMat
     }
   }
-  else if(gradientFlag){
+  else if(jacobianFlag){
+    ## If jacobians are requested, derivatives taken using numDeriv's jacobian() 
+    ## function.  After that, we extract the various derivative elements and 
+    ## arrange them properly.
     if(valueFlag) outVal <- nimFxn 
     outGrad <- jacobian(derivFxnList[[1]], singleArg)
   }
   else if(valueFlag){
+    ## Otherwise just evaluate the function.
     outVal <- nimFxn
   }
   outList <- ADNimbleList$new()
   if(valueFlag) outList$value = outVal
-  if(gradientFlag) outList$gradient = outGrad
+  if(jacobianFlag) outList$gradient = outGrad
   if(hessianFlag) outList$hessian = outHess
   return(outList)
 }
@@ -258,8 +275,8 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars){
   }
   derivInfo <- nimDerivsInfoClass(wrtPars, nodes, model)
   hessianFlag <- 2 %in% order
-  gradientFlag <- 1 %in% order || hessianFlag ## note that to calculate Hessians using chain rule, must have gradients. 
-  if(gradientFlag && !(1 %in% order)) order <- c(order, 1)
+  jacobianFlag <- 1 %in% order || hessianFlag ## note that to calculate Hessians using chain rule, must have gradients. 
+  if(jacobianFlag && !(1 %in% order)) order <- c(order, 1)
   valueFlag <- 0 %in% order
   nfv <-  nodeFunctionVector(model, model$expandNodeNames(c(nodes, 
                                                             model$expandNodeNames(wrtPars)), 
