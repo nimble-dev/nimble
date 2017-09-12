@@ -72,7 +72,7 @@ cppVarFull <- setRefClass('cppVarFull',
                                   else callSuper(...)
                               }
                           },
-                          generate = function(printName = .self$name, ...) {
+                          generate = function(printName = Rname2CppName(.self$name), ...) {
                               if(silent) return(character())
                               bCP <- if(length(baseConst) > 0) { 
                                   if(length(baseConstPtr) > 0) paste(paste(rep('*', baseConstPtr), collapse = ''), 'const')
