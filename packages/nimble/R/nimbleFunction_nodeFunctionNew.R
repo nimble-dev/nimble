@@ -14,15 +14,14 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeA
             dynamicIndexLimitsExpr <- nndf_generateDynamicIndexLimitsExpr(dynamicIndexInfo)
         } else dynamicIndexLimitsExpr <- NULL
     } else dynamicIndexLimitsExpr <- NULL
-    
     if(nimbleOptions('experimentalEnableDerivs')){
       parents <- names(parentsSizeAndDims)
-      parentIndexInfoList <- nndf_extractNodeIndices(LHSrep, parents)		
-      parentIndexInfoList <- nndf_extractNodeIndices(RHSrep, parents, indexExprList = parentIndexInfoList)		
-      for(i in seq_along(parentIndexInfoList)){		
-        for(j in seq_along(parentIndexInfoList[[i]])){		
-          parentsSizeAndDims[[names(parentIndexInfoList)[i]]][[j]]$indexExpr <- parentIndexInfoList[[i]][[j]]$indexExpr 		
-        }		
+      parentIndexInfoList <- nndf_extractNodeIndices(LHSrep, parents)
+      parentIndexInfoList <- nndf_extractNodeIndices(RHSrep, parents, indexExprList = parentIndexInfoList)
+      for(i in seq_along(parentIndexInfoList)){
+        for(j in seq_along(parentIndexInfoList[[i]])){
+          parentsSizeAndDims[[names(parentIndexInfoList)[i]]][[j]]$indexExpr <- parentIndexInfoList[[i]][[j]]$indexExpr
+        }
       }
     }
 
