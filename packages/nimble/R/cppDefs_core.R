@@ -231,8 +231,10 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                             methods = list(
                                 generate = function(indent = '', ...) {
                                     if(identical(cppADCode, TRUE)){
-                                      nimbleUserNamespace$cppADCode <- TRUE
-                                      on.exit(nimbleUserNamespace$cppADCode <- FALSE)
+                                      if(!identical(nimbleUserNamespace$cppADCode, TRUE)){
+                                        nimbleUserNamespace$cppADCode <- TRUE
+                                        on.exit(nimbleUserNamespace$cppADCode <- FALSE)
+                                      }
                                     }
                                     if(inherits(typeDefs, 'uninitializedField')) typeDefs <<- list()
                                     typeDefsToUse <- if(inherits(typeDefs, 'symbolTable')) typeDefs$symbols else typeDefs
