@@ -1,3 +1,41 @@
+## Creates a wrapper function for a call to calculate(model, nodes).
+## Arguments:
+##  calcNodeName: A character vector of node names that will be used as the nodes argument in a call to calculate(model, nodes).
+##  wrtName:      A character vector of node names that will be arguments to the wrapper function.
+##
+## The returned wrapper function takes as arguments values for all parameters specified by the 'wrtName' argument,
+## and returns the value of a call to calculate(model, nodes) evaluated at those parameter values.  The
+## 'nodes' argument to the calculate function is specified by the 'calcNodeName' argument to makeADCalcWrapperFunction.
+makeDerivCalcWrapperFunction <- function(calcNodeName, wrtName){
+  calcFunctionArgNames <- list('model' = NA)
+  for(i in seq_along(wrtName)){
+    calcFunctionArgNames[[ wrtName[[i]][1]]] <- NA
+  }
+  argSaveLines <- list()
+  argSaveLines[[1]] <- substitute(origVals <- list())
+  for(i in seq_along(calcFunctionArgNames[-1])){
+    argSaveLines[[i+1]] <- substitute({origVals[[I]] <- model[[ARGNAME]];
+    model[[ARGNAME]] <- ARGNAMEEXPR},
+    list(I = i,
+         ARGNAME = names(calcFunctionArgNames)[i+1],
+         ARGNAMEEXPR = as.name(names(calcFunctionArgNames)[i+1])))
+  }
+  callLine <-  list(substitute(outVal <- calculate(model, CALCNODENAME),
+                               list(CALCNODENAME = calcNodeName)))
+  argReplaceLines <- list()
+  for(i in seq_along(calcFunctionArgNames[-1])){
+    argReplaceLines[[i]] <- substitute(model[[ARGNAME]] <- origVals[[I]],
+                                       list(I = i, ARGNAME = names(calcFunctionArgNames)[i+1] ))
+  }
+  returnLine <- substitute(return(outVal))
+  calcWrapperFunction <- function(){}
+  body(calcWrapperFunction) <- putCodeLinesInBrackets(c(argSaveLines, callLine, argReplaceLines, returnLine))
+  formals(calcWrapperFunction) <- calcFunctionArgNames
+  return(calcWrapperFunction)
+}
+
+
+
 
 
 makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
@@ -82,32 +120,82 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
 #' 
 #' EXPERIMENTAL Computes the value, gradient, and Hessian of a given  \code{nimbleFunction} method.  
 #' 
-#' @param nimFxn a call to a \code{nimbleFunction} method with arguments included.
+#' @param nimFxn a call to a \code{nimbleFunction} method with arguments included.  Can also be a call to  \code{model$calculate(nodes)}, or to \code{calculate(model, nodes)}.
 #' @param order an integer vector with values within the set {0, 1, 2}, corresponding to whether the function value, gradient, and Hessian should be returned respectively.  Defaults to \code{c(0, 1, 2)}.
 #' @param dropArgs a vector of integers specifying any arguments to \code{nimFxn} that derivatives should not be taken with respect to.  For example, \code{dropArgs = 2} means that the second argument to \code{nimFxn} will not have derivatives taken with respect to it.  Defaults to an empty vector. 
 #' @param wrt a character vector of node names to take derivatives with respect to.  If left empty, derivatives will be taken with respect to all arguments to \code{nimFxn}.
+#' @param chainRuleDerivs a logical argument indicating whether to take derivatives of calls to \code{model$calculate(nodes)} using NIMBLE's implementation of the chain rule for testing purposes.  Defaults to \code{FALSE}.    
 #' 
 #' @details Derivatives for uncompiled nimbleFunctions are calculated using the
 #' \code{numDeriv} package.  If this package is not installed, an error will
 #' be issued.  Derivatives for matrix valued arguments will be returned in column-major order.
 #' 
 #' @return a \code{nimbleList} with elements \code{value}, \code{gradient}, and \code{hessian}.
+#' 
+#' @examples 
+#' 
+#' \dontrun{
+#' model <- nimbleModel(code = ...)
+#' calcDerivs <- nimDerivs(model$calculate(model$getDependencies('x')), wrt = 'x')
+#' }
+#' 
 #' @export
-nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = NULL){
+nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = NULL, chainRuleDerivs = FALSE){
   fxnEnv <- parent.frame()
-  fxnCall <- match.call(function(nimFxn, order, dropArgs, wrt){})
+  fxnCall <- match.call(function(nimFxn, order, dropArgs, wrt, chainRuleDerivs){})
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
   derivFxnCall <- fxnCall[['nimFxn']]
+  wrtNames <- sapply(wrt, function(x){strsplit(x, '\\[')[[1]][1]})
   if(deparse(derivFxnCall[[1]]) == 'calculate'){
-    derivFxnCall <- match.call(calculate, derivFxnCall)
-    return(nimDerivs_calculate(model = eval(derivFxnCall[['model']], envir = fxnEnv),
-                               nodes = eval(derivFxnCall[['nodes']], envir = fxnEnv),
-                               order, wrt))
+    if(chainRuleDerivs == TRUE){
+      derivFxnCall <- match.call(calculate, derivFxnCall)
+      return(nimDerivs_calculate(model = eval(derivFxnCall[['model']], envir = fxnEnv),
+                                 nodes = eval(derivFxnCall[['nodes']], envir = fxnEnv),
+                                 order, wrt))
+    }
+    else{
+      model <- eval(derivFxnCall[['model']], envir = fxnEnv)
+      RCalcDerivsFunction <- makeDerivCalcWrapperFunction(eval(derivFxnCall[['nodes']], envir = fxnEnv), wrtNames)
+      argList <- list('model' = quote(model))
+      for(k in seq_along(wrtNames)){
+        argList[[wrtNames[[k]][1]]] <- model[[wrtNames[[k]][1]]]
+      }
+      argList <- c(list('RCalcDerivsFunction'), argList)
+      fxnCall <- as.call(argList)
+      fxnCall[[1]] <- quote(RCalcDerivsFunction)
+      return(eval(substitute(nimDerivs(FXNCALL, wrt = WRT, order = order),
+                             list(FXNCALL = fxnCall,
+                                  WRT = wrt))))
+    }
   }
-  if(deparse(derivFxnCall[[1]]) == 'model$calculate'){
-    return(nimDerivs_calculate(model = eval(derivFxnCall[[1]][[2]], envir = fxnEnv),
-                               nodes = eval(derivFxnCall[[2]], envir = fxnEnv),
-                               order = order, wrt = wrt))
+  if(length(derivFxnCall[[1]]) == 3 && deparse(derivFxnCall[[1]][[1]]) == '$'){
+    if(deparse(derivFxnCall[[1]][[3]]) == 'calculate'){
+      modelError <- tryCatch(get('modelDef', pos = eval(derivFxnCall[[1]][[2]], envir = fxnEnv)), error = function(e) e)
+      if(!inherits(modelError, 'error')){
+        if(chainRuleDerivs == TRUE){
+          return(nimDerivs_calculate(model = eval(derivFxnCall[[1]][[2]], envir = fxnEnv),
+                                     nodes = eval(derivFxnCall[[2]], envir = fxnEnv),
+                                     order = order, wrt = wrt))
+        }
+        else{
+          model <- eval(derivFxnCall[[1]][[2]], envir = fxnEnv)
+          RCalcDerivsFunction <- makeDerivCalcWrapperFunction(eval(derivFxnCall[[2]], envir = fxnEnv), wrtNames)
+          argList <- list('model' = quote(model))
+          for(k in seq_along(wrtNames)){
+            argList[[wrtNames[[k]][1]]] <- model[[wrtNames[[k]][1]]]
+          }
+          argList <- c(list('RCalcDerivsFunction'), argList)
+          fxnCall <- as.call(argList)
+          fxnCall[[1]] <- quote(RCalcDerivsFunction)
+          return(eval(substitute(nimDerivs(FXNCALL, wrt = WRT, order = order),
+                                 list(FXNCALL = fxnCall,
+                                      WRT = wrt))))
+        }
+      }
+    }
+  }
+  if(!all(wrtNames %in% formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv)@.Data))){
+    stop('Error:  the wrt argument to nimDerivs() contains names that are not arguments to the nimFxn argument.')
   }
   libError <- try(library('numDeriv'), silent = TRUE)
   if(inherits(libError, 'try-error')){
@@ -148,7 +236,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
   else if(valueFlag){
     outVal <- nimFxn
   }
-  outList <- nimble:::ADNimbleList$new()
+  outList <- ADNimbleList$new()
   if(valueFlag) outList$value = outVal
   if(gradientFlag) outList$gradient = outGrad
   if(hessianFlag) outList$hessian = outHess
@@ -183,7 +271,7 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars){
   ## totalOutWRTSize is the sum of the lengths of all ouput wrt parameters.
   totalOutWRTSize <- sum(sapply(derivInfo$WRTToIndices, function(x){return(length(x))}))
   ## outDerivList will be returned from this function.
-  outDerivList <- nimble:::ADNimbleList$new()
+  outDerivList <- ADNimbleList$new()
   if(valueFlag) outDerivList$value = 0
   outDerivList$gradient = matrix(0, ncol = totalOutWRTSize, nrow = 1)
   if(hessianFlag) outDerivList$hessian = array(0, dim = c(totalOutWRTSize, totalOutWRTSize, 1))

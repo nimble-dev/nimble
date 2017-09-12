@@ -1075,42 +1075,6 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     invisible(NULL)
 }
 
-## Creates a wrapper function for a call to calculate(model, nodes).
-## Arguments:
-##  calcNodeName: A character vector of node names that will be used as the nodes argument in a call to calculate(model, nodes).
-##  wrtName:      A character vector of node names that will be arguments to the wrapper function.
-##
-## The returned wrapper function takes as arguments values for all parameters specified by the 'wrtName' argument,
-## and returns the value of a call to calculate(model, nodes) evaluated at those parameter values.  The
-## 'nodes' argument to the calculate function is specified by the 'calcNodeName' argument to makeADCalcWrapperFunction.
-makeADCalcWrapperFunction <- function(calcNodeName, wrtName){
-  calcFunctionArgNames <- list('model' = NA)
-  for(i in seq_along(wrtName)){
-    calcFunctionArgNames[[ wrtName[[i]][1]]] <- NA
-  }
-  argSaveLines <- list()
-  argSaveLines[[1]] <- substitute(origVals <- list())
-  for(i in seq_along(calcFunctionArgNames[-1])){
-    argSaveLines[[i+1]] <- substitute({origVals[[I]] <- model[[ARGNAME]];
-    model[[ARGNAME]] <- ARGNAMEEXPR},
-    list(I = i,
-         ARGNAME = names(calcFunctionArgNames)[i+1],
-         ARGNAMEEXPR = as.name(names(calcFunctionArgNames)[i+1])))
-  }
-  callLine <-  list(substitute(outVal <- calculate(model, CALCNODENAME),
-                               list(CALCNODENAME = calcNodeName)))
-  argReplaceLines <- list()
-  for(i in seq_along(calcFunctionArgNames[-1])){
-    argReplaceLines[[i]] <- substitute(model[[ARGNAME]] <- origVals[[I]],
-                                       list(I = i, ARGNAME = names(calcFunctionArgNames)[i+1] ))
-  }
-  returnLine <- substitute(return(outVal))
-  calcWrapperFunction <- function(){}
-  body(calcWrapperFunction) <- nimble:::putCodeLinesInBrackets(c(argSaveLines, callLine, argReplaceLines, returnLine))
-  formals(calcWrapperFunction) <- calcFunctionArgNames
-  return(calcWrapperFunction)
-}
-
 
 ## Tests taking derivatives of calls to model$calculate(nodes) (or equivalently calculate(model, nodes))
 ## Arguments:
@@ -1133,21 +1097,10 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
   if(testR){
     for(i in seq_along(calcNodeNames)){
       for(j in seq_along(wrt)){
-        wrtNames <- strsplit(wrt[[j]], '\\[')
-        RCalcADTestFunction <- makeADCalcWrapperFunction(calcNodeNames[[i]], wrtNames)
-        argList <- list('model' = quote(model))
-        for(k in seq_along(wrtNames)){
-          argList[[wrtNames[[k]][1]]] <- model[[wrtNames[[k]][1]]]
-        }
-        argList <- c(list('RCalcADTestFunction'), argList)
-        fxnCall <- as.call(argList)
-        fxnCall[[1]] <- quote(RCalcADTestFunction)
         test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes =', paste(calcNodeNames[[i]], collapse = ' '),
                         'and wrt =', paste(wrt[[j]], collapse = ' ')), {
-                          wrapperDerivs <- eval(substitute(nimDerivs(FXNCALL, wrt = WRT, order = order),
-                                                           list(FXNCALL = fxnCall,
-                                                                WRT = wrt[[j]])))
-                          chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
+                          wrapperDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
+                          chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order, chainRuleDerivs = TRUE)
                           expect_equal(wrapperDerivs$value, chainRuleDerivs$value)
                           expect_equal(wrapperDerivs$gradient, chainRuleDerivs$gradient, tolerance = tolerance)
                           expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = tolerance)
