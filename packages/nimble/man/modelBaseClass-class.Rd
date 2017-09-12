@@ -52,7 +52,7 @@ Details: The return value is a named list, with an element corresponding to each
 
 Arguments:
 
-nodes: a vector of names of nodes (or variables) to be expanded. Alternatively, can be a vector of integer graph IDs, but this use is intended only for advanced users 
+nodes: a vector of names of nodes (or variables) to be expanded. Alternatively, can be a vector of integer graph IDs, but this use is intended only for advanced users
 
 returnScalarComponents: should multivariate nodes (i.e. dmnorm or dmulti) be broken up into scalar components?
 
@@ -122,9 +122,9 @@ Details: The return value is a numeric vector with an element for each parameter
 
 Arguments:
 
-nodes: A character vector specifying one or more node or variable names.  
+nodes: A character vector specifying one or more node or variable names.
 
-Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. }
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
 
 \item{\code{getDownstream(...)}}{Identical to getDependencies(..., downstream = TRUE)
 
@@ -171,11 +171,11 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
 
 Arguments:
 
-nodes: A character vector specifying one or more node or variable names.  
+nodes: A character vector specifying one or more node or variable names.
 
-Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. }
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
 
-\item{\code{isData(nodes)}}{Returns a vector of logical TRUE / FALSE values, corresponding to the 'data' flags of the input node names. 
+\item{\code{isData(nodes)}}{Returns a vector of logical TRUE / FALSE values, corresponding to the 'data' flags of the input node names.
 
 Arguments:
 
@@ -187,7 +187,7 @@ Details: The variable or node names specified is expanded into a vector of model
 
 Arguments:
 
-nodes: A character vector specifying one or more node or variable names.  
+nodes: A character vector specifying one or more node or variable names.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
 
@@ -195,39 +195,39 @@ Details: The return value is a character vector with an element for each node in
 
 Arguments:
 
-nodes: A character vector specifying one or more node or variable names.  
+nodes: A character vector specifying one or more node or variable names.
 
-Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. }
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
 
 \item{\code{isEndNode(nodes)}}{Determines whether one or more nodes are end nodes (nodes with no stochastic dependences)
 
 Arguments:
 
-nodes: A character vector specifying one or more node or variable names.  
+nodes: A character vector specifying one or more node or variable names.
 
-Details: The return value is logical vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. }
+Details: The return value is logical vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
 
 \item{\code{isMultivariate(nodes)}}{Determines whether one or more nodes represent multivariate nodes
 
 Arguments:
 
-nodes: A character vector specifying one or more node or variable names.  
+nodes: A character vector specifying one or more node or variable names.
 
-Details: The return value is a logical vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. }
+Details: The return value is a logical vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
 
 \item{\code{isStoch(nodes)}}{Determines whether one or more nodes are stochastic
 
 Arguments:
 
-nodes: A character vector specifying one or more node or variable names.  
+nodes: A character vector specifying one or more node or variable names.
 
-Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. }
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.}
 
 \item{\code{isTruncated(nodes)}}{Determines whether one or more nodes are truncated
 
 Arguments:
 
-nodes: A character vector specifying one or more node or variable names.  
+nodes: A character vector specifying one or more node or variable names.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent nodes names, so the length of the output may be longer than that of the input}
 
@@ -235,7 +235,7 @@ Details: The return value is a character vector with an element for each node in
 
 Arguments:
 
-nodes: A character vector specifying one or more node or variable names.  
+nodes: A character vector specifying one or more node or variable names.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent nodes names, so the length of the output may be longer than that of the input}
 
@@ -256,13 +256,13 @@ modelName: An optional character string, used to set the internal name of the mo
 
 Details: The newly created model object will be identical to the original model in terms of structure and functionality, but entirely distinct in terms of the internal values.}
 
-\item{\code{resetData()}}{Resets the 'data' property of ALL model nodes to FALSE.  Subsequent to this call, the model will have no nodes flagged as 'data'. }
+\item{\code{resetData()}}{Resets the 'data' property of ALL model nodes to FALSE.  Subsequent to this call, the model will have no nodes flagged as 'data'.}
 
 \item{\code{setData(..., warnAboutMissingNames = TRUE)}}{Sets the 'data' flag for specified nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying 'data' nodes in a model object.  When a 'data' argument is provided to 'nimbleModel()', it uses this method to set the data nodes.
 
 Arguments:
 
-...:  Arguments may be provided as named elements with numeric values or as character names of model variables.  These may be provided in a single list, a single character vector, or as multiple arguments.  When a named element with a numeric value is provided, the size and dimension must match the corresponding model variable.  This value will be copied to the model variable and any non-NA elements will be marked as data.  When a character name is provided, the value of that variable in the model is not changed but any currently non-NA values are marked as data.  Examples: setData('x', y = 1:10) will mark both x and y as data and will set the value of y to 1:10.  setData(list('x', y = 1:10)) is equivalent.  setData(c('x','y')) or setData('x','y') will mark both x and y as data.  
+...:  Arguments may be provided as named elements with numeric values or as character names of model variables.  These may be provided in a single list, a single character vector, or as multiple arguments.  When a named element with a numeric value is provided, the size and dimension must match the corresponding model variable.  This value will be copied to the model variable and any non-NA elements will be marked as data.  When a character name is provided, the value of that variable in the model is not changed but any currently non-NA values are marked as data.  Examples: setData('x', y = 1:10) will mark both x and y as data and will set the value of y to 1:10.  setData(list('x', y = 1:10)) is equivalent.  setData(c('x','y')) or setData('x','y') will mark both x and y as data.
 
 Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as 'data'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as 'data' will result in an error.  Designating part of a multivariate node as 'data' and part as non-data (NA) will result in an error; multivariate nodes must be entirely data, or entirely non-data.}
 
@@ -272,7 +272,7 @@ Arguments:
 
 inits: A named list.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.}
 
-\item{\code{topologicallySortNodes(nodes, returnType = "names")}}{Sorts the input list of node names according to the topological dependence ordering of the model structure. 
+\item{\code{topologicallySortNodes(nodes, returnType = "names")}}{Sorts the input list of node names according to the topological dependence ordering of the model structure.
 
 Arguments:
 
