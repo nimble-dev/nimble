@@ -366,23 +366,24 @@ test_that('basic mixture model with conjugacy', {
               inits = list(sigma = rep(1,4), mu = c(-1, 0, 1, 2),
                            p = rep(.25, 4), k = sample(1:4, n, replace = TRUE),
                            mu0 = 0, a = 1, b = 1, tau = 1, alpha = rep(1, 4)),
-              results = list(mean = list("mu[1]" = mns[3],
-                                         "mu[2]" = mns[4],
+              results = list(mean = list("mu[1]" = mns[4],
+                                         "mu[2]" = mns[3],
                                          "mu[3]" = mns[1],
                                          "mu[4]" = mns[2],
-                                         "p[1]" = p[3],
-                                         "p[2]" = p[4],
+                                         "p[1]" = p[4],
+                                         "p[2]" = p[3],
                                          "p[3]" = p[1],
                                          "p[4]" = p[2])),
-              resultsTolerance = list(mean = list("mu[1]" = .7,
-                                                  "mu[2]" = .02,
-                                                  "mu[3]" = .02,
+              resultsTolerance = list(mean = list("mu[1]" = .1,
+                                                  "mu[2]" = .5,
+                                                  "mu[3]" = .1,
                                                   "mu[4]" = .3,
-                                                  "p[1]" = .08,
-                                                  "p[2]" = .02,
+                                                  "p[1]" = .02,
+                                                  "p[2]" = .07,
                                                   "p[3]" = .05,
-                                                  "p[4]" = .05))
+                                                  "p[4]" = .02))
               )
+
 })
 
 test_that('basic mixture model without conjugacy', {
@@ -412,20 +413,20 @@ test_that('basic mixture model without conjugacy', {
                            mu0 = 4, tau = 1, alpha = rep(1, 4)),
               results = list(mean = list("mu[1]" = mns[3],
                                          "mu[2]" = mns[4],
-                                         "mu[3]" = mns[2],
-                                         "mu[4]" = mns[1],
+                                         "mu[3]" = mns[1],
+                                         "mu[4]" = mns[2],
                                          "p[1]" = p[3],
                                          "p[2]" = p[4],
-                                         "p[3]" = p[2],
-                                         "p[4]" = p[1])),
+                                         "p[3]" = p[1],
+                                         "p[4]" = p[2])),
               resultsTolerance = list(mean = list("mu[1]" = .5,
-                                                  "mu[2]" = 1,
+                                                  "mu[2]" = .8,
                                                   "mu[3]" = 1.5,
-                                                  "mu[4]" = 2,
+                                                  "mu[4]" = 1,
                                                   "p[1]" = .03,
-                                                  "p[2]" = .15,
-                                                  "p[3]" = .05,
-                                                  "p[4]" = .15))
+                                                  "p[2]" = .12,
+                                                  "p[3]" = .12,
+                                                  "p[4]" = .05))
               )
 })
 
