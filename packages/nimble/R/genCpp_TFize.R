@@ -271,6 +271,7 @@ tfTranslate <- function(name) {
             }
             tf$matmul(y, x)  ## Note the transpose.
         },
+        'chol' = tf$cholesky,
         'backsolve' = function(r, x) {
             ## TODO Decide whether to transpose.
             tf$matrix_triangular_solve(r, x, lower = TRUE)

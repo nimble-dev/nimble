@@ -7,7 +7,8 @@
 nimbleOptions(...)
 }
 \arguments{
-\item{...}{any options to be defined as one or more \code{name = value} pairs.}
+\item{...}{any options to be defined as one or more \code{name = value} pairs
+or as a single \code{list} of \code{name=value} pairs.}
 }
 \value{
 When invoked with no arguments, returns a list with the current values of all options.
@@ -36,7 +37,7 @@ old <- nimbleOptions()                    # Saves old options.
 nimbleOptions(showCompilerOutput = TRUE,
               verboseErrors = TRUE)       # Sets temporary options.
 # ...do stuff...
-do.call(nimbleOptions, old)               # Restores old options.
+nimbleOptions(old)                        # Restores old options.
 }
 \author{
 Christopher Paciorek

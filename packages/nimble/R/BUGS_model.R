@@ -51,8 +51,16 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   getMaps = function(mapName, all = FALSE){
                                   	if(all == TRUE)		return(modelDef$maps)
                                   	return(modelDef$maps[[mapName]])
+                                  },
+                                  getCode = function() {
+                                      '
+Return the code for a model after\n,
+processing if-then-else statements,\n
+expanding macros, and replacing some\n
+keywords (e.g. nimStep for step) to \n
+avoid R ambiguity.'
+                                      modelDef$BUGScode
                                    },
-
                                   isEndNode = function(nodes){  #Note: it says nodes, but graphIDs are fine too. Actually they are better
                                                                           '
 Determines whether one or more nodes are end nodes (nodes with no stochastic dependences)
