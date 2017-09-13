@@ -36,6 +36,7 @@ Collate:
     BUGS_model.R
     BUGS_graphNodeMaps.R
     BUGS_readBUGS.R
+    BUGS_macros.R
     BUGS_testBUGS.R
     BUGS_getDependencies.R
     BUGS_utils.R

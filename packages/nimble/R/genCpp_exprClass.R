@@ -98,6 +98,21 @@ exprTypeInfoClass <- setRefClass('exprTypeInfoClass',
     )
 )
 
+copyExprClass <- function(original) {
+    result <- original$copy(shallow = TRUE)
+    ## shallow=FALSE does not deep-copy on list elements, so it is
+    ## useless for args list.  Another reason for shallow = TRUE
+    ## is we do not want to deep copy 'caller' here.  Instead it is
+    ## re-assigned below.
+    for(i in seq_along(result$args)) {
+        if(inherits(result$args[[i]], 'exprClass')) {
+            result$args[[i]] <- copyExprClass(result$args[[i]])
+            result$args[[i]]$caller <- result
+        }
+    }
+    result
+}
+
 ## Add indendation to every character() element in a list, doing so recursively for any nested list()
 addIndentToList <- function(x, indent) {
     if(is.list(x)) return(lapply(x, addIndentToList, indent))

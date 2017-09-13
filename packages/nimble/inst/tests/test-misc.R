@@ -2,6 +2,32 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of miscellaneous functionality.")
 
+## Regression test for Issue #563.
+test_that("while() works even when an intermediate variable is needed", {
+    mynf = nimbleFunction(
+    run=function(xi = double(1)) {
+        returnType(double(0))
+        newInd <- 1
+        n <- length(xi)
+        while(sum(xi == newInd) > 0 & newInd <= n){ 
+            newInd <- newInd+1
+        }
+        return(newInd)
+    })
+    cmynf=compileNimble(mynf)
+    expect_equal(mynf(c(1, 3, 4)),
+                 cmynf(c(1, 3, 4)),
+                 info = 'error in while() with intermediate-implemented expression')
+})
+
+test_that("copyExprClass works", {
+    testExpr <- nimble:::RparseTree2ExprClasses(quote(a <- foo(bar(b, 3, c) + 2) + 4))
+    testExprCopy <- nimble:::copyExprClass(testExpr)
+    expect_identical(capture.output(testExpr$show()),
+                     capture.output(testExprCopy$show()),
+                     info = 'incorrect copying of exprClass object')
+})
+
 test_that("Test of full model check", {
     oldmsg <- geterrmessage()
 
