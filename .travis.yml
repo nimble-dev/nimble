@@ -22,7 +22,7 @@ matrix:
     - os: linux
       env: NIMBLE_TEST_BATCH=5
     - os: osx
-      env: NIMBLE_TEST_BATCH=1 NIMBLE_USE_TENSORFLOW=0
+      env: NIMBLE_TEST_BATCH=1
 
 warnings_are_errors: true
 
@@ -53,8 +53,7 @@ install:
   - R CMD INSTALL packages/nimble
 
 script:
-  - source /home/travis/.virtualenvs/r-tensorflow/bin/activate \
-    || echo 'Missing tensorflow'
+  - source ~/.virtualenvs/r-tensorflow/bin/activate || echo 'Missing tensorflow'
   - pip freeze
   - ./run_tests.R
 
