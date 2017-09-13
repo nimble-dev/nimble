@@ -125,7 +125,7 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
 #' @param dropArgs a vector of integers specifying any arguments to \code{nimFxn} that derivatives should not be taken with respect to.  For example, \code{dropArgs = 2} means that the second argument to \code{nimFxn} will not have derivatives taken with respect to it.  Defaults to an empty vector. 
 #' @param wrt a character vector of node names to take derivatives with respect to.  If left empty, derivatives will be taken with respect to all arguments to \code{nimFxn}.
 #' @param chainRuleDerivs a logical argument indicating whether to take derivatives of calls to \code{model$calculate(nodes)} using NIMBLE's implementation of the chain rule for testing purposes.  Defaults to \code{FALSE}.    
-#' 
+#' @param silent a logical argument that determines whether warnings will be displayed.
 #' @details Derivatives for uncompiled nimbleFunctions are calculated using the
 #' \code{numDeriv} package.  If this package is not installed, an error will
 #' be issued.  Derivatives for matrix valued arguments will be returned in column-major order.
@@ -140,7 +140,7 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
 #' }
 #' 
 #' @export
-nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = NULL, chainRuleDerivs = FALSE){
+nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = NULL, chainRuleDerivs = FALSE, silent = TRUE){
   fxnEnv <- parent.frame()
   fxnCall <- match.call(function(nimFxn, order, dropArgs, wrt, chainRuleDerivs){})
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
@@ -157,7 +157,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
       derivFxnCall <- match.call(calculate, derivFxnCall)
       return(nimDerivs_calculate(model = eval(derivFxnCall[['model']], envir = fxnEnv),
                                  nodes = eval(derivFxnCall[['nodes']], envir = fxnEnv),
-                                 order, wrt))
+                                 order, wrt, silent))
     }
     else{
       model <- eval(derivFxnCall[['model']], envir = fxnEnv)
@@ -261,7 +261,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
 }
   
 
-nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars){
+nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE){
   if(all(order == 0)) return(calculate(model, nodes))
   if(!inherits(model, 'modelBaseClass') ){
     stop('model argument must be a nimbleModel.')
@@ -271,7 +271,9 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars){
   wrtParsDeps <- model$getDependencies(wrtPars)
   nodes <- model$expandNodeNames(nodes, sort = TRUE)
   if(!all(nodes %in% wrtParsDeps)){
-    warning('not all calculate nodes depend on a wrtNode')
+    if(!silent){
+      warning('not all calculate nodes depend on a wrtNode')
+    }
   }
   derivInfo <- nimDerivsInfoClass(wrtPars, nodes, model)
   hessianFlag <- 2 %in% order
