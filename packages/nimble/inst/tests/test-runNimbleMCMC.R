@@ -1,4 +1,5 @@
 
+if(FALSE) {
 runExample <- function(pumpData, ## data
                        expected.accepted, ## expected output
                        pumpInits, ## initial values
@@ -70,5 +71,6 @@ for (example in test.examples) {
                    example$model.input$pumpConsts,
                    example$model.input$pumpCode)
     })
+}
 }
 
