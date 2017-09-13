@@ -726,6 +726,19 @@ symbolInternalType <-
                     })
                 )
 
+symbolTensorflowRunner <-
+    setRefClass(Class = "symbolTensorflowRunner",
+                contains = "symbolBase",
+                fields = list(constructor = "ANY"),
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolTensorflowRunner ', name)),
+                    genCppVar = function(functionArg = FALSE) {
+                        cppVarFull(name = name, baseType = "NimTf_Runner", static = TRUE, ref = TRUE, constructor = constructor)
+                    }
+                )
+    )
+
 ## nDim is set to length(size) unless provided, which is how scalar (nDim = 0) must be set
 symbolDouble <- function(name, size = numeric(), nDim = length(size)) {
     if(is.logical(size)) size <- as.numeric(size)

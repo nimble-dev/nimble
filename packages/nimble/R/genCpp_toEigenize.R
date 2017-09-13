@@ -1,7 +1,9 @@
 ## It is hoped substantial sets of these calls can be combined
 ## or implemented by a rule system.
 
-toEigenizeNoCalls <- c('dim', 'run.time','nimOptimDefaultControl')
+toEigenizeNoCalls <- c('dim',
+                       'run.time',
+                       'nimOptimDefaultControl')
 
 toEigenizeYesCalls <- c(paste0('nimDiagonal', c('D','I','B')),
                         'diagonal',
@@ -20,93 +22,89 @@ toEigenizeYesCalls <- c(paste0('nimDiagonal', c('D','I','B')),
                         )
 
 toEigenizeMaybeCalls <- c('map',
-                          c('decide', 'size', 'getsize','getNodeFunctionIndexedInfo', 'endNimbleTimer'),
-                          c('blank', 'nfMethod', 'getPtr', 'startNimbleTimer'))
+                          c('decide',
+                            'size',
+                            'getsize',
+                            'getNodeFunctionIndexedInfo',
+                            'endNimbleTimer'),
+                          c('blank',
+                            'nfMethod',
+                            'getPtr',
+                            'startNimbleTimer'))
 
 toEigenizeUseRuleCalls <- c('nimPrint')
 
-toEigenCalls <- c(makeCallList(binaryOperators, 'toEigenBinaryCwise'),             #ok
-                  makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
-                  makeCallList(binaryOrUnaryOperators, 'toEigenBinaryUnaryCwise'), #ok
-                  makeCallList(unaryOperators, 'toEigenUnaryCwise'),               #ok
-                  makeCallList(unaryOrNonaryOperators, 'sizeUnaryNonaryCwise'),
-                  makeCallList(assignmentOperators, 'toEigenAssign'),              #ok
-                  makeCallList(reductionUnaryOperators, 'sizeUnaryReduction'),     # drafted
-                  makeCallList(matrixSquareReductionOperators, 'sizeMatrixSquareReduction'),
-                  makeCallList(reductionBinaryOperators, 'sizeBinaryReduction'),
-                  makeCallList(matrixMultOperators, 'toEigenMatrixMult'),          # drafted
-                  makeCallList(matrixFlipOperators, 'sizeTranspose'),
-                  makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
-                  makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
-                  ##               makeCallList(nimbleListReturningOperators, 'sizeNimbleListReturningFunction'),
-                  nimOptim = 'toEigenOptim',
-                  ##nimOptimDefaultControl = 'sizeOptimDefaultControl',
-                  
-                  makeCallList(paste0('nimC',c('d','i','b')), 'toEigenConcatenate'),
-                  makeCallList(paste0('nimRep',c('d','i','b')), 'toEigenRep'),
-                  list('debugSizeProcessing' = 'sizeProxyForDebugging',
-                       ##      diag = 'toEigenYes',
-                       ##      dim = 'toEigenNo',
-                       ##       RRtest_add = 'toEigenYes', ## testing!
-                       ##      which = 'toEigenYes',
-                       
-                       nimRep = 'sizeRep',
-                       nimSeqBy = 'sizeSeq',
-                       nimSeqLen = 'sizeSeq',
-                       nimSeqByLen = 'sizeSeq',
-                       'return' = 'sizeReturn',
-                       ##  'asRow' = 'sizeAsRowOrCol',
-                       ##  'asCol' = 'sizeAsRowOrCol',
-                       makeNewNimbleListObject = 'toEigenNewNimbleList',
-                       getParam = 'toEigenGetParam',
-                       getBound = 'toEigenGetBound',
-                       ## nimSwitch = 'sizeSwitch', ## NEVER GETS MARKED WITH TOEIGENIZE
-                       asDoublePtr = 'toEigenIgnoreForNow',
-                       '[' = 'sizeIndexingBracket',
-                       ##'[[' = 'sizeDoubleBracket', ## for nimbleFunctionList, this will always  go through chainedCall(nfList[[i]], 'foo')(arg1, arg2) ## NEVER GETS MARKED WITH TOEIGENIZE
-                       chainedCall = 'toEigenChainedCall',
-                       ## nfVar = 'sizeNFvar', ## NEVER GETS MARKED WITH TOEIGENIZE
-                       ## map = 'sizemap',
-                       ':' = 'sizeColonOperator',
-                       ##dim = 'sizeDimOperator',
-                       'if' = 'recurseSetSizes', ##OK
-                       'while' = 'recurseSetSizes',
-                       callC = 'sizecallC', 
-                       'for' = 'toEigenFor', 
-                       cppPointerDereference = 'toEigenCppPointerDereference',
-                       values = 'toEigenValues',
-                       '(' = 'sizeUnaryCwise',
-                       setSize = 'toEigenSetSize', ## OK but not done for numericLists
-                       ## resizeNoPtr = 'sizeResizeNoPtr', ## may not be used any more 
-                       nimArr_rcat = 'toEigenScalarRecurse',
-                       nimArr_rinterval = 'toEigenScalarRecurse',
-                       ##nimPrint = 'sizeforceEigenize',
-                       ##nimCat = 'sizeforceEigenize',
-                       as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
-                       as.numeric = 'sizeUnaryCwise',
-                       nimArrayGeneral = 'toEigenNimArrayGeneral',
-                       ##setAll = 'sizeOneEigenCommand',
-                       voidPtr = 'sizeVoidPtr'
-                       ),
-                    ##run.time = 'sizeRunTime'),
-                  ##               makeCallList(scalar_distribution_dFuns, 'toEigenYes'),
-                  ##               makeCallList(scalar_distribution_pFuns, 'toEigenYes'),
-                  ##               makeCallList(scalar_distribution_qFuns, 'sizeRecyclingRule'),
-                  ##               makeCallList(scalar_distribution_rFuns, 'sizeRecyclingRuleRfunction'),
-                  makeCallList(distributionFuns[!(distributionFuns %in% c(scalar_distribution_dFuns, scalar_distribution_pFuns, scalar_distribution_qFuns, scalar_distribution_rFuns))], 'toEigenScalarRecurse'),
-                                        # R dist functions that are not used by NIMBLE but we allow in DSL
-                  ## makeCallList(paste0(c('d','q','p'), 't'), 'sizeRecyclingRule'),
-                  ## rt = 'sizeRecyclingRuleRfunction',
-                  ## makeCallList(paste0(c('d','q','p'), 'exp'), 'sizeRecyclingRule'),
-                  ## rexp = 'sizeRecyclingRuleRfunction',
-                  makeCallList(c('isnan','ISNAN','ISNA'), 'toEigenScalarRecurse'),
-                  makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dinvwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'toEigenScalarRecurse'),
-                  makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rinvwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
-                  ##      makeCallList(c('decide', 'size', 'getsize','getNodeFunctionIndexedInfo', 'endNimbleTimer'), 'sizeScalar'),
-                  ## makeCallList(c('calculate','calculateDiff', 'getLogProb'), 'toEigenScalarModelOp'),
-                  simulate = 'toEigenIgnoreForNow'
-                  ##               makeCallList(c('blank', 'nfMethod', 'getPtr', 'startNimbleTimer'), 'sizeUndefined')
-                  )
+toEigenCalls <- c(
+    makeCallList(binaryOperators, 'toEigenBinaryCwise'),             
+    makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
+    makeCallList(binaryOrUnaryOperators, 'toEigenBinaryUnaryCwise'), 
+    makeCallList(unaryOperators, 'toEigenUnaryCwise'),               
+    makeCallList(unaryOrNonaryOperators, 'sizeUnaryNonaryCwise'),
+    makeCallList(assignmentOperators, 'toEigenAssign'),              
+    makeCallList(reductionUnaryOperators, 'sizeUnaryReduction'),     
+    makeCallList(matrixSquareReductionOperators, 'sizeMatrixSquareReduction'),
+    makeCallList(reductionBinaryOperators, 'sizeBinaryReduction'),
+    makeCallList(matrixMultOperators, 'toEigenMatrixMult'),          
+    makeCallList(matrixFlipOperators, 'sizeTranspose'),
+    makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
+    makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
+    nimOptim = 'toEigenOptim',
+    
+    makeCallList(paste0('nimC',c('d','i','b')), 'toEigenConcatenate'),
+    makeCallList(paste0('nimRep',c('d','i','b')), 'toEigenRep'),
+    list('debugSizeProcessing' = 'sizeProxyForDebugging',
+         nimRep = 'sizeRep',
+         nimSeqBy = 'sizeSeq',
+         nimSeqLen = 'sizeSeq',
+         nimSeqByLen = 'sizeSeq',
+         'return' = 'sizeReturn',
+         makeNewNimbleListObject = 'toEigenNewNimbleList',
+         getParam = 'toEigenGetParam',
+         getBound = 'toEigenGetBound',
+         asDoublePtr = 'toEigenIgnoreForNow',
+         '[' = 'sizeIndexingBracket',
+         chainedCall = 'toEigenChainedCall',
+         ':' = 'sizeColonOperator',
+         'if' = 'recurseSetSizes', 
+         'while' = 'recurseSetSizes',
+         callC = 'sizecallC', 
+         'for' = 'toEigenFor', 
+         cppPointerDereference = 'toEigenCppPointerDereference',
+         values = 'toEigenValues',
+         '(' = 'sizeUnaryCwise',
+         setSize = 'toEigenSetSize', 
+         nimArr_rcat = 'toEigenScalarRecurse',
+         nimArr_rinterval = 'toEigenScalarRecurse',
+         as.integer = 'sizeUnaryCwise', 
+         as.numeric = 'sizeUnaryCwise',
+         nimArrayGeneral = 'toEigenNimArrayGeneral',
+         voidPtr = 'sizeVoidPtr'
+         ),
+    makeCallList(distributionFuns[
+        !(distributionFuns %in% c(scalar_distribution_dFuns,
+                                  scalar_distribution_pFuns,
+                                  scalar_distribution_qFuns,
+                                  scalar_distribution_rFuns))
+    ], 'toEigenScalarRecurse'),
+    makeCallList(c('isnan',
+                   'ISNAN',
+                   'ISNA'), 'toEigenScalarRecurse'),
+    makeCallList(c('nimArr_dmnorm_chol',
+                   'nimArr_dmvt_chol',
+                   'nimArr_dwish_chol',
+                   'nimArr_dinvwish_chol',
+                   'nimArr_dmulti',
+                   'nimArr_dcat',
+                   'nimArr_dinterval',
+                   'nimArr_ddirch'), 'toEigenScalarRecurse'),
+    makeCallList(c('nimArr_rmnorm_chol',
+                   'nimArr_rmvt_chol',
+                   'nimArr_rwish_chol',
+                   'nimArr_rinvwish_chol',
+                   'nimArr_rmulti',
+                   'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
+    simulate = 'toEigenIgnoreForNow'
+)
 
 
 exprClasses_setToEigenize <- function(code, symTab, typeEnv) { ## input code is exprClass
@@ -119,9 +117,14 @@ exprClasses_setToEigenize <- function(code, symTab, typeEnv) { ## input code is 
             ## recurse over lines
             for(i in seq_along(code$args)) {
                 if(inherits(code$args[[i]], 'exprClass')) {
-                    newAsserts <- exprClasses_setToEigenize(code$args[[i]], symTab, typeEnv)
-                    code$args[[i]]$assertions <- c(code$args[[i]]$assertions,
-                                                   if(is.null(newAsserts)) list() else newAsserts)
+                    newAsserts <-
+                        exprClasses_setToEigenize(code$args[[i]],
+                                                  symTab,
+                                                  typeEnv)
+                    code$args[[i]]$assertions <-
+                        c(code$args[[i]]$assertions,
+                          if(is.null(newAsserts)) list() else newAsserts
+                          )
                 }
             }
             return(invisible(NULL))
@@ -141,7 +144,9 @@ exprClasses_setToEigenize <- function(code, symTab, typeEnv) { ## input code is 
             if(is.rcf(obj)) { ## it is an RC function
                 message('figure out how to extract the RCfunProc that should already exist')
                 browser()
-                RCfunProc <- typeEnv$.nimbleProject$compileRCfun(obj, initialTypeInference = TRUE)
+                RCfunProc <-
+                    typeEnv$.nimbleProject$compileRCfun(obj,
+                                                        initialTypeInference = TRUE)
                 
                 return(toEigenRCfunction(code, symTab, typeEnv)) ## These additional arguments are not part of the function signature: ', nfmObj, RCfunProc))'
             }
@@ -156,7 +161,11 @@ recurseSetToEigenize <- function(code, symTab, typeEnv, useArgs = rep(TRUE, leng
     for(i in seq_along(code$args)) {
         if(useArgs[i]) {
             if(inherits(code$args[[i]], 'exprClass')) {
-                asserts <- c(asserts, exprClasses_setToEigenize(code$args[[i]], symTab, typeEnv))
+                asserts <- c(asserts,
+                             exprClasses_setToEigenize(code$args[[i]],
+                                                       symTab,
+                                                       typeEnv)
+                             )
             }
         }
     }
@@ -220,8 +229,12 @@ toEigenAssignLHS <- function(code, symTab, typeEnv, NoEigenizeMap = FALSE) {
                     if(RHS$toEigenize == 'unknown') 'no'
                     else {
                         if(RHS$toEigenize != 'yes' &
-                           (!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter'))) &
-                           (RHS$nDim == 0 | RHS$isName | (RHS$name == 'map' & NoEigenizeMap)))
+                           (!(LHS$name %in% c('eigenBlock',
+                                              'diagonal',
+                                              'coeffSetter'))) &
+                           (RHS$nDim == 0 |
+                            RHS$isName |
+                            (RHS$name == 'map' & NoEigenizeMap)))
                             'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
                         else 'yes' ## if it is 'maybe' and non-scalar and not just a name, default to 'yes'
                     }
@@ -244,9 +257,13 @@ toEigenAssignLHS <- function(code, symTab, typeEnv, NoEigenizeMap = FALSE) {
         if(RHS$nDim > 0) {
             if(!(RHS$name %in% setSizeNotNeededOperators)) {
                 if(LHS$isName | LHS$name == "nfVar") {
-                    assert <- substitute(setSize(LHS), list(LHS = nimbleGeneralParseDeparse(LHS)))
+                    assert <-
+                        substitute(setSize(LHS),
+                                   list(LHS = nimbleGeneralParseDeparse(LHS)))
                     for(i in seq_along(RHS$sizeExprs)) { ## N.B. RHS$sizeExprs may be modified by sizeAssignAfterRecursing
-                        test <- try(assert[[i + 2]] <- RHS$sizeExprs[[i]])
+                        test <- try(
+                            assert[[i + 2]] <- RHS$sizeExprs[[i]]
+                        )
                         if(inherits(test, 'try-error')) browser()
                     }
                     assert[[ length(assert) + 1]] <- 0 ## copyValues = false
@@ -259,16 +276,32 @@ toEigenAssignLHS <- function(code, symTab, typeEnv, NoEigenizeMap = FALSE) {
                         if(RHS$nDim == 2) {
                             if(is.numeric(RHS$sizeExprs[[1]])) {
                                 if(RHS$sizeExprs[[1]] == 1) {
-                                    newExpr <- insertExprClassLayer(code, 1, 'asRow', type = LHS$type)
+                                    newExpr <-
+                                        insertExprClassLayer(code,
+                                                             1,
+                                                             'asRow',
+                                                             type = LHS$type)
                                     newExpr$sizeExprs <- RHS$sizeExprs 
                                     newExpr$type <- LHS$type
                                     newExpr$nDim <- RHS$nDim
-                                    if(!is.numeric(LHS$sizeExprs[[1]]) | !is.numeric(RHS$sizeExprs[[2]])) {
-                                        assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[1]]), " == ", deparse(RHS$sizeExprs[[2]]))
-                                        thisAssert <- identityAssert(LHS$sizeExprs[[1]], RHS$sizeExprs[[2]], assertMessage)
-                                        if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert 
+                                    if(!is.numeric(LHS$sizeExprs[[1]]) |
+                                       !is.numeric(RHS$sizeExprs[[2]])) {
+                                        assertMessage <-
+                                            paste0("Run-time size error: expected ",
+                                                   deparse(LHS$sizeExprs[[1]]), " == ",
+                                                   deparse(RHS$sizeExprs[[2]]))
+                                        thisAssert <-
+                                            identityAssert(LHS$sizeExprs[[1]],
+                                                           RHS$sizeExprs[[2]],
+                                                           assertMessage)
+                                        if(!is.null(thisAssert))
+                                            assert[[length(assert) + 1]] <-
+                                                thisAssert 
                                     } else {
-                                        if(LHS$sizeExprs[[1]] != RHS$sizeExprs[[2]]) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: Fixed size mismatch.')), call. = FALSE)
+                                        if(LHS$sizeExprs[[1]] != RHS$sizeExprs[[2]])
+                                            stop(exprClassProcessingErrorMsg(code,
+                                                                             paste0('In sizeAssignAfterRecursing: Fixed size mismatch.')),
+                                                 call. = FALSE)
                                     }
                                 }
                             }
@@ -280,11 +313,15 @@ toEigenAssignLHS <- function(code, symTab, typeEnv, NoEigenizeMap = FALSE) {
     } else {
         if(inherits(RHS, 'exprClass')) {
             ## If we have A <- map(B, ...), we need to generate a setMap for the RHS, which will be done by sizeInsertIntermediate 
-            if(RHS$name == 'map') assert <- c(assert, toEigenInsertIntermediate(code, 2, symTab, typeEnv) )
+            if(RHS$name == 'map')
+                assert <- c(assert,
+                            toEigenInsertIntermediate(code, 2, symTab, typeEnv) )
         }
         if(inherits(LHS, 'exprClass')) {
                                         # ditto
-            if(LHS$name == 'map') assert <- c(assert, toEigenInsertIntermediate(code, 1, symTab, typeEnv) )
+            if(LHS$name == 'map')
+                assert <- c(assert,
+                            toEigenInsertIntermediate(code, 1, symTab, typeEnv) )
         }
     }
     assert
@@ -388,7 +425,8 @@ toEigenBinaryCwise <- function(code, symTab, typeEnv) {
     a2 <- code$args[[2]]
     if(inherits(a1, 'exprClass')) {
         if(a1$toEigenize == 'no') {
-            asserts <- c(asserts, toEigenInsertIntermediate(code, 1, symTab, typeEnv))
+            asserts <- c(asserts,
+                         toEigenInsertIntermediate(code, 1, symTab, typeEnv))
             a1 <- code$args[[1]]
         }
         a1DropNdim <- length(dropSingleSizes(a1$sizeExprs)$sizeExprs)
@@ -399,7 +437,8 @@ toEigenBinaryCwise <- function(code, symTab, typeEnv) {
     }
     if(inherits(a2, 'exprClass')) {
         if(a2$toEigenize == 'no') {
-            asserts <- c(asserts, toEigenInsertIntermediate(code, 2, symTab, typeEnv))
+            asserts <- c(asserts,
+                         toEigenInsertIntermediate(code, 2, symTab, typeEnv))
             a2 <- code$args[[2]]
         }
         a2DropNdim <- length(dropSingleSizes(a2$sizeExprs)$sizeExprs)
@@ -408,7 +447,9 @@ toEigenBinaryCwise <- function(code, symTab, typeEnv) {
         a2DropNdim <- 0
         a2toEigenize <- 'maybe'
     }
-    forceYesEigenize <- identical(a1toEigenize, 'yes') | identical(a2toEigenize, 'yes')
+    forceYesEigenize <-
+        identical(a1toEigenize, 'yes') |
+        identical(a2toEigenize, 'yes')
     code$toEigenize <- if(a1DropNdim == 0 & a2DropNdim == 0)
                            if(forceYesEigenize)
                                'yes'
@@ -424,7 +465,8 @@ toEigenUnaryCwise <- function(code, symTab, typeEnv) {
     ## lifting rule: lift if not eigenizable
     if(inherits(a1, 'exprClass')) {
         if(a1$toEigenize == 'no') {
-            asserts <- c(asserts, toEigenInsertIntermediate(code, 1, symTab, typeEnv))
+            asserts <- c(asserts,
+                         toEigenInsertIntermediate(code, 1, symTab, typeEnv))
             a1 <- code$args[[1]]
         }
     }

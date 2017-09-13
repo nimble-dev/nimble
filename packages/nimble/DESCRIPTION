@@ -36,6 +36,7 @@ Collate:
     BUGS_model.R
     BUGS_graphNodeMaps.R
     BUGS_readBUGS.R
+    BUGS_macros.R
     BUGS_testBUGS.R
     BUGS_getDependencies.R
     BUGS_utils.R
@@ -53,6 +54,7 @@ Collate:
     genCpp_maps.R
     genCpp_liftMaps.R
     genCpp_eigenization.R
+    genCpp_TFize.R
     genCpp_addDebugMarks.R
     genCpp_generateCpp.R
     RCfunction_core.R

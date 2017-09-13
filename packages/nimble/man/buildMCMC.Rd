@@ -45,7 +45,7 @@ After the MCMC has been run, calling the \code{calculateWAIC()} method of the MC
 
 \code{calculateWAIC()} has a single arugment:
 
-\code{burnIn}: The number of iterations to subtract from the beginning of the posterior samples of the MCMC object for WAIC calculation.  Defaults to 0.
+\code{nburnin}: The number of iterations to subtract from the beginning of the posterior samples of the MCMC object for WAIC calculation.  Defaults to 0.
 
 The \code{calculateWAIC} method calculates the WAIC of the model that the MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from Equations 5, 12, and 13 in Gelman (2014).  Note that the set of all parameters monitored by the mcmc object will be treated as \eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014).  All parameters downstream of the monitored parameters that are necessary to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of \eqn{theta}.
 }
@@ -63,7 +63,7 @@ Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
 Cmcmc$run(10000)
 samples <- as.matrix(Cmcmc$mvSamples)
 head(samples)
-WAIC <- Cmcmc$calculateWAIC(burnIn = 1000)
+WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 }
 }
 \author{

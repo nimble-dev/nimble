@@ -7,11 +7,12 @@
 nimbleOptions(...)
 }
 \arguments{
-\item{...}{any options to be defined as one or more 'name = value' pairs.
-Options can also be passed by giving a single unnamed argument that is a named list.}
+\item{...}{any options to be defined as one or more \code{name = value} pairs
+or as a single \code{list} of \code{name=value} pairs.}
 }
 \value{
-When invoked with no arguments, a list with the current values of all options.
+When invoked with no arguments, returns a list with the current values of all options.
+When invoked with one or more arguments, returns a list of the the updated options with their updated values.
 }
 \description{
 Allow the user to set and examine a variety of global _options_
@@ -25,7 +26,18 @@ with no arguments to see a list of available opions.
    one should use \code{getNimbleOption()}.
 }
 \examples{
+# Set one option:
 nimbleOptions(verifyConjugatePosteriors = FALSE)
+
+# Compactly print all options:
+str(nimbleOptions(), max.level = 1)
+
+# Save-and-restore options:
+old <- nimbleOptions()                    # Saves old options.
+nimbleOptions(showCompilerOutput = TRUE,
+              verboseErrors = TRUE)       # Sets temporary options.
+# ...do stuff...
+nimbleOptions(old)                        # Restores old options.
 }
 \author{
 Christopher Paciorek

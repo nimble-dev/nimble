@@ -1,35 +1,36 @@
 ##
 
 cppVirtualNimbleFunctionClass <- setRefClass('cppVirtualNimbleFunctionClass',
-                                             contains = 'cppClassDef',
-                                             fields = list(
-                                                 nfProc = 'ANY'
-                                                 ),
-                                             methods = list(
-                                                 initialize = function(nfProc, ...) {
-                                                     callSuper(...)
-                                                     if(!missing(nfProc)) processNFproc(nfProc)
-                                                     useGenerator <<-  FALSE
-                                                     baseClassObj <- environment(nfProc$nfGenerator)$contains
-                                                     if(is.null(baseClassObj)) {
-                                                         addInheritance("NamedObjects")
-                                                     } else {
-                                                         if(is.character(baseClassObj)) addInheritance(baseClassObj)
-                                                         else {
-                                                             baseClassName <- environment(baseClassObj)$CclassName
-                                                             addInheritance(baseClassName)
-                                                         }
-                                                     }
-                                                 },
-                                                 processNFproc = function(nfp) {
-                                                     nfProc <<- nfp
-                                                     assign('cppDef', .self, envir = environment(nfProc$nfGenerator))
-                                                     for(i in names(nfp$RCfunProcs)) { ## This is what we should do for cppNimbleFunctions too
-                                                         functionDefs[[i]] <<- RCfunctionDef(virtual = TRUE, abstract = TRUE)
-                                                         functionDefs[[i]]$buildFunction(nfp$RCfunProcs[[i]])
-                                                     }
-                                                 }
-                                                 ))
+    contains = 'cppClassDef',
+    fields = list(
+        nfProc = 'ANY'
+    ),
+    methods = list(
+        initialize = function(nfProc, ...) {
+            callSuper(...)
+            if(!missing(nfProc)) processNFproc(nfProc)
+            useGenerator <<-  FALSE
+            baseClassObj <- environment(nfProc$nfGenerator)$contains
+            if(is.null(baseClassObj)) {
+                addInheritance("NamedObjects")
+            } else {
+                if(is.character(baseClassObj)) addInheritance(baseClassObj)
+                else {
+                    baseClassName <- environment(baseClassObj)$CclassName
+                    addInheritance(baseClassName)
+                }
+            }
+        },
+        processNFproc = function(nfp) {
+            nfProc <<- nfp
+            assign('cppDef', .self, envir = environment(nfProc$nfGenerator))
+            for(i in names(nfp$RCfunProcs)) { ## This is what we should do for cppNimbleFunctions too
+                functionDefs[[i]] <<- RCfunctionDef(virtual = TRUE, abstract = TRUE)
+                functionDefs[[i]]$buildFunction(nfp$RCfunProcs[[i]])
+            }
+        }
+    )
+)
 
 ## cppNimbleClassClass defines commonalities between cppNimbleFunctionClass and cppNimbleListClass, both of which are classes in nimble
 cppNimbleClassClass <- setRefClass('cppNimbleClassClass',

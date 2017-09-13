@@ -39,7 +39,7 @@ testsBasicMath = list(
   list(name = 'log of vector', expr = quote(out <- log(abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'sqrt of vector', expr = quote(out <- sqrt(abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'abs of vector', expr = quote(out <- abs(arg1)), inputDim = 1, outputDim = 1),
-  list(name = 'step of vector', expr = quote(out <- step(arg1)), inputDim = 1, outputDim = 1, Rcode = quote(out <- as.numeric(arg1 > 0)), xfail = 'math.*compiles.*'), ## FAILS on compileNimble(nfR) with Eigen error.
+  list(name = 'step of vector', expr = quote(out <- step(arg1)), inputDim = 1, outputDim = 1, Rcode = quote(out <- as.numeric(arg1 > 0)), xfail = '.*compiles.*'), ## FAILS on compileNimble(nfR) with Eigen error.
   list(name = 'cube of vector', expr = quote(out <- cube(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'cos of vector', expr = quote(out <- cos(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'acos of cos of vector', expr = quote(out <- acos(cos(arg1))), inputDim = 1, outputDim = 1),
@@ -52,7 +52,7 @@ testsBasicMath = list(
   list(name = 'tanh of vector', expr = quote(out <- tanh(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'acosh of vector', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'asinh of vector', expr = quote(out <- asinh(arg1)), inputDim = 1, outputDim = 1),
-  list(name = 'atanh of vector', expr = quote(out <- atanh(arg1%%1)), inputDim = 1, outputDim = 1, xfail = 'math.*compiles.*'), ## FAILS - issue here is probably that modulo on vecs doesn't work but need to restrict domain for atanh
+  list(name = 'atanh of vector', expr = quote(out <- atanh(arg1%%1)), inputDim = 1, outputDim = 1, xfail = 'math.*compiles.*|tensorflow.*runs'), ## FAILS - issue here is probably that modulo on vecs doesn't work but need to restrict domain for atanh
   ###
   list(name = 'scalar + scalar', expr = quote(out <- arg1 + arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'diff of scalars', expr = quote(out <- arg1 - arg2), inputDim = c(0,0), outputDim = 0),
@@ -62,7 +62,7 @@ testsBasicMath = list(
   list(name = 'power of scalars via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(0,0), outputDim = 0),
   list(name = 'power of scalars via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'power of scalars via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(0,0), outputDim = 0),
-  list(name = 'modulo of scalars', expr = quote(out <- arg1 %% arg2), inputDim = c(0,0), outputDim = 0),  # FLAKY
+  list(name = 'modulo of scalars', expr = quote(out <- arg1 %% arg2), inputDim = c(0,0), outputDim = 0),  ## FAILS probably due to misbehavior of negative values.
   list(name = 'min of scalars', expr = quote(out <- min(arg1, arg2)), inputDim = c(0,0), outputDim = 0),
   list(name = 'max of scalars', expr = quote(out <- max(arg1, arg2)), inputDim = c(0,0), outputDim = 0),
   ###
@@ -72,7 +72,7 @@ testsBasicMath = list(
   list(name = 'ratio of vectors', expr = quote(out <- arg1 / arg2), inputDim = c(1,1), outputDim = 1),
   list(name = 'power of vectors via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles.*'), ## FAILS with Eigen casting
   list(name = 'power of vectors via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles.*'), ## FAILS with Eigen casting
-  list(name = 'modulo of vectors', expr = quote(out <- arg1 %% arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*runs'), ## FAILS with Eigen casting
+  list(name = 'modulo of vectors', expr = quote(out <- arg1 %% arg2), inputDim = c(1,1), outputDim = 1, xfail = '.*runs'), ## FAILS with Eigen casting
   list(name = 'pmin of vectors', expr = quote(out <- pmin(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
   list(name = 'pmax of vectors', expr = quote(out <- pmax(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
   ###
@@ -86,7 +86,7 @@ testsBasicMath = list(
   list(name = 'power of vector and constant via pow', expr = quote(out <- pow(arg1, 2)), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and scalar via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and scalar via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(1,0), outputDim = 1),
-  list(name = 'modulo of vector and scalar', expr = quote(out <- arg1 %% arg2), inputDim = c(1,0), outputDim = 1, xfail = 'math.*runs') ## FAILS with Eigen casting
+  list(name = 'modulo of vector and scalar', expr = quote(out <- arg1 %% arg2), inputDim = c(1,0), outputDim = 1, xfail = '.*runs') ## FAILS with Eigen casting
   )
 
 testsMoreMath = list(
@@ -118,7 +118,7 @@ testsMoreMath = list(
   list(name = 'logit/expit of vector', expr = quote(out <- logit(expit(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'inverse probit of vector', expr = quote(out <- iprobit(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'inverse probit of vector via phi', expr = quote(out <- phi(arg1)), inputDim = 1, outputDim = 1),
-  list(name = 'probit/iprobit of vector', expr = quote(out <- probit(iprobit(arg1))), inputDim = 1, outputDim = 1),
+  list(name = 'probit/iprobit of vector', expr = quote(out <- probit(iprobit(arg1))), inputDim = 1, outputDim = 1, xfail = 'tensorflow.*runs'),
   ###
   list(name = 'ceiling of vector', expr = quote(out <- ceiling(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'floor of vector', expr = quote(out <- floor(arg1)), inputDim = 1, outputDim = 1),
@@ -136,22 +136,22 @@ testsMoreMath = list(
 testsReduction = list(
   ### vector
   list(name = 'min of vector', expr = quote(out <- min(arg1)), inputDim = 1, outputDim = 0),
-  list(name = 'max of vector', expr = quote(out <- min(arg1)), inputDim = 1, outputDim = 0),
-  list(name = 'sum of vector', expr = quote(out <- min(arg1)), inputDim = 1, outputDim = 0),
-  list(name = 'mean of vector', expr = quote(out <- min(arg1)), inputDim = 1, outputDim = 0),
-  list(name = 'sd of vector', expr = quote(out <- min(arg1)), inputDim = 1, outputDim = 0),
-  list(name = 'var of vector', expr = quote(out <- min(arg1)), inputDim = 1, outputDim = 0),
-  list(name = 'prod of vector', expr = quote(out <- min(arg1)), inputDim = 1, outputDim = 0),
-  list(name = 'norm of vector', expr = quote(out <- norm(arg1)), inputDim = 1, outputDim = 0, xfail = 'math.*runs'),  ## norm doesn't work on vector in R
+  list(name = 'max of vector', expr = quote(out <- max(arg1)), inputDim = 1, outputDim = 0),
+  list(name = 'sum of vector', expr = quote(out <- sum(arg1)), inputDim = 1, outputDim = 0),
+  list(name = 'mean of vector', expr = quote(out <- mean(arg1)), inputDim = 1, outputDim = 0),
+  list(name = 'sd of vector', expr = quote(out <- sd(arg1)), inputDim = 1, outputDim = 0),
+  list(name = 'var of vector', expr = quote(out <- var(arg1)), inputDim = 1, outputDim = 0),
+  list(name = 'prod of vector', expr = quote(out <- prod(arg1)), inputDim = 1, outputDim = 0),
+  list(name = 'norm of vector', expr = quote(out <- norm(arg1)), inputDim = 1, outputDim = 0, xfail = '.*runs'),  ## norm doesn't work on vector in R
   ### matrix
   list(name = 'min of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'max of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'sum of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'mean of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'sd of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'var of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'prod of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), xfail = 'math.*runs') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions differ => FAILS
+  list(name = 'max of matrix', expr = quote(out <- max(arg1)), inputDim = 2, outputDim = 0),
+  list(name = 'sum of matrix', expr = quote(out <- sum(arg1)), inputDim = 2, outputDim = 0),
+  list(name = 'mean of matrix', expr = quote(out <- mean(arg1)), inputDim = 2, outputDim = 0),
+  list(name = 'sd of matrix', expr = quote(out <- sd(arg1)), inputDim = 2, outputDim = 0),
+  list(name = 'var of matrix', expr = quote(out <- var(arg1)), inputDim = 2, outputDim = 0, xfail = '.*compiles.*'),  # Not supported
+  list(name = 'prod of matrix', expr = quote(out <- prod(arg1)), inputDim = 2, outputDim = 0),
+  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), xfail = '.*runs') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions differ => FAILS
   )
 
 testsComparison = list(
@@ -160,9 +160,9 @@ testsComparison = list(
   list(name = 'equals, scalar', expr = quote(out <- arg1 == arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'not equals, scalar', expr = quote(out <- arg1 != arg2), inputDim = c(0,0), outputDim = 0),
   ## vector
-  list(name = 'greater than, vector', expr = quote(out <- arg1 > arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*runs'), ## FAILS with Eigen issue
-  list(name = 'equals, vector', expr = quote(out <- arg1 == arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*runs'),  ## FAILS with Eigen issue
-  list(name = 'not equals, vector', expr = quote(out <- arg1 != arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*runs'),  ## FAILS with Eigen issue
+  list(name = 'greater than, vector', expr = quote(out <- arg1 > arg2), inputDim = c(1,1), outputDim = 1, xfail = '.*runs'), ## FAILS with Eigen issue
+  list(name = 'equals, vector', expr = quote(out <- arg1 == arg2), inputDim = c(1,1), outputDim = 1, xfail = '.*runs'),  ## FAILS with Eigen issue
+  list(name = 'not equals, vector', expr = quote(out <- arg1 != arg2), inputDim = c(1,1), outputDim = 1, xfail = '.*runs'),  ## FAILS with Eigen issue
   ## logical
   list(name = 'and operator, scalar', expr = quote(out <- arg1 & arg2), inputDim = c(0,0), outputDim = 0, logicalArgs = c(TRUE, TRUE)),
   list(name = 'or operator, scalar', expr = quote(out <- arg1 | arg2), inputDim = c(0,0), outputDim = 0, logicalArgs = c(TRUE, TRUE)),
@@ -171,24 +171,24 @@ testsComparison = list(
 
 
 testsMatrix = list(
-    list(name = 'forwardsolve matrix-vector', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1),
-    list(name = 'forwardsolve matrix-matrix', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2),
-    list(name = 'backsolve matrix-vector', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1),
-    list(name = 'backsolve matrix-matrix', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2),
+    list(name = 'forwardsolve matrix-vector', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1, xfail = 'tensorflow.*runs'),
+    list(name = 'forwardsolve matrix-matrix', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2, xfail = 'tensorflow.*Cpp'),
+    list(name = 'backsolve matrix-vector', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1, xfail = 'tensorflow.*runs'),
+    list(name = 'backsolve matrix-matrix', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2, xfail = 'tensorflow.*Cpp'),
 
-    list(name = 'forwardsolve matrix-vector with indices', expr = quote(out <- forwardsolve(arg1[1:2,1:2], arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
-    list(name = 'forwardsolve matrix-matrix with indices', expr = quote(out <- forwardsolve(arg1[1:2,1:2], arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
-    list(name = 'backsolve matrix-vector with indices', expr = quote(out <- backsolve(arg1[1:2,1:2], arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
-    list(name = 'backsolve matrix-matrix with indices', expr = quote(out <- backsolve(arg1[1:2,1:2], arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
+    list(name = 'forwardsolve matrix-vector with indices', expr = quote(out <- forwardsolve(arg1[1:2,1:2], arg2[1:2])), inputDim = c(2, 1), outputDim = 1, xfail = 'tensorflow.*runs'),
+    list(name = 'forwardsolve matrix-matrix with indices', expr = quote(out <- forwardsolve(arg1[1:2,1:2], arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2, xfail = 'tensorflow.*runs'),
+    list(name = 'backsolve matrix-vector with indices', expr = quote(out <- backsolve(arg1[1:2,1:2], arg2[1:2])), inputDim = c(2, 1), outputDim = 1, xfail = 'tensorflow.*runs'),
+    list(name = 'backsolve matrix-matrix with indices', expr = quote(out <- backsolve(arg1[1:2,1:2], arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2, xfail = 'tensorflow.*runs'),
 
-    list(name = 'forwardsolve matrix-vector amid expr', expr = quote(out <- arg2[1:2] + forwardsolve(arg1[1:2,1:2], arg2[1:2] + arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
-    list(name = 'forwardsolve matrix-matrix amid expr', expr = quote(out <- arg2[1:2,1:2] + forwardsolve(arg1[1:2,1:2], arg2[1:2,1:2] + arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
-    list(name = 'backsolve matrix-vector amid expr', expr = quote(out <- arg2[1:2] + backsolve(arg1[1:2,1:2], arg2[1:2] + arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
-    list(name = 'backsolve matrix-matrix amid expr', expr = quote(out <- arg2[1:2,1:2] + backsolve(arg1[1:2,1:2], arg2[1:2,1:2] + arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
+    list(name = 'forwardsolve matrix-vector amid expr', expr = quote(out <- arg2[1:2] + forwardsolve(arg1[1:2,1:2], arg2[1:2] + arg2[1:2])), inputDim = c(2, 1), outputDim = 1, xfail = 'tensorflow.*runs'),
+    list(name = 'forwardsolve matrix-matrix amid expr', expr = quote(out <- arg2[1:2,1:2] + forwardsolve(arg1[1:2,1:2], arg2[1:2,1:2] + arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2, xfail = 'tensorflow.*runs'),
+    list(name = 'backsolve matrix-vector amid expr', expr = quote(out <- arg2[1:2] + backsolve(arg1[1:2,1:2], arg2[1:2] + arg2[1:2])), inputDim = c(2, 1), outputDim = 1, xfail = 'tensorflow.*runs'),
+    list(name = 'backsolve matrix-matrix amid expr', expr = quote(out <- arg2[1:2,1:2] + backsolve(arg1[1:2,1:2], arg2[1:2,1:2] + arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2, xfail = 'tensorflow.*runs'),
 
     list(name = 'chol', expr = quote({ A <- arg1; for(i in 1:dim(A)[1]) A[i,i] <- A[i,i] + 10; out <- chol(A) }), inputDim = c(2), outputDim = 2),
     list(name = 'matrix-vector multiply', expr = quote(out <- arg1 %*% arg2), inputDim = c(2, 1), outputDim = 2),
-    list(name = 'vector-matrix multiply', expr = quote(out <- t(arg1) %*% arg2), inputDim = c(1, 2), outputDim = 2),
+    list(name = 'vector-matrix multiply', expr = quote(out <- t(arg1) %*% arg2), inputDim = c(1, 2), outputDim = 2, xfail = 'tensorflow.*runs'),
     list(name = 'matrix-matrix multiply', expr = quote(out <- arg1 %*% arg2), inputDim = c(2, 2), outputDim = 2)
 )
 
