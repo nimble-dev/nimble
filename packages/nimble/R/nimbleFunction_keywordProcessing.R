@@ -709,6 +709,47 @@ length_char_keywordInfo <- keywordInfoClass(
     })
 
 
+convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
+  browser()
+  if(deparse(wrtArgs[[1]]) == 'nimC'){ 
+    wrtArgs <- sapply(wrtArgs[-1], function(x){deparse(x)})
+  }
+  else{
+    wrtArgs <- deparse(wrtArgs)
+  }
+  wrtArgNames <- sapply(wrtArgs, function(x){strsplit(x, '\\[')[[1]][1]})
+  nimFxnArgNames <- names(nimFxnArgs)
+  wrtMatchArgs <- which(nimFxnArgNames %in% wrtArgNames)
+  argNameCheck <- wrtArgNames %in% nimFxnArgNames
+  if(any(argNameCheck != TRUE)) stop('Incorrect names passed to wrt argument of nimDerivs: ', fxnName, 
+                                     ' does not have arguments named: ', paste(wrtArgNames[!argNameCheck], collapse = ', ' ), '.')
+  doubleCheck <- sapply(wrtMatchArgs, function(x){return(deparse(nimFxnArgs[[x]][[1]]) == 'double')})
+  if(any(doubleCheck != TRUE)) stop('Derivatives of ', fxnName, ' being taken WRT an argument that does not have type double().')
+  wrtArgsDims <- sapply(nimFxnArgs, function(x){return(x[[2]])})
+  if(any(wrtArgsDims > 2)) stop('Derivatives cannot be taken WRT an argument with dimension > 2')
+  wrtArgsSizes <- sapply(nimFxnArgs, function(x){return(x[[length(x)]])})
+  
+  browser() 
+  
+}
+
+nimDerivs_keywordInfo <- keywordInfoClass(
+  keyword = 'nimDerivs',
+  processor = function(code, nfProc) {
+    wrtArgs <- code[['wrt']]
+    ## First check to see if nimFxn argument is a method.
+    if(!is.null(nfProc$origMethods[[deparse(code[[2]][[1]])]])){
+      derivMethod <- nfProc$origMethods[[deparse(code[[2]][[1]])]]
+      derivMethodArgs <- derivMethod$getArgInfo()
+      wrtArgIndices <- convertWrtArgToIndices(wrtArgs, derivMethodArgs, fxnName = deparse(code[[2]][[1]]))
+      
+      
+    }
+    return(code)
+  }
+)
+
+
 
 #	KeywordList
 keywordList <- new.env()
@@ -744,6 +785,8 @@ keywordList[['qexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
 keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
+
+keywordList[['nimDerivs']] <- nimDerivs_keywordInfo 
 
 keywordListModelMemberFuns <- new.env()
 keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo

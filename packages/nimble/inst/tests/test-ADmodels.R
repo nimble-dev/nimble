@@ -2,9 +2,6 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
 context("Testing of derivatives for calculate() for nimbleModels")
 
-
-
-
 test_that('R derivs of calculate function work for model ADMod1', {
   ADCode1 <- nimbleCode({
     x[1] ~ dnorm(0, 1)
