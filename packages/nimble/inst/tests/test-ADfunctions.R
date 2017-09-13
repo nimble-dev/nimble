@@ -61,8 +61,6 @@ test_that('Derivatives of x^2 function correctly.',
           }
 )
 
-
-
 test_that('Derivatives of sum(log(x)) function correctly.',
           {
             ADfun3 <- nimbleFunction(
