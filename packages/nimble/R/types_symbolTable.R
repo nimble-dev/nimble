@@ -726,6 +726,7 @@ symbolInternalType <-
                     })
                 )
 
+## Object for Tensorflow runner.
 symbolTensorflowRunner <-
     setRefClass(Class = "symbolTensorflowRunner",
                 contains = "symbolBase",
@@ -735,6 +736,20 @@ symbolTensorflowRunner <-
                     show = function() writeLines(paste('symbolTensorflowRunner ', name)),
                     genCppVar = function(functionArg = FALSE) {
                         cppVarFull(name = name, baseType = "NimTf_Runner", static = TRUE, ref = TRUE, constructor = constructor)
+                    }
+                )
+    )
+
+## Object for wrapping a Tensorflow runner in a CppAD op.
+symbolTensorflowOp <-
+    setRefClass(Class = "symbolTensorflowOp",
+                contains = "symbolBase",
+                fields = list(constructor = "ANY"),
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolTensorflowOp ', name)),
+                    genCppVar = function(functionArg = FALSE) {
+                        cppVarFull(name = name, baseType = "NimTf_Op", static = TRUE, ref = TRUE, constructor = constructor)
                     }
                 )
     )

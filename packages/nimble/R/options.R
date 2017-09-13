@@ -7,6 +7,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        stop_after_processing_model_code = FALSE,
+        enableModelMacros = FALSE,
         allowDynamicIndexing = FALSE,
         nimbleProjectForTesting = NULL,  ## only used by withTempProject and compileNimble in testing code.
         stopCompilationBeforeLinking = NULL,
@@ -165,3 +167,25 @@ nimbleOptions <- function(...) {
     return(out)
 }
 
+#' Temporarily set some NIMBLE options.
+#'
+#' @param options a list of options suitable for \code{nimbleOptions}.
+#' @param expr an expression or statement to evaluate.
+#' @return expr as evaluated with given options.
+#' @export
+#'
+#' @examples
+#' if (!(getNimbleOption('showCompilerOutput') == FALSE)) stop()
+#' nf <- nimbleFunction(run = function(){ return(0); returnType(double()) })
+#' cnf <- withNimbleOptions(list(showCompilerOutput = TRUE), {
+#'     if (!(getNimbleOption('showCompilerOutput') == TRUE)) stop()
+#'     compileNimble(nf)
+#' })
+#' if (!(getNimbleOption('showCompilerOutput') == FALSE)) stop()
+withNimbleOptions <- function(options, expr) {
+    old <- nimbleOptions()
+    cleanup <- substitute(do.call(nimbleOptions, old))
+    do.call(on.exit, list(cleanup, add = TRUE))
+    nimbleOptions(options)
+    return(expr)
+}

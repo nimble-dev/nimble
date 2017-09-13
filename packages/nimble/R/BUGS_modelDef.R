@@ -128,16 +128,23 @@ modelDefClass <- setRefClass('modelDefClass',
 ##     this takes place due to a single line, near the end of genReplacementsAndCodeRecurse() in nimbleBUGS_class_BUGSdeclClass.R
 ##     further, nameMashupFromExpr(expr) in nimbleBUGS_utils.R throws an error if expr contains a ':'
 ##
-## set v3 = FALSE to use old processing
 modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv, debug = FALSE) {
     if(debug) browser()
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
+    if(nimbleOptions("enableModelMacros")) code <- codeProcessModelMacros(code)
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
     assignDimensions(dimensions)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
     processBUGScode(userEnv = userEnv)                 ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID
+    if(nimbleOptions("stop_after_processing_model_code")) {
+        print(code)
+        stop(paste0('Stopped after processing model code because\n',
+                    'nimbleOptions("stop_after_processing_model_code") is TRUE\n'),
+             call.=FALSE)
+    }
+
     ## We will try to infer sizes later
     ##addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     splitConstantsAndData()           ## deals with case when data is passed in as constants
@@ -197,6 +204,91 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
             return(code)
     else
         return(code)
+}
+
+## This function recurses through a block of code and expands any submodels
+codeProcessModelMacros <- function(code,
+                                   recursionLabels = character()) {
+    expandRecursionLabels <- function(possibleMacroName,
+                                      labels = character()) {
+        paste0(possibleMacroName,
+               if(length(labels) > 0)
+                   paste0('(expanded from ',
+                          paste(labels, collapse = '-->'),
+                          ')')                          
+               else
+                   character()
+               )
+    }
+    codeLength <- length(code)
+    ## First check if this is the start of a curly-bracketed block
+    if(code[[1]] == '{') {
+        if(codeLength > 1)
+            ## Recurse on each line
+            for(i in 2:codeLength)
+                code[[i]] <- codeProcessModelMacros(code[[i]])
+        return(code)
+    }
+    ## If this is a for loop, recurse on the body of the loop
+    if(code[[1]] == 'for') {
+        code[[4]] <- codeProcessModelMacros(code[[4]])
+        return(code)
+    }
+    ## Check if this line invokes a submodel.
+    ## This can be done in two ways:
+    ## (i) node1 [<- | ~] <macro name>(...)
+    ## or
+    ## (ii) <macro name>(args)
+    ##
+    ## The first version is more BUGS-like.
+    ## The second version allows more full control.
+
+    ## Initialize possibleMacroName assuming version (ii):
+    possibleMacroName <- deparse(code[[1]])
+    ## If it is really version (i), possibleMacroName will be
+    ## ~ or <- and should be updated to the call on the right-hand side:
+    if(possibleMacroName %in% c('<-', '~')) {
+        possibleMacroName <- deparse(code[[3]][[1]])
+    }
+    if(exists(possibleMacroName)) { ## may need to provide an envir argument
+        possibleMacro <- get(possibleMacroName) ## ditto
+        if(inherits(possibleMacro, "model_macro")) {
+            expandedInfo <- try(possibleMacro$process(code))
+            if(inherits(expandedInfo, 'try-error'))
+                stop(paste0("Model macro ",
+                            expandRecursionLabels(
+                                possibleMacroName,
+                                recursionLabels
+                            ),
+                            " failed."),
+                     call. = FALSE)
+            if(!is.list(expandedInfo))
+                stop(paste0("Model macro ",
+                            expandRecursionLabels(
+                                possibleMacroName,
+                                recursionLabels
+                            ),
+                            " should return a list with an element named ",
+                            "'code'.  It did not return a list."),
+                     call. = FALSE)
+            if(!is.call(expandedInfo[['code']]))
+                stop(paste0("Model macro ",
+                            expandRecursionLabels(
+                                possibleMacroName,
+                                recursionLabels
+                            ),
+                            " should return a list with an element named ",
+                            "'code' that is a call."),
+                     call. = FALSE)
+            ## Return object is a list so we can ossibly extract other
+            ## content in the future.  We recurse on the returned code
+            ## to expand macros that it might contain.
+            code <- codeProcessModelMacros(expandedInfo$code,
+                                           c(recursionLabels, possibleMacroName)
+                                           )
+        }
+    }
+    code
 }
 
 modelDefClass$methods(setModelValuesClassName = function() {
@@ -293,15 +385,34 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         }
         if(code[[i]][[1]] == 'for') {        ## e.g. (for i in 1:N).  New context (for-loop info) needed
             indexVarExpr <- code[[i]][[2]]   ## This is the `i`
+            if(length(contexts) > 0) {
+                if(as.character(indexVarExpr) %in%
+                   contexts[[contextID]]$indexVarNames)
+                    stop(paste0(
+                        "Variable ",
+                        as.character(indexVarExpr),
+                        " used multiple times as for loop index in nested\n",
+                        "loops.\n",
+                        "If your model has macros or if-then-else blocks\n",
+                        "you can inspect the processed model code by doing\n",
+                        "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
+                        "before calling nimbleModel.\n"
+                    ),
+                    call. = FALSE)
+            }
             indexRangeExpr <- code[[i]][[3]] ## This is the `1:N`
-            if(nimbleOptions()$prioritizeColonLikeBUGS) indexRangeExpr <- reprioritizeColonOperator(indexRangeExpr)
+            if(nimbleOptions()$prioritizeColonLikeBUGS)
+                indexRangeExpr <- reprioritizeColonOperator(indexRangeExpr)
             nextContextID <- length(contexts) + 1
             forCode <- code[[i]][1:3]        ## This is the (for i in 1:N) without the code block
             forCode[[3]] <- indexRangeExpr
-            singleContexts <- c(if(contextID == 1) NULL else contexts[[contextID]]$singleContexts, ## concatenate any current contexts
-                                list(BUGSsingleContextClass$new(indexVarExpr = indexVarExpr,       ## Add the new context
-                                                                indexRangeExpr = indexRangeExpr,
-                                                                forCode = forCode)))
+            singleContexts <- c(
+                if(contextID == 1) NULL
+                else contexts[[contextID]]$singleContexts, ## concatenate any current contexts
+                list(BUGSsingleContextClass$new(indexVarExpr = indexVarExpr,       ## Add the new context
+                                                indexRangeExpr = indexRangeExpr,
+                                                forCode = forCode))
+            )
             BUGScontextClassObject <- BUGScontextClass$new()
             BUGScontextClassObject$setup(singleContexts = singleContexts)
             contexts[[nextContextID]] <<- BUGScontextClassObject
@@ -2138,8 +2249,14 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         
     }
     if(checkingTotModelSize != totModelSize) {
-        cat("Warning on totModelSize\n")
-        browser()
+        stop(paste0("Something is inconsistent in the model.\n",
+                    "Check for conflicting declarations.\n",
+                    "If your model has macros or if-then-else blocks\n",
+                    "you can inspect the processed model code by doing\n",
+                    "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
+                    "before calling nimbleModel.\n"
+                    ),
+             call. = FALSE)
     }
 
     ## set up the vars2graphID_functions_and_RHSonly 
@@ -2168,7 +2285,19 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$nodeNamesLHSall <<- nodeNamesLHSall
     maps$nodeNamesRHSonly <<- maps$graphID_2_nodeName[maps$types == 'RHSonly'] ##nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
-    if(any(duplicated(maps$nodeNames))) stop(paste0("Error building model, there are multiple definitions for nodes:", paste(maps$nodeNames[duplicated(maps$nodeNames)], collapse = ',')))
+    
+    if(any(duplicated(maps$nodeNames))) {
+        stop(
+            paste0("There are multiple definitions for nodes:",
+                   paste(maps$nodeNames[duplicated(maps$nodeNames)],
+                         collapse = ','), "\n",
+                   "If your model has macros or if-then-else blocks\n",
+                   "you can inspect the processed model code by doing\n",
+                   "nimbleOptions(stop_after_processing_model_code = TRUE)\n",
+                   "before calling nimbleModel.\n"
+                   ),
+            call. = FALSE)
+    }
     if(debug) browser()
     
     newVertexID_2_nodeID <- vertexID_2_nodeID [ newGraphID_2_oldGraphID ]

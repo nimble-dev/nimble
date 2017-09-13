@@ -71,12 +71,19 @@ TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
     ## static pointer.  But the cppVarFull::generate takes constructor as simple text
     ## and does not recursively generate constructor for exprClasses.  Hence
     ## for a first step now we will just paste together the constructor code
-    TFconstructor <- TfBuilder$generateConstructor()
+    TFconstructor <- TfBuilder$generateConstructor(code$cppADCode)
     TFrunnerName <- TFrunnerLabelGenerator()
-    TFrunnerSym <-
-        symbolTensorflowRunner(name = TFrunnerName,
+    if (code$cppADCode) {
+        TFrunnerSym <-
+            symbolTensorflowOp(name = TFrunnerName,
                                constructor = TFconstructor,
-                               type = "symbolTensorflowRunner")
+                               type = "symbolTensorflowOp")
+    } else {
+        TFrunnerSym <-
+            symbolTensorflowRunner(name = TFrunnerName,
+                                   constructor = TFconstructor,
+                                   type = "symbolTensorflowRunner")
+    }
     symTab$addSymbol(TFrunnerSym)
     TFsetupExprs <- makeTFsetupExprs(TfBuilder, TFrunnerName)
     ## Convert original code line to a comment.
@@ -114,6 +121,7 @@ makeTFsetupExprs <- function(TfBuilder, TFrunnerName) {
 }
 
 ## Recursively collects all names in an exprClass and create tf$placeholders for each.
+## Returns an environment mapping placeholder names to tensorflow tensors.
 TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
     if (is.null(placeholders)) {
         placeholders = new.env()
@@ -122,17 +130,24 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
         if (is.null(placeholders[[code$name]])) {
             nimType2TfDtype = list('double' = tf$float64)
             sym <- symTab$getSymbolObject(code$name)
-            dtype <- nimType2TfDtype[[sym$type]]
-            if (class(sym$size) == 'uninitializedField') {
-                size <- as.list(rep(NA, sym$nDim))
-                for (i in 1:sym$nDim) {
-                    size[i] <- list(NULL)
-                }
+            if (is.null(sym)) {
+                ## TODO this case may be unnecessar.
+                ## We make a best guess to push past a bug.
+                dtype <- tf$float64
+                size <- list()
             } else {
-                size <- as.list(rev(sym$size))  ## Note the transpose
-                for (i in 1:length(size)) {
-                    if (is.na(size[i])) {
+                dtype <- nimType2TfDtype[[sym$type]]
+                if (class(sym$size) == 'uninitializedField') {
+                    size <- as.list(rep(NA, sym$nDim))
+                    for (i in 1:sym$nDim) {
                         size[i] <- list(NULL)
+                    }
+                } else {
+                    size <- as.list(rev(sym$size))  ## Note the transpose
+                    for (i in 1:length(size)) {
+                        if (is.na(size[i])) {
+                            size[i] <- list(NULL)
+                        }
                     }
                 }
             }
@@ -256,6 +271,7 @@ tfTranslate <- function(name) {
             }
             tf$matmul(y, x)  ## Note the transpose.
         },
+        'chol' = tf$cholesky,
         'backsolve' = function(r, x) {
             ## TODO Decide whether to transpose.
             tf$matrix_triangular_solve(r, x, lower = TRUE)
@@ -263,13 +279,20 @@ tfTranslate <- function(name) {
         'forwardsolve' = function(l, x) {
             ## TODO Decide whether to transpose.
             tf$matrix_triangular_solve(l, x, lower = FALSE)
-        }
+        },
+        ## These may be unnecessary. They were added to push past a possible bug
+        ## in AD processing of tensorflow graphs.
+        'nimCd' = tf$stack,
+        'concatenateTemp' = function(x) x,
+        'eigenBlock' = function(x) x
     )
 
     return(.tfLazyData$tfTranslate[[name]])
 }
 
-TfTensorize <- function(code, placeholders) {
+## Translates code from exprClasses format to tensorflow graph format.
+## Returns a tensorflow Tensor that is the final result of the code.
+TfTensorizeExpr <- function(code, placeholders) {
     if (!is.environment(placeholders)) stop()
     if (class(code) == 'exprClass') {
         while (code$name == '(') {
@@ -280,7 +303,7 @@ TfTensorize <- function(code, placeholders) {
         }
         translated <- tfTranslate(code$name)
         if (!is.null(translated)) {
-            args <- lapply(code$args, TfTensorize, placeholders)
+            args <- lapply(code$args, TfTensorizeExpr, placeholders)
             return(do.call(translated, args))
         }
         stop(paste('Not implemented:', code$name))
@@ -297,6 +320,8 @@ TfTensorize <- function(code, placeholders) {
     stop(paste('Not implemented:', class(code)))
 }
 
+## Creates a TfBuilder object representing the given code.
+## Also computes gradients wrt each input, if possible.
 ## Setting threads=0 lets tensorflow choose the number of threads.
 exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     if (!require(tensorflow)) {
@@ -315,8 +340,30 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     ## Construct a tensorflow graph.
     tf$reset_default_graph()
     placeholders <- TfCollectPlaceholders(expr, symTab)
-    tensor <- TfTensorize(expr, placeholders)
+    tensor <- TfTensorizeExpr(expr, placeholders)
     tensor <- tf$identity(tensor, name = target$name)
+
+    ## Optionally add a gradient for each input arg.
+    ## Note that the gradients only make sense when the target tensor has size 1
+    ## (i.e. when it is either a scalar or a tensor with a single entry).
+    ## When the target has size greater than 1, then the gradients are wrt the
+    ## sum of all target entries. For details on tf.gradients, see
+    ## https://www.tensorflow.org/api_docs/python/tf/gradients
+    if (code$cppADCode) {
+        placeholders <- as.list(placeholders)
+        placeholderValues <- as.list(placeholders)
+        placeholderNames <- names(placeholderValues)
+        names(placeholderValues) <- NULL
+        gradients <- tf$gradients(tensor, placeholderValues)
+        if (length(gradients) != length(placeholderNames)) {
+            stop('programmer error')
+        }
+        for (i in seq_along(gradients)) {
+            ## This suffixed name is expected by include/nimble/tensorflow.hpp:
+            name <- paste0(placeholderNames[i], '_gradient')
+            tf$identity(gradients[i], name = name)
+        }
+    }
 
     ## Configure the tensorflow session.
     configProto <- tf$ConfigProto()
@@ -330,7 +377,8 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
 
     ## Serialize protos to strings.
     base64 <- reticulate::import('base64')
-    graph <- base64$b64encode(tensor$graph$as_graph_def()$SerializeToString())
+    graph <- tf$get_default_graph()
+    graph <- base64$b64encode(graph$as_graph_def()$SerializeToString())
     config <- base64$b64encode(configProto$SerializeToString())
 
     ## Create NimTf_Builder.
@@ -373,7 +421,7 @@ TfBuilder <- setRefClass(
         addOutputVar = function(name) {
             outputNames <<- append(outputNames, name)
         },
-        generateConstructor = function() {
+        generateConstructor = function(cppADCode) {
             ## Paste code, instead of creating a parse tree.
             ## Note that we have decided to use the static pointer trick to avoid
             ## crashes due to out-of-order destructors or unlinking. This
@@ -390,7 +438,7 @@ TfBuilder <- setRefClass(
                     paste0('.NimTf_withOutput("', outputNames, '")'),
                     collapse = "\n"
                 ),
-                '.NimTf_build()',
+                if (cppADCode) '.NimTf_op()' else '.NimTf_runner()',
                 sep = "\n"
             )
         }
