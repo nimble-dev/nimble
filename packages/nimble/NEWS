@@ -3,6 +3,8 @@ USER LEVEL CHANGES
 
 -- Improved efficiency of MCMC conjugate samplers.
 
+-- Added dcat-ddirch conjugacy.
+
 BUG FIXES
 
 -- Fixed MCMC autoBlocking procedure, to work with new sampler default values system.
