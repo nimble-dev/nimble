@@ -1,3 +1,4 @@
+[1] FALSE
 Detected rc,rt as data within 'constants'.
 Adding rc,rt as data for building model.
 ===== Starting MCMC test for blocker. =====
