@@ -1445,7 +1445,7 @@ makeMapAccessExpr <- function(newName, newNameExpr, nDim) { ## newNameExpr not u
 
 determineNdimFromOneCase <- function(model, varAndIndices) {
     varInfo <- try(model$getVarInfo(as.character(varAndIndices$varName)))
-    if(inherits(varInfo, 'try-error')) browser()
+    if(inherits(varInfo, 'try-error')) stop(paste0('In determineNdimFromOneCase: error in extracting varInfo for ', varAndIndices$varName))
     varNdim <- varInfo$nDim
     if(length(varAndIndices$indices) == 0) return(varNdim)
     if(length(varAndIndices$indices) != varNdim) {

@@ -331,7 +331,7 @@ ndf_generateGetParamFunction <- function(expr, type, nDim) {
         },
         list(TYPE=as.name(type), NDIM=nDim, PARAMEXPR=expr)
     )))
-    if(inherits(ans, 'try-error')) browser()
+    if(inherits(ans, 'try-error')) stop('In ndf_generateGetParamFunction.')
     ans
 }
 

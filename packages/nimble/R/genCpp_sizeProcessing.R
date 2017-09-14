@@ -1097,7 +1097,6 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     nfProc <- if(isSymFunc) symbolObject$nfProc else symbolObject$nlProc
     
     if(is.null(nfProc)) {
-         browser()
         stop(exprClassProcessingErrorMsg(code, 'In handling X$Y: Symbols for X have not been set up.'), call. = FALSE)
     }
     memberName <- code$args[[2]]
@@ -1708,7 +1707,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     test <- try(if(inherits(RHStype, 'uninitializedField') | length(RHStype)==0) {
         stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '",RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
     })
-    if(inherits(test, 'try-error')) browser()
+    if(inherits(test, 'try-error')) stop('"In sizeAssignAfterRecursing: Problem with RHStype.')
     if(LHS$isName) {
         if(!exists(LHS$name, envir = typeEnv, inherits = FALSE)) { ## not in typeEnv
             ## If LHS unknown, create it in typeEnv
@@ -1766,8 +1765,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             if(length(LHS$nDim) == 0) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: nDim for LHS not set.')), call. = FALSE)
             if(length(RHSnDim) == 0) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: nDim for RHS not set.')), call. = FALSE)
             if(LHS$nDim != RHSnDim) {
-                message(paste0('Warning, mismatched dimensions in assignment: ', nimDeparse(code), '. Going to browser(). Press Q to exit'), call. = FALSE )
-                browser()
+                stop(paste0('Warning, mismatched dimensions in assignment: ', nimDeparse(code), '.'), call. = FALSE )
             }
             ## and warn if type issue e.g. int <- double
             if(assignmentTypeWarn(LHS$type, RHStype)) {
@@ -1827,7 +1825,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                     assert <- substitute(setSize(LHS), list(LHS = nimbleGeneralParseDeparse(LHS)))
                     for(i in seq_along(RHSsizeExprs)) {
                         test <- try(assert[[i + 2]] <- RHS$sizeExprs[[i]])
-                        if(inherits(test, 'try-error')) browser()
+                        if(inherits(test, 'try-error')) stop(paste0('In sizeAssignAfterRecursing: Error in assert[[i + 2]] <- RHS$sizeExprs[[i]] for i = ', i))
                     }
                     assert[[ length(assert) + 1]] <- 0 ## copyValues = false
                     assert[[ length(assert) + 1]] <- 0 ## fillZeros  = false
@@ -3012,8 +3010,8 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
     }
     
     ## Choose the output type by type promotion
-    if(length(a1type) == 0) {warning('Problem with type of arg1 in sizeBinaryCwise', call. = FALSE); browser()}
-    if(length(a2type) == 0) {warning('Problem with type of arg2 in sizeBinaryCwise', call. = FALSE); browser()}
+    if(length(a1type) == 0) {stop('Problem with type of arg1 in sizeBinaryCwise', call. = FALSE)}
+    if(length(a2type) == 0) {stop('Problem with type of arg2 in sizeBinaryCwise', call. = FALSE)}
     code$type <- setReturnType(code$name, arithmeticOutputType(a1type, a2type))
 
     if(!nimbleOptions('experimentalNewSizeProcessing') ) {

@@ -232,7 +232,7 @@ symbolTable2cppVars <- function(symTab, arguments = character(), include, parent
         inputArg <- s %in% arguments
         sObj <- symTab$getSymbolObject(s)
         if(inherits(sObj$type, 'uninitializedField')) stop(paste('Error in symbolTable2cppVars for ', symTab, '. type field is not set.'))
-        if(length(sObj$type == 'Ronly') == 0) browser()
+        if(length(sObj$type == 'Ronly') == 0) stop(paste('Error in symbolTable2cppVars for ', symTab, ',  length(sObj$type == "Ronly") == 0'))
         if(sObj$type == 'Ronly') next
         newSymOrList <- symTab$getSymbolObject(s)$genCppVar(inputArg)
         if(is.list(newSymOrList)) {
