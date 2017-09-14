@@ -710,9 +710,8 @@ length_char_keywordInfo <- keywordInfoClass(
 
 
 convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
-  browser()
   if(deparse(wrtArgs[[1]]) == 'nimC'){ 
-    wrtArgs <- sapply(wrtArgs[-1], function(x){deparse(x)})
+    wrtArgs <- sapply(wrtArgs[-1], function(x){as.character(x)})
   }
   else{
     wrtArgs <- deparse(wrtArgs)
@@ -725,9 +724,20 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
                                      ' does not have arguments named: ', paste(wrtArgNames[!argNameCheck], collapse = ', ' ), '.')
   doubleCheck <- sapply(wrtMatchArgs, function(x){return(deparse(nimFxnArgs[[x]][[1]]) == 'double')})
   if(any(doubleCheck != TRUE)) stop('Derivatives of ', fxnName, ' being taken WRT an argument that does not have type double().')
-  wrtArgsDims <- sapply(nimFxnArgs, function(x){return(x[[2]])})
+  fxnArgsDims <- sapply(nimFxnArgs, function(x){return(x[[2]])})
   if(any(wrtArgsDims > 2)) stop('Derivatives cannot be taken WRT an argument with dimension > 2')
-  wrtArgsSizes <- sapply(nimFxnArgs, function(x){return(x[[length(x)]])})
+  fxnArgsSizes <- sapply(nimFxnArgs, function(x){return(x[[length(x)]])})
+  browser()
+  ### need to deal with matrix and dim 0 cases for line below to work.
+  wrtIndexVector <- cumsum(fxnArgsSizes)
+  for(i in seq_along(length(wrtArgNames))){
+    if(wrtArgsDims[i] == 0){
+      
+    }
+    
+  }
+  wrtArgsIndices <- sub('\\]', '', sub('^[a-z]*\\[', '', wrtArgs))
+  #do column major for now.
   
   browser() 
   
