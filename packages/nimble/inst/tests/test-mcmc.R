@@ -471,6 +471,40 @@ test_that('Dirichlet-multinomial with replication setup', {
 # p's and alphas.  cross-level sampler would probably work well here,
 # or, of course, integrating over the p's
 
+test_that('Dirichlet-categorical conjugacy setup', {
+### Dirichlet-categorical conjugacy
+
+# single multinomial represented as categorical
+    set.seed(0)
+    n <- 100
+    alpha <- c(10, 30, 15, 60, 1)
+    K <- length(alpha)
+    p <- c(.12, .24, .09, .54, .01)
+    y <- rmulti(1, n, p)
+    y <- rep(seq_along(y), times = y)
+    
+    code <- function() {
+        for(i in 1:n)
+          y[i] ~ dcat(p[1:K])
+        p[1:K] ~ ddirch(alpha[1:K])
+        for(i in 1:K) {
+            alpha[i] ~ dgamma(.001, .001);
+        }
+    }
+    
+    inits <- list(p = rep(1/K, K), alpha = rep(K, K))
+    data <- list(n = n, K = K, y = y)
+    
+    test_mcmc(model = code, name = 'Dirichlet-categorical example', data= data, seed = 0, numItsC = 10000,
+              inits = inits,
+              results = list(mean = list(p = p)),
+              resultsTolerance = list(mean = list(p = rep(.06, K))))
+})
+
+## also note that MCMC results here should be identical to those from
+## Dirichlet-multinomial case two tests up from this
+
+
 ### block sampler on MVN node
 test_that('block sampler on MVN node setup', {
     code <- nimbleCode({
@@ -1176,7 +1210,6 @@ test_that('dcar_normal sampling', {
 
 
 
-
 ## testing dcar_proper sampling
 test_that('dcar_proper sampling', {
     cat('===== Starting MCMC test dcar_proper sampling. =====')
@@ -1240,7 +1273,33 @@ test_that('dcar_proper sampling', {
 })
 
 
+## testing dmnorm-dnorm conjugacies we don't detect
 
+test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
+    code = nimbleCode({
+        y[1:3] ~ dmnorm(mu[1:3], pr[1:3,1:3])
+        for(i in 1:3)
+            mu[i] ~ dnorm(0,1)
+        pr[1:3,1:3] ~ dwish(pr0[1:3,1:3], 5)
+    })
+    m = nimbleModel(code, inits = list(pr0 = diag(3), pr = diag(3)))
+    conf <- configureMCMC(m)
+    expect_failure(expect_match(conf$getSamplers()[[1]]$name, "conjugate_dmnorm_dnorm",
+         info = "failed to detect dmnorm-dnorm conjugacy"),
+         info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dmnorm dependents of dnorm target")
+
+    code = nimbleCode({
+        for(i in 1:3)
+            y[i] ~ dnorm(mu[i], var = s0)
+        mu[1:3] ~ dmnorm(z[1:3],pr[1:3,1:3])
+        s0 ~ dinvgamma(1,1)
+    })
+    m = nimbleModel(code, inits = list(z = rep(0,3), pr = diag(3)))
+    conf <- configureMCMC(m)
+    expect_failure(expect_match(conf$getSamplers()[[2]]$name, "conjugate_dnorm_dmnorm",
+         info = "failed to detect dmnorm-dnorm conjugacy"),
+         info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dnorm dependents of dmnorm target")
+})
 
 sink(NULL)
 

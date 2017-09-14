@@ -257,7 +257,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             ## have generate...Definition take arg about whether to do screen
             conjSamplerName <- createDynamicConjugateSamplerName(prior = prior, dependentCounts = dependentCounts)
             if(!dynamicConjugateSamplerExists(conjSamplerName)) {
-                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts, doDependentScreen = nimbleOptions()$allowDynamicIndexing)  
+                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts, doDependentScreen = nimbleOptions()$allowDynamicIndexing)
                 dynamicConjugateSamplerAdd(conjSamplerName, conjSamplerDef)
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)

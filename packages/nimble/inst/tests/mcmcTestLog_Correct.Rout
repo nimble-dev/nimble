@@ -2987,6 +2987,21 @@ mean  0.0048167722 0.0084871386 0.0047730482 5.044441e-03
 sd    0.0041260200 0.0060139798 0.0043107456 4.494168e-03
 2.5%  0.0001218686 0.0009599834 0.0001301124 8.902263e-05
 97.5% 0.0143488420 0.0240560038 0.0167183640 1.667511e-02
+Detected y as data within 'constants'.
+Adding y as data for building model.
+===== Starting MCMC test for Dirichlet-categorical example. =====
+done compiling model
+         alpha[1]    alpha[2]    alpha[3]   alpha[4]    alpha[5]       p[1]
+mean   73.1833335  82.8578426  34.7006903 253.788794  3.68488449 0.15982695
+sd     89.1620109  89.0242760  38.1799568 281.875886  5.39850170 0.03875476
+2.5%    0.3524094   0.8039422   0.1489933   1.129657  0.05990753 0.09200081
+97.5% 342.3735806 302.3054144 133.9084216 969.581260 20.68241196 0.24335288
+            p[2]       p[3]       p[4]         p[5]
+mean  0.19483345 0.08080790 0.55437040 0.0101613031
+sd    0.03969248 0.02640541 0.05141185 0.0091993590
+2.5%  0.12479234 0.03759108 0.45524779 0.0005262836
+97.5% 0.27806439 0.13872150 0.66350833 0.0355919787
+===== Finished MCMC test for Dirichlet-categorical example. =====
 Adding Q as data for building model.
 ===== Starting MCMC test for block sampler on multivariate node. =====
 done compiling model
