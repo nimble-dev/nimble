@@ -18,7 +18,7 @@ require(igraph, warn.conflicts = FALSE, quietly = TRUE)  # same question
 
 NIMBLE provides a variety of paths to creating and executing an MCMC algorithm, which differ greatly in their simplicity of use, and also in the options available and customizability.
 
-The most direct approach to invoking the MCMC engine is using the \cd{nimbleMCMC} function (Section \ref{sec:nimbleMCMC}).  This one-line call creates and executes and MCMC, and provides a wide range of options for controlling the MCMC: specifying monitors, burn-in, and thinning, running multiple MCMC chains with different initial values, and returning posterior samples, summary statistics, and/or WAIC values.  However, this approach is restricted to using NIMBLE's default MCMC algorithm; further customization of, for example, the specific samplers employed, is not possible.
+The most direct approach to invoking the MCMC engine is using the \cd{nimbleMCMC} function (Section \ref{sec:nimbleMCMC}).  This one-line call creates and executes an MCMC, and provides a wide range of options for controlling the MCMC: specifying monitors, burn-in, and thinning, running multiple MCMC chains with different initial values, and returning posterior samples, summary statistics, and/or WAIC values.  However, this approach is restricted to using NIMBLE's default MCMC algorithm; further customization of, for example, the specific samplers employed, is not possible.
 
 The lengthier and more customizable approach to invoking the MCMC engine on a particular NIMBLE model object involves the following steps:
 
@@ -107,7 +107,7 @@ Based on its arguments, \cd{nimbleMCMC} optionally returns any combination of:
 
 \begin{itemize}
 \item Posterior samples
-\item Posterior summary statistics'
+\item Posterior summary statistics
 \item WAIC values
 \end{itemize}
 
