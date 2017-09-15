@@ -43,6 +43,8 @@ nodeFunctionVector <-
         indexingInfo <-
             model$modelDef$graphIDs2indexedNodeInfo(temp_gids)
     }
+    ## Any modification to this list ordering needs to be updated in
+    ## populateNodeFxnVectorNew_copyFromRobject in accessorClasses.cpp
     structure(list(gids = gids,
                    indexingInfo = indexingInfo,
                    model = model),
