@@ -9,6 +9,8 @@ BUG FIXES
 
 -- Fixed MCMC autoBlocking procedure, to work with new sampler default values system.
 
+-- Fixed MCMC conjugacy system, detection of indexed node names vs. indexed expressions.
+
 
                            CHANGES IN VERSION 0.6-6 (July 2017)
 
