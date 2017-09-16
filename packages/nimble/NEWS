@@ -5,6 +5,8 @@ USER LEVEL CHANGES
 
 -- Added dcat-ddirch conjugacy.
 
+-- Addition of dcar_proper distributino, the proper Gaussian conditional autoregressive (CAR) distribution, and MCMC sampling support.
+
 BUG FIXES
 
 -- Fixed MCMC autoBlocking procedure, to work with new sampler default values system.
