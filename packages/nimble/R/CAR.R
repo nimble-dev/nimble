@@ -412,11 +412,11 @@ CAR_normal_evaluateDensity <- nimbleFunction(
         if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
     },
     run = function() {
+        if(island) return(0)
         priorMean <- getMean()
         priorSigma <- sqrt(1/getPrec())
         lp <- dnorm(model[[targetScalar]], priorMean, priorSigma, log = TRUE)
         returnType(double())
-        if(island) return(0)
         return(lp)
     },
     methods = list(
@@ -428,6 +428,7 @@ CAR_normal_evaluateDensity <- nimbleFunction(
             return(mean)
         },
         getPrec = function() {
+            if(island) return(0)
             prec <- model$getParam(targetDCAR, 'tau') * sumWeights
             returnType(double())
             return(prec)
@@ -448,6 +449,7 @@ CAR_proper_evaluateDensity <- nimbleFunction(
         island <- length(neighborNodes)==0
         numNeighbors <- length(neighborCs)                        ## fix length-1 neighborCs
         neighborCs <- array(neighborCs, c(1, numNeighbors))       ## fix length-1 neighborCs
+        if(Mi <= 0)                                              stop('something went wrong')
         if(length(targetDCAR) != 1)                              stop('something went wrong')
         if(model$getDistribution(targetDCAR) != 'dcar_proper')   stop('something went wrong')
         if(length(targetIndex) != 1)                             stop('something went wrong')
@@ -457,13 +459,12 @@ CAR_proper_evaluateDensity <- nimbleFunction(
         priorSigma <- sqrt(1/getPrec())
         lp <- dnorm(model[[targetScalar]], priorMean, priorSigma, log = TRUE)
         returnType(double())
-        if(island) return(0)
         return(lp)
     },
     methods = list(
         getMean = function() {
-            if(island) return(0)
             mu <- model$getParam(targetDCAR, 'mu')[targetIndex]
+            if(island) return(mu)
             gamma <- model$getParam(targetDCAR, 'gamma')
             neighborValues <- values(model, neighborNodes)
             mean <- mu + gamma * sum(neighborCs[1,1:numNeighbors] * (neighborValues - mu))

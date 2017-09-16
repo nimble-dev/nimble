@@ -1400,8 +1400,6 @@ CAR_scalar_postPred <- nimbleFunction(
     setup = function(model, mvSaved, targetScalar, neighborNodes, neighborWeights, Mi, proper) {
         ## node list generation
         calcNodes <- c(targetScalar, model$getDependencies(targetScalar, self = FALSE))
-        ## numeric value generation
-        island <- length(neighborNodes)==0
         ## nested function and function list definitions
         dcarList <- nimbleFunctionList(CAR_evaluateDensity_base)
         if(proper) { dcarList[[1]] <- CAR_proper_evaluateDensity(model, targetScalar, neighborNodes, neighborWeights, Mi)
@@ -1417,8 +1415,9 @@ CAR_scalar_postPred <- nimbleFunction(
             model$calculate(calcNodes)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         }
-        if(island) return()
-        newValue <- rnorm(1, mean = dcarList[[1]]$getMean(), sd = sqrt(1/dcarList[[1]]$getPrec()))
+        priorPrec <- dcarList[[1]]$getPrec()
+        if(priorPrec == 0) return()    ## dcar_normal component with zero neighbors has prec = 0
+        newValue <- rnorm(1, mean = dcarList[[1]]$getMean(), sd = sqrt(1/priorPrec))
         model[[targetScalar]] <<- newValue
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
