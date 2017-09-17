@@ -1243,12 +1243,10 @@ test_that('dcar_proper sampling', {
     Rmodel <- nimbleModel(code, constants, data, inits)
     Cmodel <- compileNimble(Rmodel)
     
-    expect_equal(calculate(Rmodel), -557.7978,
-                 tol = 1E-5,
+    expect_equal(calculate(Rmodel), -557.7978, tol = 1E-5,
                  info = 'calculate for dcar_proper()')
     
-    expect_equal(calculate(Cmodel), -557.7978,
-                 tol = 1E-5,
+    expect_equal(calculate(Cmodel), -557.7978, tol = 1E-5,
                  info = 'calculate for dcar_proper(), compiled')
     
     Q <- tau * diag(1/M) %*% (diag(4) - gamma*CAR_calcCmatrix(C, adj, num))
@@ -1259,6 +1257,16 @@ test_that('dcar_proper sampling', {
     
     expect_equal(calculate(Cmodel, 'x[1:4]'), lp,
                  info = 'C density evaluation for dcar_proper()')
+
+    set.seed(0); xnew <- rmnorm_chol(n = 1, mu, chol = chol(Q), prec_param = TRUE)
+    set.seed(0); simulate(Rmodel, 'x[1:4]')
+    set.seed(0); simulate(Cmodel, 'x[1:4]')
+    
+    expect_equal(xnew, Rmodel$x, info = 'R dcar_proper() simulate function')
+    expect_equal(xnew, Cmodel$x, info = 'R dcar_proper() simulate function')
+    
+    Rmodel$x <- x
+    Cmodel$x <- x
     
     conf <- configureMCMC(Rmodel)
     conf$addMonitors('x')
