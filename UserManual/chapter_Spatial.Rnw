@@ -26,7 +26,7 @@ as well as specialized MCMC samplers for these distributions.
 
 The intrinsic Gaussian conditional autoregressive (ICAR) model for
 spatially-dependent regions is implemented in NIMBLE as the \cd{dcar\_normal}
-distribution.
+distribution. Addition details of using this distribution are available using \cd{help(CAR-Normal)}.
 
 ICAR models are improper priors for random fields (e.g., temporal or spatial processes). The prior is a joint prior across a collection of latent process values. For more technical details on CAR models, including higher-order CAR models, please see \citep{Rue_Held_2005}, \citep{Banerjee_etal_2015}, and \citep{Paciorek_2009}. Since the distribution is improper it should not be used as the distribution for data values, but rather to specify a prior for an unknown process. As discussed in the references above, the distribution can be seen to be a proper density in a reduced dimension subspace; thus the impropriety only holds on one or more linear combinations of the latent process values. 
 
@@ -120,7 +120,7 @@ See chapter \ref{cha:mcmc} for information about NIMBLE's MCMC engine, and secti
 
 The proper Gaussian conditional autoregressive model for
 spatially-dependent regions is implemented in NIMBLE as the \cd{dcar\_proper}
-distribution.
+distribution.  Addition details of using this distribution are available using \cd{help(CAR-Proper)}.
 
 
 

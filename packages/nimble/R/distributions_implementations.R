@@ -836,7 +836,7 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.  If omitted, all weights are taken to be one.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
 #' @param tau scalar precision of the Gaussian CAR prior.
-#' @param c integer number of constraints to impose on the improper density function.  If omitted, \code{c} is calculated as the number of disjoint groups of spatial locations in the adjacency structure. Note that \code{c} should be equal to the number of eigenvalues of the precision matrix that are zero. For example if the neighborhood structure is based on a second-order Markov random field in one dimension has two zero eigenvalue and in two dimensinos has three zero eigenvalues. See Rue and Held (2005) for more information.
+#' @param c integer number of constraints to impose on the improper density function.  If omitted, \code{c} is calculated as the number of disjoint groups of spatial locations in the adjacency structure. Note that \code{c} should be equal to the number of eigenvalues of the precision matrix that are zero. For example if the neighborhood structure is based on a second-order Markov random field in one dimension has two zero eigenvalue and in two dimensions has three zero eigenvalues. See Rue and Held (2005) for more information.
 #' @param zero_mean integer specifying whether to set the mean of all locations to zero during MCMC sampling of a node specified with this distribution in BUGS code (default \code{0}). This argument is used only in BUGS model code when specifying models in NIMBLE. If \code{0}, the overall process mean is included implicitly in the value of each location in a BUGS model; if \code{1}, then during MCMC sampling, the mean of all locations is set to zero at each MCMC iteration, and a separate intercept term should be included in the BUGS model. Note that centering during MCMC as implemented in NIMBLE follows the ad hoc approach of \pkg{WinBUGS} and does not sample under the constraint that the mean is zero as discussed on p. 36 of Rue and Held (2005).  See details.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #'
@@ -855,7 +855,7 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #'
 #' Rue, H. and L. Held (2005). \emph{Gaussian Markov Random Fields}, Chapman and Hall/CRC.
 #' 
-#' @seealso \link{Distributions} for other standard distributions
+#' @seealso \link{CAR-Proper}, \link{Distributions} for other standard distributions
 #' 
 #' @examples
 #' x <- c(1, 3, 3, 4)
@@ -918,14 +918,14 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #'
 #' @param x vector of values.
 #' @param mu vector of means of each spatial location.
-#' @param C vector of the same length as adj, giving the weights associated with each pair of neighboring locations.  See details.
-#' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param C vector of the same length as \code{adj}, giving the weights associated with each pair of neighboring locations.  See details.
+#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the number of locations.
-#' @param M vector giving the diagnoal elements of the conditional variance matrix, with length equal to the number of locations.  See details.
+#' @param M vector giving the diagonal elements of the conditional variance matrix, with length equal to the number of locations.  See details.
 #' @param tau scalar precision of the Gaussian CAR prior.
 #' @param gamma scalar representing the overall degree of spatial dependence.  See details.
-#' @param evs vector of eigen values of the adjacency matrix implied by C, adj, and num.  This parameter should not be provided; it will always be calculated using the adjacency parameters.
-#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @param evs vector of eigen values of the adjacency matrix implied by \code{C}, \code{adj}, and \code{num}.  This parameter should not be provided; it will always be calculated using the adjacency parameters.
+#' @param log logical; if \code{TRUE}, probability density is returned on the log scale.
 #'
 #' @author Daniel Turek
 #'
@@ -933,13 +933,13 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #'
 #' @details
 #'
-#' The C and M parameters must jointly satisfy a symmetry constraint: that M^-1 %*% C is symmetric, where M is a diagonal matrix and C is the weight matrix.  A vector C that satisfies this constraint can be generated using the function CAR_calcC(adj, num, M).
+#' The \code{C} and \code{M} parameters must jointly satisfy a symmetry constraint: that \code{M^-1 %*% C} is symmetric, where \code{M} is a diagonal matrix and \code{C} is the weight matrix.  A vector \code{C} that satisfies this constraint can be generated using the function \code{CAR_calcC(adj, num, M)}.
 #'
-#' The value of gamma is constrained to lie withing the inverse minimum and maximum eigenvalues of M^(-0.5) %*% C %*% M^(0.5), where M is a diagonal matrix and C is the weight matrix.  These bounds can be calculated using the deterministic functions CAR_calcMinBound(C, adj, num, M) and CAR_calcMaxBound(C, adj, num, M), or simultaneously using CAR_calcBounds(C, adj, num, M).
+#' The value of \code{gamma} is constrained to lie within the inverse minimum and maximum eigenvalues of \code{M^(-0.5) %*% C %*% M^(0.5)}, where \code{M} is a diagonal matrix and \code{C} is the weight matrix.  These bounds can be calculated using the deterministic functions \code{CAR_calcMinBound(C, adj, num, M)} and \code{CAR_calcMaxBound(C, adj, num, M)}, or simultaneously using \code{CAR_calcBounds(C, adj, num, M)}.
 #'
 #' @return \code{dcar_proper} gives the density, and \code{rcar_proper} generates random deviates.
 #' @references Banerjee, S., Carlin, B.P., and Gelfand, E.G. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
-#' @seealso \link{Distributions} for other standard distributions
+#' @seealso \link{CAR-Normal}, \link{Distributions} for other standard distributions
 #'
 #' @examples
 #' x <- c(1, 3, 3, 4)
