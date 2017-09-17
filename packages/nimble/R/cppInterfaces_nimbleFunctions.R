@@ -1194,6 +1194,8 @@ CmultiNimbleObjClass <- setRefClass('CmultiNimbleObjClass',
                                                   finalizationPtrList = 'ANY',
                                                   cppNames = 'ANY',
                                                   cppCopyTypes = 'ANY',
+                                                  cppNamesOneByOne = 'ANY',
+                                                  cppCopyTypesOneByOne = 'ANY',
                                                   basePtrCall = 'ANY',
 ##                                                  copyFromRobjectCall = 'ANY',
                                                   dll = 'ANY',
@@ -1274,6 +1276,16 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  callSuper(compiledNodeFun = compiledNodeFun,
                                                            basePtrCall = basePtrCall,## copyFromRobjectCall = copyFromRobjectCall,
                                                            project = project, ...)
+                                                 boolCopyOneByOne <- !(as.character(cppCopyTypes) %in% c('nimbleFunction',
+                                                                                                         'nodeFxnVec',
+                                                                                                         'numericVector',
+                                                                                                         'doubleScalar',
+                                                                                                         'integerScalar',
+                                                                                                         'logicalScalar'))
+                                                 namesForCopyOneByOne <- names(cppCopyTypes)[ boolCopyOneByOne ]
+                                                 cppNamesOneByOne <<- cppNames[ cppNames %in% namesForCopyOneByOne ]
+                                                 cppCopyTypesOneByOne <<- cppCopyTypes[boolCopyOneByOne]
+                                                 
                                                  neededObjectsList <<- list()
                                                  basePtrList <<- list()
                                                  namedObjectsPtrList <<- list()
@@ -1335,8 +1347,8 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  ##eval(call('.Call', copyFromRobjectCall, newRobject, newBasePtr))
                                                                                                   
                                                  nimble:::copyFromRobject(newRobject,
-                                                                          cppNames,
-                                                                          cppCopyTypes,
+                                                                          cppNamesOneByOne,
+                                                                          cppCopyTypesOneByOne,
                                                                           newNamedObjectsPtr,
                                                                           symTab = compiledNodeFun$nimCompProc$getSymbolTable(),
                                                                           dll) #newBasePtr, probably really need both for different cases
