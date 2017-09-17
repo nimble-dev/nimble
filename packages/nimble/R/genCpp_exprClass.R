@@ -9,43 +9,39 @@
 ##
 ## In places it is still convenient to use R parse trees, or to generate
 ## code in an R parse tree and then call RparseTree2ExprClasses to convert it
-exprClass <- setRefClass('exprClass',
-    fields = list(
-        expr = 'ANY', ## optional for the original R expr. Not used much except at setup
-        isName = 'ANY',		#'logical', ## is it a name
-        isCall = 'ANY',		# 'logical', ## is it a call
-        isAssign =  'ANY',		#'logical', ## it is an assignment (all assignments are also calls)
-        name =  'ANY',		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
-        nDim =  'ANY',		#'numeric', ## how many dimensions
-        sizeExprs =  'ANY',	#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
-        type =  'ANY',		#'character', ## type label
-        args =  'ANY',		#'list', ## list of exprClass objects for the arguments
-        eigMatrix =  'ANY',	#'logical', ## vs. Array.  Only used for Eigenized expressions
-        toEigenize =  'ANY',	#'character', ##'yes', 'no', or 'maybe'
-        caller = 'ANY',            # exprClass object for the call to which this is an argument (if any)
-        callerArgID =  'ANY',	#'numeric', ## index in the calling object's args list for this object.
-        assertions =  'ANY',	#'list'
-        cppADCode = 'ANY',         #'logical' ## is expr in code generated for cppad?
-        aux = 'ANY'                # anything needed for specific operators
-    ),
-    methods = list(
+exprClass <- R6Class(
+    'exprClass',
+    portable = FALSE,
+    public = list(
+        expr = NULL, ## optional for the original R expr. Not used much except at setup
+        isName = NULL,		#'logical', ## is it a name
+        isCall = NULL,		# 'logical', ## is it a call
+        isAssign =  NULL,		#'logical', ## it is an assignment (all assignments are also calls)
+        name =  NULL,		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
+        nDim =  NULL,		#'numeric', ## how many dimensions
+        sizeExprs =  list(),	#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
+        type =  NULL,		#'character', ## type label
+        args =  list(),		#'list', ## list of exprClass objects for the arguments
+        eigMatrix =  logical(),	#'logical', ## vs. Array.  Only used for Eigenized expressions
+        toEigenize =  'unknown',	#'character', ##'yes', 'no', or 'maybe'
+        caller = NULL,           # exprClass object for the call to which this is an argument (if any)
+        callerArgID =  NULL,	#'numeric', ## index in the calling object's args list for this object.
+        assertions =  list(),	#'list'
+        cppADCode = FALSE,         #'logical' ## is expr in code generated for cppad?
+        aux = NULL,               # anything needed for specific operators
         initialize = function(...) {
-            sizeExprs <<- list()
-            args <<- list()
-            toEigenize <<- 'unknown'
-            assertions <<- list()
-            eigMatrix <<- logical()
-            cppADCode <<- FALSE
-            callSuper(...)
+            dotsList <- list(...)
+            for(v in names(dotsList))
+                self[[v]] <- dotsList[[v]]
         },
         ## This displays the parse tree using indentation on multiple rows of output
         ## It also checks that the caller and callerArgID fields are all correct
         ## For deparsing, call nimDeparse
-        show = function(indent = '', showType = FALSE, showAssertions = FALSE, showToEigenize = FALSE) {
+        print = function(indent = '', showType = FALSE, showAssertions = FALSE, showToEigenize = FALSE) {
             ## optionally include size information
             sizeDisp <- if(showType) { 
-                if(inherits(type, 'uninitializedField')) {
-                    paste0(' \t| type = (uninitializedField)(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
+                if(is.null(type)) {
+                    paste0(' \t| type = (NULL)(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
                 } else {
                     paste0(' \t| type = ', type,'(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
                 }
@@ -101,7 +97,7 @@ exprTypeInfoClass <- setRefClass('exprTypeInfoClass',
 )
 
 copyExprClass <- function(original) {
-    result <- original$copy(shallow = TRUE)
+    result <- original$clone(deep = FALSE)
     ## shallow=FALSE does not deep-copy on list elements, so it is
     ## useless for args list.  Another reason for shallow = TRUE
     ## is we do not want to deep copy 'caller' here.  Instead it is
