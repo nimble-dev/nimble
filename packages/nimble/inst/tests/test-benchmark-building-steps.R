@@ -46,7 +46,8 @@ test_that('Benchmarking model and MCMC building and compiling steps',
     caseNames <- character()
 
     ## 1000 is a good size for full benchmarking
-    Benchmark1length <- 10
+    ## 10 is a good size for routine testing
+    Benchmark1length <- 1000
     ## following will be like 'theta->mu[1:10]->y[1:10]'
     caseNames[1] <- paste0('theta->mu[1:',
                            Benchmark1length,
@@ -67,7 +68,8 @@ test_that('Benchmarking model and MCMC building and compiling steps',
                           )
 
     ## 100x20 is a good size for full benchmarking
-    Benchmark2dims <- c(5, 2)
+    ## 5 x 2 is a good size for routing testing 
+    Benchmark2dims <- c(100, 20)
     ## following will be like 'theta->mu[1:5]->y[1:5, 1:2]'
     caseNames[2] <- paste0('theta->mu[1:',
                            Benchmark2dims[1],

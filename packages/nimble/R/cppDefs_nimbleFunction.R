@@ -382,6 +382,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 
 makeSingleCopyCall <- function(varName, cppCopyType) {
     switch(cppCopyType,
+           'nimbleFunction' = {
+               cppLiteral(paste0("COPY_NIMBLE_FXN_FROM_R_OBJECT(\"", varName, "\");")) 
+           },
            'numericVector' = {
                cppLiteral(paste0("COPY_NUMERIC_VECTOR_FROM_R_OBJECT(\"", varName, "\");"))
            },

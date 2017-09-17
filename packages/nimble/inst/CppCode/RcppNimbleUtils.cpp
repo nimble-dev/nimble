@@ -55,6 +55,56 @@ SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
   return(R_NilValue);
 }
 
+void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from) {
+  printf("In setNimbleFxnPtr_copyFromRobject\n");
+  void **doublePtr = static_cast<void **>(nf_to);
+  SEXP Scnf, SsinglePtr;
+  SEXP S_pxData;
+   PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+   SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
+  // environment(modelVar)$.CobjectInterface
+     printf("In setNimbleFxnPtr_copyFromRobject\n");
+     PROTECT(Scnf = Rf_findVarInFrame(PROTECT(GET_SLOT(
+						       S_NF_from,
+						       S_pxData)),
+				    Rf_install(".CobjectInterface"))
+	   );
+  printf("In setNimbleFxnPtr_copyFromRobject\n");
+   int unprotectCount = 3;
+  if(Rf_isNewList(Scnf)) {
+      printf("in list\n");
+    // multi-interface
+    //Cnf[[1]]$basePtrList[[ Cnf[[2]] ]]
+    SEXP Sindex;
+    PROTECT(Sindex = VECTOR_ELT(Scnf, 1));
+    int index = (Rf_isInteger(Sindex) ? INTEGER(Sindex)[0] : REAL(Sindex)[0]); 
+    index--; // From 1-based to 0-based indexing 
+    PROTECT(SsinglePtr = VECTOR_ELT(
+				    Rf_findVarInFrame(PROTECT(GET_SLOT(
+								       VECTOR_ELT(Scnf,
+										  0),
+								       S_pxData)),
+						      Rf_install("basePtrList")),
+				    index
+				    )
+	    );
+    unprotectCount += 3;
+  } else {
+    printf("in non-list\n");
+    // full interface
+    // Cnf$.basePtr
+    PROTECT(SsinglePtr =  Rf_findVarInFrame(PROTECT(GET_SLOT(
+							     Scnf,
+							     S_pxData)),
+					    Rf_install(".basePtr")));
+    unprotectCount += 2;
+  }
+  printf("done\n");
+  void *singlePtr = R_ExternalPtrAddr(SsinglePtr);
+  *doublePtr = singlePtr;
+  UNPROTECT(unprotectCount);
+}
+
 // probably deprecated
 SEXP setSmartPtrFromSinglePtr(SEXP StoPtr, SEXP SfromPtr) {
   void *fromPtr = R_ExternalPtrAddr(SfromPtr); 

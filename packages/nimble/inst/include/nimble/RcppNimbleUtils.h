@@ -50,6 +50,14 @@
 								     Rf_install(varName)))); \
   }
 
+#define COPY_NIMBLE_FXN_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  setNimbleFxnPtr_copyFromRobject(getObjectPtr(svarName),\
+					    PROTECT(Rf_findVarInFrame(S_xData, \
+								      Rf_install(varName)))); \
+  }
+
 #define COPY_DOUBLE_SCALAR_FROM_R_OBJECT(varName) \
   { \
   std::string svarName(varName); \
@@ -74,6 +82,7 @@
 								     Rf_install(varName)))); \
   }
 
+
 using namespace std;
 
 bool all(bool x);
@@ -90,6 +99,8 @@ void SEXP_2_Nim_internal(NimArrType* nimTypePtr,
 			 SEXP rValues,
 			 bool resize);
 void SEXP_2_Nim_for_copyFromRobject(void *NimArrPtr, SEXP rValues);
+
+void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from);
 
 extern "C" {
   SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);

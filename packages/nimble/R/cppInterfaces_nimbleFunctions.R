@@ -856,14 +856,15 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
             getSetModelVarPtr(v, eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, Cmodel$.basePtr, varName)), basePtr, dll = dll)
         },
         'nimbleFunction' = {
-            modelVar <- Robj[[v]]
-            Cnf <- nf_getRefClassObject(modelVar)$.CobjectInterface ##environment(modelVar)$.CobjectInterface
-            if(is.list(Cnf)) {
-                valueBasePtr <- Cnf[[1]]$basePtrList[[ Cnf[[2]] ]]
-            } else {
-                valueBasePtr <- Cnf$.basePtr
-            }
-            getSetNimbleFunction(v, valueBasePtr, basePtr, dll = dll)
+            NULL
+            ## modelVar <- Robj[[v]]
+            ## Cnf <- nf_getRefClassObject(modelVar)$.CobjectInterface ##environment(modelVar)$.CobjectInterface
+            ## if(is.list(Cnf)) {
+            ##     valueBasePtr <- Cnf[[1]]$basePtrList[[ Cnf[[2]] ]]
+            ## } else {
+            ##     valueBasePtr <- Cnf$.basePtr
+            ## }
+            ## getSetNimbleFunction(v, valueBasePtr, basePtr, dll = dll)
         },
         'nimbleList' = {
             modelVar <- Robj[[v]]

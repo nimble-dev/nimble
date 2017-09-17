@@ -43,10 +43,9 @@ public:
        There are derived classes that may not implement copyFromRobject.
        In such cases copyFromRobject should never be used, but we don't 
        want a crash. */
-    PRINTF("Warning: C++ copying from R object is not working correctly\n");
+    PRINTF("Warning: C++ copying from R object is being used incorrectly\n");
   };
-  virtual ~NamedObjects() {//PRINTF("In NamedObjects destructor\n");
-  };
+  virtual ~NamedObjects() {};
 };
 
 extern "C" {
