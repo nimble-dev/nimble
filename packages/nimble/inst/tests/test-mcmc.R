@@ -1234,21 +1234,32 @@ test_that('dcar_proper sampling', {
     bounds <- CAR_calcBounds(C, adj, num, M)
     tau <- 1
     gamma <- as.numeric(quantile(bounds, 0.8))
+    y <- c(3, 6, 8, 10)
+    x <- rep(0, 4)
     constants <- list(mu = mu, C = C, adj = adj, num = num, M = M, N = 4, L = 6, gMin = bounds[1], gMax = bounds[2])
-    data <- list(y = c(3, 6, 8, 10))
-    inits <- list(tau = tau, gamma = gamma, x = rep(0, 4))
+    data <- list(y = y)
+    inits <- list(tau = tau, gamma = gamma, x = x)
 
     Rmodel <- nimbleModel(code, constants, data, inits)
     Cmodel <- compileNimble(Rmodel)
-
+    
     expect_equal(calculate(Rmodel), -557.7978,
                  tol = 1E-5,
                  info = 'calculate for dcar_proper()')
-
+    
     expect_equal(calculate(Cmodel), -557.7978,
                  tol = 1E-5,
                  info = 'calculate for dcar_proper(), compiled')
-
+    
+    Q <- tau * diag(1/M) %*% (diag(4) - gamma*CAR_calcCmatrix(C, adj, num))
+    lp <- dmnorm_chol(x, mu, chol = chol(Q), prec_param = TRUE, log = TRUE)
+    
+    expect_equal(calculate(Rmodel, 'x[1:4]'), lp,
+                 info = 'R density evaluation for dcar_proper()')
+    
+    expect_equal(calculate(Cmodel, 'x[1:4]'), lp,
+                 info = 'C density evaluation for dcar_proper()')
+    
     conf <- configureMCMC(Rmodel)
     conf$addMonitors('x')
     Rmcmc <- buildMCMC(conf)
