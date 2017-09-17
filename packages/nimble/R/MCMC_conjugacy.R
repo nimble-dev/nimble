@@ -11,14 +11,12 @@ conjugacyRelationshipsInputList <- list(
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
 
-    ## Dirichlet - added by CJP 1/14/15
-    ## at moment can't do dcat because of limitations of conjugacy processing relying on nimble code
+    ## dirichlet
     list(prior = 'ddirch',
          link = 'identity',
          dependents = list(
-             dmulti    = list(param = 'prob', contribution_alpha = 'value')),
-             ## dcat      = list(param = 'prob', contribution_alpha = as.numeric((1:length(prob)) == value)'),
-             ## dcat      = list(param = 'prob', contribution_alpha = {tmp = rep(0,length(prob)); tmp[value]=1; tmp}')),
+             dmulti = list(param = 'prob', contribution_alpha = 'value'),
+             dcat   = list(param = 'prob', contribution_alpha = 'calc_dcatConjugacyContributions(prob, value)')),
          posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'),
 
     ## flat
@@ -357,7 +355,7 @@ conjugacyClass <- setRefClass(
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
             dependentObj <- dependents[[depNodeDist]]
             linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode)
+            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
             if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
             if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
             linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
@@ -411,13 +409,23 @@ conjugacyClass <- setRefClass(
                 }, list(DEP_NODENAMES    = as.name(paste0(  'dep_', distName, '_nodeNames')),
                         N_DEP            = as.name(paste0('N_dep_', distName)),
                         DEP_CONTROL_NAME = as.name(paste0(  'dep_', distName))))
-                if(getDimension(distName) > 0) {
+                if(any(getDimension(distName, includeParams = TRUE) > 0)) {
+                    if(getDimension(distName) > 0) {  ## usual case: dependent node is multivariate -> get sizes from dependent node names
+                        functionBody$addCode({
+                            DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(determineNodeIndexSizes(node)), USE.NAMES = FALSE)
+                        }, list(DEP_NODESIZES   = as.name(paste0('dep_', distName, '_nodeSizes')),
+                                DEP_NODENAMES   = as.name(paste0('dep_', distName, '_nodeNames'))))
+                    } else {  ## unusual case: dependent is univariate -> get sizes from dependent node's param (e.g., ddirch-dcat conjugacy)
+                        functionBody$addCode({
+                            DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(nimDim(model$getParam(node, MULTIVARIATE_PARAM_NAME))), USE.NAMES = FALSE)
+                        }, list(DEP_NODESIZES           = as.name(paste0('dep_', distName, '_nodeSizes')),
+                                DEP_NODENAMES           = as.name(paste0('dep_', distName, '_nodeNames')),
+                                MULTIVARIATE_PARAM_NAME = names(which.max(getDimension(distName, includeParams = TRUE)))))
+                    }
                     functionBody$addCode({
-                        DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(determineNodeIndexSizes(node)), USE.NAMES = FALSE)
                         if(length(DEP_NODESIZES) == 1) DEP_NODESIZES <- c(DEP_NODESIZES, -1)    ## guarantee to be a vector, for indexing and size processing
                         DEP_NODESIZEMAX <- max(DEP_NODESIZES)
                     }, list(DEP_NODESIZES   = as.name(paste0('dep_', distName, '_nodeSizes')),
-                            DEP_NODENAMES   = as.name(paste0('dep_', distName, '_nodeNames')),
                             DEP_NODESIZEMAX = as.name(paste0('dep_', distName, '_nodeSizeMax'))))
                 }
                 
@@ -550,10 +558,8 @@ conjugacyClass <- setRefClass(
 
                 forLoopBody <- codeBlockClass()
 
-                ##functionBody$addCode(thisNodeSize <- 0) ## annoyingly this is to avoid a windows compiler warning about possible uninitialized use of thisNodeSize
                 ## get *value* of each dependent node
-                ## NEWNODEFXN
-                if(getDimension(distName) > 0) {
+                if(any(getDimension(distName, includeParams = TRUE) > 0)) {
                     forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                         list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
                 }
@@ -564,7 +570,6 @@ conjugacyClass <- setRefClass(
                 for(param in neededParams) {
                     depNodeParamNdim <- getDimension(distName, param)
                     ## get *parameter values* for each dependent node
-                    ## NEWNODEFXN
                     forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
                                         list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(thisNodeSize)),
                                              DEP_NODENAMES = as.name(paste0('dep_', distName,'_nodeNames')),
@@ -590,7 +595,6 @@ conjugacyClass <- setRefClass(
 
                            for(iDepCount in seq_along(dependentCounts)) {
                                distName <- names(dependentCounts)[iDepCount]
-                               ## NEWNODEFXN
                                functionBody$addCode(
                                    for(iDep in 1:N_DEP)
                                        DEP_OFFSET_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME),
@@ -607,7 +611,6 @@ conjugacyClass <- setRefClass(
 
                            for(iDepCount in seq_along(dependentCounts)) {
                                distName <- names(dependentCounts)[iDepCount]
-                               ## NEWNODEFXN
                                functionBody$addCode(
                                    for(iDep in 1:N_DEP)
                                        DEP_COEFF_VAR[iDep] <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME) - DEP_OFFSET_VAR[iDep],
@@ -626,7 +629,6 @@ conjugacyClass <- setRefClass(
 
                            for(iDepCount in seq_along(dependentCounts)) {
                                distName <- names(dependentCounts)[iDepCount]
-                               ## NEWNODEFXN - forgot to copy and comment old code
                                functionBody$addCode({
                                    for(iDep in 1:N_DEP) {
                                        thisNodeSize <- DEP_NODESIZES[iDep]
@@ -652,7 +654,6 @@ conjugacyClass <- setRefClass(
 
                            for(iDepCount in seq_along(dependentCounts)) {
                                distName <- names(dependentCounts)[iDepCount]
-                               ## NEWNODEFXN
                                forLoopBody$addCode({
                                    for(iDep in 1:N_DEP) {
                                        thisNodeSize <- DEP_NODESIZES[iDep]
@@ -765,7 +766,7 @@ conjugacyClass <- setRefClass(
                 
                 forLoopBody <- codeBlockClass()
 
-                if(getDimension(distName) > 0) {
+                if(any(getDimension(distName, includeParams = TRUE) > 0)) {
                     if(targetNdim == 1) ## 1D
                         forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
@@ -906,7 +907,7 @@ cc_makeRDistributionName     <- function(distName)     return(paste0('r', substr
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
 cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansions=FALSE) {
     if(is.numeric(expr)) return(expr)     # return numeric
-    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) { # expr is a name, or an indexed name
+    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) { # expr is a name, or an indexed name
         if(nimbleOptions()$allowDynamicIndexing) {
             ## this deals with having mu[k[1]] (which won't pass through expandNodeNames), replacing k[1] with the index from targetNode
             if(!is.name(expr)) {
@@ -914,9 +915,33 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                 numericOrVectorIndices <- sapply(indexExprs,
                       function(x) is.numeric(x) || (length(x) == 3 && x[[1]] == ':'))
                 if(!all(numericOrVectorIndices)) {
-                    indexExprs[!numericOrVectorIndices] <- parse(text = targetNode)[[1]][3:length(expr)][!numericOrVectorIndices]
-                    expr[3:length(expr)] <- indexExprs
-                }
+                    if(model$getVarNames(nodes = targetNode) == model$getVarNames(nodes = deparse(expr))) {
+                        ## expr var is same as target var, so plug in target indexes for
+                        ## non-constant expr indexes to allow for possibility that
+                        ## dynamic index will be that of target (in some cases based on allowed
+                        ## values of dynamic index, this might actually not be possible, but
+                        ## the only disdvantage should be failing to detect conjugacy where it is
+                        ## present).
+                        expr[which(!numericOrVectorIndices)+2] <- parse(text = targetNode)[[1]][3:length(expr)][!numericOrVectorIndices]
+                        ## now check that target is not actually used in index expressions
+                        newExpr <- as.call(c(cc_structureExprName, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
+                        for(i in seq_along(newExpr)[-1])
+                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
+                        if(cc_nodeInExpr(targetNode, newExpr))
+                            return(as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x))))  # put 'expr' back in though shouldn't be needed downstream
+                        ## otherwise continue with processing as in non-dynamic index case
+                    } else {
+                        ## in this case the expr var is a different var, so shouldn't really matter what
+                        ## indexes get plugged in; plug in mins of indexes as a default
+                        varInfo <- model$modelDef$varInfo[[deparse(expr[[2]])]]
+                        expr[which(!numericOrVectorIndices)+2] <- varInfo$mins[!numericOrVectorIndices]
+                        ## sapply business gets rid of () at end of index expression
+                        newExpr <- as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
+                        for(i in seq_along(newExpr)[-1])
+                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
+                        return(newExpr)
+                    }
+                }  ## else continue with processing as in non-dynamic index case
             }
         }
         exprText <- deparse(expr)

@@ -1,5 +1,20 @@
-# used in altParams for dmnorm
-# this needs to be sourced after nimbleFunction() is defined, so can't be done in distributions_inputList.R
+
+## This is used in conjugacy definition for ddirch, to calculate 'contribution'
+## terms from dcat dependents.
+calc_dcatConjugacyContributions <- nimbleFunction(
+    name = 'calc_dcatConjugacyContributions',
+    run = function(prob = double(1), value = double(0)) {
+        n <- dim(prob)[1]
+        ans <- numeric(n)
+        ans[value] <- 1
+        return(ans)
+        returnType(double(1))
+    }
+)
+
+
+## used in altParams for dmnorm
+## this needs to be sourced after nimbleFunction() is defined, so can't be done in distributions_inputList.R
 calc_dmnormAltParams <- nimbleFunction(
     name = 'calc_dmnormAltParams',
     run = function(cholesky = double(2), prec_param = double(), return_prec = double()) {
@@ -16,8 +31,6 @@ calc_dmnormAltParams <- nimbleFunction(
         return(ans)
     }
 )
-
-
 
 
 ## used in conjugacy definition for dmnorm, to calculate 'contribution' terms;
@@ -47,8 +60,9 @@ calc_dmnormConjugacyContributions <- nimbleFunction(
     }
 )
 
-# used in altParams for dwish and dinvwish
-# this needs to be sourced after nimbleFunction() is defined, so can't be done in distributions_inputList.R
+
+## used in altParams for dwish and dinvwish
+## this needs to be sourced after nimbleFunction() is defined, so can't be done in distributions_inputList.R
 calc_dwishAltParams <- nimbleFunction(
     name = 'calc_dwishAltParams',
     run = function(cholesky = double(2), scale_param = double(), return_scale = double()) {
@@ -65,5 +79,4 @@ calc_dwishAltParams <- nimbleFunction(
         return(ans)
     }
 )
-
 
