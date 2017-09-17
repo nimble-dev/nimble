@@ -31,6 +31,7 @@ distributionsInputList <- list(
     
     dcat    = list(BUGSdist = 'dcat(prob)',
                    Rdist    = 'dcat(prob)',
+                   altParams = c('ncat = length(prob)'),
                    types    = c('prob = double(1)'),
                    range    = c(1, Inf), 
                    discrete = TRUE),
