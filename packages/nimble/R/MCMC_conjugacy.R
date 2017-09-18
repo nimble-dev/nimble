@@ -906,7 +906,7 @@ cc_makeRDistributionName     <- function(distName)     return(paste0('r', substr
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
 cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansions=FALSE) {
     if(is.numeric(expr)) return(expr)     # return numeric
-    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) { # expr is a name, or an indexed name
+    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) { # expr is a name, or an indexed name
         if(nimbleOptions()$allowDynamicIndexing) {
             ## this deals with having mu[k[1]] (which won't pass through expandNodeNames), replacing k[1] with the index from targetNode
             if(!is.name(expr)) {
