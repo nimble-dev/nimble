@@ -35,7 +35,7 @@ binaryOperators <- c(binaryMidOperators,
 
 binaryOrUnaryOperators <- c('+','-')
 unaryPromoteNoLogicalOperators <- c('abs','cube')
-unaryIntegerOperators <- c('nimStep')
+unaryIntegerOperators <- 'nimStep'
 unaryLogicalOperators <- '!'
 unaryDoubleOperators <- c('exp',
                           'log',
