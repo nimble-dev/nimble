@@ -134,7 +134,7 @@ calcCPPP <- function(MCMCIter,
 }
 
 
-generateCPPP <-  function(R.model,
+runCPPP <-  function(R.model,
                           origMCMCOutput,
                           mcmcCreator = NULL,
                           nCPPPMCMCIter = NULL,

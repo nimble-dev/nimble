@@ -8,7 +8,7 @@ crossValCalculate <- function(row, MCMCOut, dataDimensions, saveData){
     return(discrep)
 }
 
-crossValidateOne <- function(model,
+runCrossValidate <- function(model,
                              dataNames,
                              MCMCIter,
                              burnInProp, thin,

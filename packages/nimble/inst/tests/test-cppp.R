@@ -63,7 +63,7 @@ runExample <- function(pumpData, ## data
         mcmc <- buildMCMC(mcmc.spec)
     }
 
-    pumpCPPP <- generateCPPP(R.model,
+    pumpCPPP <- runCPPP(R.model,
                              origMCMCOutput=output,
                              mcmcCreator = mcmcGenFunc,
                              dataNames = 'x',
