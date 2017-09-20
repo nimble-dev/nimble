@@ -303,6 +303,24 @@ character2index <- function(thisChar){
 		stop("Error: too many :'s in index")
 }
 
+#' @export
+is.model <- function(obj, inputIsName = FALSE) {
+    if(inputIsName) obj <- get(obj)
+    return(inherits(obj, 'modelBaseClass'))
+}
+
+#' @export
+is.Rmodel <- function(obj, inputIsName = FALSE) {
+    if(inputIsName) obj <- get(obj)
+    return(inherits(obj, 'RmodelBaseClass'))
+}
+
+#' @export
+is.Cmodel <- function(obj, inputIsName = FALSE) {
+    if(inputIsName) obj <- get(obj)
+    return(inherits(obj, 'modelBaseClass') && !inherits(obj, 'RmodelBaseClass'))
+}
+
 # extracts dimension from character vec of form such as c("double(0)", "integer(1)")
 ## getDimFromType <- function(text) {
 ##     sapply(parse(text = text), '[[', 2)
