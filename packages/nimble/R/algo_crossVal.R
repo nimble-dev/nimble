@@ -1,6 +1,6 @@
-library(nimble)
-library(coda)
-library(parallel)
+# library(nimble)
+# library(coda)
+# library(parallel)
 
 crossValCalculate <- function(row, MCMCOut, dataDimensions, saveData){
     simDataArray <- array(MCMCOut[row,], dim = c(dataDimensions))

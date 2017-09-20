@@ -52,7 +52,7 @@ runExample <- function(pumpData, ## data
             returnType(double(0))
             return(disc)
         },
-        contains = virtualDiscFunction
+        contains = discrepancyFunction_BASE
     )
 
     mcmcGenFunc <- function(model){
