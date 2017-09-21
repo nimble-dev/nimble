@@ -263,6 +263,17 @@ runCPPP <-  function(model,
     if(is.null(nBootstrapSDReps)){
       nBootstrapSDReps <- 200
     }
+    if(is.null(mcmcCreator)){
+      newMCMC.spec <-   configureMCMC(model,
+                                      print=FALSE,
+                                      nthin=thin)
+      newMCMC <- buildMCMC(newMCMC.spec)
+    }
+    else{
+      newMCMC <- mcmcCreator(model)
+    }
+    thin <- newMCMC$thin
+    
     nMCMCIters <- mcmcControl[['nMCMCIters']]  
     if(!is.null(origMCMCOutput)){
       origMCMCIter <- nrow(origMCMCOutput)*thin
@@ -321,16 +332,6 @@ runCPPP <-  function(model,
     ## keep track of the real data
     origData <- values(model, dataNames)
 
-    if(is.null(mcmcCreator)){
-      newMCMC.spec <-   configureMCMC(model,
-                                      print=FALSE,
-                                      nthin=thin)
-      newMCMC <- buildMCMC(newMCMC.spec)
-    }
-    else{
-      newMCMC <- mcmcCreator(model)
-    }
-    thin <- newMCMC$thin
     
     if(is.null(origMCMCOutput)){
       CnewMCMC <- compileNimble(newMCMC, project = model, resetFunctions = TRUE)
