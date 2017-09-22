@@ -161,7 +161,7 @@ cppOutputEigBlank <- function(code, symTab) {
 
 cppOutputDerivDist <- function(code, symTab){
   ###for now, use different dist c++ fn if taking derivs
-  if(identical(nimbleUserNamespace$cppADCode, TRUE))
+  if(isTRUE(nimbleUserNamespace$cppADCode))
     paste0('nimDerivs_',code$name, '(', 
            paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ), ')', collapse = ', '), ')')
   else
