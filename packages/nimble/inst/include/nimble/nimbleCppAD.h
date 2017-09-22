@@ -84,7 +84,7 @@ class nimbleFunctionCppADbase {
 		std::size_t q = length(value_ans);
 
 		if(ordersFound[1] == true){
-			ADlist->gradient.initialize(0, false, n, q);
+			ADlist->gradient.initialize(0, false, q, n);
 		}
 		if(ordersFound[2] == true){
 			ADlist->hessian.initialize(0, false, n, n, q);
@@ -104,10 +104,8 @@ class nimbleFunctionCppADbase {
 				for(size_t dx1_ind = 0; dx1_ind < n; dx1_ind++){				
 					std::vector<double> x1 (n, 0); // vector specifying first derivatives.  first specify coeffs for first dim of s across all directions r, then second dim, ...
 					x1[dx1_ind] = 1;
-
 					ADinfo.ADtape->Forward(1, x1); // may want separate case for r=1?	
 					cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
-				
 					for(size_t i = 0; i < n; i++){
 						hessian_ans[n*n*dy_ind + n*dx1_ind + i]  = cppad_derivOut[i*2 + 1];
 					}
@@ -115,7 +113,7 @@ class nimbleFunctionCppADbase {
 			}
 			if(ordersFound[1] == true){
 				for(size_t i = 0; i < n; i++){
-					gradient_ans[n*dy_ind + i] = cppad_derivOut[i*maxOrder + 0];
+					gradient_ans[i*q + dy_ind] = cppad_derivOut[i*maxOrder + 0];
 				}
 			}
 		}

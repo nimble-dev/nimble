@@ -2533,7 +2533,6 @@ if test "${with_eigen+set}" = set; then :
 fi
 
 
-
 @%:@ Check whether --with-cppad was given.
 if test "${with_cppad+set}" = set; then :
   withval=$with_cppad; CPPAD_DIR="${withval}"

@@ -50,21 +50,10 @@ makeTypeTemplateFunction = function(newName, .self) {
     newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = TRUE)
     localArgs <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
-    newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs, cppADCode = TRUE,
-                                      generatorSymTab = .self$code$objectDefs)
+    newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs, 
+                                      generatorSymTab = .self$code$objectDefs, cppADCode = TRUE)
     newCppFunDef
 }
-
-recurseSetCppADExprs <- function(code, logicVal = TRUE){
-  if(inherits(code, 'exprClass')){
-      code$cppADCode <- logicVal
-    for(i in seq_along(code$args)){
-      recurseSetCppADExprs(code$args[[i]], logicVal)
-    }
-  }
-}
-
-
 
 ## This makes the function to be called once for CppAD taping
 ## It sets up AD variables, copies from regular variables into them
@@ -312,7 +301,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
               sizeList <- lapply(thisSizes, function(x) list(1, x))
             }
             names(sizeList) <- indexVarNames[1:length(sizeList)]
-            newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisModelName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
+            newRcode <- makeCopyingCodeBlock(quote(memberData(ADtapeSetup, independentVars)), as.name(thisName), sizeList, indicesRHS = TRUE, incrementIndex = quote(netIncrement_), isNode)
             copyIntoIndepVarCode[[ivn+1]] <- newRcode 
             totalIndependentLength <- totalIndependentLength + prod(thisSizes)
         } 
@@ -323,7 +312,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
                                          paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr, deparse), collapse = ', '),
                                         ')')
             else
-              indexBracketInfo <- paste0('[', deparse(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]]), ']')
+              indexBracketInfo <- paste0('[', deparse(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]][[1]]), ']')
             indexName <- paste0("cppLiteral('(**", thisModelName, ")')", indexBracketInfo)
             RHS <- parse(text = substitute(INDEXNAME, list(INDEXNAME = as.name(indexName))))[[1]]
           }
@@ -349,7 +338,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
 ## The code this generates is embedded in the ADtapingFunction made by makeADtapingFunction
 ##
 ## Note this does some work similar to BUGScontextClass::embedCodeInForLoop
-makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, incrementIndex, isNode) {
+makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, incrementIndex, isNode = FALSE) {
   indexNames <- names(indexList)
   indexedBracketExpr <- do.call('call', c(list('[', as.name('TO_BE_REPLACED')), lapply(indexNames, as.name)), quote = TRUE)
   if(indicesRHS) {

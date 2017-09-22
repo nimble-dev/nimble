@@ -71,9 +71,9 @@ TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
     ## static pointer.  But the cppVarFull::generate takes constructor as simple text
     ## and does not recursively generate constructor for exprClasses.  Hence
     ## for a first step now we will just paste together the constructor code
-    TFconstructor <- TfBuilder$generateConstructor(code$cppADCode)
+    TFconstructor <- TfBuilder$generateConstructor()
     TFrunnerName <- TFrunnerLabelGenerator()
-    if (code$cppADCode) {
+    if (isTRUE(nimbleUserNamespace$cppADCode)) {
         TFrunnerSym <-
             symbolTensorflowOp(name = TFrunnerName,
                                constructor = TFconstructor,
@@ -349,7 +349,7 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     ## When the target has size greater than 1, then the gradients are wrt the
     ## sum of all target entries. For details on tf.gradients, see
     ## https://www.tensorflow.org/api_docs/python/tf/gradients
-    if (code$cppADCode) {
+    if (isTRUE(nimbleUserNamespace$cppADCode)) {
         placeholders <- as.list(placeholders)
         placeholderValues <- as.list(placeholders)
         placeholderNames <- names(placeholderValues)
@@ -421,7 +421,7 @@ TfBuilder <- setRefClass(
         addOutputVar = function(name) {
             outputNames <<- append(outputNames, name)
         },
-        generateConstructor = function(cppADCode) {
+        generateConstructor = function() {
             ## Paste code, instead of creating a parse tree.
             ## Note that we have decided to use the static pointer trick to avoid
             ## crashes due to out-of-order destructors or unlinking. This
@@ -438,7 +438,7 @@ TfBuilder <- setRefClass(
                     paste0('.NimTf_withOutput("', outputNames, '")'),
                     collapse = "\n"
                 ),
-                if (cppADCode) '.NimTf_op()' else '.NimTf_runner()',
+                if (isTRUE(nimbleUserNamespace$cppADCode)) '.NimTf_op()' else '.NimTf_runner()',
                 sep = "\n"
             )
         }
