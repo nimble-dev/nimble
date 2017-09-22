@@ -230,8 +230,8 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                                           cppADCode = 'ANY', generatorSymTab = 'ANY'),			#'logical'),
                             methods = list(
                                 generate = function(indent = '', ...) {
-                                    if(identical(cppADCode, TRUE)){
-                                      if(!identical(nimbleUserNamespace$cppADCode, TRUE)){
+                                    if(isTRUE(cppADCode)){
+                                      if(isTRUE(nimbleUserNamespace$cppADCode)){
                                         nimbleUserNamespace$cppADCode <- TRUE
                                         on.exit(nimbleUserNamespace$cppADCode <- FALSE)
                                       }

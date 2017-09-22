@@ -73,7 +73,7 @@ TFize_oneStatement <- function(code, symTab, typeEnv, workEnv) {
     ## for a first step now we will just paste together the constructor code
     TFconstructor <- TfBuilder$generateConstructor()
     TFrunnerName <- TFrunnerLabelGenerator()
-    if (nimbleUserNamespace$cppADCode) {
+    if (isTRUE(nimbleUserNamespace$cppADCode)) {
         TFrunnerSym <-
             symbolTensorflowOp(name = TFrunnerName,
                                constructor = TFconstructor,
@@ -349,7 +349,7 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     ## When the target has size greater than 1, then the gradients are wrt the
     ## sum of all target entries. For details on tf.gradients, see
     ## https://www.tensorflow.org/api_docs/python/tf/gradients
-    if (nimbleUserNamespace$cppADCode) {
+    if (isTRUE(nimbleUserNamespace$cppADCode)) {
         placeholders <- as.list(placeholders)
         placeholderValues <- as.list(placeholders)
         placeholderNames <- names(placeholderValues)
@@ -438,7 +438,7 @@ TfBuilder <- setRefClass(
                     paste0('.NimTf_withOutput("', outputNames, '")'),
                     collapse = "\n"
                 ),
-                if (nimbleUserNamespace$cppADCode) '.NimTf_op()' else '.NimTf_runner()',
+                if (isTRUE(nimbleUserNamespace$cppADCode)) '.NimTf_op()' else '.NimTf_runner()',
                 sep = "\n"
             )
         }
