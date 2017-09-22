@@ -22,25 +22,19 @@ test_that('Tensorflow implementation of axpy works', {
 
 test_that('Tensorflow multiple statements', {
     temporarilyEnableTensorflow()
-    nimbleOptions(debugCppLineByLine = TRUE)
-    nimbleOptions(showCompilerOutput = TRUE)
-    nimbleOptions(pauseAfterWritingFiles = FALSE)
     nimbleOptions(experimentalNewSizeProcessing = TRUE)
 
     nf <- nimbleFunction(
-        name = 'example',
-        run = function(arg1 = double(2))
-        {
+        run = function(arg1 = double(2)) {
             ## This compiles into two separate tensorflow graphs, whereas
             ## we want it to be fused into a single graph.
             x <- arg1 %*% arg1
             out <- x %*% x
             return(out)
             returnType(double(2))
-        } 
+        }
     )
-    cnf <- compileNimble(nf, dirName = file.path(Sys.getenv('HOME'), 'tmp'), projectName = 'tf',
-                         control = list(debugCpp = TRUE))
+    cnf <- compileNimble(nf)
     x <- matrix(1:4, 2, 2)
     expect_equal(nf(x), cnf(x))
 })
@@ -55,4 +49,65 @@ test_that('Tensorflow backend works for basic math', {
     sapply(testsComparison, test_math, 'tensorflow')
     sapply(testsMoreMath, test_math, 'tensorflow')
     sapply(testsMatrix, test_math, 'tensorflow')
+})
+
+test_that('Tensorflow works with nimDerivs() for log(x)', {
+    temporarilyEnableTensorflow()
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+
+    fun <- nimbleFunction(
+        setup = function(){},
+        run = function(x = double(1, 1)) {
+            outList <- derivs(testMethod(x))
+            returnType(ADNimbleList())
+            return(outList)
+        },
+        methods = list(
+            testMethod = function(x = double(1, 1)) {
+                return(log(x))
+                returnType(double(1, 1))
+            }
+        ),
+        enableDerivs = list('testMethod')
+    )()
+    temporarilyAssignInGlobalEnv(fun)
+
+    # FIXME This fails with the following error:
+    # Error in as.name(thisModelName) : object 'thisModelName' not found
+    expect_error({
+        tf_fun <- compileNimble(fun)
+        x <- 1.2
+        expect_equal(tf_fun$run(x)$gradient[1], 1 / x)
+    })
+})
+
+test_that('Tensorflow works with nimDerivs() for sum(x)', {
+    temporarilyEnableTensorflow()
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+
+    fun <- nimbleFunction(
+        setup = function(){},
+        run = function(x = double(1, 1)) {
+            outList <- derivs(testMethod(x))
+            returnType(ADNimbleList())
+            return(outList)
+        },
+        methods = list(
+            testMethod = function(x = double(1, 1)) {
+                return(sum(x))
+                returnType(double())
+            }
+        ),
+        enableDerivs = list('testMethod')
+    )()
+    temporarilyAssignInGlobalEnv(fun)
+
+    # FIXME This fails with the following error:
+    # Error in as.name(thisModelName) : object 'thisModelName' not found
+    expect_error({
+        tf_fun <- compileNimble(fun)
+        x <- 1.2
+        Rderiv <- 1
+        expect_equal(tf_fun$run(x)$gradient[1], eval(Rderiv))
+    })
 })

@@ -19,52 +19,207 @@ ans3 <- sapply(testsInvalidDynIndexValue, test_dynamic_indexing_model)
 ## check conjugacy detection
 
 test_that("Testing conjugacy detection with dynamic indexing", { 
-          code = nimbleCode({
-              for(i in 1:4) 
-                  y[i] ~ dnorm(mu[k[i]], sd = 1)
-              for(j in 1:5) 
-                  mu[j] ~ dnorm(0, 1)
-          })
-          m = nimbleModel(code, data = list(y = rnorm(4)),
-                          inits = list(k = rep(1,4)))
-          conf <- configureMCMC(m)
-          expect_match(conf$getSamplers()[[1]]$name, "conjugate_dnorm_dnorm",
-                       info = "failed to detect normal-normal conjugacy")
-          code = nimbleCode({
-              for(i in 1:4) 
-                  y[i] ~ dpois(mu[k[i]])
-              for(j in 1:5)
-                  mu[j] ~ dnorm(0, 1)
-          })
-          m = nimbleModel(code, data = list(y = rpois(4, 1)),
-                          inits = list(k = rep(1,4)))
-          conf <- configureMCMC(m)
-          expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
 
-                       info = "incorrectly detected conjugacy")
-          code = nimbleCode({
-              for(i in 1:4) 
-                  y[i] ~ T(dnorm(mu[k[i]], sd = 1), 0, 1)
-              for(j in 1:5) 
-                  mu[j] ~ dnorm(0, 1)
-          })
-          m = nimbleModel(code, data = list(y = rnorm(4)),
-                          inits = list(k = rep(1,4)))
-          conf <- configureMCMC(m)
-          expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
-                       info = "incorrectly detected conjugacy")
-          code = nimbleCode({
-              for(i in 1:4) 
-                  y[i] ~ dnorm(mu[k[i]], sd = 1)
-              for(j in 1:5) 
-                  mu[j] ~ T(dnorm(0, 1), 0 ,1)
-          })
-          m = nimbleModel(code, data = list(y = rnorm(4)),
-                          inits = list(k = rep(1,4)))
-          conf <- configureMCMC(m)
-          expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
-                       info = "incorrectly detected conjugacy")
+    code = nimbleCode({
+        for(i in 1:4) 
+            y[i] ~ dnorm(mu[k[i]], sd = 1)
+        for(j in 1:5) 
+            mu[j] ~ dnorm(0, 1)
+    })
+    m = nimbleModel(code, data = list(y = rnorm(4)),
+                    inits = list(k = rep(1,4)))
+    conf <- configureMCMC(m)
+    expect_match(conf$getSamplers()[[1]]$name, "conjugate_dnorm_dnorm",
+                 info = "failed to detect normal-normal conjugacy")
+    
+    code = nimbleCode({
+        for(i in 1:4) 
+            y[i] ~ dpois(mu[k[i]])
+        for(j in 1:5)
+            mu[j] ~ dnorm(0, 1)
+    })
+    m = nimbleModel(code, data = list(y = rpois(4, 1)),
+                    inits = list(k = rep(1,4)))
+    conf <- configureMCMC(m)
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
+                 info = "incorrectly detected conjugacy in poisson-normal case")
+    
+    code = nimbleCode({
+        for(i in 1:4) 
+            y[i] ~ T(dnorm(mu[k[i]], sd = 1), 0, 1)
+        for(j in 1:5) 
+            mu[j] ~ dnorm(0, 1)
+    })
+    m = nimbleModel(code, data = list(y = rnorm(4)),
+                    inits = list(k = rep(1,4)))
+    conf <- configureMCMC(m)
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
+                 info = "incorrectly detected conjugacy in truncated normal-normal case")
+    
+    code = nimbleCode({
+        for(i in 1:4) 
+            y[i] ~ dnorm(mu[k[i]], sd = 1)
+        for(j in 1:5) 
+            mu[j] ~ T(dnorm(0, 1), 0 ,1)
+    })
+    m = nimbleModel(code, data = list(y = rnorm(4)),
+                    inits = list(k = rep(1,4)))
+    conf <- configureMCMC(m)
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
+                 info = "incorrectly detected conjugacy in normal-truncated normal case")
+
+    code = nimbleCode({
+    for(i in 1:2) {
+        y[i] ~ dnorm(cc*mu[xi[i]+offset], var = s0)
+        xi[i] ~ dcat(p[1:3])
+    }
+    for(j in 1:4)
+        mu[j] ~ dnorm(0,1)
+    s0 ~ dinvgamma(1,1)
+    })
+    m <- nimbleModel(code, data = list(y = rep(1,2)), inits = list(xi = 1:2, offset = 1))
+    conf <- configureMCMC(m)
+    expect_match(conf$getSamplers()[[1]]$name, "conjugate_dnorm_dnorm",
+                 info = "failed to detect normal-normal conjugacy in multi-conjugacy setting")
+    expect_match(conf$getSamplers()[[5]]$name, "conjugate_dinvgamma_dnorm",
+                 info = "failed to detect invgamma-normal conjugacy in multi-conjugacy setting")
+
+    code = nimbleCode({
+        for(i in 1:2) {
+            y[i] ~ dnorm(s0 + mu[xi[i]], var = s0)
+            xi[i] ~ dcat(p[1:3])
+        }
+        for(j in 1:4)
+            mu[j] ~ dnorm(0,1)
+        s0 ~ dinvgamma(1,1)
+    })
+    m <- nimbleModel(code, data = list(y = rep(1,2)), inits = list(xi = 1:2))
+    conf <- configureMCMC(m)
+    expect_match(conf$getSamplers()[[1]]$name, "conjugate_dnorm_dnorm",
+                 info = "failed to detect normal-normal conjugacy when var param in mean and var")
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[5]]$name)), 0,
+                 info = "incorrectly detected conjugacy when var param in dnorm mean and var")
+
+    code = nimbleCode({
+        for(i in 1:2) {
+            y[i] ~ dnorm(sqrt(s0 + mu[xi[i]]), var = s0)
+            xi[i] ~ dcat(p[1:3])
+        }
+        for(j in 1:4)
+            mu[j] ~ dnorm(0,1)
+        s0 ~ dinvgamma(1,1)
+    })
+    m <- nimbleModel(code, data = list(y = rep(1,2)), inits = list(xi = 1:2))
+    conf <- configureMCMC(m)
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
+                 info = "incorrectly detected conjugacy wth nonlinear functional of mean param in dnorm")
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[5]]$name)), 0,
+                 info = "incorrectly detected conjugacy when var param in dnorm mean and var, case 2")
+
+    code = nimbleCode({
+        for(i in 1:2) {
+            y[i] ~ dnorm(mu[round(xi[i]+s0)], var = s0)
+            xi[i] ~ dcat(p[1:3])
+        }
+        for(j in 1:4)
+            mu[j] ~ dnorm(0,1)
+        s0 ~ dinvgamma(1,1)
+    })
+    m <- nimbleModel(code, data = list(y = rep(1,2)), inits = list(s0 = 1, xi = 1:2))
+    conf <- configureMCMC(m)
+    expect_match(conf$getSamplers()[[1]]$name, "conjugate_dnorm_dnorm",
+                 info = "failed to detect normal-normal conjugacy when var param in mean index")
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[5]]$name)), 0,
+                 info = "incorrectly detected conjugacy when var param in mean index")
+
+    code = nimbleCode({
+        for(i in 1:2) {
+            y[i] ~ dnorm(mu[round(xi[i]+mu[i])], var = s0)
+            xi[i] ~ dcat(p[1:3])
+        }
+        for(j in 1:4)
+            mu[j] ~ dnorm(0,1)
+        s0 ~ dinvgamma(1,1)
+    })
+    m <- nimbleModel(code, data = list(y = rep(1,2)), inits = list(mu = rep(1, 4), xi = 1:2))
+    conf <- configureMCMC(m)
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
+                 info = "incorrectly detected conjugacy when mean param in own index")
+    expect_match(conf$getSamplers()[[5]]$name, "conjugate_dinvgamma_dnorm",
+                 info = "failed to detect invgamma-normal conjugacy when mean param in own index")
+
+    code = nimbleCode({
+        y[1:3] ~ dmnorm(mu[k, 1:3], pr[1:3,1:3])
+        pr[1:3,1:3] ~ dwish(pr0[1:3,1:3], 5)
+        for(i in 1:3)
+            mu[i, 1:3] ~ dmnorm(z[1:3], pr0[1:3, 1:3])
+        k ~ dcat(p[1:3])
+    })
+    m = nimbleModel(code, inits = list(k = 1, pr0 = diag(3), pr = diag(3),
+                                       z = rep(1,3)))
+    conf <- configureMCMC(m)
+    expect_match(conf$getSamplers()[[2]]$name, "conjugate_dwish_dmnorm",
+                 info = "failed to detect wishart-dmnorm conjugacy in multivariate multi-conjugacy setting")
+    expect_match(conf$getSamplers()[[3]]$name, "conjugate_dmnorm_dmnorm",
+                 info = "failed to detect dmnorm-dmnorm conjugacy in multivariate multi-conjugacy setting")
+
+    code = nimbleCode({
+        y[1:3] ~ dmnorm(mu[k, 1:3], pr[1:3,1:3])
+        pr[1:3,1:3] ~ dwish(pr0[1:3,1:3], 5)
+        for(i in 1:3)
+            mu[1:3, i] ~ dmnorm(z[1:3], pr0[1:3, 1:3])
+        k ~ dcat(p[1:3])
+    })
+    m = nimbleModel(code, inits = list(k = 1, pr0 = diag(3), pr = diag(3),
+                                       z = rep(1,3)))
+    conf <- configureMCMC(m)
+    expect_failure(expect_match(conf$getSamplers()[[3]]$name, "conjugate_dmnorm_dmnorm",
+        info = "failed to detect dmnorm-dmnorm conjugacy  in multivariate crossed multi-conjugacy setting"),
+        info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in our dmnorm conjugacy detection")
+
+    code = nimbleCode({
+        for(i in 1:2) {
+            k2[i] <- 1 + k1[i]
+            k1[i] ~ dbern(p)
+            for(j in 1:3)
+                for(l in 1:2) {
+                    y[i,j,l] ~ dnorm(mu[1+k1[i], 2, k2[i]], var = s0)
+                    mu[i, j, l] ~ dnorm(0, 1)
+                }
+        }
+        s0 ~ dinvgamma(1,1)
+    })
+    m = nimbleModel(code, data = list(y = array(rnorm(2*2*3), c(2,3,2))),
+                    inits = list(k1 = rep(0,2)))
+    conf <- configureMCMC(m)
+    expect_match(conf$getSamplers()[[3]]$name, "conjugate_dnorm_dnorm",
+                 info = "failed to detect normal-normal conjugacy with complicated indexing")
+    expect_match(conf$getSamplers()[[13]]$name, "conjugate_dinvgamma_dnorm",
+                 info = "failed to detect invgamma-normal conjugacy with complicated indexing")
+
+    code = nimbleCode({
+        for(i in 1:2) {
+            k2[i] <- s0 + k1[i]
+            k1[i] ~ dbern(p)
+            for(j in 1:3)
+                for(l in 1:2) {
+                    y[i,j,l] ~ dnorm(mu[1+k1[i], 2, k2[i]], var = s0)
+                    mu[i, j, l] ~ dnorm(0, 1)
+                }
+        }
+        s0 ~ dinvgamma(1,1)
+    })
+    m = nimbleModel(code, data = list(y = array(rnorm(2*2*3), c(2,3,2))),
+                    inits = list(s0 = 1, k1 = rep(0,2)))
+    conf <- configureMCMC(m)
+    expect_match(conf$getSamplers()[[3]]$name, "conjugate_dnorm_dnorm",
+                 info = "failed to detect normal-normal conjugacy with complicated indexing, var not conjugate")
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[13]]$name)), 0,
+                 info = "incorrectly detected conjugacy for variance with complicated indexing, var not conjugate") 
+
 })
+
+
 
 
 ## MCMC testing
@@ -211,23 +366,24 @@ test_that('basic mixture model with conjugacy', {
               inits = list(sigma = rep(1,4), mu = c(-1, 0, 1, 2),
                            p = rep(.25, 4), k = sample(1:4, n, replace = TRUE),
                            mu0 = 0, a = 1, b = 1, tau = 1, alpha = rep(1, 4)),
-              results = list(mean = list("mu[1]" = mns[3],
-                                         "mu[2]" = mns[4],
+              results = list(mean = list("mu[1]" = mns[4],
+                                         "mu[2]" = mns[3],
                                          "mu[3]" = mns[1],
                                          "mu[4]" = mns[2],
-                                         "p[1]" = p[3],
-                                         "p[2]" = p[4],
+                                         "p[1]" = p[4],
+                                         "p[2]" = p[3],
                                          "p[3]" = p[1],
                                          "p[4]" = p[2])),
-              resultsTolerance = list(mean = list("mu[1]" = .7,
-                                                  "mu[2]" = .02,
-                                                  "mu[3]" = .02,
+              resultsTolerance = list(mean = list("mu[1]" = .1,
+                                                  "mu[2]" = .5,
+                                                  "mu[3]" = .1,
                                                   "mu[4]" = .3,
-                                                  "p[1]" = .08,
-                                                  "p[2]" = .02,
+                                                  "p[1]" = .02,
+                                                  "p[2]" = .07,
                                                   "p[3]" = .05,
-                                                  "p[4]" = .05))
+                                                  "p[4]" = .02))
               )
+
 })
 
 test_that('basic mixture model without conjugacy', {
@@ -257,20 +413,20 @@ test_that('basic mixture model without conjugacy', {
                            mu0 = 4, tau = 1, alpha = rep(1, 4)),
               results = list(mean = list("mu[1]" = mns[3],
                                          "mu[2]" = mns[4],
-                                         "mu[3]" = mns[2],
-                                         "mu[4]" = mns[1],
+                                         "mu[3]" = mns[1],
+                                         "mu[4]" = mns[2],
                                          "p[1]" = p[3],
                                          "p[2]" = p[4],
-                                         "p[3]" = p[2],
-                                         "p[4]" = p[1])),
+                                         "p[3]" = p[1],
+                                         "p[4]" = p[2])),
               resultsTolerance = list(mean = list("mu[1]" = .5,
-                                                  "mu[2]" = 1,
+                                                  "mu[2]" = .8,
                                                   "mu[3]" = 1.5,
-                                                  "mu[4]" = 2,
+                                                  "mu[4]" = 1,
                                                   "p[1]" = .03,
-                                                  "p[2]" = .15,
-                                                  "p[3]" = .05,
-                                                  "p[4]" = .15))
+                                                  "p[2]" = .12,
+                                                  "p[3]" = .12,
+                                                  "p[4]" = .05))
               )
 })
 
