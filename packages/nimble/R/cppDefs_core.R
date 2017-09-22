@@ -231,7 +231,7 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                             methods = list(
                                 generate = function(indent = '', ...) {
                                     if(isTRUE(cppADCode)){
-                                      if(isTRUE(nimbleUserNamespace$cppADCode)){
+                                      if(!isTRUE(nimbleUserNamespace$cppADCode)){
                                         nimbleUserNamespace$cppADCode <- TRUE
                                         on.exit(nimbleUserNamespace$cppADCode <- FALSE)
                                       }

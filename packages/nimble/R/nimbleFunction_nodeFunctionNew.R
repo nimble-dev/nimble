@@ -92,6 +92,36 @@ nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()
   return(indexExprList)
 }
 
+# nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()){
+#   if(is.call(code)){
+#     if(deparse(code[[1]]) == '[') {
+#       if(deparse(code[[2]]) %in% nodesToExtract){
+#         thisIndexExpr <- list()
+#         for(i in 1:(length(code)-2)){
+#           if(is.call(code[[i + 2]]) && deparse(code[[i+2]][[1]]) == ':'){
+#             thisIndexExpr[[i]]   <- list(code[[i+2]][[2]], code[[i+2]][[3]])
+#           }
+#           else{
+#             thisIndexExpr[[i]] <- code[[i+2]]
+#           }
+#         }
+#         if(is.null(indexExprList[[deparse(code[[2]])]])) indexExprList[[deparse(code[[2]])]][[1]]$indexExpr <- thisIndexExpr
+#         else{
+#           indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]]) + 1]] <- list()
+#           indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]])]]$indexExpr <- thisIndexExpr
+#         }
+#         return(indexExprList)
+#       }
+#     }
+#     if(length(code) > 1){
+#       for(i in 2:length(code)){
+#         indexExprList <- nndf_extractNodeIndices(code[[i]], nodesToExtract, indexExprList)
+#       }
+#     }
+#   }
+#   return(indexExprList)
+# }
+
 nndf_replaceSetupOutputsWithIndexedNodeInfo <- function(code, setupOutputLabels) {
     cLength <- length(code)
     if(cLength == 1) {
@@ -259,37 +289,6 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
 
     return(methodList)
 }
-
-nndf_extractNodeIndices <- function(code, nodesToExtract, indexExprList = list()){
-  if(is.call(code)){
-    if(deparse(code[[1]]) == '[') {
-      if(deparse(code[[2]]) %in% nodesToExtract){
-        thisIndexExpr <- list()
-        for(i in 1:(length(code)-2)){
-          if(is.call(code[[i + 2]]) && deparse(code[[i+2]][[1]]) == ':'){
-            thisIndexExpr[[i]]   <- list(code[[i+2]][[2]], code[[i+2]][[3]])
-          }
-          else{
-            thisIndexExpr[[i]] <- code[[i+2]]
-          }
-        }
-        if(is.null(indexExprList[[deparse(code[[2]])]])) indexExprList[[deparse(code[[2]])]][[1]]$indexExpr <- thisIndexExpr
-        else{
-          indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]]) + 1]] <- list()
-          indexExprList[[deparse(code[[2]])]][[length(indexExprList[[deparse(code[[2]])]])]]$indexExpr <- thisIndexExpr
-        }
-        return(indexExprList)
-      }
-    }
-    if(length(code) > 1){
-      for(i in 2:length(code)){
-        indexExprList <- nndf_extractNodeIndices(code[[i]], nodesToExtract, indexExprList)
-      }
-    }
-  }
-  return(indexExprList)
-}
-
 
 nndf_addArgInfoToCalcAD <- function(code, argName, argNum){
   for(i in seq_along(code)){
