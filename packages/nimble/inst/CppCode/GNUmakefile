@@ -7,7 +7,23 @@ ifndef R_SHARE_DIR
  R_SHARE_DIR=$(R_HOME)/share
 endif
 
--include $(R_HOME)/etc$(R_ARCH)/Makeconf
+ 
+## By default, R's C++ compilation system generates debugging information,
+## typically by a -g flag.  This makes the size of libnimble.a much much larger
+## than it would be without debugging information
+##
+## The R compilation flags are defined in $(R_HOME)/etc$(R_ARCH)/Makeconf
+## As a jerry-built way to disable this, we copy that Makeconf locally, modify to
+## and include that.  Later in the script we erase it so it doesn't end up
+## distributed in any tarball, since it will have contents relative to the
+## *build* machine.
+
+## To enable -g and hence much larger libnimble, comment the next 2 lines
+## as well as the lines in the make targets indicated further down,
+## and uncomment the 3rd line down
+$(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
+-include ./Makeconf
+## -include $(R_HOME)/etc$(R_ARCH)/Makeconf ## uncomment this line to get debugging information
 include ./Makevars
 
 ifndef OS
@@ -24,6 +40,8 @@ libnimble$(DYLIB_EXT): $(OBJECTS)
 	@echo "$(OS)   $(INSTALL_NAME)"
 	$(CXX) $(SHLIB_CXXLDFLAGS) -o $@  $(OBJECTS) $(INSTALL_NAME)
 	-rm *.o
+	$(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./removeCustomizedMakeconf.R
+
 
 #	cp libnimble$(DYLIB_EXT) ../../src
 
@@ -41,4 +59,4 @@ libnimble.a  libnimble_x64.a libnimble_i386.a: $(OBJECTS)
 	echo "$(OBJECTS)"
 	$(AR) rcs $@ $(OBJECTS)
 	-rm $(OBJECTS)
-
+	$(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./removeCustomizedMakeconf.R
