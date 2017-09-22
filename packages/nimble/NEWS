@@ -3,9 +3,15 @@ USER LEVEL CHANGES
 
 -- Improved efficiency of MCMC conjugate samplers.
 
+-- Added dcat-ddirch conjugacy.
+
+-- Addition of nimbleMCMC function, providing the most direct one-line invocation of NIMBLE's MCMC engine.
+
 BUG FIXES
 
 -- Fixed MCMC autoBlocking procedure, to work with new sampler default values system.
+
+-- Fixed MCMC conjugacy system, detection of indexed node names vs. indexed expressions.
 
 
                            CHANGES IN VERSION 0.6-6 (July 2017)
