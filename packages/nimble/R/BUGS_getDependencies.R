@@ -128,8 +128,9 @@ nimDerivsInfoClass <- setRefClass(
           length(model$expandNodeNames(
             lapply(model$modelDef$declInfo[[declIDs[x]]]$symbolicParentNodesReplaced, function(y){
               if(!unrolledIndicesMatrixRows[x] == 0){
-                deparse(recurseReplaceIndices(y,
-                                              model$modelDef$declInfo[[declIDs[x]]]$unrolledIndicesMatrix[unrolledIndicesMatrixRows[x],]))
+                deparse(eval(substitute(substitute(code, 
+                                           as.list(model$modelDef$declInfo[[declIDs[x]]]$unrolledIndicesMatrix[unrolledIndicesMatrixRows[x],])),
+                                list(code = y))))
               }
               else{
                 deparse(y)
@@ -284,26 +285,6 @@ nimDerivsInfoClass <- setRefClass(
         }
       },
 
-      # ### A function that substitutes correct values of unrolledIndicesMatrix
-      # ### into symbolicParentNodesReplaced.
-      recurseReplaceIndices = function(code, unrolledIndicesRow){
-        replaceNames <- names(unrolledIndicesRow)
-        if(length(code) > 1){
-          for(i in seq_along(code)){
-            if(length(code[[i]]) > 1){
-              code[[i]] <- recurseReplaceIndices(code[[i]], unrolledIndicesRow)
-            }
-            else if(deparse(code[[i]]) %in% replaceNames){
-              code[[i]] <- unrolledIndicesRow[deparse(code[[i]])]
-            }
-          }
-        }
-        else if(deparse(code) %in% replaceNames){
-          code <- unrolledIndicesRow[deparse(code)]
-        }
-        return(code)
-      },
-      # 
       ## A function that converts the name of an argument to a calculateWithArgs
       ## function to a character string representing that argument in the model,
       ## a possible example:
