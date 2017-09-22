@@ -1,7 +1,3 @@
-library(nimble)
-library(coda)
-library(parallel)
-
 crossValCalculate <- function(MCMCOut, realData){
   discrep <- sum(colMeans((MCMCOut - saveData)^2))
   return(discrep)
@@ -24,11 +20,48 @@ getSD <- function(MCMCout, sampNum, NbootReps, saveData){
   return(sd(blockcvValues))
 }
 
+calcCrossVal <- function(i,
+                         prepModel,
+                         leaveOutNames,
+                         currentDataNames,
+                         mcmcIter,
+                         burnInProp,
+                         returnSamples,
+                         NbootReps){
+  saveData <- values(prepModel, leaveOutNames[[i]])
+  newModel <- prepModel$newModel()
+  newModel$resetData()
+  browser()
+  values(newModel, leaveOutNames[[i]]) <- NA
+  newModel$setData(currentDataNames[[i]])
+  compileNimble(newModel)
+  modelMCMCConf <- configureMCMC(newModel,
+                                 monitors = leaveOutNames[[i]])
+  modelMCMC <- buildMCMC(modelMCMCConf)
+  C.modelMCMC <- compileNimble(modelMCMC,
+                               project = newModel,
+                               resetFunctions = (i != 1))
+  C.modelMCMC$run(MCMCIter)
+  MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames[[i]]]
+  sampNum <- dim(MCMCout)[1]
+  startIndex <- max(c(ceiling(burnInProp*MCMCIter), 1))
+  message(paste("dropping data block", i))
+  crossValAveSD <- getSD(MCMCout=MCMCout, sampNum=sampNum,
+                         NbootReps=NbootReps,
+                         saveData=saveData)
+  crossVal <- crossValCalculate(MCMCout[startIndex:sampNum,], saveData)
+  nimble:::clearCompiled(C.modelMCMC)
+  return(list(crossValAverage = crossVal,
+              crossValAveSD = crossValAveSD,
+              samples= if(returnSamples) MCMCout else NA))
+}
+
+
 runCrossValidate <- function(model,
                              dataNames,
+                             k,
                              MCMCIter,
-                             burnInProp, thin,
-                             leaveOutIndex,
+                             burnInProp, 
                              MCMCdefs=NULL,
                              returnSamples=FALSE,
                              NbootReps=200){
@@ -42,9 +75,9 @@ runCrossValidate <- function(model,
   if(!inherits(model, "RmodelBaseClass")){
     stop("model is not an Rmodel")
   }
-  if(thin == 0 | thin > MCMCIter){
-    stop("thin needs to be an integer > 0 and < MCMCIter")
-  }
+  # if(thin == 0 | thin > MCMCIter){
+  #   stop("thin needs to be an integer > 0 and < MCMCIter")
+  # }
   if(burnInProp >= 1 | burnInProp < 0){
     stop("burnInProp needs to be between 0 and 1")
   }
@@ -67,53 +100,21 @@ runCrossValidate <- function(model,
   reducedDataNodeNames <- allDataNodeNames
   for(i in 1:(k-1)){
     leaveOutNames[[i]] <- sample(reducedDataNodeNames, approxNumPerFold)
-    reducedDataNodeNames <- reducedDataNodeNames[-which(reducedDataNodeNames == leaveOutNames[[i]])]
-    currentDataNames[[i]] <- allDataNodeNames[-which(reducedDataNodeNames == leaveOutNames[[i]])]
+    reducedDataNodeNames <- reducedDataNodeNames[-which(reducedDataNodeNames %in% leaveOutNames[[i]])]
+    currentDataNames[[i]] <- allDataNodeNames[-which(allDataNodeNames %in% leaveOutNames[[i]])]
   }
   leaveOutNames[[k]] <- reducedDataNodeNames
-  currentDataNames[[k]] <- allDataNodeNames[-which(reducedDataNodeNames == leaveOutNames[[k]])]
+  currentDataNames[[k]] <- allDataNodeNames[-which(allDataNodeNames %in% leaveOutNames[[k]])]
   
   prepModel <- model$newModel()
-  calcCrossVal <- function(i,
-                           leaveOutNames,
-                           currentDataNames,
-                           mcmcIter,
-                           burnInProp,
-                           returnSamples){
-    saveData <- values(prepModel, leaveOutNames[[i]])
-    newModel <- prepModel$newModel()
-    newModel$resetData()
-    values(newModel, leaveOutNames[[i]]) <- NA
-    newModel$setData(currentDataNames[[i]])
-    compileNimble(newModel)
-    modelMCMCConf <- configureMCMC(newModel,
-                                   monitors = leaveOutNames[[i]],
-                                   thin = thin)
-    modelMCMC <- buildMCMC(modelMCMCConf)
-    C.modelMCMC <- compileNimble(modelMCMC,
-                                 project = newModel,
-                                 resetFunctions = (i != 1))
-    C.modelMCMC$run(MCMCIter)
-    MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames[[i]]]
-    sampNum <- dim(MCMCout)[1]
-    startIndex <- max(c(ceiling(burnInProp*MCMCIter), 1))
-    message(paste("dropping data block", i))
-    crossValAveSD <- getSD(MCMCout=MCMCout, sampNum=sampNum,
-                           NbootReps=NbootReps,
-                           dataDimensions= dataDimensions,
-                           saveData=saveData)
-    crossVal <- crossValCalculate(MCMCout[startIndex:sampNum,], saveData)
-    nimble:::clearCompiled(C.modelMCMC)
-    return(list(crossValAverage = crossVal,
-                crossValAveSD = crossValAveSD,
-                samples= if(returnSamples) MCMCout else NA))
-  }
-  crossValOut <- mclapply(1:numBlocks, calcCrossVal,
+  crossValOut <- mclapply(1:k, calcCrossVal,
+                          prepModel,
                           leaveOutNames,
                           currentDataNames,
                           mcmcIter,
                           burnInProp,
-                          returnSamples)
+                          returnSamples,
+                          NbootReps)
   crossVal <- sum(sapply(crossValOut, function(x) x$crossValAverage),
                   na.rm=TRUE)
   crossValSD <- sqrt(sum(sapply(crossValOut,
