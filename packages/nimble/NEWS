@@ -5,6 +5,8 @@ USER LEVEL CHANGES
 
 -- Added dcat-ddirch conjugacy.
 
+-- Addition of nimbleMCMC function, providing the most direct one-line invocation of NIMBLE's MCMC engine.
+
 BUG FIXES
 
 -- Fixed MCMC autoBlocking procedure, to work with new sampler default values system.
