@@ -60,9 +60,9 @@ exprClass <- R6Class(
             ## Iterate through arguments and show them with more indenting
             for(i in seq_along(args)) {
                 if(inherits(args[[i]], 'exprClass')) {
-                    args[[i]]$show(paste0(indent, '  '), showType, showAssertions, showToEigenize)
+                    args[[i]]$print(paste0(indent, '  '), showType, showAssertions, showToEigenize)
                     ## check caller and callerArgID validity
-                    if(!identical(args[[i]]$caller, .self) |
+                    if(!identical(args[[i]]$caller, self) |
                        args[[i]]$callerArgID != i)
                         writeLines(paste0(indent, '****',
                                           'Warning: caller and/or callerID are not set correctly.'))
