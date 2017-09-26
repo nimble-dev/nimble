@@ -1278,6 +1278,10 @@ test_that('dcar_proper sampling', {
     expect_equal(calculate(Cmodel), lp, tol = 1E-5,
                  info = 'calculate for dcar_proper(), compiled')
     
+    weights <- rep(1, 6)
+    CM <- as.carCM(adj, weights, num)
+    C <- CM$C
+    M <- CM$M
     Q <- tau * diag(1/M) %*% (diag(4) - gamma*CAR_calcCmatrix(C, adj, num))
     lp <- dmnorm_chol(x, mu, chol = chol(Q), prec_param = TRUE, log = TRUE)
     
