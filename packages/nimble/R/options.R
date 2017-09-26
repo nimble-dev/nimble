@@ -143,6 +143,7 @@ getNimbleOption <- function(x) {
 #' # ...do stuff...
 #' nimbleOptions(old)                        # Restores old options.
 nimbleOptions <- function(...) {
+    invisibleReturn <- FALSE
     args <- list(...)
     if (!length(args)) {
         # Get all nimble options.
@@ -161,10 +162,11 @@ nimbleOptions <- function(...) {
             setNimbleOption(names(args)[[i]], args[[i]])
         }
         args <- names(args)
+        invisibleReturn <- TRUE
     }
     out <- as.list(.nimbleOptions)[args]
     if(length(out) == 1) out <- out[[1]]
-    return(out)
+    if(invisibleReturn) return(invisible(out)) else return(out)
 }
 
 #' Temporarily set some NIMBLE options.
