@@ -821,7 +821,16 @@ modelDefClass$methods(replaceAllConstants = function() {
     }
 })
 
-neverReplaceable <- list(chol = TRUE, inverse = TRUE, CAR_calcNumIslands = TRUE, CAR_calcEVs = TRUE) ## only the names matter, any non-null value will do.
+neverReplaceable <- list(
+    ## only the names matter, any non-null value will do
+    chol = TRUE,
+    inverse = TRUE,
+    CAR_calcNumIslands = TRUE,
+    CAR_calcC = TRUE,
+    CAR_calcM = TRUE,
+    CAR_calcEVs2 = TRUE,
+    CAR_calcEVs3 = TRUE
+)
 
 replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) {
     ## This takes as input a call and an environment or list of constants (only names matter)
@@ -904,9 +913,16 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
     stop('Error, hit end')
 }
 
-liftedCallsDoNotAddIndexing <- c('CAR_calcNumIslands')
+liftedCallsDoNotAddIndexing <- c(
+    'CAR_calcNumIslands'
+)
 
-liftedCallsGetIndexingFromArgumentNumbers <- list(CAR_calcEVs = c(3))
+liftedCallsGetIndexingFromArgumentNumbers <- list(
+    CAR_calcC = c(1),
+    CAR_calcM = c(1),
+    CAR_calcEVs2 = c(2),
+    CAR_calcEVs3 = c(3)
+)
 
 modelDefClass$methods(liftExpressionArgs = function() {
     ## overwrites declInfo (*and adds*), lifts any expressions in distribution arguments to new nodes
@@ -967,7 +983,10 @@ isExprLiftable <- function(paramExpr) {
         if(paramExpr[[1]] == 'chol')        return(TRUE)    ## do lift calls to chol(...)
         if(paramExpr[[1]] == 'inverse')     return(TRUE)    ## do lift calls to inverse(...)
         if(paramExpr[[1]] == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
-        if(paramExpr[[1]] == 'CAR_calcEVs') return(TRUE)    ## do lift calls to CAR_calcEVs(...)
+        if(paramExpr[[1]] == 'CAR_calcC')   return(TRUE)    ## do lift calls to CAR_calcC(...)
+        if(paramExpr[[1]] == 'CAR_calcM'  ) return(TRUE)    ## do lift calls to CAR_calcM(...)
+        if(paramExpr[[1]] == 'CAR_calcEVs2')return(TRUE)    ## do lift calls to CAR_calcEVs2(...)
+        if(paramExpr[[1]] == 'CAR_calcEVs3')return(TRUE)    ## do lift calls to CAR_calcEVs3(...)
         if(length(paramExpr) == 1)          return(FALSE)   ## don't generally lift function calls:   fun(...) ## this comment seems incorrect
         if(getCallText(paramExpr) == '[')   return(FALSE)   ## don't lift simply indexed expressions:  x[...]
         ## if(getCallText(paramExpr) == '[') { ## these lines are for future handling of foo()[]

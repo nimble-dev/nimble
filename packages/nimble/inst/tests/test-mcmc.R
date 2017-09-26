@@ -1210,14 +1210,45 @@ test_that('dcar_normal sampling', {
 
 
 
+## testing dcar_proper density evaluation,
+## and generation of default values of C and M
+test_that('dcar_proper density evaluation', {
+    cat('===== Starting test dcar_proper density evaluations. =====')
+
+    x <- c(1, 3, 3, 4)
+    mu <- rep(3, 4)
+    adj <- c(2, 1,3, 2,4, 3)
+    num <- c(1, 2, 2, 1)
+    lp <- 0.004158475
+    expect_equal(dcar_proper(x, mu, adj=adj, num=num, tau=1, gamma=0), lp,
+                 info = 'C density evaluation for dcar_proper() omitting C and M')
+
+    weights <- rep(1, 6)
+    CM <- as.carCM(adj, weights, num)
+    C <- CM$C
+    M <- CM$M
+    expect_equal(dcar_proper(x, mu, C, adj, num, M, tau=1, gamma=0), lp,
+                 info = 'C density evaluation for dcar_proper() weights all one')
+
+    weights <- c(2, 2, 3, 3, 4, 4)
+    CM2 <- as.carCM(adj, weights, num)
+    C2 <- CM2$C
+    M2 <- CM2$M
+    lp2 <- 0.001050636
+    expect_equal(dcar_proper(x, mu, C2, adj, num, M2, tau=1, gamma=0), lp2,
+                 info = 'C density evaluation for dcar_proper() weights different')
+})
+
+
+
 ## testing dcar_proper sampling
 test_that('dcar_proper sampling', {
     cat('===== Starting MCMC test dcar_proper sampling. =====')
 
     code <- nimbleCode({
         tau ~ dgamma(0.001, 0.001)
-        gamma ~ dunif(gMin, gMax)
-        x[1:N] ~ dcar_proper(mu[1:N], C[1:L], adj[1:L], num[1:N], M[1:N], tau, gamma)
+        gamma ~ dunif(-1, 1)
+        x[1:N] ~ dcar_proper(mu[1:N], adj=adj[1:L], num=num[1:N], tau=tau, gamma=gamma)
         for(i in 1:N) {
             y[1] ~ dnorm(x[1], 1)
             y[2] ~ dnorm(3*x[2] + 5, 10)
@@ -1229,24 +1260,22 @@ test_that('dcar_proper sampling', {
     mu <- 1:4
     adj <- c(2, 1, 3, 2, 4, 3)
     num <- c(1, 2, 2, 1)
-    M <- 1:4
-    C <- CAR_calcC(adj, num, M)
-    bounds <- CAR_calcBounds(C, adj, num, M)
     tau <- 1
-    gamma <- as.numeric(quantile(bounds, 0.8))
+    gamma <- 0
     y <- c(3, 6, 8, 10)
     x <- rep(0, 4)
-    constants <- list(mu = mu, C = C, adj = adj, num = num, M = M, N = 4, L = 6, gMin = bounds[1], gMax = bounds[2])
+    constants <- list(mu = mu, adj = adj, num = num, N = 4, L = 6)
     data <- list(y = y)
     inits <- list(tau = tau, gamma = gamma, x = x)
 
     Rmodel <- nimbleModel(code, constants, data, inits)
     Cmodel <- compileNimble(Rmodel)
+    lp <- -574.964
     
-    expect_equal(calculate(Rmodel), -557.7978, tol = 1E-5,
+    expect_equal(calculate(Rmodel), lp, tol = 1E-5,
                  info = 'calculate for dcar_proper()')
     
-    expect_equal(calculate(Cmodel), -557.7978, tol = 1E-5,
+    expect_equal(calculate(Cmodel), lp, tol = 1E-5,
                  info = 'calculate for dcar_proper(), compiled')
     
     Q <- tau * diag(1/M) %*% (diag(4) - gamma*CAR_calcCmatrix(C, adj, num))
@@ -1286,7 +1315,7 @@ test_that('dcar_proper sampling', {
                 info = 'agreement between R and C sampling of dcar_proper')
 
     expect_equal(as.numeric(Csamples[20, sampleNames]),
-                 c(0.3957632, 0.4388424, 1.5625223, 0.2071691, 2.6513380, -3.1753125),
+                 c(0.0978025, -0.6643286, 1.9510954, 0.2413084, 2.6684426, -3.2533691),
                  tolerance = 1e-6,
                  info = 'exact sample values for dcar_proper')
 })

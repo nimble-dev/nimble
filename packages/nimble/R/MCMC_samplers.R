@@ -1416,7 +1416,7 @@ CAR_scalar_postPred <- nimbleFunction(
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         }
         priorPrec <- dcarList[[1]]$getPrec()
-        if(priorPrec == 0) return()    ## dcar_normal component with zero neighbors has prec = 0
+        if(priorPrec == 0) return()    ## dcar_normal with 0 neighbors, or dcar_proper with 0 neighbors and auto-generated M
         newValue <- rnorm(1, mean = dcarList[[1]]$getMean(), sd = sqrt(1/priorPrec))
         model[[targetScalar]] <<- newValue
         model$calculate(calcNodes)

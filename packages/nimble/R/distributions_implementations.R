@@ -933,29 +933,45 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #'
 #' @details
 #'
-#' The \code{C} and \code{M} parameters must jointly satisfy a symmetry constraint: that \code{M^-1 %*% C} is symmetric, where \code{M} is a diagonal matrix and \code{C} is the weight matrix.  A vector \code{C} that satisfies this constraint can be generated using the function \code{CAR_calcC(adj, num, M)}.
+#' If both C and M are omitted, then all weights are taken as one, and corresponding values of C and M are generated.
 #'
-#' The value of \code{gamma} is constrained to lie within the inverse minimum and maximum eigenvalues of \code{M^(-0.5) %*% C %*% M^(0.5)}, where \code{M} is a diagonal matrix and \code{C} is the weight matrix.  These bounds can be calculated using the deterministic functions \code{CAR_calcMinBound(C, adj, num, M)} and \code{CAR_calcMaxBound(C, adj, num, M)}, or simultaneously using \code{CAR_calcBounds(C, adj, num, M)}.
+#' The \code{C} and \code{M} parameters must jointly satisfy a symmetry constraint: that \code{M^-1 %*% C} is symmetric, where \code{M} is a diagonal matrix and \code{C} is the full weight matrix which is sparsely represented by the parameter vector \code{c}.
+#'
+#' The value of \code{gamma} is constrained to lie within the inverse minimum and maximum eigenvalues of \code{M^(-0.5) %*% C %*% M^(0.5)}, where \code{M} is a diagonal matrix and \code{C} is the full weight matrix.  These bounds can be calculated using the deterministic functions \code{carMinBound(C, adj, num, M)} and \code{carMaxBound(C, adj, num, M)}, or simultaneously using \code{carBounds(C, adj, num, M)}.  In the case where C and M are omitted (all weights equal to one), the bounds on gamma are necessarily [-1, 1].
 #'
 #' @return \code{dcar_proper} gives the density, and \code{rcar_proper} generates random deviates.
 #' @references Banerjee, S., Carlin, B.P., and Gelfand, E.G. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
 #' @seealso \link{CAR-Normal}, \link{Distributions} for other standard distributions
 #'
 #' @examples
+#'
 #' x <- c(1, 3, 3, 4)
 #' mu <- rep(3, 4)
 #' adj <- c(2, 1,3, 2,4, 3)
 #' num <- c(1, 2, 2, 1)
-#' M <- rep(1, 4)
-#' C <- CAR_calcC(adj, num, M)
-#' tau <- 1
-#' gamma <- (CAR_calcMinBound(C, adj, num, M) + CAR_calcMaxBound(C, adj, num, M)) / 2
-#' lp <- dcar_proper(x, mu, C, adj, num, M, tau, gamma)
+#'  
+#' ## omitting C and M uses all weights = 1
+#' dcar_proper(x, mu, adj=adj, num=num, tau=1, gamma=0)
+#'  
+#' ## equivalent to above: specifying all weights = 1,
+#' ## then using as.carCM to generate C and M arguments
+#' weights <- rep(1, 6)
+#' CM <- as.carCM(adj, weights, num)
+#' C <- CM$C
+#' M <- CM$M
+#' dcar_proper(x, mu, C, adj, num, M, tau=1, gamma=0)
+#'  
+#' ## now using non-unit weights
+#' weights <- c(2, 2, 3, 3, 4, 4)
+#' CM2 <- as.carCM(adj, weights, num)
+#' C2 <- CM2$C
+#' M2 <- CM2$M
+#' dcar_proper(x, mu, C2, adj, num, M2, tau=1, gamma=0)
 NULL
 
 #' @rdname CAR-Proper
 #' @export
-dcar_proper <- function(x, mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num), log = FALSE) {
+dcar_proper <- function(x, mu, C = CAR_calcC(adj, num), adj, num, M = CAR_calcM(num), tau, gamma, evs = CAR_calcEVs3(C, adj, num), log = FALSE) {
     CAR_proper_checkAdjNumCM(adj, num, C, M)
     if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
     if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
@@ -969,7 +985,7 @@ dcar_proper <- function(x, mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, 
 
 #' @rdname CAR-Proper
 #' @export
-rcar_proper <- function(n = 1, mu, C, adj, num, M, tau, gamma, evs = CAR_calcEVs(C, adj, num)) {
+rcar_proper <- function(n = 1, mu, C = CAR_calcC(adj, num), adj, num, M = CAR_calcM(num), tau, gamma, evs = CAR_calcEVs3(C, adj, num)) {
     if(n != 1) warning('rcar_proper only handles n = 1 at the moment')
     CAR_proper_checkAdjNumCM(adj, num, C, M)
     if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'

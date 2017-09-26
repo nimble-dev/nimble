@@ -1,31 +1,4 @@
 
-
-
-#' Convert CAR structural parameters to adjecency, weights, num format
-#'
-#' This will convert alternate representations of CAR process structure into
-#' (adj, weights, num) form required by dcar_normal.  Two alternate
-#' representations are handled:
-#'
-#' A single matrix argument will be interpreted as a matrix of symmetric un-normalized weights;
-#'
-#' Two lists will be interpreted as (the first) a list of numeric vectors
-#' specifying the adjacency (neighboring) indices of each CAR process component,
-#' and (the second) a list of numeric vectors giving the un-normalized weights
-#' for each of these neighboring relationships.
-#'
-#' @param ... Either: a symmetric matrix of un-normalized weights, or two lists specifying adjacency indices and the corresponding un-normalized weights.
-#'
-#' @author Daniel Turek
-#' @export
-as.carAdjacency <- function(...) {
-    args <- list(...)
-    if(length(args) == 1) return(CAR_convertWeightMatrix(...))
-    if(length(args) == 2) return(CAR_convertNeighborWeightLists(...))
-    stop('wrong arguments to as.carAdjacency')
-}
-
-
 CAR_convertNeighborWeightLists <- function(neighborList, weightList) {
     adj <- unlist(neighborList)
     weights <- unlist(weightList)
@@ -38,6 +11,70 @@ CAR_convertWeightMatrix <- function(weightMatrix) {
     neighborList <- apply(weightMatrix, 1, function(row) which(row > 0))
     weightList <- apply(weightMatrix, 1, function(row) row[which(row > 0)])
     return(CAR_convertNeighborWeightLists(neighborList, weightList))
+}
+
+
+#' Convert CAR structural parameters to adjecency, weights, num format
+#'
+#' This will convert alternate representations of CAR process structure into
+#' (adj, weights, num) form required by dcar_normal.  Two alternate
+#' representations are handled:
+#'
+#' A single matrix argument will be interpreted as a matrix of symmetric unnormalized weights;
+#'
+#' Two lists will be interpreted as (the first) a list of numeric vectors
+#' specifying the adjacency (neighboring) indices of each CAR process component,
+#' and (the second) a list of numeric vectors giving the unnormalized weights
+#' for each of these neighboring relationships.
+#'
+#' @param ... Either: a symmetric matrix of unnormalized weights, or two lists specifying adjacency indices and the corresponding unnormalized weights.
+#'
+#' @seealso \code{\link{CAR-Normal}}
+#'
+#' @author Daniel Turek
+#' @export
+as.carAdjacency <- function(...) {
+    args <- list(...)
+    if(length(args) == 1) return(CAR_convertWeightMatrix(...))
+    if(length(args) == 2) return(CAR_convertNeighborWeightLists(...))
+    stop('wrong arguments to as.carAdjacency')
+}
+
+
+#' Convert weights vector to C and M parameters to dcar_proper() distribution
+#'
+#' Given a symmetric matrix of unnormalized weights, this function will calculate corresponding values for the C and M arguments suitable for use in the dcar_proper distribution.  This function can be used to transition between usage of dcar_normal and dcar_proper, since dcar_normal uses the adj, weights, and num arguments, while dcar_proper requires adj, num, and also the C and M as returned by this function.
+#'
+#' Here, C is a sparse vector representation of the row-normalized adjacency matrix, and M is a vector of conditional variances for each region.  The resulting values of C and M are guaranteed to satisfy the symmetry constraint imposed on C and M, that M^-1 %*% C is symmetric, where M is a diagonal matrix and C is the row-normalized adjacency matrix.
+#' 
+#' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.  This is a sparse representation of the full (unnormalized) weight matrix.
+#' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
+#'
+#' @return A named list with elements C and M.  These may be used as the C and M arguments to the dcar_proper() distribution.
+#'
+#' @seealso \code{\link{CAR-Normal}} \code{\link{CAR-Proper}}
+#'
+#' @author Daniel Turek
+#' @export
+as.carCM <- function(adj, weights, num) {    ## CAR_calcCM
+    CAR_normal_checkAdjWeightsNum(adj, weights, num)
+    N <- length(num)
+    L <- length(adj)
+    M <- rep(-1234, N)
+    C <- rep(0, L)
+    for(i in 1:N) {
+        if(num[i] > 0) {
+            startInd <- 1
+            if(i > 1) startInd <- startInd + sum(num[1:(i-1)])
+            theseInd <- startInd:(startInd+num[i]-1)
+            theseWeights <- weights[theseInd]
+            wPlus <- sum(theseWeights)
+            C[theseInd] <- theseWeights / wPlus
+            M[i] <- 1/wPlus
+        }
+    }
+    return(list(C = C, M = M))
 }
 
 
@@ -80,13 +117,14 @@ CAR_proper_checkAdjNumCM <- function(adj, num, C, M) {
     if(sum(num) != length(adj)) stop('length of adj argument to dcar_proper() must be equal to total number of neighbors specified in num argument')
     if(length(adj) != length(C)) stop('length of adj and C arguments to dcar_proper() must be the same')
     if(any(C <= 0)) stop('C argument to dcar_proper() should only contain positive values')
-    ##if(any(C > 1)) stop('C argument to dcar_proper() values cannot exceed one (normalised weights)')   ## winBUGS example contradicts this
-    if(any(M <= 0)) stop('M argument to dcar_proper() should only contain positive values (conditional variances)')
+    ## if(any(C > 1)) stop('C argument to dcar_proper() values cannot exceed one')  ## don't enforce
+    ## Mi = -1234 indicates M was auto-generated, and region i has 0 neighbors:
+    if(any((M < 0) & (M != -1234))) stop('M argument to dcar_proper() should only contain positive values (conditional variances)')
     subsetIndList <- CAR_calcSubsetIndList(adj, num)
     for(i in seq_along(subsetIndList)) {
         ind <- subsetIndList[[i]]
         if(length(ind) > 0) {
-            ##if(sum(C[ind]) != 1) stop(paste0('C (normalised weights) for component ', i, 'of dcar_proper distribution must sum to one'))    ## winBUGS example contradicts this
+            ##if(sum(C[ind]) != 1) stop(paste0('C (weights) for region ', i, 'of dcar_proper() distribution must sum to one'))  ## don't enforce
             for(ind.value in ind) {
                 j <- adj[ind.value]
                 if(round(C[ind.value]*M[j] - C[subsetIndList[[j]]][which(adj[subsetIndList[[j]]]==i)]*M[i], 10) != 0)
@@ -178,6 +216,8 @@ CAR_proper_processParams <- function(model, target, C, adj, num, M) {
 #' 
 #' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
+#'
+#' @seealso \code{\link{CAR-Normal}}
 #' 
 #' @author Daniel Turek
 #' @export
@@ -225,19 +265,37 @@ CAR_calcNumIslands <- nimbleFunction(
 )
 
 
+#' Generates the M argument of the dcar_proper distribution
+#' 
+#' Generate the vector of conditional variances, as is required as the M argument of the dcar_proper() distribution.  This is only used internally, and should never need to be invoked directly.
+#' 
+#' @author Daniel Turek
+#' @export
+CAR_calcM <- nimbleFunction(
+    name = 'CAR_calcM',
+    run = function(num = double(1)) {
+        N <- dim(num)[1]
+        M <- rep(-1234, length = N)   ## Mi = -1234 indicates M was auto-generated, and region i has 0 neighbors
+        for(i in 1:N) {
+            if(num[i] > 0) {
+                M[i] <- 1/num[i]
+            }
+        }
+        returnType(double(1))
+        return(M)
+    }
+)
+
+
 #' Generates the C argument of the dcar_proper distribution
-#' 
-#' Generate a sparse vector representation of the normalised adajacency matrix, as is required as the C argument of the dcar_proper() distribution.
-#' 
-#' The values in C are derived from the CAR neighboring relationships, as specified by adj and num, and the conditional variances of each region, as specified by M.  It is also guaranteed to satisfy the symmetry constraint imposed on C and M, that M^-1 %*% C is symmetric.
-#' 
-#' Note, values in C may be larger than one.  The values in C can be modified by any constant factor, and this will be compensated for by the gamma parameter, assuming it is assigned a prior distribution defined on the appropriate range defined by CAR_calcMinBound and CAR_calcMaxBound.
+#'
+#' Generate sparse vector representation of the normalized adajacency matrix C, as is required as the C argument of the dcar_proper() distribution.  This is only used internally, and should never need to be invoked directly.
 #' 
 #' @author Daniel Turek
 #' @export
 CAR_calcC <- nimbleFunction(
     name = 'CAR_calcC',
-    run = function(adj = double(1), num = double(1), M = double(1)) {
+    run = function(adj = double(1), num = double(1)) {
         N <- dim(num)[1]
         L <- dim(adj)[1]
         C <- rep(0, length = L)
@@ -245,7 +303,7 @@ CAR_calcC <- nimbleFunction(
         for(i in 1:N) {
             if(num[i] > 0) {
                 for(j in 1:num[i]) {
-                    C[count] <- sqrt(M[i]/M[adj[count]])
+                    C[count] <- 1/num[i]   ##sqrt(M[i]/M[adj[count]])
                     count <- count + 1
                 }
             }
@@ -257,9 +315,9 @@ CAR_calcC <- nimbleFunction(
 )
 
 
-#' Generates the normalised adjacency matrix for dcar_proper() distribution
+#' Generates the normalized adjacency matrix for dcar_proper() distribution
 #' 
-#' Using the sparse representation of the normalised adajacency matrix, generate the full matrix.  This uses the C, adj, and num parameteres of the dcar_proper() distribution.
+#' Using the sparse representation of the normalized adajacency matrix, generate the full matrix.  This uses the C, adj, and num parameters of the dcar_proper() distribution.
 #' 
 #' @author Daniel Turek
 #' @export
@@ -289,12 +347,12 @@ CAR_calcCmatrix <- nimbleFunction(
 #' 
 #' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).  The lower and upper bounds are returned in a numeric vector.
 #' 
-#' @seealso \code{\link{CAR_calcMinBound}} \code{\link{CAR_calcMaxBound}}
+#' @seealso \code{\link{CAR-Proper}} \code{\link{carMinBound}} \code{\link{carMaxBound}}
 #' 
 #' @author Daniel Turek
 #' @export
-CAR_calcBounds <- nimbleFunction(
-    name = 'CAR_calcBounds',
+carBounds <- nimbleFunction(
+    name = 'carBounds',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
         N <- dim(num)[1]
         L <- dim(adj)[1]
@@ -315,14 +373,14 @@ CAR_calcBounds <- nimbleFunction(
 #' 
 #' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).
 #' 
-#' @seealso \code{\link{CAR_calcMaxBound}} \code{\link{CAR_calcBounds}}
+#' @seealso \code{\link{CAR-Proper}} \code{\link{carMaxBound}} \code{\link{carBounds}}
 #' 
 #' @author Daniel Turek
 #' @export
-CAR_calcMinBound <- nimbleFunction(
-    name = 'CAR_calcMinBound',
+carMinBound <- nimbleFunction(
+    name = 'carMinBound',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
-        bounds <- CAR_calcBounds(C, adj, num, M)
+        bounds <- carBounds(C, adj, num, M)
         returnType(double(0))
         return(bounds[1])
     }
@@ -333,14 +391,14 @@ CAR_calcMinBound <- nimbleFunction(
 #' 
 #' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).
 #' 
-#' @seealso \code{\link{CAR_calcMinBound}} \code{\link{CAR_calcBounds}}
+#' @seealso \code{\link{CAR-Proper}} \code{\link{carMinBound}} \code{\link{carBounds}}
 #' 
 #' @author Daniel Turek
 #' @export
-CAR_calcMaxBound <- nimbleFunction(
-    name = 'CAR_calcMaxBound',
+carMaxBound <- nimbleFunction(
+    name = 'carMaxBound',
     run = function(C = double(1), adj = double(1), num = double(1), M = double(1)) {
-        bounds <- CAR_calcBounds(C, adj, num, M)
+        bounds <- carBounds(C, adj, num, M)
         returnType(double(0))
         return(bounds[2])
     }
@@ -351,36 +409,52 @@ CAR_calcMaxBound <- nimbleFunction(
 #' 
 #' This function is provided as an alias, for compatibility with WinBUGS.
 #' 
-#' @seealso \code{\link{CAR_calcMinBound}} \code{\link{CAR_calcMaxBound}} \code{\link{CAR_calcBounds}}
+#' @seealso \code{\link{CAR-Proper}} \code{\link{carMinBound}} \code{\link{carMaxBound}} \code{\link{carBounds}}
 #' 
 #' @author Daniel Turek
 #' @export
-min.bound <- CAR_calcMinBound
+min.bound <- carMinBound
 
 
 #' Calculate the upper bound for the gamma parameter of the dcar_proper distribution
 #' 
 #' This function is provided as an alias, for compatibility with WinBUGS.
 #' 
-#' @seealso \code{\link{CAR_calcMinBound}} \code{\link{CAR_calcMaxBound}} \code{\link{CAR_calcBounds}}
+#' @seealso \code{\link{CAR-Proper}} \code{\link{carMinBound}} \code{\link{carMaxBound}} \code{\link{carBounds}}
 #' 
 #' @author Daniel Turek
 #' @export
-max.bound <- CAR_calcMaxBound
+max.bound <- carMaxBound
 
 
-#' Calculates the eigenvalues of the normalised adjacency matrix C
+#' Calculates the eigenvalues of the normalized adjacency matrix C with all equal weights
+#' 
+#' This function calculates the evs parameter values for the dcar_proper distribution, when C is inferred from the adj parameter as having all equal weights, and should never need to be invoked directly.
+#' 
+#' @author Daniel Turek
+#' @export
+CAR_calcEVs2 <- nimbleFunction(
+    name = 'CAR_calcEVs2',
+    run = function(adj = double(1), num = double(1)) {
+        C <- CAR_calcC(adj, num)
+        Cmatrix <- CAR_calcCmatrix(C, adj, num)
+        evs <- eigen(Cmatrix)$values
+        returnType(double(1))
+        return(evs)
+    }
+)
+
+
+#' Calculates the eigenvalues of the normalized adjacency matrix C
 #' 
 #' This function calculates the evs parameter values for the dcar_proper distribution, and should never need to be invoked directly.
 #' 
 #' @author Daniel Turek
 #' @export
-CAR_calcEVs <- nimbleFunction(
-    name = 'CAR_calcEVs',
+CAR_calcEVs3 <- nimbleFunction(
+    name = 'CAR_calcEVs3',
     run = function(C = double(1), adj = double(1), num = double(1)) {
-        N <- dim(num)[1]
-        L <- dim(adj)[1]
-        Cmatrix <- CAR_calcCmatrix(C[1:L], adj[1:L], num[1:N])
+        Cmatrix <- CAR_calcCmatrix(C, adj, num)
         evs <- eigen(Cmatrix)$values
         returnType(double(1))
         return(evs)
@@ -455,6 +529,7 @@ CAR_proper_evaluateDensity <- nimbleFunction(
         if(length(targetIndex) != 1)                             stop('something went wrong')
     },
     run = function() {
+        if(Mi == -1234) return(0)   ## Mi = -1234 indicates M was auto-generated, and this region has 0 neighbors => conditional density = 0
         priorMean <- getMean()
         priorSigma <- sqrt(1/getPrec())
         lp <- dnorm(model[[targetScalar]], priorMean, priorSigma, log = TRUE)
@@ -472,6 +547,7 @@ CAR_proper_evaluateDensity <- nimbleFunction(
             return(mean)
         },
         getPrec = function() {
+            if(Mi == -1234) return(0)   ## Mi = -1234 indicates M was auto-generated, and this region has 0 neighbors => 1/Mi = num[i] = 0 => prec = 0
             prec <- model$getParam(targetDCAR, 'tau') / Mi
             returnType(double())
             return(prec)
