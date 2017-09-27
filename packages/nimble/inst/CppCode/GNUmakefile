@@ -7,7 +7,7 @@ ifndef R_SHARE_DIR
  R_SHARE_DIR=$(R_HOME)/share
 endif
 
- 
+
 ## By default, R's C++ compilation system generates debugging information,
 ## typically by a -g flag.  This makes the size of libnimble.a much much larger
 ## than it would be without debugging information
@@ -21,9 +21,13 @@ endif
 ## To enable -g and hence much larger libnimble, comment the next 2 lines
 ## as well as the lines in the make targets indicated further down,
 ## and uncomment the 3rd line down
-$(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
--include ./Makeconf
-## -include $(R_HOME)/etc$(R_ARCH)/Makeconf ## uncomment this line to get debugging information
+ifneq ($(OS), Windows)
+  $(shell $(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R)
+  -include ./Makeconf
+else
+  -include $(R_HOME)/etc$(R_ARCH)/Makeconf ## uncomment this line to get debugging information
+endif
+
 include ./Makevars
 
 ifndef OS
@@ -40,8 +44,9 @@ libnimble$(DYLIB_EXT): $(OBJECTS)
 	@echo "$(OS)   $(INSTALL_NAME)"
 	$(CXX) $(SHLIB_CXXLDFLAGS) -o $@  $(OBJECTS) $(INSTALL_NAME)
 	-rm *.o
+ifneq ($(OS), Windows)
 	$(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./removeCustomizedMakeconf.R
-
+endif
 
 #	cp libnimble$(DYLIB_EXT) ../../src
 
@@ -55,8 +60,10 @@ clean:
 
 # libnimble32.a libnimble64.a
 libnimble.a  libnimble_x64.a libnimble_i386.a: $(OBJECTS)
-	echo "Making nimble $@"      
+	echo "Making nimble $@"
 	echo "$(OBJECTS)"
 	$(AR) rcs $@ $(OBJECTS)
 	-rm $(OBJECTS)
+ifneq ($(OS), Windows)
 	$(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./removeCustomizedMakeconf.R
+endif
