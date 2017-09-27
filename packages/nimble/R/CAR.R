@@ -29,7 +29,7 @@ CAR_convertWeightMatrix <- function(weightMatrix) {
 #'
 #' @param ... Either: a symmetric matrix of unnormalized weights, or two lists specifying adjacency indices and the corresponding unnormalized weights.
 #'
-#' @seealso \code{\link{CAR-Normal}}
+#' @seealso \code{\link{CAR-Normal}} \code{\link{CAR-Proper}} \code{\link{as.carCM}}
 #'
 #' @author Daniel Turek
 #' @export
@@ -53,11 +53,11 @@ as.carAdjacency <- function(...) {
 #'
 #' @return A named list with elements C and M.  These may be used as the C and M arguments to the dcar_proper() distribution.
 #'
-#' @seealso \code{\link{CAR-Normal}} \code{\link{CAR-Proper}}
+#' @seealso \code{\link{CAR-Normal}} \code{\link{CAR-Proper}} \code{\link{as.carAdjacency}}
 #'
 #' @author Daniel Turek
 #' @export
-as.carCM <- function(adj, weights, num) {    ## CAR_calcCM
+as.carCM <- function(adj, weights, num) {
     CAR_normal_checkAdjWeightsNum(adj, weights, num)
     N <- length(num)
     L <- length(adj)
@@ -220,7 +220,6 @@ CAR_proper_processParams <- function(model, target, C, adj, num, M) {
 #' @seealso \code{\link{CAR-Normal}}
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcNumIslands <- nimbleFunction(
     name = 'CAR_calcNumIslands',
     run = function(adj = double(1), num = double(1)) {
@@ -270,7 +269,6 @@ CAR_calcNumIslands <- nimbleFunction(
 #' Generate the vector of conditional variances, as is required as the M argument of the dcar_proper() distribution.  This is only used internally, and should never need to be invoked directly.
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcM <- nimbleFunction(
     name = 'CAR_calcM',
     run = function(num = double(1)) {
@@ -292,7 +290,6 @@ CAR_calcM <- nimbleFunction(
 #' Generate sparse vector representation of the normalized adajacency matrix C, as is required as the C argument of the dcar_proper() distribution.  This is only used internally, and should never need to be invoked directly.
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcC <- nimbleFunction(
     name = 'CAR_calcC',
     run = function(adj = double(1), num = double(1)) {
@@ -320,7 +317,6 @@ CAR_calcC <- nimbleFunction(
 #' Using the sparse representation of the normalized adajacency matrix, generate the full matrix.  This uses the C, adj, and num parameters of the dcar_proper() distribution.
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcCmatrix <- nimbleFunction(
     name = 'CAR_calcCmatrix',
     run = function(C = double(1), adj = double(1), num = double(1)) {
@@ -432,7 +428,6 @@ max.bound <- carMaxBound
 #' This function calculates the evs parameter values for the dcar_proper distribution, when C is inferred from the adj parameter as having all equal weights, and should never need to be invoked directly.
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcEVs2 <- nimbleFunction(
     name = 'CAR_calcEVs2',
     run = function(adj = double(1), num = double(1)) {
@@ -450,7 +445,6 @@ CAR_calcEVs2 <- nimbleFunction(
 #' This function calculates the evs parameter values for the dcar_proper distribution, and should never need to be invoked directly.
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcEVs3 <- nimbleFunction(
     name = 'CAR_calcEVs3',
     run = function(C = double(1), adj = double(1), num = double(1)) {
