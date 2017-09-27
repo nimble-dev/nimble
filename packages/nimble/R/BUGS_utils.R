@@ -318,7 +318,7 @@ is.Rmodel <- function(obj, inputIsName = FALSE) {
 #' @export
 is.Cmodel <- function(obj, inputIsName = FALSE) {
     if(inputIsName) obj <- get(obj)
-    return(inherits(obj, 'modelBaseClass') && !inherits(obj, 'RmodelBaseClass'))
+    return(inherits(obj, 'CmodelBaseClass'))
 }
 
 # extracts dimension from character vec of form such as c("double(0)", "integer(1)")
