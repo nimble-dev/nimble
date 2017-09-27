@@ -723,7 +723,6 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
     thisMapAlreadySet <- FALSE
     if(!is.null(workEnv[['OnLHSnow']])) { ## this is the var on the LHS
         if(!is.null(workEnv[['LHSeigenName']])) {
-            browser()
             stop(exprClassProcessingErrorMsg(code, 'LHSeigenName already exists.'), call. = FALSE)
         }
         workEnv$LHSeigenName <- list(EigenName = EigenName, targetVar = targetVarProxy)
@@ -827,7 +826,6 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     thisMapAlreadySet <- FALSE
     if(!is.null(workEnv[['OnLHSnow']])) { ## this is the var on the LHS
         if(!is.null(workEnv[['LHSeigenName']])) {
-            browser()
             stop(exprClassProcessingErrorMsg(code, 'LHSeigenName already exists.'), call. = FALSE)
         }
         workEnv$LHSeigenName <- list(EigenName = EigenName, targetVar = code$name)
