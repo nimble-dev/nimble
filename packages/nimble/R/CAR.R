@@ -145,7 +145,7 @@ CAR_calcSubsetIndList <- function(adj, num) {
         if(num[i] != 0) subsetIndList[[i]] <- nextInd:(nextInd+num[i]-1)
         nextInd <- nextInd + num[i]
     }
-    if(nextInd != length(adj)+1) stop('something went wrong')
+    if(nextInd != length(adj)+1) stop('dcar distribution internal error')
     return(subsetIndList)
 }
 
@@ -308,7 +308,7 @@ CAR_calcC <- nimbleFunction(
                 }
             }
         }
-        if(count != L+1)   stop('something went wrong')
+        if(count != L+1)   stop('dcar distribution internal error')
         returnType(double(1))
         return(C)
     }
@@ -336,7 +336,7 @@ CAR_calcCmatrix <- nimbleFunction(
                 }
             }
         }
-        if(count != L+1)   stop('something went wrong')
+        if(count != L+1)   stop('dcar distribution internal error')
         returnType(double(2))
         return(Cmatrix)
     }
@@ -482,8 +482,8 @@ CAR_normal_evaluateDensity <- nimbleFunction(
         numNeighbors <- length(neighborWeights)                        ## fix length-1 neighborWeights
         neighborWeights <- array(neighborWeights, c(1, numNeighbors))  ## fix length-1 neighborWeights
         sumWeights <- sum(neighborWeights)
-        if(length(targetDCAR) != 1)                              stop('something went wrong')
-        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('something went wrong')
+        if(length(targetDCAR) != 1)                              stop('dcar distribution internal error')
+        if(model$getDistribution(targetDCAR) != 'dcar_normal')   stop('dcar distribution internal error')
     },
     run = function() {
         if(island) return(0)
@@ -523,10 +523,10 @@ CAR_proper_evaluateDensity <- nimbleFunction(
         island <- length(neighborNodes)==0
         numNeighbors <- length(neighborCs)                        ## fix length-1 neighborCs
         neighborCs <- array(neighborCs, c(1, numNeighbors))       ## fix length-1 neighborCs
-        if(Mi <= 0)                                              stop('something went wrong')
-        if(length(targetDCAR) != 1)                              stop('something went wrong')
-        if(model$getDistribution(targetDCAR) != 'dcar_proper')   stop('something went wrong')
-        if(length(targetIndex) != 1)                             stop('something went wrong')
+        if(Mi <= 0)                                              stop('dcar distribution internal error')
+        if(length(targetDCAR) != 1)                              stop('dcar distribution internal error')
+        if(model$getDistribution(targetDCAR) != 'dcar_proper')   stop('dcar distribution internal error')
+        if(length(targetIndex) != 1)                             stop('dcar distribution internal error')
     },
     run = function() {
         if(Mi == -1234) return(0)   ## Mi = -1234 indicates M was auto-generated, and this region has 0 neighbors => conditional density = 0
