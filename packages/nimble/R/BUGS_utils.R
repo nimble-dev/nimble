@@ -68,7 +68,7 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
             }
             thisCodeLength <- codeEndInds - codeStartInds + 1
             if(!all(thisCodeLength == thisCodeLength[1])){
-              stop("Error: AD not currently supported for ragged arrays in model code")
+              stop("Error: AD not currently supported for ragged arrays in model code", call. = FALSE)
             }
             codeLength <- c(codeLength, thisCodeLength[1])
           }

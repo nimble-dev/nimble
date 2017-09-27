@@ -321,7 +321,7 @@ nndf_generateGetParamSwitchFunction <- function(typesListAll, paramIDs, type, nD
             list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
         )))
     }
-    if(inherits(ans, 'try-error')) stop('In nndf_generateGetParamSwitchFunction.')
+    if(inherits(ans, 'try-error')) stop('In nndf_generateGetParamSwitchFunction.', call. = FALSE)
     attr(ans, 'srcref') <- NULL
     ans
 }
@@ -353,7 +353,7 @@ nndf_generateGetBoundSwitchFunction <- function(typesListAll, boundIDs, type, nD
             list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
         )))
     }
-    if(inherits(ans, 'try-error')) stop('In nndf_generateGetBoundSwitchFunction.')
+    if(inherits(ans, 'try-error')) stop('In nndf_generateGetBoundSwitchFunction.', call. = FALSE)
     attr(ans, 'srcref') <- NULL
     ans
 }

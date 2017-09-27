@@ -1704,10 +1704,9 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             stop(exprClassProcessingErrorMsg(code, "In sizeAssignAfterRecursing: don't know what to do with a provided expression."), call. = FALSE)
         }
     }
-    test <- try(if(inherits(RHStype, 'uninitializedField') | length(RHStype)==0) {
+    if(inherits(RHStype, 'uninitializedField') | length(RHStype)==0) {
         stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '",RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
-    })
-    if(inherits(test, 'try-error')) stop('"In sizeAssignAfterRecursing: Problem with RHStype.')
+    }
     if(LHS$isName) {
         if(!exists(LHS$name, envir = typeEnv, inherits = FALSE)) { ## not in typeEnv
             ## If LHS unknown, create it in typeEnv
@@ -1825,7 +1824,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                     assert <- substitute(setSize(LHS), list(LHS = nimbleGeneralParseDeparse(LHS)))
                     for(i in seq_along(RHSsizeExprs)) {
                         test <- try(assert[[i + 2]] <- RHS$sizeExprs[[i]])
-                        if(inherits(test, 'try-error')) stop(paste0('In sizeAssignAfterRecursing: Error in assert[[i + 2]] <- RHS$sizeExprs[[i]] for i = ', i))
+                        if(inherits(test, 'try-error')) stop(paste0('In sizeAssignAfterRecursing: Error in assert[[i + 2]] <- RHS$sizeExprs[[i]] for i = ', i), call. = FALSE)
                     }
                     assert[[ length(assert) + 1]] <- 0 ## copyValues = false
                     assert[[ length(assert) + 1]] <- 0 ## fillZeros  = false

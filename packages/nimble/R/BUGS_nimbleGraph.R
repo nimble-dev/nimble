@@ -9,7 +9,7 @@ nimbleGraphClass <- setRefClass(
             for(i in list(edgesFrom, edgesTo, edgesFrom2ParentExprIDs, numNodes)) {
                 if(length(i) > 0) {
                     if(any(abs(i - round(i)) > 0.1)) {
-                      stop('caught something wrong on input to setGraph')
+                      stop('caught something wrong on input to setGraph', call. = FALSE)
                     }
                 }
             }
@@ -29,7 +29,7 @@ nimbleGraphClass <- setRefClass(
             for(i in list(nodes, omit)) {
                 if(length(i) > 0) {
                     if(any(abs(i - round(i)) > 0.1)) {
-                        stop('caught something wrong on input to setGraph')
+                        stop('caught something wrong on input to setGraph', call. = FALSE)
                     }
                 }
             }
