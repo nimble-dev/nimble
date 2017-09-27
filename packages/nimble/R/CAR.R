@@ -57,7 +57,7 @@ as.carAdjacency <- function(...) {
 #'
 #' @author Daniel Turek
 #' @export
-as.carCM <- function(adj, weights, num) {    ## CAR_calcCM
+as.carCM <- function(adj, weights, num) {
     CAR_normal_checkAdjWeightsNum(adj, weights, num)
     N <- length(num)
     L <- length(adj)
