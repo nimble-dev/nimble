@@ -297,7 +297,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
                 }
                 thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
                 if(thisSamplerName == 'RW_block' && !silent){
-                  print('Note: Assigning an RW_block sampler to nodes with very different scales can result in low MCMC efficiency.  If all nodes are not on a similar scale, we recommend providing an informed value for the "propCov" control list argument, or using the AFSS sampler instead.')
+                  message('Note: Assigning an RW_block sampler to nodes with very different scales can result in low MCMC efficiency.  If all nodes assigned to RW_block are not on a similar scale, we recommend providing an informed value for the \"propCov\" control list argument, or using the AFSS sampler instead.')
                 }
                 if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))
