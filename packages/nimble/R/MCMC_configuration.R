@@ -212,7 +212,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
                                 else          addSampler(target = scalarNode, type = 'RW')    };     next }
-                        addSampler(target = node, type = 'RW_block');     next }
+                        addSampler(target = node, type = 'RW_block', silent = TRUE);     next }
                     
                     if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW'   );     next }
                     if(onlySlice)             { addSampler(target = node, type = 'slice');     next }
@@ -264,7 +264,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name) {
+        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
 
@@ -280,6 +280,8 @@ print: Logical argument, specifying whether to print the details of the newly ad
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
 
+silent: Logical argument, specifying whether to print warning messages when assigning samplers.
+
 Details: A single instance of the newly configured sampler is added to the end of the list of samplers for this MCMCconf object.
 
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.
@@ -294,6 +296,9 @@ Invisibly returns a list of the current sampler configurations, which are sample
                     } else stop(paste0('Cannot assign conjugate sampler to non-conjugate node: \'', target, '\''))
                 }
                 thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
+                if(thisSamplerName == 'RW_block' && !silent){
+                  print('Note: Assigning an RW_block sampler to nodes with very different scales can result in low MCMC efficiency.  If all nodes are not on a similar scale, we recommend providing an informed value for the "propCov" control list argument, or using the AFSS sampler instead.')
+                }
                 if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))
                 } else {
@@ -649,7 +654,7 @@ addRuleToCodeBlock <- function(oldCode, rule) {
                  OLDCODE = oldCode))
     } else {
         substitute(
-            if(CONDITION) { addSampler(target = node, type = SAMPLER, name = NAME) } else OLDCODE,
+            if(CONDITION) { addSampler(target = node, type = SAMPLER, name = NAME, silent = TRUE) } else OLDCODE,
             list(CONDITION = condition,
                  SAMPLER = sampler,
                  NAME = name,
