@@ -37,7 +37,7 @@ dnl or by setting the environment variable CPPAD_DIR
 AC_ARG_WITH(cppad, [  --with-cppad            path for the directory containing cppad/ directory], CPPAD_DIR="${withval}")
 
 AC_ARG_ENABLE(dylib, [  --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code],
-                         ENABLE_LIB=${enableval}, 
+                         ENABLE_LIB=${enableval},
 if ! test `uname` = "Linux" ; then
    ENABLE_LIB=false
 else
@@ -64,9 +64,9 @@ ENABLE_DEBUGGING=no)
 
 if test "${ENABLE_DEBUGGING}" = "yes"; then
    echo "enabling R's default debugging information in libnimble"
-   GNUMAKEFILE_INCLUDE_MAKECONF="-include \$(R_HOME)/etc\$(R_ARCH)/Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="include \$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
 else
-   GNUMAKEFILE_INCLUDE_MAKECONF="-include ./Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="include ./Makeconf"
 fi
 AC_SUBST(GNUMAKEFILE_INCLUDE_MAKECONF)
 
@@ -125,16 +125,16 @@ dnl  AC_LANG_PUSH([C++]);
 
 echo "working on eigen"
 
-AC_CHECK_HEADERS([Eigen/Dense], 
+AC_CHECK_HEADERS([Eigen/Dense],
                  [echo "Found Eigen/Dense";
 dnl                rm -rf inst/Eigen_local
 		  if test -e "NOT_IN_TARBALL" ; then
-		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6-1.tar.gz or something similar." 
+		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6-1.tar.gz or something similar."
 		  else
 		   echo "Not installing Eigen with NIMBLE"
 		   rm -r inst/include/Eigen
 		  fi
-                 ], 
+                 ],
                  [echo "Using the version of Eigen provided with NIMBLE";
 		  EIGEN_DIR=""
                   ])
@@ -214,7 +214,7 @@ fi
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
 (cd inst/CppCode ; ${MAKE} )
-  
+
 else
   echo "Building libnimble.a"
   cp inst/CppCode/dists.cpp src
