@@ -636,6 +636,7 @@ CXXPICFLAGS
 EGREP
 GREP
 CXXCPP
+GNUMAKEFILE_INCLUDE_MAKECONF
 OBJEXT
 EXEEXT
 ac_ct_CXX
@@ -662,7 +663,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -688,6 +688,7 @@ enable_option_checking
 with_eigen
 with_cppad
 enable_dylib
+enable_debugging
 '
       ac_precious_vars='build_alias
 host_alias
@@ -737,7 +738,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -990,15 +990,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1136,7 +1127,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1289,7 +1280,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1318,6 +1308,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code
+  --enable-debugging            compiled libnimble with debugging information
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2563,6 +2554,25 @@ if test -n "${LIBNIMBLE}" ; then
   echo "Enabling libnimble."
 fi
 
+# Check whether --enable-debugging was given.
+if test "${enable_debugging+set}" = set; then :
+  enableval=$enable_debugging; ENABLE_DEBUGGING=${enableval}
+else
+  ENABLE_DEBUGGING=no
+fi
+
+
+echo ${ENABLE_DEBUGGING}
+echo "${ENABLE_DEBUGGING}"
+if test "${ENABLE_DEBUGGING}" = "yes"; then
+   echo "debug true"
+   GNUMAKEFILE_INCLUDE_MAKECONF="-include \$(R_HOME)/etc\$(R_ARCH)/Makeconf"
+else
+   echo "debug false"
+   GNUMAKEFILE_INCLUDE_MAKECONF="-include ./Makeconf"
+fi
+
+
 if test -n "$EIGEN_DIR" ; then
   echo "Checking eigen directory $EIGEN_DIR"
   if ! test -d "$EIGEN_DIR" ; then
@@ -2610,7 +2620,6 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    echo "Setting CPPFLAGS to find Eigen"
    export CPPFLAGS="-I${EIGEN_DIR}"
 fi
-
 
 CXX=`"${R_HOME}/bin/R" CMD config CXX`
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
@@ -3105,7 +3114,7 @@ fi
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 
 
-ac_config_files="$ac_config_files inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars"
+ac_config_files="$ac_config_files inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars inst/CppCode/GNUmakefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -3816,6 +3825,7 @@ do
     "inst/make/Makevars_lib") CONFIG_FILES="$CONFIG_FILES inst/make/Makevars_lib" ;;
     "R/config.R") CONFIG_FILES="$CONFIG_FILES R/config.R" ;;
     "src/Makevars") CONFIG_FILES="$CONFIG_FILES src/Makevars" ;;
+    "inst/CppCode/GNUmakefile") CONFIG_FILES="$CONFIG_FILES inst/CppCode/GNUmakefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -4266,22 +4276,25 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
-
+if test "${ENABLE_DEBUGGING}" != "yes"; then
+  echo "removing debugging flags"
+  (cd inst/cppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
+fi
 
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
- (cd inst/CppCode ; ${MAKE} )
-# cp inst/CppCode/libnimble.dylib src
-# if ! test -e $R_PACKAGE_DIR/libs/ ; then
-#    mkdir -p $R_PACKAGE_DIR/libs/
-# fi
- #cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib
+(cd inst/CppCode ; ${MAKE} )
+
 else
-#  cp inst/CppCode/*.cpp src
+  echo "Building libnimble.a"
   cp inst/CppCode/dists.cpp src
   cp inst/CppCode/RcppUtils.cpp src
   cp inst/CppCode/nimbleGraph.cpp src
   cp inst/CppCode/eigenUsingClasses.cpp src
 
   (cd inst/CppCode ; ${MAKE} libnimble.a)
+fi
+
+if test "${ENABLE_DEBUGGING}" != "yes"; then
+  (cd inst/cppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf clean)
 fi

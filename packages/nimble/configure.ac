@@ -55,6 +55,21 @@ if test -n "${LIBNIMBLE}" ; then
   echo "Enabling libnimble."
 fi
 
+dnl --enable-debugging or --enable-debugging=yes will keep any -g flags from R's Makeconf
+dnl default (omission of --enable-debugging) will invoke use of customizeMakeconf in inst/CppCode
+dnl    which in turn makes a local copy of Makeconf and replaces "-g " with " ".
+AC_ARG_ENABLE(debugging, [  --enable-debugging            compiled libnimble with debugging information],
+ENABLE_DEBUGGING=${enableval},
+ENABLE_DEBUGGING=no)
+
+if test "${ENABLE_DEBUGGING}" = "yes"; then
+   echo "enabling R's default debugging information in libnimble"
+   GNUMAKEFILE_INCLUDE_MAKECONF="-include \$(R_HOME)/etc\$(R_ARCH)/Makeconf"
+else
+   GNUMAKEFILE_INCLUDE_MAKECONF="-include ./Makeconf"
+fi
+AC_SUBST(GNUMAKEFILE_INCLUDE_MAKECONF)
+
 if test -n "$EIGEN_DIR" ; then
   echo "Checking eigen directory $EIGEN_DIR"
   if ! test -d "$EIGEN_DIR" ; then
@@ -102,7 +117,6 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    echo "Setting CPPFLAGS to find Eigen"
    export CPPFLAGS="-I${EIGEN_DIR}"
 fi
-
 
 CXX=`"${R_HOME}/bin/R" CMD config CXX`
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
@@ -190,24 +204,27 @@ AC_SUBST(PKG_LIBS)
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 AC_SUBST(USE_REGISTRATION)
 
-AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars)
+AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars inst/CppCode/GNUmakefile)
 
-
+if test "${ENABLE_DEBUGGING}" != "yes"; then
+  echo "removing debugging flags"
+  (cd inst/cppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
+fi
 
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
- (cd inst/CppCode ; ${MAKE} )
-# cp inst/CppCode/libnimble.dylib src
-# if ! test -e $R_PACKAGE_DIR/libs/ ; then
-#    mkdir -p $R_PACKAGE_DIR/libs/
-# fi
- #cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib 
-else 
-#  cp inst/CppCode/*.cpp src
+(cd inst/CppCode ; ${MAKE} )
+  
+else
+  echo "Building libnimble.a"
   cp inst/CppCode/dists.cpp src
   cp inst/CppCode/RcppUtils.cpp src
   cp inst/CppCode/nimbleGraph.cpp src
   cp inst/CppCode/eigenUsingClasses.cpp src
 
   (cd inst/CppCode ; ${MAKE} libnimble.a)
+fi
+
+if test "${ENABLE_DEBUGGING}" != "yes"; then
+  (cd inst/cppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf clean)
 fi
