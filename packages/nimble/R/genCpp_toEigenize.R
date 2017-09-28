@@ -264,7 +264,7 @@ toEigenAssignLHS <- function(code, symTab, typeEnv, NoEigenizeMap = FALSE) {
                         test <- try(
                             assert[[i + 2]] <- RHS$sizeExprs[[i]]
                         )
-                        if(inherits(test, 'try-error')) browser()
+                        if(inherits(test, 'try-error')) stop(paste0('In toEigenAssignLHS: Error in assert[[i + 2]] <- RHS$sizeExprs[[i]] for i = ', i), call. = FALSE)
                     }
                     assert[[ length(assert) + 1]] <- 0 ## copyValues = false
                     assert[[ length(assert) + 1]] <- 0 ## fillZeros  = false

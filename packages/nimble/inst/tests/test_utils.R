@@ -1103,7 +1103,7 @@ test_dynamic_indexing_model_internal <- function(param) {
                 expect_identical(m$getDependencies(param$expectedDeps[[i]]$parent, stochOnly = TRUE),
                     param$expectedDeps[[i]]$result, info = paste0("dependencies don't match expected in dependency of ", param$expectedDeps[[i]]$parent))
             cm <- compileNimble(m)
-            expect_true(class(cm) == "Ccode", info = "compiled model object improperly formed")
+            expect_true(is.Cmodel(cm), info = "compiled model object improperly formed")
             expect_identical(calculate(m), calculate(cm), info = "problem with R vs. C calculate with initial indexes")
             for(i in seq_along(param$validIndexes)) {
                 for(j in seq_along(param$invalidIndexes[[i]]$var)) {

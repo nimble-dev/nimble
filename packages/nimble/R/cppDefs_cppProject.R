@@ -240,6 +240,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    },
                                    compileFile = function(names, showCompilerOutput = nimbleOptions('showCompilerOutput'),
                                                           .useLib = UseLibraryMakevars) {
+                                       names <- Rname2CppName(names)
                                        isWindows = (.Platform$OS.type == "windows")
 
                                        includes <- character()

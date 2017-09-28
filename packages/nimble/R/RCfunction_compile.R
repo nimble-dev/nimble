@@ -368,8 +368,8 @@ RCfunProcessing <- setRefClass(
             neededRCfuns <<- c(neededRCfuns,
                                compileInfo$typeEnv[['neededRCfuns']])
             if(debug) {
-                print('compileInfo$nimExpr$show(showType = TRUE) -- broken')
-                print('compileInfo$nimExpr$show(showAssertions = TRUE) -- possible broken')
+                print('compileInfo$nimExpr$print(showType = TRUE) -- broken')
+                print('compileInfo$nimExpr$print(showAssertions = TRUE) -- possible broken')
                 writeLines('***** READY FOR insertAssertions *****')
                 browser()
             }
@@ -391,10 +391,10 @@ RCfunProcessing <- setRefClass(
             }
             
             if(debug) {
-                print('compileInfo$nimExpr$show(showAssertions = TRUE)')
-                compileInfo$nimExpr$show(showAssertions = TRUE)
-                print('compileInfo$nimExpr$show(showToEigenize = TRUE)')
-                compileInfo$nimExpr$show(showToEigenize = TRUE)
+                print('compileInfo$nimExpr$print(showAssertions = TRUE)')
+                compileInfo$nimExpr$print(showAssertions = TRUE)
+                print('compileInfo$nimExpr$print(showToEigenize = TRUE)')
+                compileInfo$nimExpr$print(showToEigenize = TRUE)
                 print('nimDeparse(compileInfo$nimExpr)')
                 writeCode(nimDeparse(compileInfo$nimExpr))
                 writeLines('***** READY FOR labelForEigenization *****')

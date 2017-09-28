@@ -68,8 +68,7 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
             }
             thisCodeLength <- codeEndInds - codeStartInds + 1
             if(!all(thisCodeLength == thisCodeLength[1])){
-              print("Error: AD not currently supported for ragged arrays in model code")
-              browser()
+              stop("Error: AD not currently supported for ragged arrays in model code", call. = FALSE)
             }
             codeLength <- c(codeLength, thisCodeLength[1])
           }
@@ -318,7 +317,7 @@ is.Rmodel <- function(obj, inputIsName = FALSE) {
 #' @export
 is.Cmodel <- function(obj, inputIsName = FALSE) {
     if(inputIsName) obj <- get(obj)
-    return(inherits(obj, 'modelBaseClass') && !inherits(obj, 'RmodelBaseClass'))
+    return(inherits(obj, 'CmodelBaseClass'))
 }
 
 # extracts dimension from character vec of form such as c("double(0)", "integer(1)")
