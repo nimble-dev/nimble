@@ -2562,13 +2562,10 @@ else
 fi
 
 
-echo ${ENABLE_DEBUGGING}
-echo "${ENABLE_DEBUGGING}"
 if test "${ENABLE_DEBUGGING}" = "yes"; then
-   echo "debug true"
-   GNUMAKEFILE_INCLUDE_MAKECONF="-include \$(R_HOME)/etc\$(R_ARCH)/Makeconf"
+   echo "enabling R's default debugging information in libnimble"
+   GNUMAKEFILE_INCLUDE_MAKECONF="-include \$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
 else
-   echo "debug false"
    GNUMAKEFILE_INCLUDE_MAKECONF="-include ./Makeconf"
 fi
 
@@ -2626,7 +2623,6 @@ CXX11=`"${R_HOME}/bin/R" CMD config CXX1X`
 CXX11STD=`"${R_HOME}/bin/R" CMD config CXX1XSTD`
 CXX="${CXX11} ${CXX11STD}"
 CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX1XFLAGS`
-
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'

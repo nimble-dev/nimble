@@ -64,7 +64,7 @@ ENABLE_DEBUGGING=no)
 
 if test "${ENABLE_DEBUGGING}" = "yes"; then
    echo "enabling R's default debugging information in libnimble"
-   GNUMAKEFILE_INCLUDE_MAKECONF="-include \$(R_HOME)/etc\$(R_ARCH)/Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="-include \$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
 else
    GNUMAKEFILE_INCLUDE_MAKECONF="-include ./Makeconf"
 fi
