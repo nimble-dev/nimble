@@ -128,7 +128,9 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                    argNamesCall = argNames
                                    for(i in seq_along(argNamesCall) ){
                                      if(argsCode[i] != '')
-                                       argNamesCall[i] = paste(argNames[i], " = ", as.character(argsCode[[i]]) )
+                                         argNamesCall[i] = paste(argNames[i], " = ", deparse(argsCode[[i]]) )
+                                     ## deparse instead of as.character is needed in the above line if there is a negative default
+                                     ## because it will be parsed as a unary - operator with the number as an argument
                                    }
                                    if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                    if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){

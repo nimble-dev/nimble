@@ -2621,13 +2621,18 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    export CPPFLAGS="-I${EIGEN_DIR}"
 fi
 
-CXX=`"${R_HOME}/bin/R" CMD config CXX`
-CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
+
+CXX11=`"${R_HOME}/bin/R" CMD config CXX1X`
+CXX11STD=`"${R_HOME}/bin/R" CMD config CXX1XSTD`
+CXX="${CXX11} ${CXX11STD}"
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX1XFLAGS`
+
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
 
 
 echo "working on eigen"
