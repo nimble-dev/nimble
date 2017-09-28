@@ -216,7 +216,7 @@ AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars inst
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then
   echo "removing debugging flags"
-  (cd inst/cppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
+  (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
 fi
 
 if test "${ENABLE_LIB}" != "false" ; then
