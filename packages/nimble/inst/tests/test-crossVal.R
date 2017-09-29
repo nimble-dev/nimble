@@ -1,66 +1,38 @@
-rm(list=ls())
-library(nimble)
-library(parallel)
-setwd('occupancy/analysis/crossValidation')
-source('crossValidationFunction.R')
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-dyesCode <- nimbleCode({
-  for (i in 1:BATCHES) {
-    for (j in 1:SAMPLES) {
-      y[i,j] ~ dnorm(mu[i], sd = sigma.within);
+context("Testing of cross-validation")
+
+###  BUGS model from Chapter 5 of Gelman and Hill
+###  Below LOO-CV values from Gelman '13 "Understanding predictive 
+###  information criteria for Bayesian models"
+
+test_that("voter model cross-validation is accurate: ", {
+  y <- c(44.6, 57.76, 49.91, 61.34, 49.60, 61.79, 48.95, 44.70, 59.17, 53.94,
+         46.55, 54.74, 50.27, 51.24, 46.32)
+  growth <- c(2.4, 2.89, .85, 4.21, 3.02, 3.62, 1.08, -.39, 3.86, 2.27, .38,
+              1.04, 2.36, 1.72, .1)
+  N = length(y)
+  voterCode = nimbleCode({
+    for(i in 1:N){
+      y[i] ~ dnorm(beta_1 + growth[i]*beta_2, sd = sigma)
     }
-    mu[i] ~ dnorm(theta, sd = sigma.between);
-  }
-
-  theta ~ dnorm(0.0, 1.0E-10);
-  sigma.within ~ dunif(0, 100)
-  sigma.between ~ dunif(0, 100)
+    sigma ~ dunif(0,50)
+    beta_1 ~ dnorm(0, .01)
+    beta_2 ~ dnorm(0, .01)
+  })
+  dataList = list(y = y);
+  constList = list(growth = growth, N = N)
+  voterModel = nimbleModel(code = voterCode, data = dataList, 
+                           constants = constList,
+                           inits = list(beta_1 = 44, beta_2 = 3.75, 
+                                        sigma = 4.4))
+  voterConf <- configureMCMC(voterModel)
+  testOut <- runCrossValidate(MCMCconfiguration = voterConf,
+                              k = 15, ## do loo-vs so that we can compare against a known value
+                              foldFunction = 'random',
+                              lossFunction = 'predictive',
+                              MCMCcontrol = list(nMCMCiters = 500),
+                              NbootReps = 2)
+  expect_equal(testOut$CVvalue, -43.8, tolerance = 3)
 })
 
-dyesModel <- nimbleModel(dyesCode,
-                         constants = list(BATCHES = 6, SAMPLES = 5))
-
-## data <- matrix(c(1545, 1540, 1595, 1445, 1595, 1520, 1440, 1555, 1550,
-##                  1440, 1630, 1455, 1440, 1490, 1605, 1595, 1515, 1450,
-##                  1520, 1560, 1510, 1465, 1635, 1480, 1580, 1495, 1560,
-##                  1545, 1625, 1445), nrow = 6)
-
-data <- cbind(rnorm(6, 0, 1), rnorm(6, 6, 1), rnorm(6, 4, 1),
-              rnorm(6, 7, 1),
-              rnorm(6, 5, 1))
-
-dyesModel$setData(list(y = data))
-
-options(mc.cores=1)
-niter <- 10000
-output <- runCrossValidate(model=dyesModel,
-                           dataNames= "y",
-                           MCMCIter= niter,
-                           burnInProp=0.1,
-                           thin=1,
-                           leaveOutIndex=2,
-                           MCMCdefs=NULL)
-
-
-## ****************************************************
-dyesCodeSimp <- nimbleCode({
-  for (i in 1:BATCHES) {
-    for (j in 1:SAMPLES) {
-          y[i,j] ~ dnorm(theta, sd = sigma)
-    }
-  }
-  theta ~ dnorm(0.0, 1.0E-10);
-  sigma ~ dunif(0, 100)
-})
-
-dyesModelSimp <- nimbleModel(dyesCodeSimp,
-                             constants =list(BATCHES = 6, SAMPLES = 5))
-dyesModelSimp$setData(list(y = data))
-
-output.simp <- runCrossValidate(model=dyesModelSimp,
-                           dataNames= "y",
-                           MCMCIter= niter,
-                           burnInProp=0.1,
-                           thin=1,
-                           leaveOutIndex=2,
-                           MCMCdefs=NULL)
