@@ -10,23 +10,30 @@ calcCrossValSD <- function(MCMCout, sampNum, NbootReps, saveData, lossFunction){
     chunks <- c(apply(indexes, 1, function(x){
       seq(x[1], x[2], 1)}
     ))
-    blockcvValues[r] <- apply(MCMCout[chunks,], 1, lossFunction, saveData = saveData)
+    blockcvValues[r] <- apply(MCMCout[chunks,], 1, lossFunction, saveData)
   }
   return(sd(blockcvValues))
 }
 
 
 calcCrossVal <- function(i,
-                         prepModel,
+                         model,
                          foldFunction,
                          lossFunction,
-                         mcmcIter,
+                         MCMCiter,
                          burnInProp,
                          returnSamples,
                          NbootReps){
   leaveOutNames <- model$expandNodeNames(foldFunction(i))
   currentDataNames <- model$getNodeNames(dataOnly = T)
   currentDataNames <- currentDataNames[!(currentDataNames %in% leaveOutNames)]
+  saveData <- values(model, leaveOutNames)
+  newModel <- model$newModel()
+  newModel$resetData()
+  values(newModel, leaveOutNames) <- NA
+  newModel$setData(model$getVarNames(nodes = currentDataNames))
+  compileNimble(newModel)
+  
   ## if the 'negatuveLL' loss function is chosen, it needs access to the model
   ## and to the names of the nodes that were left out, so we define it within
   ## calcCrossVal.
@@ -35,27 +42,24 @@ calcCrossVal <- function(i,
       values(model, leaveOutNames) <- simulatedDataValues
       return(calculate(model))
     }
+    leaveOutNames <- model$getNodeNames(stochOnly = TRUE)
+    browser()
   }
-  saveData <- values(prepModel, leaveOutNames)
-  newModel <- prepModel$newModel()
-  newModel$resetData()
-  values(newModel, leaveOutNames) <- NA
-  newModel$setData(currentDataNames)
-  compileNimble(newModel)
-  modelMCMCConf <- configureMCMC(newModel,
-                                 monitors = leaveOutNames)
+  
+  modelMCMCConf <- configureMCMC(newModel, monitors = leaveOutNames)
   modelMCMC <- buildMCMC(modelMCMCConf)
   C.modelMCMC <- compileNimble(modelMCMC,
                                project = newModel)
-  C.modelMCMC$run(MCMCIter)
+  C.modelMCMC$run(MCMCiter)
   MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames]
   sampNum <- dim(MCMCout)[1]
-  startIndex <- max(c(ceiling(burnInProp*MCMCIter), 1))
+  startIndex <- max(c(ceiling(burnInProp*MCMCiter), 1))
   message(paste("dropping data fold", i))
   crossValAveSD <- calcCrossValSD(MCMCout=MCMCout, sampNum=sampNum,
                                   NbootReps=NbootReps,
-                                  saveData=saveData)
-  crossVal <- apply(MCMCout[startIndex:sampNum,], 1, lossFunction, saveData = saveData)
+                                  saveData=saveData,
+                                  lossFunction = lossFunction)
+  crossVal <- apply(MCMCout[startIndex:sampNum,], 1, lossFunction, saveData)
   nimble:::clearCompiled(C.modelMCMC)
   return(list(crossValAverage = crossVal,
               crossValAveSD = crossValAveSD,
@@ -147,7 +151,7 @@ generateRandomFoldFunction <- function(model, k){
 #' @section The \code{MCMCcontrol} Argument:
 #' The \code{MCMCcontrol} argument is a list with the following elements:
 #'	\itemize{
-#'	  \item{\code{nMCMCIters}}	{
+#'	  \item{\code{nMCMCiters}}	{
 #'      an integer argument determining how many MCMC iterations should be run for each posterior predictive p-value calculation.  Defaults to 10000, but should probably be manually set.
 #'	  }
 #'	\item{\code{burnInProp}}{
@@ -203,7 +207,7 @@ generateRandomFoldFunction <- function(model, k){
 #' # 6 folds.
 #' 
 #' dyesFoldFunction <- function(i){
-#'   foldNodes_i <- paste0(y[i, ])
+#'   foldNodes_i <- paste0('y[', i, ', ]')  # will return 'y[1,]' for i = 1 e.g.
 #'   return(foldNodes_i)
 #' }
 #' 
@@ -227,7 +231,7 @@ generateRandomFoldFunction <- function(model, k){
 #'                                    k = 6,
 #'                                    foldFunction = dyesFoldFunction,
 #'                                    lossFunction = MSElossFunction,
-#'                                    MCMCcontrol = list(nMCMCIters = 5000,
+#'                                    MCMCcontrol = list(nMCMCiters = 5000,
 #'                                                       burnInProp = .1))
 #'   
 #' 
@@ -238,17 +242,16 @@ runCrossValidate <- function(MCMCconfiguration,
                              lossFunction = 'negativeLL',
                              MCMCcontrol = list(), 
                              returnSamples = FALSE,
-                             ncores = 1,
+                             nCores = 1,
                              NbootReps = 200){
   
   model <- MCMCconfiguration$model
-  
-  nMCMCIters <- mcmcControl[['nMCMCIters']]  
-  if(is.null(nMCMCIters)){
-    nMCMCIters <- 10000
+  nMCMCiters <- MCMCcontrol[['nMCMCiters']]  
+  if(is.null(nMCMCiters)){
+    nMCMCiters <- 10000
     warning("Defaulting to 10,000 MCMC iterations for each MCMC run.")
   }
-  burnInProp <-  mcmcControl[['burnInProp']]  
+  burnInProp <-  MCMCcontrol[['burnInProp']]  
   if(is.null(burnInProp)){
     burnInProp <- 0
   }
@@ -267,17 +270,6 @@ runCrossValidate <- function(MCMCconfiguration,
       }
     }
   })
-  allDataNodeNames <- unique(sapply(dataNames, function(x){return(model$expandNodeNames(nodes = x))}))
-  approxNumPerFold <- ceiling(length(allDataNodeNames)/k)
-  leaveOutNames <- list()
-  currentDataNames <- list()
-  reducedDataNodeNames <- allDataNodeNames
-  for(i in 1:(k-1)){
-    leaveOutNames[[i]] <- sample(reducedDataNodeNames, approxNumPerFold)
-    reducedDataNodeNames <- reducedDataNodeNames[-which(reducedDataNodeNames %in% leaveOutNames[[i]])]
-    currentDataNames[[i]] <- allDataNodeNames[-which(allDataNodeNames %in% leaveOutNames[[i]])]
-  }
-  
   if(is.character(foldFunction) && foldFunction == 'random'){
     foldFunction <- generateRandomFoldFunction(model, k)
   }
@@ -294,29 +286,27 @@ runCrossValidate <- function(MCMCconfiguration,
   if(nCores > 1){
     ## simulate the ppp values
     crossValOut <- mclapply(1:k, calcCrossVal,
-                            prepModel,
+                            model,
                             foldFunction,
                             lossFunction,
-                            nMCMCIters,
+                            nMCMCiters,
+                            burnInProp,
+                            returnSamples,
+                            NbootReps,
+                            mc.cores = ncores)
+  }
+  else{
+    crossValOut <- lapply(1:k, calcCrossVal,
+                            model,
+                            foldFunction,
+                            lossFunction,
+                            nMCMCiters,
                             burnInProp,
                             returnSamples,
                             NbootReps)
   }
-  else{
-    sim.ppp.output <- lapply(X = 1, FUN = CPPPTask,
-                             nBootIter =
-                               ceiling(nSimVals/nCores))
-  }
   
   
-  crossValOut <- mclapply(1:k, calcCrossVal,
-                          prepModel,
-                          leaveOutNames,
-                          currentDataNames,
-                          mcmcIter,
-                          burnInProp,
-                          returnSamples,
-                          NbootReps)
   CVvalue <- sum(sapply(crossValOut, function(x) x$crossValAverage),
                   na.rm=TRUE)
   CVstandardError <- sqrt(sum(sapply(crossValOut,
