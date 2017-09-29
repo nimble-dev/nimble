@@ -234,5 +234,5 @@ else
 fi
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then
-  (cd inst/cppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf clean)
+  (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf clean)
 fi
