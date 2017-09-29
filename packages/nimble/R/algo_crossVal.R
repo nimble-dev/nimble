@@ -1,9 +1,4 @@
-crossValCalculate <- function(MCMCOut, realData){
-  discrep <- sum(colMeans((MCMCOut - saveData)^2))
-  return(discrep)
-}
-
-getSD <- function(MCMCout, sampNum, NbootReps, saveData){
+calcCrossValSD <- function(MCMCout, sampNum, NbootReps, saveData, lossFunction){
   l <- ceiling(min(1000, (sampNum)/20)) ##length of each
   q <- sampNum - l + 1
   h <- ceiling(sampNum/l)
@@ -15,109 +10,142 @@ getSD <- function(MCMCout, sampNum, NbootReps, saveData){
     chunks <- c(apply(indexes, 1, function(x){
       seq(x[1], x[2], 1)}
     ))
-    blockcvValues[r] <- crossValCalculate(MCMCout[chunks,], saveData)
+    blockcvValues[r] <- apply(MCMCout[chunks,], 1, lossFunction, saveData = saveData)
   }
   return(sd(blockcvValues))
 }
 
+
 calcCrossVal <- function(i,
                          prepModel,
-                         leaveOutNames,
-                         currentDataNames,
+                         foldFunction,
+                         lossFunction,
                          mcmcIter,
                          burnInProp,
                          returnSamples,
                          NbootReps){
-  saveData <- values(prepModel, leaveOutNames[[i]])
+  leaveOutNames <- model$expandNodeNames(foldFunction(i))
+  currentDataNames <- model$getNodeNames(dataOnly = T)
+  currentDataNames <- currentDataNames[!(currentDataNames %in% leaveOutNames)]
+  ## if the 'negatuveLL' loss function is chosen, it needs access to the model
+  ## and to the names of the nodes that were left out, so we define it within
+  ## calcCrossVal.
+  if(is.character(lossFunction) && lossFunction == 'negativeLL'){
+    lossFunction <- function(simulatedDataValues, actualDataValues){
+      values(model, leaveOutNames) <- simulatedDataValues
+      return(calculate(model))
+    }
+  }
+  saveData <- values(prepModel, leaveOutNames)
   newModel <- prepModel$newModel()
   newModel$resetData()
-  browser()
-  values(newModel, leaveOutNames[[i]]) <- NA
-  newModel$setData(currentDataNames[[i]])
+  values(newModel, leaveOutNames) <- NA
+  newModel$setData(currentDataNames)
   compileNimble(newModel)
   modelMCMCConf <- configureMCMC(newModel,
-                                 monitors = leaveOutNames[[i]])
+                                 monitors = leaveOutNames)
   modelMCMC <- buildMCMC(modelMCMCConf)
   C.modelMCMC <- compileNimble(modelMCMC,
-                               project = newModel,
-                               resetFunctions = (i != 1))
+                               project = newModel)
   C.modelMCMC$run(MCMCIter)
-  MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames[[i]]]
+  MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames]
   sampNum <- dim(MCMCout)[1]
   startIndex <- max(c(ceiling(burnInProp*MCMCIter), 1))
-  message(paste("dropping data block", i))
-  crossValAveSD <- getSD(MCMCout=MCMCout, sampNum=sampNum,
-                         NbootReps=NbootReps,
-                         saveData=saveData)
-  crossVal <- crossValCalculate(MCMCout[startIndex:sampNum,], saveData)
+  message(paste("dropping data fold", i))
+  crossValAveSD <- calcCrossValSD(MCMCout=MCMCout, sampNum=sampNum,
+                                  NbootReps=NbootReps,
+                                  saveData=saveData)
+  crossVal <- apply(MCMCout[startIndex:sampNum,], 1, lossFunction, saveData = saveData)
   nimble:::clearCompiled(C.modelMCMC)
   return(list(crossValAverage = crossVal,
               crossValAveSD = crossValAveSD,
               samples= if(returnSamples) MCMCout else NA))
 }
 
-runCrossValidate <- function(model,
-                             dataNames,
-                             k,
-                             MCMCIter,
-                             burnInProp, 
-                             MCMCdefs=NULL,
-                             returnSamples=FALSE,
-                             NbootReps=200){
-  
+MSElossFunction <- function(simulatedDataValues, actualDataValues){
+  MSE <- mean((simulatedDataValues - actualDataValues)^2)
+  return(MSE)
+}
 
-#' Performs k-fold cross-validation for a given NIMBLE model.  
+generateRandomFoldFunction <- function(model, k){
+  dataNodes <- model$expandNodeNames(model$getNodeNames(dataOnly = TRUE))
+  nDataNodes <- length(dataNodes)
+  if(k > nDataNodes){
+    stop('Cannot have more folds than there are data nodes in the model.')
+  }
+  approxNumPerFold <- ceiling(nDataNodes/k)
+  leaveOutNames <- list()
+  reducedDataNodeNames <- dataNodes
+  for(i in 1:(k-1)){
+    leaveOutNames[[i]] <- sample(reducedDataNodeNames, approxNumPerFold)
+    reducedDataNodeNames <- reducedDataNodeNames[-which(reducedDataNodeNames %in% leaveOutNames[[i]])]
+  }
+  leaveOutNames[[k]] <- reducedDataNodeNames
+  randomFoldFunction <- function(i){
+    return(leaveOutNames[[i]])
+  }
+}
+
+
+
+#' Perform k-fold cross-validation on a NIMBLE model  
 #' 
-#' EXPERIMENTAL.  Takes a NIMBLE model and conducts k-fold cross validation on it, returning a measure of the model's predictive performance. 
+#' EXPERIMENTAL.  Takes a NIMBLE model and conducts k-fold cross validation on 
+#' it, returning a measure of the model's predictive performance. 
 #' 
-#' @param model an uncompiled nimble model 
-#' @param k an integer argument determining the number of folds that should be used for cross-validation.
-#' @param MCMCIter the number of MCMC iterations to run for each fold of the cross-validation algorithm. 
-#' @param burnInProp a number between 0 and 1 specifying the proportion of MCMC iterations that should be discarded from the beginning of each run.
-#' @param discrepancyFunctionArgs an R \code{list} containing informaton to be used in the \code{discrepancyFunction}.  See details.
-#' @param cpppControl	(optional) an R \code{list} with parameters governing the CPPP calculation.  See details for specific parameters.
-#' @param mcmcControl (optional) an R \code{list} with parameters governing the MCMC  algorithm,  See details for specific parameters.
-#' @param origMCMCOutput (optional) a matrix with samples from the posterior distribution of the model for all model parameters.
-#' Each matrix column should contain samples from a different model parameter, and should be named as that parameter.  This argument should be supplied if
-#' a user has already run an MCMC and obtained posterior samples from the model, and wishes to use these samples in the CPPP algorithm. 
-#' @param returnSamples a logical argument indicating whether to return all posterior samples from all simulated data sets.  This can result in a very large 
-#' returned object,  Defaults to \code{FALSE}.
-#' @param nCores an integer argument indicating the number of cpu cores to use for CPPP calculation.  In order to use >1 core, the \code{parallel} R package must be 
-#' installed.  Only Mac and Linux operating systems support multiple cores at this time.  
+#'  @param MCMCconfiguration a NIMBLE MCMC configuration object, returned by a 
+#'  call to configureMCMC(). 
+#'  @param k an integer argument determining the number of folds that should be
+#'  used for cross-validation.
+#'  @param foldFunction one of (1) an R function taking a single integer argument
+#'  \code{i}, and returning a character vector with the names of the data nodes 
+#'  to leave out of the model for fold \code{i}, or (2) the character string 
+#'  \code{"random"}, indicating that data nodes will be randomly partitioned 
+#'  into \code{k} folds.  Defaults to \code{"random"}.  See 'Details'.
+#'  @param lossFunction one of (1) an R function taking a set of simulated data
+#'  and a set of observed data, and calculating the loss from those, or (2) a
+#'  character string naming one of NIMBLE's default loss functions.  If a 
+#'  character string, must be one of \code{"negativeLL"} to use the negative 
+#'  log-likelihood as a loss function or \code{"MSE"} to use the mean squared
+#'  error as a loss function.  Defaults to \code{"negativeLL"}.  See 'Details'
+#'  for information on creating a user-defined loss function.
+#'  @param MCMCcontrol (optional) an R \code{list} with parameters governing the 
+#'  MCMC algorithm,  See 'Details' for specific parameters.
+#'  @param returnSamples a logical argument indicating whether to return all 
+#'  posterior samples from all MCMC runs (note there will be \code{k} sets of
+#'  posterior samples returned).  This can result in a very large returned
+#'  object.  Defaults to \code{FALSE}.
+#'  @param nCores an integer argument indicating the number of cpu cores to use
+#'  for CV calculation.  In order to use >1 core, the \code{parallel} R package
+#'  must be installed.  Only Mac and Linux operating systems support multiple
+#'  cores at this time.  Defaults to 1.  
+#'  @param nBootReps an integer argument indicating the number of bootstrap samples
+#'  to use when estimating the Monte Carlo error of the cross validation metric.
 #' 
 #' @author Nicholas Michaud and Lauren Ponisio
 #' @export
-#' @details The CPPP algorithm used is based on that introduced by Hjoort et al. (2006), with some modifications.  Specfically, for each simulated data set and posterior predictive p-value
-#' calculated from that data set, a bootstrap estimate of the Monte-Carlo error in the p-value is calculated as well.  These errors are used to produce an error-adjusted calibrated posterior predictive p-value. 
-#'
-#'  @section The \code{discrepancyFunction} Argument:
-#' The \code{discrepancyFunction} argument is a \code{nimbleFunction} that will calculate the discrepancy between the model and the observations.  The choice of discrepancy function is highly model-specific, 
-#' and as such no default is provided for this argument.  The \code{discrepancyFunction} provided must follow these rules:
-#' \enumerate{
-#'   \item The \code{discrepancyFunction} must be a \code{nimbleFunction} with \code{setup} code and {run} code.  See the User's Manual for more information on writing \code{nimbleFunctions}.
-#'   \item The \code{setup} code to \code{discrepancyFunction} must accept two arguments: \code{model}, 
-#'   which is the model the CPPP is being calculated for, and \code{discrepancyFunctionArgs}, 
-#'   which is an R list with any needed information for calculating the discrepancy (e.g. node names, tuning parameters, etc.).
-#'   \item The \code{run} code of the discrepancy function must take no arguments and return a scalar double, and must \code{contain} the \code{discrepancyFunction_BASE} virtual \code{nimbleFunction}.
-#' }
-#' The \code{discrepancyFunctionArgs} argument to \code{runCPPP} is passed to the \code{discrepancyFunction}.  See the examples section below for an example of a discrepancy function.
+#' @details k-fold CV in NIMBLE proceeds by separating the data in a \code{nimbleModel} into k folds, as determined by the
+#' \code{foldFunction} argument.  For each fold, the corresponding data is held out of the model, 
+#' and MCMC is run to simulate data values for the left out data (these values are drawn from
+#' the data's posterior predictive distribution).  Then, the simlated data values are compared to the 
+#' known, left-out data values via the specified \code{lossFunction}.  The loss values are averaged over the
+#' posterior samples for reach fold, and these averaged values for each fold are then averaged over all folds to produce a single 
+#' loss estimate.  Additionally, estimates of the Monte Carlo error for each fold are returned.
 #' 
-#' 
-#' @section The \code{cpppControl} Argument:
-#' The \code{cpppControl} argument is a list with the following elements:
-#'	\itemize{
-#'	  \item{\code{nSimVals}}	{
-#'      an integer argument determining how many simulated posterior predictive p-values should be calculated to estimate the distribution of p-values.  Defaults to 100.
-#'	  }
-#'	  \item{\code{nCalcSamples}}{
-#'	    an integer argument determining how many posterior samples should be used to calculate the posterior predictive p-value for each simulated data set.  Defaults to 1000.
-#'	  }
-#'	  \item{\code{nBootstrapSDReps}} {
-#'	    an integer argument determining how many bootstrap repititions should be used to estimate the standard error of each posterior predictive p-value.  Defaults to 200.
-#'	  }
-#'  }
-#' @section The \code{mcmcControl} Argument:
-#' The \code{mcmcControl} argument is a list with the following elements:
+#'  @section The \code{foldFunction} Argument:
+#'  If the default 'random' method is not used, the \code{foldFunction} argument is an R function that takes a single integer argument \code{i}.  \code{i} is guaranteed to be within the range \code{[1, k]}.
+#'  For each integer value \code{i}, the function should return a character vector of node names corresponding to the data nodes that will be left out of the model for that fold.
+#'  The returned node names can be expanded, but don't need to be.   For example, if fold \code{i} is inteded to leave out the model nodes \code{x[1]}, \code{x[2]} and \code{x[3]} then the function could return either \code{c('x[1]', 'x[2]', 'x[3]')} or \code{c( 'x[1:3]')}.
+#'   
+#'  @section The \code{lossFunction} Argument:
+#'  If you don't wish to use either of NIMBLE's built in loss functions, you may provide your own R function
+#'  as the \code{lossFunction} argument to \code{runCrossValidate}.  A user-supplied  \code{lossFunction} must be an R function
+#'  that takes two arguments: the first, named \code{simulatedDataValues}, will be a vector of simulated data values.  The second,
+#'  named \code{actualDataValues}, will be a vector of observed data values corresponding to the simulated data values in \code{simulatedDataValues}.  The loss function should return a single scalar number.
+#'  See 'Examples' for an example of a user-defined loss function.
+#'  
+#' @section The \code{MCMCcontrol} Argument:
+#' The \code{MCMCcontrol} argument is a list with the following elements:
 #'	\itemize{
 #'	  \item{\code{nMCMCIters}}	{
 #'      an integer argument determining how many MCMC iterations should be run for each posterior predictive p-value calculation.  Defaults to 10000, but should probably be manually set.
@@ -130,105 +158,115 @@ runCrossValidate <- function(model,
 #' @return
 #' an R list with four elements:
 #' \itemize{
-#' \item{\code{CPPP}} {The CPPP value, measuring the amount of "surprise" the data has given the model.  Lower values indicate greater "surprise".  Will be between 0 and 1.}
-#' \item{\code{observed.PPP}} {The posterior predictive p-value for the observed data, along with an estimate of the Monte Carlo error for this p-value.}
-#' \item{\code{simulated.PPPs}} {Posterior predictive p-values for each of the simulated data sets, along with error estimates for each p-value.  The set of simulated posterior predictive p-values provide an empirical distribution of p-values, which is used to calculate the CPPP.}
-#' \item{\code{samples}} {An R list, only returned when \code{returnSamples = TRUE}.  Each element of this list will be a matrix of posterior samples from the model given a set of simulated data.  There will be \code{nSimVals} sets of samples.}
+#' \item{\code{CVvalue}} {The CV value, measuring the model's ability to predict new data.  Smaller relative values indicate better model performance.}
+#' \item{\code{CVstandardError}} {The standard error of the CV value, giving an indication of the total Monte Carlo error in the CV estimate.}
+#' \item{\code{foldCVInfo}} {An list of fold CV values and standard errors for each fold.}
+#' \item{\code{samples}} {An R list, only returned when \code{returnSamples = TRUE}.  The i'th element of this list will be a matrix of posterior samples from the model with the i'th fold of data left out.  There will be \code{k} sets of samples.}
 #' }
 #'
-#' @references 
-#' Hjort, N. L., Dahl, F. A., & Steinbakk, G. H. (2006). Post-processing posterior predictive p values. \emph{Journal of the American Statistical Association}, 101(475), 1157-1174.
 #' @examples
 #' \dontrun{
 #'
-#'  
-#' pumpCode <- nimbleCode({
-#'   for (i in 1:N){
-#'     theta[i] ~ dgamma(alpha, beta)
-#'     lambda[i] <- theta[i]*t[i]
-#'     x[i] ~ dpois(lambda[i])
+#' ## We conduct CV on the classic "dyes" BUGS model.
+#' 
+#' dyesCode <- nimbleCode({
+#'   for (i in 1:BATCHES) {
+#'     for (j in 1:SAMPLES) {
+#'       y[i,j] ~ dnorm(mu[i], tau.within);
+#'     }
+#'     mu[i] ~ dnorm(theta, tau.between);
 #'   }
-#'   alpha ~ dexp(1.0)
-#'   beta ~ dgamma(0.1,1.0)
+#' 
+#'   theta ~ dnorm(0.0, 1.0E-10);
+#'   tau.within ~ dgamma(0.001, 0.001);  sigma2.within <- 1/tau.within;
+#'   tau.between ~ dgamma(0.001, 0.001);  sigma2.between <- 1/tau.between;
 #' })
 #' 
-#' pumpConsts <- list(N = 10,
-#'                    t = c(94.3, 15.7, 62.9, 126, 5.24,
-#'                          31.4, 1.05, 1.05, 2.1, 10.5))
+#' dyesData <- list(y = matrix(c(1545, 1540, 1595, 1445, 1595,
+#'                               1520, 1440, 1555, 1550, 1440,
+#'                               1630, 1455, 1440, 1490, 1605,
+#'                               1595, 1515, 1450, 1520, 1560, 
+#'                               1510, 1465, 1635, 1480, 1580,
+#'                               1495, 1560, 1545, 1625, 1445), 
+#'                               nrow = 6, ncol = 5))
+#'                               
+#' dyesConsts <- list(BATCHES = 6,
+#'                    SAMPLES = 5)
 #' 
-#' pumpData <- list(x = c(5, 1, 5, 14, 3, 19, 1, 1, 4, 22))
+#' dyesModel <- nimbleModel(code = dyesCode,
+#'                          constants = dyesConsts,
+#'                          data = dyesData)
 #' 
-#' pumpModel <- nimbleModel(code=pumpCode,
-#'                          constants=pumpConsts,
-#'                          data=pumpData)
+#' # Define the fold function.
+#' # This function defines the data to leave out for the i'th fold
+#' # as the i'th row of the data matrix y.  This implies we will have
+#' # 6 folds.
 #' 
-#' # Define the discrepancy function.
-#' # Note that the discrepancy function must be a nimbleFunction that takes
-#' # model and discFunctionArgs as its only two arguments.
-#' 
-#' pumpDiscFunction <- nimbleFunction(
-#'   setup = function(model, discFunctionArgs){ 
-#'     dataNames <- discFunctionArgs[['dataNames']]
-#'   },
-#'   run = function(){
-#'     dataVals <- values(model, dataNames)
-#'     lambdaVals <- values(model, 'lambda')
-#'     disc <- 0
-#'     for(i in 1:dim(dataVals)[1]){
-#'       disc <- disc + ((dataVals[i] - lambdaVals[i])/sqrt(lambdaVals[i])) # subtract the expected value, divide by the sd.
-#'                                                                          # Note here the expected value and sd are the same,
-#'                                                                          # as the data comes from a poisson distribution.
-#'     }
-#'     returnType(double(0))  # must return a double(0)
-#'     return(disc)
-#'   },
-#'   contains = discrepancyFunction_BASE
-#' )
-#' 
-#' pumpCPPP <- runCPPP(pumpModel,
-#'                     dataNames = 'x',
-#'                     discrepancyFunction = pumpDiscFunction,
-#'                     discrepancyFunctionArgs = list(dataNames = 'x'),
-#'                     mcmcControl = list(nMCMCIters = 20000))
+#' dyesFoldFunction <- function(i){
+#'   foldNodes_i <- paste0(y[i, ])
+#'   return(foldNodes_i)
 #' }
+#' 
+#' # We define our own loss function as well.
+#' # The function below will compute the root mean squared error.
+#' 
+#' RMSElossFunction <- function(simulatedDataValues, actualDataValues){
+#'   dataLength <- length(simulatedDataValues) # simulatedDataValues is a vector
+#'   SSE <- 0
+#'   for(i in 1:dataLength){
+#'     SSE <- SSE + (simulatedDataValues[i] - actualDataValues[i])^2
+#'   }
+#'   MSE <- SSE / dataLength
+#'   RMSE <- sqrt(MSE)
+#'   return(RMSE)
+#' }
+#' 
+#' dyesMCMCconfiguration <- configureMCMC(dyesModel)
+#'   
+#' crossValOutput <- runCrossValidate(MCMCconfiguration = dyesMCMCconfiguration,
+#'                                    k = 6,
+#'                                    foldFunction = dyesFoldFunction,
+#'                                    lossFunction = MSElossFunction,
+#'                                    MCMCcontrol = list(nMCMCIters = 5000,
+#'                                                       burnInProp = .1))
+#'   
+#' 
 
-
-runCrossValidate <- function(model,
-                             dataNames,
+runCrossValidate <- function(MCMCconfiguration,
                              k,
-                             MCMCIter,
-                             burnInProp, 
-                             MCMCdefs=NULL,
-                             returnSamples=FALSE,
-                             NbootReps=200){
-  # simpSetMCMCDefs <- function(Rmodel, MCMCdefs, MCMCname) {
-  #   eval(MCMCdefs[[MCMCname]])
-  # }
-  # if(!is.null(MCMCdefs)){
-    ## eval(MCMCdefs.opt2[['nimbleOpt2']])
-    ## customSpec <- simpSetMCMCDefs(occ.R.model, MCMCdefs.opt2, 'nimbleOpt2')
-  # }
-  if(!inherits(model, "RmodelBaseClass")){
-    stop("model is not an Rmodel")
+                             foldFunction = 'random',
+                             lossFunction = 'negativeLL',
+                             MCMCcontrol = list(), 
+                             returnSamples = FALSE,
+                             ncores = 1,
+                             NbootReps = 200){
+  
+  model <- MCMCconfiguration$model
+  
+  nMCMCIters <- mcmcControl[['nMCMCIters']]  
+  if(is.null(nMCMCIters)){
+    nMCMCIters <- 10000
+    warning("Defaulting to 10,000 MCMC iterations for each MCMC run.")
   }
-  # if(thin == 0 | thin > MCMCIter){
-  #   stop("thin needs to be an integer > 0 and < MCMCIter")
-  # }
-  if(burnInProp >= 1 | burnInProp < 0){
+  burnInProp <-  mcmcControl[['burnInProp']]  
+  if(is.null(burnInProp)){
+    burnInProp <- 0
+  }
+  else if(burnInProp >= 1 | burnInProp < 0){
     stop("burnInProp needs to be between 0 and 1")
   }
-  testDataNames <- try(model[[dataNames]], silent=TRUE)
-  if(inherits(testDataNames, "try-error")){
-    stop(paste("dataNames", dataNames,
-               "is not the name of the data in model"))
-  } else{
-    test2DataNames <- all(model$expandNodeNames(dataNames) %in%
-                            model$getNodeNames(dataOnly=TRUE))
-    if(test2DataNames == FALSE){
-      stop(paste("dataNames", dataNames,
-                 "is not the name of the data in model"))
+  
+  allLeaveoutDataNames <- lapply(1:k, function(x){
+    try(thisDataNames <- model$expandNodeNames(foldFunction(x, model)), silent = TRUE)
+    if(inherits(thisDataNames, "try-error")){
+      stop(paste("foldFunction is returning incorrect node names for fold", x))
     }
-  }
+    else{
+      if(!all(model$expandNodeNames(thisDataNames) %in% model$expandNodeNames(model$getNodeNames(dataOnly = TRUE)))){
+        stop(paste("foldFunction is returning names of non-data nodes for fold", x))
+      }
+    }
+  })
   allDataNodeNames <- unique(sapply(dataNames, function(x){return(model$expandNodeNames(nodes = x))}))
   approxNumPerFold <- ceiling(length(allDataNodeNames)/k)
   leaveOutNames <- list()
@@ -239,10 +277,38 @@ runCrossValidate <- function(model,
     reducedDataNodeNames <- reducedDataNodeNames[-which(reducedDataNodeNames %in% leaveOutNames[[i]])]
     currentDataNames[[i]] <- allDataNodeNames[-which(allDataNodeNames %in% leaveOutNames[[i]])]
   }
-  leaveOutNames[[k]] <- reducedDataNodeNames
-  currentDataNames[[k]] <- allDataNodeNames[-which(allDataNodeNames %in% leaveOutNames[[k]])]
   
-  prepModel <- model$newModel()
+  if(is.character(foldFunction) && foldFunction == 'random'){
+    foldFunction <- generateRandomFoldFunction(model, k)
+  }
+  if(is.character(lossFunction) && lossFunction == 'MSE'){
+    lossFunction <- MSElossFunction
+  }
+  
+  libError <-  try(library('parallel'), silent = TRUE)
+  if(inherits(libError, 'try-error') && nCores > 1){
+    warning("The 'parallel' package must be installed to use multiple cores for CPPP calculation.  Defaulting to one core.")
+    nCores <- 1
+  }
+  
+  if(nCores > 1){
+    ## simulate the ppp values
+    crossValOut <- mclapply(1:k, calcCrossVal,
+                            prepModel,
+                            foldFunction,
+                            lossFunction,
+                            nMCMCIters,
+                            burnInProp,
+                            returnSamples,
+                            NbootReps)
+  }
+  else{
+    sim.ppp.output <- lapply(X = 1, FUN = CPPPTask,
+                             nBootIter =
+                               ceiling(nSimVals/nCores))
+  }
+  
+  
   crossValOut <- mclapply(1:k, calcCrossVal,
                           prepModel,
                           leaveOutNames,
@@ -251,13 +317,16 @@ runCrossValidate <- function(model,
                           burnInProp,
                           returnSamples,
                           NbootReps)
-  crossVal <- sum(sapply(crossValOut, function(x) x$crossValAverage),
+  CVvalue <- sum(sapply(crossValOut, function(x) x$crossValAverage),
                   na.rm=TRUE)
-  crossValSD <- sqrt(sum(sapply(crossValOut,
+  CVstandardError <- sqrt(sum(sapply(crossValOut,
                                 function(x) x$crossValAveSD^2),
                          na.rm=TRUE))
-  out <- list(crossVal=crossVal,
-              crossValSD=crossValSD)
+  foldCVinfo <- lapply(crossValOut(function(x)return(c(foldCVvalue = x$crossValAverage,
+                                                    foldCVstandardError = x$crossValAveSD))))
+  out <- list(CVvalue=CVvalue,
+              CVstandardError=CVstandardError,
+              foldCVinfo = foldCVinfo)
   if(!returnSamples){
     out$samples <- NULL
   }
