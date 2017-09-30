@@ -4,16 +4,16 @@ require(methods)
 require(nimble)
 
 ## These make it clear that error messages are expected.
+if(F) {
 expect_failure <- function(...) {
-    cat('BEGIN XFAIL\n', file = stderr())
+    cat('BEGIN expected failure:\n', file = stderr())
     testthat:::expect_failure(...)
-    cat('END XFAIL\n', file = stderr())
+    argList <- list(...)
+    cat(argList$info)
+    cat('\nEND expected failure.\n', file = stderr())
 }
-expect_error <- function(...) {
-    cat('BEGIN XFAIL\n', file = stderr())
-    testthat:::expect_error(...)
-    cat('END XFAIL\n', file = stderr())
 }
+
 
 ## Mark tests that are know to fail with `if(RUN_FAILING_TESTS)`.
 ## By default these tests will not be run, but we will occasionally clean up by running them with
@@ -327,18 +327,21 @@ test_coreRfeature_internal <- function(input, verbose = TRUE, dirName = NULL) { 
   invisible(NULL)
 }
 
-gen_runFun <- function(param) {
-  runFun <- function() {}
-  formalsList <- vector('list', length(param$inputDim))
-  formalsList <- lapply(param$inputDim, function(x) parse(text = paste0("double(", x, ")"))[[1]])
-  names(formalsList) <- paste0('arg', seq_along(param$inputDim))
-  formals(runFun) <- formalsList
-  tmp <- quote({})
-  tmp[[2]] <- param$expr
-  tmp[[3]] <- quote(return(out))
-  tmp[[4]] <- parse(text = paste0("returnType(double(", param$outputDim, "))"))[[1]]
-  body(runFun) <- tmp
-  return(runFun)
+gen_runFun <- function(param, logicalArgs, logicalReturn = FALSE) {
+    runFun <- function() {}
+    types <- rep('double', length(param$inputDim))
+    types[logicalArgs] <- 'logical'
+    types <- paste0(types, '(', param$inputDim, ')')
+    formalsList <- lapply(types, function(x) parse(text = x)[[1]])
+    names(formalsList) <- paste0('arg', seq_along(param$inputDim))
+    formals(runFun) <- formalsList
+    tmp <- quote({})
+    tmp[[2]] <- param$expr
+    tmp[[3]] <- quote(return(out))
+    type <- if(logicalReturn) "logical" else "double"
+    tmp[[4]] <- parse(text = paste0("returnType(", type, "(", param$outputDim, "))"))[[1]]
+    body(runFun) <- tmp
+    return(runFun)
 }
 
 make_input <- function(dim, size = 3, logicalArg) {
@@ -367,64 +370,76 @@ wrap_if_matches <- function(pattern, string, wrapper, expr) {
 test_math <- function(param, caseName, verbose = TRUE, size = 3, dirName = NULL) {
     info <- paste0(caseName, ': ', param$name)
     test_that(info, {
-        wrap_if_matches(param$xfail, paste0(info, ': compiles and runs'), expect_error, {
-            test_math_internal(param, info, verbose, size, dirName)
-        })
+        ## wrap_if_matches(param$xfail, paste0(info, ': compiles and runs'), expect_error, {
+        test_math_internal(param, info, verbose, size, dirName)
+        ## })
     })
 }
 
 test_math_internal <- function(param, info, verbose = TRUE, size = 3, dirName = NULL) {
   if(verbose) cat("### Testing", param$name, "###\n")
-  runFun <- gen_runFun(param)
-  nfR <- nimbleFunction(  
-             run = runFun)
-  nfC <- compileNimble(nfR, dirName = dirName)
-
   nArgs <- length(param$inputDim)
   logicalArgs <- rep(FALSE, nArgs)
   if("logicalArgs" %in% names(param))
-    logicalArgs <- param$logicalArgs
+      logicalArgs <- param$logicalArgs
+  logicalReturn <- FALSE
+  if("logicalReturn" %in% names(param))
+      logicalReturn <- param$logicalReturn
 
-  arg1 <- make_input(param$inputDim[1], size = size, logicalArgs[1])
-  if(nArgs > 1)
-      arg2 <- make_input(param$inputDim[2], size = size, logicalArgs[2])
-  if(nArgs > 2)
-      arg3 <- make_input(param$inputDim[3], size = size, logicalArgs[3])
-  if(nArgs > 3)
-      stop("test_math not set up for >3 args yet")
-  
-  if("Rcode" %in% names(param)) {      
-      eval(param$Rcode)
-  } else {
-      eval(param$expr)
-  }
-  if(nArgs == 3) {
-      out_nfR <- nfR(arg1, arg2, arg3)
-      out_nfC <- nfC(arg1, arg2, arg3)
-  }  
-  if(nArgs == 2) {
-      out_nfR <- nfR(arg1, arg2)
-      out_nfC <- nfC(arg1, arg2)
-  }
-  if(nArgs == 1) {
-    out_nfR <- nfR(arg1)
-    out_nfC <- nfC(arg1)
-  }
-  attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
-  if(is.logical(out)) out <- as.numeric(out)
-  if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
+  runFun <- gen_runFun(param, logicalArgs, logicalReturn)
+  nfR <- nimbleFunction(  
+      run = runFun)
 
-  infoR <- paste0(info, ": R vs Nimble DSL")
-  wrap_if_matches(param$xfail, infoR, expect_failure, {
-      expect_equal(out, out_nfR, info = infoR)
+  info <- paste0(info, ": compiles")
+  ## need expect_error not expect_failure(expect_something()) because otherwise
+  ## R error will stop execution
+  wrap_if_matches(param$xfail, info, expect_error, {
+      nfC <- compileNimble(nfR, dirName = dirName)
+
+      arg1 <- make_input(param$inputDim[1], size = size, logicalArgs[1])
+      if(nArgs > 1)
+          arg2 <- make_input(param$inputDim[2], size = size, logicalArgs[2])
+      if(nArgs > 2)
+          arg3 <- make_input(param$inputDim[3], size = size, logicalArgs[3])
+      if(nArgs > 3)
+          stop("test_math not set up for >3 args yet")
+      
+      if("Rcode" %in% names(param)) {      
+          eval(param$Rcode)
+      } else {
+          eval(param$expr)
+      }
+      info <- paste0(info, ": runs")
+      wrap_if_matches(param$xfail, info, expect_failure, {
+          if(nArgs == 3) {
+              expect_silent(out_nfR <- nfR(arg1, arg2, arg3))
+              expect_silent(out_nfC <- nfC(arg1, arg2, arg3))
+          }  
+          if(nArgs == 2) {
+              expect_silent(out_nfR <- nfR(arg1, arg2))
+              expect_silent(out_nfC <- nfC(arg1, arg2))
+          }
+          if(nArgs == 1) {
+              expect_silent(out_nfR <- nfR(arg1))
+              expect_silent(out_nfC <- nfC(arg1))
+          }
+      
+          attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
+          ## if(is.logical(out)) out <- as.numeric(out)
+          ## if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
+          
+          infoR <- paste0(info, ": R vs Nimble DSL")
+          wrap_if_matches(param$xfail, infoR, expect_failure, {
+              expect_equal(out, out_nfR, info = infoR)
+          })
+          infoC <- paste0(info, ": R vs Nimble Cpp")
+          wrap_if_matches(param$xfail, infoC, expect_failure, {
+              expect_equal(out, out_nfC, info = infoC)
+          })
+      })
+      # Unload DLL as R doesn't like to have too many loaded.
+      if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR)
   })
-  infoC <- paste0(info, ": R vs Nimble Cpp")
-  wrap_if_matches(param$xfail, infoC, expect_failure, {
-      expect_equal(out, out_nfC, info = infoC)
-  })
-
-  # Unload DLL as R doesn't like to have too many loaded.
-  if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR)
   invisible(NULL)
 }
 
@@ -1082,15 +1097,9 @@ expandNames <- function(var, ...) {
     sort(paste0(var, "[", indChars, "]"))
 }
 
-# FIXME
-tdim <- test_dynamic_indexing_model <- function(param) {
-        if(!is.null(param$expectFailure) && param$expectFailure) {
-            cat("begin XFAIL: ",  param$case, "\n")
-            expect_error(test_that(param$case, test_dynamic_indexing_model_internal(param)))
-            cat("end XFAIL\n")
-        } else
-            test_that(param$case, test_dynamic_indexing_model_internal(param))
-        invisible(NULL)
+test_dynamic_indexing_model <- function(param) {
+    test_that(param$case, test_dynamic_indexing_model_internal(param))
+    invisible(NULL)
 }
                 
 test_dynamic_indexing_model_internal <- function(param) {
@@ -1103,7 +1112,7 @@ test_dynamic_indexing_model_internal <- function(param) {
                 expect_identical(m$getDependencies(param$expectedDeps[[i]]$parent, stochOnly = TRUE),
                     param$expectedDeps[[i]]$result, info = paste0("dependencies don't match expected in dependency of ", param$expectedDeps[[i]]$parent))
             cm <- compileNimble(m)
-            expect_true(class(cm) == "Ccode", info = "compiled model object improperly formed")
+            expect_true(is.Cmodel(cm), info = "compiled model object improperly formed")
             expect_identical(calculate(m), calculate(cm), info = "problem with R vs. C calculate with initial indexes")
             for(i in seq_along(param$validIndexes)) {
                 for(j in seq_along(param$invalidIndexes[[i]]$var)) {

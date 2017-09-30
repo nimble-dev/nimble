@@ -7,7 +7,19 @@ options(warn = -1)
 
 source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = 'nimble'))
 
+nimbleAllowDynamicIndexingSetting <- nimbleOptions('allowDynamicIndexing')
 nimbleOptions(allowDynamicIndexing = TRUE)
+
+goldFileName <- 'dynamicIndexingTestLog_Correct.Rout'
+tempFileName <- 'dynamicIndexingTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForDynamicIndexingTesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForDynamicIndexingTesting'), goldFileName) else tempFileName
+
+sink(outputFile)
+
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
+
 
 ## check variations on use of dynamic indexing in BUGS code including building and compiling,
 ## dependencies, and valid and invalid dynamic index values
@@ -18,8 +30,7 @@ ans3 <- sapply(testsInvalidDynIndexValue, test_dynamic_indexing_model)
 
 ## check conjugacy detection
 
-test_that("Testing conjugacy detection with dynamic indexing", { 
-
+test_that("Testing normal-normal conjugacy detection with dynamic indexing", { 
     code = nimbleCode({
         for(i in 1:4) 
             y[i] ~ dnorm(mu[k[i]], sd = 1)
@@ -30,8 +41,11 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                     inits = list(k = rep(1,4)))
     conf <- configureMCMC(m)
     expect_match(conf$getSamplers()[[1]]$name, "conjugate_dnorm_dnorm",
-                 info = "failed to detect normal-normal conjugacy")
+                 info = 'failed to detect conjugacy')
+})
+
     
+test_that("Testing Poisson-normal non-conjugacy detection with dynamic indexing", { 
     code = nimbleCode({
         for(i in 1:4) 
             y[i] ~ dpois(mu[k[i]])
@@ -42,8 +56,10 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                     inits = list(k = rep(1,4)))
     conf <- configureMCMC(m)
     expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
-                 info = "incorrectly detected conjugacy in poisson-normal case")
+                 info = 'incorrectly detected conjugacy')
+})
     
+test_that("Testing truncated normal-normal non-conjugacy detection with dynamic indexing", { 
     code = nimbleCode({
         for(i in 1:4) 
             y[i] ~ T(dnorm(mu[k[i]], sd = 1), 0, 1)
@@ -54,8 +70,10 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                     inits = list(k = rep(1,4)))
     conf <- configureMCMC(m)
     expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
-                 info = "incorrectly detected conjugacy in truncated normal-normal case")
-    
+                 info = "incorrectly detected conjugacy")
+})
+
+test_that("Testing normal-truncated normal non-conjugacy detection with dynamic indexing", {     
     code = nimbleCode({
         for(i in 1:4) 
             y[i] ~ dnorm(mu[k[i]], sd = 1)
@@ -66,24 +84,28 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                     inits = list(k = rep(1,4)))
     conf <- configureMCMC(m)
     expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
-                 info = "incorrectly detected conjugacy in normal-truncated normal case")
+                 info = "incorrectly detected conjugacy")
+})
 
+test_that("Testing normal-normal-IG multi-conjugacy detection with dynamic indexing", {     
     code = nimbleCode({
-    for(i in 1:2) {
-        y[i] ~ dnorm(cc*mu[xi[i]+offset], var = s0)
-        xi[i] ~ dcat(p[1:3])
-    }
-    for(j in 1:4)
-        mu[j] ~ dnorm(0,1)
-    s0 ~ dinvgamma(1,1)
+        for(i in 1:2) {
+            y[i] ~ dnorm(cc*mu[xi[i]+offset], var = s0)
+            xi[i] ~ dcat(p[1:3])
+        }
+        for(j in 1:4)
+            mu[j] ~ dnorm(0,1)
+        s0 ~ dinvgamma(1,1)
     })
     m <- nimbleModel(code, data = list(y = rep(1,2)), inits = list(xi = 1:2, offset = 1))
     conf <- configureMCMC(m)
     expect_match(conf$getSamplers()[[1]]$name, "conjugate_dnorm_dnorm",
-                 info = "failed to detect normal-normal conjugacy in multi-conjugacy setting")
+                 info = "failed to detect normal-normal conjugacy")
     expect_match(conf$getSamplers()[[5]]$name, "conjugate_dinvgamma_dnorm",
-                 info = "failed to detect invgamma-normal conjugacy in multi-conjugacy setting")
+                 info = "failed to detect invgamma-normal conjugacy")
+})
 
+test_that("Testing normal-normal-IG mixed-conjugacy detection with dynamic indexing", {     
     code = nimbleCode({
         for(i in 1:2) {
             y[i] ~ dnorm(s0 + mu[xi[i]], var = s0)
@@ -99,23 +121,9 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                  info = "failed to detect normal-normal conjugacy when var param in mean and var")
     expect_equal(length(grep("conjugate", conf$getSamplers()[[5]]$name)), 0,
                  info = "incorrectly detected conjugacy when var param in dnorm mean and var")
+})
 
-    code = nimbleCode({
-        for(i in 1:2) {
-            y[i] ~ dnorm(sqrt(s0 + mu[xi[i]]), var = s0)
-            xi[i] ~ dcat(p[1:3])
-        }
-        for(j in 1:4)
-            mu[j] ~ dnorm(0,1)
-        s0 ~ dinvgamma(1,1)
-    })
-    m <- nimbleModel(code, data = list(y = rep(1,2)), inits = list(xi = 1:2))
-    conf <- configureMCMC(m)
-    expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
-                 info = "incorrectly detected conjugacy wth nonlinear functional of mean param in dnorm")
-    expect_equal(length(grep("conjugate", conf$getSamplers()[[5]]$name)), 0,
-                 info = "incorrectly detected conjugacy when var param in dnorm mean and var, case 2")
-
+test_that("Testing normal-normal-IG mixed-conjugacy detection (case 2) with dynamic indexing", {     
     code = nimbleCode({
         for(i in 1:2) {
             y[i] ~ dnorm(mu[round(xi[i]+s0)], var = s0)
@@ -131,7 +139,27 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                  info = "failed to detect normal-normal conjugacy when var param in mean index")
     expect_equal(length(grep("conjugate", conf$getSamplers()[[5]]$name)), 0,
                  info = "incorrectly detected conjugacy when var param in mean index")
+})
 
+test_that("Testing normal-normal-IG complicated dependency non-conjugacy detection with dynamic indexing", {     
+    code = nimbleCode({
+        for(i in 1:2) {
+            y[i] ~ dnorm(sqrt(s0 + mu[xi[i]]), var = s0)
+            xi[i] ~ dcat(p[1:3])
+        }
+        for(j in 1:4)
+            mu[j] ~ dnorm(0,1)
+        s0 ~ dinvgamma(1,1)
+    })
+    m <- nimbleModel(code, data = list(y = rep(1,2)), inits = list(xi = 1:2))
+    conf <- configureMCMC(m)
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[1]]$name)), 0,
+                 info = "incorrectly detected conjugacy wth nonlinear functional of mean param in dnorm")
+    expect_equal(length(grep("conjugate", conf$getSamplers()[[5]]$name)), 0,
+                 info = "incorrectly detected conjugacy when var param in dnorm mean and var, case 2")
+})
+
+test_that("Testing normal-normal-IG complicated dependency mixed-conjugacy detection with dynamic indexing", {    
     code = nimbleCode({
         for(i in 1:2) {
             y[i] ~ dnorm(mu[round(xi[i]+mu[i])], var = s0)
@@ -147,7 +175,9 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                  info = "incorrectly detected conjugacy when mean param in own index")
     expect_match(conf$getSamplers()[[5]]$name, "conjugate_dinvgamma_dnorm",
                  info = "failed to detect invgamma-normal conjugacy when mean param in own index")
+})
 
+test_that("Testing multivariate normal-Wishart dependency conjugacy detection with dynamic indexing", {    
     code = nimbleCode({
         y[1:3] ~ dmnorm(mu[k, 1:3], pr[1:3,1:3])
         pr[1:3,1:3] ~ dwish(pr0[1:3,1:3], 5)
@@ -162,7 +192,9 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                  info = "failed to detect wishart-dmnorm conjugacy in multivariate multi-conjugacy setting")
     expect_match(conf$getSamplers()[[3]]$name, "conjugate_dmnorm_dmnorm",
                  info = "failed to detect dmnorm-dmnorm conjugacy in multivariate multi-conjugacy setting")
+})
 
+test_that("Expected failure: Testing multivariate normal-Wishart dependency conjugacy detection with dynamic indexing", {    
     code = nimbleCode({
         y[1:3] ~ dmnorm(mu[k, 1:3], pr[1:3,1:3])
         pr[1:3,1:3] ~ dwish(pr0[1:3,1:3], 5)
@@ -174,9 +206,10 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                                        z = rep(1,3)))
     conf <- configureMCMC(m)
     expect_failure(expect_match(conf$getSamplers()[[3]]$name, "conjugate_dmnorm_dmnorm",
-        info = "failed to detect dmnorm-dmnorm conjugacy  in multivariate crossed multi-conjugacy setting"),
-        info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in our dmnorm conjugacy detection")
+            info = "failed to detect dmnorm-dmnorm conjugacy  in multivariate crossed multi-conjugacy setting"))
+})
 
+test_that("Testing normal-normal-IG multi-index multi-conjugacy detection with dynamic indexing", {    
     code = nimbleCode({
         for(i in 1:2) {
             k2[i] <- 1 + k1[i]
@@ -193,10 +226,12 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                     inits = list(k1 = rep(0,2)))
     conf <- configureMCMC(m)
     expect_match(conf$getSamplers()[[3]]$name, "conjugate_dnorm_dnorm",
-                 info = "failed to detect normal-normal conjugacy with complicated indexing")
+                 info = "failed to detect normal-normal conjugacy")
     expect_match(conf$getSamplers()[[13]]$name, "conjugate_dinvgamma_dnorm",
-                 info = "failed to detect invgamma-normal conjugacy with complicated indexing")
+                 info = "failed to detect invgamma-normal conjugacy")
+})
 
+test_that("Testing normal-normal-IG multi-index mixed-conjugacy detection with dynamic indexing", {    
     code = nimbleCode({
         for(i in 1:2) {
             k2[i] <- s0 + k1[i]
@@ -213,14 +248,11 @@ test_that("Testing conjugacy detection with dynamic indexing", {
                     inits = list(s0 = 1, k1 = rep(0,2)))
     conf <- configureMCMC(m)
     expect_match(conf$getSamplers()[[3]]$name, "conjugate_dnorm_dnorm",
-                 info = "failed to detect normal-normal conjugacy with complicated indexing, var not conjugate")
+                 info = "failed to detect normal-normal conjugacy, var not conjugate")
     expect_equal(length(grep("conjugate", conf$getSamplers()[[13]]$name)), 0,
-                 info = "incorrectly detected conjugacy for variance with complicated indexing, var not conjugate") 
+                 info = "incorrectly detected conjugacy for variance, var not conjugate") 
 
 })
-
-
-
 
 ## MCMC testing
 
@@ -233,74 +265,7 @@ sapply(models, test_mcmc, numItsC = 1000)
 ## beta0C is beta0 in inits file
 system.in.dir(paste("sed 's/beta0/beta0C/g' cervix-inits.R > ", file.path(tempdir(), "cervix-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
 ## need missing x's to have initial values or initial model$calculate fails
-## FIXME: replace hard-coded 1's with auto-generated
-system.in.dir(paste("echo 'x <- 
-c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)'  >> ", file.path(tempdir(), "cervix-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
+system.in.dir(paste("echo 'x <- c(rep(0, 16), rep(1, 23), rep(0, 44), rep(1, 1961))' >> ", file.path(tempdir(), "cervix-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
 
 test_that('cervix model and MCMC test', {
     testBUGSmodel('cervix', dir = "", model = system.file('classic-bugs','vol2','cervix','cervix.bug', package = 'nimble'), data = system.file('classic-bugs','vol2','cervix','cervix-data.R', package = 'nimble'),  inits = file.path(tempdir(), "cervix-inits.R"),  useInits = TRUE)
@@ -489,4 +454,15 @@ test_that('basic multivariate mixture model with conjugacy', {
 
 options(warn = RwarnLevel)
 
-nimbleOptions(allowDynamicIndexing = FALSE)
+sink(NULL)
+
+if(!generatingGoldFile) {
+    trialResults <- readLines(tempFileName)
+    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    compareFilesByLine(trialResults, correctResults)
+}
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
+nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
+nimbleOptions(allowDynamicIndexing = nimbleAllowDynamicIndexingSetting)

@@ -17,7 +17,7 @@ if(.Platform$OS.type == 'windows') {
 }
 ans3 <- sapply(testsMoreMath, test_math, 'math')  ## 41
 ans4 <- sapply(testsReduction, test_math, 'math') ## 13
-ans5 <- sapply(testsComparison, test_math, 'math')## 6
+ans5 <- sapply(testsComparison, test_math, 'math')## 12
 ans6 <- sapply(testsMatrix, test_math, 'math')    ## 19
 
 
