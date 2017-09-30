@@ -203,11 +203,8 @@ print: A logical argument, specifying whether to print the ordered list of defau
                         if(useConjugacy) {
                             conjugacyResult <- conjugacyResultsAll[[node]]
                             if(!is.null(conjugacyResult)) {
-                                varName <- model$getVarNames(nodes = node)
                                 addConjugateSampler(conjugacyResult = conjugacyResult,
-                                                    dynamicallyIndexed = model$modelDef$varInfo[[varName]]$anyDynamicallyIndexed)
-                                next
-                            }
+                                                    dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                         }
                         if(nodeDist == 'dmulti')       { addSampler(target = node, type = 'RW_multinomial');     next }
                         if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
@@ -225,11 +222,8 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     if(useConjugacy) {
                         conjugacyResult <- conjugacyResultsAll[[node]]
                         if(!is.null(conjugacyResult)) {
-                            varName <- model$getVarNames(nodes = node)
                             addConjugateSampler(conjugacyResult = conjugacyResult,
-                                                dynamicallyIndexed = model$modelDef$varInfo[[varName]]$anyDynamicallyIndexed)
-                            next
-                        }
+                                                dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                     }
                     
                     ## if node is discrete 0/1 (binary), assign 'binary' sampler
@@ -803,9 +797,9 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             addRule(quote(isEndNode), 'posterior_predictive')
             
 	    ## conjugate nodes
-            ## FIXME: CJP not sure how to modify this to include the new 'dynamicallyIndexed' argument here
             addRule(quote(useConjugacy && isConjugate),
-                    quote(addConjugateSampler(conjugacyResultsAll[[node]])))
+                    quote(addConjugateSampler(conjugacyResult = conjugacyResultsAll[[node]],
+                                              dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed)))
             
 	    ## multinomial
             addRule(quote(nodeDistribution == 'dmulti'), 'RW_multinomial')
