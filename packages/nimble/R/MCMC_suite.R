@@ -323,6 +323,7 @@ MCMCsuiteClass <- setRefClass(
             burnin <<- burnin
             thin <<- thin
             nkeep <<- floor(niter/thin) - burnin
+            if(nkeep < 0) stop('niter/thin - burnin is negative; this would not retain any samples; try increasing niter, or decreasing burnin')
             burninFraction <<- burnin / (nkeep + burnin)
             setMonitors(monitors)
             setSummaryStats(summaryStats, calculateEfficiency)

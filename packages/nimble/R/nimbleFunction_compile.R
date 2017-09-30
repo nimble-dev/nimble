@@ -334,8 +334,7 @@ nfProcessing$methods(doSetupTypeInference_processNF = function(symTab, setupOutp
         symbolRCobject <- makeTypeObject(name, instances, firstOnly)
         if(is.null(symbolRCobject)) next
         if(is.logical(symbolRCobject)) {
-            message(paste0('There is an error involving the type of ', name,'.  Going into browser(). Press Q to exit.'), call. = FALSE)
-            browser()
+            stop(paste0('There is an error involving the type of ', name,'.'), call. = FALSE)
         }
         if(add) symTab$addSymbol(symbolRCobject)
     }
