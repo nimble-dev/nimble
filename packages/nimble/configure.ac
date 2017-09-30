@@ -118,10 +118,18 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    export CPPFLAGS="-I${EIGEN_DIR}"
 fi
 
-CXX=`"${R_HOME}/bin/R" CMD config CXX`
-CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
-AC_LANG([C++])
-dnl  AC_LANG_PUSH([C++]);
+
+dnl Next 5 lines are from from https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Using-C_002b_002b11-code, but with CXX11 modified to CXX1X per output of R CMD config
+CXX11=`"${R_HOME}/bin/R" CMD config CXX1X`
+CXX11STD=`"${R_HOME}/bin/R" CMD config CXX1XSTD`
+CXX="${CXX11} ${CXX11STD}"
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX1XFLAGS`
+AC_LANG(C++)
+
+dnl Next 3 lines are from old config.ac, prior to turning on C++11 and using above 5 lines
+dnl CXX=`"${R_HOME}/bin/R" CMD config CXX`
+dnl CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
+dnl AC_LANG([C++])
 
 echo "working on eigen"
 
@@ -208,7 +216,7 @@ AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars inst
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then
   echo "removing debugging flags"
-  (cd inst/cppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
+  (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
 fi
 
 if test "${ENABLE_LIB}" != "false" ; then
@@ -226,5 +234,5 @@ else
 fi
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then
-  (cd inst/cppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf clean)
+  (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf clean)
 fi

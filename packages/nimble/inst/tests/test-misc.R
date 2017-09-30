@@ -23,8 +23,8 @@ test_that("while() works even when an intermediate variable is needed", {
 test_that("copyExprClass works", {
     testExpr <- nimble:::RparseTree2ExprClasses(quote(a <- foo(bar(b, 3, c) + 2) + 4))
     testExprCopy <- nimble:::copyExprClass(testExpr)
-    expect_identical(capture.output(testExpr$show()),
-                     capture.output(testExprCopy$show()),
+    expect_identical(capture.output(testExpr$print()),
+                     capture.output(testExprCopy$print()),
                      info = 'incorrect copying of exprClass object')
 })
 
