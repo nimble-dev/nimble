@@ -33,7 +33,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  ## the following are all set in setupModel()
                                  BUGScode = 'ANY',  ## original BUGS code, set in assignBUGScode()
                                  constantsEnv = 'ANY', ## environment with constants, set in assignConstants()
-                                 constantsList = 'ANY',  ## named list with constants, set in assignConsstants()
+                                 constantsList = 'ANY',  ## named list with constants, set in assignConstants()
                                  constantsNamesList = 'ANY', ## list of constants name objects, set in assignConstants()
                                  constantsScalarNamesList = 'ANY', ## could eventually replace constantsNamesList. added for newNodeFxns
                                  dimensionsList = 'ANY',		#list		   ## list of provided dimension information, set in assignDimensions()

@@ -204,7 +204,6 @@ print: A logical argument, specifying whether to print the ordered list of defau
                             conjugacyResult <- conjugacyResultsAll[[node]]
                             if(!is.null(conjugacyResult)) {
                                 varName <- model$getVarNames(nodes = node)
-                                if(length(varName) > 1) stop("MCMCconf: conjugate sampler for more than one variable: ", node, ".")
                                 addConjugateSampler(conjugacyResult = conjugacyResult,
                                                     dynamicallyIndexed = model$modelDef$varInfo[[varName]]$anyDynamicallyIndexed)
                                 next
@@ -227,7 +226,6 @@ print: A logical argument, specifying whether to print the ordered list of defau
                         conjugacyResult <- conjugacyResultsAll[[node]]
                         if(!is.null(conjugacyResult)) {
                             varName <- model$getVarNames(nodes = node)
-                            if(length(varName) > 1) stop("MCMCconf: conjugate sampler for more than one variable: ", node, ".")
                             addConjugateSampler(conjugacyResult = conjugacyResult,
                                                 dynamicallyIndexed = model$modelDef$varInfo[[varName]]$anyDynamicallyIndexed)
                             next
@@ -304,8 +302,8 @@ Invisibly returns a list of the current sampler configurations, which are sample
                         varName <- model$getVarNames(nodes = target)
                         if(length(varName) > 1) stop("MCMCconf: conjugate sampler for more than one variable: ", target, ".")
                         return(addConjugateSampler(conjugacyResult = conjugacyResult,
-                                                   dynamicallyIndexed = model$modelDef$varInfo[[varName]]$anyDynamicallyIndexed),
-                                                   print = print)
+                                                   dynamicallyIndexed = model$modelDef$varInfo[[varName]]$anyDynamicallyIndexed,
+                                                   print = print))
                     } else stop(paste0('Cannot assign conjugate sampler to non-conjugate node: \'', target, '\''))
                 }
                 thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
