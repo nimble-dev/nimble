@@ -426,8 +426,6 @@ test_math_internal <- function(param, info, verbose = TRUE, size = 3, dirName = 
           }
       
           attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
-          ## if(is.logical(out)) out <- as.numeric(out)
-          ## if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
           
           infoR <- paste0(info, ": R vs Nimble DSL")
           wrap_if_matches(param$xfail, infoR, expect_failure, {

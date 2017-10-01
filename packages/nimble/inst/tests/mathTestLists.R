@@ -143,16 +143,16 @@ testsReduction = list(
   list(name = 'sd of vector', expr = quote(out <- sd(arg1)), inputDim = 1, outputDim = 0),
   list(name = 'var of vector', expr = quote(out <- var(arg1)), inputDim = 1, outputDim = 0),
   list(name = 'prod of vector', expr = quote(out <- prod(arg1)), inputDim = 1, outputDim = 0),
-  list(name = 'norm of vector', expr = quote(out <- norm(arg1)), inputDim = 1, outputDim = 0, xfail = 'compiles and runs'),  ## norm doesn't work on vector in R and, in addition, is disabled because of C-R inconsistency so compilation fails as well
+  list(name = 'norm of vector', expr = quote(out <- norm(arg1)), inputDim = 1, outputDim = 0, xfail = '(.*compiles|.*runs)'),  ## norm doesn't work on vector in R and, in addition, is disabled because of C-R inconsistency so compilation fails as well
   ### matrix
   list(name = 'min of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'max of matrix', expr = quote(out <- max(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'sum of matrix', expr = quote(out <- sum(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'mean of matrix', expr = quote(out <- mean(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'sd of matrix', expr = quote(out <- sd(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'var of matrix', expr = quote(out <- var(arg1)), inputDim = 2, outputDim = 0, xfail = 'compiles'),  # Not supported
+  list(name = 'var of matrix', expr = quote(out <- var(arg1)), inputDim = 2, outputDim = 0, xfail = '.*compiles'),  # Not supported
   list(name = 'prod of matrix', expr = quote(out <- prod(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), xfail = 'compiles and runs') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions differ => FAILS, and, in addition, is disabled because of C-R inconsistency so compilation fails as well
+  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F")), xfail = '(.*compiles|.*runs)') ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions, and, in addition, is disabled because of C-R inconsistency so compilation fails as well
   )
 
 testsComparison = list(
