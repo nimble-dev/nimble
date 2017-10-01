@@ -52,7 +52,7 @@ testsBasicMath = list(
   list(name = 'tanh of vector', expr = quote(out <- tanh(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'acosh of vector', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'asinh of vector', expr = quote(out <- asinh(arg1)), inputDim = 1, outputDim = 1),
-  list(name = 'atanh of vector', expr = quote(out <- atanh(abs(arg1)-floor(abs(arg1))), inputDim = 1, outputDim = 1, xfail = 'tensorflow.*runs'), ## formerly failed as using modulo; still need to assess if tf fails
+  list(name = 'atanh of vector', expr = quote(out <- atanh(abs(arg1)-floor(abs(arg1)))), inputDim = 1, outputDim = 1, xfail = 'tensorflow.*runs'), ## formerly failed as using modulo; still need to assess if tf fails
   ###
   list(name = 'scalar + scalar', expr = quote(out <- arg1 + arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'diff of scalars', expr = quote(out <- arg1 - arg2), inputDim = c(0,0), outputDim = 0),
@@ -62,7 +62,8 @@ testsBasicMath = list(
   list(name = 'power of scalars via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(0,0), outputDim = 0),
   list(name = 'power of scalars via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(0,0), outputDim = 0),
   list(name = 'power of scalars via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(0,0), outputDim = 0),
-  list(name = 'modulo of scalars', expr = quote(out <- arg1 %% arg2), inputDim = c(0,0), outputDim = 0),  ## FAILS probably due to misbehavior of negative values.
+  list(name = 'modulo of positive scalars', expr = quote(out <- abs(arg1) %% abs(arg2)), inputDim = c(0,0), outputDim = 0), 
+  list(name = 'modulo of positive and negative scalars', expr = quote(out <- -abs(arg1) %% abs(arg2)), inputDim = c(0,0), outputDim = 0, xfail = ".*Cpp"),  ## C and R differ in handling when one input is positive and one negative
   list(name = 'min of scalars', expr = quote(out <- min(arg1, arg2)), inputDim = c(0,0), outputDim = 0),
   list(name = 'max of scalars', expr = quote(out <- max(arg1, arg2)), inputDim = c(0,0), outputDim = 0),
   ###
@@ -70,9 +71,9 @@ testsBasicMath = list(
   list(name = 'diff of vectors', expr = quote(out <- arg1 - arg2), inputDim = c(1,1), outputDim = 1),
   list(name = 'product of vectors', expr = quote(out <- arg1 * arg2), inputDim = c(1,1), outputDim = 1),
   list(name = 'ratio of vectors', expr = quote(out <- arg1 / arg2), inputDim = c(1,1), outputDim = 1),
-  list(name = 'power of vectors via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles'), ## FAILS with Eigen casting
-  list(name = 'power of vectors via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles'), ## FAILS with Eigen casting
-  list(name = 'modulo of vectors', expr = quote(out <- arg1 %% arg2), inputDim = c(1,1), outputDim = 1, xfail = '.*runs'), ## FAILS with Eigen casting
+  list(name = 'power of vectors via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles'), ## fails with Eigen casting: second argument to pow must be a scalar
+  list(name = 'power of vectors via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles'), ## fails with Eigen casting: second argument to pow must be a scalar## FAILS with Eigen casting
+  list(name = 'modulo of vectors', expr = quote(out <- abs(arg1) %% abs(arg2)), inputDim = c(1,1), outputDim = 1, xfail = '.*compiles'), ## not set up to work for vectors
   list(name = 'pmin of vectors', expr = quote(out <- pmin(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
   list(name = 'pmax of vectors', expr = quote(out <- pmax(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
   ###
@@ -86,7 +87,7 @@ testsBasicMath = list(
   list(name = 'power of vector and constant via pow', expr = quote(out <- pow(arg1, 2)), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and scalar via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and scalar via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(1,0), outputDim = 1),
-  list(name = 'modulo of vector and scalar', expr = quote(out <- arg1 %% arg2), inputDim = c(1,0), outputDim = 1, xfail = '.*runs') ## FAILS with Eigen casting
+  list(name = 'modulo of vector and scalar', expr = quote(out <- abs(arg1) %% abs(arg2)), inputDim = c(1,0), outputDim = 1, xfail = '.*compiles') ## not set up to work for vectors
   )
 
 testsMoreMath = list(

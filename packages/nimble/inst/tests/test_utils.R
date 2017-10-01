@@ -374,6 +374,7 @@ test_math <- function(param, caseName, verbose = TRUE, size = 3, dirName = NULL)
         test_math_internal(param, info, verbose, size, dirName)
         ## })
     })
+    invisible(NULL)
 }
 
 test_math_internal <- function(param, info, verbose = TRUE, size = 3, dirName = NULL) {
