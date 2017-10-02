@@ -200,7 +200,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   
   if(length(setdiff(latentNodes, allStochNonDataNodes) ) != 0 )
     stop('latentNodes provided not found in model')
-  maxNodes = setdiff(allStochNonDataNodes, latentNodes)
+  maxNodes = model$expandNodeNames(setdiff(allStochNonDataNodes, latentNodes), returnScalarComponents = TRUE)
 
   limits <- getMCEMRanges(model, maxNodes, buffer)
   low_limits = limits[[1]]
@@ -229,7 +229,6 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   }
   if(any(low_limits>=hi_limits))
     stop('lower limits greater than or equal to upper limits!')
-  
   if(identical(low_limits, rep(-Inf, length(low_limits))) && identical(hi_limits, rep(Inf, length(hi_limits))))
     optimMethod = "BFGS"
   else 
@@ -240,7 +239,6 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   
   if(length(maxNodes) == 0)
     stop('no nodes to be maximized over')
-  
   resetFunctions <- FALSE
   if(is(model, "RmodelBaseClass") ){
     Rmodel = model
@@ -277,30 +275,34 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   
   nParams = length(maxNodes)
   run <- function(initM = 1000){
-    theta = rep(NA, nParams)
     if(burnIn >= initM)
       stop('mcem quitting: burnIn > initial m value')
     cmcmc_Latent$run(1, reset = TRUE)	# To get valid initial values 
-    theta <- values(cModel, maxNodes)
     if(optimMethod == "L-BFGS-B"){
-      for(i in seq_along(theta) ) {  # check that initial values satisfy constraints
+      theta <- values(cModel, maxNodes)
+      for(i in seq_along(maxNodes) ) {  # check that initial values satisfy constraints
         if(identical(low_limits[i], -Inf) && (hi_limits[i] < Inf)){
-          if(theta[i] > hi_limits[i])
+          if(theta[i] > hi_limits[i]){
             theta[i] <- hi_limits[i] - 1
+          }
         }
         else if(identical(hi_limits[i], Inf) && (low_limits[i] > -Inf)){
-          if(theta[i] < low_limits[i])
+          if(theta[i] < low_limits[i]){
             theta[i] <- low_limits[i] + 1
+          }
         }
         else if((low_limits[i] > -Inf) && (hi_limits[i] < Inf)){
-          if(!(theta[i] >= low_limits[i] & theta[i] <= hi_limits[i]) )
-            theta[i] = (low_limits[i] + hi_limits[i])/2	
+          if(theta[i] >= low_limits[i] & theta[i] <= hi_limits[i]){
+            theta[i] = (low_limits[i] + hi_limits[i])/2
+          }
         }
       }
       values(cModel, maxNodes) <<- theta
       simulate(cModel, cModel$getDependencies(maxNodes, self = FALSE))
     }
-    
+    else{    
+      theta <- values(cModel, maxNodes)
+    }
     m <- initM 
     endCrit <- C+1 #ensure that first iteration runs
     sigSq <-0 #use initM as m value for first step
