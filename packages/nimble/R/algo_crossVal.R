@@ -72,7 +72,6 @@ calcCrossVal <- function(i,
   if(predLoss){
     crossVal <- log(crossVal)
   }
-  nimble:::clearCompiled(C.modelMCMC)
   return(list(crossValAverage = crossVal,
               crossValAveSD = crossValAveSD,
               samples= if(returnSamples) MCMCout else NA))
@@ -299,7 +298,6 @@ runCrossValidate <- function(MCMCconfiguration,
     warning("The 'parallel' package must be installed to use multiple cores for CPPP calculation.  Defaulting to one core.")
     nCores <- 1
   }
-  browser()
   if(nCores > 1){
     ## simulate the ppp values
     crossValOut <- mclapply(1:k, calcCrossVal,

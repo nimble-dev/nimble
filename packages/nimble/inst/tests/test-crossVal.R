@@ -36,7 +36,8 @@ test_that("voter model cross-validation is accurate: ", {
   expect_equal(testOut$CVvalue, -43.8, tolerance = 2)
 })
 
-
+## Next two tests are just to ensure that the CV algo runs error-free
+## with different loss functions / on different models.
 
 test_that("voter model cross-validation runs using MSE loss: ", {
   y <- c(44.6, 57.76, 49.91, 61.34, 49.60, 61.79, 48.95, 44.70, 59.17, 53.94,
@@ -60,13 +61,42 @@ test_that("voter model cross-validation runs using MSE loss: ", {
                                         sigma = 4.4))
   voterConf <- configureMCMC(voterModel)
   testOut <- runCrossValidate(MCMCconfiguration = voterConf,
-                              k = 2, ## do loo-cv so that we can compare against a known value
+                              k = 2, 
                               foldFunction = 'random',
                               lossFunction = 'MSE',
-                              MCMCcontrol = list(nMCMCiters = 500),
+                              MCMCcontrol = list(nMCMCiters = 100),
                               NbootReps = 2)
-  expect_equal(testOut$CVvalue, -43.8, tolerance = 2)
 })
 
+test_that("Radon model WAIC is accurate: ", {
+  url <- "http://stat.columbia.edu/~gelman/arm/examples/arsenic/wells.dat"
+  wells <- try(read.table(url), silent = TRUE)
+  if (inherits(wells, 'try-error')) skip("No internet connection")
+  wells$dist100 <- with(wells, dist / 100)
+  X <- model.matrix(~ dist100 + arsenic, wells)
+  radonCode = nimbleCode({
+    for(i in 1:3){
+      beta[i] ~ dnorm(0, 1)
+    }
+    coefs[1:N] <- X[1:N, 1:3] %*% beta[1:3]
+    for(i in 1:N){
+      y[i] ~ dbern(ilogit(coefs[i]))
+    }
+  })
+  dataList = list(y = wells$switch);
+  constList = list(N = nrow(X), 
+                   X = X)
+  radonModel = nimbleModel(code = radonCode, data = dataList, 
+                           constants = constList,
+                           inits = list(beta = rep(1, 3)))
+  radonConf <- configureMCMC(radonModel)
+  radonConf$addSampler('beta', type = 'AF_slice')
+  testOut <- runCrossValidate(MCMCconfiguration = radonConf,
+                              k = 2, 
+                              foldFunction = 'random',
+                              lossFunction = 'MSE',
+                              MCMCcontrol = list(nMCMCiters = 100),
+                              NbootReps = 2)
+})
 
 
