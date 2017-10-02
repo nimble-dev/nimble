@@ -38,7 +38,7 @@ calcCrossVal <- function(i,
   newModel$setData(model$getVarNames(nodes = currentDataNames))
   compileNimble(newModel)
   predLoss <- FALSE
-  if(lossFunction == 'predictive'){
+  if(is.character(lossFunction) && lossFunction == 'predictive'){
     paramNames <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
     dependencies <- model$getDependencies(paramNames)
     missingDataNames <- leaveOutNames
@@ -261,7 +261,10 @@ runCrossValidate <- function(MCMCconfiguration,
                              NbootReps = 200){
   
   model <- MCMCconfiguration$model
-  nMCMCiters <- MCMCcontrol[['nMCMCiters']]  
+  nMCMCiters <- MCMCcontrol[['nMCMCiters']] 
+  if(k < 2){
+    stop("k must be at least 2.")
+  }
   if(is.null(nMCMCiters)){
     nMCMCiters <- 10000
     warning("Defaulting to 10,000 MCMC iterations for each MCMC run.")
@@ -296,7 +299,7 @@ runCrossValidate <- function(MCMCconfiguration,
     warning("The 'parallel' package must be installed to use multiple cores for CPPP calculation.  Defaulting to one core.")
     nCores <- 1
   }
-  
+  browser()
   if(nCores > 1){
     ## simulate the ppp values
     crossValOut <- mclapply(1:k, calcCrossVal,
