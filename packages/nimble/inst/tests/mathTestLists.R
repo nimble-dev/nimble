@@ -71,8 +71,8 @@ testsBasicMath = list(
   list(name = 'diff of vectors', expr = quote(out <- arg1 - arg2), inputDim = c(1,1), outputDim = 1),
   list(name = 'product of vectors', expr = quote(out <- arg1 * arg2), inputDim = c(1,1), outputDim = 1),
   list(name = 'ratio of vectors', expr = quote(out <- arg1 / arg2), inputDim = c(1,1), outputDim = 1),
-  list(name = 'power of vectors via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles'), ## fails with Eigen casting: second argument to pow must be a scalar
-  list(name = 'power of vectors via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles'), ## fails with Eigen casting: second argument to pow must be a scalar## FAILS with Eigen casting
+  list(name = 'power of vectors via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles', xfailReport = TRUE), ## fails with Eigen casting: second argument to pow must be a scalar
+  list(name = 'power of vectors via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,1), outputDim = 1, xfail = 'math.*compiles', xfailReport = TRUE), ## fails with Eigen casting: second argument to pow must be a scalar## FAILS with Eigen casting
   list(name = 'modulo of vectors', expr = quote(out <- abs(arg1) %% abs(arg2)), inputDim = c(1,1), outputDim = 1, xfail = '.*compiles'), ## not set up to work for vectors
   list(name = 'pmin of vectors', expr = quote(out <- pmin(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
   list(name = 'pmax of vectors', expr = quote(out <- pmax(arg1, arg2)), inputDim = c(1,1), outputDim = 1),

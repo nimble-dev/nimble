@@ -51,7 +51,7 @@ test3a <- nimbleFunction(
 ))
 
 # we'd like to catch this but 'aa' could be a nf and don't want to catch that; at the moment the only thing we readily have access to at time of checking is the names of objects in setup, not their types
-test_that("Test of DSL check of invalid nimbleFunction with R code present", expect_silent(
+test_that("Test of DSL check of invalid nimbleFunction with R code present", expect_failure(expect_warning(
 test4 <- nimbleFunction(
     setup = function() {
         aa <- function() { return(0) }
@@ -62,7 +62,7 @@ test4 <- nimbleFunction(
         return(tmp)
     }
 )
-))
+)))
 
 test_that("Test of DSL check of valid nimbleFunction with other nimbleFunctions present", expect_silent(
 test5 <- nimbleFunction(

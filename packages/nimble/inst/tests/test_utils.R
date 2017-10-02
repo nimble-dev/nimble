@@ -369,11 +369,17 @@ wrap_if_matches <- function(pattern, string, wrapper, expr) {
 ##   param$xfail - Optional regular expression of tests that are expected to fail.
 test_math <- function(param, caseName, verbose = TRUE, size = 3, dirName = NULL) {
     info <- paste0(caseName, ': ', param$name)
+    ## in some cases, expect_error does not suppress error messages (I believe this has
+    ## to do with how we trap errors in compilation), so make sure user realizes expectation
+    if('xfailReport' %in% names(param) && param$xfailReport)
+        cat("Begin expected error message:\n")
     test_that(info, {
         ## wrap_if_matches(param$xfail, paste0(info, ': compiles and runs'), expect_error, {
         test_math_internal(param, info, verbose, size, dirName)
         ## })
     })
+    if('xfailReport' %in% names(param) && param$xfailReport)
+        cat("End expected error message.\n")
     invisible(NULL)
 }
 
