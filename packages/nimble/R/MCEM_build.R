@@ -278,8 +278,8 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
     if(burnIn >= initM)
       stop('mcem quitting: burnIn > initial m value')
     cmcmc_Latent$run(1, reset = TRUE)	# To get valid initial values 
+    theta <- values(cModel, maxNodes)
     if(optimMethod == "L-BFGS-B"){
-      theta <- values(cModel, maxNodes)
       for(i in seq_along(maxNodes) ) {  # check that initial values satisfy constraints
         if(identical(low_limits[i], -Inf) && (hi_limits[i] < Inf)){
           if(theta[i] > hi_limits[i]){
@@ -292,16 +292,13 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
           }
         }
         else if((low_limits[i] > -Inf) && (hi_limits[i] < Inf)){
-          if(theta[i] >= low_limits[i] & theta[i] <= hi_limits[i]){
+          if(!(theta[i] >= low_limits[i] & theta[i] <= hi_limits[i])){
             theta[i] = (low_limits[i] + hi_limits[i])/2
           }
         }
       }
       values(cModel, maxNodes) <<- theta
       simulate(cModel, cModel$getDependencies(maxNodes, self = FALSE))
-    }
-    else{    
-      theta <- values(cModel, maxNodes)
     }
     m <- initM 
     endCrit <- C+1 #ensure that first iteration runs
