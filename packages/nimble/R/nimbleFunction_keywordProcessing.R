@@ -729,7 +729,11 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   doubleCheck <- sapply(wrtMatchArgs, function(x){return(deparse(nimFxnArgs[[x]][[1]]) == 'double')})
   if(any(doubleCheck != TRUE)) stop('Derivatives of ', fxnName, ' being taken WRT an argument that does not have type double().')
   ## Make sure that all wrt arg dims are < 2.
-  fxnArgsDims <- sapply(wrtMatchArgs, function(x){return(nimFxnArgs[[x]][[2]])})
+  fxnArgsDims <- sapply(wrtMatchArgs, function(x){
+    outDim <- nimFxnArgs[[x]][[2]]
+    names(outDim) <- names(nimFxnArgs)[x]
+    return(outDim)})
+  
   if(any(fxnArgsDims > 2)) stop('Derivatives cannot be taken WRT an argument with dimension > 2')
   ## Determine sizes of each function arg.
   fxnArgsDimSizes <- lapply(nimFxnArgs, function(x){
@@ -787,7 +791,7 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
       }
     }
   }
-  browser()
+  return(unname(wrtArgsIndexVector))
 }
 
 nimDerivs_keywordInfo <- keywordInfoClass(
@@ -795,12 +799,14 @@ nimDerivs_keywordInfo <- keywordInfoClass(
   processor = function(code, nfProc) {
     wrtArgs <- code[['wrt']]
     ## First check to see if nimFxn argument is a method.
+    
     if(!is.null(nfProc$origMethods[[deparse(code[[2]][[1]])]])){
       derivMethod <- nfProc$origMethods[[deparse(code[[2]][[1]])]]
       derivMethodArgs <- derivMethod$getArgInfo()
       wrtArgIndices <- convertWrtArgToIndices(wrtArgs, derivMethodArgs, fxnName = deparse(code[[2]][[1]]))
-      
-      
+      browser()
+      code[['wrt']] <- substitute(INDICES,
+                                  list(INDICES = wrtArgIndices))
     }
     return(code)
   }
