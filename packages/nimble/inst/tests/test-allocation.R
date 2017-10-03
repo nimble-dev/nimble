@@ -841,14 +841,14 @@ setSize3D <- list(
          )
     )
 
-expectedCompilerFailures <- list(
+expectedCompilerErrors <- list(
     list(name = 'numeric: fail for length given as vector',
          expr = quote({
              a <- 2:4
              out <- nimNumeric(a, value = 1.5);
          }),
          outputType = quote(double(1)),
-         safeCompilerFail = TRUE
+         expectedCompilerError = TRUE
          ),
     list(name = 'numeric: fail for init given as vector',
          expr = quote({
@@ -856,7 +856,7 @@ expectedCompilerFailures <- list(
              out <- nimNumeric(3, value = 1.5, init = b);
          }),
          outputType = quote(double(1)),
-         safeCompilerFail = TRUE
+         expectedCompilerError = TRUE
          ),
     list(name = 'integer: fail for length given as vector',
          expr = quote({
@@ -864,7 +864,7 @@ expectedCompilerFailures <- list(
              out <- nimInteger(a, value = 15);
          }),
          outputType = quote(integer(1)),
-         safeCompilerFail = TRUE
+         expectedCompilerError = TRUE
          ),
     list(name = 'integer: fail for init given as vector',
          expr = quote({
@@ -872,7 +872,7 @@ expectedCompilerFailures <- list(
              out <- nimInteger(3, value = 15, init = b);
          }),
          outputType = quote(integer(1)),
-         safeCompilerFail = TRUE
+         expectedCompilerError = TRUE
          ),
     list(name = 'logical: fail for length given as vector',
          expr = quote({
@@ -880,7 +880,7 @@ expectedCompilerFailures <- list(
              out <- nimLogical(a, value = TRUE);
          }),
          outputType = quote(logical(1)),
-         safeCompilerFail = TRUE
+         expectedCompilerError = TRUE
          ),
     list(name = 'logical: fail for init given as vector',
          expr = quote({
@@ -888,7 +888,7 @@ expectedCompilerFailures <- list(
              out <- nimLogical(3, value = TRUE, init = b);
          }),
          outputType = quote(logical(1)),
-         safeCompilerFail = TRUE
+         expectedCompilerError = TRUE
          ),
     list(name = 'array 1D (dim vector without nDim: safe compiler fail)',
          expr = quote({
@@ -896,7 +896,7 @@ expectedCompilerFailures <- list(
              out <- nimArray(6, dim = dim);
          }),
          outputType = quote(double(1)),
-         safeCompilerFail = TRUE
+         expectedCompilerError = TRUE
          ),
     list(name = 'array 3D (dim vector without nDim: safe compiler fail)',
          expr = quote({
@@ -904,7 +904,7 @@ expectedCompilerFailures <- list(
              out <- nimArray(6, dim = dim);
          }),
          outputType = quote(double(3)),
-         safeCompilerFail = TRUE
+         expectedCompilerError = TRUE
          ),
     list(name = 'array 2D (dim vector without nDim: safe compiler fail)',
          expr = quote({
@@ -912,7 +912,7 @@ expectedCompilerFailures <- list(
              out <- nimArray(6, dim = dim);
          }),
          outputType = quote(double(2)),
-         safeCompilerFail = TRUE
+         expectedCompilerError = TRUE
          )
     )
 
@@ -928,7 +928,7 @@ setSize1DintegerResults <- test_coreRfeature_batch(setSize1Dinteger, 'setSize1Di
 setSize2DResults <- test_coreRfeature_batch(setSize2D, 'setSize2D') ## lapply(setSize2D, test_coreRfeature)
 setSize3DResults <- test_coreRfeature_batch(setSize3D, 'setSize3D') ## lapply(setSize3D, test_coreRfeature)
 
-allocationExpectedCompilerFailures <- lapply(expectedCompilerFailures, test_coreRfeature)
+allocationExpectedCompilerFailures <- lapply(expectedCompilerErrors, test_coreRfeature)
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

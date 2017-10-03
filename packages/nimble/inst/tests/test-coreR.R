@@ -202,7 +202,7 @@ repTests <- list(
     list(name = "rep(vector double, variable, firstarg)", expr = quote(out <- rep(arg1, times = arg2, each = arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- 4; arg3 <- c(5, 7)}), outputType = quote(double(1))),
     ## basic cases with x and length.out
-    list(name = "rep(1, lenght.out = 3)", expr = quote(out <- rep(1, length.out = 3)), args = list(arg1 = quote(double(0))),
+    list(name = "rep(1, length.out = 3)", expr = quote(out <- rep(1, length.out = 3)), args = list(arg1 = quote(double(0))),
          setArgVals = quote({arg1 <- 3}), outputType = quote(double(1))),
     ## 16
     list(name = "rep(vector double, length.out = larger than vector)", expr = quote(out <- rep(arg1, length.out = 5)), args = list(arg1 = quote(double(1))),
@@ -267,7 +267,7 @@ diagTests <- list(
     list(name = "diag(vector expression)", expr = quote(out <- diag(arg1 + arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(10,20, 30))}), outputType = quote(double(2))),
     list(name = "diag(vector) with expression", expr = quote(out <- exp(diag(arg1)) + arg2), args = list(arg1 = quote(double(1)), arg2 = quote(double(2))),
-         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- matrix(as.numeric(11:19), nrow = 3)}), outputType = quote(double(2))), ## ISSUE HERE
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- matrix(as.numeric(11:19), nrow = 3)}), outputType = quote(double(2))), 
 
     ## diag(matrix)
     list(name = "diag(square matrix)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(2))),

@@ -39,7 +39,7 @@ testsBasicMath = list(
   list(name = 'log of vector', expr = quote(out <- log(abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'sqrt of vector', expr = quote(out <- sqrt(abs(arg1))), inputDim = 1, outputDim = 1),
   list(name = 'abs of vector', expr = quote(out <- abs(arg1)), inputDim = 1, outputDim = 1),
-  list(name = 'step of vector', expr = quote(out <- step(arg1)), inputDim = 1, outputDim = 1, Rcode = quote(out <- as.numeric(arg1 > 0)), xfail = '.*compiles'), ## FAILS on compileNimble(nfR) with Eigen error.
+  list(name = 'step of vector', expr = quote(out <- step(arg1)), inputDim = 1, outputDim = 1, Rcode = quote(out <- as.numeric(arg1 > 0)), returnType = "integer"), # failing as of 10/2/17 with C result for input in (-1,0) being 1; formerly: # xfail = '.*compiles'), ## FAILS on compileNimble(nfR) with Eigen error.
   list(name = 'cube of vector', expr = quote(out <- cube(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'cos of vector', expr = quote(out <- cos(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'acos of cos of vector', expr = quote(out <- acos(cos(arg1))), inputDim = 1, outputDim = 1),
@@ -157,21 +157,21 @@ testsReduction = list(
 
 testsComparison = list(
   ## scalar
-  list(name = 'greater than, scalar', expr = quote(out <- arg1 > arg2), inputDim = c(0,0), outputDim = 0, logicalReturn = TRUE),
-  list(name = 'equals, scalar', expr = quote(out <- arg1 == arg2), inputDim = c(0,0), outputDim = 0, logicalReturn = TRUE),
-  list(name = 'not equals, scalar', expr = quote(out <- arg1 != arg2), inputDim = c(0,0), outputDim = 0, logicalReturn = TRUE),
+  list(name = 'greater than, scalar', expr = quote(out <- arg1 > arg2), inputDim = c(0,0), outputDim = 0, returnType = "logical"),
+  list(name = 'equals, scalar', expr = quote(out <- arg1 == arg2), inputDim = c(0,0), outputDim = 0, returnType = "logical"),
+  list(name = 'not equals, scalar', expr = quote(out <- arg1 != arg2), inputDim = c(0,0), outputDim = 0, returnType = "logical"),
   ## vector
-  list(name = 'greater than, vector', expr = quote(out <- arg1 > arg2), inputDim = c(1,1), outputDim = 1, logicalReturn = TRUE), 
-  list(name = 'equals, vector', expr = quote(out <- arg1 == arg2), inputDim = c(1,1), outputDim = 1, logicalReturn = TRUE),  
-  list(name = 'not equals, vector', expr = quote(out <- arg1 != arg2), inputDim = c(1,1), outputDim = 1, logicalReturn = TRUE),  
+  list(name = 'greater than, vector', expr = quote(out <- arg1 > arg2), inputDim = c(1,1), outputDim = 1, returnType = "logical"), 
+  list(name = 'equals, vector', expr = quote(out <- arg1 == arg2), inputDim = c(1,1), outputDim = 1, returnType = "logical"),  
+  list(name = 'not equals, vector', expr = quote(out <- arg1 != arg2), inputDim = c(1,1), outputDim = 1, returnType = "logical"),  
   ## logical scalar
-  list(name = 'and operator, scalar', expr = quote(out <- arg1 & arg2), inputDim = c(0,0), outputDim = 0, logicalArgs = c(TRUE, TRUE), logicalReturn = TRUE),
-  list(name = 'or operator, scalar', expr = quote(out <- arg1 | arg2), inputDim = c(0,0), outputDim = 0, logicalArgs = c(TRUE, TRUE), logicalReturn = TRUE),
-  list(name = 'not operator, scalar', expr = quote(out <- !arg1), inputDim = c(0), outputDim = 0, logicalArgs = c(TRUE), logicalReturn = TRUE),
+  list(name = 'and operator, scalar', expr = quote(out <- arg1 & arg2), inputDim = c(0,0), outputDim = 0, logicalArgs = c(TRUE, TRUE), returnType = "logical"),
+  list(name = 'or operator, scalar', expr = quote(out <- arg1 | arg2), inputDim = c(0,0), outputDim = 0, logicalArgs = c(TRUE, TRUE), returnType = "logical"),
+  list(name = 'not operator, scalar', expr = quote(out <- !arg1), inputDim = c(0), outputDim = 0, logicalArgs = c(TRUE), returnType = "logical"),
   ## logical vector
-  list(name = 'and operator, vector', expr = quote(out <- arg1 & arg2), inputDim = c(1,1), outputDim = 1, logicalArgs = c(TRUE, TRUE), logicalReturn = TRUE),
-  list(name = 'or operator, vector', expr = quote(out <- arg1 | arg2), inputDim = c(1,1), outputDim = 1, logicalArgs = c(TRUE, TRUE), logicalReturn = TRUE),
-  list(name = 'not operator, vector', expr = quote(out <- !arg1), inputDim = c(1), outputDim = 1, logicalArgs = c(TRUE), logicalReturn = TRUE)
+  list(name = 'and operator, vector', expr = quote(out <- arg1 & arg2), inputDim = c(1,1), outputDim = 1, logicalArgs = c(TRUE, TRUE), returnType = "logical"),
+  list(name = 'or operator, vector', expr = quote(out <- arg1 | arg2), inputDim = c(1,1), outputDim = 1, logicalArgs = c(TRUE, TRUE), returnType = "logical"),
+  list(name = 'not operator, vector', expr = quote(out <- !arg1), inputDim = c(1), outputDim = 1, logicalArgs = c(TRUE), returnType = "logical")
 )
 
 

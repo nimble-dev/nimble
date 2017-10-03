@@ -233,11 +233,11 @@ test_coreRfeature_internal <- function(input, verbose = TRUE, dirName = NULL) { 
   nfR <- nimbleFunction(run = runFun)
   ## This try is safe because failure is caught by expect_equal below
 
-  expectCompilerFail <- FALSE
-  if(!is.null(input[['safeCompilerFail']]))
-      if(isTRUE(input[['safeCompilerFail']]))
-          expectCompilerFail <- TRUE
-  if(!expectCompilerFail) {
+  expectedCompilerFail <- FALSE
+  if(!is.null(input[['expectedCompilerError']]))
+      if(isTRUE(input[['expectedCompilerError']]))
+          expectedCompilerError <- TRUE
+  if(!expectedCompilerError) {
       nfC <- compileNimble(nfR, dirName = dirName)
   } else {
       expect_error(nfC <- compileNimble(nfR, dirName = dirName))
@@ -327,7 +327,7 @@ test_coreRfeature_internal <- function(input, verbose = TRUE, dirName = NULL) { 
   invisible(NULL)
 }
 
-gen_runFun <- function(param, logicalArgs, logicalReturn = FALSE) {
+gen_runFun <- function(param, logicalArgs, returnType = "double") {
     runFun <- function() {}
     types <- rep('double', length(param$inputDim))
     types[logicalArgs] <- 'logical'
@@ -338,8 +338,7 @@ gen_runFun <- function(param, logicalArgs, logicalReturn = FALSE) {
     tmp <- quote({})
     tmp[[2]] <- param$expr
     tmp[[3]] <- quote(return(out))
-    type <- if(logicalReturn) "logical" else "double"
-    tmp[[4]] <- parse(text = paste0("returnType(", type, "(", param$outputDim, "))"))[[1]]
+    tmp[[4]] <- parse(text = paste0("returnType(", returnType, "(", param$outputDim, "))"))[[1]]
     body(runFun) <- tmp
     return(runFun)
 }
@@ -389,11 +388,11 @@ test_math_internal <- function(param, info, verbose = TRUE, size = 3, dirName = 
   logicalArgs <- rep(FALSE, nArgs)
   if("logicalArgs" %in% names(param))
       logicalArgs <- param$logicalArgs
-  logicalReturn <- FALSE
-  if("logicalReturn" %in% names(param))
-      logicalReturn <- param$logicalReturn
+  returnType <- "double"
+  if("returnType" %in% names(param))
+      returnType <- param$returnType
 
-  runFun <- gen_runFun(param, logicalArgs, logicalReturn)
+  runFun <- gen_runFun(param, logicalArgs, returnType)
   nfR <- nimbleFunction(  
       run = runFun)
 
