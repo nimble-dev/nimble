@@ -452,8 +452,6 @@ test_that('basic multivariate mixture model with conjugacy', {
 })
 }
 
-options(warn = RwarnLevel)
-
 sink(NULL)
 
 if(!generatingGoldFile) {
