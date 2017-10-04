@@ -1,4 +1,4 @@
-
+﻿
 USER LEVEL CHANGES
 
 -- Improved efficiency of MCMC conjugate samplers.
@@ -6,6 +6,8 @@ USER LEVEL CHANGES
 -- Added dcat-ddirch conjugacy.
 
 -- Addition of nimbleMCMC function, providing the most direct one-line invocation of NIMBLE's MCMC engine.
+
+-- Addition of runCrossValidate function, which conducts k-fold cross-validation of NIMBLE models.
 
 BUG FIXES
 
