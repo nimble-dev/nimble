@@ -201,7 +201,6 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   if(length(setdiff(latentNodes, allStochNonDataNodes) ) != 0 )
     stop('latentNodes provided not found in model')
   maxNodes = model$expandNodeNames(setdiff(allStochNonDataNodes, latentNodes), returnScalarComponents = TRUE)
-
   limits <- getMCEMRanges(model, maxNodes, buffer)
   low_limits = limits[[1]]
   hi_limits  = limits[[2]]
@@ -272,7 +271,8 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   cGetCov = compileNimble(RgetCov, project = Rmodel)  
   cvarCalc <- compileNimble(RvarCalc, project = Rmodel)
   cCalc_E_llk = compileNimble(Rcalc_E_llk, project = Rmodel)  
-  
+  if(any(model$isDiscrete(maxNodes))) cat(paste0("Warning: MCEM cannot optimize over discrete top-level parameters. The following top-level parameters in your model are discrete: ",
+                                                 paste0(maxNodes[model$isDiscrete(maxNodes)], collapse = ', ')))
   nParams = length(maxNodes)
   run <- function(initM = 1000){
     if(burnIn >= initM)
