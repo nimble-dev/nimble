@@ -144,11 +144,11 @@ generateRandomFoldFunction <- function(model, k){
 #' and MCMC is run to simulate data values for the left out data (these values are drawn from
 #' the data's posterior predictive distribution).  Then, the simlated data values are compared to the 
 #' known, left-out data values via the specified \code{lossFunction}.  The loss values are averaged over the
-#' posterior samples for reach fold, and these averaged values for each fold are then averaged over all folds to produce a single 
+#' posterior samples for each fold, and these averaged values for each fold are then averaged over all folds to produce a single 
 #' loss estimate.  Additionally, estimates of the Monte Carlo error for each fold are returned.
 #' 
 #'  @section The \code{foldFunction} Argument:
-#'  If the default 'random' method is not used, the \code{foldFunction} argument is an R function that takes a single integer argument \code{i}.  \code{i} is guaranteed to be within the range \code{[1, k]}.
+#'  If the default 'random' method is not used, the \code{foldFunction} argument must be an R function that takes a single integer argument \code{i}.  \code{i} is guaranteed to be within the range \code{[1, k]}.
 #'  For each integer value \code{i}, the function should return a character vector of node names corresponding to the data nodes that will be left out of the model for that fold.
 #'  The returned node names can be expanded, but don't need to be.   For example, if fold \code{i} is inteded to leave out the model nodes \code{x[1]}, \code{x[2]} and \code{x[3]} then the function could return either \code{c('x[1]', 'x[2]', 'x[3]')} or \code{c( 'x[1:3]')}.
 #'   
