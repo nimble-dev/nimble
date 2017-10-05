@@ -1,0 +1,5 @@
+localMakeconf:
+	$(R_HOME)/bin$(R_ARCH)/Rscript --vanilla ./customizeMakeconf.R
+
+clean:
+	-rm -f Makeconf
