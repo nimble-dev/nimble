@@ -1152,6 +1152,8 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   }
   setArg(code$caller, code$callerArgID, code$args[[1]])
   setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # Set order argument.
+  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, 
+         code$args[[4]])
   code$args[[2]] <- NULL
   asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
   code$args[[1]]$type <- 'nimbleList'
@@ -1161,7 +1163,6 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   if(calcDerivFlag) asserts <- c(asserts, sizeScalarModelOp(code$args[[1]], symTab, typeEnv))
   else asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))
   #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # Sets variables argument, not yet implemented.
-  
   if(length(asserts) == 0) NULL else asserts
 }
 

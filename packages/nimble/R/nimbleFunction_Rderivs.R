@@ -140,7 +140,7 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
 #' }
 #' 
 #' @export
-nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = NULL, chainRuleDerivs = FALSE, silent = TRUE){
+nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA, wrt = NULL, chainRuleDerivs = FALSE, silent = TRUE){
   fxnEnv <- parent.frame()
   fxnCall <- match.call(function(nimFxn, order, dropArgs, wrt, chainRuleDerivs){})
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
@@ -210,7 +210,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NULL, wrt = N
   if(is.null(wrt)){
     wrt <- formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv)@.Data)
   }
-  if(!is.null(dropArgs)){
+  if(!is.na(dropArgs)){
     removeArgs <- which(wrt == dropArgs)
     if(length(removeArgs) > 0)
       wrt <- wrt[-removeArgs]

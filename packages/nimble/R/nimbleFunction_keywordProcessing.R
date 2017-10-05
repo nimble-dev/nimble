@@ -794,19 +794,29 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   return(unname(wrtArgsIndexVector))
 }
 
+wrtVector_setupCodeTemplate <- setupCodeTemplateClass(
+  makeName = function(argList){Rname2CppName(paste0('wrtVec_', deparse(argList$fxn)))},
+  codeTemplate = quote(WRTVEC <- VECTOR),
+  makeCodeSubList = function(resultName, argList){
+    list(WRTVEC = as.name(resultName),
+         VECTOR = argList$vector)
+  }
+)
+
 nimDerivs_keywordInfo <- keywordInfoClass(
   keyword = 'nimDerivs',
   processor = function(code, nfProc) {
     wrtArgs <- code[['wrt']]
     ## First check to see if nimFxn argument is a method.
-    
     if(!is.null(nfProc$origMethods[[deparse(code[[2]][[1]])]])){
       derivMethod <- nfProc$origMethods[[deparse(code[[2]][[1]])]]
       derivMethodArgs <- derivMethod$getArgInfo()
       wrtArgIndices <- convertWrtArgToIndices(wrtArgs, derivMethodArgs, fxnName = deparse(code[[2]][[1]]))
-      browser()
-      code[['wrt']] <- substitute(INDICES,
-                                  list(INDICES = wrtArgIndices))
+      wrt_argList <- list(fxn = code[[2]][[1]], vector = wrtArgIndices)
+      accessName <- wrtVector_setupCodeTemplate$makeName(wrt_argList)
+      addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)
+      code[['wrt']] <- substitute(VECNAME,
+                                  list(VECNAME = as.name(accessName)))
     }
     return(code)
   }
@@ -1034,6 +1044,15 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 }
 
 #####	SETUPCODE TEMPLATES
+
+wrtVector_setupCodeTemplate <- setupCodeTemplateClass(
+  makeName = function(argList){Rname2CppName(paste0('wrtVec_', deparse(argList$fxn)))},
+  codeTemplate = quote(WRTVEC <- VECTOR),
+  makeCodeSubList = function(resultName, argList){
+    list(WRTVEC = as.name(resultName),
+         VECTOR = argList$vector)
+  }
+)
 
 length_char_SetupTemplate <- setupCodeTemplateClass(
     makeName = function(argList) {Rname2CppName(paste0(paste("length", deparse(argList$string), sep='_'), '_KNOWN_'))},

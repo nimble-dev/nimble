@@ -287,9 +287,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
           argTypeText <- if(returnType) 'returnType' else 'argument'
           if(argSym$type != 'double')
             stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method is not a double, this method cannot have derivatives enabled.'))
-          if(!(argSym$nDim %in% c(0,1)))
-             stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method must be a double scalar or double vector for derivatives to be enabled.'))
-          if((argSym$nDim == 1) && is.na(argSym$size))
+          # if(!(argSym$nDim %in% c(0,1)))
+          #    stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method must be a double scalar or double vector for derivatives to be enabled.'))
+          if((argSym$nDim != 0) && is.na(argSym$size))
               stop(paste0('To enable derivatives, size must be given for the ',
                           argName, ' ', argTypeText, ' of the ', funName,
                           ' method,  e.g. double(1, 3) for a length 3 vector.' ))

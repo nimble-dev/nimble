@@ -54,10 +54,11 @@ Type nimDerivs_dnorm(Type x, Type mean, Type sd, int give_log=0)
    make more sense as stand-alone functions.  Let's see. */
 class nimbleFunctionCppADbase {
  public:
-   nimSmartPtr<NIMBLE_ADCLASS> getDerivs(nimbleCppADinfoClass &ADinfo, NimArr<1, double> &derivOrders) {
+   nimSmartPtr<NIMBLE_ADCLASS> getDerivs(nimbleCppADinfoClass &ADinfo, NimArr<1, double> &derivOrders, NimArr<1, double> &wrtVector) {
 		nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
-		std::size_t n = length(ADinfo.independentVars); // dim of independent vars
 		
+		std::size_t n = length(ADinfo.independentVars); // dim of independent vars
+		std::size_t wrt_n = wrtVector.size(); // dim of wrt vars
 		int orderSize = derivOrders.size();
 		double array_derivOrders[orderSize];
 		std::memcpy(array_derivOrders, derivOrders.getPtr(), orderSize*sizeof(double));
@@ -84,16 +85,15 @@ class nimbleFunctionCppADbase {
 		std::size_t q = length(value_ans);
 
 		if(ordersFound[1] == true){
-			ADlist->gradient.initialize(0, false, q, n);
+			ADlist->gradient.initialize(0, false, q, wrt_n);
 		}
 		if(ordersFound[2] == true){
-			ADlist->hessian.initialize(0, false, n, n, q);
+			ADlist->hessian.initialize(0, false, wrt_n, wrt_n, q);
 		}
-		
-		vector<double> cppad_derivOut;
-		vector<double> hessian_ans (n*n*q, -1);
-		vector<double> gradient_ans (n*q, -1);
 
+		vector<double> cppad_derivOut;
+		vector<double> hessian_ans (wrt_n*wrt_n*q, -1);
+		vector<double> gradient_ans (wrt_n*q, -1);
 		for(size_t dy_ind = 0; dy_ind < q; dy_ind++){
 			std::vector<double> w (q, 0);
 			w[dy_ind] = 1;
@@ -101,31 +101,34 @@ class nimbleFunctionCppADbase {
 				cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
 			}
 			else{
-				for(size_t dx1_ind = 0; dx1_ind < n; dx1_ind++){				
-					std::vector<double> x1 (n, 0); // vector specifying first derivatives.  first specify coeffs for first dim of s across all directions r, then second dim, ...
+				for(size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++){
+					int dx1_ind = wrtVector[vec_ind] - 1;	
+					cout << dx1_ind;
+ 					std::vector<double> x1 (n, 0); // vector specifying first derivatives.  first specify coeffs for first dim of s across all directions r, then second dim, ...
 					x1[dx1_ind] = 1;
 					ADinfo.ADtape->Forward(1, x1); // may want separate case for r=1?	
 					cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
-					for(size_t i = 0; i < n; i++){
-						hessian_ans[n*n*dy_ind + n*dx1_ind + i]  = cppad_derivOut[i*2 + 1];
-					}
+  					for(size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++){
+						int dx2_ind = wrtVector[vec_ind2] - 1;	
+						hessian_ans[wrt_n*wrt_n*dy_ind + wrt_n*vec_ind + vec_ind2]  = cppad_derivOut[dx2_ind*2 + 1];
+					}  
+  				}
+			}
+ 			if(ordersFound[1] == true){
+ 				for(size_t vec_ind = 0; vec_ind < n; vec_ind++){
+					int dx1_ind = wrtVector[vec_ind] - 1;	
+					gradient_ans[vec_ind*q + dy_ind] = cppad_derivOut[dx1_ind*maxOrder + 0];
 				}
 			}
-			if(ordersFound[1] == true){
-				for(size_t i = 0; i < n; i++){
-					gradient_ans[i*q + dy_ind] = cppad_derivOut[i*maxOrder + 0];
-				}
-			}
-		}
+ 		}
 		
-		if(ordersFound[1] == true){
+  		if(ordersFound[1] == true){
 			std::copy(gradient_ans.begin(), gradient_ans.end(), ADlist->gradient.getPtr());
 		}
 		if(ordersFound[2] == true){
 			std::copy(hessian_ans.begin(), hessian_ans.end(), ADlist->hessian.getPtr());
-		}
-
-		return(ADlist);
+		} 
+ 		return(ADlist);
   } 
 
 };
