@@ -714,6 +714,9 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   if(deparse(wrtArgs[[1]]) == 'nimC'){ 
     wrtArgs <- sapply(wrtArgs[-1], function(x){as.character(x)})
   }
+  else if(is.null(wrtArgs[[1]])){
+     wrtArgs <- names(nimFxnArgs)
+  }
   else{
     wrtArgs <- deparse(wrtArgs)
   }
