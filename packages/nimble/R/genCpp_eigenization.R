@@ -71,8 +71,8 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList('pow', 'eigenize_cWiseByScalarArray'),
     makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
     ## component-wise unarys valid only for only Eigen array
-    makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos', '!', callsFromExternalUnaries), 'eigenize_cWiseUnaryArray'), 
-    
+    makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos'), 'eigenize_cWiseUnaryArray'), 
+    makeCallList(callsFromExternalUnaries, 'eigenize_cWiseUnaryArray_external'), 
     ## component-wise binarys valid for either Eigen array or matrix, but the arguments must match
     ## Check on which if any of these can extend to a scalar on one side
     makeCallList(c('pmin','pmax'), 'eigenize_cWiseBinaryArray'),
@@ -404,6 +404,9 @@ eigenize_coeffSetter <- function(code, symTab, typeEnv, workEnv) {
     setupExprs
 }
 
+## This is used instead of promoteTypes only for logical operators
+## Then the argument types are promoted to match each other,
+## not the output type.
 promoteArgTypes <- function(code) {
     if(!(inherits(code$args[[1]], 'exprClass') & inherits(code$args[[2]], 'exprClass'))) return(NULL)
     a1type <- code$args[[1]]$type
@@ -435,6 +438,16 @@ promoteArgTypes <- function(code) {
     NULL
 }
 
+## Generally for Eigen operations, input type matches output type.
+## One exception is for logical operators, which are handled by
+##   promoteArgTypes instead.
+## Another exception is for external unary calls.  These are unary
+## operators like "logit" or "nimStep" that are not built in to Eigen.
+## In C++ are called via Eigen's generic unary operator system.  Casting
+## of those types is done naturally via C++ so is not needed here. Also
+## doing it here would cause a bug (and was responsible for Issue #617).
+## E.g. nimStep(-0.5) should be 0.  But if the -0.5 is cast to int before
+## calling nimStep, we get nimStep(static_cast<int>(-0.5)) = 1. Wrong.
 promoteTypes <- function(code) {
     resultType <- code$type
     for(i in seq_along(code$args)) {
@@ -510,6 +523,21 @@ eigenize_cWiseUnaryArray <- function(code, symTab, typeEnv, workEnv) {
     if(length(code$args[[1]]$eigMatrix) == 0) stop(exprClassProcessingErrorMsg(code, 'Information for eigenizing was not complete,'), call. = FALSE)
     if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
     promoteTypes(code)
+    invisible(NULL)
+}
+
+## This is like eigenize_cWiseUnaryArray but it does different
+## casting of argument type.
+eigenize_cWiseUnaryArray_external <- function(code, symTab, typeEnv, workEnv) {
+    if(code$nDim == 0) return(NULL)
+    newName <- eigenizeTranslate[[code$name]]
+    if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
+    code$name <- newName
+    code$eigMatrix <- FALSE
+    if(length(code$args[[1]]$eigMatrix) == 0) stop(exprClassProcessingErrorMsg(code, 'Information for eigenizing was not complete,'), call. = FALSE)
+    if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+    ## no casting is necessary and could yield wrong answer. See
+    ## comments above promotTypes.
     invisible(NULL)
 }
 
