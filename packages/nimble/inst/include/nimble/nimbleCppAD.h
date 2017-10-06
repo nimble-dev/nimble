@@ -59,8 +59,6 @@ class nimbleFunctionCppADbase {
 		
 		std::size_t n = length(ADinfo.independentVars); // dim of independent vars
 		std::size_t wrt_n = wrtVector.size(); // dim of wrt vars
-		cout << wrt_n;
-		cout << wrtVector[1];
 		if(wrt_n == 2 && wrtVector[1] == -1){
 				wrt_n = 1;
 		}
@@ -96,7 +94,7 @@ class nimbleFunctionCppADbase {
 			ADlist->hessian.initialize(0, false, wrt_n, wrt_n, q);
 		}
 
-		/* vector<double> cppad_derivOut;
+		vector<double> cppad_derivOut;
 		vector<double> hessian_ans (wrt_n*wrt_n*q, -1);
 		vector<double> gradient_ans (wrt_n*q, -1);
 		for(size_t dy_ind = 0; dy_ind < q; dy_ind++){
@@ -106,9 +104,8 @@ class nimbleFunctionCppADbase {
 				cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
 			}
 			else{
-				for(size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++){
+ 				for(size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++){
 					int dx1_ind = wrtVector[vec_ind] - 1;	
-					cout << dx1_ind;
  					std::vector<double> x1 (n, 0); // vector specifying first derivatives.  first specify coeffs for first dim of s across all directions r, then second dim, ...
 					x1[dx1_ind] = 1;
 					ADinfo.ADtape->Forward(1, x1); // may want separate case for r=1?	
@@ -116,15 +113,15 @@ class nimbleFunctionCppADbase {
   					for(size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++){
 						int dx2_ind = wrtVector[vec_ind2] - 1;	
 						hessian_ans[wrt_n*wrt_n*dy_ind + wrt_n*vec_ind + vec_ind2]  = cppad_derivOut[dx2_ind*2 + 1];
-					}  
-  				}
+					}   
+  				} 
 			}
  			if(ordersFound[1] == true){
- 				for(size_t vec_ind = 0; vec_ind < n; vec_ind++){
+ 				for(size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++){
 					int dx1_ind = wrtVector[vec_ind] - 1;	
 					gradient_ans[vec_ind*q + dy_ind] = cppad_derivOut[dx1_ind*maxOrder + 0];
 				}
-			}
+			} 
  		}
 		
   		if(ordersFound[1] == true){
@@ -132,7 +129,7 @@ class nimbleFunctionCppADbase {
 		}
 		if(ordersFound[2] == true){
 			std::copy(hessian_ans.begin(), hessian_ans.end(), ADlist->hessian.getPtr());
-		}  */
+		}  
  		return(ADlist);
   } 
 
