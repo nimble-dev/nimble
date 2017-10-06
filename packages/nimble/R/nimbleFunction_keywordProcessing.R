@@ -812,6 +812,7 @@ nimDerivs_keywordInfo <- keywordInfoClass(
       derivMethod <- nfProc$origMethods[[deparse(code[[2]][[1]])]]
       derivMethodArgs <- derivMethod$getArgInfo()
       wrtArgIndices <- convertWrtArgToIndices(wrtArgs, derivMethodArgs, fxnName = deparse(code[[2]][[1]]))
+      if(length(wrtArgIndices) == 1) wrtArgIndices <- c(wrtArgIndices, -1)
       wrt_argList <- list(fxn = code[[2]][[1]], vector = wrtArgIndices)
       accessName <- wrtVector_setupCodeTemplate$makeName(wrt_argList)
       addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)

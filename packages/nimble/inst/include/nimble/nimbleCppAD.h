@@ -59,6 +59,11 @@ class nimbleFunctionCppADbase {
 		
 		std::size_t n = length(ADinfo.independentVars); // dim of independent vars
 		std::size_t wrt_n = wrtVector.size(); // dim of wrt vars
+		cout << wrt_n;
+		cout << wrtVector[1];
+		if(wrt_n == 2 && wrtVector[1] == -1){
+				wrt_n = 1;
+		}
 		int orderSize = derivOrders.size();
 		double array_derivOrders[orderSize];
 		std::memcpy(array_derivOrders, derivOrders.getPtr(), orderSize*sizeof(double));
@@ -91,7 +96,7 @@ class nimbleFunctionCppADbase {
 			ADlist->hessian.initialize(0, false, wrt_n, wrt_n, q);
 		}
 
-		vector<double> cppad_derivOut;
+		/* vector<double> cppad_derivOut;
 		vector<double> hessian_ans (wrt_n*wrt_n*q, -1);
 		vector<double> gradient_ans (wrt_n*q, -1);
 		for(size_t dy_ind = 0; dy_ind < q; dy_ind++){
@@ -127,7 +132,7 @@ class nimbleFunctionCppADbase {
 		}
 		if(ordersFound[2] == true){
 			std::copy(hessian_ans.begin(), hessian_ans.end(), ADlist->hessian.getPtr());
-		} 
+		}  */
  		return(ADlist);
   } 
 
