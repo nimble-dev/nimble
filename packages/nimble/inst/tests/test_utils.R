@@ -133,94 +133,96 @@ test_coreRfeature_batch_internal <- function(input_batch, verbose = TRUE, dirNam
     for(i in seq_along(input_batch)) {
         input <- input_batch[[i]]
         if(verbose) cat("### Testing", input$name, "###\n")
-        funName <- names(input_batch)[i]
-        nArgs <- length(input$args)
-        evalEnv <- new.env()
-        eval(input$setArgVals, envir = evalEnv)
-        savedArgs <- as.list(evalEnv)
-        seedToUse <- if(is.null(input[['seed']])) 31415927 else input[['seed']]
-        set.seed(seedToUse)
-        eval(input$expr, envir = evalEnv)
-        savedOutputs <- as.list(evalEnv)
-        list2env(savedArgs, envir = evalEnv)
-        ## with R ref classes, lookup of methods via `[[` does not work until it has been done via `$`
-        ## force it via `$` here to allow simpler syntax below
-        forceFind <- eval(substitute(nfR$FUNNAME, list(FUNNAME = as.name(funName))))
-        forceFind <- eval(substitute(nfC$FUNNAME, list(FUNNAME = as.name(funName))))
-        if(nArgs == 5) {
+        test_that(input$name, {
+            funName <- names(input_batch)[i]
+            nArgs <- length(input$args)
+            evalEnv <- new.env()
+            eval(input$setArgVals, envir = evalEnv)
+            savedArgs <- as.list(evalEnv)
+            seedToUse <- if(is.null(input[['seed']])) 31415927 else input[['seed']]
             set.seed(seedToUse)
-            out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
+            eval(input$expr, envir = evalEnv)
+            savedOutputs <- as.list(evalEnv)
             list2env(savedArgs, envir = evalEnv)
-            set.seed(seedToUse)
-            out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
-        }  
-        if(nArgs == 4) {
-            set.seed(seedToUse)
-            out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
-            list2env(savedArgs, envir = evalEnv)
-            set.seed(seedToUse)
-            out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
-        }  
-        if(nArgs == 3) {
-            set.seed(seedToUse)
-            out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
-            list2env(savedArgs, envir = evalEnv)
-            set.seed(seedToUse)
-            out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
-        }  
-        if(nArgs == 2) {
-            set.seed(seedToUse)
-            out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2)
-            list2env(savedArgs, envir = evalEnv)
-            set.seed(seedToUse)
-            out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2)
-        }
-        if(nArgs == 1) {
-            set.seed(seedToUse)
-            out_nfR = nfR[[funName]](evalEnv$arg1)
-            list2env(savedArgs, envir = evalEnv)
-            set.seed(seedToUse)
-            out_nfC = nfC[[funName]](evalEnv$arg1)
-        }
-        if(nArgs == 0) {
-            set.seed(seedToUse)
-            out_nfR = nfR[[funName]]()
-            list2env(savedArgs, envir = evalEnv)
-            set.seed(seedToUse)
-            out_nfC = nfC[[funName]]()
-        }
-        out <- savedOutputs$out
-        ## clearn any attributes except dim
-        dimOut <- attr(out, 'dim')
-        dimOutR <- attr(out_nfR, 'dim')
-        dimOutC <- attr(out_nfC, 'dim')
-        attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
-        attr(out, 'dim') <- dimOut
-        attr(out_nfR, 'dim') <- dimOutR
-        attr(out_nfC, 'dim') <- dimOutC
-        checkEqual <- input[['checkEqual']]
-        if(is.null(checkEqual)) checkEqual <- FALSE
-        if(is.null(input[['return']])) { ## use default 'out' object
-            if(!checkEqual) {
-                expect_identical(out, out_nfR, info = paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name))
-                expect_identical(out, out_nfC, info = paste0("Identical test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
-            } else {
-                expect_equal(out, out_nfR, info = paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name) )
-                expect_equal(out, out_nfC, info = paste0("Equal test of coreRfeature (direct R vs. C++ nimbleFunction): ", input$name))
+            ## with R ref classes, lookup of methods via `[[` does not work until it has been done via `$`
+            ## force it via `$` here to allow simpler syntax below
+            forceFind <- eval(substitute(nfR$FUNNAME, list(FUNNAME = as.name(funName))))
+            forceFind <- eval(substitute(nfC$FUNNAME, list(FUNNAME = as.name(funName))))
+            if(nArgs == 5) {
+                set.seed(seedToUse)
+                out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
+                list2env(savedArgs, envir = evalEnv)
+                set.seed(seedToUse)
+                out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
+            }  
+            if(nArgs == 4) {
+                set.seed(seedToUse)
+                out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
+                list2env(savedArgs, envir = evalEnv)
+                set.seed(seedToUse)
+                out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
+            }  
+            if(nArgs == 3) {
+                set.seed(seedToUse)
+                out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
+                list2env(savedArgs, envir = evalEnv)
+                set.seed(seedToUse)
+                out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
+            }  
+            if(nArgs == 2) {
+                set.seed(seedToUse)
+                out_nfR = nfR[[funName]](evalEnv$arg1, evalEnv$arg2)
+                list2env(savedArgs, envir = evalEnv)
+                set.seed(seedToUse)
+                out_nfC = nfC[[funName]](evalEnv$arg1, evalEnv$arg2)
             }
-        } else { ## not using default return(out), so only compare out_nfR to out_nfC
-            if(!checkEqual) {
-                expect_identical(out_nfC, out_nfR, info = paste0("Identical test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name))
-            } else {
-                expect_identical(out_nfC, out_nfR, info = paste0("Equal test of coreRfeature (compiled vs. uncompied nimbleFunction): ", input$name))
+            if(nArgs == 1) {
+                set.seed(seedToUse)
+                out_nfR = nfR[[funName]](evalEnv$arg1)
+                list2env(savedArgs, envir = evalEnv)
+                set.seed(seedToUse)
+                out_nfC = nfC[[funName]](evalEnv$arg1)
             }
-        }
+            if(nArgs == 0) {
+                set.seed(seedToUse)
+                out_nfR = nfR[[funName]]()
+                list2env(savedArgs, envir = evalEnv)
+                set.seed(seedToUse)
+                out_nfC = nfC[[funName]]()
+            }
+            out <- savedOutputs$out
+            ## clear any attributes except dim
+            dimOut <- attr(out, 'dim')
+            dimOutR <- attr(out_nfR, 'dim')
+            dimOutC <- attr(out_nfC, 'dim')
+            attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
+            attr(out, 'dim') <- dimOut
+            attr(out_nfR, 'dim') <- dimOutR
+            attr(out_nfC, 'dim') <- dimOutC
+            checkEqual <- input[['checkEqual']]
+            if(is.null(checkEqual)) checkEqual <- FALSE
+            if(is.null(input[['return']])) { ## use default 'out' object
+                if(!checkEqual) {
+                    expect_identical(out, out_nfR, info = "Identical test of coreRfeature (direct R vs. R nimbleFunction)")
+                    expect_identical(out, out_nfC, info = "Identical test of coreRfeature (direct R vs. C++ nimbleFunction)")
+                } else {
+                    expect_equal(out, out_nfR, info = "Equal test of coreRfeature (direct R vs. R nimbleFunction)")
+                    expect_equal(out, out_nfC, info = "Equal test of coreRfeature (direct R vs. C++ nimbleFunction)")
+                }
+            } else { ## not using default return(out), so only compare out_nfR to out_nfC
+                if(!checkEqual) {
+                    expect_identical(out_nfC, out_nfR, info = "Identical test of coreRfeature (compiled vs. uncompied nimbleFunction)")
+                } else {
+                    expect_identical(out_nfC, out_nfR, info = "Equal test of coreRfeature (compiled vs. uncompied nimbleFunction)")
+                }
+            }
+        })
     }
     ## unload DLL as R doesn't like to have too many loaded
     if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
     invisible(NULL)
 }
-
+        
 test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) {
     test_that(input$name, {
         test_coreRfeature_internal(input, verbose, dirName)

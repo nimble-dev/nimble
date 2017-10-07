@@ -8,6 +8,15 @@ context("Testing of different Filtering Algorithms")
 ### 3) estimated log-likelihood values to known values (for normal transition - observation
 ###    models where LL can be calculated analytically via KF)
 
+goldFileName <- 'filteringTestLog_Correct.Rout'
+tempFileName <- 'filteringTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForFilteringTesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForFilteringTesting'), goldFileName) else tempFileName
+
+sink(outputFile)
+
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
 
 ### basic scalar latent node example, no top-level params
 
@@ -230,3 +239,14 @@ test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, 
 ##                 sigma_y = sigma_y)),
 ##   resultsTolerance = list(mean = list(sigma_x = .1,
 ##                                       sigma_y = .1)))
+
+sink(NULL)
+
+if(!generatingGoldFile) {
+    trialResults <- readLines(tempFileName)
+    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    compareFilesByLine(trialResults, correctResults)
+}
+
+nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
+

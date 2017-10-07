@@ -27,7 +27,7 @@ makeUnaryCwiseTypeTest <- function(name, funName, type, nDim) {
          expr = substitute(out <- FOO(arg1), list(FOO = as.name(inverseReplace(funName)))),
          args = list(arg1 = substitute(TYPE(NDIM), list(TYPE = as.name(type), NDIM = nDim))),
          setArgVals = substitute( {arg1 <- as(seq(from = SEQFROM, by = SEQBY, length.out = NDIM + 1), TYPE);
-                                   if(NDIM == 2) arg1 <- matrix(arg1, nrow = 1)}, list(NDIM = nDim, TYPE = type, SEQFROM = seqFrom, SEQBY = seqBy)),
+             if(NDIM == 2) arg1 <- matrix(arg1, nrow = 1)}, list(NDIM = nDim, TYPE = type, SEQFROM = seqFrom, SEQBY = seqBy)),
          outputType = substitute(OUTPUTTYPE(NDIM), list(OUTPUTTYPE = as.name(outputType), NDIM = nDim)))
 }
 
@@ -75,16 +75,16 @@ makeBinaryCwiseTypeTest <- function(name, funName, LHStype, RHStype, nDim, outpu
 
 
 binaryCwiseTypeTests <- unlist(recursive = FALSE,
-                              x= lapply(nimble:::binaryMidLogicalOperatorsComparison,
-                                        function(x) {
-                                            mapply(makeBinaryCwiseTypeTest,
-                                                   LHStype = rep(c('double','integer','logical'), 9),
-                                                   RHStype = rep(rep(c('double','integer','logical'), each = 3), 3),
-                                                   nDim = rep(0:2, each = 9),
-                                                   MoreArgs = list(name = x, funName = x),
-                                                   SIMPLIFY = FALSE) 
-                                        }
-                                        )
+                              x = lapply(nimble:::binaryMidLogicalOperatorsComparison,
+                                         function(x) {
+                                             mapply(makeBinaryCwiseTypeTest,
+                                                    LHStype = rep(c('double','integer','logical'), 9),
+                                                    RHStype = rep(rep(c('double','integer','logical'), each = 3), 3),
+                                                    nDim = rep(0:2, each = 9),
+                                                    MoreArgs = list(name = x, funName = x),
+                                                    SIMPLIFY = FALSE) 
+                                         }
+                                         )
                               )
 
 binaryCwiseTypeTests <- indexNames(binaryCwiseTypeTests)

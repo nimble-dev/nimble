@@ -12,7 +12,7 @@ nimbleOptions(verbose = FALSE)
 compareOldAndNewCompilationRC <- function(input) {
     name <- paste0('math: ', input$name, ': compiles')
     test_that(name, {
-        wrap_if_matches(input$xfail, name, expect_error, {
+        wrap_if_matches(input$knownFailure, name, expect_error, {
             run <- input$run
             name <- input$name
 
