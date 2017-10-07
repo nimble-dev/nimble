@@ -138,10 +138,9 @@ test_that('air example setup', {
 
 test_that('jaw-linear setup', {
     system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) # alternative way to get size info in there
-    test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000,
-              knownFailures = list('R MCMC' = 'KNOWN ISSUE: R MCMC fails for jaw-linear'))
-    })
-                                        # C MCMC runs and seems fine; R MCMC fails as can't do Cholesky of 0 matrix in 2-point method
+    test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
+})
+## R MCMC used to fail when tried to do Cholesky of 0 matrix in 2-point method, but no longer doing multiplicative link for Wishart targets
                                       
 test_mcmc('pump',
           resampleData = TRUE,
@@ -360,7 +359,6 @@ test_that('various conjugacies setup', {
                       c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
     
     test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
-    skip("KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'")
 })
 
 ### Weibull-gamma conjugacy
@@ -463,8 +461,8 @@ test_that('Dirichlet-multinomial with replication setup', {
               results = list(mean = list(p = p, alpha = alpha)),
               resultsTolerance = list(mean = list(p = matrix(.05, m, K),
                                                   alpha = c(5,10,10,20,.5))),
-              knownFailures = list('MCMC match to known posterior' = 'KNOWN ISSUE: two samples outside resultsTolerance') )
-    skip('KNOWN ISSUE: two samples outside resultsTolerance')
+              knownFailures = list('MCMC match to known posterior: p mean 39' = 'KNOWN ISSUE: two samples outside resultsTolerance',
+                                  'MCMC match to known posterior: p mean 76' = 'KNOWN ISSUE: two samples outside resultsTolerance'))
 })
 # note alphas mix poorly (and are highly correlated),
 # presumably because of cross-level dependence between
