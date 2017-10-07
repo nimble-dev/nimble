@@ -64,9 +64,9 @@ test_getBound(m, cm, test, 'y6', 'lower', consts$y6l, "reversed constant lower t
 test_getBound(m, cm, test, 'y6', 'upper', consts$y6u, "reversed constant upper truncation bound")
 
 # test after a simulate
-set.seed(0)
+set.seed(1)
 simulate(m)
-set.seed(0)
+set.seed(1)
 simulate(cm)
 test_getBound(m, cm, test, 'y1', 'lower', m$b[1], "non-constant lower truncation bound")
 test_getBound(m, cm, test, 'y1', 'upper', m$d[1], "non-constant upper truncation bound")
