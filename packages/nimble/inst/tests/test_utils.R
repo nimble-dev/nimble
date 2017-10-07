@@ -1070,6 +1070,105 @@ test_size_specific_error <- function(input, verbose = TRUE) {
 }
 
 
+testGetParam <- function(distCall, dist = NULL) {
+    distCallText <- deparse(distCall)
+    test_that(distCallText, {
+        gpScalar <- nimbleFunction(
+            setup = function(model, node, param) {},
+            run = function() {
+                ans1 <- model$getParam(node, param)
+                ans2 <- getParam(model, node, param) ## to become model$getParam(node, param)
+                if(ans1 != ans2) stop('oops, ans1 != ans2')
+                return(ans1)
+                returnType(double())
+            })
+        
+        if(is.null(dist)) dist <- nimble:::getDistributionInfo(as.character(distCall[[1]]))
+        code <- substitute({x ~ DISTCALL}, list(DISTCALL = distCall))
+        m <- nimbleModel( code = code )
+        cm <- compileNimble(m)
+        gpFuns <- list()
+        expectedResults <- list()
+        altParams <- dist$altParams
+        altParamNames <- names(altParams)
+        distCallText <- deparse(distCall)
+        
+        reqdArgs <- dist$reqdArgs ## these are canonical
+        exprs <- dist$exprs
+        alts <- dist$alts
+        providedArgs <- names(distCall)
+        providedArgs <- providedArgs[providedArgs != ""]
+        whichExpr <- NULL
+        ## figure out which way arguments were provided in distCall
+        for(i in seq_along(exprs)) {
+            if(all(providedArgs %in% alts[[i]])) whichExpr <- i
+        }
+        if(is.null(whichExpr)) {
+            if(all(providedArgs %in% reqdArgs)) whichExpr <- 0
+        }
+        expect_equal(is.null(whichExpr), FALSE, 'args not found')
+
+        
+        ## exprs give expressions for calculating reqdArgs from alts
+
+        ## altParams give expressions for calculating individual alts from reqdArgs
+        
+        ## put reqd in evalEnv, which means using exprs for the alts as needed
+        ## if testing on something provided, grab what was provided.
+        ## if testing on something not provided, if it is reqd then use it directly
+        ## otherwise calculate it from altParams
+
+        evalEnv <- new.env()
+
+        for(i in seq_along(distCall)) {
+            if(names(distCall)[i] != "") assign(names(distCall)[i], distCall[[i]], envir = evalEnv)
+        }
+        if(whichExpr > 0) {  ## what was provided was not canonical
+            for(i in seq_along(exprs[[whichExpr]])) {
+                assign(names(exprs[[whichExpr]])[i], eval(exprs[[whichExpr]][[i]], envir = evalEnv), envir = evalEnv)
+            }
+        }
+
+        ## check recovery of alternative param names from what was provided
+        for(i in seq_along(altParamNames)) {
+            gpFuns[[i]] <- gpScalar(m, 'x', altParamNames[i])
+            if(altParamNames[i] %in% providedArgs) ## it was provided so simply eval the name
+                expectedResults[[i]] <- eval(as.name(altParamNames[i]), envir = evalEnv)
+            else  ## it wasn't provided so eval the expression to calculate it from reqdArgs
+                expectedResults[[i]] <- eval(altParams[[i]], envir = evalEnv)
+            expect_equal(gpFuns[[i]]$run(), expectedResults[[i]], info = paste('error in uncompiled use',
+                                                                        altParamNames[i]))
+            expect_equal(m$getParam('x', altParamNames[i]), expectedResults[[i]],
+                         info = paste('error in R getParam', altParamNames[i]))
+            expect_equal(cm$getParam('x', altParamNames[i]), expectedResults[[i]],
+                         info = paste('error in C getParam', altParamNames[i]))
+        }
+
+        resultsNames <- altParamNames
+        nextI <- length(expectedResults)+1
+        for(i in seq_along(reqdArgs)) {
+            gpFuns[[nextI]] <- gpScalar(m, 'x', reqdArgs[i])
+            expectedResults[[nextI]] <- eval(as.name(reqdArgs[i]), envir = evalEnv) ## it was already calculated into evalEnv above
+            expect_equal(gpFuns[[nextI]]$run(), expectedResults[[nextI]],
+                         info = paste('error in uncompiled reqd', reqdArgs[i]))
+            expect_equal(m$getParam('x', reqdArgs[i]), expectedResults[[nextI]],
+                         info = paste('error in R model reqd', reqdArgs[i]))
+            expect_equal(cm$getParam('x', reqdArgs[i]), expectedResults[[nextI]],
+                         info = paste('error in C model reqd', reqdArgs[i]))
+            resultsNames[nextI] <- reqdArgs[i]
+            nextI <- nextI + 1
+        }
+        
+        compiled <- do.call('compileNimble', c(list(m), gpFuns, list(resetFunctions = TRUE)))
+        for(i in seq_along(expectedResults)) {
+            expect_equal(compiled[[i+1]]$run(), expectedResults[[i]],
+                         info = paste('error in compiled', resultsNames[i]))
+        }
+    })
+    invisible(NULL)
+}
+
+
 test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     test_that(paste0("getBound test: ", info), {
         rtest <- test(model, node, bnd)
@@ -1093,7 +1192,7 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
         expect_equal(cnfOutput[1], cnfOutput[2], info = paste0("function vs. method getBound call mismatch for compiled nimbleFunction with: ", info))
                                         #   if(.Platform$OS.type != 'windows') dyn.unload(project$cppProjects[[1]]$getSOName())
         })
-        invisible(NULL)
+    invisible(NULL)
 }
 
 expandNames <- function(var, ...) {
