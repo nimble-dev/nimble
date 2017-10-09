@@ -47,6 +47,7 @@ resetLabelFunctionCreators <- function() {
 }
 
 nimbleUniqueID <- labelFunctionCreator("UID")
+nimbleModelID  <- labelFunctionCreator("MID")
 
 dimOrLength <- function(obj, scalarize = FALSE) {
     if(scalarize) if(length(obj) == 1) return(numeric(0))

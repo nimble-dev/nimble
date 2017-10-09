@@ -867,14 +867,16 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
 
             nfCppDef <- getNimbleFunctionCppDef(generatorName = generatorName)
 
-            ok <- TRUE
-            if(asTopLevel) {
-                if(is.null(nfCppDef$Rgenerator)) ok <- FALSE
-                else ans <- nfCppDef$Rgenerator(nf, dll = dll, project = .self)
-            } else {
-                if(is.null(nfCppDef$CmultiInterface)) ok <- FALSE
-                else ans <- nfCppDef$CmultiInterface$addInstance(nf, dll = dll)
-            }
+            ans <- nfCppDef$buildCallable(nf, dll = dll, asTopLevel = asTopLevel)
+            ok <- !is.null(ans)
+            ## ok <- TRUE
+            ## if(asTopLevel) {
+            ##     if(is.null(nfCppDef$Rgenerator)) ok <- FALSE
+            ##     else ans <- nfCppDef$Rgenerator(nf, dll = dll, project = .self)
+            ## } else {
+            ##     if(is.null(nfCppDef$CmultiInterface)) ok <- FALSE
+            ##     else ans <- nfCppDef$CmultiInterface$addInstance(nf, dll = dll)
+            ## }
             if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
 
             ans

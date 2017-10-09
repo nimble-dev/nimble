@@ -9,7 +9,7 @@ Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-
 Depends:
     R (>= 3.1.2)
 Imports:
-    methods,igraph,coda
+    methods,igraph,coda,R6
 Suggests:
     testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2
 URL: http://r-nimble.org

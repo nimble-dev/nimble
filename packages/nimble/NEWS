@@ -15,6 +15,10 @@ BUG FIXES
 
 -- Fixed MCMC conjugacy system, detection of indexed node names vs. indexed expressions.
 
+-- Fixed bug in MCEM where bounds for multivariate top-level parameters were not stored correctly.
+
+-- Sped up WAIC calculation for large models.
+
 
                            CHANGES IN VERSION 0.6-6 (July 2017)
 
