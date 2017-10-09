@@ -14,10 +14,10 @@ CAR_convertWeightMatrix <- function(weightMatrix) {
 }
 
 
-#' Convert CAR structural parameters to adjecency, weights, num format
+#' Convert CAR structural parameters to adjacency, weights, num format
 #'
 #' This will convert alternate representations of CAR process structure into
-#' (adj, weights, num) form required by dcar_normal.  Two alternate
+#' (adj, weights, num) form required by \code{dcar_normal}.  Two alternate
 #' representations are handled:
 #'
 #' A single matrix argument will be interpreted as a matrix of symmetric unnormalized weights;
@@ -37,23 +37,23 @@ as.carAdjacency <- function(...) {
     args <- list(...)
     if(length(args) == 1) return(CAR_convertWeightMatrix(...))
     if(length(args) == 2) return(CAR_convertNeighborWeightLists(...))
-    stop('wrong arguments to as.carAdjacency')
+    stop('as.carAdjacency: wrong arguments to as.carAdjacency')
 }
 
 
-#' Convert weights vector to C and M parameters to dcar_proper() distribution
+#' Convert weights vector to \code{C} and \code{M} parameters to \code{dcar_proper} distribution
 #'
-#' Given a symmetric matrix of unnormalized weights, this function will calculate corresponding values for the C and M arguments suitable for use in the dcar_proper distribution.  This function can be used to transition between usage of dcar_normal and dcar_proper, since dcar_normal uses the adj, weights, and num arguments, while dcar_proper requires adj, num, and also the C and M as returned by this function.
+#' Given a symmetric matrix of unnormalized weights, this function will calculate corresponding values for the \code{C} and \code{M} arguments suitable for use in the \code{dcar_proper} distribution.  This function can be used to transition between usage of \code{dcar_normal} and \code{dcar_proper}, since \code{dcar_normal} uses the \code{adj}, \code{weights}, and \code{num} arguments, while \code{dcar_proper} requires \code{adj}, \code{num}, and also the \code{C} and \code{M} as returned by this function.
 #'
-#' Here, C is a sparse vector representation of the row-normalized adjacency matrix, and M is a vector of conditional variances for each region.  The resulting values of C and M are guaranteed to satisfy the symmetry constraint imposed on C and M, that M^-1 %*% C is symmetric, where M is a diagonal matrix and C is the row-normalized adjacency matrix.
+#' Here, \code{C} is a sparse vector representation of the row-normalized adjacency matrix, and \code{M} is a vector containing the conditional variance for each region.  The resulting values of \code{C} and \code{M} are guaranteed to satisfy the symmetry constraint imposed on \eqn{C} and \eqn{M}, that \eqn{M^{-1} C} is symmetric, where \eqn{M} is a diagonal matrix and \eqn{C} is the row-normalized adjacency matrix.
 #' 
-#' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.  This is a sparse representation of the full (unnormalized) weight matrix.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
 #'
-#' @return A named list with elements C and M.  These may be used as the C and M arguments to the dcar_proper() distribution.
+#' @return A named list with elements \code{C} and \code{M}.  These may be used as the \code{C} and \code{M} arguments to the \code{dcar_proper} distribution.
 #'
-#' @seealso \code{\link{CAR-Normal}} \code{\link{CAR-Proper}}
+#' @seealso \code{\link{CAR-Normal}}, \code{\link{CAR-Proper}}
 #'
 #' @author Daniel Turek
 #' @export
@@ -214,7 +214,7 @@ CAR_proper_processParams <- function(model, target, C, adj, num, M) {
 
 #' Calculate number of islands (distinct connected groups) of CAR adjacency matrix.
 #' 
-#' @param adj vector of indicies of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
 #'
 #' @seealso \code{\link{CAR-Normal}}
@@ -265,12 +265,11 @@ CAR_calcNumIslands <- nimbleFunction(
 )
 
 
-#' Generates the M argument of the dcar_proper distribution
+#' Generates the \code{M} argument of the \code{dcar_proper} distribution
 #' 
-#' Generate the vector of conditional variances, as is required as the M argument of the dcar_proper() distribution.  This is only used internally, and should never need to be invoked directly.
+#' Generate the vector of conditional variances, as is required as the \code{M} argument of the \code{dcar_proper} distribution.  This is only used internally, and should never need to be invoked directly.
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcM <- nimbleFunction(
     name = 'CAR_calcM',
     run = function(num = double(1)) {
@@ -287,12 +286,11 @@ CAR_calcM <- nimbleFunction(
 )
 
 
-#' Generates the C argument of the dcar_proper distribution
+#' Generates the \code{C} argument of the \code{dcar_proper} distribution
 #'
-#' Generate sparse vector representation of the normalized adajacency matrix C, as is required as the C argument of the dcar_proper() distribution.  This is only used internally, and should never need to be invoked directly.
+#' Generate sparse vector representation of the normalized adjacency matrix \eqn{C}, as is required as the \code{C} argument of the \code{dcar_proper} distribution.  This is only used internally, and should never need to be invoked directly.
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcC <- nimbleFunction(
     name = 'CAR_calcC',
     run = function(adj = double(1), num = double(1)) {
@@ -315,12 +313,11 @@ CAR_calcC <- nimbleFunction(
 )
 
 
-#' Generates the normalized adjacency matrix for dcar_proper() distribution
+#' Generates the normalized adjacency matrix for \code{dcar_proper} distribution
 #' 
-#' Using the sparse representation of the normalized adajacency matrix, generate the full matrix.  This uses the C, adj, and num parameters of the dcar_proper() distribution.
+#' Using the sparse representation of the normalized adjacency matrix, generate the full matrix.  This uses the \code{C}, \code{adj}, and \code{num} parameters of the \code{dcar_proper} distribution.
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcCmatrix <- nimbleFunction(
     name = 'CAR_calcCmatrix',
     run = function(C = double(1), adj = double(1), num = double(1)) {
@@ -343,11 +340,11 @@ CAR_calcCmatrix <- nimbleFunction(
 )
 
 
-#' Calculate the lower and upper bounds for the gamma parameter of the dcar_proper distribution
+#' Calculate the lower and upper bounds for the \code{gamma} parameter of the \code{dcar_proper} distribution
 #' 
-#' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).  The lower and upper bounds are returned in a numeric vector.
+#' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5)}.  The lower and upper bounds are returned in a numeric vector.
 #' 
-#' @seealso \code{\link{CAR-Proper}} \code{\link{carMinBound}} \code{\link{carMaxBound}}
+#' @seealso \code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carMaxBound}}
 #' 
 #' @author Daniel Turek
 #' @export
@@ -369,11 +366,11 @@ carBounds <- nimbleFunction(
 )
 
 
-#' Calculate the lower bound for the gamma parameter of the dcar_proper distribution
+#' Calculate the lower bound for the \code{gamma} parameter of the \code{dcar_proper} distribution
 #' 
-#' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).
+#' Bounds for \code{gamma} are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5)}.
 #' 
-#' @seealso \code{\link{CAR-Proper}} \code{\link{carMaxBound}} \code{\link{carBounds}}
+#' @seealso \code{\link{CAR-Proper}}, \code{\link{carMaxBound}}, \code{\link{carBounds}}
 #' 
 #' @author Daniel Turek
 #' @export
@@ -387,11 +384,11 @@ carMinBound <- nimbleFunction(
 )
 
 
-#' Calculate the upper bound for the gamma parameter of the dcar_proper distribution
+#' Calculate the upper bound for the \code{gamma} parameter of the \code{dcar_proper} distribution
 #' 
-#' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: M^(-0.5) %*% C %*% M^(0.5).
+#' Bounds for \code{gamma} are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5).
 #' 
-#' @seealso \code{\link{CAR-Proper}} \code{\link{carMinBound}} \code{\link{carBounds}}
+#' @seealso \code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carBounds}}
 #' 
 #' @author Daniel Turek
 #' @export
@@ -405,22 +402,22 @@ carMaxBound <- nimbleFunction(
 )
 
 
-#' Calculate the lower bound for the gamma parameter of the dcar_proper distribution
+#' Calculate the lower bound for the \code{gamma} parameter of the \code{dcar_proper} distribution
 #' 
 #' This function is provided as an alias, for compatibility with WinBUGS.
 #' 
-#' @seealso \code{\link{CAR-Proper}} \code{\link{carMinBound}} \code{\link{carMaxBound}} \code{\link{carBounds}}
+#' @seealso \code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carMaxBound}}, \code{\link{carBounds}}
 #' 
 #' @author Daniel Turek
 #' @export
 min.bound <- carMinBound
 
 
-#' Calculate the upper bound for the gamma parameter of the dcar_proper distribution
+#' Calculate the upper bound for the \code{gamma} parameter of the \code{dcar_proper} distribution
 #' 
 #' This function is provided as an alias, for compatibility with WinBUGS.
 #' 
-#' @seealso \code{\link{CAR-Proper}} \code{\link{carMinBound}} \code{\link{carMaxBound}} \code{\link{carBounds}}
+#' @seealso \code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carMaxBound}}, \code{\link{carBounds}}
 #' 
 #' @author Daniel Turek
 #' @export
@@ -429,10 +426,9 @@ max.bound <- carMaxBound
 
 #' Calculates the eigenvalues of the normalized adjacency matrix C with all equal weights
 #' 
-#' This function calculates the evs parameter values for the dcar_proper distribution, when C is inferred from the adj parameter as having all equal weights, and should never need to be invoked directly.
+#' This function calculates the \code{evs} parameter values for the \code{dcar_proper} distribution, when \code{C} is inferred from the \code{adj} parameter as having all equal weights, and should never need to be invoked directly.
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcEVs2 <- nimbleFunction(
     name = 'CAR_calcEVs2',
     run = function(adj = double(1), num = double(1)) {
@@ -447,10 +443,9 @@ CAR_calcEVs2 <- nimbleFunction(
 
 #' Calculates the eigenvalues of the normalized adjacency matrix C
 #' 
-#' This function calculates the evs parameter values for the dcar_proper distribution, and should never need to be invoked directly.
+#' This function calculates the \code{evs} parameter values for the \code{dcar_proper} distribution, and should never need to be invoked directly.
 #' 
 #' @author Daniel Turek
-#' @export
 CAR_calcEVs3 <- nimbleFunction(
     name = 'CAR_calcEVs3',
     run = function(C = double(1), adj = double(1), num = double(1)) {
