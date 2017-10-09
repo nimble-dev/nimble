@@ -344,6 +344,13 @@ CAR_calcCmatrix <- nimbleFunction(
 #' 
 #' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5)}.  The lower and upper bounds are returned in a numeric vector.
 #' 
+#' @param C vector of the same length as \code{adj}, giving the normalized weights associated with each pair of neighboring locations.
+#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param num vector giving the number of neighboring locations of each spatial location, with length equal to the number of locations.
+#' @param M vector giving the diagonal elements of the conditional variance matrix, with length equal to the number of locations.
+#'
+#' @return A numeric vector containing the bounds (minimum and maximum allowable values) for the \code{gamma} parameter of the \code{dcar_proper} distribution.
+#' 
 #' @seealso \code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carMaxBound}}
 #' 
 #' @author Daniel Turek
@@ -370,6 +377,13 @@ carBounds <- nimbleFunction(
 #' 
 #' Bounds for \code{gamma} are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5)}.
 #' 
+#' @param C vector of the same length as \code{adj}, giving the normalized weights associated with each pair of neighboring locations.
+#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param num vector giving the number of neighboring locations of each spatial location, with length equal to the number of locations.
+#' @param M vector giving the diagonal elements of the conditional variance matrix, with length equal to the number of locations.
+#' 
+#' @return The lower bound (minimum allowable value) for the \code{gamma} parameter of the \code{dcar_proper} distribution.
+#' 
 #' @seealso \code{\link{CAR-Proper}}, \code{\link{carMaxBound}}, \code{\link{carBounds}}
 #' 
 #' @author Daniel Turek
@@ -387,6 +401,13 @@ carMinBound <- nimbleFunction(
 #' Calculate the upper bound for the \code{gamma} parameter of the \code{dcar_proper} distribution
 #' 
 #' Bounds for \code{gamma} are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5).
+#' 
+#' @param C vector of the same length as \code{adj}, giving the normalized weights associated with each pair of neighboring locations.
+#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param num vector giving the number of neighboring locations of each spatial location, with length equal to the number of locations.
+#' @param M vector giving the diagonal elements of the conditional variance matrix, with length equal to the number of locations.
+#' 
+#' @return The upper bound (maximum allowable value) for the \code{gamma} parameter of the \code{dcar_proper} distribution.
 #' 
 #' @seealso \code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carBounds}}
 #' 
@@ -406,6 +427,13 @@ carMaxBound <- nimbleFunction(
 #' 
 #' This function is provided as an alias, for compatibility with WinBUGS.
 #' 
+#' @param C vector of the same length as \code{adj}, giving the normalized weights associated with each pair of neighboring locations.
+#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param num vector giving the number of neighboring locations of each spatial location, with length equal to the number of locations.
+#' @param M vector giving the diagonal elements of the conditional variance matrix, with length equal to the number of locations.
+#' 
+#' @return The lower bound (minimum allowable value) for the \code{gamma} parameter of the \code{dcar_proper} distribution.
+#' 
 #' @seealso \code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carMaxBound}}, \code{\link{carBounds}}
 #' 
 #' @author Daniel Turek
@@ -416,6 +444,13 @@ min.bound <- carMinBound
 #' Calculate the upper bound for the \code{gamma} parameter of the \code{dcar_proper} distribution
 #' 
 #' This function is provided as an alias, for compatibility with WinBUGS.
+#' 
+#' @param C vector of the same length as \code{adj}, giving the normalized weights associated with each pair of neighboring locations.
+#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param num vector giving the number of neighboring locations of each spatial location, with length equal to the number of locations.
+#' @param M vector giving the diagonal elements of the conditional variance matrix, with length equal to the number of locations.
+#' 
+#' @return The upper bound (maximum allowable value) for the \code{gamma} parameter of the \code{dcar_proper} distribution.
 #' 
 #' @seealso \code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carMaxBound}}, \code{\link{carBounds}}
 #' 
