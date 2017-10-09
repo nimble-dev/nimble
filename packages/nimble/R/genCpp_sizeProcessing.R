@@ -1142,26 +1142,17 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 
 
 sizeNimDerivs <- function(code, symTab, typeEnv){
-  if(code$args[[1]]$name == 'calculate'){
-    calcDerivFlag <- T
-    code$args[[1]]$name <- paste0(code$args[[1]]$name, 'WithArgs_deriv')
-  } 
-  else{
-    calcDerivFlag <- F
     code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv')
-  }
-  setArg(code$caller, code$callerArgID, code$args[[1]])
-  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # Set order argument.
-  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, 
-         code$args[[4]])
-  code$args[[2]] <- NULL
-  asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
-  code$args[[1]]$type <- 'nimbleList'
-  code$args[[1]]$sizeExprs <- symTab$getSymbolObject('NIMBLE_ADCLASS', TRUE)
-  code$args[[1]]$toEigenize <- "yes"
-  code$args[[1]]$nDim <- 0
-  if(calcDerivFlag) asserts <- c(asserts, sizeScalarModelOp(code$args[[1]], symTab, typeEnv))
-  else asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))
+    setArg(code$caller, code$callerArgID, code$args[[1]])
+    setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # Set order argument.
+    setArg(code$args[[1]], length(code$args[[1]]$args) + 1, 
+           code$args[[4]])
+    code$args[[2]] <- NULL
+    asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
+    code$args[[1]]$type <- 'nimbleList'
+    code$args[[1]]$toEigenize <- "yes"
+    code$args[[1]]$nDim <- 0
+    asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))  ## currently only works for nf methods
   #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # Sets variables argument, not yet implemented.
   if(length(asserts) == 0) NULL else asserts
 }
@@ -1180,8 +1171,9 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   }
   code$sizeExprs <- symbolObject
   code$toEigenize <- "yes"  # This is specialized for nimSvd and nimEigen.
-  if(code$name == 'getDerivs')
+  if(code$name %in% c('getDerivs', 'nimDerivs_calculate')){
       code$toEigenize <- 'no'  ## Temp. solution to ensure that derivsOrders argument is a nimArray and not an eigen type.
+  }
   code$nDim <- 0
   if(!nimbleOptions('experimentalSelfLiftStage')) {
       if(!(code$caller$name %in% assignmentOperators))

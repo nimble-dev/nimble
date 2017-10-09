@@ -34,6 +34,8 @@
 #include "RcppNimbleUtils.h"
 #include <Rinternals.h>
 #include "R.h"
+#include <nimble/nimbleCppAD.h>
+
 
 
 using std::cout;

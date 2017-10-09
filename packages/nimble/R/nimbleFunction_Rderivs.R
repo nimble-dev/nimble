@@ -475,3 +475,92 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
   return(outDerivList)
 }
 
+
+convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
+  ## If a vector of wrt args, get individual args.
+  if(deparse(wrtArgs[[1]]) == 'nimC'){ 
+    wrtArgs <- sapply(wrtArgs[-1], function(x){as.character(x)})
+  }
+  else if(is.null(wrtArgs[[1]])){
+    wrtArgs <- names(nimFxnArgs)
+  }
+  else{
+    wrtArgs <- deparse(wrtArgs)
+  }
+  ## Get names of wrt args with indexing removed.
+  wrtArgNames <- sapply(wrtArgs, function(x){strsplit(x, '\\[')[[1]][1]})
+  nimFxnArgNames <- names(nimFxnArgs)
+  wrtMatchArgs <- which(nimFxnArgNames %in% wrtArgNames)
+  argNameCheck <- wrtArgNames %in% nimFxnArgNames
+  ## Compare wrt args to actual function args and make sure no erroneous args are present.
+  if(any(argNameCheck != TRUE)) stop('Incorrect names passed to wrt argument of nimDerivs: ', fxnName, 
+                                     ' does not have arguments named: ', paste(wrtArgNames[!argNameCheck], collapse = ', ' ), '.')
+  ## Make sure all wrt args have type double.
+  doubleCheck <- sapply(wrtMatchArgs, function(x){return(deparse(nimFxnArgs[[x]][[1]]) == 'double')})
+  if(any(doubleCheck != TRUE)) stop('Derivatives of ', fxnName, ' being taken WRT an argument that does not have type double().')
+  ## Make sure that all wrt arg dims are < 2.
+  fxnArgsDims <- sapply(wrtMatchArgs, function(x){
+    outDim <- nimFxnArgs[[x]][[2]]
+    names(outDim) <- names(nimFxnArgs)[x]
+    return(outDim)})
+  
+  if(any(fxnArgsDims > 2)) stop('Derivatives cannot be taken WRT an argument with dimension > 2')
+  ## Determine sizes of each function arg.
+  fxnArgsDimSizes <- lapply(nimFxnArgs, function(x){
+    if(x[[2]] == 0) return(1)
+    else if(x[[2]] == 1) return(x[[3]])
+    else if(x[[2]] == 2) return(c(x[[3]][[2]], x[[3]][[3]]))}
+  )
+  ## Same as above sizes, except that matrix sizes are reported as nrow*ncol instead of c(nrow, ncol).
+  fxnArgsTotalSizes <- sapply(fxnArgsDimSizes, function(x){
+    return(prod(x))
+  }
+  )
+  fxnArgsTotalSizes <- c(0,fxnArgsTotalSizes)
+  ## fxnArgsIndexVector is a named vector with the starting index of each argument to the nimFxn,
+  ## if all arguments were flattened and put into a single vector.
+  ## E.g. if nimFxn has arguments x = double(2, c(2, 2)), y = double(1, 3), and z = double(0),
+  ## then fxnArgsIndexVector will be:    
+  ##   x  y  z
+  ##   1  5  8
+  fxnArgsIndexVector <- cumsum(fxnArgsTotalSizes) + 1
+  names(fxnArgsIndexVector) <- c(names(fxnArgsIndexVector)[-1], '')
+  fxnArgsIndexVector <- fxnArgsIndexVector[-length(fxnArgsIndexVector)]
+  wrtArgsIndexVector <- c()
+  for(i in seq_along(wrtArgNames)){
+    if(fxnArgsDims[wrtArgNames[i]] == 0){
+      wrtArgsIndexVector <- c(wrtArgsIndexVector, fxnArgsIndexVector[wrtArgNames[i]])
+    }
+    else if(fxnArgsDims[wrtArgNames[i]] == 1){
+      hasIndex <- grepl('^[a-z]*\\[', wrtArgs[i])
+      if(hasIndex){
+        argIndices <- eval(parse(text = sub('\\]', '', sub('^[a-z]*\\[', '', wrtArgs[i]))))
+        if(is.null(argIndices)) argIndices <- 1:fxnArgsTotalSizes[wrtArgNames[i]]
+        wrtArgsIndexVector <- c(wrtArgsIndexVector, fxnArgsIndexVector[wrtArgNames[i]] + argIndices - 1)
+      }
+      else{
+        wrtArgsIndexVector <- c(wrtArgsIndexVector, fxnArgsIndexVector[wrtArgNames[i]] + 0:(fxnArgsTotalSizes[wrtArgNames[i]] - 1))
+      }
+    }
+    else if(fxnArgsDims[wrtArgNames[i]] == 2){
+      hasIndex <- grepl('^[a-z]*\\[', wrtArgs[i])
+      if(hasIndex){
+        argIndicesText <- strsplit(sub('\\]', '', sub('^[a-z]*\\[', '', wrtArgs[i])), ',', fixed = TRUE)
+        if(length(argIndicesText[[1]]) != 2)  stop(paste0('Incorrect indexing provided for wrt argument to nimDerivs(): ', wrtArgs[i]))
+        argIndicesRows <- eval(parse(text = argIndicesText[[1]][1]))
+        argIndicesCols <- eval(parse(text = argIndicesText[[1]][2]))
+        if(is.null(argIndicesRows)) argIndicesRows <- 1:fxnArgsDimSizes[[wrtArgNames[i]]][1]
+        if(is.null(argIndicesCols)) argIndicesCols <- 1:fxnArgsDimSizes[[wrtArgNames[i]]][2]
+        ## Column major ordering
+        for(col in argIndicesCols){
+          wrtArgsIndexVector <- c(wrtArgsIndexVector, fxnArgsIndexVector[wrtArgNames[i]] + (col - 1)*fxnArgsDimSizes[[wrtArgNames[i]]][2] + argIndicesRows - 1)
+        }
+      }
+      else{
+        wrtArgsIndexVector <- c(wrtArgsIndexVector,  fxnArgsIndexVector[wrtArgNames[i]] + 0:(fxnArgsTotalSizes[wrtArgNames[i]] - 1))
+      }
+    }
+  }
+  return(unname(wrtArgsIndexVector))
+}
+

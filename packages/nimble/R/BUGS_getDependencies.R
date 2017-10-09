@@ -86,7 +86,8 @@ nimDerivsInfoClass <- setRefClass(
       model =  'ANY'
     ),
     methods = list(
-      initialize = function(wrtNodes = NA, calcNodes = NA, thisModel = NA, ...){
+      initialize = function(wrtNodes = NA, calcNodes = NA, thisModel = NA, cInfo = FALSE, ...){
+        browser()
         model <<- thisModel
         calcNodeNames <<- model$expandNodeNames(calcNodes)
         WRTNodeNames <<- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
@@ -282,6 +283,7 @@ nimDerivsInfoClass <- setRefClass(
             lineWRTArgsAsCharacters[[i]] <<- NA
           }
         }
+        browser()
       },
 
       # ### A function that substitutes correct values of unrolledIndicesMatrix

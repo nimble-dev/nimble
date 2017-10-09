@@ -21,6 +21,7 @@
 
 /* Definitions only to be included when a nimbleFunction needs CppAD */
 #include <cppad/cppad.hpp>
+#include <nimble/accessorClasses.h>
 #include <nimble/RcppNimbleUtils.h>
 #include <nimble/predefinedNimbleLists.h>
 //#include <nimble/RcppNimbleUtils.h>
@@ -134,3 +135,6 @@ class nimbleFunctionCppADbase {
   } 
 
 };
+
+nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew &nodes, NimArr<1, double> &derivOrders);
+nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew &nodes,  int iNodeFunction, NimArr<1, double> &derivOrders);

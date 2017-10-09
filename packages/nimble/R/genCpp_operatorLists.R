@@ -121,7 +121,8 @@ matrixFlipOperators <- c('t')
 matrixSquareOperators <- c('chol','inverse')
 nimbleListReturningOperators <- c('nimEigen',
                                   'nimSvd',
-                                  'getDerivs')  ## These use sizeNimbleListReturningFunction. Note that nimOptim is handled separately.
+                                  'getDerivs',
+                                  'nimDerivs_calculate')  ## These use sizeNimbleListReturningFunction. Note that nimOptim is handled separately.
 matrixSolveOperators <- c('solve','forwardsolve','backsolve')
 passThroughOperators <- c('return')
 

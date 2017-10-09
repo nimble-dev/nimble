@@ -7,11 +7,17 @@
 nodeFunctionVector <-
     function(model,
              nodeNames,
+             wrtNodes = NULL,
              excludeData = FALSE,
              sortUnique = TRUE,
              errorContext = "")
 {
     ##        model <<- model
+      browser()
+      if(!is.null(wrtNodes)){browser()}
+      # nimDerivsInfo <- nimDerivsInfoClass(wrtNodes = outerCode$wrt, calcNodes = code[[2]], thisModel = code$model,
+      #                                     cInfo = TRUE)
+      
     if(length(nodeNames) == 0) {
         gids <- numeric(0)
         indexingInfo <- list(declIDs = integer(), rowIndices = integer())
