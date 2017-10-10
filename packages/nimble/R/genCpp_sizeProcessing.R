@@ -76,6 +76,7 @@ sizeCalls <- c(
          nimArr_rinterval = 'sizeScalarRecurse',
          nimPrint = 'sizeforceEigenize',
          nimDerivs = 'sizeNimDerivs',
+         nimDerivs_calculate = 'sizeNimDerivsCalculate',
          as.integer = 'sizeUnaryCwise', 
          as.numeric = 'sizeUnaryCwise',
          nimArrayGeneral = 'sizeNimArrayGeneral',
@@ -1142,18 +1143,52 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 
 
 sizeNimDerivs <- function(code, symTab, typeEnv){
-    code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv')
-    setArg(code$caller, code$callerArgID, code$args[[1]])
-    setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # Set order argument.
-    setArg(code$args[[1]], length(code$args[[1]]$args) + 1, 
-           code$args[[4]])
-    code$args[[2]] <- NULL
-    asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
-    code$args[[1]]$type <- 'nimbleList'
-    code$args[[1]]$toEigenize <- "yes"
-    code$args[[1]]$nDim <- 0
-    asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))  ## currently only works for nf methods
+  code$args[[1]]$name <- paste0(code$args[[1]]$name, '_deriv')
+  setArg(code$caller, code$callerArgID, code$args[[1]])
+  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[2]]) # Set order argument.
+  setArg(code$args[[1]], length(code$args[[1]]$args) + 1, 
+         code$args[[4]])
+  code$args[[2]] <- NULL
+  asserts <- recurseSetSizes(code$args[[1]], symTab, typeEnv)
+  code$args[[1]]$type <- 'nimbleList'
+  code$args[[1]]$toEigenize <- "yes"
+  code$args[[1]]$nDim <- 0
+  asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))  ## currently only works for nf methods
   #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # Sets variables argument, not yet implemented.
+  if(length(asserts) == 0) NULL else asserts
+}
+
+sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
+  ## this contains some logic from sizeNimbleListReturningFunction,
+  ## and some from sizeScalarModelOp.  For now, simplest to make a new size processor.
+  nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
+  nlDef <- nl.getListDef(nlGen)
+  className <- nlDef$className
+  symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
+  if(is.null(symbolObject)) {
+    nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)
+    symbolObject <- symbolNimbleListGenerator(name = className, nlProc = nlp)
+    symTab$addSymbol(symbolObject)
+  }
+  code$sizeExprs <- symbolObject
+  code$type <- 'nimbleList'
+  code$nDim <- 0
+  code$toEigenize <- 'maybe'
+  asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
+  for(i in 2:length(code$args)) {
+    if(inherits(code$args[[i]], 'exprClass')) {
+      if(code$args[[i]]$toEigenize=='yes')
+        asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))
+    }
+  }
+  if(inherits(code$args[[2]], 'exprClass') && names(code$args)[2] != 'orderVector') { ## There is an index expression that may be non-scalar
+    if(code$args[[2]]$nDim > 0) { ## It is non-scalar so we need to set a logical argument about whether is it a logical or numeric vector
+      code$args[[ length(code$args)+1 ]] <- as.integer(code$args[[2]]$type == 'logical')
+    }
+  }
+  if(code$args[[1]]$toEigenize == 'yes') { ## not sure when this would be TRUE
+    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+  }
   if(length(asserts) == 0) NULL else asserts
 }
 
@@ -1171,7 +1206,7 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   }
   code$sizeExprs <- symbolObject
   code$toEigenize <- "yes"  # This is specialized for nimSvd and nimEigen.
-  if(code$name %in% c('getDerivs', 'nimDerivs_calculate')){
+  if(code$name == 'getDerivs'){
       code$toEigenize <- 'no'  ## Temp. solution to ensure that derivsOrders argument is a nimArray and not an eigen type.
   }
   code$nDim <- 0
