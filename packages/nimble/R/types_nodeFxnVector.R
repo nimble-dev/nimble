@@ -13,7 +13,6 @@ nodeFunctionVector <-
              errorContext = "")
 {
     ##        model <<- model
-      browser()
       if(!is.null(wrtNodes)){browser()}
       # nimDerivsInfo <- nimDerivsInfoClass(wrtNodes = outerCode$wrt, calcNodes = code[[2]], thisModel = code$model,
       #                                     cInfo = TRUE)

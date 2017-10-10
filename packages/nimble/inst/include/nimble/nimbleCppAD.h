@@ -22,7 +22,7 @@
 /* Definitions only to be included when a nimbleFunction needs CppAD */
 #include <cppad/cppad.hpp>
 #include <nimble/accessorClasses.h>
-#include <nimble/RcppNimbleUtils.h>
+//#include <nimble/RcppNimbleUtils.h>
 #include <nimble/predefinedNimbleLists.h>
 //#include <nimble/RcppNimbleUtils.h>
 //#include <nimble/NimArr.h>
