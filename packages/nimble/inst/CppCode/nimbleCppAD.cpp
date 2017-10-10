@@ -3,7 +3,7 @@
 
 nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew &nodes, NimArr<1, double> &derivOrders) {
   nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
-  return(ADlist)
+  return(ADlist);
   /* const vector<NodeInstruction> &instructions = nodes.getInstructions();
   vector<NodeInstruction>::const_iterator iNode(instructions.begin());
   vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
@@ -15,7 +15,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew &nodes, Nim
 
 nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew &nodes,  int iNodeFunction, NimArr<1, double> &derivOrders) {
   nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
-  return(ADlist)
+  return(ADlist);
   /* const vector<NodeInstruction> &instructions = nodes.getInstructions();
   vector<NodeInstruction>::const_iterator iNode(instructions.begin());
   vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
