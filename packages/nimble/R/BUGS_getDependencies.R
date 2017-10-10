@@ -74,6 +74,7 @@ nimDerivsInfoClass <- setRefClass(
       parentIndicesList = 'ANY',
       stochNodeIndicators = 'ANY',
       calcNodeIndicators = 'ANY',
+      cppWrtArgIndices = 'ANY',
       WRTNodeIndicators = 'ANY',
       WRTToIndices = 'ANY',
       WRTFromIndices = 'ANY',
@@ -87,7 +88,6 @@ nimDerivsInfoClass <- setRefClass(
     ),
     methods = list(
       initialize = function(wrtNodes = NA, calcNodes = NA, thisModel = NA, cInfo = FALSE, ...){
-        browser()
         model <<- thisModel
         calcNodeNames <<- model$expandNodeNames(calcNodes)
         WRTNodeNames <<- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
@@ -242,6 +242,7 @@ nimDerivsInfoClass <- setRefClass(
         lineWRTArgsAsCharacters <<- list()
         lineWRTArgSizeInfo <<- list()
         calcWithArgsCalls  <<- list()
+        cppWrtArgIndices <<- list()
         for(i in seq_along(depIndex_2_parentDepIndices)){
           if(calcNodeIndicators[i] == 1){
             lineWRTArgSizeInfo[[i]]      <<- numeric(length(depIndex_2_parentDepIndices[[i]]))
@@ -273,6 +274,18 @@ nimDerivsInfoClass <- setRefClass(
                 }
               }
             }
+            if(cInfo){
+              functionArgsDimsList <- formalArgNames[-1]
+              argCounter <- 1
+              for(j in seq_along(sizeAndDimInfo)){
+                for(k in seq_along(sizeAndDimInfo[[j]])){
+                  functionArgsDimsList[[argCounter]] <- substitute(double(PARDIM, PARSIZES), 
+                                                                   list(PARDIM = as.numeric(sizeAndDimInfo[[j]][[k]]$nDim), 
+                                                                        PARSIZES = nndf_makeParentSizeExpr(sizeAndDimInfo[[j]][[k]]))) 
+                }
+              }
+              cppWrtArgIndices[[i]] <<- convertWrtArgToIndices(lineWRTArgsAsCharacters[[i]], functionArgsDimsList, fxnName = 'calculate')
+            }
           }
           else{
             lineWRTArgsAsCharacters[[i]] <<- NA
@@ -283,7 +296,6 @@ nimDerivsInfoClass <- setRefClass(
             lineWRTArgsAsCharacters[[i]] <<- NA
           }
         }
-        browser()
       },
 
       # ### A function that substitutes correct values of unrolledIndicesMatrix

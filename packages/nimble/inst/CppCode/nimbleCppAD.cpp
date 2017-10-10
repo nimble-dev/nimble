@@ -1,5 +1,4 @@
 #include <nimble/nimbleCppAD.h>
-//#include <nimble/accessorClasses.h>
 
 nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew &nodes, NimArr<1, double> &derivOrders) {
   nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;

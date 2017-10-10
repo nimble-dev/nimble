@@ -759,6 +759,7 @@ nimDerivs_keywordInfo <- keywordInfoClass(
     if(!is.null(nfProc$origMethods[[deparse(fxnCall)]])){
       derivMethod <- nfProc$origMethods[[deparse(fxnCall)]]
       derivMethodArgs <- derivMethod$getArgInfo()
+      browser()
       wrtArgIndices <- convertWrtArgToIndices(wrtArgs, derivMethodArgs, fxnName = deparse(fxnCall))
       if(length(wrtArgIndices) == 1) wrtArgIndices <- c(wrtArgIndices, -1)
       wrt_argList <- list(fxn = fxnCall, vector = wrtArgIndices)
@@ -1073,7 +1074,7 @@ nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
         list(NODEFXNVECNAME = as.name(resultName),
              MODEL = argList$model,
              NODES = argList$nodes,
-             WRTNODES = argList$WRTNODES,
+             WRTNODES = argList$wrtNodes,
              EXCLUDEDATA = !argList$includeData,
              SORTUNIQUE = argList$sortUnique,
              ERRORCONTEXT = argList$errorContext

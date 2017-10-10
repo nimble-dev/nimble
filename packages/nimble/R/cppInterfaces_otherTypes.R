@@ -41,8 +41,19 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
     ## This is not really the most efficient way to do things; eventually 
     ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
-	
-    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID, fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices)))
+	  browser()
+	  if(!is.null(Robject[[fxnVecName]]$nimDerivsInfo)){
+	    derivsInfo <- Robject[[fxnVecName]]$nimDerivsInfo
+	    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID_forDerivs, fxnVecPtr, 
+	              as.integer(declIDs), numberedPtrs, as.integer(rowIndices),
+	              derivsInfo$parentIndicesList, derivsInfo$stochNodeIndicators, derivsInfo$calcNodeIndicators,
+	              derivsInfo$cppWrtArgIndices, derivsInfo$WRTLineNums, derivsInfo$WRTToIndices,
+	              derivsInfo$WRTFromIndices, derivsInfo$WRTLineIndices, derivsInfo$lineWRTArgSizeInfo))
+	    
+	  }
+	  else{
+      eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID, fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices)))
+    }
 }
 
 populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName, dll) {

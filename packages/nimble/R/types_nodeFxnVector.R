@@ -13,10 +13,13 @@ nodeFunctionVector <-
              errorContext = "")
 {
     ##        model <<- model
-      if(!is.null(wrtNodes)){browser()}
-      # nimDerivsInfo <- nimDerivsInfoClass(wrtNodes = outerCode$wrt, calcNodes = code[[2]], thisModel = code$model,
-      #                                     cInfo = TRUE)
-      
+      if(!is.null(wrtNodes)){
+        nimDerivsInfo <- nimDerivsInfoClass(wrtNodes = wrtNodes, calcNodes = nodeNames, thisModel = model,
+                                            cInfo = TRUE)
+      }
+      else{
+        nimDerivsInfo <- NULL
+      }
     if(length(nodeNames) == 0) {
         gids <- numeric(0)
         indexingInfo <- list(declIDs = integer(), rowIndices = integer())
@@ -50,7 +53,8 @@ nodeFunctionVector <-
     }
     structure(list(gids = gids,
                    indexingInfo = indexingInfo,
-                   model = model),
+                   model = model,
+                   nimDerivsInfo = nimDerivsInfo),
               class = "nodeFunctionVector")
 }
 
