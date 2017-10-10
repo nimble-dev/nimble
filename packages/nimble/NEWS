@@ -7,6 +7,8 @@ USER LEVEL CHANGES
 
 -- Addition of nimbleMCMC function, providing the most direct one-line invocation of NIMBLE's MCMC engine.
 
+-- Addition of dcar_proper distributino, the proper Gaussian conditional autoregressive (CAR) distribution, and MCMC sampling support.
+
 BUG FIXES
 
 -- Fixed MCMC autoBlocking procedure, to work with new sampler default values system.

@@ -3,6 +3,7 @@ assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
                               'nimArr_rwish_chol',
                               'nimArr_rinvwish_chol',
                               'nimArr_rcar_normal',
+                              'nimArr_rcar_proper',
                               'nimArr_rmulti',
                               'nimArr_rdirch',
                               'getValues',
@@ -109,6 +110,7 @@ sizeCalls <- c(
                    'nimArr_dwish_chol',
                    'nimArr_dinvwish_chol',
                    'nimArr_dcar_normal',
+                   'nimArr_dcar_proper',
                    'nimArr_dmulti',
                    'nimArr_dcat',
                    'nimArr_dinterval',
@@ -118,6 +120,7 @@ sizeCalls <- c(
                    'nimArr_rwish_chol',
                    'nimArr_rinvwish_chol',
                    'nimArr_rcar_normal',
+                   'nimArr_rcar_proper',
                    'nimArr_rmulti',
                    'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
     makeCallList(c('decide',
@@ -3154,7 +3157,8 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
                                  1, 'double'),
                              nimArr_rinvwish_chol = list(c(2, 0, 0), ## chol, df, prec_param
                                  1, 'double'),
-			     nimArr_rcar_normal = list(c(1, 1, 1), 3, 'double'), ## adj, wgts, num
+			     nimArr_rcar_normal = list(c(1, 1, 1, 0, 0, 0), 3, 'double'), ## adj, wgts, num, tau, c, zero_mean, answer size comes from num
+			     nimArr_rcar_proper = list(c(1, 1, 1, 1, 1, 0, 0, 1), 1, 'double'), ## mu, C, adj, num, M, tau, gamma, evs, answer size comes from mu
                              nimArr_rmulti = list(c(0, 1), ## size, probs
                                  2, 'double'), ## We treat integer rv's as doubles
                              nimArr_rdirch = list(c(1), 1, 'double')) ## alpha
