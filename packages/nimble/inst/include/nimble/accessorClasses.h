@@ -63,6 +63,48 @@ class NodeVectorClassNew {
   vector<NodeInstruction> &getInstructions() { return instructions; }
 };
 
+// This is a collection of instructions denoting a sort of "program".
+class NodeVectorClassNew_derivs : NodeVectorClassNew {
+ public:
+	vector<vector<vector<int>>> parentIndicesList;
+	vector<int> stochNodeIndicators;
+	vector<int> calcNodeIndicators;
+	vector<vector<int>> cppWrtArgIndices;
+	vector<int> WrtLineNums;
+	vector<vector<int>> WrtToIndices;
+	vector<vector<int>> WrtFromIndices;
+	vector<vector<int>> WrtLineIndices;
+	vector<vector<int>> lineWrtArgSizeInfo;
+	void populateDerivsInfo(SEXP SderivsInfo) {
+		
+		RObjectPointer = SderivsInfo;
+		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+		SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
+		PROTECT(S_parentInds = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												Rf_install("parentIndicesList")));
+	
+												
+	  // PROTECT(S_value = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+										  // Rf_install("value")));
+	  // PROTECT(S_counts = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+										   // Rf_install("counts")));
+	  // PROTECT(S_convergence =
+				  // Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+									// Rf_install("convergence")));
+	  // PROTECT(S_message = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+											// Rf_install("message")));
+	  // PROTECT(S_hessian = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
+											// Rf_install("hessian")));
+	  // SEXP_2_NimArr<1>(S_par, par);
+	  // value = SEXP_2_double(S_value);
+	  // SEXP_2_NimArr<1>(S_counts, counts);
+	  // convergence = SEXP_2_int(S_convergence);
+	  // message = STRSEXP_2_string(S_message);
+	  // SEXP_2_NimArr<2>(S_hessian, hessian);
+	  // UNPROTECT(13);
+	};
+ };
+
 ///// Using NodeVectors:
 // utilities for calling node functions from a vector of node pointers
 // see .cpp file for definitions
