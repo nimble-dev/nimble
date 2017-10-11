@@ -209,6 +209,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                         if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
+                        if(nodeDist == 'dwish')        { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
@@ -806,6 +807,10 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             ## CAR models
             addRule(quote(model$getDistribution(node) == 'dcar_normal'), 'CAR_normal')
             addRule(quote(model$getDistribution(node) == 'dcar_proper'), 'CAR_proper')
+
+            ## Wishart
+            addRule(quote(model$getDistribution(node) == 'dwish'),
+                    quote(stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.')))
             
             ## multivariate & multivariateNodesAsScalars: univariate RW
             addRule(quote(isMultivariate && multivariateNodesAsScalars),
