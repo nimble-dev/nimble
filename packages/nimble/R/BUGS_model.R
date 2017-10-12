@@ -950,16 +950,36 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
 
                                               }
                                       }
+                                    
+                                      if(isTRUE(nimbleOptions('verbose'))){
+                                        varsWithNAs <- NULL
+                                        for(v in .self$getVarNames()){
+                                          if(!nimble:::isValid(.self[[v]])){
+                                            message(' This model is not fully initialized.  To see which variables are not initialized, use model$initializeInfo().  This is not an error.  For more information on model initialization, see help(modelInitialization).', appendLF = FALSE)
+                                            break()
+                                          }
+                                        }
+                                      }
 
-                                      varsWithNAs <- NULL
-                                      for(v in .self$getVarNames())
-                                          if(!nimble:::isValid(.self[[v]]))
-                                              varsWithNAs <- c(varsWithNAs, v)
-                                      if(!is.null(varsWithNAs))
-                                          if(isTRUE(nimbleOptions('verbose')))
-                                              message(' note that missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.', appendLF = FALSE)
                                   },
-
+                                  initializeInfo = function() {
+                                    '
+Provides more detailed information on which model nodes are not initialized.
+'
+                                    varsWithNAs <- NULL
+                                    for(v in .self$getVarNames()){
+                                      if(!nimble:::isValid(.self[[v]])){
+                                        varsWithNAs <- c(varsWithNAs, v)
+                                      }
+                                    }
+                                    if(!is.null(varsWithNAs)){
+                                      message('Missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), 
+                                              '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly. For more information on model initialization, see help(modelInitialization).')
+                                    }
+                                    else{
+                                      message('All model variables are initialized.')
+                                    }
+                                  },
                                   check = function() {
                                       '
 Checks for errors in model specification and for missing values that prevent use of calculate/simulate on any nodes
@@ -1320,4 +1340,16 @@ whyInvalid <- function(value) {
 
 
 
-
+#' Information on initial values in a nimbleModel
+#'
+#'  Having uninitialized nodes in a nimbleModel can potentially cause some algorithms to fail, and can lead to poor performance in others.  Here are some
+#'  general guidelines on  how non-intitialized variables can effect performance:
+#'  \itemize{
+#'    \item Any dynamic indices need to be initialized in order for the model to perform correctly.
+#'    \item MCMC will atuo-initialize, but will do so from the prior distribution.  This can cause convergence issues, especially in the case of diffuse priors.
+#'    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
+#' }
+#'
+#' @name modelInitialization
+#' @rdname modelInitialization
+#' @export
