@@ -1045,29 +1045,12 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
              LOGPROB = argList$logProb)
     })
 
-# derivsNodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
-#   #Note to programmer: required fields of argList are model, nodes and includeData
-#   
-#   makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), if(argList$sortUnique) "SU" else "notSU", "_derivs", sep = '_'))},
-#   codeTemplate = quote({
-#     DERIVINFO <-  nimDerivsInfoClass(wrtNodes = WRTNODES, calcNodes = NODES, thisModel = code$model,
-#                                      cInfo = TRUE)
-#     NODEFXNVECNAME <- nimble:::nodeFunctionVector(model = MODEL, nodeNames = NODES, derivInfo = DERIVINFO, excludeData = EXCLUDEDATA, sortUnique = SORTUNIQUE, errorContext = ERRORCONTEXT)}), 
-#   makeCodeSubList = function(resultName, argList){
-#     list(NODEFXNVECNAME = as.name(resultName),
-#          MODEL = argList$model,
-#          NODES = argList$nodes,
-#          EXCLUDEDATA = !argList$includeData,
-#          SORTUNIQUE = argList$sortUnique,
-#          ERRORCONTEXT = argList$errorContext
-#     )
-#   })
 
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
                                         #Note to programmer: required fields of argList are model, nodes and includeData
     
-    makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), if(argList$sortUnique) "SU" else "notSU", sep = '_'))},
+    makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), if(argList$sortUnique) "SU" else "notSU", if(is.null(argList$wrtNodes)) '' else '_derivs', sep = '_'))},
     codeTemplate = quote(NODEFXNVECNAME <- nimble:::nodeFunctionVector(model = MODEL, nodeNames = NODES, wrtNodes = WRTNODES,
                                                                        excludeData = EXCLUDEDATA, sortUnique = SORTUNIQUE, errorContext = ERRORCONTEXT)), 
     makeCodeSubList = function(resultName, argList){

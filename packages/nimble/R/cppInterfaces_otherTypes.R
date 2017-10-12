@@ -41,7 +41,6 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
     ## This is not really the most efficient way to do things; eventually 
     ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
-	  browser()
 	  if(!is.null(Robject[[fxnVecName]]$nimDerivsInfo)){
 	    derivsInfo <- Robject[[fxnVecName]]$nimDerivsInfo
 	    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID_forDerivs, fxnVecPtr, 

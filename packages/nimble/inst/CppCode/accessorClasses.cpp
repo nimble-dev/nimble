@@ -31,7 +31,8 @@ SEXP populateNodeFxnVectorNew_byDeclID_forDerivs(SEXP SnodeFxnVec, SEXP S_GIDs, 
   int* rowinds = INTEGER(S_ROWINDS);
   int index;
   NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
-  NodeVectorClassNew* nfv = static_cast<NodeVectorClassNew*>(R_ExternalPtrAddr(SnodeFxnVec) ) ;
+  NodeVectorClassNew_derivs* nfv_derivs = static_cast<NodeVectorClassNew_derivs*>(R_ExternalPtrAddr(SnodeFxnVec)) ;
+  (*nfv_derivs).populateDerivsInfo(SderivInfo);
   int nextRowInd;
   for(int i = 0; i < len; i++){
     index = gids[i] - 1;
@@ -39,7 +40,7 @@ SEXP populateNodeFxnVectorNew_byDeclID_forDerivs(SEXP SnodeFxnVec, SEXP S_GIDs, 
     if(nextRowInd == -1) { // should only happen from a scalar, so there is one dummy indexedNodeInfo
       nextRowInd = 0;
     }
-    (*nfv).instructions.push_back(NodeInstruction(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd));
+    (*nfv_derivs).instructions.push_back(NodeInstruction(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd));
   }
   return(R_NilValue);
 }

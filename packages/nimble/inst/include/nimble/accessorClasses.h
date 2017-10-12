@@ -64,26 +64,46 @@ class NodeVectorClassNew {
 };
 
 // This is a collection of instructions denoting a sort of "program".
-class NodeVectorClassNew_derivs : NodeVectorClassNew {
+class NodeVectorClassNew_derivs : public NodeVectorClassNew {
  public:
-	vector<vector<vector<int>>> parentIndicesList;
-	vector<int> stochNodeIndicators;
-	vector<int> calcNodeIndicators;
-	vector<vector<int>> cppWrtArgIndices;
-	vector<int> WrtLineNums;
-	vector<vector<int>> WrtToIndices;
-	vector<vector<int>> WrtFromIndices;
-	vector<vector<int>> WrtLineIndices;
-	vector<vector<int>> lineWrtArgSizeInfo;
+	vector<vector<NimArr<1, int> > > parentIndicesList;
+	NimArr<1, int> stochNodeIndicators;
+	NimArr<1, int> calcNodeIndicators;
+	vector<NimArr<1, int> > cppWrtArgIndices;
+	NimArr<1, int> WrtLineNums;
+	vector<NimArr<1, int> > WrtToIndices;
+	vector<NimArr<1, int> > WrtFromIndices;
+	vector<NimArr<1, int> > WrtLineIndices;
+	vector<NimArr<1, int> > lineWrtArgSizeInfo;
 	void populateDerivsInfo(SEXP SderivsInfo) {
-		
-		RObjectPointer = SderivsInfo;
+		SEXP S_pxData;
+		SEXP S_parentInds;
+		SEXP S_thisList;
+		SEXP S_thisRow;
+		int numNodes;
+		int numParents;
+
 		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
 		SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
 		PROTECT(S_parentInds = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												Rf_install("parentIndicesList")));
-	
-												
+		numNodes = Rf_length(S_parentInds);
+		parentIndicesList.resize(numNodes);
+		for(int i = 0; i < numNodes; i++){
+			PROTECT(S_thisList =  VECTOR_ELT(S_parentInds, i));
+			SEXP_list_2_NimArr_vec(S_thisList, parentIndicesList[i]);
+			// numParents = Rf_length(S_thisList);
+			// parentIndicesList[i].resize(numParents);
+			// for(int j = 0; j < numParents; j++){
+				// PROTECT(S_thisRow = VECTOR_ELT(S_thisList, j));
+				// SEXP_2_NimArr<1>(S_thisRow, parentIndicesList[i][j]);
+				// UNPROTECT(1);
+			// }
+			UNPROTECT(1);
+		}
+		UNPROTECT(2);
+		
+		
 	  // PROTECT(S_value = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
 										  // Rf_install("value")));
 	  // PROTECT(S_counts = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
@@ -104,7 +124,7 @@ class NodeVectorClassNew_derivs : NodeVectorClassNew {
 	  // UNPROTECT(13);
 	};
  };
-
+ 
 ///// Using NodeVectors:
 // utilities for calling node functions from a vector of node pointers
 // see .cpp file for definitions
