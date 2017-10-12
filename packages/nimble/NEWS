@@ -9,6 +9,8 @@ USER LEVEL CHANGES
 
 -- Addition of dcar_proper distributino, the proper Gaussian conditional autoregressive (CAR) distribution, and MCMC sampling support.
 
+-- nimbleModel no longer outputs the names of all uninitialized variables in a model.  Instead, users are directed to use the new $initializeInfo() method if uninitialized variables are detected. 
+
 BUG FIXES
 
 -- Fixed MCMC autoBlocking procedure, to work with new sampler default values system.
