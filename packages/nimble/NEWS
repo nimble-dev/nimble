@@ -17,6 +17,8 @@ BUG FIXES
 
 -- Fixed bug in MCEM where bounds for multivariate top-level parameters were not stored correctly.
 
+-- MCEM outputs a warning message if the provided model has discrete top-level parameters.
+
 -- Sped up WAIC calculation for large models.
 
 
