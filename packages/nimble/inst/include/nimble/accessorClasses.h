@@ -79,9 +79,15 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		SEXP S_pxData;
 		SEXP S_parentInds;
 		SEXP S_thisList;
-		SEXP S_thisRow;
+		SEXP S_stochNodeIndicators;
+		SEXP S_calcNodeIndicators;
+		SEXP S_cppWrtArgIndices;
+		SEXP S_WrtLineNums;
+		SEXP S_WrtToIndices;
+		SEXP S_WrtFromIndices;
+		SEXP S_WrtLineIndices;
+		SEXP S_lineWrtArgSizeInfo;
 		int numNodes;
-		int numParents;
 
 		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
 		SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
@@ -92,16 +98,30 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		for(int i = 0; i < numNodes; i++){
 			PROTECT(S_thisList =  VECTOR_ELT(S_parentInds, i));
 			SEXP_list_2_NimArr_vec(S_thisList, parentIndicesList[i]);
-			// numParents = Rf_length(S_thisList);
-			// parentIndicesList[i].resize(numParents);
-			// for(int j = 0; j < numParents; j++){
-				// PROTECT(S_thisRow = VECTOR_ELT(S_thisList, j));
-				// SEXP_2_NimArr<1>(S_thisRow, parentIndicesList[i][j]);
-				// UNPROTECT(1);
-			// }
 			UNPROTECT(1);
 		}
-		UNPROTECT(2);
+		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+														  Rf_install("stochNodeIndicators")));
+		SEXP_2_NimArr(S_stochNodeIndicators, stochNodeIndicators);
+		
+		PROTECT(S_calcNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("calcNodeIndicators")));
+  		SEXP_2_NimArr(S_calcNodeIndicators, calcNodeIndicatorsNodeIndicators);
+		
+		PROTECT(S_cppWrtArgIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("cppWrtArgIndices")));
+		SEXP_list_2_NimArr_vec(S_cppWrtArgIndices, cppWrtArgIndices);
+
+
+
+		
+		
+		
+		
+		
+		
+		UNPROTECT(5);
+		
 		
 		
 	  // PROTECT(S_value = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
