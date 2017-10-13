@@ -94,6 +94,8 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 				}
 			}
 		}
+		
+		nimSmartPtr<NIMBLE_ADCLASS> derivList = calcwithargsans();
 
         // if(!is.na(derivInfo$lineWrtArgsAsCharacters[[i]][1])){
           // derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS, WRT),
