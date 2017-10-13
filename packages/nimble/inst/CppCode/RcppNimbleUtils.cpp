@@ -56,23 +56,19 @@ SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
 }
 
 void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from) {
-  printf("In setNimbleFxnPtr_copyFromRobject\n");
   void **doublePtr = static_cast<void **>(nf_to);
   SEXP Scnf, SsinglePtr;
   SEXP S_pxData;
    PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
    SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
   // environment(modelVar)$.CobjectInterface
-     printf("In setNimbleFxnPtr_copyFromRobject\n");
-     PROTECT(Scnf = Rf_findVarInFrame(PROTECT(GET_SLOT(
+   PROTECT(Scnf = Rf_findVarInFrame(PROTECT(GET_SLOT(
 						       S_NF_from,
 						       S_pxData)),
 				    Rf_install(".CobjectInterface"))
 	   );
-  printf("In setNimbleFxnPtr_copyFromRobject\n");
    int unprotectCount = 3;
-  if(Rf_isNewList(Scnf)) {
-      printf("in list\n");
+   if(Rf_isNewList(Scnf)) {
     // multi-interface
     //Cnf[[1]]$basePtrList[[ Cnf[[2]] ]]
     SEXP Sindex;
@@ -99,7 +95,6 @@ void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from) {
 					    Rf_install(".basePtr")));
     unprotectCount += 2;
   }
-  printf("done\n");
   void *singlePtr = R_ExternalPtrAddr(SsinglePtr);
   *doublePtr = singlePtr;
   UNPROTECT(unprotectCount);
