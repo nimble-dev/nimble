@@ -41,6 +41,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
   int wrtLineIndicator = 0;
   vector< NimArr<2, double> > parentJacobians;
   vector< NimArr<3, double> > parentHessians;
+  vector< NimArr<2, double> > chainRuleJacobians;
 
   for(int i = 0; i < length(nodes.parentIndicesList); i++){
 	  isDeterminisitic = nodes.stochNodeIndicators[i];
@@ -48,22 +49,67 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 	  isCalcNodeLine = nodes.calcNodeIndicators[i];
 	  thisWrtLine = nodes.cumulativeWrtLineNums[i];
 	  thisNodeSize = nodes.nodeLengths[i];
-	  
 	  if(isCalcNodeLine){
 		parentJacobians.resize(length(nodes.parentIndicesList[i]));
         if(hessianFlag){
 			parentHessians.resize(length(nodes.parentIndicesList[i]));
 		}
         for(int j = 0; j < length(nodes.parentIndicesList[i]); j++){
+			// we can pre-calculate sumParentDims earlier.  Do this.
 			if(j == 0 && isWrtLine){
-            parentJacobians[j] = NimArr<2, double>(nodes.wrtLineSize[thisWrtLine], nodes.totalWrtSize);
-			for(int k = 0; k < nodes.wrtLineIndices[thisWrtLine].dimSize(0); k++){
-				thisIndex = nodes.wrtLineIndices[thisWrtLine][k];
-				parentJacobians[j](thisIndex, thisIndex) = 1;
+				parentJacobians[j] = NimArr<2, double>(nodes.wrtLineSize[thisWrtLine], nodes.totalWrtSize);
+				for(int k = 0; k < nodes.wrtLineIndices[thisWrtLine].dimSize(0); k++){
+					thisIndex = nodes.wrtLineIndices[thisWrtLine][k];
+					parentJacobians[j](thisIndex, thisIndex) = 1;
+				}
 			}
-          }
-		}		  
-	  }
+			else if(nodes.parentIndicesList[i][j][0] > 0){
+				int sumParentDims = 0;
+				for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
+					sumParentDims += chainRuleJacobians[nodes.parentIndicesList[i][j][k]].dimSize(0);
+				}
+				parentJacobians[j] = NimArr<2, double>(sumParentDims, nodes.totalWrtSize);
+				int rowIndicator = 0;
+				for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
+					for(int l = 0; l <  chainRuleJacobians[nodes.parentIndicesList[i][j][k]].dimSize(0); l++){
+						for(int m = 0; m <  chainRuleJacobians[nodes.parentIndicesList[i][j][k]].dimSize(1); m++){
+							parentJacobians[j](rowIndicator, m) = chainRuleJacobians[nodes.parentIndicesList[i][j][k]](l, m);
+						}
+						rowIndicator++;
+					}
+				}
+				if(hessianFlag){
+					parentHessians[j] = NimArr<3, double>(nodes.totalWrtSize, nodes.totalWrtSize, sumParentDims);
+					rowIndicator = 0;
+					for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
+						for(int l = 0; l <  chainRuleHessians[nodes.parentIndicesList[i][j][k]].dimSize(2); l++){
+							for(int m = 0; m <  chainRuleHessians[nodes.parentIndicesList[i][j][k]].dimSize(0); m++){
+								for(int n = 0; n <  chainRuleHessians[nodes.parentIndicesList[i][j][k]].dimSize(1); n++){
+									parentHessians[j](m, n, rowIndicator) = chainRuleHessians[nodes.parentIndicesList[i][j][k]](m, n, l);
+								}
+							}
+							rowIndicator++;
+						}
+					}
+				}
+			}
+		}
+
+        // if(!is.na(derivInfo$lineWrtArgsAsCharacters[[i]][1])){
+          // derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS, WRT),
+                                       // list(CALCCALL = derivInfo$calcWithArgsCalls[[i]],
+                                            // DERIVORDERS = order,
+                                            // DROPARGS = 'INDEXEDNODEINFO_',
+                                            // WRT = derivInfo$lineWrtArgsAsCharacters[[i]])))
+
+          // if(isDeterm){
+            // derivList$value <- 0
+            // model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)
+          // }
+          
+
+		
+	}
   }
 
   for(; iNode != iNodeEnd; iNode++){
