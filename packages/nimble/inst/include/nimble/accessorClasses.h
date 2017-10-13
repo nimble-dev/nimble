@@ -70,10 +70,10 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 	NimArr<1, int> stochNodeIndicators;
 	NimArr<1, int> calcNodeIndicators;
 	vector<NimArr<1, int> > cppWrtArgIndices;
-	NimArr<1, int> WrtLineNums;
-	vector<NimArr<1, int> > WrtToIndices;
-	vector<NimArr<1, int> > WrtFromIndices;
-	vector<NimArr<1, int> > WrtLineIndices;
+	NimArr<1, int> wrtLineNums;
+	vector<NimArr<1, int> > wrtToIndices;
+	vector<NimArr<1, int> > wrtFromIndices;
+	vector<NimArr<1, int> > wrtLineIndices;
 	vector<NimArr<1, int> > lineWrtArgSizeInfo;
 	void populateDerivsInfo(SEXP SderivsInfo) {
 		SEXP S_pxData;
@@ -82,10 +82,10 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		SEXP S_stochNodeIndicators;
 		SEXP S_calcNodeIndicators;
 		SEXP S_cppWrtArgIndices;
-		SEXP S_WrtLineNums;
-		SEXP S_WrtToIndices;
-		SEXP S_WrtFromIndices;
-		SEXP S_WrtLineIndices;
+		SEXP S_wrtLineNums;
+		SEXP S_wrtToIndices;
+		SEXP S_wrtFromIndices;
+		SEXP S_wrtLineIndices;
 		SEXP S_lineWrtArgSizeInfo;
 		int numNodes;
 
@@ -103,45 +103,29 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 														  Rf_install("stochNodeIndicators")));
 		SEXP_2_NimArr(S_stochNodeIndicators, stochNodeIndicators);
-		
 		PROTECT(S_calcNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("calcNodeIndicators")));
-  		SEXP_2_NimArr(S_calcNodeIndicators, calcNodeIndicatorsNodeIndicators);
-		
+  		SEXP_2_NimArr(S_calcNodeIndicators, calcNodeIndicators);
+		PROTECT(S_wrtLineNums = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("wrtLineNums")));
+  		SEXP_2_NimArr(S_wrtLineNums, wrtLineNums);
 		PROTECT(S_cppWrtArgIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("cppWrtArgIndices")));
 		SEXP_list_2_NimArr_vec(S_cppWrtArgIndices, cppWrtArgIndices);
+		PROTECT(S_wrtToIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("wrtToIndices")));
+		SEXP_list_2_NimArr_vec(S_wrtToIndices, wrtToIndices);
+		PROTECT(S_wrtFromIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("wrtFromIndices")));
+		SEXP_list_2_NimArr_vec(S_wrtFromIndices, wrtFromIndices);
+		PROTECT(S_wrtLineIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("wrtLineIndices")));
+		SEXP_list_2_NimArr_vec(S_wrtLineIndices, wrtLineIndices);
+		PROTECT(S_lineWrtArgSizeInfo = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("lineWrtArgSizeInfo")));
+		SEXP_list_2_NimArr_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
+		UNPROTECT(19);
 
-
-
-		
-		
-		
-		
-		
-		
-		UNPROTECT(5);
-		
-		
-		
-	  // PROTECT(S_value = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-										  // Rf_install("value")));
-	  // PROTECT(S_counts = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-										   // Rf_install("counts")));
-	  // PROTECT(S_convergence =
-				  // Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-									// Rf_install("convergence")));
-	  // PROTECT(S_message = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-											// Rf_install("message")));
-	  // PROTECT(S_hessian = Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, S_pxData)),
-											// Rf_install("hessian")));
-	  // SEXP_2_NimArr<1>(S_par, par);
-	  // value = SEXP_2_double(S_value);
-	  // SEXP_2_NimArr<1>(S_counts, counts);
-	  // convergence = SEXP_2_int(S_convergence);
-	  // message = STRSEXP_2_string(S_message);
-	  // SEXP_2_NimArr<2>(S_hessian, hessian);
-	  // UNPROTECT(13);
 	};
  };
  
