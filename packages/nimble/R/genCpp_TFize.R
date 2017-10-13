@@ -168,6 +168,10 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
     return(placeholders)
 }
 
+## These are helpful for type checking tensorflow expressions.
+is.tf_tensor <- function(x) { x$`__class__`$`__name__` == 'Tensor' }
+is.tf_sparse <- function(x) { x$`__class__`$`__name__` == 'SparseTensor' }
+
 ## This constructs the tfTranslate list lazily,
 ## since the tensorflow package may not be loaded.
 .tfLazyData <- new.env()
@@ -185,6 +189,45 @@ tfTranslate <- function(name) {
         '-' = '-',
         '*' = '*',
         '/' = '/',
+        'make_sparse' = function(nrows, ncols, indices, values) {
+            if (!is.tf_tensor(indices)) stop()
+            if (!is.tf_tensor(values)) stop()
+            if (indices$dtype != tf$int64) indices <- tf$cast(indices, tf$int64)
+            axes <- tf$constant(1L, dtype=tf$int32, shape=tuple(1L))
+            indices <- tf$reverse(indices, axes)  ## Note the transpose.
+            shape <- tuple(ncols, nrows)  ## Note the transpose.
+            tf$SparseTensor(indices, values, dense_shape = shape)
+        },
+        'sparse_indices' = function(x) {
+            if (!is.tf_sparse(x)) stop()
+            axes <- tf$constant(1L, dtype=tf$int32, shape=tuple(1L))
+            tf$reverse(x$indices, 1L)  ## Note the transpose.
+        },
+        'sparse_values' = function(x) {
+            if (!is.tf_sparse(x)) stop()
+            x$values
+        },
+        'add_sparse_sparse' = function(x, y) {
+            if (!is.tf_sparse(x)) stop()
+            if (!is.tf_sparse(x)) stop()
+            ans <- tf$sparse_add(x, y)
+            if (!is.tf_sparse(x)) stop()
+            return(ans)
+        },
+        'add_dense_sparse' = function(x, y) {
+            if (!is.tf_tensor(x)) stop()
+            if (!is.tf_sparse(x)) stop()
+            ans <- tf$sparse_add(x, y)
+            if (!is.tf_tensor(x)) stop()
+            return(ans)
+        },
+        'add_sparse_dense' = function(x, y) {
+            if (!is.tf_sparse(x)) stop()
+            if (!is.tf_tensor(x)) stop()
+            ans <- tf$sparse_add(x, y)
+            if (!is.tf_tensor(x)) stop()
+            return(ans)
+        },
         'abs' = tf$abs,
         'ceil' = tf$ceil,
         'floor' = tf$floor,
