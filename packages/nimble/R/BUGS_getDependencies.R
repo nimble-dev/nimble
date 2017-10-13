@@ -84,6 +84,7 @@ nimDerivsInfoClass <- setRefClass(
       lineWrtArgsAsCharacters = 'ANY',
       lineWrtArgSizeInfo = 'ANY',
       calcWithArgsCalls = 'ANY',
+      nodeLengths = 'ANY',
       model =  'ANY'
     ),
     methods = list(
@@ -149,8 +150,10 @@ nimDerivsInfoClass <- setRefClass(
         stochNodeIndicators <<- model$getNodeType(allWrtAndCalcNodeNames) == 'stoch'
         wrtNodeIndicators <<- numeric(length(allWrtAndCalcNodeNames))
         calcNodeIndicators <<- numeric(length(allWrtAndCalcNodeNames))
+        nodeLengths <<- numeric(length(allWrtAndCalcNodeNames))
         ## For each input depsID
         for(i in seq_along(depIDs)) {
+          nodeLengths[i] <<- length(values(model, allWrtAndCalcNodeNames[i]))
           thisNode <- depIDs[i]
           if(thisNode %in% wrtNodes) {
             depIndex_2_parentDepIndices[[i]][[1]] <- -which(wrtNodes == thisNode) ## e.g. set -2 for 2nd wrt node

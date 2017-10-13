@@ -45,12 +45,6 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
 	    derivsInfo <- Robject[[fxnVecName]]$nimDerivsInfo
 	    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID_forDerivs, fxnVecPtr, 
 	              as.integer(declIDs), numberedPtrs, as.integer(rowIndices), derivsInfo))
-	              
-	              
-	              # derivsInfo$parentIndicesList, derivsInfo$stochNodeIndicators, derivsInfo$calcNodeIndicators,
-	              # derivsInfo$cppWrtArgIndices, derivsInfo$WRTLineNums, derivsInfo$WRTToIndices,
-	              # derivsInfo$WRTFromIndices, derivsInfo$WRTLineIndices, derivsInfo$lineWRTArgSizeInfo))
-	    
 	  }
 	  else{
       eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID, fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices)))

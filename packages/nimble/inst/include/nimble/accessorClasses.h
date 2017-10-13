@@ -71,10 +71,17 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 	NimArr<1, int> calcNodeIndicators;
 	vector<NimArr<1, int> > cppWrtArgIndices;
 	NimArr<1, int> wrtLineNums;
+	NimArr<1, int> nodeLengths;
 	vector<NimArr<1, int> > wrtToIndices;
 	vector<NimArr<1, int> > wrtFromIndices;
 	vector<NimArr<1, int> > wrtLineIndices;
 	vector<NimArr<1, int> > lineWrtArgSizeInfo;
+	int totalOutWrtSize;
+	int totalWrtSize;
+    NimArr<1, int> cumulativeWrtLineNums;
+    NimArr<1, int> wrtLineSize;
+
+	
 	void populateDerivsInfo(SEXP SderivsInfo) {
 		SEXP S_pxData;
 		SEXP S_parentInds;
@@ -87,6 +94,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		SEXP S_wrtFromIndices;
 		SEXP S_wrtLineIndices;
 		SEXP S_lineWrtArgSizeInfo;
+		SEXP S_nodeLengths;
 		int numNodes;
 
 		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
@@ -109,6 +117,9 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		PROTECT(S_wrtLineNums = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("wrtLineNums")));
   		SEXP_2_NimArr(S_wrtLineNums, wrtLineNums);
+		PROTECT(S_nodeLengths = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("nodeLengths")));
+  		SEXP_2_NimArr(S_nodeLengths, nodeLengths);
 		PROTECT(S_cppWrtArgIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("cppWrtArgIndices")));
 		SEXP_list_2_NimArr_vec(S_cppWrtArgIndices, cppWrtArgIndices);
@@ -124,8 +135,29 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		PROTECT(S_lineWrtArgSizeInfo = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("lineWrtArgSizeInfo")));
 		SEXP_list_2_NimArr_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
-		UNPROTECT(19);
-
+		
+		UNPROTECT(21);
+		
+		totalOutWrtSize = 0;
+		for(int i = 0; i < length(wrtToIndices); i++){
+			totalOutWrtSize += wrtToIndices[i].dimSize(0);
+		}
+		
+		totalWrtSize = 0;
+		cumulativeWrtLineNums.setSize(numNodes);
+		wrtLineSize.setSize(wrtLineNums.dimSize(0));
+		int lineCounter = 0;
+		for(int i = 0; i < numNodes; i++){
+			if(i == wrtLineNums[lineCounter]){
+				wrtLineSize[lineCounter] = nodeLengths[i];
+				totalWrtSize += wrtLineSize[lineCounter];
+				cumulativeWrtLineNums[i] = lineCounter;
+				lineCounter++;
+			}
+			else{
+				cumulativeWrtLineNums[i] = 0;
+			}
+		}
 	};
  };
  
