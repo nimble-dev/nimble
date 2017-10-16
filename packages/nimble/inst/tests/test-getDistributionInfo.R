@@ -2,6 +2,11 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 ## Testing functions that query distribution info based on distribution name or node/variable names
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 context('Testing distributions API')
 
 # tests of distribution functions applied to distribution name
@@ -50,8 +55,7 @@ rmyexp <- nimbleFunction(
 temporarilyAssignInGlobalEnv(rmyexp)
 
 test_that("Test of registerDistributions with character string",
-          expect_output(registerDistributions('dmyexp'),
-                        "Registering the following user-provided distributions: dmyexp."))
+          expect_silent(registerDistributions('dmyexp')))
 
 test_that("Test of registerDistributions with character string for missing distribution",
           expect_error(registerDistributions('dfoo')))
@@ -157,7 +161,7 @@ names(out) <- m$expandNodeNames(vars)
 
 test_that("Test of isDiscrete model method",
               expect_identical(m$isDiscrete(vars), out,
-                               info = "incorrect results from isDiscrete")))
+                               info = "incorrect results from isDiscrete"))
 
 vars <- c('y', 'yy', 'w', 'x', 'uu')
 out <- c(rep(FALSE, 10), FALSE, NA, FALSE, TRUE)
@@ -275,14 +279,15 @@ const <- list(M = 2, K = 4, n = 5, N = rep(1000, 5),
       topic = c(1, 1, 1, 2, 2))
 alphaInits <- rbind(c(10, 30, 100, 3), c(12, 15, 15, 8))
 
-m <- nimbleModel(code, constants = const,
-                  inits = list(alpha = alphaInits))
+# don't really care about this test, but having it as an expectation suppresses the registration message
+expect_output(m <- nimbleModel(code, constants = const,
+                               inits = list(alpha = alphaInits)), "NIMBLE has registered ddirchmulti", info = "no registration message printed")
+
 
 # won't be correct because haven't used registerDistributions such that it's noted as discrete
 test_that("Test of isDiscrete for user-defined ddirchmulti",
-          expect_failure(expect_identical(isDiscrete('ddirchmulti'), TRUE,
-                                          info = "isDiscrete says ddirchmulti is not discrete"),
-   message = "known failure of distribution not noted as discrete not actually failing"))
+          expect_failure(expect_true(isDiscrete('ddirchmulti'),
+                 info = "isDiscrete says ddirchmulti is not discrete")))
 
 
 output <- c(1,1,0); names(output) <- c('value', 'alpha', 'size')
@@ -307,3 +312,5 @@ test_that("Test of use of user-defined ddirchmulti",
               expect_identical(m$y, cm$y, info = "R and compiled model values from ddirchmulti not the same"))
 
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

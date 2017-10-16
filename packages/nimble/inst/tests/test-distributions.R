@@ -4,7 +4,9 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context('Testing NIMBLE distributions')
 
 RwarnLevel <- options('warn')$warn
-options(warn = -1)
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
 
 goldFileName <- 'distributionsTestLog_Correct.Rout'
 tempFileName <- 'distributionsTestLog.Rout'
@@ -57,7 +59,7 @@ test_that("Test that dmvt_chol works correctly in nimbleFunction", {
 
 ## test use in model
 
-test_that("Test that dmvt calculation is correct in model likelihood calculation", {
+test_that("Test that mvt calculate and simulate are correct in nodeFunctions", {
     mvt_code <- nimbleCode({
         x[1:3] ~ dmvt(mn[1:3], scale = sc[1:3,1:3], df = df)
     })
@@ -69,25 +71,19 @@ test_that("Test that dmvt calculation is correct in model likelihood calculation
     c_mvt_model$x
     expect_equal(exp(c_mvt_model$calculate()), (truth),
                  info = paste0("incorrect likelihood value for compiled dmvt"))
-})
 
-## random sampling
-set.seed(0)
-r_samps <- t(replicate(10000, rmvt_chol(n = 1, mn, chol(sc), df, prec_param = FALSE)))
-true_cov <- sc*df/(df-2)
+    ## random sampling
+    set.seed(0)
+    r_samps <- t(replicate(10000, rmvt_chol(n = 1, mn, chol(sc), df, prec_param = FALSE)))
+    true_cov <- sc*df/(df-2)
 
+    expect_equal(colMeans(r_samps), mn, 
+                 tol = 0.03,
+                 info = "Difference in random sample means in R exceeds tolerance")
+    expect_equal(cov(r_samps), true_cov,
+                 tol = 0.1,
+                 info = "Difference in random sample covs in R exceeds tolerance")
 
-test_that("Test that random samples (R) have correct mean",
-              expect_equal(colMeans(r_samps), mn, 
-                           tol = 0.03,
-                           info = "Difference in means exceeds tolerance"))
-
-test_that("Test that random samples (R) have correct covariance",
-              expect_equal(cov(r_samps), true_cov,
-                           tol = 0.1,
-                           info = "Difference in covs exceeds tolerance"))
-
-test_that("Test that random samples (nf) have correct mean and covariance", {
     nf_sampling <- nimbleFunction(
         run = function(mn = double(1), scale = double(2), df = double(0)) {
             returnType(double(1))
@@ -100,32 +96,29 @@ test_that("Test that random samples (nf) have correct mean and covariance", {
     nf_samps <- t(replicate(10000, nf_sampling(mn, sc, df)))
     expect_equal(colMeans(nf_samps), mn, 
                  tol = 0.03,
-                 info = "Difference in means exceeds tolerance")
+                 info = "Difference in means in nf exceeds tolerance")
     expect_equal(cov(nf_samps), true_cov,
                  tol = 0.1,
-                 info = "Difference in covs exceeds tolerance")
+                 info = "Difference in covs in nf exceeds tolerance")
+
+    ## sampling via `simulate`
+    set.seed(0)
+    simul_samp <- function(model) {
+        model$simulate()
+        return(model$x)
+    }
+    
+    simul_samps <- t(replicate(10000, simul_samp(c_mvt_model)))
+    
+    expect_equal(colMeans(simul_samps), mn,
+                 tol = 0.03,
+                 info = "Difference in means in random samples (simulate) exceeds tolerance")
+    
+    expect_equal(cov(simul_samps), true_cov, 
+                 tol = 0.1,
+                 info = "Difference in covs in random samples (simulate) exceeds tolerance")
 })
-
-## sampling via `simulate`
-set.seed(0)
-simul_samp <- function(model) {
-  model$simulate()
-  return(model$x)
-}
-
-simul_samps <- t(replicate(10000, simul_samp(c_mvt_model)))
-
-test_that("Test that random samples (simulate) have correct mean: ",
-              expect_equal(colMeans(simul_samps), mn,
-                           tol = 0.03,
-                           info = "Difference in means exceeds tolerance"))
-
-test_that("Test that random samples (simulate) have correct covariance: ",
-              expect_equal(cov(simul_samps), true_cov, 
-                           tol = 0.1,
-                           info = "Difference in covs exceeds tolerance"))
-
-
+    
 ## dmulti and dcat
 
 set.seed(0)
@@ -229,9 +222,7 @@ test_that("dinvgamma-dinvgamma conjugacy with dependency using rate", {
     samplers <- conf$getSamplers()
     expect_identical(samplers[[1]]$name, 'conjugate_dinvgamma_dinvgamma',
                      info = "conjugacy not detected")
-})
 
-test_that("invgamma conjugate sampler gets correct result: ", {
     mcmc <- buildMCMC(conf)
     comp <- compileNimble(m, mcmc)
     set.seed(0)
@@ -267,9 +258,7 @@ test_that("dgamma-dinvgamma conjugacy with dependency using rate", {
     samplers <- conf$getSamplers()
     expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dinvgamma',
                      info = "conjugacy not detected")
-})
 
-test_that("gamma conjugate sampler with invgamma dependency gets correct result", {
     mcmc <- buildMCMC(conf)
     comp <- compileNimble(m, mcmc)
     set.seed(0)
@@ -290,7 +279,8 @@ test_that("gamma conjugate sampler with invgamma dependency gets correct result"
 })
 
 # dinvwish_chol
-test_that("Test that rinvwish_chol and rwish_chol give correct results", {
+
+test_that("Test that rinvwish_chol, dinvwish_chol, and rwish_chol give correct results", {
     set.seed(1)
     df <- 20
     d <- 3
@@ -319,9 +309,7 @@ test_that("Test that rinvwish_chol and rwish_chol give correct results", {
                  info = "mean of rinvwish with scale draws differs from truth")
     expect_equal(max(abs(pmean3 - pm)), 0, tol = 0.06,
                  info = "mean of rinvwish with rate differs from truth")
-})
 
-test_that("Test that dinvwish_chol gives correct results", {
     dens1 <- dinvwish_chol(draws1[,,1], chol(C), df, log = TRUE)
     dens2 <- dinvwish_chol(draws1[,,1], chol(solve(C)), df, log = TRUE, scale_param = FALSE)
     

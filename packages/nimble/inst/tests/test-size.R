@@ -1,3 +1,10 @@
+## This aims to test whether our size error checking is properly reporting
+## problems with model specification, including cases that will fail to compile.
+## It's rather complicated because of the different ways that
+## incorrect/inconsistent sizes can cause problems at model building,
+## compilation, and run-time. For now, test_size is somewhat inconsistent
+## with how expect_failure and expect_error are used in our other tests. 
+
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn

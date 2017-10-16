@@ -1,5 +1,10 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 context("Testing of getParam")
 
 
@@ -97,3 +102,5 @@ test_that('non-scalar 2', expect_equal(pr2, cm$getParam('a', 'prec')))
 test_that('non-scalar 3', expect_equal(solve(pr1), m$getParam('a', 'cov')))
 test_that('non-scalar 4', expect_equal(solve(pr2), cm$getParam('a', 'cov')))
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

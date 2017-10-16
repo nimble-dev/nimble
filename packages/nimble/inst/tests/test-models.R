@@ -1,5 +1,12 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+context("Testing of NIMBLE modeling building and operation")
+
 allModels <- c(# vol1
     'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
                                         # vol2
@@ -397,3 +404,6 @@ test_that("use of dbin/dbinom and dnegbin/dnbinom are identical", {
     expect_equal(getLogProb(cm, 'y2'), getLogProb(cm, 'yalt2'),
                  info = "compiled calculate gives different results for dbin and dbinom")
 })
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

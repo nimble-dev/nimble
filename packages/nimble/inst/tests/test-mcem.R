@@ -1,6 +1,21 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
+
 context("Testing of MCEM")
+
+nimbleOptions(verbose = TRUE)
+goldFileName <- 'mcemTestLog_Correct.Rout'
+tempFileName <- 'mcemTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCEMtesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForMCEMtesting'), goldFileName) else tempFileName
+
+sink(outputFile)
 
 test_that("Test that MCEM finds the MLE", {
     pumpCode <- nimbleCode({
@@ -48,7 +63,6 @@ test_that("Test that MCEM finds the MLE", {
     expect_equal(out, mle, tolerance = 0.04)
 })
 
-context("Testing of MCEM covariance estimation")
 ## below example obtained from https://people.ucsc.edu/~abrsvn/bayes_winbugs_jags_4.r
 ## covariance matrix from buildMCEM compared to cov. matrix obtained from lme4 package
 
@@ -116,5 +130,14 @@ test_that("Test that asymptotic covariance is correct", {
     expect_equal(sqrt(abs(lme4Cov[2,1])), sqrt(abs(mixedEffCov[2,1])), tolerance = 1)
 })
 
+sink(NULL)
 
+if(!generatingGoldFile) {
+    trialResults <- readLines(tempFileName)
+    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    compareFilesByLine(trialResults, correctResults)
+}
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
+nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)

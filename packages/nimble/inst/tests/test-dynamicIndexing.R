@@ -3,7 +3,9 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context("Testing of dynamic indexing")
 
 RwarnLevel <- options('warn')$warn
-options(warn = -1)
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
 
 source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = 'nimble'))
 
@@ -265,7 +267,7 @@ sapply(models, test_mcmc, numItsC = 1000)
 ## beta0C is beta0 in inits file
 system.in.dir(paste("sed 's/beta0/beta0C/g' cervix-inits.R > ", file.path(tempdir(), "cervix-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
 ## need missing x's to have initial values or initial model$calculate fails
-system.in.dir(paste("echo 'x <- c(rep(0, 16), rep(1, 23), rep(0, 44), rep(1, 1961))' >> ", file.path(tempdir(), "cervix-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
+system.in.dir(paste("echo 'x <- c(rep(as.numeric(NA), 115), rep(1, 1929))' >> ", file.path(tempdir(), "cervix-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
 
 test_that('cervix model and MCMC test', {
     testBUGSmodel('cervix', dir = "", model = system.file('classic-bugs','vol2','cervix','cervix.bug', package = 'nimble'), data = system.file('classic-bugs','vol2','cervix','cervix-data.R', package = 'nimble'),  inits = file.path(tempdir(), "cervix-inits.R"),  useInits = TRUE)

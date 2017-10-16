@@ -1,6 +1,13 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-# need a test_dslCheck function???
+# Might want to make a test_dslCheck function.
+
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+context('Testing of nimbleFunction (DSL) code checking')
 
 test_that("Test of DSL check of valid RCfunction", expect_silent(
 test1 <- nimbleFunction(
@@ -240,3 +247,5 @@ test14 <- nimbleFunction(
 ))
 
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

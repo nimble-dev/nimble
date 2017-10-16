@@ -8,6 +8,11 @@ context("Testing of different Filtering Algorithms")
 ### 3) estimated log-likelihood values to known values (for normal transition - observation
 ###    models where LL can be calculated analytically via KF)
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 goldFileName <- 'filteringTestLog_Correct.Rout'
 tempFileName <- 'filteringTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForFilteringTesting'))
@@ -201,6 +206,7 @@ test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, 
                 sigma_y = sigma_y)),
   resultsTolerance = list(mean = list(sigma_x = .5,
                                       sigma_y = .5)))
+# , expectWarnings = list("C MCMC" = "NaNs produced"))
 
 ## Let's stop here to save testing time
 ## # test MCMC with longer runs and lower tolerance
@@ -248,5 +254,7 @@ if(!generatingGoldFile) {
     compareFilesByLine(trialResults, correctResults)
 }
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
 

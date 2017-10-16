@@ -1,5 +1,10 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 context("Testing of getDependencies")
 
 ## note this testing is not intended to blur into general model processing testing.
@@ -95,3 +100,6 @@ test_that("getDependencies in second model with some criss-crossing dependencies
     expect_identical(m2$getDependencies(c('c3','c2')), ans4)
     expect_identical(m2$getDependencies(c('c2','h1','c3')), ans4)
 })
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
