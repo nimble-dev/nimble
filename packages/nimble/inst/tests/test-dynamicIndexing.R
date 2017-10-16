@@ -17,7 +17,8 @@ tempFileName <- 'dynamicIndexingTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForDynamicIndexingTesting'))
 outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForDynamicIndexingTesting'), goldFileName) else tempFileName
 
-sink(outputFile)
+## capture warnings
+sink_with_messages(outputFile)
 
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)

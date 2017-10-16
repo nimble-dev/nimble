@@ -1,5 +1,11 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-context('nimbleList() tests in RC functions')
+
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+context('Testing nimbleLists in RC functions')
 
 ## All necessary nlDefinitions below:
 test_that("nimbleList RCfun Test 1", {
@@ -35,6 +41,10 @@ test_that("nimbleList RCfun Test 1", {
 })
 
 test_that("nimbleList RCfun Test 1a", {
+    testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+    otherTestListDef1 <- testListDef1
+    temporarilyAssignInGlobalEnv(testListDef1)
+    temporarilyAssignInGlobalEnv(otherTestListDef1)
     nlTestFunc1a <- nimbleFunction(
         run = function(){
             outList <- otherTestListDef1$new(nlScalar = 5)
@@ -85,7 +95,7 @@ test_that("nimbleList RCfun Test 2", {
     
     nlTestFunc2 <- outerNlTestFunc2()
     RnimbleList2 <- nlTestFunc2$run()
-    CnlTestFunc2 <- compileNimble(nlTestFunc2, showCompilerOutput = TRUE)
+    CnlTestFunc2 <- compileNimble(nlTestFunc2)
     CnimbleList2 <- CnlTestFunc2$run()
     
     expect_identical(RnimbleList2$nlScalar, 2)
@@ -123,7 +133,7 @@ test_that("nimbleList RCfun Test 2a", {
     
     nlTestFunc2a <- outerNlTestFunc2a(testListDef1)
     RnimbleList2a <- nlTestFunc2a$run()
-    CnlTestFunc2a <- compileNimble(nlTestFunc2a, showCompilerOutput = TRUE)
+    CnlTestFunc2a <- compileNimble(nlTestFunc2a)
     CnimbleList2a <- CnlTestFunc2a$run()
     
     expect_identical(RnimbleList2a$nlScalar, .5)
@@ -217,7 +227,7 @@ test_that("nimbleList RCfun Test 4", {
     )
     
     RnimbleList4 <- nlTestFunc4()
-    CnlTestFunc4 <- compileNimble(nlTestFunc4, showCompilerOutput = TRUE)
+    CnlTestFunc4 <- compileNimble(nlTestFunc4)
     CnimbleList4 <- CnlTestFunc4()
     
     expect_identical(RnimbleList4$nlScalar,2)
@@ -366,14 +376,14 @@ test_that("nimbleList RCfun Test 9", {
     temporarilyAssignInGlobalEnv(testListDef2)
     temporarilyAssignInGlobalEnv(differentNlDef)
 
-    nlTestFun9 <- nimbleFunction(
+    expect_warning(nlTestFun9 <- nimbleFunction(
         run = function(nlArg1 = testListDef1(), doubleArg = double()){
             returnNl <- innerNlTestFun9_1(nlArg1, doubleArg)
             returnNl$nlMatrix <- eigen(diag(2))$vectors
             returnType(testListDef1())
             return(returnNl)
         }
-    )
+    ), "For this nimbleFunction to compile, these objects must be defined")
     temporarilyAssignInGlobalEnv(nlTestFun9)
     
     innerNlTestFun9_2 <- nimbleFunction(
@@ -466,3 +476,5 @@ test_that("nimbleList RCfun Test 10", {
     expect_identical(CnimbleList10_3$values, c(3,3))
 })
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

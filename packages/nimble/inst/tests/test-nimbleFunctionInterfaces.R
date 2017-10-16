@@ -1,4 +1,10 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 context("Testing of nimbleFunction interfaces")
 
 ## goals here:
@@ -10,7 +16,7 @@ context("Testing of nimbleFunction interfaces")
 ##  (So we are not testing nimbleLists or nested nimbleFunctions here)
 
 ## passing every kind of argument
-test_that(paste0("copying of argument passing in nimbleFunctionInteface", {
+test_that("copying of argument passing in nimbleFunctionInterface", {
     f1 <- nimbleFunction(
         run = function(bs = logical(),
                        b1 = logical(1),
@@ -59,7 +65,7 @@ test_that(paste0("copying of argument passing in nimbleFunctionInteface", {
 
 ## populating and using every kind of argument with a full interface
     
-test_that(paste0("population of member data in full nimbleFunctionInteface", {
+test_that("population and getting of member data in full nimbleFunctionInterface", {
     f2G <- nimbleFunction(
         setup = function() {
             bs <- TRUE
@@ -85,10 +91,7 @@ test_that(paste0("population of member data in full nimbleFunctionInteface", {
     cf2 <- compileNimble(f2)
     cans2 <- cf2$run()
     expect_identical(ans2, cans2)
-})
 
-## these test the setters, and also make sure they return the value 
-test_that(paste0("getting of member data in full nimbleFunctionInteface", {
     f2$bs <- cf2$bs <- FALSE
     f2$b1 <- cf2$b1 <- c(FALSE, TRUE, FALSE, FALSE)
     f2$b2 <- cf2$b2 <- matrix(rep(c(FALSE, TRUE, FALSE), 3), nrow = 3)
@@ -103,8 +106,7 @@ test_that(paste0("getting of member data in full nimbleFunctionInteface", {
     f2$s1 <- cf2$s1 <- c('hw again', 'goodbye again', 'and another thing')
     ans2b <- f2$run()
     cans2b <- cf2$run()
-    try(test_that(paste0("setting of member data in full nimbleFunctionInteface"),
-                  expect_equal(ans2b, cans2b)))
+    expect_equal(ans2b, cans2b)
     
     ## these test the getters
     f2$bs <- cf2$bs
@@ -127,7 +129,7 @@ test_that(paste0("getting of member data in full nimbleFunctionInteface", {
   
 
 ## populating and using every kind of argument with a multi interface
-test_that(paste0("populating member data in multi nimbleFunctionInteface", {
+test_that("populating member data in multi nimbleFunctionInterface", {
     f2G <- nimbleFunction(
         setup = function() {
             bs <- TRUE
@@ -206,3 +208,6 @@ test_that(paste0("populating member data in multi nimbleFunctionInteface", {
     
     expect_equal(ans3b, cans3b)
 })
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

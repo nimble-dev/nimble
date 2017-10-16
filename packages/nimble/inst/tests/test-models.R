@@ -7,6 +7,21 @@ nimbleOptions(verbose = FALSE)
 
 context("Testing of NIMBLE modeling building and operation")
 
+## If you do *not* want to write to results files
+##    comment out the sink() call below.  And consider setting verbose = FALSE 
+## To record a new gold file, nimbleOptions('generateGoldFileForMCMCtesting') should contain the path to the directory where you want to put it
+## e.g. nimbleOptions(generateGoldFileForMCMCtesting = getwd())
+## Comparison to the gold file won't work until it is installed with the package.
+
+goldFileName <- 'modelsTestLog_Correct.Rout'
+tempFileName <- 'modelsTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForModelsTesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForModelsTesting'), goldFileName) else tempFileName
+
+## capture warnings in gold file
+sink_with_messages(outputFile)
+
+
 allModels <- c(# vol1
     'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
                                         # vol2
@@ -294,17 +309,17 @@ test_that("test of preventing overwriting of data values by inits:", {
     })
     xVal <- c(3, NA)
     xInit <- c(4, 4)
-    m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit))
-    try(expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test"))
-    try(expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test"))
-    try(expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test"))
+    expect_warning(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring values in inits for data nodes")
+    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test")
+    expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test")
+    expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test")
 
     code <- nimbleCode({
         x[1] ~ dnorm(mu,1)
         x[2] ~ dnorm(mu,1)
         mu ~ dnorm(0, 1)
     })
-    m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit))
+    expect_warning(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring values in inits for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fifth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fifth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fifth test")
@@ -404,6 +419,14 @@ test_that("use of dbin/dbinom and dnegbin/dnbinom are identical", {
     expect_equal(getLogProb(cm, 'y2'), getLogProb(cm, 'yalt2'),
                  info = "compiled calculate gives different results for dbin and dbinom")
 })
+
+sink(NULL)
+
+if(!generatingGoldFile) {
+    trialResults <- readLines(tempFileName)
+    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    compareFilesByLine(trialResults, correctResults)
+}
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

@@ -8,7 +8,14 @@
 ##    nimbleList passed as argument to nimbleFunction
 
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-context('nimbleList() tests')
+
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+
+context('Testing nimbleLists')
 
 ########
 ## Test of creating new nimbleList in run code and specifying initial values for that list
@@ -831,7 +838,8 @@ test_that("nimbleList test 17: return objects are nimbleLists", {
     RnimbleList <- testInst$run()
     ## note - we expect warning here, since when testInst was run, the nestedNL's of the two argLists became the same, 
     ## thus will be added twice in compilation.
-    CtestInst <- compileNimble(testInst)
+    expect_warning(CtestInst <- compileNimble(testInst),
+                   "Adding a specialized nimbleList to a project to which it already belongs")
     CnimbleList <- CtestInst$run()
     
     ## test for correct values of nimbleLists
@@ -1069,7 +1077,7 @@ test_that("nimbleList Test 23", {
     
     expect_identical(RpiDigits, 3.14)
     expect_identical(RpiDigits, CpiDigits)
-}
+})
 
 ########
 ## Test #1 for eigen() function.  Return an eigenList.
@@ -1268,18 +1276,19 @@ test_that("nimEigen Model Test 1", {
         covMat[1:5,1:5] <- eigen(constMat[1:5,])$vectors[1:5,1:5]%*%t(eigen(constMat[1:5,1:5])$vectors[,])
         y[] ~ dmnorm(meanVec[], cov = covMat[1:5,1:5])
     })
-    
+    set.seed(1)    
     data <- list(y = rnorm(5, 0, 1))
     constants <- list(constMat = diag(5) + 1)
     dims <- list(y = c(5), meanVec = c(5), constMat = c(5,5))
     
-    expect_output(Rmodel1 <- nimbleModel(modelCode1, data = data, dimensions = dims, constants = constants))
-    expect_output(Cmodel1 <- compileNimble(Rmodel1))  
+    Rmodel1 <- nimbleModel(modelCode1, data = data, dimensions = dims, constants = constants)
+    Cmodel1 <- compileNimble(Rmodel1)
+    expect_silent(Rmodel1$simulate())
     expect_silent(Cmodel1$simulate())
-    expect_output(Cmodel1$calculate())
+    expect_identical(Rmodel1$calculate(), Cmodel1$calculate())
 })
 
-
+  
 ########
 ## Testing for use of svd() in BUGS models
 ########
@@ -1290,13 +1299,18 @@ test_that("nimSvd Model Test 1", {
         covMat[1:5,1:5] <- svd(constMat[1:5,])$u[1:5,1:5]
         y[] ~ dmnorm(meanVec[], cov = covMat[1:5,1:5])
     })
-    
+    set.seed(1)    
     data <- list(y = rnorm(5, 0, 1))
     constants <- list(constMat = diag(5))
     dims <- list(y = c(5), meanVec = c(5))
     
-    expect_output(Rmodel2 <- nimbleModel(modelCode2, data = data, dimensions = dims, constants = constants))
-    expect_output(Cmodel2 <- compileNimble(Rmodel2))
+    Rmodel2 <- nimbleModel(modelCode2, data = data, dimensions = dims, constants = constants)
+    Cmodel2 <- compileNimble(Rmodel2)
+
+    expect_silent(Rmodel2$simulate())
     expect_silent(Cmodel2$simulate())
-    expect_output(Cmodel2$calculate())
+    expect_identical(Rmodel2$calculate(), Cmodel2$calculate())
 })
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

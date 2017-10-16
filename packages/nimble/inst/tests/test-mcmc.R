@@ -3,21 +3,23 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context("Testing of default MCMC")
 
 RwarnLevel <- options('warn')$warn
-options(warn = -1)
+options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
 
 ## If you do *not* want to write to results files
 ##    comment out the sink() call below.  And consider setting verbose = FALSE 
 ## To record a new gold file, nimbleOptions('generateGoldFileForMCMCtesting') should contain the path to the directory where you want to put it
 ## e.g. nimbleOptions(generateGoldFileForMCMCtesting = getwd())
 ## Comparison to the gold file won't work until it is installed with the package.
-nimbleOptions(verbose = TRUE)
+
 goldFileName <- 'mcmcTestLog_Correct.Rout'
 tempFileName <- 'mcmcTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCMCtesting'))
 outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForMCMCtesting'), goldFileName) else tempFileName
 
-sink(outputFile)
+## capture warnings
+sink_with_messages(outputFile)
 
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)

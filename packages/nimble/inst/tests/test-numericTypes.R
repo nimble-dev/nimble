@@ -2,9 +2,10 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context("Testing of numeric type handling and casting")
 
 RwarnLevel <- options('warn')$warn
+## There are a bunch of NaN warnings we want to ignore.
 options(warn = -1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = TRUE)
+nimbleOptions(verbose = FALSE)
 
 
 inverseCallReplacements <- as.list(names(nimble:::specificCallReplacements))

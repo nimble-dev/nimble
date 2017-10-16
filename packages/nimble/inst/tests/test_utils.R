@@ -37,6 +37,13 @@ system.in.dir <- function(cmd, dir = '.') {
         system(cmd)
 }
 
+## This sets up sink to also capture messages (in particular warnings).
+sink_with_messages <- function(file, ...) {
+    sinkfile <- file(file, open = 'wt')
+    sink(sinkfile)
+    sink(sinkfile, type = 'message')
+}
+
 ## This is useful for working around scoping issues with nimbleFunctions using other nimbleFunctions.
 temporarilyAssignInGlobalEnv <- function(value) {
     name <- deparse(substitute(value))
