@@ -2,6 +2,9 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of user-supplied distributions and functions in BUGS code")
 
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 goldFileName <- 'userTestLog_Correct.Rout'
 tempFileName <- 'userTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForUserTesting'))
@@ -88,14 +91,14 @@ test_that("User-supplied functions", {
         expect_equal(c(get(var, m)), (get(var, cm)),
                      info = paste0("Test that R and C models agree with user-supplied functions:", var, " values differ"))
     }
-    expect_lt(abs(2*cm$x - cm$dx), (.03), info = "Test that values based on user-supplied functions are correct (x and dx consistent)")
-    expect_lt(max(abs(2*cm$mu - cm$y)), (.03), info = "Test that values based on user-supplied functions are correct (mu and y consistent)")
-    expect_lt(abs(2*(cm$x + cm$z) - cm$dz), (.03), info = "Test that values based on user-supplied functions are correct (x plus z and dz consistent)")
-    expect_lt(max(abs(2*cm$theta - cm$w)), (.03), info = "Test that values based on user-supplied functions are correct (theta and w consistent)")
+    expect_lt(abs(2*cm$x - cm$dx), (.03)) # "Test that values based on user-supplied functions are correct (x and dx consistent)"
+    expect_lt(max(abs(2*cm$mu - cm$y)), (.03)) # "Test that values based on user-supplied functions are correct (mu and y consistent)"
+    expect_lt(abs(2*(cm$x + cm$z) - cm$dz), (.03)) # "Test that values based on user-supplied functions are correct (x plus z and dz consistent)"
+    expect_lt(max(abs(2*cm$theta - cm$w)), (.03)) # "Test that values based on user-supplied functions are correct (theta and w consistent)"
     expect_identical(c(m$out), (8),
                      info = "incorrect arg matching by name in R model")
     expect_identical(cm$out, (8),
-                     info = paste0("incorrect arg matching by name in C model")
+                     info = "incorrect arg matching by name in C model")
 })
 
 
@@ -222,7 +225,7 @@ code3 <- nimbleCode({
 })
 
 
-test_that("Test that truncation works with nodeFunctions for user-supplied distribution", {
+test_that("Test that truncation works with nodeFunctions and MCMC for user-supplied distribution", {
     set.seed(0)
     mn = 3
     n1 <- 1000
@@ -258,26 +261,23 @@ test_that("Test that truncation works with nodeFunctions for user-supplied distr
     cm2 <- compileNimble(m2)
     simulate(m2, 'lambda')
     simulate(cm2, 'lambda')
-    expect_lt(max(c(m2$lambda, cm2$lambda)), (upper), info = "parameter not exceed upper bound")
+    expect_lt(max(c(m2$lambda, cm2$lambda)), (upper)) # "parameter not exceed upper bound"
     m2$lambda <- cm2$lambda <- upper + 1
     expect_identical(max(c(calculate(m2, 'lambda'), calculate(cm2, 'lambda'))), (-Inf), info = "calculation on out-of-bounds not return -Inf")
-})
 
-testBUGSmodel(code1, example = 'user1', dir = "", data = data1, inits = inits1, useInits = TRUE)
-testBUGSmodel(code2, example = 'user2', dir = "", data = data2, inits = inits2, useInits = TRUE)
-testBUGSmodel(code3, example = 'user3', dir = "", data = data3, inits = inits3, useInits = TRUE)
+    testBUGSmodel(code1, example = 'user1', dir = "", data = data1, inits = inits1, useInits = TRUE)
+    testBUGSmodel(code2, example = 'user2', dir = "", data = data2, inits = inits2, useInits = TRUE)
+    testBUGSmodel(code3, example = 'user3', dir = "", data = data3, inits = inits3, useInits = TRUE)
 
+    test_mcmc(model = code1, data = data1, inits = inits1,
+              results = list(mean = list(s1 = mn, s2 = mn)),
+              resultsTolerance = list(mean = list(s1 = .2, s2 = .2)))
+    
+    test_mcmc(model = code3, data = data3, inits = inits3,
+              results = list(mean = list(alpha = alpha)),
+              resultsTolerance = list(mean = list(alpha = c(4, 6, 8))),
+              numItsC_results = 50000)
 
-test_mcmc(model = code1, data = data1, inits = inits1,
-          results = list(mean = list(s1 = mn, s2 = mn)),
-          resultsTolerance = list(mean = list(s1 = .2, s2 = .2)))
-
-test_mcmc(model = code3, data = data3, inits = inits3,
-          results = list(mean = list(alpha = alpha)),
-          resultsTolerance = list(mean = list(alpha = c(4, 6, 8))),
-          numItsC_results = 50000)
-
-test_that("Test that truncation works with MCMC for user-supplied distribution", {
     m <- nimbleModel(code2, constants = data2, inits = inits2)
     cm <- compileNimble(m)
     
@@ -326,4 +326,5 @@ if(!generatingGoldFile) {
     compareFilesByLine(trialResults, correctResults)
 }
 
+nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)

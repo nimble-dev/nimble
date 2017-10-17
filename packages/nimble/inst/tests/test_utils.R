@@ -126,13 +126,13 @@ indexNames <- function(x) {
     lapply(x, function(z) {z$name <- paste(i, z$name); i <<- i + 1; z})
 }
 
-test_coreRfeature_batch <- function(input_batch, info = '', verbose = nimbleOptions()$verbose, dirName = NULL) {
+test_coreRfeature_batch <- function(input_batch, info = '', verbose = nimbleOptions('verbose'), dirName = NULL) {
     test_that(info, {
         test_coreRfeature_batch_internal(input_batch, verbose = verbose, dirName)
     })
 }
 
-test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOptions()$verbose, dirName = NULL) { ## a lot like test_math but a bit more flexible
+test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOptions('verbose'), dirName = NULL) { ## a lot like test_math but a bit more flexible
     names(input_batch) <- paste0('batch_case_', seq_along(input_batch))
     runFuns <- lapply(input_batch, gen_runFunCore)
     nfR <- nimbleFunction(setup = TRUE, methods = runFuns)()
@@ -247,13 +247,13 @@ test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOption
     invisible(NULL)
 }
         
-test_coreRfeature <- function(input, verbose = nimbleOptions()$verbose, dirName = NULL) {
+test_coreRfeature <- function(input, verbose = nimbleOptions('verbose'), dirName = NULL) {
     test_that(input$name, {
         test_coreRfeature_internal(input, verbose, dirName)
     })
 }
 
-test_coreRfeature_internal <- function(input, verbose = nimbleOptions()$verbose, dirName = NULL) { ## a lot like test_math but a bit more flexible
+test_coreRfeature_internal <- function(input, verbose = nimbleOptions('verbose'), dirName = NULL) { ## a lot like test_math but a bit more flexible
   if(verbose) cat("### Testing", input$name, "###\n")
   runFun <- gen_runFunCore(input)
   nfR <- nimbleFunction(run = runFun)
@@ -1026,7 +1026,7 @@ weightedMetricFunc <- function(index, samples, weights, metric, samplesToWeights
   }
 }
 
-test_size <- function(input, verbose = TRUE) {
+test_size <- function(input, verbose = nimbleOptions('verbose')) {
     if(is.null(input$expectPassWithConst)) input$expectPassWithConst <- input$expectPass
     if(is.null(input$knownProblem)) input$knownProblem <- FALSE
     if(is.null(input$knownProblemWithConst)) input$knownProblemWithConst <- input$knownProblem
@@ -1063,7 +1063,7 @@ test_size <- function(input, verbose = TRUE) {
 }
 
 # could redo test_size to always expect specific error, but not taking time to do that now
-test_size_specific_error <- function(input, verbose = TRUE) {
+test_size_specific_error <- function(input, verbose = nimbleOptions('verbose')) {
     if(verbose) cat("### Testing", input$name, "###\n")
     test_that(paste0("Test 1 of size/dimension check: ", input$name), {
         expect_error(nimbleModel(code = input$expr, data = input$data, inits = input$inits),

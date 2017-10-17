@@ -3,14 +3,26 @@
 ## It's rather complicated because of the different ways that
 ## incorrect/inconsistent sizes can cause problems at model building,
 ## compilation, and run-time. For now, test_size is somewhat inconsistent
-## with how expect_failure and expect_error are used in our other tests. 
+## with how expect_failure and expect_error are used in our other tests.
+## Note that numerous error messages are expected here; check for test failures not denoted with 'KNOWN PROBLEM'
 
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
-options(warn = -1)
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
 
-context("Testing of size/dimension checks in NIMBLE code.\nNote that numerous error messages are expected here; check for test failures not denoted with 'KNOWN PROBLEM'.")
+
+context("Testing of size/dimension checks in NIMBLE code")
+
+goldFileName <- 'sizeTestLog_Correct.Rout'
+tempFileName <- 'sizeTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForSizeTesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForSizeTesting'), goldFileName) else tempFileName
+
+## capture warnings in gold file
+sink_with_messages(outputFile)
 
 vec2 <- c(1,1)
 mat2 <- diag(rep(1, 2))
@@ -493,5 +505,13 @@ sapply(testsTrunc, test_size)
 # for these we want errors caught by NIMBLE error-checking not by R errors at model-building
 sapply(testsLHSRHSmismatch, test_size_specific_error)
 
-RwarnLevel <- options('warn')$warn
-options(warn = -1)
+sink(NULL)
+
+if(!generatingGoldFile) {
+    trialResults <- readLines(tempFileName)
+    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    compareFilesByLine(trialResults, correctResults)
+}
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

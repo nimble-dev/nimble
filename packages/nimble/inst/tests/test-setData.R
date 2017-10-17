@@ -1,5 +1,10 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 context("Testing setData")
 
 model <- nimbleModel(
@@ -88,3 +93,6 @@ test_that("set one to current values and one to new value by two arguments", {
     expect_equal(all(model$isData('a')), FALSE)
     expect_equal(all(model$isData('b')), FALSE)
 })
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
