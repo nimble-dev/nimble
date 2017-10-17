@@ -2,9 +2,9 @@
 
 nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nodes, NimArr<1, double> &derivOrders) {
   nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
+  nimSmartPtr<NIMBLE_ADCLASS> thisDerivList;
+
   const vector<NodeInstruction> &instructions = nodes.getInstructions();
-  vector<NodeInstruction>::const_iterator iNode(instructions.begin());
-  vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
   bool hessianFlag = false;
   bool jacobianFlag = false;
   bool valueFlag = false;
@@ -38,10 +38,15 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
   int thisWrtLine;
   int thisNodeSize;
   int thisIndex;
+  int thisRowLength;
+  int sumRowLengths = 0;
   int wrtLineIndicator = 0;
-  vector< NimArr<2, double> > parentJacobians;
-  vector< NimArr<3, double> > parentHessians;
-  vector< NimArr<2, double> > chainRuleJacobians;
+  vector< MatrixXd > parentJacobians;
+  //vector< NimArr<3, double> > parentHessians;
+  vector<vector<vector<VectorXd > > > parentHessians;   // the parent Hessians are actually only used as vectors in our implementation of faa di brunos theorem, so stored as such.
+
+  vector< MatrixXd > chainRuleJacobians;
+  vector<vector< MatrixXd > > chainRuleHessians;
 
   for(int i = 0; i < length(nodes.parentIndicesList); i++){
 	  isDeterminisitic = nodes.stochNodeIndicators[i];
@@ -57,7 +62,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
         for(int j = 0; j < length(nodes.parentIndicesList[i]); j++){
 			// we can pre-calculate sumParentDims earlier.  Do this.
 			if(j == 0 && isWrtLine){
-				parentJacobians[j] = NimArr<2, double>(nodes.wrtLineSize[thisWrtLine], nodes.totalWrtSize);
+				parentJacobians[j].resize(nodes.wrtLineSize[thisWrtLine], nodes.totalWrtSize);
 				for(int k = 0; k < nodes.wrtLineIndices[thisWrtLine].dimSize(0); k++){
 					thisIndex = nodes.wrtLineIndices[thisWrtLine][k];
 					parentJacobians[j](thisIndex, thisIndex) = 1;
@@ -66,36 +71,40 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 			else if(nodes.parentIndicesList[i][j][0] > 0){
 				int sumParentDims = 0;
 				for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
-					sumParentDims += chainRuleJacobians[nodes.parentIndicesList[i][j][k]].dimSize(0);
+					sumParentDims += chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows();
 				}
-				parentJacobians[j] = NimArr<2, double>(sumParentDims, nodes.totalWrtSize);
-				int rowIndicator = 0;
+			    parentJacobians[j].resize(sumParentDims, nodes.totalWrtSize);
 				for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
-					for(int l = 0; l <  chainRuleJacobians[nodes.parentIndicesList[i][j][k]].dimSize(0); l++){
-						for(int m = 0; m <  chainRuleJacobians[nodes.parentIndicesList[i][j][k]].dimSize(1); m++){
-							parentJacobians[j](rowIndicator, m) = chainRuleJacobians[nodes.parentIndicesList[i][j][k]](l, m);
-						}
-						rowIndicator++;
-					}
+					thisRowLength = chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows();
+					parentJacobians[j].block(sumRowLengths, 0, thisRowLength, nodes.totalWrtSize) = chainRuleJacobians[nodes.parentIndicesList[i][j][k]].block(0, 0, thisRowLength, nodes.totalWrtSize);
+					sumRowLengths = sumRowLengths + thisRowLength;
 				}
 				if(hessianFlag){
-					parentHessians[j] = NimArr<3, double>(nodes.totalWrtSize, nodes.totalWrtSize, sumParentDims);
-					rowIndicator = 0;
+					parentHessians[j].resize(nodes.totalWrtSize);
+					for(int k = 0; k < nodes.totalWrtSize; k++){
+						parentHessians[j][k].resize(nodes.totalWrtSize);
+						for(int l = 0; l < nodes.totalWrtSize; l++){
+							parentHessians[j][k][l].resize(sumParentDims);
+						}
+					}
 					for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
-						for(int l = 0; l <  chainRuleHessians[nodes.parentIndicesList[i][j][k]].dimSize(2); l++){
-							for(int m = 0; m <  chainRuleHessians[nodes.parentIndicesList[i][j][k]].dimSize(0); m++){
-								for(int n = 0; n <  chainRuleHessians[nodes.parentIndicesList[i][j][k]].dimSize(1); n++){
-									parentHessians[j](m, n, rowIndicator) = chainRuleHessians[nodes.parentIndicesList[i][j][k]](m, n, l);
+						for(int l = 0; l <  chainRuleHessians[nodes.parentIndicesList[i][j][k]][0].rows(); l++){
+							for(int m = 0; m <  chainRuleHessians[nodes.parentIndicesList[i][j][k]][0].cols(); m++){
+								for(int n = 0; n < sumParentDims; n++){
+									parentHessians[j][l][m](n) = chainRuleHessians[nodes.parentIndicesList[i][j][k]][n](l, m);
 								}
 							}
-							rowIndicator++;
 						}
 					}
 				}
 			}
 		}
+		if(nodes.cppWrtArgIndices[i].dimSize(0) > 0){
+			thisDerivList = instructions[i].nodeFunPtr->calculateWithArgs_derivBlock(instructions[i]->operand, derivOrders, nodes.cppWrtArgIndices[i]);
+		}
+
 		
-		nimSmartPtr<NIMBLE_ADCLASS> derivList = calcwithargsans();
+		//nimSmartPtr<NIMBLE_ADCLASS> derivList = calcwithargsans();
 
         // if(!is.na(derivInfo$lineWrtArgsAsCharacters[[i]][1])){
           // derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS, WRT),
@@ -112,10 +121,6 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 
 		
 	}
-  }
-
-  for(; iNode != iNodeEnd; iNode++){
-    (*ADlist).value[0] += iNode->nodeFunPtr->calculateBlock(iNode->operand);
   }
   return(ADlist);  
 }
