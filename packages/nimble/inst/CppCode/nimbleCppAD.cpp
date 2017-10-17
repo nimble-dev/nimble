@@ -1,5 +1,6 @@
 #include <nimble/nimbleCppAD.h>
 
+
 nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nodes, NimArr<1, double> &derivOrders) {
   nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
   nimSmartPtr<NIMBLE_ADCLASS> thisDerivList;
@@ -35,6 +36,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
   bool isDeterminisitic;
   bool isWrtLine;
   bool isCalcNodeLine;
+  bool derivOutputFlag;
   int thisWrtLine;
   int thisNodeSize;
   int thisIndex;
@@ -45,9 +47,9 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
   //vector< NimArr<3, double> > parentHessians;
   vector<vector<vector<VectorXd > > > parentHessians;   // the parent Hessians are actually only used as vectors in our implementation of faa di brunos theorem, so stored as such.
 
-  vector< MatrixXd > chainRuleJacobians;
-  vector<vector< MatrixXd > > chainRuleHessians;
-
+  vector< MatrixXd > chainRuleJacobians(length(nodes.parentIndicesList));
+  vector<vector< MatrixXd > > chainRuleHessians(length(nodes.parentIndicesList)); // chainRuleHessians index info:  first vector goes over nodes.parentIndicesList.  Second over third dimension of hessian.  Then individual matrices are first and second dims.
+  
   for(int i = 0; i < length(nodes.parentIndicesList); i++){
 	  isDeterminisitic = nodes.stochNodeIndicators[i];
 	  isWrtLine = (i == nodes.wrtLineNums[wrtLineIndicator]);
@@ -100,18 +102,25 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 			}
 		}
 		if(nodes.cppWrtArgIndices[i].dimSize(0) > 0){
-			thisDerivList = instructions[i].nodeFunPtr->calculateWithArgs_derivBlock(instructions[i]->operand, derivOrders, nodes.cppWrtArgIndices[i]);
+			thisDerivList = instructions[i].nodeFunPtr->calculateWithArgs_derivBlock(instructions[i].operand, derivOrders, nodes.cppWrtArgIndices[i]);
+			derivOutputFlag = (isDeterminisitic) ? false : true;
+			if(derivOutputFlag){
+				chainRuleJacobians[i] =  MatrixXd::Zero(1, totalWrtSize);
+				if(hessianFlag){
+					chainRuleHessianList[[i]].resize(1);
+					chainRuleHessianList[[i]][[0]] =  MatrixXd::Zero(totalWrtSize, totalWrtSize);
+				}
+			}
+			else{
+				chainRuleDerivList[[i]] <- matrix(0, nrow = thisNodeSize, ncol = totalWrtSize)
+				if(hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWrtSize, totalWrtSize, thisNodeSize))
+			}
+
+
+
+			
+			
 		}
-
-		
-		//nimSmartPtr<NIMBLE_ADCLASS> derivList = calcwithargsans();
-
-        // if(!is.na(derivInfo$lineWrtArgsAsCharacters[[i]][1])){
-          // derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS, WRT),
-                                       // list(CALCCALL = derivInfo$calcWithArgsCalls[[i]],
-                                            // DERIVORDERS = order,
-                                            // DROPARGS = 'INDEXEDNODEINFO_',
-                                            // WRT = derivInfo$lineWrtArgsAsCharacters[[i]])))
 
           // if(isDeterm){
             // derivList$value <- 0
@@ -318,32 +327,6 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
   // }
   // return(outDerivList)
 // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

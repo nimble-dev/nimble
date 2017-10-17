@@ -69,7 +69,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 	vector<vector<NimArr<1, int> > > parentIndicesList;
 	NimArr<1, int> stochNodeIndicators;
 	NimArr<1, int> calcNodeIndicators;
-	vector<NimArr<1, int> > cppWrtArgIndices;
+	vector<NimArr<1, double> > cppWrtArgIndices;
 	NimArr<1, int> wrtLineNums;
 	NimArr<1, int> nodeLengths;
 	vector<NimArr<1, int> > wrtToIndices;
@@ -105,7 +105,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		parentIndicesList.resize(numNodes);
 		for(int i = 0; i < numNodes; i++){
 			PROTECT(S_thisList =  VECTOR_ELT(S_parentInds, i));
-			SEXP_list_2_NimArr_vec(S_thisList, parentIndicesList[i]);
+			SEXP_list_2_NimArr_int_vec(S_thisList, parentIndicesList[i]);
 			UNPROTECT(1);
 		}
 		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
@@ -122,19 +122,19 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   		SEXP_2_NimArr(S_nodeLengths, nodeLengths);
 		PROTECT(S_cppWrtArgIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("cppWrtArgIndices")));
-		SEXP_list_2_NimArr_vec(S_cppWrtArgIndices, cppWrtArgIndices);
+		SEXP_list_2_NimArr_double_vec(S_cppWrtArgIndices, cppWrtArgIndices);
 		PROTECT(S_wrtToIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("wrtToIndices")));
-		SEXP_list_2_NimArr_vec(S_wrtToIndices, wrtToIndices);
+		SEXP_list_2_NimArr_int_vec(S_wrtToIndices, wrtToIndices);
 		PROTECT(S_wrtFromIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("wrtFromIndices")));
-		SEXP_list_2_NimArr_vec(S_wrtFromIndices, wrtFromIndices);
+		SEXP_list_2_NimArr_int_vec(S_wrtFromIndices, wrtFromIndices);
 		PROTECT(S_wrtLineIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("wrtLineIndices")));
-		SEXP_list_2_NimArr_vec(S_wrtLineIndices, wrtLineIndices);
+		SEXP_list_2_NimArr_int_vec(S_wrtLineIndices, wrtLineIndices);
 		PROTECT(S_lineWrtArgSizeInfo = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("lineWrtArgSizeInfo")));
-		SEXP_list_2_NimArr_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
+		SEXP_list_2_NimArr_int_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
 		
 		UNPROTECT(21);
 		

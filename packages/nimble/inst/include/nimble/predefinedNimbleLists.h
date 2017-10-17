@@ -31,6 +31,7 @@
 #include <nimble/accessorClasses.h>
 #include <nimble/nimDists.h>
 #include <nimble/smartPtrs.h>
+#include <nimble/nodeFun.h>
 #undef eval
 
 extern "C" SEXP new_EIGEN_EIGENCLASS();
@@ -106,25 +107,11 @@ extern "C" SEXP OptimControlNimbleList_castPtrPtrToNamedObjectsPtrSEXP(
 extern "C" SEXP OptimControlNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(
     SEXP input);
 
-class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
- public:
-  NimArr<1, double> value;
-  NimArr<2, double> gradient;
-  NimArr<3, double> hessian;
-  NimArr<4, double> thirdDerivs;
-  SEXP RObjectPointer;
-  bool RCopiedFlag;
-  void copyFromSEXP(SEXP S_nimList_);
-  SEXP copyToSEXP();
-  void createNewSEXP();
-  void resetFlags();
-  NIMBLE_ADCLASS();
-};
-
 extern "C" SEXP new_NIMBLE_ADCLASS();
 
 extern "C" SEXP NIMBLE_ADCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input);
 
 extern "C" SEXP NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SEXP input);
+
 
 #endif  // __NIMBLE_PREDEFINEDNIMBLELISTS_H

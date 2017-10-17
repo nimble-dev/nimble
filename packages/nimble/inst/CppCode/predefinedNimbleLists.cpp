@@ -535,6 +535,7 @@ void NIMBLE_ADCLASS::createNewSEXP() {
   UNPROTECT(2);
 }
 void NIMBLE_ADCLASS::resetFlags() { RCopiedFlag = false; }
+
 NIMBLE_ADCLASS::NIMBLE_ADCLASS() {
   RCopiedFlag = false;
   RObjectPointer = NULL;

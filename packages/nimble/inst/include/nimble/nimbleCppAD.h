@@ -23,7 +23,7 @@
 #include <cppad/cppad.hpp>
 #include <nimble/accessorClasses.h>
 #include <nimble/EigenTypedefs.h>
-
+#include <nimble/nodeFun.h>
 //#include <nimble/RcppNimbleUtils.h>
 #include <nimble/predefinedNimbleLists.h>
 //#include <nimble/RcppNimbleUtils.h>
