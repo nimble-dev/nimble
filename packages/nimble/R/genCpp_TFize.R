@@ -128,12 +128,12 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
     }
     if (code$isName) {
         if (is.null(placeholders[[code$name]])) {
-            nimType2TfDtype = list('double' = tf$float64)
+            nimType2TfDtype = list('double' = tensorflow::tf$float64)
             sym <- symTab$getSymbolObject(code$name)
             if (is.null(sym)) {
                 ## TODO this case may be unnecessar.
                 ## We make a best guess to push past a bug.
-                dtype <- tf$float64
+                dtype <- tensorflow::tf$float64
                 size <- list()
             } else {
                 dtype <- nimType2TfDtype[[sym$type]]
@@ -151,7 +151,7 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
                     }
                 }
             }
-            placeholders[[code$name]] = tf$placeholder(name = code$name,
+            placeholders[[code$name]] = tensorflow::tf$placeholder(name = code$name,
                                                        dtype = dtype,
                                                        shape = size)
         }
@@ -185,104 +185,104 @@ tfTranslate <- function(name) {
         '-' = '-',
         '*' = '*',
         '/' = '/',
-        'abs' = tf$abs,
-        'ceil' = tf$ceil,
-        'floor' = tf$floor,
-        'round' = tf$round,
-        'nimRound' = tf$round,
+        'abs' = tensorflow::tf$abs,
+        'ceil' = tensorflow::tf$ceil,
+        'floor' = tensorflow::tf$floor,
+        'round' = tensorflow::tf$round,
+        'nimRound' = tensorflow::tf$round,
         'trunc' = function(x) {
-            if (x$dtype == tf$int64) {
-                tf$truncatediv(x, tf$constant(1, tf$int64))
+            if (x$dtype == tensorflow::tf$int64) {
+                tensorflow::tf$truncatediv(x, tensorflow::tf$constant(1, tensorflow::tf$int64))
             } else {
-                tf$cast(tf$cast(x, tf$int64), tf$float64)
+                tensorflow::tf$cast(tensorflow::tf$cast(x, tensorflow::tf$int64), tensorflow::tf$float64)
             }
         },
-        'ftrunc' = function(x) tf$cast(tf$cast(x, tf$int64), tf$float64),
-        'cos' = tf$cos,
-        'sin' = tf$sin,
-        'tan' = tf$tan,
-        'acos' = tf$acos,
-        'asin' = tf$asin,
-        'atan' = tf$atan,
-        'cosh' = tf$cosh,
-        'sinh' = tf$sinh,
-        'tanh' = tf$tanh,
-        'acosh' = tf$acosh,
-        'asinh' = tf$asinh,
-        'atanh' = tf$atanh,
-        'exp' = tf$exp,
-        'log' = tf$log,
-        'log1p' = tf$log1p,
-        'pow' = tf$pow,
-        'sqrt' = tf$sqrt,
-        'square' = tf$square,
-        'cube' = function(x) tf$pow(x, 3L),
-        'gamma' = function(x) tf$exp(tf$lgamma(x)),
-        'gammafn' = function(x) tf$exp(tf$lgamma(x)),
-        'lgamma' = tf$lgamma,
-        'lgammafn' = tf$lgamma,
-        'loggam' = tf$lgamma,
-        'factorial' = function(x) tf$exp(tf$lgamma(tf$constant(1, tf$float64) + x)),
-        'lfactorial' = function(x) tf$lgamma(tf$constant(1, tf$float64) + x),
-        'cloglog' = function(x) tf$log(-tf$log1p(-x)),
-        'icloglog' = function(x) tf$constant(1, tf$float64) - tf$exp(-tf$exp(x)),
-        'logit' = function(x) tf$log(x / (tf$constant(1, tf$float64) - x)),
-        'ilogit' = tf$sigmoid,
-        'expit' = tf$sigmoid,
+        'ftrunc' = function(x) tensorflow::tf$cast(tensorflow::tf$cast(x, tensorflow::tf$int64), tensorflow::tf$float64),
+        'cos' = tensorflow::tf$cos,
+        'sin' = tensorflow::tf$sin,
+        'tan' = tensorflow::tf$tan,
+        'acos' = tensorflow::tf$acos,
+        'asin' = tensorflow::tf$asin,
+        'atan' = tensorflow::tf$atan,
+        'cosh' = tensorflow::tf$cosh,
+        'sinh' = tensorflow::tf$sinh,
+        'tanh' = tensorflow::tf$tanh,
+        'acosh' = tensorflow::tf$acosh,
+        'asinh' = tensorflow::tf$asinh,
+        'atanh' = tensorflow::tf$atanh,
+        'exp' = tensorflow::tf$exp,
+        'log' = tensorflow::tf$log,
+        'log1p' = tensorflow::tf$log1p,
+        'pow' = tensorflow::tf$pow,
+        'sqrt' = tensorflow::tf$sqrt,
+        'square' = tensorflow::tf$square,
+        'cube' = function(x) tensorflow::tf$pow(x, 3L),
+        'gamma' = function(x) tensorflow::tf$exp(tensorflow::tf$lgamma(x)),
+        'gammafn' = function(x) tensorflow::tf$exp(tensorflow::tf$lgamma(x)),
+        'lgamma' = tensorflow::tf$lgamma,
+        'lgammafn' = tensorflow::tf$lgamma,
+        'loggam' = tensorflow::tf$lgamma,
+        'factorial' = function(x) tensorflow::tf$exp(tensorflow::tf$lgamma(tensorflow::tf$constant(1, tensorflow::tf$float64) + x)),
+        'lfactorial' = function(x) tensorflow::tf$lgamma(tensorflow::tf$constant(1, tensorflow::tf$float64) + x),
+        'cloglog' = function(x) tensorflow::tf$log(-tensorflow::tf$log1p(-x)),
+        'icloglog' = function(x) tensorflow::tf$constant(1, tensorflow::tf$float64) - tensorflow::tf$exp(-tensorflow::tf$exp(x)),
+        'logit' = function(x) tensorflow::tf$log(x / (tensorflow::tf$constant(1, tensorflow::tf$float64) - x)),
+        'ilogit' = tensorflow::tf$sigmoid,
+        'expit' = tensorflow::tf$sigmoid,
         'probit' = function(x) {
-            one <- tf$constant(1.0, tf$float64)
-            two <- tf$constant(2.0, tf$float64)
-            ## tf$erfinv is implemented in C++ but not yet exposed in python as of tensorflow 1.3.0.
-            tf$sqrt(two) * tf$erfinv(two * x - one)
+            one <- tensorflow::tf$constant(1.0, tensorflow::tf$float64)
+            two <- tensorflow::tf$constant(2.0, tensorflow::tf$float64)
+            ## tensorflow::tf$erfinv is implemented in C++ but not yet exposed in python as of tensorflow 1.3.0.
+            tensorflow::tf$sqrt(two) * tensorflow::tf$erfinv(two * x - one)
         },
         'iprobit' = function(x) {
-            one <- tf$constant(1.0, tf$float64)
-            half <- tf$constant(0.5, tf$float64)
-            (one + tf$erf(x * tf$sqrt(half))) * half
+            one <- tensorflow::tf$constant(1.0, tensorflow::tf$float64)
+            half <- tensorflow::tf$constant(0.5, tensorflow::tf$float64)
+            (one + tensorflow::tf$erf(x * tensorflow::tf$sqrt(half))) * half
         },
-        'inprod' = function(lhs, rhs) tf$reduce_sum(lhs * rhs),
-        'min' = tf$reduce_min,
-        'max' = tf$reduce_max,
-        'pmin' = tf$minimum,
-        'pmax' = tf$maximum,
-        't' = function(mat) tf$transpose(mat, c(1L, 0L)),
+        'inprod' = function(lhs, rhs) tensorflow::tf$reduce_sum(lhs * rhs),
+        'min' = tensorflow::tf$reduce_min,
+        'max' = tensorflow::tf$reduce_max,
+        'pmin' = tensorflow::tf$minimum,
+        'pmax' = tensorflow::tf$maximum,
+        't' = function(mat) tensorflow::tf$transpose(mat, c(1L, 0L)),
         'asCol' = function(x) x,  ## TODO Does this suffice?
-        'diagonal' = tf$matrix_diag,  ## TODO Decide between diag() and diag_part().
-        'det' = tf$matrix_determinant,
-        'logdet' = function(x) tf$log(tf$matrix_determinant(x)),
-        'inverse' = tf$matrix_inverse,
-        'sum' = tf$reduce_sum,
-        'prod' = tf$reduce_prod,
-        'mean' = tf$reduce_mean,
+        'diagonal' = tensorflow::tf$matrix_diag,  ## TODO Decide between diag() and diag_part().
+        'det' = tensorflow::tf$matrix_determinant,
+        'logdet' = function(x) tensorflow::tf$log(tensorflow::tf$matrix_determinant(x)),
+        'inverse' = tensorflow::tf$matrix_inverse,
+        'sum' = tensorflow::tf$reduce_sum,
+        'prod' = tensorflow::tf$reduce_prod,
+        'mean' = tensorflow::tf$reduce_mean,
         'var' = function(x) {
-            n_minus_one <- tf$cast(tf$size(x), tf$float64) - tf$constant(1, tf$float64)
-            tf$reduce_sum(tf$square(x - tf$reduce_mean(x))) / n_minus_one
+            n_minus_one <- tensorflow::tf$cast(tensorflow::tf$size(x), tensorflow::tf$float64) - tensorflow::tf$constant(1, tensorflow::tf$float64)
+            tensorflow::tf$reduce_sum(tensorflow::tf$square(x - tensorflow::tf$reduce_mean(x))) / n_minus_one
         },
         'sd' = function(x) {
-            n_minus_one <- tf$cast(tf$size(x), tf$float64) - tf$constant(1, tf$float64)
-            tf$norm(x - tf$reduce_mean(x), ord = 2) / tf$sqrt(n_minus_one)
+            n_minus_one <- tensorflow::tf$cast(tensorflow::tf$size(x), tensorflow::tf$float64) - tensorflow::tf$constant(1, tensorflow::tf$float64)
+            tensorflow::tf$norm(x - tensorflow::tf$reduce_mean(x), ord = 2) / tensorflow::tf$sqrt(n_minus_one)
         },
         '%*%' = function(x, y) {
             while (length(x$shape$as_list()) < 2) {
-                x <- tf$expand_dims(x, 1L)
+                x <- tensorflow::tf$expand_dims(x, 1L)
             }
             while (length(y$shape$as_list()) < 2) {
-                y <- tf$expand_dims(y, 0L)
+                y <- tensorflow::tf$expand_dims(y, 0L)
             }
-            tf$matmul(y, x)  ## Note the transpose.
+            tensorflow::tf$matmul(y, x)  ## Note the transpose.
         },
-        'chol' = tf$cholesky,
+        'chol' = tensorflow::tf$cholesky,
         'backsolve' = function(r, x) {
             ## TODO Decide whether to transpose.
-            tf$matrix_triangular_solve(r, x, lower = TRUE)
+            tensorflow::tf$matrix_triangular_solve(r, x, lower = TRUE)
         },
         'forwardsolve' = function(l, x) {
             ## TODO Decide whether to transpose.
-            tf$matrix_triangular_solve(l, x, lower = FALSE)
+            tensorflow::tf$matrix_triangular_solve(l, x, lower = FALSE)
         },
         ## These may be unnecessary. They were added to push past a possible bug
         ## in AD processing of tensorflow graphs.
-        'nimCd' = tf$stack,
+        'nimCd' = tensorflow::tf$stack,
         'concatenateTemp' = function(x) x,
         'eigenBlock' = function(x) x
     )
@@ -309,13 +309,13 @@ TfTensorizeExpr <- function(code, placeholders) {
         stop(paste('Not implemented:', code$name))
     }
     if (class(code) == 'numeric') {
-        return(tf$constant(code, dtype = tf$float64))
+        return(tensorflow::tf$constant(code, dtype = tensorflow::tf$float64))
     }
     if (class(code) == 'integer') {
-        return(tf$constant(code, dtype = tf$int64))
+        return(tensorflow::tf$constant(code, dtype = tensorflow::tf$int64))
     }
     if (class(code) == 'logical') {
-        return(tf$constant(code, dtype = tf$bool))
+        return(tensorflow::tf$constant(code, dtype = tensorflow::tf$bool))
     }
     stop(paste('Not implemented:', class(code)))
 }
@@ -324,10 +324,10 @@ TfTensorizeExpr <- function(code, placeholders) {
 ## Also computes gradients wrt each input, if possible.
 ## Setting threads=0 lets tensorflow choose the number of threads.
 exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
-    if (!require(tensorflow)) {
+    if (!requireNamespace(tensorflow, 'quietly' = TRUE)) {
         stop('Failed to load tensorflow package')
     }
-    if (!require(reticulate)) {
+    if (!requireNamespace(reticulate, 'quietly' = TRUE)) {
         stop('Failed to load reticulate package')
     }
     
@@ -338,10 +338,10 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
     expr <- code$args[[2]]
 
     ## Construct a tensorflow graph.
-    tf$reset_default_graph()
+    tensorflow::tf$reset_default_graph()
     placeholders <- TfCollectPlaceholders(expr, symTab)
     tensor <- TfTensorizeExpr(expr, placeholders)
-    tensor <- tf$identity(tensor, name = target$name)
+    tensor <- tensorflow::tf$identity(tensor, name = target$name)
 
     ## Optionally add a gradient for each input arg.
     ## Note that the gradients only make sense when the target tensor has size 1
@@ -354,19 +354,19 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
         placeholderValues <- as.list(placeholders)
         placeholderNames <- names(placeholderValues)
         names(placeholderValues) <- NULL
-        gradients <- tf$gradients(tensor, placeholderValues)
+        gradients <- tensorflow::tf$gradients(tensor, placeholderValues)
         if (length(gradients) != length(placeholderNames)) {
             stop('programmer error')
         }
         for (i in seq_along(gradients)) {
             ## This suffixed name is expected by include/nimble/tensorflow.hpp:
             name <- paste0(placeholderNames[i], '_gradient')
-            tf$identity(gradients[i], name = name)
+            tensorflow::tf$identity(gradients[i], name = name)
         }
     }
 
     ## Configure the tensorflow session.
-    configProto <- tf$ConfigProto()
+    configProto <- tensorflow::tf$ConfigProto()
     configProto$inter_op_parallelism_threads <- threads;
     configProto$intra_op_parallelism_threads <- threads;
     ## This tryCatch works around the following bug in reticulate:
@@ -377,7 +377,7 @@ exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
 
     ## Serialize protos to strings.
     base64 <- reticulate::import('base64')
-    graph <- tf$get_default_graph()
+    graph <- tensorflow::tf$get_default_graph()
     graph <- base64$b64encode(graph$as_graph_def()$SerializeToString())
     config <- base64$b64encode(configProto$SerializeToString())
 
