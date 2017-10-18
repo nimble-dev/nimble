@@ -14,8 +14,6 @@ USER LEVEL CHANGES
 
 -- Added warning that RW block sampler may behave poorly with default initial proposal covariance if elements are on very different scales.
 
--- model macros [PdV please expand]
-
 -- Modified a variety of warning messages. 
 
 
@@ -33,18 +31,36 @@ BUG FIXES
 
 -- Fixed a bug in conjugacy processing when there were multiple dynamically indexed nodes in an expression.
 
+-- Fixed a bug in handling of negative default values.
+
+-- Fixed a bug in compiling multiple models in the same session.
+
+-- Fixed a bug with step() for vectors.
+
+-- Fixed handling of non-trivial conditions for a while() loop.
+
+
+
 
 DEVELOPER LEVEL CHANGES
 
--- Sped up copying from R to C++ in some cases [PdV, please revise as needed]
+-- Added new method to generated nimbleFunction C++ classes to copy some member data from R to C++ as a batch, making this step faster.
 
 -- Replaced reference classes with R6 classes for exprClass.
 
--- Removed -g debugger flags from libnimble.so, thereby greatly reducing library size. 
+-- Replaced reference class with S3 class for nodeFunctionVector.
+
+-- Added experimental system for expansion of model macros.
+
+-- Removed -g debugger flags from CppCode/libnimble.a in unix-alike systems, thereby greatly reducing library size. 
 
 -- Removed various legacy browser() statements.
 
 -- Cleaned up testing system to make more consistent across test files and in handling of known failures.
+
+-- Flag NIMBLE as requiring C++11, mostly for future purposes.
+
+-- Fix compilation bug when nimbleFunction has a "." in its name.
 
                            CHANGES IN VERSION 0.6-6 (July 2017)
 
