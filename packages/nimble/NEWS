@@ -1,5 +1,8 @@
+                           CHANGES IN VERSION 0.6-7 (October 2017)
 
 USER LEVEL CHANGES
+
+-- Addition of dcar_proper distributino, the proper Gaussian conditional autoregressive (CAR) distribution, and MCMC sampling support.
 
 -- Improved efficiency of MCMC conjugate samplers.
 
@@ -7,7 +10,14 @@ USER LEVEL CHANGES
 
 -- Addition of nimbleMCMC function, providing the most direct one-line invocation of NIMBLE's MCMC engine.
 
--- Addition of dcar_proper distributino, the proper Gaussian conditional autoregressive (CAR) distribution, and MCMC sampling support.
+-- Added error-trapping for MCMC where there is a Wishart node without conjugacy.
+
+-- Added warning that RW block sampler may behave poorly with default initial proposal covariance if elements are on very different scales.
+
+-- model macros [PdV please expand]
+
+-- Modified a variety of warning messages. 
+
 
 BUG FIXES
 
@@ -21,6 +31,20 @@ BUG FIXES
 
 -- Sped up WAIC calculation for large models.
 
+-- Fixed a bug in conjugacy processing when there were multiple dynamically indexed nodes in an expression.
+
+
+DEVELOPER LEVEL CHANGES
+
+-- Sped up copying from R to C++ in some cases [PdV, please revise as needed]
+
+-- Replaced reference classes with R6 classes for exprClass.
+
+-- Removed -g debugger flags from libnimble.so, thereby greatly reducing library size. 
+
+-- Removed various legacy browser() statements.
+
+-- Cleaned up testing system to make more consistent across test files and in handling of known failures.
 
                            CHANGES IN VERSION 0.6-6 (July 2017)
 
