@@ -19,6 +19,7 @@
 #' Rmodel$resetData()
 #' Rmodel$setData(list(x = c(1.2, NA)))   ## flags only 'x[1]' node as data
 #' Rmodel$isData(c('mu', 'x[1]', 'x[2]'))   ## returns c(FALSE, TRUE, FALSE)
+#' @seealso \code{\link{initializeModel}}
 modelBaseClass <- setRefClass('modelBaseClass',
                               fields = list(
                                   modelDef = 'ANY',
@@ -955,7 +956,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                         varsWithNAs <- NULL
                                         for(v in .self$getVarNames()){
                                           if(!nimble:::isValid(.self[[v]])){
-                                            message(' This model is not fully initialized.  To see which variables are not initialized, use model$initializeInfo().  This is not an error.  For more information on model initialization, see help(modelInitialization).', appendLF = FALSE)
+                                            message(' This model is not fully initialized.  This is not an error.  To see which variables are not initialized, use model$initializeInfo().  For more information on model initialization, see help(modelInitialization).', appendLF = FALSE)
                                             break()
                                           }
                                         }
@@ -1340,10 +1341,10 @@ whyInvalid <- function(value) {
 #' Information on initial values in a nimbleModel
 #'
 #'  Having uninitialized nodes in a nimbleModel can potentially cause some algorithms to fail, and can lead to poor performance in others.  Here are some
-#'  general guidelines on  how non-intitialized variables can effect performance:
+#'  general guidelines on  how non-intitialized variables can affect performance:
 #'  \itemize{
 #'    \item Any dynamic indices need to be initialized in order for the model to perform correctly.
-#'    \item MCMC will atuo-initialize, but will do so from the prior distribution.  This can cause convergence issues, especially in the case of diffuse priors.
+#'    \item MCMC will atuo-initialize, but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
 #'    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
 #' }
 #'
