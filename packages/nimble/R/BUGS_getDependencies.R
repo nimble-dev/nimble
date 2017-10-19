@@ -85,7 +85,9 @@ nimDerivsInfoClass <- setRefClass(
       lineWrtArgSizeInfo = 'ANY',
       calcWithArgsCalls = 'ANY',
       nodeLengths = 'ANY',
-      model =  'ANY'
+      model =  'ANY',
+      declIDs = 'ANY',
+      rowIndices = 'ANY'
     ),
     methods = list(
       initialize = function(wrtNodes = NA, calcNodes = NA, thisModel = NA, cInfo = FALSE, ...){
@@ -102,6 +104,7 @@ nimDerivsInfoClass <- setRefClass(
         ## convert inputNodes and deps from character to integer IDs
         allWrtAndCalcNodeNames <<- model$expandNodeNames(c(wrtNodeNames, calcNodeNames), sort = TRUE)
         nfv <- nodeFunctionVector(model, allWrtAndCalcNodeNames, sortUnique = FALSE)
+
         wrtNodes <- model$modelDef$nodeName2GraphIDs(model$expandNodeNames(wrtNodeNames))
         depIDs <- model$modelDef$nodeName2GraphIDs(allWrtAndCalcNodeNames)
         calcNodes <-  model$modelDef$nodeName2GraphIDs(model$expandNodeNames(calcNodeNames))
@@ -122,16 +125,16 @@ nimDerivsInfoClass <- setRefClass(
         ##           The 0 means that beta is not part of deps
         ##           The 3 means that x[4] is deps[3]
         indexingInfo <- nfv$indexingInfo
-        declIDs <- indexingInfo$declIDs
+        declIDs <<- indexingInfo$declIDs
+        rowIndices <<-  indexingInfo$unrolledIndicesMatrixRows
         numNodes <- length(declIDs)
-        unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
 
         declIDlengths <- sapply(1:numNodes, function(x){
           length(model$expandNodeNames(
             lapply(model$modelDef$declInfo[[declIDs[x]]]$symbolicParentNodesReplaced, function(y){
-              if(!unrolledIndicesMatrixRows[x] == 0){
+              if(!rowIndices[x] == 0){
                 deparse(recurseReplaceIndices(y,
-                                              model$modelDef$declInfo[[declIDs[x]]]$unrolledIndicesMatrix[unrolledIndicesMatrixRows[x],]))
+                                              model$modelDef$declInfo[[declIDs[x]]]$unrolledIndicesMatrix[rowIndices[x],]))
               }
               else{
                 deparse(y)
@@ -251,7 +254,7 @@ nimDerivsInfoClass <- setRefClass(
             lineWrtArgSizeInfo[[i]]      <<- numeric(length(depIndex_2_parentDepIndices[[i]]))
             sizeAndDimInfo <- environment(model$nodeFunctions[[declIDs[i]]]$.generatorFunction)[['parentsSizeAndDims']]
             formalArgNames <- formals(model$nodeFunctions[[declIDs[i]]]$calculateWithArgs)
-            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declIDs[i]]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declIDs[i]]]$unrolledIndicesMatrix[ rowIndices[i], ]
             modelArgNames <- lapply(names(formalArgNames)[-1],
                                     function(x){parse(text = convertCalcArgNameToModelNodeName(x, sizeAndDimInfo, unrolledIndicesMatrixRow))[[1]]})
             calcWithArgsCalls[[i]] <<- as.call(c(list(as.name('calcWithArgs'), unrolledIndicesMatrixRow), modelArgNames))
@@ -361,12 +364,12 @@ nimDerivsInfoClass <- setRefClass(
         writeLines('The following calculations would be done from this input:')
         deps <- allWrtAndCalcNodeNames
         depIDs <- model$modelDef$nodeName2GraphIDs(deps)
-        declIDs <- model$modelDef$maps$graphID_2_declID[depIDs]
+        currentDeclIDs <- model$modelDef$maps$graphID_2_declID[depIDs]
         for(i in seq_along(depIDs)) {
           description <- c()
           derivInfo <- parentIndicesList
           thisDerivInfo <- derivInfo[[i]]
-          argumentNames <- lapply( model$modelDef$declInfo[[ declIDs[i] ]]$symbolicParentNodesReplaced, deparse)
+          argumentNames <- lapply( model$modelDef$declInfo[[ currentDeclIDs[i] ]]$symbolicParentNodesReplaced, deparse)
           for(j in seq_along(thisDerivInfo)){
             if(j == 1 && thisDerivInfo[[j]][1] < 0){
               description <- paste0('wrt parameter ', -thisDerivInfo[[1]][1])
@@ -381,7 +384,7 @@ nimDerivsInfoClass <- setRefClass(
           if(length(description) == 0){
             description <- "(No arguments are wrt or deterministic arguments from previous calculations)\n"
           }
-          BUGSline <- deparse(model$modelDef$declInfo[[ declIDs[i] ]]$codeReplaced)
+          BUGSline <- deparse(model$modelDef$declInfo[[ currentDeclIDs[i] ]]$codeReplaced)
           output <- paste0(i,': ', deps[i], ' (from ', BUGSline, ')\n', paste0('\t', description, collapse = '\n'))
           writeLines(output)
         }

@@ -70,27 +70,27 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 						parentJacobians[j](thisIndex, thisIndex) = 1;
 					}
 				}
-				//else if(nodes.parentIndicesList[i][j][0] > 0){
-				//	thisWrtNodes[j] = 1;
-				//	int sumParentDims = 0;
-				//	for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
-				//		sumParentDims += chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows();
-				//	}
-				//	parentJacobians[j].resize(sumParentDims, nodes.totalWrtSize);
-					/* for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
+				else if(nodes.parentIndicesList[i][j][0] > 0){
+					thisWrtNodes[j] = 1;
+					int sumParentDims = 0;
+					for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
+						sumParentDims += chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows();
+					}
+					parentJacobians[j].resize(sumParentDims, nodes.totalWrtSize);
+					for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
 						thisRowLength = chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows();
 						parentJacobians[j].block(sumRowLengths, 0, thisRowLength, nodes.totalWrtSize) = chainRuleJacobians[nodes.parentIndicesList[i][j][k]].block(0, 0, thisRowLength, nodes.totalWrtSize);
 						sumRowLengths = sumRowLengths + thisRowLength;
-					} */
-					// if(hessianFlag){
-						// parentHessians[j].resize(nodes.totalWrtSize);
-						// for(int k = 0; k < nodes.totalWrtSize; k++){
-							// parentHessians[j][k].resize(nodes.totalWrtSize);
-							// for(int l = 0; l < nodes.totalWrtSize; l++){
-								// parentHessians[j][k][l].resize(sumParentDims);
-							// }
-						// }
-/* 						for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
+					} 
+					if(hessianFlag){
+						parentHessians[j].resize(nodes.totalWrtSize);
+						for(int k = 0; k < nodes.totalWrtSize; k++){
+							parentHessians[j][k].resize(nodes.totalWrtSize);
+							for(int l = 0; l < nodes.totalWrtSize; l++){
+								parentHessians[j][k][l].resize(sumParentDims);
+							}
+						}
+ 						for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
 							for(int l = 0; l <  chainRuleHessians[nodes.parentIndicesList[i][j][k]][0].rows(); l++){
 								for(int m = 0; m <  chainRuleHessians[nodes.parentIndicesList[i][j][k]][0].cols(); m++){
 									for(int n = 0; n < sumParentDims; n++){
@@ -98,19 +98,17 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 									}
 								}
 							}
-						}  */
-					// } 
-				//}
-				//else{				
-				//	thisWrtNodes[j] = 0;
-				//}
+						} 
+					} 
+				}
+				else{				
+					thisWrtNodes[j] = 0;
+				}
 			}
 			if(nodes.cppWrtArgIndices[i].dimSize(0) > 0){ 
-			cout << derivOrders[0];
-			cout << nodes.cppWrtArgIndices[1][0];
- 			thisDerivList = instructions[i].nodeFunPtr->calculateWithArgs_derivBlock(instructions[i].operand, derivOrders, nodes.cppWrtArgIndices[i]);
+				thisDerivList = instructions[i].nodeFunPtr->calculateWithArgs_derivBlock(instructions[i].operand, derivOrders, nodes.cppWrtArgIndices[i]);
 
-/* 				derivOutputFlag = (isDeterminisitic) ? false : true;
+ 				derivOutputFlag = (isDeterminisitic) ? false : true;
 				if(derivOutputFlag){
 					chainRuleJacobians[i] =  MatrixXd::Zero(1, nodes.totalWrtSize);
 					if(hessianFlag){
@@ -127,7 +125,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 						}
 					}
 				} 
- *//* 				for(int j = 0; j <  nodes.wrtLineNums.dimSize(0); j++){
+ 				for(int j = 0; j <  nodes.wrtLineNums.dimSize(0); j++){
 					int thisArgIndex = 0;
 					int wrtStartNode = nodes.wrtLineIndices[j][0] - 1;
 					int wrtLength = nodes.wrtLineIndices[j].dimSize(0);
@@ -159,9 +157,9 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 							chainRuleJacobians[i].block(0, wrtFromStartNode, ansJacobian.rows(), wrtFromLength);	
 					} 
 				} 
- */			}
+ 			}
 			else{ 
-				/* if(valueFlag){
+				if(valueFlag){
 					thisDerivList = instructions[i].nodeFunPtr->calculateWithArgs_derivBlock(instructions[i].operand, derivOrders, nodes.cppWrtArgIndices[i]);
 				}
 				chainRuleJacobians[i] = MatrixXd::Zero(thisNodeSize, nodes.totalWrtSize);
@@ -170,11 +168,11 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 					for(int j = 0; j < thisNodeSize; j++){
 						chainRuleHessians[i][j] = MatrixXd::Zero(nodes.totalWrtSize, nodes.totalWrtSize);
 					}
-				} */
+				} 
 			}  
 		} 
-		//if(!isDeterminisitic){ 
-/* 			chainRuleJacobians[i] =  MatrixXd::Zero(thisNodeSize, nodes.totalWrtSize);
+		if(!isDeterminisitic){ 
+ 			chainRuleJacobians[i] =  MatrixXd::Zero(thisNodeSize, nodes.totalWrtSize);
 			if(isWrtLine){
 				for(int j = 0; j < nodes.wrtLineIndices[thisWrtLine].dimSize(0); j++){
 					thisIndex = nodes.wrtLineIndices[thisWrtLine][j] - 1;
@@ -189,8 +187,8 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 			}
 			if(isCalcNodeLine && valueFlag){
 				(*ansList).value[0] = (*ansList).value[0] + (*thisDerivList).value[0];
-			} */
-		//}		
+			} 
+		}		
 	}
   return(ansList);  
 }
