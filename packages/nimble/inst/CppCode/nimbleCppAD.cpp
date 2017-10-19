@@ -176,7 +176,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 			if(isWrtLine){
 				for(int j = 0; j < nodes.wrtLineIndices[thisWrtLine].dimSize(0); j++){
 					thisIndex = nodes.wrtLineIndices[thisWrtLine][j] - 1;
-					parentJacobians[j](thisIndex, thisIndex) = 1;
+					chainRuleJacobians[i](thisIndex, thisIndex) = 1;
 				}
 			}
 			if(isWrtLine && hessianFlag){
