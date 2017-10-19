@@ -120,19 +120,19 @@ generateRandomFoldFunction <- function(model, k){
 #'  @param lossFunction one of (1) an R function taking a set of simulated data
 #'  and a set of observed data, and calculating the loss from those, or (2) a
 #'  character string naming one of NIMBLE's built-in loss functions.  If a 
-#'  character string, must be one of \code{"preictive"} to use the log 
+#'  character string, must be one of \code{"predictive"} to use the log 
 #'  predictive density as a loss function or \code{"MSE"} to use the mean squared
 #'  error as a loss function.  Defaults to \code{"MSE"}.  See 'Details'
 #'  for information on creating a user-defined loss function.
 #'  @param MCMCcontrol (optional) an R \code{list} with parameters governing the 
 #'  MCMC algorithm,  See 'Details' for specific parameters.
 #'  @param returnSamples a logical argument indicating whether to return all 
-#'  posterior samples from all MCMC runs (note there will be \code{k} sets of
-#'  posterior samples returned).  This can result in a very large returned
-#'  object.  Defaults to \code{FALSE}.
+#'  posterior samples from all MCMC runs.  This can result in a very large returned
+#'  object  (there will be \code{k} sets of
+#'  posterior samples returned).  Defaults to \code{FALSE}.
 #'  @param nCores an integer argument indicating the number of cpu cores to use
 #'  for CV calculation.  In order to use >1 core, the \code{parallel} R package
-#'  must be installed.  Only Mac and Linux operating systems support multiple
+#'  must be installed.  Only OS X (Mac) and Linux operating systems support multiple
 #'  cores at this time.  Defaults to 1.  
 #'  @param nBootReps an integer argument indicating the number of bootstrap samples
 #'  to use when estimating the Monte Carlo error of the cross validation metric.
@@ -141,10 +141,10 @@ generateRandomFoldFunction <- function(model, k){
 #' @export
 #' @details k-fold CV in NIMBLE proceeds by separating the data in a \code{nimbleModel} into k folds, as determined by the
 #' \code{foldFunction} argument.  For each fold, the corresponding data is held out of the model, 
-#' and MCMC is run to simulate data values for the left out data (these values are drawn from
-#' the data's posterior predictive distribution).  Then, the simlated data values are compared to the 
+#' and MCMC is run to estimate the posterior distribution and simultaneously impute posterior predictive values for the left-out data. 
+#' Then, the posterior predictive values are compared to the 
 #' known, left-out data values via the specified \code{lossFunction}.  The loss values are averaged over the
-#' posterior samples for each fold, and these averaged values for each fold are then averaged over all folds to produce a single 
+#' posterior samples for each fold, and these averaged values for each fold are then averaged over all folds to produce a single out-of-sample 
 #' loss estimate.  Additionally, estimates of the Monte Carlo error for each fold are returned.
 #' 
 #'  @section The \code{foldFunction} Argument:
@@ -153,7 +153,7 @@ generateRandomFoldFunction <- function(model, k){
 #'  The returned node names can be expanded, but don't need to be.   For example, if fold \code{i} is inteded to leave out the model nodes \code{x[1]}, \code{x[2]} and \code{x[3]} then the function could return either \code{c('x[1]', 'x[2]', 'x[3]')} or \code{c( 'x[1:3]')}.
 #'   
 #'  @section The \code{lossFunction} Argument:
-#'  If you don't wish to use \ NIMBLE's built in "MSE" loss functions, you may provide your own R function
+#'  If you don't wish to use NIMBLE's built in "MSE" or "predictive" loss functions, you may provide your own R function
 #'  as the \code{lossFunction} argument to \code{runCrossValidate}.  A user-supplied  \code{lossFunction} must be an R function
 #'  that takes two arguments: the first, named \code{simulatedDataValues}, will be a vector of simulated data values.  The second,
 #'  named \code{actualDataValues}, will be a vector of observed data values corresponding to the simulated data values in \code{simulatedDataValues}.  The loss function should return a single scalar number.
