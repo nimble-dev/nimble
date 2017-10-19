@@ -748,6 +748,10 @@ nimDerivs_keywordInfo <- keywordInfoClass(
     wrtArgs <- code[['wrt']]
     ## First check to see if nimFxn argument is a method.
     fxnCall <- code[[2]][[1]]
+    order <- code[['order']]
+    if(length(order) == 1){
+      code[['order']] <- substitute(nimC(ORDER), list(ORDER = order))
+    }
     if(deparse(fxnCall) == 'calculate'){
       code <- calculate_keywordInfo$processor(code, nfProc)
     } 

@@ -285,6 +285,7 @@ nimDerivsInfoClass <- setRefClass(
                   functionArgsDimsList[[argCounter]] <- substitute(double(PARDIM, PARSIZES), 
                                                                    list(PARDIM = as.numeric(sizeAndDimInfo[[j]][[k]]$nDim), 
                                                                         PARSIZES = nndf_makeParentSizeExpr(sizeAndDimInfo[[j]][[k]]))) 
+                  argCounter <- argCounter + 1
                 }
               }
               cppWrtArgIndices[[i]] <<- convertWrtArgToIndices(lineWrtArgsAsCharacters[[i]], functionArgsDimsList, fxnName = 'calculate')
@@ -292,8 +293,9 @@ nimDerivsInfoClass <- setRefClass(
           }
           else{
             lineWrtArgsAsCharacters[[i]] <<- NA
-            lineWrtArgSizeInfo[[i]]      <<- NA
+            lineWrtArgSizeInfo[[i]]      <<- -1
             calcWithArgsCalls[[i]] <<-   NA
+            cppWrtArgIndices[[i]] <<- -1
           }
           if(length(lineWrtArgsAsCharacters) < i){
             lineWrtArgsAsCharacters[[i]] <<- NA
