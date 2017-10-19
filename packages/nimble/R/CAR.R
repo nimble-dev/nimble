@@ -17,8 +17,11 @@ CAR_convertWeightMatrix <- function(weightMatrix) {
 #' Convert CAR structural parameters to adjacency, weights, num format
 #'
 #' This will convert alternate representations of CAR process structure into
-#' (adj, weights, num) form required by \code{dcar_normal}.  Two alternate
-#' representations are handled:
+#' (adj, weights, num) form required by \code{dcar_normal}.  
+#'
+#' @details
+#' 
+#' Two alternate representations are handled:
 #'
 #' A single matrix argument will be interpreted as a matrix of symmetric unnormalized weights;
 #'
@@ -40,9 +43,11 @@ as.carAdjacency <- function(...) {
     stop('as.carAdjacency: wrong arguments to as.carAdjacency')
 }
 
-
-#' Convert weights vector to \code{C} and \code{M} parameters to \code{dcar_proper} distribution
+#' Convert weights vector to parameters of \code{dcar_proper} distributio
+#' 
+#' Convert weights vector to \code{C} and \code{M} parameters of \code{dcar_proper} distribution
 #'
+#' @details
 #' Given a symmetric matrix of unnormalized weights, this function will calculate corresponding values for the \code{C} and \code{M} arguments suitable for use in the \code{dcar_proper} distribution.  This function can be used to transition between usage of \code{dcar_normal} and \code{dcar_proper}, since \code{dcar_normal} uses the \code{adj}, \code{weights}, and \code{num} arguments, while \code{dcar_proper} requires \code{adj}, \code{num}, and also the \code{C} and \code{M} as returned by this function.
 #'
 #' Here, \code{C} is a sparse vector representation of the row-normalized adjacency matrix, and \code{M} is a vector containing the conditional variance for each region.  The resulting values of \code{C} and \code{M} are guaranteed to satisfy the symmetry constraint imposed on \eqn{C} and \eqn{M}, that \eqn{M^{-1} C} is symmetric, where \eqn{M} is a diagonal matrix and \eqn{C} is the row-normalized adjacency matrix.
@@ -212,7 +217,9 @@ CAR_proper_processParams <- function(model, target, C, adj, num, M) {
 }
 
 
-#' Calculate number of islands (distinct connected groups) of CAR adjacency matrix.
+#' Calculate number of islands based on a CAR adjacency matrix.
+#'
+#' Calculate number of islands (distinct connected groups) based on a CAR adjacency matrix.
 #' 
 #' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
@@ -286,7 +293,7 @@ CAR_calcM <- nimbleFunction(
 )
 
 
-#' Generates the \code{C} argument of the \code{dcar_proper} distribution
+#' Generate the \code{C} argument of the \code{dcar_proper} distribution
 #'
 #' Generate sparse vector representation of the normalized adjacency matrix \eqn{C}, as is required as the \code{C} argument of the \code{dcar_proper} distribution.  This is only used internally, and should never need to be invoked directly.
 #' 
@@ -340,9 +347,11 @@ CAR_calcCmatrix <- nimbleFunction(
 )
 
 
+#' Calculate bounds for the autocorrelation parameter of the \code{dcar_proper} distribution
+#'
 #' Calculate the lower and upper bounds for the \code{gamma} parameter of the \code{dcar_proper} distribution
 #' 
-#' Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5)}.  The lower and upper bounds are returned in a numeric vector.
+#' @details Bounds for gamma are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5)}.  The lower and upper bounds are returned in a numeric vector.
 #' 
 #' @param C vector of the same length as \code{adj}, giving the normalized weights associated with each pair of neighboring locations.
 #' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
@@ -373,9 +382,11 @@ carBounds <- nimbleFunction(
 )
 
 
+#' Calculate the lower bound for the autocorrelation parameter of the \code{dcar_proper} distribution
+#'
 #' Calculate the lower bound for the \code{gamma} parameter of the \code{dcar_proper} distribution
 #' 
-#' Bounds for \code{gamma} are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5)}.
+#' @details Bounds for \code{gamma} are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5)}.
 #' 
 #' @param C vector of the same length as \code{adj}, giving the normalized weights associated with each pair of neighboring locations.
 #' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
@@ -398,9 +409,11 @@ carMinBound <- nimbleFunction(
 )
 
 
+#' Calculate the upper bound for the autocorrelation parameter of the \code{dcar_proper} distribution
+#'
 #' Calculate the upper bound for the \code{gamma} parameter of the \code{dcar_proper} distribution
 #' 
-#' Bounds for \code{gamma} are the inverse of the minimum and maximum eigenvalues of: \eqn{M^(-0.5) C M^(0.5).
+#' @details Bounds for \code{gamma} are the inverse of the minimum and maximum eigenvalues of \eqn{M^(-0.5) C M^(0.5)}.
 #' 
 #' @param C vector of the same length as \code{adj}, giving the normalized weights associated with each pair of neighboring locations.
 #' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
@@ -422,7 +435,7 @@ carMaxBound <- nimbleFunction(
     }
 )
 
-#' Calculates the eigenvalues of the normalized adjacency matrix C with all equal weights
+#' Calculate the eigenvalues of the normalized adjacency matrix with all equal weights
 #' 
 #' This function calculates the \code{evs} parameter values for the \code{dcar_proper} distribution, when \code{C} is inferred from the \code{adj} parameter as having all equal weights, and should never need to be invoked directly.
 #' 
@@ -439,7 +452,7 @@ CAR_calcEVs2 <- nimbleFunction(
 )
 
 
-#' Calculates the eigenvalues of the normalized adjacency matrix C
+#' Calculate the eigenvalues of the normalized adjacency matrix
 #' 
 #' This function calculates the \code{evs} parameter values for the \code{dcar_proper} distribution, and should never need to be invoked directly.
 #' 

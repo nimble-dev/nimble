@@ -2,7 +2,7 @@
 % Please edit documentation in R/CAR.R
 \name{CAR_calcNumIslands}
 \alias{CAR_calcNumIslands}
-\title{Calculate number of islands (distinct connected groups) of CAR adjacency matrix.}
+\title{Calculate number of islands based on a CAR adjacency matrix.}
 \usage{
 CAR_calcNumIslands(adj, num)
 }
@@ -12,7 +12,7 @@ CAR_calcNumIslands(adj, num)
 \item{num}{vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.}
 }
 \description{
-Calculate number of islands (distinct connected groups) of CAR adjacency matrix.
+Calculate number of islands (distinct connected groups) based on a CAR adjacency matrix.
 }
 \author{
 Daniel Turek

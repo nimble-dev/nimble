@@ -11,10 +11,11 @@ as.carAdjacency(...)
 }
 \description{
 This will convert alternate representations of CAR process structure into
-(adj, weights, num) form required by \code{dcar_normal}.  Two alternate
-representations are handled:
+(adj, weights, num) form required by \code{dcar_normal}.
 }
 \details{
+Two alternate representations are handled:
+
 A single matrix argument will be interpreted as a matrix of symmetric unnormalized weights;
 
 Two lists will be interpreted as (the first) a list of numeric vectors

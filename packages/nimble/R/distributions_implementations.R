@@ -929,15 +929,12 @@ rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNum
 #'
 #' @author Daniel Turek
 #'
-#' @export
-#'
 #' @details
-#'
 #' If both \code{C} and \code{M} are omitted, then all weights are taken as one, and corresponding values of \code{C} and \code{M} are generated.
 #'
-#' The \code{C} and \code{M} parameters must jointly satisfy a symmetry constraint: that \code{M^-1 %*% C} is symmetric, where \code{M} is a diagonal matrix and \code{C} is the full weight matrix that is sparsely represented by the parameter vector \code{C}.
+#' The \code{C} and \code{M} parameters must jointly satisfy a symmetry constraint: that \code{M^(-1) \%*\% C} is symmetric, where \code{M} is a diagonal matrix and \code{C} is the full weight matrix that is sparsely represented by the parameter vector \code{C}.
 #'
-#' For a proper CAR model, the value of \code{gamma} must lie within the inverse minimum and maximum eigenvalues of \code{M^(-0.5) %*% C %*% M^(0.5)}, where \code{M} is a diagonal matrix and \code{C} is the full weight matrix.  These bounds can be calculated using the deterministic functions \code{carMinBound(C, adj, num, M)} and \code{carMaxBound(C, adj, num, M)}, or simultaneously using \code{carBounds(C, adj, num, M)}.  In the case where \code{C} and \code{M} are omitted (all weights equal to one), the bounds on gamma are necessarily (-1, 1).
+#' For a proper CAR model, the value of \code{gamma} must lie within the inverse minimum and maximum eigenvalues of \code{M^(-0.5) \%*\% C \%*\% M^(0.5)}, where \code{M} is a diagonal matrix and \code{C} is the full weight matrix.  These bounds can be calculated using the deterministic functions \code{carMinBound(C, adj, num, M)} and \code{carMaxBound(C, adj, num, M)}, or simultaneously using \code{carBounds(C, adj, num, M)}.  In the case where \code{C} and \code{M} are omitted (all weights equal to one), the bounds on gamma are necessarily (-1, 1).
 #'
 #' @return \code{dcar_proper} gives the density, and \code{rcar_proper} generates random deviates.
 #' @references Banerjee, S., Carlin, B.P., and Gelfand, A.E. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.

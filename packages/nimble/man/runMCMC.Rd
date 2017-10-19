@@ -40,9 +40,9 @@ and runs the MCMC with one or more chains, any returns any combination
 of posterior samples, posterior summary statistics, and WAIC values.
 }
 \details{
-At least one of \code{returnSamples}, \code{returnSummary} or \code{returnWAIC} must be \code{TRUE}, since otherwise, nothing will be returned.  Any combination of these may be \cd{TRUE}, including possibly all three, in which case posterior samples, summary statistics, and WAIC values are returned for each MCMC chain.
+At least one of \code{returnSamples}, \code{returnSummary} or \code{returnWAIC} must be \code{TRUE}, since otherwise, nothing will be returned.  Any combination of these may be \code{TRUE}, including possibly all three, in which case posterior samples, summary statistics, and WAIC values are returned for each MCMC chain.
 
-When \code{returnSamples = TRUE}, the form of the posterior samples is determined by the \code{samplesAsCodaMCMC} argument, as either matrices of posterior samples, or \cd{coda} \cd{mcmc} and \cd{mcmc.list} objects.
+When \code{returnSamples = TRUE}, the form of the posterior samples is determined by the \code{samplesAsCodaMCMC} argument, as either matrices of posterior samples, or \code{coda} \code{mcmc} and \code{mcmc.list} objects.
 
 Posterior summary statistics are returned individually for each chain, and also as calculated from all chains combined (when \code{nchains > 1}).
 
