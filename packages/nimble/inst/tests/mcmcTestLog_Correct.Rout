@@ -3089,3 +3089,5 @@ sd      0.6607385   0.5216073    1.807713
 [7] RW sampler: theta[4]
 thin = 1: alpha, theta, p1, p2
 ===== Starting MCMC test dcar_normal sampling. =====Adding num,adj,weights as data for building model.
+===== Starting test dcar_proper density evaluations. ========== Starting MCMC test dcar_proper sampling. =====Adding mu,adj,num as data for building model.
+thin = 1: tau, gamma, x

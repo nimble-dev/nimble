@@ -16,6 +16,7 @@ echo "R_PACKAGE_DIR: $R_PACKAGE_DIR"
 
 sed -e "s!@NIMBLE_HOME@!${R_PACKAGE_DIR}!" inst/make/Makevars.win.in > inst/make/Makevars.win
 
+sed -e 's!@GNUMAKEFILE_INCLUDE_MAKECONF@!include \$(R_HOME)/etc\$(R_ARCH)/Makeconf!' inst/CppCode/GNUmakefile.in > inst/CppCode/GNUmakefile
 
 sed -e 's!@NEED_MAKEVARS_FILE@!TRUE!' R/config.R.in |
  sed -e 's|@R_ENABLE_LIB@|FALSE|' |

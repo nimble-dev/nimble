@@ -31,6 +31,16 @@ void NamedObjects::NO_hw(  ) {
   PRINTF("hello world from NamedObjects\n");
 }
 
+SEXP copyFromRobject(SEXP Sextptr, SEXP Robject) {
+  if(!R_ExternalPtrAddr(Sextptr)) {
+    PRINTF("Error: Sextptr is not a a valid external pointer\n");
+  }
+  NamedObjects *m;
+  m = static_cast< NamedObjects *>(R_ExternalPtrAddr(Sextptr));
+  m->copyFromRobject(Robject);
+  return(R_NilValue);
+}
+
 void* NamedObjects::getObjectPtr( string &name ) {
   //cout<<name<<"\n";
   map<string, void *>::iterator iMO;
@@ -97,7 +107,6 @@ SEXP getAvailableNames(SEXP Sextptr) {
   UNPROTECT(1);
   return(Sans);
 }
-
 
 void* NumberedObjects::getObjectPtr(int index){
 	return(numberedObjects[index]);

@@ -71,6 +71,11 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
 additionalExports <- c("calc_dmnormConjugacyContributions",
                        "calc_dmnormAltParams",
                        "calc_dwishAltParams",
+                       "CAR_calcM",
+                       "CAR_calcC",
+                       "CAR_calcCmatrix",
+                       "CAR_calcEVs2",
+                       "CAR_calcEVs3",
                        "getNodeFunctionIndexedInfo",
                        "singleModelValuesAccess",
                        "getNimbleProject",
@@ -128,9 +133,11 @@ imports <- c("methods", "igraph")
 imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
 
 importFroms <- c("coda, effectiveSize, as.mcmc, is.mcmc.list",
+                 "reticulate, import",
+                 "tensorflow, tf",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",
-                 "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var")
+                 "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile")
 ##                 "R2WinBUGS, bugs",
 ##                 "rjags, jags.model",
 ##                 "rjags, coda.samples",

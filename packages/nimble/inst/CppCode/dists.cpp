@@ -2214,3 +2214,156 @@ double dcar_normal(double* x, double* adj, double* weights, double* num, double 
   return(exp(lp));
 }
 
+SEXP C_dcar_proper(SEXP x, SEXP mu, SEXP C, SEXP adj, SEXP num, SEXP M, SEXP tau, SEXP gamma, SEXP evs, SEXP return_log) {
+  if(!Rf_isReal(x) || !Rf_isReal(mu) || !Rf_isReal(C) || !Rf_isReal(adj) || !Rf_isReal(num) || !Rf_isReal(M) || !Rf_isReal(tau) || !Rf_isReal(gamma) || !Rf_isReal(evs) || !Rf_isLogical(return_log))
+    RBREAK("Error (C_dcar_proper): invalid input type for one of the arguments.");
+  
+  int N = LENGTH(x);
+  int L = LENGTH(adj);
+  
+  double* c_x = REAL(x);
+  double* c_mu = REAL(mu);
+  double* c_C = REAL(C);
+  double* c_adj = REAL(adj);
+  double* c_num = REAL(num);
+  double* c_M = REAL(M);
+  double c_tau = REAL(tau)[0];
+  double c_gamma = REAL(gamma)[0];
+  double* c_evs = REAL(evs);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+  
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));
+  REAL(ans)[0] = dcar_proper(c_x, c_mu, c_C, c_adj, c_num, c_M, c_tau, c_gamma, c_evs, N, L, give_log);
+  
+  UNPROTECT(1);
+  return ans;
+}
+
+double dcar_proper(double* x, double* mu, double* C, double* adj, double* num, double* M, double tau, double gamma, double* evs, int N, int L, int give_log) {
+  // This method implements the following density calculation:
+  // x ~ MVN( mean = mu,   cov  = (I-gamma*Cmatrix)^-1* %*% Mmatrix / tau )
+  // note that the scalar 'tau' is a precision term.
+  if(tau < 0) {
+    return R_NaN;
+  }
+  double lp = 0;
+  double xi, xj;
+  int i, j, index;
+  int count = 0;
+  for(i = 0; i < N; i++) {
+    xi = x[i] - mu[i];
+    lp += pow(xi, 2) / M[i];      // (x-mu)' M^-1 (x-mu)
+    //PRINTF("lp is equal to %f\n", lp);
+    for(j = 0; j < num[i]; j++) {
+      index = (int) adj[count] - 1;
+      xj = x[index] - mu[index];
+      lp -= gamma * xi * xj * C[count] / M[i];  // -gamma (x-mu)' M^-1 C (x-mu)
+      count++;
+    }
+  }
+  if(count != L) {
+    ML_ERR_return_NAN;
+  }
+  lp *= (-1/2.0) * tau;
+  // now add -1/2*log(|2*pi*Sigma|) to lp:
+  // det(Sigma) = det((I-gamma*Cmatrix)^-1 %*% M / tau) = prod(M) / prod(1 - gamma*evs) / tau^N
+  // where evs = eigen(Cmatrix)$values, and tau is precision
+  for(i = 0; i < N; i++) {
+    lp += (log(1 - gamma*evs[i]) - log(M[i])) / 2.0;
+  }
+  lp += N / 2.0 * (log(tau) - M_LN_2PI);
+  if(give_log) {
+    return(lp);
+  }
+  return(exp(lp));
+}
+
+
+SEXP C_rcar_proper(SEXP n, SEXP mu, SEXP C, SEXP adj, SEXP num, SEXP M, SEXP tau, SEXP gamma, SEXP evs) {
+  if(!Rf_isInteger(n) || !Rf_isReal(mu) || !Rf_isReal(C) || !Rf_isReal(adj) || !Rf_isReal(num) || !Rf_isReal(M) || !Rf_isReal(tau) || !Rf_isReal(gamma) || !Rf_isReal(evs))
+    RBREAK("Error (C_rcar_proper): invalid input type for one of the arguments.");
+  
+  int N = LENGTH(mu);
+  int L = LENGTH(adj);
+  
+  double* c_mu = REAL(mu);
+  double* c_C = REAL(C);
+  double* c_adj = REAL(adj);
+  double* c_num = REAL(num);
+  double* c_M = REAL(M);
+  double c_tau = REAL(tau)[0];
+  double c_gamma = REAL(gamma)[0];
+  double* c_evs = REAL(evs);
+  
+  SEXP ans;
+  
+  GetRNGstate();
+  
+  PROTECT(ans = Rf_allocVector(REALSXP, N));
+  
+  rcar_proper(REAL(ans), c_mu, c_C, c_adj, c_num, c_M, c_tau, c_gamma, c_evs, N, L);
+  
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+
+
+void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, double* M, double tau, double gamma, double* evs, int N, int L) {
+  
+#ifdef IEEE_754
+  if (R_isnancpp(mu, N) || R_isnancpp(C, L) || R_isnancpp(adj, L) || R_isnancpp(num, N) || R_isnancpp(M, N) || R_isnancpp(tau) || R_isnancpp(gamma) || R_isnancpp(evs, N)) {
+    for(int i = 0; i < N; i++) {
+      ans[i] = R_NaN;
+    }
+    return;
+  }
+#endif
+  
+  int i, j;
+  
+  double* Qchol = new double[N*N];    // precison Q = tau * M^-1 %*% (I - gamma*C)
+  for(i = 0; i < N*N; i++) {
+    Qchol[i] = 0;
+  }
+  int count = 0;
+  for(i = 0; i < N; i++) {
+    Qchol[ i*(N+1) ] = tau / M[i];    // main diagonal
+    for(j = 0; j < num[i]; j++) {
+      Qchol[  i  +  N*((int) adj[count] - 1)  ] = -tau * gamma * C[count] / M[i];
+      count++;
+    }
+  }
+  
+  // now take chol(precision), and write that into Qchol
+  // F77_CALL(dpotrf)( UPLO, N, A, LDA, INFO ) does Choleskey factorization of a symmetric pos. def. matrix
+  // http://www.netlib.org/lapack/double/dpotrf.f
+  char uplo('U');
+  int info(0);
+  F77_CALL(dpotrf)(&uplo, &N, Qchol, &N, &info);
+  
+  if(!R_FINITE_VEC(Qchol, N*N)) {
+    for(i = 0; i < N; i++) {
+      ans[i] = R_NaN;
+    }
+    delete [] Qchol;
+    return;
+  }
+  
+  for(i = 0; i < N; i++) {
+    ans[i] = norm_rand();
+  }
+  // upper-triangular solve or (transpose) multiply
+  char transPrec('N');
+  char diag('N');
+  int lda(N);
+  int incx(1);
+  F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &N, Qchol, &lda, ans, &incx);
+  for(i = 0; i < N; i++) {
+    ans[i] += mu[i];
+  }
+  delete [] Qchol;
+}
+
+

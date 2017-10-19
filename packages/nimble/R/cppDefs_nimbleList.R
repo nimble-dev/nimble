@@ -181,6 +181,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                               buildCopyToSexp()
                                               buildCreateNewSexp()
                                               buildResetFlags()
+                                              addCopyFromRobject()
                                           }
                                           callSuper(where)
                                       },

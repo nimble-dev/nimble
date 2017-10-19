@@ -53,12 +53,13 @@ readRelevantLines <- function(filename) {
     step <- 'HEADER'
     for(i in seq_along(lines)) {
         if (step == 'HEADER') {
-            if (length(grep('REMOVE_THIS_CODE', lines[i])) == 0) {
-                beginBody <- i
+            if (grepl('P_1_REMOVE_THIS_CODE', lines[i])
+                & grepl('include', lines[i])) {
+                beginBody <- i+1
                 step <- 'BODY'
             }
         } else if (step == 'BODY') {
-            if (length(grep('REMOVE_THIS_CODE', lines[i])) == 1) {
+            if (grepl('REMOVE_THIS_CODE', lines[i])) {
                 endBody <- i - 1
                 break
             }

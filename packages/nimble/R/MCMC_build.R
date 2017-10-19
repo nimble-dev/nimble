@@ -97,9 +97,9 @@ buildMCMC <- nimbleFunction(
     },
 
     run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
-        if(simulateAll)     simulate(model)    ## default behavior excludes data nodes
-        my_initializeModel$run()
         if(reset) {
+            if(simulateAll)   simulate(model)
+            my_initializeModel$run()
             nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
             for(i in seq_along(samplerFunctions))
                 samplerFunctions[[i]]$reset()

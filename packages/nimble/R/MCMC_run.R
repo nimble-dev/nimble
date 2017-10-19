@@ -99,7 +99,6 @@ runMCMC <- function(mcmc,
     if(!identical(nf_getGeneratorFunction(mcmc), buildMCMC)) stop('mcmc argument must be a NIMBLE MCMC algorithm')
     if(!is.Cnf(mcmc)) message('Warning: running an uncompiled MCMC algorithm, use compileNimble() for faster execution.')
     if(!returnSamples && !returnSummary && !returnWAIC) stop('no output specified, use returnSamples = TRUE, returnSummary = TRUE, or returnWAIC = TRUE')
-    if(samplesAsCodaMCMC) require(coda)
     if(nchains < 1) stop('must have nchains > 0')
     if(!missing(inits)) {
         if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
@@ -131,7 +130,7 @@ runMCMC <- function(mcmc,
         samplesList[[i]] <- samples
         if(returnWAIC) waic[i] <- mcmc$calculateWAIC(nburnin = nburnin)
     }
-    if(samplesAsCodaMCMC) samplesList <- coda::as.mcmc.list(lapply(samplesList, coda::as.mcmc))
+    if(samplesAsCodaMCMC) samplesList <- as.mcmc.list(lapply(samplesList, as.mcmc))
     if(nchains == 1) samplesList <- samplesList[[1]]  ## returns matrix when nchains = 1
     if(returnSummary) {
         if(nchains == 1) {
@@ -248,7 +247,6 @@ nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
     ##}
     if(missing(code) && missing(model)) stop('must provide either code or model argument')
     if(!returnSamples && !returnSummary && !returnWAIC) stop('no output specified, use returnSamples = TRUE, returnSummary = TRUE, or returnWAIC = TRUE')
-    if(samplesAsCodaMCMC) require(coda)
     if(missing(model)) {  ## model object not provided
         if(!missing(inits)) {
             if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')

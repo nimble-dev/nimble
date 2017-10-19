@@ -8,7 +8,7 @@ cGetNRow <- function(cMV, compIndex = 1)
   return(nRow)
 }
 
-newObjElementPtr = function(rPtr, name, dll){
+newObjElementPtr <- function(rPtr, name, dll){
   eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, rPtr, name))
 }
 
