@@ -201,8 +201,7 @@ nimDerivsInfoClass <- setRefClass(
             }
           }
         }
-
-        parentIndicesList <<- depIndex_2_parentDepIndices
+        
 
         ### next let's do wrt info
         scalarWrtNames <- model$expandNodeNames(wrtNodeNames, returnScalarComponents = TRUE)
@@ -304,6 +303,14 @@ nimDerivsInfoClass <- setRefClass(
             lineWrtArgsAsCharacters[[i]] <<- NA
           }
         }
+        if(cInfo){
+          for(i in seq_along(depIndex_2_parentDepIndices)){
+            for(j in seq_along(depIndex_2_parentDepIndices[[i]])){
+              depIndex_2_parentDepIndices[[i]][[j]] <- depIndex_2_parentDepIndices[[i]][[j]] - 1
+            }
+          }
+        }
+        parentIndicesList <<- depIndex_2_parentDepIndices
       },
 
       # ### A function that substitutes correct values of unrolledIndicesMatrix

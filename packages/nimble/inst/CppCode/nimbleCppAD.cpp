@@ -8,8 +8,6 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 	bool hessianFlag = false;
 	bool jacobianFlag = false;
 	bool valueFlag = false;
-	  
-	(*ansList).value.setSize(1);
 
 	for(int i = 0; i < derivOrders.dimSize(0); i++){
 	    if(derivOrders[i] == 0){
@@ -22,6 +20,9 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 			hessianFlag = true;
 			jacobianFlag = true;
 		}
+	}
+	if(valueFlag){
+		(*ansList).value.setSize(1);
 	}
 	if(valueFlag && (!jacobianFlag && !hessianFlag)){
 		(*ansList).value[0] += calculate(nodes);
@@ -70,12 +71,14 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 						parentJacobians[j](thisIndex, thisIndex) = 1;
 					}
 				}
-				else if(nodes.parentIndicesList[i][j][0] > 0){
+				else if(nodes.parentIndicesList[i][j][0] > -1){
 					thisWrtNodes[j] = 1;
 					int sumParentDims = 0;
 					for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
 						sumParentDims += chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows();
 					}
+					cout << sumParentDims << "\n";
+					cout << nodes.parentIndicesList[i][j][0] << "\n";
 					parentJacobians[j].resize(sumParentDims, nodes.totalWrtSize);
 					for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
 						thisRowLength = chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows();
