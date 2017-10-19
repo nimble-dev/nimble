@@ -43,9 +43,9 @@ samplesSummary <- function(samples) {
 #'
 #' @details
 #'
-#' At least one of \code{returnSamples}, \code{returnSummary} or \code{returnWAIC} must be \code{TRUE}, since otherwise, nothing will be returned.  Any combination of these may be \cd{TRUE}, including possibly all three, in which case posterior samples, summary statistics, and WAIC values are returned for each MCMC chain.
+#' At least one of \code{returnSamples}, \code{returnSummary} or \code{returnWAIC} must be \code{TRUE}, since otherwise, nothing will be returned.  Any combination of these may be \code{TRUE}, including possibly all three, in which case posterior samples, summary statistics, and WAIC values are returned for each MCMC chain.
 #'
-#' When \code{returnSamples = TRUE}, the form of the posterior samples is determined by the \code{samplesAsCodaMCMC} argument, as either matrices of posterior samples, or \cd{coda} \cd{mcmc} and \cd{mcmc.list} objects.
+#' When \code{returnSamples = TRUE}, the form of the posterior samples is determined by the \code{samplesAsCodaMCMC} argument, as either matrices of posterior samples, or \code{coda} \code{mcmc} and \code{mcmc.list} objects.
 #'
 #' Posterior summary statistics are returned individually for each chain, and also as calculated from all chains combined (when \code{nchains > 1}).
 #'
@@ -154,7 +154,7 @@ runMCMC <- function(mcmc,
 #'
 #' \code{nimbleMCMC} is designed as the most straight forward entry point to using NIMBLE's default MCMC algorithm.  It provides capability for running multiple MCMC chains, specifying the number of MCMC iterations, thinning, and burn-in, and which model variables should be monitored.  It also provides options to return the posterior samples, to return summary statistics calculated from the posterior samples, and to return the WAIC value calculated from each chain.
 #'
-#' The entry point for this function is providing the \cd{code}, \cd{constants}, \cd{data} and \cd{inits} arguments, to create a new NIMBLE model object, or alternatively providing an exisiting NIMBLE model object as the \cd{model} argument.
+#' The entry point for this function is providing the \code{code}, \code{constants}, \code{data} and \code{inits} arguments, to create a new NIMBLE model object, or alternatively providing an exisiting NIMBLE model object as the \code{model} argument.
 #'
 #' @param code The quoted code expression representing the model, such as the return value from a call to \code{nimbleCode}).  No default value, this is a required argument.
 #' 
@@ -164,7 +164,7 @@ runMCMC <- function(mcmc,
 #'
 #' @param inits Argument to specify initial values for the model object, and for each MCMC chain.  See details.
 #'
-#' @param model A compiled or uncompiled NIMBLE model object.  When provided, this model will be used to configure the MCMC algorithm to be executed, rather than using the \cd{code}, \cd{constants}, \cd{data} and \cd{inits} arguments to create a new model object.  However, if also provided, the \cd{inits} argument will still be used to initialize this model prior to running each MCMC chain.
+#' @param model A compiled or uncompiled NIMBLE model object.  When provided, this model will be used to configure the MCMC algorithm to be executed, rather than using the \code{code}, \code{constants}, \code{data} and \code{inits} arguments to create a new model object.  However, if also provided, the \code{inits} argument will still be used to initialize this model prior to running each MCMC chain.
 #' 
 #' @param monitors A character vector giving the node names or variable names to monitor.  The samples corresponding to these nodes will returned, and/or will have summary statistics calculated. Default value is all top-level stochastic nodes of the model.
 #' 
@@ -194,9 +194,9 @@ runMCMC <- function(mcmc,
 #'
 #' @details
 #'
-#' At least one of \code{returnSamples}, \code{returnSummary} or \code{returnWAIC} must be \code{TRUE}, since otherwise, nothing will be returned.  Any combination of these may be \cd{TRUE}, including possibly all three, in which case posterior samples, summary statistics, and WAIC values are returned for each MCMC chain.
+#' At least one of \code{returnSamples}, \code{returnSummary} or \code{returnWAIC} must be \code{TRUE}, since otherwise, nothing will be returned.  Any combination of these may be \code{TRUE}, including possibly all three, in which case posterior samples, summary statistics, and WAIC values are returned for each MCMC chain.
 #'
-#' When \code{returnSamples = TRUE}, the form of the posterior samples is determined by the \code{samplesAsCodaMCMC} argument, as either matrices of posterior samples, or \cd{coda} \cd{mcmc} and \cd{mcmc.list} objects.
+#' When \code{returnSamples = TRUE}, the form of the posterior samples is determined by the \code{samplesAsCodaMCMC} argument, as either matrices of posterior samples, or \code{coda} \code{mcmc} and \code{mcmc.list} objects.
 #'
 #' Posterior summary statistics are returned individually for each chain, and also as calculated from all chains combined (when \code{nchains > 1}).
 #'

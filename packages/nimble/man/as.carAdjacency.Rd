@@ -2,27 +2,30 @@
 % Please edit documentation in R/CAR.R
 \name{as.carAdjacency}
 \alias{as.carAdjacency}
-\title{Convert CAR structural parameters to adjecency, weights, num format}
+\title{Convert CAR structural parameters to adjacency, weights, num format}
 \usage{
 as.carAdjacency(...)
 }
 \arguments{
-\item{...}{Either: a symmetric matrix of un-normalized weights, or two lists specifying adjacency indices and the corresponding un-normalized weights.}
+\item{...}{Either: a symmetric matrix of unnormalized weights, or two lists specifying adjacency indices and the corresponding unnormalized weights.}
 }
 \description{
 This will convert alternate representations of CAR process structure into
-(adj, weights, num) form required by dcar_normal.  Two alternate
+(adj, weights, num) form required by \code{dcar_normal}.  Two alternate
 representations are handled:
 }
 \details{
-A single matrix argument will be interpreted as a matrix of symmetric un-normalized weights;
+A single matrix argument will be interpreted as a matrix of symmetric unnormalized weights;
 
 Two lists will be interpreted as (the first) a list of numeric vectors
 specifying the adjacency (neighboring) indices of each CAR process component,
-and (the second) a list of numeric vectors giving the un-normalized weights
+and (the second) a list of numeric vectors giving the unnormalized weights
 for each of these neighboring relationships.
 }
 \author{
 Daniel Turek
+}
+\seealso{
+\code{\link{CAR-Normal}}
 }
 
