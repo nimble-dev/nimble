@@ -324,10 +324,10 @@ TfTensorizeExpr <- function(code, placeholders) {
 ## Also computes gradients wrt each input, if possible.
 ## Setting threads=0 lets tensorflow choose the number of threads.
 exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
-    if (!requireNamespace(tensorflow, 'quietly' = TRUE)) {
+    if (!requireNamespace('tensorflow', 'quietly' = TRUE)) {
         stop('Failed to load tensorflow package')
     }
-    if (!requireNamespace(reticulate, 'quietly' = TRUE)) {
+    if (!requireNamespace('reticulate', 'quietly' = TRUE)) {
         stop('Failed to load reticulate package')
     }
     

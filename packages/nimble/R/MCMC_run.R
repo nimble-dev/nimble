@@ -130,7 +130,7 @@ runMCMC <- function(mcmc,
         samplesList[[i]] <- samples
         if(returnWAIC) waic[i] <- mcmc$calculateWAIC(nburnin = nburnin)
     }
-    if(samplesAsCodaMCMC) samplesList <- as.mcmc.list(lapply(samplesList, as.mcmc))
+    if(samplesAsCodaMCMC) samplesList <- coda::as.mcmc.list(lapply(samplesList, as.mcmc))
     if(nchains == 1) samplesList <- samplesList[[1]]  ## returns matrix when nchains = 1
     if(returnSummary) {
         if(nchains == 1) {

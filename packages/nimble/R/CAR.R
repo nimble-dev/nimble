@@ -422,43 +422,6 @@ carMaxBound <- nimbleFunction(
     }
 )
 
-
-#' Calculate the lower bound for the \code{gamma} parameter of the \code{dcar_proper} distribution
-#' 
-#' This function is provided as an alias, for compatibility with WinBUGS.
-#' 
-#' @param C vector of the same length as \code{adj}, giving the normalized weights associated with each pair of neighboring locations.
-#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
-#' @param num vector giving the number of neighboring locations of each spatial location, with length equal to the number of locations.
-#' @param M vector giving the diagonal elements of the conditional variance matrix, with length equal to the number of locations.
-#' 
-#' @return The lower bound (minimum allowable value) for the \code{gamma} parameter of the \code{dcar_proper} distribution.
-#' 
-#' @seealso \code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carMaxBound}}, \code{\link{carBounds}}
-#' 
-#' @author Daniel Turek
-#' @export
-min.bound <- carMinBound
-
-
-#' Calculate the upper bound for the \code{gamma} parameter of the \code{dcar_proper} distribution
-#' 
-#' This function is provided as an alias, for compatibility with WinBUGS.
-#' 
-#' @param C vector of the same length as \code{adj}, giving the normalized weights associated with each pair of neighboring locations.
-#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
-#' @param num vector giving the number of neighboring locations of each spatial location, with length equal to the number of locations.
-#' @param M vector giving the diagonal elements of the conditional variance matrix, with length equal to the number of locations.
-#' 
-#' @return The upper bound (maximum allowable value) for the \code{gamma} parameter of the \code{dcar_proper} distribution.
-#' 
-#' @seealso \code{\link{CAR-Proper}}, \code{\link{carMinBound}}, \code{\link{carMaxBound}}, \code{\link{carBounds}}
-#' 
-#' @author Daniel Turek
-#' @export
-max.bound <- carMaxBound
-
-
 #' Calculates the eigenvalues of the normalized adjacency matrix C with all equal weights
 #' 
 #' This function calculates the \code{evs} parameter values for the \code{dcar_proper} distribution, when \code{C} is inferred from the \code{adj} parameter as having all equal weights, and should never need to be invoked directly.
