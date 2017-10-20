@@ -17,9 +17,15 @@
 \alias{[[,conjugacyRelationshipsClass-method}
 \alias{dsqrtinvgamma}
 \alias{rsqrtinvgamma}
+\alias{is.Cmodel}
+\alias{is.Cnf}
+\alias{is.Rmodel}
+\alias{is.model}
+\alias{samplesSummary}
 \alias{calc_dmnormConjugacyContributions}
 \alias{calc_dmnormAltParams}
 \alias{calc_dwishAltParams}
+\alias{calc_dcatConjugacyContributions}
 \alias{CAR_calcM}
 \alias{CAR_calcC}
 \alias{CAR_calcCmatrix}

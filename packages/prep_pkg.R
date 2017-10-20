@@ -66,11 +66,17 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method",
                        "[[,distributionsClass-method",
                        "[[,conjugacyRelationshipsClass-method",
                        "dsqrtinvgamma",
-                       "rsqrtinvgamma")
+                       "rsqrtinvgamma",
+                       "is.Cmodel",
+                       "is.Cnf",
+                       "is.Rmodel",
+                       "is.model",
+                       "samplesSummary")
 
 additionalExports <- c("calc_dmnormConjugacyContributions",
                        "calc_dmnormAltParams",
                        "calc_dwishAltParams",
+                       "calc_dcatConjugacyContributions",
                        "CAR_calcM",
                        "CAR_calcC",
                        "CAR_calcCmatrix",
