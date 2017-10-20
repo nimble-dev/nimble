@@ -272,12 +272,11 @@ CAR_calcNumIslands <- nimbleFunction(
 )
 
 
-#' Generates the \code{M} argument of the \code{dcar_proper} distribution
-#' 
-#' Generate the vector of conditional variances, as is required as the \code{M} argument of the \code{dcar_proper} distribution.  This is only used internally, and should never need to be invoked directly.
-#' 
-#' @author Daniel Turek
-
+## Generates the \code{M} argument of the \code{dcar_proper} distribution
+## 
+## Generate the vector of conditional variances, as is required as the \code{M} argument of the \code{dcar_proper} distribution.  This is only used internally, and should never need to be invoked directly.
+## 
+## @author Daniel Turek
 CAR_calcM <- nimbleFunction(
     name = 'CAR_calcM',
     run = function(num = double(1)) {
@@ -294,12 +293,10 @@ CAR_calcM <- nimbleFunction(
 )
 
 
-#' Generate the \code{C} argument of the \code{dcar_proper} distribution
-#'
-#' Generate sparse vector representation of the normalized adjacency matrix \eqn{C}, as is required as the \code{C} argument of the \code{dcar_proper} distribution.  This is only used internally, and should never need to be invoked directly.
-#' 
-#' @author Daniel Turek
-
+## Generate the \code{C} argument of the \code{dcar_proper} distribution
+##
+## Generate sparse vector representation of the normalized adjacency matrix \eqn{C}, as is required as the \code{C} argument of the \code{dcar_proper} distribution.  This is only used internally, and should never need to be invoked directly.
+## @author Daniel Turek
 CAR_calcC <- nimbleFunction(
     name = 'CAR_calcC',
     run = function(adj = double(1), num = double(1)) {
@@ -322,12 +319,11 @@ CAR_calcC <- nimbleFunction(
 )
 
 
-#' Generates the normalized adjacency matrix for \code{dcar_proper} distribution
-#' 
-#' Using the sparse representation of the normalized adjacency matrix, generate the full matrix.  This uses the \code{C}, \code{adj}, and \code{num} parameters of the \code{dcar_proper} distribution.
-#' 
-#' @author Daniel Turek
-
+## Generates the normalized adjacency matrix for \code{dcar_proper} distribution
+## 
+## Using the sparse representation of the normalized adjacency matrix, generate the full matrix.  This uses the \code{C}, \code{adj}, and \code{num} parameters of the \code{dcar_proper} distribution.
+## 
+## @author Daniel Turek
 CAR_calcCmatrix <- nimbleFunction(
     name = 'CAR_calcCmatrix',
     run = function(C = double(1), adj = double(1), num = double(1)) {
@@ -438,11 +434,11 @@ carMaxBound <- nimbleFunction(
     }
 )
 
-#' Calculate the eigenvalues of the normalized adjacency matrix with all equal weights
-#' 
-#' This function calculates the \code{evs} parameter values for the \code{dcar_proper} distribution, when \code{C} is inferred from the \code{adj} parameter as having all equal weights, and should never need to be invoked directly.
-#' 
-#' @author Daniel Turek
+## Calculate the eigenvalues of the normalized adjacency matrix with all equal weights
+## 
+## This function calculates the \code{evs} parameter values for the \code{dcar_proper} distribution, when \code{C} is inferred from the \code{adj} parameter as having all equal weights, and should never need to be invoked directly.
+## 
+## @author Daniel Turek
 
 CAR_calcEVs2 <- nimbleFunction(
     name = 'CAR_calcEVs2',
@@ -456,12 +452,11 @@ CAR_calcEVs2 <- nimbleFunction(
 )
 
 
-#' Calculate the eigenvalues of the normalized adjacency matrix
-#' 
-#' This function calculates the \code{evs} parameter values for the \code{dcar_proper} distribution, and should never need to be invoked directly.
-#' 
-#' @author Daniel Turek
-
+## Calculate the eigenvalues of the normalized adjacency matrix
+## 
+## This function calculates the \code{evs} parameter values for the \code{dcar_proper} distribution, and should never need to be invoked directly.
+## 
+## @author Daniel Turek
 CAR_calcEVs3 <- nimbleFunction(
     name = 'CAR_calcEVs3',
     run = function(C = double(1), adj = double(1), num = double(1)) {
