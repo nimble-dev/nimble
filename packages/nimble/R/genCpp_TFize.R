@@ -137,7 +137,7 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
                 size <- list()
             } else {
                 dtype <- nimType2TfDtype[[sym$type]]
-                if (class(sym$size) == 'uninitializedField') {
+                if (is(sym$size, 'uninitializedField')) {
                     size <- as.list(rep(NA, sym$nDim))
                     for (i in 1:sym$nDim) {
                         size[i] <- list(NULL)
@@ -161,7 +161,7 @@ TfCollectPlaceholders <- function(code, symTab, placeholders = NULL) {
         return(TfCollectPlaceholders(code$args[[2]], symTab, placeholders))
     }
     for (arg in code$args) {
-        if (class(arg) == 'exprClass') {
+        if (is(arg, 'exprClass')) {
             TfCollectPlaceholders(arg, symTab, placeholders)
         }
     }
@@ -294,7 +294,7 @@ tfTranslate <- function(name) {
 ## Returns a tensorflow Tensor that is the final result of the code.
 TfTensorizeExpr <- function(code, placeholders) {
     if (!is.environment(placeholders)) stop()
-    if (class(code) == 'exprClass') {
+    if (is(code, 'exprClass')) {
         while (code$name == '(') {
             code <- code$args[[1]]
         }
@@ -308,13 +308,13 @@ TfTensorizeExpr <- function(code, placeholders) {
         }
         stop(paste('Not implemented:', code$name))
     }
-    if (class(code) == 'numeric') {
+    if (is(code, 'numeric')) {
         return(tensorflow::tf$constant(code, dtype = tensorflow::tf$float64))
     }
-    if (class(code) == 'integer') {
+    if (is(code, 'integer')) {
         return(tensorflow::tf$constant(code, dtype = tensorflow::tf$int64))
     }
-    if (class(code) == 'logical') {
+    if (is(code, 'logical')) {
         return(tensorflow::tf$constant(code, dtype = tensorflow::tf$bool))
     }
     stop(paste('Not implemented:', class(code)))
@@ -324,10 +324,10 @@ TfTensorizeExpr <- function(code, placeholders) {
 ## Also computes gradients wrt each input, if possible.
 ## Setting threads=0 lets tensorflow choose the number of threads.
 exprClasses2serializedTF <- function(code, symTab, threads = 0L) {
-    if (!requireNamespace(tensorflow, 'quietly' = TRUE)) {
+    if (!requireNamespace('tensorflow', 'quietly' = TRUE)) {
         stop('Failed to load tensorflow package')
     }
-    if (!requireNamespace(reticulate, 'quietly' = TRUE)) {
+    if (!requireNamespace('reticulate', 'quietly' = TRUE)) {
         stop('Failed to load reticulate package')
     }
     

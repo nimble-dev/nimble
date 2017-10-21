@@ -65,8 +65,12 @@ samples <- as.matrix(Cmcmc$mvSamples)
 head(samples)
 WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 }
+
 }
 \author{
 Daniel Turek
+}
+\seealso{
+\code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 }
 

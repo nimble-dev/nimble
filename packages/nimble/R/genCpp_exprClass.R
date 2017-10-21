@@ -9,7 +9,7 @@
 ##
 ## In places it is still convenient to use R parse trees, or to generate
 ## code in an R parse tree and then call RparseTree2ExprClasses to convert it
-exprClass <- R6Class(
+exprClass <- R6::R6Class(
     'exprClass',
     portable = FALSE,
     public = list(

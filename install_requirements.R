@@ -4,6 +4,7 @@ requirements <- c(
     'igraph',
     'coda',
     'testthat',
+    'R6',
     'mvtnorm',  ## needed for test-distributions.R
     'abind',    ## needed for test-compareMCMCs.R
     'ggplot2',  ## needed for test-compareMCMCs.R

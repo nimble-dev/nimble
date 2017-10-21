@@ -36,6 +36,8 @@ nimKeyWords <- list(copy = 'nimCopy',
                     svd = 'nimSvd',
                     optim = 'nimOptim',
                     optimDefaultControl = 'nimOptimDefaultControl',
+                    min.bound = 'carMinBound',
+                    max.bound = 'carMaxBound',
                     derivs = 'nimDerivs')
 
 nfMethodRCinterface <- setRefClass(
