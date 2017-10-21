@@ -169,7 +169,7 @@ nimEigen <- function(x, symmetric = FALSE, only.values = FALSE) {
 #' Computes singular values and, optionally, left and right singular vectors of a numeric matrix.
 #' 
 #' @param x a symmetric numeric matrix (double or integer) whose spectral decomposition is to be computed.
-#' @param vectors character that determines whether to calculate left and right singular vectors.  Can take values \code{'none'}, \code{'thin'} or \code{'full'}.  Defaults to \code{'full'}.  See details.
+#' @param vectors character that determines whether to calculate left and right singular vectors.  Can take values \code{'none'}, \code{'thin'} or \code{'full'}.  Defaults to \code{'full'}.  See \sQuote{Details}.
 #'
 #' @author NIMBLE development team
 #'
@@ -834,28 +834,28 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' @param n number of observations.
 #' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
 #' @param weights vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.  If omitted, all weights are taken to be one.
-#' @param num vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.
+#' @param num vector giving the number of neighboring locations of each spatial location, with length equal to the total number of locations.
 #' @param tau scalar precision of the Gaussian CAR prior.
-#' @param c integer number of constraints to impose on the improper density function.  If omitted, \code{c} is calculated as the number of disjoint groups of spatial locations in the adjacency structure. Note that \code{c} should be equal to the number of eigenvalues of the precision matrix that are zero. For example if the neighborhood structure is based on a second-order Markov random field in one dimension has two zero eigenvalue and in two dimensinos has three zero eigenvalues. See Rue and Held (2005) for more information.
-#' @param zero_mean integer specifying whether to set the mean of all locations to zero during MCMC sampling of a node specified with this distribution in BUGS code (default \code{0}). This argument is used only in BUGS model code when specifying models in NIMBLE. If \code{0}, the overall process mean is included implicitly in the value of each location in a BUGS model; if \code{1}, then during MCMC sampling, the mean of all locations is set to zero at each MCMC iteration, and a separate intercept term should be included in the BUGS model. Note that centering during MCMC as implemented in NIMBLE follows the ad hoc approach of \pkg{WinBUGS} and does not sample under the constraint that the mean is zero as discussed on p. 36 of Rue and Held (2005).  See details.
-#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @param c integer number of constraints to impose on the improper density function.  If omitted, \code{c} is calculated as the number of disjoint groups of spatial locations in the adjacency structure, which implicitly assumes a first-order CAR process for each group. Note that \code{c} should be equal to the number of eigenvalues of the precision matrix that are zero. For example, if the neighborhood structure is based on a second-order Markov random field in one dimension then the matrix has two zero eigenvalues and in two dimensions it has three zero eigenvalues. See Rue and Held (2005) and the NIMBLE User Manual for more information.
+#' @param zero_mean integer specifying whether to set the mean of all locations to zero during MCMC sampling of a node specified with this distribution in BUGS code (default \code{0}). This argument is used only in BUGS model code when specifying models in NIMBLE. If \code{0}, the overall process mean is included implicitly in the value of each location in a BUGS model; if \code{1}, then during MCMC sampling, the mean of all locations is set to zero at each MCMC iteration, and a separate intercept term should be included in the BUGS model. Note that centering during MCMC as implemented in NIMBLE follows the ad hoc approach of \pkg{WinBUGS} and does not sample under the constraint that the mean is zero as discussed on p. 36 of Rue and Held (2005).  See \sQuote{Details}.
+#' @param log logical; if \code{TRUE}, probability density is returned on the log scale.
 #'
 #' @author Daniel Turek
 #' 
 #' @details 
 #'
-#' When specifying a CAR distribution in BUGS model code, the \code{zero_mean} parameter should be specified as either 0 or 1 (rather than TRUE or FALSE).
+#' When specifying a CAR distribution in BUGS model code, the \code{zero_mean} parameter should be specified as either \code{0} or \code{1} (rather than \code{TRUE} or \code{FALSE}).
 #' 
-#' Note that because the distribution is improper, \code{rcar_normal} does not generated a sample from the distribution, though as discussed in Rue and Held (2005), it is possible to generate a sample from the distribution under constraints imposed based on the eigenvalues of the precision matrix that are zero.
+#' Note that because the distribution is improper, \code{rcar_normal} does not generate a sample from the distribution. However, as discussed in Rue and Held (2005), it is possible to generate a sample from the distribution under constraints imposed based on the eigenvalues of the precision matrix that are zero.
 #' 
-#' @return \code{dcar_normal} gives the density, and \code{rcar_normal} returns the current process values, since this distribution is improper.
+#' @return \code{dcar_normal} gives the density, while \code{rcar_normal} returns the current process values, since this distribution is improper.
 #' 
 #' @references
 #' Banerjee, S., Carlin, B.P., and Gelfand, A.E. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
 #'
 #' Rue, H. and L. Held (2005). \emph{Gaussian Markov Random Fields}, Chapman and Hall/CRC.
 #' 
-#' @seealso \link{Distributions} for other standard distributions
+#' @seealso \link{CAR-Proper}, \link{Distributions} for other standard distributions
 #' 
 #' @examples
 #' x <- c(1, 3, 3, 4)
@@ -867,8 +867,8 @@ NULL
 
 #' @rdname CAR-Normal
 #' @export
-dcar_normal <- function(x, adj, weights, num, tau, c = CAR_calcNumIslands(adj, num), zero_mean = 0, log = FALSE) {
-    CAR_checkAdjWeightsNum(adj, weights, num)
+dcar_normal <- function(x, adj, weights = adj/adj, num, tau, c = CAR_calcNumIslands(adj, num), zero_mean = 0, log = FALSE) {
+    CAR_normal_checkAdjWeightsNum(adj, weights, num)
     if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
     if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
     if(storage.mode(weights) != 'double')   storage.mode(weights) <- 'double'
@@ -899,12 +899,99 @@ dcar_normal <- function(x, adj, weights, num, tau, c = CAR_calcNumIslands(adj, n
 
 #' @rdname CAR-Normal
 #' @export
-rcar_normal <- function(n = 1, adj, weights, num, tau, c = CAR_calcNumIslands(adj, num), zero_mean = 0) {
+rcar_normal <- function(n = 1, adj, weights = adj/adj, num, tau, c = CAR_calcNumIslands(adj, num), zero_mean = 0) {
     ## it's important that simulation via rcar_normal() does *not* set all values to NA (or NaN),
     ## since initializeModel() will call this simulate method if there are any NA's present,
     ## (which is allowed for island components), which over-writes all the other valid initial values.
     ##return(rep(NaN, length(num)))
     currentValues <- eval(quote(model[[nodes]]), parent.frame(3))
     return(currentValues)
+}
+
+
+#' The CAR-Proper Distribution
+#'
+#'   Density function and random generation for the proper
+#'   Gaussian conditional autoregressive (CAR) distribution.
+#'
+#' @name CAR-Proper
+#'
+#' @param x vector of values.
+#' @param n number of observations.
+#' @param mu vector of the same length as \code{x}, specifying the mean for each spatial location.
+#' @param C vector of the same length as \code{adj}, giving the weights associated with each pair of neighboring locations.  See \sQuote{Details}.
+#' @param adj vector of indices of the adjacent locations (neighbors) of each spatial location.  This is a sparse representation of the full adjacency matrix.
+#' @param num vector giving the number of neighboring locations of each spatial location, with length equal to the number of locations.
+#' @param M vector giving the diagonal elements of the conditional variance matrix, with length equal to the number of locations.  See \sQuote{Details}.
+#' @param tau scalar precision of the Gaussian CAR prior.
+#' @param gamma scalar representing the overall degree of spatial dependence.  See \sQuote{Details}.
+#' @param evs vector of eigenvalues of the adjacency matrix implied by \code{C}, \code{adj}, and \code{num}.  This parameter should not be provided; it will always be calculated using the adjacency information.
+#' @param log logical; if \code{TRUE}, probability density is returned on the log scale.
+#'
+#' @author Daniel Turek
+#'
+#' @details
+#' If both \code{C} and \code{M} are omitted, then all weights are taken as one, and corresponding values of \code{C} and \code{M} are generated.
+#'
+#' The \code{C} and \code{M} parameters must jointly satisfy a symmetry constraint: that \code{M^(-1) \%*\% C} is symmetric, where \code{M} is a diagonal matrix and \code{C} is the full weight matrix that is sparsely represented by the parameter vector \code{C}.
+#'
+#' For a proper CAR model, the value of \code{gamma} must lie within the inverse minimum and maximum eigenvalues of \code{M^(-0.5) \%*\% C \%*\% M^(0.5)}, where \code{M} is a diagonal matrix and \code{C} is the full weight matrix.  These bounds can be calculated using the deterministic functions \code{carMinBound(C, adj, num, M)} and \code{carMaxBound(C, adj, num, M)}, or simultaneously using \code{carBounds(C, adj, num, M)}.  In the case where \code{C} and \code{M} are omitted (all weights equal to one), the bounds on gamma are necessarily (-1, 1).
+#'
+#' @return \code{dcar_proper} gives the density, and \code{rcar_proper} generates random deviates.
+#' @references Banerjee, S., Carlin, B.P., and Gelfand, A.E. (2015). \emph{Hierarchical Modeling and Analysis for Spatial Data}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{CAR-Normal}, \link{Distributions} for other standard distributions
+#'
+#' @examples
+#'
+#' x <- c(1, 3, 3, 4)
+#' mu <- rep(3, 4)
+#' adj <- c(2, 1,3, 2,4, 3)
+#' num <- c(1, 2, 2, 1)
+#'  
+#' ## omitting C and M uses all weights = 1
+#' dcar_proper(x, mu, adj = adj, num = num, tau = 1, gamma = 0.95)
+#'  
+#' ## equivalent to above: specifying all weights = 1,
+#' ## then using as.carCM to generate C and M arguments
+#' weights <- rep(1, 6)
+#' CM <- as.carCM(adj, weights, num)
+#' C <- CM$C
+#' M <- CM$M
+#' dcar_proper(x, mu, C, adj, num, M, tau = 1, gamma = 0.95)
+#'  
+#' ## now using non-unit weights
+#' weights <- c(2, 2, 3, 3, 4, 4)
+#' CM2 <- as.carCM(adj, weights, num)
+#' C2 <- CM2$C
+#' M2 <- CM2$M
+#' dcar_proper(x, mu, C2, adj, num, M2, tau = 1, gamma = 0.95)
+NULL
+
+#' @rdname CAR-Proper
+#' @export
+dcar_proper <- function(x, mu, C = CAR_calcC(adj, num), adj, num, M = CAR_calcM(num), tau, gamma, evs = CAR_calcEVs3(C, adj, num), log = FALSE) {
+    CAR_proper_checkAdjNumCM(adj, num, C, M)
+    if(storage.mode(x) != 'double')   storage.mode(x) <- 'double'
+    if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
+    if(storage.mode(C) != 'double')   storage.mode(C) <- 'double'
+    if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
+    if(storage.mode(num) != 'double')   storage.mode(num) <- 'double'
+    if(storage.mode(M) != 'double')   storage.mode(M) <- 'double'
+    if(storage.mode(evs) != 'double')   storage.mode(evs) <- 'double'
+    .Call(C_dcar_proper, as.double(x), as.double(mu), as.double(C), as.double(adj), as.double(num), as.double(M), as.double(tau), as.double(gamma), as.double(evs), as.logical(log))
+}
+
+#' @rdname CAR-Proper
+#' @export
+rcar_proper <- function(n = 1, mu, C = CAR_calcC(adj, num), adj, num, M = CAR_calcM(num), tau, gamma, evs = CAR_calcEVs3(C, adj, num)) {
+    if(n != 1) warning('rcar_proper only handles n = 1 at the moment')
+    CAR_proper_checkAdjNumCM(adj, num, C, M)
+    if(storage.mode(mu) != 'double')   storage.mode(mu) <- 'double'
+    if(storage.mode(C) != 'double')   storage.mode(C) <- 'double'
+    if(storage.mode(adj) != 'double')   storage.mode(adj) <- 'double'
+    if(storage.mode(num) != 'double')   storage.mode(num) <- 'double'
+    if(storage.mode(M) != 'double')   storage.mode(M) <- 'double'
+    if(storage.mode(evs) != 'double')   storage.mode(evs) <- 'double'
+    .Call(C_rcar_proper, as.integer(n), as.double(mu), as.double(C), as.double(adj), as.double(num), as.double(M), as.double(tau), as.double(gamma), as.double(evs))
 }
 

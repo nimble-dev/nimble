@@ -73,6 +73,10 @@ SEXP int_2_SEXP(int i);
 bool SEXP_2_bool(SEXP Sn, int i = 0);
 SEXP bool_2_SEXP(bool ind);
 
+void populate_SEXP_2_double_for_copyFromRobject(void *vPtr, SEXP rScalar);
+void populate_SEXP_2_int_for_copyFromRobject(void *vPtr, SEXP rScalar);
+void populate_SEXP_2_bool_for_copyFromRobject(void *vPtr, SEXP rScalar);
+
 extern "C" {
   SEXP populate_SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar);
   SEXP extract_double_2_SEXP(SEXP rPtr, SEXP refNum);

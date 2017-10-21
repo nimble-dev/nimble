@@ -3,9 +3,8 @@
 ## terms from dcat dependents.
 calc_dcatConjugacyContributions <- nimbleFunction(
     name = 'calc_dcatConjugacyContributions',
-    run = function(prob = double(1), value = double(0)) {
-        n <- dim(prob)[1]
-        ans <- numeric(n)
+    run = function(ncat = double(0), value = double(0)) {
+        ans <- numeric(ncat)
         ans[value] <- 1
         return(ans)
         returnType(double(1))

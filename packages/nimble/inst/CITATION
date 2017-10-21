@@ -1,0 +1,44 @@
+citHeader("Please cite the Journal of Computational and Graphical Statistics article for general purposes, the package if you need to cite a specific package version, or the manual if you need to cite material from the manual.")
+
+year <- sub("-.*", "", meta$Date)
+note <- sprintf("{R} package version %s", meta$Version)
+noteManual <- sprintf("{R} package manual version %s", meta$Version)
+
+
+bibentry(
+ bibtype = "article",
+ title = "Programming with models: writing statistical algorithms for general model structures with NIMBLE", 
+ journal = "Journal of Computational and Graphical Statistics",
+ volume = "26",
+ issue = "2",
+ pages = "403-413",
+ year = "2017",
+ author = "de Valpine, P., D. Turek, C.J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik",
+ doi = "10.1080/10618600.2016.1172487",
+ textVersion = "de Valpine, P., D. Turek, C.J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik. 2017. Programming with models: writing statistical algorithms for general model structures with NIMBLE. Journal of Computational and Graphical Statistics 26: 403-413. doi: 10.1080/10618600.2016.1172487."
+)
+
+bibentry(
+ bibtype = "misc",
+ title = "NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling",
+ author = person(given = "NIMBLE Development Team"),
+ url = "https://cran.r-project.org/package=nimble",
+ year = year,
+ version = meta$Version,
+ note = note,
+ textVersion = NULL
+)
+
+bibentry(
+ bibtype = "techreport",
+ title = "NIMBLE User Manual",
+ author = person(given = "NIMBLE Development Team"),
+ url = "https://r-nimble.org",
+ year = year,
+ version = meta$Version,
+ note = noteManual,
+ institution = "University of California, Berkeley",
+ textVersion = NULL
+)
+
+

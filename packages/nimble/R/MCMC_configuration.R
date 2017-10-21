@@ -203,11 +203,14 @@ print: A logical argument, specifying whether to print the ordered list of defau
                         if(useConjugacy) {
                             conjugacyResult <- conjugacyResultsAll[[node]]
                             if(!is.null(conjugacyResult)) {
-                                addConjugateSampler(conjugacyResult = conjugacyResult);     next }
+                                addConjugateSampler(conjugacyResult = conjugacyResult,
+                                                    dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                         }
                         if(nodeDist == 'dmulti')       { addSampler(target = node, type = 'RW_multinomial');     next }
                         if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
+                        if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
+                        if(nodeDist == 'dwish')        { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
@@ -221,7 +224,8 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     if(useConjugacy) {
                         conjugacyResult <- conjugacyResultsAll[[node]]
                         if(!is.null(conjugacyResult)) {
-                            addConjugateSampler(conjugacyResult = conjugacyResult);     next }
+                            addConjugateSampler(conjugacyResult = conjugacyResult,
+                                                dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                     }
                     
                     ## if node is discrete 0/1 (binary), assign 'binary' sampler
@@ -242,7 +246,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             if(print)   printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, print = FALSE) {
+        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
@@ -251,12 +255,13 @@ print: A logical argument, specifying whether to print the ordered list of defau
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
             names(dependentCounts) <- gsub('^dep_', '', names(dependentCounts))
-            ## FIXME: add check here of whether node is dynamically indexed and if so pass doDependentScreen flag to do screening
-            ## add _unknownIndex to samplers where we do the screen
-            ## have generate...Definition take arg about whether to do screen
-            conjSamplerName <- createDynamicConjugateSamplerName(prior = prior, dependentCounts = dependentCounts)
+            ## we now have separate sampler functions for the same conjugacy
+            ## when there are both dynamically and non-dynamically indexed
+            ## nodes with that conjugacy, as the dynamically-indexed
+            ## sampler has a check for zero contributions for each dependent
+            conjSamplerName <- createDynamicConjugateSamplerName(prior = prior, dependentCounts = dependentCounts, dynamicallyIndexed = dynamicallyIndexed)
             if(!dynamicConjugateSamplerExists(conjSamplerName)) {
-                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts, doDependentScreen = nimbleOptions()$allowDynamicIndexing)
+                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts, doDependentScreen = dynamicallyIndexed)
                 dynamicConjugateSamplerAdd(conjSamplerName, conjSamplerDef)
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
@@ -292,7 +297,11 @@ Invisibly returns a list of the current sampler configurations, which are sample
                 if(type == 'conjugate') {
                     conjugacyResult <- model$checkConjugacy(target)[[target]]
                     if(!is.null(conjugacyResult)) {
-                        return(addConjugateSampler(conjugacyResult = conjugacyResult, print = print))
+                        varName <- model$getVarNames(nodes = target)
+                        if(length(varName) > 1) stop("MCMCconf: conjugate sampler for more than one variable: ", target, ".")
+                        return(addConjugateSampler(conjugacyResult = conjugacyResult,
+                                                   dynamicallyIndexed = model$modelDef$varInfo[[varName]]$anyDynamicallyIndexed,
+                                                   print = print))
                     } else stop(paste0('Cannot assign conjugate sampler to non-conjugate node: \'', target, '\''))
                 }
                 thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
@@ -788,22 +797,29 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             if(print) printRules()
         },
         addDefaultSamplerAssignmentRules = function() {
-            ## CAR models
-            addRule(quote(model$getDistribution(node) == 'dcar_normal'), 'CAR_normal')
             
 	    ## posterior predictive nodes
             addRule(quote(isEndNode), 'posterior_predictive')
             
 	    ## conjugate nodes
             addRule(quote(useConjugacy && isConjugate),
-                    quote(addConjugateSampler(conjugacyResultsAll[[node]])))
+                    quote(addConjugateSampler(conjugacyResult = conjugacyResultsAll[[node]],
+                                              dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed)))
             
 	    ## multinomial
             addRule(quote(nodeDistribution == 'dmulti'), 'RW_multinomial')
             
 	    ## dirichlet
             addRule(quote(nodeDistribution == 'ddirch'), 'RW_dirichlet')
+            
+            ## CAR models
+            addRule(quote(model$getDistribution(node) == 'dcar_normal'), 'CAR_normal')
+            addRule(quote(model$getDistribution(node) == 'dcar_proper'), 'CAR_proper')
 
+            ## Wishart
+            addRule(quote(model$getDistribution(node) == 'dwish'),
+                    quote(stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.')))
+            
             ## multivariate & multivariateNodesAsScalars: univariate RW
             addRule(quote(isMultivariate && multivariateNodesAsScalars),
                     quote(for(scalarNode in model$expandNodeNames(node, returnScalarComponents = TRUE)) {

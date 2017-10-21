@@ -1,5 +1,8 @@
+                           CHANGES IN VERSION 0.6-7 (October 2017)
 
 USER LEVEL CHANGES
+
+-- Addition of dcar_proper distributino, the proper Gaussian conditional autoregressive (CAR) distribution, and MCMC sampling support.
 
 -- Improved efficiency of MCMC conjugate samplers.
 
@@ -7,12 +10,59 @@ USER LEVEL CHANGES
 
 -- Addition of nimbleMCMC function, providing the most direct one-line invocation of NIMBLE's MCMC engine.
 
+-- Added error-trapping for MCMC where there is a Wishart node without conjugacy.
+
+-- Added warning that RW block sampler may behave poorly with default initial proposal covariance if elements are on very different scales.
+
+-- Modified a variety of warning messages. 
+
+
+-- nimbleModel no longer outputs the names of all uninitialized variables in a model.  Instead, users are directed to use the new $initializeInfo() method if uninitialized variables are detected. 
+
 BUG FIXES
 
 -- Fixed MCMC autoBlocking procedure, to work with new sampler default values system.
 
 -- Fixed MCMC conjugacy system, detection of indexed node names vs. indexed expressions.
 
+-- Fixed bug in MCEM where bounds for multivariate top-level parameters were not stored correctly.
+
+-- MCEM outputs a warning message if the provided model has discrete top-level parameters.
+
+-- Sped up WAIC calculation for large models.
+
+-- Fixed a bug in conjugacy processing when there were multiple dynamically indexed nodes in an expression.
+
+-- Fixed a bug in handling of negative default values.
+
+-- Fixed a bug in compiling multiple models in the same session.
+
+-- Fixed a bug with step() for vectors.
+
+-- Fixed handling of non-trivial conditions for a while() loop.
+
+
+
+
+DEVELOPER LEVEL CHANGES
+
+-- Added new method to generated nimbleFunction C++ classes to copy some member data from R to C++ as a batch, making this step faster.
+
+-- Replaced reference classes with R6 classes for exprClass.
+
+-- Replaced reference class with S3 class for nodeFunctionVector.
+
+-- Added experimental system for expansion of model macros.
+
+-- Removed -g debugger flags from CppCode/libnimble.a in unix-alike systems, thereby greatly reducing library size. 
+
+-- Removed various legacy browser() statements.
+
+-- Cleaned up testing system to make more consistent across test files and in handling of known failures.
+
+-- Flag NIMBLE as requiring C++11, mostly for future purposes.
+
+-- Fix compilation bug when nimbleFunction has a "." in its name.
 
                            CHANGES IN VERSION 0.6-6 (July 2017)
 

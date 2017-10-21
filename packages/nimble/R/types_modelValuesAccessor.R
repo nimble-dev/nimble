@@ -72,7 +72,12 @@ makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
     sourceObject <- accessorVector[[1]] ## a model or modelValues
     
     if(accessorVector[[3]]) {## logProb == TRUE
-        isLogProbName <- grepl('logProb_', nodeNames)
+        ## efficiency note for posterity:
+        ## grepl is inefficient when used extensively.
+        ## Using fixed = TRUE is much more efficient.
+        ## In this case, substr comparison is even more efficient
+        ## isLogProbName <- grepl('logProb_', nodeNames)
+        isLogProbName <- substr(nodeNames, 1, 8) == 'logProb_'
         nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
     }
     varNames <- .Call(parseVar, nodeNames)
