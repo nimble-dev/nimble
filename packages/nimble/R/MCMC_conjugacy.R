@@ -16,7 +16,7 @@ conjugacyRelationshipsInputList <- list(
          link = 'identity',
          dependents = list(
              dmulti = list(param = 'prob', contribution_alpha = 'value'),
-             dcat   = list(param = 'prob', contribution_alpha = 'calc_dcatConjugacyContributions(prob, value)')),
+             dcat   = list(param = 'prob', contribution_alpha = 'calc_dcatConjugacyContributions(k, value)')),
          posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'),
 
     ## flat

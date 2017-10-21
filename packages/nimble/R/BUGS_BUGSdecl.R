@@ -87,7 +87,8 @@ nimbleOrRfunctionNames <- c('[',
                             # distribution functions
                             paste0(c('d','r','q','p'), 't'),
                             paste0(c('d','r','q','p'), 'exp'),
-                            'nimC', 'nimRep', 'nimSeq', 'diag')
+                            'nimC', 'nimRep', 'nimSeq', 'diag',
+                            'length')
 
 functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq', 'diag')
 
