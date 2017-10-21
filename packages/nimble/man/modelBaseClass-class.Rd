@@ -62,6 +62,16 @@ sort: should names be topologically sorted before being returned?
 
 unique: should names be the unique names or should original ordering of nodes (after expansion of any variable names into node names) be preserved}
 
+\item{\code{getCode()}}{Return the code for a model after
+,
+processing if-then-else statements,
+
+expanding macros, and replacing some
+
+keywords (e.g. nimStep for step) to 
+
+avoid R ambiguity.}
+
 \item{\code{getDependencies(nodes, omit = character(), self = TRUE,
   determOnly = FALSE, stochOnly = FALSE, includeData = TRUE,
   dataOnly = FALSE, includeRHSonly = FALSE, downstream = FALSE,

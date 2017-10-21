@@ -15,6 +15,7 @@
 \alias{sampler_AF_slice}
 \alias{sampler_BASE}
 \alias{sampler_CAR_normal}
+\alias{sampler_CAR_proper}
 \alias{sampler_RW}
 \alias{sampler_RW_PF}
 \alias{sampler_RW_PF_block}
@@ -66,6 +67,8 @@ sampler_RW_multinomial(model, mvSaved, target, control)
 sampler_RW_dirichlet(model, mvSaved, target, control)
 
 sampler_CAR_normal(model, mvSaved, target, control)
+
+sampler_CAR_proper(model, mvSaved, target, control)
 }
 \arguments{
 \item{model}{(uncompiled) model on which the MCMC is to be run}
@@ -282,8 +285,23 @@ The CAR_normal sampler operates uniquely on improper (intrinsic) Gaussian condit
 
 The CAR_normal sampler accepts the following control list elements:
 \itemize{
+\item \code{carUseConjugacy}. A logical argument, specifying whether to assign conjugate samplers for conjugate components of the target node. If \code{FALSE}, a RW sampler would be assigned instead. (default = TRUE)
 \item \code{adaptive}. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = \code{TRUE})
 \item \code{adaptInterval}. The interval on which to perform adaptation for any component RW samplers.  Every \code{adaptInterval} MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the \code{scale} variable, based upon the sampler's achieved acceptance rate over the past \code{adaptInterval} iterations. (default = 200)
+\item \code{scale}. The initial value of the normal proposal standard deviation for any component RW samplers.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
+}
+}
+
+\section{CAR_proper sampler}{
+
+
+The CAR_proper sampler operates uniquely on proper Gaussian conditional autoregressive (CAR) nodes, those with a \code{dcar_proper} prior distribution.  It internally assigns one of three univariate samplers to each dimension of the target node: a posterior predictive, conjugate, or RW sampler, however these component samplers are specialized to operate on dimensions of a \code{dcar_proper} distribution.
+
+The CAR_proper sampler accepts the following control list elements:
+\itemize{
+\item \code{carUseConjugacy}. A logical argument, specifying whether to assign conjugate samplers for conjugate components of the target node. If \code{FALSE}, a RW sampler would be assigned instead. (default = \code{TRUE})
+\item \code{adaptive}. A logical argument, specifying whether any component RW samplers should adapt the scale (proposal standard deviation), to achieve a theoretically desirable acceptance rate. (default = \code{TRUE})
+\item \code{adaptInterval}. The interval on which to perform adaptation for any component RW samplers.  Every adaptInterval MCMC iterations (prior to thinning), component RW samplers will perform an adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
 \item \code{scale}. The initial value of the normal proposal standard deviation for any component RW samplers.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
 }
 }
