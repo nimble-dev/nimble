@@ -1,5 +1,5 @@
 #' Class \code{modelBaseClass}
-#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData isEndNode getDistribution isDiscrete isBinary isStoch isDeterm isTruncated isUnivariate getDimension getDependencies setInits checkConjugacy newModel [[,modelBaseClass-method [[<-,modelBaseClass-method
+#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData isEndNode getDistribution isDiscrete isBinary isStoch isDeterm isTruncated isUnivariate getDimension getDependencies setInits checkConjugacy newModel [[,modelBaseClass-method [[<-,modelBaseClass-method initializeInfo
 #' @export
 #' @description
 #' This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
@@ -19,6 +19,7 @@
 #' Rmodel$resetData()
 #' Rmodel$setData(list(x = c(1.2, NA)))   ## flags only 'x[1]' node as data
 #' Rmodel$isData(c('mu', 'x[1]', 'x[2]'))   ## returns c(FALSE, TRUE, FALSE)
+#' @seealso \code{\link{initializeModel}}
 modelBaseClass <- setRefClass('modelBaseClass',
                               fields = list(
                                   modelDef = 'ANY',
@@ -950,16 +951,36 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
 
                                               }
                                       }
+                                    
+                                      if(isTRUE(nimbleOptions('verbose'))){
+                                        varsWithNAs <- NULL
+                                        for(v in .self$getVarNames()){
+                                          if(!nimble:::isValid(.self[[v]])){
+                                            message(' This model is not fully initialized. This is not an error. To see which variables are not initialized, use model$initializeInfo(). For more information on model initialization, see help(modelInitialization).', appendLF = FALSE)
+                                            break()
+                                          }
+                                        }
+                                      }
 
-                                      varsWithNAs <- NULL
-                                      for(v in .self$getVarNames())
-                                          if(!nimble:::isValid(.self[[v]]))
-                                              varsWithNAs <- c(varsWithNAs, v)
-                                      if(!is.null(varsWithNAs))
-                                          if(isTRUE(nimbleOptions('verbose')))
-                                              message(' note that missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.', appendLF = FALSE)
                                   },
-
+                                  initializeInfo = function() {
+                                    '
+Provides more detailed information on which model nodes are not initialized.
+'
+                                    varsWithNAs <- NULL
+                                    for(v in .self$getVarNames()){
+                                      if(!nimble:::isValid(.self[[v]])){
+                                        varsWithNAs <- c(varsWithNAs, v)
+                                      }
+                                    }
+                                    if(!is.null(varsWithNAs)){
+                                      message('Missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), 
+                                              '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly. For more information on model initialization, see help(modelInitialization).')
+                                    }
+                                    else{
+                                      message('All model variables are initialized.')
+                                    }
+                                  },
                                   check = function() {
                                       '
 Checks for errors in model specification and for missing values that prevent use of calculate/simulate on any nodes
@@ -1317,7 +1338,15 @@ whyInvalid <- function(value) {
     stop('should never happen')
 }
 
-
-
-
-
+#' Information on initial values in a nimbleModel
+#'
+#'  Having uninitialized nodes in a nimbleModel can potentially cause some algorithms to fail, and can lead to poor performance in others.  Here are some
+#'  general guidelines on  how non-intitialized variables can affect performance:
+#'  \itemize{
+#'    \item MCMC will atuo-initialize, but will do so from the prior distribution.  This can cause slow convergence, especially in the case of diffuse priors.
+#'    \item Likewise, particle filtering methods will initialize top-level parameters from their prior distributions, which can lead to errors or poor performance in these methods.
+#' }
+#'
+#' @name modelInitialization
+#' @rdname modelInitialization
+#' @export
