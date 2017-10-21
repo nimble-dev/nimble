@@ -10,6 +10,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 	bool valueFlag = false;
 
 	for(int i = 0; i < derivOrders.dimSize(0); i++){
+		cout << derivOrders[i];
 	    if(derivOrders[i] == 0){
 		  valueFlag = true;
      	}
@@ -28,10 +29,15 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 		(*ansList).value[0] += calculate(nodes);
 		return(ansList);
 	}
+	derivOrders.setSize(3);
+	derivOrders[0] = valueFlag;
+	derivOrders[1] = jacobianFlag;
+	derivOrders[2] = hessianFlag;
+	
 	(*ansList).gradient.setSize(1, nodes.totalOutWrtSize);
-	if(hessianFlag){
-		(*ansList).hessian.setSize(nodes.totalOutWrtSize, nodes.totalOutWrtSize, 1);
-	} 
+	// if(hessianFlag){
+		// (*ansList).hessian.setSize(nodes.totalOutWrtSize, nodes.totalOutWrtSize, 1);
+	// } 
 	Map<MatrixXd> ansJacobian(0,0,0);
 	new (&ansJacobian) Map< MatrixXd >((*ansList).gradient.getPtr(),(*ansList).gradient.dim()[0],(*ansList).gradient.dim()[1]);
 	bool isDeterminisitic;
@@ -54,7 +60,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 		cout << "isWrtLine: " << isWrtLine << "\n";
 		isCalcNodeLine = nodes.calcNodeIndicators[i];
 		thisWrtLine = nodes.cumulativeWrtLineNums[i];
-		thisNodeSize = nodes.nodeLengths[i]; 
+		thisNodeSize = nodes.nodeLengths[i]; 			
 		if(isCalcNodeLine){
 			vector<int> thisWrtNodes(length(nodes.parentIndicesList[i]));
 			parentJacobians.resize(length(nodes.parentIndicesList[i]));
@@ -156,6 +162,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 						thisArgIndex += nodes.lineWrtArgSizeInfo[i][k];
 					}
 					if(derivOutputFlag){
+						cout << "copying \n";
 						ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength) = ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength) +
 							chainRuleJacobians[i].block(0, wrtFromStartNode, ansJacobian.rows(), wrtFromLength);	
 					} 
@@ -191,7 +198,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 			if(isCalcNodeLine && valueFlag){
 				(*ansList).value[0] = (*ansList).value[0] + (*thisDerivList).value[0];
 			} 
-		}		
+		}		 
 	}
   return(ansList);  
 }
