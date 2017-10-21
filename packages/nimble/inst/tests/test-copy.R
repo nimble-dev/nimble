@@ -11,7 +11,7 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context('Testing of nimCopy and values()')
+context('Testing of nimCopy and values')
 
 #############
 ## Here is a model with deterministic and stochastic variables of dimensions 0-4, including a multivariate node
