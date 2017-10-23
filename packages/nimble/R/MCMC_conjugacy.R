@@ -16,7 +16,7 @@ conjugacyRelationshipsInputList <- list(
          link = 'identity',
          dependents = list(
              dmulti = list(param = 'prob', contribution_alpha = 'value'),
-             dcat   = list(param = 'prob', contribution_alpha = 'calc_dcatConjugacyContributions(prob, value)')),
+             dcat   = list(param = 'prob', contribution_alpha = 'calc_dcatConjugacyContributions(k, value)')),
          posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'),
 
     ## flat
@@ -778,7 +778,7 @@ conjugacyClass <- setRefClass(
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
-                    if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) { ## FIXME: do so only have one if() here and only insert the check if the sampler involves a dynamic index
+                    if(nimbleOptions()$allowDynamicIndexing && doDependentScreen) { ## FIXME: would be nice to only have one if() here when we loop through multiple parameters
                         if(targetNdim == 0)
                             forLoopBody$addCode(if(COEFF_EXPR != 0) CONTRIB_NAME <<- CONTRIB_NAME + CONTRIB_EXPR,
                                                 list(COEFF_EXPR = subList$coeff, CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
@@ -1181,10 +1181,10 @@ compareConjugacyLists <- function(C1, C2) {
     }
 }
 
-createDynamicConjugateSamplerName <- function(prior, dependentCounts, unknownIndex = FALSE) {
+createDynamicConjugateSamplerName <- function(prior, dependentCounts, dynamicallyIndexed = FALSE) {
     ##depString <- paste0(dependentCounts, names(dependentCounts), collapse='_')  ## including the numbers of dependents
     depString <- paste0(names(dependentCounts), collapse='_')                     ## without the numbers of each type of dependent node
-    paste0('sampler_conjugate_', prior, '_', depString, ifelse(unknownIndex, '_unknownIndex', ''))
+    paste0('sampler_conjugate_', prior, '_', depString, ifelse(dynamicallyIndexed, '_dynamicDeps', ''))
 }
 
 makeDeclareSizeField <- function(firstSize, secondSize, thirdSize, nDim) {

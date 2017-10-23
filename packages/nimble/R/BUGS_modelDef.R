@@ -5,7 +5,8 @@ varInfoClass <- setRefClass('varInfoClass',
                                 mins = 'ANY',
                                 maxs = 'ANY',
                                 nDim = 'ANY',
-                                anyStoch = 'ANY'))
+                                anyStoch = 'ANY',
+                                anyDynamicallyIndexed = 'ANY'))
 
 ## A small class for information about a node in the igraph
 graphNode <- setRefClass(
@@ -2395,7 +2396,8 @@ modelDefClass$methods(genVarInfo3 = function() {
                                                    mins = rep(10000000, nDim),
                                                    maxs = rep(0, nDim),
                                                    nDim = nDim,
-                                                   anyStoch = FALSE)
+                                                   anyStoch = FALSE,
+                                                   anyDynamicallyIndexed = FALSE)
         }
         varInfo[[lhsVar]]$anyStoch <<- varInfo[[lhsVar]]$anyStoch | (BUGSdecl$type == 'stoch')
     }
@@ -2469,7 +2471,8 @@ modelDefClass$methods(genVarInfo3 = function() {
                                                        mins = rep(100000, nDim),
                                                        maxs = rep(0, nDim),
                                                        nDim = nDim,
-                                                       anyStoch = FALSE)
+                                                       anyStoch = FALSE,
+                                                       anyDynamicallyIndexed = FALSE)
             }
             if(varInfo[[rhsVar]]$nDim != length(BUGSdecl$parentIndexNamePieces[[iV]]))
                 stop("Dimension of ", rhsVar, " is ", varInfo[[rhsVar]]$nDim, ", which does not match its usage in '", deparse(BUGSdecl$code), "'.")
@@ -2520,10 +2523,14 @@ modelDefClass$methods(addUnknownIndexVars = function(debug = FALSE) {
             if(BUGSdecl$type != 'unknownIndex') next
             lhsVar <- BUGSdecl$targetVarName
             if(!(lhsVar %in% names(varInfo))) {
+                if(length(BUGSdecl$rhsVars) > 1)
+                    stop("addUnknownIndexVars: more than one right-hand side variable in unknownIndex declaration: ",
+                         deparse(BUGSdecl$code))
                 varInfo[[lhsVar]] <<- varInfo[[BUGSdecl$rhsVars]]$copy()
                 varInfo[[lhsVar]]$varName <<- lhsVar
                 varInfo[[lhsVar]]$anyStoch <<- FALSE
                 unknownIndexNames <<- c(unknownIndexNames, lhsVar)
+                varInfo[[BUGSdecl$rhsVars]]$anyDynamicallyIndexed <<- TRUE
             } else stop("addUnknownIndexVars: ", lhsVar, " already present in varInfo. This code should not have been triggered.")
         }
 })

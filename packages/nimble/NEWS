@@ -21,6 +21,8 @@ USER LEVEL CHANGES
 -- the nimEigen() function now has a symmetric argument, which can be set to TRUE if a matrix is guaranteed to be symmetric (default = FALSE).
 
 
+-- nimbleModel no longer outputs the names of all uninitialized variables in a model.  Instead, users are directed to use the new $initializeInfo() method if uninitialized variables are detected. 
+
 BUG FIXES
 
 -- Fixed MCMC autoBlocking procedure, to work with new sampler default values system.

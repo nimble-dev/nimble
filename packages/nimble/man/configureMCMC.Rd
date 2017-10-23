@@ -66,6 +66,6 @@ See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object
 Daniel Turek
 }
 \seealso{
-\code{\link{samplerAssignmentRules}}, \code{\link{buildMCMC}}
+\code{\link{samplerAssignmentRules}} \code{\link{buildMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
 }
 

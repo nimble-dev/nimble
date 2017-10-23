@@ -63,6 +63,8 @@
 #' 
 #' @return A list with a named element \code{code} that contains the
 #' replacement code.
+#'
+#' @export
 #' 
 #' @examples
 #' nimbleOptions(enableModelMacros = TRUE)

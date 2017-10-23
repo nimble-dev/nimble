@@ -241,10 +241,12 @@ makeStaticInitClass <- function(cppDef, derivMethods) {
                                                                    name = paste0('initTape_', cppDef$name, '_Object_'))
     initializerCodeList <- list()
     for(derivFun in derivMethods){
-      initializerDef <- cppFunctionDef(name = paste0('initTape_', cppDef$name), returnType = emptyTypeInfo())
-      initializerCodeList <- c(initializerCodeList,
-                               substitute(push_back(quote(CLASSNAME::allADtapePtrs_), quote(CLASSNAME::ADTAPINGNAME()) ),  
-                                          list(CLASSNAME = as.name(cppDef$name),ADTAPINGNAME = as.name(paste0(derivFun, "_callForADtaping_")))))
+        initializerDef <- cppFunctionDef(name = paste0('initTape_', cppDef$name), returnType = emptyTypeInfo())
+        ## use of parse instead of substitute is so R CMD check doesn't flag CLASSNAME:: as an unmentioned dependency on package named CLASSNAME
+        initializerCodeList <- c(initializerCodeList,
+                                 parse(text = paste0("push_back(", cppDef$name, "::allADtapePtrs_, ",
+                                                     cppDef$name, "::", paste0(derivFun, "_callForADtaping_"), "() )"))[[1]])
+        ## initializerCodeList <- c(initializerCodeList, substitute(push_back(CLASSNAME::allADtapePtrs_, CLASSNAME::ADTAPINGNAME() ), list(CLASSNAME = as.name(cppDef$name),ADTAPINGNAME = as.name(paste0(derivFun, "_callForADtaping_")))))
     }
     initializerCode <- do.call('call', c('{', initializerCodeList), quote = TRUE)
     initializerECcode <- RparseTree2ExprClasses(initializerCode)

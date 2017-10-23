@@ -842,9 +842,10 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll,
         ## Currently this includes various numeric types as well as and nodeFxnVector
         ## There is a problem creating the C++ method for predefined nimbleLists,
         ##   so currently useCompiledCopyMethod will be FALSE for (all) nimbleLists
-        .Call(nimbleUserNamespace$sessionSpecificDll$copyFromRobject,
-              basePtr,
-              Robj)
+
+        ## use eval() to avoid R CMD check issue with registration 
+        eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$copyFromRobject, basePtr, Robj))
+        ## .Call(nimbleUserNamespace$sessionSpecificDll$copyFromRobject, basePtr, Robj)
     }
     
     for(v in cppNames) {
