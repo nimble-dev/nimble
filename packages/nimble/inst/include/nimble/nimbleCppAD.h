@@ -44,7 +44,7 @@ class nimbleCppADinfoClass {
 };
 
 template<class Type>
-Type nimDerivs_dnorm(Type x, Type mean, Type sd, int give_log=0)
+Type nimDerivs_dnorm(Type x, Type mean, Type sd, int give_log)
 {
   Type logres;
   logres=-log(Type(sqrt(2*M_PI))*sd)-Type(.5)*pow((x-mean)/sd,2);
@@ -59,7 +59,6 @@ class nimbleFunctionCppADbase {
  public:
    nimSmartPtr<NIMBLE_ADCLASS> getDerivs(nimbleCppADinfoClass &ADinfo, NimArr<1, double> &derivOrders, NimArr<1, double> &wrtVector) {
 		nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
-		
 		std::size_t n = length(ADinfo.independentVars); // dim of independent vars
 		std::size_t wrt_n = wrtVector.size(); // dim of wrt vars
 		int orderSize = derivOrders.size();
@@ -75,9 +74,9 @@ class nimbleFunctionCppADbase {
 			}
 			ordersFound[static_cast<int>(array_derivOrders[i])] = true;
 		}
-		cout << "ordersFound: " << ordersFound[2] << "\n";
 		vector<double> value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
-		
+	    cout << "value_ans: " << value_ans[0] << "\n";
+
 		if(ordersFound[0] == true){
 			ADlist->value = vectorDouble_2_NimArr(value_ans);
 			if(maxOrder == 0){
