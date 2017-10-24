@@ -182,9 +182,13 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 						// cout << "ansJacobian.rows():" << ansJacobian.rows() << "\n";
 						// cout << "wrtToLength:" << wrtToLength << "\n";
 						// cout << "wrtFromLength:" << wrtFromLength << "\n";
-						// cout << "ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength):" << ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength) << "\n";
-
+						//cout << "pre:" << i << " " << j << " " << ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength) << "\n";
+						if(i == 1 && j == 0){
+							cout << chainRuleJacobians[i].block(0, wrtFromStartNode, ansJacobian.rows(), wrtFromLength) << "\n";
+						}
 						ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength) += chainRuleJacobians[i].block(0, wrtFromStartNode, ansJacobian.rows(), wrtFromLength);
+						//cout << "post:" << i << " " << j << " " << ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength) << "\n";
+
 					} 
 					if(hessianFlag){
 					 	for(int j2 = 0; j2 <  nodes.wrtLineNums.dimSize(0); j2++){

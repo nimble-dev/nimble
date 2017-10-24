@@ -398,8 +398,14 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
             }
             if(derivOutputFlag == TRUE){
               ## If this line is included in output, add the derivative of this line (i) wrt this param (j).
+              # print(paste("pre:", i-1, j-1,  outDerivList$gradient[, derivInfo$wrtToIndices[[j]]] ))
+              if(i == 2 && j == 1){
+                print(chainRuleDerivList[[i]])
+              }
               outDerivList$gradient[, derivInfo$wrtToIndices[[j]]] <- outDerivList$gradient[, derivInfo$wrtToIndices[[j]]]  +  
                 chainRuleDerivList[[i]][,derivInfo$wrtFromIndices[[j]]]
+              # print(paste("post:", i-1, j-1,  outDerivList$gradient[, derivInfo$wrtToIndices[[j]]] ))
+              
             }
             if(hessianFlag){
               ## The Hessian is calculated below using Faà di Bruno's formula.
