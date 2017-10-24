@@ -254,7 +254,7 @@ calculate_keywordInfo <- keywordInfoClass(
         errorContext <- deparse(code)
         
         if(derivsFlag){
-          if(is.null(outerCode$wrt[[1]])){
+          if(is.list(outerCode$wrt) && is.null(outerCode$wrt[[1]])){
             stop("Derivatives of a call to 'calculate()' must have 'wrt' argument specified.")
           }
           nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, wrtNodes = outerCode$wrt,

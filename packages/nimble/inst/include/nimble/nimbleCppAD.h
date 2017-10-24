@@ -75,7 +75,6 @@ class nimbleFunctionCppADbase {
 			ordersFound[static_cast<int>(array_derivOrders[i])] = true;
 		}
 		vector<double> value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
-	    cout << "value_ans: " << value_ans[0] << "\n";
 
 		if(ordersFound[0] == true){
 			ADlist->value = vectorDouble_2_NimArr(value_ans);

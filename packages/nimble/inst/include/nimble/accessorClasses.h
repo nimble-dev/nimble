@@ -157,7 +157,6 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 					lineCounter++;
 				}
 			}
-			cout << cumulativeWrtLineNums[i];
 		}
 	};
  };

@@ -1075,6 +1075,15 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     invisible(NULL)
 }
 
+testCompiledModelDerivsNimFxn <- nimbleFunction(
+  setup = function(model, calcNodes, wrtNodes, order){
+  },
+  run = function(){
+    ansList <- nimDerivs(model$calculate(calcNodes), wrt = wrtNodes, order = order)
+    returnType(ADNimbleList())
+    return(ansList)
+  }
+)
 
 ## Tests taking derivatives of calls to model$calculate(nodes) (or equivalently calculate(model, nodes))
 ## Arguments:
@@ -1110,6 +1119,22 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
   }
   if(testCompiled){
     expect_message(cModel <- compileNimble(model))
+    for(i in seq_along(calcNodeNames)){
+      for(j in seq_along(wrt)){
+        test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes =', paste(calcNodeNames[[i]], collapse = ' '),
+                        'and wrt =', paste(wrt[[j]], collapse = ' ')), {
+                          testFunctionInstance <- testCompiledModelDerivsNimFxn(model, calcNodeNames[[i]], wrt[[j]], order)
+                          ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model)
+                          browser()
+                          cDerivs <- ctestFunctionInstance$run()
+                          chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order, chainRuleDerivs = TRUE)
+                          wrapperDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
+                          expect_equal(wrapperDerivs$value, cDerivs$value)
+                          expect_equal(wrapperDerivs$gradient, cDerivs$gradient, tolerance = tolerance)
+                          expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = tolerance)
+                          })
+      }
+    }
   }
 }
 
