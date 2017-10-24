@@ -11,7 +11,7 @@ require(nimble)
 \label{cha:algos-provided}
 
 
-The NIMBLE algorithm library is growing and as of version 0.5-1 includes a suite of Sequential Monte Carlo algorithms as well as a more robust MCEM. 
+The NIMBLE algorithm library is growing and as of version 0.6-7 includes a suite of Sequential Monte Carlo algorithms as well as a more robust MCEM and k-fold cross-validation. 
 
  
 
@@ -288,3 +288,6 @@ pumpCov
 pumpCov <- pumpMCEM$estimateCov(MLEs = c(alpha = 0.823, beta = 1.261))
 @ 
 
+\section{k-fold Cross-Validation}
+
+The EXPERIMENTAL \cd{runCrossValidate} function in NIMBLE performs k-fold cross-validation on a \cd{nimbleModel}.  More information can be found by calling \cd{help(runCrossValidate)}.
