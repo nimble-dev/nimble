@@ -5,7 +5,7 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-context("Testing of NIMBLE modeling building and operation")
+context("Testing of NIMBLE model building and operation")
 
 ## If you do *not* want to write to results files
 ##    comment out the sink() call below.  And consider setting verbose = FALSE 
@@ -20,6 +20,7 @@ outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileFo
 
 ## capture warnings in gold file
 sink_with_messages(outputFile)
+
 
 
 allModels <- c(# vol1
@@ -422,9 +423,12 @@ test_that("use of dbin/dbinom and dnegbin/dnbinom are identical", {
 
 sink(NULL)
 
+print(trialResults)
+
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
     correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    debug(compareFilesByLine)
     compareFilesByLine(trialResults, correctResults)
 }
 
