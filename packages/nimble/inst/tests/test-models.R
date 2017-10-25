@@ -423,12 +423,9 @@ test_that("use of dbin/dbinom and dnegbin/dnbinom are identical", {
 
 sink(NULL)
 
-print(trialResults)
-
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
     correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
-    debug(compareFilesByLine)
     compareFilesByLine(trialResults, correctResults)
 }
 

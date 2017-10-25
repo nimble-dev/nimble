@@ -18,7 +18,7 @@ generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForDynamicIndexing
 outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForDynamicIndexingTesting'), goldFileName) else tempFileName
 
 ## capture warnings
-sink_with_messages(outputFile)
+sink(outputFile)
 
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
@@ -460,6 +460,7 @@ sink(NULL)
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
     correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    debug(compareFilesByLine)
     compareFilesByLine(trialResults, correctResults)
 }
 

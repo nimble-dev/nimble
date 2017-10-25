@@ -1358,6 +1358,7 @@ sink(NULL)
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
     correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    debug(compareFilesByLine)
     compareFilesByLine(trialResults, correctResults)
 }
 
