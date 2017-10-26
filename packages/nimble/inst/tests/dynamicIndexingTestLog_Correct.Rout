@@ -2425,5 +2425,3 @@ sd    0.04066245 13.485401
 2.5%  0.03795598  4.278142
 97.5% 0.17517628 48.143442
 ===== Finished MCMC test for basic mixture model without conjugacy. =====
-Warning message:
-Placing tests in `inst/tests/` is deprecated. Please use `tests/testthat/` instead 

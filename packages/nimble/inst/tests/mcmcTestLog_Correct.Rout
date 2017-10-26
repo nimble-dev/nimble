@@ -2977,5 +2977,4 @@ sd      0.6607385   0.5216073    1.807713
 ===== Finished MCMC test for conjugate Wishart. =====
 ===== Starting MCMC test for conjugate MVN with ragged dependencies. ========== Starting MCMC test for binary sampler. ========== Starting MCMC test for binary sampler handles out of bounds. ========== Starting MCMC test for RW_multinomial sampler. ========== Starting MCMC test RW_multinomial sampler on distribution of size 2. ========== Starting MCMC test if RW_dirichlet sampler consistent with conjugate multinomial sampler. ========== Starting MCMC test RW_dirichlet sampler more complicated. =====thin = 1: alpha, theta, p1, p2
 ===== Starting MCMC test dcar_normal sampling. ========== Starting test dcar_proper density evaluations. ========== Starting MCMC test dcar_proper sampling. =====thin = 1: tau, gamma, x
-Warning message:
-Placing tests in `inst/tests/` is deprecated. Please use `tests/testthat/` instead 
+
