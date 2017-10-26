@@ -134,16 +134,16 @@ runMCMC <- function(mcmc,
     if(nchains == 1) samplesList <- samplesList[[1]]  ## returns matrix when nchains = 1
     if(summary) {
         if(nchains == 1) {
-            summary <- samplesSummary(samplesList)
+            summaryObject <- samplesSummary(samplesList)
         } else {
-            summary <- lapply(samplesList, samplesSummary)
-            names(summary) <- paste0('chain', 1:nchains)
-            summary$all.chains <- samplesSummary(do.call('rbind', samplesList))
+            summaryObject <- lapply(samplesList, samplesSummary)
+            names(summaryObject) <- paste0('chain', 1:nchains)
+            summaryObject$all.chains <- samplesSummary(do.call('rbind', samplesList))
         }
     }
     retList <- list()
     if(samples) retList$samples <- samplesList
-    if(summary) retList$summary <- summary
+    if(summary) retList$summary <- summaryObject
     if(WAIC)    retList$WAIC    <- WAICvalues
     if(samples + summary + WAIC == 1) retList <- retList[[1]]
     return(retList)
