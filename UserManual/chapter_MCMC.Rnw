@@ -142,13 +142,13 @@ Rmodel <- nimbleModel(code, data = data, inits = initsList)
 ## specified burn-in.  return samples, summary statistics, and WAIC.
 mcmc.out <- nimbleMCMC(model = Rmodel,
                        niter = 20000, nchains = 3, nburnin = 2000,
-                       returnSummary = TRUE, returnWAIC = TRUE)
+                       summary = TRUE, WAIC = TRUE)
 
 ## run ten chains, generating random initial values for each
 ## chain using the inits function specified above.
 ## only return summary statistics from each chain; not all the samples.
 mcmc.out <- nimbleMCMC(model = Rmodel, nchains = 10, inits = initsFunction,
-                       returnSamples = FALSE, returnSummary = TRUE)
+                       samples = FALSE, summary = TRUE)
 
 
 @
@@ -503,7 +503,7 @@ mcmc.out <- runMCMC(Cmcmc, niter = 10000, nburnin = 1000, nchains = 3)
 
 ## run three chains, returning posterior samples, summary statistics,
 ## and the WAIC value for each chain
-mcmc.out <- runMCMC(Cmcmc, nchains = 3, returnSummary = TRUE, returnWAIC = TRUE)
+mcmc.out <- runMCMC(Cmcmc, nchains = 3, summary = TRUE, WAIC = TRUE)
 
 ## run two chains, and specify the initial values for each
 initsList <- list(list(mu = 1, sigma = 1),
@@ -517,7 +517,7 @@ initsFunction <- function()
     list(mu = rnorm(1,0,1), sigma = runif(1,0,100))
 mcmc.out <- runMCMC(Cmcmc, niter = 100000, nchains = 10,
                     inits = initsFunction, setSeed = TRUE,
-                    returnSamples = FALSE, returnSummary = TRUE)
+                    samples = FALSE, summary = TRUE)
 @
 
 
