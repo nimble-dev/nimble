@@ -361,6 +361,7 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
                                             DERIVORDERS = order,
                                             DROPARGS = 'INDEXEDNODEINFO_',
                                             WRT = derivInfo$lineWrtArgsAsCharacters[[i]])))
+          if(i == 4)browser()
           if(isDeterm){
             derivList$value <- 0
             model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)

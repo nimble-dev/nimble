@@ -213,8 +213,6 @@ nimDerivsInfoClass <- setRefClass(
         thisIndex <- 1
 
         for(i in seq_along(model$expandNodeNames(wrtNodeNames))){
-          ## which node is it? let's say unnecessary for now
-          ##wrtLineInfo[[i]]$lineNum <- which(model$expandNodeNames(wrtNodeNames)[i] == derivInfo[[1]])
           ## length of the node
           wrtLineSize[[i]] <<- length(model[[model$expandNodeNames(wrtNodeNames)[i]]])
           wrtLineNums[i] <<- which(model$expandNodeNames(wrtNodeNames)[i] == allWrtAndCalcNodeNames)

@@ -13,7 +13,7 @@ context("Testing of derivatives for calculate() for nimbleModels")
   ADMod1 <- nimbleModel(code = ADCode1, data = list(y = numeric(2)), dimensions = list(y = c(2)),
                         inits = list(x = c(1,1)))
   test_ADModelCalculate(ADMod1, name = 'ADMod1', calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod1$getDependencies('x'))),
-                        wrt = list(c('x', 'y'), c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]'), c('x[1]', 'y', 'x[2]')), testR = FALSE,
+                        wrt = list(c('x[1]', 'y', 'x[2]')), testR = FALSE,
                         testCompiled = TRUE, order = 1)
 
 
