@@ -12,5 +12,3 @@ Warning in md$newModel(data = data, inits = inits, where = where, check = check,
   newModel: tau is not a variable in the model; initial value ignored.
 Warning in md$newModel(data = data, inits = inits, where = where, check = check,  :
   newModel: beta2 is not a variable in the model; initial value ignored.
-Warning message:
-Placing tests in `inst/tests/` is deprecated. Please use `tests/testthat/` instead 

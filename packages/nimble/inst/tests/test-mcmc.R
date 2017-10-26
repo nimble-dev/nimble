@@ -19,7 +19,7 @@ generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCMCtesting'))
 outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForMCMCtesting'), goldFileName) else tempFileName
 
 ## capture warnings
-sink(outputFile)
+sink_with_messages(outputFile)
 
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
@@ -355,6 +355,8 @@ test_that('various conjugacies setup', {
             kTauSd[i] <- 2
             kLogNorm[i] ~ dlnorm(0 - a - 6*i, kTauSd[i])
         }
+        jNorm[1] <- 0
+        kLogNorm[1] <- 0
     })
     
     sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),

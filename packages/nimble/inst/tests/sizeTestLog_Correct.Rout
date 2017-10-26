@@ -1,8 +1,6 @@
 Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.
 Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.
 Error in forwardsolve(t(cholesky), I) : invalid 'k' argument
-In addition: Warning message:
-Placing tests in `inst/tests/` is deprecated. Please use `tests/testthat/` instead 
 Error in forwardsolve(t(cholesky), I) : invalid 'k' argument
 Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.
 Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.

@@ -1274,7 +1274,20 @@ writeOutput <- function(cases, filename) {
     for(i in seq_along(cases)) appendOutput(filename, cases[[i]], names(cases)[i], casePrefix = paste0(i,": "))
 }
 
+stripTestPlacementWarning <- function(lines) {
+    ## deal with Placing tests in `inst/tests/` is deprecated warning
+    ## as it doesn't seem entirely predictable when/where it appears 
+    coreLines <- grep("^Placing tests in", lines)
+    addedLines <- lines[coreLines-1] == "Warning message:"
+    totalLines <- c(coreLines-addedLines, coreLines)
+    if(length(totalLines))
+        return(lines[-totalLines]) else return(lines)
+}
+               
+
 compareFilesByLine <- function(trialResults, correctResults, main = "") {
+    trialResults <- stripTestPlacementWarning(trialResults)
+    trialResults <- stripTestPlacementWarning(correctResults)
     test_that(paste0(main, ': same number of output lines'),
           expect_equal(length(trialResults), length(correctResults)))
     
