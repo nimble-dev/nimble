@@ -278,6 +278,9 @@ nimDerivsInfoClass <- setRefClass(
                   lineWrtArgSizeInfo[[i]][j] <<- lineWrtArgSizeInfo[[i]][j] + wrtInfoList$argSize
                 }
               }
+              else{
+                lineWrtArgsAsCharacters[[i]] <<- NA
+              }
             }
             if(cInfo){
               functionArgsDimsList <- formalArgNames[-1]

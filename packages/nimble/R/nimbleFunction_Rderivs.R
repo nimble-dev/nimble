@@ -275,7 +275,7 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
       warning('not all calculate nodes depend on a wrtNode')
     }
   }
-  derivInfo <- nimDerivsInfoClass(wrtPars, nodes, model)
+  derivInfo <- nimDerivsInfoClass(wrtPars, nodes, model, cInfo = TRUE)
   hessianFlag <- 2 %in% order
   jacobianFlag <- 1 %in% order || hessianFlag ## note that to calculate Hessians using chain rule, must have gradients. 
   if(jacobianFlag && !(1 %in% order)) order <- c(order, 1)
@@ -389,7 +389,7 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
             ## Iterate over this line's parent nodes.
             for(k in seq_along(derivInfo$parentIndicesList[[i]])){
               if(!is.null(parentGradients[[k]])){
-                ## Calculate derivs of this node (i) wrt this parameter (j) for this parent node (k) via chain rule. 
+                ## Calculate derivs of this node (i) wrt this parameter (j) for this parent node (k) via chain rule.
                 chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[j]]] <- chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[j]]] +
                   derivList$gradient[,(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]), drop = FALSE]%*%parentGradients[[k]][,derivInfo$wrtLineIndices[[j]], drop = FALSE]
                 
@@ -398,14 +398,9 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
             }
             if(derivOutputFlag == TRUE){
               ## If this line is included in output, add the derivative of this line (i) wrt this param (j).
-              # print(paste("pre:", i-1, j-1,  outDerivList$gradient[, derivInfo$wrtToIndices[[j]]] ))
-              if(i == 2 && j == 1){
-                print(chainRuleDerivList[[i]])
-              }
               outDerivList$gradient[, derivInfo$wrtToIndices[[j]]] <- outDerivList$gradient[, derivInfo$wrtToIndices[[j]]]  +  
                 chainRuleDerivList[[i]][,derivInfo$wrtFromIndices[[j]]]
-              # print(paste("post:", i-1, j-1,  outDerivList$gradient[, derivInfo$wrtToIndices[[j]]] ))
-              
+
             }
             if(hessianFlag){
               ## The Hessian is calculated below using Faà di Bruno's formula.
@@ -481,8 +476,11 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
 }
 
 
-convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName, nimFxnArgsSizes = NULL){
+convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   ## If a vector of wrt args, get individual args.
+  if(is.na(wrtArgs)){
+    return(-1)
+  }
   if(deparse(wrtArgs[[1]]) == 'nimC'){ 
     wrtArgs <- sapply(wrtArgs[-1], function(x){as.character(x)})
   }
