@@ -3,6 +3,9 @@ source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
 
 context("Testing of Tensorflow-ization")
 
+## note: need version of tensorflow recent enough to support tf$cosh
+## on smeagol, make sure to do 'source activate r-tensorflow'
+
 test_that('Tensorflow implementation of axpy works', {
     temporarilyEnableTensorflow()
 
