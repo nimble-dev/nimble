@@ -9,9 +9,8 @@ nimbleOptions(verbose = FALSE)
 
 source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = 'nimble'))
 
-nimbleOptions(allowDynamicIndexing = TRUE)
-
 nimbleAllowDynamicIndexingSetting <- nimbleOptions('allowDynamicIndexing')
+nimbleOptions(allowDynamicIndexing = TRUE)
 
 goldFileName <- 'dynamicIndexingTestLog_Correct.Rout'
 tempFileName <- 'dynamicIndexingTestLog.Rout'
