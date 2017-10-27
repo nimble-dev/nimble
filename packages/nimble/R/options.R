@@ -9,7 +9,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
     list(
         stop_after_processing_model_code = FALSE,
         enableModelMacros = FALSE,
-        allowDynamicIndexing = FALSE,
+        allowDynamicIndexing = TRUE,
         nimbleProjectForTesting = NULL,  ## only used by withTempProject and compileNimble in testing code.
         stopCompilationBeforeLinking = NULL,
         experimentalUseTensorflow = FALSE,
