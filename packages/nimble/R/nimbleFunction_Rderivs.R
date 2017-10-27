@@ -275,7 +275,7 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
       warning('not all calculate nodes depend on a wrtNode')
     }
   }
-  derivInfo <- nimDerivsInfoClass(wrtPars, nodes, model, cInfo = TRUE)
+  derivInfo <- nimDerivsInfoClass(wrtPars, nodes, model)
   hessianFlag <- 2 %in% order
   jacobianFlag <- 1 %in% order || hessianFlag ## note that to calculate Hessians using chain rule, must have gradients. 
   if(jacobianFlag && !(1 %in% order)) order <- c(order, 1)
@@ -361,7 +361,6 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
                                             DERIVORDERS = order,
                                             DROPARGS = 'INDEXEDNODEINFO_',
                                             WRT = derivInfo$lineWrtArgsAsCharacters[[i]])))
-          if(i == 4)browser()
           if(isDeterm){
             derivList$value <- 0
             model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)

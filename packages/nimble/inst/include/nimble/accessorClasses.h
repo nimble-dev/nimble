@@ -143,22 +143,20 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 			totalOutWrtSize += wrtToIndices[i].dimSize(0);
 		}
 		
-		totalWrtSize = 0;
-		cumulativeWrtLineNums.setSize(numNodes);
+		cumulativeWrtLineNums.initialize(-1, 1, numNodes);
 		wrtLineSize.setSize(wrtLineNums.dimSize(0));
-		int lineCounter = 0;
-		for(int i = 0; i < numNodes; i++){
-			cumulativeWrtLineNums[i] = -1;
-			if(lineCounter < wrtLineNums.dimSize(0)){
-				if(i == (wrtLineNums[lineCounter] - 1)){
-					wrtLineSize[lineCounter] = nodeLengths[i];
-					totalWrtSize += wrtLineSize[lineCounter];
-					cumulativeWrtLineNums[i] = lineCounter;
-					lineCounter++;
-				}
-			}
+		for(int i = 0; i < wrtLineNums.dimSize(0); i++){
+			cumulativeWrtLineNums[wrtLineNums[i] - 1] = i;
+			wrtLineSize[i] = nodeLengths[wrtLineNums[i] -1];
+			totalWrtSize += wrtLineSize[i];
 		}
-	};
+		for(int i = 0; i < wrtLineNums.dimSize(0); i++){
+			cout << cumulativeWrtLineNums[i];			
+		}
+		for(int i = 0; i < wrtLineNums.dimSize(0); i++){
+			cout << wrtLineSize[i];			
+		}
+	}
  };
  
 ///// Using NodeVectors:

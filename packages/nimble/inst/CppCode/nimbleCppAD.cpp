@@ -66,7 +66,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 	vector<vector<vector<VectorXd > > > parentHessians;   // the parent Hessians are actually only used as vectors in our implementation of faa di brunos theorem, so stored as such.
 	vector< MatrixXd > chainRuleJacobians(length(nodes.parentIndicesList));
 	vector<vector< MatrixXd > > chainRuleHessians(length(nodes.parentIndicesList)); // chainRuleHessians index info:  first vector goes over nodes.parentIndicesList.  Second over third dimension of hessian.  Then individual matrices are first and second dims.
-  
+
 	for(int i = 0; i < length(nodes.parentIndicesList); i++){
 		isDeterminisitic = 1 - nodes.stochNodeIndicators[i];
 		isWrtLine = (nodes.cumulativeWrtLineNums[i] >= 0);
@@ -102,24 +102,24 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 						parentJacobians[j].block(sumRowLengths, 0, thisRowLength, nodes.totalWrtSize) = chainRuleJacobians[nodes.parentIndicesList[i][j][k]].block(0, 0, thisRowLength, nodes.totalWrtSize);
 						sumRowLengths = sumRowLengths + thisRowLength;
 					} 
-					// if(hessianFlag){
-						// parentHessians[j].resize(nodes.totalWrtSize);
-						// for(int k = 0; k < nodes.totalWrtSize; k++){
-							// parentHessians[j][k].resize(nodes.totalWrtSize);
-							// for(int l = 0; l < nodes.totalWrtSize; l++){
-								// parentHessians[j][k][l].resize(sumParentDims);
-							// }
-						// }
- 						// for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
-							// for(int l = 0; l <  chainRuleHessians[nodes.parentIndicesList[i][j][k]][0].rows(); l++){
-								// for(int m = 0; m <  chainRuleHessians[nodes.parentIndicesList[i][j][k]][0].cols(); m++){
-									// for(int n = 0; n < sumParentDims; n++){
-										// parentHessians[j][l][m](n) = chainRuleHessians[nodes.parentIndicesList[i][j][k]][n](l, m);
-									// }
-								// }
-							// }
-						// } 
-					// } 
+					if(hessianFlag){
+						parentHessians[j].resize(nodes.totalWrtSize);
+						for(int k = 0; k < nodes.totalWrtSize; k++){
+							parentHessians[j][k].resize(nodes.totalWrtSize);
+							for(int l = 0; l < nodes.totalWrtSize; l++){
+								parentHessians[j][k][l].resize(sumParentDims);
+							}
+						}
+ 						for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
+							for(int l = 0; l <  chainRuleHessians[nodes.parentIndicesList[i][j][k]][0].rows(); l++){
+								for(int m = 0; m <  chainRuleHessians[nodes.parentIndicesList[i][j][k]][0].cols(); m++){
+									for(int n = 0; n < sumParentDims; n++){
+										parentHessians[j][l][m](n) = chainRuleHessians[nodes.parentIndicesList[i][j][k]][n](l, m);
+									}
+								}
+							}
+						} 
+					} 
 				}
 				else{				
 					thisWrtNodes[j] = 0;
@@ -161,42 +161,27 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 					int wrtToLength = nodes.wrtToIndices[j].dimSize(0);
 					int wrtFromStartNode = nodes.wrtFromIndices[j][0] - 1;
 					int wrtFromLength = nodes.wrtFromIndices[j].dimSize(0);
-	 
+	 				cout << "j" << j << "\n";
+
+					cout << "wrtStartNode" << wrtStartNode << "\n";
+					cout << "wrtLength" << wrtLength << "\n";
+					cout << "wrtToStartNode" << wrtToStartNode << "\n";
+					cout << "wrtToLength" << wrtToLength << "\n";
+					cout << "wrtFromStartNode" << wrtFromStartNode << "\n";
+					cout << "wrtFromLength" << wrtFromLength << "\n";
+
 					Map<MatrixXd> thisJacobian(0,0,0);
 					new (&thisJacobian) Map< MatrixXd >((*thisDerivList).gradient.getPtr(),(*thisDerivList).gradient.dimSize(0),(*thisDerivList).gradient.dimSize(1));
+					
 					for(int k = 0; k < length(nodes.parentIndicesList[i]) ; k++){
 						if(thisWrtNodes[k] == 1){
-							//if(i < 4){
-								// cout << "thisArgIndex: " <<  thisArgIndex << "\n";
-
-								// cout << "nodes.lineWrtArgSizeInfo[i][k]: " << nodes.lineWrtArgSizeInfo[i][k] << "\n";
-								// cout << "parentJacobians[k](0,0): " << parentJacobians[k](0,0) << "\n";	
-								// cout << "parentJacobians[k](0,1): " << parentJacobians[k](0,1) << "\n";			
-								// cout << "parentJacobians[k](0,2): " << parentJacobians[k](0,2) << "\n";			
-								// cout << "parentJacobians[k](0,3): " << parentJacobians[k](0,3) << "\n";			
+							chainRuleJacobians[i].block(0, wrtStartNode, chainRuleJacobians[i].rows(), wrtLength) += (thisJacobian).block(0, thisArgIndex, (thisJacobian).rows(), nodes.lineWrtArgSizeInfo[i][k])*parentJacobians[k].block(0, wrtStartNode, parentJacobians[k].rows(), wrtLength);
 								
-							 
-								chainRuleJacobians[i].block(0, wrtStartNode, chainRuleJacobians[i].rows(), wrtLength) += (thisJacobian).block(0, thisArgIndex, (thisJacobian).rows(), nodes.lineWrtArgSizeInfo[i][k])*parentJacobians[k].block(0, wrtStartNode, parentJacobians[k].rows(), wrtLength);
-							//}
 						}
 						thisArgIndex += nodes.lineWrtArgSizeInfo[i][k];
 					}
 					if(derivOutputFlag){
-						// cout << "copying \n";
-						// cout << "chainRuleJacobians[i](0, 0):" << chainRuleJacobians[i](0, 0) << "\n";
-						// cout << "wrtToStartNode:" << wrtToStartNode << "\n";
-						// cout << "wrtFromStartNode:" << wrtFromStartNode << "\n";
-						// cout << "ansJacobian.rows():" << ansJacobian.rows() << "\n";
-						// cout << "wrtToLength:" << wrtToLength << "\n";
-						// cout << "wrtFromLength:" << wrtFromLength << "\n";
-						// cout << "pre:" << i << " " << j << " " << ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength) << "\n";
-						// if(i == 3 && j == 0){
-							// cout << "wrtStartNode " << wrtStartNode << "\n";
-							// cout << "wrtLength" << wrtLength << "\n";
-						// }
 						ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength) += chainRuleJacobians[i].block(0, wrtFromStartNode, ansJacobian.rows(), wrtFromLength);
-						// // cout << "post:" << i << " " << j << " " << ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength) << "\n";
-
 					} 
 					// if(hessianFlag){
 					 	// for(int j2 = 0; j2 <  nodes.wrtLineNums.dimSize(0); j2++){
@@ -275,214 +260,9 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 	if(hessianFlag){
 		ansHessian.triangularView<Eigen::Lower>() = ansHessian.transpose().triangularView<Eigen::Lower>();
 	}
-	if(hessianFlag){
-		ansHessian.triangularView<Eigen::Lower>() = ansHessian.transpose().triangularView<Eigen::Lower>();
-	}
 
   return(ansList);  
 }
-
-
-// nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE){
-  // nfv <-  nodeFunctionVector(model, model$expandNodeNames(c(nodes, 
-                                                            // model$expandNodeNames(wrtPars)), 
-                                                          // sort = TRUE), 
-                             // sortUnique = FALSE)
-  // declIDs <- nfv$indexingInfo$declIDs
-  // chainRuleDerivList <- list()
-  // if(hessianFlag) chainRuleHessianList <- list()
-  // ## totalOutWrtSize is the sum of the lengths of all ouput wrt parameters.
-  // totalOutWrtSize <- sum(sapply(derivInfo$wrtToIndices, function(x){return(length(x))}))
-  // ## outDerivList will be returned from this function.
-  // outDerivList <- ADNimbleList$new()
-  // if(valueFlag) outDerivList$value = 0
-  // outDerivList$gradient = matrix(0, ncol = totalOutWrtSize, nrow = 1)
-  // if(hessianFlag) outDerivList$hessian = array(0, dim = c(totalOutWrtSize, totalOutWrtSize, 1))
-  // totalWrtSize <-  sum(sapply(derivInfo$wrtLineSize, function(x){return(x)}))
-  // wrtLineNums <- derivInfo$wrtLineNums
-  // calcNodesLineNums <- which(derivInfo$calcNodeIndicators == 1)
-  // for(i in seq_along(derivInfo$allWrtAndCalcNodeNames)){
-    // if(length(calcNodesLineNums) > 0){
-      // declID <- declIDs[i]
-      // isDeterm <- derivInfo$stochNodeIndicators[i] == 0
-      // thisWrtLine <- which(wrtLineNums == i)
-      // isWrtLine <-  derivInfo$wrtNodeIndicators[i] == 1
-      // isCalcNodeLine <- i %in% calcNodesLineNums
-      // ## Below shouldn't be necessary in c++ chain rule code.
-      // ## If this node is a calulate node,
-      // ## we need to take derivatives of its calculateWithArgs function.  The derivative function
-      // ## call is evaluated below.
-      // thisNodeSize <- length(values(model, derivInfo$allWrtAndCalcNodeNames[i]))  
-      // unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[nfv$indexingInfo$unrolledIndicesMatrixRows[i], ]
-      // if(isCalcNodeLine){
-        // calcWithArgs <- model$nodeFunctions[[declID]]$calculateWithArgs
-        
-        // ## Below we construct two lists:
-        // ## parentGradients, a list of all the gradients of the parent nodes of each argument of this node.
-        // ## parentHessians, a list of all the hessians of the parent nodes of this node.  
-        // parentGradients <- vector('list', length = length(derivInfo$parentIndicesList[[i]]))
-        // if(hessianFlag) parentHessians <- vector('list', length = length(derivInfo$parentIndicesList[[i]]))
-        // for(k in seq_along(derivInfo$parentIndicesList[[i]])){
-          // if(k == 1 && isWrtLine){
-            // ## The first argument (k = 1) of a node's calculateWithArgs function will always be the node itself.
-            // ## If this node is a wrt node, we want to set the parent gradient of the first arg (the derivative of this node wrt itself)
-            // ## to the identity.
-            // parentGradients[[k]] <- matrix(0, nrow = derivInfo$wrtLineSize[[thisWrtLine]],
-                                           // ncol = totalWrtSize)
-            // parentGradients[[k]][, derivInfo$wrtLineIndices[[thisWrtLine]]] <- diag(derivInfo$wrtLineSize[[thisWrtLine]])
-          // }
-          // else if(derivInfo$parentIndicesList[[i]][[k]][1] > 0){
-            // ## Otherwise, if argument k has parents that depend on a wrt node, grab the parent gradients (which will have already been calculated)
-            // ## and combine them into a single matrix.
-            // parentGradientsList <- chainRuleDerivList[derivInfo$parentIndicesList[[i]][[k]]]
-            // parentGradients[[k]] <- parentGradientsList[[1]]
-            // if(length(parentGradientsList) > 1){
-              // for(i_listEntry in 2:length(parentGradientsList)){
-                // parentGradients[[k]] <- rbind(parentGradients[[k]], parentGradientsList[[i_listEntry]])
-              // }
-            // }
-            // ## Similarly, grab the parent Hessians (which will have already been calculated)
-            // ## and combine them into a single array.
-            // if(hessianFlag){
-              // parentHessiansList <- chainRuleHessianList[derivInfo$parentIndicesList[[i]][[k]]]
-              // parentHessiansDim <- sum(sapply(parentHessiansList, function(x){return(dim(x)[3])}))
-              // parentHessians[[k]] <- array(NA, dim = c(dim(parentHessiansList[[1]])[1], dim(parentHessiansList[[1]])[1],
-                                                       // parentHessiansDim))
-              // thisDim <- 1
-              // for(i_listEntry in 1:length(parentHessiansList)){
-                // parentHessians[[k]][, , thisDim:(thisDim + dim(parentHessiansList[[i_listEntry]])[3] - 1)] <- parentHessiansList[[i_listEntry]]
-                // thisDim <- thisDim +  dim(parentHessiansList[[i_listEntry]])[3]
-              // }
-            // }
-          // }
-        // }
-        // if(!is.na(derivInfo$lineWrtArgsAsCharacters[[i]][1])){
-          // derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS, WRT),
-                                       // list(CALCCALL = derivInfo$calcWithArgsCalls[[i]],
-                                            // DERIVORDERS = order,
-                                            // DROPARGS = 'INDEXEDNODEINFO_',
-                                            // WRT = derivInfo$lineWrtArgsAsCharacters[[i]])))
-
-          // if(isDeterm){
-            // derivList$value <- 0
-            // model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)
-          // }
-          
-          // ## The derivOutputFlag determines whether the derivatives of this node (node i): 
-          // ## should be calculated for inclusion in the chain rule output (TRUE),
-          // ## should be calculated for later use in the chain rule (FALSE), 
-          // derivOutputFlag <- if(isDeterm) FALSE else TRUE
-          
-          // if(derivOutputFlag == TRUE){
-            // ## If these derivatives will be included in output, we are taking derivative of a log prob. calculation,
-            // ## so ouput will be length 1, and input args will be all wrt args.
-            // chainRuleDerivList[[i]] <- matrix(0, nrow = 1, ncol = totalWrtSize)
-            // if(hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWrtSize, totalWrtSize, 1))
-          // }
-          // else{
-            // ## otherwise, we are taking derivative of a node value calculation (not log prob. calculation).
-            // ## so ouput will be the length of this node, and input args will be all wrt args.
-            // chainRuleDerivList[[i]] <- matrix(0, nrow = thisNodeSize, ncol = totalWrtSize)
-            // if(hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWrtSize, totalWrtSize, thisNodeSize))
-          // }
-          // ## Iterate over all wrt params.
-          // for(j in seq_along(wrtLineNums)){
-            // thisArgIndex <- 0
-            // ## Iterate over this line's parent nodes.
-            // for(k in seq_along(derivInfo$parentIndicesList[[i]])){
-              // if(!is.null(parentGradients[[k]])){
-                // ## Calculate derivs of this node (i) wrt this parameter (j) for this parent node (k) via chain rule. 
-                // chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[j]]] <- chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[j]]] +
-                  // derivList$gradient[,(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]), drop = FALSE]%*%parentGradients[[k]][,derivInfo$wrtLineIndices[[j]], drop = FALSE]
-                
-              // }
-              // thisArgIndex <- thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]
-            // }
-            // if(derivOutputFlag == TRUE){
-              // ## If this line is included in output, add the derivative of this line (i) wrt this param (j).
-              // outDerivList$gradient[, derivInfo$wrtToIndices[[j]]] <- outDerivList$gradient[, derivInfo$wrtToIndices[[j]]]  +  
-                // chainRuleDerivList[[i]][,derivInfo$wrtFromIndices[[j]]]
-            // }
-            // if(hessianFlag){
-              // ## The Hessian is calculated below using Faà di Bruno's formula.
-              // ## Second iteration over wrt parameters 
-              // for(j_2 in j:length(wrtLineNums)){
-                // thisArgIndex <- 0
-                // ## Iterate over this line's parent nodes.
-                // for(k in seq_along(derivInfo$parentIndicesList[[i]])){
-                  // if(!is.null(parentHessians[[k]])){
-                    // for(dim1 in derivInfo$WrtLineIndices[[j]]){
-                      // for(dim2 in derivInfo$WrtLineIndices[[j_2]]){
-                        // chainRuleHessianList[[i]][dim1, dim2, ] <- chainRuleHessianList[[i]][dim1, dim2, ] +
-                          // c(derivList$gradient[ ,(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]), drop = FALSE]%*%parentHessians[[k]][dim1, dim2, , drop = FALSE])
-                      // }
-                    // }
-                  // }
-                  // thisArgIndex_2 <- 0
-                  // for(k_2 in seq_along(derivInfo$parentIndicesList[[i]])){
-                    // if(!is.null(parentGradients[[k]])){
-                      // if(!is.null(parentGradients[[k_2]])){
-                        // for(dim3 in 1:dim(derivList$hessian)[3]){
-                          // chainRuleHessianList[[i]][derivInfo$wrtLineIndices[[j]], derivInfo$wrtLineIndices[[j_2]], dim3] <- chainRuleHessianList[[i]][derivInfo$wrtLineIndices[[j]], derivInfo$wrtLineIndices[[j_2]], dim3] +
-                            // t(parentGradients[[k]][, derivInfo$wrtLineIndices[[j]], drop = FALSE])%*%derivList$hessian[(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]),(thisArgIndex_2 + 1):(thisArgIndex_2 + derivInfo$lineWrtArgSizeInfo[[i]][k_2]), dim3]%*%
-                            // parentGradients[[k_2]][, derivInfo$wrtLineIndices[[j_2]], drop = FALSE]
-                        // }
-                      // }
-                      
-                    // }
-                    // thisArgIndex_2 <- thisArgIndex_2 + derivInfo$lineWrtArgSizeInfo[[i]][k_2]
-                  // }
-                  // thisArgIndex <- thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]
-                // }
-                // if(derivOutputFlag == TRUE){
-                  // ## If this line is included in output, add the Hessian of this line (i) wrt this param #1 (j) and this param #2 (j_2).
-                  // outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ] <-  outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ]   +
-                    // chainRuleHessianList[[i]][derivInfo$wrtFromIndices[[j]], derivInfo$wrtFromIndices[[j_2]],]
-                // }
-              // }
-            // }
-          // }
-        // }
-        // else{ 
-          // if(valueFlag) derivList <- eval(substitute(nimDerivs(CALCCALL, DERIVORDERS, DROPARGS),
-                                                     // list(CALCCALL = derivInfo$calcWithArgsCalls[[i]],
-                                                          // DERIVORDERS = c(0),
-                                                          // DROPARGS = 'INDEXEDNODEINFO_')))
-          // chainRuleDerivList[[i]] <- matrix(0, nrow = thisNodeSize, ncol = totalWrtSize)
-          // if(hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWrtSize, totalWrtSize, thisNodeSize))
-        // }
-      // }
-      
-      // if(!isDeterm){
-        // ## If this is a wrt node, we need to set the chainRule lists appropriately so that the chain rule
-        // ## will work for dependent nodes of this node.  That means taking the first and second derivs of the
-        // ## function f(x) = x, which will be the identity matrix and 0 respectively.
-        // chainRuleDerivList[[i]] <- matrix(0,nrow = thisNodeSize, ncol = totalWrtSize)
-        // if(isWrtLine)   chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[thisWrtLine]]] <- diag(thisNodeSize)
-        // if(isWrtLine && hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWrtSize, totalWrtSize, thisNodeSize))
-        // if(isCalcNodeLine){
-          // if(valueFlag) outDerivList$value <- outDerivList$value + derivList$value
-        // }
-      // }
-    // }
-  // }
-  
-  // ## Reflect hessian across the diagonal
-  // if(hessianFlag){
-    // upperTriHess <- outDerivList$hessian[,,1]
-    // upperTriHess[lower.tri(upperTriHess)] <-   t(upperTriHess)[lower.tri(upperTriHess)]
-    // outDerivList$hessian[,,1] <-  upperTriHess
-  // }
-  // return(outDerivList)
-// }
-
-
-
-
-
-
-
-
 
 nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nodes,  int iNodeFunction, NimArr<1, double> &derivOrders) {
   nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
