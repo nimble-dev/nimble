@@ -9,6 +9,9 @@ source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = '
 
 nimbleOptions(allowDynamicIndexing = TRUE)
 
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
+
 ## check variations on use of dynamic indexing in BUGS code including building and compiling,
 ## dependencies, and valid and invalid dynamic index values
 
@@ -220,8 +223,34 @@ test_that("Testing conjugacy detection with dynamic indexing", {
 })
 
 
+## Testing that uninitialized dynamic indexes are initialized at start of MCMC and MCMC runs
 
-
+test_that("Testing initialization of uninitialized dynamic indexes", {
+    mix_normal <- nimbleCode({
+        for(i in 1:n) {
+            z[i] ~ dcat(lambda[1:K])
+            y[i] ~ dnorm(mu[z[i]],1)       
+        }
+        lambda[1:K] ~ ddirch(alpha[1:K])
+        for(k in 1:K) {
+            mu[k] ~ dnorm(0.0,0.0001);
+        }   
+    })
+    
+    n <- 200; K <- 2;
+    y1 <- c(rnorm(100, mean = 3, sd = 1), rnorm(100, mean = -3, sd = 1))
+    consts <- list(n = n, K = K)
+    data <- list(y = y1, alpha = rep(1,K))
+    
+    expect_message(model1 <- nimbleModel(code = mix_normal, constants = consts, data = data), "missing value where TRUE/FALSE needed")
+    conf1 <- configureMCMC(model1)
+    Rmcmc <- buildMCMC(model1)
+    Cmodel <- compileNimble(model1)
+    Cmcmc <- compileNimble(Rmcmc, project = model1)
+    expect_silent(Cmcmc$run(100))
+})
+    
+    
 ## MCMC testing
 
 models <- c('hearts')
@@ -490,3 +519,4 @@ test_that('basic multivariate mixture model with conjugacy', {
 options(warn = RwarnLevel)
 
 nimbleOptions(allowDynamicIndexing = FALSE)
+nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
