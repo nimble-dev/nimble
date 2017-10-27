@@ -75,6 +75,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 		thisNodeSize = nodes.nodeLengths[i]; 			
 		if(isCalcNodeLine){
 			vector<int> thisWrtNodes(length(nodes.parentIndicesList[i]));
+			vector<int> thisHessianNodes(length(nodes.parentIndicesList[i]));
 			parentJacobians.resize(length(nodes.parentIndicesList[i]));
 			if(hessianFlag){
 				parentHessians.resize(length(nodes.parentIndicesList[i]));
@@ -90,6 +91,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 					}
 				}
 				else if(nodes.parentIndicesList[i][j][0] > -1){
+					thisHessianNodes[j] = 1;
 					thisWrtNodes[j] = 1;
 					int sumParentDims = 0;
 					for(int k = 0; k < nodes.parentIndicesList[i][j].dimSize(0); k++){
@@ -161,15 +163,6 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 					int wrtToLength = nodes.wrtToIndices[j].dimSize(0);
 					int wrtFromStartNode = nodes.wrtFromIndices[j][0] - 1;
 					int wrtFromLength = nodes.wrtFromIndices[j].dimSize(0);
-	 				cout << "j" << j << "\n";
-
-					cout << "wrtStartNode" << wrtStartNode << "\n";
-					cout << "wrtLength" << wrtLength << "\n";
-					cout << "wrtToStartNode" << wrtToStartNode << "\n";
-					cout << "wrtToLength" << wrtToLength << "\n";
-					cout << "wrtFromStartNode" << wrtFromStartNode << "\n";
-					cout << "wrtFromLength" << wrtFromLength << "\n";
-
 					Map<MatrixXd> thisJacobian(0,0,0);
 					new (&thisJacobian) Map< MatrixXd >((*thisDerivList).gradient.getPtr(),(*thisDerivList).gradient.dimSize(0),(*thisDerivList).gradient.dimSize(1));
 					
@@ -183,46 +176,47 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 					if(derivOutputFlag){
 						ansJacobian.block(0, wrtToStartNode, ansJacobian.rows(), wrtToLength) += chainRuleJacobians[i].block(0, wrtFromStartNode, ansJacobian.rows(), wrtFromLength);
 					} 
-					// if(hessianFlag){
-					 	// for(int j2 = 0; j2 <  nodes.wrtLineNums.dimSize(0); j2++){
-							// thisArgIndex = 0;
-							// int wrtStartNode2 = nodes.wrtLineIndices[j2][0] - 1;
-							// int wrtLength2 = nodes.wrtLineIndices[j2].dimSize(0);
-							// int wrtToStartNode2 = nodes.wrtToIndices[j2][0] - 1;
-							// int wrtToLength2 = nodes.wrtToIndices[j2].dimSize(0);
-							// int wrtFromStartNode2 = nodes.wrtFromIndices[j2][0] - 1;
-							// int wrtFromLength2 = nodes.wrtFromIndices[j2].dimSize(0);
-							// for(int k = 0; k < length(nodes.parentIndicesList[i]) ; k++){
-								// if(thisWrtNodes[k] == 1){
-									// for(int dim1 = 0; dim1 < nodes.wrtLineIndices[j].dimSize(0); dim1++){
-										// for(int dim2 = 0; dim2 < nodes.wrtLineIndices[j2].dimSize(0); dim2++){
-											// VectorXd addToHessian = (thisJacobian).block(0, thisArgIndex, (thisJacobian).rows(), nodes.lineWrtArgSizeInfo[i][k])*parentHessians[k][dim1][dim2];
-											// for(int dim3 = 0; dim3 < length(chainRuleHessians[i]); dim3++){
-												// chainRuleHessians[i][dim3](nodes.wrtLineIndices[j][dim1], nodes.wrtLineIndices[j2][dim2]) += addToHessian[dim3];
-											// }
-										// }
-									// }
-								// }
-								// int thisArgIndex2 = 0;
-								// for(int k2 = 0; k2 < length(nodes.parentIndicesList[i]) ; k2++){
-									// if((thisWrtNodes[k] == 1) && (thisWrtNodes[k2] == 1)){
-											// for(int dim3 = 0; dim3 < chainRuleJacobians[i].rows(); dim3++){
-												// chainRuleHessians[i][dim3].block(wrtStartNode, wrtStartNode2, wrtLength, wrtLength2) += 
-												// parentJacobians[k].block(0, wrtStartNode, parentJacobians[k].rows(), wrtLength).transpose()*
-												// thisHessian[dim3].block(thisArgIndex, thisArgIndex2, nodes.lineWrtArgSizeInfo[i][k], nodes.lineWrtArgSizeInfo[i][k2])*
-												// parentJacobians[k2].block(0, wrtStartNode2, parentJacobians[k2].rows(), wrtLength2);
-											// }
-									// }
-									// thisArgIndex2 += nodes.lineWrtArgSizeInfo[i][k2];
-								// }
-								// thisArgIndex += nodes.lineWrtArgSizeInfo[i][k];
-							// }
-							// if(derivOutputFlag){
-								// // cout << "chainRuleHessians[i][0](0, 0)" <<chainRuleHessians[i][0](0, 0) << "\n";
-								// ansHessian.block(wrtToStartNode, wrtToStartNode2, wrtToLength, wrtToLength2) += chainRuleHessians[i][0].block(wrtFromStartNode, wrtFromStartNode2, wrtFromLength, wrtFromLength2);
-							// }
-						// }
-					// }
+					if(hessianFlag){
+					 	for(int j2 = j; j2 <  nodes.wrtLineNums.dimSize(0); j2++){
+							thisArgIndex = 0;
+							int wrtStartNode2 = nodes.wrtLineIndices[j2][0] - 1;
+							int wrtLength2 = nodes.wrtLineIndices[j2].dimSize(0);
+							int wrtToStartNode2 = nodes.wrtToIndices[j2][0] - 1;
+							int wrtToLength2 = nodes.wrtToIndices[j2].dimSize(0);
+							int wrtFromStartNode2 = nodes.wrtFromIndices[j2][0] - 1;
+							int wrtFromLength2 = nodes.wrtFromIndices[j2].dimSize(0);
+
+							for(int k = 0; k < length(nodes.parentIndicesList[i]) ; k++){
+								if(thisWrtNodes[k] == 1 && thisHessianNodes[k] == 1){
+									for(int dim1 = 0; dim1 < nodes.wrtLineIndices[j].dimSize(0); dim1++){
+										for(int dim2 = 0; dim2 < nodes.wrtLineIndices[j2].dimSize(0); dim2++){
+											VectorXd addToHessian = (thisJacobian).block(0, thisArgIndex, (thisJacobian).rows(), nodes.lineWrtArgSizeInfo[i][k])*parentHessians[k][dim1][dim2];
+											for(int dim3 = 0; dim3 < length(chainRuleHessians[i]); dim3++){
+												chainRuleHessians[i][dim3](nodes.wrtLineIndices[j][dim1] - 1, nodes.wrtLineIndices[j2][dim2] - 1) += addToHessian[dim3];
+											}
+										}
+									}
+								}
+								int thisArgIndex2 = 0;
+								for(int k2 = 0; k2 < length(nodes.parentIndicesList[i]) ; k2++){
+									if(thisWrtNodes[k] == 1 && thisWrtNodes[k2] == 1){
+											for(int dim3 = 0; dim3 < chainRuleJacobians[i].rows(); dim3++){
+												chainRuleHessians[i][dim3].block(wrtStartNode, wrtStartNode2, wrtLength, wrtLength2) += 
+												parentJacobians[k].block(0, wrtStartNode, parentJacobians[k].rows(), wrtLength).transpose()*
+												thisHessian[dim3].block(thisArgIndex, thisArgIndex2, nodes.lineWrtArgSizeInfo[i][k], nodes.lineWrtArgSizeInfo[i][k2])*
+												parentJacobians[k2].block(0, wrtStartNode2, parentJacobians[k2].rows(), wrtLength2);
+											}
+									}
+									thisArgIndex2 += nodes.lineWrtArgSizeInfo[i][k2];
+								}
+								thisArgIndex += nodes.lineWrtArgSizeInfo[i][k];
+							}
+							if(derivOutputFlag){
+								// cout << "chainRuleHessians[i][0](0, 0)" <<chainRuleHessians[i][0](0, 0) << "\n";
+								ansHessian.block(wrtToStartNode, wrtToStartNode2, wrtToLength, wrtToLength2) += chainRuleHessians[i][0].block(wrtFromStartNode, wrtFromStartNode2, wrtFromLength, wrtFromLength2);
+							}
+						}
+					}
 				} 
  			}
 			else{ 
@@ -260,7 +254,6 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 	if(hessianFlag){
 		ansHessian.triangularView<Eigen::Lower>() = ansHessian.transpose().triangularView<Eigen::Lower>();
 	}
-
   return(ansList);  
 }
 

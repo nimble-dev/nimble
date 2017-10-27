@@ -370,7 +370,6 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
           ## should be calculated for inclusion in the chain rule output (TRUE),
           ## should be calculated for later use in the chain rule (FALSE), 
           derivOutputFlag <- if(isDeterm) FALSE else TRUE
-          
           if(derivOutputFlag == TRUE){
             ## If these derivatives will be included in output, we are taking derivative of a log prob. calculation,
             ## so ouput will be length 1, and input args will be all wrt args.
@@ -410,8 +409,8 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
                 ## Iterate over this line's parent nodes.
                 for(k in seq_along(derivInfo$parentIndicesList[[i]])){
                   if(!is.null(parentHessians[[k]])){
-                    for(dim1 in derivInfo$WrtLineIndices[[j]]){
-                      for(dim2 in derivInfo$WrtLineIndices[[j_2]]){
+                    for(dim1 in derivInfo$wrtLineIndices[[j]]){
+                      for(dim2 in derivInfo$wrtLineIndices[[j_2]]){
                         chainRuleHessianList[[i]][dim1, dim2, ] <- chainRuleHessianList[[i]][dim1, dim2, ] +
                           c(derivList$gradient[ ,(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]), drop = FALSE]%*%parentHessians[[k]][dim1, dim2, , drop = FALSE])
                       }

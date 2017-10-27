@@ -744,14 +744,13 @@ length_char_keywordInfo <- keywordInfoClass(
 nimDerivs_keywordInfo <- keywordInfoClass(
   keyword = 'nimDerivs',
   processor = function(code, nfProc) {
-    print('in keyword processing, need to make sure derivsOrder <= 2 and all ints.')
     wrtArgs <- code[['wrt']]
     ## First check to see if nimFxn argument is a method.
     fxnCall <- code[[2]][[1]]
     order <- code[['order']]
-    if(length(order) == 1){
-      code[['order']] <- substitute(nimC(ORDER), list(ORDER = order))
-    }
+    # if(length(order) == 1){
+    #   code[['order']] <- substitute(nimC(ORDER), list(ORDER = order))
+    # }
     if(deparse(fxnCall) == 'calculate'){
       code <- calculate_keywordInfo$processor(code, nfProc)
     } 

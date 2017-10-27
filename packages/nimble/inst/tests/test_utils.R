@@ -1101,39 +1101,32 @@ testCompiledModelDerivsNimFxn <- nimbleFunction(
 ##   tolerance:     A numeric argument, the tolerance to use when comparing wrapperDerivs to chainRuleDerivs.
 ##   verbose:       A logical argument.  Currently serves no purpose.
 test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
-                                  testR = TRUE, testCompiled = FALSE, tolerance = .001,  verbose = TRUE){
+                                  testR = TRUE, testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
   temporarilyAssignInGlobalEnv(model)  
-  if(testR){
-    for(i in seq_along(calcNodeNames)){
-      for(j in seq_along(wrt)){
-        test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes =', paste(calcNodeNames[[i]], collapse = ' '),
-                        'and wrt =', paste(wrt[[j]], collapse = ' ')), {
-                          wrapperDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
-                          chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order, chainRuleDerivs = TRUE)
-                          expect_equal(wrapperDerivs$value, chainRuleDerivs$value)
-                          expect_equal(wrapperDerivs$gradient, chainRuleDerivs$gradient, tolerance = tolerance)
-                          expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = tolerance)
-                        })
-      }
-    }
-  }
+  
   if(testCompiled){
     expect_message(cModel <- compileNimble(model))
-    for(i in seq_along(calcNodeNames)){
-      for(j in seq_along(wrt)){
-        test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes =', paste(calcNodeNames[[i]], collapse = ' '),
-                        'and wrt =', paste(wrt[[j]], collapse = ' ')), {
-                          testFunctionInstance <- testCompiledModelDerivsNimFxn(model, calcNodeNames[[i]], wrt[[j]], order)
-                          ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model)
-                          browser()
-                          cDerivs <- ctestFunctionInstance$run()
+  }
+  for(i in seq_along(calcNodeNames)){
+    for(j in seq_along(wrt)){
+      test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes =', paste(calcNodeNames[[i]], collapse = ' '),
+                      'and wrt =', paste(wrt[[j]], collapse = ' ')), {
+                        wrapperDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
+                        if(testR){
                           chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order, chainRuleDerivs = TRUE)
-                          wrapperDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
-                          expect_equal(wrapperDerivs$value, cDerivs$value)
-                          expect_equal(wrapperDerivs$gradient, cDerivs$gradient, tolerance = tolerance)
-                          expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = tolerance)
-                          })
-      }
+                          if(0 %in% order) expect_equal(wrapperDerivs$value, chainRuleDerivs$value)
+                          if(1 %in% order) expect_equal(wrapperDerivs$gradient, chainRuleDerivs$gradient, tolerance = tolerance)
+                          if(2 %in% order) expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = tolerance)
+                        }
+                        if(testCompiled){
+                          testFunctionInstance <- testCompiledModelDerivsNimFxn(model, calcNodeNames[[i]], wrt[[j]], order)
+                          expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model))
+                          cDerivs <- ctestFunctionInstance$run()
+                          if(0 %in% order) expect_equal(wrapperDerivs$value, cDerivs$value)
+                          if(1 %in% order) expect_equal(wrapperDerivs$gradient, cDerivs$gradient, tolerance = tolerance)
+                          if(2 %in% order) expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = tolerance)
+                        }
+                      })
     }
   }
 }

@@ -150,12 +150,6 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 			wrtLineSize[i] = nodeLengths[wrtLineNums[i] -1];
 			totalWrtSize += wrtLineSize[i];
 		}
-		for(int i = 0; i < wrtLineNums.dimSize(0); i++){
-			cout << cumulativeWrtLineNums[i];			
-		}
-		for(int i = 0; i < wrtLineNums.dimSize(0); i++){
-			cout << wrtLineSize[i];			
-		}
 	}
  };
  
