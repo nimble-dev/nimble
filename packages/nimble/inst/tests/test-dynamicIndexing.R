@@ -7,6 +7,7 @@ options(warn = -1)
 
 source(system.file(file.path('tests', 'dynamicIndexingTestLists.R'), package = 'nimble'))
 
+nimbleAllowDynamicIndexingSetting <- nimbleOptions('allowDynamicIndexing')
 nimbleOptions(allowDynamicIndexing = TRUE)
 
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
@@ -518,5 +519,5 @@ test_that('basic multivariate mixture model with conjugacy', {
 
 options(warn = RwarnLevel)
 
-nimbleOptions(allowDynamicIndexing = FALSE)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
+nimbleOptions(allowDynamicIndexing = nimbleAllowDynamicIndexingSetting)
