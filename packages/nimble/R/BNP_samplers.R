@@ -5,7 +5,7 @@
 # Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
 sampler_MarginalizedG_xi<-nimbleFunction(
-  
+  name = 'sampler_MarginalizedG_xi',
   contains=sampler_BASE,
   
   setup=function(model, mvSaved, target, control){

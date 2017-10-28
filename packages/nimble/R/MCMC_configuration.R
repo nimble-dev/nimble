@@ -210,6 +210,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                         if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
+                        if(nodeDist == 'dCRP')  { addSampler(target = node, type = 'MarginalizedG_xi');         next }
                         if(nodeDist == 'dwish')        { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
