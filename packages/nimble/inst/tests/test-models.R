@@ -1,5 +1,28 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+context("Testing of NIMBLE model building and operation")
+
+## If you do *not* want to write to results files
+##    comment out the sink() call below.  And consider setting verbose = FALSE 
+## To record a new gold file, nimbleOptions('generateGoldFileForMCMCtesting') should contain the path to the directory where you want to put it
+## e.g. nimbleOptions(generateGoldFileForMCMCtesting = getwd())
+## Comparison to the gold file won't work until it is installed with the package.
+
+goldFileName <- 'modelsTestLog_Correct.Rout'
+tempFileName <- 'modelsTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForModelsTesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForModelsTesting'), goldFileName) else tempFileName
+
+## capture warnings in gold file
+sink_with_messages(outputFile)
+
+
+
 allModels <- c(# vol1
     'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
                                         # vol2
@@ -287,17 +310,17 @@ test_that("test of preventing overwriting of data values by inits:", {
     })
     xVal <- c(3, NA)
     xInit <- c(4, 4)
-    m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit))
-    try(expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test"))
-    try(expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test"))
-    try(expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test"))
+    expect_warning(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring values in inits for data nodes")
+    expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test")
+    expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test")
+    expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test")
 
     code <- nimbleCode({
         x[1] ~ dnorm(mu,1)
         x[2] ~ dnorm(mu,1)
         mu ~ dnorm(0, 1)
     })
-    m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit))
+    expect_warning(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring values in inits for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fifth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fifth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fifth test")
@@ -353,49 +376,58 @@ test_that("test of the handling of missing covariates:", {
 
 ## test of use of alias names for distributions
 
-model <- function() {
-    y ~ dnbinom(p, n)
-    p ~ dbeta(3,3)
-    yalt ~ dnegbin(p, n)
+test_that("use of dbin/dbinom and dnegbin/dnbinom are identical", {
+    model <- function() {
+        y ~ dnbinom(p, n)
+        p ~ dbeta(3,3)
+        yalt ~ dnegbin(p, n)
+        
+        y2 ~ dbin(p2, n)
+        p2 ~ dbeta(3,3)
+        yalt2 ~ dbinom(p2, n)
+    }
+    
+    data = list(y = 3, yalt = 3, y2 = 3, yalt2 = 3)
+    constants = list(n = 10)
+    inits <- list(p = 0.5, p2 = 0.5)
+    
+    testBUGSmodel(example = 'test_dist_aliases', dir = "",
+                  model = model, data = c(constants, data), inits = inits,
+                  useInits = TRUE)
+    
+    m <- nimbleModel(body(model), constants = constants, inits = inits, check = FALSE)
+    cm <- compileNimble(m)
+    
+    set.seed(0)
+    simulate(m, c('y','y2'))
+    set.seed(0)
+    simulate(m, c('yalt','yalt2'))
+    set.seed(0)
+    simulate(cm, c('y','y2'))
+    set.seed(0)
+    simulate(cm, c('yalt','yalt2'))
+    
+    expect_equal(m$y, m$yalt, info = "simulate gives different results for dnegbin and dnbinom")
+    expect_equal(getLogProb(m, 'y'), getLogProb(m, 'yalt'),
+                 info = "calculate gives different results for dnegbin and dnbinom")
+    expect_equal(m$y2, m$yalt2, info = "simulate gives different results for dbin and dbinom")
+    expect_equal(getLogProb(m, 'y2'), getLogProb(m, 'yalt2'),
+                 info = "calculate gives different results for dbin and dbinom")
+    expect_equal(cm$y, cm$yalt, info = "compiled simulate gives different results for dnegbin and dnbinom")
+    expect_equal(getLogProb(cm, 'y'), getLogProb(cm, 'yalt'),
+                 info = "compiled calculate gives different results for dnegbin and dnbinom")
+    expect_equal(cm$y2, cm$yalt2, info = "compiled simulate gives different results for dbin and dbinom")
+    expect_equal(getLogProb(cm, 'y2'), getLogProb(cm, 'yalt2'),
+                 info = "compiled calculate gives different results for dbin and dbinom")
+})
 
-    y2 ~ dbin(p2, n)
-    p2 ~ dbeta(3,3)
-    yalt2 ~ dbinom(p2, n)
+sink(NULL)
+
+if(!generatingGoldFile) {
+    trialResults <- readLines(tempFileName)
+    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    compareFilesByLine(trialResults, correctResults)
 }
 
-data = list(y = 3, yalt = 3, y2 = 3, yalt2 = 3)
-constants = list(n = 10)
-inits <- list(p = 0.5, p2 = 0.5)
-
-testBUGSmodel(example = 'test_dist_aliases', dir = "",
-              model = model, data = c(constants, data), inits = inits,
-              useInits = TRUE)
-
-m <- nimbleModel(body(model), constants = constants, inits = inits, check = FALSE)
-cm <- compileNimble(m)
-
-set.seed(0)
-simulate(m, c('y','y2'))
-set.seed(0)
-simulate(m, c('yalt','yalt2'))
-set.seed(0)
-simulate(cm, c('y','y2'))
-set.seed(0)
-simulate(cm, c('yalt','yalt2'))
-
-try(test_that("dnegbin and dnbinom give same results in R model", expect_equal(
-                                                                      m$y, m$yalt, info = "simulate gives different results for dnegbin and dnbinom")))
-try(test_that("dnegbin and dnbinom give same results in R model", expect_equal(
-                                                                      getLogProb(m, 'y'), getLogProb(m, 'yalt'), info = "calculate gives different results for dnegbin and dnbinom")))
-try(test_that("dbin and dbinom give same results in R model", expect_equal(
-                                                                  m$y2, m$yalt2, info = "simulate gives different results for dbin and dbinom")))
-try(test_that("dbin and dbinom give same results in R model", expect_equal(
-                                                                  getLogProb(m, 'y2'), getLogProb(m, 'yalt2'), info = "calculate gives different results for dbin and dbinom")))
-try(test_that("dnegbin and dnbinom give same results in C model", expect_equal(
-                                                                      cm$y, cm$yalt, info = "simulate gives different results for dnegbin and dnbinom")))
-try(test_that("dnegbin and dnbinom give same results in C model", expect_equal(
-                                                                      getLogProb(cm, 'y'), getLogProb(cm, 'yalt'), info = "calculate gives different results for dnegbin and dnbinom")))
-try(test_that("dbin and dbinom give same results in C model", expect_equal(
-                                                                  cm$y2, cm$yalt2, info = "simulate gives different results for dbin and dbinom")))
-try(test_that("dbin and dbinom give same results in C model", expect_equal(
-                                                                  getLogProb(cm, 'y2'), getLogProb(cm, 'yalt2'), info = "calculate gives different results for dbin and dbinom")))
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

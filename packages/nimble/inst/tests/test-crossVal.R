@@ -6,6 +6,14 @@ context("Testing of cross-validation")
 ###  Below LOO-CV value from Gelman '13 "Understanding predictive 
 ###  information criteria for Bayesian models"
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
+
 test_that("voter model cross-validation is accurate: ", {
   y <- c(44.6, 57.76, 49.91, 61.34, 49.60, 61.79, 48.95, 44.70, 59.17, 53.94,
          46.55, 54.74, 50.27, 51.24, 46.32)
@@ -100,3 +108,6 @@ test_that("Radon model WAIC is accurate: ", {
 })
 
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
+nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)

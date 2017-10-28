@@ -3,7 +3,7 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
-options(warn = -1)
+options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 

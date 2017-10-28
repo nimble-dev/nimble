@@ -23,11 +23,11 @@
 #' \dontrun{
 #' testBUGSmodel('pump')
 #' }
-testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL, inits = NULL, useInits = TRUE, debug = FALSE) {
+testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL, inits = NULL, useInits = TRUE, debug = FALSE, verbose = nimbleOptions('verbose')) {
   if(requireNamespace('testthat', quietly = TRUE)) {
     if(!is.null(example) && !is.character(example))
       stop("testBUGSmodel: 'example' argument should be a character vector referring to an existing BUGS example or NULL if provided via the 'model' argument")
-    testthat::context(paste0("testing for BUGS example: ", example))
+    if(verbose) testthat::context(paste0("testing for BUGS example: ", example))
 
     if(is.null(dir)) {
 
@@ -42,7 +42,7 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
       } else {
         stop(paste0("Example: ", example, " not found in Classic BUGS examples; to use your current working directory or if passing inputs as R objects, set 'dir' to be \"\""))
       }
-      cat("Using example in BUGS example directory of the NIMBLE package.\n")
+      if(verbose) cat("Using example in BUGS example directory of the NIMBLE package.\n")
       dir <- file.path(examplesDir, paste0('vol', vol), example)
     }
 
@@ -152,5 +152,6 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     # this works to avoid having too many DLLs, but gives segfault when one quits R afterwards
     if(debug) browser()
   } else warning("testBUGSmodel: testthat package is required.")
+  invisible(NULL)
 }
 

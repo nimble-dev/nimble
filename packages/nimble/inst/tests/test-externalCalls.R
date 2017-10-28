@@ -3,6 +3,9 @@
 
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+
 ## Calling external C:
 
 ## Say we want a C function that adds 1.5 to a vector of values:
@@ -144,3 +147,5 @@ test_that('external calls 3', {
     y <- as.integer(rbinom(5, size = 10, prob = .5))
     expect_equal(sumXY(x, y), CsumXY(x, y), info = "nimbleType arguments to nimbleRcall work.")
 })
+
+options(warn = RwarnLevel)

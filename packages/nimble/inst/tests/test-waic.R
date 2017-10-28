@@ -1,12 +1,17 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
+
 context("Testing of calcWAIC")
 
 ###  BUGS models from Chapter 5 of Gelman and Hill
 ###  Below WAIC values from Gelman '13 "Understanding predictive 
 ###  information criteria for Bayesian models"
 
-test_that("school model WAIC is accurate: ", {
+test_that("school model WAIC is accurate", {
   sigma     <- c(15,10,16,11, 9,11,10,18)
   schoolobs <- c(28,8, -3, 7,-1, 1,18,12)
   schoolSATcode <- nimbleCode({
@@ -35,7 +40,7 @@ test_that("school model WAIC is accurate: ", {
   expect_equal(CschoolSATmcmc$calculateWAIC(), 61.8, tolerance = 2.0)
 })
 
-test_that("voter model WAIC is accurate: ", {
+test_that("voter model WAIC is accurate", {
   y <- c(44.6, 57.76, 49.91, 61.34, 49.60, 61.79, 48.95, 44.70, 59.17, 53.94,
        46.55, 54.74, 50.27, 51.24, 46.32)
   growth <- c(2.4, 2.89, .85, 4.21, 3.02, 3.62, 1.08, -.39, 3.86, 2.27, .38,
@@ -67,7 +72,7 @@ test_that("voter model WAIC is accurate: ", {
 })
 
 
-test_that("Radon model WAIC is accurate: ", {
+test_that("Radon model WAIC is accurate", {
   url <- "http://stat.columbia.edu/~gelman/arm/examples/arsenic/wells.dat"
   wells <- try(read.table(url), silent = TRUE)
   if (inherits(wells, 'try-error')) skip("No internet connection")
@@ -97,3 +102,6 @@ test_that("Radon model WAIC is accurate: ", {
   Cradonmcmc$run(10000)
   expect_equal(Cradonmcmc$calculateWAIC(1000), 3937, tolerance = 10)
 })
+
+nimbleOptions(verbose = nimbleVerboseSetting)
+nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)

@@ -1,8 +1,8 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-context('testing return() type error trapping')
+context('Testing return() type error trapping')
 
 RwarnLevel <- options('warn')$warn
-options(warn = -1)
+options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 nimbleVerboseErrorsSetting <- nimbleOptions('verboseErrors')
