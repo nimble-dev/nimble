@@ -119,7 +119,7 @@ Note that the compiled model is used when running any NIMBLE algorithms via C++,
 
 The most direct approach to invoking NIMBLE's MCMC engine is using the
 \cd{nimbleMCMC} function.  This function can accept the (compiled or uncompiled)
-model object as an argument, and provides a variety of options for executing and
+model object as an argument and provides a variety of options for executing and
 controlling multiple chains of NIMBLE's default MCMC algorithm, and
 returning posterior samples, posterior summary statistics,
 and/or WAIC values.

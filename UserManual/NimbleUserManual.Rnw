@@ -37,7 +37,7 @@
 ## replace.assign replaces "=" with "<-"; 
 ## width controls (not perfectly) width of R code lines, hopefully avoiding some of the margin overflow
 options(replace.assign=TRUE, width=65)
-runMCEMs <- FALSE
+runMCEMs <- TRUE
 opts_chunk$set(eval = TRUE, message = FALSE) ## turned off message() output
 ##options(replace.assign=TRUE, cache.rebuild = TRUE, width=65)
 @

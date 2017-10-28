@@ -81,34 +81,34 @@ End-to-end examples of MCMC in NIMBLE can be found in Sections \ref{sec:creating
 % \end{itemize}
 
 
-\section{One-line invocation of MCMC engine: \cd{nimbleMCMC}}
+\section{One-line invocation of MCMC: \cd{nimbleMCMC}}
 \label{sec:nimbleMCMC}
 
 The most direct approach to executing an MCMC algorithm in NIMBLE is using \cd{nimbleMCMC}.  This single function can be used to create an underlying model and associated MCMC algorithm, compile both of these, execute the MCMC, and return samples, summary statistics, and WAIC values.  This approach circumvents the longer (and more flexible) approach using \cd{nimbleModel}, \cd{configureMCMC}, \cd{buildMCMC}, \cd{compileNimble}, and \cd{runMCMC}, which is described subsequently.
 
-The \cd{nimbleMCMC} function provides control over:
+The \cd{nimbleMCMC} function provides control over the:
 
 \begin{itemize}
-\item Number of MCMC iterations in each chain;
-\item Number of MCMC chains to execute;
-\item Number of burn-in samples to discard from each chain;
-\item Thinning interval on which samples should be recorded;
-\item Model variables to monitor and return posterior samples;
-\item Initial values, or a function for generating initial values for each chain;
-\item Setting the random number seed;
-\item Returning posterior samples as a matrix or a \cd{coda} \cd{mcmc} object;
-\item Returning posterior summary statistics; and
-\item Returning WAIC values calculated from each chain.
+\item number of MCMC iterations in each chain;
+\item number of MCMC chains to execute;
+\item number of burn-in samples to discard from each chain;
+\item thinning interval on which samples should be recorded;
+\item model variables to monitor and return posterior samples;
+\item initial values, or a function for generating initial values for each chain;
+\item setting the random number seed;
+\item returning posterior samples as a matrix or a \cd{coda} \cd{mcmc} object;
+\item returning posterior summary statistics; and
+\item returning WAIC values calculated from each chain.
 \end{itemize}
 
-This entry point for using \cd{nimbleMCMC} is the \cd{code}, \cd{constants}, \cd{data}, and \cd{inits} arguments which are used for building a NIMBLE model (see Chapters \ref{cha:writing-models} and \ref{cha:building-models}).  However, when using \cd{nimbleMCMC}, the \cd{inits} argument can also specify a list of lists of initial values which will be used for each MCMC chain, or a function which generates a list of initial values, which will be generated at the onset of each chain.  As an alternative entry point, a NIMBLE \cd{model} object can also be supplied to \cd{nimbleMCMC}, in which case this model will be used to build the MCMC algorithm.
+This entry point for using \cd{nimbleMCMC} is the \cd{code}, \cd{constants}, \cd{data}, and \cd{inits} arguments that are used for building a NIMBLE model (see Chapters \ref{cha:writing-models} and \ref{cha:building-models}).  However, when using \cd{nimbleMCMC}, the \cd{inits} argument can also specify a list of lists of initial values that will be used for each MCMC chain, or a function that generates a list of initial values, which will be generated at the onset of each chain.  As an alternative entry point, a NIMBLE \cd{model} object can also be supplied to \cd{nimbleMCMC}, in which case this model will be used to build the MCMC algorithm.
 
-Based on its arguments, \cd{nimbleMCMC} optionally returns any combination of:
+Based on its arguments, \cd{nimbleMCMC} optionally returns any combination of
 
 \begin{itemize}
-\item Posterior samples
-\item Posterior summary statistics
-\item WAIC values
+\item posterior samples,
+\item Posterior summary statistics, and
+\item WAIC values.
 \end{itemize}
 
 The above are calculated and returned for each MCMC chain.  Additionally, posterior summary statistics are calculated for all chains combined when multiple chains are run.
@@ -585,6 +585,9 @@ Once an MCMC algorithm has been run, as dscribed in \ref{sec:executing-the-mcmc-
 Cmcmc$calculateWAIC(nburnin = 100)
 @ 
 
+\section{k-fold cross-validation}
+
+The \cd{runCrossValidate} function in NIMBLE performs k-fold cross-validation on a \cd{nimbleModel} fit via MCMC.  More information can be found by calling \cd{help(runCrossValidate)}. This feature is EXPERIMENTAL - please report any problems or questions to the NIMBLE development team.
 
 
 

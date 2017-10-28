@@ -34,11 +34,7 @@ developer discussions on the
   repository}.
 
 If you use NIMBLE in your work, please cite us, as this helps justify past and future funding
-for the development of NIMBLE. For more information, run 
-<<citation, eval=FALSE>>=
-citation('nimble')
-@ 
-in R.
+for the development of NIMBLE. For more information, please call \cd{citation('nimble')} in R.
 
 \section{What does NIMBLE do?}
 \label{sec:what-is-nimble}
