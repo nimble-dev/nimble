@@ -524,7 +524,7 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
       ## dimension information was NOT provided for this variable
       ## let's check to make sure all indexes are present
       if(any(unlist(lapply(as.list(code), is.blank)))) {
-        stop(paste0('Opps! This part of NIMBLE is still under development.', '\n',
+        stop(paste0('Error: This part of NIMBLE is still under development.', '\n',
                     'The model definition included the expression \'', deparse(code), '\', which contains missing indices.', '\n',
                     'There are two options to resolve this:', '\n',
                     '(1) Explicitly provide the missing indices in the model definition (e.g., \'', deparse(example_fillInMissingIndices(code)), '\'), or', '\n',
@@ -1800,6 +1800,8 @@ modelDefClass$methods(addFullDimExtentToUnknownIndexDeclarations = function() {
                 varName <- declInfo[[iDI]]$rhsVars[1] # deparse(parentExpr[[2]])
                 dynamicIndices <- detectDynamicIndexes(parentExpr)
                 ranges <- data.frame(rbind(varInfo[[varName]]$mins[dynamicIndices], varInfo[[varName]]$maxs[dynamicIndices]))
+                if(any(ranges[2, ] == 1))
+                    stop("Variable ", varName, " is dynamically-indexed but has at least one dimension of length one, probably because NIMBLE could not automatically determine its dimensionality. Please provide dimensions via the 'dimensions' argument.")
                 fullExtent <- lapply(ranges, function(x) 
                     substitute(X:Y, list(X = x[1], Y = x[2])))
                 parentExpr[which(dynamicIndices)+2] <- fullExtent
