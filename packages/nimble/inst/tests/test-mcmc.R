@@ -140,7 +140,7 @@ test_that('air example setup', {
 
 test_that('jaw-linear setup', {
     system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) # alternative way to get size info in there
-    test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000, knownFailures = list('R MCMC' = 'Cholesky of NA matrix fails in R 3.4.2 in calculate(model) of initializeModel() but not in R 3.4.1'))
+    test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000) # , knownFailures = list('R MCMC' = 'Cholesky of NA matrix fails in R 3.4.2 in calculate(model) of initializeModel() but not in R 3.4.1'))
 })
 ## note R MCMC used to fail when tried to do Cholesky of 0 matrix in 2-point method, but no longer doing multiplicative link for Wishart targets
                                       
