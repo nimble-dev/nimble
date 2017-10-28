@@ -10,6 +10,7 @@
 \alias{getDistribution}
 \alias{getNodeNames}
 \alias{getVarNames}
+\alias{initializeInfo}
 \alias{isBinary}
 \alias{isData}
 \alias{isDeterm}
@@ -177,6 +178,8 @@ logProb: Logical argument specifying whether or not to include the logProb varia
 
 nodes: An optional character vector supplying a subset of nodes for which to extract the variable names and return the unique set of variable names}
 
+\item{\code{initializeInfo()}}{Provides more detailed information on which model nodes are not initialized.}
+
 \item{\code{isBinary(nodes)}}{Determines whether one or more nodes represent binary random variables
 
 Arguments:
@@ -307,5 +310,8 @@ Rmodel$isData(c('mu', 'x[1]', 'x[2]'))   ## returns c(FALSE, TRUE, FALSE)
 }
 \author{
 Daniel Turek
+}
+\seealso{
+\code{\link{initializeModel}}
 }
 

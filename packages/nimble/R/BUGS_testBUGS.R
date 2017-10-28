@@ -15,6 +15,7 @@
 #' @param inits (optional) (1) character string giving the file name for an R file providing the initial values for parameters as R code [assigning individual objects or as a named list] or (2) a named list providing the values. If neither is provided, the function will look for a file named \code{example}-init or \code{example}-inits including extensions .R, .r, or .txt.
 #' @param useInits boolean indicating whether to test model with initial values provided via \code{inits}
 #' @param debug logical indicating whether to put the user in a browser for debugging when \code{testBUGSmodel} calls \code{readBUGSmodel}.  Intended for developer use.
+#' @param verbose logical indicating whether to print additional logging information
 #' @author Christopher Paciorek
 #' @details
 #' Note that testing without initial values may cause warnings when parameters are sampled from improper or fat-tailed distributions

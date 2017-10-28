@@ -33,7 +33,7 @@ nimSeq(from, to, by, length.out)
 \item{length.out}{desired length of the sequence.}
 }
 \description{
-These functions can be used in nimbleFunctions and compiled using \code{compileNimble}.
+The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{length}, and \code{diag} can be used in nimbleFunctions and compiled using \code{compileNimble}.
 }
 \details{
 For \code{c}, \code{rep}, \code{seq}, these functions are NIMBLE's version of similar R functions, e.g., \code{nimRep} for \code{rep}.   In a \code{nimbleFunction}, either the R name (e.g., \code{rep}) or the NIMBLE name (e.g., \code{nimRep}) can be used.  If the R name is used, it will be converted to the NIMBLE name. For \code{which}, \code{length}, \code{diag}, simply use the standard name without \code{"nim"}. These functions largely mimic (see exceptions below) the behavior of their R counterparts, but they can be compiled in a \code{nimbleFunction} using \code{compileNimble}.

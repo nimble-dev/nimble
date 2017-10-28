@@ -142,7 +142,8 @@ importFroms <- c("coda, effectiveSize, as.mcmc, is.mcmc.list",
                  "R6, R6Class",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",
-                 "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile")
+                 "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile",
+                 "parallel, mclapply")
 ##                 "R2WinBUGS, bugs",
 ##                 "rjags, jags.model",
 ##                 "rjags, coda.samples",

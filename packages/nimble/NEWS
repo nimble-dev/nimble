@@ -2,15 +2,15 @@
 
 USER LEVEL CHANGES
 
--- Addition of dcar_proper distributino, the proper Gaussian conditional autoregressive (CAR) distribution, and MCMC sampling support.
-
--- Improved efficiency of MCMC conjugate samplers.
-
--- Added dcat-ddirch conjugacy.
+-- Addition of dcar_proper distribution, the proper Gaussian conditional autoregressive (CAR) distribution, and MCMC sampling support.
 
 -- Addition of nimbleMCMC function, providing the most direct one-line invocation of NIMBLE's MCMC engine.
 
 -- Addition of runCrossValidate function, which conducts k-fold cross-validation of NIMBLE models.
+
+-- Improved efficiency of MCMC conjugate samplers.
+
+-- Added dcat-ddirch conjugacy.
 
 -- Added error-trapping for MCMC where there is a Wishart node without conjugacy.
 
@@ -20,8 +20,9 @@ USER LEVEL CHANGES
 
 -- the nimEigen() function now has a symmetric argument, which can be set to TRUE if a matrix is guaranteed to be symmetric (default = FALSE).
 
-
 -- nimbleModel no longer outputs the names of all uninitialized variables in a model.  Instead, users are directed to use the new $initializeInfo() method if uninitialized variables are detected. 
+
+-- Sped up WAIC calculation for large models.
 
 BUG FIXES
 
@@ -32,8 +33,6 @@ BUG FIXES
 -- Fixed bug in MCEM where bounds for multivariate top-level parameters were not stored correctly.
 
 -- MCEM outputs a warning message if the provided model has discrete top-level parameters.
-
--- Sped up WAIC calculation for large models.
 
 -- Fixed a bug in conjugacy processing when there were multiple dynamically indexed nodes in an expression.
 
@@ -46,7 +45,6 @@ BUG FIXES
 -- Fixed handling of non-trivial conditions for a while() loop.
 
 -- Results from R's eigen() and NIMBLE's eigen() functions should now match for non-symmetric matrices.
-
 
 DEVELOPER LEVEL CHANGES
 

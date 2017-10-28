@@ -24,7 +24,7 @@
 
 \def\cd#1{\texttt{#1}}
 \def\nm#1{\textit{#1}}
-\newcommand{\ver}{0.6-6}
+\newcommand{\ver}{0.6-7}
 
 \hypersetup{colorlinks=true, linkcolor=red, urlcolor=blue}
 
@@ -37,7 +37,7 @@
 ## replace.assign replaces "=" with "<-"; 
 ## width controls (not perfectly) width of R code lines, hopefully avoiding some of the margin overflow
 options(replace.assign=TRUE, width=65)
-runMCEMs <- TRUE
+runMCEMs <- FALSE
 opts_chunk$set(eval = TRUE, message = FALSE) ## turned off message() output
 ##options(replace.assign=TRUE, cache.rebuild = TRUE, width=65)
 @
