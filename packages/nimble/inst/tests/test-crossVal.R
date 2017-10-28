@@ -40,7 +40,7 @@ test_that("voter model cross-validation is accurate: ", {
                               foldFunction = 'random',
                               lossFunction = 'predictive',
                               MCMCcontrol = list(nMCMCiters = 500),
-                              NbootReps = 2)
+                              nBootReps = 2)
   expect_equal(testOut$CVvalue, -43.8, tolerance = 2)
 })
 
@@ -73,7 +73,7 @@ test_that("voter model cross-validation runs using MSE loss: ", {
                               foldFunction = 'random',
                               lossFunction = 'MSE',
                               MCMCcontrol = list(nMCMCiters = 100),
-                              NbootReps = 2)
+                              nBootReps = 2)
 })
 
 test_that("Radon model WAIC is accurate: ", {
@@ -104,7 +104,7 @@ test_that("Radon model WAIC is accurate: ", {
                               foldFunction = 'random',
                               lossFunction = 'MSE',
                               MCMCcontrol = list(nMCMCiters = 100),
-                              NbootReps = 2)
+                              nBootReps = 2)
 })
 
 
