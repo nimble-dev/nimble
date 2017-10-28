@@ -281,7 +281,7 @@ test_that("dgamma-dinvgamma conjugacy with dependency using rate", {
 # dinvwish_chol
 
 test_that("Test that rinvwish_chol, dinvwish_chol, and rwish_chol give correct results", {
-    set.seed(0)
+    set.seed(1)
     df <- 20
     d <- 3
     C <- crossprod(matrix(rnorm(d^2, 3), d))
@@ -289,17 +289,17 @@ test_that("Test that rinvwish_chol, dinvwish_chol, and rwish_chol give correct r
     
     n <- 100
     draws1 <- draws2 <- draws3 <- array(0, c(d, d, n))
-    set.seed(0)
+    set.seed(1)
     for(i in 1:n)
         draws1[,,i] <- solve(rwish_chol(1, chol(C), df, scale_param = FALSE))
     pmean1 <- apply(draws1, c(1,2), mean)
     
-    set.seed(0)
+    set.seed(1)
     for(i in 1:n)
         draws2[,,i] <- rinvwish_chol(1, chol(C), df, scale_param = TRUE)
     pmean2 <- apply(draws2, c(1,2), mean)
     
-    set.seed(0)
+    set.seed(1)
     for(i in 1:n)
         draws3[,,i] <- rinvwish_chol(1, chol(solve(C)), df, scale_param = FALSE)
     pmean3 <- apply(draws3, c(1,2), mean)
@@ -327,7 +327,7 @@ test_that("Test that rinvwish_chol, dinvwish_chol, and rwish_chol give correct r
                  info = "dinvwish with rate differs from truth")
 })
                                                                         
-set.seed(0)
+set.seed(1)
 
 trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
 covs <- c(3, 2, .5)
@@ -423,9 +423,9 @@ test_that("dflat and dhalfflat usage", {
     conf <- configureMCMC(m, nodes = 'mu')
     mcmc <- buildMCMC(conf)
     cmcmc <- compileNimble(mcmc, project = m)
-    set.seed(0)
+    set.seed(1)
     mcmc$run(10)
-    set.seed(0)
+    set.seed(1)
     cmcmc$run(10000)
     rsmp <- c(as.matrix(mcmc$mvSamples)[,'mu'])
     csmp <- c(as.matrix(cmcmc$mvSamples)[,'mu'])
@@ -441,9 +441,9 @@ test_that("dflat and dhalfflat usage", {
     conf <- configureMCMC(m, nodes = 'sigma')
     mcmc <- buildMCMC(conf)
     cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
-    set.seed(0)
+    set.seed(1)
     mcmc$run(10)
-    set.seed(0)
+    set.seed(1)
     cmcmc$run(10000)
     rsmp <- c(as.matrix(mcmc$mvSamples)[,'sigma'])
     csmp <- c(as.matrix(cmcmc$mvSamples)[,'sigma'])
@@ -457,9 +457,9 @@ test_that("dflat and dhalfflat usage", {
     conf <- configureMCMC(m)
     mcmc <- buildMCMC(conf)
     cmcmc <- compileNimble(mcmc, project = m, resetFunctions = TRUE)
-    set.seed(0)
+    set.seed(1)
     mcmc$run(10)
-    set.seed(0)
+    set.seed(1)
     cmcmc$run(10000)
     rsmp <- as.matrix(mcmc$mvSamples)
     csmp <- as.matrix(cmcmc$mvSamples)
