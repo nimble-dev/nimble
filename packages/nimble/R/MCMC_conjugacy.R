@@ -3,11 +3,13 @@ conjugacyRelationshipsInputList <- list(
 
     ## beta
     list(prior = 'dbeta',
-         link = 'identity',
+         link = c(rep('identity', 3), 'stickbreaking'),
          dependents = list(
              dbern   = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = '1 - value'   ),
              dbin    = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
-             dnegbin = list(param = 'prob', contribution_shape1 = 'size',  contribution_shape2 = 'value'       )),
+             dnegbin = list(param = 'prob', contribution_shape1 = 'size',  contribution_shape2 = 'value'       ),
+             dcat    = list(param = 'prob', contribution_shape1 = 'value == position',
+                            contribution_shape2 = 'value > position')),  ## position is where in the broken stick the target is
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
 
@@ -353,14 +355,22 @@ conjugacyClass <- setRefClass(
             if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
             depNodeDist <- model$getDistribution(depNode)
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
+            if(length(link) > 1) link <- link[which(depNodeDist == dependentDistNames)] # handle multiple link case introduced for beta stickbreaking
             dependentObj <- dependents[[depNodeDist]]
-            linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
-            if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
-            if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
-            linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
-            if(!cc_linkCheck(linearityCheck, link))                           return(NULL)
-            if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
+            if(link != 'stickbreaking') {
+                linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
+                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
+                if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
+                if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
+                linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
+                if(!cc_linkCheck(linearityCheck, link))                           return(NULL)
+                if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
+            } else {
+                browser()
+                stickbreakingCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
+                stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = targetNode)
+                if(!cc_checkStickbreaking(targetNode))                            return(NULL)
+            }
             return(paste0('dep_', depNodeDist))
         },
 
@@ -447,7 +457,9 @@ conjugacyClass <- setRefClass(
             
             ## more new array() setup outputs, instead of declare() statements, for offset and coeff variables
             ## July 2017
-            if(needsLinearityCheck || (nimbleOptions()$allowDynamicIndexing && link == 'identity' && doDependentScreen)) {
+
+            ## the any() here is because of beta-stickbreaking stuff and needs to be considered more carefully 
+            if(any(needsLinearityCheck) || (nimbleOptions()$allowDynamicIndexing && any(link == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
                 for(iDepCount in seq_along(dependentCounts)) {
@@ -582,7 +594,7 @@ conjugacyClass <- setRefClass(
             }
 
             ## if we need to determine 'coeff' and/or 'offset'
-            if(needsLinearityCheck || (nimbleOptions()$allowDynamicIndexing && link == 'identity' && doDependentScreen)) {
+            if(any(needsLinearityCheck) || (nimbleOptions()$allowDynamicIndexing && any(link == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
@@ -992,7 +1004,7 @@ cc_createStructureExpr <- function(model, exprText) {
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
-    if(!(link %in% c('identity', 'multiplicative', 'linear')))    stop(paste0('unknown link: \'', link, '\''))
+    if(!(link %in% c('identity', 'multiplicative', 'linear', 'stickbreaking')))    stop(paste0('unknown link: \'', link, '\''))
     if(is.null(linearityCheck))    return(FALSE)
     offset <- linearityCheck$offset
     scale  <- linearityCheck$scale
