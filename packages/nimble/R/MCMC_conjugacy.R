@@ -195,7 +195,7 @@ conjugacyRelationshipsClass <- setRefClass(
             }
             names(conjugacys) <<- unlist(lapply(conjugacys, function(cr) cr$prior))
         },
-        checkConjugacy = function(model, nodeIDs) {
+        checkConjugacy = function(model, nodeIDs, restrictLink = NULL) {
             maps <- model$modelDef$maps
             nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
             declID2nodeIDs <- split(nodeIDs, nodeDeclIDs) ## nodeIDs grouped by declarationID
@@ -205,10 +205,10 @@ conjugacyRelationshipsClass <- setRefClass(
                 firstNodeName <- maps$graphID_2_nodeName[nodeIDsFromOneDecl[1]]
                 if(model$isTruncated(firstNodeName)) next   ## we say non-conjugate if the targetNode is truncated
                 dist <- model$getDistribution(firstNodeName)
-
                 conjugacyObj <- conjugacys[[dist]]
                 if(is.null(conjugacyObj)) next
-                
+                if(!is.null(restrictLink))
+                    conjugacyObj$link <- restrictLink
                 # NO: insert logic here to check a single dependency and do next if can't be conjugate
                 #model$getDependencies('mu[1]',self=F,stochOnly=T)
                 #for( loop through deps )
