@@ -24,7 +24,7 @@ calcCrossVal <- function(i,
                          foldFunction,
                          lossFunction,
                          MCMCiter,
-                         burnInProp,
+                         nburnin,
                          returnSamples,
                          nBootReps){
   model <- conf$model
@@ -58,7 +58,7 @@ calcCrossVal <- function(i,
   C.modelMCMC$run(MCMCiter)
   MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames]
   sampNum <- dim(MCMCout)[1]
-  startIndex <- max(c(ceiling(burnInProp*MCMCiter), 1))
+  startIndex <- nburnin+1
   message(paste("dropping data fold", i))
   if(predLoss){
     values(model, missingDataNames) <- saveData
@@ -173,12 +173,12 @@ generateRandomFoldFunction <- function(model, k){
 #' @section The \code{MCMCcontrol} Argument:
 #' The \code{MCMCcontrol} argument is a list with the following elements:
 #'	\itemize{
-#'	  \item{\code{nMCMCiters}}{
-#'      an integer argument determining how many MCMC iterations should be run for each posterior predictive p-value calculation.  Defaults to 10000, but should probably be manually set.
+#'	  \item{\code{niter}}{
+#'      an integer argument determining how many MCMC iterations should be run for each loss value calculation.  Defaults to 10000, but should probably be manually set.
 #'	  }
-#'	\item{\code{burnInProp}}{
-#'	   the proportion of the MCMC chain to discard as burn-in for each posterior predictive p-value calculation.  Must be between 0 and 1.  Defaults to 0.
-#'	}
+#'	\item{\code{nburnin}}{
+#'	   the number of samples from the start of the MCMC chain to discard as burn-in for each loss value calculation.  Must be between 0 and \code{niter}.  Defaults to 10% of \code{niter}.
+#'	  }
 #'  }
 #' 
 #' @return
@@ -256,8 +256,8 @@ generateRandomFoldFunction <- function(model, k){
 #'                                    k = 6,
 #'                                    foldFunction = dyesFoldFunction,
 #'                                    lossFunction = RMSElossFunction,
-#'                                    MCMCcontrol = list(nMCMCiters = 5000,
-#'                                                       burnInProp = .1))
+#'                                    MCMCcontrol = list(niter = 5000,
+#'                                                       nburnin = 500))
 #' }  
 #' 
 runCrossValidate <- function(MCMCconfiguration,
@@ -270,20 +270,20 @@ runCrossValidate <- function(MCMCconfiguration,
                              nBootReps = 200){
   
   model <- MCMCconfiguration$model
-  nMCMCiters <- MCMCcontrol[['nMCMCiters']] 
+  niter <- MCMCcontrol[['niter']] 
   if(k < 2){
     stop("k must be at least 2.")
   }
-  if(is.null(nMCMCiters)){
-    nMCMCiters <- 10000
+  if(is.null(niter)){
+    niter <- 10000
     warning("Defaulting to 10,000 MCMC iterations for each MCMC run.")
   }
-  burnInProp <-  MCMCcontrol[['burnInProp']]  
-  if(is.null(burnInProp)){
-    burnInProp <- 0
+  nburnin <-  MCMCcontrol[['nburnin']]  
+  if(is.null(nburnin)){
+    nburnin <- floor(0.1*niter)
   }
-  else if(burnInProp >= 1 | burnInProp < 0){
-    stop("burnInProp needs to be between 0 and 1")
+  else if(nburnin >= niter | nburnin < 0){
+    stop("nburnin needs to be between 0 and niter.")
   }
   if(is.character(foldFunction) && foldFunction == 'random'){
     foldFunction <- generateRandomFoldFunction(model, k)
@@ -312,8 +312,8 @@ runCrossValidate <- function(MCMCconfiguration,
                             MCMCconfiguration,
                             foldFunction,
                             lossFunction,
-                            nMCMCiters,
-                            burnInProp,
+                            niter,
+                            nburnin,
                             returnSamples,
                             nBootReps,
                             mc.cores = nCores)
@@ -322,8 +322,8 @@ runCrossValidate <- function(MCMCconfiguration,
                             MCMCconfiguration,
                             foldFunction,
                             lossFunction,
-                            nMCMCiters,
-                            burnInProp,
+                            niter,
+                            nburnin,
                             returnSamples,
                             nBootReps)
   }
