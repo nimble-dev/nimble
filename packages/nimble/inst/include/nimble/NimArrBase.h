@@ -151,6 +151,8 @@ class NimArrBase : public NimArrType {
         if (fillZeros) std::fill(new_v, new_v + l, static_cast<T>(0));
       }
       nimble_free(v);
+    } else {
+      if (fillZeros) std::fill(new_v, new_v + l, static_cast<T>(0));
     }
     NAlength = l;
     v = new_v;
