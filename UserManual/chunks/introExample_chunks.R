@@ -62,7 +62,9 @@ Cpump$theta
 
 ## ---- nimbleMCMCpump
 
-mcmc.out <- nimbleMCMC(model = pump, nchains = 2, niter = 10000,
+mcmc.out <- nimbleMCMC(code = pumpCode, constants = pumpConsts,
+                       data = pumpData, inits = pumpInits,
+                       nchains = 2, niter = 10000,
                        summary = TRUE, WAIC = TRUE)
 names(mcmc.out)
 mcmc.out$summary
