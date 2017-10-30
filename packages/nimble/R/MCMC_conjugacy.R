@@ -8,8 +8,8 @@ conjugacyRelationshipsInputList <- list(
              dbern   = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = '1 - value'   ),
              dbin    = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
              dnegbin = list(param = 'prob', contribution_shape1 = 'size',  contribution_shape2 = 'value'       ),
-             dcat    = list(param = 'prob', contribution_shape1 = 'value == position',
-                            contribution_shape2 = 'value > position')),  ## position is where in the broken stick the target is
+             dcat    = list(param = 'prob', contribution_shape1 = 'value == offset',
+                            contribution_shape2 = 'value > offset')),  ## offset is set to be where in the broken stick the target is
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
 
@@ -322,6 +322,7 @@ conjugacyClass <- setRefClass(
         dependentDistNames =  'ANY',   ## character vector of the names of all allowable dependent sampling distributions.  same as: names(dependents)
         posteriorObject =     'ANY',   ## an object of posteriorClass
         needsLinearityCheck = 'ANY',   ## logical specifying whether we need to do the linearity check; if the link is 'multiplicative' or 'linear'
+        needsStickbreakingCheck = 'ANY',   ## logical specifying whether we need to do the sb check
         model                  = 'ANY',   ## these fields ONLY EXIST TO PREVENT A WARNING for '<<-',
         DEP_VALUES_VAR_INDEXED = 'ANY',   ## in the code for generating the conjugate sampler functions
         DEP_PARAM_VAR_INDEXED  = 'ANY',   ##
@@ -337,6 +338,7 @@ conjugacyClass <- setRefClass(
             link <<- cr$link
             initialize_addDependents(cr$dependents)
             needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
+            needsStickbreakingCheck <<- link %in% c('stickbreaking')
             posteriorObject <<- posteriorClass(cr$posterior, prior)
             },
 
@@ -366,10 +368,9 @@ conjugacyClass <- setRefClass(
                 if(!cc_linkCheck(linearityCheck, link))                           return(NULL)
                 if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
             } else {
-                browser()
                 stickbreakingCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = targetNode)
-                if(!cc_checkStickbreaking(targetNode))                            return(NULL)
+                if(is.null(cc_checkStickbreaking(stickbreakingCheckExpr, targetNode))) return(NULL)
             }
             return(paste0('dep_', depNodeDist))
         },
@@ -459,7 +460,7 @@ conjugacyClass <- setRefClass(
             ## July 2017
 
             ## the any() here is because of beta-stickbreaking stuff and needs to be considered more carefully 
-            if(any(needsLinearityCheck) || (nimbleOptions()$allowDynamicIndexing && any(link == 'identity') && doDependentScreen)) {
+            if(any(needsStickbreakingCheck) || any(needsLinearityCheck) || (nimbleOptions()$allowDynamicIndexing && any(link == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
                 for(iDepCount in seq_along(dependentCounts)) {
@@ -472,6 +473,26 @@ conjugacyClass <- setRefClass(
                             DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), as.name(paste0('dep_', distName, '_nodeSizeMax')), targetNdim),
                             DECLARE_SIZE_COEFF  = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), quote(d),                                          targetCoeffNdim)))
                 }
+            }
+            if(any(needsStickbreakingCheck)) {
+                                        # HERE
+                # use model somehow
+        linearityCheckExprList <- lapply(depStochNodes_dnorm, function(node) model$getParamExpr(node, 'mean'))
+        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansions=TRUE))
+        if(!all(sapply(linearityCheckExprList, function(expr) cc_nodeInExpr(targetScalar, expr)))) stop('something went wrong')
+        linearityCheckResultList <- lapply(linearityCheckExprList, function(expr) cc_checkLinearity(expr, targetScalar))
+        if(any(sapply(linearityCheckResultList, function(expr) is.null(expr)))) stop('something went wrong')
+        offsetList <- lapply(linearityCheckResultList, '[[', 'offset')
+
+                
+                offset <- cc_checkStickbreaking()
+                 for(iDepCount in seq_along(dependentCounts)) {
+                     distName <- names(dependentCounts)[iDepCount]
+                     functionBody$addCode({
+                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
+                     }, list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
+                             DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), as.name(paste0('dep_', distName, '_nodeSizeMax')), targetNdim),
+                     }
             }
 
             ## adding declarations for the contribution terms, to remove Windows compiler warnings, DT August 2015
@@ -1175,6 +1196,16 @@ cc_combineExprsDivision <- function(expr1, expr2) {
     if((expr1 == 0)                ) return(0)
     if(is.numeric(expr1) && is.numeric(expr2)) return(expr1 / expr2)
     return(substitute(EXPR1 / EXPR2, list(EXPR1=expr1, EXPR2=expr2)))
+}
+
+cc_checkStickbreaking <- function(expr, targetNode) {
+    if(!is.call(expr) || expr[[1]] != 'stickbreaking' || !cc_nodeInExpr(targetNode, expr))
+        return(NULL)
+    expr <- expr[[2]]
+    if(!is.call(expr) || expr[[1]] != 'structureExpr')
+        return(NULL)
+    offset <- which(targetNode == cc_getNodesInExpr(expr))
+    if(length(offset) != 1) return(NULL) else return(list(offset = offset, scale = 1))
 }
 
 compareConjugacyLists <- function(C1, C2) {
