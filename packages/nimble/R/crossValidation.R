@@ -10,7 +10,7 @@ calcCrossValSD <- function(MCMCout, sampNum, nBootReps, saveData, lossFunction, 
     chunks <- c(apply(indexes, 1, function(x){
       seq(x[1], x[2], 1)}
     ))
-    blockcvValues[r] <- mean(apply(MCMCout[chunks,], 1, lossFunction, saveData))
+    blockcvValues[r] <- mean(apply(MCMCout[chunks,, drop = FALSE], 1, lossFunction, saveData))
     if(predLoss){
       blockcvValues[r] <- log(blockcvValues[r])
     }
@@ -23,7 +23,7 @@ calcCrossVal <- function(i,
                          conf,
                          foldFunction,
                          lossFunction,
-                         MCMCiter,
+                         niter,
                          nburnin,
                          returnSamples,
                          nBootReps){
@@ -32,7 +32,7 @@ calcCrossVal <- function(i,
   currentDataNames <- model$getNodeNames(dataOnly = T)
   currentDataNames <- currentDataNames[!(currentDataNames %in% leaveOutNames)]
   saveData <- values(model, leaveOutNames)
-  newModel <- model$newModel(check = FALSE)
+  newModel <- model$newModel(check = FALSE, replicate = TRUE)
   newModel$resetData()
   values(newModel, leaveOutNames) <- NA
   newModel$setData(model$getVarNames(nodes = currentDataNames))
@@ -50,13 +50,13 @@ calcCrossVal <- function(i,
     leaveOutNames <- paramNames
     predLoss <- TRUE
   }
-  modelMCMCConf <- configureMCMC(newModel, nodes = NULL, monitors = leaveOutNames)
-  modelMCMCConf$samplerConfs <- conf$samplerConfs
+  modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames)
+  if(!predLoss) modelMCMCConf$samplerConfs <- c(conf$samplerConfs,modelMCMCConf$samplerConfs)
   modelMCMC <- buildMCMC(modelMCMCConf)
   C.modelMCMC <- compileNimble(modelMCMC,
                                project = newModel)
-  C.modelMCMC$run(MCMCiter)
-  MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames]
+  C.modelMCMC$run(niter)
+  MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames, drop = FALSE]
   sampNum <- dim(MCMCout)[1]
   startIndex <- nburnin+1
   message(paste("dropping data fold", i))
@@ -68,7 +68,7 @@ calcCrossVal <- function(i,
                                   saveData=saveData,
                                   lossFunction = lossFunction,
                                   predLoss = predLoss)
-  crossVal <- mean(apply(MCMCout[startIndex:sampNum,], 1, lossFunction, saveData))
+  crossVal <- mean(apply(MCMCout[startIndex:sampNum,, drop = FALSE], 1, lossFunction, saveData))
   if(predLoss){
     crossVal <- log(crossVal)
   }
@@ -307,6 +307,19 @@ runCrossValidate <- function(MCMCconfiguration,
     warning("To use multiple cores for the cross-validation calculation, the 'parallel' package must be available.  Defaulting to one core.")
     nCores <- 1
   }
+  
+  ## Below we run an initial MCMC chain to get good initial values for model params.  This way the fold-specific chains will hopefully 
+  ## converge quickly.
+  compileNimble(model)
+  initMCMC <- MCMCconfiguration
+  initMCMC <- buildMCMC(MCMCconfiguration)
+  C.initMCMC <- compileNimble(initMCMC,
+                               project = model)
+  C.initMCMC$run(niter)
+  mvSamples <- as.matrix(C.initMCMC$mvSamples)
+  values(MCMCconfiguration$model, colnames(mvSamples)) <- mvSamples[dim(mvSamples)[1],]
+  MCMCconfiguration$model$calculate(MCMCconfiguration$model$getDependencies(colnames(mvSamples)))
+  
   if(nCores > 1){
     crossValOut <- parallel::mclapply(1:k, calcCrossVal,
                             MCMCconfiguration,
