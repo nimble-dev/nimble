@@ -1,5 +1,12 @@
 
-# tests for BNP models using CRP prior for labels.
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#-- TESTS FOR BNP MODELS
+
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#-- tests for BNP models using CRP prior for labels.
 
 rm(list=ls())
 library(nimble)
@@ -106,3 +113,54 @@ fhat=apply(fsam, 2, mean)
 #-- Graphics
 hist(Data$y, freq=FALSE, breaks=30)
 points(sec,fhat, col="black", lwd=2, type="l")
+
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#-- stick_breaking representation and BUGS Code
+
+#-- stick breaking representation:
+stick_breaking=nimbleFunction(
+  run=function(z=double(1)){ # z values must lie in (0,1)!
+    returnType(double(1))
+    
+    N<-length(z)
+    x<-numeric(N) # returned vector
+    tmp<-1
+    
+    x[1]<-z[1]
+    for(i in 2:(N-1)){
+      tmp=tmp*(1-z[i-1])
+      x[i]<-z[i]*tmp
+    }
+    x[N]<-tmp*(1-z[N-1])
+    return(x)
+  }
+)
+
+
+#-- BUGS code:
+Code=nimbleCode(
+  {
+    for(i in 1:Trunc){
+      thetatilde[i] ~ dnorm(mu0, tau0) 
+      s2tilde[i] ~ dinvgamma(a0, b0) 
+    }
+    for(i in 1:(Trunc-1)){
+      z[i] ~ dbeta(1, conc) # could be dbeta(a_i,b_i)
+    }
+    w[1:Trunc] <- stick_breaking(z[1:(Trunc-1)])
+    
+    for(i in 1:N){
+      xi[i] ~ dcat(w[1:Trunc])
+      theta[i] <- thetatilde[xi[i]]
+      s2[i] <- s2tilde[xi[i]]
+      y[i] ~ dnorm(theta[i], var=s2[i])
+    }
+    conc<-1
+    mu0<-0; tau0<-sqrt(20)
+    a0<-1; b0 <- 0.1
+  }
+)
+
+
