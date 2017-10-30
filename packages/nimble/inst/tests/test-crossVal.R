@@ -12,7 +12,7 @@ nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
-nimbleOptions(MCMCprogressBar = FALSE)
+nimbleOptions(MCMCprogressBar = TRUE) ## try to prevent timeout on Travis due to lack of output
 
 test_that("voter model cross-validation is accurate: ", {
   y <- c(44.6, 57.76, 49.91, 61.34, 49.60, 61.79, 48.95, 44.70, 59.17, 53.94,
