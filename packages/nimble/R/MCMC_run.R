@@ -134,7 +134,6 @@ runMCMC <- function(mcmc,
         }
         colnames(posteriorSamplesMatrix) <- colnames(samplesList[[1]])
         matrix2mv(posteriorSamplesMatrix, mcmc$mvSamples)  ## transfer all posterior samples into mcmc$mvSamples
-        mcmc$calculateWAIC()
       }
       WAICvalue <- mcmc$calculateWAIC()
     }
