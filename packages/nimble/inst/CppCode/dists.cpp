@@ -2366,4 +2366,3 @@ void rcar_proper(double* ans, double* mu, double* C, double* adj, double* num, d
   delete [] Qchol;
 }
 
-
