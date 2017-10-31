@@ -131,13 +131,16 @@ runMCMC <- function(mcmc,
     }
     if(WAIC){
       if(nchains > 1){
-        WAICcalcFunc <- calculateWAICfomSamplesList(mcmc$Robject$model, samplesList)
-        cWAICcalcFunc <- compileNimble(WAICcalcFunc, project = model)
-        WAICvalue <- cWAICcalcFunc$run()
+        samplesPerChain <- dim(samplesList[[1]])[1]
+        posteriorSamplesMatrix <- matrix(0, nrow = samplesPerChain*nchains, ncol = dim(samplesList[[1]])[2])
+        for(i in seq_along(samplesList)){
+          posteriorSamplesMatrix[((i-1)*samplesPerChain + 1):(i*samplesPerChain),] <- samplesList[[i]][,]
+        }
+        colnames(posteriorSamplesMatrix) <- colnames(samplesList[[1]])
+        matrix2mv(posteriorSamplesMatrix, mcmc$mvSamples)  ## transfer all posterior samples into mcmc$mvSamples
+        mcmc$calculateWAIC()
       }
-      else{
-        WAICvalue <- mcmc$calculateWAIC()
-      }
+      WAICvalue <- mcmc$calculateWAIC()
     }
     if(samplesAsCodaMCMC) samplesList <- coda::as.mcmc.list(lapply(samplesList, as.mcmc))
     if(nchains == 1) samplesList <- samplesList[[1]]  ## returns matrix when nchains = 1
@@ -282,60 +285,3 @@ nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
             setSeed = setSeed, progressBar = progressBar, samples = samples,
             samplesAsCodaMCMC = samplesAsCodaMCMC, summary = summary, WAIC = WAIC)
 }
-
-
-
-## Below function calculates WAIC in the case that 
-## runMCMC was called, with WAIC = TRUE, and nchains > 1.
-## Uses a list of matrices of posterior samples to calculate WAIC,
-## as opposed to the modelValues object used in the buildMCMC()
-## version.
-calculateWAICfomSamplesList <- nimbleFunction(
-  setup = function(model, samplesList){
-    samplesPerChain <- dim(samplesList[[1]])[1]
-    posteriorSamplesMatrix <- matrix(0, nrow = samplesPerChain*length(samplesList), ncol = dim(samplesList[[1]])[2])
-    for(i in seq_along(samplesList)){
-      posteriorSamplesMatrix[((i-1)*samplesPerChain + 1):(i*samplesPerChain),] <- samplesList[[i]][,]
-    }
-    dataNodes <- model$getNodeNames(dataOnly = TRUE)
-    dataNodeLength <- length(dataNodes)
-    sampledNodes <- model$getVarNames(FALSE, colnames(samplesList[[1]]))
-    paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
-    totalMCMCSamples <- dim(posteriorSamplesMatrix)[1]
-  },
-  run = function(nburnin = integer(default = 0), burnIn = integer(default = 0)) {
-    if(burnIn != 0) {
-      print("Warning, `burnIn` argument is deprecated and will not be supported in future versions of NIMBLE. Please use the `nburnin` argument instead.")
-      if(nburnin == 0) {  ## if nburnin has not been changed from default, we replace with `burnIn` value here.
-        nburnin <- burnIn
-      }
-    }
-    if((totalMCMCSamples) < 2) {
-      print('Error, need more than one post burn-in MCMC samples')
-      return(-Inf)
-    }
-    logPredProbs <- matrix(nrow = totalMCMCSamples, ncol = dataNodeLength)
-    logAvgProb <- 0
-    pWAIC <- 0
-    currentVals <- values(model, sampledNodes)
-    for(i in 1:totalMCMCSamples) {
-      values(model, sampledNodes) <<- posteriorSamplesMatrix[i,]
-      model$simulate(paramDeps)
-      model$calculate(dataNodes)
-      for(j in 1:dataNodeLength) {
-        logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
-      }
-    }
-    for(j in 1:dataNodeLength) {
-      maxLogPred <- max(logPredProbs[,j])
-      thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
-      logAvgProb <- logAvgProb + thisDataLogAvgProb
-      pointLogPredVar <- var(logPredProbs[,j])
-      pWAIC <- pWAIC + pointLogPredVar
-    }
-    WAIC <- -2*(logAvgProb - pWAIC)
-    values(model, sampledNodes) <<- currentVals
-    model$calculate(paramDeps)
-    returnType(double())
-    return(WAIC)
-  })
