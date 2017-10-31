@@ -83,7 +83,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 			for(int j = 0; j < length(nodes.parentIndicesList[i]); j++){
 				// we can pre-calculate sumParentDims earlier.  Do this.
 				if(j == 0 && isWrtLine){
-					thisWrtNodes[j] = 1;
+					thisWrtNodes[j] = 1;					
 					parentJacobians[j] =  MatrixXd::Zero(nodes.wrtLineSize[thisWrtLine], nodes.totalWrtSize);
 					for(int k = 0; k < nodes.wrtLineIndices[thisWrtLine].dimSize(0); k++){
 						thisIndex = nodes.wrtLineIndices[thisWrtLine][k] - 1;
@@ -212,7 +212,6 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 								thisArgIndex += nodes.lineWrtArgSizeInfo[i][k];
 							}
 							if(derivOutputFlag){
-								// cout << "chainRuleHessians[i][0](0, 0)" <<chainRuleHessians[i][0](0, 0) << "\n";
 								ansHessian.block(wrtToStartNode, wrtToStartNode2, wrtToLength, wrtToLength2) += chainRuleHessians[i][0].block(wrtFromStartNode, wrtFromStartNode2, wrtFromLength, wrtFromLength2);
 							}
 						}

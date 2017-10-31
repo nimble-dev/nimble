@@ -1164,6 +1164,7 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
   nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
   nlDef <- nl.getListDef(nlGen)
   className <- nlDef$className
+  symTab$parentST$symbols$order$nDim <- 1
   symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
   if(is.null(symbolObject)) {
     nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)

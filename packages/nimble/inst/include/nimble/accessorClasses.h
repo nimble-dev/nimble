@@ -145,6 +145,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		
 		cumulativeWrtLineNums.initialize(-1, 1, numNodes);
 		wrtLineSize.setSize(wrtLineNums.dimSize(0));
+		totalWrtSize = 0;
 		for(int i = 0; i < wrtLineNums.dimSize(0); i++){
 			cumulativeWrtLineNums[wrtLineNums[i] - 1] = i;
 			wrtLineSize[i] = nodeLengths[wrtLineNums[i] -1];

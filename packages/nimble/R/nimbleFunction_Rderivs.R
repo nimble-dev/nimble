@@ -262,7 +262,11 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA, wrt = NUL
   
 
 nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE){
-  if(all(order == 0)) return(calculate(model, nodes))
+  outDerivList <- ADNimbleList$new()
+  if(all(order == 0)){
+    outDerivList$value <- calculate(model, nodes)
+    return(outDerivList)
+  }
   if(!inherits(model, 'modelBaseClass') ){
     stop('model argument must be a nimbleModel.')
   }
@@ -290,7 +294,6 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
   ## totalOutWrtSize is the sum of the lengths of all ouput wrt parameters.
   totalOutWrtSize <- sum(sapply(derivInfo$wrtToIndices, function(x){return(length(x))}))
   ## outDerivList will be returned from this function.
-  outDerivList <- ADNimbleList$new()
   if(valueFlag) outDerivList$value = 0
   outDerivList$gradient = matrix(0, ncol = totalOutWrtSize, nrow = 1)
   if(hessianFlag) outDerivList$hessian = array(0, dim = c(totalOutWrtSize, totalOutWrtSize, 1))
