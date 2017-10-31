@@ -125,17 +125,17 @@ runMCMC <- function(mcmc,
         if(nburnin > 0) samplesMatrix <- samplesMatrix[-(1:nburnin), , drop = FALSE]
         samplesList[[i]] <- samplesMatrix
     }
-    if(WAIC){
-      if(nchains > 1){
-        samplesPerChain <- dim(samplesList[[1]])[1]
-        posteriorSamplesMatrix <- matrix(0, nrow = samplesPerChain*nchains, ncol = dim(samplesList[[1]])[2])
-        for(i in seq_along(samplesList)){
-          posteriorSamplesMatrix[((i-1)*samplesPerChain + 1):(i*samplesPerChain),] <- samplesList[[i]][,]
+    if(WAIC) {
+        if(nchains > 1) {
+            samplesPerChain <- dim(samplesList[[1]])[1]
+            posteriorSamplesMatrix <- matrix(0, nrow = samplesPerChain*nchains, ncol = dim(samplesList[[1]])[2])
+            for(i in seq_along(samplesList)) {
+                posteriorSamplesMatrix[((i-1)*samplesPerChain + 1):(i*samplesPerChain),] <- samplesList[[i]][,]
+            }
+            colnames(posteriorSamplesMatrix) <- colnames(samplesList[[1]])
+            matrix2mv(posteriorSamplesMatrix, mcmc$mvSamples)  ## transfer all posterior samples into mcmc$mvSamples
         }
-        colnames(posteriorSamplesMatrix) <- colnames(samplesList[[1]])
-        matrix2mv(posteriorSamplesMatrix, mcmc$mvSamples)  ## transfer all posterior samples into mcmc$mvSamples
-      }
-      WAICvalue <- mcmc$calculateWAIC()
+        WAICvalue <- mcmc$calculateWAIC()
     }
     if(samplesAsCodaMCMC) samplesList <- coda::as.mcmc.list(lapply(samplesList, as.mcmc))
     if(nchains == 1) samplesList <- samplesList[[1]]  ## returns matrix when nchains = 1
@@ -280,3 +280,5 @@ nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
             setSeed = setSeed, progressBar = progressBar, samples = samples,
             samplesAsCodaMCMC = samplesAsCodaMCMC, summary = summary, WAIC = WAIC)
 }
+
+
