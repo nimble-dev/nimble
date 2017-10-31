@@ -37,13 +37,13 @@ samplesSummary <- function(samples) {
 #' 
 #' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
 #'
-#' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a combined WAIC is calculated using the output from all chains.  Default value is \code{FALSE}.  See details.
+#' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.
 #'
-#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, the WAIC value is returned.
+#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
 #'
 #' @details
 #'
-#' At least one of \code{samples}, \code{summary} or \code{WAIC} must be \code{TRUE}, since otherwise, nothing will be returned.  Any combination of these may be \code{TRUE}, including possibly all three, in which case posterior samples and summary statistics are returned for each MCMC chain, and an overall WAIC value is calculated.
+#' At least one of \code{samples}, \code{summary} or \code{WAIC} must be \code{TRUE}, since otherwise, nothing will be returned.  Any combination of these may be \code{TRUE}, including possibly all three, in which case posterior samples and summary statistics are returned for each MCMC chain, and an overall WAIC value is calculated and returned.
 #'
 #' When \code{samples = TRUE}, the form of the posterior samples is determined by the \code{samplesAsCodaMCMC} argument, as either matrices of posterior samples, or \code{coda} \code{mcmc} and \code{mcmc.list} objects.
 #'
@@ -108,10 +108,6 @@ runMCMC <- function(mcmc,
     if(!is.model(model)) stop('something went wrong')
     samplesList <- vector('list', nchains)
     names(samplesList) <- paste0('chain', 1:nchains)
-    # if(WAIC) {
-    #     WAICvalues <- numeric(nchains)
-    #     if(nchains > 1) names(WAICvalues) <- paste0('chain', 1:nchains)
-    # }
     for(i in 1:nchains) {
         if(nimbleOptions('verbose')) message('running chain ', i, '...')
         if(setSeed) set.seed(i)
@@ -129,15 +125,14 @@ runMCMC <- function(mcmc,
         if(nburnin > 0) samplesMatrix <- samplesMatrix[-(1:nburnin), , drop = FALSE]
         samplesList[[i]] <- samplesMatrix
     }
-    if(WAIC){
-      if(nchains > 1){
-        WAICcalcFunc <- calculateWAICfomSamplesList(mcmc$Robject$model, samplesList)
-        cWAICcalcFunc <- compileNimble(WAICcalcFunc, project = model)
-        WAICvalue <- cWAICcalcFunc$run()
-      }
-      else{
-        WAICvalue <- mcmc$calculateWAIC()
-      }
+    if(WAIC) {
+        if(nchains == 1) {
+            WAICvalue <- mcmc$calculateWAIC()
+        } else {
+            calcWAIC <- calculateWAICfomSamplesList(mcmc$Robject$model, samplesList)
+            CcalcWAIC <- compileNimble(calcWAIC, project = model)
+            WAICvalue <- CcalcWAIC$run()
+        }
     }
     if(samplesAsCodaMCMC) samplesList <- coda::as.mcmc.list(lapply(samplesList, as.mcmc))
     if(nchains == 1) samplesList <- samplesList[[1]]  ## returns matrix when nchains = 1
@@ -196,10 +191,10 @@ runMCMC <- function(mcmc,
 #' @param samplesAsCodaMCMC Logical argument.  If \code{TRUE}, then a \code{coda} \code{mcmc} object is returned instead of an R matrix of samples, or when \code{nchains > 1} a \code{coda} \code{mcmc.list} object is returned containing \code{nchains} \code{mcmc} objects.  This argument is only used when \code{samples} is \code{TRUE}.  Default value is \code{FALSE}.  See details.
 #' 
 #' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
-#'
-#' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a combined WAIC is calculated using the output from all chains.  Default value is \code{FALSE}.  See details.
-#'
-#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, the WAIC value is returned.
+#'z
+#' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.
+#' 
+#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
 #'
 #' @details
 #'
@@ -291,51 +286,55 @@ nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
 ## as opposed to the modelValues object used in the buildMCMC()
 ## version.
 calculateWAICfomSamplesList <- nimbleFunction(
-  setup = function(model, samplesList){
-    samplesPerChain <- dim(samplesList[[1]])[1]
-    posteriorSamplesMatrix <- matrix(0, nrow = samplesPerChain*length(samplesList), ncol = dim(samplesList[[1]])[2])
-    for(i in seq_along(samplesList)){
-      posteriorSamplesMatrix[((i-1)*samplesPerChain + 1):(i*samplesPerChain),] <- samplesList[[i]][,]
+    setup = function(model, samplesList) {
+        samplesPerChain <- dim(samplesList[[1]])[1]
+        posteriorSamplesMatrix <- matrix(0, nrow = samplesPerChain*length(samplesList), ncol = dim(samplesList[[1]])[2])
+        for(i in seq_along(samplesList)) {
+            posteriorSamplesMatrix[((i-1)*samplesPerChain + 1):(i*samplesPerChain),] <- samplesList[[i]][,]
+        }
+        dataNodes <- model$getNodeNames(dataOnly = TRUE)
+        dataNodeLength <- length(dataNodes)
+        sampledNodes <- model$getVarNames(FALSE, colnames(samplesList[[1]]))
+        paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
+        totalMCMCSamples <- dim(posteriorSamplesMatrix)[1]
+    },
+    run = function(nburnin = integer(default = 0), burnIn = integer(default = 0)) {
+        if(burnIn != 0) {
+            print('Warning, `burnIn` argument is deprecated and will not be supported in future versions of NIMBLE. Please use the `nburnin` argument instead.')
+            if(nburnin == 0) {  ## if nburnin has not been changed from default, we replace with `burnIn` value here.
+                nburnin <- burnIn
+            }
+        }
+        if((totalMCMCSamples) < 2) {
+            print('Error, need more than one post burn-in MCMC samples')
+            return(-Inf)
+        }
+        logPredProbs <- matrix(nrow = totalMCMCSamples, ncol = dataNodeLength)
+        logAvgProb <- 0
+        pWAIC <- 0
+        currentVals <- values(model, sampledNodes)
+        for(i in 1:totalMCMCSamples) {
+            values(model, sampledNodes) <<- posteriorSamplesMatrix[i,]
+            model$simulate(paramDeps)
+            model$calculate(dataNodes)
+            for(j in 1:dataNodeLength) {
+                logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
+            }
+        }
+        for(j in 1:dataNodeLength) {
+            maxLogPred <- max(logPredProbs[,j])
+            thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
+            logAvgProb <- logAvgProb + thisDataLogAvgProb
+            pointLogPredVar <- var(logPredProbs[,j])
+            pWAIC <- pWAIC + pointLogPredVar
+        }
+        WAIC <- -2*(logAvgProb - pWAIC)
+        values(model, sampledNodes) <<- currentVals
+        model$calculate(paramDeps)
+        returnType(double())
+        return(WAIC)
     }
-    dataNodes <- model$getNodeNames(dataOnly = TRUE)
-    dataNodeLength <- length(dataNodes)
-    sampledNodes <- model$getVarNames(FALSE, colnames(samplesList[[1]]))
-    paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
-    totalMCMCSamples <- dim(posteriorSamplesMatrix)[1]
-  },
-  run = function(nburnin = integer(default = 0), burnIn = integer(default = 0)) {
-    if(burnIn != 0) {
-      print("Warning, `burnIn` argument is deprecated and will not be supported in future versions of NIMBLE. Please use the `nburnin` argument instead.")
-      if(nburnin == 0) {  ## if nburnin has not been changed from default, we replace with `burnIn` value here.
-        nburnin <- burnIn
-      }
-    }
-    if((totalMCMCSamples) < 2) {
-      print('Error, need more than one post burn-in MCMC samples')
-      return(-Inf)
-    }
-    logPredProbs <- matrix(nrow = totalMCMCSamples, ncol = dataNodeLength)
-    logAvgProb <- 0
-    pWAIC <- 0
-    currentVals <- values(model, sampledNodes)
-    for(i in 1:totalMCMCSamples) {
-      values(model, sampledNodes) <<- posteriorSamplesMatrix[i,]
-      model$simulate(paramDeps)
-      model$calculate(dataNodes)
-      for(j in 1:dataNodeLength) {
-        logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
-      }
-    }
-    for(j in 1:dataNodeLength) {
-      maxLogPred <- max(logPredProbs[,j])
-      thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
-      logAvgProb <- logAvgProb + thisDataLogAvgProb
-      pointLogPredVar <- var(logPredProbs[,j])
-      pWAIC <- pWAIC + pointLogPredVar
-    }
-    WAIC <- -2*(logAvgProb - pWAIC)
-    values(model, sampledNodes) <<- currentVals
-    model$calculate(paramDeps)
-    returnType(double())
-    return(WAIC)
-  })
+)
+
+
+
