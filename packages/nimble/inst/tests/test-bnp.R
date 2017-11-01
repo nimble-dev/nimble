@@ -11,8 +11,8 @@
 rm(list=ls())
 library(nimble)
 nimbleOptions(allowDynamicIndexing = TRUE)
-source("./packages/nimble/R/BNP_distributions.R")
-source("./packages/nimble/R/BNP_samplers.R")
+#source("./packages/nimble/R/BNP_distributions.R")
+#source("./packages/nimble/R/BNP_samplers.R")
 
 
 #-- Model 1: 
