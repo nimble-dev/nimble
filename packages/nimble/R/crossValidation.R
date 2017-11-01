@@ -308,18 +308,6 @@ runCrossValidate <- function(MCMCconfiguration,
     nCores <- 1
   }
   
-  ## Below we run an initial MCMC chain to get good initial values for model params.  This way the fold-specific chains will hopefully 
-  ## converge quickly.
-  compileNimble(model)
-  initMCMC <- MCMCconfiguration
-  initMCMC <- buildMCMC(MCMCconfiguration)
-  C.initMCMC <- compileNimble(initMCMC,
-                               project = model)
-  C.initMCMC$run(niter)
-  mvSamples <- as.matrix(C.initMCMC$mvSamples)
-  values(MCMCconfiguration$model, colnames(mvSamples)) <- mvSamples[dim(mvSamples)[1],]
-  MCMCconfiguration$model$calculate(MCMCconfiguration$model$getDependencies(colnames(mvSamples)))
-  
   if(nCores > 1){
     crossValOut <- parallel::mclapply(1:k, calcCrossVal,
                             MCMCconfiguration,
