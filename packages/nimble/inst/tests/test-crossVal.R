@@ -39,7 +39,7 @@ test_that("voter model cross-validation is accurate: ", {
                               k = 15, ## do loo-cv so that we can compare against a known value
                               foldFunction = 'random',
                               lossFunction = 'predictive',
-                              MCMCcontrol = list(nMCMCiters = 500),
+                              MCMCcontrol = list(niter = 500),
                               nBootReps = 2)
   expect_equal(testOut$CVvalue, -43.8, tolerance = 2)
 })
@@ -72,11 +72,11 @@ test_that("voter model cross-validation runs using MSE loss: ", {
                               k = 2, 
                               foldFunction = 'random',
                               lossFunction = 'MSE',
-                              MCMCcontrol = list(nMCMCiters = 100),
+                              MCMCcontrol = list(niter = 100),
                               nBootReps = 2)
 })
 
-test_that("Radon model WAIC is accurate: ", {
+test_that("Radon model cross-validation runs using MSE loss: ", {
   url <- "http://stat.columbia.edu/~gelman/arm/examples/arsenic/wells.dat"
   wells <- try(read.table(url), silent = TRUE)
   if (inherits(wells, 'try-error')) skip("No internet connection")
@@ -103,7 +103,7 @@ test_that("Radon model WAIC is accurate: ", {
                               k = 2, 
                               foldFunction = 'random',
                               lossFunction = 'MSE',
-                              MCMCcontrol = list(nMCMCiters = 100),
+                              MCMCcontrol = list(niter = 100),
                               nBootReps = 2)
 })
 

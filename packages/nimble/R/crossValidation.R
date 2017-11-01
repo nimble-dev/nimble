@@ -10,7 +10,7 @@ calcCrossValSD <- function(MCMCout, sampNum, nBootReps, saveData, lossFunction, 
     chunks <- c(apply(indexes, 1, function(x){
       seq(x[1], x[2], 1)}
     ))
-    blockcvValues[r] <- mean(apply(MCMCout[chunks,], 1, lossFunction, saveData))
+    blockcvValues[r] <- mean(apply(MCMCout[chunks,, drop = FALSE], 1, lossFunction, saveData))
     if(predLoss){
       blockcvValues[r] <- log(blockcvValues[r])
     }
@@ -23,8 +23,8 @@ calcCrossVal <- function(i,
                          conf,
                          foldFunction,
                          lossFunction,
-                         MCMCiter,
-                         burnInProp,
+                         niter,
+                         nburnin,
                          returnSamples,
                          nBootReps){
   model <- conf$model
@@ -32,7 +32,7 @@ calcCrossVal <- function(i,
   currentDataNames <- model$getNodeNames(dataOnly = T)
   currentDataNames <- currentDataNames[!(currentDataNames %in% leaveOutNames)]
   saveData <- values(model, leaveOutNames)
-  newModel <- model$newModel(check = FALSE)
+  newModel <- model$newModel(check = FALSE, replicate = TRUE)
   newModel$resetData()
   values(newModel, leaveOutNames) <- NA
   newModel$setData(model$getVarNames(nodes = currentDataNames))
@@ -50,15 +50,15 @@ calcCrossVal <- function(i,
     leaveOutNames <- paramNames
     predLoss <- TRUE
   }
-  modelMCMCConf <- configureMCMC(newModel, nodes = NULL, monitors = leaveOutNames)
-  modelMCMCConf$samplerConfs <- conf$samplerConfs
+  modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames)
+  if(!predLoss) modelMCMCConf$samplerConfs <- c(conf$samplerConfs,modelMCMCConf$samplerConfs)
   modelMCMC <- buildMCMC(modelMCMCConf)
   C.modelMCMC <- compileNimble(modelMCMC,
                                project = newModel)
-  C.modelMCMC$run(MCMCiter)
-  MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames]
+  C.modelMCMC$run(niter)
+  MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames, drop = FALSE]
   sampNum <- dim(MCMCout)[1]
-  startIndex <- max(c(ceiling(burnInProp*MCMCiter), 1))
+  startIndex <- nburnin+1
   message(paste("dropping data fold", i))
   if(predLoss){
     values(model, missingDataNames) <- saveData
@@ -68,7 +68,7 @@ calcCrossVal <- function(i,
                                   saveData=saveData,
                                   lossFunction = lossFunction,
                                   predLoss = predLoss)
-  crossVal <- mean(apply(MCMCout[startIndex:sampNum,], 1, lossFunction, saveData))
+  crossVal <- mean(apply(MCMCout[startIndex:sampNum,, drop = FALSE], 1, lossFunction, saveData))
   if(predLoss){
     crossVal <- log(crossVal)
   }
@@ -173,12 +173,12 @@ generateRandomFoldFunction <- function(model, k){
 #' @section The \code{MCMCcontrol} Argument:
 #' The \code{MCMCcontrol} argument is a list with the following elements:
 #'	\itemize{
-#'	  \item{\code{nMCMCiters}}{
-#'      an integer argument determining how many MCMC iterations should be run for each posterior predictive p-value calculation.  Defaults to 10000, but should probably be manually set.
+#'	  \item{\code{niter}}{
+#'      an integer argument determining how many MCMC iterations should be run for each loss value calculation.  Defaults to 10000, but should probably be manually set.
 #'	  }
-#'	\item{\code{burnInProp}}{
-#'	   the proportion of the MCMC chain to discard as burn-in for each posterior predictive p-value calculation.  Must be between 0 and 1.  Defaults to 0.
-#'	}
+#'	\item{\code{nburnin}}{
+#'	   the number of samples from the start of the MCMC chain to discard as burn-in for each loss value calculation.  Must be between 0 and \code{niter}.  Defaults to 10% of \code{niter}.
+#'	  }
 #'  }
 #' 
 #' @return
@@ -256,8 +256,8 @@ generateRandomFoldFunction <- function(model, k){
 #'                                    k = 6,
 #'                                    foldFunction = dyesFoldFunction,
 #'                                    lossFunction = RMSElossFunction,
-#'                                    MCMCcontrol = list(nMCMCiters = 5000,
-#'                                                       burnInProp = .1))
+#'                                    MCMCcontrol = list(niter = 5000,
+#'                                                       nburnin = 500))
 #' }  
 #' 
 runCrossValidate <- function(MCMCconfiguration,
@@ -270,20 +270,20 @@ runCrossValidate <- function(MCMCconfiguration,
                              nBootReps = 200){
   
   model <- MCMCconfiguration$model
-  nMCMCiters <- MCMCcontrol[['nMCMCiters']] 
+  niter <- MCMCcontrol[['niter']] 
   if(k < 2){
     stop("k must be at least 2.")
   }
-  if(is.null(nMCMCiters)){
-    nMCMCiters <- 10000
+  if(is.null(niter)){
+    niter <- 10000
     warning("Defaulting to 10,000 MCMC iterations for each MCMC run.")
   }
-  burnInProp <-  MCMCcontrol[['burnInProp']]  
-  if(is.null(burnInProp)){
-    burnInProp <- 0
+  nburnin <-  MCMCcontrol[['nburnin']]  
+  if(is.null(nburnin)){
+    nburnin <- floor(0.1*niter)
   }
-  else if(burnInProp >= 1 | burnInProp < 0){
-    stop("burnInProp needs to be between 0 and 1")
+  else if(nburnin >= niter | nburnin < 0){
+    stop("nburnin needs to be between 0 and niter.")
   }
   if(is.character(foldFunction) && foldFunction == 'random'){
     foldFunction <- generateRandomFoldFunction(model, k)
@@ -307,13 +307,14 @@ runCrossValidate <- function(MCMCconfiguration,
     warning("To use multiple cores for the cross-validation calculation, the 'parallel' package must be available.  Defaulting to one core.")
     nCores <- 1
   }
+  
   if(nCores > 1){
     crossValOut <- parallel::mclapply(1:k, calcCrossVal,
                             MCMCconfiguration,
                             foldFunction,
                             lossFunction,
-                            nMCMCiters,
-                            burnInProp,
+                            niter,
+                            nburnin,
                             returnSamples,
                             nBootReps,
                             mc.cores = nCores)
@@ -322,8 +323,8 @@ runCrossValidate <- function(MCMCconfiguration,
                             MCMCconfiguration,
                             foldFunction,
                             lossFunction,
-                            nMCMCiters,
-                            burnInProp,
+                            niter,
+                            nburnin,
                             returnSamples,
                             nBootReps)
   }
