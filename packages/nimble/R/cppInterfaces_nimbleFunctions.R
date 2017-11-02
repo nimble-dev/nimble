@@ -1198,7 +1198,6 @@ CmultiNimbleObjClass <- setRefClass('CmultiNimbleObjClass',
                                             cppCopyTypes <<- makeNimbleFxnCppCopyTypes(symTab, cppNames)
                                         },
                                         finalize = function() {
-                                          browser()
                                             for(i in seq_along(finalizationPtrList)) { ## previously basePtrList
                                                 if(!is.null(finalizationPtrList[[i]])) {
                                                     nimbleInternalFunctions$nimbleFinalize(finalizationPtrList[[i]])

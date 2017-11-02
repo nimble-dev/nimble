@@ -66,7 +66,7 @@ inline Type lgamma_approx(const Type &y)
     Parameterized through size and prob parameters, following R-convention.
 */
 template<class Type>
-inline Type dnbinom(const Type &x, const Type &size, const Type &prob,
+inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
 		    int give_log=0)
 {
   Type n=size;
@@ -120,7 +120,7 @@ VECTORIZE4_ttti(dnbinom_robust)
 */
 
 template<class Type>
-inline Type dpois(const Type &x, const Type &lambda, int give_log=0)
+inline Type nimDerivs_dpois(const Type &x, const Type &lambda, int give_log=0)
 {
   Type logres = -lambda + x*log(lambda) - lgamma(x+Type(1));
   if (give_log) return logres; else return exp(logres);
@@ -131,7 +131,7 @@ VECTORIZE3_tti(dpois)
   \ingroup R_style_distribution
 */
 template<class Type>
-Type dgamma(Type y, Type shape, Type scale, int give_log=0)
+Type nimDerivs_dgamma(Type y, Type shape, Type scale, int give_log=0)
 {
   Type logres=-lgamma(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale);
   if(give_log)return logres; else return exp(logres);

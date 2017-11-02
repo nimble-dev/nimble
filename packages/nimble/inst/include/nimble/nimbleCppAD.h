@@ -130,74 +130,74 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nodes,  int iNodeFunction, NimArr<1, double> &derivOrders);
 
 
-template<class Type>
-Type nimDerivs_dnorm(Type x, Type mean, Type sd, int give_log)
-{
-  Type logres;
-  logres=-log(Type(sqrt(2*M_PI))*sd)-Type(.5)*pow((x-mean)/sd,2);
-  if(give_log)return logres; else return exp(logres);
-}
+// template<class Type>
+// Type nimDerivs_dnorm(Type x, Type mean, Type sd, int give_log)
+// {
+  // Type logres;
+  // logres=-log(Type(sqrt(2*M_PI))*sd)-Type(.5)*pow((x-mean)/sd,2);
+  // if(give_log)return logres; else return exp(logres);
+// }
 
-template<class Type> 
-Type nimDerivs_dexp(Type x, Type rate, int give_log)
-{
-	if(!give_log)
-		return CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0));
-	else
-		return CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY));
-}
+// template<class Type> 
+// Type nimDerivs_dexp(Type x, Type rate, int give_log)
+// {
+	// if(!give_log)
+		// return CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0));
+	// else
+		// return CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY));
+// }
 
-template<class Type> 
-Type nimDerivs_dweib(Type x, Type shape, Type scale, int give_log)
-{
-	if(!give_log)
-		return CppAD::CondExpGe(x,Type(0),shape/scale * pow(x/scale,shape-1) * exp(-pow(x/scale,shape)),Type(0));
-	else
-		return CppAD::CondExpGe(x,Type(0),log(shape) - log(scale) + (shape-1)*(log(x)-log(scale)) - pow(x/scale,shape),Type(-INFINITY));
-}
+// template<class Type> 
+// Type nimDerivs_dweib(Type x, Type shape, Type scale, int give_log)
+// {
+	// if(!give_log)
+		// return CppAD::CondExpGe(x,Type(0),shape/scale * pow(x/scale,shape-1) * exp(-pow(x/scale,shape)),Type(0));
+	// else
+		// return CppAD::CondExpGe(x,Type(0),log(shape) - log(scale) + (shape-1)*(log(x)-log(scale)) - pow(x/scale,shape),Type(-INFINITY));
+// }
 
-template<class Type> 
-Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log)
-{
-	Type logres = lgamma(size+1)-lgamma(k+1)-lgamma(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
-	if(!give_log) return exp(logres);
-	else return logres;
-}
+// template<class Type> 
+// Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log)
+// {
+	// Type logres = lgamma(size+1)-lgamma(k+1)-lgamma(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
+	// if(!give_log) return exp(logres);
+	// else return logres;
+// }
 
-template <class Type>
-Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, int give_log)
-{
-	Type res = exp(lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1);
-	if(!give_log) 
-		return res;
-	else 
-		return CppAD::CondExpEq(x,Type(0),log(res),lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2) + (shape1-1)*log(x) + (shape2-1)*log(1-x));
-}
+// template <class Type>
+// Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, int give_log)
+// {
+	// Type res = exp(lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1);
+	// if(!give_log) 
+		// return res;
+	// else 
+		// return CppAD::CondExpEq(x,Type(0),log(res),lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2) + (shape1-1)*log(x) + (shape2-1)*log(1-x));
+// }
 
-template <class Type>
-Type nimDerivs_dlogis(Type x, Type location, Type scale, int give_log)
-{
-	Type logres = -(x-location)/scale - log(scale) - 2*log(1+exp(-(x-location)/scale));
-	if(!give_log) return exp(logres);
-	else return logres;
-}
+// template <class Type>
+// Type nimDerivs_dlogis(Type x, Type location, Type scale, int give_log)
+// {
+	// Type logres = -(x-location)/scale - log(scale) - 2*log(1+exp(-(x-location)/scale));
+	// if(!give_log) return exp(logres);
+	// else return logres;
+// }
 
-template <class Type>
-Type nimDerivs_dt(Type x, Type df, int give_log)
-{
-	Type logres = lgamma((df+1)/2) - Type(1)/2*log(df*M_PI) -lgamma(df/2) - (df+1)/2*log(1+x*x/df);
-	if(!give_log) return exp(logres);
-	else return logres;
-}
+// template <class Type>
+// Type nimDerivs_dt(Type x, Type df, int give_log)
+// {
+	// Type logres = lgamma((df+1)/2) - Type(1)/2*log(df*M_PI) -lgamma(df/2) - (df+1)/2*log(1+x*x/df);
+	// if(!give_log) return exp(logres);
+	// else return logres;
+// }
 
-template <class Type>
-Type nimDerivs_dmulti(vector<Type> x, vector<Type> p, int give_log=0)
-{
-	vector<Type> xp1 = x+Type(1);
-	Type logres = lgamma(x.sum() + Type(1)) - lgamma(xp1).sum() + (x*log(p)).sum();
-	if(give_log) return logres;
-	else return exp(logres);
-}
+// template <class Type>
+// Type nimDerivs_dmulti(vector<Type> x, vector<Type> p, int give_log=0)
+// {
+	// vector<Type> xp1 = x+Type(1);
+	// Type logres = lgamma(x.sum() + Type(1)) - lgamma(xp1).sum() + (x*log(p)).sum();
+	// if(give_log) return logres;
+	// else return exp(logres);
+// }
 
 // template<class Type>
 // Type lgamma(Type x){

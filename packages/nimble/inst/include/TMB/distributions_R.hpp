@@ -91,7 +91,7 @@ VECTORIZE2_tt(pexp)
 	\param give_log true if one wants the log-probability, false otherwise.
 	*/
 template<class Type> 
-Type dexp(Type x, Type rate, int give_log=0)
+Type nimDerivs_dexp(Type x, Type rate, int give_log=0)
 {
 	if(!give_log)
 		return CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0));
@@ -142,7 +142,7 @@ VECTORIZE3_ttt(pweibull)
 	\param give_log true if one wants the log-probability, false otherwise.
 	*/
 template<class Type> 
-Type dweibull(Type x, Type shape, Type scale, int give_log=0)
+Type nimDerivs_dweibull(Type x, Type shape, Type scale, int give_log=0)
 {
 	if(!give_log)
 		return CppAD::CondExpGe(x,Type(0),shape/scale * pow(x/scale,shape-1) * exp(-pow(x/scale,shape)),Type(0));
@@ -180,7 +180,7 @@ VECTORIZE3_ttt(qweibull)
 	\param give_log true if one wants the log-probability, false otherwise.
 	*/
 template<class Type> 
-Type dbinom(Type k, Type size, Type prob, int give_log=0)
+Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log=0)
 {
 	Type logres = lgamma(size+1)-lgamma(k+1)-lgamma(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
 	if(!give_log) return exp(logres);
@@ -220,7 +220,7 @@ VECTORIZE4_ttti(dbinom_robust)
 	\param give_log true if one wants the log-probability, false otherwise.
 	*/
 template <class Type>
-Type dbeta(Type x, Type shape1, Type shape2, int give_log)
+Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, int give_log)
 {
 	Type res = exp(lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1);
 	if(!give_log) 
@@ -256,7 +256,7 @@ VECTORIZE4_ttti(df)
 	\param give_log true if one wants the log-probability, false otherwise.
 	*/
 template <class Type>
-Type dlogis(Type x, Type location, Type scale, int give_log)
+Type nimDerivs_dlogis(Type x, Type location, Type scale, int give_log)
 {
 	Type logres = -(x-location)/scale - log(scale) - 2*log(1+exp(-(x-location)/scale));
 	if(!give_log) return exp(logres);
@@ -288,7 +288,7 @@ VECTORIZE3_tti(dsn)
 	\param give_log true if one wants the log-probability, false otherwise.
 	*/	
 template <class Type>
-Type dt(Type x, Type df, int give_log)
+Type nimDerivs_dt(Type x, Type df, int give_log)
 {
 	Type logres = lgamma((df+1)/2) - Type(1)/2*log(df*M_PI) -lgamma(df/2) - (df+1)/2*log(1+x*x/df);
 	if(!give_log) return exp(logres);
@@ -305,7 +305,7 @@ VECTORIZE3_tti(dt)
 	\param give_log true if one wants the log-probability, false otherwise.
 	*/
 template <class Type>
-Type dmultinom(vector<Type> x, vector<Type> p, int give_log=0)
+Type nimDerivs_dmultinom(vector<Type> x, vector<Type> p, int give_log=0)
 {
 	vector<Type> xp1 = x+Type(1);
 	Type logres = lgamma(x.sum() + Type(1)) - lgamma(xp1).sum() + (x*log(p)).sum();
