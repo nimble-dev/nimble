@@ -357,15 +357,15 @@ conjugacyClass <- setRefClass(
             if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
             depNodeDist <- model$getDistribution(depNode)
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
-            if(length(link) > 1) link <- link[which(depNodeDist == dependentDistNames)] # handle multiple link case introduced for beta stickbreaking
+            if(length(link) > 1) currentLink <- link[which(depNodeDist == dependentDistNames)] else currentLink <- link # handle multiple link case introduced for beta stickbreaking
             dependentObj <- dependents[[depNodeDist]]
-            if(link != 'stickbreaking') {
+            if(currentLink != 'stickbreaking') {
                 linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
                 if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
                 if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
                 linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
-                if(!cc_linkCheck(linearityCheck, link))                           return(NULL)
+                if(!cc_linkCheck(linearityCheck, currentLink))                           return(NULL)
                 if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
             } else {
                 stickbreakingCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
@@ -411,7 +411,6 @@ conjugacyClass <- setRefClass(
             if(getDimension(prior) > 0) {
                 functionBody$addCode(d <- max(determineNodeIndexSizes(target)))
             }
-
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
                 functionBody$addCode({
@@ -460,7 +459,7 @@ conjugacyClass <- setRefClass(
             ## July 2017
 
             ## the any() here is because of beta-stickbreaking stuff and needs to be considered more carefully 
-            if(any(needsStickbreakingCheck) || any(needsLinearityCheck) || (nimbleOptions()$allowDynamicIndexing && any(link == 'identity') && doDependentScreen)) {
+            if(any(needsLinearityCheck) || (nimbleOptions()$allowDynamicIndexing && any(link == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
                 for(iDepCount in seq_along(dependentCounts)) {
@@ -475,26 +474,24 @@ conjugacyClass <- setRefClass(
                 }
             }
             if(any(needsStickbreakingCheck)) {
-                                        # HERE
-                # use model somehow
-        linearityCheckExprList <- lapply(depStochNodes_dnorm, function(node) model$getParamExpr(node, 'mean'))
-        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansions=TRUE))
-        if(!all(sapply(linearityCheckExprList, function(expr) cc_nodeInExpr(targetScalar, expr)))) stop('something went wrong')
-        linearityCheckResultList <- lapply(linearityCheckExprList, function(expr) cc_checkLinearity(expr, targetScalar))
-        if(any(sapply(linearityCheckResultList, function(expr) is.null(expr)))) stop('something went wrong')
-        offsetList <- lapply(linearityCheckResultList, '[[', 'offset')
-
-                
-                offset <- cc_checkStickbreaking()
-                 for(iDepCount in seq_along(dependentCounts)) {
-                     distName <- names(dependentCounts)[iDepCount]
-                     functionBody$addCode({
-                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
-                     }, list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
-                             DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), as.name(paste0('dep_', distName, '_nodeSizeMax')), targetNdim),
-                     }
+                ## cautions: need to think through possibility that a non sb-dcat conjugate dep of target may be included in the model
+                for(iDepCount in seq_along(dependentCounts)) {
+                    distName <- names(dependentCounts)[iDepCount]
+                    functionBody$addCode({
+                        DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
+                    }, list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
+                            DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), as.name(paste0('dep_', distName, '_nodeSizeMax')), 0))
+                    )
+                }
+                functionBody$addCode({
+                    browser()
+                    stickbreakingCheckExpr <- model$getValueExpr(calcNodesDeterm)
+                    stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = target)
+                })
+                functionBody$addCode(DEP_OFFSET_VAR2 <- rep(cc_checkStickbreaking(stickbreakingCheckExpr, target)$offset, DEP_OFFSET_SIZE), 
+                                     list(DEP_OFFSET_VAR2 = as.name(paste0('dep_', distName, '_offset')),
+                                          DEP_OFFSET_SIZE = as.name(paste0('N_dep_', distName))))
             }
-
             ## adding declarations for the contribution terms, to remove Windows compiler warnings, DT August 2015
             ## moved these numeric() and array() declarations for contributino terms to setup outputs, July 2017
             for(contributionName in posteriorObject$neededContributionNames) {
@@ -798,12 +795,12 @@ conjugacyClass <- setRefClass(
                 subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
                 
                 forLoopBody <- codeBlockClass()
-
+                
                 if(any(getDimension(distName, includeParams = TRUE) > 0)) {
                     if(targetNdim == 1) ## 1D
                         forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
-                    else ## 2D
+                    if(targetNdim == 2) ## 2D  ## formerly this was 'else', but for 'dcat' we have targetNdim=0 while max(getDimension(distName, includeParams = TRUE)) is 1 so need explicit check for 2D
                         forLoopBody$addCode(if(DEP_NODESIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
                 }
