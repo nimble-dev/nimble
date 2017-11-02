@@ -3,6 +3,27 @@ nimbleOptions(experimentalEnableDerivs = TRUE)
 nimbleOptions(showCompilerOutput = FALSE)
 context("Testing of derivatives for calculate() for nimbleModels")
 
+
+test_that('R derivs of calculate function work for model ADMod4', {
+  ADCode4 <- nimbleCode({
+    x0 ~ dnorm(0,1)
+    x[1] ~ dnorm(x0, 1)
+    y[1] ~ dnorm(x[1], var = 2)
+    for(i in 2:3) {
+      x[i] ~ dnorm(x[i-1], 1)
+      y[i] ~ dnorm(x[i], var = 2)
+    }
+  })
+  testdata = list(y = c(0,1,2))
+  ADMod4 <- nimbleModel(
+    code = ADCode4, data = list(y = 0.5+1:3), inits = list(x0 = 1.23, x = -1:3))
+  ADMod4$simulate(ADMod4$getDependencies('x'))
+  test_ADModelCalculate(ADMod4, name = 'ADMod4', calcNodeNames = list(c('x[1]')),
+                        wrt = list(c('x0')), testR = TRUE,
+                        testCompiled = FALSE, tolerance = .1)
+})
+
+
   ADCode1 <- nimbleCode({
     x[1] ~ dnorm(0, 1)
     x[2] ~ dnorm(0, 1)

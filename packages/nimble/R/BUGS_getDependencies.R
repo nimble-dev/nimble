@@ -256,6 +256,7 @@ nimDerivsInfoClass <- setRefClass(
                                     function(x){parse(text = convertCalcArgNameToModelNodeName(x, sizeAndDimInfo, unrolledIndicesMatrixRow))[[1]]})
             calcWithArgsCalls[[i]] <<- as.call(c(list(as.name('calcWithArgs'), unrolledIndicesMatrixRow), modelArgNames))
             for(j in seq_along(depIndex_2_parentDepIndices[[i]])){
+              browser()
               if(j == 1 && wrtNodeIndicators[[i]] == 1){
                 thisWrtLine <- which(wrtLineNums == i)
                 lineWrtArgsAsCharacters[[i]]  <<- names(formalArgNames[2])
@@ -276,9 +277,9 @@ nimDerivsInfoClass <- setRefClass(
                   lineWrtArgSizeInfo[[i]][j] <<- lineWrtArgSizeInfo[[i]][j] + wrtInfoList$argSize
                 }
               }
-              else{
-                lineWrtArgsAsCharacters[[i]] <<- NA
-              }
+            }
+            if(length(lineWrtArgsAsCharacters) < i){
+              lineWrtArgsAsCharacters[[i]] <<- NA
             }
             if(cInfo){
               functionArgsDimsList <- formalArgNames[-1]
