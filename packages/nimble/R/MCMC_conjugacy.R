@@ -484,7 +484,6 @@ conjugacyClass <- setRefClass(
                     )
                 }
                 functionBody$addCode({
-                    browser()
                     stickbreakingCheckExpr <- model$getValueExpr(calcNodesDeterm)
                     stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = target)
                 })
