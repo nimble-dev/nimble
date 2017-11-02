@@ -246,6 +246,8 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 				}
 			}
 			if(isCalcNodeLine && valueFlag){
+				cout << "i" << i << "\n";
+				 cout << " (*thisDerivList).value[0];" << (*thisDerivList).value[0] << "\n";
 				(*ansList).value[0] = (*ansList).value[0] + (*thisDerivList).value[0];
 			} 
 		}		 
