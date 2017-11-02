@@ -67,7 +67,9 @@ cppModelValuesClass <- setRefClass('cppModelValuesClass',
                                            codeLines2 <- list()
                                            if(is.list(vars)) {
                                                for(v in names(Rnames2CppNames)) {
-                                                   ssc <- as.call(c(list(as.name('setSize')), as.list(vars[[v]])))
+                                                   ssc <- as.call(c(list(as.name('initialize')),
+                                                                    c(list(quote(NA_REAL), 1)),
+                                                                    as.list(vars[[v]])))
                                                    codeLines2[[v]] <- codeSubstitute(template2, list(SETSIZECALL = ssc, VAR = as.name(Rnames2CppNames[[v]])))
                                                    
                                                }
@@ -76,7 +78,9 @@ cppModelValuesClass <- setRefClass('cppModelValuesClass',
                                                for(v in names(Rnames2CppNames)) {
                                                    thisSize <- vars$getSymbolObject(v)$size
                                                    if(length(thisSize)==0) thisSize <- 1
-                                                   ssc <- as.call(c(list(as.name('setSize')), as.list(thisSize)))
+                                                   ssc <- as.call(c(list(as.name('initialize')),
+                                                                    c(list(quote(NA_REAL), 1)),
+                                                                    as.list(thisSize)))
                                                    codeLines2[[v]] <- codeSubstitute(template2, list(SETSIZECALL = ssc, VAR = as.name(Rnames2CppNames[[v]])))
                                                }
                                            }
