@@ -3,7 +3,7 @@ conjugacyRelationshipsInputList <- list(
 
     ## beta
     list(prior = 'dbeta',
-         link = c(rep('identity', 3), 'stickbreaking'),
+         link = c(rep('identity', 3), 'stick_breaking'),
          dependents = list(
              dbern   = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = '1 - value'   ),
              dbin    = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
@@ -338,7 +338,7 @@ conjugacyClass <- setRefClass(
             link <<- cr$link
             initialize_addDependents(cr$dependents)
             needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
-            needsStickbreakingCheck <<- link %in% c('stickbreaking')
+            needsStickbreakingCheck <<- link %in% c('stick_breaking')
             posteriorObject <<- posteriorClass(cr$posterior, prior)
             },
 
@@ -359,7 +359,7 @@ conjugacyClass <- setRefClass(
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
             if(length(link) > 1) currentLink <- link[which(depNodeDist == dependentDistNames)] else currentLink <- link # handle multiple link case introduced for beta stickbreaking
             dependentObj <- dependents[[depNodeDist]]
-            if(currentLink != 'stickbreaking') {
+            if(currentLink != 'stick_breaking') {
                 linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
                 if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
@@ -1022,7 +1022,7 @@ cc_createStructureExpr <- function(model, exprText) {
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
-    if(!(link %in% c('identity', 'multiplicative', 'linear', 'stickbreaking')))    stop(paste0('unknown link: \'', link, '\''))
+    if(!(link %in% c('identity', 'multiplicative', 'linear', 'stick_breaking')))    stop(paste0('unknown link: \'', link, '\''))
     if(is.null(linearityCheck))    return(FALSE)
     offset <- linearityCheck$offset
     scale  <- linearityCheck$scale
@@ -1196,7 +1196,7 @@ cc_combineExprsDivision <- function(expr1, expr2) {
 }
 
 cc_checkStickbreaking <- function(expr, targetNode) {
-    if(!is.call(expr) || expr[[1]] != 'stickbreaking' || !cc_nodeInExpr(targetNode, expr))
+    if(!is.call(expr) || expr[[1]] != 'stick_breaking' || !cc_nodeInExpr(targetNode, expr))
         return(NULL)
     expr <- expr[[2]]
     if(!is.call(expr) || expr[[1]] != 'structureExpr')
