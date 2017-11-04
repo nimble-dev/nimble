@@ -1,5 +1,10 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 nimbleOptions(enableModelMacros = TRUE)
 
 context("Testing model macros")
@@ -301,33 +306,48 @@ test_that(paste0('Macro expansion 7 (correct trapping of ',
     )
     temporarilyAssignInGlobalEnv(testMacroOuter)
 
+    cat("\nTwo 'unused argument' error messages known to occur here:\n")
+    
+    expect_error(nimble:::codeProcessModelMacros(
+                              quote(x[1] ~ testMacroOuter(y[1], 1))),
+                 "Model macro testMacroInner\\(expanded from testMacroOuter\\) failed.")
+
+    expect_error(ans <- nimbleModel(
+            nimbleCode({
+                x[1] ~ testMacroOuter(y[1], 1)
+            })
+        ), "Model macro testMacroInner\\(expanded from testMacroOuter\\) failed.")
+
+    ## Replaced below with use of expect_error that does check error message.
+    
     ## The expect_failure mechanism does not allow to check the error
     ## message returned from successful error-trapping.  Hence we use
     ## this try(), which is potentially dangerous for masking errors
     ## but in this case is safe because we follow it with an
     ## expectation that an error did occur.
-    ans <- try(nimble:::codeProcessModelMacros(
-        quote(x[1] ~ testMacroOuter(y[1], 1)
-              ## second arg triggers
-              ## failure for testing
-              )))
-    expect_true(inherits(ans, 'try-error'),
-                'failure occurred when intended')
-    expect_identical(as.character(ans),
-                     "Error : Model macro testMacroInner(expanded from testMacroOuter) failed.\n")
+    
+    ## ans <- try(nimble:::codeProcessModelMacros(
+    ##     quote(x[1] ~ testMacroOuter(y[1], 1)
+    ##           ## second arg triggers
+    ##           ## failure for testing
+    ##           )))
+    ## expect_true(inherits(ans, 'try-error'),
+    ##             'failure occurred when intended')
+    ## expect_identical(as.character(ans),
+    ##                  "Error : Model macro testMacroInner(expanded from testMacroOuter) failed.\n")
 
     
-    ans <- try(
-        nimbleModel(
-            nimbleCode({
-                x[1] ~ testMacroOuter(y[1], 1)
-            })
-        )
-    )
-    expect_true(inherits(ans, 'try-error'),
-                'failure occurred when intended')
-    expect_identical(as.character(ans),
-                     "Error : Model macro testMacroInner(expanded from testMacroOuter) failed.\n")
+    ## ans <- try(
+    ##     nimbleModel(
+    ##         nimbleCode({
+    ##             x[1] ~ testMacroOuter(y[1], 1)
+    ##         })
+    ##     )
+    ## )
+    ## expect_true(inherits(ans, 'try-error'),
+    ##             'failure occurred when intended')
+    ## expect_identical(as.character(ans),
+    ##                  "Error : Model macro testMacroInner(expanded from testMacroOuter) failed.\n")
 })
 
 test_that('duplicate variables from macro expansion error-trapped correctly',
@@ -349,20 +369,13 @@ test_that('duplicate variables from macro expansion error-trapped correctly',
     )
     temporarilyAssignInGlobalEnv(flat_normal_priors)
     ## Safe use of try due to immediate next test
-    model <- try(nimbleModel(
+    expect_error(model <- nimbleModel(
         nimbleCode(
         {
             flat_normal_priors(mu, beta, gamma)
             mu ~ dexp(4)
         }
-        ))
-        )
-
-    expect_true(inherits(model, 'try-error'),
-                'error with duplicate name from macro expansion trapped\n')
-    expect_true(grepl("There are multiple definitions for nodes:mu",
-                      as.character(model)),
-                'error with duplicate name emits correct message\n')
+        )), "There are multiple definitions for nodes:mu")
 })
 
 test_that('duplicate nested indices from macro expansion error-trapped correctly',
@@ -385,18 +398,14 @@ test_that('duplicate nested indices from macro expansion error-trapped correctly
     )
     temporarilyAssignInGlobalEnv(all_dnorm)
     ## Safe use of try due to immediately next test
-    model <- try(nimbleModel(
+    expect_error(model <- nimbleModel(
         nimbleCode(
         {
             for(i in 1:3)
                 x ~ all_dnorm(mu, start = 1, end = 10)        
         }
-        ))
-        )
-    
-    expect_true(inherits(model, 'try-error'),
-                'error with duplicate nested indices from macro expansion trapped\n')
-    expect_true(grepl("Variable i used multiple times as for loop index",
-                      as.character(model)),
-                'error with duplicate nested indices emits correct message\n')
+        )), "Variable i used multiple times as for loop index")
 })
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

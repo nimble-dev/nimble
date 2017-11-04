@@ -64,7 +64,7 @@ NIMBLE extends the BUGS language in the following ways:
    deterministic, declarations.\footnote{But beware of the possibility
      of needing to set values for ``lifted'' nodes created by NIMBLE.}
  \item Data values can be reset, and which parts of a model are flagged as data can be changed, allowing one model to be used for different data sets without rebuilding the model each time.
-   \item As of Version 0.6-6 we now support stochastic/dynamic indexes as a beta release feature. More specifically in earlier versions all indexes needed to be constants. Now indexes can be other nodes or functions of other nodes. For a given dimension of a node being indexed, if the index is not constant, it must be a scalar value. So expressions such as \cd{mu[k[i], 3]} or \cd{mu[k[i], 1:3]} or \cd{mu[k[i], j[i]]} are allowed, but not \cd{mu[k[i]:(k[i]+1)]}. Nested dynamic indexes such as \cd{mu[k[j[i]]]} are also allowed. 
+   \item As of Version 0.6-6 we now support stochastic/dynamic indexes. More specifically in earlier versions all indexes needed to be constants. Now indexes can be other nodes or functions of other nodes. For a given dimension of a node being indexed, if the index is not constant, it must be a scalar value. So expressions such as \cd{mu[k[i], 3]} or \cd{mu[k[i], 1:3]} or \cd{mu[k[i], j[i]]} are allowed, but not \cd{mu[k[i]:(k[i]+1)]}. Nested dynamic indexes such as \cd{mu[k[j[i]]]} are also allowed. 
   \end{enumerate}
   
 \subsection{Not-yet-supported features of BUGS and JAGS}

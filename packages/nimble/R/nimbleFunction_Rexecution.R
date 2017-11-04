@@ -3,7 +3,7 @@
 
 #' NIMBLE language functions for R-like vector construction
 #'
-#' These functions can be used in nimbleFunctions and compiled using \code{compileNimble}.
+#' The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{length}, and \code{diag} can be used in nimbleFunctions and compiled using \code{compileNimble}.
 #' 
 #' @name nimble-R-functions
 #' 

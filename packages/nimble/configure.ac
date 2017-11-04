@@ -37,7 +37,7 @@ dnl or by setting the environment variable CPPAD_DIR
 AC_ARG_WITH(cppad, [  --with-cppad            path for the directory containing cppad/ directory], CPPAD_DIR="${withval}")
 
 AC_ARG_ENABLE(dylib, [  --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code],
-                         ENABLE_LIB=${enableval}, 
+                         ENABLE_LIB=${enableval},
 if ! test `uname` = "Linux" ; then
    ENABLE_LIB=false
 else
@@ -54,6 +54,21 @@ if test -n "${LIBNIMBLE}" ; then
   ENABLE_LIB=true
   echo "Enabling libnimble."
 fi
+
+dnl --enable-debugging or --enable-debugging=yes will keep any -g flags from R's Makeconf
+dnl default (omission of --enable-debugging) will invoke use of customizeMakeconf in inst/CppCode
+dnl    which in turn makes a local copy of Makeconf and replaces "-g " with " ".
+AC_ARG_ENABLE(debugging, [  --enable-debugging            compiled libnimble with debugging information],
+ENABLE_DEBUGGING=${enableval},
+ENABLE_DEBUGGING=no)
+
+if test "${ENABLE_DEBUGGING}" = "yes"; then
+   echo "enabling R's default debugging information in libnimble"
+   GNUMAKEFILE_INCLUDE_MAKECONF="include \$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
+else
+   GNUMAKEFILE_INCLUDE_MAKECONF="include ./Makeconf"
+fi
+AC_SUBST(GNUMAKEFILE_INCLUDE_MAKECONF)
 
 if test -n "$EIGEN_DIR" ; then
   echo "Checking eigen directory $EIGEN_DIR"
@@ -104,23 +119,30 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
 fi
 
 
-CXX=`"${R_HOME}/bin/R" CMD config CXX`
-CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
-AC_LANG([C++])
-dnl  AC_LANG_PUSH([C++]);
+dnl Next 5 lines are from from https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Using-C_002b_002b11-code, but with CXX11 modified to CXX1X per output of R CMD config
+CXX11=`"${R_HOME}/bin/R" CMD config CXX1X`
+CXX11STD=`"${R_HOME}/bin/R" CMD config CXX1XSTD`
+CXX="${CXX11} ${CXX11STD}"
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX1XFLAGS`
+AC_LANG(C++)
+
+dnl Next 3 lines are from old config.ac, prior to turning on C++11 and using above 5 lines
+dnl CXX=`"${R_HOME}/bin/R" CMD config CXX`
+dnl CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
+dnl AC_LANG([C++])
 
 echo "working on eigen"
 
-AC_CHECK_HEADERS([Eigen/Dense], 
+AC_CHECK_HEADERS([Eigen/Dense],
                  [echo "Found Eigen/Dense";
 dnl                rm -rf inst/Eigen_local
 		  if test -e "NOT_IN_TARBALL" ; then
-		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6-1.tar.gz or something similar." 
+		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6-1.tar.gz or something similar."
 		  else
 		   echo "Not installing Eigen with NIMBLE"
 		   rm -r inst/include/Eigen
 		  fi
-                 ], 
+                 ],
                  [echo "Using the version of Eigen provided with NIMBLE";
 		  EIGEN_DIR=""
                   ])
@@ -190,24 +212,27 @@ AC_SUBST(PKG_LIBS)
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 AC_SUBST(USE_REGISTRATION)
 
-AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars)
+AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars inst/CppCode/GNUmakefile)
 
-
+if test "${ENABLE_DEBUGGING}" != "yes"; then
+  echo "removing debugging flags"
+  (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
+fi
 
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
- (cd inst/CppCode ; ${MAKE} )
-# cp inst/CppCode/libnimble.dylib src
-# if ! test -e $R_PACKAGE_DIR/libs/ ; then
-#    mkdir -p $R_PACKAGE_DIR/libs/
-# fi
- #cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib 
-else 
-#  cp inst/CppCode/*.cpp src
+(cd inst/CppCode ; ${MAKE} )
+
+else
+  echo "Building libnimble.a"
   cp inst/CppCode/dists.cpp src
   cp inst/CppCode/RcppUtils.cpp src
   cp inst/CppCode/nimbleGraph.cpp src
   cp inst/CppCode/eigenUsingClasses.cpp src
 
   (cd inst/CppCode ; ${MAKE} libnimble.a)
+fi
+
+if test "${ENABLE_DEBUGGING}" != "yes"; then
+  (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf clean)
 fi

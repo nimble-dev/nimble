@@ -1,6 +1,11 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-context("Testing of miscellaneous functionality.")
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+context("Testing of miscellaneous functionality")
 
 ## Regression test for Issue #563.
 test_that("while() works even when an intermediate variable is needed", {
@@ -23,8 +28,8 @@ test_that("while() works even when an intermediate variable is needed", {
 test_that("copyExprClass works", {
     testExpr <- nimble:::RparseTree2ExprClasses(quote(a <- foo(bar(b, 3, c) + 2) + 4))
     testExprCopy <- nimble:::copyExprClass(testExpr)
-    expect_identical(capture.output(testExpr$show()),
-                     capture.output(testExprCopy$show()),
+    expect_identical(capture.output(testExpr$print()),
+                     capture.output(testExprCopy$print()),
                      info = 'incorrect copying of exprClass object')
 })
 
@@ -35,7 +40,8 @@ test_that("Test of full model check", {
         y ~ dnorm(mu, 1)
         mu ~ dnorm(0, 1)
     })
-    try(m <- nimbleModel(code, data = list(y = 0), check = TRUE, name = 'test'))
+    expect_output(m <- nimbleModel(code, data = list(y = 0), check = TRUE, name = 'test'),
+                   "NAs were detected")
 
     errmsg <- geterrmessage()    
 
@@ -182,3 +188,6 @@ test_that("pi case 3", {
     expect_equal(cnf(), c(10.1, 20.2), info = 'pi case 1 compiled')
     }
 )
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

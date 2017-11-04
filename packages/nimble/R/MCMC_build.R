@@ -6,8 +6,6 @@
 #' @param conf An object of class MCMCconf that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCconf objects.  Alternatively, \code{MCMCconf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.
 #' @param ... Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object
 #'
-#' @author Daniel Turek
-#' @export
 #' @details
 #' Calling buildMCMC(conf) will produce an uncompiled (R) R mcmc function object, say 'Rmcmc'.
 #'
@@ -58,6 +56,12 @@
 #' head(samples)
 #' WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 #' }
+#'
+#' @seealso \code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
+#' 
+#' @author Daniel Turek
+#' 
+#' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
     setup = function(conf, ...) {
@@ -93,9 +97,9 @@ buildMCMC <- nimbleFunction(
     },
 
     run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
-        if(simulateAll)     simulate(model)    ## default behavior excludes data nodes
-        my_initializeModel$run()
         if(reset) {
+            if(simulateAll)   simulate(model)
+            my_initializeModel$run()
             nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
             for(i in seq_along(samplerFunctions))
                 samplerFunctions[[i]]$reset()

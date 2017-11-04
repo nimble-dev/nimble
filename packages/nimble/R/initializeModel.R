@@ -46,10 +46,11 @@ initializeModel <- nimbleFunction(
 
         ##allDetermNodes <- model$getNodeNames(determOnly = TRUE)
         ##determNodesNodeFxnVector <- nodeFunctionVector(model = model, nodeNames = allDetermNodes)
+        determDepsOfRHSonly <- model$getDependencies(model$getMaps('nodeNamesRHSonly'), determOnly = TRUE)
     },
     
     run = function() {
-        calculate(model)
+        model$calculate(determDepsOfRHSonly)
         for(i in seq_along(initFunctionList)) {
             initFunctionList[[i]]$run()
         }

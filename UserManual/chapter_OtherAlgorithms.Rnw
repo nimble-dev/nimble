@@ -11,7 +11,7 @@ require(nimble)
 \label{cha:algos-provided}
 
 
-The NIMBLE algorithm library is growing and as of version 0.5-1 includes a suite of Sequential Monte Carlo algorithms as well as a more robust MCEM. 
+The NIMBLE algorithm library is growing and as of version 0.6-7 includes a suite of Sequential Monte Carlo algorithms as well as a more robust MCEM and k-fold cross-validation. 
 
  
 

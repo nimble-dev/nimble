@@ -3,6 +3,8 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context("Testing of old vs. new generated C++ during refactoring steps")
 
 RwarnLevel <- options('warn')$warn
+## Many warnings of "creating a .Call() expression with no DLL information",
+## so suppressing them.
 options(warn = -1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
@@ -12,7 +14,7 @@ nimbleOptions(verbose = FALSE)
 compareOldAndNewCompilationRC <- function(input) {
     name <- paste0('math: ', input$name, ': compiles')
     test_that(name, {
-        wrap_if_matches(input$xfail, name, expect_error, {
+        wrap_if_matches(input$knownFailure, name, expect_error, {
             run <- input$run
             name <- input$name
 
@@ -57,13 +59,26 @@ testCases <- list(
 ans <- lapply(testCases, compareOldAndNewCompilationRC)
 
 compareOldAndNewMathTest <- function(input) {
-    runFun <- gen_runFun(input)
+    runFun <- gen_runFun(input, logicalArgs = input$logicalArgs,
+                         returnType = ifelse(is.null(input$returnType), "double", input$returnType))
     input$run <- runFun
+    if('knownFailureReport' %in% names(input) && input$knownFailureReport)
+        cat("\nBegin expected error message:\n")
     compareOldAndNewCompilationRC(input)
+    if('knownFailureReport' %in% names(input) && input$knownFailureReport)
+        cat("End expected error message.\n")
 }
 
 source(system.file(file.path('tests', 'mathTestLists.R'), package = 'nimble'))
-ans2 <- lapply(testsBasicMath, compareOldAndNewMathTest)
+## compilation of two modulo tests only fails if actual compilation is done,
+## not just C++ generation, so this clunkily unsets knownFailure
+testsBasicMathModified <- lapply(testsBasicMath, function(x) {
+    if(x$name %in% c('modulo of vectors', 'modulo of vector and scalar'))
+        x$knownFailure <- NULL
+    x
+})
+
+ans2 <- lapply(testsBasicMathModified, compareOldAndNewMathTest)
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

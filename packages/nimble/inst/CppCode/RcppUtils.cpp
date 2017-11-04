@@ -391,6 +391,22 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 // 	return;
 // }
 
+void populate_SEXP_2_double_internal(double *cPtr, SEXP rScalar) {
+  if(Rf_isLogical(rScalar) )
+    (*cPtr) = LOGICAL(rScalar)[0];
+  else if(Rf_isInteger(rScalar) )
+    (*cPtr) = INTEGER(rScalar)[0];
+  else if(Rf_isReal(rScalar) )
+    (*cPtr) = REAL(rScalar)[0];
+  else
+    PRINTF("R class not identified. Currently numeric, integer annd logical are supported\n");
+}
+
+void populate_SEXP_2_double_for_copyFromRobject(void *vPtr, SEXP rScalar) {
+  double *cPtr = static_cast<double*>(vPtr);
+  populate_SEXP_2_double_internal(cPtr, rScalar);
+}
+
 SEXP populate_SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
@@ -404,16 +420,25 @@ SEXP populate_SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar){
     else if(cRefNum == 2)
         cPtr = (*static_cast<double**> ( vPtr ) );
     else return(R_NilValue);
-    
-    if(Rf_isLogical(rScalar) )
-      (*cPtr) = LOGICAL(rScalar)[0];
-    else if(Rf_isInteger(rScalar) )
-      (*cPtr) = INTEGER(rScalar)[0];
-    else if(Rf_isReal(rScalar) )
-      (*cPtr) = REAL(rScalar)[0];
-    else
-        PRINTF("R class not identified. Currently numeric and integers supported\n");
+
+    populate_SEXP_2_double_internal(cPtr, rScalar);
     return(R_NilValue);
+}
+
+void populate_SEXP_2_int_internal(int *cPtr, SEXP rScalar) {
+  if(Rf_isLogical(rScalar) )
+    (*cPtr) = LOGICAL(rScalar)[0];
+  else if(Rf_isInteger(rScalar) )
+    (*cPtr) = INTEGER(rScalar)[0];
+  else if(Rf_isReal(rScalar) )
+    (*cPtr) = REAL(rScalar)[0];
+  else
+    PRINTF("R class not identified. Currently numeric, integer annd logical are supported\n");
+}
+
+void populate_SEXP_2_int_for_copyFromRobject(void *vPtr, SEXP rScalar) {
+  int *cPtr = static_cast<int*>(vPtr);
+  populate_SEXP_2_int_internal(cPtr, rScalar);
 }
 
 SEXP populate_SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
@@ -429,39 +454,42 @@ SEXP populate_SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
     else if(cRefNum == 2)
         cPtr = (*static_cast<int**> ( vPtr ) );
     else return(R_NilValue);
-    if(Rf_isInteger(rScalar) )
-        (*cPtr) = INTEGER(rScalar)[0];
-    else if(Rf_isReal(rScalar) )
-        (*cPtr) = REAL(rScalar)[0];
-    else
-        PRINTF("R class not identified. Currently numeric and integers supported\n");
+    
+    populate_SEXP_2_int_internal(cPtr, rScalar);
     return(R_NilValue);
-}		//Note: this is identical to above and one should be removed (ie. just SEXP_2_scalar)
-		//But our generated code calls both
+}
 
+void populate_SEXP_2_bool_internal(bool *cPtr, SEXP rScalar) {
+  if(Rf_isLogical(rScalar) )
+    (*cPtr) = LOGICAL(rScalar)[0];
+  else if(Rf_isInteger(rScalar) )
+    (*cPtr) = INTEGER(rScalar)[0];
+  else if(Rf_isReal(rScalar) )
+    (*cPtr) = REAL(rScalar)[0];
+  else
+    PRINTF("R class not identified. Currently numeric, integer annd logical are supported\n");
+}
 
-  SEXP populate_SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar){
-    void* vPtr = R_ExternalPtrAddr(rPtr);
-    if(vPtr == NULL){
-        PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
-        return(R_NilValue);
-    }
-    bool* cPtr;
-    int cRefNum = INTEGER(refNum)[0];
-    if(cRefNum == 1)
-        cPtr = static_cast<bool*>( vPtr );
-    else if(cRefNum == 2)
-        cPtr = (*static_cast<bool**> ( vPtr ) );
-    else return(R_NilValue);
-    if(Rf_isLogical(rScalar) )
-      (*cPtr) = LOGICAL(rScalar)[0];
-    else if(Rf_isInteger(rScalar) )
-        (*cPtr) = INTEGER(rScalar)[0];
-    else if(Rf_isReal(rScalar) )
-        (*cPtr) = REAL(rScalar)[0];
-    else
-        PRINTF("R class not identified. Currently numeric and integers supported\n");
+void populate_SEXP_2_bool_for_copyFromRobject(void *vPtr, SEXP rScalar) {
+  bool *cPtr = static_cast<bool*>(vPtr);
+  populate_SEXP_2_bool_internal(cPtr, rScalar);
+}
+
+SEXP populate_SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar){
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
     return(R_NilValue);
+  }
+  bool* cPtr;
+  int cRefNum = INTEGER(refNum)[0];
+  if(cRefNum == 1)
+    cPtr = static_cast<bool*>( vPtr );
+  else if(cRefNum == 2)
+    cPtr = (*static_cast<bool**> ( vPtr ) );
+  else return(R_NilValue);
+  populate_SEXP_2_bool_internal(cPtr, rScalar);
+  return(R_NilValue);
 }
 
 SEXP extract_bool_2_SEXP(SEXP rPtr, SEXP refNum){

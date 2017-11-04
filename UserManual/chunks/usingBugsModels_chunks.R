@@ -146,7 +146,8 @@ multiVarCode2 <- nimbleCode({
         Y[i] ~ dnorm(mn, 1)
 })
 
-multiVarModel2 <- nimbleModel(multiVarCode2, dimensions = list(mu = 5, cov = c(5,5)),
+multiVarModel2 <- nimbleModel(multiVarCode2,
+                              dimensions = list(mu = 5, cov = c(5,5)),
                              calculate = FALSE)
 
 

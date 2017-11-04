@@ -333,7 +333,8 @@ eigenListFunctionGenerator <- nimbleFunction(
   },
   run = function(){
     ## we will take the eigendecomposition and svd of a symmetric matrix
-    eigenAndSvdList$demoEigenList <<- eigen(demoMatrix, symmetric = TRUE, only.values = TRUE)
+    eigenAndSvdList$demoEigenList <<- eigen(demoMatrix, symmetric = TRUE, 
+                                            only.values = TRUE)
     eigenAndSvdList$demoSvdList <<- svd(demoMatrix, vectors = 'none')
     returnType(eigenAndSvdListDef())
     return(eigenAndSvdList)

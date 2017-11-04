@@ -1,5 +1,10 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 context("Testing of error handling.")
 
 test_that("Testing of error handling in SEXP_2_NimArr", {
@@ -29,7 +34,10 @@ test_that("Testing of error handling in SEXP_2_NimArr", {
   wrong_shape1 = TRUE
   wrong_shape2 = matrix(c(1, 2, 3, 4), 2, 2)
   
-  # These DO NOT trigger errors.
+  # These DO NOT trigger errors, though they do trigger run-time error messages.
+  # Per conversation with Perry, this is not the ideal behavior, hence expect_failure().
+  # Print this message so anyone running tests knows this is ok.
+  cat("\nSeven run-time size error messages known to occur here:\n")
   expect_failure(expect_error(compiledFun(wrong_shape1, y, z)))
   expect_failure(expect_error(compiledFun(x, wrong_shape1, z)))
   expect_failure(expect_error(compiledFun(x, y, wrong_shape1)))
@@ -42,3 +50,6 @@ test_that("Testing of error handling in SEXP_2_NimArr", {
   expect_error(compiledFun(x, y, wrong_type))
   expect_error(compiledFun(wrong_shape2, y, z))
 })
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

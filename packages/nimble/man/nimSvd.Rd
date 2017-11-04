@@ -10,7 +10,7 @@ nimSvd(x, vectors = "full")
 \arguments{
 \item{x}{a symmetric numeric matrix (double or integer) whose spectral decomposition is to be computed.}
 
-\item{vectors}{character that determines whether to calculate left and right singular vectors.  Can take values \code{'none'}, \code{'thin'} or \code{'full'}.  Defaults to \code{'full'}.  See details.}
+\item{vectors}{character that determines whether to calculate left and right singular vectors.  Can take values \code{'none'}, \code{'thin'} or \code{'full'}.  Defaults to \code{'full'}.  See \sQuote{Details}.}
 }
 \value{
 The singular value decomposition of \code{x} is returned as a \code{\link{nimbleList}} with elements:

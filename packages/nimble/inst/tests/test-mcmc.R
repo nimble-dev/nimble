@@ -3,21 +3,23 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context("Testing of default MCMC")
 
 RwarnLevel <- options('warn')$warn
-options(warn = -1)
+options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
 
 ## If you do *not* want to write to results files
 ##    comment out the sink() call below.  And consider setting verbose = FALSE 
 ## To record a new gold file, nimbleOptions('generateGoldFileForMCMCtesting') should contain the path to the directory where you want to put it
 ## e.g. nimbleOptions(generateGoldFileForMCMCtesting = getwd())
 ## Comparison to the gold file won't work until it is installed with the package.
-nimbleOptions(verbose = TRUE)
+
 goldFileName <- 'mcmcTestLog_Correct.Rout'
 tempFileName <- 'mcmcTestLog.Rout'
 generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForMCMCtesting'))
 outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForMCMCtesting'), goldFileName) else tempFileName
 
-sink(outputFile)
+## capture warnings
+sink_with_messages(outputFile)
 
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
@@ -138,10 +140,9 @@ test_that('air example setup', {
 
 test_that('jaw-linear setup', {
     system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) # alternative way to get size info in there
-    test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000,
-              knownFailures = list('R MCMC' = 'KNOWN ISSUE: R MCMC fails for jaw-linear'))
-    })
-                                        # C MCMC runs and seems fine; R MCMC fails as can't do Cholesky of 0 matrix in 2-point method
+    test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000) # , knownFailures = list('R MCMC' = 'Cholesky of NA matrix fails in R 3.4.2 in calculate(model) of initializeModel() but not in R 3.4.1'))
+})
+## note R MCMC used to fail when tried to do Cholesky of 0 matrix in 2-point method, but no longer doing multiplicative link for Wishart targets
                                       
 test_mcmc('pump',
           resampleData = TRUE,
@@ -354,13 +355,15 @@ test_that('various conjugacies setup', {
             kTauSd[i] <- 2
             kLogNorm[i] ~ dlnorm(0 - a - 6*i, kTauSd[i])
         }
+        jNorm[1] <- 0
+        kLogNorm[1] <- 0
     })
     
     sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),
                       c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
     
-    test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
-    skip("KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'")
+    test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
+    ## with fixing of jNorm[1] and kLogNorm[1] we no longer have: knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
 })
 
 ### Weibull-gamma conjugacy
@@ -463,8 +466,8 @@ test_that('Dirichlet-multinomial with replication setup', {
               results = list(mean = list(p = p, alpha = alpha)),
               resultsTolerance = list(mean = list(p = matrix(.05, m, K),
                                                   alpha = c(5,10,10,20,.5))),
-              knownFailures = list('MCMC match to known posterior' = 'KNOWN ISSUE: two samples outside resultsTolerance') )
-    skip('KNOWN ISSUE: two samples outside resultsTolerance')
+              knownFailures = list('MCMC match to known posterior: p mean 39' = 'KNOWN ISSUE: two samples outside resultsTolerance',
+                                  'MCMC match to known posterior: p mean 76' = 'KNOWN ISSUE: two samples outside resultsTolerance'))
 })
 # note alphas mix poorly (and are highly correlated),
 # presumably because of cross-level dependence between
@@ -1206,6 +1209,122 @@ test_that('dcar_normal sampling', {
                  c(1.639127, 1.815422, 1.676655, 5.099797, 2.345276, 7.018026, 2.696936),
                  tolerance = 1e-6,
                  info = 'exact sample values for dcar_normal')
+})
+
+
+
+## testing dcar_proper density evaluation,
+## and generation of default values of C and M
+test_that('dcar_proper density evaluation', {
+    cat('===== Starting test dcar_proper density evaluations. =====')
+
+    x <- c(1, 3, 3, 4)
+    mu <- rep(3, 4)
+    adj <- c(2, 1,3, 2,4, 3)
+    num <- c(1, 2, 2, 1)
+    lp <- 0.004158475
+    expect_equal(dcar_proper(x, mu, adj=adj, num=num, tau=1, gamma=0), lp,
+                 info = 'C density evaluation for dcar_proper() omitting C and M')
+
+    weights <- rep(1, 6)
+    CM <- as.carCM(adj, weights, num)
+    C <- CM$C
+    M <- CM$M
+    expect_equal(dcar_proper(x, mu, C, adj, num, M, tau=1, gamma=0), lp,
+                 info = 'C density evaluation for dcar_proper() weights all one')
+
+    weights <- c(2, 2, 3, 3, 4, 4)
+    CM2 <- as.carCM(adj, weights, num)
+    C2 <- CM2$C
+    M2 <- CM2$M
+    lp2 <- 0.001050636
+    expect_equal(dcar_proper(x, mu, C2, adj, num, M2, tau=1, gamma=0), lp2,
+                 info = 'C density evaluation for dcar_proper() weights different')
+})
+
+
+
+## testing dcar_proper sampling
+test_that('dcar_proper sampling', {
+    cat('===== Starting MCMC test dcar_proper sampling. =====')
+
+    code <- nimbleCode({
+        tau ~ dgamma(0.001, 0.001)
+        gamma ~ dunif(-1, 1)
+        x[1:N] ~ dcar_proper(mu[1:N], adj=adj[1:L], num=num[1:N], tau=tau, gamma=gamma)
+        for(i in 1:N) {
+            y[1] ~ dnorm(x[1], 1)
+            y[2] ~ dnorm(3*x[2] + 5, 10)
+            y[3] ~ dnorm(x[3]^2, 1)
+            y[4] ~ dnorm(x[4]^2, 10)
+        }
+    })
+
+    mu <- 1:4
+    adj <- c(2, 1, 3, 2, 4, 3)
+    num <- c(1, 2, 2, 1)
+    tau <- 1
+    gamma <- 0
+    y <- c(3, 6, 8, 10)
+    x <- rep(0, 4)
+    constants <- list(mu = mu, adj = adj, num = num, N = 4, L = 6)
+    data <- list(y = y)
+    inits <- list(tau = tau, gamma = gamma, x = x)
+
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Cmodel <- compileNimble(Rmodel)
+    lp <- -574.964
+    
+    expect_equal(calculate(Rmodel), lp, tol = 1E-5,
+                 info = 'calculate for dcar_proper()')
+    
+    expect_equal(calculate(Cmodel), lp, tol = 1E-5,
+                 info = 'calculate for dcar_proper(), compiled')
+    
+    weights <- rep(1, 6)
+    CM <- as.carCM(adj, weights, num)
+    C <- CM$C
+    M <- CM$M
+    Q <- tau * diag(1/M) %*% (diag(4) - gamma*CAR_calcCmatrix(C, adj, num))
+    lp <- dmnorm_chol(x, mu, chol = chol(Q), prec_param = TRUE, log = TRUE)
+    
+    expect_equal(calculate(Rmodel, 'x[1:4]'), lp,
+                 info = 'R density evaluation for dcar_proper()')
+    
+    expect_equal(calculate(Cmodel, 'x[1:4]'), lp,
+                 info = 'C density evaluation for dcar_proper()')
+
+    set.seed(0); xnew <- rmnorm_chol(n = 1, mu, chol = chol(Q), prec_param = TRUE)
+    set.seed(0); simulate(Rmodel, 'x[1:4]')
+    set.seed(0); simulate(Cmodel, 'x[1:4]')
+    
+    expect_equal(xnew, Rmodel$x, info = 'R dcar_proper() simulate function')
+    expect_equal(xnew, Cmodel$x, info = 'R dcar_proper() simulate function')
+    
+    Rmodel$x <- x
+    Cmodel$x <- x
+    
+    conf <- configureMCMC(Rmodel)
+    conf$addMonitors('x')
+    Rmcmc <- buildMCMC(conf)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+    niter <- 20
+    set.seed(0); Rmcmc$run(niter)
+    set.seed(0); Cmcmc$run(niter)
+
+    Rsamples <- as.matrix(Rmcmc$mvSamples)
+    Csamples <- as.matrix(Cmcmc$mvSamples)
+
+    sampleNames <- colnames(Rsamples)
+
+    expect_true(all(Rsamples[, sampleNames] - Csamples[, sampleNames] == 0),
+                info = 'agreement between R and C sampling of dcar_proper')
+
+    expect_equal(as.numeric(Csamples[20, sampleNames]),
+                 c(0.0978025, -0.6643286, 1.9510954, 0.2413084, 2.6684426, -3.2533691),
+                 tolerance = 1e-6,
+                 info = 'exact sample values for dcar_proper')
 })
 
 

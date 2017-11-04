@@ -60,6 +60,16 @@ pump$logProb_x
 Cpump <- compileNimble(pump)
 Cpump$theta
 
+## ---- nimbleMCMCpump
+
+mcmc.out <- nimbleMCMC(code = pumpCode, constants = pumpConsts,
+                       data = pumpData, inits = pumpInits,
+                       nchains = 2, niter = 10000,
+                       summary = TRUE, WAIC = TRUE)
+names(mcmc.out)
+mcmc.out$summary
+mcmc.out$waic
+
 ## ---- mcmcPump
 pumpConf <- configureMCMC(pump, print = TRUE)
 pumpConf$addMonitors(c("alpha", "beta", "theta"))

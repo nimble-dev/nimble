@@ -38,13 +38,14 @@ specificCallHandlers = c(
          nimSvd = 'svdHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(c('nimNumeric', 'nimLogical', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
-    makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dwish_chol', 'dinvwish_chol', 'dcar_normal', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
+    makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dwish_chol', 'dinvwish_chol', 'dcar_normal', 'dcar_proper', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
          )
 specificCallHandlers[['rmnorm_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rmvt_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rwish_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rinvwish_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rcar_normal']] <- 'rmFunHandler'
+specificCallHandlers[['rcar_proper']] <- 'rmFunHandler'
 specificCallHandlers[['rmulti']] <- 'rmFunHandler'
 specificCallHandlers[['rcat']] <- 'rmFunHandler' ## not really multivar, but same processing
 specificCallHandlers[['rdirch']] <- 'rmFunHandler'

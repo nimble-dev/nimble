@@ -87,7 +87,8 @@ nimbleOrRfunctionNames <- c('[',
                             # distribution functions
                             paste0(c('d','r','q','p'), 't'),
                             paste0(c('d','r','q','p'), 'exp'),
-                            'nimC', 'nimRep', 'nimSeq', 'diag')
+                            'nimC', 'nimRep', 'nimSeq', 'diag',
+                            'length')
 
 functionsThatShouldNeverBeReplacedInBUGScode <- c(':','nimC','nimRep','nimSeq', 'diag')
 
@@ -769,7 +770,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                     if(!nimbleOptions()$allowDynamicIndexing) {
                         warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ",
                                 deparse(code),
-                                ". This is now allowed in version 0.6-6 as an optional beta feature. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
+                                ". This is now allowed as of version 0.6-6 (as an optional beta feature) and by default as of version 0.6-7. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
                         dynamicIndexParent <- code[[2]]
                     } else {
                         if(any(

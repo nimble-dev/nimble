@@ -1,5 +1,11 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+
 context("Testing of the optim() function in NIMBLE code")
 
 # The methods "SANN" and "Brent" are not supported.
@@ -218,7 +224,7 @@ test_that("when an RCfunction optim()izes an RCfunction, the DSL and C++ behavio
     )
     temporarilyAssignInGlobalEnv(nimCallee)  # Work around scoping issues.
     # Test agreement.
-    compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    compiledCaller <- compileNimble(nimCaller)
     par <- c(1.2, 3.4)
     for (method in methodsAllowingGradient) {
         result_dsl <- nimCaller(par, method)
@@ -245,7 +251,7 @@ test_that("when a nimbleFunction optim()izes an RCfunction, the DSL and C++ beha
     )()
     temporarilyAssignInGlobalEnv(nimCallee)  # Work around scoping issues.
     # Test agreement.
-    compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    compiledCaller <- compileNimble(nimCaller)
     par <- c(1.2, 3.4)
     for (method in methodsAllowingGradient) {
         result_dsl <- nimCaller$run(par, method)
@@ -275,7 +281,7 @@ test_that("when a nimbleFunction optim()izes a nimbleFunction, the DSL and C++ b
         }
     )()
     # Test agreement.
-    compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    compiledCaller <- compileNimble(nimCaller)
     par <- c(1.2, 3.4)
     for (method in methodsAllowingGradient) {
         result_dsl <- nimCaller$run(par, method)
@@ -307,7 +313,7 @@ test_that("when an RCfunction optim()izes an RCfunction with gradient, the DSL a
             returnType(optimResultNimbleList())
         }
     )
-    compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    compiledCaller <- compileNimble(nimCaller)
     # Test agreement.
     par <- c(1.2, 3.4)
     for (method in methodsAllowingGradient) {
@@ -341,7 +347,7 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
             returnType(optimResultNimbleList())
         }
     )()
-    compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    compiledCaller <- compileNimble(nimCaller)
     # Test approximate agreement (i.e. that most fields agree).
     par <- c(1.2, 3.4)
     for (method in methodsAllowingGradient) {
@@ -375,7 +381,7 @@ test_that("when a nimbleFunction optim()izes an RCfunction with gradient, the DS
             returnType(optimResultNimbleList())
         }
     )()
-    compiledCaller <- compileNimble(nimCaller, showCompilerOutput = TRUE)
+    compiledCaller <- compileNimble(nimCaller)
     # Test approximate agreement (i.e. that most fields agree).
     par <- c(1.2, 3.4)
     for (method in methodsAllowingGradient) {
@@ -409,7 +415,7 @@ test_that("when optim() is called with bounds, behavior is the same among R, DSL
             returnType(optimResultNimbleList())
         }
     )
-    compiledOptimizer <- compileNimble(nimOptimizer, showCompilerOutput = TRUE)
+    compiledOptimizer <- compileNimble(nimOptimizer)
     
     expect_agreement <- function(lower, upper) {
         info <- paste(' where lower =', capture.output(dput(lower, control = c())),
@@ -463,7 +469,7 @@ test_that("when optim() is called with bounds and gradient, behavior is the same
             returnType(optimResultNimbleList())
         }
     )
-    compiledOptimizer <- compileNimble(nimOptimizer, showCompilerOutput = TRUE)
+    compiledOptimizer <- compileNimble(nimOptimizer)
     
     expect_agreement <- function(lower, upper) {
         info <- paste(' where lower =', capture.output(dput(lower, control = c())),
@@ -520,7 +526,7 @@ test_that("when optim() is called with control, behavior is the same among R, DS
             returnType(optimResultNimbleList())
         }
     )
-    compiledOptimizer <- compileNimble(nimOptimizer, showCompilerOutput = TRUE)
+    compiledOptimizer <- compileNimble(nimOptimizer)
 
     expect_agreement <- function(method, ...) {
         control_nondefault <- list(...)
@@ -572,7 +578,7 @@ test_that("optim() minimizes with fnscale = 1 and maximizes when fnscale = -1", 
             returnType(optimResultNimbleList())
         }
     )
-    compiledOptimizer <- compileNimble(nimOptimizer, showCompilerOutput = TRUE)
+    compiledOptimizer <- compileNimble(nimOptimizer)
     # Test with many methods and fnscales.
     for (method in methodsAllowingGradient) {
         for (fnscale in c(-1, 1)) {
@@ -622,7 +628,7 @@ test_that("optim() with gradient minimizes with fnscale = 1 and maximizes when f
             returnType(optimResultNimbleList())
         }
     )
-    compiledOptimizer <- compileNimble(nimOptimizer, showCompilerOutput = TRUE)
+    compiledOptimizer <- compileNimble(nimOptimizer)
     # Test with many methods and fnscales.
     for (method in methodsAllowingGradient) {
         for (fnscale in c(-1, 1)) {
@@ -635,3 +641,6 @@ test_that("optim() with gradient minimizes with fnscale = 1 and maximizes when f
         }
     }
 })
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

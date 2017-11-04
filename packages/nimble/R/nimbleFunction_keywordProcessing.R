@@ -826,7 +826,7 @@ for(distfun in paste0(c('d','p','q','r'), 'nbinom'))
 
 
 # the following are standard in terms of both matchFunctions and keywordList
-matchDistList <- list('binom', 'cat', 'dirch', 'interval', 'lnorm', 'logis', 'multi', 'mnorm_chol', 'mvt_chol', 'norm', 'pois', 't_nonstandard', 'unif', 'weibull', 'wish_chol', 'invwish_chol', 'car_normal')
+matchDistList <- list('binom', 'cat', 'dirch', 'interval', 'lnorm', 'logis', 'multi', 'mnorm_chol', 'mvt_chol', 'norm', 'pois', 't_nonstandard', 'unif', 'weibull', 'wish_chol', 'invwish_chol', 'car_normal', 'car_proper')
 
 addDistList2matchFunctions <- function(distList, matchFunEnv){
 	for(thisDist in distList){
@@ -1445,7 +1445,7 @@ makeMapAccessExpr <- function(newName, newNameExpr, nDim) { ## newNameExpr not u
 
 determineNdimFromOneCase <- function(model, varAndIndices) {
     varInfo <- try(model$getVarInfo(as.character(varAndIndices$varName)))
-    if(inherits(varInfo, 'try-error')) browser()
+    if(inherits(varInfo, 'try-error')) stop(paste0('In determineNdimFromOneCase: error in extracting varInfo for ', varAndIndices$varName), call. = FALSE)
     varNdim <- varInfo$nDim
     if(length(varAndIndices$indices) == 0) return(varNdim)
     if(length(varAndIndices$indices) != varNdim) {
