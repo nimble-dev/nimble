@@ -826,80 +826,81 @@ sampler_HMC <- nimbleFunction(
     ), where = getLoadingNamespace()
 )
 
-##sampler_HMC_old <- nimbleFunction(        ## original version, requires tuning L
-##    name = 'sampler_HMC_old',
-##    contains = sampler_BASE,
-##    setup = function(model, mvSaved, target, control) {
-##        ## control list extraction
-##        L             <- if(!is.null(control$L))             control$L             else 100     ## number of leapfrog steps
-##        epsilon       <- if(!is.null(control$epsilon))       control$epsilon       else 0.01    ## leapfrog step-size
-##        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
-##        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
-##        ## node list generation
-##        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-##        calcNodes <- model$getDependencies(target)
-##        ## numeric value generation
-##        d <- length(targetAsScalar)
-##        scaleVec <- rep(1, d)
-##        epsilonVec <- epsilon * scaleVec
-##        empirSamp <- matrix(0, nrow = adaptInterval, ncol = d)
-##        timesRan <- 0
-##        timesAdapted <- 0
-##        ##m <- array(1, c(d,1))    ## mass for each dimension -- no longer using, per adaptive step-sizes
-##        ## checks
-##        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set options(experimentalEnableDerivs = TRUE)')
-##        if(d == 1)                                     warning('HMC sampler might not work on only one target dimension')
-##        if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('HMC sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
-##    },
-##    run = function() {
-##        q <- values(model, target)         ## current position variables
-##        p <- numeric(d)
-##        for(i in 1:d)
-##            p[i] <- rnorm(1, 0, 1)         ## randomly draw momentum variables  (formerly: rnorm(1, 0, m[i,1]))
-##        currentH <- model$getLogProb(calcNodes) - sum(p^2)/2
-##        p <- p + epsilonVec * gradient(q) / 2   ## initial half step for p
-##        for(i in 1:L) {
-##            q <- q + epsilonVec * p             ## alternate full steps for q and p
-##            if(i != L)   p <- p + epsilonVec * gradient(q)
-##        }
-##        p <- p + epsilonVec * gradient(q) / 2   ## final half step for p
-##        values(model, target) <<- q      ## probably redundant, following gradient(q)
-##        propH <- model$calculate(calcNodes) - sum(p^2)/2
-##        jump <- decide(propH - currentH)
-##        if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-##        else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
-##        if(adaptive)     adaptiveProcedure()
-##    },
-##    methods = list(
-##        gradient = function(q = double(1)) {
-##            values(model, target) <<- q
-##            derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = target)
-##            grad <- numeric(d)
-##            grad[1:d] <- derivsOutput$gradient[1, 1:d]   ## preserve 1D vector object
-##            returnType(double(1))
-##            return(grad)
-##        },
-##        adaptiveProcedure = function() {
-##            ## adapts leapfrog step-size for each dimension (epsilonVec),
-##            ## as described in Neal, Handbook of MCMC (2011), Chapter 5 (section 5.4.2.4)
-##            timesRan <<- timesRan + 1
-##            empirSamp[timesRan, 1:d] <<- values(model, target)
-##            if(timesRan %% adaptInterval == 0) {
-##                timesRan <<- 0
-##                timesAdapted <<- timesAdapted + 1
-##                gamma1 <- 1/((timesAdapted + 3)^0.8)
-##                for(i in 1:d)     scaleVec[i] <<- gamma1 * sd(empirSamp[, i]) + (1-gamma1) * scaleVec[i]
-##                epsilonVec <<- epsilon * scaleVec
-##            }
-##        },
-##        reset = function() {
-##            timesRan     <<- 0
-##            timesAdapted <<- 0
-##            scaleVec     <<- rep(1, d)
-##            epsilonVec   <<- epsilon * scaleVec
-##        }
-##    ), where = getLoadingNamespace()
-##)
+
+
+####################################################################
+### langevin sampler ###############################################
+####################################################################
+
+sampler_langevin <- nimbleFunction(
+    name = 'sampler_langevin',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        epsilon       <- if(!is.null(control$epsilon))       control$epsilon       else 0.01    ## initial leapfrog step-size
+        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
+        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        ## numeric value generation
+        d <- length(targetAsScalar)
+        scaleVec <- rep(1, d)
+        epsilonVec <- epsilon * scaleVec
+        empirSamp <- matrix(0, nrow = adaptInterval, ncol = d)
+        timesRan <- 0
+        timesAdapted <- 0
+        ## checks
+        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set options(experimentalEnableDerivs = TRUE)')
+        if(d == 1)                                     warning('langevin sampler might not work on only one target dimension')
+        if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('langevin sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
+    },
+    run = function() {
+        q <- values(model, target)         ## current position variables
+        p <- numeric(d)
+        for(i in 1:d)
+            p[i] <- rnorm(1, 0, 1)         ## randomly draw momentum variables
+        currentH <- model$getLogProb(calcNodes) - sum(p^2)/2
+        p <- p + epsilonVec * gradient(q) / 2   ## initial half step for p
+        q <- q + epsilonVec * p                 ## full step for q and p
+        p <- p + epsilonVec * gradient(q) / 2   ## final half step for p
+        values(model, target) <<- q      ## probably redundant, following gradient(q)
+        propH <- model$calculate(calcNodes) - sum(p^2)/2
+        jump <- decide(propH - currentH)
+        if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(adaptive)     adaptiveProcedure()
+    },
+    methods = list(
+        gradient = function(q = double(1)) {
+            values(model, target) <<- q
+            derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = target)
+            grad <- numeric(d)
+            grad[1:d] <- derivsOutput$gradient[1, 1:d]   ## preserve 1D vector object
+            returnType(double(1))
+            return(grad)
+        },
+        adaptiveProcedure = function() {
+            ## adapts leapfrog step-size for each dimension (epsilonVec),
+            ## as described in Neal, Handbook of MCMC (2011), Chapter 5 (section 5.4.2.4)
+            timesRan <<- timesRan + 1
+            empirSamp[timesRan, 1:d] <<- values(model, target)
+            if(timesRan %% adaptInterval == 0) {
+                timesRan <<- 0
+                timesAdapted <<- timesAdapted + 1
+                gamma1 <- 1/((timesAdapted + 3)^0.8)
+                for(i in 1:d)     scaleVec[i] <<- gamma1 * sd(empirSamp[, i]) + (1-gamma1) * scaleVec[i]
+                epsilonVec <<- epsilon * scaleVec
+            }
+        },
+        reset = function() {
+            timesRan     <<- 0
+            timesAdapted <<- 0
+            scaleVec     <<- rep(1, d)
+            epsilonVec   <<- epsilon * scaleVec
+        }
+    ), where = getLoadingNamespace()
+)
 
 
 
