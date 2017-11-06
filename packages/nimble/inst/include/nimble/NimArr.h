@@ -163,7 +163,7 @@ class NimArr<1, T> : public NimArrBase<T> {
   }
 
   NimArr<1, T>(const NimArr<1, T> &other) : NimArrBase<T>(other) {
-    NimArrBase<T>::NAdims[0] = other.dim()[0];
+    NimArrBase<T>::NAdims[0] = other.dim()[0]; // redundant with base class copy constructor?
     size1 = NimArrBase<T>::NAdims[0];
 
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
