@@ -151,6 +151,8 @@ class NimArrBase : public NimArrType {
         if (fillZeros) std::fill(new_v, new_v + l, static_cast<T>(0));
       }
       nimble_free(v);
+    } else {
+      if (fillZeros) std::fill(new_v, new_v + l, static_cast<T>(0));
     }
     NAlength = l;
     v = new_v;
@@ -179,13 +181,14 @@ class NimArrBase : public NimArrType {
   virtual ~NimArrBase() {
     if (own_v) nimble_free(v);
   }
-  // Do we ever use this case?
+  // Base class copy constructor:
+  // This will be used by derived class copy constructors,
+  // which will be called when a VecNimArr resizes its vector of NimArr<>s.
   NimArrBase(const NimArrBase<T> &other)
-      :  // own_v isn't a map but we'll only set to true when giving it values.
-        own_v(false),
-        offset(0),
-        boolMap(false),
-        NAlength(other.size()) {
+    :   own_v(false), // this may get set to true in a derived copy constructor
+    offset(0),
+    boolMap(false),
+    NAlength(other.size()) {
     std::memcpy(NAdims, other.dim(), other.numDims() * sizeof(int));
     myType = other.getNimType();
   }
