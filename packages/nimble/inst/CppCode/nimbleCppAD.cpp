@@ -50,10 +50,8 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 	if(hessianFlag){
 		(*ansList).hessian.initialize(0, 1, nodes.totalOutWrtSize, nodes.totalOutWrtSize, 1);
 	} 
-	Map<MatrixXd> ansJacobian(0,0,0);
-	new (&ansJacobian) Map< MatrixXd >((*ansList).gradient.getPtr(),(*ansList).gradient.dim()[0],(*ansList).gradient.dim()[1]);
-	Map<MatrixXd> ansHessian(0,0,0);
-	new (&ansHessian) Map< MatrixXd >((*ansList).hessian.getPtr(),(*ansList).hessian.dim()[0],(*ansList).hessian.dim()[1]);
+    Map<MatrixXd> ansJacobian((*ansList).gradient.getPtr(),(*ansList).gradient.dim()[0],(*ansList).gradient.dim()[1]);
+    Map<MatrixXd> ansHessian((*ansList).hessian.getPtr(),(*ansList).hessian.dim()[0],(*ansList).hessian.dim()[1]);
 	bool isDeterminisitic;
 	bool isWrtLine;
 	bool isCalcNodeLine;
@@ -129,13 +127,12 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 			}
 			if(nodes.cppWrtArgIndices[i][0] > -1){ 
 				thisDerivList = instructions[i].nodeFunPtr->calculateWithArgs_derivBlock(instructions[i].operand, derivOrders, nodes.cppWrtArgIndices[i]);
-				vector<Map<MatrixXd > > thisHessian; 
+				vector<Map<MatrixXd, Unaligned, EigStrDyn > > thisHessian; 
  				derivOutputFlag = (isDeterminisitic) ? false : true;
 				if(derivOutputFlag){
 					chainRuleJacobians[i] =  MatrixXd::Zero(1, nodes.totalWrtSize);
 					if(hessianFlag){
-						Map<MatrixXd> iHessian(0,0,0);
-						new (&iHessian) EigenMapStrd((*thisDerivList).hessian.getPtr(), (*thisDerivList).hessian.dim()[0], (*thisDerivList).hessian.dim()[1],
+						Map<MatrixXd, Unaligned, EigStrDyn>  iHessian((*thisDerivList).hessian.getPtr(), (*thisDerivList).hessian.dim()[0], (*thisDerivList).hessian.dim()[1],
 							EigStrDyn((*thisDerivList).hessian.strides()[1], (*thisDerivList).hessian.strides()[0]));
 						thisHessian.push_back(iHessian);
 						chainRuleHessians[i].resize(1);
@@ -147,8 +144,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 					if(hessianFlag){
 						chainRuleHessians[i].resize(thisNodeSize);
 						for(int j = 0; j < thisNodeSize; j++){
-							Map<MatrixXd> iHessian(0,0,0);
-							new (&iHessian) EigenMapStrd((*thisDerivList).hessian.getPtr() + static_cast<int>(static_cast<int>(j * (*thisDerivList).hessian.strides()[2])),
+							Map<MatrixXd, Unaligned, EigStrDyn> iHessian((*thisDerivList).hessian.getPtr() + static_cast<int>(static_cast<int>(j * (*thisDerivList).hessian.strides()[2])),
 								(*thisDerivList).hessian.dim()[0], (*thisDerivList).hessian.dim()[1], EigStrDyn((*thisDerivList).hessian.strides()[1], (*thisDerivList).hessian.strides()[0]));
 							thisHessian.push_back(iHessian);
 							chainRuleHessians[i][j] = MatrixXd::Zero(nodes.totalWrtSize, nodes.totalWrtSize);
@@ -163,8 +159,7 @@ nimSmartPtr<NIMBLE_ADCLASS>  NIM_DERIVS_CALCULATE(NodeVectorClassNew_derivs &nod
 					int wrtToLength = nodes.wrtToIndices[j].dimSize(0);
 					int wrtFromStartNode = nodes.wrtFromIndices[j][0] - 1;
 					int wrtFromLength = nodes.wrtFromIndices[j].dimSize(0);
-					Map<MatrixXd> thisJacobian(0,0,0);
-					new (&thisJacobian) Map< MatrixXd >((*thisDerivList).gradient.getPtr(),(*thisDerivList).gradient.dimSize(0),(*thisDerivList).gradient.dimSize(1));
+					Map<MatrixXd> thisJacobian((*thisDerivList).gradient.getPtr(),(*thisDerivList).gradient.dimSize(0),(*thisDerivList).gradient.dimSize(1));
 					
 					for(int k = 0; k < length(nodes.parentIndicesList[i]) ; k++){
 						if(thisWrtNodes[k] == 1){

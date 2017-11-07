@@ -348,25 +348,19 @@ SEXP NimArr_2_SEXP(NimArr<ndim, bool> &val) {
 
 template<int ndim>
 void SEXP_list_2_NimArr_double_vec(SEXP Sn, vector<NimArr<ndim, double> > &ans) {
-			SEXP S_thisElement;
 			int numListElements = Rf_length(Sn);
 			ans.resize(numListElements);
 			for(int i = 0; i < numListElements; i++){
-				PROTECT(S_thisElement = VECTOR_ELT(Sn, i));
-				SEXP_2_NimArr<1>(S_thisElement, ans[i]);
-				UNPROTECT(1);
+				SEXP_2_NimArr<1>(VECTOR_ELT(Sn, i), ans[i]);
 			}
 }
 
 template<int ndim>
 void SEXP_list_2_NimArr_int_vec(SEXP Sn, vector<NimArr<ndim, int> > &ans) {
-			SEXP S_thisElement;
 			int numListElements = Rf_length(Sn);
 			ans.resize(numListElements);
 			for(int i = 0; i < numListElements; i++){
-				PROTECT(S_thisElement = VECTOR_ELT(Sn, i));
-				SEXP_2_NimArr<1>(S_thisElement, ans[i]);
-				UNPROTECT(1);
+				SEXP_2_NimArr<1>(VECTOR_ELT(Sn, i), ans[i]);
 			}
 }
 
