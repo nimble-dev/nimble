@@ -33,6 +33,9 @@ developer discussions on the
 \href{https://github.com/nimble-dev/nimble/wiki}{wiki of our GitHub
   repository}.
 
+If you use NIMBLE in your work, please cite us, as this helps justify past and future funding
+for the development of NIMBLE. For more information, please call \cd{citation('nimble')} in R.
+
 \section{What does NIMBLE do?}
 \label{sec:what-is-nimble}
 

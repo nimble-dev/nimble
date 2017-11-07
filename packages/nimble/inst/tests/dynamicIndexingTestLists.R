@@ -1,4 +1,4 @@
-
+## These tests check building, compilation and calculation with dynamically-indexed models. Testing includes that errors are correctly emitted when invalid indexes are used via the 'invalidIndexes' element.
 testsDynIndex <- list(
     list(
         case = 'basic dynamic index',
@@ -503,6 +503,7 @@ testsDynIndex <- list(
     )
 )
 
+## These are cases that NIMBLE should error out of.
 testsInvalidDynIndex <- list(
     list(
         case = 'vector dynamic index (invalid)',
@@ -551,7 +552,7 @@ testsInvalidDynIndex <- list(
 )
 
 
-## These are cases NIMBLE fails on that we are aware of. XFAIL should be reported.
+## This case is one where NIMBLE correctly errors on invalid indexes, but there is a complication. 
 testsInvalidDynIndexValue <- list(
     list(  # This correctly finds errors in nested index, but in R execution it fails non-gracefully.  (C execution fails gracefully because of how C++ handles k[d[0]].
         case = 'dynamic index multiple input functional, multiple indexing, with invalid nested index',

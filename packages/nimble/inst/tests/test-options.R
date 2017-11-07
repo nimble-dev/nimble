@@ -1,5 +1,10 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 context("Testing of nimble options")
 
 test_that('withNimbleOptions works for zero options', {
@@ -34,3 +39,6 @@ test_that('withNimbleOptions works for two options', {
     expect_equal(getNimbleOption('compileOnly'), FALSE)
     expect_equal(expected, actual)
 })
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

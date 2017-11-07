@@ -48,7 +48,8 @@ print: A logical argument, specifying whether to print all current monitors.
 Details: See the initialize() function
             }
 
-\item{\code{addSampler(target, type = "RW", control = list(), print = FALSE, name)}}{Adds a sampler to the list of samplers contained in the MCMCconf object.
+\item{\code{addSampler(target, type = "RW", control = list(), print = FALSE, name,
+  silent = FALSE)}}{Adds a sampler to the list of samplers contained in the MCMCconf object.
 
 Arguments:
 
@@ -61,6 +62,8 @@ control: A list of control arguments specific to the sampler function. These wil
 print: Logical argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
 
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If 'name' is not provided, the 'type' argument is used to generate the sampler name.
+
+silent: Logical argument, specifying whether to print warning messages when assigning samplers.
 
 Details: A single instance of the newly configured sampler is added to the end of the list of samplers for this MCMCconf object.
 

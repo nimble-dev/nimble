@@ -55,6 +55,51 @@ SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
   return(R_NilValue);
 }
 
+void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from) {
+  void **doublePtr = static_cast<void **>(nf_to);
+  SEXP Scnf, SsinglePtr;
+  SEXP S_pxData;
+   PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+   SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
+  // environment(modelVar)$.CobjectInterface
+   PROTECT(Scnf = Rf_findVarInFrame(PROTECT(GET_SLOT(
+						       S_NF_from,
+						       S_pxData)),
+				    Rf_install(".CobjectInterface"))
+	   );
+   int unprotectCount = 3;
+   if(Rf_isNewList(Scnf)) {
+    // multi-interface
+    //Cnf[[1]]$basePtrList[[ Cnf[[2]] ]]
+    SEXP Sindex;
+    PROTECT(Sindex = VECTOR_ELT(Scnf, 1));
+    int index = (Rf_isInteger(Sindex) ? INTEGER(Sindex)[0] : REAL(Sindex)[0]); 
+    index--; // From 1-based to 0-based indexing 
+    PROTECT(SsinglePtr = VECTOR_ELT(
+				    Rf_findVarInFrame(PROTECT(GET_SLOT(
+								       VECTOR_ELT(Scnf,
+										  0),
+								       S_pxData)),
+						      Rf_install("basePtrList")),
+				    index
+				    )
+	    );
+    unprotectCount += 3;
+  } else {
+    printf("in non-list\n");
+    // full interface
+    // Cnf$.basePtr
+    PROTECT(SsinglePtr =  Rf_findVarInFrame(PROTECT(GET_SLOT(
+							     Scnf,
+							     S_pxData)),
+					    Rf_install(".basePtr")));
+    unprotectCount += 2;
+  }
+  void *singlePtr = R_ExternalPtrAddr(SsinglePtr);
+  *doublePtr = singlePtr;
+  UNPROTECT(unprotectCount);
+}
+
 // probably deprecated
 SEXP setSmartPtrFromSinglePtr(SEXP StoPtr, SEXP SfromPtr) {
   void *fromPtr = R_ExternalPtrAddr(SfromPtr); 
@@ -722,56 +767,71 @@ SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers){
 	return(R_NilValue);
 }
 
-SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize){
+void SEXP_2_Nim_internal(NimArrType* nimTypePtr,
+			 SEXP rValues,
+			 bool resize = true) {
     vector<int> sexpDims = getSEXPdims( rValues );
     int sexpNumDims = sexpDims.size();
-    bool resize = (LOGICAL(allowResize)[0] == TRUE);
+    
+    if(!nimTypePtr)
+      return;
+    
+    if((*nimTypePtr).getNimType() == INT){
+      NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
+      int nimNumDims = (*nimBase).numDims();
+      if(nimNumDims != sexpNumDims) {
+	if((LENGTH(rValues) != (*nimBase).size()) & 
+	   (sexpNumDims != 1)){
+	  PRINTF("Incorrect number of dimensions in copying\n");
+	  return;
+	}
+      }
+      if(resize)
+	(*nimBase).setSize(sexpDims);
+      SEXP_2_NimArrInt(rValues,  (*nimBase) ) ;
+    }
+    if((*nimTypePtr).getNimType() == DOUBLE){
+      
+      NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
+      int nimNumDims = (*nimBase).numDims();
+      
+      if(nimNumDims != sexpNumDims){
+	if((LENGTH(rValues) != (*nimBase).size()) &
+	   (sexpNumDims != 1)){
+	  PRINTF("Incorrect number of dimensions in copying\n");
+	  return;
+	}
+      }
+      if((resize) & (nimNumDims == sexpNumDims))
+	(*nimBase).setSize(sexpDims);
+      SEXP_2_NimArrDouble( rValues, (*nimBase) ) ;
+    }
+    if((*nimTypePtr).getNimType() == BOOL){
+      NimArrBase<bool>* nimBase = static_cast<NimArrBase<bool> *>(nimTypePtr);
+      int nimNumDims = (*nimBase).numDims();
+      if(nimNumDims != sexpNumDims){
+	if((LENGTH(rValues) != (*nimBase).size()) &
+	   (sexpNumDims != 1)){
+	  PRINTF("Incorrect number of dimensions in copying\n");
+	  return;
+	}
+      }
+      if(resize)
+	(*nimBase).setSize(sexpDims);
+      SEXP_2_NimArrBool(rValues,  (*nimBase) ) ;
+    }
+}
 
-	NimArrType* nimTypePtr = getNimTypePtr(rPtr, NumRefers);
-	if(!nimTypePtr)
-		return(R_NilValue);
-	if((*nimTypePtr).getNimType() == INT){
-	  NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
-	  int nimNumDims = (*nimBase).numDims();
-	  if(nimNumDims != sexpNumDims){
-            if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-	      PRINTF("Incorrect number of dimensions in copying\n");
-	      return(R_NilValue);
-            }
-	  }
-	  if(resize == true)
-            (*nimBase).setSize(sexpDims);
-	  SEXP_2_NimArrInt(rValues,  (*nimBase) ) ;
-	}
-	if((*nimTypePtr).getNimType() == DOUBLE){
-	  
-	  NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
-	  int nimNumDims = (*nimBase).numDims();
-	  
-	  if(nimNumDims != sexpNumDims){
-            if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-	      PRINTF("Incorrect number of dimensions in copying\n");
-	      return(R_NilValue);
-            }
-	  }
-	  if((resize == true) & (nimNumDims == sexpNumDims))
-            (*nimBase).setSize(sexpDims);
-	  SEXP_2_NimArrDouble( rValues, (*nimBase) ) ;
-	}
-	if((*nimTypePtr).getNimType() == BOOL){
-	  NimArrBase<bool>* nimBase = static_cast<NimArrBase<bool> *>(nimTypePtr);
-	  int nimNumDims = (*nimBase).numDims();
-	  if(nimNumDims != sexpNumDims){
-            if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-	      PRINTF("Incorrect number of dimensions in copying\n");
-	      return(R_NilValue);
-            }
-	  }
-	  if(resize == true)
-            (*nimBase).setSize(sexpDims);
-	  SEXP_2_NimArrBool(rValues,  (*nimBase) ) ;
-	}
-	return(R_NilValue);
+void SEXP_2_Nim_for_copyFromRobject(void *NimArrPtr, SEXP rValues) {
+  NimArrType* nimTypePtr = static_cast<NimArrType*>(NimArrPtr);
+  SEXP_2_Nim_internal(nimTypePtr, rValues);
+}
+
+SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize){
+    bool resize = (LOGICAL(allowResize)[0] == TRUE);
+    NimArrType* nimTypePtr = getNimTypePtr(rPtr, NumRefers);
+    SEXP_2_Nim_internal(nimTypePtr, rValues, resize);
+    return(R_NilValue);
 }
 
 void VecNimArr_Finalizer(SEXP Sp) {

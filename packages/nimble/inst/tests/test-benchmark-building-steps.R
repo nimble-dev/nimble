@@ -4,6 +4,11 @@
 
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 context('Benchmarking model and MCMC building and compiling steps')
 cat('\n')
 
@@ -46,6 +51,7 @@ test_that('Benchmarking model and MCMC building and compiling steps',
     caseNames <- character()
 
     ## 1000 is a good size for full benchmarking
+    ## 10 is a good size for routine testing
     Benchmark1length <- 10
     ## following will be like 'theta->mu[1:10]->y[1:10]'
     caseNames[1] <- paste0('theta->mu[1:',
@@ -67,6 +73,7 @@ test_that('Benchmarking model and MCMC building and compiling steps',
                           )
 
     ## 100x20 is a good size for full benchmarking
+    ## 5 x 2 is a good size for routing testing 
     Benchmark2dims <- c(5, 2)
     ## following will be like 'theta->mu[1:5]->y[1:5, 1:2]'
     caseNames[2] <- paste0('theta->mu[1:',
@@ -95,3 +102,6 @@ test_that('Benchmarking model and MCMC building and compiling steps',
     print(results)
 }
 )
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

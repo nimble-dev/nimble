@@ -2,33 +2,38 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 ## Testing functions that query distribution info based on distribution name or node/variable names
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 context('Testing distributions API')
 
 # tests of distribution functions applied to distribution name
 
-try(test_that("Test that requesting unknown distribution returns error",
-              expect_error(getDistributionInfo('dfoobar'),
-    info = "No error when 'dfoobar' provided to getDistributionInfo")))
+test_that("Test that requesting unknown distribution returns error",
+          expect_error(getDistributionInfo('dfoobar'),
+                       info = "No error when 'dfoobar' provided to getDistributionInfo"))
 
-try(test_that("Test that getDistributionInfo returns parameter dimension",
-                 expect_identical(getDistributionInfo('dnorm')$types$tau$nDim, 0,
-                 info = "getDistributionInfo doesn't correctly give dimension of tau in dnorm")))
+test_that("Test that getDistributionInfo returns parameter dimension",
+          expect_identical(getDistributionInfo('dnorm')$types$tau$nDim, 0,
+                           info = "getDistributionInfo doesn't correctly give dimension of tau in dnorm"))
 
-try(test_that("Test that requesting unknown distribution returns error",
-                               expect_error(isDiscrete('dfoobar'),
-                                                   info = "No error when 'dfoobar' provided to isDiscrete")))
+test_that("Test that requesting unknown distribution returns error",
+          expect_error(isDiscrete('dfoobar'),
+                       info = "No error when 'dfoobar' provided to isDiscrete"))
 
-try(test_that("Test of isDiscrete",
-                                  expect_identical(isDiscrete('dnorm'), FALSE,
-                                                                       info = "isDiscrete says dnorm is discrete")))
+test_that("Test of isDiscrete",
+          expect_identical(isDiscrete('dnorm'), FALSE,
+                           info = "isDiscrete says dnorm is discrete"))
 
-try(test_that("Test of isDiscrete",
-                                                   expect_identical(isDiscrete('dbin'), TRUE,
-                                                                                                                                              info = "isDiscrete says dbin is not discrete")))
+test_that("Test of isDiscrete",
+          expect_identical(isDiscrete('dbin'), TRUE,
+                           info = "isDiscrete says dbin is not discrete"))
 
-try(test_that("Test of isUserDefined",
-                                                expect_identical(isUserDefined('dnorm'), FALSE,
-                                               info = "isUserDefined says dnorm is user-defined")))
+test_that("Test of isUserDefined",
+          expect_identical(isUserDefined('dnorm'), FALSE,
+                           info = "isUserDefined says dnorm is user-defined"))
 
 dmyexp <- nimbleFunction(
         run = function(x = double(0), rate = double(0, default = 1),
@@ -38,7 +43,7 @@ dmyexp <- nimbleFunction(
                             if(log) return(logProb)
                     else return(exp(logProb))
         })
-assign('dmyexp', dmyexp, envir = .GlobalEnv)
+temporarilyAssignInGlobalEnv(dmyexp)
 
 rmyexp <- nimbleFunction(
         run = function(n = integer(0), rate = double(0, default = 1)) {
@@ -47,59 +52,59 @@ rmyexp <- nimbleFunction(
                     dev <- runif(1)
                             return(-log(1-dev) / rate)
         })
-assign('rmyexp', rmyexp, envir = .GlobalEnv)
+temporarilyAssignInGlobalEnv(rmyexp)
 
-try(test_that("Test of registerDistributions with character string",
-              expect_output(registerDistributions('dmyexp'),
-                            "Registering the following user-provided distributions: dmyexp.")))
+test_that("Test of registerDistributions with character string",
+          expect_silent(registerDistributions('dmyexp')))
 
-try(test_that("Test of registerDistributions with character string for missing distribution",
-              expect_error(registerDistributions('dfoo'))))
+test_that("Test of registerDistributions with character string for missing distribution",
+          expect_error(registerDistributions('dfoo')))
 
-try(test_that("Test of isUserDefined",
-                                                                 expect_identical(isUserDefined('dmyexp'), TRUE,
-                                                                                                                                    info = "isUserDefined says dmyexp is not user-defined")))
+test_that("Test of isUserDefined",
+          expect_identical(isUserDefined('dmyexp'), TRUE,
+                           info = "isUserDefined says dmyexp is not user-defined"))
 
-try(test_that("Test of pqDefined",
-                                 expect_identical(pqDefined('dmyexp'), FALSE,
-                                 info = "pqDefined says pqDefined is TRUE for dmyexp")))
+test_that("Test of pqDefined",
+          expect_identical(pqDefined('dmyexp'), FALSE,
+                           info = "pqDefined says pqDefined is TRUE for dmyexp"))
 
-try(test_that("Test of pqDefined",
-                                                  expect_identical(pqDefined('dnorm'), TRUE,
-                                                       info = "isUserDefined says pqDefined is FALSE for dnorm")))
+test_that("Test of pqDefined",
+          expect_identical(pqDefined('dnorm'), TRUE,
+                           info = "isUserDefined says pqDefined is FALSE for dnorm"))
 
 
 output <- 0; names(output) <- 'value'
 
-try(test_that("Test of getDimension, value only",
-              expect_identical(getDimension('dnorm'), output,
-                               info = "incorrect value dimension for dnorm")))
+test_that("Test of getDimension, value only",
+          expect_identical(getDimension('dnorm'), output,
+                           info = "incorrect value dimension for dnorm"))
 
 output <- rep(0, 5); names(output) <- c('value', 'mean','sd', 'tau', 'var')
-try(test_that("Test of getDimension, value and params",
-              expect_equal(getDimension('dnorm', includeParams = TRUE), output,
-                               info = "incorrect dimensions for dnorm")))
+test_that("Test of getDimension, value and params",
+          expect_equal(getDimension('dnorm', includeParams = TRUE), output,
+                       info = "incorrect dimensions for dnorm"))
 
 output <- c(1,0); names(output) <- c('prob', 'size')
 
-try(test_that("Test of getDimension, params only",
-              expect_equal(getDimension('dmulti', params = c('prob', 'size')), output,
-                               info = "incorrect param dimensions for dmulti")))
+test_that("Test of getDimension, params only",
+          expect_equal(getDimension('dmulti', params = c('prob', 'size')), output,
+                       info = "incorrect param dimensions for dmulti"))
 
-try(test_that("Test of getDimension error checking",
-              expect_error(getDimension('dmulti', params = c('foo')), 
-                               info = "getDimension not detecting erroneous parameter names")))
+test_that("Test of getDimension error checking",
+          expect_error(getDimension('dmulti', params = c('foo')), 
+                       info = "getDimension not detecting erroneous parameter names"))
 
     
-try(test_that("Test of getParamNames",
-              expect_identical(getParamNames('dnorm'), c('value','mean','sd','tau','var'),
-                               info = "incorrect param names from getParamNames for dnorm")))
+test_that("Test of getParamNames",
+          expect_identical(getParamNames('dnorm'), c('value','mean','sd','tau','var'),
+                           info = "incorrect param names from getParamNames for dnorm"))
 
-try(test_that("Test of getParamNames",
-           expect_identical(getParamNames('dnorm', includeValue = FALSE), c('mean','sd','tau','var'),
-                                       info = "incorrect param names without value from getParamNames for dnorm")))
+test_that("Test of getParamNames",
+          expect_identical(getParamNames('dnorm', includeValue = FALSE), c('mean','sd','tau','var'),
+                           info = "incorrect param names without value from getParamNames for dnorm"))
 
 # test of distribution functions applied to model variables/nodes
+
 
 code <- nimbleCode({
     for(i in 1:10)
@@ -138,99 +143,101 @@ m2 <- nimbleModel(code2, data = list(y = rnorm(10)),
 out <- c(rep(TRUE, 10), FALSE, TRUE)
 names(out) <- m$expandNodeNames(c('y', 'mu', 'w'))
 
-try(test_that("Test of isEndNode",
-              expect_identical(m$isEndNode(c('y', 'mu', 'w')), out,
-                               info = "incorrect results from isEndNode")))
+test_that("Test of isEndNode",
+          expect_identical(m$isEndNode(c('y', 'mu', 'w')), out,
+                           info = "incorrect results from isEndNode"))
 
 vars <- c('y', 'mu', 'w', 'x')
 out <- c(rep('dnorm', 11), NA, 'dmnorm')
 names(out) <- m$expandNodeNames(vars)
 
-try(test_that("Test of getDistribution",
-              expect_identical(m$getDistribution(vars), out,
-                               info = "incorrect results from getDistribution")))
+test_that("Test of getDistribution",
+          expect_identical(m$getDistribution(vars), out,
+                           info = "incorrect results from getDistribution"))
 
 vars <- c('y', 'yy', 'w', 'x')
 out <- c(rep(FALSE, 10), TRUE, NA, FALSE)
 names(out) <- m$expandNodeNames(vars)
 
-try(test_that("Test of isDiscrete model method",
+test_that("Test of isDiscrete model method",
               expect_identical(m$isDiscrete(vars), out,
-                               info = "incorrect results from isDiscrete")))
+                               info = "incorrect results from isDiscrete"))
 
 vars <- c('y', 'yy', 'w', 'x', 'uu')
 out <- c(rep(FALSE, 10), FALSE, NA, FALSE, TRUE)
 names(out) <- m$expandNodeNames(vars)
 
-try(test_that("Test of isBinary model method",
-              expect_identical(m$isBinary(vars), out,
-                               info = "incorrect results from isBinary")))
+test_that("Test of isBinary model method",
+          expect_identical(m$isBinary(vars), out,
+                           info = "incorrect results from isBinary"))
 
 vars <- c('y', 'yy', 'w', 'x')
 out <- c(rep(FALSE, 10), FALSE, NA, FALSE)
 names(out) <- m$expandNodeNames(vars)
 
-try(test_that("Test of isBinary model method",
-              expect_identical(m2$isBinary(vars), out,
-                               info = "incorrect results from isBinary")))
+test_that("Test of isBinary model method",
+          expect_identical(m2$isBinary(vars), out,
+                           info = "incorrect results from isBinary"))
 
 vars <- c('y', 'yy', 'w', 'x', 'uu', 'z')
 out <- !c(rep(FALSE, 10), FALSE, TRUE, FALSE, FALSE, TRUE)
 names(out) <- m$expandNodeNames(vars)
 
-try(test_that("Test of isStoch model method",
-              expect_identical(m$isStoch(vars), out,
-                               info = "incorrect results from isStoch")))
+test_that("Test of isStoch model method",
+          expect_identical(m$isStoch(vars), out,
+                           info = "incorrect results from isStoch"))
 
 vars <- c('y', 'yy', 'w', 'x', 'uu', 'z')
 out <- c(rep(FALSE, 10), FALSE, TRUE, FALSE, FALSE, TRUE)
 names(out) <- m$expandNodeNames(vars)
 
-try(test_that("Test of isDeterm model method",
-              expect_identical(m$isDeterm(vars), out,
-                               info = "incorrect results from isDeterm")))
+test_that("Test of isDeterm model method",
+          expect_identical(m$isDeterm(vars), out,
+                           info = "incorrect results from isDeterm"))
 
 vars <- c('y', 'sigma', 'w', 'x', 'uu', 'z')
 out <- c(rep(FALSE, 10), TRUE, FALSE, FALSE, FALSE, FALSE)
 names(out) <- m$expandNodeNames(vars)
 
-try(test_that("Test of isTruncated model method",
-              expect_identical(m$isTruncated(vars), out,
-                               info = "incorrect results from isTruncated")))
+test_that("Test of isTruncated model method",
+          expect_identical(m$isTruncated(vars), out,
+                           info = "incorrect results from isTruncated"))
 
 vars <- c('y', 'sigma', 'w', 'x', 'uu', 'z')
 out <- c(rep(FALSE, 10), FALSE, NA, TRUE, FALSE, NA)
 names(out) <- m$expandNodeNames(vars)
 
-try(test_that("Test of isUnivariate model method",
-              expect_identical(m$isUnivariate(vars), out,
-                               info = "incorrect results from isUnivariate")))
+test_that("Test of isUnivariate model method",
+          expect_identical(m$isUnivariate(vars), out,
+                           info = "incorrect results from isUnivariate"))
+
 out <- 0
 names(out) <- "value"
-try(test_that("Test of getDimension, value only",
-              expect_identical(m$getDimension('mu'), out,
-                               info = "incorrect result from getDimension for value only, scalar")))
+test_that("Test of getDimension, value only",
+          expect_identical(m$getDimension('mu'), out,
+                           info = "incorrect result from getDimension for value only, scalar"))
+
 out <- 1
 names(out) <- "value"
-try(test_that("Test of getDimension, value only",
-              expect_identical(m$getDimension('x'), out,
-                               info = "incorrect result from getDimension for value only, vector")))
+test_that("Test of getDimension, value only",
+          expect_identical(m$getDimension('x'), out,
+                           info = "incorrect result from getDimension for value only, vector"))
 
 out <- c(1,1,2,0,2,2)
 names(out) <- c("value","mean","cholesky","prec_param","prec","cov")
-try(test_that("Test of getDimension, value and params",
-              expect_identical(m$getDimension('x', includeParams = TRUE), out,
-                               info = "incorrect result from getDimension for value and params, vector")))
+test_that("Test of getDimension, value and params",
+          expect_identical(m$getDimension('x', includeParams = TRUE), out,
+                           info = "incorrect result from getDimension for value and params, vector"))
 
 out <- c(2,1)
 names(out) <- c('cov','mean')
-try(test_that("Test of getDimension, specific params",
-              expect_identical(m$getDimension('x', params = c('cov','mean')), out,
-                               info = "incorrect result from getDimension for specific params, vector")))
+test_that("Test of getDimension, specific params",
+          expect_identical(m$getDimension('x', params = c('cov','mean')), out,
+                           info = "incorrect result from getDimension for specific params, vector"))
 
-try(test_that("Test of getDimension, value only",
-              expect_error(m$getDimension('x', params = 'foo'),
-                               info = "not detecting missing param in getDimension")))
+test_that("Test of getDimension, value only",
+          expect_error(m$getDimension('x', params = 'foo'),
+                       info = "not detecting missing param in getDimension"))
 
 # test of user-defined distributions
 
@@ -246,7 +253,7 @@ ddirchmulti <- nimbleFunction(
                 if(log) return(logProb)
                         else return(exp(logProb))
 })
-assign('ddirchmulti', ddirchmulti, envir = .GlobalEnv)
+temporarilyAssignInGlobalEnv(ddirchmulti)
 
 rdirchmulti <- nimbleFunction(
             run = function(n = integer(0), alpha = double(1), 
@@ -257,7 +264,7 @@ rdirchmulti <- nimbleFunction(
                 p <- rdirch(1, alpha)
                 return(rmulti(1, size = size, prob = p))
 })
-assign('rdirchmulti', rdirchmulti, envir = .GlobalEnv)
+temporarilyAssignInGlobalEnv(rdirchmulti)
 
 code <- nimbleCode({
     for(i in 1:n)
@@ -272,33 +279,38 @@ const <- list(M = 2, K = 4, n = 5, N = rep(1000, 5),
       topic = c(1, 1, 1, 2, 2))
 alphaInits <- rbind(c(10, 30, 100, 3), c(12, 15, 15, 8))
 
-m <- nimbleModel(code, constants = const,
-                  inits = list(alpha = alphaInits))
+# don't really care about this test, but having it as an expectation suppresses the registration message
+expect_output(m <- nimbleModel(code, constants = const,
+                               inits = list(alpha = alphaInits)), "NIMBLE has registered ddirchmulti", info = "no registration message printed")
+
 
 # won't be correct because haven't used registerDistributions such that it's noted as discrete
-## try(test_that("Test of isDiscrete for user-defined ddirchmulti",
-##                                                    expect_identical(isDiscrete('ddirchmulti'), TRUE,
-##                                                                                                                                               info = "isDiscrete says ddirchmulti is not discrete")))
+test_that("Test of isDiscrete for user-defined ddirchmulti",
+          expect_failure(expect_true(isDiscrete('ddirchmulti'),
+                 info = "isDiscrete says ddirchmulti is not discrete")))
+
 
 output <- c(1,1,0); names(output) <- c('value', 'alpha', 'size')
 
-try(test_that("Test of getDimension, value and params, for user-defined ddirchmulti",
-              expect_equal(getDimension('ddirchmulti', includeParams = TRUE), output,
-                               info = "incorrect param dimensions for ddirchmulti")))
+test_that("Test of getDimension, value and params, for user-defined ddirchmulti",
+          expect_equal(getDimension('ddirchmulti', includeParams = TRUE), output,
+                       info = "incorrect param dimensions for ddirchmulti"))
 
 
-set.seed(0)
-try(test_that("Test of use of ddirchmulti in R model",
-              expect_silent(m$simulate('y'))))
-try(test_that("Test of use of ddirchmulti in R model",
-              expect_equal(m$y[5,4], 149, info = "unexpected result from use of ddirchmulti")))
+set.seed(1)
+test_that("Test of use of ddirchmulti in R model",
+          expect_silent(m$simulate('y')))
+test_that("Test of use of ddirchmulti in R model",
+          expect_equal(m$y[5,4], 149, info = "unexpected result from use of ddirchmulti"))
 
-set.seed(0)
+set.seed(1)
 cm <- compileNimble(m)
 
-try(test_that("Test of use of ddirchmulti in R model",
-              expect_silent(cm$simulate('y'))))
-try(test_that("Test of use of user-defined ddirchmulti",
-              expect_identical(m$y, cm$y, info = "R and compiled model values from ddirchmulti not the same")))
+test_that("Test of use of ddirchmulti in R model",
+              expect_silent(cm$simulate('y')))
+test_that("Test of use of user-defined ddirchmulti",
+              expect_identical(m$y, cm$y, info = "R and compiled model values from ddirchmulti not the same"))
 
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

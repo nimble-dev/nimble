@@ -6,7 +6,7 @@
 require(nimble)
 @ 
 
-\chapter{Writing nimbleFunctions that interact with models}
+\chapter{Writing nimbleFunctions to interact with models}
 \label{cha:progr-with-models}
 
 <<echo=FALSE>>=

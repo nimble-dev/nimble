@@ -25,6 +25,7 @@ R CMD check --as-cran nimble_${VERSION}.tar.gz
 R CMD INSTALL nimble_${VERSION}.tar.gz
 
 run tests:
+(comments here superseded for the most part by the new goldfile system)
 in particular check exact results vs previous versions (ignore differences in compilation log info)
 doing this test by test because of DLL unloading issue
 types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists errors filtering getBound getDependencies getDistributionInfo getParam graphStructure math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList nimbleList_RCfun numericTypes setData size trunc types user"

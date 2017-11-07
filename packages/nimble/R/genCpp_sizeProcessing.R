@@ -3,6 +3,7 @@ assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
                               'nimArr_rwish_chol',
                               'nimArr_rinvwish_chol',
                               'nimArr_rcar_normal',
+                              'nimArr_rcar_proper',
                               'nimArr_rmulti',
                               'nimArr_rdirch',
                               'getValues',
@@ -110,6 +111,7 @@ sizeCalls <- c(
                    'nimArr_dwish_chol',
                    'nimArr_dinvwish_chol',
                    'nimArr_dcar_normal',
+                   'nimArr_dcar_proper',
                    'nimArr_dmulti',
                    'nimArr_dcat',
                    'nimArr_dinterval',
@@ -119,6 +121,7 @@ sizeCalls <- c(
                    'nimArr_rwish_chol',
                    'nimArr_rinvwish_chol',
                    'nimArr_rcar_normal',
+                   'nimArr_rcar_proper',
                    'nimArr_rmulti',
                    'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
     makeCallList(c('decide',
@@ -1098,7 +1101,6 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     nfProc <- if(isSymFunc) symbolObject$nfProc else symbolObject$nlProc
     
     if(is.null(nfProc)) {
-         browser()
         stop(exprClassProcessingErrorMsg(code, 'In handling X$Y: Symbols for X have not been set up.'), call. = FALSE)
     }
     memberName <- code$args[[2]]
@@ -1734,10 +1736,9 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             stop(exprClassProcessingErrorMsg(code, "In sizeAssignAfterRecursing: don't know what to do with a provided expression."), call. = FALSE)
         }
     }
-    test <- try(if(inherits(RHStype, 'uninitializedField') | length(RHStype)==0) {
-        stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '",RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
-    })
-    if(inherits(test, 'try-error')) browser()
+    if(is.null(RHStype) | length(RHStype)==0) {
+        stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '", RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
+    }
     if(LHS$isName) {
         if(!exists(LHS$name, envir = typeEnv, inherits = FALSE)) { ## not in typeEnv
             ## If LHS unknown, create it in typeEnv
@@ -1795,8 +1796,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             if(length(LHS$nDim) == 0) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: nDim for LHS not set.')), call. = FALSE)
             if(length(RHSnDim) == 0) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: nDim for RHS not set.')), call. = FALSE)
             if(LHS$nDim != RHSnDim) {
-                message(paste0('Warning, mismatched dimensions in assignment: ', nimDeparse(code), '. Going to browser(). Press Q to exit'), call. = FALSE )
-                browser()
+                stop(paste0('Warning, mismatched dimensions in assignment: ', nimDeparse(code), '.'), call. = FALSE )
             }
             ## and warn if type issue e.g. int <- double
             if(assignmentTypeWarn(LHS$type, RHStype)) {
@@ -1856,7 +1856,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                     assert <- substitute(setSize(LHS), list(LHS = nimbleGeneralParseDeparse(LHS)))
                     for(i in seq_along(RHSsizeExprs)) {
                         test <- try(assert[[i + 2]] <- RHS$sizeExprs[[i]])
-                        if(inherits(test, 'try-error')) browser()
+                        if(inherits(test, 'try-error')) stop(paste0('In sizeAssignAfterRecursing: Error in assert[[i + 2]] <- RHS$sizeExprs[[i]] for i = ', i), call. = FALSE)
                     }
                     assert[[ length(assert) + 1]] <- 0 ## copyValues = false
                     assert[[ length(assert) + 1]] <- 0 ## fillZeros  = false
@@ -3041,8 +3041,8 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
     }
     
     ## Choose the output type by type promotion
-    if(length(a1type) == 0) {warning('Problem with type of arg1 in sizeBinaryCwise', call. = FALSE); browser()}
-    if(length(a2type) == 0) {warning('Problem with type of arg2 in sizeBinaryCwise', call. = FALSE); browser()}
+    if(length(a1type) == 0) {stop('Problem with type of arg1 in sizeBinaryCwise', call. = FALSE)}
+    if(length(a2type) == 0) {stop('Problem with type of arg2 in sizeBinaryCwise', call. = FALSE)}
     code$type <- setReturnType(code$name, arithmeticOutputType(a1type, a2type))
 
     if(!nimbleOptions('experimentalNewSizeProcessing') ) {
@@ -3186,7 +3186,8 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
                                  1, 'double'),
                              nimArr_rinvwish_chol = list(c(2, 0, 0), ## chol, df, prec_param
                                  1, 'double'),
-			     nimArr_rcar_normal = list(c(1, 1, 1), 3, 'double'), ## adj, wgts, num
+			     nimArr_rcar_normal = list(c(1, 1, 1, 0, 0, 0), 3, 'double'), ## adj, wgts, num, tau, c, zero_mean, answer size comes from num
+			     nimArr_rcar_proper = list(c(1, 1, 1, 1, 1, 0, 0, 1), 1, 'double'), ## mu, C, adj, num, M, tau, gamma, evs, answer size comes from mu
                              nimArr_rmulti = list(c(0, 1), ## size, probs
                                  2, 'double'), ## We treat integer rv's as doubles
                              nimArr_rdirch = list(c(1), 1, 'double')) ## alpha

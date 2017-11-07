@@ -104,7 +104,7 @@ nimGenerateCpp <- function(code, symTab = NULL, indent = '', showBracket = TRUE,
     if(is.logical(code) ) return(if(code) 'true' else 'false')
     if(is.list(code) ) stop("Error generating C++ code, there is a list where there shouldn't be one.  It is probably inside map information.", call. = FALSE)
 
-    if(length(code$isName) == 0) browser()
+    if(length(code$isName) == 0) stop("Error generating C++ code, length(code$isName) == 0.", call. = FALSE)
     if(code$isName) return(exprName2Cpp(code, symTab, asArg))
     if(code$name == '{') {
         iOffset <- as.integer(showBracket)

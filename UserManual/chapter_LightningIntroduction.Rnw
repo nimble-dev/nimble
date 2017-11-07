@@ -114,6 +114,27 @@ subsequent changes in one will not be reflected in the other.
 
 Note that the compiled model is used when running any NIMBLE algorithms via C++, so the model needs to be compiled before (or at the same time as) any compilation of algorithms, such as the compilation of the MCMC done in the next section.
 
+\section{One-line invocation of MCMC}
+\label{sec:intro-runMCMC}
+
+The most direct approach to invoking NIMBLE's MCMC engine is using the
+\cd{nimbleMCMC} function.  This function would generally take the code,
+data, constants, and initial values as input, but it can also accept the (compiled or uncompiled)
+model object as an argument. It provides a variety of options for executing and
+controlling multiple chains of NIMBLE's default MCMC algorithm, and
+returning posterior samples, posterior summary statistics,
+and/or WAIC values.
+
+For example, to execute two MCMC chains of 10,000 samples each, and
+return samples, summary statistics, and WAIC values:
+
+<<nimbleMCMCpump>>=
+@ 
+
+See Section \ref{sec:nimbleMCMC} or \cd{help(nimbleMCMC)} for more
+details about using \cd{nimbleMCMC}.
+
+
 \section{Creating, compiling and running a basic MCMC configuration}
 \label{sec:creating-mcmc}
   

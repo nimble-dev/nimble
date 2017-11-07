@@ -31,6 +31,7 @@ distributionsInputList <- list(
     
     dcat    = list(BUGSdist = 'dcat(prob)',
                    Rdist    = 'dcat(prob)',
+                   altParams = c('k = length(prob)'),
                    types    = c('prob = double(1)'),
                    range    = c(1, Inf), 
                    discrete = TRUE),
@@ -181,6 +182,13 @@ distributionsInputList <- list(
                        types    = c('value = double(1)', 'adj = double(1)', 'weights = double(1)', 'num = double(1)', 'tau = double(0)', 'c = double(0)', 'zero_mean = double(0)'),
                        mixedSizes = TRUE,
                        alias    = 'car.normal'),
+    
+    dcar_proper = list(BUGSdist = 'dcar_proper(mu, C, adj, num, M, tau, gamma, evs)',
+                       Rdist    = c('dcar_proper(mu, C,                       adj, num, M,                  tau, gamma, evs = CAR_calcEVs3(C, adj, num))',
+                                    'dcar_proper(mu, C = CAR_calcC(adj, num), adj, num, M = CAR_calcM(num), tau, gamma, evs = CAR_calcEVs2(   adj, num))'),
+                       types    = c('value = double(1)', 'mu = double(1)', 'C = double(1)', 'adj = double(1)', 'num = double(1)', 'M = double(1)', 'tau = double(0)', 'gamma = double(0)', 'evs = double(1)'),
+                       mixedSizes = TRUE,
+                       alias    = 'car.proper'),
 
     ddirch  = list(BUGSdist = 'ddirch(alpha)',
                    Rdist    = 'ddirch(alpha)',

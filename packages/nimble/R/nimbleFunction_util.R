@@ -27,6 +27,7 @@ is.nf <- function(f, inputIsName = FALSE) {
                existsFunctionEnvVar(f, 'nfRefClassObject') ) 	
 }
 
+#' @export
 is.Cnf <- function(f, inputIsName = FALSE) {
     if(inputIsName) f <- get(f)
     if(inherits(f, 'CnimbleFunctionBase')) return(TRUE)

@@ -231,8 +231,8 @@ symbolTable2cppVars <- function(symTab, arguments = character(), include, parent
     for(s in include) {
         inputArg <- s %in% arguments
         sObj <- symTab$getSymbolObject(s)
-        if(inherits(sObj$type, 'uninitializedField')) stop(paste('Error in symbolTable2cppVars for ', symTab, '. type field is not set.'))
-        if(length(sObj$type == 'Ronly') == 0) browser()
+        if(inherits(sObj$type, 'uninitializedField')) stop(paste('Error in symbolTable2cppVars for ', symTab, '. type field is not set.'), call. = FALSE)
+        if(length(sObj$type == 'Ronly') == 0) stop(paste('Error in symbolTable2cppVars for ', symTab, ',  length(sObj$type == "Ronly") == 0'), call. = FALSE)
         if(sObj$type == 'Ronly') next
         newSymOrList <- symTab$getSymbolObject(s)$genCppVar(inputArg)
         if(is.list(newSymOrList)) {
@@ -726,6 +726,7 @@ symbolInternalType <-
                     })
                 )
 
+## Object for Tensorflow runner.
 symbolTensorflowRunner <-
     setRefClass(Class = "symbolTensorflowRunner",
                 contains = "symbolBase",
@@ -735,6 +736,20 @@ symbolTensorflowRunner <-
                     show = function() writeLines(paste('symbolTensorflowRunner ', name)),
                     genCppVar = function(functionArg = FALSE) {
                         cppVarFull(name = name, baseType = "NimTf_Runner", static = TRUE, ref = TRUE, constructor = constructor)
+                    }
+                )
+    )
+
+## Object for wrapping a Tensorflow runner in a CppAD op.
+symbolTensorflowOp <-
+    setRefClass(Class = "symbolTensorflowOp",
+                contains = "symbolBase",
+                fields = list(constructor = "ANY"),
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolTensorflowOp ', name)),
+                    genCppVar = function(functionArg = FALSE) {
+                        cppVarFull(name = name, baseType = "NimTf_Op", static = TRUE, ref = TRUE, constructor = constructor)
                     }
                 )
     )

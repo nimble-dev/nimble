@@ -6,11 +6,11 @@
 \alias{rcar_normal}
 \title{The CAR-Normal Distribution}
 \usage{
-dcar_normal(x, adj, weights, num, tau, c = CAR_calcNumIslands(adj, num),
-  zero_mean = 0, log = FALSE)
+dcar_normal(x, adj, weights = adj/adj, num, tau, c = CAR_calcNumIslands(adj,
+  num), zero_mean = 0, log = FALSE)
 
-rcar_normal(n = 1, adj, weights, num, tau, c = CAR_calcNumIslands(adj, num),
-  zero_mean = 0)
+rcar_normal(n = 1, adj, weights = adj/adj, num, tau,
+  c = CAR_calcNumIslands(adj, num), zero_mean = 0)
 }
 \arguments{
 \item{x}{vector of values.}
@@ -19,29 +19,29 @@ rcar_normal(n = 1, adj, weights, num, tau, c = CAR_calcNumIslands(adj, num),
 
 \item{weights}{vector of symmetric unnormalized weights associated with each pair of adjacent locations, of the same length as adj.  If omitted, all weights are taken to be one.}
 
-\item{num}{vector giving the number of neighbors of each spatial location, with length equal to the total number of locations.}
+\item{num}{vector giving the number of neighboring locations of each spatial location, with length equal to the total number of locations.}
 
 \item{tau}{scalar precision of the Gaussian CAR prior.}
 
-\item{c}{integer number of constraints to impose on the improper density function.  If omitted, \code{c} is calculated as the number of disjoint groups of spatial locations in the adjacency structure. Note that \code{c} should be equal to the number of eigenvalues of the precision matrix that are zero. For example if the neighborhood structure is based on a second-order Markov random field in one dimension has two zero eigenvalue and in two dimensinos has three zero eigenvalues. See Rue and Held (2005) for more information.}
+\item{c}{integer number of constraints to impose on the improper density function.  If omitted, \code{c} is calculated as the number of disjoint groups of spatial locations in the adjacency structure, which implicitly assumes a first-order CAR process for each group. Note that \code{c} should be equal to the number of eigenvalues of the precision matrix that are zero. For example, if the neighborhood structure is based on a second-order Markov random field in one dimension then the matrix has two zero eigenvalues and in two dimensions it has three zero eigenvalues. See Rue and Held (2005) and the NIMBLE User Manual for more information.}
 
-\item{zero_mean}{integer specifying whether to set the mean of all locations to zero during MCMC sampling of a node specified with this distribution in BUGS code (default \code{0}). This argument is used only in BUGS model code when specifying models in NIMBLE. If \code{0}, the overall process mean is included implicitly in the value of each location in a BUGS model; if \code{1}, then during MCMC sampling, the mean of all locations is set to zero at each MCMC iteration, and a separate intercept term should be included in the BUGS model. Note that centering during MCMC as implemented in NIMBLE follows the ad hoc approach of \pkg{WinBUGS} and does not sample under the constraint that the mean is zero as discussed on p. 36 of Rue and Held (2005).  See details.}
+\item{zero_mean}{integer specifying whether to set the mean of all locations to zero during MCMC sampling of a node specified with this distribution in BUGS code (default \code{0}). This argument is used only in BUGS model code when specifying models in NIMBLE. If \code{0}, the overall process mean is included implicitly in the value of each location in a BUGS model; if \code{1}, then during MCMC sampling, the mean of all locations is set to zero at each MCMC iteration, and a separate intercept term should be included in the BUGS model. Note that centering during MCMC as implemented in NIMBLE follows the ad hoc approach of \pkg{WinBUGS} and does not sample under the constraint that the mean is zero as discussed on p. 36 of Rue and Held (2005).  See \sQuote{Details}.}
 
-\item{log}{logical; if TRUE, probability density is returned on the log scale.}
+\item{log}{logical; if \code{TRUE}, probability density is returned on the log scale.}
 
 \item{n}{number of observations.}
 }
 \value{
-\code{dcar_normal} gives the density, and \code{rcar_normal} returns the current process values, since this distribution is improper.
+\code{dcar_normal} gives the density, while \code{rcar_normal} returns the current process values, since this distribution is improper.
 }
 \description{
 Density function and random generation for the improper (intrinsic)
   Gaussian conditional autoregressive (CAR) distribution.
 }
 \details{
-When specifying a CAR distribution in BUGS model code, the \code{zero_mean} parameter should be specified as either 0 or 1 (rather than TRUE or FALSE).
+When specifying a CAR distribution in BUGS model code, the \code{zero_mean} parameter should be specified as either \code{0} or \code{1} (rather than \code{TRUE} or \code{FALSE}).
 
-Note that because the distribution is improper, \code{rcar_normal} does not generated a sample from the distribution, though as discussed in Rue and Held (2005), it is possible to generate a sample from the distribution under constraints imposed based on the eigenvalues of the precision matrix that are zero.
+Note that because the distribution is improper, \code{rcar_normal} does not generate a sample from the distribution. However, as discussed in Rue and Held (2005), it is possible to generate a sample from the distribution under constraints imposed based on the eigenvalues of the precision matrix that are zero.
 }
 \examples{
 x <- c(1, 3, 3, 4)
@@ -59,6 +59,6 @@ Banerjee, S., Carlin, B.P., and Gelfand, A.E. (2015). \emph{Hierarchical Modelin
 Rue, H. and L. Held (2005). \emph{Gaussian Markov Random Fields}, Chapman and Hall/CRC.
 }
 \seealso{
-\link{Distributions} for other standard distributions
+\link{CAR-Proper}, \link{Distributions} for other standard distributions
 }
 

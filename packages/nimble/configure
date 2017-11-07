@@ -636,6 +636,7 @@ CXXPICFLAGS
 EGREP
 GREP
 CXXCPP
+GNUMAKEFILE_INCLUDE_MAKECONF
 OBJEXT
 EXEEXT
 ac_ct_CXX
@@ -688,6 +689,7 @@ enable_option_checking
 with_eigen
 with_cppad
 enable_dylib
+enable_debugging
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1318,6 +1320,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code
+  --enable-debugging            compiled libnimble with debugging information
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2563,6 +2566,22 @@ if test -n "${LIBNIMBLE}" ; then
   echo "Enabling libnimble."
 fi
 
+# Check whether --enable-debugging was given.
+if test "${enable_debugging+set}" = set; then :
+  enableval=$enable_debugging; ENABLE_DEBUGGING=${enableval}
+else
+  ENABLE_DEBUGGING=no
+fi
+
+
+if test "${ENABLE_DEBUGGING}" = "yes"; then
+   echo "enabling R's default debugging information in libnimble"
+   GNUMAKEFILE_INCLUDE_MAKECONF="-include \$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
+else
+   GNUMAKEFILE_INCLUDE_MAKECONF="-include ./Makeconf"
+fi
+
+
 if test -n "$EIGEN_DIR" ; then
   echo "Checking eigen directory $EIGEN_DIR"
   if ! test -d "$EIGEN_DIR" ; then
@@ -2612,13 +2631,16 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
 fi
 
 
-CXX=`"${R_HOME}/bin/R" CMD config CXX`
-CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
+CXX11=`"${R_HOME}/bin/R" CMD config CXX1X`
+CXX11STD=`"${R_HOME}/bin/R" CMD config CXX1XSTD`
+CXX="${CXX11} ${CXX11STD}"
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX1XFLAGS`
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
 
 
 echo "working on eigen"
@@ -3105,7 +3127,7 @@ fi
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 
 
-ac_config_files="$ac_config_files inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars"
+ac_config_files="$ac_config_files inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars inst/CppCode/GNUmakefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -3816,6 +3838,7 @@ do
     "inst/make/Makevars_lib") CONFIG_FILES="$CONFIG_FILES inst/make/Makevars_lib" ;;
     "R/config.R") CONFIG_FILES="$CONFIG_FILES R/config.R" ;;
     "src/Makevars") CONFIG_FILES="$CONFIG_FILES src/Makevars" ;;
+    "inst/CppCode/GNUmakefile") CONFIG_FILES="$CONFIG_FILES inst/CppCode/GNUmakefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -4266,22 +4289,25 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
-
+if test "${ENABLE_DEBUGGING}" != "yes"; then
+  echo "removing debugging flags"
+  (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
+fi
 
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
- (cd inst/CppCode ; ${MAKE} )
-# cp inst/CppCode/libnimble.dylib src
-# if ! test -e $R_PACKAGE_DIR/libs/ ; then
-#    mkdir -p $R_PACKAGE_DIR/libs/
-# fi
- #cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib
+(cd inst/CppCode ; ${MAKE} )
+
 else
-#  cp inst/CppCode/*.cpp src
+  echo "Building libnimble.a"
   cp inst/CppCode/dists.cpp src
   cp inst/CppCode/RcppUtils.cpp src
   cp inst/CppCode/nimbleGraph.cpp src
   cp inst/CppCode/eigenUsingClasses.cpp src
 
   (cd inst/CppCode ; ${MAKE} libnimble.a)
+fi
+
+if test "${ENABLE_DEBUGGING}" != "yes"; then
+  (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf clean)
 fi

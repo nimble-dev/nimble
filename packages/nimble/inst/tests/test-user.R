@@ -2,101 +2,105 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of user-supplied distributions and functions in BUGS code")
 
-## User-supplied functions
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
 
-dbl <- nimbleFunction(
-    run = function(x = double(0)) {
-        returnType(double(0))
-        return(2*x)
-    }
+goldFileName <- 'userTestLog_Correct.Rout'
+tempFileName <- 'userTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForUserTesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForUserTesting'), goldFileName) else tempFileName
+
+sink(outputFile)
+
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
+
+test_that("User-supplied functions", {
+    dbl <- nimbleFunction(
+        run = function(x = double(0)) {
+            returnType(double(0))
+            return(2*x)
+        }
     )
-# if not in Global, nimble's scoping can't find it in the
-# environment created by testthat
-assign('dbl', dbl, envir = .GlobalEnv)
-# not working at moment as enclosing env of fun is getting messed up
+    temporarilyAssignInGlobalEnv(dbl)
+                                        # not working at moment as enclosing env of fun is getting messed up
 
 
-## two arguments to the nimbleFunction
-dblSum <- nimbleFunction(
-    run = function(x = double(0), y = double(0)) {
-        returnType(double(0))
-        return(2*(x+y))
-    }
+    ## two arguments to the nimbleFunction
+    dblSum <- nimbleFunction(
+        run = function(x = double(0), y = double(0)) {
+            returnType(double(0))
+            return(2*(x+y))
+        }
     )
-assign('dblSum', dblSum, envir = .GlobalEnv)
+    temporarilyAssignInGlobalEnv(dblSum)
 
-## vector input and output
-vecdbl <- nimbleFunction(
-    run = function(x = double(1)) {
-        returnType(double(1))
-        return(2*x)
-    }
+    ## vector input and output
+    vecdbl <- nimbleFunction(
+        run = function(x = double(1)) {
+            returnType(double(1))
+            return(2*x)
+        }
     )
-assign('vecdbl', vecdbl, envir = .GlobalEnv)
+    temporarilyAssignInGlobalEnv(vecdbl)
 
-# function that will allow testing of arg matching by name
-mypow <- nimbleFunction(
-    run = function(x = double(0), y = double(0)) {
-        returnType(double(0))
-        return(pow(x, y))
-    }
+                                        # function that will allow testing of arg matching by name
+    mypow <- nimbleFunction(
+        run = function(x = double(0), y = double(0)) {
+            returnType(double(0))
+            return(pow(x, y))
+        }
     )
-assign('mypow', mypow, envir = .GlobalEnv)
+    temporarilyAssignInGlobalEnv(mypow)
 
-code <- nimbleCode({
-    x ~ dnorm(0, 1)
-    dx ~ dnorm(dbl(x), sd = .01)
-    liftedmu[1:K] <- vecdbl(mu[1:K])
-    y[1:K] ~ dmnorm(liftedmu[1:K], cov = eps[1:K,1:K])
-    mu[1:K] ~ dmnorm(zeros[1:K], cov = I[1:K, 1:K])
-    z ~ dnorm(0, 1)
-    dz ~ dnorm(dblSum(x, z), sd = .01)
+    code <- nimbleCode({
+        x ~ dnorm(0, 1)
+        dx ~ dnorm(dbl(x), sd = .01)
+        liftedmu[1:K] <- vecdbl(mu[1:K])
+        y[1:K] ~ dmnorm(liftedmu[1:K], cov = eps[1:K,1:K])
+        mu[1:K] ~ dmnorm(zeros[1:K], cov = I[1:K, 1:K])
+        z ~ dnorm(0, 1)
+        dz ~ dnorm(dblSum(x, z), sd = .01)
 
-    # use of args out of order
-    out <- mypow(y = yin, x = xin)
-    
-    # vectorized fun applied to scalar nodes-based variable
-    for(i in 1:K) {
-        theta[i] ~ dnorm(0, 1)
+                                        # use of args out of order
+        out <- mypow(y = yin, x = xin)
+        
+                                        # vectorized fun applied to scalar nodes-based variable
+        for(i in 1:K) {
+            theta[i] ~ dnorm(0, 1)
+        }
+        liftedmu2[1:K] <- vecdbl(theta[1:K])
+        w[1:K] ~ dmnorm(liftedmu2[1:K], cov = eps[1:K, 1:K])
+    })
+
+    K <- 3
+    m <- nimbleModel(code, inits = list(yin = 3, xin = 2, x = 0.25, y = 1:K, mu = 1:K,
+                                        z = 0.5, theta = rep(.5, K), w = rep(1, K)),
+                     constants = list(K = K, zeros = rep(0, K), I = diag(K),
+                                      eps = diag(rep(.0001, K))))
+
+    cm <- compileNimble(m)
+
+    set.seed(0)
+    simulate(m)
+    set.seed(0)
+    simulate(cm)
+
+                                        # need c() in here because R nodes are arrays
+    for(var in c('dx', 'y', 'dz', 'w')) {
+        expect_equal(c(get(var, m)), (get(var, cm)),
+                     info = paste0("Test that R and C models agree with user-supplied functions:", var, " values differ"))
     }
-    liftedmu2[1:K] <- vecdbl(theta[1:K])
-    w[1:K] ~ dmnorm(liftedmu2[1:K], cov = eps[1:K, 1:K])
+    expect_lt(abs(2*cm$x - cm$dx), (.03)) # "Test that values based on user-supplied functions are correct (x and dx consistent)"
+    expect_lt(max(abs(2*cm$mu - cm$y)), (.03)) # "Test that values based on user-supplied functions are correct (mu and y consistent)"
+    expect_lt(abs(2*(cm$x + cm$z) - cm$dz), (.03)) # "Test that values based on user-supplied functions are correct (x plus z and dz consistent)"
+    expect_lt(max(abs(2*cm$theta - cm$w)), (.03)) # "Test that values based on user-supplied functions are correct (theta and w consistent)"
+    expect_identical(c(m$out), (8),
+                     info = "incorrect arg matching by name in R model")
+    expect_identical(cm$out, (8),
+                     info = "incorrect arg matching by name in C model")
 })
 
-K <- 3
-m <- nimbleModel(code, inits = list(yin = 3, xin = 2, x = 0.25, y = 1:K, mu = 1:K,
-                           z = 0.5, theta = rep(.5, K), w = rep(1, K)),
-                 constants = list(K = K, zeros = rep(0, K), I = diag(K),
-                                  eps = diag(rep(.0001, K))))
-
-cm <- compileNimble(m)
-
-set.seed(0)
-simulate(m)
-set.seed(0)
-simulate(cm)
-
-# need c() in here because R nodes are arrays
-for(var in c('dx', 'y', 'dz', 'w')) {
-    try(test_that("Test that R and C models agree with user-supplied functions: ",
-                  expect_equal(c(get(var, m)), (get(var, cm)),
-                                             info = paste0(var, " values differ"))))
-}
-try(test_that("Test that values based on user-supplied functions are correct (x and dx consistent): ",
-              expect_lt(abs(2*cm$x - cm$dx), (.03))))
-try(test_that("Test that values based on user-supplied functions are correct (mu and y consistent): ",
-              expect_lt(max(abs(2*cm$mu - cm$y)), (.03))))
-try(test_that("Test that values based on user-supplied functions are correct (x plus z and dz consistent):",
-              expect_lt(abs(2*(cm$x + cm$z) - cm$dz), (.03))))
-try(test_that("Test that values based on user-supplied functions are correct (theta and w consistent):",
-              expect_lt(max(abs(2*cm$theta - cm$w)), (.03))))
-
-try(test_that("Test that arg matching by name is correct: ",
-              expect_identical(c(m$out), (8),
-                          info = paste0("incorrect arg matching by name in R model"))))
-try(test_that("Test that arg matching by name is correct: ",
-              expect_identical(cm$out, (8),
-                          info = paste0("incorrect arg matching by name in C model"))))
 
 ## User-supplied distributions
 
@@ -110,7 +114,7 @@ dmyexp <- nimbleFunction(
             return(exp(logProb))
         }
     })
-assign('dmyexp', dmyexp, envir = .GlobalEnv)
+temporarilyAssignInGlobalEnv(dmyexp)
 
 
 rmyexp <- nimbleFunction(
@@ -121,7 +125,7 @@ rmyexp <- nimbleFunction(
         return(-log(1-dev) / rate)
     }
     )
-assign('rmyexp', rmyexp, envir = .GlobalEnv)
+temporarilyAssignInGlobalEnv(rmyexp)
 
 pmyexp <- nimbleFunction(
     run = function(q = double(0), rate = double(0, default = 1), lower.tail = integer(0, default = 1), log.p = integer(0, default = 0)) {
@@ -143,7 +147,7 @@ pmyexp <- nimbleFunction(
         }
     }
     )
-assign('pmyexp', pmyexp, envir = .GlobalEnv)
+temporarilyAssignInGlobalEnv(pmyexp)
 
 qmyexp <- nimbleFunction(
     run = function(p = double(0), rate = double(0, default = 1), lower.tail = integer(0, default = 1), log.p = integer(0, default = 0)) {
@@ -157,7 +161,7 @@ qmyexp <- nimbleFunction(
         return(-log(1 - p) / rate)
     }
     )
-assign('qmyexp', qmyexp, envir = .GlobalEnv)
+temporarilyAssignInGlobalEnv(qmyexp)
 
 
 ddirchmulti <- nimbleFunction(
@@ -170,7 +174,7 @@ ddirchmulti <- nimbleFunction(
             return(exp(logProb))
         }
     })
-assign('ddirchmulti', ddirchmulti, envir = .GlobalEnv)
+temporarilyAssignInGlobalEnv(ddirchmulti)
 
 rdirchmulti <- nimbleFunction(
     run = function(n = integer(0), alpha = double(1), size = double(0)) {
@@ -179,7 +183,7 @@ rdirchmulti <- nimbleFunction(
         p <- rdirch(1, alpha)
         return(rmulti(1, size = size, prob = p))
     })
-assign('rdirchmulti', rdirchmulti, envir = .GlobalEnv)
+temporarilyAssignInGlobalEnv(rdirchmulti)
 
 registerDistributions(list(
     dmyexp = list(
@@ -221,81 +225,77 @@ code3 <- nimbleCode({
 })
 
 
-set.seed(0)
-mn = 3
-n1 <- 1000
-y1 <- rexp(n1, rate = 1/mn)
-y2 <- rexp(n1, rate = 1/mn)
+test_that("Test that truncation works with nodeFunctions and MCMC for user-supplied distribution", {
+    set.seed(0)
+    mn = 3
+    n1 <- 1000
+    y1 <- rexp(n1, rate = 1/mn)
+    y2 <- rexp(n1, rate = 1/mn)
+    
+    lambda = 2.5
+    n2 <- 50
+    y3 <- rpois(n2, lambda)
+    
+    upper <-  3
+    
+    sz <- 100
+    alpha <- 10*c(1,2,3)
+    m <- 40
+    P <- length(alpha)
+    y <- p <- matrix(0, nrow = m, ncol = P)
+    for( i in 1:m ) {
+        p[i, ] <- rdirch(1, alpha)
+        y[i, ] <- rmultinom(1, size = sz, prob  = p[i,])
+    }
+    
+    data1 <- list(y1 = y1, y2 = y2, n1 = n1)
+    data2 <- list(y3 = y3, n2 = n2, upper = upper)
+    data3 <- list(y = y, m = m, P = P, sz = sz)
+    
+    inits1 <- list(s1 = 1, s2 = 1)
+    inits2 <- list(lambda = 1)
+    inits3 <- list(alpha = rep(30, P))
+    
+    m2 <- nimbleModel(code2, data = data2['y3'], constants = data2[c('upper', 'n2')],
+                      inits = inits2)
+    cm2 <- compileNimble(m2)
+    simulate(m2, 'lambda')
+    simulate(cm2, 'lambda')
+    expect_lt(max(c(m2$lambda, cm2$lambda)), (upper)) # "parameter not exceed upper bound"
+    m2$lambda <- cm2$lambda <- upper + 1
+    expect_identical(max(c(calculate(m2, 'lambda'), calculate(cm2, 'lambda'))), (-Inf), info = "calculation on out-of-bounds not return -Inf")
 
-lambda = 2.5
-n2 <- 50
-y3 <- rpois(n2, lambda)
+    testBUGSmodel(code1, example = 'user1', dir = "", data = data1, inits = inits1, useInits = TRUE)
+    testBUGSmodel(code2, example = 'user2', dir = "", data = data2, inits = inits2, useInits = TRUE)
+    testBUGSmodel(code3, example = 'user3', dir = "", data = data3, inits = inits3, useInits = TRUE)
 
-upper <-  3
+    test_mcmc(model = code1, data = data1, inits = inits1,
+              results = list(mean = list(s1 = mn, s2 = mn)),
+              resultsTolerance = list(mean = list(s1 = .2, s2 = .2)))
+    
+    test_mcmc(model = code3, data = data3, inits = inits3,
+              results = list(mean = list(alpha = alpha)),
+              resultsTolerance = list(mean = list(alpha = c(4, 6, 8))),
+              numItsC_results = 50000)
 
-sz <- 100
-alpha <- 10*c(1,2,3)
-m <- 40
-P <- length(alpha)
-y <- p <- matrix(0, nrow = m, ncol = P)
-for( i in 1:m ) {
-    p[i, ] <- rdirch(1, alpha)
-    y[i, ] <- rmultinom(1, size = sz, prob  = p[i,])
-}
+    m <- nimbleModel(code2, constants = data2, inits = inits2)
+    cm <- compileNimble(m)
+    
+    spec <- configureMCMC(m)
+    Rmcmc <- buildMCMC(spec)
+    Cmcmc <- compileNimble(Rmcmc, project = m)
+    
+    Cmcmc$run(5000)
+    smp <- as.matrix(Cmcmc$mvSamples)
+    
+    expect_lt(max(smp[ , 'lambda']), (upper))
+})
 
-data1 <- list(y1 = y1, y2 = y2, n1 = n1)
-data2 <- list(y3 = y3, n2 = n2, upper = upper)
-data3 <- list(y = y, m = m, P = P, sz = sz)
-  
-inits1 <- list(s1 = 1, s2 = 1)
-inits2 <- list(lambda = 1)
-inits3 <- list(alpha = rep(30, P))
-
-m2 <- nimbleModel(code2, data = data2['y3'], constants = data2[c('upper', 'n2')],
-                  inits = inits2)
-cm2 <- compileNimble(m2)
-simulate(m2, 'lambda')
-simulate(cm2, 'lambda')
-try(test_that("Test that truncation works with simulate nodeFunction for user-supplied distribution (parameter not exceed upper bound): ",
-              expect_lt(max(c(m2$lambda, cm2$lambda)), (upper))))
-m2$lambda <- cm2$lambda <- upper + 1
-try(test_that("Test that truncation works with calculate nodeFunction for user-supplied distribution (calculation on out-of-bounds not return -Inf): ",
-              expect_identical(max(c(calculate(m2, 'lambda'), calculate(cm2, 'lambda'))), (-Inf))))
-
-
-testBUGSmodel(code1, example = 'user1', dir = "", data = data1, inits = inits1, useInits = TRUE)
-testBUGSmodel(code2, example = 'user2', dir = "", data = data2, inits = inits2, useInits = TRUE)
-testBUGSmodel(code3, example = 'user3', dir = "", data = data3, inits = inits3, useInits = TRUE)
-
-
-test_mcmc(model = code1, data = data1, inits = inits1,
-          results = list(mean = list(s1 = mn, s2 = mn)),
-          resultsTolerance = list(mean = list(s1 = .2, s2 = .2)))
-
-test_mcmc(model = code3, data = data3, inits = inits3,
-          results = list(mean = list(alpha = alpha)),
-          resultsTolerance = list(mean = list(alpha = c(4, 6, 8))),
-          numItsC_results = 50000)
-
-
-m <- nimbleModel(code2, constants = data2, inits = inits2)
-cm <- compileNimble(m)
-
-spec <- configureMCMC(m)
-Rmcmc <- buildMCMC(spec)
-Cmcmc <- compileNimble(Rmcmc, project = m)
-
-Cmcmc$run(5000)
-smp <- as.matrix(Cmcmc$mvSamples)
-
-try(test_that("Test that truncation works with MCMC for user-supplied distribution (parameter not exceed upper bound): ",
-              expect_lt(max(smp[ , 'lambda']), (upper))))
-
-
-deregisterDistributions('ddirchmulti')
-try(test_that("Test that deregistration of user-supplied distributions works: ",
-              expect_equal(is.null(nimble:::nimbleUserNamespace$distributions[['ddirchmulti']]), (TRUE),
-                          info = paste0("ddirchmulti has not been deregistered"))))
+test_that("Test that deregistration of user-supplied distributions works", {
+    deregisterDistributions('ddirchmulti')
+    expect_true(is.null(nimble:::nimbleUserNamespace$distributions[['ddirchmulti']]),
+                info = "ddirchmulti has not been deregistered")
+})
 
 # would like to test user-defined without r function, but registerDistributions()
 # puts r function in calling frame and that is causing problems when called from
@@ -307,7 +307,7 @@ try(test_that("Test that deregistration of user-supplied distributions works: ",
 ##         return(0)
 ##     })
 
-## assign('dfoo', dfoo, envir = .GlobalEnv)
+## temporarilyAssignInGlobalEnv(dfoo)
 
 ## code <- nimbleCode({
 ##     v[1:3] ~ dfoo()
@@ -317,3 +317,14 @@ try(test_that("Test that deregistration of user-supplied distributions works: ",
 
 ## try(test_that("Test of user-supplied distribution without r function: ",
 ##               expect_false(is(out, 'try-error'))))
+
+sink(NULL)
+
+if(!generatingGoldFile) {
+    trialResults <- readLines(tempFileName)
+    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    compareFilesByLine(trialResults, correctResults)
+}
+
+nimbleOptions(verbose = nimbleVerboseSetting)
+nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)

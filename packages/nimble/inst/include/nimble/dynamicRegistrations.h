@@ -106,6 +106,7 @@ R_CallMethodDef CallEntries[] = {
   // from NamedObjects
   FUN(getModelObjectPtr, 2),
   FUN(getAvailableNames, 1),
+  FUN(copyFromRobject, 2),
   FUN(getNumberedObject, 2),
   FUN(setNumberedObject, 3),
   FUN(resizeNumberedObjects, 2),

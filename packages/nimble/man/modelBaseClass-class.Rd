@@ -10,6 +10,7 @@
 \alias{getDistribution}
 \alias{getNodeNames}
 \alias{getVarNames}
+\alias{initializeInfo}
 \alias{isBinary}
 \alias{isData}
 \alias{isDeterm}
@@ -61,6 +62,16 @@ returnType: return type. Options are 'names' (character vector) or 'ids' (graph 
 sort: should names be topologically sorted before being returned?
 
 unique: should names be the unique names or should original ordering of nodes (after expansion of any variable names into node names) be preserved}
+
+\item{\code{getCode()}}{Return the code for a model after
+,
+processing if-then-else statements,
+
+expanding macros, and replacing some
+
+keywords (e.g. nimStep for step) to 
+
+avoid R ambiguity.}
 
 \item{\code{getDependencies(nodes, omit = character(), self = TRUE,
   determOnly = FALSE, stochOnly = FALSE, includeData = TRUE,
@@ -166,6 +177,8 @@ Arguments:
 logProb: Logical argument specifying whether or not to include the logProb variables.  Default is FALSE.
 
 nodes: An optional character vector supplying a subset of nodes for which to extract the variable names and return the unique set of variable names}
+
+\item{\code{initializeInfo()}}{Provides more detailed information on which model nodes are not initialized.}
 
 \item{\code{isBinary(nodes)}}{Determines whether one or more nodes represent binary random variables
 
@@ -297,5 +310,8 @@ Rmodel$isData(c('mu', 'x[1]', 'x[2]'))   ## returns c(FALSE, TRUE, FALSE)
 }
 \author{
 Daniel Turek
+}
+\seealso{
+\code{\link{initializeModel}}
 }
 
