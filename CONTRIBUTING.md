@@ -216,6 +216,8 @@ We recommended two different practices for parametrized testing: `for`-outside-`
   }
 ```
 
+If you are using parametrized tests and some of the tests are known failures of NIMBLE, you can pass in a flag to the parametrized test and query that flag with `wrap_if_matches` so as to only wrap the specific tests that are known to fail with an `expect_failure` (or in some cases `expect_warning`). See `mathTestLists.R` and `test-mcmc.R` for examples. Note that `test-size.R` was developed before the system recommended in this document and that `test-size.R` handles very convoluted cases, so do not follow the syntax used in `test-size.R`.
+
 ### Test expected errors with `expect_error`
 
 Use `expect_error` to test for expected errors,
@@ -227,6 +229,8 @@ e.g. when testing that our compiler correctly errors on some code.
       expect_error(compileNimble(nf))
   })
 ```
+
+Note that if we would like an error to be triggered but it is not, this would call for wrapping the `expect_error` call in an `expect_failure` call. 
 
 ### Use `test_utils.R`
 
@@ -241,6 +245,14 @@ See also the numerous testing tools in [`test_utils.R`](https://github.com/nimbl
 -   `clearOldOutput` - Remove a file if it does not exist (like `rm -f`).
 
 and many undocumented test utilities.
+
+### Using goldfiles and determining what output to include/suppress
+
+As seen in `test-mcmc.R` and others, we compare the printed output (particularly for MCMC summaries) with known results from previous testing to ensure that numeric values have not changed. Please follow the template in `test-mcmc.R`. Goldfiles should be saved in `inst/tests` and included in the repository and should be updated as needed, but only with care that any changes relative to older goldfiles are understood. 
+
+We recommend including `options(warn=1)` so that warnings are printed out. However, note that it is difficult to ensure that warnings appear in the goldfiles and are able to be checked exactly against previous testing instantiations. In some cases we use `sink_with_messages` rather than `sink` to capture output from testing. This does not capture the `W` values printed out by testthat, but it does (e.g., in the case of `test-models.R`) capture other warning messages that one may want to check versus previous versions of the code.
+
+We recommend turning verbosity and MCMC progress bars off during testing to avoid extensive unimportant output. Again see `test-mcmc.R`. 
 
 ### Run tests with `test_package`
 
