@@ -701,15 +701,14 @@ sampler_langevin <- nimbleFunction(
         if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('langevin sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
     },
     run = function() {
-        q <- values(model, target)         ## current position variables
+        q <- values(model, target)              ## current position variables
         p <- numeric(d)
-        for(i in 1:d)
-            p[i] <- rnorm(1, 0, 1)         ## randomly draw momentum variables
+        for(i in 1:d)   p[i] <- rnorm(1, 0, 1)  ## randomly draw momentum variables
         currentH <- model$getLogProb(calcNodes) - sum(p^2)/2
         p <- p + epsilonVec * gradient(q) / 2   ## initial half step for p
         q <- q + epsilonVec * p                 ## full step for q and p
         p <- p + epsilonVec * gradient(q) / 2   ## final half step for p
-        values(model, target) <<- q      ## probably redundant, following gradient(q)
+        values(model, target) <<- q             ## probably redundant, following previous call to gradient(q)
         propH <- model$calculate(calcNodes) - sum(p^2)/2
         jump <- decide(propH - currentH)
         if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -780,6 +779,7 @@ sampler_HMC <- nimbleFunction(
         if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('HMC sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
     },
     run = function() {
+        ## implements No-U-Turm Sampler with Dual Averaging, as in Hoffman and Gelman (2014), Algorithm 6
         if(timesRan == 0)    initializeEpsilon()
         timesRan <<- timesRan + 1
         q <- values(model, target)
@@ -831,7 +831,6 @@ sampler_HMC <- nimbleFunction(
             derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = target)
             grad <- numeric(d)
             grad[1:d] <- derivsOutput$gradient[1, 1:d]   ## preserve 1D vector object
-            ##grad <- rep(0, d)
             returnType(double(1))
             return(grad)
         },
@@ -843,6 +842,7 @@ sampler_HMC <- nimbleFunction(
             return(qpNLDef$new(q = q, p = p))
         },
         initializeEpsilon = function() {
+            ## Algorithm 4 from Hoffman and Gelman (2014)
             q <- values(model, target)
             p <- numeric(d)
             for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
@@ -2021,7 +2021,7 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section HMC sampler:
 #'
-#' The Hamiltonian Monte Carlo sampler implements the No-U-Turn algorithm (NUTS; Hoffman and Gelman, 2014) for performing joint updates of multiple continuous-valued posterior dimensions.  This is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  In contrast to standard HMC (Neal, 2011), the NUTS algorithm removes the tuning parameters of the leapfrong step size and the number of leapfrog steps, thus providing a sampling algorithm that can be used without hand tuning or trial runs.
+#' The Hamiltonian Monte Carlo sampler implements the No-U-Turn algorithm (NUTS; Hoffman and Gelman, 2014) for performing joint updates of multiple continuous-valued posterior dimensions.  This is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  In contrast to standard HMC (Neal, 2011), the NUTS algorithm removes the tuning parameters of the leapfrog step size and the number of leapfrog steps, thus providing a sampling algorithm that can be used without hand tuning or trial runs.
 #
 #' The HMC sampler accepts the following control list elements:
 #' \itemize{
