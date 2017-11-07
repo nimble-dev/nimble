@@ -296,9 +296,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                           ' method,  e.g. double(1, 3) for a length 3 vector.' ))
         },
         addADclassContent = function() {
-            CPPincludes <<- c("<TMB/distributions_R.hpp>", CPPincludes)
-            Hincludes <<- c("<TMB/distributions_R.hpp>",
-                            nimbleIncludeFile("nimbleCppAD.h"), Hincludes)
+            # CPPincludes <<- c("<TMB/distributions_R.hpp>", CPPincludes)
+            Hincludes <<- c(nimbleIncludeFile("nimbleCppAD.h"),
+                            "<TMB/distributions_R.hpp>", Hincludes)
             addInheritance("nimbleFunctionCppADbase")
             objectDefs$addSymbol(cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), static = TRUE, name = 'allADtapePtrs_'))
             objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))

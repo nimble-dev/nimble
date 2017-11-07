@@ -61,11 +61,11 @@ namespace atomic{
   CppAD::ADFun<Base>* generate_tape(Func f, vector<double> x_){
     std::cout << "Generating tape\n";
     int n=x_.size();
-    vector<AD<Base> > x(n);
-    for(int i=0;i<n;i++)x[i]=AD<Base>(x_[i]);
+    vector<CppAD::AD<Base> > x(n);
+    for(int i=0;i<n;i++)x[i]=CppAD::AD<Base>(x_[i]);
     CppAD::Independent(x);
-    vector<AD<Base> > y=f(x);
-    vector<AD<Base> > y2(y.size());
+    vector<CppAD::AD<Base> > y=f(x);
+    vector<CppAD::AD<Base> > y2(y.size());
     for(int i=0;i<y.size();i++)y2[i]=y[i];
     CppAD::ADFun<Base>* padf=new CppAD::ADFun<Base>(x,y2);
     return padf;
@@ -75,15 +75,15 @@ namespace atomic{
      of f0. Zeros are filled in for all range directions.
   */
   template <class Base>
-  CppAD::ADFun<Base>* forrev(CppAD::ADFun<AD<Base> >* padf, vector<double> x_){
+  CppAD::ADFun<Base>* forrev(CppAD::ADFun<CppAD::AD<Base> >* padf, vector<double> x_){
     size_t n=padf->Domain();
     size_t m=padf->Range();
-    vector<AD<Base> > x(n+m);
-    vector<AD<Base> > y(n);
-    for(int i=0;i<x_.size();i++)x[i]=AD<Base>(x_[i]);
-    for(int i=x_.size();i<x.size();i++)x[i]=AD<Base>(0);
-    vector<AD<Base> > tmp1(n);
-    vector<AD<Base> > tmp2(m);
+    vector<CppAD::AD<Base> > x(n+m);
+    vector<CppAD::AD<Base> > y(n);
+    for(int i=0;i<x_.size();i++)x[i]=CppAD::AD<Base>(x_[i]);
+    for(int i=x_.size();i<x.size();i++)x[i]=CppAD::AD<Base>(0);
+    vector<CppAD::AD<Base> > tmp1(n);
+    vector<CppAD::AD<Base> > tmp2(m);
     CppAD::Independent(x);
     for(size_t i=0;i<n;i++)tmp1[i]=x[i];
     for(size_t i=0;i<m;i++)tmp2[i]=x[i+n];
@@ -142,10 +142,10 @@ namespace atomic{
       UserFunctor<double> f;
       n=x.size();
       m=f(x).size();
-      UserFunctor<AD<double> > f0;
-      UserFunctor<AD<AD<double> > > f1;
-      UserFunctor<AD<AD<AD<double> > > > f2;
-      UserFunctor<AD<AD<AD<AD<double> > > > > f3;
+      UserFunctor<CppAD::AD<double> > f0;
+      UserFunctor<CppAD::AD<CppAD::AD<double> > > f1;
+      UserFunctor<CppAD::AD<CppAD::AD<CppAD::AD<double> > > > f2;
+      UserFunctor<CppAD::AD<CppAD::AD<CppAD::AD<CppAD::AD<double> > > > > f3;
       vpf.resize(NTHREADS);
       for(int thread=0;thread<NTHREADS;thread++){
         vpf[thread].resize(4);
@@ -228,13 +228,13 @@ vector<double> USERFUNCTION(vector<double> x){				\
   USERFUNCTION##NAMESPACE::double_version.init(x);			\
   return USERFUNCTION##NAMESPACE::generalized_symbol(x);		\
 }									\
-vector<AD<double> > USERFUNCTION(vector<AD<double> > x){		\
+vector<CppAD::AD<double> > USERFUNCTION(vector<CppAD::AD<double> > x){		\
   return USERFUNCTION##NAMESPACE::generalized_symbol(x);		\
 }									\
-vector<AD<AD<double> > > USERFUNCTION(vector<AD<AD<double> > > x){	\
+vector<CppAD::AD<CppAD::AD<double> > > USERFUNCTION(vector<CppAD::AD<CppAD::AD<double> > > x){	\
   return USERFUNCTION##NAMESPACE::generalized_symbol(x);		\
 }									\
-vector<AD<AD<AD<double> > > > USERFUNCTION(vector<AD<AD<AD<double> > > > x){ \
+vector<CppAD::AD<CppAD::AD<CppAD::AD<double> > > > USERFUNCTION(vector<CppAD::AD<CppAD::AD<CppAD::AD<double> > > > x){ \
   return USERFUNCTION##NAMESPACE::generalized_symbol(x);		\
 }
 

@@ -59,7 +59,7 @@ void eigen_REprintf(const char* x);
 /* Include the CppAD library. (Always turn off debug for cppad) */
 #undef NDEBUG
 #define NDEBUG 1
-#include "cppad/cppad.hpp"
+#include "TMB/cppad/cppad.hpp"
 
 /* Include the R library _after_ Eigen and CppAD. Otherwise, the R
    macros can cause conflicts (as they do not respect the Eigen and

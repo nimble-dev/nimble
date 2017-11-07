@@ -1,14 +1,16 @@
 // Copyright (C) 2013-2015 Kasper Kristensen
 // License: GPL-2
-#include <cppad/cppad.hpp>
 
 /** \file
     \brief Gamma function and gamma probability densities
 */
 
+#include <TMB/atomic_math.hpp>
+
 /** \brief Logarithm of gamma function (following R argument convention).
     \ingroup special_functions
 */
+
 template<class Type>
 Type lgamma(Type x){
   CppAD::vector<Type> tx(2);
@@ -61,11 +63,11 @@ Type lfactorial(Type x){
 //   return term1 + (term2 - Type(7.0));
 // }
 
-/** \brief Negative binomial probability function.
-  \ingroup R_style_distribution
+// /** \brief Negative binomial probability function.
+//   \ingroup R_style_distribution
 
-    Parameterized through size and prob parameters, following R-convention.
-*/
+//     Parameterized through size and prob parameters, following R-convention.
+// */
 template<class Type>
 inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
 		    int give_log=0)

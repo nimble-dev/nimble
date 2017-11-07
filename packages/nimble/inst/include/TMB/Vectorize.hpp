@@ -7,7 +7,7 @@
 
 // Function body type declarations
 // V=vector, T=scalar, I=integer, N=none
-#define declareV(arg) const vector<Type> &arg
+#define declareV(arg) const tmbutils::vector<Type> &arg
 #define declareT(arg) Type arg
 #define declareI(arg) int arg
 #define declareN(arg)
@@ -35,7 +35,7 @@
 */
 #define GVECTORIZE(FUN,Type1,Type2,Type3,Type4,Type5,Type6)		\
 template <class Type>							\
-vector<Type> FUN( declare##Type1(arg1) comma##Type2			\
+tmbutils::vector<Type> FUN( declare##Type1(arg1) comma##Type2			\
 		  declare##Type2(arg2) comma##Type3			\
 		  declare##Type3(arg3) comma##Type4			\
 		  declare##Type4(arg4) comma##Type5			\
@@ -49,7 +49,7 @@ vector<Type> FUN( declare##Type1(arg1) comma##Type2			\
   outputsize##Type4(n,arg4);						\
   outputsize##Type5(n,arg5);						\
   outputsize##Type6(n,arg6);						\
-  vector<Type> res(n);							\
+  tmbutils::vector<Type> res(n);							\
   for(int i=0;i<n;i++) res[i] = FUN( element##Type1(arg1,i) comma##Type2 \
 				     element##Type2(arg2,i) comma##Type3 \
 				     element##Type3(arg3,i) comma##Type4 \
@@ -129,8 +129,8 @@ vector<Type> FUN( declare##Type1(arg1) comma##Type2			\
     one argument */
 #define VECTORIZE1_n(FUN)                       \
 template<class Type>                            \
-vector<Type> FUN(int n, Type arg1) {            \
-  vector<Type> ans(n);                          \
+tmbutils::vector<Type> FUN(int n, Type arg1) {            \
+  tmbutils::vector<Type> ans(n);                          \
   for(int i=0; i<n; i++) ans(i) = FUN(arg1);    \
   return ans;                                   \
 }
@@ -139,8 +139,8 @@ vector<Type> FUN(int n, Type arg1) {            \
     two arguments */
 #define VECTORIZE2_n(FUN)                               \
 template<class Type>                                    \
-vector<Type> FUN(int n, Type arg1, Type arg2) {         \
-  vector<Type> ans(n);                                  \
+tmbutils::vector<Type> FUN(int n, Type arg1, Type arg2) {         \
+  tmbutils::vector<Type> ans(n);                                  \
   for(int i=0; i<n; i++) ans(i) = FUN(arg1, arg2);      \
   return ans;                                           \
 }

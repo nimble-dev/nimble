@@ -21,6 +21,8 @@
    Second option is to generate reverse mode derivatives automatically
    using the macro REGISTER_ATOMIC.
 */
+// #include <TMB/atomic_macro.hpp>
+
 namespace atomic {
 /**
    \internal \brief Namespace with double versions of some R special math
@@ -150,7 +152,10 @@ namespace Rmath {
 
 }
 
-#include "atomic_macro.hpp"
+#include "TMB/atomic_macro.hpp"
+#include "TMB/tmbutils/tmbutils.hpp"
+
+using namespace tmbutils;
 
 template<class Type>
 struct TypeDefs{
@@ -640,4 +645,4 @@ Type nldmvnorm(vector<Type> x, matrix<Type> Sigma){
 
 } /* End namespace atomic */
 
-#include "checkpoint_macro.hpp"
+#include "TMB/checkpoint_macro.hpp"

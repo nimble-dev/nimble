@@ -1,16 +1,27 @@
 // Copyright (C) 2013-2015 Kasper Kristensen
 // License: GPL-2
 
-#include <cppad/cppad.hpp>
-#include <TMB/lgamma.hpp>
-
 /**	\file
 	\brief Probability distribution functions.
 	*/
+	#ifdef WITH_LIBTMB
+	#define CSKIP(x) ;
+	#define TMB_EXTERN extern
+	#else
+	#define CSKIP(x) x
+	#define TMB_EXTERN
+	#endif
+	
+	
+	#define IF_TMB_PRECOMPILE(x)
+	#include <Eigen/Dense>
+	#include <Eigen/Sparse>
+  #include <TMB/lgamma.hpp>
+  
 
 /** \brief Distribution function of the normal distribution (following R argument convention).
     \ingroup R_style_distribution
-  */
+*/
 // template<class Type>
 // Type pnorm(Type q, Type mean = 0., Type sd = 1.){
 //   CppAD::vector<Type> tx(1);
@@ -20,9 +31,9 @@
 // VECTORIZE3_ttt(pnorm)
 // VECTORIZE1_t(pnorm)
 
-// /** \brief Quantile function of the normal distribution (following R argument convention).
-//     \ingroup R_style_distribution
-// */
+/** \brief Quantile function of the normal distribution (following R argument convention).
+    \ingroup R_style_distribution
+*/
 // template<class Type>
 // Type qnorm(Type p, Type mean = 0., Type sd = 1.){
 //   CppAD::vector<Type> tx(1);
@@ -32,9 +43,9 @@
 // VECTORIZE3_ttt(qnorm)
 // VECTORIZE1_t(qnorm)
 
-// /** \brief Distribution function of the gamma distribution (following R argument convention).
-//     \ingroup R_style_distribution
-// */
+/** \brief Distribution function of the gamma distribution (following R argument convention).
+    \ingroup R_style_distribution
+*/
 // template<class Type>
 // Type pgamma(Type q, Type shape, Type scale = 1.){
 //   CppAD::vector<Type> tx(4);
@@ -86,14 +97,13 @@
 // }
 
 // // Vectorize pexp
-// VECTORIZE2_tt(pexp) 
+// VECTORIZE2_tt(pexp)
 
-
-/**	\brief Probability density function of the exponential distribution.
-	\ingroup R_style_distribution
-	\param rate Rate parameter. Must be strictly positive.
-	\param give_log true if one wants the log-probability, false otherwise.
-	*/
+// /**	\brief Probability density function of the exponential distribution.
+// 	\ingroup R_style_distribution
+// 	\param rate Rate parameter. Must be strictly positive.
+// 	\param give_log true if one wants the log-probability, false otherwise.
+// 	*/
 template<class Type> 
 Type nimDerivs_dexp(Type x, Type rate, int give_log=0)
 {
@@ -106,10 +116,10 @@ Type nimDerivs_dexp(Type x, Type rate, int give_log=0)
 // Vectorize dexp
 // VECTORIZE3_tti(dexp)
 
-// /**	\brief Inverse cumulative distribution function of the exponential distribution.
-// 	\ingroup R_style_distribution
-// 	\param rate Rate parameter. Must be strictly positive.
-// 	*/
+/**	\brief Inverse cumulative distribution function of the exponential distribution.
+	\ingroup R_style_distribution
+	\param rate Rate parameter. Must be strictly positive.
+	*/
 // template <class Type>
 // Type qexp(Type p, Type rate)
 // {
@@ -130,14 +140,14 @@ Type nimDerivs_dexp(Type x, Type rate, int give_log=0)
 // 	\param shape Shape parameter. Must be strictly positive.
 // 	\param scale Scale parameter. Must be strictly positive.
 // 	*/
-// template<class Type> 
-// Type pweibull(Type x, Type shape, Type scale)
-// {
-// 	return CppAD::CondExpGe(x,Type(0),1-exp(-pow(x/scale,shape)),Type(0));
-// }
+// // template<class Type> 
+// // Type pweibull(Type x, Type shape, Type scale)
+// // {
+// // 	return CppAD::CondExpGe(x,Type(0),1-exp(-pow(x/scale,shape)),Type(0));
+// // }
 
-// // Vectorize pweibull
-// VECTORIZE3_ttt(pweibull)
+// // // Vectorize pweibull
+// // VECTORIZE3_ttt(pweibull)
 
 // /** 	\brief Probability density function of the Weibull distribution.
 // 	\ingroup R_style_distribution
@@ -154,15 +164,15 @@ Type nimDerivs_dweibull(Type x, Type shape, Type scale, int give_log=0)
 		return CppAD::CondExpGe(x,Type(0),log(shape) - log(scale) + (shape-1)*(log(x)-log(scale)) - pow(x/scale,shape),Type(-INFINITY));
 }
 
-// // Vectorize dweibull
+// Vectorize dweibull
 // VECTORIZE4_ttti(dweibull)
 
-// /**	\brief Inverse cumulative distribution function of the Weibull distribution.
-// 	\ingroup R_style_distribution
-// 	\param p Probability ; must be between 0 and 1.
-// 	\param shape Shape parameter. Must be strictly positive.
-// 	\param scale Scale parameter. Must be strictly positive.
-// 	*/
+/**	\brief Inverse cumulative distribution function of the Weibull distribution.
+	\ingroup R_style_distribution
+	\param p Probability ; must be between 0 and 1.
+	\param shape Shape parameter. Must be strictly positive.
+	\param scale Scale parameter. Must be strictly positive.
+	*/
 // template<class Type> 
 // Type qweibull(Type p, Type shape, Type scale)
 // {
@@ -191,38 +201,38 @@ Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log=0)
 	else return logres;
 }
 
-// // Vectorize dbinom
+// Vectorize dbinom
 // VECTORIZE4_ttti(dbinom)
 
-// /** \brief Density of binomial distribution parameterized via logit(prob)
+/** \brief Density of binomial distribution parameterized via logit(prob)
 
-//     This version should be preferred when working on the logit scale
-//     as it is numerically stable for probabilities close to 0 or 1.
+    This version should be preferred when working on the logit scale
+    as it is numerically stable for probabilities close to 0 or 1.
 
-//     \ingroup R_style_distribution
-// */
-template<class Type>
-Type dbinom_robust(Type k, Type size, Type logit_p, int give_log=0)
-{
-  CppAD::vector<Type> tx(4);
-  tx[0] = k;
-  tx[1] = size;
-  tx[2] = logit_p;
-  tx[3] = 0;
-  Type ans = atomic::log_dbinom_robust(tx)[0]; /* without norm. constant */
-  if (size > 1) {
-    ans += lgamma(size+1.) - lgamma(k+1.) - lgamma(size-k+1.);
-  }
-  return ( give_log ? ans : exp(ans) );
-}
+    \ingroup R_style_distribution
+*/
+// template<class Type>
+// Type dbinom_robust(Type k, Type size, Type logit_p, int give_log=0)
+// {
+//   CppAD::vector<Type> tx(4);
+//   tx[0] = k;
+//   tx[1] = size;
+//   tx[2] = logit_p;
+//   tx[3] = 0;
+//   Type ans = atomic::log_dbinom_robust(tx)[0]; /* without norm. constant */
+//   if (size > 1) {
+//     ans += lgamma(size+1.) - lgamma(k+1.) - lgamma(size-k+1.);
+//   }
+//   return ( give_log ? ans : exp(ans) );
+// }
 // VECTORIZE4_ttti(dbinom_robust)
 
-/**	\brief Probability density function of the beta distribution.
-	\ingroup R_style_distribution
-	\param shape1 First shape parameter. Must be strictly positive.
-	\param shape2 Second shape parameter. Must be strictly positive.
-	\param give_log true if one wants the log-probability, false otherwise.
-	*/
+// /**	\brief Probability density function of the beta distribution.
+// 	\ingroup R_style_distribution
+// 	\param shape1 First shape parameter. Must be strictly positive.
+// 	\param shape2 Second shape parameter. Must be strictly positive.
+// 	\param give_log true if one wants the log-probability, false otherwise.
+// 	*/
 template <class Type>
 Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, int give_log)
 {
@@ -233,7 +243,7 @@ Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, int give_log)
 		return CppAD::CondExpEq(x,Type(0),log(res),lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2) + (shape1-1)*log(x) + (shape2-1)*log(1-x));
 }
 
-// // Vectorize dbeta
+// Vectorize dbeta
 // VECTORIZE4_ttti(dbeta)
 
 /**	\brief Probability density function of the Fisher distribution.
@@ -250,15 +260,15 @@ Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, int give_log)
 // 	else return logres;
 // }
 
-//Vectorize df
+// //Vectorize df
 // VECTORIZE4_ttti(df)
 
-/**	\brief Probability density function of the logistic distribution.
-	\ingroup R_style_distribution
-	\param location Location parameter.
-	\param scale Scale parameter. Must be strictly positive.
-	\param give_log true if one wants the log-probability, false otherwise.
-	*/
+// /**	\brief Probability density function of the logistic distribution.
+// 	\ingroup R_style_distribution
+// 	\param location Location parameter.
+// 	\param scale Scale parameter. Must be strictly positive.
+// 	\param give_log true if one wants the log-probability, false otherwise.
+// 	*/
 template <class Type>
 Type nimDerivs_dlogis(Type x, Type location, Type scale, int give_log)
 {
@@ -286,11 +296,22 @@ Type nimDerivs_dlogis(Type x, Type location, Type scale, int give_log)
 // // Vectorize dsn
 // VECTORIZE3_tti(dsn)
 
-/** 	\brief Probability density function of the Student t-distribution.
-	\ingroup R_style_distribution
-	\param df Degree of freedom.
-	\param give_log true if one wants the log-probability, false otherwise.
-	*/	
+// /** 	\brief Probability density function of the Student t-distribution.
+// 	\ingroup R_style_distribution
+// 	\param df Degree of freedom.
+// 	\param give_log true if one wants the log-probability, false otherwise.
+// 	*/	
+
+template<class Type>
+Type nimDerivs_dnorm(Type x, Type mean, Type sd, int give_log=0)
+{
+  Type logres;
+  logres=-log(Type(sqrt(2*M_PI))*sd)-Type(.5)*pow((x-mean)/sd,2);
+  //return 1/(sqrt(2*M_PI)*sd)*exp(-.5*pow((x-mean)/sd,2));
+  if(give_log)return logres; else return exp(logres);
+}
+
+
 template <class Type>
 Type nimDerivs_dt(Type x, Type df, int give_log)
 {
@@ -352,18 +373,18 @@ Type nimDerivs_dmultinom(vector<Type> x, vector<Type> p, int give_log=0)
 // // Vectorize dSHASHo
 // VECTORIZE6_ttttti(dSHASHo)
 
-/**	\brief Cumulative distribution function of the sinh-asinh distribution.
-  	\ingroup R_style_distribution
-	\param mu Location.
-	\param sigma Scale.
-	\param nu Skewness.
-	\param tau Kurtosis.
-	\param give_log true if one wants the log-probability, false otherwise.
+// /**	\brief Cumulative distribution function of the sinh-asinh distribution.
+//   	\ingroup R_style_distribution
+// 	\param mu Location.
+// 	\param sigma Scale.
+// 	\param nu Skewness.
+// 	\param tau Kurtosis.
+// 	\param give_log true if one wants the log-probability, false otherwise.
 		
-	Notation adopted from R package "gamlss.dist".
+// 	Notation adopted from R package "gamlss.dist".
 	
-	It is not possible to call this function with nu a vector or tau a vector.
-*/
+// 	It is not possible to call this function with nu a vector or tau a vector.
+// */
 // template <class Type>
 // Type pSHASHo(Type q,Type mu,Type sigma,Type nu,Type tau,int give_log=0)
 // {
@@ -380,18 +401,18 @@ Type nimDerivs_dmultinom(vector<Type> x, vector<Type> p, int give_log=0)
 // // Vectorize pSHASHo
 // VECTORIZE6_ttttti(pSHASHo)
 
-/**	\brief Quantile function of the sinh-asinh distribution.
-	\ingroup R_style_distribution
-	\param mu Location.
-	\param sigma Scale.
-	\param nu Skewness.
-	\param tau Kurtosis.
-	\param log_p true if p is log-probability, false otherwise.
+// /**	\brief Quantile function of the sinh-asinh distribution.
+// 	\ingroup R_style_distribution
+// 	\param mu Location.
+// 	\param sigma Scale.
+// 	\param nu Skewness.
+// 	\param tau Kurtosis.
+// 	\param log_p true if p is log-probability, false otherwise.
 	
-	Notation adopted from R package "gamlss.dist".
+// 	Notation adopted from R package "gamlss.dist".
 	
-	It is not possible to call this function with nu a vector or tau a vector.
-	*/
+// 	It is not possible to call this function with nu a vector or tau a vector.
+// 	*/
 // template <class Type>
 // Type qSHASHo(Type p, Type mu, Type sigma, Type nu, Type tau, int log_p = 0)
 // {
