@@ -27,7 +27,6 @@ exprClass <- R6::R6Class(
         caller = NULL,           # exprClass object for the call to which this is an argument (if any)
         callerArgID =  NULL,	#'numeric', ## index in the calling object's args list for this object.
         assertions =  list(),	#'list'
-        cppADCode = FALSE,         #'logical' ## is expr in code generated for cppad?
         aux = NULL,               # anything needed for specific operators
         initialize = function(...) {
             dotsList <- list(...)

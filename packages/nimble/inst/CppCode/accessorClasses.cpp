@@ -24,6 +24,28 @@
 #include<sstream>
 using std::istringstream;
 
+SEXP populateNodeFxnVectorNew_byDeclID_forDerivs(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS, SEXP SderivInfo){
+  int len = LENGTH(S_ROWINDS);
+  if(len == 0) return(R_NilValue);
+  int* gids = INTEGER(S_GIDs);
+  int* rowinds = INTEGER(S_ROWINDS);
+  int index;
+  NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
+  NodeVectorClassNew_derivs* nfv_derivs = static_cast<NodeVectorClassNew_derivs*>(R_ExternalPtrAddr(SnodeFxnVec)) ;
+  (*nfv_derivs).populateDerivsInfo(SderivInfo);
+  int nextRowInd;
+  for(int i = 0; i < len; i++){
+    index = gids[i] - 1;
+    nextRowInd = rowinds[i]-1;
+    if(nextRowInd == -1) { // should only happen from a scalar, so there is one dummy indexedNodeInfo
+      nextRowInd = 0;
+    }
+    (*nfv_derivs).instructions.push_back(NodeInstruction(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd));
+  }
+  return(R_NilValue);
+}
+
+
 NimArr<1, double> getParam_1D_double(int paramID, const NodeInstruction &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
   return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID, useInfo.operand));

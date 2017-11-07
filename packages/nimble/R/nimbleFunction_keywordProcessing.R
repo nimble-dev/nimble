@@ -241,11 +241,28 @@ getBound_keywordInfo <- keywordInfoClass(
 calculate_keywordInfo <- keywordInfoClass(
     keyword = 'calculate',
     processor = function(code, nfProc){
+        if(deparse(code[[1]]) == 'nimDerivs'){
+          outerCode <- code
+          code <- code[[2]]
+          derivsFlag <- TRUE
+        }
+        else{
+          derivsFlag <- FALSE
+        }
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
         errorContext <- deparse(code)
-        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         
+        if(derivsFlag){
+          if(is.list(outerCode$wrt) && is.null(outerCode$wrt[[1]])){
+            stop("Derivatives of a call to 'calculate()' must have 'wrt' argument specified.")
+          }
+          nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, wrtNodes = outerCode$wrt,
+                                     includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
+        }
+        else{
+          nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
+        }
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
                 stop('nodes argument cannot be provided to calculate if nodeFunctionIndex is specified')
@@ -270,12 +287,28 @@ calculate_keywordInfo <- keywordInfoClass(
 
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
         addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
-        if(!useNodeFunctionVectorByIndex)
+        if(!useNodeFunctionVectorByIndex){
+          if(derivsFlag){
+            newRunCode <- substitute(nimDerivs_calculate(nodeFxnVector = NODEFUNVEC_NAME, orderVector = ORDERVEC),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName),
+                                          ORDERVEC = outerCode$order))
+          }
+          else{
             newRunCode <- substitute(calculate(nodeFxnVector = NODEFUNVEC_NAME),
                                      list(NODEFUNVEC_NAME = as.name(nodeFunName)))
-        else
+          }
+        }
+        else{
+          if(derivsFlag){
+            newRunCode <- substitute(nimDerivs_calculate(nodeFxnVector = NODEFUNVEC_NAME, nodeFunctionIndex = NODEFUNVECINDEX, orderVector = ORDERVEC),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr,
+                                          orderVec = outerCode$order))
+          }
+          else{
             newRunCode <- substitute(calculate(nodeFxnVector = NODEFUNVEC_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
-                                 list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr))
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr))
+          }
+        }
         return(newRunCode)	
     }
 )
@@ -708,7 +741,40 @@ length_char_keywordInfo <- keywordInfoClass(
         return(code)
     })
 
-
+nimDerivs_keywordInfo <- keywordInfoClass(
+  keyword = 'nimDerivs',
+  processor = function(code, nfProc) {
+    wrtArgs <- code[['wrt']]
+    ## First check to see if nimFxn argument is a method.
+    fxnCall <- code[[2]][[1]]
+    order <- code[['order']]
+    # if(length(order) == 1){
+    #   code[['order']] <- substitute(nimC(ORDER), list(ORDER = order))
+    # }
+    if(deparse(fxnCall) == 'calculate'){
+      code <- calculate_keywordInfo$processor(code, nfProc)
+    } 
+    else if(length(fxnCall) == 3 && (deparse(fxnCall[[1]]) == '$'
+       && deparse(fxnCall[[3]]) == 'calculate')){
+      code[[2]] <- modelMemberFun_keywordInfo$processor(code[[2]], nfProc)
+      code[[2]] <- matchKeywordCode(code[[2]], nfProc)
+      code <- calculate_keywordInfo$processor(code, nfProc)
+    }
+    if(!is.null(nfProc$origMethods[[deparse(fxnCall)]])){
+      derivMethod <- nfProc$origMethods[[deparse(fxnCall)]]
+      derivMethodArgs <- derivMethod$getArgInfo()
+      browser()
+      wrtArgIndices <- convertWrtArgToIndices(wrtArgs, derivMethodArgs, fxnName = deparse(fxnCall))
+      if(length(wrtArgIndices) == 1) wrtArgIndices <- c(wrtArgIndices, -1)
+      wrt_argList <- list(fxn = fxnCall, vector = wrtArgIndices)
+      accessName <- wrtVector_setupCodeTemplate$makeName(wrt_argList)
+      addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)
+      code[['wrt']] <- substitute(VECNAME,
+                                  list(VECNAME = as.name(accessName)))
+    }
+    return(code)
+  }
+)
 
 #	KeywordList
 keywordList <- new.env()
@@ -744,6 +810,8 @@ keywordList[['qexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
 keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
+
+keywordList[['nimDerivs']] <- nimDerivs_keywordInfo 
 
 keywordListModelMemberFuns <- new.env()
 keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo
@@ -929,6 +997,15 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 
 #####	SETUPCODE TEMPLATES
 
+wrtVector_setupCodeTemplate <- setupCodeTemplateClass(
+  makeName = function(argList){Rname2CppName(paste0('wrtVec_', deparse(argList$fxn)))},
+  codeTemplate = quote(WRTVEC <- VECTOR),
+  makeCodeSubList = function(resultName, argList){
+    list(WRTVEC = as.name(resultName),
+         VECTOR = argList$vector)
+  }
+)
+
 length_char_SetupTemplate <- setupCodeTemplateClass(
     makeName = function(argList) {Rname2CppName(paste0(paste("length", deparse(argList$string), sep='_'), '_KNOWN_'))},
     codeTemplate = quote(LENGTHNAME <- CODE),
@@ -972,15 +1049,19 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
              LOGPROB = argList$logProb)
     })
 
+
+
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
                                         #Note to programmer: required fields of argList are model, nodes and includeData
     
-    makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), if(argList$sortUnique) "SU" else "notSU", sep = '_'))},
-    codeTemplate = quote(NODEFXNVECNAME <- nimble:::nodeFunctionVector(model = MODEL, nodeNames = NODES, excludeData = EXCLUDEDATA, sortUnique = SORTUNIQUE, errorContext = ERRORCONTEXT)), 
+    makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), if(argList$sortUnique) "SU" else "notSU", if(is.null(argList$wrtNodes)) '' else '_derivs', sep = '_'))},
+    codeTemplate = quote(NODEFXNVECNAME <- nimble:::nodeFunctionVector(model = MODEL, nodeNames = NODES, wrtNodes = WRTNODES,
+                                                                       excludeData = EXCLUDEDATA, sortUnique = SORTUNIQUE, errorContext = ERRORCONTEXT)), 
     makeCodeSubList = function(resultName, argList){
         list(NODEFXNVECNAME = as.name(resultName),
              MODEL = argList$model,
              NODES = argList$nodes,
+             WRTNODES = argList$wrtNodes,
              EXCLUDEDATA = !argList$includeData,
              SORTUNIQUE = argList$sortUnique,
              ERRORCONTEXT = argList$errorContext

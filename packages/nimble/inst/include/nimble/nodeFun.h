@@ -22,6 +22,24 @@
 #ifndef __NODEFUN
 #define __NODEFUN
 #include "NimArr.h"
+#include "smartPtrs.h"
+
+class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
+ public:
+  NimArr<1, double> value;
+  NimArr<2, double> gradient;
+  NimArr<3, double> hessian;
+  NimArr<4, double> thirdDerivs;
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  void copyFromRobject(SEXP Robject);
+  NIMBLE_ADCLASS();
+};
+
 
 // This contains the indexed information -- often indices themselves but also any partially evaluated values --
 // to calculate/simulate/getLogProb for one node withina new node function.
@@ -52,6 +70,7 @@ class nodeFun : public NamedObjects {
   }
 
   virtual double calculate(const indexedNodeInfo &iNI) const =0;
+  virtual nimSmartPtr<NIMBLE_ADCLASS> calculateWithArgs_deriv(const indexedNodeInfo &iNI, NimArr<1, double> & ARG2_nimDerivsOrders_, NimArr<1, double> & ARG3_wrtVector_) = 0;
   virtual double calculateDiff(const indexedNodeInfo &iNI) const =0;
   virtual void simulate(const indexedNodeInfo &iNI) const =0;
   virtual double getLogProb(const indexedNodeInfo &iNI) const =0;
@@ -65,6 +84,9 @@ class nodeFun : public NamedObjects {
   virtual NimArr<2, double> getBound_2D_double(int boundID, const indexedNodeInfo &iNI) const {NimArr<2, double> ans; return(ans);}
 
   double calculateBlock(int operand) const { return calculate(indexedNodeInfoTable[operand]); }
+  nimSmartPtr<NIMBLE_ADCLASS> calculateWithArgs_derivBlock(int operand, NimArr<1, double> &derivOrders, NimArr<1, double> &wrtVector) {
+	  return(calculateWithArgs_deriv(indexedNodeInfoTable[operand], derivOrders, wrtVector));
+  }
   double calculateDiffBlock(int operand) const { return calculateDiff(indexedNodeInfoTable[operand]); }
   double getLogProbBlock(int operand) const { return getLogProb(indexedNodeInfoTable[operand]); }
   void simulateBlock(int operand) const { simulate(indexedNodeInfoTable[operand]); }

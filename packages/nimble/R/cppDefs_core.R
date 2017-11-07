@@ -230,6 +230,12 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                                           cppADCode = 'ANY', generatorSymTab = 'ANY'),			#'logical'),
                             methods = list(
                                 generate = function(indent = '', ...) {
+                                    if(identical(cppADCode, TRUE)){
+                                      if(!identical(nimbleUserNamespace$cppADCode, TRUE)){
+                                        nimbleUserNamespace$cppADCode <- TRUE
+                                        on.exit(nimbleUserNamespace$cppADCode <- FALSE)
+                                      }
+                                    }
                                     if(inherits(typeDefs, 'uninitializedField')) typeDefs <<- list()
                                     typeDefsToUse <- if(inherits(typeDefs, 'symbolTable')) typeDefs$symbols else typeDefs
                                     if(length(typeDefsToUse) > 0) {
@@ -245,9 +251,7 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                                         if(inherits(generatorSymTab, 'symbolTable')) useSymTab <- generatorSymTab
                                         else if(!inherits(objectDefs, 'symbolTable')) stop('Error, with exprClass code in the cppCodeBlock, must have objectDefs be a symbolTable')
                                         else useSymTab <- objectDefs
-                                        if(identical(cppADCode, TRUE)) recurseSetCppADExprs(code, TRUE) 
-                                      outputCppCode <- c(outputCppCode, nimGenerateCpp(code, useSymTab, indent = ' ', showBracket = FALSE))
-                                        if(identical(cppADCode, TRUE)) recurseSetCppADExprs(code, FALSE) 
+                                        outputCppCode <- c(outputCppCode, nimGenerateCpp(code, useSymTab, indent = ' ', showBracket = FALSE))
                                     } else {
                                         outputCppCode <- c(outputCppCode, outputCppParseTree2(code, indent))
                                     }

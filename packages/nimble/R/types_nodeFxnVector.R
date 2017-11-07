@@ -7,11 +7,19 @@
 nodeFunctionVector <-
     function(model,
              nodeNames,
+             wrtNodes = NULL,
              excludeData = FALSE,
              sortUnique = TRUE,
              errorContext = "")
 {
     ##        model <<- model
+      if(!is.null(wrtNodes)){
+        nimDerivsInfo <- nimDerivsInfoClass(wrtNodes = wrtNodes, calcNodes = nodeNames, thisModel = model,
+                                            cInfo = TRUE)
+      }
+      else{
+        nimDerivsInfo <- NULL
+      }
     if(length(nodeNames) == 0) {
         gids <- numeric(0)
         indexingInfo <- list(declIDs = integer(), rowIndices = integer())
@@ -47,7 +55,8 @@ nodeFunctionVector <-
     ## populateNodeFxnVectorNew_copyFromRobject in accessorClasses.cpp
     structure(list(gids = gids,
                    indexingInfo = indexingInfo,
-                   model = model),
+                   model = model,
+                   nimDerivsInfo = nimDerivsInfo),
               class = "nodeFunctionVector")
 }
 

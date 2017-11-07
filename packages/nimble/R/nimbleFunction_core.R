@@ -129,16 +129,16 @@ buildDerivMethods <- function(methodsList, enableDerivs) {
         derivMethodsList[[i]] <- methodsList[[derivMethodIndex]]
         argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer_')
         if(enableDerivs[i] == getCalcADFunName()) isNode <- TRUE else isNode <- FALSE
-        if(!isNode)     newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]]))))
-        else     newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
+        if(!isNode)     newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1), wrtVector = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]]))))
+        else     newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1), wrtVector = double(1)), list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
         newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
-        newFormalsList[[length(newFormalsList) - 1]] <- NULL 
-        
+        newFormalsList[[length(newFormalsList) - 2]] <- NULL
         formals(derivMethodsList[[i]]) <- newFormalsList
         if(!isNode) newCall <- as.call(c(list(as.name(argTransferName)), lapply(names(formals(methodsList[[derivMethodIndex]])), as.name)))
         else newCall <- as.call(c(list(as.name(argTransferName)), lapply(names(formals(methodsList[[derivMethodIndex]]))[1], as.name)))
-        body(derivMethodsList[[i]]) <- substitute({return(getDerivs(NEWCALL, DERIVSINDEX)); returnType(ADNimbleList())}, 
-                                                  list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders')))
+        body(derivMethodsList[[i]]) <- substitute({return(getDerivs(NEWCALL, DERIVSINDEX, WRTVECTOR)); returnType(ADNimbleList())}, 
+                                                  list(NEWCALL = newCall, DERIVSINDEX = as.name('nimDerivsOrders'),
+                                                       WRTVECTOR = as.name('wrtVector')))
         names(derivMethodsList)[i] <-paste0(names(methodsList)[derivMethodIndex], '_deriv')
     }
     derivMethodsList

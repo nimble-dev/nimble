@@ -37,6 +37,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          getBound = 'cppOutputGetBound',
                         dnorm = 'cppOutputDerivDist',
                         dpois = 'cppOutputDerivDist',
+                        dgamma = 'cppOutputDerivDist',
+                        nimDerivs_calculate = 'cppNimbleListReturningOperator',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
@@ -161,12 +163,15 @@ cppOutputEigBlank <- function(code, symTab) {
 
 cppOutputDerivDist <- function(code, symTab){
   ###for now, use different dist c++ fn if taking derivs
-  if(identical(code$cppADCode, TRUE))
+  if(identical(nimbleUserNamespace$cppADCode, TRUE)){
     paste0('nimDerivs_',code$name, '(', 
-           paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ), ')', collapse = ', '), ')')
-  else
+           paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ),
+                  ')', collapse = ', '), ', ', nimGenerateCpp(code$args[length(code$args)][[1]], symTab, asArg = TRUE), ')')
+  }
+  else{
     paste0(code$name, '(',
            paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
+  }
 }
 
 cppOutputNumList <- function(code, symTab) {
@@ -437,7 +442,7 @@ cppOutputCall <- function(code, symTab) {
 }
 
 cppOutputPow <- function(code, symTab) {
-    useStaticCase <- if(identical(code$cppADCode, TRUE)) FALSE else if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
+    useStaticCase <- if(identical(nimbleUserNamespace$cppADCode, TRUE)) FALSE else if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
     if(useStaticCase)
         paste0(exprName2Cpp(code, symTab), '( static_cast<double>(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
     else

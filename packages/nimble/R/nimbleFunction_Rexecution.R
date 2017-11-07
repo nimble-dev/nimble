@@ -360,7 +360,6 @@ rCalcDiffNodes <- function(model, nfv){
     return(l_Prob)
 }
 
-
 #' calculate, calculateDiff, simulate, or get the current log probabilities (densities) a set of nodes in a NIMBLE model
 #'
 #' calculate, calculateDiff, simulate, or get the current log probabilities (densities) of one or more nodes of a NIMBLE model and (for calculate and getLogProb) return the sum of their log probabilities (or densities).  Part of R and NIMBLE.
@@ -392,8 +391,6 @@ rCalcDiffNodes <- function(model, nfv){
 #'
 #' simulate returns NULL.
 #' 
-NULL
-
 #' @rdname nodeFunctions
 #' @export
 calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)	

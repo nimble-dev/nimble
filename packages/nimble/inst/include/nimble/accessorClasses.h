@@ -34,6 +34,8 @@
 #include "RcppNimbleUtils.h"
 #include <Rinternals.h>
 #include "R.h"
+//#include <nimble/nimbleCppAD.h>
+
 
 
 using std::cout;
@@ -61,6 +63,97 @@ class NodeVectorClassNew {
   vector<NodeInstruction> &getInstructions() { return instructions; }
 };
 
+// This is a collection of instructions denoting a sort of "program".
+class NodeVectorClassNew_derivs : public NodeVectorClassNew {
+ public:
+	vector<vector<NimArr<1, int> > > parentIndicesList;
+	NimArr<1, int> stochNodeIndicators;
+	NimArr<1, int> calcNodeIndicators;
+	vector<NimArr<1, double> > cppWrtArgIndices;
+	NimArr<1, int> wrtLineNums;
+	NimArr<1, int> nodeLengths;
+	vector<NimArr<1, int> > wrtToIndices;
+	vector<NimArr<1, int> > wrtFromIndices;
+	vector<NimArr<1, int> > wrtLineIndices;
+	vector<NimArr<1, int> > lineWrtArgSizeInfo;
+	int totalOutWrtSize;
+	int totalWrtSize;
+    NimArr<1, int> cumulativeWrtLineNums;
+    NimArr<1, int> wrtLineSize;
+
+	
+	void populateDerivsInfo(SEXP SderivsInfo) {
+		SEXP S_pxData;
+		SEXP S_parentInds;
+		SEXP S_thisList;
+		SEXP S_stochNodeIndicators;
+		SEXP S_calcNodeIndicators;
+		SEXP S_cppWrtArgIndices;
+		SEXP S_wrtLineNums;
+		SEXP S_wrtToIndices;
+		SEXP S_wrtFromIndices;
+		SEXP S_wrtLineIndices;
+		SEXP S_lineWrtArgSizeInfo;
+		SEXP S_nodeLengths;
+		int numNodes;
+
+		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+		SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
+		PROTECT(S_parentInds = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												Rf_install("parentIndicesList")));
+		numNodes = Rf_length(S_parentInds);
+		parentIndicesList.resize(numNodes);
+		for(int i = 0; i < numNodes; i++){
+			PROTECT(S_thisList =  VECTOR_ELT(S_parentInds, i));
+			SEXP_list_2_NimArr_int_vec(S_thisList, parentIndicesList[i]);
+			UNPROTECT(1);
+		}
+		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+														  Rf_install("stochNodeIndicators")));
+		SEXP_2_NimArr(S_stochNodeIndicators, stochNodeIndicators);
+		PROTECT(S_calcNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("calcNodeIndicators")));
+  		SEXP_2_NimArr(S_calcNodeIndicators, calcNodeIndicators);
+		PROTECT(S_wrtLineNums = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("wrtLineNums")));
+  		SEXP_2_NimArr(S_wrtLineNums, wrtLineNums);
+		PROTECT(S_nodeLengths = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("nodeLengths")));
+  		SEXP_2_NimArr(S_nodeLengths, nodeLengths);
+		PROTECT(S_cppWrtArgIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("cppWrtArgIndices")));
+		SEXP_list_2_NimArr_double_vec(S_cppWrtArgIndices, cppWrtArgIndices);
+		PROTECT(S_wrtToIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("wrtToIndices")));
+		SEXP_list_2_NimArr_int_vec(S_wrtToIndices, wrtToIndices);
+		PROTECT(S_wrtFromIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("wrtFromIndices")));
+		SEXP_list_2_NimArr_int_vec(S_wrtFromIndices, wrtFromIndices);
+		PROTECT(S_wrtLineIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("wrtLineIndices")));
+		SEXP_list_2_NimArr_int_vec(S_wrtLineIndices, wrtLineIndices);
+		PROTECT(S_lineWrtArgSizeInfo = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("lineWrtArgSizeInfo")));
+		SEXP_list_2_NimArr_int_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
+		
+		UNPROTECT(21);
+		
+		totalOutWrtSize = 0;
+		for(int i = 0; i < length(wrtToIndices); i++){
+			totalOutWrtSize += wrtToIndices[i].dimSize(0);
+		}
+		
+		cumulativeWrtLineNums.initialize(-1, 1, numNodes);
+		wrtLineSize.setSize(wrtLineNums.dimSize(0));
+		totalWrtSize = 0;
+		for(int i = 0; i < wrtLineNums.dimSize(0); i++){
+			cumulativeWrtLineNums[wrtLineNums[i] - 1] = i;
+			wrtLineSize[i] = nodeLengths[wrtLineNums[i] -1];
+			totalWrtSize += wrtLineSize[i];
+		}
+	}
+ };
+ 
 ///// Using NodeVectors:
 // utilities for calling node functions from a vector of node pointers
 // see .cpp file for definitions
@@ -577,6 +670,7 @@ extern "C" {
   SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim);
   
   SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS);
+  SEXP populateNodeFxnVectorNew_byDeclID_forDerivs(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS, SEXP SderivInfo);
   SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents);
   SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr );
   SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrModelValuesPtr );
