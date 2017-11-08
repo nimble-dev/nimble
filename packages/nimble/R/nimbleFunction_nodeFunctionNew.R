@@ -146,10 +146,14 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
                  )))
         if(nimbleOptions('experimentalEnableDerivs')){
           methodList[['CALCADFUNNAME']]  <- eval(substitute(
-            function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <- RHS;    returnType(double(THISDIM));   return(THISNAME) },
+            function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <- RHS;    returnType(THISSIZEEXPR);   return(THISNAME) },
             list(LHS=LHS,
                  RHS=RHS,
-                 THISDIM =   as.numeric(parentsSizeAndDims[[1]][[1]]$nDim),
+                 THISSIZEEXPR = { if(as.numeric(parentsSizeAndDims[[1]][[1]]$nDim) == 0) substitute(double(0))
+                                 else substitute(double(THISDIM, LENGTHS),
+                                                 list(THISDIM = as.numeric(parentsSizeAndDims[[1]][[1]]$nDim),
+                                                      LENGTHS = parse(text = paste0('c(', paste0(parentsSizeAndDims[[1]][[1]]$lengths, collapse = ', '), ')'))[[1]]))
+                 },
                  THISNAME =  as.name(names(parentsSizeAndDims)[1])
             )))
         }
