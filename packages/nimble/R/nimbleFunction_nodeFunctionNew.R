@@ -236,6 +236,11 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
         caseName <- paste0("getBound_",nDimSupported,"D_double")
         methodList[[caseName]] <- nndf_generateGetBoundSwitchFunction(bounds, seq_along(bounds), type = 'double', nDim = nDimSupported)
     }
+    if(!nimbleOptions('experimentalEnableDerivs')){
+      methodList[[paste0( getCalcADFunName(), '_deriv')]]  <- eval(substitute(
+        function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass), nimDerivsOrders = double(1), wrtVector = double(1)) {
+          returnType(ADNimbleList());  return(ADNimbleList$new())}))
+    }
     parentsArgs <-c()
     if(nimbleOptions('experimentalEnableDerivs')){
       names(methodList)[names(methodList) == 'CALCADFUNNAME'] <-  getCalcADFunName() ## replace CALCADFUNNAME with real name
