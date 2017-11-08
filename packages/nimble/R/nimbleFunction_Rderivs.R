@@ -178,14 +178,20 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA, wrt = NUL
     if(deparse(derivFxnCall[[1]][[3]]) == 'calculate'){
       modelError <- tryCatch(get('modelDef', pos = eval(derivFxnCall[[1]][[2]], envir = fxnEnv)), error = function(e) e)
       if(!inherits(modelError, 'error')){
+        model <-  eval(derivFxnCall[[1]][[2]], envir = fxnEnv)
+        if(length(derivFxnCall) < 2){
+          nodes <- model$getMaps('nodeNamesLHSall')
+        }
+        else{
+          nodes <- eval(derivFxnCall[[2]], envir = fxnEnv)
+        }
         if(chainRuleDerivs == TRUE){
-          return(nimDerivs_calculate(model = eval(derivFxnCall[[1]][[2]], envir = fxnEnv),
-                                     nodes = eval(derivFxnCall[[2]], envir = fxnEnv),
+          return(nimDerivs_calculate(model = model,
+                                     nodes = nodes,
                                      order = order, wrt = wrt))
         }
         else{
-          model <- eval(derivFxnCall[[1]][[2]], envir = fxnEnv)
-          RCalcDerivsFunction <- makeDerivCalcWrapperFunction(eval(derivFxnCall[[2]], envir = fxnEnv), wrtNames)
+          RCalcDerivsFunction <- makeDerivCalcWrapperFunction(nodes, wrtNames)
           argList <- list('model' = quote(model))
           for(k in seq_along(wrtNames)){
             argList[[wrtNames[[k]][1]]] <- model[[wrtNames[[k]][1]]]
