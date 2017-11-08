@@ -106,7 +106,6 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		for(int i = 0; i < numNodes; i++){
 			PROTECT(S_thisList =  VECTOR_ELT(S_parentInds, i));
 			SEXP_list_2_NimArr_int_vec(S_thisList, parentIndicesList[i]);
-			UNPROTECT(1);
 		}
 		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 														  Rf_install("stochNodeIndicators")));
@@ -136,7 +135,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 												         Rf_install("lineWrtArgSizeInfo")));
 		SEXP_list_2_NimArr_int_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
 		
-		UNPROTECT(21);
+		UNPROTECT(21 + numNodes);
 		
 		totalOutWrtSize = 0;
 		for(int i = 0; i < length(wrtToIndices); i++){

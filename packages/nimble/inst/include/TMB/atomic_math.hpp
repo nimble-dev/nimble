@@ -635,6 +635,14 @@ Type logdet(matrix<Type> x){
 /* Temporary test of dmvnorm implementation based on atomic symbols.
    Should reduce tape size from O(n^3) to O(n^2).
 */
+
+
+// asVector
+
+// template<class Type>
+// Type dmnorm_chol(Type* x, double* mean, double* chol, int n, double prec_param, int give_log, int overwrite_inputs) {
+	
+
 template<class Type>
 Type nldmvnorm(vector<Type> x, matrix<Type> Sigma){
   matrix<Type> Q=matinv(Sigma);
