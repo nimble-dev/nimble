@@ -349,7 +349,7 @@ makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, i
   indexNames <- names(indexList)
   indexedBracketExpr <- do.call('call', c(list('[', as.name('TO_BE_REPLACED')), lapply(indexNames, as.name)), quote = TRUE)
   if(indicesRHS) {
-    if(isNode)   RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = cppLiteral(paste0('(**', deparse(RHSvar), ')')))), list(indexedBracketExpr = indexedBracketExpr)))
+    if(isNode)   RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = cppLiteral(paste0('(**model_', deparse(RHSvar), ')')))), list(indexedBracketExpr = indexedBracketExpr)))
     else RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = RHSvar)), list(indexedBracketExpr = indexedBracketExpr)))
     LHS <- substitute(A[i], list(A = LHSvar, i = incrementIndex))
   } else {
