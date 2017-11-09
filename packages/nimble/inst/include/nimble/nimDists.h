@@ -25,6 +25,16 @@
 #include "NimArr.h"
 #include "dists.h"
 
+template<int nDim, class T>
+NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
+  if(orig.isMap()) {
+    possibleCopy = orig;
+    return(possibleCopy);
+  } else {
+    return(orig);
+  }
+}
+
 
 double nim_dnorm(double x, double mu, double sigma, int give_log);
 
@@ -45,6 +55,32 @@ void nimArr_rmulti(NimArr<1, double> &ans, double size, NimArr<1, double> &prob)
 
 double nimArr_dcat(double x, NimArr<1, double> &prob, int give_log);
 double nimArr_rcat(NimArr<1, double> &prob);
+
+template<class Type>
+Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, double prec_param, int give_log, int overwrite_inputs) { 
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+
+  int n = x.dimSize(0);
+  int i;
+  Type dens = Type(-n * M_LN_SQRT_2PI);
+  if(prec_param) {
+    for(i = 0; i < n*n; i += n + 1) 
+      dens += log(chol[i]);
+  } else {
+    for(i = 0; i < n*n; i += n + 1) 
+      dens -= log(chol[i]);
+  }
+  MatrixXt xCopy(n, 1);
+  for(i = 0; i < n; i++)
+    xCopy(i, 0) = x[i] - mean[i];
+
+  Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
+  xCopy = eigenChol*xCopy;
+  xCopy = xCopy.array()*xCopy.array();
+  dens += -0.5*xCopy.sum();
+
+  return give_log ? dens : exp(dens);
+}
 
 double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log, int overwrite_inputs);
 void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param);

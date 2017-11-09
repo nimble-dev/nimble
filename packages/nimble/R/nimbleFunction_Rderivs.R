@@ -519,7 +519,10 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   ## Determine sizes of each function arg.
   fxnArgsDimSizes <- lapply(nimFxnArgs, function(x){
     if(x[[2]] == 0) return(1)
-    else if(x[[2]] == 1) return(x[[3]])
+    else if(x[[2]] == 1){
+      if(length(x[[3]]) == 1) return(x[[3]])
+      else return(x[[3]][[2]])
+    }
     else if(x[[2]] == 2) return(c(x[[3]][[2]], x[[3]][[3]]))}
   )
   ## Same as above sizes, except that matrix sizes are reported as nrow*ncol instead of c(nrow, ncol).

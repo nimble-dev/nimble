@@ -1244,8 +1244,6 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
                           if(2 %in% order) expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = tolerance)
                         }
                         if(testCompiled){
-                          print(wrt[[j]])
-                          print(calcNodeNames[[i]])
                           testFunctionInstance <- testCompiledModelDerivsNimFxn(model, calcNodeNames[[i]], wrt[[j]], order)
                           expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model, resetFunctions = TRUE))
                           cDerivs <- ctestFunctionInstance$run()
