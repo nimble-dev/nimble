@@ -295,8 +295,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
             if(isNode){
               sizeList <- list()
               for(i in 1:length(thisSizeAndDims$lengths)){
-                sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]], 
-                                   parse(text = paste0(deparse(thisSizeAndDims$indexExpr[[i]]), ' + ', thisSizeAndDims$lengths[i], ' - ', 1))[[1]])
+                sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[2]])
               }
             }
             else{
