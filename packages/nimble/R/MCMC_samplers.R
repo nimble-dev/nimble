@@ -682,7 +682,7 @@ sampler_langevin <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        epsilon       <- if(!is.null(control$epsilon))       control$epsilon       else 0.01    ## initial leapfrog step-size
+        epsilon       <- if(!is.null(control$epsilon))       control$epsilon       else 1      ## leapfrog step-size multiplier
         adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
         adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
         ## node list generation
