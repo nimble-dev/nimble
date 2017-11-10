@@ -2018,6 +2018,17 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item sliceMaxSteps.  The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
 #' }
 #'
+#' @section langevin sampler:
+#'
+#' The langevin sampler implements a special case of Hamiltonian Monte Carlo (HMC) sampling where only a single leapfrog step is taken on each sampling iteration, and the leapfrog stepsize is adapted to match the scale of the posterior distribution (separately for each dimension being sampled).  This is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  Langevin sampling can operate on one or more continuous-valued posterior dimensions.  This sampling technique is also known as Langevin Monte Carlo (LMC), and the Metropolis-Adjusted Langevin Algorithm (MALA).
+#
+#' The langevin sampler accepts the following control list elements:
+#' \itemize{
+#' \item epsilon. An optional multiplier, to scale the stepsize of the leapfrog steps. If adaptation is turned off, this uniquely determines the leapfrog stepsize (default = 1)
+#' \item adaptive. A logical argument, specifying whether the sampler will adapt the leapfrog stepsize (scale) throughout the course of MCMC execution. The scale is adapted independently for each dimension being sampled. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
+#' }
+#'
 #' @section HMC sampler:
 #'
 #' The Hamiltonian Monte Carlo sampler implements the No-U-Turn algorithm (NUTS; Hoffman and Gelman, 2014) for performing joint updates of multiple continuous-valued posterior dimensions.  This is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  In contrast to standard HMC (Neal, 2011), the NUTS algorithm removes the tuning parameters of the leapfrog step size and the number of leapfrog steps, thus providing a sampling algorithm that can be used without hand tuning or trial runs.
