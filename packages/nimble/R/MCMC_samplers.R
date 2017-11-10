@@ -682,7 +682,7 @@ sampler_langevin <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        epsilon       <- if(!is.null(control$epsilon))       control$epsilon       else 1      ## leapfrog step-size multiplier
+        epsilon       <- if(!is.null(control$epsilon))       control$epsilon       else 1      ## step-size multiplier
         adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
         adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
         ## node list generation
@@ -690,25 +690,25 @@ sampler_langevin <- nimbleFunction(
         calcNodes <- model$getDependencies(target)
         ## numeric value generation
         d <- length(targetAsScalar)
-        scaleVec <- rep(1, d)
+        scaleVec <- matrix(1, nrow = d, ncol = 1)
         epsilonVec <- epsilon * scaleVec
+        q <- matrix(0, nrow = d, ncol = 1)
+        p <- matrix(0, nrow = d, ncol = 1)
+        grad <- matrix(0, nrow = d, ncol = 1)
         empirSamp <- matrix(0, nrow = adaptInterval, ncol = d)
         timesRan <- 0
         timesAdapted <- 0
         ## checks
         if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set options(experimentalEnableDerivs = TRUE)')
-        if(d == 1)                                     warning('langevin sampler might not work on only one target dimension')
         if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('langevin sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
     },
     run = function() {
-        q <- values(model, target)              ## current position variables
-        p <- numeric(d)
-        for(i in 1:d)   p[i] <- rnorm(1, 0, 1)  ## randomly draw momentum variables
+        q[1:d, 1] <<- values(model, target)         ## current position variables
+        for(i in 1:d)   p[i, 1] <<- rnorm(1, 0, 1)  ## randomly draw momentum variables
         currentH <- model$getLogProb(calcNodes) - sum(p^2)/2
-        p <- p + epsilonVec * gradient(q) / 2   ## initial half step for p
-        q <- q + epsilonVec * p                 ## full step for q and p
-        p <- p + epsilonVec * gradient(q) / 2   ## final half step for p
-        values(model, target) <<- q             ## probably redundant, following previous call to gradient(q)
+        p <<- p + epsilonVec * gradient(q) / 2      ## initial half step for p
+        q <<- q + epsilonVec * p                    ## full step for q
+        p <<- p + epsilonVec * gradient(q) / 2      ## final half step for p
         propH <- model$calculate(calcNodes) - sum(p^2)/2
         jump <- decide(propH - currentH)
         if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -716,12 +716,11 @@ sampler_langevin <- nimbleFunction(
         if(adaptive)     adaptiveProcedure()
     },
     methods = list(
-        gradient = function(q = double(1)) {
-            values(model, target) <<- q
+        gradient = function(q = double(2)) {
+            values(model, target) <<- q[1:d, 1]
             derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = target)
-            grad <- numeric(d)
-            grad[1:d] <- derivsOutput$gradient[1, 1:d]   ## preserve 1D vector object
-            returnType(double(1))
+            grad[1:d, 1] <<- derivsOutput$gradient[1, 1:d]
+            returnType(double(2))
             return(grad)
         },
         adaptiveProcedure = function() {
@@ -733,14 +732,14 @@ sampler_langevin <- nimbleFunction(
                 timesRan <<- 0
                 timesAdapted <<- timesAdapted + 1
                 gamma1 <- 1/((timesAdapted + 3)^0.8)
-                for(i in 1:d)     scaleVec[i] <<- gamma1 * sd(empirSamp[, i]) + (1-gamma1) * scaleVec[i]
+                for(i in 1:d)     scaleVec[i, 1] <<- gamma1 * sd(empirSamp[, i]) + (1-gamma1) * scaleVec[i, 1]
                 epsilonVec <<- epsilon * scaleVec
             }
         },
         reset = function() {
             timesRan     <<- 0
             timesAdapted <<- 0
-            scaleVec     <<- rep(1, d)
+            scaleVec     <<- matrix(1, nrow = d, ncol = 1)
             epsilonVec   <<- epsilon * scaleVec
         }
     ), where = getLoadingNamespace()
