@@ -146,10 +146,14 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
                  )))
         if(nimbleOptions('experimentalEnableDerivs')){
           methodList[['CALCADFUNNAME']]  <- eval(substitute(
-            function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <- RHS;    returnType(double(THISDIM));   return(THISNAME) },
+            function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <- RHS;    returnType(THISSIZEEXPR);   return(THISNAME) },
             list(LHS=LHS,
                  RHS=RHS,
-                 THISDIM =   as.numeric(parentsSizeAndDims[[1]][[1]]$nDim),
+                 THISSIZEEXPR = { if(as.numeric(parentsSizeAndDims[[1]][[1]]$nDim) == 0) substitute(double(0))
+                                 else substitute(double(THISDIM, LENGTHS),
+                                                 list(THISDIM = as.numeric(parentsSizeAndDims[[1]][[1]]$nDim),
+                                                      LENGTHS = parse(text = paste0('c(', paste0(parentsSizeAndDims[[1]][[1]]$lengths, collapse = ', '), ')'))[[1]]))
+                 },
                  THISNAME =  as.name(names(parentsSizeAndDims)[1])
             )))
         }
@@ -235,6 +239,11 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
         nDimSupported <- 0  # even multivar nodes have single lower and single upper since truncation not supported for mv distributions, so lower and upper come from distribution 'range'
         caseName <- paste0("getBound_",nDimSupported,"D_double")
         methodList[[caseName]] <- nndf_generateGetBoundSwitchFunction(bounds, seq_along(bounds), type = 'double', nDim = nDimSupported)
+    }
+    if(!nimbleOptions('experimentalEnableDerivs')){
+      methodList[[paste0( getCalcADFunName(), '_deriv')]]  <- eval(substitute(
+        function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass), nimDerivsOrders = double(1), wrtVector = double(1)) {
+          returnType(ADNimbleList());  return(ADNimbleList$new())}))
     }
     parentsArgs <-c()
     if(nimbleOptions('experimentalEnableDerivs')){

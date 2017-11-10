@@ -77,7 +77,8 @@ cppNamespace <- setRefClass('cppNamespace',
 nimbleCppInheritanceInfo <- list(
     Values = c('NamedObjects'),
     ModelBase = c('NamedObjects'),
-    nodeFun = c('NamedObjects')
+    nodeFun = c('NamedObjects'),
+    derivNodeFun = c('nodeFun')
 )
 
 ## C++ class object.

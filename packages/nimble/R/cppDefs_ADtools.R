@@ -295,8 +295,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
             if(isNode){
               sizeList <- list()
               for(i in 1:length(thisSizeAndDims$lengths)){
-                sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]], 
-                                   parse(text = paste0(deparse(thisSizeAndDims$indexExpr[[i]]), ' + ', thisSizeAndDims$lengths[i], ' - ', 1))[[1]])
+                sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[2]])
               }
             }
             else{
@@ -350,7 +349,7 @@ makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, i
   indexNames <- names(indexList)
   indexedBracketExpr <- do.call('call', c(list('[', as.name('TO_BE_REPLACED')), lapply(indexNames, as.name)), quote = TRUE)
   if(indicesRHS) {
-    if(isNode)   RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = cppLiteral(paste0('(**', deparse(RHSvar), ')')))), list(indexedBracketExpr = indexedBracketExpr)))
+    if(isNode)   RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = cppLiteral(paste0('(**model_', deparse(RHSvar), ')')))), list(indexedBracketExpr = indexedBracketExpr)))
     else RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = RHSvar)), list(indexedBracketExpr = indexedBracketExpr)))
     LHS <- substitute(A[i], list(A = LHSvar, i = incrementIndex))
   } else {

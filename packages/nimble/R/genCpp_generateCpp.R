@@ -38,6 +38,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                         dnorm = 'cppOutputDerivDist',
                         dpois = 'cppOutputDerivDist',
                         dgamma = 'cppOutputDerivDist',
+                        nimArr_dmnorm_chol = 'cppOutputDerivDist',
                         nimDerivs_calculate = 'cppNimbleListReturningOperator',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
@@ -164,9 +165,15 @@ cppOutputEigBlank <- function(code, symTab) {
 cppOutputDerivDist <- function(code, symTab){
   ###for now, use different dist c++ fn if taking derivs
   if(identical(nimbleUserNamespace$cppADCode, TRUE)){
-    paste0('nimDerivs_',code$name, '(', 
-           paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ),
-                  ')', collapse = ', '), ', ', nimGenerateCpp(code$args[length(code$args)][[1]], symTab, asArg = TRUE), ')')
+    if(code$name == "nimArr_dmnorm_chol"){
+      paste0('nimDerivs_', code$name, '(',
+             paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
+    }
+    else{
+      paste0('nimDerivs_',code$name, '(', 
+             paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ),
+                    ')', collapse = ', '), ', ', nimGenerateCpp(code$args[length(code$args)][[1]], symTab, asArg = TRUE), ')')
+    }
   }
   else{
     paste0(code$name, '(',

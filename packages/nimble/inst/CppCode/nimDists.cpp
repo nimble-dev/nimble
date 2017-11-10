@@ -37,15 +37,6 @@ bool R_isnancpp(NimArr<1, double> &P) {
   return(false);
 }
 
-template<int nDim, class T>
-NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
-  if(orig.isMap()) {
-    possibleCopy = orig;
-    return(possibleCopy);
-  } else {
-    return(orig);
-  }
-}
 
 double nimArr_dmulti(NimArr<1, double> &x, double size, NimArr<1, double> &prob, int give_log) {
   int K = prob.size();
@@ -233,7 +224,6 @@ void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, doubl
   rinvwish_chol(ansptr, cholptr, df, p, scale_param, overwrite_inputs);
   if(ans.isMap()) {ans = ansCopy;}
 }
-
 
 
 double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log, int overwrite_inputs) { 
