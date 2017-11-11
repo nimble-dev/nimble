@@ -774,7 +774,6 @@ sampler_HMC <- nimbleFunction(
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
         ## checks
         if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set nimbleOptions(experimentalEnableDerivs = TRUE)')
-        if(d == 1)                                     warning('HMC sampler might not work properly on only one target dimension')
         if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('HMC sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
     },
     run = function() {
