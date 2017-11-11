@@ -682,7 +682,7 @@ sampler_langevin <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        epsilon       <- if(!is.null(control$epsilon))       control$epsilon       else 1      ## step-size multiplier
+        scale         <- if(!is.null(control$scale))         control$scale         else 1      ## step-size multiplier
         adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
         adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
         ## node list generation
@@ -691,7 +691,7 @@ sampler_langevin <- nimbleFunction(
         ## numeric value generation
         d <- length(targetAsScalar)
         scaleVec <- matrix(1, nrow = d, ncol = 1)
-        epsilonVec <- epsilon * scaleVec
+        epsilonVec <- scale * scaleVec
         q <- matrix(0, nrow = d, ncol = 1)
         p <- matrix(0, nrow = d, ncol = 1)
         grad <- matrix(0, nrow = d, ncol = 1)
@@ -733,14 +733,14 @@ sampler_langevin <- nimbleFunction(
                 timesAdapted <<- timesAdapted + 1
                 gamma1 <- 1/((timesAdapted + 3)^0.8)
                 for(i in 1:d)     scaleVec[i, 1] <<- gamma1 * sd(empirSamp[, i]) + (1-gamma1) * scaleVec[i, 1]
-                epsilonVec <<- epsilon * scaleVec
+                epsilonVec <<- scale * scaleVec
             }
         },
         reset = function() {
             timesRan     <<- 0
             timesAdapted <<- 0
             scaleVec     <<- matrix(1, nrow = d, ncol = 1)
-            epsilonVec   <<- epsilon * scaleVec
+            epsilonVec   <<- scale * scaleVec
         }
     ), where = getLoadingNamespace()
 )
@@ -2020,11 +2020,11 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section langevin sampler:
 #'
-#' The langevin sampler implements a special case of Hamiltonian Monte Carlo (HMC) sampling where only a single leapfrog step is taken on each sampling iteration, and the leapfrog stepsize is adapted to match the scale of the posterior distribution (separately for each dimension being sampled).  This is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  Langevin sampling can operate on one or more continuous-valued posterior dimensions.  This sampling technique is also known as Langevin Monte Carlo (LMC), and the Metropolis-Adjusted Langevin Algorithm (MALA).
+#' The langevin sampler implements a special case of Hamiltonian Monte Carlo (HMC) sampling where only a single leapfrog step is taken on each sampling iteration, and the leapfrog stepsize is adapted to match the scale of the posterior distribution (independently for each dimension being sampled).  The single leapfrog step is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  Langevin sampling can operate on one or more continuous-valued posterior dimensions.  This sampling technique is also known as Langevin Monte Carlo (LMC), and the Metropolis-Adjusted Langevin Algorithm (MALA).
 #
 #' The langevin sampler accepts the following control list elements:
 #' \itemize{
-#' \item epsilon. An optional multiplier, to scale the stepsize of the leapfrog steps. If adaptation is turned off, this uniquely determines the leapfrog stepsize (default = 1)
+#' \item scale. An optional multiplier, to scale the stepsize of the leapfrog steps. If adaptation is turned off, this uniquely determines the leapfrog stepsize (default = 1)
 #' \item adaptive. A logical argument, specifying whether the sampler will adapt the leapfrog stepsize (scale) throughout the course of MCMC execution. The scale is adapted independently for each dimension being sampled. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' }
