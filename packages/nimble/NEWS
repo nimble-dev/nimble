@@ -1,4 +1,4 @@
-                           CHANGES IN VERSION 0.6-7 (October 2017)
+                           CHANGES IN VERSION 0.6-7 (November 2017)
 
 USER LEVEL CHANGES
 
@@ -6,7 +6,7 @@ USER LEVEL CHANGES
 
 -- Addition of nimbleMCMC function, providing the most direct one-line invocation of NIMBLE's MCMC engine.
 
--- Addition of runCrossValidate function, which conducts k-fold cross-validation of NIMBLE models.
+-- Addition of runCrossValidate function, which conducts k-fold cross-validation of NIMBLE models fit by MCMC.
 
 -- Improved efficiency of MCMC conjugate samplers.
 
