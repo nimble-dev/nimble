@@ -279,16 +279,15 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                     					    if(length(nfProc$RCfunProcs[[funName]]$nameSubList) == 0) stop(paste0('Derivatives cannot be enabled for method ', funName, ', since this method has no arguments.'))
                                     					    if(!nfProc$isNode){
                                     					      for(iArg in seq_along(functionDefs[[funName]]$args$symbols)){
-                                    						arg <- functionDefs[[funName]]$args$symbols[[iArg]]
-                                    						argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)
-                                    						argName <- names(nfProc$RCfunProcs[[funName]]$nameSubList)[iArg]
-                                    						checkADargument(funName, argSym, argName = argName)
+                                          						arg <- functionDefs[[funName]]$args$symbols[[iArg]]
+                                          						argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)
+                                          						argName <- names(nfProc$RCfunProcs[[funName]]$nameSubList)[iArg]
+                                          						checkADargument(funName, argSym, argName = argName)
                                     					      }
                                     					    }
                                     					    addTypeTemplateFunction(funName)
                                     					    independentVarNames <- names(functionDefs[[funName]]$args$symbols)
                                     					    if(nfProc$isNode) independentVarNames <- independentVarNames[-1]  ## remove ARG1_INDEXEDNODEINFO__ from independentVars
-                                    					    
                                     					    addADtapingFunction(funName, independentVarNames = independentVarNames, dependentVarNames = 'ANS_' )
                                     					    addADargumentTransferFunction(funName, independentVarNames = independentVarNames)
                                     					},

@@ -258,7 +258,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
     else{
       TF$args <- symbolTable()
       indexNodeInfoSym <- targetFunDef$args$getSymbolObject('ARG1_INDEXEDNODEINFO__')
-      indexNodeInfoSym$name <-'INDEXEDNODEINFO_' ## to conform with original R function indexing
+      # indexNodeInfoSym$name <-'ARG1_INDEXEDNODEINFO__' ## to conform with original R function indexing
       TF$args$addSymbol(indexNodeInfoSym)   
     }
     
@@ -279,6 +279,13 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
     localVars$addSymbol( cppVar(name = 'netIncrement_', baseType = 'int') )
     copyIntoIndepVarCode[[1]] <- quote(netIncrement_ <- 1) 
     totalIndependentLength <- 0
+    subArgIndexedInfo <- function(x){
+      if(deparse(x[[1]])== 'getNodeFunctionIndexedInfo'){
+        x[[2]] <- parse(text = "ARG1_INDEXEDNODEINFO__")[[1]]
+      }
+      return(deparse(x))
+    }
+    
     for(ivn in seq_along(independentVarNames)) {
         thisName <- independentVarNames[ivn]
         thisSym <- nimbleSymTab$getSymbolObject(thisName)
@@ -310,11 +317,11 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
           if(isNode){
             if(length(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$lengths) > 1)
               indexBracketInfo <- paste0('(', 
-                                         paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr, deparse), collapse = ', '),
+                                         paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr, subArgIndexedInfo), collapse = ', '),
                                         ')')
             else{
               if(deparse(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]][[1]]) == 'getNodeFunctionIndexedInfo'){
-                indexBracketInfo <- paste0('[', deparse(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]]), ']')
+                indexBracketInfo <- paste0('[', subArgIndexedInfo(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]]), ']')
               }
               else{
                 indexBracketInfo <- paste0('[', deparse(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]][[1]]), ']')

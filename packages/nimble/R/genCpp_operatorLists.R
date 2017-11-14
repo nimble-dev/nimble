@@ -331,3 +331,6 @@ operatorRank <- c(
          '&&' = 13,
          '||' = 14)
 )
+
+nimDerivsPrependOperators <- c("nimArr_dmnorm_chol", "nimStep")
+nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma")
