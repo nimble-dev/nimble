@@ -34,9 +34,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   if (valueFlag) {
     (*ansList).value.initialize(0, 1, 1);
   }
-  if (valueFlag && (!jacobianFlag && !hessianFlag)) {  // If only function value
-                                                       // is asked for, skip
-                                                       // derivative calculation
+  if (valueFlag && (!jacobianFlag && !hessianFlag)) {// If only function value
+                                                     // is asked for, skip
+                                                     // derivative calculation
     for (int i = 0; i < length(nodes.parentIndicesList); i++) {
       if (nodes.calcNodeIndicators[i]) {
         (*ansList).value[0] +=
@@ -451,6 +451,8 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
         }
       }
       if (isCalcNodeLine && valueFlag) {
+		  cout << "i" << i << "\n";
+		  cout << "(*thisDerivList).value[0]" << (*thisDerivList).value[0] << "\n";
         (*ansList).value[0] = (*ansList).value[0] + (*thisDerivList).value[0];
       }
     }

@@ -78,7 +78,8 @@ test_that('Derivs of calculate function work for model equiv', {
   dir = nimble:::getBUGSexampleDir('equiv')
   Rmodel <- readBUGSmodel('equiv', data = NULL, inits = list(tau = c(.2, .2), pi = 1, phi = 1, mu = 1), dir = dir, useInits = TRUE,
                           check = FALSE)
-  simulate(Rmodel, Rmodel$getDependencies('d'))
+  initModel <- initializeModel(Rmodel)
+  initModel$run()
   ## Higher tolerance for more complex chain rule calculations in this model.
   test_ADModelCalculate(Rmodel, name = 'equiv', calcNodeNames = list(Rmodel$getDependencies('tau'), Rmodel$getDependencies('sigma'),  Rmodel$getDependencies('d'),
                                                      Rmodel$getDependencies('d[1]')),
