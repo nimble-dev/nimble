@@ -361,7 +361,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                           (thisJacobian)
                               .block(0, thisArgIndex, (thisJacobian).rows(),
                                      nodes.lineWrtArgSizeInfo[i][k]) *
-                          parentHessians[k][dim1][dim2];
+                          parentHessians[k][nodes.wrtLineIndices[j][dim1] -1][nodes.wrtLineIndices[j2][dim2] - 1];
                       for (int dim3 = 0; dim3 < length(chainRuleHessians[i]);
                            dim3++) {
                         chainRuleHessians[i][dim3](
@@ -451,8 +451,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
         }
       }
       if (isCalcNodeLine && valueFlag) {
-		  cout << "i" << i << "\n";
-		  cout << "(*thisDerivList).value[0]" << (*thisDerivList).value[0] << "\n";
         (*ansList).value[0] = (*ansList).value[0] + (*thisDerivList).value[0];
       }
     }

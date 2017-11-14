@@ -43,7 +43,6 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
 	  if(!is.null(Robject[[fxnVecName]]$nimDerivsInfo)){
 	    derivsInfo <- Robject[[fxnVecName]]$nimDerivsInfo
-	    browser()
 	    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID_forDerivs, fxnVecPtr, 
 	              as.integer(derivsInfo$declIDs), numberedPtrs, as.integer(derivsInfo$rowIndices), derivsInfo))
 	  }

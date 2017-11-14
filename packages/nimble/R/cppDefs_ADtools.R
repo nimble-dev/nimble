@@ -283,7 +283,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
       if(deparse(x[[1]])== 'getNodeFunctionIndexedInfo'){
         x[[2]] <- parse(text = "ARG1_INDEXEDNODEINFO__")[[1]]
       }
-      return(deparse(x)))
+      return(deparse(x))
     }
     maxSize <- 1
     for(ivn in seq_along(independentVarNames)) {
@@ -316,9 +316,8 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
         } 
         else {
           if(isNode){
-            indexBracketInfo <- paste0('[', paste0(sapply(
-              parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr, subArgIndexedInfo), collapse = ', '),
-                                                                    ']')
+            indexBracketInfo <- paste0('[', paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr,
+                                                          subArgIndexedInfo), collapse = ', '),']')
             # 
             # if(length(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$lengths) > 1)
             #   indexBracketInfo <- paste0('(', 
