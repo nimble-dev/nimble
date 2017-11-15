@@ -4,8 +4,7 @@ Description: A system for writing hierarchical statistical models largely compat
 Version: 0.6-7
 Date: 2017-11-13
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
-Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-
-    Bergman, Nick Michaud, Fritz Obermeyer, Duncan Temple Lang
+Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Nick Michaud, Fritz Obermeyer, Duncan Temple Lang, and see AUTHORS file for additional contributors.
 Depends:
     R (>= 3.1.2)
 Imports:
@@ -14,7 +13,8 @@ Suggests:
     testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2,tensorflow,reticulate
 URL: http://r-nimble.org
 SystemRequirements: GNU make
-License: BSD_3_clause + file LICENSE | GPL (>= 2)
+License: BSD_3_clause + file LICENSE | GPL (>= 2) and see file COPYRIGHTS for third-party code.
+Copyright: See COPYRIGHTS file.
 Note: For convenience, the package includes the necessary header files for the
     Eigen distribution. (This is all that is needed to use that functionality.)
     You can use an alternative installation of Eigen on your system or the one
