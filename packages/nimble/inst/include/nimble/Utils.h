@@ -180,12 +180,14 @@ T nimDerivs_icloglog(T x){
 }
 
 double iprobit(double x);
+template<class T>
 T nimDerivs_iprobit(T x){
   return(nimDerivs_pnorm(x, 0., 1., 1, 0));
 }
 
 
 double probit(double x);
+template<class T>
 T nimDerivs_probit(T x){
   return(nimDerivs_qnorm(x, 0., 1., 1, 0));
 }
