@@ -285,7 +285,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
       }
       return(deparse(x))
     }
-    maxSize <- 1
+    maxSize <- 0
     for(ivn in seq_along(independentVarNames)) {
         thisName <- independentVarNames[ivn]
         thisSym <- nimbleSymTab$getSymbolObject(thisName)
@@ -293,8 +293,8 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
           nameSubList <- targetFunDef$RCfunProc$nameSubList
           thisName <- names(nameSubList)[sapply(nameSubList, function(x) return(as.character(x) == thisName))]
           thisModelElementNum <- as.numeric(gsub(".*([0-9]+)$", "\\1", thisName)) ## Extract 1, 2, etc. from end of arg name.
-          thisName <- sub("_[0-9]+$","",thisName)
-          thisModelName <- paste0('model_', thisName) ## Add model_ at beginning and remove _1, _2, etc. at end of arg name.
+          thisName <- sub("_[0-9]+$", "", thisName)
+          thisModelName <- paste0('model_', Rname2CppName(thisName)) ## Add model_ at beginning and remove _1, _2, etc. at end of arg name.
           thisSizeAndDims <- parentsSizeAndDims[[thisName]][[thisModelElementNum]]
         }
         if(thisSym$nDim > 0) {
@@ -343,9 +343,11 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
     }
     setSizeLine <- substitute(cppMemberFunction(resize(memberData(ADtapeSetup, independentVars), TIL)), list(TIL = totalIndependentLength))
     returnCall <- cppLiteral("return(ADtapeSetup);")
-    for(ivn in 1:maxSize)
-      localVars$addSymbol( cppVar(name = indexVarNames[ivn], baseType = 'int') )    
     
+    if(maxSize > 0){
+      for(ivn in 1:maxSize)
+        localVars$addSymbol( cppVar(name = indexVarNames[ivn], baseType = 'int') )    
+    }
     
     allRcode <- do.call('call', c(list('{'), list(assignTapePtrCode), list(setSizeLine), copyIntoIndepVarCode, list(returnCall)), quote=TRUE)
     allCode <- RparseTree2ExprClasses(allRcode)
