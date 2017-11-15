@@ -374,7 +374,6 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
             derivList$value <- 0
             model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)
           }
-          
           ## The derivOutputFlag determines whether the derivatives of this node (node i): 
           ## should be calculated for inclusion in the chain rule output (TRUE),
           ## should be calculated for later use in the chain rule (FALSE), 
@@ -466,9 +465,11 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
         ## function f(x) = x, which will be the identity matrix and 0 respectively.
         chainRuleDerivList[[i]] <- matrix(0,nrow = thisNodeSize, ncol = totalWrtSize)
         if(isWrtLine)   chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[thisWrtLine]]] <- diag(thisNodeSize)
-        if(isWrtLine && hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWrtSize, totalWrtSize, thisNodeSize))
+        if(hessianFlag) chainRuleHessianList[[i]] <- array(0, dim = c(totalWrtSize, totalWrtSize, thisNodeSize))
         if(isCalcNodeLine){
-          if(valueFlag) outDerivList$value <- outDerivList$value + derivList$value
+          if(valueFlag){
+            outDerivList$value <- outDerivList$value + derivList$value
+          } 
         }
       }
     }

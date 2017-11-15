@@ -2,7 +2,9 @@
 ## Section for outputting C++ code from an exprClass object ##
 ##############################################################
 
-cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
+cppOutputCalls <- c(makeCallList(nimDerivsPrependOperators, 'cppOutputNimDerivsPrepend'),
+                    makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
+                    makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryMidLogicalOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryOrUnaryOperators, 'cppOutputBinaryOrUnary'),
                     makeCallList(assignmentOperators, 'cppOutputMidOperator'),
@@ -35,11 +37,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          nimSwitch = 'cppOutputNimSwitch',
                          getParam = 'cppOutputGetParam',
                          getBound = 'cppOutputGetBound',
-                        dnorm = 'cppOutputDerivDist',
-                        dpois = 'cppOutputDerivDist',
-                        dgamma = 'cppOutputDerivDist',
-                        nimArr_dmnorm_chol = 'cppOutputDerivDist',
-                        nimDerivs_calculate = 'cppNimbleListReturningOperator',
+                         nimDerivs_calculate = 'cppNimbleListReturningOperator',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
@@ -162,18 +160,23 @@ cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')
 }
 
-cppOutputDerivDist <- function(code, symTab){
-  ###for now, use different dist c++ fn if taking derivs
+cppOutputNimDerivsPrepend <- function(code, symTab){
   if(identical(nimbleUserNamespace$cppADCode, TRUE)){
-    if(code$name == "nimArr_dmnorm_chol"){
       paste0('nimDerivs_', code$name, '(',
              paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
-    }
-    else{
+  }
+  else{
+    paste0(code$name, '(',
+           paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
+  }
+}
+
+
+cppOutputNimDerivsPrependType <- function(code, symTab){
+  if(identical(nimbleUserNamespace$cppADCode, TRUE)){
       paste0('nimDerivs_',code$name, '(', 
              paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ),
                     ')', collapse = ', '), ', ', nimGenerateCpp(code$args[length(code$args)][[1]], symTab, asArg = TRUE), ')')
-    }
   }
   else{
     paste0(code$name, '(',
@@ -402,14 +405,15 @@ cppOutputMidOperator <- function(code, symTab) {
     }
 
     useDoubleCast <- FALSE
-    if(code$name == '/') ## cast the denominator to double if it is any numeric or if it is an scalar integer expression
-        if(is.numeric(code$args[[2]]) ) useDoubleCast <- TRUE
-        else ## We have cases where a integer ends up with type type 'double' during compilation but should be cast to double for C++, so we shouldn't filter on 'integer' types here
-            if(identical(code$args[[2]]$nDim, 0)) useDoubleCast <- TRUE
+    if(!identical(nimbleUserNamespace$cppADCode, TRUE)){
+      if(code$name == '/') ## cast the denominator to double if it is any numeric or if it is an scalar integer expression
+          if(is.numeric(code$args[[2]]) ) useDoubleCast <- TRUE
+          else ## We have cases where a integer ends up with type type 'double' during compilation but should be cast to double for C++, so we shouldn't filter on 'integer' types here
+              if(identical(code$args[[2]]$nDim, 0)) useDoubleCast <- TRUE
+    }
 
     secondPart <- nimGenerateCpp(code$args[[2]], symTab)
     if(useDoubleCast) secondPart <- paste0('static_cast<double>(', secondPart, ')')
-
     if(useParens)
         paste0( '(',nimGenerateCpp(code$args[[1]], symTab), cppMidOperators[[code$name]],secondPart,')' )
     else
