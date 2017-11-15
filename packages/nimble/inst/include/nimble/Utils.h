@@ -168,9 +168,27 @@ bool nimNot(bool x);
 
 // needed for link functions
 double ilogit(double x);
+template<class T>
+T nimDerivs_ilogit(T x){
+  return(1./(1. + exp(-x)));
+}
+
 double icloglog(double x);
+template<class T>
+T nimDerivs_icloglog(T x){
+  return(1.-exp(-exp(x)));
+}
+
 double iprobit(double x);
+T nimDerivs_iprobit(T x){
+  return(nimDerivs_pnorm(x, 0., 1., 1, 0));
+}
+
+
 double probit(double x);
+T nimDerivs_probit(T x){
+  return(nimDerivs_qnorm(x, 0., 1., 1, 0));
+}
 //double abs(double x);
 double cloglog(double x);
 int nimEquals(double x1, double x2);
