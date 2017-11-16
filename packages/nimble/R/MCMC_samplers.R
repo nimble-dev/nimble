@@ -718,7 +718,7 @@ sampler_langevin <- nimbleFunction(
     methods = list(
         gradient = function(q = double(2)) {
             values(model, target) <<- q[1:d, 1]
-            derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = target)
+            derivsOutput <- nimDerivs(model$calculate(calcNodes), order = 1, wrt = target)
             grad[1:d, 1] <<- derivsOutput$gradient[1, 1:d]
             returnType(double(2))
             return(grad)

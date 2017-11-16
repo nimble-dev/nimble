@@ -120,7 +120,6 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                  next
                                                }
                                                if(inherits(neededType, 'symbolNimbleFunctionList')) {
-                                                   
                                                    baseClassName <- environment(neededType$baseClass)$name
                                                    thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = baseClassName)
                                                    if(is.null(thisCppDef)) {

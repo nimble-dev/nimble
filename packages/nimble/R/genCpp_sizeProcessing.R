@@ -1166,7 +1166,7 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
   nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
   nlDef <- nl.getListDef(nlGen)
   className <- nlDef$className
-  symTab$parentST$symbols$order$nDim <- 1
+  #symTab$parentST$symbols$order$nDim <- 1
   symbolObject <- symTab$getSymbolObject(className, inherits = TRUE)
   if(is.null(symbolObject)) {
     nlp <- typeEnv$.nimbleProject$compileNimbleList(nlGen, initialTypeInference = TRUE)
@@ -1177,7 +1177,7 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
   code$type <- 'nimbleList'
   code$nDim <- 0
   code$toEigenize <- 'maybe'
-  asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
+  asserts <- recurseSetSizes(code, symTab, typeEnv) # useArgs = c(FALSE, rep(TRUE, code$args)))
   for(i in 2:length(code$args)) {
     if(inherits(code$args[[i]], 'exprClass')) {
       if(code$args[[i]]$toEigenize=='yes')

@@ -428,7 +428,6 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
   if(is.nf(instances[[1]][[name]])) { ## nimbleFunction
     funList <- lapply(instances, `[[`, name)
     nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
-    
     className <- class(nf_getRefClassObject(funList[[1]]))
     neededObjectNames <<- c(neededObjectNames, name)
     newSym <- symbolNimbleFunction(name = name, type = 'nimbleFunction', nfProc = nfp)

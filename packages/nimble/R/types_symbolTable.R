@@ -231,6 +231,7 @@ symbolTable2cppVars <- function(symTab, arguments = character(), include, parent
     for(s in include) {
         inputArg <- s %in% arguments
         sObj <- symTab$getSymbolObject(s)
+        if(s == 'order') browser()
         if(inherits(sObj$type, 'uninitializedField')) stop(paste('Error in symbolTable2cppVars for ', symTab, '. type field is not set.'), call. = FALSE)
         if(length(sObj$type == 'Ronly') == 0) stop(paste('Error in symbolTable2cppVars for ', symTab, ',  length(sObj$type == "Ronly") == 0'), call. = FALSE)
         if(sObj$type == 'Ronly') next
