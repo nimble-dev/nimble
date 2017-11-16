@@ -32,7 +32,7 @@
 #include <nimble/NamedObjects.h>
 #include <nimble/dllFinalizer.h>
 #include <nimble/smartPtrs.h>
-#include <nimble/nimbleCppAD.h>
+#include <nimble/predefinedNimbleLists.h>
 
 #include <R_ext/Rdynload.h>
 

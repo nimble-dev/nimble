@@ -150,7 +150,7 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            ## The next line creates the cppCopyTypes exactly the same way as in buildNimbleObjInterface
                                            ## and CmultiNimbleObjClass::initialize.
                                            cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
-                                           copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes)
+                                           copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes, .self$nfProc$instances[[1]])
                                            functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
                                           ## SEXPmemberInterfaceFuns[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectInterfaceDef
                                        },
@@ -401,10 +401,14 @@ makeSingleCopyCall <- function(varName, cppCopyType) {
            'nodeFxnVec' = {
                cppLiteral(paste0("COPY_NODE_FXN_VECTOR_FROM_R_OBJECT(\"", varName, "\");"))
            },
+           'nodeFxnVec_derivs' = {
+               cppLiteral(paste0("COPY_NODE_FXN_VECTOR_DERIVS_FROM_R_OBJECT(\"", varName, "\");"))
+           },
+           
            NULL)
 }
 
-makeCopyFromRobjectDef <- function(className, cppCopyTypes) {
+makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj) {
     ## Make method for copying from R object
     copyFromRobjectDef <- RCfunctionDef()
     copyFromRobjectDef$name <- 'copyFromRobject'
@@ -416,7 +420,12 @@ makeCopyFromRobjectDef <- function(className, cppCopyTypes) {
     copyCalls <- list()
     varNames <- names(cppCopyTypes)
     for(i in seq_along(cppCopyTypes)) {
-        copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]])
+      if(cppCopyTypes[[i]] == "nodeFxnVec"){
+        if(!is.null(Robj[[varNames[i]]]$nimDerivsInfo)){
+          cppCopyTypes[[i]] = "nodeFxnVec_derivs"
+        }
+      } 
+      copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]])
     }
 
     if(length(copyCalls) == 0) {

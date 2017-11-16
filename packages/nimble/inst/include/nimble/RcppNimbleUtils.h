@@ -48,7 +48,15 @@
   populateNodeFxnVectorNew_copyFromRobject(getObjectPtr(svarName),\
 					   PROTECT(Rf_findVarInFrame(S_xData, \
 								     Rf_install(varName)))); \
-  }
+                    }
+
+#define COPY_NODE_FXN_VECTOR_DERIVS_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  populateNodeFxnVectorNew_copyFromRobject_forDerivs(getObjectPtr(svarName),\
+					   PROTECT(Rf_findVarInFrame(S_xData, \
+								     Rf_install(varName)))); \
+                    }
 
 #define COPY_NIMBLE_FXN_FROM_R_OBJECT(varName) \
   { \

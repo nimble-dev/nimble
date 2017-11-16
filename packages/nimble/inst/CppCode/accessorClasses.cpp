@@ -24,28 +24,6 @@
 #include<sstream>
 using std::istringstream;
 
-SEXP populateNodeFxnVectorNew_byDeclID_forDerivs(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS, SEXP SderivInfo){
-  int len = LENGTH(S_ROWINDS);
-  if(len == 0) return(R_NilValue);
-  int* gids = INTEGER(S_GIDs);
-  int* rowinds = INTEGER(S_ROWINDS);
-  int index;
-  NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
-  NodeVectorClassNew_derivs* nfv_derivs = static_cast<NodeVectorClassNew_derivs*>(R_ExternalPtrAddr(SnodeFxnVec)) ;
-  (*nfv_derivs).populateDerivsInfo(SderivInfo);
-  int nextRowInd;
-  for(int i = 0; i < len; i++){
-    index = gids[i] - 1;
-    nextRowInd = rowinds[i]-1;
-    if(nextRowInd == -1) { // should only happen from a scalar, so there is one dummy indexedNodeInfo
-      nextRowInd = 0;
-    }
-    (*nfv_derivs).instructions.push_back(NodeInstruction(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd));
-  }
-  return(R_NilValue);
-}
-
-
 NimArr<1, double> getParam_1D_double(int paramID, const NodeInstruction &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
   return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID, useInfo.operand));
@@ -653,6 +631,66 @@ SEXP getListElement(SEXP list, const char *str){
 	UNPROTECT(2);
 	return(ans);
 }
+
+void populateNodeFxnVectorNew_internal_forDerivs(NodeVectorClassNew_derivs* nfv, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS, SEXP SderivInfo) {
+  (*nfv).populateDerivsInfo(SderivInfo);
+  int len = LENGTH(S_ROWINDS);
+  if(len == 0) return;
+  int* gids = INTEGER(S_GIDs);
+  int* rowinds = INTEGER(S_ROWINDS);
+  int index;
+  NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
+  int nextRowInd;
+  (*nfv).instructions.clear();
+  for(int i = 0; i < len; i++){
+    index = gids[i] - 1;
+    nextRowInd = rowinds[i]-1;
+    if(nextRowInd == -1) { // should only happen from a scalar, so there is one dummy indexedNodeInfo
+      nextRowInd = 0;
+    }
+    (*nfv).instructions.push_back(NodeInstruction(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd));
+  }
+}
+
+void populateNodeFxnVectorNew_copyFromRobject_forDerivs(void *nodeFxnVec_to, SEXP S_nodeFxnVec_from ) {
+   SEXP S_indexingInfo;
+   SEXP S_pxData;
+   PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+   SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
+  PROTECT(S_indexingInfo = VECTOR_ELT(S_nodeFxnVec_from, 1));
+  SEXP S_declIDs;
+  PROTECT(S_declIDs = VECTOR_ELT(S_indexingInfo, 0));
+  SEXP S_rowIndices;
+  PROTECT(S_rowIndices = VECTOR_ELT(S_indexingInfo, 1));
+  SEXP S_numberedPtrs;
+  PROTECT(S_numberedPtrs = Rf_findVarInFrame(PROTECT(GET_SLOT(
+							      Rf_findVarInFrame(PROTECT(GET_SLOT(
+												 Rf_findVarInFrame(PROTECT(GET_SLOT(
+																    VECTOR_ELT(S_nodeFxnVec_from,
+																	       2
+																	       ),
+																    S_pxData)),
+														   Rf_install("CobjectInterface")
+														   ),
+												 S_pxData)),
+										Rf_install(".nodeFxnPointers_byDeclID")),
+							      S_pxData)),
+					     Rf_install(".ptr")
+					     )
+  );
+  SEXP SderivInfo;
+  PROTECT(SderivInfo = VECTOR_ELT(S_nodeFxnVec_from, 3));
+  NodeVectorClassNew_derivs* nfv_derivs = static_cast<NodeVectorClassNew_derivs*>(nodeFxnVec_to);
+  populateNodeFxnVectorNew_internal_forDerivs(nfv_derivs, S_declIDs, S_numberedPtrs, S_rowIndices, SderivInfo);
+  UNPROTECT(9);
+}
+
+SEXP populateNodeFxnVectorNew_byDeclID_forDerivs(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS, SEXP SderivInfo){
+  NodeVectorClassNew_derivs* nfv_derivs = static_cast<NodeVectorClassNew_derivs*>(R_ExternalPtrAddr(SnodeFxnVec)) ;
+  populateNodeFxnVectorNew_internal_forDerivs(nfv_derivs, S_GIDs, SnumberedObj, S_ROWINDS, SderivInfo);
+  return(R_NilValue);
+}
+
 
 void populateNodeFxnVectorNew_internal(NodeVectorClassNew* nfv, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS ) {
   int len = LENGTH(S_ROWINDS);
