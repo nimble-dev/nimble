@@ -487,7 +487,7 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
 
 convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   ## If a vector of wrt args, get individual args.
-  if(is.na(wrtArgs)){
+  if(all(is.na(wrtArgs))){
     return(-1)
   }
   if(deparse(wrtArgs[[1]]) == 'nimC'){ 
