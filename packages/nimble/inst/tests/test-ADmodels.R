@@ -118,7 +118,7 @@ Rmodel <- nimbleModel(code = ssmCode, name = 'SSMcorrelated', constants = ssmCon
 test_ADModelCalculate(Rmodel, name = 'SSM', calcNodeNames = list(Rmodel$getDependencies('a'), Rmodel$getDependencies('b'),
                                                                  Rmodel$getDependencies('sigPN'),
                                                                    Rmodel$getDependencies('x')),
-                      wrt = list(c('a', 'b'), c('sigPN'), c('x[1]'), c('x')), tolerance = .5)
+                      wrt = list(c('a', 'b'), c('sigPN'), c('x[1]')), tolerance = .5, testR = TRUE)
 })
 
 
