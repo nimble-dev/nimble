@@ -116,11 +116,11 @@
 #define R_D_fexp(f,x)     (give_log ? -0.5*log(f)+(x) : exp(x)/sqrt(f))
 
 /* [neg]ative or [non int]eger : */
-#define R_D_negInonint(x) (x < 0. || R_nonint(x))
+// #define R_D_negInonint(x) (x < 0. || R_nonint(x))
 
 // for discrete d<distr>(x, ...) :
-#define R_D_nonint_check(x)				\
-   if(R_nonint(x)) {					\
-       MATHLIB_WARNING(_("non-integer x = %f"), x);	\
-	return R_D__0;					\
-   }
+// #define R_D_nonint_check(x)				
+//    if(R_nonint(x)) {					
+//        MATHLIB_WARNING(_("non-integer x = %f"), x);	
+// 	return R_D__0;					
+//    }

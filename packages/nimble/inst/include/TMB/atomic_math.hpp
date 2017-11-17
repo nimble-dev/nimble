@@ -154,6 +154,7 @@ namespace Rmath {
 
 #include "TMB/atomic_macro.hpp"
 #include "TMB/tmbutils/tmbutils.hpp"
+#include "TMB/tiny_ad/atomic.hpp"
 
 using namespace tmbutils;
 

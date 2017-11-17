@@ -117,11 +117,11 @@ TMB_ATOMIC_VECTOR_FUNCTION(						\
   static const int nvar = mask_type::count;				\
   CppAD::vector<Type> tx_(tx);						\
   tx_[NCHAR(MASK)] = tx_[NCHAR(MASK)] + Type(1.0);			\
-  vector<Type> tmp = NAME(tx_);						\
-  matrix<Type> m = tmp.matrix();					\
+  tmbutils::vector<Type> tmp = NAME(tx_);						\
+  tmbutils::matrix<Type> m = tmp.matrix();					\
   m.resize(nvar, m.size() / nvar);					\
-  vector<Type> w = py;							\
-  vector<Type> px_ = m * w.matrix();					\
+  tmbutils::vector<Type> w = py;							\
+  tmbutils::vector<Type> px_ = m * w.matrix();					\
   mask.copy(px, px_);							\
   px[NCHAR(MASK)] = 0;							\
   )

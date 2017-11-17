@@ -9,16 +9,16 @@
 
 template<class Type> Type lgamma(Type x);
 
-namespace atomic {
+//namespace atomic {
 
 #define TINY_AD_USE_TINY_VEC 1
-#include "tiny_ad/tiny_ad.hpp"
-#include "mask.hpp"
+#include "TMB/tiny_ad/tiny_ad/tiny_ad.hpp"
+#include "TMB/tiny_ad/mask.hpp"
 
 /********************************************************************
  * Adding 'pbeta'
  ********************************************************************/
-#include "beta/pbeta.hpp"    // Get namespace 'toms708'
+#include "TMB/tiny_ad/beta/pbeta.hpp"    // Get namespace 'toms708'
 TMB_BIND_ATOMIC(pbeta,
 		111,
 		toms708::pbeta(x[0], x[1], x[2], 1, 0) )
@@ -26,78 +26,78 @@ TMB_BIND_ATOMIC(pbeta,
 /********************************************************************
  * Adding 'bessel_k'
  ********************************************************************/
-#include "bessel/bessel.hpp" // Get namespace 'bessel_utils'
-TMB_BIND_ATOMIC(bessel_k,
-		11,
-		bessel_utils::bessel_k(x[0], x[1], 1.) )
+// #include "TMB/tiny_ad/bessel/bessel.hpp" // Get namespace 'bessel_utils'
+// TMB_BIND_ATOMIC(bessel_k,
+// 		11,
+// 		bessel_utils::bessel_k(x[0], x[1], 1.) )
 
-/********************************************************************
- * Adding 'bessel_i'
- ********************************************************************/
-#include "bessel/bessel.hpp" // Get namespace 'bessel_utils'
-TMB_BIND_ATOMIC(bessel_i,
-		11,
-		bessel_utils::bessel_i(x[0], x[1], 1.) )
+// /********************************************************************
+//  * Adding 'bessel_i'
+//  ********************************************************************/
+// #include "TMB/tiny_ad/bessel/bessel.hpp" // Get namespace 'bessel_utils'
+// TMB_BIND_ATOMIC(bessel_i,
+// 		11,
+// 		bessel_utils::bessel_i(x[0], x[1], 1.) )
 
-/********************************************************************
- * Adding 'bessel_j'
- ********************************************************************/
-#include "bessel/bessel.hpp" // Get namespace 'bessel_utils'
-TMB_BIND_ATOMIC(bessel_j,
-		11,
-		bessel_utils::bessel_j(x[0], x[1]) )
+// /********************************************************************
+//  * Adding 'bessel_j'
+//  ********************************************************************/
+// #include "TMB/tiny_ad/bessel/bessel.hpp" // Get namespace 'bessel_utils'
+// TMB_BIND_ATOMIC(bessel_j,
+// 		11,
+// 		bessel_utils::bessel_j(x[0], x[1]) )
 
-/********************************************************************
- * Adding 'bessel_y'
- ********************************************************************/
-#include "bessel/bessel.hpp" // Get namespace 'bessel_utils'
-TMB_BIND_ATOMIC(bessel_y,
-		11,
-		bessel_utils::bessel_y(x[0], x[1]) )
+// /********************************************************************
+//  * Adding 'bessel_y'
+//  ********************************************************************/
+// #include "TMB/tiny_ad/bessel/bessel.hpp" // Get namespace 'bessel_utils'
+// TMB_BIND_ATOMIC(bessel_y,
+// 		11,
+// 		bessel_utils::bessel_y(x[0], x[1]) )
 
-/********************************************************************
- * Adding 'dtweedie'
- ********************************************************************/
-#include "tweedie/tweedie.hpp"
-TMB_BIND_ATOMIC(log_dtweedie,
-		0111,
-		tweedie_utils::dtweedie(x[0], x[1], x[2], x[3], true) )
+// /********************************************************************
+//  * Adding 'dtweedie'
+//  ********************************************************************/
+// #include "TMB/tiny_ad/tweedie/tweedie.hpp"
+// TMB_BIND_ATOMIC(log_dtweedie,
+// 		0111,
+// 		tweedie_utils::dtweedie(x[0], x[1], x[2], x[3], true) )
 
-/********************************************************************
- * Adding numerically robust utility functions
- ********************************************************************/
-#include "robust/distributions.hpp"
-TMB_BIND_ATOMIC(log_dnbinom_robust,
-                011,
-                robust_utils::dnbinom_robust(x[0], x[1], x[2], true) )
+// /********************************************************************
+//  * Adding numerically robust utility functions
+//  ********************************************************************/
+// #include "TMB/tiny_ad/robust/distributions.hpp"
+// TMB_BIND_ATOMIC(log_dnbinom_robust,
+//                 011,
+//                 robust_utils::dnbinom_robust(x[0], x[1], x[2], true) )
 
-TMB_BIND_ATOMIC(log_dbinom_robust,
-                001,
-                robust_utils::dbinom_robust(x[0], x[1], x[2], true) )
+// TMB_BIND_ATOMIC(log_dbinom_robust,
+//                 001,
+//                 robust_utils::dbinom_robust(x[0], x[1], x[2], true) )
 
-TMB_BIND_ATOMIC(logspace_add,
-                11,
-                robust_utils::logspace_add(x[0], x[1]) )
+// TMB_BIND_ATOMIC(logspace_add,
+//                 11,
+//                 robust_utils::logspace_add(x[0], x[1]) )
 
-TMB_BIND_ATOMIC(logspace_sub,
-                11,
-                robust_utils::logspace_sub(x[0], x[1]) )
+// TMB_BIND_ATOMIC(logspace_sub,
+//                 11,
+//                 robust_utils::logspace_sub(x[0], x[1]) )
 
-/********************************************************************
- * Adding Conway-Maxwell_poisson distribution
- ********************************************************************/
-#include "compois/compois.hpp"
-TMB_BIND_ATOMIC(compois_calc_logZ,
-                11,
-                compois_utils::calc_logZ(x[0], x[1]) )
+// /********************************************************************
+//  * Adding Conway-Maxwell_poisson distribution
+//  ********************************************************************/
+// #include "TMB/tiny_ad/compois/compois.hpp"
+// TMB_BIND_ATOMIC(compois_calc_logZ,
+//                 11,
+//                 compois_utils::calc_logZ(x[0], x[1]) )
 
-TMB_BIND_ATOMIC(compois_calc_loglambda,
-                11,
-                compois_utils::calc_loglambda(x[0], x[1]) )
+// TMB_BIND_ATOMIC(compois_calc_loglambda,
+//                 11,
+//                 compois_utils::calc_loglambda(x[0], x[1]) )
 
-/********************************************************************
- * Adding 'qbeta'
- ********************************************************************/
+// /********************************************************************
+//  * Adding 'qbeta'
+//  ********************************************************************/
 extern "C" double Rf_qbeta(double, double, double, int, int);
 template <class Type>
 Type dbeta(Type x, Type shape1, Type shape2) {
@@ -132,6 +132,6 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 			   px[2] = -D_shape[2] / tmp * py[0];
 			   )
 
-} // End namespace atomic
+//} // End namespace atomic
 
 
