@@ -53,7 +53,7 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
     if(length(wrtNames[[i]]) > 1){
       indText <-  paste0('[', wrtNames[[i]][[2]])
     }
-    argSym <- parse(text = paste0(deparse(arg), indText))[[1]]
+    argSym <- parse(text = paste0(paste0(deparse(arg), collapse = ''), indText))[[1]]
     dimInfo <- dim(eval(argSym, envir = fxnEnv))
     if(is.null(dimInfo)) dimInfo <- length(eval(argSym, envir = fxnEnv))
     lineInds <- thisIndex:(thisIndex + prod(dimInfo) - 1)

@@ -1234,8 +1234,8 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
   }
   for(i in seq_along(calcNodeNames)){
     for(j in seq_along(wrt)){
-      test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes =', paste(calcNodeNames[[i]], collapse = ' '),
-                      'and wrt =', paste(wrt[[j]], collapse = ' ')), {
+      test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes ', i, 
+                      'and wrt ', j), {
                         wrapperDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
                         if(testR){
                           chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order, chainRuleDerivs = TRUE)
