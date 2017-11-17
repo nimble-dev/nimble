@@ -112,6 +112,15 @@ Type nimDerivs_dexp(Type x, Type rate, int give_log=0)
 	else
 		return CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY));
 }
+	
+template<class Type> 
+Type nimDerivs_dunif(Type x, Type a, Type b, int give_log=0)
+{   
+	Type check = CppAD::CondExpGt(b, a, Type(1), Type(0)); 
+	Type ans = check*CppAD::CondExpGt(x, a, CppAD::CondExpLt(x, b, 1/(a-b), Type(0)), Type(0));
+	if(!give_log) return ans;
+	else return(log(ans));
+}
 
 // Vectorize dexp
 // VECTORIZE3_tti(dexp)
