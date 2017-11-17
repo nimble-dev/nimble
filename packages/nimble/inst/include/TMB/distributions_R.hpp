@@ -105,7 +105,7 @@ Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){
 // 	\param give_log true if one wants the log-probability, false otherwise.
 // 	*/
 template<class Type> 
-Type nimDerivs_dexp(Type x, Type rate, int give_log=0)
+Type nimDerivs_dexp_nimble(Type x, Type rate, int give_log=0)
 {
 	if(!give_log)
 		return CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0));
