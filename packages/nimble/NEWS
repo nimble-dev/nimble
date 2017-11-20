@@ -1,4 +1,6 @@
-                           CHANGES IN VERSION 0.6-7 (November 2017)
+                           CHANGES IN VERSION 0.6-8 and 0.6-7 (November 2017)
+
+Note: versions 0.6-8 and 0.6-7 are the same except for a non-user-facing change to the withNimbleOptions function example to pass CRAN checks.
 
 USER LEVEL CHANGES
 
