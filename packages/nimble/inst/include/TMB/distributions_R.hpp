@@ -219,6 +219,17 @@ Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log=0)
 	if(!give_log) return exp(logres);
 	else return logres;
 }
+template<class Type> 
+Type nimDerivs_lfactorial(Type x) {
+	return(lgamma(x + 1));
+} 
+
+template<class Type> 
+Type nimDerivs_factorial(Type x) {
+	return(exp(lgamma(1+x)));
+}
+
+
 
 // Vectorize dbinom
 // VECTORIZE4_ttti(dbinom)

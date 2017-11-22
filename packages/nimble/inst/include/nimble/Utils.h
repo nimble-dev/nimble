@@ -201,9 +201,24 @@ double lfactorial(double x);
 double factorial(double x);
 //double loggam(double x);
 double logit(double x);
+template<class T>
+T nimDerivs_logit(T x) {
+  return(log(x / (T(1)-x)));
+}
+
 double nimRound(double x);
 double pairmax(double x1, double x2);
+template<class T>
+T nimDerivs_pairmax(T x1, T x2) {
+  return(CondExpGt(x1, x2, x1, x2));
+}
+
 double pairmin(double x1, double x2);
+template<class T>
+T nimDerivs_pairmin(T x1, T x2) {
+  return(CondExpLt(x1, x2, x1, x2));
+}
+
 //double phi(double x);
 int nimStep(double x); 
 template<class T>
@@ -212,7 +227,16 @@ T nimDerivs_nimStep(T x){
 } 
 
 double cube(double x);
+template<class T>
+T nimDerivs_cube(T x){
+	return(x*x*x);
+}
+
 double inprod(double v1, double v2);
+template<class T>
+T nimDerivs_inprod(T v1, T v2) {
+  return(v1*v2);
+}
 
 inline double nimble_NaN() {
   return std::numeric_limits<double>::has_quiet_NaN
