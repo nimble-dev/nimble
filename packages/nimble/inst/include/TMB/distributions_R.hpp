@@ -40,6 +40,16 @@ Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){
   tx[0] = p;
   return sd*atomic::qnorm1(tx)[0] + mean;
 }
+
+template<class T>
+T nimDerivs_probit(T x){
+  return(nimDerivs_qnorm(x, 0., 1., 1, 0));
+}
+
+template<class T>
+T nimDerivs_iprobit(T x){
+  return(nimDerivs_pnorm(x, 0., 1., 1, 0));
+}
 // VECTORIZE3_ttt(qnorm)
 // VECTORIZE1_t(qnorm)
 

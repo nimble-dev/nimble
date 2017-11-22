@@ -29,6 +29,7 @@
 #include<limits>
 #include<string>
 #include<time.h>
+#include<cppad/cppad.hpp>
 using std::string;
 
 //using namespace std;
@@ -180,20 +181,21 @@ T nimDerivs_icloglog(T x){
 }
 
 double iprobit(double x);
-template<class T>
-T nimDerivs_iprobit(T x){
-  return(nimDerivs_pnorm(x, 0., 1., 1, 0));
-}
-
-
 double probit(double x);
-template<class T>
-T nimDerivs_probit(T x){
-  return(nimDerivs_qnorm(x, 0., 1., 1, 0));
-}
+
 //double abs(double x);
 double cloglog(double x);
+template<class T>
+T nimDerivs_cloglog(T x){
+  return(log(-log(T(1) - x)));
+}
+
 int nimEquals(double x1, double x2);
+template<class T>
+T nimDerivs_nimEquals(T x1, T x2){
+  return(CondExpEq(x1, x2, T(1), T(0))); 
+}
+
 double nimbleIfElse(bool condition, double x1, double x2);
 double lfactorial(double x);
 double factorial(double x);
@@ -206,7 +208,7 @@ double pairmin(double x1, double x2);
 int nimStep(double x); 
 template<class T>
 T nimDerivs_nimStep(T x){
-	return(x >= T(0) ? T(1) : T(0));
+	return(CondExpGe(x, T(0), T(1), T(0)));
 } 
 
 double cube(double x);
