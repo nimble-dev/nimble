@@ -548,7 +548,7 @@ BUGSdeclClass$methods(
         if(type == 'stoch') {
             RHSreplaced <- codeReplaced[[3]]
             if(length(RHSreplaced) > 1) { ## It actually has argument(s)
-                boundNames <- c('lower', 'upper')
+                boundNames <- c('lower_', 'upper_')
                 boundExprs <<- as.list(RHSreplaced[boundNames])
                 if(truncated) {  # check for user-provided constant bounds inconsistent with distribution range
                     distName <- as.character(RHSreplaced[[1]])
@@ -573,7 +573,7 @@ BUGSdeclClass$methods(
                         warning(paste0("Lower bound is less than or equal to distribution lower bound in ",
                                        deparse(codeReplaced), "; ignoring user-provided lower bound."))
                         boundExprs$lower <<- distRange$lower
-                        codeReplaced[[3]]['lower'] <<- distRange$lower
+                        codeReplaced[[3]]['lower_'] <<- distRange$lower
                     }
                     if(is.numeric(boundExprs$upper) &&
                        is.numeric(distRange$upper) &&
@@ -582,7 +582,7 @@ BUGSdeclClass$methods(
                                        deparse(codeReplaced),
                                        "; ignoring user-provided upper bound."))
                         boundExprs$upper <<- distRange$upper
-                        codeReplaced[[3]]['upper'] <<- distRange$upper
+                        codeReplaced[[3]]['upper_'] <<- distRange$upper
                     }
                 }
                 if(!truncated) {

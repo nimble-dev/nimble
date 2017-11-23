@@ -30,7 +30,7 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
     RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'    
-    if("lower" %in% names(RHS) || "upper" %in% names(RHS)) {
+    if("lower_" %in% names(RHS) || "upper_" %in% names(RHS)) {
         RHS <- ndf_createStochSimulateTrunc(RHS, discrete = getAllDistributionsInfo('discrete')[BUGSdistName])
     } 
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
@@ -49,11 +49,11 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
 }
 
 
-## changes 'rnorm(mean=1, sd=2, lower=0, upper=3)' into correct truncated simulation
+## changes 'rnorm(mean=1, sd=2, lower_=0, upper_=3)' into correct truncated simulation
 ##   using inverse CDF
 ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
-    lowerPosn <- which("lower" == names(RHS))
-    upperPosn <- which("upper" == names(RHS))
+    lowerPosn <- which("lower_" == names(RHS))
+    upperPosn <- which("upper_" == names(RHS))
     lower <- RHS[[lowerPosn]]
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
@@ -121,7 +121,7 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, AD
     RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$densityName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS
-    if("lower" %in% names(RHS) || "upper" %in% names(RHS)) {
+    if("lower_" %in% names(RHS) || "upper_" %in% names(RHS)) {
         return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS, diff = diff, discrete = getAllDistributionsInfo('discrete')[BUGSdistName], dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))
     } else {
         userDist <- BUGSdistName %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
@@ -170,8 +170,8 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, AD
 
 ## changes 'dnorm(mean=1, sd=2, lower=0, upper=3)' into correct truncated calculation
 ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, discrete = FALSE, dynamicIndexLimitsExpr, RHSnonReplaced) {
-    lowerPosn <- which("lower" == names(RHS))
-    upperPosn <- which("upper" == names(RHS))
+    lowerPosn <- which("lower_" == names(RHS))
+    upperPosn <- which("upper_" == names(RHS))
     lower <- RHS[[lowerPosn]]
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
