@@ -299,6 +299,13 @@ test_that("Test that user-defined distributions with 'lower' and 'upper' params 
             return(1) else return(0)
         returnType(double())
     })
+    rmyunif <- nimbleFunction(
+        run = function(n = double(0), lower = double(0), upper = double(0)) {
+            return(0)
+            returnType(double(0))
+        })
+    temporarilyAssignInGlobalEnv(dmyunif)
+    temporarilyAssignInGlobalEnv(rmyunif)
 
     code = nimbleCode({
         y ~ dmyunif(lower = 3, upper = 7)
