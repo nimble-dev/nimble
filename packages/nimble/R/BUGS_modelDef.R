@@ -350,7 +350,7 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList) {
         initDim <- nimbleInternalFunctions$dimOrLength(initsList[[i]], scalarize = TRUE)
         if(initName %in% names(dL)) {
             if(!identical(as.numeric(dL[[initName]]), as.numeric(initDim))) {
-                stop('inconsistent dimensions between inits and dimensions arguments:', initName)
+                warning('inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
             }
         } else {
             dL[[initName]] <- initDim
