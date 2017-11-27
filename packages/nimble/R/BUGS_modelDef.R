@@ -333,7 +333,10 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList) {
     for(i in seq_along(constantsList)) {
         constName <- names(constantsList)[i]
         ## constDim <- if(is.null(dim(constantsList[[i]]))) length(constantsList[[i]]) else dim(constantsList[[i]])
-        constDim <- nimbleInternalFunctions$dimOrLength(constantsList[[i]], scalarize = TRUE)
+#       constDim <- nimbleInternalFunctions$dimOrLength(constantsList[[i]], scalarize = TRUE)
+        constDim <- nimbleInternalFunctions$dimOrLength(constantsList[[i]], scalarize = FALSE)  # don't scalarize as want to preserve dims as provided by user, e.g. for 1x1 matrices
+        if(length(constDim) == 1 && constDim == 1)
+            constDim <- numeric(0)  # but for 1-length vectors treat as scalars as that is how handled in system
         if(constName %in% names(dL)) {
             if(!identical(as.numeric(dL[[constName]]), as.numeric(constDim))) {
                 stop('inconsistent dimensions between constants and dimensions arguments: ', constName)
@@ -347,7 +350,9 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList) {
     # we'll try to be smart about this: check for duplicate names in inits and dimensions, and make sure they agree
     for(i in seq_along(initsList)) {
         initName <- names(initsList)[i]
-        initDim <- nimbleInternalFunctions$dimOrLength(initsList[[i]], scalarize = TRUE)
+        initDim <- nimbleInternalFunctions$dimOrLength(initsList[[i]], scalarize = FALSE)  # don't scalarize as want to preserve dims as provided by user, e.g. for 1x1 matrices
+        if(length(initDim) == 1 && initDim == 1)
+            initDim <- numeric(0)  # but for 1-length vectors treat as scalars as that is how handled in system
         if(initName %in% names(dL)) {
             if(!identical(as.numeric(dL[[initName]]), as.numeric(initDim))) {
                 warning('inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
