@@ -160,7 +160,7 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     }
 
     ## put dummy values in ADindependentVars
-    dummyValueRcode <- substitute(for(III in 1:TOTLENGTH) ADindependentVars[III] = 0.5, list(III = as.name(indexVarNames[1]), TOTLENGTH = totalIndependentLength))
+    dummyValueRcode <- substitute(for(III in 1:TOTLENGTH) ADindependentVars[III] = 1, list(III = as.name(indexVarNames[1]), TOTLENGTH = totalIndependentLength))
     
     if(isNode){
       dummyIndexNodeInfoCode <- list(cppLiteral('indexedNodeInfo ARG1_INDEXEDNODEINFO__ = generateDummyIndexedNodeInfo();'))
@@ -248,7 +248,8 @@ makeStaticInitClass <- function(cppDef, derivMethods) {
     cppClass
 }
 
-makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0, parentsSizeAndDims) {
+makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames, funIndex = 0, parentsSizeAndDims,
+                                           ADconstantsInfo) {
     ## modeled closely parts of /*  */
     ## needs to set the ADtapePtr to one element of the ADtape
     TF <- RCfunctionDef$new() ## should it be static?
@@ -296,6 +297,12 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
           thisName <- sub("_[0-9]+$", "", thisName)
           thisModelName <- paste0('model_', Rname2CppName(thisName)) ## Add model_ at beginning and remove _1, _2, etc. at end of arg name.
           thisSizeAndDims <- parentsSizeAndDims[[thisName]][[thisModelElementNum]]
+          if(is.null(thisSizeAndDims)){
+            thisConstInfo <- ADconstantsInfo[[thisName]][[thisModelElementNum]]
+            copyIntoIndepVarCode[[ivn+1]] <- substitute({memberData(ADtapeSetup, independentVars)[netIncrement_] <- ARG1_INDEXEDNODEINFO__.info[INT]; netIncrement_ <- netIncrement_ + 1}, list(INT = thisConstInfo$indexColumn)) 
+            totalIndependentLength <- totalIndependentLength + 1
+            next
+          }
         }
         if(thisSym$nDim > 0) {
             thisSizes <- thisSym$size
@@ -318,19 +325,6 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
           if(isNode){
             indexBracketInfo <- paste0('[', paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr,
                                                           subArgIndexedInfo), collapse = ', '),']')
-            # 
-            # if(length(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$lengths) > 1)
-            #   indexBracketInfo <- paste0('(', 
-            #                              paste0(sapply(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr, subArgIndexedInfo), collapse = ', '),
-            #                             ')')
-            # else{
-            #   if(deparse(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]][[1]]) == 'getNodeFunctionIndexedInfo'){
-            #     indexBracketInfo <- paste0('[', subArgIndexedInfo(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]]), ']')
-            #   }
-            #   else{
-            #     indexBracketInfo <- paste0('[', deparse(parentsSizeAndDims[[thisName]][[thisModelElementNum]]$indexExpr[[1]][[1]]), ']')
-            #   }
-            
             indexName <- paste0("cppLiteral('(**", thisModelName, ")')", indexBracketInfo)
             RHS <- parse(text = substitute(INDEXNAME, list(INDEXNAME = as.name(indexName))))[[1]]
           }

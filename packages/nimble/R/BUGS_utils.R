@@ -95,6 +95,26 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
   return(allSizeAndDimList)
 }
 
+makeSizeAndDimListForIndexedInfo <- function(code, nodeNamesToSkip,
+                                             unrolledIndicesMatrix = NULL, allSizeAndDimList = list()){
+  if(is.call(code)){
+    if((deparse(code[[1]]) == 'getNodeFunctionIndexedInfo') && length(code) == 3) {
+      thisCodeExprList <- list(indexColumn = code[[3]])
+      thisConstName <- colnames(unrolledIndicesMatrix)[code[[3]]]
+      if(is.null(allSizeAndDimList[[thisConstName]])) allSizeAndDimList[[thisConstName]][[1]] <- thisCodeExprList
+      else allSizeAndDimList[[thisConstName]][[length(allSizeAndDimList[[thisConstName]]) + 1]] <- thisCodeExprList
+      return(allSizeAndDimList)
+    }
+  }
+  if(length(code) > 1){
+    if(!((deparse(code[[1]]) == '[') && (deparse(code[[2]]) %in% nodeNamesToSkip))){
+      for(i in 2:length(code)){
+        allSizeAndDimList <- makeSizeAndDimListForIndexedInfo(code[[i]], nodeNamesToSkip, unrolledIndicesMatrix, allSizeAndDimList)
+      }
+    }
+  }
+  return(allSizeAndDimList)
+}
 
 
 ## This should add model$ in front of any names that are not already part of a '$' expression
