@@ -309,7 +309,16 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
             if(isNode){
               sizeList <- list()
               for(i in 1:length(thisSizeAndDims$lengths)){
-                sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[2]])
+                if(thisSizeAndDims$lengths[i] == 1){
+                  if(deparse(thisSizeAndDims$indexExpr[[i]][[1]]) == 'getNodeFunctionIndexedInfo'){
+                    thisSizeAndDims$indexExpr[[i]][[1]] <- parse(text = paste0(
+                      'ARG1_INDEXEDNODEINFO__.info[', thisSizeAndDims$indexExpr[[i]][[3]], ']'))[[1]]
+                  }
+                  sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[1]])
+                }
+                else{
+                  sizeList[[i]] <-  list(thisSizeAndDims$indexExpr[[i]][[1]], thisSizeAndDims$indexExpr[[i]][[2]])
+                }
               }
             }
             else{

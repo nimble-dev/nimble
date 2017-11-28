@@ -59,7 +59,6 @@ double nimArr_rcat(NimArr<1, double> &prob);
 template<class Type>
 Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, double prec_param, int give_log, int overwrite_inputs) { 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-
   int n = x.dimSize(0);
   int i;
   Type dens = Type(-n * M_LN_SQRT_2PI);
