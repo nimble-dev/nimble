@@ -12,10 +12,6 @@
 	#define TMB_EXTERN
 	#endif
 	#define IF_TMB_PRECOMPILE(x)
-	#ifndef M_LN_SQRT_PI
-	#define M_LN_SQRT_PI	0.572364942924700087071713675677	/* log(sqrt(pi))
-																   == log(pi)/2 */
-	#endif
 	#include <Eigen/Dense>
 	#include <Eigen/Sparse>
   #include <TMB/lgamma.hpp>
@@ -24,11 +20,14 @@
 /** \brief Distribution function of the normal distribution (following R argument convention).
     \ingroup R_style_distribution
 */
-
+#ifndef M_LN_SQRT_PI
+#define M_LN_SQRT_PI	0.572364942924700087071713675677	/* log(sqrt(pi))
+								   == log(pi)/2 */
+#endif
 template<class Type>
-Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr, Type df, int scale_param, int give_log, int overwrite_inputs){
+Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr, int df, int scale_param, int give_log, int overwrite_inputs){
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-   Type p = xNimArr.dim()[0];
+   int p = xNimArr.dim()[0];
 
   char uplo('U');
   char sideL('L');
@@ -70,7 +69,12 @@ Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &chol
 
 
 MatrixXt eigenXChol = x.llt().matrixL();
-dens += (df - p - 1) * eigenXChol.log().sum();
+for(i = 0; i < p; i++){ 
+	for(j = 0; j < p; j++){ 
+  		dens += (df - p - 1) *  log(eigenXChol(i, j));
+	}
+}
+
 Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
   Type tmp_dens = 0.0;
   if(scale_param) {
