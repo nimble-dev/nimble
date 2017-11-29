@@ -20,102 +20,102 @@
 /** \brief Distribution function of the normal distribution (following R argument convention).
     \ingroup R_style_distribution
 */
-#ifndef M_LN_SQRT_PI
-#define M_LN_SQRT_PI	0.572364942924700087071713675677	/* log(sqrt(pi))
-								   == log(pi)/2 */
-#endif
-template<class Type>
-Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr, int df, int scale_param, int give_log, int overwrite_inputs){
-  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-   int p = xNimArr.dim()[0];
-
-  char uplo('U');
-  char sideL('L');
-  char sideR('R');
-  char diag('N');
-  char transN('N');
-  int info(0);
-  double alpha(1.0);
-  int i, j;
-
-//   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
-//     return NA_REAL;
-// #ifdef IEEE_754
-//   if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
-//     return R_NaN;
+// #ifndef M_LN_SQRT_PI
+// #define M_LN_SQRT_PI	0.572364942924700087071713675677	/* log(sqrt(pi))
+// 								   == log(pi)/2 */
 // #endif
+// template<class Type>
+// Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr, int df, int scale_param, int give_log, int overwrite_inputs){
+//   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+//    int p = xNimArr.dim()[0];
 
-  // also covers df < 0
-//   if(df < (double) p) ML_ERR_return_NAN;
+//   char uplo('U');
+//   char sideL('L');
+//   char sideR('R');
+//   char diag('N');
+//   char transN('N');
+//   int info(0);
+//   double alpha(1.0);
+//   int i, j;
 
-//   if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+// //   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+// //     return NA_REAL;
+// // #ifdef IEEE_754
+// //   if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+// //     return R_NaN;
+// // #endif
 
-  Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
-  for(i = 0; i < p; i++)
-    dens -= lgamma((df - i) / 2);
+//   // also covers df < 0
+// //   if(df < (double) p) ML_ERR_return_NAN;
 
-  if(scale_param) {
-    for(i = 0; i < p; i++){ 
-	  dens -= df * log(cholNimArr(i, i));
-	}
-  } else {
-    for(i = 0; i < p; i++){ 
-	  dens += df *  log(cholNimArr(i, i));
-	}
-  }
+// //   if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
 
-  // determinant of x using Cholesky:
-  Eigen::Map<MatrixXt > x(xNimArr.getPtr(), p, p);
+//   Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
+//   for(i = 0; i < p; i++)
+//     dens -= lgamma((df - i) / 2);
+
+//   if(scale_param) {
+//     for(i = 0; i < p; i++){ 
+// 	  dens -= df * log(cholNimArr(i, i));
+// 	}
+//   } else {
+//     for(i = 0; i < p; i++){ 
+// 	  dens += df *  log(cholNimArr(i, i));
+// 	}
+//   }
+
+//   // determinant of x using Cholesky:
+//   Eigen::Map<MatrixXt > x(xNimArr.getPtr(), p, p);
 
 
-MatrixXt eigenXChol = x.llt().matrixL();
-for(i = 0; i < p; i++){ 
-	for(j = 0; j < p; j++){ 
-  		dens += (df - p - 1) *  log(eigenXChol(i, j));
-	}
-}
+// MatrixXt eigenXChol = x.llt().matrixL();
+// for(i = 0; i < p; i++){ 
+// 	for(j = 0; j < p; j++){ 
+//   		dens += (df - p - 1) *  log(eigenXChol(i, j));
+// 	}
+// }
 
-Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
-  Type tmp_dens = 0.0;
-  if(scale_param) {
-	// chol(x) %*% inverse(chol)
+// Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
+//   Type tmp_dens = 0.0;
+//   if(scale_param) {
+// 	// chol(x) %*% inverse(chol)
 	
-	//   SUBROUTINE DTRSM ( SIDE, UPLO, TRANSA, DIAG, M, N, ALPHA, A, LDA,
-	//  $                   B, LDB )
+// 	//   SUBROUTINE DTRSM ( SIDE, UPLO, TRANSA, DIAG, M, N, ALPHA, A, LDA,
+// 	//  $                   B, LDB )
 	 
-	//  #     op( A )*X = alpha*B,   or   X*op( A ) = alpha*B,
+// 	//  #     op( A )*X = alpha*B,   or   X*op( A ) = alpha*B,
 
-	//  alpha = 1
-	//  A = chol
-	//  B = xChol
-	//  diag = N
-	//  N = M = p
-	//  TransA = N
-	//  uplo = U
-	// side = R
-	// LDA = LDB = p
+// 	//  alpha = 1
+// 	//  A = chol
+// 	//  B = xChol
+// 	//  diag = N
+// 	//  N = M = p
+// 	//  TransA = N
+// 	//  uplo = U
+// 	// side = R
+// 	// LDA = LDB = p
 	
-	// so X*chol = xChol
-	// aka cholT*xT = xChol
-	MatrixXt eigenSolved = eigenChol.transpose().colPivHouseholderQr().solve(x).transpose();
+// 	// so X*chol = xChol
+// 	// aka cholT*xT = xChol
+// 	MatrixXt eigenSolved = eigenChol.transpose().colPivHouseholderQr().solve(x).transpose();
 
-	for(j = 0; j < p; j++){ 
-      for(i = 0; i <= j; i++){ 
-		tmp_dens += eigenSolved(i,j)*eigenSolved(i,j);
-	}
-	}
-  } else {
-	  MatrixXt cholMultX = eigenChol*x;
-    for(j = 0; j < p; j++) {
-      for(i = 0; i <= j; i++) {
-        tmp_dens += cholMultX(i, j) * eigenChol(i, j);
-      }
-    }
-  }
+// 	for(j = 0; j < p; j++){ 
+//       for(i = 0; i <= j; i++){ 
+// 		tmp_dens += eigenSolved(i,j)*eigenSolved(i,j);
+// 	}
+// 	}
+//   } else {
+// 	  MatrixXt cholMultX = eigenChol*x;
+//     for(j = 0; j < p; j++) {
+//       for(i = 0; i <= j; i++) {
+//         tmp_dens += cholMultX(i, j) * eigenChol(i, j);
+//       }
+//     }
+//   }
 
-  dens += -0.5 * tmp_dens;
-  return give_log ? dens : exp(dens);
-}
+//   dens += -0.5 * tmp_dens;
+//   return give_log ? dens : exp(dens);
+// }
 
 template<class Type>
 Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){
