@@ -92,7 +92,7 @@ buildMCMC <- nimbleFunction(
         ## WAIC setup below:
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
-        sampledNodes <- model$getVarNames(FALSE, colnames(as.matrix(mvSamples)))
+        sampledNodes <- model$getVarNames(FALSE, monitors)
         ## Remove any logProb variables from nodes used in WAIC calculation:
         sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(FALSE)]
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
