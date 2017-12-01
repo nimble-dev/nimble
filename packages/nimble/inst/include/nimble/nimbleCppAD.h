@@ -32,6 +32,8 @@
 //#include <nimble/smartPtrs.h>
 #include <cstdio>
 #include <vector>
+#include <chrono>
+
 
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction
    object
@@ -48,7 +50,7 @@ class nimbleCppADinfoClass {
    CppAD-enabled nimbleFunctions. Some of these functions might
    make more sense as stand-alone functions.  Let's see. */
 class nimbleFunctionCppADbase {
- public:
+public:
   nimSmartPtr<NIMBLE_ADCLASS> getDerivs(nimbleCppADinfoClass &ADinfo,
                                         NimArr<1, double> &derivOrders,
                                         NimArr<1, double> &wrtVector) {
@@ -70,6 +72,7 @@ class nimbleFunctionCppADbase {
       }
       ordersFound[static_cast<int>(array_derivOrders[i])] = true;
     }
+
     vector<double> value_ans =
         ADinfo.ADtape->Forward(0, ADinfo.independentVars);
 
@@ -79,23 +82,26 @@ class nimbleFunctionCppADbase {
         return (ADlist);
       }
     }
+            auto t1 = std::chrono::high_resolution_clock::now();
 
     std::size_t q = length(value_ans);
+    vector<double> hessian_ans;
+    vector<double> gradient_ans;
 
     if (ordersFound[1] == true) {
       ADlist->gradient.initialize(0, false, q, wrt_n);
+      gradient_ans.reserve(wrt_n * q);
     }
     if (ordersFound[2] == true) {
       ADlist->hessian.initialize(0, false, wrt_n, wrt_n, q);
+      hessian_ans.reserve(wrt_n * wrt_n * q);
     }
 
     vector<double> cppad_derivOut;
-    vector<double> hessian_ans(wrt_n * wrt_n * q, -1);
-    vector<double> gradient_ans(wrt_n * q, -1);
     for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
       std::vector<double> w(q, 0);
       w[dy_ind] = 1;
-      if (maxOrder == 1) {
+      if (maxOrder == 1) {   
         cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
       } else {
         for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
@@ -122,7 +128,6 @@ class nimbleFunctionCppADbase {
         }
       }
     }
-
     if (ordersFound[1] == true) {
       std::copy(gradient_ans.begin(), gradient_ans.end(),
                 ADlist->gradient.getPtr());
@@ -130,7 +135,9 @@ class nimbleFunctionCppADbase {
     if (ordersFound[2] == true) {
       std::copy(hessian_ans.begin(), hessian_ans.end(),
                 ADlist->hessian.getPtr());
-    }
+              }
+    auto t1b =std::chrono::high_resolution_clock::now();
+    ADlist->value[0] =    chrono::duration_cast<chrono::microseconds>(t1b - t1).count();
     return (ADlist);
   }
 };
