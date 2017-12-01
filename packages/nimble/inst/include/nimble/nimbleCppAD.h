@@ -85,16 +85,13 @@ public:
             auto t1 = std::chrono::high_resolution_clock::now();
 
     std::size_t q = length(value_ans);
-    vector<double> hessian_ans;
-    vector<double> gradient_ans;
-
+    vector<double> hessian_ans(wrt_n * wrt_n * q, -1);
+    vector<double> gradient_ans(wrt_n * q, -1);
     if (ordersFound[1] == true) {
       ADlist->gradient.initialize(0, false, q, wrt_n);
-      gradient_ans.reserve(wrt_n * q);
     }
     if (ordersFound[2] == true) {
       ADlist->hessian.initialize(0, false, wrt_n, wrt_n, q);
-      hessian_ans.reserve(wrt_n * wrt_n * q);
     }
 
     vector<double> cppad_derivOut;
