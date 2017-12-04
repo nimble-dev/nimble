@@ -65,7 +65,7 @@ class NodeVectorClassNew {
 
 // This is a collection of instructions denoting a sort of "program".
 class NodeVectorClassNew_derivs : public NodeVectorClassNew {
- public:
+public:
 	vector<vector<NimArr<1, int> > > parentIndicesList;
 	NimArr<1, int> stochNodeIndicators;
 	NimArr<1, int> calcNodeIndicators;
@@ -78,10 +78,11 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 	vector<NimArr<1, int> > lineWrtArgSizeInfo;
 	int totalOutWrtSize;
 	int totalWrtSize;
-    NimArr<1, int> cumulativeWrtLineNums;
-    NimArr<1, int> wrtLineSize;
+  NimArr<1, int> cumulativeWrtLineNums;
+  NimArr<1, int> wrtLineSize;
+	const vector<NodeInstruction> &getConstInstructions() const { 
+    return instructions; }
 
-	
 	void populateDerivsInfo(SEXP SderivsInfo) {
 		SEXP S_pxData;
 		SEXP S_parentInds;

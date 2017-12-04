@@ -53,7 +53,7 @@ class nimbleFunctionCppADbase {
 public:
   nimSmartPtr<NIMBLE_ADCLASS> getDerivs(nimbleCppADinfoClass &ADinfo,
                                         NimArr<1, double> &derivOrders,
-                                        NimArr<1, double> &wrtVector) {
+                                        const NimArr<1, double> &wrtVector) {
     nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
     std::size_t n = length(ADinfo.independentVars);  // dim of independent vars
     std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
@@ -85,12 +85,14 @@ public:
             auto t1 = std::chrono::high_resolution_clock::now();
 
     std::size_t q = length(value_ans);
-    vector<double> hessian_ans(wrt_n * wrt_n * q, -1);
-    vector<double> gradient_ans(wrt_n * q, -1);
+    // vector<double> hessian_ans;
+    // vector<double> gradient_ans;
     if (ordersFound[1] == true) {
+      // gradient_ans.resize(wrt_n * q);
       ADlist->gradient.initialize(0, false, q, wrt_n);
     }
     if (ordersFound[2] == true) {
+      // hessian_ans.resize(wrt_n * wrt_n * q);
       ADlist->hessian.initialize(0, false, wrt_n, wrt_n, q);
     }
 
@@ -112,7 +114,7 @@ public:
           cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
           for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
             int dx2_ind = wrtVector[vec_ind2] - 1;
-            hessian_ans[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
+             ADlist->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
                 cppad_derivOut[dx2_ind * 2 + 1];
           }
         }
@@ -120,19 +122,19 @@ public:
       if (ordersFound[1] == true) {
         for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
           int dx1_ind = wrtVector[vec_ind] - 1;
-          gradient_ans[vec_ind * q + dy_ind] =
+          ADlist->gradient[vec_ind * q + dy_ind] =
               cppad_derivOut[dx1_ind * maxOrder + 0];
         }
       }
     }
-    if (ordersFound[1] == true) {
-      std::copy(gradient_ans.begin(), gradient_ans.end(),
-                ADlist->gradient.getPtr());
-    }
-    if (ordersFound[2] == true) {
-      std::copy(hessian_ans.begin(), hessian_ans.end(),
-                ADlist->hessian.getPtr());
-              }
+    // if (ordersFound[1] == true) {
+    //   std::copy(gradient_ans.begin(), gradient_ans.end(),
+    //             ADlist->gradient.getPtr());
+    // }
+    // if (ordersFound[2] == true) {
+    //   std::copy(hessian_ans.begin(), hessian_ans.end(),
+    //             ADlist->hessian.getPtr());
+    //           }
     auto t1b =std::chrono::high_resolution_clock::now();
     ADlist->value[0] =    chrono::duration_cast<chrono::microseconds>(t1b - t1).count();
     return (ADlist);
@@ -140,9 +142,9 @@ public:
 };
 
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
-    NodeVectorClassNew_derivs &nodes, NimArr<1, double> &derivOrders);
+    const NodeVectorClassNew_derivs &nodes, const NimArr<1, double> &derivOrders);
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
-    NodeVectorClassNew_derivs &nodes, double derivOrders);
+    const NodeVectorClassNew_derivs &nodes, const double derivOrders);
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
     NodeVectorClassNew_derivs &nodes, int iNodeFunction,
     NimArr<1, double> &derivOrders);

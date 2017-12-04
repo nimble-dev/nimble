@@ -195,6 +195,9 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 					   copyLineCounter <- 1
 					   
 					   for(i in seq_along(argNames)) {
+					     if(exists('const', RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]))){
+					       objects$symbols[[i]] <- symbolDouble(objects$symbols[[i]]$name,   NA, 1)$genCppVar() ## remove 'const' local vars from sexpInterfaceFun
+					     }
 					     Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
 					     ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
 					     interfaceArgs$addSymbol(cppSEXP(name = Snames[i]))
