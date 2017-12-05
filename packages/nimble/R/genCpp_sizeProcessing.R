@@ -1209,14 +1209,15 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   }
   code$sizeExprs <- symbolObject
   code$toEigenize <- "yes"  # This is specialized for nimSvd and nimEigen.
-  if(code$name == 'getDerivs'){
-      code$toEigenize <- 'no'  ## Temp. solution to ensure that derivsOrders argument is a nimArray and not an eigen type.
-  }
+  # if(code$name == 'getDerivs'){
+  #     code$toEigenize <- 'no'  ## Temp. solution to ensure that derivsOrders argument is a nimArray and not an eigen type.
+  # }
   code$nDim <- 0
   if(!nimbleOptions('experimentalSelfLiftStage')) {
       if(!(code$caller$name %in% assignmentOperators))
           asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   }
+  browser()
   if(length(asserts) == 0) NULL else asserts
 }
 
