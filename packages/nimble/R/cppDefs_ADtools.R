@@ -352,7 +352,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
         localVars$addSymbol( cppVar(name = indexVarNames[ivn], baseType = 'int') )    
     }
     
-    allRcode <- do.call('call', c(list('{'), list(assignTapePtrCode), list(setSizeLine), copyIntoIndepVarCode, list(returnCall)), quote=TRUE)
+    allRcode <- do.call('call', c(list('{'), list(setSizeLine), list(assignTapePtrCode), copyIntoIndepVarCode, list(returnCall)), quote=TRUE)
     allCode <- RparseTree2ExprClasses(allRcode)
     TF$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
     TF

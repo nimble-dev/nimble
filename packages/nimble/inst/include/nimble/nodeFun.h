@@ -70,7 +70,7 @@ class nodeFun : public NamedObjects {
   }
 
   virtual double calculate(const indexedNodeInfo &iNI) const =0;
-  virtual nimSmartPtr<NIMBLE_ADCLASS> calculateWithArgs_deriv(const indexedNodeInfo &iNI, NimArr<1, double> & ARG2_nimDerivsOrders_, const NimArr<1, double> & ARG3_wrtVector_) = 0;
+  virtual void calculateWithArgs_deriv(const indexedNodeInfo &iNI, NimArr<1, double> & ARG2_nimDerivsOrders_, const NimArr<1, double> & ARG3_wrtVector_, nimSmartPtr<NIMBLE_ADCLASS> ansList) = 0;
   virtual double calculateDiff(const indexedNodeInfo &iNI) const =0;
   virtual void simulate(const indexedNodeInfo &iNI) const =0;
   virtual double getLogProb(const indexedNodeInfo &iNI) const =0;
@@ -84,8 +84,8 @@ class nodeFun : public NamedObjects {
   virtual NimArr<2, double> getBound_2D_double(int boundID, const indexedNodeInfo &iNI) const {NimArr<2, double> ans; return(ans);}
 
   double calculateBlock(int operand) const { return calculate(indexedNodeInfoTable[operand]); }
-  nimSmartPtr<NIMBLE_ADCLASS> calculateWithArgs_derivBlock(int operand, NimArr<1, double> &derivOrders, const NimArr<1, double> &wrtVector) {
-	  return(calculateWithArgs_deriv(indexedNodeInfoTable[operand], derivOrders, wrtVector));
+  void calculateWithArgs_derivBlock(int operand, NimArr<1, double> &derivOrders, const NimArr<1, double> &wrtVector, nimSmartPtr<NIMBLE_ADCLASS> ansList) {
+	  return(calculateWithArgs_deriv(indexedNodeInfoTable[operand], derivOrders, wrtVector, ansList));
   }
   double calculateDiffBlock(int operand) const { return calculateDiff(indexedNodeInfoTable[operand]); }
   double getLogProbBlock(int operand) const { return getLogProb(indexedNodeInfoTable[operand]); }

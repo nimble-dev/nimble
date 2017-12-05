@@ -16,7 +16,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   nimSmartPtr<NIMBLE_ADCLASS> ansList =
       new NIMBLE_ADCLASS;  // This will be returned from this funciton.
   nimSmartPtr<NIMBLE_ADCLASS>
-      thisDerivList;  // Used to store derivative output from individual nodes.
+      thisDerivList = new NIMBLE_ADCLASS;  // Used to store derivative output from individual nodes.
   const vector<NodeInstruction> &instructions = nodes.getConstInstructions();
   bool hessianFlag = false;   // Are second order derivs requested?
   bool jacobianFlag = false;  // Are first order derivs requested?
@@ -289,10 +289,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                  // rule.
         auto t2 = std::chrono::high_resolution_clock::now();
 
-        thisDerivList =
             instructions[i].nodeFunPtr->calculateWithArgs_derivBlock(
                 instructions[i].operand, newDerivOrders,
-                nodes.cppWrtArgIndices[i]);  // Derivatives of calculate() for
+                nodes.cppWrtArgIndices[i], thisDerivList);  // Derivatives of calculate() for
                                              // node i are computed here.
 
         
@@ -464,10 +463,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
         if (valueFlag) {  // Still may need to get the value (0'th order deriv).
           NimArr<1, double> valueOrder(1);
           valueOrder[0] = 0;
-          thisDerivList =
               instructions[i].nodeFunPtr->calculateWithArgs_derivBlock(
                   instructions[i].operand, valueOrder,
-                  nodes.cppWrtArgIndices[i]);
+                  nodes.cppWrtArgIndices[i], thisDerivList);
         }
         chainRuleJacobians[i] =
             MatrixXd::Zero(thisNodeSize, nodes.totalWrtSize);
