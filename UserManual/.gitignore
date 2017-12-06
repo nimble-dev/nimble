@@ -1,0 +1,21 @@
+# tex file versions of Rnw files
+NimbleUserManual.tex
+MCMC.tex
+chapter_*.tex
+.Rhistory
+
+# testing files for Daniel
+includesMCMConly*
+includesWritingNFsonly*
+includes*nly*
+
+# Latex output files
+*.aux
+*.out
+*.bbl
+*.blg
+*.log
+*.toc
+*.bbl
+*.blg
+figure

@@ -1,14 +1,17 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-nimbleOptions(showCompilerOutput = TRUE)
-
 ## Tests for copy() [implemented as nimCopy], values(), and values()<-
 ## These use some of the same internals (accessors), so they are in the same testing file.
 ## These tests use lists of nimbleFunctions, initialization code, and testing code.
 ## They include copying to and from models and/or modelValues, using default arguments, using logProb = [TRUE|FALSE], and using the same or different blocks of variables.
 ## Checks are made internally for uncompiled and compiled cases.  Then uncompiled and compiled outcomes are compared to check that they behaved identically.
 
-context('nimCopy and values() tests')
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+context('Testing of nimCopy and values')
 
 #############
 ## Here is a model with deterministic and stochastic variables of dimensions 0-4, including a multivariate node
@@ -415,18 +418,18 @@ compareCompiledToUncompiled_code <- quote({
 
 
 ## Function to iterate through test cases
-runCopyTests <- function(testCaseList = copyTestCaseList, testModelCode = copyTestModelCode, testNFcodeList = copyTestNFcodeList, dirName = NULL, trace = FALSE) {
+runCopyTests <- function(testCaseList = copyTestCaseList, testModelCode = copyTestModelCode, testNFcodeList = copyTestNFcodeList, dirName = NULL, verbose = nimbleOptions()$verbose) {
     for(copyTestCase in testCaseList) {
-        runOneCopyTest(copyTestCase, testModelCode = testModelCode, testNFcodeList = testNFcodeList, dirName = dirName, trace = trace)
+        runOneCopyTest(copyTestCase, testModelCode = testModelCode, testNFcodeList = testNFcodeList, dirName = dirName, verbose = verbose)
     }
 }
 
 ## Function to handle one test case
-runOneCopyTest <- function(copyTestCase, testModelCode, testNFcodeList, dirName = NULL, trace = FALSE) {
-    if(trace) writeLines(paste0('STARTING CASE ', copyTestCase$label))
+runOneCopyTest <- function(copyTestCase, testModelCode, testNFcodeList, dirName = NULL, verbose = nimbleOptions()$verbose) {
+    if(verbose) writeLines(paste0('Testing ', copyTestCase$label))
     compileVec <- copyTestCase$compile
     for(compile in compileVec) {
-        if(trace) writeLines(paste0('COMPILE = ', compile))
+        if(verbose) writeLines(paste0('COMPILE = ', compile))
         m <- nimbleModel(testModelCode, constants = copyTestConstants, data = copyTestData)
         mv <- modelValues(m, 3)
         set.seed(copyTestCase$seed)
@@ -454,8 +457,8 @@ runOneCopyTest <- function(copyTestCase, testModelCode, testNFcodeList, dirName 
 
 ###############
 ## Master call:
-runCopyTests(copyTestCaseList, dirName = getwd(), trace = TRUE)
-runCopyTests(copyTestCaseListMVtoModel, dirName = getwd(), trace = TRUE)
+runCopyTests(copyTestCaseList, dirName = getwd(), verbose = nimbleOptions()$verbose)
+runCopyTests(copyTestCaseListMVtoModel, dirName = getwd(), verbose = nimbleOptions()$verbose)
 
 ###################
 ### Testing for values() and values()<-
@@ -527,18 +530,18 @@ copyTestCaseListValues <- list(
 )
 
 ## Iterate through the value tests
-runValuesTests <- function(testCaseList = copyTestCaseListValues, testModelCode = copyTestModelCode, testNFcodeList = copyTestNFcodeListValues, testNFconstantsList = copyTestConstants, testNFdataList = copyTestData, dirName = NULL, trace = FALSE) {
+runValuesTests <- function(testCaseList = copyTestCaseListValues, testModelCode = copyTestModelCode, testNFcodeList = copyTestNFcodeListValues, testNFconstantsList = copyTestConstants, testNFdataList = copyTestData, dirName = NULL, verbose = nimbleOptions()$verbose) {
     for(copyTestCase in testCaseList) {
-        runOneValuesTest(copyTestCase, testModelCode = testModelCode, testNFcodeList = testNFcodeList, testNFconstantsList = testNFconstantsList, testNFdataList = testNFdataList, dirName = dirName, trace = trace)
+        runOneValuesTest(copyTestCase, testModelCode = testModelCode, testNFcodeList = testNFcodeList, testNFconstantsList = testNFconstantsList, testNFdataList = testNFdataList, dirName = dirName, verbose = verbose)
     }
 }
 
 ## run one value test case
-runOneValuesTest <- function(copyTestCase, testModelCode, testNFcodeList, testNFconstantsList, testNFdataList, dirName = NULL, trace = FALSE) {
-    if(trace) writeLines(paste0('STARTING CASE ', copyTestCase$label))
+runOneValuesTest <- function(copyTestCase, testModelCode, testNFcodeList, testNFconstantsList, testNFdataList, dirName = NULL, verbose = nimbleOptions()$verbose) {
+    if(verbose) writeLines(paste0('Testing ', copyTestCase$label))
     compileVec <- copyTestCase$compile
     for(compile in compileVec) {
-        if(trace) writeLines(paste0('COMPILE = ', compile))
+        if(verbose) writeLines(paste0('COMPILE = ', compile))
         m <- nimbleModel(testModelCode, constants = testNFconstantsList, data = testNFdataList)
         set.seed(copyTestCase$seed)
         eval(copyTestCase$initCode)
@@ -697,3 +700,6 @@ copyTestConstants <- list(n = n)
 copyTestData <- list(y = rnorm(10))
 
 runValuesTests(copyTestCaseListValuesIndexedLoop, testNFcodeList = copyTestNFcodeListValuesIndexedLoop)
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

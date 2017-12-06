@@ -2,3 +2,4 @@ config.R
 Makevars
 .Rapp.history
 TEMP*
+TAGS

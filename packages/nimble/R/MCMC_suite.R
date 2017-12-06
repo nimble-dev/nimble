@@ -189,7 +189,7 @@ MCMCsuite <- function(
 #' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 #' Trace plots and density plots for the MCMC samples may also be generated and saved.
 #'
-#' @seealso \link{MCMCsuite}
+#' @seealso \code{\link{MCMCsuite}}
 #' 
 #' @author Daniel Turek
 #' @export
@@ -323,6 +323,7 @@ MCMCsuiteClass <- setRefClass(
             burnin <<- burnin
             thin <<- thin
             nkeep <<- floor(niter/thin) - burnin
+            if(nkeep < 0) stop('niter/thin - burnin is negative; this would not retain any samples; try increasing niter, or decreasing burnin')
             burninFraction <<- burnin / (nkeep + burnin)
             setMonitors(monitors)
             setSummaryStats(summaryStats, calculateEfficiency)
@@ -463,7 +464,7 @@ MCMCsuiteClass <- setRefClass(
         run_stan = function(dataFile, initFile) {
             if(setSeed) set.seed(0)
             if(require('rstan', quietly = TRUE)) {
-                ## warning("MCMCsuite: use of rstan is not yet provided via the CRAN version of NIMBLE because of packaging issues. To use this functionality, please install NIMBLE from http://r-nimble.org.")
+                 ## warning("MCMCsuite: use of rstan is not yet provided via the CRAN version of NIMBLE because of packaging issues. To use this functionality, please install NIMBLE from http://r-nimble.org.")
                  if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
                  ##            dataFile <- gsub('stan$', 'data.R', stan_model)
                  ##            initFile <- gsub('stan$', 'init.R', stan_model)

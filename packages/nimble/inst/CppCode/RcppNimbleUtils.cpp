@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #include "nimble/NimArrBase.h"
 #include "nimble/NamedObjects.h"
 #include "nimble/RcppNimbleUtils.h"
@@ -9,6 +30,21 @@
 #include<sstream>
 #include<algorithm>
 
+// Work around R's unqualified use of `error` in the `ERROR` macro
+// (see $R_SOURCE/src/include/R_ext/RS.h).
+#define error Rf_error
+
+void SEXP_2_NimArr(SEXP Sn, double &x) {x = SEXP_2_double(Sn);}
+void SEXP_2_NimArr(SEXP Sn, int &x) {x = SEXP_2_int(Sn);}
+void SEXP_2_NimArr(SEXP Sn, bool &x) {x = SEXP_2_bool(Sn);}
+void SEXP_2_NimArr(SEXP Sn, std::string &x) {x = STRSEXP_2_string(Sn);}
+void SEXP_2_NimArr(SEXP Sn, std::vector<std::string> &x) {STRSEXP_2_vectorString(Sn, x);}
+
+SEXP NimArr_2_SEXP(double x) {return(double_2_SEXP(x));}
+SEXP NimArr_2_SEXP(int x) {return(int_2_SEXP(x));}
+SEXP NimArr_2_SEXP(bool x) {return(bool_2_SEXP(x));}
+SEXP NimArr_2_SEXP(std::string &x) {return(string_2_STRSEXP(x));}
+SEXP NimArr_2_SEXP(const std::vector<std::string> &x) {return(vectorString_2_STRSEXP(x));}
 
 // This is used when we have a NimArr<>* in a model and a NimArr<>** that needs to point to it.
 // We assume we have an extptr to each
@@ -17,6 +53,51 @@ SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
   void **doublePtr = static_cast<void **>(R_ExternalPtrAddr(SdoublePtr)); // this is really a ***.  
   *doublePtr = singlePtr;
   return(R_NilValue);
+}
+
+void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from) {
+  void **doublePtr = static_cast<void **>(nf_to);
+  SEXP Scnf, SsinglePtr;
+  SEXP S_pxData;
+   PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
+   SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
+  // environment(modelVar)$.CobjectInterface
+   PROTECT(Scnf = Rf_findVarInFrame(PROTECT(GET_SLOT(
+						       S_NF_from,
+						       S_pxData)),
+				    Rf_install(".CobjectInterface"))
+	   );
+   int unprotectCount = 3;
+   if(Rf_isNewList(Scnf)) {
+    // multi-interface
+    //Cnf[[1]]$basePtrList[[ Cnf[[2]] ]]
+    SEXP Sindex;
+    PROTECT(Sindex = VECTOR_ELT(Scnf, 1));
+    int index = (Rf_isInteger(Sindex) ? INTEGER(Sindex)[0] : REAL(Sindex)[0]); 
+    index--; // From 1-based to 0-based indexing 
+    PROTECT(SsinglePtr = VECTOR_ELT(
+				    Rf_findVarInFrame(PROTECT(GET_SLOT(
+								       VECTOR_ELT(Scnf,
+										  0),
+								       S_pxData)),
+						      Rf_install("basePtrList")),
+				    index
+				    )
+	    );
+    unprotectCount += 3;
+  } else {
+    printf("in non-list\n");
+    // full interface
+    // Cnf$.basePtr
+    PROTECT(SsinglePtr =  Rf_findVarInFrame(PROTECT(GET_SLOT(
+							     Scnf,
+							     S_pxData)),
+					    Rf_install(".basePtr")));
+    unprotectCount += 2;
+  }
+  void *singlePtr = R_ExternalPtrAddr(SsinglePtr);
+  *doublePtr = singlePtr;
+  UNPROTECT(unprotectCount);
 }
 
 // probably deprecated
@@ -50,14 +131,6 @@ SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr) {
   return(R_NilValue);
 }
 
-// could be useful but is not currently used
-// SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si) {
-//   vectorOfPtrsAccessBase *accessorPtr = static_cast<vectorOfPtrsAccessBase *>(R_ExternalPtrAddr(SaccessorPtr)); 
-//   int i = INTEGER(Si)[0];
-//   void *ans = accessorPtr->getVecPtr(i);
-//   return( R_MakeExternalPtr(ans, R_NilValue, R_NilValue));
-// }
-
 /*This function was created so we can report the status of different operations
 from C++ to R. I found that Rbreak does not stop the R function from which the C++
 function was called. This can cause an excessive number (e.g. nrow) of printed 
@@ -68,7 +141,7 @@ for loops, etc. */
 SEXP returnStatus(bool OK)
 	{
 	SEXP ans;
-    PROTECT(ans = allocVector(LGLSXP, 1) );
+    PROTECT(ans = Rf_allocVector(LGLSXP, 1) );
     LOGICAL(ans)[0] = OK;
     UNPROTECT(1);
     return(ans);
@@ -81,62 +154,14 @@ double t(double x) {return(x);}
 int prod(int x) {return(x);}
 double prod(double x) {return(x);}
 
-
-
-/* Cliff's new function for adding blank rows to C model values */
-SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded){
-    if(!isInteger(numAdded)) {
-        PRINTF("Error: numAdded is not an integer!\n");
-        return(returnStatus(false) );
-    }
-    
-    if(!R_ExternalPtrAddr(Sextptr)) {
-        PRINTF("Error: Sextptr is not a valid external pointer\n");
-        return(returnStatus(false) );
-    }
-    NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(Sextptr));
-    nimType vecType = (*typePtr).getNimType();
-    if(vecType == DOUBLE){
-    	VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(R_ExternalPtrAddr(Sextptr));
-    	int nrowCpp = matPtr->size();
-	    int new_size = INTEGER(numAdded)[0] + nrowCpp;
-    	matPtr->resize(new_size);
-    	NimArrBase<double> *thisRow;
-    	thisRow = matPtr->getBasePtr(0);
-    	int numDims = thisRow->numDims();
-	     vector<int> Dims(numDims);
- 		for(int i = 0; i < numDims; i++)
-      		Dims[i] = thisRow->dimSize(i);
-    	for(int i = nrowCpp; i < INTEGER(numAdded)[0] + nrowCpp; i++){
-      		thisRow = matPtr->getBasePtr(i); 
-      		thisRow->setSize(Dims);
-    	}
-    return(returnStatus(true) );
-    }
-    
-    else if(vecType == INT){
-    	VecNimArrBase<int> *matPtr = static_cast< VecNimArrBase<int>* >(R_ExternalPtrAddr(Sextptr));
-    	int nrowCpp = matPtr->size();
-    	  int new_size = INTEGER(numAdded)[0] + nrowCpp;
-	  	matPtr->resize(new_size);
-    	NimArrBase<int> *thisRow;
-    	thisRow = matPtr->getBasePtr(0);
-    	int numDims = thisRow->numDims();
-  	    vector<int> Dims(numDims);
-		for(int i = 0; i < numDims; i++)
-      		Dims[i] = thisRow->dimSize(i);
-    	for(int i = nrowCpp; i < INTEGER(numAdded)[0] + nrowCpp; i++){
-      		thisRow = matPtr->getBasePtr(i); 
-      		thisRow->setSize(Dims);
-    	}
-    return(returnStatus(true) );
-    }
- 	
- 	PRINTF("Data type for VecNimArr not currently supported\n");
- 	return(returnStatus(false) ) ;
+NimArr<1, double> vectorDouble_2_NimArr(vector<double> input) {
+  NimArr<1, double> output;
+  output.setSize(input.size(), false, false);
+  std::copy(input.begin(), input.end(), output.getPtr());
+  return(output);
 }
 
-SEXP setNumListRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1){
+SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1){
     NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(Sextptr));
     nimType vecType = (*typePtr).getNimType();
     if(vecType == DOUBLE){
@@ -187,9 +212,58 @@ SEXP setNumListRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1){
  	return(returnStatus(false) ) ;
 }
 
-
-
-
+/* Add blank rows to C model values */
+SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded){
+    if(!Rf_isInteger(numAdded)) {
+        PRINTF("Error: numAdded is not an integer!\n");
+        return(returnStatus(false) );
+    }
+    
+    if(!R_ExternalPtrAddr(Sextptr)) {
+        PRINTF("Error: Sextptr is not a valid external pointer\n");
+        return(returnStatus(false) );
+    }
+    NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(Sextptr));
+    nimType vecType = (*typePtr).getNimType();
+    if(vecType == DOUBLE){
+    	VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(R_ExternalPtrAddr(Sextptr));
+    	int nrowCpp = matPtr->size();
+	    int new_size = INTEGER(numAdded)[0] + nrowCpp;
+    	matPtr->resize(new_size);
+    	NimArrBase<double> *thisRow;
+    	thisRow = matPtr->getBasePtr(0);
+    	int numDims = thisRow->numDims();
+	     vector<int> Dims(numDims);
+ 		for(int i = 0; i < numDims; i++)
+      		Dims[i] = thisRow->dimSize(i);
+    	for(int i = nrowCpp; i < INTEGER(numAdded)[0] + nrowCpp; i++){
+      		thisRow = matPtr->getBasePtr(i); 
+      		thisRow->setSize(Dims);
+    	}
+    return(returnStatus(true) );
+    }
+    
+    else if(vecType == INT){
+    	VecNimArrBase<int> *matPtr = static_cast< VecNimArrBase<int>* >(R_ExternalPtrAddr(Sextptr));
+    	int nrowCpp = matPtr->size();
+    	  int new_size = INTEGER(numAdded)[0] + nrowCpp;
+	  	matPtr->resize(new_size);
+    	NimArrBase<int> *thisRow;
+    	thisRow = matPtr->getBasePtr(0);
+    	int numDims = thisRow->numDims();
+  	    vector<int> Dims(numDims);
+		for(int i = 0; i < numDims; i++)
+      		Dims[i] = thisRow->dimSize(i);
+    	for(int i = nrowCpp; i < INTEGER(numAdded)[0] + nrowCpp; i++){
+      		thisRow = matPtr->getBasePtr(i); 
+      		thisRow->setSize(Dims);
+    	}
+    return(returnStatus(true) );
+    }
+ 	
+ 	PRINTF("Data type for VecNimArr not currently supported\n");
+ 	return(returnStatus(false) ) ;
+}
 
 /* Cliff's new function for retreiving nrow from CmodelValues object */
 SEXP getNRow(SEXP Sextptr){
@@ -214,7 +288,7 @@ SEXP getNRow(SEXP Sextptr){
 //		cout << "vecType DOUBLE = " << DOUBLE << "\n";
 		}
 	SEXP rNRow;
-	PROTECT(rNRow = allocVector(INTSXP, 1) ); 
+	PROTECT(rNRow = Rf_allocVector(INTSXP, 1) ); 
 	INTEGER(rNRow)[0] = nRow;
 	UNPROTECT(1);
     return(rNRow);
@@ -344,7 +418,7 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
 }	
 
 SEXP getMVElement(SEXP Sextptr, SEXP Sindex){
-	if(!isInteger(Sindex)) {
+	if(!Rf_isInteger(Sindex)) {
     	PRINTF("Error: Sindex is not an integer!\n");
     	return(returnStatus(false) ) ;
 	}
@@ -366,26 +440,23 @@ SEXP getMVElement(SEXP Sextptr, SEXP Sindex){
   	}
   return(cGetMVElementOneRow(typePtr, vecType, index) ) ;	
 }  	
-  	
 
-// //SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int nrowCpp, int index) 	{  	
-// //ONe
+// This is not called directly from R.  It is called from getMVElement
 SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{  	
     if(vecType == DOUBLE){
 		VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(typePtr);
-//		int nrowCpp = matPtr->size();
 		NimArrBase<double> *thisRow;
   		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
 		int outputLength = thisRow->size();
   		SEXP Sans;
-  		PROTECT(Sans = allocVector(REALSXP, outputLength));
+  		PROTECT(Sans = Rf_allocVector(REALSXP, outputLength));
 		double *value = REAL(Sans);
   		std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength, value); /* copy should work now */
   		if(thisRow->numDims() > 1) { // using first row as representative
     		SEXP Sdim;
-    		PROTECT(Sdim = allocVector(INTSXP, thisRow->numDims()));
+    		PROTECT(Sdim = Rf_allocVector(INTSXP, thisRow->numDims()));
     		for(int idim = 0; idim < thisRow->numDims(); ++idim) INTEGER(Sdim)[idim] = thisRow->dimSize(idim);
-    			setAttrib(Sans, R_DimSymbol, Sdim);
+    			Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     		UNPROTECT(2);
   		}
   		else {
@@ -400,14 +471,14 @@ SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{
   		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
 		int outputLength = thisRow->size();
   		SEXP Sans;
-  		PROTECT(Sans = allocVector(INTSXP, outputLength));
+  		PROTECT(Sans = Rf_allocVector(INTSXP, outputLength));
 		int *value = INTEGER(Sans);
   		std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength, value); /* copy should work now */
   		if(thisRow->numDims() > 1) { // using first row as representative
     		SEXP Sdim;
-    		PROTECT(Sdim = allocVector(INTSXP, thisRow->numDims()));
+    		PROTECT(Sdim = Rf_allocVector(INTSXP, thisRow->numDims()));
     		for(int idim = 0; idim < thisRow->numDims(); ++idim) INTEGER(Sdim)[idim] = thisRow->dimSize(idim);
-    			setAttrib(Sans, R_DimSymbol, Sdim);
+    			Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     		UNPROTECT(2);
   		}
   		else {
@@ -484,7 +555,7 @@ SEXP setMVElementFromList(SEXP vNimPtr, SEXP rList, SEXP Sindices){
  SEXP getMVElementAsList(SEXP SextPtr, SEXP Sindices){
  	int nIndice = LENGTH(Sindices);
  	SEXP sList;
- 	PROTECT(sList = allocVector(VECSXP, nIndice) );
+ 	PROTECT(sList = Rf_allocVector(VECSXP, nIndice) );
  	NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(SextPtr));
 	nimType vecType = (*typePtr).getNimType();
 	for(int i = 0; i < nIndice; i++)
@@ -493,20 +564,8 @@ SEXP setMVElementFromList(SEXP vNimPtr, SEXP rList, SEXP Sindices){
 	return(sList);
  }
 
-
-SEXP resizeNumListRow(SEXP Sextptr, SEXP Sindex, SEXP dims){
-	int nDims = LENGTH(dims);
-	vector<int> cDims(nDims);
-	for(int i = 0; i < nDims ; i++)
-		cDims[i] = INTEGER(dims)[i];
-	NimVecType* listBasePtr = static_cast<NimVecType* >(R_ExternalPtrAddr(Sextptr) ) ;
-	int cRow = INTEGER(Sindex)[0]-1;	
-	(*listBasePtr).setRowDims(cRow, cDims);	
-	return(R_NilValue);
-}
-
 SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
-    if(!isInteger(Sindex)) {
+    if(!Rf_isInteger(Sindex)) {
     PRINTF("Error: Sindex is not an integer!\n");
 	return(returnStatus(false) ) ;
   }
@@ -528,7 +587,7 @@ SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
 	return(returnStatus(false) ) ;
   }
   cSetMVElementSingle( typePtr, vecType, index, Svalue );
-  SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
+  //SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
   return(returnStatus(true) );
  } 
  
@@ -538,46 +597,25 @@ SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
  	vector<int> cDims = (*nimVecPtr).getRowDims(0);
 	int nDims = cDims.size();
  	SEXP Sans;
- 	PROTECT(Sans = allocVector(INTSXP, nDims) );
+ 	PROTECT(Sans = Rf_allocVector(INTSXP, nDims) );
  	for(int i = 0; i < nDims; i++)
  		INTEGER(Sans)[i] = cDims[i];
  	UNPROTECT(1);
  	return(Sans);
  	}
 
-
-// SEXP setVarPointer(SEXP SextptrModelVar, SEXP SextptrStorageVar, SEXP Srownum) {
-//   // This function is untested in its new (NimArr) version
-//   if(!R_ExternalPtrAddr(SextptrModelVar)) {
-//     PRINTF("Error: Sextptr is not a valid external pointer\n");
-//     return(R_NilValue);
-//   }
-//   if(!R_ExternalPtrAddr(SextptrStorageVar)) {
-//     PRINTF("Error: Sextptr is not a valid external pointer\n");
-//     return(R_NilValue);
-//   }
-//   if(!isInteger(Srownum)) {
-//     PRINTF("Error: Srownum is not a valid integer\n");
-//     return(R_NilValue);
-//   }
-//   VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(R_ExternalPtrAddr(SextptrStorageVar));
-//   NimArrBase<double> **vecPtr = static_cast< NimArrBase<double>** >(R_ExternalPtrAddr(SextptrModelVar));
-//   (*vecPtr) = matPtr->getBasePtr( INTEGER(Srownum)[0] );
-//   return(R_NilValue);
-// }
-
 SEXP NimArrDouble_2_SEXP(NimArrBase<double> &nimArrDbl){
 		int len = nimArrDbl.size();
 		SEXP Sans;  
-		PROTECT(Sans = allocVector(REALSXP, len));
+		PROTECT(Sans = Rf_allocVector(REALSXP, len));
 		//		std::copy(nimArrDbl.v.begin(), nimArrDbl.v.end() , REAL(Sans) );
 		std::copy(nimArrDbl.v, nimArrDbl.v + len , REAL(Sans) );  
   		int numDims = nimArrDbl.numDims();
   		if(numDims > 1) {
 		  SEXP Sdim;
-		  PROTECT(Sdim = allocVector(INTSXP, numDims));
+		  PROTECT(Sdim = Rf_allocVector(INTSXP, numDims));
 		  for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = nimArrDbl.dimSize(idim);
-		  setAttrib(Sans, R_DimSymbol, Sdim);
+		  Rf_setAttrib(Sans, R_DimSymbol, Sdim);
 		  UNPROTECT(2);
   		}
   		else {
@@ -589,15 +627,15 @@ SEXP NimArrDouble_2_SEXP(NimArrBase<double> &nimArrDbl){
 SEXP NimArrInt_2_SEXP(NimArrBase<int> &nimArrInt){
 		int len = nimArrInt.size();
 		SEXP Sans;  
-		PROTECT(Sans = allocVector(INTSXP, len));
+		PROTECT(Sans = Rf_allocVector(INTSXP, len));
 		//		std::copy(nimArrInt.v.begin(), nimArrInt.v.end() , INTEGER(Sans) );
 		std::copy(nimArrInt.v, nimArrInt.v + len , INTEGER(Sans) );  
   		int numDims = nimArrInt.numDims();
   		if(numDims > 1) {
     		SEXP Sdim;
-    		PROTECT(Sdim = allocVector(INTSXP, numDims));
+    		PROTECT(Sdim = Rf_allocVector(INTSXP, numDims));
     		for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = nimArrInt.dimSize(idim);
-			setAttrib(Sans, R_DimSymbol, Sdim);
+			Rf_setAttrib(Sans, R_DimSymbol, Sdim);
 		    UNPROTECT(2);
   		}
   		else {
@@ -609,15 +647,15 @@ SEXP NimArrInt_2_SEXP(NimArrBase<int> &nimArrInt){
 SEXP NimArrBool_2_SEXP(NimArrBase<bool> &nimArrBl){
   int len = nimArrBl.size();
   SEXP Sans;  
-  PROTECT(Sans = allocVector(LGLSXP, len));
+  PROTECT(Sans = Rf_allocVector(LGLSXP, len));
   //		std::copy(nimArrInt.v.begin(), nimArrInt.v.end() , INTEGER(Sans) );
   std::copy(nimArrBl.v, nimArrBl.v + len , LOGICAL(Sans) );  
   int numDims = nimArrBl.numDims();
   if(numDims > 1) {
     SEXP Sdim;
-    PROTECT(Sdim = allocVector(INTSXP, numDims));
+    PROTECT(Sdim = Rf_allocVector(INTSXP, numDims));
     for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = nimArrBl.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
+    Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     UNPROTECT(2);
   }
   else {
@@ -650,11 +688,11 @@ void SEXP_2_NimArrDouble (SEXP rValues, NimArrBase<double> &NimArrDbl){
     PRINTF("Warning: R object of different size than NimArrDouble. R obj has size %i but NimArrDbl has size %i.\n", rLength, NimArrDbl.size());
     return;
   }
-  if(isReal(rValues) ) {
+  if(Rf_isReal(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrDbl[i] = REAL(rValues)[i];
   }
-  else if(isInteger(rValues) | isLogical(rValues) ) {
+  else if(Rf_isInteger(rValues) | Rf_isLogical(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrDbl[i] = INTEGER(rValues)[i];
   }
@@ -671,11 +709,11 @@ void SEXP_2_NimArrInt (SEXP rValues, NimArrBase<int> &NimArrInt){
     return;		
   }
   
-  if(isInteger(rValues) | isLogical(rValues) ) {
+  if(Rf_isInteger(rValues) | Rf_isLogical(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrInt[i] = INTEGER(rValues)[i];
   }
-  else if(isReal(rValues) ) {
+  else if(Rf_isReal(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrInt[i] = REAL(rValues)[i];
   }
@@ -693,11 +731,11 @@ void SEXP_2_NimArrBool (SEXP rValues, NimArrBase<bool> &NimArrBl){
   }
 
   // In R, Logical is represented as integer
-  if(isInteger(rValues) | isLogical(rValues)) {
+  if(Rf_isInteger(rValues) | Rf_isLogical(rValues)) {
     for(int i = 0; i < rLength; i++)
       NimArrBl[i] = INTEGER(rValues)[i];
   }
-  else if(isReal(rValues) ) {
+  else if(Rf_isReal(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrBl[i] = REAL(rValues)[i];
   }
@@ -729,180 +767,72 @@ SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers){
 	return(R_NilValue);
 }
 
-SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize){
+void SEXP_2_Nim_internal(NimArrType* nimTypePtr,
+			 SEXP rValues,
+			 bool resize = true) {
     vector<int> sexpDims = getSEXPdims( rValues );
     int sexpNumDims = sexpDims.size();
+    
+    if(!nimTypePtr)
+      return;
+    
+    if((*nimTypePtr).getNimType() == INT){
+      NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
+      int nimNumDims = (*nimBase).numDims();
+      if(nimNumDims != sexpNumDims) {
+	if((LENGTH(rValues) != (*nimBase).size()) & 
+	   (sexpNumDims != 1)){
+	  PRINTF("Incorrect number of dimensions in copying\n");
+	  return;
+	}
+      }
+      if(resize)
+	(*nimBase).setSize(sexpDims);
+      SEXP_2_NimArrInt(rValues,  (*nimBase) ) ;
+    }
+    if((*nimTypePtr).getNimType() == DOUBLE){
+      
+      NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
+      int nimNumDims = (*nimBase).numDims();
+      
+      if(nimNumDims != sexpNumDims){
+	if((LENGTH(rValues) != (*nimBase).size()) &
+	   (sexpNumDims != 1)){
+	  PRINTF("Incorrect number of dimensions in copying\n");
+	  return;
+	}
+      }
+      if((resize) & (nimNumDims == sexpNumDims))
+	(*nimBase).setSize(sexpDims);
+      SEXP_2_NimArrDouble( rValues, (*nimBase) ) ;
+    }
+    if((*nimTypePtr).getNimType() == BOOL){
+      NimArrBase<bool>* nimBase = static_cast<NimArrBase<bool> *>(nimTypePtr);
+      int nimNumDims = (*nimBase).numDims();
+      if(nimNumDims != sexpNumDims){
+	if((LENGTH(rValues) != (*nimBase).size()) &
+	   (sexpNumDims != 1)){
+	  PRINTF("Incorrect number of dimensions in copying\n");
+	  return;
+	}
+      }
+      if(resize)
+	(*nimBase).setSize(sexpDims);
+      SEXP_2_NimArrBool(rValues,  (*nimBase) ) ;
+    }
+}
+
+void SEXP_2_Nim_for_copyFromRobject(void *NimArrPtr, SEXP rValues) {
+  NimArrType* nimTypePtr = static_cast<NimArrType*>(NimArrPtr);
+  SEXP_2_Nim_internal(nimTypePtr, rValues);
+}
+
+SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize){
     bool resize = (LOGICAL(allowResize)[0] == TRUE);
-
-	NimArrType* nimTypePtr = getNimTypePtr(rPtr, NumRefers);
-	if(!nimTypePtr)
-		return(R_NilValue);
-	if((*nimTypePtr).getNimType() == INT){
-	  NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
-	  int nimNumDims = (*nimBase).numDims();
-	  if(nimNumDims != sexpNumDims){
-            if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-	      PRINTF("Incorrect number of dimensions in copying\n");
-	      return(R_NilValue);
-            }
-	  }
-	  if(resize == true)
-            (*nimBase).setSize(sexpDims);
-	  SEXP_2_NimArrInt(rValues,  (*nimBase) ) ;
-	}
-	if((*nimTypePtr).getNimType() == DOUBLE){
-	  
-	  NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
-	  int nimNumDims = (*nimBase).numDims();
-	  
-	  if(nimNumDims != sexpNumDims){
-            if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-	      PRINTF("Incorrect number of dimensions in copying\n");
-	      return(R_NilValue);
-            }
-	  }
-	  if((resize == true) & (nimNumDims == sexpNumDims))
-            (*nimBase).setSize(sexpDims);
-	  SEXP_2_NimArrDouble( rValues, (*nimBase) ) ;
-	}
-	if((*nimTypePtr).getNimType() == BOOL){
-	  NimArrBase<bool>* nimBase = static_cast<NimArrBase<bool> *>(nimTypePtr);
-	  int nimNumDims = (*nimBase).numDims();
-	  if(nimNumDims != sexpNumDims){
-            if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-	      PRINTF("Incorrect number of dimensions in copying\n");
-	      return(R_NilValue);
-            }
-	  }
-	  if(resize == true)
-            (*nimBase).setSize(sexpDims);
-	  SEXP_2_NimArrBool(rValues,  (*nimBase) ) ;
-	}
-	return(R_NilValue);
+    NimArrType* nimTypePtr = getNimTypePtr(rPtr, NumRefers);
+    SEXP_2_Nim_internal(nimTypePtr, rValues, resize);
+    return(R_NilValue);
 }
-
-// template <class T>
-// void cNimArr_2_NimArr(NimArrBase<T> &nimFrom, NimArrBase<T> &nimTo){
-// 	if(nimFrom.size() != nimTo.size() ){
-// 	PRINTF("Warning: NimArr's of different sizes!\n");
-// 	return;
-// 	}
-// 	//	copy(nimFrom.v.begin(), nimFrom.v.end(), nimTo.v.begin() );
-// 	copy(nimFrom.v, nimFrom.v + nimFrom.size(), nimTo.v );
-// 	return;
-// }
-
-// template <class T1, class T2>
-// void cNimArr_2_NimArr_Index(NimArrBase<T1> &nimFrom, int fromBegin, NimArrBase<T2> &nimTo, int toBegin, int length){
-// 	if(nimFrom.size() != nimTo.size() ){
-// 	PRINTF("Warning: NimArr's of different sizes!\n");
-// 	return;
-// 	}
-// 	//	copy(nimFrom.v.begin() + fromBegin, nimFrom.v.end() + length - 1, nimTo.v.begin() + toBegin); // was this a bug?
-// 	copy(nimFrom.v + fromBegin, nimFrom.v + fromBegin + length, nimTo.v + toBegin);
-// 	return;
-// }
-
-// SEXP Nim_2_Nim(SEXP rPtrFrom, SEXP numRefFrom, SEXP rPtrTo, SEXP numRefTo){
-// 	NimArrType* nimTypePtrFrom = getNimTypePtr(rPtrFrom, numRefFrom);
-// 	NimArrType* nimTypePtrTo = getNimTypePtr(rPtrTo, numRefTo);
-// 	if(!nimTypePtrFrom | !nimTypePtrTo)
-// 		return(R_NilValue);
-// 	if(((*nimTypePtrFrom).getNimType() == INT) & ((*nimTypePtrTo).getNimType() == INT))
-// 		{
-// 		NimArrBase<int>* nimArrFrom = static_cast<NimArrBase<int> * >(nimTypePtrFrom);
-// 		NimArrBase<int>* nimArrTo = static_cast<NimArrBase<int> * >(nimTypePtrTo);
-// 		cNimArr_2_NimArr<int>( (*nimArrFrom), (*nimArrTo) ) ;
-// 		}
-// 	else if( ((*nimTypePtrFrom).getNimType() == DOUBLE) & ((*nimTypePtrTo).getNimType() == DOUBLE ))
-// 		{
-// 		NimArrBase<double>* nimArrFrom = static_cast<NimArrBase<double> * >(nimTypePtrFrom);
-// 		NimArrBase<double>* nimArrTo = static_cast<NimArrBase<double> * >(nimTypePtrTo);
-// 		cNimArr_2_NimArr<double>( (*nimArrFrom), (*nimArrTo) ) ;
-// 		}
-// 	else {
-// 		PRINTF("Copying templates not supported!\n");
-// 		}
-// 	return(R_NilValue);
-// }
-
-
-SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows){
-	int cDims = INTEGER(nDims)[0];
-	int cRows = INTEGER(nRows)[0];
-	string cType = STRSEXP_2_string(type, 0);
-	if( (cType == "double" || cType == "numeric") && cDims == 1){
-		VecNimArr<1, double>* newList = new VecNimArr<1, double>;
-//		(*newList).allowResizeRows = true;
-		(*newList).resize(cRows);		
-		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
-		PROTECT(ptr);
-		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<1, double>, TRUE);
-		UNPROTECT(1);
-		return(ptr);
-	}
-	if( (cType == "double" || cType == "numeric") && cDims == 2){
-		VecNimArr<2, double>* newList = new VecNimArr<2, double>;
-//		(*newList).allowResizeRows = true;
-		(*newList).resize(cRows);
-		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
-		PROTECT(ptr);
-		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<2, double>, TRUE);
-		UNPROTECT(1);
-		return(ptr);
-	}
-	if( (cType == "double" || cType == "numeric") && cDims == 3){
-		VecNimArr<3, double>* newList = new VecNimArr<3, double>;
-//		(*newList).allowResizeRows = true;
-		(*newList).resize(cRows);
-		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
-		PROTECT(ptr);
-		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<3, double>, TRUE);
-		UNPROTECT(1);
-		return(ptr);
-	}
-
-	if( (cType == "integer" || cType == "int") && cDims == 1){
-		VecNimArr<1, int>* newList = new VecNimArr<1, int>;
-//		(*newList).allowResizeRows = true;
-		(*newList).resize(cRows);
-		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
-		PROTECT(ptr);
-		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<1, int>, TRUE);
-		UNPROTECT(1);
-		return(ptr);
-	}
-	if( (cType == "double" || cType == "numeric") && cDims == 2){
-		VecNimArr<2, int>* newList = new VecNimArr<2, int>;
-//		(*newList).allowResizeRows = true;
-		(*newList).resize(cRows);
-		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
-		PROTECT(ptr);
-		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<2, int>, TRUE);
-		UNPROTECT(1);
-		return(ptr);
-	}
-	if( (cType == "double" || cType == "numeric") && cDims == 3){
-		VecNimArr<3, int>* newList = new VecNimArr<3, int>;
-//		(*newList).allowResizeRows = true;
-		(*newList).resize(cRows);
-		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
-		PROTECT(ptr);
-		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<3, int>, TRUE);
-		UNPROTECT(1);
-		return(ptr);
-	}
-
-        PROBLEM "unhandled case in makeNumericList()"
-            ERROR;
-}
-
-
-// template<int nDim, class T>
-// void VecNimArrFinalizer(SEXP ptr){
-// 	VecNimArr<nDim, T>* cPtr = static_cast<VecNimArr<nDim, T>*>(R_ExternalPtrAddr(ptr));
-// 	delete cPtr;
-// }
 
 void VecNimArr_Finalizer(SEXP Sp) {
   //  std::cout<< "In VecNimArr_Finalizer\n";
@@ -927,12 +857,12 @@ double nimMod(double a, double b) {
 //   return(a.value < b.value);
 // }
 
-void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output) {
+void rankSample(NimArr<1, double> &weights, int n, NimArr<1, int> &output) {
   bool silent = false;
   rankSample(weights, n, output, silent);
 }
 
-void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output, bool& silent) {
+void rankSample(NimArr<1, double> &weights, int n, NimArr<1, int> &output, bool silent) {
   //PRINTF("in VOID rankSample\n");
   output.setSize(n);
   int N = weights.size();
@@ -983,152 +913,23 @@ SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd){
 SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex){
 	SEXP ans;
 	int cIndex = INTEGER(sIndex)[0] - 1;
-	ans = findVar(install(CHAR(STRING_ELT(sString, cIndex ))), sEnv);
+	ans = Rf_findVar(Rf_install(CHAR(STRING_ELT(sString, cIndex ))), sEnv);
 	PROTECT(ans);
 	UNPROTECT(1);
 	return(ans);
 	}
 
 SEXP getEnvVar(SEXP sString, SEXP sEnv){
-  	return(getEnvVar_Sindex(sString, sEnv, ScalarInteger(1)));
+  	return(getEnvVar_Sindex(sString, sEnv, Rf_ScalarInteger(1)));
 }
 
 SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex){
 	int cIndex = INTEGER(sIndex)[0] - 1;
-	setVar(install(CHAR(STRING_ELT(sString, cIndex ))), sVal, sEnv);
+	Rf_setVar(Rf_install(CHAR(STRING_ELT(sString, cIndex ))), sVal, sEnv);
 	return(R_NilValue);
 }
 
  SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal){						
-  	return(setEnvVar_Sindex(sString, sEnv, sVal, ScalarInteger(1)));
+  	return(setEnvVar_Sindex(sString, sEnv, sVal, Rf_ScalarInteger(1)));
   }
   
-  
-/* tools for R's optim	*/
-
-
-//   FRAMEWORK FOR USING R'S OPTIM FUNCTIONS IN NIMBLE
-
-
-
-
-void bareBonesOptim(NimArr<1, double> initPar, optimfn objFxn, void* nfPtr, int nargs,  ...){
-	int n1 = initPar.size();
-	NM_OptimControl* nmControl = new NM_OptimControl(1.0, 0.5, 2.0,0.0001, 0.0001, 500, 0);
-	OptimAns* optAns = new OptimAns(n1);
-	optAns->Fmin = 100;
-	vector<void*>* otherArgs = new vector<void*>(nargs);
-	va_list vl;
-	va_start(vl, nargs);
-	for(int i = 0; i < nargs; i++)
-		(*otherArgs)[i] = va_arg(vl, void*);
-	va_end(vl);
-	
-    void* vp_otherArgs = static_cast<void*>(otherArgs);
-    
-	nimble_optim(nfPtr, static_cast<OptimControl*>(nmControl), optAns,
-					 initPar, vp_otherArgs, objFxn);
-	
-	Rprintf("Called bareBonesOptim, final value = %f\n", optAns->Fmin);
-	
-    delete nmControl;
-    delete optAns;
-    delete otherArgs;
-	
-}	
-	
-// NEW CORE GENERIC FUNCTIONS
-
-//We hope this function will be generic (i.e. not requiring generated function)
-//objFxn is the double (int, double*, void*) that we want to optimize
-//objFxn has to be built dynamically 
-//Also, not 100% sure what to do about the nimbleFunction it self. Right now I'm 
-//assuming it will be passed as a void pointer
-void nimble_optim(void* nimFun, OptimControl* control, OptimAns* ans,
-				 	NimArr<1, double> par, void* otherArgs,
-				 	optimfn objFxn){
-
-	//Steps required:	
-	//Unpack parts of control (things that are required for all optimizers)
-	//Decide optimizer {
-	//Based on optimizer, unpack specialized part of optimControl and call appropriate optimizer	
-	//  unpack results of optimizer into ans
-	//	}
-	// ?return ans (depends if we want to allow return of nimble functions)
-
-	// Generic Unpacking	
-	int n = par.size();
-	double* xin = &(par[0]);	//IF we want to leave par untouched by optim, we could copy these values instead of pointing at them
-	double* x = &(ans->par[0]);
-	double* Fmin = &(ans->Fmin);
-	int* fail = &(ans->fail);
-	int* fncount = &(ans->fncount);
-	
-	vector<void*>* ex = new vector<void*> (2);
-	(*ex)[0] = nimFun;
-	(*ex)[1] = otherArgs;
-
-	
-	//Choosing and applying optimizer
-	//Just using Nelder Mead as example here
-	if( control->optimType == 1 ){
-		NM_OptimControl* nmControl = static_cast<NM_OptimControl*>(control);	
-			nmmin(n, xin, x, Fmin, objFxn, fail, nmControl->abstol, nmControl->intol,
-			static_cast<void*> (ex), nmControl->alpha, nmControl->beta, nmControl->gamma, nmControl->trace,
-			fncount, nmControl->maxit);
-	
-	}		
-	
-	
-		delete ex;
-		
-	//actually, nothing else to do at this point! 
-	//Could return ans if we decided to build it on the fly here instead of providing it as argument
-}	
-
-
-
-void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans,
-				 	NimArr<1, double> par, optimfn objFxn,
-				 	int numOtherArgs, ...){
-
-	//Steps required:	
-	//Unpack parts of control (things that are required for all optimizers)
-	//Decide optimizer {
-	//Based on optimizer, unpack specialized part of optimControl and call appropriate optimizer	
-	//  unpack results of optimizer into ans
-	//	}
-	// ?return ans (depends if we want to allow return of nimble functions)
-
-	// Generic Unpacking	
-	int n = par.size();
-	double* xin = &(par[0]);	//IF we want to leave par untouched by optim, we could copy these values instead of pointing at them
-	double* x = &(ans->par[0]);
-	double* Fmin = &(ans->Fmin);
-	int* fail = &(ans->fail);
-	int* fncount = &(ans->fncount);
-	vector<void*>* otherArgs = new vector<void*>(numOtherArgs);
-	va_list vl;
-	va_start(vl, numOtherArgs);
-	for(int i = 0; i < numOtherArgs; i++)
-		(*otherArgs)[i] = va_arg(vl, void*);
-	va_end(vl);
-	vector<void*>* ex = new vector<void*> (2);
-	(*ex)[0] = nimFun;
-	(*ex)[1] = otherArgs;
-	//Choosing and applying optimizer
-	//Just using Nelder Mead as example here
-	if( control->optimType == 1 ){
-		NM_OptimControl* nmControl = static_cast<NM_OptimControl*>(control);	
-			nmmin(n, xin, x, Fmin, objFxn, fail, nmControl->abstol, nmControl->intol,
-			static_cast<void*> (ex), nmControl->alpha, nmControl->beta, nmControl->gamma, nmControl->trace,
-			fncount, nmControl->maxit);
-	
-	}		
-		delete ex;
-		delete otherArgs;
-	//actually, nothing else to do at this point! 
-	//Could return ans if we decided to build it on the fly here instead of providing it as argument
-}	
-
-

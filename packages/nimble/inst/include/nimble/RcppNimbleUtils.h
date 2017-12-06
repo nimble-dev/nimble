@@ -1,24 +1,87 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #ifndef __RCPPNIMBLEUTILS
 #define __RCPPNIMBLEUTILS
 #include "NimArrBase.h"
 #include "NimArr.h"
 #include "RcppUtils.h"
 
-//#include "RcppUtils.h"
+/* The following two macros are for use by copyFromRobject methods 
+   in compiled nimbleFunctions. */
+#define SETUP_S_xData \
+  SEXP S_string_xData; \
+  SEXP S_xData; \
+  PROTECT(S_string_xData = Rf_allocVector(STRSXP, 1)); \
+  SET_STRING_ELT(S_string_xData, 0, Rf_mkChar(".xData")); \
+  PROTECT(S_xData = GET_SLOT(Robject, S_string_xData));
 
+#define COPY_NUMERIC_VECTOR_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  SEXP_2_Nim_for_copyFromRobject(getObjectPtr(svarName),\
+				 PROTECT(Rf_findVarInFrame(S_xData,	\
+							   Rf_install(varName)))); \
+  }
 
-// all of this is in RcppUtils.h
-/* #include "R.h" */
-/* #include "Utils.h" */
-/* #include <string> */
-/* #include <vector> */
-/* #include<iostream> */
-/* #include<sstream> */
+#define COPY_NODE_FXN_VECTOR_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  populateNodeFxnVectorNew_copyFromRobject(getObjectPtr(svarName),\
+					   PROTECT(Rf_findVarInFrame(S_xData, \
+								     Rf_install(varName)))); \
+  }
 
-/* #include <Rinternals.h> */
+#define COPY_NIMBLE_FXN_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  setNimbleFxnPtr_copyFromRobject(getObjectPtr(svarName),\
+					    PROTECT(Rf_findVarInFrame(S_xData, \
+								      Rf_install(varName)))); \
+  }
 
-/* #include <R_ext/Applic.h>	/\* this is required for optim *\/ */
-/* #include <stdarg.h> 		/\* this is required for variable number of arguments *\/ */
+#define COPY_DOUBLE_SCALAR_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  populate_SEXP_2_double_for_copyFromRobject(getObjectPtr(svarName),\
+					     PROTECT(Rf_findVarInFrame(S_xData, \
+								     Rf_install(varName)))); \
+  }
+
+#define COPY_INTEGER_SCALAR_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  populate_SEXP_2_int_for_copyFromRobject(getObjectPtr(svarName),\
+					     PROTECT(Rf_findVarInFrame(S_xData, \
+								     Rf_install(varName)))); \
+  }
+
+#define COPY_LOGICAL_SCALAR_FROM_R_OBJECT(varName) \
+  { \
+  std::string svarName(varName); \
+  populate_SEXP_2_bool_for_copyFromRobject(getObjectPtr(svarName),\
+					     PROTECT(Rf_findVarInFrame(S_xData, \
+								     Rf_install(varName)))); \
+  }
+
 
 using namespace std;
 
@@ -30,22 +93,21 @@ int prod(int x);
 double prod(double x);
 
 SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index);
-//SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int nrowCpp, int index);
 void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP Svalue);
- 
-//bool checkString(SEXP Ss, int len);
-//bool checkNumeric(SEXP Sval, int len);
 
+void SEXP_2_Nim_internal(NimArrType* nimTypePtr,
+			 SEXP rValues,
+			 bool resize);
+void SEXP_2_Nim_for_copyFromRobject(void *NimArrPtr, SEXP rValues);
+
+void setNimbleFxnPtr_copyFromRobject(void *nf_to, SEXP S_NF_from);
 
 extern "C" {
   SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
   SEXP setSmartPtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
   SEXP setSmartPtrFromDoublePtr(SEXP SdoublePtr, SEXP SsinglePtr);
-
-  //  SEXP setVec(SEXP Sextptr, SEXP Svalue);
-  //  SEXP getVec(SEXP Sextptr);
-  //  SEXP getVec_Integer(SEXP Sextptr);
   
+  SEXP setVecNimArrRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);
   SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded);
   SEXP getNRow(SEXP Sextptr);
   SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SEXP rowsTo);
@@ -57,52 +119,39 @@ extern "C" {
 
   SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd);
 
-  //  SEXP printMVElement(SEXP Sextptr, SEXP Sindex);
   SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue);
 
-  SEXP resizeNumListRow(SEXP Sextptr, SEXP Sindex, SEXP dims); 	// resizes a particular row of a numericlist
-
-//  SEXP setNumList(SEXP Sextptr, SEXP Sindex, SEXP Svalue);   automatically resizes. Might want to use later
-   SEXP setNumListRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);		// this sets the number of rows in a numericList (really, any VecNimArr)
-
-
-  //  SEXP setVarPointer(SEXP SextptrModelVar, SEXP SextptrStorageVar, SEXP Srownum);
-  SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows);
-
   SEXP newSampObject();	//  Creates our new object from sampleClass (will be generated automatically later)
-							//	Just for use in demos
-							// 	To get a pointer to an element from sampleClass, use
-							//	getModelObjectPtr (from the NamedObjects.cpp file)
-					
+  //	Just for use in demos
+  // 	To get a pointer to an element from sampleClass, use
+  //	getModelObjectPtr (from the NamedObjects.cpp file)
+  
   SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers);	//	Returns SEXP object with correct data type and dimensions. NumRefers
-												//  should be an integer with the number of dereferencing required for rPtr
-												//	So if rPtr is a pointer to a NimArr, NumRefers = 1
-												//	If rPtr is a pointer to a pointer to a NimArr, NumRefers = 2
-												//	Currently only NumRefers = 1 and 2 are allowed, but easily updated
-												//	by extending "getNimTypePtr" function
-	
+  //  should be an integer with the number of dereferencing required for rPtr
+  //	So if rPtr is a pointer to a NimArr, NumRefers = 1
+  //	If rPtr is a pointer to a pointer to a NimArr, NumRefers = 2
+  //	Currently only NumRefers = 1 and 2 are allowed, but easily updated
+  //	by extending "getNimTypePtr" function
+  
   SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize); //	Copies values from rValues to NimArr. Same behavior
-															  // 	with NumRefers as above. Also, type checking is done
-															  // 	by R.internals functions INTEGER and REAL
-															  
+  // 	with NumRefers as above. Also, type checking is done
+  // 	by R.internals functions INTEGER and REAL
+  
   //  SEXP Nim_2_Nim(SEXP rPtrFrom, SEXP numRefFrom, SEXP rPtrTo, SEXP numRefTo);	
-												//  Copies from one NimArr to another. Type checks
-												//	For now, both NimArr's must be either double or int. We can add other
-												//  types or allow conversion by extending Nim_2_Nim and the cNim_2_Nim options 
-
+  //  Copies from one NimArr to another. Type checks
+  //	For now, both NimArr's must be either double or int. We can add other
+  //  types or allow conversion by extending Nim_2_Nim and the cNim_2_Nim options 
+  
   SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
-  //SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si);
-  
-  
   
   SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex);// This is a utility for looking up a field of an environment
-  														 // sString is a character vector with the field name we want
-  														 // sEnv is the environment
-  														 // sIndex is the index of the sString that contains the name
-  														 // we actually want to use. 
-  														 //	Look up by sString[sIndex] is done to allow for easy looping
-  														 //Important Note: sIndex = 1 looks up the first name (i.e. use R indexing, not C) 
+  // sString is a character vector with the field name we want
+  // sEnv is the environment
+  // sIndex is the index of the sString that contains the name
+  // we actually want to use. 
+  //	Look up by sString[sIndex] is done to allow for easy looping
+  //Important Note: sIndex = 1 looks up the first name (i.e. use R indexing, not C) 
   SEXP getEnvVar(SEXP sString, SEXP sEnv);	// Same as above, but uses sIndex = 1 (i.e. sString is a single character string)
   														 
   SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex);	//Same as getEnvVar_Sindex, but this function sets rather than gets														
@@ -131,13 +180,25 @@ class vectorOfPtrsAccess : public vectorOfPtrsAccessBase {
   void *getVecPtr(int i) {return(static_cast<void *>( (*theVec)[i] ) ); }
 };
 
+NimArr<1, double> vectorDouble_2_NimArr(vector<double> input);
 
 /*
   Apparently partial specialization of function templates is not allowed.
   So these are witten for doubles, and when we get to integers and logicals we can 
   use overlaoding or different names.
  */
+/* Try overloading these for all needed copy operations */ 
+void SEXP_2_NimArr(SEXP Sn, double &x);
+void SEXP_2_NimArr(SEXP Sn, int &x);
+void SEXP_2_NimArr(SEXP Sn, bool &x);
+void SEXP_2_NimArr(SEXP Sn, std::string &x);
+void SEXP_2_NimArr(SEXP Sn, std::vector<std::string> &x);
 
+SEXP NimArr_2_SEXP(double x);
+SEXP NimArr_2_SEXP(int x);
+SEXP NimArr_2_SEXP(bool x);
+SEXP NimArr_2_SEXP(std::string &x);
+SEXP NimArr_2_SEXP(const std::vector<std::string> &x);
 
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans );
@@ -156,62 +217,71 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans);
 
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<ndim> called for SEXP that is not a numeric or logica!\n");
+  NIM_ASSERT3(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
+    "SEXP_2_NimArr<%d, double> called for SEXP that is not a numeric or logical: actual type %s\n",
+    ndim, Rf_type2str(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
-  if(inputDims.size() != ndim) PRINTF("Error: Wrong number of input dimensions in SEXP_2_NimArr<ndim, double> called for SEXP that is not a numeric!\n");
-  // if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  NIM_ASSERT4(inputDims.size() == ndim,
+    "Wrong number of input dimensions in SEXP_2_NimArr<%d, double> called for SEXP that is not a numeric: expected %d, actual %d\n",
+    ndim, ndim, inputDims.size());
+  // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
-  if(isReal(Sn)) {
+  if(Rf_isReal(Sn)) {
     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      std::copy(iSn, iSn + nn, ans.getPtr()); //v);
-    } else {
-      PRINTF("Error: could not handle input type to SEXP_2_NimArr\n");
-    }
+    NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
+      "could not handle input of type %s to SEXP_2_NimArr<%d, double>\n",
+      Rf_type2str(TYPEOF(Sn)), ndim);
+    int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+    std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
 }
 
 // ACTUALLY THIS IS IDENTICAL CODE TO ABOVE, SO THEY COULD BE COMBINED WITHOUT TEMPLATE SPECIALIZATION
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<ndim> called for SEXP that is not a numeric or logica!\n");
+  NIM_ASSERT3(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
+    "SEXP_2_NimArr<%d, int> called for SEXP that is not a numeric or logical: actual type %s\n",
+    ndim, Rf_type2str(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
-  if(inputDims.size() != ndim) PRINTF("Error: Wrong number of input dimensions in SEXP_2_NimArr<ndim, double> called for SEXP that is not a numeric!\n");
-  // if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  NIM_ASSERT4(inputDims.size() == ndim,
+    "Wrong number of input dimensions in SEXP_2_NimArr<%d, int> called for SEXP that is not a numeric: expected %d, actual %d\n",
+    ndim, ndim, inputDims.size());
+  // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
-  if(isReal(Sn)) {
+  if(Rf_isReal(Sn)) {
     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      std::copy(iSn, iSn + nn, ans.getPtr()); //v);
-    } else {
-      PRINTF("Error: could not handle input type to SEXP_2_NimArr\n");
-    }
+    NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
+      "could not handle input type %s to SEXP_2_NimArr<%d, int>\n",
+      Rf_type2str(TYPEOF(Sn)), ndim);
+    int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+    std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
 }
 
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<ndim> called for SEXP that is not a numeric or logica!\n");
+  NIM_ASSERT3(Rf_isNumeric(Sn) || Rf_isLogical(Sn),
+    "SEXP_2_NimArr<%d, bool> called for SEXP that is not a numeric or logical: actual type %s\n",
+    ndim, Rf_type2str(TYPEOF(Sn)));
   vector<int> inputDims(getSEXPdims(Sn));
-  if(inputDims.size() != ndim) PRINTF("Error: Wrong number of input dimensions in SEXP_2_NimArr<ndim, double> called for SEXP that is not a numeric!\n");
-  // if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  NIM_ASSERT4(inputDims.size() == ndim,
+    "Wrong number of input dimensions in SEXP_2_NimArr<%d, bool> called for SEXP that is not a numeric: expected %d, actual %d\n",
+    ndim, ndim, inputDims.size());
+  // NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(inputDims);
   int nn = LENGTH(Sn);
-  if(isReal(Sn)) {
+  if(Rf_isReal(Sn)) {
     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
   } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      std::copy(iSn, iSn + nn, ans.getPtr()); //v);
-    } else {
-      PRINTF("Error: could not handle input type to SEXP_2_NimArr\n");
-    }
+    NIM_ASSERT3(Rf_isInteger(Sn) || Rf_isLogical(Sn),
+      "could not handle input type %s to SEXP_2_NimArr<%d, bool>\n",
+      Rf_type2str(TYPEOF(Sn)), ndim);
+    int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+    std::copy(iSn, iSn + nn, ans.getPtr()); //v);
   }
 }
 
@@ -220,15 +290,15 @@ template<int ndim>
 SEXP NimArr_2_SEXP(NimArr<ndim, double> &val) {
   SEXP Sans;
   int outputLength = val.size();
-  PROTECT(Sans = allocVector(REALSXP, outputLength));
+  PROTECT(Sans = Rf_allocVector(REALSXP, outputLength));
   double *ans = REAL(Sans);
 
   std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
   if(val.numDims() > 1) {
     SEXP Sdim;
-    PROTECT(Sdim = allocVector(INTSXP, val.numDims() ) );
+    PROTECT(Sdim = Rf_allocVector(INTSXP, val.numDims() ) );
     for(int idim = 0; idim < val.numDims(); ++idim) INTEGER(Sdim)[idim] = val.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
+    Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     UNPROTECT(2);
   } else {
     UNPROTECT(1);
@@ -240,15 +310,15 @@ template<int ndim>
 SEXP NimArr_2_SEXP(NimArr<ndim, int> &val) {
   SEXP Sans;
   int outputLength = val.size();
-  PROTECT(Sans = allocVector(INTSXP, outputLength));
+  PROTECT(Sans = Rf_allocVector(INTSXP, outputLength));
   int *ans = INTEGER(Sans);
 
   std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
   if(val.numDims() > 1) {
     SEXP Sdim;
-    PROTECT(Sdim = allocVector(INTSXP, val.numDims() ) );
+    PROTECT(Sdim = Rf_allocVector(INTSXP, val.numDims() ) );
     for(int idim = 0; idim < val.numDims(); ++idim) INTEGER(Sdim)[idim] = val.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
+    Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     UNPROTECT(2);
   } else {
     UNPROTECT(1);
@@ -260,15 +330,15 @@ template<int ndim>
 SEXP NimArr_2_SEXP(NimArr<ndim, bool> &val) {
   SEXP Sans;
   int outputLength = val.size();
-  PROTECT(Sans = allocVector(LGLSXP, outputLength));
+  PROTECT(Sans = Rf_allocVector(LGLSXP, outputLength));
   int *ans = LOGICAL(Sans);
 
   std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
   if(val.numDims() > 1) {
     SEXP Sdim;
-    PROTECT(Sdim = allocVector(LGLSXP, val.numDims() ) );
+    PROTECT(Sdim = Rf_allocVector(LGLSXP, val.numDims() ) );
     for(int idim = 0; idim < val.numDims(); ++idim) LOGICAL(Sdim)[idim] = val.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
+    Rf_setAttrib(Sans, R_DimSymbol, Sdim);
     UNPROTECT(2);
   } else {
     UNPROTECT(1);
@@ -299,74 +369,8 @@ int length(vector<T> vec)
 	{
 	return(vec.size());
 	}
-	
-/* class orderedPair	//simple class which is used to be sorted by value, but remember what the original order was. used in rawSample */
-/* 	{ */
-/* 	public: */
-/* 	double value; */
-/* 	int rank; */
-/* 	}; */
 
-/* bool compareOrderedPair(orderedPair a, orderedPair b);	 //function called for sort  */
-
-
-void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output);
-void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output, bool& silent);
-
-
-/*	optim tools	*/
-
-
-//	 NEW CLASSES (may be classes for which nimble functions can inherit from to allow for easy 
-
-
-//This is a class that will be used to store outcome of a call to optim
-//By giving the optim functions pointers to these elements, 
-//there is actually no need to "unpack" the results
-//The following two classes COULD be a nimbleFunction
-class OptimAns{
-	public: 
-	NimArr<1, double> par;
-	double Fmin;
-	int fail, fncount;
-	OptimAns(int n){
-		par = NimArr<1, double> (n);
-	};
-};		
-
-
-//This is a class that will be used to store inputs to various optims
-//Will further specialize classes for each version of optim!
-
-
-class OptimControl{
-	public:
-	int optimType, maxit, trace;
-	//Choices of optimType: 1 = Nelder Mead, 2 = BFG, 3 = BFG with Box Constraints, 4 = Conjugate Gradient, 5 = Simulated Annealing
-};		
-					
-					
-//	This is a specialized control specifically for Nelder Mead optimizer						
-class NM_OptimControl : public OptimControl{
-	public:
-	double alpha, beta, gamma, abstol, intol;
-	NM_OptimControl(double ialpha, double ibeta, double igamma, double iabstol, double iintol, int imaxit, int itrace){
-		alpha = ialpha; beta = ibeta; gamma = igamma; abstol = iabstol; intol = iintol;
-		maxit = imaxit; trace = itrace;
-		optimType = 1;
-	};
-};
-
-
-void bareBonesOptim(NimArr<1, double> initPar, optimfn objFxn, void* nfPtr, int nargs,  ...);
-
-void nimble_optim(void* nimFun, OptimControl* control, OptimAns* ans,
-				 	NimArr<1, double> par, void* otherArgs,
-				 	optimfn objFxn);
-
-void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans,
-				 	NimArr<1, double> par, optimfn objFxn,
-				 	int numOtherArgs, ...);
-					
+void rankSample(NimArr<1, double>& weights, int n, NimArr<1, int>& output);
+void rankSample(NimArr<1, double>& weights, int n, NimArr<1, int>& output, bool silent);
 
 #endif

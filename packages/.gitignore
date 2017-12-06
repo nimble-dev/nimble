@@ -12,3 +12,5 @@ MyMakevars
 Eigen_local*
 
 config.*
+*.Rproj
+profile/

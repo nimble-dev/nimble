@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #include <map>
 #include <utility>
 #include <string>
@@ -38,7 +59,7 @@ void RNimble_PtrFinalizer(SEXP obj) {
 }
 
 string local_STRSEXP_2_string(SEXP Ss, int i) {
-  if(!isString(Ss)) {
+  if(!Rf_isString(Ss)) {
     PRINTF("Error: STRSEXP_2_string called for SEXP that is not a string!\n"); 
     return(string(""));
   }
@@ -79,7 +100,7 @@ void RegisterNimblePointer(SEXP ptr, SEXP Dll, R_CFinalizer_t finalizer, SEXP Sl
 
 SEXP CountDllObjects() {
   SEXP Sans;
-  PROTECT(Sans = allocVector(INTSXP, 1));
+  PROTECT(Sans = Rf_allocVector(INTSXP, 1));
   INTEGER(Sans)[0] = RnimblePtrs.size();
   UNPROTECT(1);
   return(Sans);
@@ -94,9 +115,9 @@ SEXP RNimble_Ptr_ManualFinalizer(SEXP obj) {
 SEXP local_vectorString_2_STRSEXP(const std::vector<string> &v) {
   SEXP Sans;
   int nn = v.size();
-  PROTECT(Sans = allocVector(STRSXP, nn));
+  PROTECT(Sans = Rf_allocVector(STRSXP, nn));
   for(int i = 0; i < nn; i++) {
-    SET_STRING_ELT(Sans, i, mkChar(v[i].c_str()));
+    SET_STRING_ELT(Sans, i, Rf_mkChar(v[i].c_str()));
   }
   UNPROTECT(1);
   return(Sans);
@@ -131,7 +152,7 @@ SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll, SEXP Sforce) {
       PRINTF("Warning: %i objects were found from a DLL\n", objectsFound);
   }
   //  SEXP Sans;
-  //  PROTECT(Sans = allocVector(INTSXP, 1));
+  //  PROTECT(Sans = Rf_allocVector(INTSXP, 1));
   //  INTEGER(Sans)[0] = objectsFound;
   //  UNPROTECT(1);
   //  return(Sans);

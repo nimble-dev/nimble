@@ -17,6 +17,7 @@
 #' Run code: \code{for(i in seq_along(myCalcs)) {ans[i] <- myCalcs[[i]]()} }
 #' 
 simNodes <- nimbleFunction(
+    name = 'simNodes',
     setup = function(model, nodes){
         if(missing(nodes) )
             nodes <- model$getNodeNames()
@@ -33,6 +34,7 @@ simNodes <- nimbleFunction(
 #' @rdname simNodes
 #' @export
 calcNodes <- nimbleFunction(
+    name = 'calcNodes',
 	setup = function(model, nodes){
 		if(missing(nodes) )
                     depNodes <- model$getNodeNames()
@@ -49,6 +51,7 @@ calcNodes <- nimbleFunction(
 #' @rdname simNodes
 #' @export
 getLogProbNodes <- nimbleFunction(
+    name = 'getLogProbNodes',
 	setup = function(model, nodes) {
 		if(missing(nodes) )
                     depNodes <- model$getNodeNames()
@@ -122,6 +125,7 @@ getLogProbNodes <- nimbleFunction(
 #'   Cglp$run()	  #Gives wrong answers because logProbs were not saved
 #' }
 simNodesMV <- nimbleFunction(
+    name = 'simNodesMV',
     setup = function(model, mv, nodes) {
         if(missing(nodes) )
             nodes <- model$getNodeNames()
@@ -143,6 +147,7 @@ simNodesMV <- nimbleFunction(
 #' @rdname simNodesMV
 #' @export
 calcNodesMV <- nimbleFunction(
+    name = 'calcNodesMV',
 	setup = function(model, mv, nodes) {
 		if(missing(nodes) )
                     nodes <- depNodes <- model$getNodeNames()
@@ -168,6 +173,7 @@ where = getLoadingNamespace())
 #' @rdname simNodesMV
 #' @export
 getLogProbNodesMV <- nimbleFunction(
+    name = 'getLogProbNodesMV',
 	setup = function(model, mv, nodes) {
 		if(missing(nodes) )
                     nodes <- depNodes <- model$getNodeNames()
@@ -194,7 +200,7 @@ getLogProbNodesMV <- nimbleFunction(
 #'
 #' Returns a d-by-d identity matrix (square matrix of 0's, with 1's on the main diagnol).
 #'
-#' This function can be used in the NIMBLE DSL, i.e. in the run function and member methods of nimbleFunctions.
+#' This function can be used in NIMBLE run code.
 #'
 #' @param d The size of the identity matrix to return, will return a d-by-d matrix
 #'
@@ -207,6 +213,7 @@ getLogProbNodesMV <- nimbleFunction(
 #'
 #' @export
 identityMatrix <- nimbleFunction(
+    name = 'identityMatrix',
     run = function(d = double()) {
         declare(arr, double(2, c(d, d)))
         for(i in 1:d)   for(j in 1:d)   arr[i, j] <- 0

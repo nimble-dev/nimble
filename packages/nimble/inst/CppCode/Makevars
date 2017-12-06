@@ -1,1 +1,2 @@
-PKG_CPPFLAGS=-I"../include"
+PKG_CPPFLAGS= -DR_NO_REMAP -I"../include"
+CXX_STD = CXX11

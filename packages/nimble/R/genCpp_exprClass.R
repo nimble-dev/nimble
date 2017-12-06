@@ -9,81 +9,107 @@
 ##
 ## In places it is still convenient to use R parse trees, or to generate
 ## code in an R parse tree and then call RparseTree2ExprClasses to convert it
-exprClass <- setRefClass('exprClass',
-                         fields = list(
-                             expr = 'ANY', ## optional for the original R expr. Not used much except at setup
-                             isName = 'ANY',		#'logical', ## is it a name
-                             isCall = 'ANY',		# 'logical', ## is it a call
-                             isAssign =  'ANY',		#'logical', ## it is an assignment (all assignments are also calls)
-                             name =  'ANY',		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
-                             nDim =  'ANY',		#'numeric', ## how many dimensions
-                             sizeExprs =  'ANY',		#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
-                             type =  'ANY',		#'character', ## type label
-                             args =  'ANY',		#'list', ## list of exprClass objects for the arguments
-                             eigMatrix =  'ANY',		#'logical', ## vs. Array.  Only used for Eigenized expressions
-                             toEigenize =  'ANY',		#'character', ##'yes', 'no', or 'maybe'
-                             caller = 'ANY', ## exprClass object for the call to which this is an argument (if any)
-                             callerArgID =  'ANY',		#'numeric', ## index in the calling object's args list for this object.
-                             assertions =  'ANY'		#'list'
-                             ),
-                         methods = list(
-                             initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); callSuper(...)},
-                             ## This displays the parse tree using indentation on multiple rows of output
-                             ## It also checks that the caller and callerArgID fields are all correct
-                             ## For deparsing, call nimDeparse
-                             show = function(indent = '', showType = FALSE, showAssertions = FALSE, showToEigenize = FALSE) {
-                                 ## optionally include size information
-                                 sizeDisp <- if(showType) { 
-                                     if(inherits(type, 'uninitializedField')) {
-                                         paste0(' \t| type = (uninitializedField)(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
-                                     } else {
-                                         paste0(' \t| type = ', type,'(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
-                                     }
-                                 } else
-                                     character()
-
-                                 assertDisp <- if(showAssertions & length(assertions) > 0) {
-                                     paste(' \t| assert:',paste(unlist(lapply(assertions, deparse)), collapse = ', '))
-                                 } else character()
-
-                                 toEigenizeDisp <- if(showToEigenize) {
-                                     paste(' \t| ', toEigenize)
-                                 } else character()
-                                 ## write self label
-                                 writeLines(paste0(indent, name, sizeDisp, assertDisp, toEigenizeDisp))
-                                 ## Iterate through arguments and show them with more indenting
-                                 for(i in seq_along(args)) {
-                                     if(inherits(args[[i]], 'exprClass')) {
-                                         args[[i]]$show(paste0(indent, '  '), showType, showAssertions, showToEigenize)
-                                         ## check caller and callerArgID validity
-                                         if(!identical(args[[i]]$caller, .self) |
-                                            args[[i]]$callerArgID != i)
-                                             writeLines(paste0(indent, '****',
-                                                               'Warning: caller and/or callerID are not set correctly.'))
-                                     } else {
-                                         writeLines(paste0(indent, '  ', if(is.null(args[[i]])) 'NULL' else args[[i]]))
-                                     }
-                                 }
-                                 ## close brackets
-                                 if(name=='{') writeLines(paste0(indent,'}'))
-                             }
-                             )
-                         )
+exprClass <- R6::R6Class(
+    'exprClass',
+    portable = FALSE,
+    public = list(
+        expr = NULL, ## optional for the original R expr. Not used much except at setup
+        isName = NULL,		#'logical', ## is it a name
+        isCall = NULL,		# 'logical', ## is it a call
+        isAssign =  NULL,		#'logical', ## it is an assignment (all assignments are also calls)
+        name =  NULL,		#'character', ## what is the name of the call or the object (e.g. 'a' or '+')
+        nDim =  NULL,		#'numeric', ## how many dimensions
+        sizeExprs =  list(),	#'list', ## a list of size expressions (using R parse trees for each non-numeric expression
+        type =  NULL,		#'character', ## type label
+        args =  list(),		#'list', ## list of exprClass objects for the arguments
+        eigMatrix =  logical(),	#'logical', ## vs. Array.  Only used for Eigenized expressions
+        toEigenize =  'unknown',	#'character', ##'yes', 'no', or 'maybe'
+        caller = NULL,           # exprClass object for the call to which this is an argument (if any)
+        callerArgID =  NULL,	#'numeric', ## index in the calling object's args list for this object.
+        assertions =  list(),	#'list'
+        cppADCode = FALSE,         #'logical' ## is expr in code generated for cppad?
+        aux = NULL,               # anything needed for specific operators
+        initialize = function(...) {
+            dotsList <- list(...)
+            for(v in names(dotsList))
+                self[[v]] <- dotsList[[v]]
+        },
+        ## This displays the parse tree using indentation on multiple rows of output
+        ## It also checks that the caller and callerArgID fields are all correct
+        ## For deparsing, call nimDeparse
+        print = function(indent = '', showType = FALSE, showAssertions = FALSE, showToEigenize = FALSE) {
+            ## optionally include size information
+            sizeDisp <- if(showType) { 
+                if(is.null(type)) {
+                    paste0(' \t| type = (NULL)(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
+                } else {
+                    paste0(' \t| type = ', type,'(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
+                }
+            } else
+                character()
+    
+            assertDisp <- if(showAssertions & length(assertions) > 0) {
+                paste(' \t| assert:',paste(unlist(lapply(assertions, deparse)), collapse = ', '))
+            } else character()
+    
+            toEigenizeDisp <- if(showToEigenize) {
+                paste(' \t| ', toEigenize)
+            } else character()
+            ## write self label
+            writeLines(paste0(indent, name, sizeDisp, assertDisp, toEigenizeDisp))
+            ## Iterate through arguments and show them with more indenting
+            for(i in seq_along(args)) {
+                if(inherits(args[[i]], 'exprClass')) {
+                    args[[i]]$print(paste0(indent, '  '), showType, showAssertions, showToEigenize)
+                    ## check caller and callerArgID validity
+                    if(!identical(args[[i]]$caller, self) |
+                       args[[i]]$callerArgID != i)
+                        writeLines(paste0(indent, '****',
+                                          'Warning: caller and/or callerID are not set correctly.'))
+                } else {
+                    writeLines(paste0(indent, '  ', if(is.null(args[[i]])) 'NULL' else args[[i]]))
+                }
+            }
+            ## close brackets
+            if(name=='{') writeLines(paste0(indent,'}'))
+        }
+    )
+)
 
 ## This class is for keeping track of symbolic dimension and size information
-## for a variable name, including any known changes as code processing progresses
-## It differs from the information in the symbol table in that the latter is static: it is not modified as a result of code processing
+## for a variable name, including any known changes as code processing progresses.
+## This differs from the information in the symbol table in that the latter is static: it is not modified as a result of code processing.
 exprTypeInfoClass <- setRefClass('exprTypeInfoClass',
-                                 fields = list(
-                                     nDim =  'ANY',		#'numeric',
-                                     sizeExprs =  'ANY',		#'list',
-                                     type =  'ANY'),		#'character'),
-                                 methods = list(
-                                 	initialize = function(...){sizeExprs <<- list();callSuper(...)},
-                                     show = function() {
-                                         writeLines(paste0('exprTypeInfoClass: nDim = ', nDim, '. type = ', type,'. sizeExprs = ', paste0( lapply(sizeExprs, deparse), collapse = ',')))
-                                     })
-                                 )
+    fields = list(
+        nDim =  'ANY',		#'numeric',
+        sizeExprs =  'ANY',	#'list',
+        type =  'ANY'		#'character'
+    ),
+    methods = list(
+    	initialize = function(...) {
+            sizeExprs <<- list()
+            callSuper(...)
+        },
+        show = function() {
+            writeLines(paste0('exprTypeInfoClass: nDim = ', nDim, '. type = ', type,'. sizeExprs = ', paste0( lapply(sizeExprs, deparse), collapse = ',')))
+        }
+    )
+)
+
+copyExprClass <- function(original) {
+    result <- original$clone(deep = FALSE)
+    ## shallow=FALSE does not deep-copy on list elements, so it is
+    ## useless for args list.  Another reason for shallow = TRUE
+    ## is we do not want to deep copy 'caller' here.  Instead it is
+    ## re-assigned below.
+    for(i in seq_along(result$args)) {
+        if(inherits(result$args[[i]], 'exprClass')) {
+            result$args[[i]] <- copyExprClass(result$args[[i]])
+            result$args[[i]]$caller <- result
+        }
+    }
+    result
+}
 
 ## Add indendation to every character() element in a list, doing so recursively for any nested list()
 addIndentToList <- function(x, indent) {
@@ -94,7 +120,7 @@ addIndentToList <- function(x, indent) {
 ### Deparse from exprClass back to R code: not guaranteed to be identical, but valid.
 nimDeparse <- function(code, indent = '') {
     ## numeric case
-    if(is.numeric(code)) return(code)
+    if(is.numeric(code) | is.logical(code)) return(code)
     if(is.character(code)) return(paste0('\"', code, '\"'))
     if(is.null(code)) return('NULL')
     ## name
@@ -184,15 +210,17 @@ nimDeparse <- function(code, indent = '') {
         return(paste0(nimDeparse(code$args[[1]]),
                       '(', paste0(unlist(lapply(code$args[-1], nimDeparse) ), collapse = ', '), ')' ) )
     }
-    ## for a general function call
-    return( paste0(code$name, '(', paste0(unlist(lapply(code$args, nimDeparse) ), collapse = ', '), ')' ) )
+    ## for a general function call. Modified to preseve any argument names
+    deparsedArguments <- lapply(code$args, nimDeparse)
+    argumentText <- if(!is.null(names(deparsedArguments))) paste(names(deparsedArguments), deparsedArguments, sep = '=') else unlist(deparsedArguments)
+    return(paste0(code$name, '(', paste0(argumentText, collapse = ','), ')' ))
 }
 
 ## error trapping utilities to be used from the various processing steps
 exprClassProcessingErrorMsg <- function(code, msg) {
     contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()
     ans <- paste0(msg, '\n This occurred for: ', nimDeparse(code),'\n', collapse = '')
-    if(!is.null(contextCode)) ans <- paste(ans, '\n This was part of the call: ', contextCode, collapse = '')
+    if(!is.null(contextCode)) ans <- paste(ans, 'This was part of the call: ', contextCode, collapse = '')
     ans
 }
 
@@ -279,10 +307,14 @@ isCodeScalar <- function(code) {
 anyNonScalar <- function(code) {
     if(!inherits(code, 'exprClass')) return(FALSE)
     if(code$name == 'map') return(TRUE)
+    if(is.character(code$type))
+        if(code$type[1] == 'nimbleList') return(FALSE)
     if(code$isName) {
         return(!isCodeScalar(code))
     }
     if(code$isCall) {
+        if(code$name == 'nfVar') ## don't recurse just for nested member access
+            return(!isCodeScalar(code))
         skipFirst <- FALSE
         if(code$name == '[') skipFirst <- TRUE
         if(code$name == 'size') skipFirst <- TRUE

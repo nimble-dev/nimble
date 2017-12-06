@@ -2,17 +2,22 @@
 ##  We have a build function (buildBootstrapFilter),
 ##  and step function.
 
-
 bootStepVirtual <- nimbleFunctionVirtual(
-  run = function(m = integer(), threshNum=double(), prevSamp = logical()) 
+  run = function(m = integer(), threshNum=double(), prevSamp = logical()) {
     returnType(double(1))
+  },
+  methods = list(
+    returnESS = function() {
+      returnType(double())
+    }
+  )
 )
-
 
 # Bootstrap filter as specified in Doucet & Johnasen '08,
 # uses weights from previous time point to calculate likelihood estimate.
 
 bootFStep <- nimbleFunction(
+    name = 'bootFStep',
   contains = bootStepVirtual,
   setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names, saveAll, smoothing, silent = FALSE) {
     notFirst <- iNode != 1
@@ -42,6 +47,7 @@ bootFStep <- nimbleFunction(
       prevInd <- 1 
     }
     isLast <- (iNode == length(nodes))
+    ess <- 0
   },
   run = function(m = integer(), threshNum = double(), prevSamp = logical()) {
     returnType(double(1))
@@ -94,7 +100,7 @@ bootFStep <- nimbleFunction(
     
     # Normalize weights and calculate effective sample size 
     wts <- exp(wts)/sum(exp(wts))
-    ess <- 1/sum(wts^2) 
+    ess <<- 1/sum(wts^2) 
     
     # Determine whether to resample by weights or not
     if(ess < threshNum){
@@ -121,7 +127,13 @@ bootFStep <- nimbleFunction(
       }
     }
     return(out)
-  }, where = getLoadingNamespace()
+  },
+  methods = list(
+    returnESS = function(){
+      returnType(double(0))
+      return(ess)
+    }
+  ), where = getLoadingNamespace()
 )
 
 #' Create a bootstrap particle filter algorithm to estimate log-likelihood.
@@ -165,6 +177,10 @@ bootFStep <- nimbleFunction(
 #'  states in the \code{mvWSamples} modelValues object, with corresponding logged weights in \code{mvWSamples['wts',]}.
 #'  An equally weighted sample from the posterior can be found in the \code{mvEWsamp} \code{modelValues} object.
 #'
+#' @section \code{returnESS()} Method:
+#'  Calling the \code{returnESS()} method of a bootstrap filter after that filter has been \code{run()} for a given model will return a vector of ESS (effective
+#'  sample size) values, one value for each time point.
+#'  
 #' @export
 #' 
 #' @family particle filtering methods
@@ -175,10 +191,12 @@ bootFStep <- nimbleFunction(
 #' my_BootF <- buildBootstrapFilter(model, 'x[1:100]')
 #' Cmodel <- compileNimble(model)
 #' Cmy_BootF <- compileNimble(my_BootF, project = model)
-#' logLike <- Cmy_BootF(m = 100000)
+#' logLike <- Cmy_BootF$run(m = 100000)
+#' ESS <- Cmy_BootF$returnESS()
 #' boot_X <- as.matrix(Cmy_BootF$mvEWSamples)
 #' }
 buildBootstrapFilter <- nimbleFunction(
+    name = 'buildBootstrapFilter',
   setup = function(model, nodes, control = list()) {
     
     #control list extraction
@@ -268,6 +286,7 @@ buildBootstrapFilter <- nimbleFunction(
       bootStepFunctions[[iNode]] <- bootFStep(model, mvEWSamples, mvWSamples, nodes,
                                               iNode, names, saveAll, smoothing, silent) 
     }
+    essVals <- rep(0, length(nodes))
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
@@ -283,10 +302,19 @@ buildBootstrapFilter <- nimbleFunction(
       out <- bootStepFunctions[[iNode]]$run(m,threshNum, prevSamp)
       logL <- logL + out[1]
       prevSamp <- out[2]
+      essVals[iNode] <<- bootStepFunctions[[iNode]]$returnESS()
       if(logL == -Inf) return(logL)
       if(is.nan(logL)) return(-Inf)
       if(logL == Inf) return(-Inf) 
     }
     return(logL)
-  }, where = getLoadingNamespace()
+  },
+  methods = list(
+    returnESS = function(){
+      returnType(double(1))
+      return(essVals)
+    }
+  ), where = getLoadingNamespace()
 )
+
+

@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #ifndef __NIMBLE_EIGEN_NIMARR
 #define __NIMBLE_EIGEN_NIMARR
 
@@ -86,86 +107,86 @@ void setValuesIndexRange(NimArrBase<T> &nimArr, ManyVariablesMapAccessor &MVA, c
 
 
 template<typename Derived>
-double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   double ans(0);
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
   if(!logical) {
     int thisIndex;
     for(int i = 0; i < len; ++i) {
       thisIndex = indices(i)-1; // indices is R-based
-      ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateBlock(useInfoVec[ thisIndex ].useInfo );
+      ans += instructions[ thisIndex ].nodeFunPtr->calculateBlock(instructions[ thisIndex ].operand);
     }
     return(ans);
   }
   // logical = true. treat indices as a logical vector
   for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      ans += useInfoVec[ i ].nodeFunPtr->calculateBlock(useInfoVec[ i ].useInfo );
+      ans += instructions[ i ].nodeFunPtr->calculateBlock(instructions[ i ].operand);
     }
   }
   return(ans);
 }
   
 template<typename Derived>  
-  double calculateDiff(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  double calculateDiff(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   double ans(0);
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
   if(!logical) {
     int thisIndex;
     for(int i = 0; i < len; ++i) {
       thisIndex = indices(i)-1; // indices is R-based
-      ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateDiffBlock(useInfoVec[ thisIndex ].useInfo );
+      ans += instructions[ thisIndex ].nodeFunPtr->calculateDiffBlock(instructions[ thisIndex ].operand);
     }
     return(ans);
   }
   // logical = true. treat indices as a logical vector
   for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      ans += useInfoVec[ i ].nodeFunPtr->calculateDiffBlock(useInfoVec[ i ].useInfo );
+      ans += instructions[ i ].nodeFunPtr->calculateDiffBlock(instructions[ i ].operand);
     }
   }
   return(ans);
 }
 
 template<typename Derived>  
-  double getLogProb(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  double getLogProb(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
   double ans(0);
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
   if(!logical) {
     int thisIndex;
     for(int i = 0; i < len; ++i) {
       thisIndex = indices(i)-1; // indices is R-based
-      ans += useInfoVec[ thisIndex ].nodeFunPtr->getLogProbBlock(useInfoVec[ thisIndex ].useInfo );
+      ans += instructions[ thisIndex ].nodeFunPtr->getLogProbBlock(instructions[ thisIndex ].operand);
     }
     return(ans);
   }
   // logical = true. treat indices as a logical vector
   for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      ans += useInfoVec[ i ].nodeFunPtr->getLogProbBlock(useInfoVec[ i ].useInfo );
+      ans += instructions[ i ].nodeFunPtr->getLogProbBlock(instructions[ i ].operand);
     }
   }
   return(ans);
 }
 
 template<typename Derived>  
-  void simulate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
-  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  void simulate(NodeVectorClassNew &nodes, const Derived &indices, bool logical) {
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
   int len = indices.size();
   if(!logical) {
    int thisIndex;
    for(int i = 0; i < len; ++i) {
     thisIndex = indices(i)-1; // indices is R-based
-    useInfoVec[ thisIndex ].nodeFunPtr->simulateBlock(useInfoVec[ thisIndex ].useInfo );
+    instructions[ thisIndex ].nodeFunPtr->simulateBlock(instructions[ thisIndex ].operand);
    }
   } else {
   // logical = true. treat indices as a logical vector
    for(int i = 0; i < len; ++i) {
     if(indices(i)) {
-      useInfoVec[ i ].nodeFunPtr->simulateBlock(useInfoVec[ i ].useInfo );
+      instructions[ i ].nodeFunPtr->simulateBlock(instructions[ i ].operand);
     }
    }
   }
@@ -190,98 +211,103 @@ template<typename NimArrOutput, typename NimArrInput>
   return;
 }
 
+// This is called from one of the assignNimArrToNimArr functions, which are generated from numeric / integer / logical / matrix / array with NON-SCALAR initialization
 template<typename NimArrOutput, typename NimArrInput>
-  void copyNimArrToNimArrInternal(NimArrOutput &output, NimArrInput &input, int totSize) {
+  void copyNimArrToNimArrInternal(NimArrOutput &output, NimArrInput &input, int totSize, bool fillZeros, bool recycle) {
   int sizeToCopy;
   if(input.size() < totSize) {
-      _nimble_global_output << "Warning from C++: not enough initialization values.\n"; nimble_print_to_R( _nimble_global_output);
+    //     _nimble_global_output << "Warning from C++: not enough initialization values.\n"; nimble_print_to_R( _nimble_global_output);
       sizeToCopy = input.size();
   } else {
     if(input.size() > totSize) {
-      _nimble_global_output << "Warning from C++: too many initialization values.\n"; nimble_print_to_R( _nimble_global_output);
+      //   _nimble_global_output << "Warning from C++: too many initialization values.\n"; nimble_print_to_R( _nimble_global_output);
     }
     sizeToCopy = totSize;
   }
   if(input.isMap() | (output.getNimType() != input.getNimType())) { 
     for(int i = 0; i < sizeToCopy; i++) output.valueNoMap(i) = input[i];
     if(sizeToCopy < totSize) {
-      for(int i = sizeToCopy; i < totSize; i++) output.valueNoMap(i) = 0;
+      if(recycle) {
+	int iStart = sizeToCopy;
+	while(iStart + sizeToCopy <= totSize) {
+	  for(int i = 0; i < sizeToCopy; i++) output.valueNoMap(iStart + i) = input[i];
+	  iStart += sizeToCopy;
+	}
+	if(iStart < totSize)
+	  for(int i = 0; i < (totSize - iStart); i++) output.valueNoMap(iStart + i) = input[i];
+      } else {
+	if(fillZeros) 
+	  for(int i = sizeToCopy; i < totSize; i++) output.valueNoMap(i) = 0;
+      }
     }
   } else {
     memcpy(output.getPtr(), input.getPtr(), sizeToCopy * output.element_size() );
     if(sizeToCopy < totSize) {
-      std::fill(output.getPtr() + sizeToCopy, output.getPtr() + totSize, 0);
+      if(recycle) {
+	int iStart = sizeToCopy;
+	while(iStart + sizeToCopy <= totSize) {
+	  memcpy(output.getPtr() + iStart, input.getPtr(), sizeToCopy * output.element_size() );
+	  iStart += sizeToCopy;
+	}
+	if(iStart < totSize)
+	  memcpy(output.getPtr() + iStart, input.getPtr(), (totSize - iStart) * output.element_size() );
+      } else {
+	if(fillZeros)
+	  std::fill(output.getPtr() + sizeToCopy, output.getPtr() + totSize, 0);
+      }
     }
   }
   return;
 }
 
 template<typename NimArrOutput, typename NimArrInput>
-  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1) {
-  if(!init) return;
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, bool fillZeros, bool recycle, int size1) {
   if(output.isMap()) {
     _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
   } else {
     output.setSize(size1, false, false); // would need same scalar types before trying memcpy.
-    copyNimArrToNimArrInternal(output, input, size1);
+    if(!init) return;
+    copyNimArrToNimArrInternal(output, input, size1, fillZeros, recycle);
   }
-  /*   if(input.size() < size1) { */
-  /*     _nimble_global_output << "Warning from C++: not enough initialization values.\n"; nimble_print_to_R( _nimble_global_output); */
-  /*     sizeToCopy = input.size(); */
-  /*   } else { */
-  /*     if(input.size() > size1) { */
-  /* 	_nimble_global_output << "Warning from C++: too many initialization values.\n"; nimble_print_to_R( _nimble_global_output); */
-  /*     } */
-  /*     sizeToCopy = size1; */
-  /*   } */
-  /*   if(input.isMap() | (output.getNimType() != input.getNimType())) */
-  /*     for(int i = 0; i < size1; i++) output.valueNoMap(i) = input[i]; */
-  /*   else { */
-  /*     memcpy(output.getPtr(), input.getPtr(), sizeToCopy * output.element_size() ); */
-  /*     if(sizeToCopy < size1) { */
-  /* 	std::fill(output.getPtr() + sizeToCopy, output.getPtr() + size1, 0); */
-  /*     } */
-  /*   } */
-  /* } */
   return;
 }
 
 template<typename NimArrOutput, typename NimArrInput>
-  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1, int size2) {
-  if(!init) return;
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, bool fillZeros, bool recycle, int size1, int size2) {
   if(output.isMap()) {
     _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
   } else {
     output.setSize(size1, size2, false, false); // would need same scalar types before trying memcpy.
+    if(!init) return;
     int totsize = size1 * size2;
-    copyNimArrToNimArrInternal(output, input, totsize);
+    copyNimArrToNimArrInternal(output, input, totsize, fillZeros, recycle);
   }
   return;
 }
 
 template<typename NimArrOutput, typename NimArrInput>
-  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1, int size2, int size3) {
-  if(!init) return;
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, bool fillZeros, bool recycle, int size1, int size2, int size3) {
   if(output.isMap()) {
     _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
   } else {
     output.setSize(size1, size2, size3, false, false); // would need same scalar types before trying memcpy.
+    if(!init) return;
     int totsize = size1 * size2 * size3;
-    copyNimArrToNimArrInternal(output, input, totsize);
+    copyNimArrToNimArrInternal(output, input, totsize, fillZeros, recycle);
   }
   return;
 }
 
 
 template<typename NimArrOutput, typename NimArrInput>
-  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1, int size2, int size3, int size4) {
-  if(!init) return;
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, bool fillZeros, bool recycle, int size1, int size2, int size3, int size4) {
   if(output.isMap()) {
     _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
   } else {
     output.setSize(size1, size2, size3, size4, false, false); // would need same scalar types before trying memcpy.
+    if(!init) return;
     int totsize = size1 * size2 * size3 * size4;
-    copyNimArrToNimArrInternal(output, input, totsize);
+    copyNimArrToNimArrInternal(output, input, totsize, fillZeros, recycle);
   }
   return;
 }
@@ -307,7 +333,7 @@ template<typename NimArrOutput, typename DerivedBool>
   ans.reserve(BoolArg.size());
   bool nextBool;
   for(unsigned int i = 0; i < BoolArg.size(); i++ ) {
-    nextBool = nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedBool>::Flags & LinearAccessBit, int, DerivedBool, typename Eigen::internal::traits<DerivedBool>::Index >::getCoeff(BoolArg, i);
+    nextBool = nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedBool>::Flags & LinearAccessBit, int, DerivedBool, Eigen::Index >::getCoeff(BoolArg, i);
     if(nextBool) ans.push_back(i + 1); // That 1 makes it one-based indexing, which will then be adjusted back to zero-based when used for indexing something else
   }
   assignVectorToNimArr<NimArrOutput, std::vector<int> >(output, ans);

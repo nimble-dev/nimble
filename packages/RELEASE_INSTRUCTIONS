@@ -2,33 +2,46 @@ make sure NEWS is updated with info on changes in latest release
 
 update DESCRIPTION and INSTALL with current version number
 
+update LICENSE with current year
+
+check CRAN results page to see what issues CRAN testing has noted:
+https://cran.r-project.org/web/checks/check_results_nimble.html
+
 for version on nimble website, remove FLIBS from src/Makevars.in
 for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
 
 Make sure src/Makevars.win is present.
 
-R CMD build nimble
-R CMD INSTALL nimble_${VERSION}.tar.gz
-# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
+# before running prep_pkg.R make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
 
-./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
+./prep_pkg.R # this creates man pages and updates NAMESPACE
 
+## note that an error: "section title spans multiple lines" will occur in roxygenization if any "@section" line does not have a ":" at the end of the line
 
 R CMD build nimble
 R CMD check --as-cran nimble_${VERSION}.tar.gz
-# officially this should be done on a development build of R, such as in a BCE or docker instance; for Chris, easiest to do via installing R-devel on SCF
+# officially this should be done on a development build of R, but now can be done formally using rhub (see below), so doing on your own machine in a release version of R just serves as a first pass
+
+R CMD INSTALL nimble_${VERSION}.tar.gz
 
 run tests:
+(comments here superseded for the most part by the new goldfile system)
 in particular check exact results vs previous versions (ignore differences in compilation log info)
 doing this test by test because of DLL unloading issue
-types="compareMCMCs copy declare distributions dsl_dists filtering getBound getDistributionInfo getParam getDependencies math mcem mcmc models setData size trunc user"
+types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists errors filtering getBound getDependencies getDistributionInfo getParam graphStructure math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList nimbleList_RCfun numericTypes setData size trunc types user"
 for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
 done
 
+Note that test-size results are simply showing warnings from model building that are labeled based on the test message - what is marked as a KNOWN PROBLEM is not _all_ of the tests that are KNOWN PROBLEMS, just those that happen to generate warnings. 
+
+run tests on all OS ideally
+
 rebuild manual as further test of package
 
 put new version of manual in inst/doc (perhaps - not sure if we want to add that much to the size of the tarball/package install)
+
+make sure no calls to compileNimble are in any examples that are not wrapped in a \dontrun; these calls will cause installation failure on Solaris and big headaches with CRAN
 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
 and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
@@ -36,11 +49,9 @@ and change to requireNamespace('rstan') from require('rstan')
 
 test cross-machine on Macs and on Windows
 
-can test using rhub:
+can test using rhub (from within packages/nimble):
 
-library(rhub)
-check()
-check_with_sanitizers()
+Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> rhub.out
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
@@ -58,20 +69,19 @@ go to website: R-nimble.org/login and login
 note that to make a new blog post or modify pages, need to 
 deactivate Google analyticator on Plugins -> Installed Plugins page
 
-change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
+change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version on Archived versions page.
 
 put new user manual in /web/R-nimble/wordpress/manuals
 and change symlink to point to newest pdf
+and change to g+w for NimbleUserManual_$VERSION.pdf
 
-make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
+update documentation page with link to updated manual
 
 add info on new release to release notes page
 
-update NEWS info on webpage as high-level summary of NEWS in package
+update version numbering on license and citation page
 
-update version numbering on license and citation page and 'What is Nimble' page
-
-update documentation page with link to updated manual
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 
@@ -82,6 +92,7 @@ reactivate Google Analyticator by clicking on 'activate' on Plugins -> Installed
 *****************
 
 make sure to merge devel into master branch and create a branch for the new version
+before doing so add final test-results-v$VERSION to repo to provide baseline for future releases
 git checkout master
 git merge devel
 git commit -am'merged new version onto master'
@@ -90,11 +101,6 @@ probably best at this point also to merge master onto devel
 
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote
-
-# make tag for nimble-docs too
-git tag -a v$VERSION -m "NIMBLE version $VERSION release, April 6, 2016"
-git push --tags    ## this is how you push *tags* to the remote
-
 
 ### building binaries
 

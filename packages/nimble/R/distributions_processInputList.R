@@ -87,6 +87,7 @@ distClass <- setRefClass(
         altParams = 'ANY',	#'list',    ## the (named) list of alternate parameters we'll have available, list elements are the expressions for each parameter 
         discrete = 'ANY',	#'logical',   ## logical, if the distribution is discrete
         pqAvail = 'ANY',        #'logical', ## if the p (CDF) and q (inverse CDF/quantile) functions are available
+        mixedSizes = 'ANY',     ##   if TRUE, then parameters of this distribution could have varied sizes, and is exempted from this check in model$checkBasics()
         range = 'ANY',          #'numeric',  ## lower and upper limits of distribution domain
         types = 'ANY',		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
         paramIDs = 'ANY'        #'integer'   ## named vector of unique integer ID for each parameter
@@ -111,6 +112,7 @@ distClass <- setRefClass(
             init_altParams(distInputList)
             discrete <<- if(is.null(distInputList$discrete))    FALSE    else    distInputList$discrete
             pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
+            mixedSizes <<- if(is.null(distInputList$mixedSizes))    FALSE    else    distInputList$mixedSizes
             init_range(distInputList)
             init_types(distInputList)
             init_paramIDs()
@@ -377,7 +379,8 @@ prepareDistributionInput <- function(dist) {
 #' Register distributional information so that NIMBLE can process
 #' user-supplied distributions in BUGS model code
 #'
-#' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, it should be a named list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}, and with the name of the list the same as that of the density function. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions. 
+#' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, it should be a named list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}, and with the name of the list the same as that of the density function. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions.
+#' @param userEnv environment in which to look for the nimbleFunctions that provide the distribution; this will generally not need to be set by the user as it will default to the environment from which this function was called.
 #' @author Christopher Paciorek
 #' @export
 #' @details
@@ -495,7 +498,8 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame()) 
          } else {
             nms <- names(distributionsInput)
           }
-        cat("Registering the following user-provided distributions:", nms, ".\n")
+        if(nimbleOptions('verbose'))
+            cat("Registering the following user-provided distributions:", nms, ".\n")
         dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
             distributionsInput[dupl] <- NULL
@@ -599,8 +603,6 @@ getDistributionList <- function(dists) {
 #' @param includeValue a logical indicating whether to return the string 'value', which is the name of the node value
 #'
 #' @author Christopher Paciorek
-#' 
-#' @export
 #' @details
 #' NIMBLE provides various functions to give information about a BUGS distribution. In some cases, functions of the same name and similar functionality operate on the node(s) of a model as well (see \code{help(modelBaseClass)}).
 #' 
@@ -722,6 +724,14 @@ pqDefined <- function(dist) {
    return(getDistributionInfo(dist)$pqAvail)
 } 
 
+## not user-facing. only for use in model$checkBasics(),
+## to avoid "same size check" for distribution parameters
+isMixedSizes <- function(dist) {
+    if(is.na(dist)) return(NA)
+    if(length(dist) > 1 || class(dist) != 'character')
+        stop("isMixedSizes: 'dist' should be a character vector of length 1")
+   return(getDistributionInfo(dist)$mixedSizes)
+}
 
 #' @export
 getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&

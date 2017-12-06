@@ -1,8 +1,13 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-# need a test_dslCheck function???
+# Might want to make a test_dslCheck function.
 
-nimbleOptions(showCompilerOutput = TRUE)
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+context('Testing of nimbleFunction (DSL) code checking')
 
 test_that("Test of DSL check of valid RCfunction", expect_silent(
 test1 <- nimbleFunction(
@@ -53,7 +58,7 @@ test3a <- nimbleFunction(
 ))
 
 # we'd like to catch this but 'aa' could be a nf and don't want to catch that; at the moment the only thing we readily have access to at time of checking is the names of objects in setup, not their types
-test_that("Test of DSL check of invalid nimbleFunction with R code present", expect_silent(
+test_that("Test of DSL check of invalid nimbleFunction with R code present", expect_failure(expect_warning(
 test4 <- nimbleFunction(
     setup = function() {
         aa <- function() { return(0) }
@@ -64,7 +69,7 @@ test4 <- nimbleFunction(
         return(tmp)
     }
 )
-))
+)))
 
 test_that("Test of DSL check of valid nimbleFunction with other nimbleFunctions present", expect_silent(
 test5 <- nimbleFunction(
@@ -242,3 +247,5 @@ test14 <- nimbleFunction(
 ))
 
 
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

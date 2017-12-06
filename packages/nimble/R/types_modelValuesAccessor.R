@@ -72,28 +72,18 @@ makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
     sourceObject <- accessorVector[[1]] ## a model or modelValues
     
     if(accessorVector[[3]]) {## logProb == TRUE
-        isLogProbName <- grepl('logProb_', nodeNames)
+        ## efficiency note for posterity:
+        ## grepl is inefficient when used extensively.
+        ## Using fixed = TRUE is much more efficient.
+        ## In this case, substr comparison is even more efficient
+        ## isLogProbName <- grepl('logProb_', nodeNames)
+        isLogProbName <- substr(nodeNames, 1, 8) == 'logProb_'
         nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
     }
-
-## time these also
-    
-    varNames <- .Call('parseVar', nodeNames)
+    varNames <- .Call(parseVar, nodeNames)
     symTab <- sourceObject$getSymbolTable()
-
-    ##varSizesAndNDims <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
-    varSizesAndNDims2 <- symTab$makeDimAndSizeList(varNames)
-    ## test <- varSizesAndNDims
-    ## if(length(varNames)>0) names(test) <- varNames
-    ## else {
-    ##     names(test) <- NULL
-    ##     names(varSizesAndNDims2) <- NULL
-    ## }
-    ## if(!identical(test, varSizesAndNDims2)) browser()
-    
+    varSizesAndNDims2 <- symTab$makeDimAndSizeList(varNames)    
     varSizesAndNDims <- varSizesAndNDims2
-##    varSizesAndNDims <- SINGLE_LAPPLY_FOR_PROFILING(varNames, symTab)
-    
     list(nodeNames, varSizesAndNDims)
 }
 

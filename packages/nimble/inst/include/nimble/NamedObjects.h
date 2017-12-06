@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #ifndef __NAMEDOBJECTS
 #define __NAMEDOBJECTS
 
@@ -16,13 +37,21 @@ public:
   map< string, void * > &getNamedObjects() {return(namedObjects);}
   void NO_hw();
   virtual void* getObjectPtr( string &name );
-  virtual ~NamedObjects() {//PRINTF("In NamedObjects destructor\n");
+   virtual void copyFromRobject( SEXP Robject ) {
+    /* Base class method should never be called,
+       but we implement it to avoid making this an abstract base class.
+       There are derived classes that may not implement copyFromRobject.
+       In such cases copyFromRobject should never be used, but we don't 
+       want a crash. */
+    PRINTF("Warning: C++ copying from R object is being used incorrectly\n");
   };
+  virtual ~NamedObjects() {};
 };
 
 extern "C" {
   SEXP getModelObjectPtr(SEXP Sextptr, SEXP Sname); /* should rename to getObjectPtr*/
   SEXP getAvailableNames(SEXP Sextptr);
+  SEXP copyFromRobject(SEXP Sextptr, SEXP Robject);
 }
 
 class NumberedObjects {

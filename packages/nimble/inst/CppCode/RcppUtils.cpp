@@ -1,8 +1,33 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 #include "nimble/RcppUtils.h"
 #include "nimble/Utils.h"
 #include<iostream>
 #include<sstream>
 #include<algorithm>
+
+// Work around R's unqualified use of `error` in the `ERROR` macro
+// (see $R_SOURCE/src/include/R_ext/RS.h).
+#define error Rf_error
 
 std::ostringstream _nimble_global_output;
 
@@ -25,17 +50,17 @@ void multivarTestCall(double *x, int n) {
 }
 
 vector<int> getSEXPdims(SEXP Sx) {
-  if(!isNumeric(Sx)) {PRINTF("Error, getSEXPdims called for something not numeric\n"); return(vector<int>());}
-  if(!isVector(Sx)) {PRINTF("Error, getSEXPdims called for something not vector\n"); return(vector<int>());}
-  if(!isArray(Sx) & !isMatrix(Sx)) {
+  if(!Rf_isNumeric(Sx)) {PRINTF("Error, getSEXPdims called for something not numeric\n"); return(vector<int>());}
+  if(!Rf_isVector(Sx)) {PRINTF("Error, getSEXPdims called for something not vector\n"); return(vector<int>());}
+  if(!Rf_isArray(Sx) & !Rf_isMatrix(Sx)) {
     vector<int> ans; 
     ans.resize(1); ans[0] = LENGTH(Sx); return(ans);
   }
-  return(SEXP_2_vectorInt(getAttrib(Sx, R_DimSymbol), 0));
+  return(SEXP_2_vectorInt(Rf_getAttrib(Sx, R_DimSymbol), 0));
 }
 
 string STRSEXP_2_string(SEXP Ss, int i) {
-  if(!isString(Ss)) {
+  if(!Rf_isString(Ss)) {
     PRINTF("Error: STRSEXP_2_string called for SEXP that is not a string!\n"); 
     return(string(""));
   }
@@ -49,7 +74,7 @@ string STRSEXP_2_string(SEXP Ss, int i) {
 }
 
 void STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans) {
-  if(!isString(Ss)) {
+  if(!Rf_isString(Ss)) {
     PRINTF("Error: STRSEXP_2_vectorString called for SEXP that is not a string!\n"); 
     return;
   }
@@ -62,8 +87,8 @@ void STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans) {
 
 SEXP string_2_STRSEXP(string v) {
   SEXP Sans;
-  PROTECT(Sans = allocVector(STRSXP, 1));
-  SET_STRING_ELT(Sans, 0, mkChar(v.c_str()));
+  PROTECT(Sans = Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(Sans, 0, Rf_mkChar(v.c_str()));
   UNPROTECT(1);
   return(Sans);
 }
@@ -71,24 +96,24 @@ SEXP string_2_STRSEXP(string v) {
 SEXP vectorString_2_STRSEXP(const vector<string> &v) {
   SEXP Sans;
   int nn = v.size();
-  PROTECT(Sans = allocVector(STRSXP, nn));
+  PROTECT(Sans = Rf_allocVector(STRSXP, nn));
   for(int i = 0; i < nn; i++) {
-    SET_STRING_ELT(Sans, i, mkChar(v[i].c_str()));
+    SET_STRING_ELT(Sans, i, Rf_mkChar(v[i].c_str()));
   }
   UNPROTECT(1);
   return(Sans);
 }
 
 vector<double> SEXP_2_vectorDouble( SEXP Sn ) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_vectorDouble called for SEXP that is not a numeric or logica!\n");
+  if(!(Rf_isNumeric(Sn) || Rf_isLogical(Sn))) PRINTF("Error: SEXP_2_vectorDouble called for SEXP that is not a numeric or logica!\n");
   int nn = LENGTH(Sn);
   vector<double> ans(nn);
-  if(isReal(Sn)) {
+  if(Rf_isReal(Sn)) {
     double *dSn = REAL(Sn);
     copy(dSn, dSn + nn, ans.begin());
   } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+    if(Rf_isInteger(Sn) || Rf_isLogical(Sn)) {
+      int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
       for(int i = 0; i < nn; ++i) {
 	ans[i] = static_cast<double>(iSn[i]);
       }
@@ -100,13 +125,13 @@ vector<double> SEXP_2_vectorDouble( SEXP Sn ) {
 }
 
 double SEXP_2_double(SEXP Sn, int i) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_double called for SEXP that is not numeric or logical\n");
+  if(!(Rf_isNumeric(Sn) || Rf_isLogical(Sn))) PRINTF("Error: SEXP_2_double called for SEXP that is not numeric or logical\n");
   if(LENGTH(Sn) <= i) PRINTF("Error: SEXP_2_double called for element %i >= length of %i.\n", i, LENGTH(Sn));
-  if(isReal(Sn)) {
+  if(Rf_isReal(Sn)) {
     return(REAL(Sn)[i]);
   } 
-  if(isInteger(Sn) || isLogical(Sn)) {
-    if(isInteger(Sn))
+  if(Rf_isInteger(Sn) || Rf_isLogical(Sn)) {
+    if(Rf_isInteger(Sn))
       return(static_cast<double>(INTEGER(Sn)[i]));
     else
       return(static_cast<double>(LOGICAL(Sn)[i]));
@@ -117,7 +142,7 @@ double SEXP_2_double(SEXP Sn, int i) {
 
 SEXP double_2_SEXP(double v) {
   SEXP Sans;
-  PROTECT(Sans = allocVector(REALSXP, 1));
+  PROTECT(Sans = Rf_allocVector(REALSXP, 1));
   REAL(Sans)[0] = v;
   UNPROTECT(1);
   return(Sans);
@@ -126,7 +151,7 @@ SEXP double_2_SEXP(double v) {
 SEXP vectorDouble_2_SEXP(const vector<double> &v) {
   SEXP Sans;
   int nn = v.size();
-  PROTECT(Sans = allocVector(REALSXP, nn));
+  PROTECT(Sans = Rf_allocVector(REALSXP, nn));
   if(nn > 0) {
     copy(v.begin(), v.end(), REAL(Sans));
   }
@@ -137,7 +162,7 @@ SEXP vectorDouble_2_SEXP(const vector<double> &v) {
 SEXP vectorInt_2_SEXP(const vector<int> &v) {
   SEXP Sans;
   int nn = v.size();
-  PROTECT(Sans = allocVector(INTSXP, nn));
+  PROTECT(Sans = Rf_allocVector(INTSXP, nn));
   if(nn > 0) {
     copy(v.begin(), v.end(), INTEGER(Sans));
   }
@@ -148,7 +173,7 @@ SEXP vectorInt_2_SEXP(const vector<int> &v) {
 
 void vectorDouble_2_SEXP(const vector<double> &v, SEXP Sn) {
   int nn = v.size();
-  PROTECT(Sn = allocVector(REALSXP, nn));
+  PROTECT(Sn = Rf_allocVector(REALSXP, nn));
   if(nn > 0) {
     copy(v.begin(), v.end(), REAL(Sn));
   }
@@ -157,7 +182,7 @@ void vectorDouble_2_SEXP(const vector<double> &v, SEXP Sn) {
 
 void vectorInt_2_SEXP(const vector<int> &v, SEXP Sn) {
   int nn = v.size();
-  PROTECT(Sn = allocVector(INTSXP, nn));
+  PROTECT(Sn = Rf_allocVector(INTSXP, nn));
   if(nn > 0) {
     copy(v.begin(), v.end(), INTEGER(Sn));
   }
@@ -175,7 +200,7 @@ public:
 SEXP vectorInt_2_SEXP(const vector<int> &v, int offset) {
   SEXP Sans;
   int nn = v.size();
-  PROTECT(Sans = allocVector(INTSXP, nn));
+  PROTECT(Sans = Rf_allocVector(INTSXP, nn));
   if(nn > 0) {
     if(offset == 0)
       copy(v.begin(), v.end(), INTEGER(Sans));
@@ -189,17 +214,17 @@ SEXP vectorInt_2_SEXP(const vector<int> &v, int offset) {
 
 
 vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_vectorInt called for SEXP that is not a numeric or logica!\n");
+  if(!(Rf_isNumeric(Sn) || Rf_isLogical(Sn))) PRINTF("Error: SEXP_2_vectorInt called for SEXP that is not a numeric or logica!\n");
   int nn = LENGTH(Sn);
   vector<int> ans(nn);
-  if(isInteger(Sn) || isLogical(Sn)) {
-    int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+  if(Rf_isInteger(Sn) || Rf_isLogical(Sn)) {
+    int *iSn = Rf_isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
     if(offset == 0) copy(iSn, iSn + nn, ans.begin());
     else {
       std::transform(iSn, iSn + nn, ans.begin(), opIntegerShift(offset)); 
     }
   } else {
-    if(isReal(Sn)) {
+    if(Rf_isReal(Sn)) {
       double *dSn = REAL(Sn);
       bool warning = false;
       for(int i = 0; i < nn; ++i) {
@@ -215,15 +240,15 @@ vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
 }
 
 int SEXP_2_int(SEXP Sn, int i, int offset ) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_int called for SEXP that is not numeric or logical\n");
+  if(!(Rf_isNumeric(Sn) || Rf_isLogical(Sn))) PRINTF("Error: SEXP_2_int called for SEXP that is not numeric or logical\n");
   if(LENGTH(Sn) <= i) PRINTF("Error: SEXP_2_int called for element %i% >= length of %i.\n", i, LENGTH(Sn));
-  if(isInteger(Sn) || isLogical(Sn)) {
-    if(isInteger(Sn))
+  if(Rf_isInteger(Sn) || Rf_isLogical(Sn)) {
+    if(Rf_isInteger(Sn))
       return(INTEGER(Sn)[i]);
     else
       return(LOGICAL(Sn)[i]);
   } else {
-    if(isReal(Sn)) {
+    if(Rf_isReal(Sn)) {
       double ans = REAL(Sn)[i] + offset;
       if(ans != floor(ans)) PRINTF("Warning from SEXP_2_int: input element is a real with a non-integer value\n");
       return(static_cast<int>(ans));
@@ -236,7 +261,7 @@ int SEXP_2_int(SEXP Sn, int i, int offset ) {
 
 SEXP int_2_SEXP(int i) {
   SEXP Sans;
-  PROTECT(Sans = allocVector(INTSXP, 1));
+  PROTECT(Sans = Rf_allocVector(INTSXP, 1));
   INTEGER(Sans)[0] = i;
   UNPROTECT(1);
   return(Sans);
@@ -244,22 +269,22 @@ SEXP int_2_SEXP(int i) {
 
 SEXP bool_2_SEXP(bool ind){
 	SEXP Sans;
-	PROTECT(Sans = allocVector(LGLSXP, 1) );
+	PROTECT(Sans = Rf_allocVector(LGLSXP, 1) );
 	LOGICAL(Sans)[0] = ind;
 	UNPROTECT(1);
 	return(Sans);
 }
 
 bool SEXP_2_bool(SEXP Sn, int i) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_bool called for SEXP that is not numeric or logical\n");
+  if(!(Rf_isNumeric(Sn) || Rf_isLogical(Sn))) PRINTF("Error: SEXP_2_bool called for SEXP that is not numeric or logical\n");
   if(LENGTH(Sn) <= i) PRINTF("Error: SEXP_2_bool called for element %i% >= length of %i.\n", i, LENGTH(Sn));
-  if(isLogical(Sn)) {
+  if(Rf_isLogical(Sn)) {
     return(static_cast<bool>(LOGICAL(Sn)[i]));
   } else {
-    if(isInteger(Sn)) {
+    if(Rf_isInteger(Sn)) {
       return(static_cast<bool>(INTEGER(Sn)[i]));
     } else {
-      if(isReal(Sn)) {
+      if(Rf_isReal(Sn)) {
 	return(static_cast<bool>(REAL(Sn)[i]));
       }
     }
@@ -269,7 +294,7 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 }
 
 // bool checkString(SEXP Ss, int len) {
-//   if(!isString(Ss)) {
+//   if(!Rf_isString(Ss)) {
 //     PRINTF("Error: something that was supposed to be a string is not\n"); 
 //     return(false);
 //   }
@@ -281,13 +306,13 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 // }
 
 // bool checkNumeric(SEXP Sval, int len) {
-//   if(!isNumeric(Sval)) return(false);
+//   if(!Rf_isNumeric(Sval)) return(false);
 //   if(LENGTH(Sval) != len) return(false);
 //   return(true);
 // }
 
 // SEXP setVec(SEXP Sextptr, SEXP Svalue) {
-//   if(!isNumeric(Svalue)) {
+//   if(!Rf_isNumeric(Svalue)) {
 //     PRINTF("Error: Svalue is not a numeric!\n");
 //     return(R_NilValue);
 //   }
@@ -319,16 +344,16 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 //   int len = vecPtr->size();
 //   SEXP Sans;  
   
-//   PROTECT(Sans = allocVector(REALSXP, len));
+//   PROTECT(Sans = Rf_allocVector(REALSXP, len));
 //   //std::copy(vecPtr->v.begin(), vecPtr->v.end() , REAL(Sans) );
 //   std::copy(vecPtr->v, vecPtr->v + len , REAL(Sans) );
   
 //   int numDims = vecPtr->numDims();
 //   if(numDims > 1) {
 //     SEXP Sdim;
-//     PROTECT(Sdim = allocVector(INTSXP, numDims));
+//     PROTECT(Sdim = Rf_allocVector(INTSXP, numDims));
 //     for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = vecPtr->dimSize(idim);
-//     setAttrib(Sans, R_DimSymbol, Sdim);
+//     Rf_setAttrib(Sans, R_DimSymbol, Sdim);
 //     UNPROTECT(2);
 //   } else {
 //     UNPROTECT(1);
@@ -345,16 +370,16 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 //   SEXP Sans;
 //   int len = vecPtr->size();
   
-//   PROTECT(Sans = allocVector(REALSXP, len));
+//   PROTECT(Sans = Rf_allocVector(REALSXP, len));
 //   //  std::copy(vecPtr->v.begin(), vecPtr->v.end(), INTEGER(Sans) );
 //   std::copy(vecPtr->v, vecPtr->v + len, INTEGER(Sans) );  
   
 //   int numDims = vecPtr->numDims();
 //   if(numDims > 1) {
 //     SEXP Sdim;
-//     PROTECT(Sdim = allocVector(INTSXP, numDims));
+//     PROTECT(Sdim = Rf_allocVector(INTSXP, numDims));
 //     for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = vecPtr->dimSize(idim);
-//     setAttrib(Sans, R_DimSymbol, Sdim);
+//     Rf_setAttrib(Sans, R_DimSymbol, Sdim);
 //     UNPROTECT(2);
 //   } else {
 //     UNPROTECT(1);
@@ -366,7 +391,23 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 // 	return;
 // }
 
-SEXP SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar){
+void populate_SEXP_2_double_internal(double *cPtr, SEXP rScalar) {
+  if(Rf_isLogical(rScalar) )
+    (*cPtr) = LOGICAL(rScalar)[0];
+  else if(Rf_isInteger(rScalar) )
+    (*cPtr) = INTEGER(rScalar)[0];
+  else if(Rf_isReal(rScalar) )
+    (*cPtr) = REAL(rScalar)[0];
+  else
+    PRINTF("R class not identified. Currently numeric, integer annd logical are supported\n");
+}
+
+void populate_SEXP_2_double_for_copyFromRobject(void *vPtr, SEXP rScalar) {
+  double *cPtr = static_cast<double*>(vPtr);
+  populate_SEXP_2_double_internal(cPtr, rScalar);
+}
+
+SEXP populate_SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
         PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -379,19 +420,28 @@ SEXP SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar){
     else if(cRefNum == 2)
         cPtr = (*static_cast<double**> ( vPtr ) );
     else return(R_NilValue);
-    
-    if(isLogical(rScalar) )
-      (*cPtr) = LOGICAL(rScalar)[0];
-    else if(isInteger(rScalar) )
-      (*cPtr) = INTEGER(rScalar)[0];
-    else if(isReal(rScalar) )
-      (*cPtr) = REAL(rScalar)[0];
-    else
-        PRINTF("R class not identified. Currently numeric and integers supported\n");
+
+    populate_SEXP_2_double_internal(cPtr, rScalar);
     return(R_NilValue);
 }
 
-SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
+void populate_SEXP_2_int_internal(int *cPtr, SEXP rScalar) {
+  if(Rf_isLogical(rScalar) )
+    (*cPtr) = LOGICAL(rScalar)[0];
+  else if(Rf_isInteger(rScalar) )
+    (*cPtr) = INTEGER(rScalar)[0];
+  else if(Rf_isReal(rScalar) )
+    (*cPtr) = REAL(rScalar)[0];
+  else
+    PRINTF("R class not identified. Currently numeric, integer annd logical are supported\n");
+}
+
+void populate_SEXP_2_int_for_copyFromRobject(void *vPtr, SEXP rScalar) {
+  int *cPtr = static_cast<int*>(vPtr);
+  populate_SEXP_2_int_internal(cPtr, rScalar);
+}
+
+SEXP populate_SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
         PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -404,42 +454,45 @@ SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
     else if(cRefNum == 2)
         cPtr = (*static_cast<int**> ( vPtr ) );
     else return(R_NilValue);
-    if(isInteger(rScalar) )
-        (*cPtr) = INTEGER(rScalar)[0];
-    else if(isReal(rScalar) )
-        (*cPtr) = REAL(rScalar)[0];
-    else
-        PRINTF("R class not identified. Currently numeric and integers supported\n");
-    return(R_NilValue);
-}		//Note: this is identical to above and one should be removed (ie. just SEXP_2_scalar)
-		//But our generated code calls both
-
-
-  SEXP SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar){
-    void* vPtr = R_ExternalPtrAddr(rPtr);
-    if(vPtr == NULL){
-        PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
-        return(R_NilValue);
-    }
-    bool* cPtr;
-    int cRefNum = INTEGER(refNum)[0];
-    if(cRefNum == 1)
-        cPtr = static_cast<bool*>( vPtr );
-    else if(cRefNum == 2)
-        cPtr = (*static_cast<bool**> ( vPtr ) );
-    else return(R_NilValue);
-    if(isLogical(rScalar) )
-      (*cPtr) = LOGICAL(rScalar)[0];
-    else if(isInteger(rScalar) )
-        (*cPtr) = INTEGER(rScalar)[0];
-    else if(isReal(rScalar) )
-        (*cPtr) = REAL(rScalar)[0];
-    else
-        PRINTF("R class not identified. Currently numeric and integers supported\n");
+    
+    populate_SEXP_2_int_internal(cPtr, rScalar);
     return(R_NilValue);
 }
 
-SEXP bool_2_SEXP(SEXP rPtr, SEXP refNum){
+void populate_SEXP_2_bool_internal(bool *cPtr, SEXP rScalar) {
+  if(Rf_isLogical(rScalar) )
+    (*cPtr) = LOGICAL(rScalar)[0];
+  else if(Rf_isInteger(rScalar) )
+    (*cPtr) = INTEGER(rScalar)[0];
+  else if(Rf_isReal(rScalar) )
+    (*cPtr) = REAL(rScalar)[0];
+  else
+    PRINTF("R class not identified. Currently numeric, integer annd logical are supported\n");
+}
+
+void populate_SEXP_2_bool_for_copyFromRobject(void *vPtr, SEXP rScalar) {
+  bool *cPtr = static_cast<bool*>(vPtr);
+  populate_SEXP_2_bool_internal(cPtr, rScalar);
+}
+
+SEXP populate_SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar){
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  bool* cPtr;
+  int cRefNum = INTEGER(refNum)[0];
+  if(cRefNum == 1)
+    cPtr = static_cast<bool*>( vPtr );
+  else if(cRefNum == 2)
+    cPtr = (*static_cast<bool**> ( vPtr ) );
+  else return(R_NilValue);
+  populate_SEXP_2_bool_internal(cPtr, rScalar);
+  return(R_NilValue);
+}
+
+SEXP extract_bool_2_SEXP(SEXP rPtr, SEXP refNum){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
         PRINTF("Warning: pointing to NULL in bool_2_SEXP\n");
@@ -456,16 +509,16 @@ SEXP bool_2_SEXP(SEXP rPtr, SEXP refNum){
       return(R_NilValue);
     }
     SEXP Sans;
-    PROTECT(Sans = allocVector(LGLSXP, 1));
+    PROTECT(Sans = Rf_allocVector(LGLSXP, 1));
     LOGICAL(Sans)[0] = (*cPtr);
     UNPROTECT(1);
     return(Sans);
 }
 
-SEXP double_2_SEXP(SEXP rPtr, SEXP refNum){
+SEXP extract_double_2_SEXP(SEXP rPtr, SEXP refNum){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
-        PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+        PRINTF("Warning: pointing to NULL in extract_double_2_SEXP\n");
         return(R_NilValue);
     }
     double* cPtr;
@@ -475,18 +528,17 @@ SEXP double_2_SEXP(SEXP rPtr, SEXP refNum){
     else if(cRefNum == 2)
         cPtr = (*static_cast<double**> ( vPtr ) );
     else {
-      PRINTF("Warning: double_2_SEXP called with reNum != 1 or 2\n");
+      PRINTF("Warning: extract_double_2_SEXP called with reNum != 1 or 2\n");
       return(R_NilValue);
     }
     SEXP Sans;
-    PROTECT(Sans = allocVector(REALSXP, 1));
+    PROTECT(Sans = Rf_allocVector(REALSXP, 1));
     REAL(Sans)[0] = (*cPtr);    
     UNPROTECT(1);
     return(Sans);
 }
 
-
-SEXP int_2_SEXP(SEXP rPtr, SEXP refNum){
+SEXP extract_int_2_SEXP(SEXP rPtr, SEXP refNum){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
         PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -503,13 +555,13 @@ SEXP int_2_SEXP(SEXP rPtr, SEXP refNum){
             ERROR;
     }
     SEXP Sans;
-    PROTECT(Sans = allocVector(INTSXP, 1));
+    PROTECT(Sans = Rf_allocVector(INTSXP, 1));
     INTEGER(Sans)[0] = (*cPtr);
     UNPROTECT(1);
     return(Sans);
 }
 
-SEXP SEXP_2_string(SEXP rPtr, SEXP rString) {
+SEXP populate_SEXP_2_string(SEXP rPtr, SEXP rString) {
   void* vPtr = R_ExternalPtrAddr(rPtr);
   if(vPtr == NULL){
     PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -519,7 +571,7 @@ SEXP SEXP_2_string(SEXP rPtr, SEXP rString) {
   return(R_NilValue);
 }
 
-SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector) {
+SEXP populate_SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector) {
   void* vPtr = R_ExternalPtrAddr(rPtr);
   if(vPtr == NULL){
     PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -529,7 +581,7 @@ SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector) {
   return(R_NilValue);
 }
 
-SEXP string_2_SEXP(SEXP rPtr) {
+SEXP extract_string_2_SEXP(SEXP rPtr) {
   void* vPtr = R_ExternalPtrAddr(rPtr);
   if(vPtr == NULL){
     PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -538,7 +590,7 @@ SEXP string_2_SEXP(SEXP rPtr) {
   return(string_2_STRSEXP(*static_cast<string *>(vPtr)));
 }
 
-SEXP stringVector_2_SEXP(SEXP rPtr) {
+SEXP extract_stringVector_2_SEXP(SEXP rPtr) {
   void* vPtr = R_ExternalPtrAddr(rPtr);
   if(vPtr == NULL){
     PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -549,12 +601,12 @@ SEXP stringVector_2_SEXP(SEXP rPtr) {
 
 //Next 3 functions are used for CmodelValues objects
 SEXP fastMatrixInsert(SEXP matrixInto, SEXP matrix, SEXP rowStart, SEXP colStart){
-	SEXP RdimInto = getAttrib(matrixInto, R_DimSymbol);
+	SEXP RdimInto = Rf_getAttrib(matrixInto, R_DimSymbol);
 	PROTECT(RdimInto);
 	int Iinto = INTEGER(RdimInto)[0];
 	int Jinto = INTEGER(RdimInto)[1];
 	
-	SEXP Rdim = getAttrib(matrix, R_DimSymbol);
+	SEXP Rdim = Rf_getAttrib(matrix, R_DimSymbol);
 	PROTECT(Rdim);
 	int I = INTEGER(Rdim)[0];
 	int J = INTEGER(Rdim)[1];
@@ -582,8 +634,8 @@ SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,
 	for(int i = 0; i < LENGTH(dims); i++)
 		len = len * INTEGER(dims)[i];
 	for(int i = 0; i < cNRows; i++){
-	SEXP row = PROTECT(allocVector(REALSXP, len) ) ;
-	setAttrib(row, R_DimSymbol, dims);
+	SEXP row = PROTECT(Rf_allocVector(REALSXP, len) ) ;
+	Rf_setAttrib(row, R_DimSymbol, dims);
 		for(int j = 0; j <  len; j++){		
 			REAL(row)[j] = REAL(matrix)[i + cNRows * j];
 			}
@@ -600,8 +652,8 @@ SEXP matrix2ListInt(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  S
 	for(int i = 0; i < LENGTH(dims); i++)
 		len = len * INTEGER(dims)[i];
 	for(int i = 0; i < cNRows; i++){
-	SEXP row = PROTECT(allocVector(INTSXP, len) ) ;
-	setAttrib(row, R_DimSymbol, dims);
+	SEXP row = PROTECT(Rf_allocVector(INTSXP, len) ) ;
+	Rf_setAttrib(row, R_DimSymbol, dims);
 		for(int j = 0; j <  len; j++){		
 			INTEGER(row)[j] = INTEGER(matrix)[i + cNRows * j];
 			}
@@ -677,13 +729,13 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent
   }
 }
 
-SEXP rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s) {
-  //PRINTF("in SEXP rankSample\n");
+SEXP C_rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s) {
+  //PRINTF("in SEXP C_rankSample\n");
   int N = LENGTH(p);
   int c_samps = INTEGER(n)[0];
   bool silent = LOGICAL(s)[0];
   SEXP output;
-  PROTECT(output = allocVector(INTSXP, c_samps ));
+  PROTECT(output = Rf_allocVector(INTSXP, c_samps ));
   GetRNGstate();
   rawSample(REAL(p), c_samps, N, INTEGER(output), false, silent);
   PutRNGstate();
@@ -716,11 +768,15 @@ SEXP parseVar(SEXP Sinput) {
   return(vectorString_2_STRSEXP(output));
 }
 
+
 SEXP makeNewNimbleList(SEXP S_listName) {
+  SEXP SnimbleInternalFunctionsEnv;
   SEXP call;
-  PROTECT(call = allocVector(LANGSXP, 2));
-  SETCAR(call, install("makeNewNimListSEXPRESSIONFromC"));
+  PROTECT(SnimbleInternalFunctionsEnv =
+    Rf_eval(Rf_findVar(Rf_install("nimbleInternalFunctions"), R_GlobalEnv), R_GlobalEnv));
+  PROTECT(call = Rf_allocVector(LANGSXP, 2));
+  SETCAR(call, Rf_install("makeNewNimListSEXPRESSIONFromC"));
   SETCADR(call, S_listName);
-  UNPROTECT(1);
-  return(EVAL(call));
+  UNPROTECT(2);
+  return(Rf_eval(call, SnimbleInternalFunctionsEnv));
 }

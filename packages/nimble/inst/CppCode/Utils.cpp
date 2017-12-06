@@ -1,8 +1,43 @@
-#include "nimble/Utils.h"
-#define PRINTF Rprintf
-#define NIMERROR error
-#define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
 
+#include<limits>
+#include "nimble/Utils.h"
+
+// A utility function that will return floor(x) unless x is within numerical imprecision of an integer, in which case it will return round(x)
+int floorOrEquivalent(double x) {
+  double roundX = round(x);
+  double sqrtEpsilon = sqrt(std::numeric_limits<double>::epsilon());
+  bool shouldBeExactInteger(false);
+  if(fabs(x) > sqrtEpsilon) { // This algorithm for numerical equivalence imitates what happens in all.equal.numeric in R
+    if(fabs(x - roundX) / fabs(x) < sqrtEpsilon)
+      shouldBeExactInteger = true;
+  } else {
+    if(fabs(x - roundX) < sqrtEpsilon) // in the present context, this would mean length should be zero anyway
+      shouldBeExactInteger = true;
+  }
+  if(shouldBeExactInteger)
+    return(static_cast<int>(roundX));
+  return(floor(x));
+}
 
 int rFunLength(int Arg) {
   return Arg;

@@ -1,3 +1,24 @@
+/*
+ * NIMBLE: an R package for programming with BUGS models.
+ * Copyright (C) 2014-2017 Perry de Valpine, Christopher Paciorek,
+ * Daniel Turek, Clifford Anderson-Bergman, Nick Michaud, Fritz Obermeyer,
+ * Duncan Temple Lang.
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, a copy is available at
+ * https://www.R-project.org/Licenses/
+ */
+
 // Code to be included in each on-the-fly (dynamic) nimble compilation
 // It will be included by a generated file in each project
 #ifndef __DYNAMIC_REGISTRATIONS
@@ -11,6 +32,7 @@
 #include <nimble/NamedObjects.h>
 #include <nimble/dllFinalizer.h>
 #include <nimble/smartPtrs.h>
+#include <nimble/predefinedNimbleLists.h>
 
 #include <R_ext/Rdynload.h>
 
@@ -26,38 +48,17 @@ R_CallMethodDef CallEntries[] = {
   FUN(getModelElementPtr, 2),
   FUN(getMVBuildName, 1),
   FUN(derefPtr, 1),
-  //  FUN(setSinglePtrFromSinglePtr, 2),
 
   // accessorClasses
-  //FUN(makeSingleVariableAccessor, 4),
-  //  FUN(makeSingleModelValuesAccessor, 5),
-  FUN(getModelAccessorValues, 1),
-  FUN(getMVAccessorValues, 1),
-  //  FUN(setNodeModelPtr, 3),
-  //FUN(newManyVariableAccessor, 1),
-  FUN(addSingleVariableAccessor, 4),
-  FUN(resizeManyModelVarAccessor, 2),
-  FUN(removeModelVariableAccessor, 3),
-  //FUN(newManyModelValuesAccessor, 1),
-  FUN(resizeManyModelValuesAccessor, 2),
-  FUN(addSingleModelValuesAccessor, 4),
-  FUN(removeModelValuesAccessor, 3),
   FUN(manualSetNRows, 2),
-  //FUN(getVarAndIndicesExtPtr, 2),
   FUN(getVarAndIndices, 1),
   FUN(varAndIndices2mapParts, 3),
   FUN(var2mapParts, 3),
-  FUN(populateNodeFxnVector_byGID, 3),
   FUN(populateNodeFxnVectorNew_byDeclID, 4),
   FUN(populateIndexedNodeInfoTable, 2),
   FUN(populateValueMapAccessorsFromNodeNames, 4),
   FUN(populateValueMapAccessors, 3),
-  FUN(populateNumberedObject_withSingleModelValuesAccessors, 5),
   FUN(populateCopierVector, 5),
-  FUN(populateNumberedObject_withSingleModelVariablesAccessors, 5),
-  FUN(populateModelVariablesAccessors_byGID, 5),
-  //  FUN(new_SingleModelValuesAccessor_NumberedObjects, 0),
-  //FUN(new_SingleModelVariablesAccessor_NumberedObjects, 0),
 
   //dists
   // these don't need to be linked into an on-the-fly dll because they will be in nimble.so
@@ -77,17 +78,25 @@ R_CallMethodDef CallEntries[] = {
   FUN(getMVElementAsList, 2),
   FUN(setMVElementFromList, 3),
   FUN(matrix2VecNimArr, 4),
-  //  FUN(printMVElement, 2),
   FUN(setMVElement, 3),
-  FUN(resizeNumListRow, 3),
-  FUN(setNumListRows, 3),
-  //FUN(setVarPointer, 3),
-  FUN(makeNumericList, 3),
   FUN(Nim_2_SEXP, 2),
   FUN(SEXP_2_Nim, 4),
+  FUN(extract_double_2_SEXP, 2),
+  FUN(populate_SEXP_2_double, 3),
+  FUN(extract_int_2_SEXP, 2),
+  FUN(populate_SEXP_2_int, 3),
+  FUN(extract_bool_2_SEXP, 2),
+  FUN(populate_SEXP_2_bool, 3),
+  
+  FUN(populate_SEXP_2_string, 2),
+  FUN(extract_string_2_SEXP, 1),
+  FUN(populate_SEXP_2_stringVector, 2),
+  FUN(extract_stringVector_2_SEXP, 1),
+
+  FUN(setVecNimArrRows, 3),
+  
   FUN(setPtrVectorOfPtrs, 3),
   FUN(setOnePtrVectorOfPtrs, 3),
-  //FUN(getOnePtrVectorOfPtrs, 2),
   FUN(getEnvVar_Sindex, 3),
   FUN(getEnvVar, 2),
   FUN(setEnvVar_Sindex, 4),
@@ -96,6 +105,7 @@ R_CallMethodDef CallEntries[] = {
   // from NamedObjects
   FUN(getModelObjectPtr, 2),
   FUN(getAvailableNames, 1),
+  FUN(copyFromRobject, 2),
   FUN(getNumberedObject, 2),
   FUN(setNumberedObject, 3),
   FUN(resizeNumberedObjects, 2),
@@ -109,17 +119,32 @@ R_CallMethodDef CallEntries[] = {
   FUN(RNimble_Ptr_ManualFinalizer, 1),
   FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 2),
   FUN(CountDllObjects, 1),
+
+  // predefinedNimbleList
+  FUN(new_EIGEN_EIGENCLASS, 0),
+  FUN(EIGEN_EIGENCLASS_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(EIGEN_EIGENCLASS_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_EIGEN_SVDCLASS, 0),
+  FUN(EIGEN_SVDCLASS_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(EIGEN_SVDCLASS_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+
+  FUN(new_OptimResultNimbleList, 0),
+  FUN(OptimResultNimbleList_castPtrPtrToNamedObjectsPtrSEXP, 1),
+  FUN(OptimResultNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP, 1),
+  
   {NULL, NULL, 0}
 };
 
 
+/* Reference prototype: */
 /* R_CMethodDef CEntries[] = { */
 /*   FUN(RegisterNimblePointer, 3), */
 /*   {NULL, NULL, 0} */
 /* } */
 
-// Something like this will be generated with each .so/.dll nimble creates
-// however it is required to be named R_init_SONAME, so it must be generated for each one.
+// Something like the following will be generated with each .so/.dll nimble creates.
+// It is required to be named R_init_SONAME, so it must be generated for each one.
 //
 // extern "C"
 // void

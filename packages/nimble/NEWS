@@ -1,44 +1,254 @@
-                           CHANGES IN VERSION 0.6-4 (March 2017)
+                           CHANGES IN VERSION 0.6-8 and 0.6-7 (November 2017)
+
+Note: versions 0.6-8 and 0.6-7 are the same except for a non-user-facing change to the withNimbleOptions function example to pass CRAN checks.
 
 USER LEVEL CHANGES
 
+-- Addition of dcar_proper distribution, the proper Gaussian conditional autoregressive (CAR) distribution, and MCMC sampling support.
+
+-- Addition of nimbleMCMC function, providing the most direct one-line invocation of NIMBLE's MCMC engine.
+
+-- Addition of runCrossValidate function, which conducts k-fold cross-validation of NIMBLE models fit by MCMC.
+
+-- Improved efficiency of MCMC conjugate samplers.
+
+-- Added dcat-ddirch conjugacy.
+
+-- Added error-trapping for MCMC where there is a Wishart node without conjugacy.
+
+-- Added warning that RW block sampler may behave poorly with default initial proposal covariance if elements are on very different scales.
+
+-- Modified a variety of warning messages. 
+
+-- the nimEigen() function now has a symmetric argument, which can be set to TRUE if a matrix is guaranteed to be symmetric (default = FALSE).
+
+-- nimbleModel no longer outputs the names of all uninitialized variables in a model.  Instead, users are directed to use the new $initializeInfo() method if uninitialized variables are detected. 
+
+-- Sped up WAIC calculation for large models.
+
+BUG FIXES
+
+-- Fixed MCMC autoBlocking procedure, to work with new sampler default values system.
+
+-- Fixed MCMC conjugacy system, detection of indexed node names vs. indexed expressions.
+
+-- Fixed bug in MCEM where bounds for multivariate top-level parameters were not stored correctly.
+
+-- MCEM outputs a warning message if the provided model has discrete top-level parameters.
+
+-- Fixed a bug in conjugacy processing when there were multiple dynamically indexed nodes in an expression.
+
+-- Fixed a bug in handling of negative default values.
+
+-- Fixed a bug in compiling multiple models in the same session.
+
+-- Fixed a bug with step() for vectors.
+
+-- Fixed handling of non-trivial conditions for a while() loop.
+
+-- Results from R's eigen() and NIMBLE's eigen() functions should now match for non-symmetric matrices.
+
+DEVELOPER LEVEL CHANGES
+
+-- Added new method to generated nimbleFunction C++ classes to copy some member data from R to C++ as a batch, making this step faster.
+
+-- Replaced reference classes with R6 classes for exprClass.
+
+-- Replaced reference class with S3 class for nodeFunctionVector.
+
+-- Added experimental system for expansion of model macros.
+
+-- Removed -g debugger flags from CppCode/libnimble.a in unix-alike systems, thereby greatly reducing library size. 
+
+-- Removed various legacy browser() statements.
+
+-- Cleaned up testing system to make more consistent across test files and in handling of known failures.
+
+-- Flag NIMBLE as requiring C++11, mostly for future purposes.
+
+-- Fix compilation bug when nimbleFunction has a "." in its name.
+
+                           CHANGES IN VERSION 0.6-6 (July 2017)
+
+USER LEVEL CHANGES
+
+-- One can now use dynamic indexes in BUGS code - indexes of a variable no longer have to be constants but can be other nodes or functions of other nodes. This allows mixture models with unknown membership. For this release, this is a beta feature and needs to be enabled with nimbleOptions(allowDynamicIndexing = TRUE).
+
+-- The Intrinsic Gaussian conditional autoregressive (ICAR) distribution can now be used in BUGS code using the dcar_normal distribution, which behaves similarly to BUGS' car.normal distribution. Specialized MCMC samplers will be assigned to nodes that have this distribution. 
+
+-- Enabled use of optim (equivalently, nimOptim) in nimbleFunctions.
+
+-- One can now calculate WAIC for model selection using the calculateWAIC method for MCMC objects.
+
+-- There is a new nimbleExternalCall function that allows one to call separately compiled code from a nimbleFunction or a model (this feature is experimental for now).
+
+-- There is a new nimbleRCall function that allows one to call an R function from a compiled nimbleFunction or model (this feature is experimental for now).
+
+-- Enabled use of next in nimbleFunctions.
+
+-- A resetFunctions flag have been added to buildMCEM.
+
+-- Improved error management from compileNimble
+
+-- NaN is now handled correctly as a constant by compiler
+
+-- Variable names with "." are now handled correctly by the compiler.
+
+-- pi is now handled as a constant or variable in a nimbleFunction (but cannot be used as a constant in model code).
+
+-- There is a new returnESS method added for the bootstrap filter and auxiliary particle filter.
+
+DEVELOPER LEVEL CHANGES
+
+-- MCMC sampler control list default values are now internal to sampling algorithms, rather than a system-level option.
+
+-- Improvements added to testing system, including safeguarding against silent failures, use of gold files, batching of compiler tests, more expected failures, conversion to running all tests using test_package, and parallelization on Travis-CI.
+
+-- Names assigned to package-defined nimbleFunctions to improve C++ readability.
+
+-- Use of R registrations for C functions was cleaned up.
+
+-- Lots of vestigial code was cleaned up.
+
+-- Un-referenced scalar arguments to rankSample.
+
+-- We now use -fPIC rather than -fpic in most cases.
+
+-- Updated the version of Eigen that we use to version 3.3.4.
+
+BUG FIXES
+
+-- Several bugs fixed in the automated factor slice sampler (AF_slice sampler), having to do with correctly resetting the internal member variables when an MCMC is run multiple times
+
+-- Fixed harmless bug in managing split vertex numbering.
+
+-- Fixed bugs in test-mcmc that resulted in ignoring comparisons against known results for node names with brackets or underscores.
+
+-- Allow sum of length-zero vectors to compile correctly.
+
+                           CHANGES IN VERSION 0.6-5 (June 2017)
+
+USER LEVEL CHANGES
+
+-- The functions returned from a call to buildMCEM() now include an estimateCov() method, which can be used to estimate the asymptotic covariance of model parameters at their MLE values.  
+
+-- nimbleLists can now be used in nimbleFunctions that do not have setup code.
+
+-- Enabled use of c(), rep(), seq(), diag() and ':' in BUGS code.
+
+-- Added dflat and dhalfflat for improper uniform (prior) distributions on the real line and positive real line; includes conjugacies for dnorm dependents (in mean) with dflat distribution and dnorm dependents (in sd) with dhalfflat distribution.
+
+-- Allow compilation of cases like model$getParam(nodes[i], 'mean'), even if nodes is empty, in a nimbleFunction instance (in which case the code would not execute, but it must be able to compile).
+
+-- Added inverse-wishart distribution to NIMBLE's provided distributions.
+
+-- Improved a variety of error-trapping.
+
+-- New nimbleOptions()$verboseErrors, default FALSE.  If TRUE, the call stack will be output when an error is trapped.
+
+DEVELOPER LEVEL CHANGES
+
+-- Added error trapping to report useful error message when the type of the returned object does not match the declared returnType of a nimbleFunction.
+
+-- Added onAttach message to point users to website and manual.
+
+-- Updated script for creating roxygen-based documentation.
+
+-- Added more complete handling of split vertices during graph construction and model-querying methods.
+
+BUG FIXES
+
+-- Fixed underflow error in MCMC binary sampler.
+
+-- Fixed bug preventing use of nimC() with an argument like model[[node]].
+
+-- Fixed model$getDependencies(nodes) to return only what is needed (and no extra) when nodes contains a subset of elements of a non-scalar node.  e.g. model$getDependencies('x[1]') if BUGS code has 'x[1:5] ~ dmnorm(...)'.
+
+-- Fixed bug in model definition processing where some (rare) syntax could lead to very inefficient computation.
+
+-- Fixed bug when multiple nimbleFunctions with multiple levels of nesting led to incomplete inclusion of multiple .o files in compilation.
+
+-- Fixed compilation of cases where a scalar is computed from vectors and then used in scalar operations, e.g. inprod(X, Y) + a.
+
+-- Fixed bug where return(rnorm(2)) and some other cases of a return argument that is an expression returning a vector would fail to compile.
+
+-- Fixed bug where identical BUGS declarations with expression arguments in different for-loops could yield incorrect models.
+
+-- Fixed bug where a LHS node split in the middle by a RHS usage would fail during model building.
+
+-- Fixed bug in compiling code that constructs logical scalars and vectors.
+
+-- Fixed bug preventing installation on Solaris.
+
+-- Fixed issue with PROTECT flagged by rchk.
+
+-- Fixed C++ array deletion issue in two multivariate densities.
+
+                           CHANGES IN VERSION 0.6-4 (April 2017)
+
+USER LEVEL CHANGES
+
+-- The user manual has been heavily revised and reorganized, with material on NIMBLE programming now more carefully organized.
+
 -- Versions of R functions c(), seq(), `:`, rep(), diag(), diag()<-, and which() are now allowed in nimbleFunction run code and in BUGS code.
 
--- Functions numeric(), integer(), logical(), matrix(), and array() can now take non-scalar value arguments and will populate the newly created object from using the contents of value sequentially.
+-- Functions numeric(), integer(), logical(), matrix(), and array() can now take non-scalar value arguments and will populate the newly created object by using the contents of value sequentially.
 
 -- Distribution functions (d, p, r and q) now follow R's recycling rule, allowing non-scalar arguments and return values.  Unlike R, return values will never have dimension > 1.  Hence matrix arguments will result in a vector return value.
 
 -- Logical vectors and operators are now supported.
 
--- Indexing of vectors, matrices and arrays can now use arbitrary numeric (with integer contents) and logical vectors.
+-- Indexing of vectors and matrices can now use arbitrary numeric (with integer contents) and logical vectors.
+
+-- Added inverse-gamma distribution to NIMBLE's provided distributions.
 
 -- dim() now returns an integer vector.  It is not limited to uses like dim(x)[i].
 
--- Updates to MCMC configuration API.  Member methods conf$addMonitors() and conf$addMonitors2() now accept argument ..., allowing multiple monitors to be added using the syntax conf$addMonitors('x', 'y', 'z').  Introduced a new member method, conf$printMonitors(), which nicely prints the current MCMC monitors.  This takes the place of the former method conf$getMonitors().  Now, conf$getMonitors() returns a character vector of the MCMC monitors, and the new method conf$getMonitors2() returns a character vector of the MCMC monitors2 field.
+-- Updates to MCMC configuration API:  Member methods conf$addMonitors() and conf$addMonitors2() now accept argument ..., allowing multiple monitors to be added using the syntax conf$addMonitors('x', 'y', 'z').  Introduced a new member method, conf$printMonitors(), which nicely prints the current MCMC monitors.  This takes the place of the former method conf$getMonitors().  Now, conf$getMonitors() returns a character vector of the MCMC monitors, and the new method conf$getMonitors2() returns a character vector of the MCMC monitors2 field.
+
+-- Added options to the printSamplers() method of MCMC configuration objects that control the level of detail displayed.  These allow control for displaying default values, displaying values of non-scalar elements, and displaying the dependency lists of conjugate samplers.
 
 -- Indexing of nodes as an argument to values() now allowed, so syntax such as `x <- model$values(nodes[i])` or `values(model, nodes[i]) <- x` is supported.
+
+-- More general indexing of vectors of node names now allowed in calculate(), simulate(), calculateDiff(), getLogProb() and values().  
+
+-- The adaptive factor slice sampler can now be used in NIMBLE's MCMC framework by specifying "AF_slice" as the sampler type.  
 
 -- New sampling algorithm (RW_dirichlet) added to MCMC engine, for sampling non-conjugate Dirichlet distributions.
 
 -- Added checking at time of model definition to catch errors where implied dimensions of a variable are different in different BUGS declarations.
 
--- nimbleLists can now be created and used in nimbleFunctions.  nimbleList definitions can be created in R's global environment, or in setup code.  Instances of nimbleLists can be created in R's global environment, in setup code, or in run code.  nimbleLists can contain other nimbleLists.  nimbleLists can be used as arguments to nimbleFunction run and other methods, and returned from such nimbleFunctions.  
+-- nimbleLists are a new list-style data structure that can now be created and used in nimbleFunctions.  nimbleList definitions can be created in R's global environment, or in setup code.  Instances of nimbleLists can be created in R's global environment, in setup code, or in run code.  nimbleLists can contain other nimbleLists.  nimbleLists can be used as arguments to nimbleFunction run and other methods, and returned from such nimbleFunctions.  
 
--- eigen() and svd() now work to conduct eigendecompositions and singular value decompositions on matrices in nimble.  These are synonyms for nimEigen and nimSvd, respectively.  If called from R, nimEigen() and nimSvd() will execute precompiled c++ code that conducts these decompositions using the eigen c++ library.  Both decompositions return nimbleList objects.  nimEigen() and nimSvd() can also be used in BUGS code.
-
--- The adaptive factor slice sampler can now be used in NIMBLE's MCMC framework by specifying "AF_slice" as the sampler type.  
+-- eigen() and svd() now work to conduct eigendecompositions and singular value decompositions on matrices.  These are synonyms for nimEigen and nimSvd, respectively.  If called from R, nimEigen() and nimSvd() will execute precompiled C++ code that conducts these decompositions using the Eigen library.  Both decompositions return nimbleList objects.  nimEigen() and nimSvd() can also be used in BUGS code.
 
 -- Filtering algorithms now have "initModel" control list option.  If initModel = TRUE, the model will be initialized at the start of the filtering algorithm.  Defaults to TRUE. 
 
--- User-defined distributions may not be defined based solely on a density ('d') function, with a simulation ('r') function. Algorithms that need to use the simulate function will fail if it is not provided.
+-- User-defined distributions may now be defined based solely on a density ('d') function, without a simulation ('r') function. Algorithms that need to use the simulate function will fail if it is not provided.
+
+-- Checking of conjugacy is now much quicker in cases where there are recursive dependencies.
+
+-- Some refinement to the error checking of DSL code that occurs when a nimbleFunction is defined. 
+
+DEVELOPER LEVEL CHANGES
+
+-- Reduced copying with values and modelValues.
+
+-- Templates compatible with Eigen library to implement R's recycling rule can be used for other functions when needed.
 
 BUG FIXES
 
 -- Fixed bug preventing use of round() in nimbleFunction and BUGS code.
 
--- Fixed bug in RW_PF sampler where dependencies were not being updated after proposal value was inserted into target node
+-- Fixed bugs in dmnorm_chol(), dmvt_chol(), dwish_chol(), and rwish_chol() that were causing input arguments to be overwritten when used in DSL run code (but not in nodeFunctions).
 
--- Fixed bugs in RW_PF and RW_PF_block samplers where stored LP0 was not being updated with potentially new log probability for target node at each iteration.  
+-- Fixed bug in multiplication and division of matrix by scalar in run code when run in R.
+
+-- Fixed bug in RW_PF sampler where dependencies were not being updated after proposal value was inserted into target node.
+
+-- Fixed bugs in RW_PF and RW_PF_block samplers where stored LP0 was not being updated with potentially new log probability for target node at each iteration.
+
+-- Fixed bug in Wishart conjugacy calculations when the Wishart-distributed matrix was multiplied by another value in the dependent node precision matrix. Conjugacy for the Wishart now is handled only when the Wishart matrix is the precision of the dependent node without any scaling.
 
 
                            CHANGES IN VERSION 0.6-3 (December 2016)

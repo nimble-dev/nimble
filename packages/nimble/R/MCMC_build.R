@@ -6,8 +6,6 @@
 #' @param conf An object of class MCMCconf that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCconf objects.  Alternatively, \code{MCMCconf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.
 #' @param ... Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object
 #'
-#' @author Daniel Turek
-#' @export
 #' @details
 #' Calling buildMCMC(conf) will produce an uncompiled (R) R mcmc function object, say 'Rmcmc'.
 #'
@@ -32,7 +30,16 @@
 #' \code{Cmcmc <- compileNimble(Rmcmc, project=Rmodel)}
 #'
 #' The compiled function will function identically to the uncompiled object, except acting on the compiled model object.
+#'
+#' @section Calculating WAIC:
+#' After the MCMC has been run, calling the \code{calculateWAIC()} method of the MCMC object will return the WAIC for the model, calculated using the posterior samples from the MCMC run.
 #' 
+#' \code{calculateWAIC()} has a single arugment:
+#'
+#' \code{nburnin}: The number of iterations to subtract from the beginning of the posterior samples of the MCMC object for WAIC calculation.  Defaults to 0.
+#' 
+#' The \code{calculateWAIC} method calculates the WAIC of the model that the MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from Equations 5, 12, and 13 in Gelman (2014).  Note that the set of all parameters monitored by the mcmc object will be treated as \eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014).  All parameters downstream of the monitored parameters that are necessary to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of \eqn{theta}.
+#'
 #' @examples
 #' \dontrun{
 #' code <- nimbleCode({
@@ -47,11 +54,19 @@
 #' Cmcmc$run(10000)
 #' samples <- as.matrix(Cmcmc$mvSamples)
 #' head(samples)
+#' WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 #' }
+#'
+#' @seealso \code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}
+#' 
+#' @author Daniel Turek
+#' 
+#' @export
 buildMCMC <- nimbleFunction(
+    name = 'MCMC',
     setup = function(conf, ...) {
     	if(inherits(conf, 'modelBaseClass'))
-    		conf <- configureMCMC(conf, ...)
+            conf <- configureMCMC(conf, ...)
 
     	else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
 
@@ -73,12 +88,18 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
+        
+        ## WAIC setup below:
+        dataNodes <- model$getNodeNames(dataOnly = TRUE)
+        dataNodeLength <- length(dataNodes)
+        sampledNodes <- model$getVarNames(FALSE, colnames(as.matrix(mvSamples)))
+        paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
     },
 
     run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
-        if(simulateAll)     simulate(model)    ## default behavior excludes data nodes
-        my_initializeModel$run()
         if(reset) {
+            if(simulateAll)   simulate(model)
+            my_initializeModel$run()
             nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
             for(i in seq_along(samplerFunctions))
                 samplerFunctions[[i]]$reset()
@@ -122,12 +143,49 @@ buildMCMC <- nimbleFunction(
         getTimes = function() {
             returnType(double(1))
             return(samplerTimes[1:(length(samplerTimes)-1)])
+        },
+        calculateWAIC = function(nburnin = integer(default = 0), burnIn = integer(default = 0)) {
+            if(burnIn != 0) {
+                print("Warning, `burnIn` argument is deprecated and will not be supported in future versions of NIMBLE. Please use the `nburnin` argument instead.")
+                if(nburnin == 0) {  ## if nburnin has not been changed from default, we replace with `burnIn` value here.
+                    nburnin <- burnIn
+                }
+            }
+            numMCMCSamples <- getsize(mvSamples) - nburnin
+            if((numMCMCSamples) < 2) {
+                print('Error, need more than one post burn-in MCMC samples')
+                return(-Inf)
+            }
+            logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
+            logAvgProb <- 0
+            pWAIC <- 0
+            currentVals <- values(model, sampledNodes)
+            for(i in 1:numMCMCSamples) {
+                copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburnin)
+                model$simulate(paramDeps)
+                model$calculate(dataNodes)
+                for(j in 1:dataNodeLength) {
+                    logPredProbs[i,j] <- model$getLogProb(dataNodes[j])
+                }
+            }
+            for(j in 1:dataNodeLength) {
+                maxLogPred <- max(logPredProbs[,j])
+                thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
+                logAvgProb <- logAvgProb + thisDataLogAvgProb
+                pointLogPredVar <- var(logPredProbs[,j])
+                pWAIC <- pWAIC + pointLogPredVar
+            }
+            WAIC <- -2*(logAvgProb - pWAIC)
+            values(model, sampledNodes) <<- currentVals
+            model$calculate(paramDeps)
+            returnType(double())
+            return(WAIC)
         }),
     where = getLoadingNamespace()
 )
 
 
-# This is a function that will weed out missing indices from the monitors
+## This is a function that will weed out missing indices from the monitors
 processMonitorNames <- function(model, nodes){
 	isLogProbName <- grepl('logProb', nodes)
 	expandedNodeNames <- model$expandNodeNames(nodes[!isLogProbName])

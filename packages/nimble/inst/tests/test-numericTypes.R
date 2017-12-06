@@ -1,6 +1,13 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context("Testing of numeric type handling and casting")
 
+RwarnLevel <- options('warn')$warn
+## There are a bunch of NaN warnings we want to ignore.
+options(warn = -1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
+
 inverseCallReplacements <- as.list(names(nimble:::specificCallReplacements))
 names(inverseCallReplacements) <- unlist(nimble:::specificCallReplacements)
 inverseReplace <- function(x) {
@@ -21,7 +28,7 @@ makeUnaryCwiseTypeTest <- function(name, funName, type, nDim) {
          expr = substitute(out <- FOO(arg1), list(FOO = as.name(inverseReplace(funName)))),
          args = list(arg1 = substitute(TYPE(NDIM), list(TYPE = as.name(type), NDIM = nDim))),
          setArgVals = substitute( {arg1 <- as(seq(from = SEQFROM, by = SEQBY, length.out = NDIM + 1), TYPE);
-                                   if(NDIM == 2) arg1 <- matrix(arg1, nrow = 1)}, list(NDIM = nDim, TYPE = type, SEQFROM = seqFrom, SEQBY = seqBy)),
+             if(NDIM == 2) arg1 <- matrix(arg1, nrow = 1)}, list(NDIM = nDim, TYPE = type, SEQFROM = seqFrom, SEQBY = seqBy)),
          outputType = substitute(OUTPUTTYPE(NDIM), list(OUTPUTTYPE = as.name(outputType), NDIM = nDim)))
 }
 
@@ -69,16 +76,16 @@ makeBinaryCwiseTypeTest <- function(name, funName, LHStype, RHStype, nDim, outpu
 
 
 binaryCwiseTypeTests <- unlist(recursive = FALSE,
-                              x= lapply(nimble:::binaryMidLogicalOperatorsComparison,
-                                        function(x) {
-                                            mapply(makeBinaryCwiseTypeTest,
-                                                   LHStype = rep(c('double','integer','logical'), 9),
-                                                   RHStype = rep(rep(c('double','integer','logical'), each = 3), 3),
-                                                   nDim = rep(0:2, each = 9),
-                                                   MoreArgs = list(name = x, funName = x),
-                                                   SIMPLIFY = FALSE) 
-                                        }
-                                        )
+                              x = lapply(nimble:::binaryMidLogicalOperatorsComparison,
+                                         function(x) {
+                                             mapply(makeBinaryCwiseTypeTest,
+                                                    LHStype = rep(c('double','integer','logical'), 9),
+                                                    RHStype = rep(rep(c('double','integer','logical'), each = 3), 3),
+                                                    nDim = rep(0:2, each = 9),
+                                                    MoreArgs = list(name = x, funName = x),
+                                                    SIMPLIFY = FALSE) 
+                                         }
+                                         )
                               )
 
 binaryCwiseTypeTests <- indexNames(binaryCwiseTypeTests)
@@ -153,7 +160,9 @@ reductionTypeTestsMatrixSquare <- unlist(recursive = FALSE,
                                     x= lapply(nimble:::matrixSquareReductionOperators,
                                               function(x) {
                                                   mapply(makeReductionTypeTest,
-                                                         type = c('double','integer'),
+                                                         ## As of 2015-03-13, Eigen does not allow integer determinants.
+                                                         ## https://bitbucket.org/eigen/eigen/commits/678c42a8
+                                                         type = 'double',
                                                          nDim = rep(2, 2),
                                                          MoreArgs = list(name = x, funName = x),
                                                          SIMPLIFY = FALSE) 
@@ -263,21 +272,16 @@ binaryMatrixOpTypeTests <- unlist(recursive = FALSE,
 binaryMatrixOpTypeTests <- indexNames(binaryMatrixOpTypeTests)
 
 
-lapply(unaryCwiseTypeTests, test_coreRfeature)
-lapply(binaryCwiseTypeTests, test_coreRfeature)
-lapply(binaryCwiseTypeTestsLogicals, test_coreRfeature)
-lapply(reductionTypeTests, test_coreRfeature)
-lapply(reductionTypeTestsLogical, test_coreRfeature)
-lapply(reductionTypeTestsMatrixSquare[3:4], test_coreRfeature)
-lapply(binaryCwiseTypeTestsMidOps, test_coreRfeature)
-lapply(binaryCwiseTypeTestsInprod, test_coreRfeature)
-lapply(binaryCwiseTypeTestsLeftPromotOps, test_coreRfeature)
+unaryCwiseResults <- test_coreRfeature_batch(unaryCwiseTypeTests, 'unaryCwiseTypeTests') ## lapply(unaryCwiseTypeTests, test_coreRfeature)
+binaryCwiseResults <- test_coreRfeature_batch(binaryCwiseTypeTests, 'binaryCwiseTypeTests') ## lapply(binaryCwiseTypeTests, test_coreRfeature)
+binaryCwiseLogicalResults <- test_coreRfeature_batch(binaryCwiseTypeTestsLogicals, 'binaryCwiseTypeTestsLogicals') ## lapply(binaryCwiseTypeTestsLogicals, test_coreRfeature)
+reductionResults <- test_coreRfeature_batch(reductionTypeTests, 'reductionTypeTests') ## lapply(reductionTypeTests, test_coreRfeature)
+reductionLogicalResults <- test_coreRfeature_batch(reductionTypeTestsLogical, 'reductionTypeTestsLogical') ## lapply(reductionTypeTestsLogical, test_coreRfeature)
+reductionMatrixSquareResults <- test_coreRfeature_batch(reductionTypeTestsMatrixSquare[3:4], 'reductionTypeTestsMatrixSquare[3:4]') ## lapply(reductionTypeTestsMatrixSquare[3:4], test_coreRfeature)
+binaryCwiseMidOpsResults <- test_coreRfeature_batch(binaryCwiseTypeTestsMidOps, 'binaryCwiseTypeTestsMidOps') ## lapply(binaryCwiseTypeTestsMidOps, test_coreRfeature)
+binaryCwiseInProdResults <- test_coreRfeature_batch(binaryCwiseTypeTestsInprod, 'binaryCwiseTypeTestsInprod') ## lapply(binaryCwiseTypeTestsInprod, test_coreRfeature)
+binaryCwiseLeftPromoteResults <- test_coreRfeature_batch(binaryCwiseTypeTestsLeftPromotOps, 'binaryCwiseTypeTestsLeftPromotOps') ## lapply(binaryCwiseTypeTestsLeftPromotOps, test_coreRfeature)
+binaryMatrixOpResults <- test_coreRfeature_batch(binaryMatrixOpTypeTests, 'binaryMatrixOpTypeTests') ## lapply(binaryMatrixOpTypeTests, test_coreRfeature)
 
-
-
-lapply(binaryMatrixOpTypeTests, test_coreRfeature)
-
-
-
-
-
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

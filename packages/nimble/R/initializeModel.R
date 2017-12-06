@@ -29,6 +29,7 @@
 #' )
 #' @export
 initializeModel <- nimbleFunction(
+    name = 'initializeModel',
     setup = function(model, silent = FALSE) {
         initFunctionList <- nimbleFunctionList(nodeInit_virtual)
         iter <- 1
@@ -45,10 +46,11 @@ initializeModel <- nimbleFunction(
 
         ##allDetermNodes <- model$getNodeNames(determOnly = TRUE)
         ##determNodesNodeFxnVector <- nodeFunctionVector(model = model, nodeNames = allDetermNodes)
+        determDepsOfRHSonly <- model$getDependencies(model$getMaps('nodeNamesRHSonly'), determOnly = TRUE)
     },
     
     run = function() {
-        calculate(model)
+        model$calculate(determDepsOfRHSonly)
         for(i in seq_along(initFunctionList)) {
             initFunctionList[[i]]$run()
         }
@@ -60,6 +62,7 @@ initializeModel <- nimbleFunction(
 nodeInit_virtual <- nimbleFunctionVirtual()
 
 checkRHSonlyInit <- nimbleFunction(
+    name = 'checkRHSonlyInit',
     contains = nodeInit_virtual,
     setup = function(model, nodes) {},
     run = function() {
@@ -69,6 +72,7 @@ checkRHSonlyInit <- nimbleFunction(
 )
 
 stochNodeInit <- nimbleFunction(
+    name = 'stochNodeInit',
     contains = nodeInit_virtual,
     setup = function(model, node, silent) {
         thisDetermNodes <- model$getDependencies(node, determOnly=TRUE)
