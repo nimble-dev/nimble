@@ -48,14 +48,14 @@ addons:
 install:
   - pip2.7 install --upgrade --ignore-installed --user travis pip setuptools wheel virtualenv
   - ./install_requirements.R
-  - pip freeze
+  - pip2 freeze
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
 script:
   - source /home/travis/.virtualenvs/r-tensorflow/bin/activate \
     || echo 'Missing tensorflow'
-  - pip freeze
+  - pip2 freeze
   - ./run_tests.R
 
 after_success:
