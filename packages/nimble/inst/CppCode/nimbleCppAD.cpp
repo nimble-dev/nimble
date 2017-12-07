@@ -192,21 +192,21 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                    // and populate parent deriv info.
                    // we can pre-calculate sumParentDims earlier.  Do this.
         if (j == 0 && isWrtLine) {  // This is the case where this node (node i)
-                                    // was included in the wrt argument to
-                                    // nimDerivs.  Note that for the purposes of
-                                    // the chain rule, we set the parent 1st
-                                    // derivatives of this node wrt itself (its
-                                    // first argument) as a matrix with 1s on
-                                    // the diagonal.
-          thisWrtNodes[j] = 1;
-          parentJacobians[j] = MatrixXd::Zero(nodes.wrtLineSize[thisWrtLine],
-                                              nodes.totalWrtSize);
-          kLength =  nodes.wrtLineIndices[thisWrtLine].dimSize(0);
-          for (int k = 0; k < kLength;
-               k++) {
-            thisIndex = nodes.wrtLineIndices[thisWrtLine][k] - 1;
-            parentJacobians[j](k, thisIndex) = 1;
-          }
+          //                           // was included in the wrt argument to
+          //                           // nimDerivs.  Note that for the purposes of
+          //                           // the chain rule, we set the parent 1st
+          //                           // derivatives of this node wrt itself (its
+          //                           // first argument) as a matrix with 1s on
+          //                           // the diagonal.
+          // thisWrtNodes[j] = 1;
+          // parentJacobians[j] = MatrixXd::Zero(nodes.wrtLineSize[thisWrtLine],
+          //                                     nodes.totalWrtSize);
+          // kLength =  nodes.wrtLineIndices[thisWrtLine].dimSize(0);
+          // for (int k = 0; k < kLength;
+          //      k++) {
+          //   thisIndex = nodes.wrtLineIndices[thisWrtLine][k] - 1;
+          //   parentJacobians[j](k, thisIndex) = 1;
+          // }
         } else if (nodes.parentIndicesList[i][j][0] >
                    -1) {  // This is the case where at least one of the parent
                           // nodes of the j'th argument to this node (node i)'s
@@ -254,39 +254,39 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                     0, 0, thisRowLength, nodes.totalWrtSize);
             sumRowLengths = sumRowLengths + thisRowLength;
           }
-          if (hessianFlag) {
-            parentHessians[j].resize(nodes.totalWrtSize);
-            kLength =  nodes.totalWrtSize;
-            for (int k = 0; k < kLength; k++) {
-              parentHessians[j][k].resize(nodes.totalWrtSize);
-              for (int l = 0; l < kLength; l++) {
-                parentHessians[j][k][l].resize(sumParentDims);
-              }
-            }
-            kLength =  nodes.parentIndicesList[i][j].dimSize(0);
-            for (int k = 0; k < kLength; k++) {
-              lLength = chainRuleHessians[nodes.parentIndicesList[i][j][k]][0]
-                           .rows();
-              for (int l = 0;
-                   l < lLength;
-                   l++) {
-                     mLength = chainRuleHessians[nodes.parentIndicesList[i][j][k]][0]
-                             .cols();
-                for (int m = 0;
-                     m < mLength;
-                     m++) {
-                  int indexTracker = 0; 
-                  nLength = parentDims[k];
-                  for (int n = 0; n < nLength; n++) {
-                    parentHessians[j][l][m](indexTracker) = 
-                        chainRuleHessians[nodes.parentIndicesList[i][j][k]][n](
-                            l, m);
-                    indexTracker++;
-                  }
-                }
-              }
-            }
-          }
+          // if (hessianFlag) {
+          //   parentHessians[j].resize(nodes.totalWrtSize);
+          //   kLength =  nodes.totalWrtSize;
+          //   for (int k = 0; k < kLength; k++) {
+          //     parentHessians[j][k].resize(nodes.totalWrtSize);
+          //     for (int l = 0; l < kLength; l++) {
+          //       parentHessians[j][k][l].resize(sumParentDims);
+          //     }
+          //   }
+          //   kLength =  nodes.parentIndicesList[i][j].dimSize(0);
+          //   for (int k = 0; k < kLength; k++) {
+          //     lLength = chainRuleHessians[nodes.parentIndicesList[i][j][k]][0]
+          //                  .rows();
+          //     for (int l = 0;
+          //          l < lLength;
+          //          l++) {
+          //            mLength = chainRuleHessians[nodes.parentIndicesList[i][j][k]][0]
+          //                    .cols();
+          //       for (int m = 0;
+          //            m < mLength;
+          //            m++) {
+          //         int indexTracker = 0; 
+          //         nLength = parentDims[k];
+          //         for (int n = 0; n < nLength; n++) {
+          //           parentHessians[j][l][m](indexTracker) = 
+          //               chainRuleHessians[nodes.parentIndicesList[i][j][k]][n](
+          //                   l, m);
+          //           indexTracker++;
+          //         }
+          //       }
+          //     }
+          //   }
+          // }
         } else {  // Otherwise, the j'th argument has no parents that depend on
                   // wrt nodes.
           thisWrtNodes[j] = 0;
@@ -371,7 +371,29 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                      // node (node i) wrt wrt node j using Faa di Bruno's
                      // formula.
           lineWrtSizeIJ = nodes.lineWrtArgSizeInfo[i][j];
-          if (nodes.topLevelWrtDeps[i][j][0] > 0) {
+          if((j == 0) & isWrtLine){
+            int wrtStartNode = nodes.wrtLineIndices[thisWrtLine][0] - 1;
+            int wrtLength = nodes.wrtLineIndices[thisWrtLine].dimSize(0);
+            int wrtToStartNode = nodes.wrtToIndices[thisWrtLine][0] - 1;
+            int wrtToLength = nodes.wrtToIndices[thisWrtLine].dimSize(0);
+            int wrtFromStartNode = nodes.wrtFromIndices[thisWrtLine][0] - 1;
+            int wrtFromLength = nodes.wrtFromIndices[thisWrtLine].dimSize(0);
+            if(chainRuleRows == 1){
+              chainRuleJacobians[i].row(0).segment(wrtStartNode, wrtLength) += 
+              (thisJacobian).row(0).segment(thisArgIndex, lineWrtSizeIJ); 
+            }
+            else{
+              chainRuleJacobians[i].block(0, wrtStartNode, chainRuleRows, wrtLength) +=
+                  (thisJacobian).block(0, thisArgIndex, thisRows, lineWrtSizeIJ);
+            }   
+            if (derivOutputFlag) {  // Add this Jacobian to the output of this
+                                  // function
+                ansJacobian.row(0).segment(wrtToStartNode, wrtToLength) +=
+                    chainRuleJacobians[i].row(0).segment(wrtFromStartNode,
+                                                wrtFromLength);
+            }   
+          }
+          else if (nodes.topLevelWrtDeps[i][j][0] > 0) {
             kLength = nodes.topLevelWrtDeps[i][j].size();
             for (int k = 0; k < kLength; k++) {
               wrtNodeK = nodes.topLevelWrtDeps[i][j][k] - 1;
