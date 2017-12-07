@@ -393,31 +393,42 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                                 wrtFromLength);
             }   
           }
-          else if (nodes.topLevelWrtDeps[i][j][0] > 0) {
-            kLength = nodes.topLevelWrtDeps[i][j].size();
-            for (int k = 0; k < kLength; k++) {
-              wrtNodeK = nodes.topLevelWrtDeps[i][j][k] - 1;
-              int wrtStartNode = nodes.wrtLineIndices[wrtNodeK][0] - 1;
-              int wrtLength = nodes.wrtLineIndices[wrtNodeK].dimSize(0);
-              int wrtToStartNode = nodes.wrtToIndices[wrtNodeK][0] - 1;
-              int wrtToLength = nodes.wrtToIndices[wrtNodeK].dimSize(0);
-              int wrtFromStartNode = nodes.wrtFromIndices[wrtNodeK][0] - 1;
-              int wrtFromLength = nodes.wrtFromIndices[wrtNodeK].dimSize(0);
+          else{
+            kLength = nodes.parentIndicesList[i][j].size();
+            
+             if (nodes.topLevelWrtDeps[i][j][0].size() > 0) {
+            // kLength = nodes.parentIndicesList[i][j].dimSize(0);
+            // for (int k = 0; k < kLength; k++) {
+            //   lLength = nodes.topLevelWrtDeps[i][j].size();
 
-              chainRuleJacobians[i]
-                  .block(  // this doesn't always need to be saved
-                      0, wrtStartNode, chainRuleRows, wrtLength) +=
-                  (thisJacobian)
-                      .block(0, thisArgIndex, thisRows, lineWrtSizeIJ) *
-                  parentJacobians[j].block(
-                      0, wrtStartNode, parentJacobians[j].rows(), wrtLength);
-              if (derivOutputFlag) {  // Add this Jacobian to the output of this
-                                      // function
-                ansJacobian.block(0, wrtToStartNode, 1, wrtToLength) +=
-                    chainRuleJacobians[i].block(0, wrtFromStartNode, 1,
-                                                wrtFromLength);
-              }
-            }
+            // }
+
+
+
+            // kLength = nodes.topLevelWrtDeps[i][j].size();
+            // for (int k = 0; k < kLength; k++) {
+            //   wrtNodeK = nodes.topLevelWrtDeps[i][j][k] - 1;
+            //   int wrtStartNode = nodes.wrtLineIndices[wrtNodeK][0] - 1;
+            //   int wrtLength = nodes.wrtLineIndices[wrtNodeK].dimSize(0);
+            //   int wrtToStartNode = nodes.wrtToIndices[wrtNodeK][0] - 1;
+            //   int wrtToLength = nodes.wrtToIndices[wrtNodeK].dimSize(0);
+            //   int wrtFromStartNode = nodes.wrtFromIndices[wrtNodeK][0] - 1;
+            //   int wrtFromLength = nodes.wrtFromIndices[wrtNodeK].dimSize(0);
+
+            //   chainRuleJacobians[i]
+            //       .block(  // this doesn't always need to be saved
+            //           0, wrtStartNode, chainRuleRows, wrtLength) +=
+            //       (thisJacobian)
+            //           .block(0, thisArgIndex, thisRows, lineWrtSizeIJ) *
+            //       parentJacobians[j].block(
+            //           0, wrtStartNode, parentJacobians[j].rows(), wrtLength);
+            //   if (derivOutputFlag) {  // Add this Jacobian to the output of this
+            //                           // function
+            //     ansJacobian.block(0, wrtToStartNode, 1, wrtToLength) +=
+            //         chainRuleJacobians[i].block(0, wrtFromStartNode, 1,
+            //                                     wrtFromLength);
+            //   }
+            // }
           }
           thisArgIndex += lineWrtSizeIJ;
           //                             auto t3 =

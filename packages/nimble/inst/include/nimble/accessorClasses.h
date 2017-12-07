@@ -67,7 +67,7 @@ class NodeVectorClassNew {
 class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 public:
   vector<vector<NimArr<1, int> > > parentIndicesList;
-  vector<vector<NimArr<1, int> > > topLevelWrtDeps;
+  vector<vector<vector<NimArr<1, int> > > > topLevelWrtDeps;
 	NimArr<1, int> stochNodeIndicators;
 	NimArr<1, int> calcNodeIndicators;
 	vector<NimArr<1, double> > cppWrtArgIndices;
@@ -87,7 +87,8 @@ public:
 	void populateDerivsInfo(SEXP SderivsInfo) {
 		SEXP S_pxData;
 		SEXP S_parentInds;
-		SEXP S_thisList;
+    SEXP S_thisList;
+    SEXP S_thisListI;
 		SEXP S_stochNodeIndicators;
 		SEXP S_calcNodeIndicators;
 		SEXP S_cppWrtArgIndices;
@@ -99,7 +100,7 @@ public:
     SEXP S_nodeLengths;
     SEXP S_topLevelWrtDeps;
 		int numNodes;
-
+    int numNodesI;
 		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
 		SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
 		PROTECT(S_parentInds = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
@@ -113,9 +114,16 @@ public:
     PROTECT(S_topLevelWrtDeps = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												Rf_install("topLevelWrtDeps")));
     topLevelWrtDeps.resize(numNodes);
+    int sumNodesI = 0;
 		for(int i = 0; i < numNodes; i++){
-			PROTECT(S_thisList =  VECTOR_ELT(S_topLevelWrtDeps, i));
-			SEXP_list_2_NimArr_int_vec(S_thisList, topLevelWrtDeps[i]);
+      PROTECT(S_thisList =  VECTOR_ELT(S_topLevelWrtDeps, i));
+      numNodesI  = Rf_length(S_thisList);
+      sumNodesI += numNodesI;
+      topLevelWrtDeps[i].resize(numNodesI);
+		  for(int j = 0; j < numNodesI; j++){
+			  PROTECT(S_thisListI =  VECTOR_ELT(S_thisList, j));
+		  	SEXP_list_2_NimArr_int_vec(S_thisListI, topLevelWrtDeps[i][j]);
+      }
     }
 
 		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
@@ -146,7 +154,7 @@ public:
 												         Rf_install("lineWrtArgSizeInfo")));
 		SEXP_list_2_NimArr_int_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
 		
-		UNPROTECT(23 + 2*numNodes);
+		UNPROTECT(23 + 2*numNodes + sumNodesI);
 		
 		totalOutWrtSize = 0;
 		for(int i = 0; i < length(wrtToIndices); i++){

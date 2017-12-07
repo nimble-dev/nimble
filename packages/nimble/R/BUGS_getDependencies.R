@@ -156,18 +156,22 @@ nimDerivsInfoClass <- setRefClass(
         calcNodeIndicators <<- numeric(length(allWrtAndCalcNodeNames))
         nodeLengths <<- numeric(length(allWrtAndCalcNodeNames))
         topLevelWrtDeps <<- depIndex_2_parentDepIndices
+        for(i in seq_along(topLevelWrtDeps))
+          for(j in seq_along(topLevelWrtDeps[[i]]))
+              topLevelWrtDeps[[i]][[j]] <<- list(0)
+              
         ## For each input depsID
         for(i in seq_along(depIDs)) {
           nodeLengths[i] <<- length(values(model, allWrtAndCalcNodeNames[i]))
           thisNode <- depIDs[i]
           if(thisNode %in% wrtNodes) {
             depIndex_2_parentDepIndices[[i]][[1]] <- -which(wrtNodes == thisNode) ## e.g. set -2 for 2nd wrt node
-            topLevelWrtDeps[[i]][[1]] <<- which(wrtNodes == thisNode)
+            topLevelWrtDeps[[i]][[1]][[1]] <<- which(wrtNodes == thisNode)
             wrtNodeIndicators[i] <<- 1
           }
           else{
             depIndex_2_parentDepIndices[[i]][[1]] <- 0
-            topLevelWrtDeps[[i]][[1]] <<- 0
+            # topLevelWrtDeps[[i]][[1]] <<- 0
           }
           if(thisNode %in% calcNodes){
             calcNodeIndicators[i] <<- 1
@@ -240,21 +244,9 @@ nimDerivsInfoClass <- setRefClass(
                 }
               }
               if(wrtNodeIndicators[i]){
-                if(length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 &&
-                   topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][1] == 0){
-                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]] <<- which(i == wrtLineNums)
-                }
-                else{
-                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]] <<- setdiff(unique(c(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]], which(i == wrtLineNums))), 0)
-                }
+                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) + 1]] <<- which(i == wrtLineNums)
               } else if(stochNodeIndicators[i] == 0){
-                if(length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 &&
-                   topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][1] == 0){
-                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]] <<- setdiff(unique(unlist(topLevelWrtDeps[[i]])), 0)
-                }
-                else{
-                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]] <<- setdiff(unique(c(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]], unlist(topLevelWrtDeps[[i]]))), 0)
-                }
+                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) + 1]] <<-  unlist(topLevelWrtDeps[[i]])
               }
             }
           }
