@@ -107,6 +107,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   int wrtNodeK;
   int thisRows;
   int chainRuleRows;
+  int thisArgIndex;
   
   vector<MatrixXd> parentJacobians;  // For each node, parentJacobians is
                                      // repopulated to store the Jacobian
@@ -359,6 +360,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 
         jLength = nodes.topLevelWrtDeps[i].size(); /// also need to ensure that if all wrtDeps == 0 for node i, no derivs are taken or calcs are performed.
                                                     //  may be taken care of by if (nodes.cppWrtArgIndices[i][0] > -1
+        thisArgIndex = 0;              
         for (int j = 0; j < jLength;
              j++) {  // Next we iterate over all the wrt nodes.  For each wrt
                      // node, we iterate over all of the nodes that are
@@ -368,7 +370,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                      // chainRuleJacobians[i] and chainRuleHessians[i]) of this
                      // node (node i) wrt wrt node j using Faa di Bruno's
                      // formula.
-          int thisArgIndex = 0;              
           lineWrtSizeIJ = nodes.lineWrtArgSizeInfo[i][j];
           if (nodes.topLevelWrtDeps[i][j][0] > 0) {
             kLength = nodes.topLevelWrtDeps[i][j].size();
@@ -380,6 +381,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
               int wrtToLength = nodes.wrtToIndices[wrtNodeK].dimSize(0);
               int wrtFromStartNode = nodes.wrtFromIndices[wrtNodeK][0] - 1;
               int wrtFromLength = nodes.wrtFromIndices[wrtNodeK].dimSize(0);
+
               chainRuleJacobians[i]
                   .block(  // this doesn't always need to be saved
                       0, wrtStartNode, chainRuleRows, wrtLength) +=
