@@ -66,7 +66,8 @@ class NodeVectorClassNew {
 // This is a collection of instructions denoting a sort of "program".
 class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 public:
-	vector<vector<NimArr<1, int> > > parentIndicesList;
+  vector<vector<NimArr<1, int> > > parentIndicesList;
+  vector<vector<NimArr<1, int> > > topLevelWrtDeps;
 	NimArr<1, int> stochNodeIndicators;
 	NimArr<1, int> calcNodeIndicators;
 	vector<NimArr<1, double> > cppWrtArgIndices;
@@ -95,7 +96,8 @@ public:
 		SEXP S_wrtFromIndices;
 		SEXP S_wrtLineIndices;
 		SEXP S_lineWrtArgSizeInfo;
-		SEXP S_nodeLengths;
+    SEXP S_nodeLengths;
+    SEXP S_topLevelWrtDeps;
 		int numNodes;
 
 		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
@@ -103,11 +105,19 @@ public:
 		PROTECT(S_parentInds = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												Rf_install("parentIndicesList")));
 		numNodes = Rf_length(S_parentInds);
-		parentIndicesList.resize(numNodes);
+    parentIndicesList.resize(numNodes);
 		for(int i = 0; i < numNodes; i++){
 			PROTECT(S_thisList =  VECTOR_ELT(S_parentInds, i));
 			SEXP_list_2_NimArr_int_vec(S_thisList, parentIndicesList[i]);
-		}
+    }
+    PROTECT(S_topLevelWrtDeps = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												Rf_install("topLevelWrtDeps")));
+    topLevelWrtDeps.resize(numNodes);
+		for(int i = 0; i < numNodes; i++){
+			PROTECT(S_thisList =  VECTOR_ELT(S_topLevelWrtDeps, i));
+			SEXP_list_2_NimArr_int_vec(S_thisList, topLevelWrtDeps[i]);
+    }
+
 		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 														  Rf_install("stochNodeIndicators")));
 		SEXP_2_NimArr(S_stochNodeIndicators, stochNodeIndicators);
@@ -136,7 +146,7 @@ public:
 												         Rf_install("lineWrtArgSizeInfo")));
 		SEXP_list_2_NimArr_int_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
 		
-		UNPROTECT(21 + numNodes);
+		UNPROTECT(23 + 2*numNodes);
 		
 		totalOutWrtSize = 0;
 		for(int i = 0; i < length(wrtToIndices); i++){

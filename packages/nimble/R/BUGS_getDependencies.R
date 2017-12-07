@@ -87,7 +87,8 @@ nimDerivsInfoClass <- setRefClass(
       nodeLengths = 'ANY',
       model =  'ANY',
       declIDs = 'ANY',
-      rowIndices = 'ANY'
+      rowIndices = 'ANY',
+      topLevelWrtDeps = 'ANY'
     ),
     methods = list(
       initialize = function(wrtNodes = NA, calcNodes = NA, thisModel = NA, cInfo = FALSE, ...){
@@ -154,16 +155,19 @@ nimDerivsInfoClass <- setRefClass(
         wrtNodeIndicators <<- numeric(length(allWrtAndCalcNodeNames))
         calcNodeIndicators <<- numeric(length(allWrtAndCalcNodeNames))
         nodeLengths <<- numeric(length(allWrtAndCalcNodeNames))
+        topLevelWrtDeps <<- depIndex_2_parentDepIndices
         ## For each input depsID
         for(i in seq_along(depIDs)) {
           nodeLengths[i] <<- length(values(model, allWrtAndCalcNodeNames[i]))
           thisNode <- depIDs[i]
           if(thisNode %in% wrtNodes) {
             depIndex_2_parentDepIndices[[i]][[1]] <- -which(wrtNodes == thisNode) ## e.g. set -2 for 2nd wrt node
+            topLevelWrtDeps[[i]][[1]] <<- which(wrtNodes == thisNode)
             wrtNodeIndicators[i] <<- 1
           }
           else{
             depIndex_2_parentDepIndices[[i]][[1]] <- 0
+            topLevelWrtDeps[[i]][[1]] <<- 0
           }
           if(thisNode %in% calcNodes){
             calcNodeIndicators[i] <<- 1
@@ -172,6 +176,43 @@ nimDerivsInfoClass <- setRefClass(
             calcNodeIndicators[i] <<- 0
           }
         }
+        
+        ### next let's do wrt info
+        scalarWrtNames <- model$expandNodeNames(wrtNodeNames, returnScalarComponents = TRUE)
+        wrtToIndices <<- list()
+        wrtFromIndices <<- list()
+        wrtLineIndices <<- list()
+        wrtLineSize <<- list()
+        wrtLineNums <<- numeric(length(model$expandNodeNames(wrtNodeNames)))
+        thisIndex <- 1
+        
+        for(i in seq_along(model$expandNodeNames(wrtNodeNames))){
+          ## length of the node
+          wrtLineSize[[i]] <<- length(model[[model$expandNodeNames(wrtNodeNames)[i]]])
+          wrtLineNums[i] <<- which(model$expandNodeNames(wrtNodeNames)[i] == allWrtAndCalcNodeNames)
+          ## function below, for each scalar element of the i'th wrt par, returns the index
+          ## of that element in the vector of all wrt pars.
+          thisWrtNodeInds <- sapply(model$expandNodeNames(model$expandNodeNames(wrtNodeNames)[i],
+                                                          returnScalarComponents = TRUE),
+                                    function(x){
+                                      outInd <- which(x == scalarWrtNames)
+                                      if(length(outInd) > 0){
+                                        return(outInd)
+                                      }
+                                      else{return(0)}
+                                    }
+          )
+          
+          ## toIndices are the indices of the returned deriv element (e.g. gradient)
+          ## that this wrt param will map to
+          wrtToIndices[[i]] <<- thisWrtNodeInds[which(thisWrtNodeInds != 0)]
+          ## lineIndices are the full indices of this wrt node (could be longer than toIndices if only one element of a multivar node is used for wrt)
+          wrtLineIndices[[i]] <<- thisIndex:(thisIndex + wrtLineSize[[i]] - 1)
+          ## fromIndices are the elements of the calculated derivative that will be placed into the toIndices of the output deriv.
+          wrtFromIndices[[i]] <<- wrtLineIndices[[i]][which(thisWrtNodeInds != 0)]
+          thisIndex <- thisIndex + wrtLineSize[[i]]
+        }
+        
         for(i in seq_along(depIDs)) {
           thisNode <- depIDs[i]
           ## Follow its descendents that are also in deps
@@ -198,47 +239,32 @@ nimDerivsInfoClass <- setRefClass(
                   depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]] <- c(depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]], i)
                 }
               }
+              if(wrtNodeIndicators[i]){
+                if(length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 &&
+                   topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][1] == 0){
+                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]] <<- which(i == wrtLineNums)
+                }
+                else{
+                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]] <<- setdiff(unique(c(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]], which(i == wrtLineNums))), 0)
+                }
+              } else if(stochNodeIndicators[i] == 0){
+                if(length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 &&
+                   topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][1] == 0){
+                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]] <<- setdiff(unique(unlist(topLevelWrtDeps[[i]])), 0)
+                }
+                else{
+                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]] <<- setdiff(unique(c(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]], unlist(topLevelWrtDeps[[i]]))), 0)
+                }
+              }
             }
           }
         }
         
 
-        ### next let's do wrt info
-        scalarWrtNames <- model$expandNodeNames(wrtNodeNames, returnScalarComponents = TRUE)
-        wrtToIndices <<- list()
-        wrtFromIndices <<- list()
-        wrtLineIndices <<- list()
-        wrtLineSize <<- list()
-        wrtLineNums <<- numeric(length(model$expandNodeNames(wrtNodeNames)))
-        thisIndex <- 1
 
-        for(i in seq_along(model$expandNodeNames(wrtNodeNames))){
-          ## length of the node
-          wrtLineSize[[i]] <<- length(model[[model$expandNodeNames(wrtNodeNames)[i]]])
-          wrtLineNums[i] <<- which(model$expandNodeNames(wrtNodeNames)[i] == allWrtAndCalcNodeNames)
-          ## function below, for each scalar element of the i'th wrt par, returns the index
-          ## of that element in the vector of all wrt pars.
-          thisWrtNodeInds <- sapply(model$expandNodeNames(model$expandNodeNames(wrtNodeNames)[i],
-                                                          returnScalarComponents = TRUE),
-                                    function(x){
-                                      outInd <- which(x == scalarWrtNames)
-                                      if(length(outInd) > 0){
-                                        return(outInd)
-                                      }
-                                      else{return(0)}
-                                    }
-          )
-
-          ## toIndices are the indices of the returned deriv element (e.g. gradient)
-          ## that this wrt param will map to
-          wrtToIndices[[i]] <<- thisWrtNodeInds[which(thisWrtNodeInds != 0)]
-          ## lineIndices are the full indices of this wrt node (could be longer than toIndices if only one element of a multivar node is used for wrt)
-          wrtLineIndices[[i]] <<- thisIndex:(thisIndex + wrtLineSize[[i]] - 1)
-          ## fromIndices are the elements of the calculated derivative that will be placed into the toIndices of the output deriv.
-          wrtFromIndices[[i]] <<- wrtLineIndices[[i]][which(thisWrtNodeInds != 0)]
-          thisIndex <- thisIndex + wrtLineSize[[i]]
-        }
-
+        
+        
+          
 
         ## Next lets get line wrt info.  Do both as characters (for R) and as indices (for C++)! with a flag to control which is returned.
         ## Then update the explainDerivContent function.  May also make more sense to make this function a ref class w/ fields for different return vals and such.
