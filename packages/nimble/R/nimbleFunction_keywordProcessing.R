@@ -90,6 +90,19 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 	}
 )
 
+besselK_keywordInfo <- keywordInfoClass(
+    keyword = 'besselK',
+    processor = function(code, nfProc) {
+        expon.scaledArg <- code$expon.scaled
+        if(is.null(expon.scaledArg))
+            expon.scaledArg <- FALSE
+        if(is.numeric(expon.scaledArg) || is.logical(expon.scaledArg)) {
+            code$expon.scaled <- 1 + as.logical(expon.scaledArg)
+        } else code$expon.scaled <- substitute(1 + A, list(A = expon.scaledArg))
+        return(code)
+    }
+)
+
 
 nimSeq_keywordInfo <- keywordInfoClass(
     keyword = 'nimSeq',
@@ -724,6 +737,7 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
+keywordList[['besselK']] <- besselK_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo
@@ -779,6 +793,7 @@ matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['nimDerivs']] <- nimDerivs
+matchFunctions[['besselK']] <- function(x, nu, expon.scaled = FALSE){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}

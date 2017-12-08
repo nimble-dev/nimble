@@ -18,6 +18,7 @@ specificCallReplacements <- list(
     lgamma = 'lgammafn',
     logfact = 'lfactorial',
     loggam = 'lgammafn',
+    besselK = 'bessel_k',
     gamma = 'gammafn',
     expit = 'ilogit',
     phi = 'iprobit',
