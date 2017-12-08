@@ -244,9 +244,24 @@ nimDerivsInfoClass <- setRefClass(
                 }
               }
               if(wrtNodeIndicators[i]){
+                if(length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 && (topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]][1] == 0)){
+                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]] <<- which(i == wrtLineNums)
+                }
+                else{
                   topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) + 1]] <<- which(i == wrtLineNums)
+                }
               } else if(stochNodeIndicators[i] == 0){
-                  topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) + 1]] <<-  unlist(topLevelWrtDeps[[i]])
+                if(length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 && (topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]][1] == 0)){
+                  if(!all(unlist(topLevelWrtDeps[[i]]) == 0)){
+                    topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]] <<- setdiff(unique(unlist(topLevelWrtDeps[[i]])), 0)
+                  }
+                }
+                else{
+                  if(!all(unlist(topLevelWrtDeps[[i]]) == 0)){
+                    topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) + 1]] <<-
+                      setdiff(unique(unlist(topLevelWrtDeps[[i]])),0)
+                  }
+                }
               }
             }
           }
