@@ -46,7 +46,7 @@ addons:
       - python-virtualenv  # For tensorflow::install_tensorflow().
 
 install:
-  - pip2.7 install --upgrade --ignore-installed --user travis pip setuptools wheel virtualenv
+  - pip2.7 install --upgrade --ignore-installed --user travis pip2 setuptools wheel virtualenv
   - ./install_requirements.R
   - pip2 freeze
   - R CMD build packages/nimble
