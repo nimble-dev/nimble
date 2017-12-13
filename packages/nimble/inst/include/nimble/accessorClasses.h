@@ -546,12 +546,12 @@ class copierClassBuilderCase : public copierClassBuilderClass {
       fromType = fromNimArr->getNimType();
       toType = toNimArr->getNimType();  
       switch(fromType) {
-      case DOUBLE:
+      case nimType::DOUBLE:
 	switch(toType) {
-	case DOUBLE:
+	case nimType::DOUBLE:
 	  return new TDD(from, to, isFromMV, isToMV);
 	  break;
-	case INT:
+	case nimType::INT:
 	  return new TDI(from, to, isFromMV, isToMV);
 	  break;
 	default:
@@ -559,12 +559,12 @@ class copierClassBuilderCase : public copierClassBuilderClass {
 	  return 0;
 	  break;
 	};
-      case INT:
+      case nimType::INT:
 	switch(toType) {
-	case DOUBLE:
+	case nimType::DOUBLE:
 	  return new TID(from, to, isFromMV, isToMV);
 	  break;
-	case INT:
+	case nimType::INT:
 	  return new TII(from, to, isFromMV, isToMV);
 	  break;
 	default:
@@ -616,10 +616,10 @@ void SingleModelAccess_2_nimArr(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
   NimArrBase<int>* SMA_NimArrPtrI;
   if(SMVAPtr->getSingleton()) {
     switch(SMA_Type) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset];
       break;
-    case INT:
+    case nimType::INT:
       (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase<int> *>(SMA_NimTypePtr))[SMVAPtr->offset];
       break;
     default:
@@ -628,11 +628,11 @@ void SingleModelAccess_2_nimArr(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
     }
   } else {
     switch(SMA_Type) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
       dynamicMapCopyDimToFlat<double, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes() );
       break;
-    case INT:
+    case nimType::INT:
       SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
       dynamicMapCopyDimToFlat<int, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes());
       break;
@@ -653,10 +653,10 @@ void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
 
   if(SMVAPtr->getSingleton()) {
     switch(SMA_Type) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
       break;
-    case INT:
+    case nimType::INT:
       (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
       break;
     default:
@@ -665,11 +665,11 @@ void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
     }
   } else {
     switch(SMA_Type) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
       dynamicMapCopyFlatToDim<T, double>(SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
       break;
-    case INT:
+    case nimType::INT:
       SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
       dynamicMapCopyFlatToDim<T, int>(SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
       break;

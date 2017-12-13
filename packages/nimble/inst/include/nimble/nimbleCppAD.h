@@ -22,9 +22,6 @@
 /* Definitions only to be included when a nimbleFunction needs CppAD */
 #define STRICT_R_HEADERS
 #include <Eigen-unsupported/Eigen/CXX11/Tensor>
-#undef INT
-#undef BOOL
-#undef DOUBLE
 #include <cppad/cppad.hpp>
 //#include <TMB/tmbDists.h>
 #include <nimble/EigenTypedefs.h>
