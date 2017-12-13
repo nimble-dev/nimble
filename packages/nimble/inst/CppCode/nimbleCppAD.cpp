@@ -108,25 +108,26 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   int thisRows;
   int chainRuleRows;
   int thisArgIndex;
+  int wrtNodeJ;
   
-  vector<MatrixXd> parentJacobians;  // For each node, parentJacobians is
-                                     // repopulated to store the Jacobian
-                                     // matrices of all of the parent nodes of
-                                     // that node.
+  // vector<MatrixXd> parentJacobians;  // For each node, parentJacobians is
+  //                                    // repopulated to store the Jacobian
+  //                                    // matrices of all of the parent nodes of
+  //                                    // that node.
 
-  vector<vector<vector<VectorXd> > > parentHessians;  // Similar to
-                                                      // parentJacobians.  The
-                                                      // parent Hessians are
-                                                      // actually only used as
-                                                      // vectors in our
-                                                      // implementation of Faa
-                                                      // Di Bruno's theorem, so
-                                                      // stored as such. E.g.
-                                                      // parentHessians[i][j][k]
-                                                      // would be the i'th
-                                                      // parent node's Hessian
-                                                      // array's third dimension
-                                                      // (a vector).
+  // vector<vector<vector<VectorXd> > > parentHessians;  // Similar to
+  //                                                     // parentJacobians.  The
+  //                                                     // parent Hessians are
+  //                                                     // actually only used as
+  //                                                     // vectors in our
+  //                                                     // implementation of Faa
+  //                                                     // Di Bruno's theorem, so
+  //                                                     // stored as such. E.g.
+  //                                                     // parentHessians[i][j][k]
+  //                                                     // would be the i'th
+  //                                                     // parent node's Hessian
+  //                                                     // array's third dimension
+  //                                                     // (a vector).
   vector<MatrixXd> chainRuleJacobians(
       nodes.parentIndicesList.size());  // Similar storage as parentJacobians above.
                                   // chainRuleJacobians[i] is the Jacobian
@@ -135,19 +136,22 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                   // chainRuleJacobians are not overwritten, but
                                   // stored for use in populating the
                                   // parentJacobians of downstream nodes.
-  vector<vector<MatrixXd> > chainRuleHessians(  // Due to the linear algebra
-                                                // necessary for chain rule
-                                                // calculations,
-      nodes.parentIndicesList.size());  // the chainRuleHessians are stored in
-                                         // a different format than the parent
-                                         // Hessians. The outer vector goes over
-                                         // nodes.parentIndicesList. The second
-                                         // vector goes over the third dimension
-                                         // of the Hessian (the third dimension
-                                         // has length = sum length of wrt
-                                         // arguments). Then individual
-                                         // MatrixXds are first and second dims
-                                         // of the Hessian.
+
+
+  // vector<Tensor<double, 3> > chainRuleHessians(nodes.parentIndicesList.size());
+  // vector<vector<MatrixXd> > chainRuleHessians(  // Due to the linear algebra
+  //                                               // necessary for chain rule
+  //                                               // calculations,
+  //     nodes.parentIndicesList.size());  // the chainRuleHessians are stored in
+  //                                        // a different format than the parent
+  //                                        // Hessians. The outer vector goes over
+  //                                        // nodes.parentIndicesList. The second
+  //                                        // vector goes over the third dimension
+  //                                        // of the Hessian (the third dimension
+  //                                        // has length = sum length of wrt
+  //                                        // arguments). Then individual
+  //                                        // MatrixXds are first and second dims
+  //                                        // of the Hessian.
   iLength = nodes.parentIndicesList.size(); 
   for (int i = 0; i < iLength; i++) {
     isDeterminisitic =
@@ -324,36 +328,36 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                 // storage is sized appropriately.
           chainRuleRows = 1;
           if (hessianFlag) {
-            Map<MatrixXd, Unaligned, EigStrDyn> iHessian(
-                (*thisDerivList).hessian.getPtr(),
-                (*thisDerivList).hessian.dim()[0],
-                (*thisDerivList).hessian.dim()[1],
-                EigStrDyn((*thisDerivList).hessian.strides()[1],
-                          (*thisDerivList).hessian.strides()[0]));
-            thisHessian.push_back(iHessian);
-            chainRuleHessians[i].resize(1);
-            chainRuleHessians[i][0] =
-                MatrixXd::Zero(nodes.totalWrtSize, nodes.totalWrtSize);
+            // Map<MatrixXd, Unaligned, EigStrDyn> iHessian(
+            //     (*thisDerivList).hessian.getPtr(),
+            //     (*thisDerivList).hessian.dim()[0],
+            //     (*thisDerivList).hessian.dim()[1],
+            //     EigStrDyn((*thisDerivList).hessian.strides()[1],
+            //               (*thisDerivList).hessian.strides()[0]));
+            // thisHessian.push_back(iHessian);
+            // chainRuleHessians[i].resize(1);
+            // chainRuleHessians[i][0] =
+            //     MatrixXd::Zero(nodes.totalWrtSize, nodes.totalWrtSize);
           }
         } else {  // If derivOutputFlag == false, these derivatives will be
                   // taken of a deterministic function that returns an object of
                   // thisNodeSize, so the storage is sized appropriately.
           chainRuleRows = thisRows;
           if (hessianFlag) {
-            chainRuleHessians[i].resize(thisNodeSize);
-            for (int j = 0; j < thisNodeSize; j++) {
-              Map<MatrixXd, Unaligned, EigStrDyn> iHessian(
-                  (*thisDerivList).hessian.getPtr() +
-                      static_cast<int>(static_cast<int>(
-                          j * (*thisDerivList).hessian.strides()[2])),
-                  (*thisDerivList).hessian.dim()[0],
-                  (*thisDerivList).hessian.dim()[1],
-                  EigStrDyn((*thisDerivList).hessian.strides()[1],
-                            (*thisDerivList).hessian.strides()[0]));
-              thisHessian.push_back(iHessian);
-              chainRuleHessians[i][j] =
-                  MatrixXd::Zero(nodes.totalWrtSize, nodes.totalWrtSize);
-            }
+            // chainRuleHessians[i].resize(thisNodeSize);
+            // for (int j = 0; j < thisNodeSize; j++) {
+            //   Map<MatrixXd, Unaligned, EigStrDyn> iHessian(
+            //       (*thisDerivList).hessian.getPtr() +
+            //           static_cast<int>(static_cast<int>(
+            //               j * (*thisDerivList).hessian.strides()[2])),
+            //       (*thisDerivList).hessian.dim()[0],
+            //       (*thisDerivList).hessian.dim()[1],
+            //       EigStrDyn((*thisDerivList).hessian.strides()[1],
+            //                 (*thisDerivList).hessian.strides()[0]));
+            //   thisHessian.push_back(iHessian);
+            //   chainRuleHessians[i][j] =
+            //       MatrixXd::Zero(nodes.totalWrtSize, nodes.totalWrtSize);
+            // }
           }
         }
         chainRuleJacobians[i] = MatrixXd::Zero(chainRuleRows, nodes.totalWrtSize);
@@ -366,22 +370,11 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
         thisArgIndex = 0;    
         auto t3 =  std::chrono::high_resolution_clock::now();  
         for (int j = 0; j < jLength;
-             j++) {  // Next we iterate over all the wrt nodes.  For each wrt
-                     // node, we iterate over all of the nodes that are
-                     // arguments to this node's calculateWithArgs() function.
-                     // If argument k depends on wrt node j, we calcuate the
-                     // first and second derivatives (stored in
-                     // chainRuleJacobians[i] and chainRuleHessians[i]) of this
-                     // node (node i) wrt wrt node j using Faa di Bruno's
-                     // formula.
+             j++) { 
           lineWrtSizeIJ = nodes.lineWrtArgSizeInfo[i][j];
           if((j == 0) & isWrtLine){
             int wrtStartNode = nodes.wrtLineIndices[thisWrtLine][0] - 1;
             int wrtLength = nodes.wrtLineIndices[thisWrtLine].dimSize(0);
-            int wrtToStartNode = nodes.wrtToIndices[thisWrtLine][0] - 1;
-            int wrtToLength = nodes.wrtToIndices[thisWrtLine].dimSize(0);
-            int wrtFromStartNode = nodes.wrtFromIndices[thisWrtLine][0] - 1;
-            int wrtFromLength = nodes.wrtFromIndices[thisWrtLine].dimSize(0);
             if(chainRuleRows == 1){
               if(wrtLength == 1){
                 chainRuleJacobians[i](0, wrtStartNode) += 
@@ -396,12 +389,17 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
               chainRuleJacobians[i].block(0, wrtStartNode, chainRuleRows, wrtLength) +=
                   (thisJacobian).block(0, thisArgIndex, thisRows, lineWrtSizeIJ);
             }   
-            if (derivOutputFlag) {  // Add this Jacobian to the output of this
-                                  // function
-                ansJacobian.row(0).segment(wrtToStartNode, wrtToLength) +=
-                    chainRuleJacobians[i].row(0).segment(wrtFromStartNode,
-                                                wrtFromLength);
-            }   
+            // if (derivOutputFlag) {  // Add this Jacobian to the output of this
+            //                       // function
+
+            //     // ansJacobian.row(0).segment(wrtToStartNode, wrtToLength) +=
+            //     //     chainRuleJacobians[i].row(0).segment(wrtFromStartNode,
+            //     //                                 wrtFromLength);
+            //     //           cout << "i: " << i << "\n";
+            //     //           cout << "wrtNodeK: " << thisWrtLine << "\n";
+            //     //           cout << "ansJacobian: " << ansJacobian(0, 0) << " " << ansJacobian(0, 1) << " " << ansJacobian(0, 2) << " " << ansJacobian(0, 3) <<"\n";
+
+            // }   
           }
           else{
             kLength = nodes.topLevelWrtDeps[i][j].size();
@@ -414,15 +412,11 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                     wrtNodeK = nodes.topLevelWrtDeps[i][j][k][l] - 1;
                     int wrtStartNode = nodes.wrtLineIndices[wrtNodeK][0] - 1;
                     int wrtLength = nodes.wrtLineIndices[wrtNodeK].dimSize(0);
-                    int wrtToStartNode = nodes.wrtToIndices[wrtNodeK][0] - 1;
-                    int wrtToLength = nodes.wrtToIndices[wrtNodeK].dimSize(0);
-                    int wrtFromStartNode = nodes.wrtFromIndices[wrtNodeK][0] - 1;
-                    int wrtFromLength = nodes.wrtFromIndices[wrtNodeK].dimSize(0);
                     // cout << "nodes.parentIndicesList[i][j][k]: " << nodes.parentIndicesList[i][j][k] << "\n";
                     // cout << "chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows()" << chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows() << "\n"; 
                     // cout << "chainRuleJacobians[nodes.parentIndicesList[i][j][k]].cols()" << chainRuleJacobians[nodes.parentIndicesList[i][j][k]].cols() << "\n"; 
-                    cout << "wrtNodeK: " << wrtNodeK << "\n";
-                    cout << "nodes.parentIndicesList[nodes.parentIndicesList[i][j][k]][0][0]: " << nodes.parentIndicesList[nodes.parentIndicesList[i][j][k]][0][0] << "\n";
+                    // cout << "wrtNodeK: " << wrtNodeK << "\n";
+                    // cout << "nodes.parentIndicesList[nodes.parentIndicesList[i][j][k]][0][0]: " << nodes.parentIndicesList[nodes.parentIndicesList[i][j][k]][0][0] << "\n";
                     if(nodes.parentIndicesList[nodes.parentIndicesList[i][j][k]][0][0] == -1*(wrtNodeK + 2)){
                       chainRuleJacobians[i]
                                     .block(  // this doesn't always need to be saved
@@ -438,52 +432,28 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                     chainRuleJacobians[nodes.parentIndicesList[i][j][k]]
                                         .block(0, wrtStartNode, parentRowLength, wrtLength);
                     }
-                    if (derivOutputFlag) {  // Add this Jacobian to the output of this
-                                        // function
-                      ansJacobian.row(0).segment(wrtToStartNode, wrtToLength) +=
-                        chainRuleJacobians[i].row(0).segment(wrtFromStartNode,
-                                                    wrtFromLength);
-                    }
+                    // if (derivOutputFlag) {  // Add this Jacobian to the output of this
+                    //                     // function
+                    //   ansJacobian.row(0).segment(wrtToStartNode, wrtToLength) +=
+                    //     chainRuleJacobians[i].row(0).segment(wrtFromStartNode,
+                    //                                 wrtFromLength);
+                    //       // cout << "i: " << i << "\n";
+                    //       // cout << "wrtNodeK: " << wrtNodeK << "\n";
+                    //       // cout << "ansJacobian: " << ansJacobian(0, 0) << " " << ansJacobian(0, 1) << " " << ansJacobian(0, 2) << " " << ansJacobian(0, 3) <<"\n";
+
+                    // }
                   }     
                 }
               }
             }
-
-            //  if (nodes.topLevelWrtDeps[i][j][0].size() > 0) {
-            // kLength = nodes.parentIndicesList[i][j].dimSize(0);
-            // for (int k = 0; k < kLength; k++) {
-            //   lLength = nodes.topLevelWrtDeps[i][j].size();
-
-            // }
-
-
-
-            // kLength = nodes.topLevelWrtDeps[i][j].size();
-            // for (int k = 0; k < kLength; k++) {
-            //   wrtNodeK = nodes.topLevelWrtDeps[i][j][k] - 1;
-            //   int wrtStartNode = nodes.wrtLineIndices[wrtNodeK][0] - 1;
-            //   int wrtLength = nodes.wrtLineIndices[wrtNodeK].dimSize(0);
-            //   int wrtToStartNode = nodes.wrtToIndices[wrtNodeK][0] - 1;
-            //   int wrtToLength = nodes.wrtToIndices[wrtNodeK].dimSize(0);
-            //   int wrtFromStartNode = nodes.wrtFromIndices[wrtNodeK][0] - 1;
-            //   int wrtFromLength = nodes.wrtFromIndices[wrtNodeK].dimSize(0);
-
-            //   chainRuleJacobians[i]
-            //       .block(  // this doesn't always need to be saved
-            //           0, wrtStartNode, chainRuleRows, wrtLength) +=
-            //       (thisJacobian)
-            //           .block(0, thisArgIndex, thisRows, lineWrtSizeIJ) *
-            //       parentJacobians[j].block(
-            //           0, wrtStartNode, parentJacobians[j].rows(), wrtLength);
-            //   if (derivOutputFlag) {  // Add this Jacobian to the output of this
-            //                           // function
-            //     ansJacobian.block(0, wrtToStartNode, 1, wrtToLength) +=
-            //         chainRuleJacobians[i].block(0, wrtFromStartNode, 1,
-            //                                     wrtFromLength);
-            //   }
-            // }
           }
           thisArgIndex += lineWrtSizeIJ;
+          if (hessianFlag) {
+            for (int j2 = 0; j2 < j; j2++) { 
+              int lineWrtSizeIJ2 = nodes.lineWrtArgSizeInfo[i][j2];
+
+            }
+          }
           //                             auto t3 =
           //                             std::chrono::high_resolution_clock::now();
 
@@ -492,6 +462,43 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
           // chrono::duration_cast<chrono::microseconds>(t3b - t3).count();
 
 
+          /* below:
+          j over wrt
+          j2 over wrt[0]:wrt[j]
+          k over args
+          if thisWrtNodes and thisHessianNodes,
+          dim1 over length(wrt[j])
+          dim2 over length(wrt[j2])
+          addToHessian = thisJacobian[, thisArgIndex:(thisArgIndex + thisArgSize)]%*%parentHessians[k][nodes.wrtLineIndices[j][dim1]-1][nodes.wrtLineIndices[j2][dim2]-1]
+
+          !! Now note: parentHessians[k][nodes.wrtLineIndices[j][dim1]-1][nodes.wrtLineIndices[j2][dim2]-1] can be written as:
+              suppose l goes over the parents of arg k
+             chainRuleHessians[l]
+
+
+          // i over nodes
+          // j over args
+          //   kLength =  nodes.parentIndicesList[i][j].dimSize(0);
+          //   for (int k = 0; k < kLength; k++) {
+          //     lLength = chainRuleHessians[nodes.parentIndicesList[i][j][k]][0]
+          //                  .rows();
+          //     for (int l = 0;
+          //          l < lLength;
+          //          l++) {
+          //            mLength = chainRuleHessians[nodes.parentIndicesList[i][j][k]][0]
+          //                    .cols();
+          //       for (int m = 0;
+          //            m < mLength;
+          //            m++) {
+          //         int indexTracker = 0; 
+          //         nLength = parentDims[k];
+          //         for (int n = 0; n < nLength; n++) {
+          //           parentHessians[j][l][m](indexTracker) = 
+          //               chainRuleHessians[nodes.parentIndicesList[i][j][k]][n](
+          //                   l, m);
+          //           indexTracker++;
+
+          */
           // if (hessianFlag) {
           //   j2Length = nodes.wrtLineNums.dimSize(0);
           //   for (int j2 = j; j2 < j2Length; j2++) {
@@ -565,6 +572,20 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
           //   }
           // }
         }
+        if (derivOutputFlag) {  // Add this Jacobian to the output of this
+          jLength = nodes.allNeededWRTCopyVars[i].dimSize(0);
+          for(int j = 0; j < jLength; j++){
+            wrtNodeJ = nodes.allNeededWRTCopyVars[i][j] - 1;
+            int wrtToStartNode = nodes.wrtToIndices[wrtNodeJ][0] - 1;
+            int wrtToLength = nodes.wrtToIndices[wrtNodeJ].dimSize(0);
+            int wrtFromStartNode = nodes.wrtFromIndices[wrtNodeJ][0] - 1;
+            int wrtFromLength = nodes.wrtFromIndices[wrtNodeJ].dimSize(0);
+            ansJacobian.row(0).segment(wrtToStartNode, wrtToLength) +=
+               chainRuleJacobians[i].row(0).segment(wrtFromStartNode,
+               wrtFromLength);
+          }
+        }
+
         auto t3b = std::chrono::high_resolution_clock::now();
         accumulateTimerLinearAlgebra +=
         chrono::duration_cast<chrono::microseconds>(t3b - t3).count();
@@ -622,10 +643,10 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 
   auto t1b = Clock::now();                                
   accumulateTimerWholeAlgo +=    chrono::duration_cast<chrono::microseconds>(t1b - t1).count();
-  cout << "accumulateTimerWholeAlgo: " << accumulateTimerWholeAlgo << "\n";
-  cout << "accumulateTimerCppadDerivs: " << accumulateTimerCppadDerivs << "\n";
-  cout << "accumulateTimerInsideCppADFunc: " << accumulateTimerInsideCppADFunc << "\n";
-  cout << "accumulateTimerLinearAlgebra: " << accumulateTimerLinearAlgebra << "\n";
+  // cout << "accumulateTimerWholeAlgo: " << accumulateTimerWholeAlgo << "\n";
+  // cout << "accumulateTimerCppadDerivs: " << accumulateTimerCppadDerivs << "\n";
+  // cout << "accumulateTimerInsideCppADFunc: " << accumulateTimerInsideCppADFunc << "\n";
+  // cout << "accumulateTimerLinearAlgebra: " << accumulateTimerLinearAlgebra << "\n";
 
 
   return (ansList);

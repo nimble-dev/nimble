@@ -76,7 +76,8 @@ public:
 	vector<NimArr<1, int> > wrtToIndices;
 	vector<NimArr<1, int> > wrtFromIndices;
 	vector<NimArr<1, int> > wrtLineIndices;
-	vector<NimArr<1, int> > lineWrtArgSizeInfo;
+  vector<NimArr<1, int> > lineWrtArgSizeInfo;
+  vector<NimArr<1, int> > allNeededWRTCopyVars;
 	int totalOutWrtSize;
 	int totalWrtSize;
   NimArr<1, int> cumulativeWrtLineNums;
@@ -99,6 +100,7 @@ public:
 		SEXP S_lineWrtArgSizeInfo;
     SEXP S_nodeLengths;
     SEXP S_topLevelWrtDeps;
+    SEXP S_allNeededWRTCopyVars;
 		int numNodes;
     int numNodesI;
 		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
@@ -153,8 +155,11 @@ public:
 		PROTECT(S_lineWrtArgSizeInfo = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("lineWrtArgSizeInfo")));
 		SEXP_list_2_NimArr_int_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
-		
-		UNPROTECT(23 + 2*numNodes + sumNodesI);
+		PROTECT(S_allNeededWRTCopyVars = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("allNeededWRTCopyVars")));
+		SEXP_list_2_NimArr_int_vec(S_allNeededWRTCopyVars, allNeededWRTCopyVars);
+
+		UNPROTECT(25 + 2*numNodes + sumNodesI);
 		
 		totalOutWrtSize = 0;
 		for(int i = 0; i < length(wrtToIndices); i++){

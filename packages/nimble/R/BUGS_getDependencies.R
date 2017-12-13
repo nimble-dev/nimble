@@ -88,7 +88,8 @@ nimDerivsInfoClass <- setRefClass(
       model =  'ANY',
       declIDs = 'ANY',
       rowIndices = 'ANY',
-      topLevelWrtDeps = 'ANY'
+      topLevelWrtDeps = 'ANY',
+      allNeededWRTCopyVars = 'ANY'
     ),
     methods = list(
       initialize = function(wrtNodes = NA, calcNodes = NA, thisModel = NA, cInfo = FALSE, ...){
@@ -156,6 +157,7 @@ nimDerivsInfoClass <- setRefClass(
         calcNodeIndicators <<- numeric(length(allWrtAndCalcNodeNames))
         nodeLengths <<- numeric(length(allWrtAndCalcNodeNames))
         topLevelWrtDeps <<- depIndex_2_parentDepIndices
+        allNeededWRTCopyVars <<- list()
         for(i in seq_along(topLevelWrtDeps))
           for(j in seq_along(topLevelWrtDeps[[i]]))
               topLevelWrtDeps[[i]][[j]] <<- list(0)
@@ -265,6 +267,7 @@ nimDerivsInfoClass <- setRefClass(
               }
             }
           }
+          allNeededWRTCopyVars[[i]] <<- setdiff(unique(unlist(topLevelWrtDeps[[i]])), 0)
         }
         
 
