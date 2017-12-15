@@ -62,6 +62,15 @@ install.packages("nimble", type = "source", repos = "http://r-nimble.org")
 
 ## Citation
 
+In published work that uses or mentions NIMBLE, please cite:
+
+de Valpine, P., D. Turek, C.J. Paciorek, C. Anderson-Bergman,
+D. Temple Lang, and R. Bodik. 2017. Programming with models: writing
+statistical algorithms for general model structures with
+NIMBLE. Journal of Computational and Graphical Statistics 26:403-413. [https://doi.org/10.1080/10618600.2016.1172487.](https://doi.org/10.1080/10618600.2016.1172487)
+
+To cite a version of the package, please cite:
+
 NIMBLE Development Team. 2017.
 NIMBLE: An R Package for Programming with BUGS models, Version 0.6-6.
 https://r-nimble.org,
