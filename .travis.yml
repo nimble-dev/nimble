@@ -47,7 +47,7 @@ addons:
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mkdir $HOME/bin; ln -s $(which pip2) $HOME/bin/pip; fi
-  - pip install --upgrade --ignore-installed --user travis pip setuptools wheel virtualenv
+  - pip install --upgrade --force-reinstall --user travis pip setuptools wheel virtualenv
   - ./install_requirements.R
   - pip freeze
   - R CMD build packages/nimble
