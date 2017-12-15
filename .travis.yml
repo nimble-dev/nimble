@@ -11,6 +11,8 @@ cache:
 # We parallelize the tests into baches, and run only one batch on OS X.
 matrix:
   include:
+    - os: osx
+      env: NIMBLE_TEST_BATCH=1 NIMBLE_USE_TENSORFLOW=0
     - os: linux
       env: NIMBLE_TEST_BATCH=1
     - os: linux
@@ -21,8 +23,6 @@ matrix:
       env: NIMBLE_TEST_BATCH=4
     - os: linux
       env: NIMBLE_TEST_BATCH=5
-    - os: osx
-      env: NIMBLE_TEST_BATCH=1 NIMBLE_USE_TENSORFLOW=0
 
 warnings_are_errors: true
 
@@ -46,16 +46,16 @@ addons:
       - python-virtualenv  # For tensorflow::install_tensorflow().
 
 install:
-  - pip2.7 install --upgrade --ignore-installed --user travis pip2 setuptools wheel virtualenv
+  - pip2.7 install --upgrade --ignore-installed --user travis pip setuptools wheel virtualenv
   - ./install_requirements.R
-  - pip2 freeze
+  - pip2.7 freeze
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
 script:
   - source /home/travis/.virtualenvs/r-tensorflow/bin/activate \
     || echo 'Missing tensorflow'
-  - pip2 freeze
+  - pip2.7 freeze
   - ./run_tests.R
 
 after_success:
