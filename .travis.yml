@@ -49,14 +49,14 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mkdir $HOME/bin; ln -s $(which pip2) $HOME/bin/pip; fi
   - pip install --upgrade --force-reinstall --user travis pip setuptools wheel virtualenv
   - ./install_requirements.R
-  - pip freeze
+  # - pip freeze
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
 script:
   - source /home/travis/.virtualenvs/r-tensorflow/bin/activate \
     || echo 'Missing tensorflow'
-  - pip freeze
+  # - pip freeze
   - ./run_tests.R
 
 after_success:
