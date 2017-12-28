@@ -553,35 +553,35 @@ BUGSdeclClass$methods(
                 if(truncated) {  # check for user-provided constant bounds inconsistent with distribution range
                     distName <- as.character(RHSreplaced[[1]])
                     distRange <- getDistributionInfo(distName)$range
-                    if(is.numeric(boundExprs$lower) &&
+                    if(is.numeric(boundExprs$lower_) &&
                        is.numeric(distRange$lower) &&
-                       is.numeric(boundExprs$upper) &&
+                       is.numeric(boundExprs$upper_) &&
                        is.numeric(distRange$upper) &&
-                       boundExprs$lower <= distRange$lower &&
-                       boundExprs$upper >= distRange$upper)  # user specified bounds irrelevant
+                       boundExprs$lower_ <= distRange$lower &&
+                       boundExprs$upper_ >= distRange$upper)  # user specified bounds irrelevant
                         truncated <<- FALSE
                     
-                    if(is.numeric(boundExprs$lower) &&
-                       is.numeric(boundExprs$upper) &&
-                       boundExprs$lower >= boundExprs$upper)
+                    if(is.numeric(boundExprs$lower_) &&
+                       is.numeric(boundExprs$upper_) &&
+                       boundExprs$lower_ >= boundExprs$upper_)
                         warning(paste0("Lower bound is greater than or equal to upper bound in ",
                                        deparse(codeReplaced),
                                        "; proceeding anyway, but this is likely to cause numerical issues."))
-                    if(is.numeric(boundExprs$lower) &&
+                    if(is.numeric(boundExprs$lower_) &&
                        is.numeric(distRange$lower) &&
-                       boundExprs$lower < distRange$lower) {
+                       boundExprs$lower_ < distRange$lower) {
                         warning(paste0("Lower bound is less than or equal to distribution lower bound in ",
                                        deparse(codeReplaced), "; ignoring user-provided lower bound."))
-                        boundExprs$lower <<- distRange$lower
+                        boundExprs$lower_ <<- distRange$lower
                         codeReplaced[[3]]['lower_'] <<- distRange$lower
                     }
-                    if(is.numeric(boundExprs$upper) &&
+                    if(is.numeric(boundExprs$upper_) &&
                        is.numeric(distRange$upper) &&
-                       boundExprs$upper > distRange$upper) {
+                       boundExprs$upper_ > distRange$upper) {
                         warning(paste0("Upper bound is greater than or equal to distribution upper bound in ",
                                        deparse(codeReplaced),
                                        "; ignoring user-provided upper bound."))
-                        boundExprs$upper <<- distRange$upper
+                        boundExprs$upper_ <<- distRange$upper
                         codeReplaced[[3]]['upper_'] <<- distRange$upper
                     }
                 }
