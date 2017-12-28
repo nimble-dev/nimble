@@ -351,14 +351,14 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList) {
     for(i in seq_along(initsList)) {
         initName <- names(initsList)[i]
         initDim <- nimbleInternalFunctions$dimOrLength(initsList[[i]], scalarize = FALSE)  # don't scalarize as want to preserve dims as provided by user, e.g. for 1x1 matrices
-        if(length(initDim) == 1 && initDim == 1)
-            initDim <- numeric(0)  # but for 1-length vectors treat as scalars as that is how handled in system
-        if(initName %in% names(dL)) {
-            if(!identical(as.numeric(dL[[initName]]), as.numeric(initDim))) {
-                warning('inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
+        if(!(length(initDim) == 1 && initDim == 1)) {  # i.e., non-scalar inits; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
+            if(initName %in% names(dL)) {
+                if(!identical(as.numeric(dL[[initName]]), as.numeric(initDim))) {
+                    warning('inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
+                }
+            } else {
+                dL[[initName]] <- initDim
             }
-        } else {
-            dL[[initName]] <- initDim
         }
     }
 
