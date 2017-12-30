@@ -283,7 +283,7 @@ test_that("Testing initialization of uninitialized dynamic indexes", {
     Rmcmc <- buildMCMC(model1)
     Cmodel <- compileNimble(model1)
     Cmcmc <- compileNimble(Rmcmc, project = model1)
-    expect_silent(Cmcmc$run(100))
+    expect_equal(Cmcmc$run(100), NULL)
 })
     
 ## MCMC testing

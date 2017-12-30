@@ -93,7 +93,8 @@ testsScalar <- list(
          expr = quote({y[1:2] ~ dnorm(mu1[1:2, 1:2]%*%mu2[1:2], sd = sig)}), 
          inits = list(mu1 = mat2, mu2 = vec2, sig = 1) ),
 
-    list(name = 'scalar stochastic, scalar within multivar variable', expectPass = FALSE,
+    list(name = 'scalar stochastic, scalar within multivar variable', expectPass = TRUE,
+    	 expectPassWithConst = FALSE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
@@ -162,7 +163,8 @@ testsDeterm <- list(
          expr = quote({y <- a + b}),
          inits = list(a = 3, b = 3 )),
     
-    list(name = 'deterministic, basic with node in variable, incorrect init size', expectPass = FALSE, 
+    list(name = 'deterministic, basic with node in variable, incorrect init size', expectPass = TRUE,
+    	 expectPassWithConst = FALSE, 
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] <- a[i,j] + b}),

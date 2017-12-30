@@ -94,5 +94,16 @@ test_that("set one to current values and one to new value by two arguments", {
     expect_equal(all(model$isData('b')), FALSE)
 })
 
+model <- nimbleModel(
+    nimbleCode({
+        for(i in 1:1)
+            a[i] ~ dnorm(0,1)
+    }))
+
+test_that("set 1-length data vector", {
+    expect_silent(model$setData(a = 3))
+    expect_equal(model$isData('a'), TRUE)
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

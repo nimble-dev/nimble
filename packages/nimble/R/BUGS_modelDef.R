@@ -327,6 +327,8 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList) {
     
     # first, add the provided dimensions
     dL <- dimensions
+    if(is.null(dL))
+        dL <- list()
     
     # add dimensions of any *non-scalar* constants to dimensionsList
     # we'll try to be smart about this: check for duplicate names in constants and dimensions, and make sure they agree
