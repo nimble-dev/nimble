@@ -1226,7 +1226,7 @@ testCompiledModelDerivsNimFxn <- nimbleFunction(
 ##   tolerance:     A numeric argument, the tolerance to use when comparing wrapperDerivs to chainRuleDerivs.
 ##   verbose:       A logical argument.  Currently serves no purpose.
 test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
-                                  testR = TRUE, testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
+                                  testR = FALSE, testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
   temporarilyAssignInGlobalEnv(model)  
 
   if(testCompiled){

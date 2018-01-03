@@ -267,7 +267,7 @@ nimDerivsInfoClass <- setRefClass(
               }
             }
           }
-          allNeededWRTCopyVars[[i]] <<- setdiff(unique(unlist(topLevelWrtDeps[[i]])), 0)
+          allNeededWRTCopyVars[[i]] <<- sort(setdiff(unique(unlist(topLevelWrtDeps[[i]])), 0))
         }
         
 
