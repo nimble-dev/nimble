@@ -269,11 +269,6 @@ nimDerivsInfoClass <- setRefClass(
           }
           allNeededWRTCopyVars[[i]] <<- sort(setdiff(unique(unlist(topLevelWrtDeps[[i]])), 0))
         }
-        
-
-
-        
-        
           
 
         ## Next lets get line wrt info.  Do both as characters (for R) and as indices (for C++)! with a flag to control which is returned.
