@@ -322,6 +322,14 @@ nimDerivsInfoClass <- setRefClass(
                   argCounter <- argCounter + 1
                 }
               }
+              functionArgsDimsList <- lapply(functionArgsDimsList, function(x){
+                if(deparse(x) == ""){
+                  return(parse(text = "double(0, 1)")[[1]])
+                }
+                else{
+                  return(x)
+                }
+              })
               cppWrtArgIndices[[i]] <<- convertWrtArgToIndices(lineWrtArgsAsCharacters[[i]], functionArgsDimsList, fxnName = 'calculate')
             }
           }

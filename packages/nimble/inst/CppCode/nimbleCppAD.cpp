@@ -389,7 +389,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                               //  (nodes.cppWrtArgIndices[i][0]
                                               //  > -1
         thisArgIndex = 0;
-        cout << "i: " << i << "\n";
         for (int j = 0; j < jLength; j++) {
           lineWrtSizeIJ = nodes.lineWrtArgSizeInfo[i][j];
           if ((j == 0) & isWrtLine) {
@@ -619,10 +618,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                     }
                                   }
                                 }
-                                cout << "j: " << j << "\n";
-                                cout << "j2: " << j2 << "\n";
-                                cout << "transpose: " << transposeMatrices << "\n";
-
                                 for (int dim3 = 0; dim3 < dim3Length; dim3++) {
                                   if (nodes.parentIndicesList
                                           [nodes.parentIndicesList[i][j][k]][0]
@@ -636,8 +631,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                         -1 * (wrtNodeK2 +
                                               2)) {  // parent is wrt node, mult
                                                      // by identity
-                                             cout << "a \n";
-
                                       if(transposeMatrices){
                                         chainRuleHessians[i][dim3].block(
                                           wrtStartNode2, wrtStartNode,
@@ -657,7 +650,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                               nodes.lineWrtArgSizeInfo[i][j2]);
                                       }
                                     } else {
-                                        cout << "b \n";
                                       if(transposeMatrices){
                                       chainRuleHessians[i][dim3].block(
                                           wrtStartNode2, wrtStartNode,
@@ -705,8 +697,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                                                          [k2]]
                                                  [0][0] ==
                                              -1 * (wrtNodeK2 + 2)) {
-                                                                                 cout << "c \n";
-
                                    if(transposeMatrices){
                                     chainRuleHessians[i][dim3].block(
                                         wrtStartNode2, wrtStartNode, wrtLength2,
@@ -745,8 +735,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                             nodes.lineWrtArgSizeInfo[i][j2]);
                                           }
                                   } else {
-                                                                                 cout << "d \n";
-
                                     if(transposeMatrices){
                                     chainRuleHessians[i][dim3].block(
                                         wrtStartNode2, wrtStartNode, wrtLength2,

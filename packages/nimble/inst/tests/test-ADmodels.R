@@ -122,6 +122,15 @@ test_ADModelCalculate(Rmodel, name = 'SSM', calcNodeNames = list(Rmodel$getDepen
 })
 
 
+test_that("Derivs of calculate function work for rats model", {
+  Rmodel <- readBUGSmodel('rats', dir = getBUGSexampleDir('rats'))
+  test_ADModelCalculate(Rmodel, name = 'rats', calcNodeNames = list(Rmodel$getNodeNames(),
+                                                                    Rmodel$getDependencies('mu[1, 2]'),
+                                                                    Rmodel$getDependencies('alpha'),
+                                                                    Rmodel$getDependencies('beta')),
+                        wrt = list(c('alpha[1]', 'beta[1]'), c('mu[1,1]')), tolerance = .5, testR = FALSE)
+})
+
 ## Ragged arrays not supported for derivs yet.
 # dir = nimble:::getBUGSexampleDir('bones')
 # Rmodel <- readBUGSmodel('bones', data = NULL, inits = NULL, dir = dir, useInits = TRUE,
