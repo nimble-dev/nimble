@@ -166,7 +166,13 @@ nimDerivsInfoClass <- setRefClass(
         for(i in seq_along(depIDs)) {
           nodeLengths[i] <<- length(values(model, allWrtAndCalcNodeNames[i]))
           thisNode <- depIDs[i]
-          if(thisNode %in% wrtNodes) {
+          if(thisNode %in% calcNodes){
+            calcNodeIndicators[i] <<- 1
+          }
+          else{
+            calcNodeIndicators[i] <<- 0
+          }
+          if(thisNode %in% wrtNodes && (stochNodeIndicators[i] || (!calcNodeIndicators[i]))) {
             depIndex_2_parentDepIndices[[i]][[1]] <- -which(wrtNodes == thisNode) ## e.g. set -2 for 2nd wrt node
             topLevelWrtDeps[[i]][[1]][[1]] <<- which(wrtNodes == thisNode)
             wrtNodeIndicators[i] <<- 1
@@ -174,12 +180,6 @@ nimDerivsInfoClass <- setRefClass(
           else{
             depIndex_2_parentDepIndices[[i]][[1]] <- 0
             # topLevelWrtDeps[[i]][[1]] <<- 0
-          }
-          if(thisNode %in% calcNodes){
-            calcNodeIndicators[i] <<- 1
-          }
-          else{
-            calcNodeIndicators[i] <<- 0
           }
         }
         
@@ -245,7 +245,7 @@ nimDerivsInfoClass <- setRefClass(
                   depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]] <- c(depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]], i)
                 }
               }
-              if(wrtNodeIndicators[i]){
+              if(wrtNodeIndicators[i] && stochNodeIndicators[i]){
                 if(length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 && (topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]][1] == 0)){
                   topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]] <<- which(i == wrtLineNums)
                 }
