@@ -2,6 +2,7 @@
 
 #cp inst/CppCode/*.cpp src
 cp inst/CppCode/dists.cpp src
+cp inst/CppCode/gig.cpp src
 cp inst/CppCode/RcppUtils.cpp src
 cp inst/CppCode/nimbleGraph.cpp src
 cp inst/CppCode/eigenUsingClasses.cpp src

@@ -822,6 +822,16 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
     .Call(C_rsqrtinvgamma, as.integer(n), as.double(shape), as.double(rate))
 }
 
+#' @export
+dgig <- function(x, lambda, chi, psi, log = FALSE) {
+    .Call(C_dgig, as.double(x), as.double(lambda), as.double(chi), as.double(psi), as.logical(log))
+}
+
+#' @export
+rgig <- function(n = 1, lambda, chi, psi) {
+    .Call(C_rgig, as.integer(n), as.double(lambda), as.double(chi), as.double(psi))
+}
+
 
 #' The CAR-Normal Distribution
 #'

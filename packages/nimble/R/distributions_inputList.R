@@ -41,6 +41,8 @@ distributionsInputList <- list(
                        range = c(0, 1),
                        discrete = TRUE),
 
+    dgig = list(BUGSdist = 'dgig(lambda, chi, psi)'),
+
     ## construct used to enforce censoring.
     ## takes values 0,1,...,len(c), depending on which interval t falls into
     dinterval     = list(BUGSdist = 'dinterval(t, c)',

@@ -11,3 +11,4 @@ Makevars
 NFxnUtils.cpp
 Values.cpp
 eigenUsingClasses.cpp
+gig.cpp
