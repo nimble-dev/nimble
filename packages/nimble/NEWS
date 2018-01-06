@@ -1,4 +1,10 @@
-                           CHANGES IN VERSION 0.6-8 and 0.6-7 (November 2017)
+                CHANGES IN VERSION 0.6-9
+
+USER LEVEL CHANGES
+
+-- Addition of dgig distribution, the generalized inverse Gaussian distribution, at the suggestion of and with input from Darren Wraith.
+
+                CHANGES IN VERSION 0.6-8 and 0.6-7 (November 2017)
 
 Note: versions 0.6-8 and 0.6-7 are the same except for a non-user-facing change to the withNimbleOptions function example to pass CRAN checks.
 
