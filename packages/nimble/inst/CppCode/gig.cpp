@@ -2,6 +2,8 @@
 
 #include "nimble/dists.h"
 
+#define ZTOL (DBL_EPSILON*10.0)
+
 /*---------------------------------------------------------------------------*/
 /* Prototypes of private functions                                           */
 /*---------------------------------------------------------------------------*/
@@ -9,13 +11,13 @@
 static double _gig_mode(double lambda, double omega);
 
 /* Type 1 */
-static void _rgig_ROU_noshift (double *res, int n, double lambda, double lambda_old, double omega, double alpha);
+static double _rgig_ROU_noshift (double lambda, double lambda_old, double omega, double alpha);
 
 /* Type 4 */
-static void _rgig_newapproach1 (double *res, int n, double lambda, double lambda_old, double omega, double alpha);
+static double _rgig_newapproach1 (double lambda, double lambda_old, double omega, double alpha);
 
 /* Type 8 */
-static void _rgig_ROU_shift_alt (double *res, int n, double lambda, double lambda_old,  double omega, double alpha);
+static double _rgig_ROU_shift_alt (double lambda, double lambda_old,  double omega, double alpha);
 
 static double _unur_bessel_k_nuasympt (double x, double nu, int islog, int expon_scaled);
 
@@ -42,7 +44,7 @@ double dgig(double x, double lambda, double chi, double psi, int give_log)
       /* Inf */
       err = TRUE;
       res_err = R_NaN;
-      warning("NaNs produced");
+      PRINTF("Warning in dgig: NaNs produced.");
     }
   } 
   else {
@@ -52,13 +54,13 @@ double dgig(double x, double lambda, double chi, double psi, int give_log)
 	 (psi == 0. && lambda >= 0.) ) {
       err = TRUE;
       res_err = R_NaN;
-      warning("NaNs produced");
+      PRINTF("Warning in dgig: NaNs produced.");
     }
   }
 
   /* invalid arguments */
   if (err) {
-    warning("invalid parameters for GIG distribution: lambda=%g, chi=%g, psi=%g",
+    PRINTF("Warning in dgig: invalid parameters for GIG distribution: lambda=%g, chi=%g, psi=%g.",
 	    lambda, chi, psi);
     res = ISNA(x) ? NA_REAL : res_err;
     return res;
@@ -96,7 +98,7 @@ double dgig(double x, double lambda, double chi, double psi, int give_log)
     res =  (give_log) ? R_NegInf : 0.;
   }
   else {
-    res = LOGNORMCONSTANT + ((lambda-1.)*log(x[i]) - 0.5*(chi/x+psi*x));
+    res = LOGNORMCONSTANT + ((lambda-1.)*log(x) - 0.5*(chi/x+psi*x));
     if (!give_log) res = exp(res);
   }
 
@@ -116,8 +118,7 @@ double rgig(double lambda, double chi, double psi)
        (chi <  0. || psi < 0)      || 
        (chi == 0. && lambda <= 0.) ||
        (psi == 0. && lambda >= 0.) ) {
-    error("invalid parameters for GIG distribution: lambda=%g, chi=%g, psi=%g",
-	  lambda, chi, psi);
+    ML_ERR_return_NAN;
   }
 
   if (chi < ZTOL) { 
@@ -168,7 +169,7 @@ double rgig(double lambda, double chi, double psi)
       }
       
       /* else */
-      error("parameters must satisfy lambda>=0 and omega>0.");
+      ML_ERR_return_NAN;
       
     } while (0);
   }
@@ -221,7 +222,7 @@ SEXP C_dgig(SEXP x, SEXP lambda, SEXP chi, SEXP psi, SEXP return_log) {
   return ans;
 }
   
-SEXP C_rgig(SEXP n, SEXP lambda, SEXP chi, SEXP chi2) {
+SEXP C_rgig(SEXP n, SEXP lambda, SEXP chi, SEXP psi) {
   if(!Rf_isInteger(n) || !Rf_isReal(lambda) || !Rf_isReal(chi) || !Rf_isReal(psi))
     RBREAK("Error (C_rgig): invalid input type for one of the arguments.");
   int n_lambda = LENGTH(lambda);
@@ -254,7 +255,7 @@ SEXP C_rgig(SEXP n, SEXP lambda, SEXP chi, SEXP chi2) {
     int i_chi = 0;
     int i_psi = 0;
     for(int i = 0; i < n_values; i++) {
-      REAL(ans)[i] = rgig(c_lambda[i_lambda++], c_chi[i_chi++], c_psi[i_psi++);
+      REAL(ans)[i] = rgig(c_lambda[i_lambda++], c_chi[i_chi++], c_psi[i_psi++]);
       // implement recycling:
       if(i_lambda == n_lambda) i_lambda = 0;
       if(i_chi == n_chi) i_chi = 0;
@@ -306,7 +307,7 @@ double _rgig_ROU_noshift (double lambda, double lambda_old, double omega, double
   double ym, um;     /* location of maximum of x*sqrt(f(x)); umax of MBR */
   double s, t;       /* auxiliary variables */
   double U, V, X;    /* random variables */
-
+  
   /* -- Setup -------------------------------------------------------------- */
 
   /* shortcuts */
@@ -341,11 +342,8 @@ double _rgig_ROU_noshift (double lambda, double lambda_old, double omega, double
   while (((log(V)) > (t*log(X) - s*(X + 1./X) - nc)));
   
   /* store random point */
-  res = (lambda_old < 0.) ? (alpha / X) : (alpha * X);
+  return (lambda_old < 0.) ? (alpha / X) : (alpha * X);
 
-  /* -- End ---------------------------------------------------------------- */
-  
-  return res;
 } /* end of _rgig_ROU_noshift() */
 
 
@@ -380,10 +378,11 @@ double _rgig_newapproach1 (double lambda, double lambda_old, double omega, doubl
   double U, V, X;     /* random numbers */
   double hx;          /* hat at X */
 
+  double res;
   /* -- Check arguments ---------------------------------------------------- */
 
   if (lambda >= 1. || omega >1.)
-    error ("invalid parameters");
+    ML_ERR_return_NAN;
 
   /* -- Setup -------------------------------------------------------------- */
 
@@ -546,12 +545,8 @@ _rgig_ROU_shift_alt (double lambda, double lambda_old, double omega, double alph
   while ((X <= 0.) || ((log(V)) > (t*log(X) - s*(X + 1./X) - nc)));
   
   /* store random point */
-  res = (lambda_old < 0.) ? (alpha / X) : (alpha * X);
+  return (lambda_old < 0.) ? (alpha / X) : (alpha * X);
   
-
-  /* -- End ---------------------------------------------------------------- */
-
-  return res;
 } /* end of _rgig_ROU_shift_alt() */
 
 /*---------------------------------------------------------------------------*/
