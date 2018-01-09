@@ -64,9 +64,9 @@ ENABLE_DEBUGGING=no)
 
 if test "${ENABLE_DEBUGGING}" = "yes"; then
    echo "enabling R's default debugging information in libnimble"
-   GNUMAKEFILE_INCLUDE_MAKECONF="include \$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="\$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
 else
-   GNUMAKEFILE_INCLUDE_MAKECONF="include ./Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="./Makeconf"
 fi
 AC_SUBST(GNUMAKEFILE_INCLUDE_MAKECONF)
 
@@ -212,7 +212,7 @@ AC_SUBST(PKG_LIBS)
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 AC_SUBST(USE_REGISTRATION)
 
-AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars inst/CppCode/GNUmakefile)
+AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars)
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then
   echo "removing debugging flags"
@@ -221,7 +221,7 @@ fi
 
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
-(cd inst/CppCode ; ${MAKE} )
+(cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile)
 
 else
   echo "Building libnimble.a"
@@ -230,7 +230,7 @@ else
   cp inst/CppCode/nimbleGraph.cpp src
   cp inst/CppCode/eigenUsingClasses.cpp src
 
-  (cd inst/CppCode ; ${MAKE} libnimble.a)
+  (cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile libnimble.a)
 fi
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then
