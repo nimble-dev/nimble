@@ -68,7 +68,8 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 public:
   vector<vector<NimArr<1, int> > > parentIndicesList;
   vector<vector<vector<NimArr<1, int> > > > topLevelWrtDeps;
-	NimArr<1, int> stochNodeIndicators;
+  NimArr<1, int> stochNodeIndicators;
+  NimArr<1, int> isAddedScalarNode;
 	NimArr<1, int> calcNodeIndicators;
 	vector<NimArr<1, double> > cppWrtArgIndices;
 	NimArr<1, int> wrtLineNums;
@@ -78,6 +79,7 @@ public:
 	vector<NimArr<1, int> > wrtLineIndices;
   vector<NimArr<1, int> > lineWrtArgSizeInfo;
   vector<NimArr<1, int> > allNeededWRTCopyVars;
+  vector<NimArr<2, double> > thisAddedNodeJacobianList;
 	int totalOutWrtSize;
 	int totalWrtSize;
   NimArr<1, int> cumulativeWrtLineNums;
@@ -101,6 +103,8 @@ public:
     SEXP S_nodeLengths;
     SEXP S_topLevelWrtDeps;
     SEXP S_allNeededWRTCopyVars;
+    SEXP S_isAddedScalarNode;
+    SEXP S_thisAddedNodeJacobianList;
 		int numNodes;
     int numNodesI;
 		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
@@ -113,6 +117,11 @@ public:
 			PROTECT(S_thisList =  VECTOR_ELT(S_parentInds, i));
 			SEXP_list_2_NimArr_int_vec(S_thisList, parentIndicesList[i]);
     }
+
+    PROTECT(S_thisAddedNodeJacobianList = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+                        Rf_install("thisAddedNodeJacobianList")));
+    SEXP_list_2_NimArr_double_vec(S_thisAddedNodeJacobianList, thisAddedNodeJacobianList);
+
     PROTECT(S_topLevelWrtDeps = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												Rf_install("topLevelWrtDeps")));
     topLevelWrtDeps.resize(numNodes);
@@ -128,6 +137,9 @@ public:
       }
     }
 
+    PROTECT(S_isAddedScalarNode = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+														  Rf_install("isAddedScalarNode")));
+		SEXP_2_NimArr(S_isAddedScalarNode, isAddedScalarNode);
 		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 														  Rf_install("stochNodeIndicators")));
 		SEXP_2_NimArr(S_stochNodeIndicators, stochNodeIndicators);
@@ -159,7 +171,7 @@ public:
 												         Rf_install("allNeededWRTCopyVars")));
 		SEXP_list_2_NimArr_int_vec(S_allNeededWRTCopyVars, allNeededWRTCopyVars);
 
-		UNPROTECT(25 + 2*numNodes + sumNodesI);
+		UNPROTECT(29 + 2*numNodes + sumNodesI);
 		
 		totalOutWrtSize = 0;
 		for(int i = 0; i < length(wrtToIndices); i++){

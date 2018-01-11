@@ -85,7 +85,6 @@ test_that('Derivs of calculate function work for model equiv', {
                                                      Rmodel$getDependencies('d[1]')),
                         wrt = list(c('tau'), c('sigma'), c('d'), c('d[2]')), tolerance = .5)
 })
-  
 
 test_that("Derivs of calculate function work for Daniel's SSM", {
 ssmCode <- nimbleCode({

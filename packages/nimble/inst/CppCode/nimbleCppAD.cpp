@@ -168,7 +168,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   //                                        dims
   //                                        // of the Hessian.
   iLength = nodes.parentIndicesList.size();
+  int sumAddedScalarNodes = 0;
   for (int i = 0; i < iLength; i++) {
+      cout << "i: " << i << "\n";
     isDeterminisitic =
         1 - nodes.stochNodeIndicators[i];  // Is node i deterministic?
     isWrtLine = (nodes.cumulativeWrtLineNums[i] >= 0);  // Is node i a wrt node
@@ -178,6 +180,13 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
     isCalcNodeLine = nodes.calcNodeIndicators[i];  // Is node i a node included
                                                    // in the call to
                                                    // calculate(nodes) ?
+
+    bool isAddedScalarNode = nodes.isAddedScalarNode[i];  
+          cout << "isAddedScalarNode: " << isAddedScalarNode << "\n";
+    if(isAddedScalarNode){
+      sumAddedScalarNodes++;
+    }
+
     thisWrtLine = nodes.cumulativeWrtLineNums[i];  // If node i is a wrt node,
                                                    // which wrt node is it (i.e.
                                                    // where does it fall in the
@@ -185,149 +194,28 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                                    // wrt nodes) ?
     thisNodeSize = nodes.nodeLengths[i];  // Total size (= product of lengths of
                                           // dimensions) of this node
-    if (isCalcNodeLine) {
-      // If this node was included in the call to calculate(nodes), we first
-      // populate its parent derivative information.
-      // parentsIsize =  nodes.parentIndicesList[i].size();
-      // vector<int> thisWrtNodes(
-      //     parentsIsize);  // for each parent node,  do we
-      //                                           // need to take derivatives
-      //                                           wrt
-      //                                           // that node?
-      // vector<int> thisHessianNodes(
-      //     parentsIsize);  // for each parent node,  do we
-      //                                           // need to calculate hessians
-      //                                           // wrt that node?
-      //                                                   auto t2 =
-      //                                                   std::chrono::high_resolution_clock::now();
-
-      // parentJacobians.resize(parentsIsize);
-      // if (hessianFlag) {
-      //   parentHessians.resize(parentsIsize);
-      // }
-      // jLength =  parentsIsize;
-      // for (int j = 0; j < jLength;
-      //  j++) {  // Iterate over all arguments to calcWithArgs() for node i
-      // and populate parent deriv info.
-      // we can pre-calculate sumParentDims earlier.  Do this.
-      // if (j == 0 && isWrtLine) {  // This is the case where this node (node
-      // i)
-      //                           // was included in the wrt argument to
-      //                           // nimDerivs.  Note that for the purposes of
-      //                           // the chain rule, we set the parent 1st
-      //                           // derivatives of this node wrt itself (its
-      //                           // first argument) as a matrix with 1s on
-      //                           // the diagonal.
-      // thisWrtNodes[j] = 1;
-      // parentJacobians[j] = MatrixXd::Zero(nodes.wrtLineSize[thisWrtLine],
-      //                                     nodes.totalWrtSize);
-      // kLength =  nodes.wrtLineIndices[thisWrtLine].dimSize(0);
-      // for (int k = 0; k < kLength;
-      //      k++) {
-      //   thisIndex = nodes.wrtLineIndices[thisWrtLine][k] - 1;
-      //   parentJacobians[j](k, thisIndex) = 1;
-      // }
-      // } else if (nodes.parentIndicesList[i][j][0] >
-      //            -1) {  // This is the case where at least one of the parent
-      // nodes of the j'th argument to this node (node i)'s
-      // calculateWithArgs() function depends on a wrt node.
-      // We populate parentJacobians and parentHessians by
-      // retreiving the parent nodes' already calculated
-      // derivatives from the chainRuleJacobians and
-      // chainRuleHessians.  In  the case where the j'th
-      // argument depends on multiple nodes, we piece
-      // together the parentJacobians and parentHessians
-      // from multiple entires in chainRuleJacobians and
-      // chainRuleHessians.
-      // thisHessianNodes[j] = 1;
-      // thisWrtNodes[j] = 1;
-      // vector<int> parentDims(nodes.parentIndicesList[i][j].dimSize(0));
-      // int sumParentDims = 0;
-      // kLength =  nodes.parentIndicesList[i][j].dimSize(0);
-      // for (int k = 0; k < kLength; k++) {
-      //   parentDims[k] =
-      //       chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows();
-      //   sumParentDims +=  parentDims[k];
-      // }
-      // parentJacobians[j] =
-      //     MatrixXd::Zero(sumParentDims, nodes.totalWrtSize);
-      // int sumRowLengths = 0;
-      // for (int k = 0; k < kLength;
-      //      k++) {  // Populating Jacobians and Hessians for parents is
-      //              // somewhat complicated by the fact that
-      //              //  argument j can come from multiple different nodes.
-      //              //  I.e., in BUGS code: x[1] ~ dnorm(...) x[2] ~
-      //              //  dnorm(...) y[1:2] ~ dmnorm(x[1:2], ...)
-      //              // Here the second argument to y[1:2]'s calculateWithArgs
-      //              // function would be x[1:2], and the parent derivative
-      //              // information would have to come from both x[1] and
-      //              // x[2].
-      //              //  The derivative information from x[1] and x[2] are
-      //              //  combined into a single (matrix / array) to enable the
-      //              //  linear algebra necessary to calculate the (Jacobian /
-      //              //  Hessian).
-      //   thisRowLength =
-      //       chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows();
-      //   parentJacobians[j].block(sumRowLengths, 0, thisRowLength,
-      //                            nodes.totalWrtSize) =
-      //       chainRuleJacobians[nodes.parentIndicesList[i][j][k]].block(
-      //           0, 0, thisRowLength, nodes.totalWrtSize);
-      //   sumRowLengths = sumRowLengths + thisRowLength;
-      // }
-      // if (hessianFlag) {
-      //   parentHessians[j].resize(nodes.totalWrtSize);
-      //   kLength =  nodes.totalWrtSize;
-      //   for (int k = 0; k < kLength; k++) {
-      //     parentHessians[j][k].resize(nodes.totalWrtSize);
-      //     for (int l = 0; l < kLength; l++) {
-      //       parentHessians[j][k][l].resize(sumParentDims);
-      //     }
-      //   }
-      //   kLength =  nodes.parentIndicesList[i][j].dimSize(0);
-      //   for (int k = 0; k < kLength; k++) {
-      //     lLength = chainRuleHessians[nodes.parentIndicesList[i][j][k]][0]
-      //                  .rows();
-      //     for (int l = 0;
-      //          l < lLength;
-      //          l++) {
-      //            mLength =
-      //            chainRuleHessians[nodes.parentIndicesList[i][j][k]][0]
-      //                    .cols();
-      //       for (int m = 0;
-      //            m < mLength;
-      //            m++) {
-      //         int indexTracker = 0;
-      //         nLength = parentDims[k];
-      //         for (int n = 0; n < nLength; n++) {
-      //           parentHessians[j][l][m](indexTracker) =
-      //               chainRuleHessians[nodes.parentIndicesList[i][j][k]][n](
-      //                   l, m);
-      //           indexTracker++;
-      //         }
-      //       }
-      //     }
-      //   }
-      // }
-      // } else {  // Otherwise, the j'th argument has no parents that depend on
-      //           // wrt nodes.
-      //   thisWrtNodes[j] = 0;
-      // }
-      // }
-      //       auto t2b = std::chrono::high_resolution_clock::now();
-      // accumulateTimerCopyParents +=
-      // chrono::duration_cast<chrono::microseconds>(t2b - t2).count();
-
-      if (nodes.cppWrtArgIndices[i][0] >
-          -1) {  // -1 is used as an indicator that node i doesn't have any
+    if (isCalcNodeLine | isAddedScalarNode) {
+     
+      if ((nodes.cppWrtArgIndices[i][0] >
+          -1) | isAddedScalarNode) {  // -1 is used as an indicator that node i doesn't have any
                  // parents that depend on WRT arguments, so its derivs don't
                  // need too be taken.  Otherwise, we proceed with the chain
                  // rule.
                  // auto t2 = std::chrono::high_resolution_clock::now();
 
-        instructions[i].nodeFunPtr->calculateWithArgs_derivBlock(
-            instructions[i].operand, newDerivOrders, nodes.cppWrtArgIndices[i],
+        if(isAddedScalarNode){
+          thisDerivList->value[0] = 0;
+          thisDerivList->gradient = nodes.thisAddedNodeJacobianList[0];
+          if(hessianFlag){
+
+          }
+        }
+        else{
+        instructions[i - sumAddedScalarNodes].nodeFunPtr->calculateWithArgs_derivBlock(
+            instructions[i - sumAddedScalarNodes].operand, newDerivOrders, nodes.cppWrtArgIndices[i],
             thisDerivList);  // Derivatives of calculate() for
                              // node i are computed here.
+        }
         // auto t2b = std::chrono::high_resolution_clock::now();
         // accumulateTimerCppadDerivs +=
         // chrono::duration_cast<chrono::microseconds>(t2b - t2).count();
@@ -342,26 +230,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                                 // the derivative output from
                                                 // this node will be added to
                                                 // the ansList.
-        // if (derivOutputFlag) {  // If derivOutputFlag == true, these
-        // derivatives
-        //                         // will be taken of a function that returns a
-        //                         // scalar (a density calculation), so the
-        //                         // storage is sized appropriately.
-        //   thisRows = 1;
-        //   // if (hessianFlag) {
-        //     // Map<MatrixXd, Unaligned, EigStrDyn> iHessian(
-        //     //     (*thisDerivList).hessian.getPtr(),
-        //     //     (*thisDerivList).hessian.dim()[0],
-        //     //     (*thisDerivList).hessian.dim()[1],
-        //     //     EigStrDyn((*thisDerivList).hessian.strides()[1],
-        //     //               (*thisDerivList).hessian.strides()[0]));
-        //     // thisHessian.push_back(iHessian);
-        //     // chainRuleHessians[i][0] =
-        //     //     MatrixXd::Zero(nodes.totalWrtSize, nodes.totalWrtSize);
-        //   // }
-        // } else {  // If derivOutputFlag == false, these derivatives will be
-        // taken of a deterministic function that returns an object of
-        // thisNodeSize, so the storage is sized appropriately.
         if (hessianFlag) {
           chainRuleHessians[i].resize(thisNodeSize);
           for (int j = 0; j < thisNodeSize; j++) {
@@ -389,6 +257,10 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                               //  (nodes.cppWrtArgIndices[i][0]
                                               //  > -1
         thisArgIndex = 0;
+        cout << i << "\n";
+        if(i >= 4){
+          cout << "thisJac: " << (*thisDerivList).gradient(0,0)  << (*thisDerivList).gradient(0,1) << "\n";
+        }
         for (int j = 0; j < jLength; j++) {
           lineWrtSizeIJ = nodes.lineWrtArgSizeInfo[i][j];
           if ((j == 0) & isWrtLine) {
@@ -506,10 +378,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
               }
             }
           } else {
-            int addToIndex = 0;
             kLength = nodes.topLevelWrtDeps[i][j].size();
+            int addToIndex = 0;
             for (int k = 0; k < kLength; k++) {
-              if (nodes.topLevelWrtDeps[i][j][k][0] > 0) {
                 lLength = nodes.topLevelWrtDeps[i][j][k].dimSize(0);
                 int parentRowLength =
                     chainRuleJacobians[nodes.parentIndicesList[i][j][k]].rows();
@@ -529,17 +400,27 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                               0, wrtStartNode, thisRows, wrtLength) +=
                           (thisJacobian)
                               .block(0, thisArgIndex + addToIndex, thisRows, wrtLength);
-                              addToIndex += wrtLength;
                     } else {
+                        cout << "wrtStartNode: " << wrtStartNode << "\n";
+                        cout << "thisRows: " << thisRows << "\n";
+                        cout << "wrtLength: " << wrtLength << "\n";
+                        cout << "thisArgIndex: " << thisArgIndex << "\n";
+                        cout << "lineWrtSizeIJ: " << lineWrtSizeIJ << "\n";
+                        cout << "parentRowLength: " << parentRowLength << "\n";
+
                       chainRuleJacobians[i]
                           .block(  // this doesn't always need to be saved
                               0, wrtStartNode, thisRows, wrtLength) +=
                           (thisJacobian)
-                              .block(0, thisArgIndex, thisRows, lineWrtSizeIJ) *
+                              .block(0, thisArgIndex + addToIndex, thisRows, parentRowLength) *
                           chainRuleJacobians[nodes.parentIndicesList[i][j][k]]
                               .block(0, wrtStartNode, parentRowLength,
                                      wrtLength);
-                      
+                                     cout << "ati: " << addToIndex << "\n";
+                      cout << "parentNode: " << nodes.parentIndicesList[i][j][k]  << "\n";
+                      cout << "crjI: " << chainRuleJacobians[i](0,0) << "\n";
+                      cout << "crjParent: " << chainRuleJacobians[nodes.parentIndicesList[i][j][k]](0,0) << "\n";
+
                     }
                     if (hessianFlag) {
                       int thisArgIndex2 = nodes.lineWrtArgSizeInfo[i][0];
@@ -802,7 +683,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                     }
                   }
                 }
-              }
+                addToIndex += nodes.nodeLengths[nodes.parentIndicesList[i][j][k]];
             }
           }
           thisArgIndex += lineWrtSizeIJ;
@@ -818,6 +699,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
             ansJacobian.row(0).segment(wrtToStartNode, wrtToLength) +=
                 chainRuleJacobians[i].row(0).segment(wrtFromStartNode,
                                                      wrtFromLength);
+            cout << "ansJacobian: " << ansJacobian(0,0) << "\n";
             if(hessianFlag){
               for (int j2 = j; j2 < jLength; j2++) {
                 int wrtNodeJ2 = nodes.allNeededWRTCopyVars[i][j2] - 1;

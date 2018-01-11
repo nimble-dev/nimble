@@ -89,7 +89,9 @@ nimDerivsInfoClass <- setRefClass(
       declIDs = 'ANY',
       rowIndices = 'ANY',
       topLevelWrtDeps = 'ANY',
-      allNeededWRTCopyVars = 'ANY'
+      allNeededWRTCopyVars = 'ANY',
+      isAddedScalarNode = 'ANY',
+      thisAddedNodeJacobianList = 'ANY'
     ),
     methods = list(
       initialize = function(wrtNodes = NA, calcNodes = NA, thisModel = NA, cInfo = FALSE, ...){
@@ -106,11 +108,46 @@ nimDerivsInfoClass <- setRefClass(
         ## convert inputNodes and deps from character to integer IDs
         allWrtAndCalcNodeNames <<- model$expandNodeNames(c(wrtNodeNames, calcNodeNames), sort = TRUE)
         nfv <- nodeFunctionVector(model, allWrtAndCalcNodeNames, sortUnique = FALSE)
-
+        
         wrtNodes <- model$modelDef$nodeName2GraphIDs(model$expandNodeNames(wrtNodeNames))
         depIDs <- model$modelDef$nodeName2GraphIDs(allWrtAndCalcNodeNames)
         calcNodes <-  model$modelDef$nodeName2GraphIDs(model$expandNodeNames(calcNodeNames))
         maps <- model$modelDef$maps
+ 
+        ## we want to check for children that are scalar representations of multivariate nodes
+        depIdIndex <- 1
+        isAddedScalarNode <<- c()
+        thisAddedNodeJacobianList <<- list()
+        addedScalarNodeParentInds <- c()
+        for(i in seq_along(depIDs)) {
+          thisNode <- depIDs[depIdIndex]
+          ## Follow its descendents that are also in deps
+          ## toNodes will be the children of thisNode
+          toNodes <- maps$edgesFrom2To[[ thisNode ]]
+          ## parentExprIDs will be the argument ID that thisNode represents to each of its child nodes
+          # parentExprIDs <- maps$edgesFrom2ParentExprID[[ thisNode ]]
+        addDepIds <- c()
+        for(jNode in toNodes){
+          if(maps$graphID_2_nodeName[jNode] %in% model$expandNodeNames(allWrtAndCalcNodeNames[depIdIndex], returnScalarComponents = TRUE)){
+            if((length(maps$edgesFrom2To[[jNode]]) > 0) && !(maps$edgesFrom2To[[jNode]] %in% addDepIds)){
+              addDepIds <- c(addDepIds, jNode)
+              thisAddedNodeJacobianList[[length(thisAddedNodeJacobianList) + 1]] <<- matrix(0, nrow = 1, ncol = length(model[[maps$graphID_2_nodeName[thisNode]]]))
+              thisAddedNodeJacobianList[[length(thisAddedNodeJacobianList)]][1, which(maps$graphID_2_nodeName[jNode] == model$expandNodeNames(allWrtAndCalcNodeNames[depIdIndex], returnScalarComponents = TRUE))] <<- 1
+            }
+          }
+        }
+        isAddedScalarNode <<- c(isAddedScalarNode, 0)
+        if(length(addDepIds) > 0){
+          isAddedScalarNode <<- c(isAddedScalarNode, rep(1, length(addDepIds)))
+        }
+        newDepIDs <- c(depIDs[1:depIdIndex], addDepIds)
+        if(depIdIndex + 1 <= length(depIDs)){
+          depIDs <- c(newDepIDs, depIDs[(depIdIndex + 1):length(depIDs)])
+        }
+        depIdIndex <- depIdIndex + 1 + length(addDepIds)
+        
+        }
+        allWrtAndCalcNodeNames <<- maps$graphID_2_nodeName[depIDs]
 
         ## get the BUGS declaration ID for every node
 
@@ -143,6 +180,16 @@ nimDerivsInfoClass <- setRefClass(
               }
             }))) + 1
         })
+        
+        ## add length 1 addedScalarNodes to declIDlengths
+        for(i in 1:length(depIDs)){
+          if(isAddedScalarNode[i]){
+            addDeclIDlengths <- c(declIDlengths[1:(i-1)], 2)
+            if(i <= length(depIDs)) addDeclIDlengths <- c(addDeclIDlengths, declIDlengths[(i):length(declIDlengths)])
+            declIDlengths <- addDeclIDlengths
+          }
+        }
+        
 
         depIndex_2_parentDepIndices <- lapply(declIDlengths, function(x){
           outList <- list()
@@ -164,6 +211,12 @@ nimDerivsInfoClass <- setRefClass(
               
         ## For each input depsID
         for(i in seq_along(depIDs)) {
+          if(isAddedScalarNode[i]){
+            nodeLengths[i] <<- 1
+            calcNodeIndicators[i] <<- 0
+            depIndex_2_parentDepIndices[[i]][[1]] <- 0
+          }
+          else{
           nodeLengths[i] <<- length(values(model, allWrtAndCalcNodeNames[i]))
           thisNode <- depIDs[i]
           if(thisNode %in% calcNodes){
@@ -180,6 +233,7 @@ nimDerivsInfoClass <- setRefClass(
           else{
             depIndex_2_parentDepIndices[[i]][[1]] <- 0
             # topLevelWrtDeps[[i]][[1]] <<- 0
+          }
           }
         }
         
@@ -226,23 +280,37 @@ nimDerivsInfoClass <- setRefClass(
           toNodes <- maps$edgesFrom2To[[ thisNode ]]
           ## parentExprIDs will be the argument ID that thisNode represents to each of its child nodes
           parentExprIDs <- maps$edgesFrom2ParentExprID[[ thisNode ]]
+          parentExprIDs[is.na(parentExprIDs)] <- 1
+          # addToNodes <- c()
+          # for(jNode in toNodes){
+          #   if(maps$graphID_2_nodeName[jNode] %in% model$expandNodeNames(allWrtAndCalcNodeNames[i], returnScalarComponents = TRUE)){
+          #     if((length(maps$edgesFrom2To[[jNode]]) > 0) && !(maps$edgesFrom2To[[jNode]] %in% addToNodes)){
+          #       addToNodes <- c(addToNodes, maps$edgesFrom2To[[jNode]])
+          #       parentExprIDs <- c(parentExprIDs, maps$edgesFrom2ParentExprID[[jNode]])
+          #     }
+          #   }
+          # }
+          # toNodes <- c(toNodes, addToNodes)
           ## for each child node
           for(iTo in seq_along(toNodes)) {
             thisToNode <- toNodes[iTo]
             ## Check if this child is in depIDs
+            thisParentExprID <- parentExprIDs[iTo]
+            
             if(thisToNode %in% depIDs) {
               ## Populate an entry in the results
               iThisToNode <- which(depIDs == thisToNode)
               if(wrtNodeIndicators[iThisToNode] == 1 ||
-                 (calcNodeIndicators[iThisToNode] == 1 &&
+                 ((calcNodeIndicators[iThisToNode] == 1 || isAddedScalarNode[iThisToNode] == 1) &&
                   (wrtNodeIndicators[i] == 1 || stochNodeIndicators[i] == 0))){
-                thisParentExprID <- parentExprIDs[iTo]
-                if(length(depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 &&
-                   depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]][1] == 0){
-                  depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]] <- i
-                }
-                else{
-                  depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]] <- c(depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]], i)
+                if(!is.na(thisParentExprID)){
+                  if(length(depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 &&
+                     depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]][1] == 0){
+                    depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]] <- i
+                  }
+                  else{
+                    depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]] <- c(depIndex_2_parentDepIndices[[iThisToNode]][[ thisParentExprID + 1 ]], i)
+                  }
                 }
               }
               if(wrtNodeIndicators[i] && stochNodeIndicators[i]){
@@ -253,21 +321,36 @@ nimDerivsInfoClass <- setRefClass(
                   topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) + 1]] <<- which(i == wrtLineNums)
                 }
               } else if(stochNodeIndicators[i] == 0){
-                if(length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 && (topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]][1] == 0)){
+                if(length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 && (!is.na(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]][1]) &&
+                                                                                             topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]][1] == 0)){
                   if(!all(unlist(topLevelWrtDeps[[i]]) == 0)){
-                    topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]] <<- setdiff(unique(unlist(topLevelWrtDeps[[i]])), 0)
+                    topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]] <<- setdiff(unique(unlist(topLevelWrtDeps[[i]])), c(0, NA))
+                  }
+                  else{
+                    topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]] <<- NA
                   }
                 }
                 else{
                   if(!all(unlist(topLevelWrtDeps[[i]]) == 0)){
                     topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) + 1]] <<-
-                      setdiff(unique(unlist(topLevelWrtDeps[[i]])),0)
+                      setdiff(unique(unlist(topLevelWrtDeps[[i]])),c(0, NA))
+                  }
+                  else{
+                    topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) + 1]] <<-
+                     NA
                   }
                 }
               }
             }
           }
-          allNeededWRTCopyVars[[i]] <<- sort(setdiff(unique(unlist(topLevelWrtDeps[[i]])), 0))
+          allNeededWRTCopyVars[[i]] <<- sort(setdiff(unique(unlist(topLevelWrtDeps[[i]])), c(0, NA)))
+        }
+        for(i in seq_along(topLevelWrtDeps)){
+          for(j in seq_along(topLevelWrtDeps[[i]])){
+            for(k in seq_along(topLevelWrtDeps[[i]][[j]])){
+              topLevelWrtDeps[[i]][[j]][[k]][is.na(topLevelWrtDeps[[i]][[j]][[k]])] <<- 0
+            }
+          }
         }
           
 
@@ -277,12 +360,14 @@ nimDerivsInfoClass <- setRefClass(
         lineWrtArgSizeInfo <<- list()
         calcWithArgsCalls  <<- list()
         cppWrtArgIndices <<- list()
+        tempDeclIDs <- declIDs
         for(i in seq_along(depIndex_2_parentDepIndices)){
           if(calcNodeIndicators[i] == 1){
             lineWrtArgSizeInfo[[i]]      <<- numeric(length(depIndex_2_parentDepIndices[[i]]))
-            sizeAndDimInfo <- environment(model$nodeFunctions[[declIDs[i]]]$.generatorFunction)[['parentsSizeAndDims']]
-            formalArgNames <- formals(model$nodeFunctions[[declIDs[i]]]$calculateWithArgs)
-            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declIDs[i]]]$unrolledIndicesMatrix[ rowIndices[i], ]
+            sizeAndDimInfo <- environment(model$nodeFunctions[[tempDeclIDs[1]]]$.generatorFunction)[['parentsSizeAndDims']]
+            formalArgNames <- formals(model$nodeFunctions[[tempDeclIDs[1]]]$calculateWithArgs)
+            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[tempDeclIDs[1]]]$unrolledIndicesMatrix[ rowIndices[i], ]
+            tempDeclIDs <- tempDeclIDs[-1]
             modelArgNames <- lapply(names(formalArgNames)[-1],
                                     function(x){parse(text = convertCalcArgNameToModelNodeName(x, sizeAndDimInfo, unrolledIndicesMatrixRow))[[1]]})
             calcWithArgsCalls[[i]] <<- as.call(c(list(as.name('calcWithArgs'), unrolledIndicesMatrixRow), modelArgNames))
@@ -304,8 +389,9 @@ nimDerivsInfoClass <- setRefClass(
                   else{
                     lineWrtArgsAsCharacters[[i]] <<- c(lineWrtArgsAsCharacters[[i]], wrtInfoList$wrtArg)
                   }
-                  lineWrtArgSizeInfo[[i]][j] <<- lineWrtArgSizeInfo[[i]][j] + wrtInfoList$argSize
+                  # lineWrtArgSizeInfo[[i]][j] <<- lineWrtArgSizeInfo[[i]][j] + wrtInfoList$argSize
                 }
+                lineWrtArgSizeInfo[[i]][j] <<- length(eval(modelArgNames[[j]]))
               }
             }
             if(length(lineWrtArgsAsCharacters) < i){
@@ -332,6 +418,12 @@ nimDerivsInfoClass <- setRefClass(
               })
               cppWrtArgIndices[[i]] <<- convertWrtArgToIndices(lineWrtArgsAsCharacters[[i]], functionArgsDimsList, fxnName = 'calculate')
             }
+          }
+          else if(isAddedScalarNode[i]){
+            lineWrtArgsAsCharacters[[i]] <<- NA
+            lineWrtArgSizeInfo[[i]]      <<- c(0, length(model[[allWrtAndCalcNodeNames[depIndex_2_parentDepIndices[[i]][[2]]]]]))
+            calcWithArgsCalls[[i]] <<-   NA
+            cppWrtArgIndices[[i]] <<- -1
           }
           else{
             lineWrtArgsAsCharacters[[i]] <<- NA
