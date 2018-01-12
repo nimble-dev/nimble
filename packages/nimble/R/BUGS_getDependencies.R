@@ -426,6 +426,7 @@ nimDerivsInfoClass <- setRefClass(
             cppWrtArgIndices[[i]] <<- -1
           }
           else{
+            tempDeclIDs <- tempDeclIDs[-1]
             lineWrtArgsAsCharacters[[i]] <<- NA
             lineWrtArgSizeInfo[[i]]      <<- -1
             calcWithArgsCalls[[i]] <<-   NA

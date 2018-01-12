@@ -170,7 +170,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   iLength = nodes.parentIndicesList.size();
   int sumAddedScalarNodes = 0;
   for (int i = 0; i < iLength; i++) {
-      cout << "i: " << i << "\n";
     isDeterminisitic =
         1 - nodes.stochNodeIndicators[i];  // Is node i deterministic?
     isWrtLine = (nodes.cumulativeWrtLineNums[i] >= 0);  // Is node i a wrt node
@@ -182,7 +181,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                                    // calculate(nodes) ?
 
     bool isAddedScalarNode = nodes.isAddedScalarNode[i];  
-          cout << "isAddedScalarNode: " << isAddedScalarNode << "\n";
     if(isAddedScalarNode){
       sumAddedScalarNodes++;
     }
@@ -207,7 +205,8 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
           thisDerivList->value[0] = 0;
           thisDerivList->gradient = nodes.thisAddedNodeJacobianList[0];
           if(hessianFlag){
-
+            thisDerivList->hessian.initialize(0, 1, nodes.totalOutWrtSize,
+                                  nodes.totalOutWrtSize, 1);
           }
         }
         else{
@@ -257,9 +256,8 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                               //  (nodes.cppWrtArgIndices[i][0]
                                               //  > -1
         thisArgIndex = 0;
-        cout << i << "\n";
-        if(i >= 4){
-          cout << "thisJac: " << (*thisDerivList).gradient(0,0)  << (*thisDerivList).gradient(0,1) << "\n";
+        if(i == 3){
+          cout << "thisJac: " << thisJacobian(0,0) << ", " << thisJacobian(0,1) << ", " << thisJacobian(0,2) << "\n";
         }
         for (int j = 0; j < jLength; j++) {
           lineWrtSizeIJ = nodes.lineWrtArgSizeInfo[i][j];
@@ -401,13 +399,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                           (thisJacobian)
                               .block(0, thisArgIndex + addToIndex, thisRows, wrtLength);
                     } else {
-                        cout << "wrtStartNode: " << wrtStartNode << "\n";
-                        cout << "thisRows: " << thisRows << "\n";
-                        cout << "wrtLength: " << wrtLength << "\n";
-                        cout << "thisArgIndex: " << thisArgIndex << "\n";
-                        cout << "lineWrtSizeIJ: " << lineWrtSizeIJ << "\n";
-                        cout << "parentRowLength: " << parentRowLength << "\n";
-
                       chainRuleJacobians[i]
                           .block(  // this doesn't always need to be saved
                               0, wrtStartNode, thisRows, wrtLength) +=
@@ -416,19 +407,16 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                           chainRuleJacobians[nodes.parentIndicesList[i][j][k]]
                               .block(0, wrtStartNode, parentRowLength,
                                      wrtLength);
-                                     cout << "ati: " << addToIndex << "\n";
-                      cout << "parentNode: " << nodes.parentIndicesList[i][j][k]  << "\n";
-                      cout << "crjI: " << chainRuleJacobians[i](0,0) << "\n";
-                      cout << "crjParent: " << chainRuleJacobians[nodes.parentIndicesList[i][j][k]](0,0) << "\n";
-
                     }
                     if (hessianFlag) {
                       int thisArgIndex2 = nodes.lineWrtArgSizeInfo[i][0];
                       for (int j2 = 1; j2 <= j; j2++) {
                         int lineWrtSizeIJ2 = nodes.lineWrtArgSizeInfo[i][j2];
                         int k2Length = nodes.topLevelWrtDeps[i][j2].size();
+                        int addToIndex2 = 0;
                         for (int k2 = 0; k2 < k2Length; k2++) {
-                          if (nodes.topLevelWrtDeps[i][j2][k2][0] > 0) {
+                          cout << "addToIndex: " << addToIndex << "\n";
+                          cout << "addToIndex2: " << addToIndex2 << "\n";
                             int lLength2 =
                                 nodes.topLevelWrtDeps[i][j2][k2].dimSize(0);
                             int parentRowLength2 =
@@ -436,7 +424,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                     [nodes.parentIndicesList[i][j2][k2]]
                                         .rows();
                             for (int l2 = 0; l2 < lLength2; l2++) {
-                              if (nodes.topLevelWrtDeps[i][j2][k2][l2] > 0) {
+                              if(nodes.topLevelWrtDeps[i][j2][k2][l2] > 0) {
                                 int wrtNodeK2 =
                                     nodes.topLevelWrtDeps[i][j2][k2][l2] - 1;
                                 int wrtStartNode2 =
@@ -449,235 +437,257 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                 } else {
                                   transposeMatrices = false;
                                 }
-
                                 dim3Length = chainRuleHessians[i].size();
-                                if (nodes.parentIndicesList
-                                        [nodes.parentIndicesList[i][j][k]][0]
-                                        [0] != -1 * (wrtNodeK + 2)) {
-                                  for (int m1 = 0; m1 < wrtLength; m1++) {
-                                    for (int m2 = 0; m2 < wrtLength2;
-                                         m2++) {
-                                      VectorXd addToHessian(parentRowLength);
-                                      for (int m3 = 0; m3 < parentRowLength;
-                                           m3++) {
-                                        addToHessian[m3] = chainRuleHessians
-                                            [nodes.parentIndicesList[i][j][k]]
-                                            [m3](nodes.wrtLineIndices
-                                                         [k][m1] -
-                                                     1,
-                                                 nodes.wrtLineIndices
-                                                         [k2][m2] -
-                                                     1);
-                                      }
-                                      addToHessian =
-                                          (thisJacobian)
-                                              .block(0, thisArgIndex,
-                                                     (thisJacobian).rows(),
-                                                     lineWrtSizeIJ) *
-                                          addToHessian;
+                                if(!nodes.isAddedScalarNode[nodes.parentIndicesList[i][j][k]]){
+                                  cout << "a! \n"; 
+                                  if (nodes.parentIndicesList
+                                          [nodes.parentIndicesList[i][j][k]][0]
+                                          [0] != -1 * (wrtNodeK + 2)) {
+                                    for (int m1 = 0; m1 < wrtLength; m1++) {
+                                      for (int m2 = 0; m2 < wrtLength2;
+                                          m2++) {
+                                        VectorXd addToHessian(parentRowLength);
+                                        for (int m3 = 0; m3 < parentRowLength;
+                                            m3++) {
+                                          addToHessian[m3] = chainRuleHessians
+                                              [nodes.parentIndicesList[i][j][k]]
+                                              [m3](nodes.wrtLineIndices
+                                                          [wrtNodeK][m1] -
+                                                      1,
+                                                  nodes.wrtLineIndices
+                                                          [wrtNodeK2][m2] -
+                                                      1);
+                                        if(i == 3){
+                                          cout << "parent crh: " <<  chainRuleHessians
+                                              [nodes.parentIndicesList[i][j][k]]
+                                              [m3](nodes.wrtLineIndices
+                                                          [wrtNodeK][m1] -
+                                                      1,
+                                                  nodes.wrtLineIndices
+                                                          [wrtNodeK2][m2] -
+                                                      1) << "\n";
+                                        }
 
-                                      for (int m3 = 0; m3 < dim3Length; m3++) {
-                                        if(transposeMatrices){
-                                        chainRuleHessians[i][m3](
-                                            nodes.wrtLineIndices[wrtNodeK2]
-                                                                [m2] -
-                                                1,
-                                            nodes.wrtLineIndices[wrtNodeK]
-                                                                [m1] -
-                                                1) += addToHessian[m3];
-                                              }
-                                              else{
-                                                chainRuleHessians[i][m3](
-                                            nodes.wrtLineIndices[wrtNodeK]
-                                                                [m1] -
-                                                1,
-                                            nodes.wrtLineIndices[wrtNodeK2]
-                                                                [m2] -
-                                                1) += addToHessian[m3];
-                                              }
+                                        }
+                                        addToHessian =
+                                            (thisJacobian)
+                                                .block(0, thisArgIndex + addToIndex,
+                                                      thisRows,
+                                                      parentRowLength) *
+                                            addToHessian;
+
+                                        for (int m3 = 0; m3 < dim3Length; m3++) {
+                                          if(transposeMatrices){
+                                          chainRuleHessians[i][m3](
+                                              nodes.wrtLineIndices[wrtNodeK2]
+                                                                  [m2] -
+                                                  1,
+                                              nodes.wrtLineIndices[wrtNodeK]
+                                                                  [m1] -
+                                                  1) += addToHessian[m3];
+                                                }
+                                                else{
+                                                  chainRuleHessians[i][m3](
+                                              nodes.wrtLineIndices[wrtNodeK]
+                                                                  [m1] -
+                                                  1,
+                                              nodes.wrtLineIndices[wrtNodeK2]
+                                                                  [m2] -
+                                                  1) += addToHessian[m3];
+                                                }
+                                        }
                                       }
                                     }
                                   }
+                                  if(i == 3){
+                                    cout << "j: " << j << ", j2: " << j2 << "\n";
+                                    cout << "k: " << k << ", k2: " << k2 << "\n";
+                                    cout << "l: " << l << ", l2: " << l2 << "\n";
+                                  cout << "crh a: " << chainRuleHessians[i][0](0,0) << "\n";
+                                  }
                                 }
-                                for (int dim3 = 0; dim3 < dim3Length; dim3++) {
-                                  if (nodes.parentIndicesList
-                                          [nodes.parentIndicesList[i][j][k]][0]
-                                          [0] ==
-                                      -1 * (wrtNodeK + 2)) {  // parent is wrt
-                                                              // node, mult by
-                                                              // identity
+                                if(!isAddedScalarNode){
+                                  cout << "b! \n"; 
+                                  for (int dim3 = 0; dim3 < dim3Length; dim3++) {
                                     if (nodes.parentIndicesList
-                                            [nodes.parentIndicesList[i][j2][k2]]
-                                            [0][0] ==
-                                        -1 * (wrtNodeK2 +
-                                              2)) {  // parent is wrt node, mult
-                                                     // by identity
-                                      if(transposeMatrices){
+                                            [nodes.parentIndicesList[i][j][k]][0]
+                                            [0] ==
+                                        -1 * (wrtNodeK + 2)) {  // parent is wrt
+                                                                // node, mult by
+                                                                // identity
+                                      if (nodes.parentIndicesList
+                                              [nodes.parentIndicesList[i][j2][k2]]
+                                              [0][0] ==
+                                          -1 * (wrtNodeK2 +
+                                                2)) {  // parent is wrt node, mult
+                                                      // by identity
+                                        if(transposeMatrices){
+                                          chainRuleHessians[i][dim3].block(
+                                            wrtStartNode2, wrtStartNode,
+                                            wrtLength2, wrtLength) +=
+                                            thisHessian[dim3].block(
+                                                thisArgIndex + addToIndex, thisArgIndex2 + addToIndex2,
+                                                nodes.lineWrtArgSizeInfo[i][j],
+                                                nodes.lineWrtArgSizeInfo[i][j2]).transpose();
+                                        }
+                                        else{
                                         chainRuleHessians[i][dim3].block(
-                                          wrtStartNode2, wrtStartNode,
-                                          wrtLength2, wrtLength) +=
-                                          thisHessian[dim3].block(
-                                              thisArgIndex, thisArgIndex2,
-                                              nodes.lineWrtArgSizeInfo[i][j],
-                                              nodes.lineWrtArgSizeInfo[i][j2]).transpose();
+                                            wrtStartNode, wrtStartNode2,
+                                            wrtLength, wrtLength2) +=
+                                            thisHessian[dim3].block(
+                                                thisArgIndex + addToIndex, thisArgIndex2 + addToIndex2,
+                                                nodes.lineWrtArgSizeInfo[i][j],
+                                                nodes.lineWrtArgSizeInfo[i][j2]);
+                                        }
+                                      } else {
+                                        if(transposeMatrices){
+                                        chainRuleHessians[i][dim3].block(
+                                            wrtStartNode2, wrtStartNode,
+                                            wrtLength2, wrtLength) +=
+                                            chainRuleJacobians
+                                                [nodes.parentIndicesList[i][j2]
+                                                                        [k2]]
+                                                    .block(
+                                                        0, wrtStartNode2,
+                                                        chainRuleJacobians
+                                                            [nodes
+                                                                .parentIndicesList
+                                                                    [i][j2][k2]]
+                                                                .rows(),
+                                                        wrtLength2).transpose() *
+                                            thisHessian[dim3].block(
+                                                thisArgIndex + addToIndex, thisArgIndex2 + addToIndex2,
+                                                nodes.lineWrtArgSizeInfo[i][j],
+                                                nodes.lineWrtArgSizeInfo[i][j2]).transpose();
+                                        }
+                                        else{
+                                          chainRuleHessians[i][dim3].block(
+                                            wrtStartNode, wrtStartNode2,
+                                            wrtLength, wrtLength2) +=
+                                            thisHessian[dim3].block(
+                                                thisArgIndex + addToIndex, thisArgIndex2 + addToIndex2,
+                                                nodes.lineWrtArgSizeInfo[i][j],
+                                                nodes.lineWrtArgSizeInfo[i][j2]) *
+                                            chainRuleJacobians
+                                                [nodes.parentIndicesList[i][j2]
+                                                                        [k2]]
+                                                    .block(
+                                                        0, wrtStartNode2,
+                                                        chainRuleJacobians
+                                                            [nodes
+                                                                .parentIndicesList
+                                                                    [i][j2][k2]]
+                                                                .rows(),
+                                                        wrtLength2);
+
+                                        }            
                                       }
-                                      else{
-                                       chainRuleHessians[i][dim3].block(
-                                          wrtStartNode, wrtStartNode2,
-                                          wrtLength, wrtLength2) +=
+                                    } else if (nodes.parentIndicesList
+                                                  [nodes.parentIndicesList[i][j2]
+                                                                          [k2]]
+                                                  [0][0] ==
+                                              -1 * (wrtNodeK2 + 2)) {
+                                    if(transposeMatrices){
+                                      chainRuleHessians[i][dim3].block(
+                                          wrtStartNode2, wrtStartNode, wrtLength2,
+                                          wrtLength) +=
                                           thisHessian[dim3].block(
-                                              thisArgIndex, thisArgIndex2,
+                                              thisArgIndex + addToIndex, thisArgIndex2 + addToIndex2,
+                                              nodes.lineWrtArgSizeInfo[i][j],
+                                              nodes.lineWrtArgSizeInfo[i][j2]).transpose() *
+                                              chainRuleJacobians
+                                              [nodes.parentIndicesList[i][j][k]]
+                                                  .block(
+                                                      0, wrtStartNode,
+                                                      chainRuleJacobians
+                                                          [nodes.parentIndicesList
+                                                              [i][j][k]]
+                                                              .rows(),
+                                                      wrtLength);
+                                            }
+                                            else{
+                                              chainRuleHessians[i][dim3].block(
+                                          wrtStartNode, wrtStartNode2, wrtLength,
+                                          wrtLength2) +=
+                                          chainRuleJacobians
+                                              [nodes.parentIndicesList[i][j][k]]
+                                                  .block(
+                                                      0, wrtStartNode,
+                                                      chainRuleJacobians
+                                                          [nodes.parentIndicesList
+                                                              [i][j][k]]
+                                                              .rows(),
+                                                      wrtLength)
+                                                  .transpose() *
+                                          thisHessian[dim3].block(
+                                              thisArgIndex + addToIndex, thisArgIndex2 + addToIndex2,
                                               nodes.lineWrtArgSizeInfo[i][j],
                                               nodes.lineWrtArgSizeInfo[i][j2]);
-                                      }
+                                            }
                                     } else {
                                       if(transposeMatrices){
                                       chainRuleHessians[i][dim3].block(
-                                          wrtStartNode2, wrtStartNode,
-                                          wrtLength2, wrtLength) +=
+                                          wrtStartNode2, wrtStartNode, wrtLength2,
+                                          wrtLength) +=
                                           chainRuleJacobians
-                                              [nodes.parentIndicesList[i][j2]
-                                                                      [k2]]
+                                              [nodes.parentIndicesList[i][j2][k2]]
                                                   .block(
                                                       0, wrtStartNode2,
                                                       chainRuleJacobians
-                                                          [nodes
-                                                               .parentIndicesList
-                                                                   [i][j2][k2]]
+                                                          [nodes.parentIndicesList
+                                                              [i][j2][k2]]
                                                               .rows(),
                                                       wrtLength2).transpose() *
                                           thisHessian[dim3].block(
-                                              thisArgIndex, thisArgIndex2,
-                                              nodes.lineWrtArgSizeInfo[i][j],
-                                              nodes.lineWrtArgSizeInfo[i][j2]).transpose();
-                                      }
-                                      else{
-                                        chainRuleHessians[i][dim3].block(
-                                          wrtStartNode, wrtStartNode2,
-                                          wrtLength, wrtLength2) +=
-                                          thisHessian[dim3].block(
-                                              thisArgIndex, thisArgIndex2,
+                                              thisArgIndex + addToIndex, thisArgIndex2 + addToIndex2,
                                               nodes.lineWrtArgSizeInfo[i][j],
                                               nodes.lineWrtArgSizeInfo[i][j2]) *
                                           chainRuleJacobians
-                                              [nodes.parentIndicesList[i][j2]
-                                                                      [k2]]
+                                              [nodes.parentIndicesList[i][j][k]]
+                                                  .block(
+                                                      0, wrtStartNode,
+                                                      chainRuleJacobians
+                                                          [nodes.parentIndicesList
+                                                              [i][j][k]]
+                                                              .rows(),
+                                                      wrtLength);
+                                                    }
+                                                    else{
+                                                    chainRuleHessians[i][dim3].block(
+                                          wrtStartNode, wrtStartNode2, wrtLength,
+                                          wrtLength2) +=
+                                          chainRuleJacobians
+                                              [nodes.parentIndicesList[i][j][k]]
+                                                  .block(
+                                                      0, wrtStartNode,
+                                                      chainRuleJacobians
+                                                          [nodes.parentIndicesList
+                                                              [i][j][k]]
+                                                              .rows(),
+                                                      wrtLength)
+                                                  .transpose() *
+                                          thisHessian[dim3].block(
+                                              thisArgIndex + addToIndex, thisArgIndex2 + addToIndex2,
+                                              nodes.lineWrtArgSizeInfo[i][j],
+                                              nodes.lineWrtArgSizeInfo[i][j2])   *
+                                          chainRuleJacobians
+                                              [nodes.parentIndicesList[i][j2][k2]]
                                                   .block(
                                                       0, wrtStartNode2,
                                                       chainRuleJacobians
-                                                          [nodes
-                                                               .parentIndicesList
-                                                                   [i][j2][k2]]
+                                                          [nodes.parentIndicesList
+                                                              [i][j2][k2]]
                                                               .rows(),
-                                                      wrtLength2);
-
-                                      }            
+                                                      wrtLength2); 
+                                                    }
                                     }
-                                  } else if (nodes.parentIndicesList
-                                                 [nodes.parentIndicesList[i][j2]
-                                                                         [k2]]
-                                                 [0][0] ==
-                                             -1 * (wrtNodeK2 + 2)) {
-                                   if(transposeMatrices){
-                                    chainRuleHessians[i][dim3].block(
-                                        wrtStartNode2, wrtStartNode, wrtLength2,
-                                        wrtLength) +=
-                                        thisHessian[dim3].block(
-                                            thisArgIndex, thisArgIndex2,
-                                            nodes.lineWrtArgSizeInfo[i][j],
-                                            nodes.lineWrtArgSizeInfo[i][j2]).transpose() *
-                                            chainRuleJacobians
-                                            [nodes.parentIndicesList[i][j][k]]
-                                                .block(
-                                                    0, wrtStartNode,
-                                                    chainRuleJacobians
-                                                        [nodes.parentIndicesList
-                                                             [i][j][k]]
-                                                            .rows(),
-                                                    wrtLength);
-                                          }
-                                          else{
-                                            chainRuleHessians[i][dim3].block(
-                                        wrtStartNode, wrtStartNode2, wrtLength,
-                                        wrtLength2) +=
-                                        chainRuleJacobians
-                                            [nodes.parentIndicesList[i][j][k]]
-                                                .block(
-                                                    0, wrtStartNode,
-                                                    chainRuleJacobians
-                                                        [nodes.parentIndicesList
-                                                             [i][j][k]]
-                                                            .rows(),
-                                                    wrtLength)
-                                                .transpose() *
-                                        thisHessian[dim3].block(
-                                            thisArgIndex, thisArgIndex2,
-                                            nodes.lineWrtArgSizeInfo[i][j],
-                                            nodes.lineWrtArgSizeInfo[i][j2]);
-                                          }
-                                  } else {
-                                    if(transposeMatrices){
-                                    chainRuleHessians[i][dim3].block(
-                                        wrtStartNode2, wrtStartNode, wrtLength2,
-                                        wrtLength) +=
-                                        chainRuleJacobians
-                                            [nodes.parentIndicesList[i][j2][k2]]
-                                                .block(
-                                                    0, wrtStartNode2,
-                                                    chainRuleJacobians
-                                                        [nodes.parentIndicesList
-                                                             [i][j2][k2]]
-                                                            .rows(),
-                                                    wrtLength2).transpose() *
-                                        thisHessian[dim3].block(
-                                            thisArgIndex, thisArgIndex2,
-                                            nodes.lineWrtArgSizeInfo[i][j],
-                                            nodes.lineWrtArgSizeInfo[i][j2]) *
-                                        chainRuleJacobians
-                                            [nodes.parentIndicesList[i][j][k]]
-                                                .block(
-                                                    0, wrtStartNode,
-                                                    chainRuleJacobians
-                                                        [nodes.parentIndicesList
-                                                             [i][j][k]]
-                                                            .rows(),
-                                                    wrtLength);
-                                                  }
-                                                  else{
-                                                   chainRuleHessians[i][dim3].block(
-                                        wrtStartNode, wrtStartNode2, wrtLength,
-                                        wrtLength2) +=
-                                        chainRuleJacobians
-                                            [nodes.parentIndicesList[i][j][k]]
-                                                .block(
-                                                    0, wrtStartNode,
-                                                    chainRuleJacobians
-                                                        [nodes.parentIndicesList
-                                                             [i][j][k]]
-                                                            .rows(),
-                                                    wrtLength)
-                                                .transpose() *
-                                        thisHessian[dim3].block(
-                                            thisArgIndex, thisArgIndex2,
-                                            nodes.lineWrtArgSizeInfo[i][j],
-                                            nodes.lineWrtArgSizeInfo[i][j2])   *
-                                        chainRuleJacobians
-                                            [nodes.parentIndicesList[i][j2][k2]]
-                                                .block(
-                                                    0, wrtStartNode2,
-                                                    chainRuleJacobians
-                                                        [nodes.parentIndicesList
-                                                             [i][j2][k2]]
-                                                            .rows(),
-                                                    wrtLength2); 
-                                                  }
                                   }
+                                  cout << "crh b: " << chainRuleHessians[i][0](0,0) << "\n";
                                 }
                               }
-                            }
+                            addToIndex2 += nodes.nodeLengths[nodes.parentIndicesList[i][j2][k2]];
                           }
                         }
-
                         thisArgIndex2 += lineWrtSizeIJ2;
                       }
                     }
@@ -699,9 +709,11 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
             ansJacobian.row(0).segment(wrtToStartNode, wrtToLength) +=
                 chainRuleJacobians[i].row(0).segment(wrtFromStartNode,
                                                      wrtFromLength);
-            cout << "ansJacobian: " << ansJacobian(0,0) << "\n";
             if(hessianFlag){
               for (int j2 = j; j2 < jLength; j2++) {
+                cout << "i: " << i << "\n";
+                cout << "j: " << j << "\n";
+                cout << "j2: " << j2 << "\n";
                 int wrtNodeJ2 = nodes.allNeededWRTCopyVars[i][j2] - 1;
                 int wrtToStartNode2 = nodes.wrtToIndices[wrtNodeJ2][0] - 1;
                 int wrtToLength2 = nodes.wrtToIndices[wrtNodeJ2].dimSize(0);
@@ -712,6 +724,8 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                     chainRuleHessians[i][0].block(wrtFromStartNode,
                                                   wrtFromStartNode2,
                                                   wrtFromLength, wrtFromLength2);
+                cout << "ansHessian: " <<  ansHessian(0,0) << ", " <<    ansHessian(0,1) << ", " << ansHessian(1,0) <<", " <<  ansHessian(1,1) << "\n";
+
               }
             }
           }
