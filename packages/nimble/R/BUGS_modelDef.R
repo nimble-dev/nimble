@@ -174,6 +174,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv
     addFullDimExtentToUnknownIndexDeclarations() ## update unknownIndex declarations with full extent of relevant parent variable; this splits parent variable and does edge determination (from parent variable to unknownIndex variable) but without splitting based on unknown indices
     genExpandedNodeAndParentNames3(debug = debug) ## heavy processing: all graphIDs, maps, graph, nodeNames etc. built here
     stripUnknownIndexInfo()               ## removes unknownIndex declarations and vars
+    checkForSelfParents()                 ## Checks to see if any nodes are their own parents, and errors out if so
     maps$setPositions3()                  ## Determine top, latent and end nodes
     buildSymbolTable()                    ## 
     genIsDataVarInfo()                    ## only the maxs is ever used, in newModel
@@ -2898,4 +2899,12 @@ detectDynamicIndexes <- function(expr) {
     if(length(expr) == 1 || expr[[1]] != "[") return(FALSE) # stop("whichDynamicIndices: 'expr' should be a bracket expression")
     return(sapply(expr[3:length(expr)], isDynamicIndex)) 
 }
+
+modelDefClass$methods(checkForSelfParents = function(){
+  for(i in seq_along(maps$edgesFrom)){
+    if(maps$edgesFrom[i] == maps$edgesTo[i]){
+      stop(paste("In building model, node", maps$graphID_2_nodeName[maps$edgesFrom[i]], "is recursively defined."), call. = FALSE)
+    }
+  }
+})
 

@@ -181,10 +181,6 @@ void nimbleGraph::setNodes(const vector<int> &edgesFrom, const vector<int> &edge
     graphNodeVec[iNode] = new graphNode(iNode, types[iNode], names[iNode]);
   }
   for(unsigned int iEdge = 0; iEdge < numEdges; iEdge++) {
-    if(edgesFrom[iEdge] == edgesTo[iEdge]){
-      PRINTF("Error in setNodes: node %i is recursively defined in model\n", edgesFrom[iEdge]+1);
-      return;
-    }
     graphNodeVec[ edgesFrom[iEdge]]->addChild( graphNodeVec[edgesTo[iEdge]], edgesFrom2ParentExprIDs[iEdge] );
   }
   for(unsigned int iNode = 0; iNode < numNodes; iNode++) {
