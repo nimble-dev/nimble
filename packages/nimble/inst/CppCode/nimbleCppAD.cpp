@@ -412,7 +412,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                         int k2Length = nodes.topLevelWrtDeps[i][j2].size();
                         int addToIndex2 = 0;
                         for (int k2 = 0; k2 < k2Length; k2++) { // k and k2 iterate over parent nodes to argument j and j2 
-                          cout << "ATI2: " << addToIndex2 << "\n";
                             int lLength2 =
                                 nodes.topLevelWrtDeps[i][j2][k2].dimSize(0);
                             if((j2 == j) & (k2 == k)){
@@ -438,7 +437,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                 }
                                 dim3Length = chainRuleHessians[i].size();
                                 if(!nodes.isAddedScalarNode[nodes.parentIndicesList[i][j][k]]){
-                                  cout << "a! \n"; 
                                   if (nodes.parentIndicesList
                                           [nodes.parentIndicesList[i][j][k]][0]
                                           [0] != -1 * (wrtNodeK + 2)) {
@@ -487,15 +485,8 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                       }
                                     }
                                   }
-                                  if(i == 3){
-                                    cout << "j: " << j << ", j2: " << j2 << "\n";
-                                    cout << "k: " << k << ", k2: " << k2 << "\n";
-                                    cout << "l: " << l << ", l2: " << l2 << "\n";
-                                  cout << "crh a: " << chainRuleHessians[i][0](0,1) << "\n";
-                                  }
                                 }
                                 if(!isAddedScalarNode){
-                                  cout << "b! \n"; 
                                   for (int dim3 = 0; dim3 < dim3Length; dim3++) {
                                     if (nodes.parentIndicesList
                                             [nodes.parentIndicesList[i][j][k]][0]
@@ -670,7 +661,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                                     }
                                     }
                                   }
-                                  cout << "crh b: " << chainRuleHessians[i][0](0,1) << "\n";
                                 }
 
                             }
@@ -701,9 +691,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                                      wrtFromLength);
             if(hessianFlag){
               for (int j2 = j; j2 < jLength; j2++) {
-                cout << "i: " << i << "\n";
-                cout << "j: " << j << "\n";
-                cout << "j2: " << j2 << "\n";
                 int wrtNodeJ2 = nodes.allNeededWRTCopyVars[i][j2] - 1;
                 int wrtToStartNode2 = nodes.wrtToIndices[wrtNodeJ2][0] - 1;
                 int wrtToLength2 = nodes.wrtToIndices[wrtNodeJ2].dimSize(0);
@@ -714,8 +701,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                     chainRuleHessians[i][0].block(wrtFromStartNode,
                                                   wrtFromStartNode2,
                                                   wrtFromLength, wrtFromLength2);
-                cout << "ansHessian: " <<  ansHessian(0,0) << ", " <<    ansHessian(0,1) << ", " << ansHessian(1,0) <<", " <<  ansHessian(1,1) << "\n";
-
               }
             }
           }

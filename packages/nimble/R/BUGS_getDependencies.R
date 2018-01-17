@@ -323,7 +323,7 @@ nimDerivsInfoClass <- setRefClass(
               } else if(stochNodeIndicators[i] == 0){
                 if(length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) == 1 && (!is.na(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]][1]) &&
                                                                                              topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]][1] == 0)){
-                  if(!all(unlist(topLevelWrtDeps[[i]]) == 0)){
+                  if(!all(unlist(topLevelWrtDeps[[i]]) %in% c(0, NA))){
                     topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[1]] <<- setdiff(unique(unlist(topLevelWrtDeps[[i]])), c(0, NA))
                   }
                   else{
@@ -331,7 +331,7 @@ nimDerivsInfoClass <- setRefClass(
                   }
                 }
                 else{
-                  if(!all(unlist(topLevelWrtDeps[[i]]) == 0)){
+                  if(!all(unlist(topLevelWrtDeps[[i]]) %in% c(0, NA))){
                     topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]][[length(topLevelWrtDeps[[iThisToNode]][[ thisParentExprID + 1 ]]) + 1]] <<-
                       setdiff(unique(unlist(topLevelWrtDeps[[i]])),c(0, NA))
                   }
