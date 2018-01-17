@@ -1147,7 +1147,6 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                    },
 
                                    buildNodeFunctions = function(where = globalenv(), debug = FALSE) {
-                                     browser()  
                                      if(debug) browser()
                                        iNextNodeFunction <- 1
                                        numDecls <- length(modelDef$declInfo)
