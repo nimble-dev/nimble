@@ -448,7 +448,9 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
                   ## If this line is included in output, add the Hessian of this line (i) wrt this param #1 (j) and this param #2 (j_2).
                   outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ] <-  outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ]   +
                     chainRuleHessianList[[i]][derivInfo$wrtFromIndices[[j]], derivInfo$wrtFromIndices[[j_2]],]
-                  print(outDerivList$hessian)
+                  print(i)
+                  print("crHessian")
+                  print(chainRuleHessianList[[i]])
                   
                 }
               }
