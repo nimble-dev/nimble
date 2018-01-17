@@ -1013,7 +1013,7 @@ genReplacementsAndCodeRecurse <- function(code,
                         deparse(code[[1]]),
                         '\" has non-replaceable node values as arguments.  Must be a nimble function.')
                  )
-        if(isRfunction & allContentsReplaceable)
+        if((isRfunction & allContentsReplaceable) & !(is.rcf(get(deparse(code[[1]])))))
             return(replaceAllCodeSuccessfully(code))
         return(replaceWhatWeCan(code,
                                 contentsCodeReplaced,
