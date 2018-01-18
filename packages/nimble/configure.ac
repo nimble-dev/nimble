@@ -12,19 +12,19 @@ AC_PROG_CXX
 
 NEED_MAKEVARS_FILE=TRUE
 
-# Define -fPIC rather than -fpic when possibly, to overcome -fpic's limit on
-# the number of exported symbols.
-CXXPICFLAGS="-fPIC"
-case "${CXX}" in
-  ## Intel compilers
-  *icpc|*icc)
-    CXXPICFLAGS="-fpic"
-    ;;
-  ## Portland Group
-  *pgCC)
-    CXXPICFLAGS="-fpic"
-    ;;
-esac
+dnl # Define -fPIC rather than -fpic when possibly, to overcome -fpic's limit on
+dnl # the number of exported symbols.
+dnl CXXPICFLAGS="-fPIC"
+dnl case "${CXX}" in
+dnl   ## Intel compilers
+dnl   *icpc|*icc)
+dnl     CXXPICFLAGS="-fpic"
+dnl     ;;
+dnl   ## Portland Group
+dnl   *pgCC)
+dnl     CXXPICFLAGS="-fpic"
+dnl     ;;
+dnl esac
 
 dnl The caller can specify where their Eigen/ directory is using, e.g.,
 dnl    --configure-args='--with-eigen=/home/bob/local'
@@ -148,7 +148,7 @@ dnl                rm -rf inst/Eigen_local
                   ])
 
 dnl Somewhat confused if this is redundant with the CPPFLAGS entry above
-if test -n "CPPAD_DIR" ; then
+if test -n "$CPPAD_DIR" ; then
 echo "Using CppAD directory ${CPPAD_DIR}"
 CPPAD_INC="-I$CPPAD_DIR"
 fi
@@ -158,7 +158,7 @@ echo "Using Eigen directory ${EIGEN_DIR}"
 EIGEN_INC="-I$EIGEN_DIR"
 fi
 
-AC_SUBST(CXXPICFLAGS)
+dnl AC_SUBST(CXXPICFLAGS)
 AC_SUBST(CPPAD_INC)
 AC_SUBST(EIGEN_INC)
 AC_SUBST(NEED_MAKEVARS_FILE)
