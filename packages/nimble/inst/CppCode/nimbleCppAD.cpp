@@ -256,6 +256,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                               //  (nodes.cppWrtArgIndices[i][0]
                                               //  > -1
         thisArgIndex = 0;
+        if(i == 5){
+
+        }
         for (int j = 0; j < jLength; j++) {
           lineWrtSizeIJ = nodes.lineWrtArgSizeInfo[i][j];
           if ((j == 0) & isWrtLine) {
@@ -286,8 +289,8 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                 for (int j2 = 1; j2 < jLength; j2++) {
                   int lineWrtSizeIJ2 = nodes.lineWrtArgSizeInfo[i][j2];
                   k2Length = nodes.topLevelWrtDeps[i][j2].size();
+                  int addToIndex2 = 0;
                   for (int k2 = 0; k2 < k2Length; k2++) {
-                    if (nodes.topLevelWrtDeps[i][j2][k2][0] > 0) {
                       int lLength2 = nodes.topLevelWrtDeps[i][j2][k2].dimSize(0);
                       int parentRowLength2 =
                           chainRuleJacobians[nodes.parentIndicesList[i][j2][k2]]
@@ -317,7 +320,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                   wrtStartNode2, wrtStartNode,
                                   wrtLength2, wrtLength) +=
                                   thisHessian[dim3].block(
-                                      thisArgIndex, thisArgIndex2, lineWrtSizeIJ,
+                                      thisArgIndex, thisArgIndex2 + addToIndex2, lineWrtSizeIJ,
                                       nodes.lineWrtArgSizeInfo[i][j2]).transpose();
                               }
                               else{
@@ -325,7 +328,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                   wrtStartNode, wrtStartNode2,
                                   wrtLength, wrtLength2) +=
                                   thisHessian[dim3].block(
-                                      thisArgIndex, thisArgIndex2, lineWrtSizeIJ,
+                                      thisArgIndex, thisArgIndex2 + addToIndex2, lineWrtSizeIJ,
                                       nodes.lineWrtArgSizeInfo[i][j2]);
 
                               }
@@ -343,7 +346,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                                     .rows(),
                                             wrtLength2).transpose() * 
                                             thisHessian[dim3].block(
-                                        thisArgIndex, thisArgIndex2, lineWrtSizeIJ,
+                                        thisArgIndex, thisArgIndex2 + addToIndex2, lineWrtSizeIJ,
                                         nodes.lineWrtArgSizeInfo[i][j2]).transpose();
                               }
                               else{
@@ -351,7 +354,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                     wrtStartNode, wrtStartNode2,
                                     wrtLength, wrtLength2) +=
                                     thisHessian[dim3].block(
-                                        thisArgIndex, thisArgIndex2, lineWrtSizeIJ,
+                                        thisArgIndex, thisArgIndex2 + addToIndex2, lineWrtSizeIJ,
                                         nodes.lineWrtArgSizeInfo[i][j2]) *
                                     chainRuleJacobians[nodes.parentIndicesList
                                                           [i][j2][k2]]
@@ -365,8 +368,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                             }
                           }
                         }
-                      }
                     }
+                                                     addToIndex2 += nodes.nodeLengths[nodes.parentIndicesList[i][j2][k2]];;
+
                   }
                   thisArgIndex2 += lineWrtSizeIJ2;
                 }
@@ -662,11 +666,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                                     }
                                   }
                                 }
-
                             }
-
                         }
-                                 addToIndex2 += nodes.nodeLengths[nodes.parentIndicesList[i][j2][k2]];;
+                        addToIndex2 += nodes.nodeLengths[nodes.parentIndicesList[i][j2][k2]];;
                         }
                         thisArgIndex2 += lineWrtSizeIJ2;
                       }

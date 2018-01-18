@@ -73,6 +73,21 @@ test_that('Derivs of calculate function work for model ADMod4', {
                         wrt = list(c('x0'), c('x[0]', 'x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), tolerance = .1)
 })
 
+test_that('Derivs of calculate function work for model ADmod5 (tricky indexing)', {
+  ADCode5 <- nimbleCode({
+    y[1:2] ~ dmnorm(z[1:2], diagMat[,])
+    z[1] <- x[2]
+    z[2:3] <- x[1:2] + c(1,1)
+    x[1] ~ dnorm(.1, 10)
+    x[2] ~ dnorm(1, 3)
+  })
+  ADMod5 <- nimbleModel(
+    code = ADCode5, dimensions = list(x = 2, y = 2, z = 3), constants = list(diagMat = diag(2)),
+    inits = list(x = c(1, 1.2), y  = c(-.1,-.2)))
+  test_ADModelCalculate(ADMod4, name = 'ADMod5', calcNodeNames = list(c('y'), c('y[2]'), c(ADMod4$getDependencies(c('x')))),
+                        wrt = list(c('x'), c('x[1]', 'z[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), tolerance = .1)
+})
+
 
 test_that('Derivs of calculate function work for model equiv', {
   dir = nimble:::getBUGSexampleDir('equiv')
