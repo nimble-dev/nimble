@@ -84,7 +84,7 @@ test_that('Derivs of calculate function work for model ADmod5 (tricky indexing)'
   ADMod5 <- nimbleModel(
     code = ADCode5, dimensions = list(x = 2, y = 2, z = 3), constants = list(diagMat = diag(2)),
     inits = list(x = c(1, 1.2), y  = c(-.1,-.2)))
-  test_ADModelCalculate(ADMod4, name = 'ADMod5', calcNodeNames = list(c('y'), c('y[2]'), c(ADMod4$getDependencies(c('x')))),
+  test_ADModelCalculate(ADMod5, name = 'ADMod5', calcNodeNames = list(c('y'), c('y[2]'), c(ADMod5$getDependencies(c('x')))),
                         wrt = list(c('x'), c('x[1]', 'z[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), tolerance = .1)
 })
 

@@ -1258,6 +1258,37 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
   }
 }
 
+makeADDistributionTestList <- function(distnList){
+  argsList <- lapply(distnList$args, function(x){
+    return(x)
+  })
+  ansList <- list(args = argsList,
+                  expr = substitute(out <- nimDerivs(METHODEXPR, wrt = WRT, order = c(0,1,2)),
+                                    list(METHODEXPR = as.call(c(list(quote(method1)),
+                                                               lapply(names(distnList$args),
+                                                                      function(x){return(parse(text = x)[[1]])}))),
+                                         WRT = names(distnList$args)
+                                    )),
+                  outputType = quote(ADNimbleList())
+  )
+  return(ansList)
+}
+
+makeADDistributionMethodTestList <- function(distnList){
+  argsList <- lapply(distnList$args, function(x){
+    return(x)
+  })
+  ansList <- list(args = argsList,
+                  expr = substitute(out <- DISTNEXPR,
+                                    list(DISTNEXPR = as.call(c(list(parse(text = distnList$distnName)[[1]]),
+                                                               lapply(names(distnList$args),
+                                                                      function(x){return(parse(text = x)[[1]])})))
+                                    )),
+                  outputType = quote(double(0))
+  )
+  return(ansList)
+}
+
 expandNames <- function(var, ...) {
     tmp <- as.matrix(expand.grid(...))
     indChars <- apply(tmp, 1, paste0, collapse=', ')
@@ -1365,3 +1396,5 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
               )
     invisible(NULL)
 }
+
+

@@ -138,13 +138,17 @@ public:
           }
         }
       }
-      // Delete Below:
-      // ansList->value.setSize(1, false);
-      // ansList->value[0] =    chrono::duration_cast<chrono::microseconds>(t1b - t1).count();
-      // Delete Above
     }
     //return (ansList);
-  }
+  };
+
+   nimSmartPtr<NIMBLE_ADCLASS> getDerivs_wrapper(nimbleCppADinfoClass &ADinfo,
+                                        NimArr<1, double> &derivOrders,
+                                        const NimArr<1, double> &wrtVector){
+            nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
+            getDerivs(ADinfo, derivOrders, wrtVector, ansList);
+            return(ansList);
+    }
 };
 
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(

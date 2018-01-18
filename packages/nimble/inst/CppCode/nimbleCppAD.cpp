@@ -1,18 +1,8 @@
 #include <nimble/nimbleCppAD.h>
-#include <time.h> /* time_t, struct tm, difftime, time, mktime */
-#include <chrono>
-
-double accumulateTimerWholeAlgo(0);
-double accumulateTimerCppadDerivs(0);
-double accumulateTimerInsideCppADFunc(0);
-double accumulateTimerLinearAlgebra(0);
 
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
     const NodeVectorClassNew_derivs &nodes,
     const NimArr<1, double> &derivOrders) {
-  // typedef std::chrono::high_resolution_clock Clock;
-
-  // auto t1 = Clock::now();
 
   nimSmartPtr<NIMBLE_ADCLASS> ansList =
       new NIMBLE_ADCLASS;  // This will be returned from this funciton.
@@ -110,51 +100,17 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   int thisArgIndex;
   int wrtNodeJ;
 
-  // vector<MatrixXd> parentJacobians;  // For each node, parentJacobians is
-  //                                    // repopulated to store the Jacobian
-  //                                    // matrices of all of the parent nodes
-  //                                    of
-  //                                    // that node.
-
-  // vector<vector<vector<VectorXd> > > parentHessians;  // Similar to
-  //                                                     // parentJacobians. The
-  //                                                     // parent Hessians are
-  //                                                     // actually only used
-  //                                                     as
-  //                                                     // vectors in our
-  //                                                     // implementation of
-  //                                                     Faa
-  //                                                     // Di Bruno's theorem,
-  //                                                     so
-  //                                                     // stored as such. E.g.
-  //                                                     //
-  //                                                     parentHessians[i][j][k]
-  //                                                     // would be the i'th
-  //                                                     // parent node's
-  //                                                     Hessian
-  //                                                     // array's third
-  //                                                     dimension
-  //                                                     // (a vector).
   vector<MatrixXd> chainRuleJacobians(
       nodes.parentIndicesList
-          .size());  // Similar storage as parentJacobians above.
-                     // chainRuleJacobians[i] is the Jacobian
+          .size()); // chainRuleJacobians[i] is the Jacobian
                      // matrix for the i'th node (as determined by
                      // nodes.parentIndicesList). Values of
                      // chainRuleJacobians are not overwritten, but
                      // stored for use in populating the
                      // parentJacobians of downstream nodes.
 
-  // vector<Tensor<double, 3> >
-  // chainRuleHessians(nodes.parentIndicesList.size());
-  vector<vector<MatrixXd> > chainRuleHessians(  // Due to the linear algebra
-      //                                               // necessary for chain
-      //                                               rule
-      //                                               // calculations,
-      nodes.parentIndicesList.size());  // the chainRuleHessians are stored in
-  //                                        // a different format than the
-  //                                        parent
-  //                                        // Hessians. The outer vector goes
+  vector<vector<MatrixXd> > chainRuleHessians(  
+      nodes.parentIndicesList.size());  // The outer vector goes
   //                                        over
   //                                        // nodes.parentIndicesList. The
   //                                        second
@@ -215,14 +171,8 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
             thisDerivList);  // Derivatives of calculate() for
                              // node i are computed here.
         }
-        // auto t2b = std::chrono::high_resolution_clock::now();
-        // accumulateTimerCppadDerivs +=
-        // chrono::duration_cast<chrono::microseconds>(t2b - t2).count();
-
         thisRows = (*thisDerivList).gradient.dimSize(0);
         thisCols = (*thisDerivList).gradient.dimSize(1);
-        accumulateTimerInsideCppADFunc += thisDerivList->value[0];
-
         vector<Map<MatrixXd, Unaligned, EigStrDyn> > thisHessian;
         derivOutputFlag =
             (isDeterminisitic) ? false : true;  // derivOutputFlag is true if
@@ -707,10 +657,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
             }
           }
         }
-
-        // auto t3b = std::chrono::high_resolution_clock::now();
-        // accumulateTimerLinearAlgebra +=
-        // chrono::duration_cast<chrono::microseconds>(t3b - t3).count();
       } else {  // Otherwise, no arguments depend on wrt nodes, so we don't need
                 // to take derivatives. Instead, just set Jacobian and Hessian
                 // to 0.
@@ -721,38 +667,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
               instructions[i].operand, valueOrder, nodes.cppWrtArgIndices[i],
               thisDerivList);
         }
-        // chainRuleJacobians[i] =
-        //     MatrixXd::Zero(thisNodeSize, nodes.totalWrtSize);
-        // if (hessianFlag) {
-        //   chainRuleHessians[i].resize(thisNodeSize);
-        //   for (int j = 0; j < thisNodeSize; j++) {
-        //     chainRuleHessians[i][j] =
-        //         MatrixXd::Zero(nodes.totalWrtSize, nodes.totalWrtSize);
-        //   }
-        // }
       }
     }
-    if (!isDeterminisitic) {  // If this is a wrt node, we need to set the
-                              // chainRule derivatives appropriately so that the
-                              // chain rule will work for dependent nodes of
-                              // this node.  That means taking the first and
-                              // second derivs of the function f(x) = x, which
-                              // will be the identity matrix and 0 respectively.
-      // chainRuleJacobians[i] = MatrixXd::Zero(thisNodeSize,
-      // nodes.totalWrtSize); if (isWrtLine) {
-      //   jLength = nodes.wrtLineIndices[thisWrtLine].dimSize(0);
-      //   for (int j = 0; j < jLength; j++) {
-      //     thisIndex = nodes.wrtLineIndices[thisWrtLine][j] - 1;
-      //     chainRuleJacobians[i](j, thisIndex) = 1;
-      //   }
-      // }
-      // if (hessianFlag) {
-      //   chainRuleHessians[i].resize(thisNodeSize);
-      //   for (int j = 0; j < thisNodeSize; j++) {
-      //     chainRuleHessians[i][j] =
-      //         MatrixXd::Zero(nodes.totalWrtSize, nodes.totalWrtSize);
-      //   }
-      // }
+    if (!isDeterminisitic) {  
       if (isCalcNodeLine && valueFlag) {
         (*ansList).value[0] = (*ansList).value[0] + (*thisDerivList).value[0];
       }
@@ -762,16 +679,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
     ansHessian.triangularView<Eigen::Lower>() =
         ansHessian.transpose().triangularView<Eigen::Lower>();
   }
-
-  // auto t1b = Clock::now();
-  // accumulateTimerWholeAlgo +=
-  // chrono::duration_cast<chrono::microseconds>(t1b - t1).count();
-  // cout << "accumulateTimerWholeAlgo: " << accumulateTimerWholeAlgo << "\n";
-  // cout << "accumulateTimerCppadDerivs: " << accumulateTimerCppadDerivs <<
-  // "\n"; cout << "accumulateTimerInsideCppADFunc: " <<
-  // accumulateTimerInsideCppADFunc << "\n"; cout <<
-  // "accumulateTimerLinearAlgebra: " << accumulateTimerLinearAlgebra << "\n";
-
   return (ansList);
 }
 
