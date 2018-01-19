@@ -358,8 +358,6 @@ chainsPlot <- function(samplesList, var=NULL, nrows=3, width=7, height=min(1+3*n
     if(!is.null(file)) pdf(file, width=width, height=height) else
     if(inherits(try(eval(parse(text=paste0('knitr','::','opts_chunk$get(\'dev\')'))[[1]]), silent=TRUE), 'try-error') || is.null(eval(parse(text=paste0('knitr','::','opts_chunk$get(\'dev\')'))[[1]])))   ## if called from Rmarkdown/knitr
         dev.new(height=height, width=width)
-    par.save <- par(no.readonly = TRUE)
-    par(mfrow=c(nrows,1), oma=c(3,1,1,1), mar=c(4,1,0,1), mgp=c(3,0.5,0))
     if(class(samplesList) != 'list') samplesList <- list(samplesList)
     if(!is.null(var)) samplesList <- lapply(samplesList, function(samples) {
         var <- gsub('\\[', '\\\\\\[', gsub('\\]', '\\\\\\]', var))   ## add \\ before any '[' or ']' appearing in var
@@ -370,6 +368,9 @@ chainsPlot <- function(samplesList, var=NULL, nrows=3, width=7, height=min(1+3*n
     nChains <- length(samplesList)
     paramNamesAll <- unique(unlist(lapply(samplesList, function(s) colnames(s))))
     nParamsAll <- length(paramNamesAll)
+    if(nParamsAll < 9) nrows <- 2;     if(nParamsAll < 5) nrows <- 1
+    par.save <- par(no.readonly = TRUE)
+    par(mfrow=c(nrows,1), oma=c(3,1,1,1), mar=c(4,1,0,1), mgp=c(3,0.5,0))
     cols <- rainbow(nChains)
     ## construct 3D summary array:
     summary <- array(as.numeric(NA), dim = c(nChains, 3, nParamsAll))
