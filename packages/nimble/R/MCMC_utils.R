@@ -315,7 +315,7 @@ samplesSummary <- function(samples) {
 #' @export
 samplesPlot <- function(samples, var=colnames(samples), ind=NULL, burnin=NULL, width=7, height=4, legend=TRUE, legend.location='topright', traceplot=TRUE, densityplot=TRUE, file=NULL) {
     if(!is.null(file)) pdf(file, width=width, height=height) else
-    if(inherits(try(knitr::opts_chunk$get('dev'), silent=TRUE), 'try-error') || is.null(knitr::opts_chunk$get('dev')))   ## if called from Rmarkdown/knitr
+    if(inherits(try(eval(parse(text=paste0('knitr','::','opts_chunk$get(\'dev\')'))[[1]]), silent=TRUE), 'try-error') || is.null(eval(parse(text=paste0('knitr','::','opts_chunk$get(\'dev\')'))[[1]])))   ## if called from Rmarkdown/knitr
         dev.new(height=height, width=width)
     par.save <- par(no.readonly = TRUE)
     par(mfrow=c(1,traceplot+densityplot), cex=0.7, cex.main=1.5, cex.axis=0.9, lab=c(3,3,7), mgp=c(0,0.4,0), mar=c(1.6,1.6,2,0.6), oma=c(0,0,0,0), tcl=-0.3, bty='l')
@@ -356,7 +356,7 @@ samplesPlot <- function(samples, var=colnames(samples), ind=NULL, burnin=NULL, w
 #' @export
 chainsPlot <- function(samplesList, var=NULL, nrows=3, width=7, height=min(1+3*nrows,7), legend=!is.null(names(samplesList)), legend.location='topright', jitter=1, buffer.right=0, buffer.left=0, cex=1, file=NULL) {
     if(!is.null(file)) pdf(file, width=width, height=height) else
-    if(inherits(try(knitr::opts_chunk$get('dev'), silent=TRUE), 'try-error') || is.null(knitr::opts_chunk$get('dev')))   ## if called from Rmarkdown/knitr
+    if(inherits(try(eval(parse(text=paste0('knitr','::','opts_chunk$get(\'dev\')'))[[1]]), silent=TRUE), 'try-error') || is.null(eval(parse(text=paste0('knitr','::','opts_chunk$get(\'dev\')'))[[1]])))   ## if called from Rmarkdown/knitr
         dev.new(height=height, width=width)
     par.save <- par(no.readonly = TRUE)
     par(mfrow=c(nrows,1), oma=c(3,1,1,1), mar=c(4,1,0,1), mgp=c(3,0.5,0))
