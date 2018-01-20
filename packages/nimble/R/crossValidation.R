@@ -35,12 +35,12 @@ calcCrossVal <- function(i,
   currentDataNames <- currentDataNames[!(currentDataNames %in% leaveOutNames)]
   saveData <- values(model, leaveOutNames)
   if(!silent) newModel <- model$newModel(check = FALSE, replicate = TRUE)
-  else hideOut <- capture.output(newModel <- model$newModel(check = FALSE, replicate = TRUE), type = 'message')
+  else newModel <- suppressMessages(model$newModel(check = FALSE, replicate = TRUE))
   newModel$resetData()
   values(newModel, leaveOutNames) <- NA
   newModel$setData(model$getVarNames(nodes = currentDataNames))
   if(!silent) compileNimble(newModel)
-  else hideOut <- capture.output(Cmodel <- compileNimble(newModel), type = 'message')
+  else Cmodel <- suppressMessages(compileNimble(newModel))
   predLoss <- FALSE
   if(is.character(lossFunction) && lossFunction == 'predictive'){
     paramNames <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -55,7 +55,7 @@ calcCrossVal <- function(i,
     predLoss <- TRUE
   }
   if(!silent) modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames)
-  else hideOut <- capture.output(modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames), type = 'message')
+  else modelMCMCConf <- suppressMessages(configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames))
   if(!predLoss) modelMCMCConf$samplerConfs <- c(conf$samplerConfs,modelMCMCConf$samplerConfs)
   if(!silent){
     modelMCMC <- buildMCMC(modelMCMCConf)
@@ -64,12 +64,10 @@ calcCrossVal <- function(i,
     C.modelMCMC$run(niter)
   }
   else{
-    hideOut <- capture.output({
-      modelMCMC <- buildMCMC(modelMCMCConf)
-      C.modelMCMC <- compileNimble(modelMCMC,
-                                   project = newModel)
-      silentNull <- C.modelMCMC$run(niter, progressBar = FALSE)
-    }, type = 'message')
+      modelMCMC <- suppressMessages(buildMCMC(modelMCMCConf))
+      C.modelMCMC <- suppressMessages(compileNimble(modelMCMC,
+                                   project = newModel))
+      silentNull <- suppressMessages(C.modelMCMC$run(niter, progressBar = FALSE))
   }
   MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames, drop = FALSE]
   sampNum <- dim(MCMCout)[1]
