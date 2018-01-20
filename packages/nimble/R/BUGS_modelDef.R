@@ -772,6 +772,7 @@ modelDefClass$methods(reparameterizeDists = function() {
           
                                         # insert altParams and bounds into code
         }
+        names(boundExprs)[names(boundExprs) %in% c('lower', 'upper')] <- paste0(names(boundExprs)[names(boundExprs) %in% c('lower', 'upper')], '_')
         newValueExpr <- as.call(c(as.list(newValueExpr), nonReqdArgExprs, boundExprs))
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
@@ -939,7 +940,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
             params <- as.list(valueExpr[-1])   ## extract the original distribution parameters
             
             for(iParam in seq_along(params)) {
-                if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower', 'upper'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
+                if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower_', 'upper_'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
                 paramExpr <- params[[iParam]]
                 if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
                 requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
