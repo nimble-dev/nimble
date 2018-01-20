@@ -26,18 +26,21 @@ calcCrossVal <- function(i,
                          niter,
                          nburnin,
                          returnSamples,
-                         nBootReps){
+                         nBootReps, 
+                         silent){
   message(paste("dropping data fold", i))
   model <- conf$model
   leaveOutNames <- model$expandNodeNames(foldFunction(i))
   currentDataNames <- model$getNodeNames(dataOnly = T)
   currentDataNames <- currentDataNames[!(currentDataNames %in% leaveOutNames)]
   saveData <- values(model, leaveOutNames)
-  newModel <- model$newModel(check = FALSE, replicate = TRUE)
+  if(!silent) newModel <- model$newModel(check = FALSE, replicate = TRUE)
+  else hideOut <- capture.output(newModel <- model$newModel(check = FALSE, replicate = TRUE), type = 'message')
   newModel$resetData()
   values(newModel, leaveOutNames) <- NA
   newModel$setData(model$getVarNames(nodes = currentDataNames))
-  compileNimble(newModel)
+  if(!silent) compileNimble(newModel)
+  else hideOut <- capture.output(Cmodel <- compileNimble(newModel), type = 'message')
   predLoss <- FALSE
   if(is.character(lossFunction) && lossFunction == 'predictive'){
     paramNames <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -51,12 +54,23 @@ calcCrossVal <- function(i,
     leaveOutNames <- paramNames
     predLoss <- TRUE
   }
-  modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames)
+  if(!silent) modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames)
+  else hideOut <- capture.output(modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames), type = 'message')
   if(!predLoss) modelMCMCConf$samplerConfs <- c(conf$samplerConfs,modelMCMCConf$samplerConfs)
-  modelMCMC <- buildMCMC(modelMCMCConf)
-  C.modelMCMC <- compileNimble(modelMCMC,
-                               project = newModel)
-  C.modelMCMC$run(niter)
+  if(!silent){
+    modelMCMC <- buildMCMC(modelMCMCConf)
+    C.modelMCMC <- compileNimble(modelMCMC,
+                                 project = newModel)
+    C.modelMCMC$run(niter)
+  }
+  else{
+    hideOut <- capture.output({
+      modelMCMC <- buildMCMC(modelMCMCConf)
+      C.modelMCMC <- compileNimble(modelMCMC,
+                                   project = newModel)
+      silentNull <- C.modelMCMC$run(niter, progressBar = FALSE)
+    }, type = 'message')
+  }
   MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames, drop = FALSE]
   sampNum <- dim(MCMCout)[1]
   startIndex <- nburnin+1
@@ -143,7 +157,7 @@ generateRandomFoldFunction <- function(model, k){
 #' @param nBootReps number of bootstrap samples
 #' to use when estimating the Monte Carlo error of the cross-validation metric. Defaults to 200.  If no Monte Carlo error estimate is desired,
 #' \code{nBootReps} can be set to \code{NA}, which can potentially save significant computation time.
-#'
+#' @param silent Boolean specifying whether to show output from the algorithm as it's running (default = FALSE).
 #' @author Nicholas Michaud and Lauren Ponisio
 #' @export
 #' @details k-fold CV in NIMBLE proceeds by separating the data in a \code{nimbleModel}
@@ -274,7 +288,8 @@ runCrossValidate <- function(MCMCconfiguration,
                              MCMCcontrol = list(), 
                              returnSamples = FALSE,
                              nCores = 1,
-                             nBootReps = 200){
+                             nBootReps = 200,
+                             silent = FALSE){
   
   model <- MCMCconfiguration$model
   niter <- MCMCcontrol[['niter']] 
@@ -324,7 +339,8 @@ runCrossValidate <- function(MCMCconfiguration,
                             nburnin,
                             returnSamples,
                             nBootReps,
-                            mc.cores = nCores)
+                            mc.cores = nCores,
+                            silent)
   } else{
       crossValOut <- lapply(1:k, calcCrossVal,
                             MCMCconfiguration,
@@ -333,7 +349,8 @@ runCrossValidate <- function(MCMCconfiguration,
                             niter,
                             nburnin,
                             returnSamples,
-                            nBootReps)
+                            nBootReps,
+                            silent)
   }
   CVvalue <- mean(sapply(crossValOut, function(x) x$crossValAverage),
                   na.rm=TRUE)

@@ -73,7 +73,8 @@ test_that("voter model cross-validation runs using MSE loss: ", {
                               foldFunction = 'random',
                               lossFunction = 'MSE',
                               MCMCcontrol = list(niter = 100),
-                              nBootReps = 2)
+                              nBootReps = 2,
+                              silent = TRUE)
 })
 
 test_that("cross-validation runs correctly when nBootReps = NA: ", {
