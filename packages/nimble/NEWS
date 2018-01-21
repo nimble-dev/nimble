@@ -1,8 +1,17 @@
                            CHANGES IN VERSION 0.6-9 (January 2018)
 						   
+USER LEVEL CHANGES
+
+-- Can now specify "nBootReps = NA" in the runCrossValidate() function, which will prevent the Monte Carlo error from being calculated.
+
+-- runCrossValidate() now returns the averaged loss over all k folds, instead of the summed loss.
+						   
 BUG FIXES
 
 -- Fixed a bug where calling nimbleModel() on a BUGS model with a node that was it's own parent caused R to crash.
+
+-- Fixed a bug in runCrossValidate(), where for certain models using the "random" foldFunction would cause an error.
+
 
 						   
 						   CHANGES IN VERSION 0.6-8 and 0.6-7 (November 2017)
