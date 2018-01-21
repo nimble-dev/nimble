@@ -1710,7 +1710,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
     ## replacementNameExpressions has the names of things that are replacements, e.g. i_plus_1
     if(debug) browser()
     anyContext <- ncol(unrolledBUGSindices) > 0 
-    if(length(anyContext)==0) browser()
+    if(length(anyContext)==0) stop('collectEdges: problem with anyContext')
 
     if(nimbleOptions()$allowDynamicIndexing) {
         ## replace NA with 1 to index into first element, since for unknownIndex vars there should be only one vertex
@@ -1735,7 +1735,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
                 boolIndexNamePiecesExprs <- !unlist(lapply(parentIndexNamePieces, is.numeric)) ##!is.numeric(parentIndexNamePieces)
                 if(all(boolIndexNamePiecesExprs)) {
                     test <- try(varIndicesToUse <- unrolledBUGSindices[ , unlist(parentIndexNamePieces), drop = FALSE])
-                    if(inherits(test, 'try-error')) browser()
+                    if(inherits(test, 'try-error')) stop('collectEdges: problem with unrolledBUGSindices')
                 } else {
                     varIndicesToUse <- matrix(nrow = nrow(unrolledBUGSindices), ncol = length(parentIndexNamePieces))
                     varIndicesToUse[, boolIndexNamePiecesExprs] <- unrolledBUGSindices[ , unlist(parentIndexNamePieces)[boolIndexNamePiecesExprs], drop = FALSE]
@@ -1756,7 +1756,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
         
     } else {
         if(anyContext) {
-           if(length(ncol(unrolledBUGSindices))==0) browser()
+           if(length(ncol(unrolledBUGSindices))==0) stop('collectEdges: problem with unrolledBUGSindices')
             colNums <- 1:ncol(unrolledBUGSindices)
             names(colNums) <- dimnames(unrolledBUGSindices)[[2]]
             newIndexExprs <- lapply(replacementNameExprs, function(x) substitute(unrolledBUGSindices[iRow, iCol], list(X = x, iCol = colNums[as.character(x)])))
@@ -1910,7 +1910,9 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 }
             }
             pieces[['sep']] <- ', '
-            BUGSdecl$nodeFunctionNames <- paste0(lhsVar, '[', do.call('paste', pieces), ']')  ## create the names.  These are LHS so the are nodeFunctions
+            BUGSdecl$nodeFunctionNames <- paste0(lhsVar, '[', do.call('paste', pieces), ']')  ## create the names.  These are LHS so they are nodeFunctions
+            if(BUGSdecl$type == 'unknownIndex')   # catch duplicate node names in case like x[k[i],block[i]]
+                BUGSdecl$nodeFunctionNames <- unique(BUGSdecl$nodeFunctionNames)
             allNodeNames <- c(allNodeNames, BUGSdecl$nodeFunctionNames)
             types <- c(types, rep(BUGSdecl$type, length(BUGSdecl$nodeFunctionNames) ) )       ## append vector of "stoch" or "determ" to types vector
             BUGSdecl$origIDs <- next_origID -1 + (1:length(BUGSdecl$nodeFunctionNames))       ## record the original IDs used here
