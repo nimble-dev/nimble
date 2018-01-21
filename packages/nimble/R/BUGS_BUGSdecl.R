@@ -695,7 +695,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
               indexingBracket <- FALSE
             } 
         }
-        if(indexingBracket) { 
+        if(indexingBracket) {
             ## recurse on the index arguments
             contents <-
                 lapply(code[-c(1,2)],
@@ -728,7 +728,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                               indexNames,
                                               nimbleFunctionNames,
                                               contextID)
-
+            
             ## error if it looks like mu[i][j] where i is a for-loop index
             if(variable$hasIndex)
                 stop('Error: Variable',
@@ -738,6 +738,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             if(variable$replaceable) {
                 ## a case like x[ block[i] ], dealing with the
                 ## block[i], so block is replaceable
+                if(!all(contentsReplaceable)) 
+                    ## dynamic index on a constant
+                    stop('getSymbolicParentNodesRecurse: dynamic indexing of constants is not allowed in ', deparse(code))
                 boolIndexingBlock <-
                     unlist(
                         lapply(code[-c(1,2)],
