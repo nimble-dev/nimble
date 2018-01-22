@@ -1,4 +1,4 @@
-citHeader("Please cite the Journal of Computational and Graphical Statistics article for general purposes, the package if you need to cite a specific package version, or the manual if you need to cite material from the manual.")
+citHeader("In published work that uses or mentions NIMBLE, please cite the Journal of Computational and Graphical Statistics article. To cite a specific version of the package or to cite material from the manual, please cite the package itself or the manual.")
 
 year <- sub("-.*", "", meta$Date)
 note <- sprintf("{R} package version %s", meta$Version)

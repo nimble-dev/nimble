@@ -72,7 +72,7 @@ NIMBLE. Journal of Computational and Graphical Statistics 26:403-413. [https://d
 To cite a version of the package, please cite:
 
 NIMBLE Development Team. 2017.
-NIMBLE: An R Package for Programming with BUGS models, Version 0.6-6.
+NIMBLE: An R Package for Programming with BUGS models, Version 0.6-8.
 https://r-nimble.org,
 https://zenodo.org/record/820704.
 

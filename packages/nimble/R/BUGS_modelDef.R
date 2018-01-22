@@ -174,6 +174,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     addFullDimExtentToUnknownIndexDeclarations() ## update unknownIndex declarations with full extent of relevant parent variable; this splits parent variable and does edge determination (from parent variable to unknownIndex variable) but without splitting based on unknown indices
     genExpandedNodeAndParentNames3(debug = debug) ## heavy processing: all graphIDs, maps, graph, nodeNames etc. built here
     stripUnknownIndexInfo()               ## removes unknownIndex declarations and vars
+    checkForSelfParents()                 ## Checks to see if any nodes are their own parents, and errors out if so
     maps$setPositions3()                  ## Determine top, latent and end nodes
     buildSymbolTable()                    ## 
     genIsDataVarInfo()                    ## only the maxs is ever used, in newModel
@@ -811,6 +812,7 @@ modelDefClass$methods(reparameterizeDists = function() {
           
                                         # insert altParams and bounds into code
         }
+        names(boundExprs)[names(boundExprs) %in% c('lower', 'upper')] <- paste0(names(boundExprs)[names(boundExprs) %in% c('lower', 'upper')], '_')
         newValueExpr <- as.call(c(as.list(newValueExpr), nonReqdArgExprs, boundExprs))
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
@@ -978,7 +980,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
             params <- as.list(valueExpr[-1])   ## extract the original distribution parameters
             
             for(iParam in seq_along(params)) {
-                if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower', 'upper'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
+                if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower_', 'upper_'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
                 paramExpr <- params[[iParam]]
                 if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
                 requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
@@ -2937,4 +2939,12 @@ detectDynamicIndexes <- function(expr) {
     if(length(expr) == 1 || expr[[1]] != "[") return(FALSE) # stop("whichDynamicIndices: 'expr' should be a bracket expression")
     return(sapply(expr[3:length(expr)], isDynamicIndex)) 
 }
+
+modelDefClass$methods(checkForSelfParents = function(){
+  for(i in seq_along(maps$edgesFrom)){
+    if(maps$edgesFrom[i] == maps$edgesTo[i]){
+      stop(paste("In building model, node", maps$graphID_2_nodeName[maps$edgesFrom[i]], "is its own parent node."), call. = FALSE)
+    }
+  }
+})
 

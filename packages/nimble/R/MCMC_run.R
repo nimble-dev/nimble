@@ -1,15 +1,5 @@
 
 
-#' @export
-samplesSummary <- function(samples) {
-    cbind(
-        `Mean`      = apply(samples, 2, mean),
-        `Median`    = apply(samples, 2, median),
-        `St.Dev.`   = apply(samples, 2, sd),
-        `95%CI_low` = apply(samples, 2, function(x) quantile(x, 0.025)),
-        `95%CI_upp` = apply(samples, 2, function(x) quantile(x, 0.975)))
-}
-
 
 #' Run one or more chains of an MCMC algorithm and return samples, summary and/or WAIC
 #'
