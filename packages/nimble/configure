@@ -2576,9 +2576,9 @@ fi
 
 if test "${ENABLE_DEBUGGING}" = "yes"; then
    echo "enabling R's default debugging information in libnimble"
-   GNUMAKEFILE_INCLUDE_MAKECONF="-include \$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="include \$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
 else
-   GNUMAKEFILE_INCLUDE_MAKECONF="-include ./Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="include ./Makeconf"
 fi
 
 
@@ -3063,7 +3063,7 @@ fi
 done
 
 
-if test -n "CPPAD_DIR" ; then
+if test -n "$CPPAD_DIR" ; then
 echo "Using CppAD directory ${CPPAD_DIR}"
 CPPAD_INC="-I$CPPAD_DIR"
 fi
