@@ -26,17 +26,21 @@ calcCrossVal <- function(i,
                          niter,
                          nburnin,
                          returnSamples,
-                         nBootReps){
+                         nBootReps, 
+                         silent){
+  message(paste("dropping data fold", i))
   model <- conf$model
   leaveOutNames <- model$expandNodeNames(foldFunction(i))
   currentDataNames <- model$getNodeNames(dataOnly = T)
   currentDataNames <- currentDataNames[!(currentDataNames %in% leaveOutNames)]
   saveData <- values(model, leaveOutNames)
-  newModel <- model$newModel(check = FALSE, replicate = TRUE)
+  if(!silent) newModel <- model$newModel(check = FALSE, replicate = TRUE)
+  else newModel <- suppressMessages(model$newModel(check = FALSE, replicate = TRUE))
   newModel$resetData()
   values(newModel, leaveOutNames) <- NA
   newModel$setData(model$getVarNames(nodes = currentDataNames))
-  compileNimble(newModel)
+  if(!silent) compileNimble(newModel)
+  else Cmodel <- suppressMessages(compileNimble(newModel))
   predLoss <- FALSE
   if(is.character(lossFunction) && lossFunction == 'predictive'){
     paramNames <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -50,24 +54,37 @@ calcCrossVal <- function(i,
     leaveOutNames <- paramNames
     predLoss <- TRUE
   }
-  modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames)
+  if(!silent) modelMCMCConf <- configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames)
+  else modelMCMCConf <- suppressMessages(configureMCMC(newModel, nodes = leaveOutNames, monitors = leaveOutNames))
   if(!predLoss) modelMCMCConf$samplerConfs <- c(conf$samplerConfs,modelMCMCConf$samplerConfs)
-  modelMCMC <- buildMCMC(modelMCMCConf)
-  C.modelMCMC <- compileNimble(modelMCMC,
-                               project = newModel)
-  C.modelMCMC$run(niter)
+  if(!silent){
+    modelMCMC <- buildMCMC(modelMCMCConf)
+    C.modelMCMC <- compileNimble(modelMCMC,
+                                 project = newModel)
+    C.modelMCMC$run(niter)
+  }
+  else{
+      modelMCMC <- suppressMessages(buildMCMC(modelMCMCConf))
+      C.modelMCMC <- suppressMessages(compileNimble(modelMCMC,
+                                   project = newModel))
+      silentNull <- suppressMessages(C.modelMCMC$run(niter, progressBar = FALSE))
+  }
   MCMCout <- as.matrix(C.modelMCMC$mvSamples)[,leaveOutNames, drop = FALSE]
   sampNum <- dim(MCMCout)[1]
   startIndex <- nburnin+1
-  message(paste("dropping data fold", i))
   if(predLoss){
     values(model, missingDataNames) <- saveData
   }
-  crossValAveSD <- calcCrossValSD(MCMCout=MCMCout, sampNum=sampNum,
-                                  nBootReps=nBootReps,
-                                  saveData=saveData,
-                                  lossFunction = lossFunction,
-                                  predLoss = predLoss)
+  if(!is.na(nBootReps)){
+    crossValAveSD <- calcCrossValSD(MCMCout=MCMCout, sampNum=sampNum,
+                                    nBootReps=nBootReps,
+                                    saveData=saveData,
+                                    lossFunction = lossFunction,
+                                    predLoss = predLoss)
+  }
+  else{
+    crossValAveSD <- NA
+  }
   crossVal <- mean(apply(MCMCout[startIndex:sampNum,, drop = FALSE], 1, lossFunction, saveData))
   if(predLoss){
     crossVal <- log(crossVal)
@@ -88,12 +105,13 @@ generateRandomFoldFunction <- function(model, k){
   if(k > nDataNodes){
     stop('Cannot have more folds than there are data nodes in the model.')
   }
-  approxNumPerFold <- ceiling(nDataNodes/k)
+  approxNumPerFold <- floor(nDataNodes/k)
   leaveOutNames <- list()
   reducedDataNodeNames <- dataNodes
   for(i in 1:(k-1)){
     leaveOutNames[[i]] <- sample(reducedDataNodeNames, approxNumPerFold)
     reducedDataNodeNames <- reducedDataNodeNames[-which(reducedDataNodeNames %in% leaveOutNames[[i]])]
+    approxNumPerFold <- floor(length(reducedDataNodeNames)/(k-i))
   }
   leaveOutNames[[k]] <- reducedDataNodeNames
   randomFoldFunction <- function(i){
@@ -135,8 +153,9 @@ generateRandomFoldFunction <- function(model, k){
 #' parallelizing the CV calculation. Only MacOS and Linux operating systems support multiple
 #' cores at this time.  Defaults to 1.  
 #' @param nBootReps number of bootstrap samples
-#' to use when estimating the Monte Carlo error of the cross-validation metric.
-#'
+#' to use when estimating the Monte Carlo error of the cross-validation metric. Defaults to 200.  If no Monte Carlo error estimate is desired,
+#' \code{nBootReps} can be set to \code{NA}, which can potentially save significant computation time.
+#' @param silent Boolean specifying whether to show output from the algorithm as it's running (default = FALSE).
 #' @author Nicholas Michaud and Lauren Ponisio
 #' @export
 #' @details k-fold CV in NIMBLE proceeds by separating the data in a \code{nimbleModel}
@@ -267,7 +286,8 @@ runCrossValidate <- function(MCMCconfiguration,
                              MCMCcontrol = list(), 
                              returnSamples = FALSE,
                              nCores = 1,
-                             nBootReps = 200){
+                             nBootReps = 200,
+                             silent = FALSE){
   
   model <- MCMCconfiguration$model
   niter <- MCMCcontrol[['niter']] 
@@ -317,7 +337,8 @@ runCrossValidate <- function(MCMCconfiguration,
                             nburnin,
                             returnSamples,
                             nBootReps,
-                            mc.cores = nCores)
+                            mc.cores = nCores,
+                            silent)
   } else{
       crossValOut <- lapply(1:k, calcCrossVal,
                             MCMCconfiguration,
@@ -326,13 +347,19 @@ runCrossValidate <- function(MCMCconfiguration,
                             niter,
                             nburnin,
                             returnSamples,
-                            nBootReps)
+                            nBootReps,
+                            silent)
   }
-  CVvalue <- sum(sapply(crossValOut, function(x) x$crossValAverage),
+  CVvalue <- mean(sapply(crossValOut, function(x) x$crossValAverage),
                   na.rm=TRUE)
-  CVstandardError <- sqrt(sum(sapply(crossValOut,
-                                function(x) x$crossValAveSD^2),
-                         na.rm=TRUE))
+  if(!is.na(nBootReps)){
+    CVstandardError <- sqrt(sum(sapply(crossValOut,
+                                  function(x) x$crossValAveSD^2),
+                           na.rm=TRUE)/k^2)
+  }
+  else{
+    CVstandardError <- NA
+  }
   foldCVinfo <- lapply(crossValOut, function(x){return(c(foldCVvalue = x$crossValAverage,
                                                     foldCVstandardError = x$crossValAveSD))})
   out <- list(CVvalue=CVvalue,
