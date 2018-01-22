@@ -1911,8 +1911,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             }
             pieces[['sep']] <- ', '
             BUGSdecl$nodeFunctionNames <- paste0(lhsVar, '[', do.call('paste', pieces), ']')  ## create the names.  These are LHS so they are nodeFunctions
-            if(BUGSdecl$type == 'unknownIndex')   # catch duplicate node names in case like x[k[i],block[i]]
-                BUGSdecl$nodeFunctionNames <- unique(BUGSdecl$nodeFunctionNames)
             allNodeNames <- c(allNodeNames, BUGSdecl$nodeFunctionNames)
             types <- c(types, rep(BUGSdecl$type, length(BUGSdecl$nodeFunctionNames) ) )       ## append vector of "stoch" or "determ" to types vector
             BUGSdecl$origIDs <- next_origID -1 + (1:length(BUGSdecl$nodeFunctionNames))       ## record the original IDs used here
@@ -2192,6 +2190,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
    if(debug) browser()
     vertexID_2_nodeID <- vertexID_2_nodeID[1:numContigVertices]
     types[ types == 'RHSonly' & vertexID_2_nodeID != 0] <- 'LHSinferred' ## The types == 'RHSonly' could be obtained more easily, since it will be a single set of FALSES followed by a single set of TRUES, but anyway, this works
+    unknownIndexNodes <- types == 'unknownIndex'
     types[ types == 'unknownIndex' ] <- 'LHSinferred' ## treat unknownIndex nodes as LHSinferred so graph dependency calculations simply pass through them
 
     ## 9c. for RHSonly names that have a splitVertex indication (i %.s% j), convert back to colon (i:j)
@@ -2332,11 +2331,11 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$nodeNamesLHSall <<- nodeNamesLHSall
     maps$nodeNamesRHSonly <<- maps$graphID_2_nodeName[maps$types == 'RHSonly'] ##nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
-    
-    if(any(duplicated(maps$nodeNames))) {
+
+    if(any(duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]]))) {  ## x[k[i],block[i]] can lead to duplicated nodeNames for unknownIndex declarations; this should be ok, though there is inefficiency in having a vertex in the graph for each element of second index instead of collapsing into one vertex per unique value.
         stop(
             paste0("There are multiple definitions for nodes:",
-                   paste(maps$nodeNames[duplicated(maps$nodeNames)],
+                   paste(maps$nodeNames[duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]])],
                          collapse = ','), "\n",
                    "If your model has macros or if-then-else blocks\n",
                    "you can inspect the processed model code by doing\n",

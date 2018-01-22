@@ -1,4 +1,17 @@
-                           CHANGES IN VERSION 0.6-8 and 0.6-7 (November 2017)
+               CHANGES IN VERSION 0.6-9 (January 2018)
+
+USER LEVEL CHANGES
+
+-- Dimensions will now be determined from either 'inits' or 'data' if not otherwise available. 
+
+BUG FIXES
+
+-- Fixed bug that prevented use of dynamic index and an index specified by a constant because of duplicated dynamicIndex nodeFunctionNames.
+
+-- Added error trapping for dynamic indexing of constants.
+
+
+               CHANGES IN VERSION 0.6-8 and 0.6-7 (November 2017)
 
 Note: versions 0.6-8 and 0.6-7 are the same except for a non-user-facing change to the withNimbleOptions function example to pass CRAN checks.
 
