@@ -3063,7 +3063,7 @@ fi
 done
 
 
-if test -n "CPPAD_DIR" ; then
+if test -n "$CPPAD_DIR" ; then
 echo "Using CppAD directory ${CPPAD_DIR}"
 CPPAD_INC="-I$CPPAD_DIR"
 fi
