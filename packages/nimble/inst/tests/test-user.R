@@ -52,6 +52,15 @@ test_that("User-supplied functions", {
         }
     )
     temporarilyAssignInGlobalEnv(mypow)
+    
+    noArgFunc <- nimbleFunction(
+      run = function() {
+        returnType(double(1))
+        x <- c(1,2,3,4,5)
+        return(x)
+      }
+    )
+    temporarilyAssignInGlobalEnv(noArgFunc)
 
     code <- nimbleCode({
         x ~ dnorm(0, 1)
@@ -71,6 +80,7 @@ test_that("User-supplied functions", {
         }
         liftedmu2[1:K] <- vecdbl(theta[1:K])
         w[1:K] ~ dmnorm(liftedmu2[1:K], cov = eps[1:K, 1:K])
+        u[1:5] <- noArgFunc()
     })
 
     K <- 3
@@ -87,7 +97,7 @@ test_that("User-supplied functions", {
     simulate(cm)
 
                                         # need c() in here because R nodes are arrays
-    for(var in c('dx', 'y', 'dz', 'w')) {
+    for(var in c('dx', 'y', 'dz', 'w', 'u')) {
         expect_equal(c(get(var, m)), (get(var, cm)),
                      info = paste0("Test that R and C models agree with user-supplied functions:", var, " values differ"))
     }
@@ -99,6 +109,8 @@ test_that("User-supplied functions", {
                      info = "incorrect arg matching by name in R model")
     expect_identical(cm$out, (8),
                      info = "incorrect arg matching by name in C model")
+    expect_identical(c(m$u), c(1,2,3,4,5))
+    expect_identical(cm$u, c(1,2,3,4,5))
 })
 
 
