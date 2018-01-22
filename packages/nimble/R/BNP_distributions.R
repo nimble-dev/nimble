@@ -55,12 +55,13 @@ dCRP=nimbleFunction(
     tmpden[1]=1
     if(n>1){
       for(i in 2:n){
-        counts=0 # replaces sum(x[i]==x[1:(i-1)]) (works in nimble?)
-        for(j in 1:(i-1)){
-          if(x[i]==x[j]){
-            counts=counts+1
-          }
-        }
+        #counts=0 # replaces sum(x[i]==x[1:(i-1)]) (works in nimble?)
+        #for(j in 1:(i-1)){
+        #  if(x[i]==x[j]){
+        #    counts=counts+1
+        #  }
+        #}
+        counts=sum(x[i]==x[1:(i-1)])
         if(counts>0){
           tmpden[i]=1/(i-1+conc)
         }else{
