@@ -541,7 +541,7 @@ testsInvalidDynIndex <- list(
                 y[i, 1:3] ~ dmnorm(mu[k[i, 1:3]], pr[1:3,1:3])
         }), 
         inits = list(mu = rnorm(10)), 
-        data = list(y = rnorm(3)),
+        data = list(y = matrix(rnorm(6), 2, 3)),
         expectError = TRUE,
         expectErrorMsg = "only scalar random indices are allowed"
     ),
