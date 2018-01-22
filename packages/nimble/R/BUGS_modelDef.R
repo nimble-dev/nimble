@@ -68,7 +68,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  	classEnvironment <<- new.env()
                                  	callSuper(...)
                                  },
-                                 setupModel = function(code, constants, dimensions, inits, debug) {},
+                                 setupModel = function(code, constants, dimensions, inits, data, debug) {},
                                  
                                  ## the following are all run, in this order, by setupModel():
                                  setModelValuesClassName        = function() {},
@@ -129,14 +129,14 @@ modelDefClass <- setRefClass('modelDefClass',
 ##     this takes place due to a single line, near the end of genReplacementsAndCodeRecurse() in nimbleBUGS_class_BUGSdeclClass.R
 ##     further, nameMashupFromExpr(expr) in nimbleBUGS_utils.R throws an error if expr contains a ':'
 ##
-modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, userEnv, debug = FALSE) {
+modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, data, userEnv, debug = FALSE) {
     if(debug) browser()
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     if(nimbleOptions("enableModelMacros")) code <- codeProcessModelMacros(code)
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
-    assignDimensions(dimensions, inits)      ## uses 'dimensions' argument, sets field: dimensionList
+    assignDimensions(dimensions, inits, data)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
     processBUGScode(userEnv = userEnv)                 ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID
     if(nimbleOptions("stop_after_processing_model_code")) {
@@ -322,7 +322,7 @@ modelDefClass$methods(assignConstants = function(constants) {
         constantsScalarNamesList <<- list()
     }
 })
-modelDefClass$methods(assignDimensions = function(dimensions, initsList) {
+modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataList) {
     ## uses 'dimensions' argument, sets field: dimensionList
     
     # first, add the provided dimensions
@@ -364,6 +364,22 @@ modelDefClass$methods(assignDimensions = function(dimensions, initsList) {
         }
     }
 
+    # add dimensions of any *non-scalar* data to dimensionsList
+    # we'll try to be smart about this: check for duplicate names in data and dimensions, and make sure they agree
+    # main use case here is when user provides RHS only variable as data
+    for(i in seq_along(dataList)) {
+        dataName <- names(dataList)[i]
+        dataDim <- nimbleInternalFunctions$dimOrLength(dataList[[i]], scalarize = FALSE)  # don't scalarize as want to preserve dims as provided by user, e.g. for 1x1 matrices
+        if(!(length(dataDim) == 1 && dataDim == 1)) {  # i.e., non-scalar data; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
+            if(dataName %in% names(dL)) {
+                if(!identical(as.numeric(dL[[dataName]]), as.numeric(dataDim))) {
+                    warning('inconsistent dimensions between data and dimensions arguments: ', dataName, '; ignoring dimensions in data.')
+                }
+            } else {
+                dL[[dataName]] <- dataDim
+            }
+        }
+    }
     
     dimensionsList <<- dL
 })

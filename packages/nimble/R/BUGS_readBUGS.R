@@ -96,7 +96,7 @@ nimbleModel <- function(code,
     ## }
     md <- modelDefClass$new(name = name)
     if(nimbleOptions('verbose')) message("defining model...")
-    md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits, userEnv = userEnv, debug=debug)
+    md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits, data = data, userEnv = userEnv, debug=debug)
     if(!returnModel) return(md)
     # move any data lumped in 'constants' into 'data' for
     # backwards compatibility with JAGS/BUGS
