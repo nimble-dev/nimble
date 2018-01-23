@@ -4,16 +4,17 @@
 #-- TESTS FOR BNP MODELS
 
 
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-#-- tests for BNP models using CRP prior for labels.
+
 
 rm(list=ls())
 library(nimble)
-nimbleOptions(allowDynamicIndexing = TRUE)
+#nimbleOptions(allowDynamicIndexing = TRUE)
 #source("./packages/nimble/R/BNP_distributions.R")
 #source("./packages/nimble/R/BNP_samplers.R")
 
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#-- tests for BNP models using CRP prior for labels.
 
 #-- Model 1: 
 #-- Model : y_i ~ N(theta_i, s2_i), s0 known
@@ -26,37 +27,37 @@ nimbleOptions(allowDynamicIndexing = TRUE)
 #-- BUGS definition of the model
 Code=nimbleCode(
   {
-    for(i in 1:N){
-      thetatilde[i] ~ dnorm(mu0, tau0) 
-      s2tilde[i] ~ dinvgamma(a0, b0) 
+    for(i in 1:N3){
+      thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+      s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
     }
-    xi[1:N] ~ dCRP(conc)
+    xi[1:N2] ~ dCRP(conc)
     
     for(i in 1:N){
       theta[i] <- thetatilde[xi[i]]
       s2[i] <- s2tilde[xi[i]]
       y[i] ~ dnorm(theta[i], var=s2[i])
     }
-    conc<-1
-    mu0<-0; tau0<-sqrt(20)
-    a0<-1; b0 <- 0.1
+    conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
   }
 )
 
-conc<-1; mu0<-0; tau0<-sqrt(20); a0<-1; b0<-0.1
-Consts<-list(N=100)
+conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
+Consts=list(N=50, N2=50, N3=50)
 set.seed(1)
-Inits<-list(xi=sample(1:10, size=Consts$N, replace=TRUE), 
-           thetatilde=rnorm(Consts$N, mu0, tau0),
-           s2tilde=rinvgamma(Consts$N, a0, b0))
-Data<-list(y=c(rnorm(Consts$N/2,-5, 2),rnorm(Consts$N/2,5, 2)))
+aux=sample(1:10, size=Consts$N2, replace=TRUE)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)),s2tilde=rinvgamma(Consts$N3, shape=a0, scale=b0))#list(xi=aux, thetatilde=c(10,-10,rnorm(98, mu0,tau0)),s2tilde=rep(1,100))#
+
+s20=4; s21=4
+mu01=5; mu11=-5
+Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
 
 #-- compiling the model:
 model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
 cmodel<-compileNimble(model)
 
 #-- MCMC configuration:
-modelConf<-configureMCMC(model, print=TRUE)
+modelConf<-configureMCMC(model, print=FALSE)
 #modelConf$removeSamplers(c("xi"), print="TRUE")
 #modelConf$addSampler(c("xi"), type="MarginalizedG_xi")
 modelConf$printSamplers(c("xi"))
@@ -99,7 +100,7 @@ for(i in 1:nsave){
   for(j in 1:Trunc){
     index=sample(1:(N+1), size=1, prob=probs)
     if(index==(N+1)){
-      thetaNew[j,1]=rnorm(1,mu0, tau0)
+      thetaNew[j,1]=rnorm(1,mu0, sqrt(tau20))
       thetaNew[j,2]=rinvgamma(1, a0,b0)
       countnew=countnew+1
     }else{
@@ -119,9 +120,9 @@ points(sec,fhat, col="black", lwd=2, type="l")
 #------------------------------------------------------------------------------
 #-- stick_breaking representation and BUGS Code
 
-#-- stick breaking representation:
+#-- stick breaking nimble function:
 stick_breaking=nimbleFunction(
-  run=function(z=double(1)){ # z values must lie in (0,1)!
+  run=function(z=double(1)){ # z values must be different of 1, otherwise the process is truncated to a smaller value tha N; never use z[N]!
     returnType(double(1))
     
     N<-length(z)
@@ -143,13 +144,11 @@ stick_breaking=nimbleFunction(
 Code=nimbleCode(
   {
     for(i in 1:Trunc){
-      thetatilde[i] ~ dnorm(mu0, tau0) 
-      s2tilde[i] ~ dinvgamma(a0, b0) 
-    }
-    for(i in 1:(Trunc-1)){
+      thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+      s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
       z[i] ~ dbeta(1, conc) # could be dbeta(a_i,b_i)
     }
-    w[1:Trunc] <- stick_breaking(z[1:(Trunc-1)])
+    w[1:Trunc] <- stick_breaking(z[1:Trunc])
     
     for(i in 1:N){
       xi[i] ~ dcat(w[1:Trunc])
@@ -157,10 +156,59 @@ Code=nimbleCode(
       s2[i] <- s2tilde[xi[i]]
       y[i] ~ dnorm(theta[i], var=s2[i])
     }
-    conc<-1
-    mu0<-0; tau0<-sqrt(20)
-    a0<-1; b0 <- 0.1
+    conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
   }
 )
 
+conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
+Consts=list(N=50, Trunc=25)
+set.seed(1)
+Inits=list(thetatilde=rnorm(Consts$Trunc, mu0, sqrt(tau20)),
+           s2tilde=rinvgamma(Consts$Trunc, shape=a0, scale=b0),
+           z=rbeta(Consts$Trunc, 1, conc),
+           xi=sample(1:10, size=Consts$N, replace=TRUE))
+s20=4; s21=4
+mu01=5; mu11=-5
+Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
+
+#-- compiling the model:
+model=nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)#, dimensions=list(theta=Consts$N))
+cmodel=compileNimble(model)
+
+#-- MCMC configuration:
+modelConf=configureMCMC(model, print=FALSE)
+modelConf$printSamplers(c('xi[1]', 'z[1]'))
+modelMCMC2=buildMCMC(modelConf)
+
+#-- compiling the sampler
+CmodelNewMCMC=compileNimble(modelMCMC2, project=model,
+                            resetFunctions=TRUE, showCompilerOutput = TRUE)
+
+#-- MCMC samples
+set.seed(1)
+nsave=100
+t1=proc.time()
+CmodelNewMCMC$run(nsave)
+proc.time()-t1
+
+#-- results:
+samples=as.matrix(CmodelNewMCMC$mvSamples)
+s2tildepost=samples[, 1:25]
+thetatildepost=samples[, 26:50]
+Zpost=samples[, 51:75]
+Tr=Consts$Trunc
+Wpost=t(apply(Zpost, 1, function(x)c(x[1], x[2:(Tr-1)]*cumprod(1-x[1:(Tr-2)]), cumprod(1-x[1:(Tr-1)])[N=Tr-1])))
+
+# grid:
+ngrid=102
+grid=seq(-10, 25,len=ngrid)
+
+# posterior preddictives
+predSB=matrix(0, ncol=ngrid, nrow=nsave)
+for(i in 1:nsave){
+  predSB[i, ]=sapply(1:ngrid, function(j)sum(Wpost[i, ]*dnorm(grid[j], thetatildepost[i,],sqrt(s2tildepost[i,]))))
+}
+
+hist(Data$y, freq=FALSE, xlim=c(min(grid), max(grid)))
+points(grid, apply(predSB, 2, mean), col="blue", type="l", lwd=2)
 
