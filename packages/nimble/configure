@@ -2576,9 +2576,9 @@ fi
 
 if test "${ENABLE_DEBUGGING}" = "yes"; then
    echo "enabling R's default debugging information in libnimble"
-   GNUMAKEFILE_INCLUDE_MAKECONF="include \$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="\$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
 else
-   GNUMAKEFILE_INCLUDE_MAKECONF="include ./Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="./Makeconf"
 fi
 
 
@@ -3127,7 +3127,7 @@ fi
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 
 
-ac_config_files="$ac_config_files inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars inst/CppCode/GNUmakefile"
+ac_config_files="$ac_config_files inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -3838,7 +3838,6 @@ do
     "inst/make/Makevars_lib") CONFIG_FILES="$CONFIG_FILES inst/make/Makevars_lib" ;;
     "R/config.R") CONFIG_FILES="$CONFIG_FILES R/config.R" ;;
     "src/Makevars") CONFIG_FILES="$CONFIG_FILES src/Makevars" ;;
-    "inst/CppCode/GNUmakefile") CONFIG_FILES="$CONFIG_FILES inst/CppCode/GNUmakefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -4296,7 +4295,7 @@ fi
 
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
-(cd inst/CppCode ; ${MAKE} )
+(cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile)
 
 else
   echo "Building libnimble.a"
@@ -4305,7 +4304,7 @@ else
   cp inst/CppCode/nimbleGraph.cpp src
   cp inst/CppCode/eigenUsingClasses.cpp src
 
-  (cd inst/CppCode ; ${MAKE} libnimble.a)
+  (cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile libnimble.a)
 fi
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then
