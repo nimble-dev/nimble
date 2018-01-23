@@ -598,8 +598,10 @@ Details: If a provided value (or the current value in the model when only a name
                                               data[[varName]] <- NULL
                                               next
                                           }
-                                          if(length(nimbleInternalFunctions$dimOrLength(varValue, scalarize = TRUE)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
-                                          if(!(all(nimbleInternalFunctions$dimOrLength(varValue, scalarize = TRUE) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(length(isDataVars[[varName]]))
+                                              scalarize <- FALSE else scalarize <- TRUE  ## if non-scalar, check actual dimensionality of input
+                                          if(length(nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(!(all(nimbleInternalFunctions$dimOrLength(varValue, scalarize = scalarize) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
                                           assign(varName, varValue, inherits = TRUE)
                                           isDataVarValue <- !is.na(varValue)
                                           assign(varName, isDataVarValue, envir = isDataEnv)

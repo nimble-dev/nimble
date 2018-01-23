@@ -68,7 +68,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  	classEnvironment <<- new.env()
                                  	callSuper(...)
                                  },
-                                 setupModel = function(code, constants, dimensions, debug) {},
+                                 setupModel = function(code, constants, dimensions, inits, data, debug) {},
                                  
                                  ## the following are all run, in this order, by setupModel():
                                  setModelValuesClassName        = function() {},
@@ -129,14 +129,14 @@ modelDefClass <- setRefClass('modelDefClass',
 ##     this takes place due to a single line, near the end of genReplacementsAndCodeRecurse() in nimbleBUGS_class_BUGSdeclClass.R
 ##     further, nameMashupFromExpr(expr) in nimbleBUGS_utils.R throws an error if expr contains a ':'
 ##
-modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv, debug = FALSE) {
+modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, data, userEnv, debug = FALSE) {
     if(debug) browser()
     code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     if(nimbleOptions("enableModelMacros")) code <- codeProcessModelMacros(code)
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
-    assignDimensions(dimensions)      ## uses 'dimensions' argument, sets field: dimensionList
+    assignDimensions(dimensions, inits, data)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
     processBUGScode(userEnv = userEnv)                 ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID
     if(nimbleOptions("stop_after_processing_model_code")) {
@@ -323,26 +323,65 @@ modelDefClass$methods(assignConstants = function(constants) {
         constantsScalarNamesList <<- list()
     }
 })
-modelDefClass$methods(assignDimensions = function(dimensions) {
+modelDefClass$methods(assignDimensions = function(dimensions, initsList, dataList) {
     ## uses 'dimensions' argument, sets field: dimensionList
     
     # first, add the provided dimensions
     dL <- dimensions
+    if(is.null(dL))
+        dL <- list()
     
     # add dimensions of any *non-scalar* constants to dimensionsList
     # we'll try to be smart about this: check for duplicate names in constants and dimensions, and make sure they agree
     for(i in seq_along(constantsList)) {
         constName <- names(constantsList)[i]
         ## constDim <- if(is.null(dim(constantsList[[i]]))) length(constantsList[[i]]) else dim(constantsList[[i]])
-        constDim <- nimbleInternalFunctions$dimOrLength(constantsList[[i]], scalarize = TRUE)
+#       constDim <- nimbleInternalFunctions$dimOrLength(constantsList[[i]], scalarize = TRUE)
+        constDim <- nimbleInternalFunctions$dimOrLength(constantsList[[i]], scalarize = FALSE)  # don't scalarize as want to preserve dims as provided by user, e.g. for 1x1 matrices
+        if(length(constDim) == 1 && constDim == 1)
+            constDim <- numeric(0)  # but for 1-length vectors treat as scalars as that is how handled in system
         if(constName %in% names(dL)) {
             if(!identical(as.numeric(dL[[constName]]), as.numeric(constDim))) {
-                stop('inconsistent dimensions between constants and dimensions arguments')
+                stop('inconsistent dimensions between constants and dimensions arguments: ', constName)
             }
         } else {
             dL[[constName]] <- constDim
         }
     }
+
+    # add dimensions of any *non-scalar* inits to dimensionsList
+    # we'll try to be smart about this: check for duplicate names in inits and dimensions, and make sure they agree
+    for(i in seq_along(initsList)) {
+        initName <- names(initsList)[i]
+        initDim <- nimbleInternalFunctions$dimOrLength(initsList[[i]], scalarize = FALSE)  # don't scalarize as want to preserve dims as provided by user, e.g. for 1x1 matrices
+        if(!(length(initDim) == 1 && initDim == 1)) {  # i.e., non-scalar inits; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
+            if(initName %in% names(dL)) {
+                if(!identical(as.numeric(dL[[initName]]), as.numeric(initDim))) {
+                    warning('inconsistent dimensions between inits and dimensions arguments: ', initName, '; ignoring dimensions in inits.')
+                }
+            } else {
+                dL[[initName]] <- initDim
+            }
+        }
+    }
+
+    # add dimensions of any *non-scalar* data to dimensionsList
+    # we'll try to be smart about this: check for duplicate names in data and dimensions, and make sure they agree
+    # main use case here is when user provides RHS only variable as data
+    for(i in seq_along(dataList)) {
+        dataName <- names(dataList)[i]
+        dataDim <- nimbleInternalFunctions$dimOrLength(dataList[[i]], scalarize = FALSE)  # don't scalarize as want to preserve dims as provided by user, e.g. for 1x1 matrices
+        if(!(length(dataDim) == 1 && dataDim == 1)) {  # i.e., non-scalar data; 1-length vectors treated as scalars and not passed along as dimension info to avoid conflicts between scalars and one-length vectors/matrices/arrays in various places
+            if(dataName %in% names(dL)) {
+                if(!identical(as.numeric(dL[[dataName]]), as.numeric(dataDim))) {
+                    warning('inconsistent dimensions between data and dimensions arguments: ', dataName, '; ignoring dimensions in data.')
+                }
+            } else {
+                dL[[dataName]] <- dataDim
+            }
+        }
+    }
+    
     dimensionsList <<- dL
 })
 
@@ -1689,7 +1728,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
     ## replacementNameExpressions has the names of things that are replacements, e.g. i_plus_1
     if(debug) browser()
     anyContext <- ncol(unrolledBUGSindices) > 0 
-    if(length(anyContext)==0) browser()
+    if(length(anyContext)==0) stop('collectEdges: problem with anyContext')
 
     if(nimbleOptions()$allowDynamicIndexing) {
         ## replace NA with 1 to index into first element, since for unknownIndex vars there should be only one vertex
@@ -1714,7 +1753,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
                 boolIndexNamePiecesExprs <- !unlist(lapply(parentIndexNamePieces, is.numeric)) ##!is.numeric(parentIndexNamePieces)
                 if(all(boolIndexNamePiecesExprs)) {
                     test <- try(varIndicesToUse <- unrolledBUGSindices[ , unlist(parentIndexNamePieces), drop = FALSE])
-                    if(inherits(test, 'try-error')) browser()
+                    if(inherits(test, 'try-error')) stop('collectEdges: problem with unrolledBUGSindices')
                 } else {
                     varIndicesToUse <- matrix(nrow = nrow(unrolledBUGSindices), ncol = length(parentIndexNamePieces))
                     varIndicesToUse[, boolIndexNamePiecesExprs] <- unrolledBUGSindices[ , unlist(parentIndexNamePieces)[boolIndexNamePiecesExprs], drop = FALSE]
@@ -1735,7 +1774,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
         
     } else {
         if(anyContext) {
-           if(length(ncol(unrolledBUGSindices))==0) browser()
+           if(length(ncol(unrolledBUGSindices))==0) stop('collectEdges: problem with unrolledBUGSindices')
             colNums <- 1:ncol(unrolledBUGSindices)
             names(colNums) <- dimnames(unrolledBUGSindices)[[2]]
             newIndexExprs <- lapply(replacementNameExprs, function(x) substitute(unrolledBUGSindices[iRow, iCol], list(X = x, iCol = colNums[as.character(x)])))
@@ -1889,7 +1928,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 }
             }
             pieces[['sep']] <- ', '
-            BUGSdecl$nodeFunctionNames <- paste0(lhsVar, '[', do.call('paste', pieces), ']')  ## create the names.  These are LHS so the are nodeFunctions
+            BUGSdecl$nodeFunctionNames <- paste0(lhsVar, '[', do.call('paste', pieces), ']')  ## create the names.  These are LHS so they are nodeFunctions
             allNodeNames <- c(allNodeNames, BUGSdecl$nodeFunctionNames)
             types <- c(types, rep(BUGSdecl$type, length(BUGSdecl$nodeFunctionNames) ) )       ## append vector of "stoch" or "determ" to types vector
             BUGSdecl$origIDs <- next_origID -1 + (1:length(BUGSdecl$nodeFunctionNames))       ## record the original IDs used here
@@ -2169,6 +2208,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
    if(debug) browser()
     vertexID_2_nodeID <- vertexID_2_nodeID[1:numContigVertices]
     types[ types == 'RHSonly' & vertexID_2_nodeID != 0] <- 'LHSinferred' ## The types == 'RHSonly' could be obtained more easily, since it will be a single set of FALSES followed by a single set of TRUES, but anyway, this works
+    unknownIndexNodes <- types == 'unknownIndex'
     types[ types == 'unknownIndex' ] <- 'LHSinferred' ## treat unknownIndex nodes as LHSinferred so graph dependency calculations simply pass through them
 
     ## 9c. for RHSonly names that have a splitVertex indication (i %.s% j), convert back to colon (i:j)
@@ -2309,11 +2349,11 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$nodeNamesLHSall <<- nodeNamesLHSall
     maps$nodeNamesRHSonly <<- maps$graphID_2_nodeName[maps$types == 'RHSonly'] ##nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
-    
-    if(any(duplicated(maps$nodeNames))) {
+
+    if(any(duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]]))) {  ## x[k[i],block[i]] can lead to duplicated nodeNames for unknownIndex declarations; this should be ok, though there is inefficiency in having a vertex in the graph for each element of second index instead of collapsing into one vertex per unique value.
         stop(
             paste0("There are multiple definitions for nodes:",
-                   paste(maps$nodeNames[duplicated(maps$nodeNames)],
+                   paste(maps$nodeNames[duplicated(maps$nodeNames[!unknownIndexNodes[newGraphID_2_oldGraphID]])],
                          collapse = ','), "\n",
                    "If your model has macros or if-then-else blocks\n",
                    "you can inspect the processed model code by doing\n",

@@ -1,12 +1,17 @@
                            CHANGES IN VERSION 0.6-9 (January 2018)
-						   
 USER LEVEL CHANGES
+
+-- Dimensions will now be determined from either 'inits' or 'data' if not otherwise available. 
 
 -- Can now specify "nBootReps = NA" in the runCrossValidate() function, which will prevent the Monte Carlo error from being calculated.
 
 -- runCrossValidate() now returns the averaged loss over all k folds, instead of the summed loss.
 						   
 BUG FIXES
+
+-- Fixed bug that prevented use of dynamic index and an index specified by a constant because of duplicated dynamicIndex nodeFunctionNames.
+
+-- Added error trapping for dynamic indexing of constants.
 
 -- Fixed a bug where calling nimbleModel() on a BUGS model with a node that was it's own parent caused R to crash.
 

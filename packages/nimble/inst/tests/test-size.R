@@ -52,17 +52,15 @@ testsScalar <- list(
          inits = list(mu1 = 0, mu2 = 0, sig = 1) ),
     list(name = 'scalar stochastic, parameter expression non-scalar, no indices',
          expectPass = FALSE, expectPassWithConst = TRUE,
-         knownProblem = TRUE, knownProblemWithConst = FALSE,
+         knownProblem = FALSE, knownProblemWithConst = FALSE,
          expr = quote({y ~ dnorm(mu1%*%mu2, sd = sig)}), 
          inits = list(mu1 = vec2, mu2 = vec2, sig = 1) ),
     
     list(name = 'scalar stochastic, parameter expression non-scalar, RHS index',
          expectPass = FALSE, expectPassWithConst = FALSE,
-         knownProblem = TRUE, knownProblemWithConst = FALSE,
+         knownProblem = FALSE, knownProblemWithConst = FALSE,
          expr = quote({y ~ dnorm((mu1%*%mu2)[1,1], sd = sig)}), 
          inits = list(mu1 = vec2, mu2 = vec2, sig = 1) ),
-    # passes for RHS init, though compileNimble does give helpful error message
-    # passes for RHS const but fails in compilation because of lack of indexing
     
     list(name = 'scalar stochastic, parameter expression non-scalar',
          expectPass = FALSE, expectPassWithConst = TRUE,
@@ -95,21 +93,18 @@ testsScalar <- list(
          expr = quote({y[1:2] ~ dnorm(mu1[1:2, 1:2]%*%mu2[1:2], sd = sig)}), 
          inits = list(mu1 = mat2, mu2 = vec2, sig = 1) ),
 
-    list(name = 'scalar stochastic, scalar within multivar variable', expectPass = TRUE, expectPassWithConst = FALSE,
+    list(name = 'scalar stochastic, scalar within multivar variable', expectPass = TRUE,
+    	 expectPassWithConst = FALSE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = 0, sig = 1) ),
-    # test passes with RHS init and model building is fine, though not clear if we want it to be ok to instantiate a 1x1 matrix with a scalar
 
-    list(name = 'scalar stochastic, scalar within multivar variable 2',
-         expectPass = TRUE,
-         knownProblem = FALSE, knownProblemWithConst = TRUE,
+    list(name = 'scalar stochastic, scalar within multivar variable 2', expectPass = TRUE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = matrix(0, 1,1), sig = 1) ),
-    # for RHS const, addMissingIndexRecurse does not like this for some reason, so error thrown, but size check passes
 
     list(name = 'scalar stochastic, scalar within multivar variable 3', expectPass = TRUE,
          expr = quote({for(i in 1:1)
@@ -168,14 +163,14 @@ testsDeterm <- list(
          expr = quote({y <- a + b}),
          inits = list(a = 3, b = 3 )),
     
-    list(name = 'deterministic, basic with node in variable, incorrect init size', expectPass = TRUE, expectPassWithConst = FALSE,
+    list(name = 'deterministic, basic with node in variable, incorrect init size', expectPass = TRUE,
+    	 expectPassWithConst = FALSE, 
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] <- a[i,j] + b}),
          inits = list(a = 3, b = 3 )),
     
     list(name = 'deterministic, basic with node in variable', expectPass = TRUE,
-         expectPassWithConst = FALSE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] <- a[i,j] + b}),
@@ -195,7 +190,6 @@ testsDeterm <- list(
     
     list(name = 'deterministic, non-scalar expression, no indices',
          expectPass = FALSE, expectPassWithConst = TRUE,
-         knownProblem = TRUE, knownProblemWithConst = FALSE,
          expr = quote({y <- a %*% b}),
          inits = list(a = vec2, b = vec2 )),
     # this compiles fine with RHS const, though warning is given during model building
@@ -231,24 +225,21 @@ testsDeterm <- list(
          knownProblem = TRUE,
          expr = quote({y[1:2] <- a + b}),
          inits = list(a = 3, b = 3)),
-    
+
     list(name = 'deterministic, vector value, missing indices', expectPass = FALSE,
-         expectPassWithConst = TRUE,
-         knownProblem = TRUE,
          expr = quote({y[1:2] <- a + b}),
          inits = list(a = vec2, b = vec2)),
-    # this compiles fine with RHS const, though warning is given during model building
+    # errors for RHS const but not in model_check()
+
 
     list(name = 'deterministic, basic vector', expectPass = TRUE,
          expr = quote({y[1:2] <- a[1:2,1:2] %*% b[1:2]}),
          inits = list(a = mat2, b = vec2 )),
-    
+
     list(name = 'deterministic, basic vector, missing indices',
          expectPass = FALSE,
-         knownProblem = TRUE, knownProblemWithConst = FALSE,
          expr = quote({y[1:2] <- a %*% b[1:2]}),
          inits = list(a = mat2, b = vec2 )),
-    # passes for RHS inits case, but compileNimble does give useful error msg; 
     # errors for RHS const but not in model_check()
     
     list(name = 'deterministic, basic vector, dimension mismatch',
