@@ -1217,7 +1217,6 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
       if(!(code$caller$name %in% assignmentOperators))
           asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   }
-  browser()
   if(length(asserts) == 0) NULL else asserts
 }
 

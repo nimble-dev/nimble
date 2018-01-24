@@ -136,8 +136,10 @@ inline Type nimDerivs_dpois(const Type &x, const Type &lambda, int give_log=0)
 template<class Type>
 Type nimDerivs_dgamma(Type y, Type shape, Type scale, int give_log=0)
 {
+  // Type res = 1/(exp(lgamma(shape))*pow(scale, shape))*pow(y, shape - 1)*exp(-y/scale);
   Type logres=-lgamma(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale);
-  if(give_log)return logres; else return exp(logres);
+  //Type logres = lgamma(shape);
+  if(true)return logres; else return exp(logres);
 }
 // VECTORIZE4_ttti(dgamma)
 

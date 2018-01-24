@@ -99,7 +99,7 @@ public:
       // vector<double> gradient_ans;
       if (ordersFound[1] == true) {
         // gradient_ans.resize(wrt_n * q);
-        ansList->gradient.setSize(q, wrt_n, false, false); // setSize is fairly costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
+        ansList->gradient.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
       }
       if (ordersFound[2] == true) {
         // hessian_ans.resize(wrt_n * wrt_n * q);
@@ -123,6 +123,7 @@ public:
             x1[dx1_ind] = 1;
             ADinfo.ADtape->Forward(1, x1);
             cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
+            
             for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
               int dx2_ind = wrtVector[vec_ind2] - 1;
               ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =

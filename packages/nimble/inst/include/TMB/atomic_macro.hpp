@@ -16,18 +16,11 @@ TMB_EXTERN bool atomicFunctionGenerated CSKIP(= false;)
     ATOMIC_DOUBLE;                                                            \
   })                                                                          \
   template<class Double>                                                      \
-  CppAD::vector<double> ATOMIC_NAME(const CppAD::vector<Double>& tx) CSKIP({  \
+  CppAD::vector<double> ATOMIC_NAME(const CppAD::vector<Double>& tx) {  \
     CppAD::vector<double> ty(OUTPUT_DIM);                                     \
     ATOMIC_NAME(tx, ty);                                                      \
     return ty;                                                                \
-  })                                                                          \
-  IF_TMB_PRECOMPILE(                                                          \
-  template                                                                    \
-  void ATOMIC_NAME<double>(const CppAD::vector<double>& tx,                   \
-                           CppAD::vector<double>& ty);                        \
-  template                                                                    \
-  CppAD::vector<double> ATOMIC_NAME<double>(const CppAD::vector<double>& tx); \
-  )                                                                           \
+  }                                                                         \
   template <class Type>                                                       \
   void ATOMIC_NAME(const CppAD::vector<CppAD::AD<Type> >& tx,                        \
                    CppAD::vector<CppAD::AD<Type> >& ty);                             \
@@ -45,13 +38,17 @@ TMB_EXTERN bool atomicFunctionGenerated CSKIP(= false;)
     virtual bool forward(size_t p, size_t q, const CppAD::vector<bool>& vx,   \
                          CppAD::vector<bool>& vy,                             \
                          const CppAD::vector<Type>& tx,                       \
-                         CppAD::vector<Type>& ty) {                           \
+                         CppAD::vector<Type>& ty) {  \
       if (vx.size() > 0) {                                                    \
         bool anyvx = false;                                                   \
         for (size_t i = 0; i < vx.size(); i++) anyvx |= vx[i];                \
         for (size_t i = 0; i < vy.size(); i++) vy[i] = anyvx;                 \
       }                                                                       \
       ATOMIC_NAME(tx, ty);                                                    \
+      cout << "ty: ";                                                    \
+      for(int i = 0; i < ty.size(); i++)                                \
+        cout << ty[i] << ", ";                                          \
+      cout << "\n";                                                       \
       return true;                                                            \
     }                                                                         \
     virtual bool reverse(size_t q, const CppAD::vector<Type>& tx,             \
