@@ -73,6 +73,21 @@ test_that('Derivs of calculate function work for model ADMod4', {
                         wrt = list(c('x0'), c('x[0]', 'x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), tolerance = .1)
 })
 
+test_that('Derivs of calculate function work for model ADmod5 (tricky indexing)', {
+  ADCode5 <- nimbleCode({
+    y[1:2] ~ dmnorm(z[1:2], diagMat[,])
+    z[1] <- x[2]
+    z[2:3] <- x[1:2] + c(1,1)
+    x[1] ~ dnorm(.1, 10)
+    x[2] ~ dnorm(1, 3)
+  })
+  ADMod5 <- nimbleModel(
+    code = ADCode5, dimensions = list(x = 2, y = 2, z = 3), constants = list(diagMat = diag(2)),
+    inits = list(x = c(1, 1.2), y  = c(-.1,-.2)))
+  test_ADModelCalculate(ADMod5, name = 'ADMod5', calcNodeNames = list(c('y'), c('y[2]'), c(ADMod5$getDependencies(c('x')))),
+                        wrt = list(c('x'), c('x[1]', 'z[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), tolerance = .1)
+})
+
 
 test_that('Derivs of calculate function work for model equiv', {
   dir = nimble:::getBUGSexampleDir('equiv')
@@ -85,18 +100,6 @@ test_that('Derivs of calculate function work for model equiv', {
                                                      Rmodel$getDependencies('d[1]')),
                         wrt = list(c('tau'), c('sigma'), c('d'), c('d[2]')), tolerance = .5)
 })
-
-test_that('Derivs of calculate function work for model blocker', {
-  dir = nimble:::getBUGSexampleDir('blocker')
-  Rmodel <- readBUGSmodel('blocker', dir = dir, useInits = TRUE)
-  initModel <- initializeModel(Rmodel)
-  initModel$run()
-  ## Higher tolerance for more complex chain rule calculations in this model.
-  test_ADModelCalculate(Rmodel, name = 'blocker', calcNodeNames = list(Rmodel$getDependencies('mu')),
-                               +                          wrt = list(c('tau')), tolerance = .5)
-})
-
-  
 
 test_that("Derivs of calculate function work for Daniel's SSM", {
 ssmCode <- nimbleCode({
@@ -121,6 +124,15 @@ test_ADModelCalculate(Rmodel, name = 'SSM', calcNodeNames = list(Rmodel$getDepen
                       wrt = list(c('a', 'b'), c('sigPN'), c('x[1]')), tolerance = .5, testR = TRUE)
 })
 
+
+test_that("Derivs of calculate function work for rats model", {
+  Rmodel <- readBUGSmodel('rats', dir = getBUGSexampleDir('rats'))
+  test_ADModelCalculate(Rmodel, name = 'rats', calcNodeNames = list(Rmodel$getNodeNames(),
+                                                                    Rmodel$getDependencies('mu[1, 2]'),
+                                                                    Rmodel$getDependencies('alpha'),
+                                                                    Rmodel$getDependencies('beta')),
+                        wrt = list(c('alpha[1]', 'beta[1]'), c('mu[1,1]')), tolerance = .5, testR = FALSE)
+})
 
 ## Ragged arrays not supported for derivs yet.
 # dir = nimble:::getBUGSexampleDir('bones')

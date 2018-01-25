@@ -32,6 +32,8 @@
 //#include <nimble/smartPtrs.h>
 #include <cstdio>
 #include <vector>
+#include <chrono>
+
 
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction
    object
@@ -48,17 +50,22 @@ class nimbleCppADinfoClass {
    CppAD-enabled nimbleFunctions. Some of these functions might
    make more sense as stand-alone functions.  Let's see. */
 class nimbleFunctionCppADbase {
- public:
-  nimSmartPtr<NIMBLE_ADCLASS> getDerivs(nimbleCppADinfoClass &ADinfo,
+public:
+  void                        getDerivs(nimbleCppADinfoClass &ADinfo,
                                         NimArr<1, double> &derivOrders,
-                                        NimArr<1, double> &wrtVector) {
-    nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
-    std::size_t n = length(ADinfo.independentVars);  // dim of independent vars
+                                        const NimArr<1, double> &wrtVector,
+                                        nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
+   // nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
+
+    std::size_t n = ADinfo.independentVars.size();  // dim of independent vars
+
     std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
     int orderSize = derivOrders.size();
     double array_derivOrders[orderSize];
+
     std::memcpy(array_derivOrders, derivOrders.getPtr(),
                 orderSize * sizeof(double));
+
     int maxOrder =
         *std::max_element(array_derivOrders, array_derivOrders + orderSize);
     bool ordersFound[3] = {false};
@@ -66,79 +73,89 @@ class nimbleFunctionCppADbase {
     for (int i = 0; i < orderSize; i++) {
       if ((array_derivOrders[i] > 2) | (array_derivOrders[i] < 0)) {
         printf("Error: Derivative orders must be between 0 and 2.\n");
-        return (ADlist);
+        //return (ansList);
       }
       ordersFound[static_cast<int>(array_derivOrders[i])] = true;
     }
-    vector<double> value_ans =
-        ADinfo.ADtape->Forward(0, ADinfo.independentVars);
+
+    vector<double> value_ans;
 
     if (ordersFound[0] == true) {
-      ADlist->value = vectorDouble_2_NimArr(value_ans);
+      value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
+      ansList->value = vectorDouble_2_NimArr(value_ans);
       if (maxOrder == 0) {
-        return (ADlist);
+      //  return (ansList);
       }
     }
-
-    std::size_t q = length(value_ans);
-
-    if (ordersFound[1] == true) {
-      ADlist->gradient.initialize(0, false, q, wrt_n);
-    }
-    if (ordersFound[2] == true) {
-      ADlist->hessian.initialize(0, false, wrt_n, wrt_n, q);
+    else{
+      ADinfo.ADtape->Forward(0, ADinfo.independentVars);
     }
 
-    vector<double> cppad_derivOut;
-    vector<double> hessian_ans(wrt_n * wrt_n * q, -1);
-    vector<double> gradient_ans(wrt_n * q, -1);
-    for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
-      std::vector<double> w(q, 0);
-      w[dy_ind] = 1;
-      if (maxOrder == 1) {
-        cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
-      } else {
-        for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-          int dx1_ind = wrtVector[vec_ind] - 1;
-          std::vector<double> x1(n, 0);  // vector specifying first derivatives.
-                                         // first specify coeffs for first dim
-                                         // of s across all directions r, then
-                                         // second dim, ...
-          x1[dx1_ind] = 1;
-          ADinfo.ADtape->Forward(1, x1);
-          cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
-          for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
-            int dx2_ind = wrtVector[vec_ind2] - 1;
-            hessian_ans[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
-                cppad_derivOut[dx2_ind * 2 + 1];
+    if(maxOrder > 0){
+      auto t1 = std::chrono::high_resolution_clock::now();
+
+      std::size_t q = value_ans.size();
+      // vector<double> hessian_ans;
+      // vector<double> gradient_ans;
+      if (ordersFound[1] == true) {
+        // gradient_ans.resize(wrt_n * q);
+        ansList->gradient.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
+      }
+      if (ordersFound[2] == true) {
+        // hessian_ans.resize(wrt_n * wrt_n * q);
+        ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
+      }
+      auto t1b =std::chrono::high_resolution_clock::now();
+
+      vector<double> cppad_derivOut;
+      for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
+        std::vector<double> w(q, 0);
+        w[dy_ind] = 1;
+        if (maxOrder == 1) {   
+          cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
+        } else {
+          for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+            int dx1_ind = wrtVector[vec_ind] - 1;
+            std::vector<double> x1(n, 0);  // vector specifying first derivatives.
+                                          // first specify coeffs for first dim
+                                          // of s across all directions r, then
+                                          // second dim, ...
+            x1[dx1_ind] = 1;
+            ADinfo.ADtape->Forward(1, x1);
+            cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
+            
+            for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
+              int dx2_ind = wrtVector[vec_ind2] - 1;
+              ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
+                  cppad_derivOut[dx2_ind * 2 + 1];
+            }
+          }
+        }
+        if (ordersFound[1] == true) {
+          for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+            int dx1_ind = wrtVector[vec_ind] - 1;
+            ansList->gradient[vec_ind * q + dy_ind] =
+                cppad_derivOut[dx1_ind * maxOrder + 0];
           }
         }
       }
-      if (ordersFound[1] == true) {
-        for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-          int dx1_ind = wrtVector[vec_ind] - 1;
-          gradient_ans[vec_ind * q + dy_ind] =
-              cppad_derivOut[dx1_ind * maxOrder + 0];
-        }
-      }
     }
+    //return (ansList);
+  };
 
-    if (ordersFound[1] == true) {
-      std::copy(gradient_ans.begin(), gradient_ans.end(),
-                ADlist->gradient.getPtr());
+   nimSmartPtr<NIMBLE_ADCLASS> getDerivs_wrapper(nimbleCppADinfoClass &ADinfo,
+                                        NimArr<1, double> &derivOrders,
+                                        const NimArr<1, double> &wrtVector){
+            nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
+            getDerivs(ADinfo, derivOrders, wrtVector, ansList);
+            return(ansList);
     }
-    if (ordersFound[2] == true) {
-      std::copy(hessian_ans.begin(), hessian_ans.end(),
-                ADlist->hessian.getPtr());
-    }
-    return (ADlist);
-  }
 };
 
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
-    NodeVectorClassNew_derivs &nodes, NimArr<1, double> &derivOrders);
+    const NodeVectorClassNew_derivs &nodes, const NimArr<1, double> &derivOrders);
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
-    NodeVectorClassNew_derivs &nodes, double derivOrders);
+    const NodeVectorClassNew_derivs &nodes, const double derivOrders);
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
     NodeVectorClassNew_derivs &nodes, int iNodeFunction,
     NimArr<1, double> &derivOrders);

@@ -359,7 +359,7 @@ void SEXP_list_2_NimArr_double_vec(SEXP Sn, vector<NimArr<ndim, double> > &ans) 
 			int numListElements = Rf_length(Sn);
 			ans.resize(numListElements);
 			for(int i = 0; i < numListElements; i++){
-				SEXP_2_NimArr<1>(VECTOR_ELT(Sn, i), ans[i]);
+				SEXP_2_NimArr<ndim>(VECTOR_ELT(Sn, i), ans[i]);
 			}
 }
 
@@ -368,12 +368,11 @@ void SEXP_list_2_NimArr_int_vec(SEXP Sn, vector<NimArr<ndim, int> > &ans) {
 			int numListElements = Rf_length(Sn);
 			ans.resize(numListElements);
 			for(int i = 0; i < numListElements; i++){
-				SEXP_2_NimArr<1>(VECTOR_ELT(Sn, i), ans[i]);
+				SEXP_2_NimArr<ndim>(VECTOR_ELT(Sn, i), ans[i]);
 			}
 }
 
-
- void row2NimArr(SEXP &matrix, NimArrBase<double> &nimPtr, int startPoint, int len, int nRows);
+void row2NimArr(SEXP &matrix, NimArrBase<double> &nimPtr, int startPoint, int len, int nRows);
 void row2NimArr(SEXP &matrix, NimArrBase<int> &nimPtr, int startPoint, int len, int nRows);
 
 template <class T>

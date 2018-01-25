@@ -65,9 +65,11 @@ class NodeVectorClassNew {
 
 // This is a collection of instructions denoting a sort of "program".
 class NodeVectorClassNew_derivs : public NodeVectorClassNew {
- public:
-	vector<vector<NimArr<1, int> > > parentIndicesList;
-	NimArr<1, int> stochNodeIndicators;
+public:
+  vector<vector<NimArr<1, int> > > parentIndicesList;
+  vector<vector<vector<NimArr<1, int> > > > topLevelWrtDeps;
+  NimArr<1, int> stochNodeIndicators;
+  NimArr<1, int> isAddedScalarNode;
 	NimArr<1, int> calcNodeIndicators;
 	vector<NimArr<1, double> > cppWrtArgIndices;
 	NimArr<1, int> wrtLineNums;
@@ -75,17 +77,21 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 	vector<NimArr<1, int> > wrtToIndices;
 	vector<NimArr<1, int> > wrtFromIndices;
 	vector<NimArr<1, int> > wrtLineIndices;
-	vector<NimArr<1, int> > lineWrtArgSizeInfo;
+  vector<NimArr<1, int> > lineWrtArgSizeInfo;
+  vector<NimArr<1, int> > allNeededWRTCopyVars;
+  vector<NimArr<2, double> > thisAddedNodeJacobianList;
 	int totalOutWrtSize;
 	int totalWrtSize;
-    NimArr<1, int> cumulativeWrtLineNums;
-    NimArr<1, int> wrtLineSize;
+  NimArr<1, int> cumulativeWrtLineNums;
+  NimArr<1, int> wrtLineSize;
+	const vector<NodeInstruction> &getConstInstructions() const { 
+    return instructions; }
 
-	
 	void populateDerivsInfo(SEXP SderivsInfo) {
 		SEXP S_pxData;
 		SEXP S_parentInds;
-		SEXP S_thisList;
+    SEXP S_thisList;
+    SEXP S_thisListI;
 		SEXP S_stochNodeIndicators;
 		SEXP S_calcNodeIndicators;
 		SEXP S_cppWrtArgIndices;
@@ -94,19 +100,46 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		SEXP S_wrtFromIndices;
 		SEXP S_wrtLineIndices;
 		SEXP S_lineWrtArgSizeInfo;
-		SEXP S_nodeLengths;
+    SEXP S_nodeLengths;
+    SEXP S_topLevelWrtDeps;
+    SEXP S_allNeededWRTCopyVars;
+    SEXP S_isAddedScalarNode;
+    SEXP S_thisAddedNodeJacobianList;
 		int numNodes;
-
+    int numNodesI;
 		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
 		SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
 		PROTECT(S_parentInds = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												Rf_install("parentIndicesList")));
 		numNodes = Rf_length(S_parentInds);
-		parentIndicesList.resize(numNodes);
+    parentIndicesList.resize(numNodes);
 		for(int i = 0; i < numNodes; i++){
 			PROTECT(S_thisList =  VECTOR_ELT(S_parentInds, i));
 			SEXP_list_2_NimArr_int_vec(S_thisList, parentIndicesList[i]);
-		}
+    }
+
+    PROTECT(S_thisAddedNodeJacobianList = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+                        Rf_install("thisAddedNodeJacobianList")));
+    SEXP_list_2_NimArr_double_vec(S_thisAddedNodeJacobianList, thisAddedNodeJacobianList);
+
+    PROTECT(S_topLevelWrtDeps = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												Rf_install("topLevelWrtDeps")));
+    topLevelWrtDeps.resize(numNodes);
+    int sumNodesI = 0;
+		for(int i = 0; i < numNodes; i++){
+      PROTECT(S_thisList =  VECTOR_ELT(S_topLevelWrtDeps, i));
+      numNodesI  = Rf_length(S_thisList);
+      sumNodesI += numNodesI;
+      topLevelWrtDeps[i].resize(numNodesI);
+		  for(int j = 0; j < numNodesI; j++){
+			  PROTECT(S_thisListI =  VECTOR_ELT(S_thisList, j));
+		  	SEXP_list_2_NimArr_int_vec(S_thisListI, topLevelWrtDeps[i][j]);
+      }
+    }
+
+    PROTECT(S_isAddedScalarNode = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+														  Rf_install("isAddedScalarNode")));
+		SEXP_2_NimArr(S_isAddedScalarNode, isAddedScalarNode);
 		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 														  Rf_install("stochNodeIndicators")));
 		SEXP_2_NimArr(S_stochNodeIndicators, stochNodeIndicators);
@@ -134,8 +167,11 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
 		PROTECT(S_lineWrtArgSizeInfo = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
 												         Rf_install("lineWrtArgSizeInfo")));
 		SEXP_list_2_NimArr_int_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
-		
-		UNPROTECT(21 + numNodes);
+		PROTECT(S_allNeededWRTCopyVars = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
+												         Rf_install("allNeededWRTCopyVars")));
+		SEXP_list_2_NimArr_int_vec(S_allNeededWRTCopyVars, allNeededWRTCopyVars);
+
+		UNPROTECT(29 + 2*numNodes + sumNodesI);
 		
 		totalOutWrtSize = 0;
 		for(int i = 0; i < length(wrtToIndices); i++){
@@ -522,12 +558,12 @@ class copierClassBuilderCase : public copierClassBuilderClass {
       fromType = fromNimArr->getNimType();
       toType = toNimArr->getNimType();  
       switch(fromType) {
-      case DOUBLE:
+      case nimType::DOUBLE:
 	switch(toType) {
-	case DOUBLE:
+	case nimType::DOUBLE:
 	  return new TDD(from, to, isFromMV, isToMV);
 	  break;
-	case INT:
+	case nimType::INT:
 	  return new TDI(from, to, isFromMV, isToMV);
 	  break;
 	default:
@@ -535,12 +571,12 @@ class copierClassBuilderCase : public copierClassBuilderClass {
 	  return 0;
 	  break;
 	};
-      case INT:
+      case nimType::INT:
 	switch(toType) {
-	case DOUBLE:
+	case nimType::DOUBLE:
 	  return new TID(from, to, isFromMV, isToMV);
 	  break;
-	case INT:
+	case nimType::INT:
 	  return new TII(from, to, isFromMV, isToMV);
 	  break;
 	default:
@@ -592,10 +628,10 @@ void SingleModelAccess_2_nimArr(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
   NimArrBase<int>* SMA_NimArrPtrI;
   if(SMVAPtr->getSingleton()) {
     switch(SMA_Type) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset];
       break;
-    case INT:
+    case nimType::INT:
       (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase<int> *>(SMA_NimTypePtr))[SMVAPtr->offset];
       break;
     default:
@@ -604,11 +640,11 @@ void SingleModelAccess_2_nimArr(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
     }
   } else {
     switch(SMA_Type) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
       dynamicMapCopyDimToFlat<double, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes() );
       break;
-    case INT:
+    case nimType::INT:
       SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
       dynamicMapCopyDimToFlat<int, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes());
       break;
@@ -629,10 +665,10 @@ void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
 
   if(SMVAPtr->getSingleton()) {
     switch(SMA_Type) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
       break;
-    case INT:
+    case nimType::INT:
       (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
       break;
     default:
@@ -641,11 +677,11 @@ void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
     }
   } else {
     switch(SMA_Type) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
       dynamicMapCopyFlatToDim<T, double>(SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
       break;
-    case INT:
+    case nimType::INT:
       SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
       dynamicMapCopyFlatToDim<T, int>(SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
       break;

@@ -510,12 +510,12 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
     singletonCopyCheck(toNimArr, to->getOffset());
 #endif
     switch(fromType) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       switch(toType) {
-      case DOUBLE:
+      case nimType::DOUBLE:
 	(*static_cast<NimArrBase<double> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->getOffset()];
 	break;
-    case INT:
+    case nimType::INT:
 	(*static_cast<NimArrBase<int> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->getOffset()];
       break;
     default:
@@ -523,12 +523,12 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
       nimble_print_to_R(_nimble_global_output);
     }
     break;
-  case INT:
+  case nimType::INT:
     switch(toType) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       (*static_cast<NimArrBase<double> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->getOffset()];
       break;
-    case INT:
+    case nimType::INT:
 	(*static_cast<NimArrBase<int> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->getOffset()];
       break;
     default:
@@ -546,12 +546,12 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
     dynamicMapCopyCheck(fromNimArr, from->getOffset(), from->getStrides(), from->getSizes());
 #endif
     switch(fromType) {
-    case DOUBLE:
+    case nimType::DOUBLE:
       switch(toType) {
-      case DOUBLE:
+      case nimType::DOUBLE:
 	dynamicMapCopy<double, double>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
-      case INT:
+      case nimType::INT:
 	dynamicMapCopy<double, int>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
       default:
@@ -559,12 +559,12 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
 	nimble_print_to_R(_nimble_global_output);
       }
       break;
-    case INT:
+    case nimType::INT:
       switch(toType) {
-      case DOUBLE:
+      case nimType::DOUBLE:
 	dynamicMapCopy<int, double>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
-      case INT:
+      case nimType::INT:
 	dynamicMapCopy<int, int>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
       default:
@@ -581,10 +581,10 @@ void singletonCopyCheck(NimArrType *NAT, int offset) {
   nimType NATtype = NAT->getNimType();
   int NATsize;
   switch(NATtype) {
-  case INT:
+  case nimType::INT:
     NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
-  case DOUBLE:
+  case nimType::DOUBLE:
     NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   default:
@@ -599,10 +599,10 @@ void dynamicMapCopyCheck(NimArrType *NAT, int offset, vector<int> &strides, vect
   nimType NATtype = NAT->getNimType();
   int NATsize;
   switch(NATtype) {
-  case INT:
+  case nimType::INT:
     NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
-  case DOUBLE:
+  case nimType::DOUBLE:
     NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   default:

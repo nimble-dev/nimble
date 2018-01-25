@@ -374,6 +374,8 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
             derivList$value <- 0
             model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)
           }
+          print(paste(i, "hessian:"))
+          print(derivList$gradient)
           ## The derivOutputFlag determines whether the derivatives of this node (node i): 
           ## should be calculated for inclusion in the chain rule output (TRUE),
           ## should be calculated for later use in the chain rule (FALSE), 
@@ -407,7 +409,6 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
               ## If this line is included in output, add the derivative of this line (i) wrt this param (j).
               outDerivList$gradient[, derivInfo$wrtToIndices[[j]]] <- outDerivList$gradient[, derivInfo$wrtToIndices[[j]]]  +  
                 chainRuleDerivList[[i]][,derivInfo$wrtFromIndices[[j]]]
-
             }
             if(hessianFlag){
               ## The Hessian is calculated below using Faà di Bruno's formula.
@@ -441,9 +442,16 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
                   thisArgIndex <- thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]
                 }
                 if(derivOutputFlag == TRUE){
+                  print(paste("i:", i))
+                  print(paste("j1:", i))
+                  print(paste("j2:", i))
                   ## If this line is included in output, add the Hessian of this line (i) wrt this param #1 (j) and this param #2 (j_2).
                   outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ] <-  outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ]   +
                     chainRuleHessianList[[i]][derivInfo$wrtFromIndices[[j]], derivInfo$wrtFromIndices[[j_2]],]
+                  print(i)
+                  print("crHessian")
+                  print(chainRuleHessianList[[i]])
+                  
                 }
               }
             }

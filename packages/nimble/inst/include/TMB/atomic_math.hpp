@@ -145,8 +145,12 @@ namespace Rmath {
   }
   /* n'th order derivative of log gamma function */
   double D_lgamma(double x, double n){
-    if(n<.5)return Rf_lgammafn(x);
-    else return Rf_psigamma(x,n-1.0);
+	double ans;
+	if(n<.5) ans = Rf_lgammafn(x);
+	else ans = Rf_psigamma(x, n-1);
+	return(ans);
+    // if(n<.5)return Rf_lgammafn(x);
+    // else return Rf_psigamma(x,n-1.0);
   }
 #endif // #ifdef WITH_LIBTMB
 
@@ -324,9 +328,37 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 			   // ATOMIC_REVERSE
 			   CppAD::vector<Type> tx_(2);
 			   tx_[0]=tx[0];
-			   tx_[1]=tx[1]+Type(1.0);
-			   px[0] = D_lgamma(tx_)[0] * py[0];
-			   px[1] = Type(0);
+
+			   
+			   size_t q1 = q + 1;
+			   if(q1 == 2){
+				   cout << "tx: ";
+			   for(size_t i = 0; i < tx.size(); i++){
+				   cout << tx[i] << ", ";
+				}
+				   cout << "\n";
+
+				 cout << "py: ";
+			   for(size_t i = 0; i < py.size(); i++){
+				   cout << py[i] << ", ";
+				}
+				   cout << "\n";
+
+
+				   tx_[1] = Type(2.0);
+				   px[0 * q1 + 0] += py[0 * q1 + 1] * D_lgamma(tx_)[0] * tx[0 * q1 + 1] * tx[0 * q1 + 1];
+					cout << "px[0]: " << px[0] << "\n";
+				   tx_[1] = Type(1.0);
+				   px[0 * q1 + 1] += py[0 * q1 + 1] * D_lgamma(tx_)[0];
+				   px[1 * q1 + 1] = 0;
+				}
+			   tx_[1]=Type(1.0);
+			   px[0 * q1 + 0] += D_lgamma(tx_)[0] * py[0];
+			   px[1 * q1 + 0] = 0;
+			   	if(q1 == 2){
+					   cout << "px: " << px[0] << ", " << px[1] << "\n";
+				   }
+
 			   )
 
 /** \brief Atomic version of poisson cdf \f$ppois(n,\lambda)\f$.

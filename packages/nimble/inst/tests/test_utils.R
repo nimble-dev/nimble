@@ -1226,7 +1226,7 @@ testCompiledModelDerivsNimFxn <- nimbleFunction(
 ##   tolerance:     A numeric argument, the tolerance to use when comparing wrapperDerivs to chainRuleDerivs.
 ##   verbose:       A logical argument.  Currently serves no purpose.
 test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
-                                  testR = TRUE, testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
+                                  testR = FALSE, testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
   temporarilyAssignInGlobalEnv(model)  
 
   if(testCompiled){
@@ -1256,6 +1256,51 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
                       })
     }
   }
+}
+
+makeADDistributionTestList <- function(distnList){
+  argsList <- lapply(distnList$args, function(x){
+    return(x)
+  })
+  ansList <- list(args = argsList,
+                  expr = substitute(out <- nimDerivs(METHODEXPR, wrt = WRT, order = c(0,1,2)),
+                                    list(METHODEXPR = as.call(c(list(quote(method1)),
+                                                               lapply(names(distnList$args),
+                                                                      function(x){return(parse(text = x)[[1]])}))),
+                                         WRT = names(distnList$args)
+                                    )),
+                  outputType = quote(ADNimbleList())
+  )
+  return(ansList)
+}
+
+makeADDistributionMethodTestList <- function(distnList){
+  argsList <- lapply(distnList$args, function(x){
+    return(x)
+  })
+  ansList <- list(args = argsList,
+                  expr = substitute(out <- DISTNEXPR,
+                                    list(DISTNEXPR = as.call(c(list(parse(text = distnList$distnName)[[1]]),
+                                                               lapply(names(distnList$args),
+                                                                      function(x){return(parse(text = x)[[1]])}),
+                                                               list(log = TRUE)))
+                                    )),
+                  outputType = quote(double(0))
+  )
+  return(ansList)
+}
+
+testADDistribution <- function(ADfunGen, argsList, name){
+  ADfun <- ADfunGen()
+  CADfun <- compileNimble(ADfun)
+  RfunCallList <- c(list(quote(ADfun$run)), argsList)
+  CfunCallList <- c(list(quote(CADfun$run)), argsList)
+  RderivsList <- eval(as.call(RfunCallList))
+  CderivsList <- eval(as.call(CfunCallList))
+  expect_equal(RderivsList$value, CderivsList$value, tolerance = .01)
+  expect_equal(RderivsList$gradient, CderivsList$gradient, tolerance = .1)
+  expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1)
+  browser()
 }
 
 expandNames <- function(var, ...) {
@@ -1365,3 +1410,5 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
               )
     invisible(NULL)
 }
+
+
