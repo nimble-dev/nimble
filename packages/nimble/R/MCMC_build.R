@@ -111,6 +111,8 @@ buildMCMC <- nimbleFunction(
             resize(mvSamples2, niter/thin2)
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
         } else {
+            my_initializeModel$run()  ## helps with restarting MCMC in new R session
+            nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)   ##
             mvSamples_offset  <- getsize(mvSamples)
             mvSamples2_offset <- getsize(mvSamples2)
             resize(mvSamples,  mvSamples_offset  + niter/thin)
