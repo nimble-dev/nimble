@@ -45,10 +45,6 @@ TMB_EXTERN bool atomicFunctionGenerated CSKIP(= false;)
         for (size_t i = 0; i < vy.size(); i++) vy[i] = anyvx;                 \
       }                                                                       \
       ATOMIC_NAME(tx, ty);                                                    \
-      cout << "ty: ";                                                    \
-      for(int i = 0; i < ty.size(); i++)                                \
-        cout << ty[i] << ", ";                                          \
-      cout << "\n";                                                       \
       return true;                                                            \
     }                                                                         \
     virtual bool reverse(size_t q, const CppAD::vector<Type>& tx,             \

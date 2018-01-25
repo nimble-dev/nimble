@@ -250,8 +250,8 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, ADconstantsInfo,
     }
     if(!nimbleOptions('experimentalEnableDerivs')){
       methodList[[paste0( getCalcADFunName(), '_deriv')]]  <- eval(substitute(
-        function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass), nimDerivsOrders = double(1), wrtVector = double(1)) {
-          returnType(ADNimbleList());  return(ADNimbleList$new())}))
+        function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass), nimDerivsOrders = double(1), wrtVector = constDouble(1),  ansList = ADNimbleList()) {
+          }))
     }
     parentsArgs <-c()
     if(nimbleOptions('experimentalEnableDerivs')){
