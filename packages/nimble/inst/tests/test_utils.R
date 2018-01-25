@@ -1213,9 +1213,9 @@ test_dynamic_indexing_model <- function(param) {
                 
 test_dynamic_indexing_model_internal <- function(param) {
         if(!is.null(param$expectError) && param$expectError) {
-            expect_error(m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data), param$expectErrorMsg, info = "expected error not generated")
+            expect_error(m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data, constants = param$constants), param$expectErrorMsg, info = "expected error not generated")
         } else {
-            m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data)
+            m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data, constants = param$constants)
             expect_true(inherits(m, 'modelBaseClass'), info = "problem creating model")
             for(i in seq_along(param$expectedDeps)) 
                 expect_identical(m$getDependencies(param$expectedDeps[[i]]$parent, stochOnly = TRUE),

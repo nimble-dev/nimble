@@ -500,6 +500,24 @@ testsDynIndex <- list(
                             list(parent = 'mu[2]', result = c('mu[2]', expandNames('y', 1:5)))),
         validIndexes =list(list(var = 'k[4]', value = 7)),
         invalidIndexes =list(list(var = 'k[4]', value = 8))
+    ),
+    list(
+        case = 'dynamic index plus index specified by constant',
+        code = nimbleCode({
+            for(i in 1:5) {
+                y[i] ~ dnorm(mu[k[i], block[i]], 1)
+                k[i] ~ dcat(p[1:4])
+            }
+        }),
+        inits = list(mu = matrix(rnorm(4*2), 4, 2), k = rep(1,5)),
+        data = list(y = rnorm(5)),
+        constants = list(block = c(1,1,2,1,2)),
+        expectedDeps = list(list(parent = 'mu[1,1]', result = c('y[1]', 'y[2]', 'y[4]')),
+                            list(parent = 'mu[2,1]', result = c('y[1]', 'y[2]', 'y[4]')),
+                            list(parent = 'mu[2,2]', result = c('y[3]', 'y[5]')),
+                            list(parent = 'k[2]', result = c('k[2]', 'y[2]'))),
+        validIndexes =list(list(var = 'k[4]', value = 4)),
+        invalidIndexes =list(list(var = 'k[4]', value = 5))
     )
 )
 
@@ -523,7 +541,7 @@ testsInvalidDynIndex <- list(
                 y[i, 1:3] ~ dmnorm(mu[k[i, 1:3]], pr[1:3,1:3])
         }), 
         inits = list(mu = rnorm(10)), 
-        data = list(y = rnorm(3)),
+        data = list(y = matrix(rnorm(6), 2, 3)),
         expectError = TRUE,
         expectErrorMsg = "only scalar random indices are allowed"
     ),
@@ -548,6 +566,17 @@ testsInvalidDynIndex <- list(
         inits = list(mu = rnorm(5)),
         expectError = TRUE,
         expectErrorMsg = "arguments that cannot be evaluated"
+    ),
+    list(
+        case = 'dynamic indexing of constants',
+        code = nimbleCode({
+            for(i in 1:2) {
+                y[i] ~ dnorm(mu[k[i]], sd = sigma)
+            }
+        }), 
+        constants = list(mu = rnorm(5)),
+        expectError = TRUE,
+        expectErrorMsg = "dynamic indexing of constants"
     )
 )
 
