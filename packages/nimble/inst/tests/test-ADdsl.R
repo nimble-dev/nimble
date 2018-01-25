@@ -49,8 +49,7 @@ thisNf <- nimbleFunction(setup = function(){},
 
 RthisNf <- thisNf()
 CthisNf <- compileNimble(RthisNf)
-CthisNf$run(1, 1, 1)
-RthisNf$run(1, 1 , 1)
+round(CthisNf$run(1, 1, 1)$hessian -RthisNf$run(1, 1, 1)$hessian, .01)
 
 for(x in 1:50){
  if(abs(CthisNf$run(1, x, 1)$value - RthisNf$run(1, x, 1)$value) > .05) browser()

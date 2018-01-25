@@ -332,22 +332,8 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 			   
 			   size_t q1 = q + 1;
 			   if(q1 == 2){
-				   cout << "tx: ";
-			   for(size_t i = 0; i < tx.size(); i++){
-				   cout << tx[i] << ", ";
-				}
-				   cout << "\n";
-
-				 cout << "py: ";
-			   for(size_t i = 0; i < py.size(); i++){
-				   cout << py[i] << ", ";
-				}
-				   cout << "\n";
-
-
 				   tx_[1] = Type(2.0);
 				   px[0 * q1 + 0] += py[0 * q1 + 1] * D_lgamma(tx_)[0] * tx[0 * q1 + 1] * tx[0 * q1 + 1];
-					cout << "px[0]: " << px[0] << "\n";
 				   tx_[1] = Type(1.0);
 				   px[0 * q1 + 1] += py[0 * q1 + 1] * D_lgamma(tx_)[0];
 				   px[1 * q1 + 1] = 0;
@@ -355,10 +341,6 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 			   tx_[1]=Type(1.0);
 			   px[0 * q1 + 0] += D_lgamma(tx_)[0] * py[0];
 			   px[1 * q1 + 0] = 0;
-			   	if(q1 == 2){
-					   cout << "px: " << px[0] << ", " << px[1] << "\n";
-				   }
-
 			   )
 
 /** \brief Atomic version of poisson cdf \f$ppois(n,\lambda)\f$.
