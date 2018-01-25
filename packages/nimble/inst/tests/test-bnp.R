@@ -116,6 +116,40 @@ hist(Data$y, freq=FALSE, breaks=30)
 points(sec,fhat, col="black", lwd=2, type="l")
 
 
+
+#----------------------------------------------------------------------------
+#-- standarized output:
+modelConf<-configureMCMC(model, print=FALSE, thin=10) # less samples!
+modelConf$printSamplers(c("xi"))
+modelMCMC=buildMCMC(modelConf)
+#-- compiling the sampler
+CmodelNewMCMC=compileNimble(modelMCMC, project=model,
+                            resetFunctions=TRUE, showCompilerOutput = TRUE)
+#-- MCMC samples
+set.seed(1)
+nsave=100
+t1=proc.time()
+CmodelNewMCMC$run(nsave)
+proc.time()-t1
+
+
+mvSaved=CmodelNewMCMC$mvSamples
+target='xi'
+varNames=c('thetatilde', 's2tilde') #  in this order!!!!
+rndconc='FALSE'
+
+
+SamplerG <- nimble:::sampler_G(model, mvSaved, target, varNames, rndconc)#nimble:::sampler_G(model, mvSaved, target, varNames)## 
+SamplerG$run()
+aux=as.matrix(SamplerG$mv)  ## the mv object is accessed here
+
+trunc=length(aux[1,])/3
+for(i in 1:nrow(aux)){
+  plot(aux[i, (trunc+1):(2*trunc)], aux[i, 1:trunc], type="h", main=sum(aux[i, 1:trunc])); readline()
+}
+
+
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 #-- stick_breaking representation and BUGS Code

@@ -271,72 +271,81 @@ sampler_MarginalizedG_general <- nimbleFunction(
 
 #-- Standarized output nimbleFunction
 #-- user gives us: 
-#   - mvSaved: modelValues object with the samples of xi, tilde variables, and conc parameter if it is random
-#      for now, conc is deterministic
-#   - varNames: names of the variables in the mvSaved object, first name should be xi (LHS of dCRP)
-#   - model
-#-- we return a model Values object (?) where each row is a matrix having the sampled weights and atom of measure G.
+#   - model: the model
+#   - mvSaved: modelValues object with the samples of xi, the tilde variables, and the conc parameter, if sampled 
+#   - varNames: names of the variables in the mv object including the tilde variables and conc param (in that order!).
+#   - rndconc: whether the concentration parameteris sampled or not (if not sampled is fixed)
 
-#mvSaved=CmodelNewMCMC$mvSamples
-#varNames=c('xi', 'thetatilde', 's2tilde')
-#model=model
+#-- we return a model Values object (?) where each row is a matrix having the sampled weights and atom of measure G.
 
 sampler_G <- nimbleFunction(
   # name = 'sampler_G'
   
-  setup=function(model, mvSaved, varNames){
-    target <- varNames[1] 
+  setup=function(model, mvSaved, target, varNames, rndconc){
     #calcNodes <- model$getDependencies(target) 
     targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
     
     # defining truncation for a fixed concentration parameter: 
-    # how to know if conc is deterministic or stochastic? is model$getNodeNames(determOnly = TRUE) usefull?
-    conc <- model$getParam(target, 'conc') # deterministic:
-    AproxError <- 1e-10
-    Trunc <- ceiling(log(AproxError)/log(conc/(conc+1))+1) # gives an error of at most AproxError.
-    #conc <- mvSaved[[varNames['conc']]]# stochastic; 
-    #concHat <- mean(conc)
-    #Trunc <- ceiling(log(AproxError)/log(concHat/(concHat+1))+1) # gives an error of at most AproxError.
+    m0 <- length(varNames)
+    if(rndconc==FALSE){ # fixed conc parameter
+      conc <- model$getParam(target, 'conc') # works for deterministic and stochastic?
+      AproxError <- 1e-10
+      Trunc <- ceiling(log(AproxError)/log(conc/(conc+1))+1) # gives an error of at most AproxError.
+    }else{
+      conc <- mvSaved[[varNames[m0]]] #how to get the samples from this parameters? 
+      concHat <- mean(unlist(conc))
+      Trunc <- ceiling(log(AproxError)/log(concHat/(concHat+1))+1) # gives an error of at most AproxError.
+    }
     
     niter <- length(mvSaved[[target]]) # number of iterations of the MCMC
     N <- length(targetElements) # sample size
     
     xi <- mvSaved[[target]]
-    p <- length(mvSaved[[]])-1 # length(varNames)-1 is atoms dimension in measure G
+    if(rndconc==FALSE){
+      p <- length(mvSaved[[]])-1 #dimension of measure G when conc is not sampled
+    }else{
+      p <- length(mvSaved[[]])-2 #dimension of measure G when conc is  sampled
+    }
     
+    tildeVar1 <- rep(0, p)
+    for(j in 1:p){
+      tildeVar1[j] <- model$expandNodeNames(varNames[j])[1]
+    }
     # storaging object:
-    mvConf = modelValuesConf(vars = 'G', type = 'double', size = list(G = double(2)) )
-    mv = modelValues(mvConf, m = niter)
+    mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
+    mv <- modelValues(mvConf, m = niter)
   },
   
   run=function(){
-    
     for(iiter in 1:niter){
       
-      mv$G[[iiter]] <- matrix(0, ncol=p+1, nrow=Trunc) # first colum has the weights, then the atoms
+      if(rndconc==FALSE){
+        conciter <- conc 
+      }else{
+        conciter <- mvSaved[[varNames[m0]]][[iiter]]
+      }
       
-      # first we get the unique values in the samples and their probabilities of being sampled when computing G:
+      #-- getting the unique values in the samples and their probabilities of beign sampled. Need for computing G later.
       probs <- numeric(N)
       uniqueValues <- matrix(0, ncol=p, nrow=N) # is this ok?
       xiiter <- xi[[iiter]]
-      rangei <- min(xiiter):max(xiiter)
-      index=1
+      rangei <- min(xiiter):max(xiiter) # is this ok??
+      index <- 1
       for(i in 1:length(rangei)){
         cond <- sum(xiiter==rangei[i])
         if(cond>0){
           probs[index] <- cond
           for(j in 1:p){
-            uniqueValues[index, j] <- mvSaved[[varNames[j+1]]][[iiter]][rangei[i]]
+            uniqueValues[index, j] <- mvSaved[[varNames[j]]][[iiter]][rangei[i]]
           }
           index <- index+1
         }
       }
-      probs[index] <- conc # conc[[iiter]]
-      #probs <- probs/sum(probs)
+      probs[index] <- conciter #probs <- probs/sum(probs)
       newvalueindex <- index
       
-      #-- computing G:
-      vaux <- rbeta(1, 1, conc+N) # rbeta(1, 1, conc[[iiter]]+N)
+      #-- computing G: 
+      vaux <- rbeta(1, 1, conciter+N)
       v1prod <- 1
       Taux <- 0
       paramaux <- numeric(p)
@@ -344,51 +353,45 @@ sampler_G <- nimbleFunction(
         index <- rcat(prob=probs[1:newvalueindex])
         if(index==newvalueindex){# sample from G_0
           for(j in 1:p){ 
-            model$simulate(varNames[j+1])
-            paramaux[j] <- values(model, varNames[j+1])[1]  
+            model$simulate(tildeVar1[j])
+            paramaux[j] <- values(model, varNames[j])[1]  
           }
         }else{# sample one of the existing values
           for(j in 1:p){
-            paramaux[j]=uniqueValues[index, j] 
+            paramaux[j] <- uniqueValues[index, j] 
           }
         }
-        condaux <- uniqueValues[1:Trunc, 1] == paramaux[1] # check if we sample a new atom or an atom that ir in G already
+        condaux <- uniqueValues[1:Taux, 1] == paramaux[1] # check if we sample a new atom or an atom that ir in G already
         if(sum(condaux) >0){ # the atom already exists and we have to update the weights and not increase Trunc
-          repindex=1  #repindex=which(condaux==TRUE)
+          repindex=1
           while(condaux[repindex]==FALSE){
             repindex=repindex+1
           }
-          v1prod=v1prod*(1-vaux)
-          vaux=rbeta(1, 1, conc+N) # rbeta(1, 1, conc[[iiter]]+N)
-          mv$G[[iiter]][repindex, 1] <- mv$G[[iiter]][repindex, 1] + vaux*v1prod
-        }else{ # agument the truncation and keep the parameters
-          Taux=Taux+1
+          v1prod <- v1prod*(1-vaux)
+          vaux <-rbeta(1, 1, conciter+N)
+          mv['G', iiter][repindex, 1] <<- mv$G[[iiter]][repindex, 1] + vaux*v1prod
+        }else{ # agument the truncation and keep the same parameters
+          Taux <-Taux+1
           for(j in 1:p){
-            mv$G[[iiter]][Taux, j+1] <- paramaux[j]
+            mv$G[[iiter]][Taux, j+1] <<- paramaux[j]
           }
           if( Taux==1 ){
-            mv$G[[iiter]][Taux, 1] <-vaux
+            mv['G', iiter][Taux, 1] <<-vaux
           }else{
             v1prod <- v1prod*(1-vaux)
-            vaux <- rbeta(1, 1, conc+N) # rbeta(1, 1, conc[[iiter]]+N)
-            mv$G[[iiter]][Taux, 1] <-vaux*v1prod
+            vaux <- rbeta(1, 1, conciter+N)
+            mv['G', iiter][Taux, 1] <<-vaux*v1prod
           }
         }
       }
       # complete the vector of probabiities and atoms
-      mv$G[[iiter]][Trunc, 1] <- v1prod*(1-vaux)
+      mv['G', iiter][Trunc, 1] <<- 1- sum(mv['G', iiter][1:(Trunc-1), 1])
       for(j in 1:p){ 
-        model$simulate(varNames[j+1])
-        mv$G[[iiter]][Trunc, j+1] <- values(model, varNames[j+1])[1]  
+        model$simulate(varNames[j])
+        mv['G', iiter][Trunc, j+1] <<- values(model, varNames[j])[1]  
       }
     }
-    
-    
-    #return(??)
-    #returnType(??)
-    #copy(from = model, to = mvSaved, row = 1, nodes = G, logProb = FALSE) #??
-  }#,
-  #methods = list( reset = function () {} )
+  },
+  
+  methods = list( reset = function () {} )
 )
-
-
