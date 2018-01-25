@@ -1149,7 +1149,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                    },
 
                                    buildNodeFunctions = function(where = globalenv(), debug = FALSE) {
-                                       if(debug) browser()
+                                     if(debug) browser()
                                        iNextNodeFunction <- 1
                                        numDecls <- length(modelDef$declInfo)
                                        nodeFunctions <<- vector('list', length = numDecls)  ## for the specialized instances
