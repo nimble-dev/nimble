@@ -16,7 +16,7 @@ Type lgamma(Type x){
   CppAD::vector<Type> tx(2);
   tx[0] = x;
   tx[1] = Type(0);
-  return atomic::D_lgamma(tx)[0];
+  return ::atomic::D_lgamma(tx)[0];
 }
 // VECTORIZE1_t(lgamma)
 
@@ -28,7 +28,7 @@ Type lfactorial(Type x){
   CppAD::vector<Type> tx(2);
   tx[0] = x + Type(1);
   tx[1] = Type(0);
-  return atomic::D_lgamma(tx)[0];
+  return ::atomic::D_lgamma(tx)[0];
 }
 // VECTORIZE1_t(lfactorial)
 

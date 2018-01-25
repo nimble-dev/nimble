@@ -30,7 +30,7 @@ TMB_EXTERN bool atomicFunctionGenerated CSKIP(= false;)
   class atomic##ATOMIC_NAME : public CppAD::atomic_base<Type> {               \
    public:                                                                    \
     atomic##ATOMIC_NAME(const char* name) : CppAD::atomic_base<Type>(name) {  \
-      atomic::atomicFunctionGenerated = true;                                 \
+      ::atomic::atomicFunctionGenerated = true;                                 \
       this->option(CppAD::atomic_base<Type>::bool_sparsity_enum);             \
     }                                                                         \
                                                                               \
