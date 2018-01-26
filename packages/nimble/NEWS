@@ -17,6 +17,12 @@ BUG FIXES
 
 -- Fixed a bug in runCrossValidate(), where for certain models using the "random" foldFunction would cause an error.
 
+DEVELOPER LEVEL CHANGES
+
+-- Fixed configure error that caused issues with -fpic compiler flag.
+
+-- Removed use of "include" directive in Makefile on a path derived from R_HOME variable at request of CRAN.
+
 
 						   
 						   CHANGES IN VERSION 0.6-8 and 0.6-7 (November 2017)
