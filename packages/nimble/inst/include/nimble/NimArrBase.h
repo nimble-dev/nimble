@@ -24,9 +24,12 @@
 
 /* fix to avoid warnings exemplified by edison.nersc.gov SUSE Linux - Github
  * issue #214 */
+/* based on CRAN complaint, remove this as of 0.6-9 */
+/*
 #if defined __GNUC__ && __GNUC__ >= 6
 #pragma GCC diagnostic ignored "-Wignored-attributes"
 #endif
+*/
 
 #include <R.h>
 #include <Eigen/Core>
