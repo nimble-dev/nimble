@@ -85,6 +85,8 @@ buildMCMC <- nimbleFunction(
         mvSamples2Conf <- conf$getMvSamplesConf(2)
         mvSamples <- modelValues(mvSamplesConf)
         mvSamples2 <- modelValues(mvSamples2Conf)
+        resize(mvSamples,  0)     ## helps with restarting MCMC in new R session
+        resize(mvSamples2, 0)     ##
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
@@ -111,6 +113,8 @@ buildMCMC <- nimbleFunction(
             resize(mvSamples2, niter/thin2)
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
         } else {
+            my_initializeModel$run()  ## helps with restarting MCMC in new R session
+            nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)   ##
             mvSamples_offset  <- getsize(mvSamples)
             mvSamples2_offset <- getsize(mvSamples2)
             resize(mvSamples,  mvSamples_offset  + niter/thin)
