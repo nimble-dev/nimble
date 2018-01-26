@@ -53,6 +53,8 @@ round(CthisNf$run(1, 1, 1)$hessian -RthisNf$run(1, 1, 1)$hessian, 2)
 
 
 CthisNf$run(1, .2, 1)$hessian
+RthisNf$run(1, .2, 1)
+
 
 [,1]       [,2]       [,3]
 [1,]  0.3678794  0.3678794 -0.3678794

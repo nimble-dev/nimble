@@ -13,8 +13,15 @@ TMB_EXTERN bool atomicFunctionGenerated CSKIP(= false;)
   template<class Double>                                                      \
   void ATOMIC_NAME(const CppAD::vector<Double>& tx,                           \
                    CppAD::vector<Double>& ty) CSKIP({                         \
+    size_t p = 0;                                                                          \
+    size_t q = 0;                                                                          \
     ATOMIC_DOUBLE;                                                            \
   })                                                                          \
+  template<class Double>                                                                                                 \
+  void ATOMIC_NAME(const CppAD::vector<Double>& tx,                           \
+                   CppAD::vector<Double>& ty, size_t p, size_t q) CSKIP({                         \
+    ATOMIC_DOUBLE;                                                            \
+  })                                                                                     \
   template<class Double>                                                      \
   CppAD::vector<double> ATOMIC_NAME(const CppAD::vector<Double>& tx) {  \
     CppAD::vector<double> ty(OUTPUT_DIM);                                     \
@@ -44,7 +51,7 @@ TMB_EXTERN bool atomicFunctionGenerated CSKIP(= false;)
         for (size_t i = 0; i < vx.size(); i++) anyvx |= vx[i];                \
         for (size_t i = 0; i < vy.size(); i++) vy[i] = anyvx;                 \
       }                                                                       \
-      ATOMIC_NAME(tx, ty);                                                    \
+      ATOMIC_NAME(tx, ty, p, q);                                                    \
       return true;                                                            \
     }                                                                         \
     virtual bool reverse(size_t q, const CppAD::vector<Type>& tx,             \

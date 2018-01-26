@@ -323,23 +323,18 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 			   1
 			   ,
 			   // ATOMIC_DOUBLE
-			   ty[0]=Rmath::D_lgamma(tx[0],tx[1]);
+			   ty[0]=Rmath::D_lgamma(tx[0],Double(0.0));
+			   if(q == 1){
+				 ty[1]=Rmath::D_lgamma(tx[0],Double(1.0))*tx[1];
+				}
 			   ,
 			   // ATOMIC_REVERSE
-			   CppAD::vector<Type> tx_(2);
-			   tx_[0]=tx[0];
-
-			   
 			   size_t q1 = q + 1;
 			   if(q1 == 2){
-				   tx_[1] = Type(2.0);
-				   px[0 * q1 + 0] += py[0 * q1 + 1] * D_lgamma(tx_)[0] * tx[0 * q1 + 1] * tx[0 * q1 + 1];
-				   tx_[1] = Type(1.0);
-				   px[0 * q1 + 1] += py[0 * q1 + 1] * D_lgamma(tx_)[0];
-				   px[1 * q1 + 1] = 0;
+				   px[0 * q1 + 0] += py[0 * q1 + 1] * Rmath::D_lgamma(tx[0],2.0) * tx[0 * q1 + 1] * tx[0 * q1 + 1];
+				   px[0 * q1 + 1] += py[0 * q1 + 1] * Rmath::D_lgamma(tx[0],1.0) ;
 				}
-			   tx_[1]=Type(1.0);
-			   px[0 * q1 + 0] += D_lgamma(tx_)[0] * py[0];
+			   px[0 * q1 + 0] += Rmath::D_lgamma(tx[0],1.0) * py[0];
 			   px[1 * q1 + 0] = 0;
 			   )
 

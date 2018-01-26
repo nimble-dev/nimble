@@ -70,7 +70,7 @@ Type lfactorial(Type x){
 // */
 template<class Type>
 inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
-		    int give_log=0)
+		    int give_log)
 {
   Type n=size;
   Type p=prob;
@@ -123,7 +123,7 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
 // */
 
 template<class Type>
-inline Type nimDerivs_dpois(const Type &x, const Type &lambda, int give_log=0)
+inline Type nimDerivs_dpois(const Type &x, const Type &lambda, int give_log)
 {
   Type logres = -lambda + x*log(lambda) - lgamma(x+Type(1));
   if (give_log) return logres; else return exp(logres);
@@ -134,12 +134,10 @@ inline Type nimDerivs_dpois(const Type &x, const Type &lambda, int give_log=0)
   \ingroup R_style_distribution
 */
 template<class Type>
-Type nimDerivs_dgamma(Type y, Type shape, Type scale, int give_log=0)
+Type nimDerivs_dgamma(Type y, Type shape, Type scale, int give_log)
 {
-  // Type res = 1/(exp(lgamma(shape))*pow(scale, shape))*pow(y, shape - 1)*exp(-y/scale);
   Type logres=-lgamma(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale);
-  //Type logres = lgamma(shape);
-  if(true)return logres; else return exp(logres);
+  if(give_log)return logres; else return exp(logres);
 }
 // VECTORIZE4_ttti(dgamma)
 
