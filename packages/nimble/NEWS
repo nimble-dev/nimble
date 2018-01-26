@@ -17,6 +17,8 @@ BUG FIXES
 
 -- Fixed a bug in runCrossValidate(), where for certain models using the "random" foldFunction would cause an error.
 
+-- Fixed a name conflict that caused an error when user-defined distributions had parameters named 'lower' or 'upper'.
+
 DEVELOPER LEVEL CHANGES
 
 -- Fixed configure error that caused issues with -fpic compiler flag.
