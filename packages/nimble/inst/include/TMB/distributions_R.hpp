@@ -121,7 +121,7 @@ template<class Type>
 Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){
   CppAD::vector<Type> tx(1);
   tx[0] = (q - mean) / sd;
-  return atomic::pnorm1(tx)[0];
+  return ::atomic::pnorm1(tx)[0];
 }
 // VECTORIZE3_ttt(pnorm)
 // VECTORIZE1_t(pnorm)
@@ -133,7 +133,7 @@ template<class Type>
 Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){
   CppAD::vector<Type> tx(1);
   tx[0] = p;
-  return sd*atomic::qnorm1(tx)[0] + mean;
+  return sd*::atomic::qnorm1(tx)[0] + mean;
 }
 
 template<class T>
