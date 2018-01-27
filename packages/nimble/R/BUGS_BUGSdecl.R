@@ -992,9 +992,18 @@ genReplacementsAndCodeRecurse <- function(code,
             contentsReplaceable  <- list()
             allContentsReplaceable <- TRUE
         }
-        if(deparse(code[[1]]) %in%
-           functionsThatShouldNeverBeReplacedInBUGScode)
-            return(replaceWhatWeCan(code,
+        ## Do not replace if it is from a special set of functions
+        ## or is a nimbleFunction (specifically, an RCfunction)
+        if(
+        {
+            funName <- deparse(code[[1]])
+            (
+                (funName %in% functionsThatShouldNeverBeReplacedInBUGScode) ||
+                (exists(funName) && is.rcf(get(funName)))
+            )
+        }
+        )
+           return(replaceWhatWeCan(code,
                                     contentsCodeReplaced,
                                     contentsReplacements,
                                     contentsReplaceable,
