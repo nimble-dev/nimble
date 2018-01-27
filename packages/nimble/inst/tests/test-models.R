@@ -399,6 +399,12 @@ test_that("test of the handling of missing covariates:", {
 
 })
 
+test_that("test of error trapping for indexes that are zero or less:", {
+    code <- nimbleCode( {
+        for(i in 1:n)
+            y[i] ~ dnorm(mu[n-i], 1)})
+    expect_error(m <- nimbleModel(code, constants = list(n=3)), 'index value of zero or less')
+})
 
 ## test of use of alias names for distributions
 
