@@ -14,6 +14,8 @@
 \cd{diag()<-} & Works for assigning the diagonal vector of a matrix.\\
 \cd{dim()} & Works on a vector as well as higher-dimensional arguments. \\
 \cd{length()} & \\
+\cd{is.na()} & Does not correctly handle NAs from R that are type \cd{'logical'}, so convert these using \cd{as.numeric()} before passing from R to NIMBLE. \\
+\cd{is.nan()} & \\
 \cd{numeric()} & Allows additional arguments to control initialization. \\
 \cd{logical()} & Allows additional arguments to control initialization. \\
 \cd{integer()} & Allows additional arguments to control initialization. \\
