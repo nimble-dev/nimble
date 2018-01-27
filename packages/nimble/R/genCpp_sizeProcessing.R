@@ -136,7 +136,8 @@ sizeCalls <- c(
     makeCallList(c('blank',
                    'nfMethod',
                    'getPtr',
-                   'startNimbleTimer'), 'sizeUndefined') ##'nimFunListAccess'
+                   'startNimbleTimer'), 'sizeUndefined'), ##'nimFunListAccess'
+    passByMap = 'sizePassByMap'
 )
 
 scalarOutputTypes <- list(decide = 'logical',
@@ -3253,6 +3254,15 @@ sizeVoidPtr <- function(code, symTab, typeEnv) {
     return(asserts)
 }
 
+sizePassByMap <- function(code, symTab, typeEnv) {
+    ensureNimbleBlocks <- typeEnv$.ensureNimbleBlocks
+    typeEnv$.ensureNimbleBlocks <- TRUE
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code <- removeExprClassLayer(code, 1)
+    typeEnv$.ensureNimbleBlocks <- ensureNimbleBlocks
+    asserts
+}
+
 ###
 ## This function would be called with arguments from an RCfunction or nimbleFunction
 ## the functions dim and length would be taken over to work on the sizeExprs.
@@ -3266,7 +3276,7 @@ generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chain
         stop(exprClassProcessingErrorMsg(code, 'In generalFunSizeHandler: Wrong number of arguments.'), call. = FALSE)
     }
     ## Note this is NOT checking the dimensions of each arg. useArgs just means it will recurse on that and lift or do as needed
-
+    
     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs)
 
     ## lift any argument that is an expression
@@ -3328,6 +3338,25 @@ generalFunSizeHandlerFromSymbols <- function(code, symTab, typeEnv, returnSymbol
         stop(exprClassProcessingErrorMsg(code, 'In generalFunSizeHandler: Wrong number of arguments.'), call. = FALSE)
     }
     ## Note this is NOT checking the dimensions of each arg. useArgs just means it will recurse on that and lift or do as needed
+
+    ## Ensure that simple maps being passed will be passed without extra
+    ## copy that would occur from lifting an Eigen expression.
+    for(i in seq_along(code$args)) {
+        ## check if each argument is purely of the form x[...]
+        ## (note that x[...][...] might also be valid for passByMap
+        ## but it is not handled that way currently.
+        if(inherits(code$args[[i]], 'exprClass')) {
+            if(code$args[[i]]$name == "[") {
+                if(inherits(code$args[[i]]$args[[1]],
+                            'exprClass')) { ## must be true, but I'm being defensive
+                    code$args[[i]]$args[[1]]$isName
+                    if(code$args[[i]]$args[[1]]$isName) {
+                        insertExprClassLayer(code, i, 'passByMap')
+                    }
+                }
+            }
+        }
+    }
 
     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs)
 
