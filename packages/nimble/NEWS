@@ -6,6 +6,8 @@ USER LEVEL CHANGES
 -- Can now specify "nBootReps = NA" in the runCrossValidate() function, which will prevent the Monte Carlo error from being calculated.
 
 -- runCrossValidate() now returns the averaged loss over all k folds, instead of the summed loss.
+
+-- Added besselK function to DSL.
 						   
 BUG FIXES
 
@@ -16,6 +18,20 @@ BUG FIXES
 -- Fixed a bug where calling nimbleModel() on a BUGS model with a node that was it's own parent caused R to crash.
 
 -- Fixed a bug in runCrossValidate(), where for certain models using the "random" foldFunction would cause an error.
+
+-- Fixed a name conflict that caused an error when user-defined distributions had parameters named 'lower' or 'upper'.
+
+-- Fixed WAIC bug in getting dependencies of logProb variables.
+
+DEVELOPER LEVEL CHANGES
+
+-- Fixed configure error that caused issues with -fpic compiler flag.
+
+-- Removed use of "include" directive in Makefile on a path derived from R_HOME variable at request of CRAN.
+
+-- Removed pragma regarding -Wno-ignored-attributes from NimArrBase.h to satisfy CRAN policy.
+
+-- Additional defensive programming features added to buildMCMC and MCMC execution.
 
 
 						   

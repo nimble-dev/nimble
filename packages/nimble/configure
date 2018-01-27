@@ -632,7 +632,6 @@ R_PACKAGE_DIR
 NEED_MAKEVARS_FILE
 EIGEN_INC
 CPPAD_INC
-CXXPICFLAGS
 EGREP
 GREP
 CXXCPP
@@ -2515,19 +2514,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 NEED_MAKEVARS_FILE=TRUE
 
-# Define -fPIC rather than -fpic when possibly, to overcome -fpic's limit on
-# the number of exported symbols.
-CXXPICFLAGS="-fPIC"
-case "${CXX}" in
-  ## Intel compilers
-  *icpc|*icc)
-    CXXPICFLAGS="-fpic"
-    ;;
-  ## Portland Group
-  *pgCC)
-    CXXPICFLAGS="-fpic"
-    ;;
-esac
 
 
 # Check whether --with-eigen was given.
@@ -3072,7 +3058,6 @@ if test -n "$EIGEN_DIR" ; then
 echo "Using Eigen directory ${EIGEN_DIR}"
 EIGEN_INC="-I$EIGEN_DIR"
 fi
-
 
 
 
