@@ -23,12 +23,24 @@ test_that("nimbleFunction use of model variables and nodes works",
             aNode <- 'a'                ## CORRECT
             bNode <- 'b'
             cNode <- 'c'
+            bNode2 <- 'b[2]'
+            cNode34 <- 'c[3, 4]'
         },
         run = function(aCheck = double(),
                        bCheck = double(1),
                        cCheck = double(2)) {
             ok <- TRUE
 
+            bNode2v <- model[[bNode2]]
+            cNode34v <- model[[cNode34]]
+            bNode2v2 <- model[['b[2]']]
+            cNode34v2 <- model[['c[3, 4]']]
+
+            ok <- ok & bNode2v == bCheck[2]
+            ok <- ok & bNode2v == bNode2v2
+            ok <- ok & cNode34v == cCheck[3, 4]
+            ok <- ok & cNode34v2 == cNode34v
+            
             a1 <- model[['a']]
             ok <- ok & a1 == aCheck
             b1 <- model[['b']]
