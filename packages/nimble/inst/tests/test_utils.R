@@ -1291,16 +1291,18 @@ makeADDistributionMethodTestList <- function(distnList){
 }
 
 testADDistribution <- function(ADfunGen, argsList, name){
-  ADfun <- ADfunGen()
-  CADfun <- compileNimble(ADfun)
-  RfunCallList <- c(list(quote(ADfun$run)), argsList)
-  CfunCallList <- c(list(quote(CADfun$run)), argsList)
-  RderivsList <- eval(as.call(RfunCallList))
-  CderivsList <- eval(as.call(CfunCallList))
-  expect_equal(RderivsList$value, CderivsList$value, tolerance = .01)
-  expect_equal(RderivsList$gradient, CderivsList$gradient, tolerance = .1)
-  expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1)
-  browser()
+  for(iArg in seq_along(argsList)){
+    ADfun <- ADfunGen()
+    CADfun <- compileNimble(ADfun)
+    RfunCallList <- c(list(quote(ADfun$run)), argsList[[iArg]])
+    CfunCallList <- c(list(quote(CADfun$run)), argsList[[iArg]])
+    browser()
+    RderivsList <- eval(as.call(RfunCallList))
+    CderivsList <- eval(as.call(CfunCallList))
+    expect_equal(RderivsList$value, CderivsList$value, tolerance = .01)
+    expect_equal(RderivsList$gradient, CderivsList$gradient, tolerance = .1)
+    expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1)
+  }
 }
 
 expandNames <- function(var, ...) {
