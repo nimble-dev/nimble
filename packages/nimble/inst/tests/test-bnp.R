@@ -134,12 +134,13 @@ proc.time()-t1
 
 
 mvSaved=CmodelNewMCMC$mvSamples
-target='xi'
-varNames=c('thetatilde', 's2tilde') #  in this order!!!!
-rndconc='FALSE'
+#target='xi'
+#varNames=c('thetatilde', 's2tilde') #  in this order!!!!
+#rndconc='FALSE'
 
 
-SamplerG <- nimble:::sampler_G(model, mvSaved, target, varNames, rndconc)#nimble:::sampler_G(model, mvSaved, target, varNames)## 
+#SamplerG <- nimble:::sampler_G(model, mvSaved, target, varNames, rndconc)#nimble:::sampler_G(model, mvSaved, target, varNames)## 
+SamplerG <- nimble:::sampler_G2(model, mvSaved)
 SamplerG$run()
 aux=as.matrix(SamplerG$mv)  ## the mv object is accessed here
 
