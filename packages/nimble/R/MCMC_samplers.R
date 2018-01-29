@@ -263,10 +263,11 @@ sampler_RW_block <- nimbleFunction(
         d <- length(targetAsScalar)
         scaleHistory  <- c(0, 0)   ## scaleHistory
         acceptanceHistory  <- c(0, 0)   ## scaleHistory
+        if(d <= 10)
+            propCovHistory <- array(0, dim = c(2, d, d))    ## scaleHistory
         if(nimbleOptions('saveMCMChistory')) {
             saveMCMChistory <- TRUE
         } else saveMCMChistory <- FALSE
-        ##propCovHistory <- array(0, dim = c(2, d, d))    ## scaleHistory
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
@@ -306,13 +307,15 @@ sampler_RW_block <- nimbleFunction(
                     scaleHistory[timesAdapted] <<- scale        ## scaleHistory
                     setSize(acceptanceHistory, timesAdapted)         ## scaleHistory
                     acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
-                }   
-                ##propCovTemp <- propCovHistory                                           ## scaleHistory
-                ##setSize(propCovHistory, timesAdapted, d, d)                             ## scaleHistory
-                ##if(timesAdapted > 1)                                                    ## scaleHistory
-                ##    for(iTA in 1:(timesAdapted-1))                                      ## scaleHistory
-                ##        propCovHistory[iTA, 1:d, 1:d] <<- propCovTemp[iTA, 1:d, 1:d]    ## scaleHistory
-                ##propCovHistory[timesAdapted, 1:d, 1:d] <<- propCov[1:d, 1:d]            ## scaleHistory
+                    if(d <= 10) {
+                        propCovTemp <- propCovHistory                                           ## scaleHistory
+                        setSize(propCovHistory, timesAdapted, d, d)                             ## scaleHistory
+                        if(timesAdapted > 1)                                                    ## scaleHistory
+                            for(iTA in 1:(timesAdapted-1))                                      ## scaleHistory
+                                propCovHistory[iTA, 1:d, 1:d] <<- propCovTemp[iTA, 1:d, 1:d]    ## scaleHistory
+                        propCovHistory[timesAdapted, 1:d, 1:d] <<- propCov[1:d, 1:d]            ## scaleHistory
+                    }
+                }
                 adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
@@ -346,8 +349,15 @@ sampler_RW_block <- nimbleFunction(
                 return(numeric(1, 0))
             }
         },                  
-        ##getScaleHistory   = function() { returnType(double(1)); return(scaleHistory)   },                   ## scaleHistory
-        ##getPropCovHistory = function() { returnType(double(3)); return(propCovHistory) },                   ## scaleHistory
+        getPropCovHistory = function() { ## scaleHistory
+            returnType(double(3))
+            if(saveMCMChistory & d <= 10) {
+                return(propCovHistory)
+            } else {
+                print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
+                return(nimArray(0, c(1,d,d)))
+            }
+        },
         ##getScaleHistoryExpanded = function() {                                                              ## scaleHistory
         ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)                         ## scaleHistory
         ##    for(iTA in 1:timesAdapted)                                                                      ## scaleHistory
@@ -371,9 +381,9 @@ sampler_RW_block <- nimbleFunction(
             if(saveMCMChistory) {
                 scaleHistory  <<- c(0, 0)    ## scaleHistory
                 acceptanceHistory  <<- c(0, 0)
+                if(d <= 10) 
+                    propCovHistory <<- nimArray(0, dim = c(2,d,d))
             }
-            ##for(iTA in 1:dim(scaleHistory)[1])                                       ## scaleHistory
-            ##    propCovHistory[iTA, 1:d, 1:d] <<- propCovHistory[1, 1:d, 1:d] * 0    ## scaleHistory
             my_calcAdaptationFactor$reset()
         }
     ), where = getLoadingNamespace()
