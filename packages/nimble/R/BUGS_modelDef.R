@@ -2558,8 +2558,8 @@ modelDefClass$methods(genVarInfo3 = function() {
     }
 
     ## check for mins or maxs zero or less (these trigger various errors including R crashes)
-    if(any(sapply(varInfo, function(x) min(x$mins)) < 1) ||
-       any(sapply(varInfo, function(x) min(x$maxs)) < 1)) {
+    if(any(sapply(varInfo, function(x) length(x$mins) && min(x$mins) < 1)) ||
+       any(sapply(varInfo, function(x) length(x$maxs) && min(x$maxs) < 1))) {
            problemVars <- c(which(sapply(varInfo, function(x) min(x$mins)) < 1),
                          which(sapply(varInfo, function(x) min(x$maxs)) < 1))
            stop("genVarInfo3: index value of zero or less found for model variable(s): ",
