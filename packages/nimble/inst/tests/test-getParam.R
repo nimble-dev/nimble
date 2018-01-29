@@ -108,6 +108,13 @@ test_that('getParam, three-dimensional', {
             returnType(double(0))
             return(0)
         })
+    rtest <- nimbleFunction(
+        run = function(n = integer(0), theta = double(3)) {
+            returnType(double(0))
+            return(0)
+        })
+    temporarilyAssignInGlobalEnv(dtest)
+    temporarilyAssignInGlobalEnv(rtest)
     code <- nimbleCode({
         y ~ dtest(theta[1:2,1:3,1:4])
     })
