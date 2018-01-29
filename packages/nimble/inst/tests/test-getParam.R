@@ -116,7 +116,7 @@ test_that('getParam, three-dimensional', {
     cm <- compileNimble(m)
     expect_identical(m$getParam('y','theta'), NULL, 'getParam_3D in uncompiled model')
     expect_identical(m$getParam('y','theta'), NULL, 'getParam_3D in compiled model')
-
+    
     mynf <- nimbleFunction(setup = function(model, node, param) {},
                            run = function() {
                                tmp <- model$getParam(node, param)
@@ -124,4 +124,4 @@ test_that('getParam, three-dimensional', {
     rnf <- mynf(m, 'y', 'theta')
     expect_identical(rnf$run(), NULL, 'getParam_3D in uncompiled nf')
     expect_error(cnf <- compileNimble(rnf, project = m), 'Failed to create the shared library')
-}
+})
