@@ -395,3 +395,196 @@ sampler_G <- nimbleFunction(
   
   methods = list( reset = function () {} )
 )
+
+#-- new veriosn of sampler_G where user only gives the model and the mv object
+sampler_G2 <- nimbleFunction(
+  # name = 'sampler_G'
+  
+  setup=function(model, mvSaved){#, target, varNames
+    # cheking the mvSaved object:
+    m0 <- length(mvSaved[[]]) 
+    if( m0 == 1 ){
+      stop('you need at least one random variable depending on the random indexes') # 
+    }
+    
+    # I need the names of the variables to access content in mvSaved.
+    nodes <- model$getNodeNames() # here are all the nodes in the model, in topological order.
+    VarNames <- model$getVarNames()
+    
+    detNodes <- model$getNodeNames(determOnly=TRUE) 
+    stochNodes <- model$getNodeNames(stochOnly=TRUE) 
+    dataNodes <- model$getNodeNames(dataOnly=TRUE) 
+    distributions <- model$getDistribution(stochNodes) # finding  dCRP distr, if it exists, and the name of its node
+    
+    # getting variable and node xi:
+    dCRPdistrindex <- distributions == 'dCRP'
+    if( sum(dCRPdistrindex) == 0 ){
+      stop('there are no random indexes')
+    }else{
+      dCRPDistr <- distributions[dCRPdistrindex]
+      dCRPNode <- stochNodes[ dCRPdistrindex ] # xi nodes. Is the order in stochNodes and their distributions always the same?!?!?!!
+      dCRPVarindex <- FALSE
+      i=1
+      while(dCRPVarindex == FALSE){
+        aux <- model$getDistribution(VarNames[i])
+        aux2 <- aux[1] == 'dCRP'
+        if(sum(aux2, na.rm=TRUE)==0){
+          i=i+1
+        }else{
+          dCRPVar <- VarNames[i]
+          dCRPVarindex <- TRUE
+        }
+      }
+    }
+    xi <- mvSaved[[dCRPVar]]
+    
+    # getting variable and node conc,  assuming there is only one conc parameter
+    NodeDependXi <- c()
+    for(i in 1:length(nodes)){ # might be inefficient
+      aux <- model$getDependencies(nodes[i], self=FALSE)
+      NodeDependXi[i] <- sum(aux == dCRPNode , na.rm=TRUE)
+    }
+    concNode <- nodes[NodeDependXi] 
+    concDistr <- model$getDistribution(concNode)
+    if(is.na(concDistr)){
+      concRnd <- FALSE
+    }else{
+      concRnd <- TRUE
+    }
+    concVar <- concNode
+    if(concRnd){ # defining truncation
+      conc <- mvSaved[[concVar]]
+      concHat <- mean(unlist(conc))
+      Trunc <- ceiling(log(AproxError)/log(concHat/(concHat+1))+1) # gives an error of at most AproxError.
+    }else{
+      conc <- model$getParam(dCRPNode, 'conc') 
+      AproxError <- 1e-10
+      Trunc <- ceiling(log(AproxError)/log(conc/(conc+1))+1)
+    }
+    
+    targetElements <- model$expandNodeNames(dCRPNode, returnScalarComponents=TRUE)
+    niter <- length(xi) # number of iterations of the MCMC
+    N <- length(targetElements) # sample size
+    if(concRnd==FALSE){
+      p <- length(mvSaved[[]])-1 #dimension of measure G when conc is not sampled
+    }else{
+      p <- length(mvSaved[[]])-2 #dimension of measure G when conc is  sampled
+    }
+    
+    # getting tilde variables by finding random nodes with N components
+    tildevarNames=c()
+    i=1
+    for(j in 1:length(VarNames)){
+      aux <- model$getDistribution(VarNames[j]) # can 
+      if(length(aux) == N){ # VarNames[j] has N components
+        if(is.na(aux[1])==FALSE){ # VarNames[j] is a random variable 
+          aux2 <- model$expandNodeNames(VarNames[j])
+          if(aux2[1]!=dataNodes[1]){  # VarNames[j] is different from data
+            tildevarNames[i]=VarNames[j]
+            i=i+1
+          }
+        }
+      }
+    }
+    # there could be other random nodes with N components
+    if(length(tildevarNames)!=p){ # matching the names in tildevarNames with anme sin mvSaved
+      cat('warning: there might be some ERRORs that can be safely solved: have to TEST!')
+      tildevarNames2=c()
+      i=1
+      for(j in 1:length(tildevarNames)){
+        if(length(mvSaved[[tildevarNames[j]]])==niter){
+          tildevarNames2[i]=tildevarNames[j]
+          i=i+1
+        }
+      }
+      if(length(tildevarNames2)!=p){
+        cat('warnings: do not know what is happening??')
+      }
+    }
+    
+    
+    # storaging object:
+    mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
+    mv <- modelValues(mvConf, m = niter)
+  },
+  
+  run=function(){
+    for(iiter in 1:niter){
+      
+      if(concRnd==FALSE){
+        conciter <- conc 
+      }else{
+        conciter <- conc[[iiter]]
+      }
+      
+      #-- getting the unique values in the samples and their probabilities of beign sampled. Need for computing G later.
+      probs <- numeric(N)
+      uniqueValues <- matrix(0, ncol=p, nrow=N) # is this ok?
+      xiiter <- xi[[iiter]]
+      rangei <- min(xiiter):max(xiiter) # is this ok??
+      index <- 1
+      for(i in 1:length(rangei)){
+        cond <- sum(xiiter==rangei[i])
+        if(cond>0){
+          probs[index] <- cond
+          for(j in 1:p){
+            uniqueValues[index, j] <- mvSaved[[tildevarNames[j]]][[iiter]][rangei[i]]
+          }
+          index <- index+1
+        }
+      }
+      probs[index] <- conciter #probs <- probs/sum(probs)
+      newvalueindex <- index
+      
+      #-- computing G: 
+      vaux <- rbeta(1, 1, conciter+N)
+      v1prod <- 1
+      Taux <- 0
+      paramaux <- numeric(p)
+      while(Taux < Trunc-1){
+        index <- rcat(prob=probs[1:newvalueindex])
+        if(index==newvalueindex){# sample from G_0
+          for(j in 1:p){ 
+            model$simulate(tildevarNames[j])
+            paramaux[j] <- values(model, tildevarNames[j])[1]  
+          }
+        }else{# sample one of the existing values
+          for(j in 1:p){
+            paramaux[j] <- uniqueValues[index, j] 
+          }
+        }
+        condaux <- uniqueValues[1:Taux, 1] == paramaux[1] # check if we sample a new atom or an atom that ir in G already
+        if(sum(condaux) >0){ # the atom already exists and we have to update the weights and not increase Trunc
+          repindex=1
+          while(condaux[repindex]==FALSE){
+            repindex=repindex+1
+          }
+          v1prod <- v1prod*(1-vaux)
+          vaux <-rbeta(1, 1, conciter+N)
+          mv['G', iiter][repindex, 1] <<- mv$G[[iiter]][repindex, 1] + vaux*v1prod
+        }else{ # agument the truncation and keep the same parameters
+          Taux <-Taux+1
+          for(j in 1:p){
+            mv$G[[iiter]][Taux, j+1] <<- paramaux[j]
+          }
+          if( Taux==1 ){
+            mv['G', iiter][Taux, 1] <<-vaux
+          }else{
+            v1prod <- v1prod*(1-vaux)
+            vaux <- rbeta(1, 1, conciter+N)
+            mv['G', iiter][Taux, 1] <<-vaux*v1prod
+          }
+        }
+      }
+      # complete the vector of probabiities and atoms
+      mv['G', iiter][Trunc, 1] <<- 1- sum(mv['G', iiter][1:(Trunc-1), 1])
+      for(j in 1:p){ 
+        model$simulate(tildevarNames[j])
+        mv['G', iiter][Trunc, j+1] <<- values(model, tildevarNames[j])[1]  
+      }
+    }
+  },
+  
+  methods = list( reset = function () {} )
+)
+
