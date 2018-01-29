@@ -21,6 +21,7 @@
 
 /* Definitions only to be included when a nimbleFunction needs CppAD */
 #include <cppad/cppad.hpp>
+#include <cppad/utility/nan.hpp>
 //#include <TMB/tmbDists.h>
 #include <nimble/EigenTypedefs.h>
 #include <nimble/accessorClasses.h>
@@ -80,64 +81,70 @@ public:
     }
     if(maxOrder > 0){
       std::size_t q = value_ans.size();
-      bool infFlag = false;
-      size_t inf_ind = 0;
-      while((infFlag == false) & (inf_ind < q)){
-        if((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
-          (value_ans[inf_ind] == std::numeric_limits<double>::infinity())){
-          infFlag = true;
+      vector<bool> infIndicators(q); 
+      for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
+        if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
+          (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
+          (isnan(value_ans[inf_ind]))){
+          infIndicators[inf_ind] = true;
         }
-        inf_ind++;
+        else{
+          infIndicators[inf_ind] = false;
+        }
       }
       if (ordersFound[1] == true) {
-        if(infFlag){
-          ansList->gradient.initialize(CppAD::numeric_limits<double>::quiet_NaN(), 1, q, wrt_n);
-        }
-        else{
-          ansList->gradient.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
-        }
+        ansList->gradient.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
       }
       if (ordersFound[2] == true) {
-        if(infFlag){
-          ansList->hessian.initialize(CppAD::numeric_limits<double>::quiet_NaN(), 1, wrt_n, wrt_n, q);
-        }
-        else{
-          ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
-        }
+        ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
       }
-      if(!infFlag){
         vector<double> cppad_derivOut;
         for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
           std::vector<double> w(q, 0);
           w[dy_ind] = 1;
           if (maxOrder == 1) {   
-            cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
+            if(infIndicators[dy_ind] == false){
+              cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
+            }
           } else {
             for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-              int dx1_ind = wrtVector[vec_ind] - 1;
-              std::vector<double> x1(n, 0);  // vector specifying first derivatives.
-                                            // first specify coeffs for first dim
-                                            // of s across all directions r, then
-                                            // second dim, ...
-              x1[dx1_ind] = 1;
-              ADinfo.ADtape->Forward(1, x1);
-              cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
-              
+              if(infIndicators[dy_ind] == false){
+
+                int dx1_ind = wrtVector[vec_ind] - 1;
+                std::vector<double> x1(n, 0);  // vector specifying first derivatives.
+                                              // first specify coeffs for first dim
+                                              // of s across all directions r, then
+                                              // second dim, ...
+                x1[dx1_ind] = 1;
+                ADinfo.ADtape->Forward(1, x1);
+                cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
+              }
               for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
-                int dx2_ind = wrtVector[vec_ind2] - 1;
-                ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
-                    cppad_derivOut[dx2_ind * 2 + 1];
+                if(infIndicators[dy_ind] == false){
+                  int dx2_ind = wrtVector[vec_ind2] - 1;
+                  ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
+                      cppad_derivOut[dx2_ind * 2 + 1];
+                }
+                else{
+                  ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] = 
+                  CppAD::numeric_limits<double>::quiet_NaN();
+                }
               }
             }
           }
           if (ordersFound[1] == true) {
             for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-              int dx1_ind = wrtVector[vec_ind] - 1;
-              ansList->gradient[vec_ind * q + dy_ind] =
-                  cppad_derivOut[dx1_ind * maxOrder + 0];
+              if(infIndicators[dy_ind] == false){
+                int dx1_ind = wrtVector[vec_ind] - 1;
+                ansList->gradient[vec_ind * q + dy_ind] =
+                    cppad_derivOut[dx1_ind * maxOrder + 0];
+              }
+              else{
+                ansList->gradient[vec_ind * q + dy_ind] =
+                CppAD::numeric_limits<double>::quiet_NaN();
+              }     
             }
           }
-        }
       }
     }
   };

@@ -1274,34 +1274,40 @@ makeADDistributionTestList <- function(distnList){
   return(ansList)
 }
 
-makeADDistributionMethodTestList <- function(distnList){
+makeADDistributionMethodTestList <- function(distnList, log){
   argsList <- lapply(distnList$args, function(x){
     return(x)
   })
   ansList <- list(args = argsList,
-                  expr = substitute(out <- DISTNEXPR,
+                  expr = substitute({out <- numeric(2);
+                                     out[1] <- DISTNEXPR;
+                                     out[2] <- LOGDISTNEXPR;},
                                     list(DISTNEXPR = as.call(c(list(parse(text = distnList$distnName)[[1]]),
                                                                lapply(names(distnList$args),
                                                                       function(x){return(parse(text = x)[[1]])}),
+                                                               list(log = FALSE))),
+                                         LOGDISTNEXPR = as.call(c(list(parse(text = distnList$distnName)[[1]]),
+                                                               lapply(names(distnList$args),
+                                                                      function(x){return(parse(text = x)[[1]])}),
                                                                list(log = TRUE)))
+                                         
                                     )),
-                  outputType = quote(double(0))
+                  outputType = quote(double(1, 2))
   )
   return(ansList)
 }
 
 testADDistribution <- function(ADfunGen, argsList, name){
-  for(iArg in seq_along(argsList)){
     ADfun <- ADfunGen()
     CADfun <- compileNimble(ADfun)
-    RfunCallList <- c(list(quote(ADfun$run)), argsList[[iArg]])
-    CfunCallList <- c(list(quote(CADfun$run)), argsList[[iArg]])
-    browser()
-    RderivsList <- eval(as.call(RfunCallList))
-    CderivsList <- eval(as.call(CfunCallList))
-    expect_equal(RderivsList$value, CderivsList$value, tolerance = .01)
-    expect_equal(RderivsList$gradient, CderivsList$gradient, tolerance = .1)
-    expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1)
+    for(iArg in seq_along(argsList)){
+      RfunCallList <- c(list(quote(ADfun$run)), argsList[[iArg]])
+      CfunCallList <- c(list(quote(CADfun$run)), argsList[[iArg]])
+      RderivsList <- eval(as.call(RfunCallList))
+      CderivsList <- eval(as.call(CfunCallList))
+      expect_equal(RderivsList$value, CderivsList$value, tolerance = .01)
+      expect_equal(RderivsList$gradient, CderivsList$gradient, tolerance = .1)
+      expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1)
   }
 }
 

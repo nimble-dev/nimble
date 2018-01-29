@@ -5,12 +5,12 @@ context("Testing of derivatives for distributions and dsl functions")
 
 # untested:
 # 'dbern', 'dbeta', 'dbin', 'dcat', 'dchisq', 'ddirch',
-# 'dexp', 'dgamma', 'dinvgamma', 'dlogis', 'dlnorm',
+# 'dexp', 'dinvgamma', 'dlogis', 'dlnorm',
 # 'dmulti', 'dmnorm', 'dmvt', 'dnegbin', 'dnorm', 'dpois', 
 # 'dt', 'dunif', 'dweib', 'dwish')
 
 # tested:
-# 
+# 'dgamma',
 
 distributionTests <- list()
 
@@ -36,12 +36,14 @@ distributionArgsList[[3]] <- list(
               rate = quote(double(0))),
   argsValues = list(
     list(x = -1, shape = 1, rate = 1),
+    list(x = -1, shape = -1, rate = 1),
+    list(x = -1, shape = 1, rate = -1),
     list(x = .1, shape = 1, rate = 1),
-    list(x = .1, shape = 1, rate = 1))
+    list(x = 22.2, shape = 10, rate = 15.2))
 )
 
 runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[[3]]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[[3]]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[[3]], log = FALSE))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
@@ -50,6 +52,10 @@ thisNf <- nimbleFunction(setup = function(){},
                       enableDerivs = list('method1'))
 testADDistribution(thisNf, distributionArgsList[[3]]$argsValues, distributionArgsList[[3]]$distnName)
 
+shape = 1
+scale = 1
+y = .1
+-lgamma(shape)+(shape-1.0)*log(y)-y/scale-shape*log(scale)
 
 RthisNf <- thisNf()
 CthisNf <- compileNimble(RthisNf)
