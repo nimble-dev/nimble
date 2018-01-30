@@ -361,11 +361,28 @@ Type nimDerivs_factorial(Type x) {
 template <class Type>
 Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, int give_log)
 {
-	Type res = exp(lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1);
-	if(!give_log) 
-		return res;
-	else 
-		return CppAD::CondExpEq(x,Type(0),log(res),lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2) + (shape1-1)*log(x) + (shape2-1)*log(1-x));
+	Type res;
+	if(!give_log){
+		res = CondExpLe(x, Type(1.0), 
+							exp(lgamma(shape1+shape2) - lgamma(shape1) - 
+							lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1),
+							Type(0.0));
+		res = CondExpGe(x, Type(0.0), res, Type(0.0)) ;
+		res = CondExpGt(shape1, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+		res = CondExpGt(shape2, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+	}
+	if(give_log){
+		res = CondExpEq(x, Type(0.0), 
+								log(exp(lgamma(shape1+shape2) - lgamma(shape1) - 
+								lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1)),
+								lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2) + 
+								(shape1-1)*log(x) + (shape2-1)*log(1-x));
+		res = CondExpGe(x, Type(0.0), res, -Type(std::numeric_limits<double>::infinity() ));
+		res = CondExpLe(x, Type(1.0), res, -Type(std::numeric_limits<double>::infinity() ));
+		res = CondExpGt(shape1, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+		res = CondExpGt(shape2, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+	} 
+	return(res);
 }
 
 // Vectorize dbeta

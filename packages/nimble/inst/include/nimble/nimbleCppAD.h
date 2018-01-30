@@ -109,7 +109,6 @@ public:
           } else {
             for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
               if(infIndicators[dy_ind] == false){
-
                 int dx1_ind = wrtVector[vec_ind] - 1;
                 std::vector<double> x1(n, 0);  // vector specifying first derivatives.
                                               // first specify coeffs for first dim

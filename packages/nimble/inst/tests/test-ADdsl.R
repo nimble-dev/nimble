@@ -4,32 +4,43 @@ nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for distributions and dsl functions")
 
 # untested:
-# 'dbern', 'dbeta', 'dbin', 'dcat', 'dchisq', 'ddirch',
+# 'dbeta', 'dbin', 'dcat', 'dchisq', 'ddirch',
 # 'dexp', 'dinvgamma', 'dlogis', 'dlnorm',
 # 'dmulti', 'dmnorm', 'dmvt', 'dnegbin', 'dnorm', 'dpois', 
 # 'dt', 'dunif', 'dweib', 'dwish')
 
 # tested:
+# 'dbeta' (although boundary at x=0 and x=1 not consistent between R and c++),
 # 'dgamma',
 
 distributionTests <- list()
 
 distributionArgsList <- list()
-distributionArgsList[[1]] <- list(
-  distnName = 'dbern',
-  args = list(x = quote(double(0)),
-              prob = quote(double(0)))
-)
-distributionArgsList[[2]] <- list(
+
+distributionArgsList[['dbeta']] <- list(
   distnName = 'dbeta',
   args = list(x = quote(double(0)),
               shape1 = quote(double(0)),
               shape2 = quote(double(0))),
-  argsValues = list(x = .1,
-                    shape1 = 1,
-                    shape2 = 1)
+  argsValues = list(list(x = -1, shape1 = 1, shape2 = 1), ## x below support
+                   # list(x = 0, shape1 = 1, shape2 = 1), ## x at boundary of support, currently not working
+                    # list(x = 1, shape1 = 1, shape2 = 1), ## x at boundary of support, currently not working
+                    list(x = 2, shape1 = 1,
+                         shape2 = 1),
+                    list(x = .3,  ## first param not valid
+                         shape1 = -1,
+                         shape2 = 1),
+                    list(x = .3,  ## second param not valid
+                         shape1 = 1,
+                         shape2 = -1),
+                    list(x = .9,  ## okay
+                         shape1 = 12,
+                         shape2 = .1),
+                    list(x = .3,  ## okay
+                         shape1 = 10,
+                         shape2 = 1))
 )
-distributionArgsList[[3]] <- list(
+distributionArgsList[['dgamma']] <- list(
   distnName = 'dgamma',
   args = list(x = quote(double(0)),
               shape = quote(double(0)),
@@ -42,46 +53,24 @@ distributionArgsList[[3]] <- list(
     list(x = 22.2, shape = 10, rate = 15.2))
 )
 
-runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[[3]]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[[3]], log = FALSE))
+runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[[1]]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[[1]]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
-testADDistribution(thisNf, distributionArgsList[[3]]$argsValues, distributionArgsList[[3]]$distnName)
+testADDistribution(thisNf, distributionArgsList[[1]]$argsValues, distributionArgsList[[1]]$distnName)
 
-shape = 1
-scale = 1
-y = .1
--lgamma(shape)+(shape-1.0)*log(y)-y/scale-shape*log(scale)
-
-RthisNf <- thisNf()
-CthisNf <- compileNimble(RthisNf)
-round(CthisNf$run(1, 1, 1)$hessian -RthisNf$run(1, 1, 1)$hessian, 2)
-
-
-CthisNf$run(1, .2, 1)$hessian
-RthisNf$run(1, .2, 1)
-
-
-[,1]       [,2]       [,3]
-[1,]  0.3678794  0.3678794 -0.3678794
-[2,]  0.1555337 -0.6051374  0.3678794
-[3,] -0.3678794  0.3678794 -0.3678794
-
-[,1]      [,2] [,3]
-[1,]    0  1.000000   -1
-[2,]    1 -1.644934    1
-[3,]   -1  1.000000   -1
-
-
-
-for(x in 1:50){
- if(abs(CthisNf$run(1, x, 1)$value - RthisNf$run(1, x, 1)$value) > .05) browser()
+testFn <- function(x, shape1, shape2){
+  - lgamma(shape1) - lgamma(shape2) ;
 }
+nimDerivs(testFn(.9, 12, .1))
 
-x <- .1
-digamma(2) - digamma(1) + log(.1)
-
+Field "value":
+  [1]   0.00000 -19.75502
+Field "gradient":
+  [,1]      [,2]     [,3]
+[1,]    0  0.000000 0.000000
+[2,]    0 -2.442662 7.981093

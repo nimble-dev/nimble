@@ -1274,7 +1274,7 @@ makeADDistributionTestList <- function(distnList){
   return(ansList)
 }
 
-makeADDistributionMethodTestList <- function(distnList, log){
+makeADDistributionMethodTestList <- function(distnList){
   argsList <- lapply(distnList$args, function(x){
     return(x)
   })
@@ -1305,9 +1305,11 @@ testADDistribution <- function(ADfunGen, argsList, name){
       CfunCallList <- c(list(quote(CADfun$run)), argsList[[iArg]])
       RderivsList <- eval(as.call(RfunCallList))
       CderivsList <- eval(as.call(CfunCallList))
+      if(iArg == 7){browser()
       expect_equal(RderivsList$value, CderivsList$value, tolerance = .01)
       expect_equal(RderivsList$gradient, CderivsList$gradient, tolerance = .1)
       expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1)
+      }
   }
 }
 
