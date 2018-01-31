@@ -58,6 +58,11 @@ public:
     std::size_t n = ADinfo.independentVars.size();  // dim of independent vars
 
     std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
+    if(wrt_n == 2){
+      if(wrtVector[1] == -1){
+        wrt_n = 1;
+      }
+    }
     int orderSize = derivOrders.size();
     double array_derivOrders[orderSize];
 

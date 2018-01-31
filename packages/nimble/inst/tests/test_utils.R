@@ -1267,7 +1267,7 @@ makeADDistributionTestList <- function(distnList){
                                     list(METHODEXPR = as.call(c(list(quote(method1)),
                                                                lapply(names(distnList$args),
                                                                       function(x){return(parse(text = x)[[1]])}))),
-                                         WRT = names(distnList$args)
+                                         WRT = if(is.null(distnList$WRT)) names(distnList$args) else distnList$WRT
                                     )),
                   outputType = quote(ADNimbleList())
   )
@@ -1305,11 +1305,9 @@ testADDistribution <- function(ADfunGen, argsList, name){
       CfunCallList <- c(list(quote(CADfun$run)), argsList[[iArg]])
       RderivsList <- eval(as.call(RfunCallList))
       CderivsList <- eval(as.call(CfunCallList))
-      if(iArg == 7){browser()
       expect_equal(RderivsList$value, CderivsList$value, tolerance = .01)
       expect_equal(RderivsList$gradient, CderivsList$gradient, tolerance = .1)
       expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1)
-      }
   }
 }
 

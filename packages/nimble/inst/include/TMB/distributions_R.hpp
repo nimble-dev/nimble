@@ -307,12 +307,20 @@ Type nimDerivs_dweibull(Type x, Type shape, Type scale, int give_log=0)
 // 	\param prob Probability of success.
 // 	\param give_log true if one wants the log-probability, false otherwise.
 // 	*/
-template<class Type> 
+
+
+template<class Type>
 Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log=0)
 {
-	Type logres = lgamma(size+1)-lgamma(k+1)-lgamma(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
-	if(!give_log) return exp(logres);
-	else return logres;
+  Type disc_k = discrete_round(k);
+  Type disc_size = discrete_round(size);
+  Type logres = CondExpEq(k, disc_k,  lgamma(disc_size+1)-lgamma(disc_k+1)-lgamma(disc_size-disc_k+1)+disc_k*log(prob)+(disc_size-disc_k)*log(1-prob),
+   -Type( std::numeric_limits<double>::infinity()));
+  logres = CondExpEq(size, disc_size, logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CondExpGe(size, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CondExpGe(prob, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CondExpLe(prob, Type(1.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  if (give_log) return logres; else return exp(logres);
 }
 template<class Type> 
 Type nimDerivs_lfactorial(Type x) {

@@ -68,9 +68,30 @@ Type lfactorial(Type x){
 
 //     Parameterized through size and prob parameters, following R-convention.
 // */
+
+
+namespace {
+    double discrete_round(const double &x)
+     {     
+      double out_x = round(x);
+      return(out_x);
+    }
+
+     double discrete_wrapper(const double &x)
+     {     
+      return(x);
+    }
+
+    // CPPAD_DISCRETE_FUNCTION(double, discrete_round)
+    CPPAD_DISCRETE_FUNCTION(double, discrete_round)
+    CPPAD_DISCRETE_FUNCTION(double, discrete_wrapper)
+
+}
+      
+
 template<class Type>
 inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
-		    int give_log)
+		    int give_log=0)
 {
   Type n=size;
   Type p=prob;
@@ -78,6 +99,7 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
     n*log(p)+x*log(Type(1)-p);
   if (give_log) return logres; else return exp(logres);
 }
+
 // VECTORIZE4_ttti(dnbinom)
 
 /** \brief Negative binomial probability function.
