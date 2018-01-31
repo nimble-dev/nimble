@@ -11,7 +11,7 @@ Imports:
     methods,igraph,coda,R6
 Suggests:
     testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2,tensorflow,reticulate
-URL: <http://r-nimble.org>
+URL: http://r-nimble.org
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE | GPL (>= 2)
 Copyright: See COPYRIGHTS file.
