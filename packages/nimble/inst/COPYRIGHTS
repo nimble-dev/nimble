@@ -1,9 +1,9 @@
 Files: R/*
-Copyright: Copyright (C) 2014-2017 the NIMBLE authors.
+Copyright: Copyright (C) 2014-2018 the NIMBLE authors.
 License: BSD_3_clause
 
 Files: CppCode/* include/nimble/*
-Copyright: Copyright (C) 2014-2017 the NIMBLE authors, unless otherwise stated.
+Copyright: Copyright (C) 2014-2018 the NIMBLE authors, unless otherwise stated.
 License: GPL (>=2)
 
 Files: include/Eigen/* (files with non-Intel copyright)
@@ -27,7 +27,6 @@ License:
    * Neither the name of Intel Corporation nor the names of its contributors may
      be used to endorse or promote products derived from this software without
      specific prior written permission.
-
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE

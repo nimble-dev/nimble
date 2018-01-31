@@ -103,7 +103,8 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-inte
 
 ### 3. Create nimble-math.Rd as documentation for various math functions we don't want to write individual documentation for given similarity to BUGS or base R functions
 
-mathFuns <- c('cloglog',
+mathFuns <- c('besselK',
+              'cloglog',
               'cube',
               'expit',
               'icloglog',
