@@ -21,6 +21,7 @@
 
 /* Definitions only to be included when a nimbleFunction needs CppAD */
 #include <cppad/cppad.hpp>
+#include <cppad/utility/nan.hpp>
 //#include <TMB/tmbDists.h>
 #include <nimble/EigenTypedefs.h>
 #include <nimble/accessorClasses.h>
@@ -32,7 +33,6 @@
 //#include <nimble/smartPtrs.h>
 #include <cstdio>
 #include <vector>
-#include <chrono>
 
 
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction
@@ -55,11 +55,14 @@ public:
                                         NimArr<1, double> &derivOrders,
                                         const NimArr<1, double> &wrtVector,
                                         nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
-   // nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;
-
     std::size_t n = ADinfo.independentVars.size();  // dim of independent vars
 
     std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
+    if(wrt_n == 2){
+      if(wrtVector[1] == -1){
+        wrt_n = 1;
+      }
+    }
     int orderSize = derivOrders.size();
     double array_derivOrders[orderSize];
 
@@ -73,74 +76,81 @@ public:
     for (int i = 0; i < orderSize; i++) {
       if ((array_derivOrders[i] > 2) | (array_derivOrders[i] < 0)) {
         printf("Error: Derivative orders must be between 0 and 2.\n");
-        //return (ansList);
       }
       ordersFound[static_cast<int>(array_derivOrders[i])] = true;
     }
-
     vector<double> value_ans;
-
+    value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
     if (ordersFound[0] == true) {
-      value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
       ansList->value = vectorDouble_2_NimArr(value_ans);
-      if (maxOrder == 0) {
-      //  return (ansList);
-      }
     }
-    else{
-      ADinfo.ADtape->Forward(0, ADinfo.independentVars);
-    }
-
     if(maxOrder > 0){
-      auto t1 = std::chrono::high_resolution_clock::now();
-
       std::size_t q = value_ans.size();
-      // vector<double> hessian_ans;
-      // vector<double> gradient_ans;
+      vector<bool> infIndicators(q); 
+      for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
+        if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
+          (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
+          (isnan(value_ans[inf_ind]))){
+          infIndicators[inf_ind] = true;
+        }
+        else{
+          infIndicators[inf_ind] = false;
+        }
+      }
       if (ordersFound[1] == true) {
-        // gradient_ans.resize(wrt_n * q);
         ansList->gradient.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
       }
       if (ordersFound[2] == true) {
-        // hessian_ans.resize(wrt_n * wrt_n * q);
         ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
       }
-      auto t1b =std::chrono::high_resolution_clock::now();
-
-      vector<double> cppad_derivOut;
-      for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
-        std::vector<double> w(q, 0);
-        w[dy_ind] = 1;
-        if (maxOrder == 1) {   
-          cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
-        } else {
-          for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-            int dx1_ind = wrtVector[vec_ind] - 1;
-            std::vector<double> x1(n, 0);  // vector specifying first derivatives.
-                                          // first specify coeffs for first dim
-                                          // of s across all directions r, then
-                                          // second dim, ...
-            x1[dx1_ind] = 1;
-            ADinfo.ADtape->Forward(1, x1);
-            cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
-            
-            for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
-              int dx2_ind = wrtVector[vec_ind2] - 1;
-              ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
-                  cppad_derivOut[dx2_ind * 2 + 1];
+        vector<double> cppad_derivOut;
+        for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
+          std::vector<double> w(q, 0);
+          w[dy_ind] = 1;
+          if (maxOrder == 1) {   
+            if(infIndicators[dy_ind] == false){
+              cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
+            }
+          } else {
+            for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+              if(infIndicators[dy_ind] == false){
+                int dx1_ind = wrtVector[vec_ind] - 1;
+                std::vector<double> x1(n, 0);  // vector specifying first derivatives.
+                                              // first specify coeffs for first dim
+                                              // of s across all directions r, then
+                                              // second dim, ...
+                x1[dx1_ind] = 1;
+                ADinfo.ADtape->Forward(1, x1);
+                cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
+              }
+              for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
+                if(infIndicators[dy_ind] == false){
+                  int dx2_ind = wrtVector[vec_ind2] - 1;
+                  ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
+                      cppad_derivOut[dx2_ind * 2 + 1];
+                }
+                else{
+                  ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] = 
+                  CppAD::numeric_limits<double>::quiet_NaN();
+                }
+              }
             }
           }
-        }
-        if (ordersFound[1] == true) {
-          for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-            int dx1_ind = wrtVector[vec_ind] - 1;
-            ansList->gradient[vec_ind * q + dy_ind] =
-                cppad_derivOut[dx1_ind * maxOrder + 0];
+          if (ordersFound[1] == true) {
+            for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+              if(infIndicators[dy_ind] == false){
+                int dx1_ind = wrtVector[vec_ind] - 1;
+                ansList->gradient[vec_ind * q + dy_ind] =
+                    cppad_derivOut[dx1_ind * maxOrder + 0];
+              }
+              else{
+                ansList->gradient[vec_ind * q + dy_ind] =
+                CppAD::numeric_limits<double>::quiet_NaN();
+              }     
+            }
           }
-        }
       }
     }
-    //return (ansList);
   };
 
    nimSmartPtr<NIMBLE_ADCLASS> getDerivs_wrapper(nimbleCppADinfoClass &ADinfo,

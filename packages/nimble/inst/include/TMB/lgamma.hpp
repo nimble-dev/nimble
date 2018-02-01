@@ -68,9 +68,30 @@ Type lfactorial(Type x){
 
 //     Parameterized through size and prob parameters, following R-convention.
 // */
+
+
+namespace {
+    double discrete_round(const double &x)
+     {     
+      double out_x = round(x);
+      return(out_x);
+    }
+
+     double discrete_wrapper(const double &x)
+     {     
+      return(x);
+    }
+
+    // CPPAD_DISCRETE_FUNCTION(double, discrete_round)
+    CPPAD_DISCRETE_FUNCTION(double, discrete_round)
+    CPPAD_DISCRETE_FUNCTION(double, discrete_wrapper)
+
+}
+      
+
 template<class Type>
 inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
-		    int give_log)
+		    int give_log=0)
 {
   Type n=size;
   Type p=prob;
@@ -78,6 +99,7 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
     n*log(p)+x*log(Type(1)-p);
   if (give_log) return logres; else return exp(logres);
 }
+
 // VECTORIZE4_ttti(dnbinom)
 
 /** \brief Negative binomial probability function.
@@ -136,7 +158,11 @@ inline Type nimDerivs_dpois(const Type &x, const Type &lambda, int give_log)
 template<class Type>
 Type nimDerivs_dgamma(Type y, Type shape, Type scale, int give_log)
 {
-  Type logres=-lgamma(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale);
+  Type logres = CondExpGt(y, Type(0.0), 
+   -lgamma(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale),
+   -Type( std::numeric_limits<double>::infinity() ));
+  logres = CondExpGt(shape, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+  logres = CondExpGt(scale, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
   if(give_log)return logres; else return exp(logres);
 }
 // VECTORIZE4_ttti(dgamma)

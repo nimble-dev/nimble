@@ -80,19 +80,11 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   bool derivOutputFlag;
   int thisWrtLine;
   int thisNodeSize;
-  int thisIndex;
-  int thisRowLength;
   int jLength;
-  int j2Length;
   int kLength;
   int k2Length;
   int lLength;
-  int mLength;
-  int nLength;
-  int dim1Length;
-  int dim2Length;
   int dim3Length;
-  int parentsIsize;
   int lineWrtSizeIJ;
   int wrtNodeK;
   int thisRows;
@@ -242,9 +234,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                   int addToIndex2 = 0;
                   for (int k2 = 0; k2 < k2Length; k2++) {
                       int lLength2 = nodes.topLevelWrtDeps[i][j2][k2].dimSize(0);
-                      int parentRowLength2 =
-                          chainRuleJacobians[nodes.parentIndicesList[i][j2][k2]]
-                              .rows();
                       for (int l2 = 0; l2 < lLength2; l2++) {
                         if (nodes.topLevelWrtDeps[i][j2][k2][l2] > 0) {
                           int wrtNodeK2 =
@@ -371,10 +360,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
                             if((j2 == j) & (k2 == k)){
                                 lLength2 = l + 1; 
                             }
-                            int parentRowLength2 =
-                                chainRuleJacobians
-                                    [nodes.parentIndicesList[i][j2][k2]]
-                                        .rows();
                             for (int l2 = 0; l2 < lLength2; l2++) { // l and l2 iterate over top level wrt nodes that the parent nodes (k and k2) depend on
                               if(nodes.topLevelWrtDeps[i][j2][k2][l2] > 0) {
                                 int wrtNodeK2 =

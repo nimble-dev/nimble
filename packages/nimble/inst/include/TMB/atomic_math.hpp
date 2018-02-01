@@ -330,10 +330,12 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 			   ,
 			   // ATOMIC_REVERSE
 			   size_t q1 = q + 1;
+			   px[0 * q1 + 0] = Type(0.0);
+			   px[0 * q1 + 1]  = Type(0.0);
 			   if(q1 == 2){
 				   px[0 * q1 + 0] += py[0 * q1 + 1] * Rmath::D_lgamma(tx[0],2.0) * tx[0 * q1 + 1] * tx[0 * q1 + 1];
 				   px[0 * q1 + 1] += py[0 * q1 + 1] * Rmath::D_lgamma(tx[0],1.0) ;
-				}
+			   }
 			   px[0 * q1 + 0] += Rmath::D_lgamma(tx[0],1.0) * py[0];
 			   px[1 * q1 + 0] = 0;
 			   )

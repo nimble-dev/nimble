@@ -307,12 +307,20 @@ Type nimDerivs_dweibull(Type x, Type shape, Type scale, int give_log=0)
 // 	\param prob Probability of success.
 // 	\param give_log true if one wants the log-probability, false otherwise.
 // 	*/
-template<class Type> 
+
+
+template<class Type>
 Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log=0)
 {
-	Type logres = lgamma(size+1)-lgamma(k+1)-lgamma(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
-	if(!give_log) return exp(logres);
-	else return logres;
+  Type disc_k = discrete_round(k);
+  Type disc_size = discrete_round(size);
+  Type logres = CondExpEq(k, disc_k,  lgamma(disc_size+1)-lgamma(disc_k+1)-lgamma(disc_size-disc_k+1)+disc_k*log(prob)+(disc_size-disc_k)*log(1-prob),
+   -Type( std::numeric_limits<double>::infinity()));
+  logres = CondExpEq(size, disc_size, logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CondExpGe(size, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CondExpGe(prob, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CondExpLe(prob, Type(1.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  if (give_log) return logres; else return exp(logres);
 }
 template<class Type> 
 Type nimDerivs_lfactorial(Type x) {
@@ -361,11 +369,28 @@ Type nimDerivs_factorial(Type x) {
 template <class Type>
 Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, int give_log)
 {
-	Type res = exp(lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1);
-	if(!give_log) 
-		return res;
-	else 
-		return CppAD::CondExpEq(x,Type(0),log(res),lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2) + (shape1-1)*log(x) + (shape2-1)*log(1-x));
+	Type res;
+	if(!give_log){
+		res = CondExpLe(x, Type(1.0), 
+							exp(lgamma(shape1+shape2) - lgamma(shape1) - 
+							lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1),
+							Type(0.0));
+		res = CondExpGe(x, Type(0.0), res, Type(0.0)) ;
+		res = CondExpGt(shape1, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+		res = CondExpGt(shape2, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+	}
+	if(give_log){
+		res = CondExpEq(x, Type(0.0), 
+								log(exp(lgamma(shape1+shape2) - lgamma(shape1) - 
+								lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1)),
+								lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2) + 
+								(shape1-1)*log(x) + (shape2-1)*log(1-x));
+		res = CondExpGe(x, Type(0.0), res, -Type(std::numeric_limits<double>::infinity() ));
+		res = CondExpLe(x, Type(1.0), res, -Type(std::numeric_limits<double>::infinity() ));
+		res = CondExpGt(shape1, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+		res = CondExpGt(shape2, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+	} 
+	return(res);
 }
 
 // Vectorize dbeta
