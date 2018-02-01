@@ -396,7 +396,14 @@ sampler_G <- nimbleFunction(
   methods = list( reset = function () {} )
 )
 
-#-- new veriosn of sampler_G where user only gives the model and the mv object
+
+
+#-- Standarized output nimbleFunction new version
+#-- user gives us: 
+#   - model: the model
+#   - mvSaved: modelValues object with the samples of xi, the tilde variables, and the conc parameter, if sampled 
+
+#-- we return a model Values object where each row has the sampled weights and atoms of measure G.
 sampler_G2 <- nimbleFunction(
   # name = 'sampler_G'
   
@@ -416,7 +423,11 @@ sampler_G2 <- nimbleFunction(
     dataNodes <- model$getNodeNames(dataOnly=TRUE) 
     distributions <- model$getDistribution(stochNodes) # finding  dCRP distr, if it exists, and the name of its node
     
-    # getting variable and node xi:
+    # getting variable and node xi: 
+    # here I'm considering that xi is monitored and that there is only one dCRP distr in the model
+    # -- if conc parameter is random, by default, the xi node is not monitered in the MCMC sampling
+    # -- there could be more than one dCRP distribution in the model. In this case we have more
+    #    than one vector of xi, how do we identify the tilde variables for each?
     dCRPdistrindex <- distributions == 'dCRP'
     if( sum(dCRPdistrindex) == 0 ){
       stop('there are no random indexes')
@@ -439,12 +450,22 @@ sampler_G2 <- nimbleFunction(
     xi <- mvSaved[[dCRPVar]]
     
     # getting variable and node conc,  assuming there is only one conc parameter
-    NodeDependXi <- c()
-    for(i in 1:length(nodes)){ # might be inefficient
+    #NodeDependXi <- c()
+    #for(i in 1:length(nodes)){ # might be inefficient
+    #  aux <- model$getDependencies(nodes[i], self=FALSE)
+    #  NodeDependXi[i] <- sum(aux == dCRPNode , na.rm=TRUE)
+    #}
+    #concNode <- nodes[NodeDependXi] 
+    concNode <- FALSE
+    i <- 1
+    while(concNode == FALSE){ # finds the (first) node that depends on dCRPNode.
       aux <- model$getDependencies(nodes[i], self=FALSE)
-      NodeDependXi[i] <- sum(aux == dCRPNode , na.rm=TRUE)
-    }
-    concNode <- nodes[NodeDependXi] 
+      if(sum(aux == dCRPNode , na.rm=TRUE)==1){
+        concNode <- nodes[i]
+      }else{
+        i <- i+1
+      }
+    } 
     concDistr <- model$getDistribution(concNode)
     if(is.na(concDistr)){
       concRnd <- FALSE
@@ -452,24 +473,32 @@ sampler_G2 <- nimbleFunction(
       concRnd <- TRUE
     }
     concVar <- concNode
+    AproxError <- 1e-10
     if(concRnd){ # defining truncation
       conc <- mvSaved[[concVar]]
       concHat <- mean(unlist(conc))
       Trunc <- ceiling(log(AproxError)/log(concHat/(concHat+1))+1) # gives an error of at most AproxError.
     }else{
       conc <- model$getParam(dCRPNode, 'conc') 
-      AproxError <- 1e-10
       Trunc <- ceiling(log(AproxError)/log(conc/(conc+1))+1)
     }
     
     targetElements <- model$expandNodeNames(dCRPNode, returnScalarComponents=TRUE)
     niter <- length(xi) # number of iterations of the MCMC
     N <- length(targetElements) # sample size
-    if(concRnd==FALSE){
-      p <- length(mvSaved[[]])-1 #dimension of measure G when conc is not sampled
-    }else{
-      p <- length(mvSaved[[]])-2 #dimension of measure G when conc is  sampled
+    
+    if(Trunc > N){
+      print('for an approximation error smaller than 1e-10, Trunc > N.')
     }
+    
+    # there could be other nodes that are being monitored besides the xi, tilde, and conc.
+    # p is not defined by this condition.!!!
+    # will define p wheen the tilde variables are identify
+    #if(concRnd==FALSE){
+    #  p <- length(mvSaved[[]])-1 #dimension of measure G when conc is not sampled
+    #}else{
+    #  p <- length(mvSaved[[]])-2 #dimension of measure G when conc is  sampled
+    #}
     
     # getting tilde variables by finding random nodes with N components
     tildevarNames=c()
@@ -486,22 +515,29 @@ sampler_G2 <- nimbleFunction(
         }
       }
     }
-    # there could be other random nodes with N components
-    if(length(tildevarNames)!=p){ # matching the names in tildevarNames with anme sin mvSaved
-      cat('warning: there might be some ERRORs that can be safely solved: have to TEST!')
-      tildevarNames2=c()
-      i=1
-      for(j in 1:length(tildevarNames)){
-        if(length(mvSaved[[tildevarNames[j]]])==niter){
-          tildevarNames2[i]=tildevarNames[j]
-          i=i+1
-        }
-      }
-      if(length(tildevarNames2)!=p){
-        cat('warnings: do not know what is happening??')
-      }
-    }
+    #-- assuming there are deterministic nodes:  theta[i] <- thetatilde[xi[i]]
+    # we can match thetatilde[xi[i]] with theta[i]
+    #-- if there are no deterministic nodes then have to ask for the parameters of the 
+    # distribution of the data and match them with thetatilde[xi[i]]. Which parameters
+    # depend on xi?
+    #-- what follows works when conc is not random!!! 
+    #-- find another way to get the tilde variables in a more general model!
+    #if(length(tildevarNames)!=p){ # matching the names in tildevarNames with anme sin mvSaved
+    #  cat('warning: there might be some ERRORs that can be safely solved: have to TEST!')
+    #  tildevarNames2=c()
+    #  i=1
+    #  for(j in 1:length(tildevarNames)){
+    #    if(length(mvSaved[[tildevarNames[j]]])==niter){
+    #      tildevarNames2[i]=tildevarNames[j]
+    #      i=i+1
+    #    }
+    #  }
+    #  if(length(tildevarNames2)!=p){
+    #    cat('warnings: do not know what is happening??')
+    #  }
+    #}
     
+    p <- length(tildevarNames)
     
     # storaging object:
     mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
@@ -553,7 +589,7 @@ sampler_G2 <- nimbleFunction(
             paramaux[j] <- uniqueValues[index, j] 
           }
         }
-        condaux <- uniqueValues[1:Taux, 1] == paramaux[1] # check if we sample a new atom or an atom that ir in G already
+        condaux <- uniqueValues[1:newvalueindex, 1] == paramaux[1] # check if we sample a new atom or an atom that ir in G already
         if(sum(condaux) >0){ # the atom already exists and we have to update the weights and not increase Trunc
           repindex=1
           while(condaux[repindex]==FALSE){
@@ -565,7 +601,7 @@ sampler_G2 <- nimbleFunction(
         }else{ # agument the truncation and keep the same parameters
           Taux <-Taux+1
           for(j in 1:p){
-            mv$G[[iiter]][Taux, j+1] <<- paramaux[j]
+            mv['G', iiter][Taux, j+1] <<- paramaux[j]
           }
           if( Taux==1 ){
             mv['G', iiter][Taux, 1] <<-vaux
@@ -587,4 +623,63 @@ sampler_G2 <- nimbleFunction(
   
   methods = list( reset = function () {} )
 )
+
+
+#-- Sampler for concentration parameter, conc, of the dCRP distribution.
+
+sampler_Augmented_BetaGamma <- nimbleFunction(
+  #name = 'sampler_Augmente_BetaGamma',
+  contains=sampler_BASE,
+  
+  setup=function(model, mvSaved, target, control){
+    #conjugate <- FALSE # default
+    
+    calcNodes <- model$getDependencies(target)
+    targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
+    detDeps <- model$getDependencies(targetElements, determOnly = TRUE)
+    
+    # do this sampler only when conc ~ gamma(ac, bc) and only one dCRP distribution depends on conc
+    #if(length(calcNodes) & length(detDeps)==0){ do this sampler!}else{M-H}
+    #if(length(calcNodes)>2){ assign M-H sampler} # two dCRP distributions with same conc, or something like 'conc+conc1', conc1 random or not
+    #if(length(detDeps)>0){assign M-H sampler} # conc param is deterministic
+    
+    aux <- targetElements==calcNodes
+    xiNodes <- calcNodes[ aux == FALSE ]
+    xiNodesi <- model$expandNodeNames(xiNodes, returnScalarComponents=TRUE)
+    
+    N <- length(xiNodesi) # number of observations
+    conc <- model$getParam(xiNodes, 'conc')
+    a <- model$getParam(target, 'shape')
+    b <- model$getParam(target, 'rate')
+    xi <- model[[xiNodes]]
+    k <- length(unique(xi))
+    
+    ak <- a+k
+    ak1 <- ak -1
+    
+    
+  },
+  
+  
+  run = function() {
+    
+    # -- generating augmented r.v. and computing the weight.
+    x <- rbeta(1, conc+1, N)
+    blog <- b-log(x)
+    w <- ak1/(ak1 + N*blog)
+    
+    # -- updating the concentration parameter.
+    if(runif(1)<=w){
+      model[[target]] <<- rgamma(1, ak, blog)
+    }else{
+      model[[target]] <<- rgamma(1, ak1, blog)
+    }
+    model$calculate(calcNodes)
+    
+    
+    copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+  },
+  methods = list( reset = function () {})
+)
+
 
