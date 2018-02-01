@@ -48,7 +48,7 @@ ARCH_SUFFIX=`echo ${R_ARCH} | sed -e s!/!_!`
 
 echo "Creating inst/CppCode/libnimble${ARCH_SUFFIX}.a"
 
-(cd inst/CppCode ; make libnimble${ARCH_SUFFIX}.a ARCH_SUFFIX=${ARCH_SUFFIX} OS=Windows R_ARCH=$R_ARCH)
+(cd inst/CppCode ; make -f$(R_HOME)/etc$(R_ARCH)/Makeconf -fGNUMakefile libnimble${ARCH_SUFFIX}.a ARCH_SUFFIX=${ARCH_SUFFIX} OS=Windows R_ARCH=$R_ARCH)
 
 if test -d "$R_PACKAGE_DIR/CppCode" ; then
   echo "Package CppCode directory exists"
