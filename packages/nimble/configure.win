@@ -16,7 +16,7 @@ echo "R_PACKAGE_DIR: $R_PACKAGE_DIR"
 
 sed -e "s!@NIMBLE_HOME@!${R_PACKAGE_DIR}!" inst/make/Makevars.win.in > inst/make/Makevars.win
 
-sed -e 's!@GNUMAKEFILE_INCLUDE_MAKECONF@!include \$(R_HOME)/etc\$(R_ARCH)/Makeconf!' inst/CppCode/GNUmakefile.in > inst/CppCode/GNUmakefile
+##sed -e 's!@GNUMAKEFILE_INCLUDE_MAKECONF@!include \$(R_HOME)/etc\$(R_ARCH)/Makeconf!' inst/CppCode/GNUmakefile.in > inst/CppCode/GNUmakefile
 
 sed -e 's!@NEED_MAKEVARS_FILE@!TRUE!' R/config.R.in |
  sed -e 's|@R_ENABLE_LIB@|FALSE|' |
@@ -50,7 +50,11 @@ ARCH_SUFFIX=`echo ${R_ARCH} | sed -e s!/!_!`
 
 echo "Creating inst/CppCode/libnimble${ARCH_SUFFIX}.a"
 
-(cd inst/CppCode ; make libnimble${ARCH_SUFFIX}.a ARCH_SUFFIX=${ARCH_SUFFIX} OS=Windows R_ARCH=$R_ARCH)
+## echo "File to use is ${R_HOME}/etc${R_ARCH}/Makeconf"
+
+cd inst/CppCode
+
+make --file=${R_HOME}/etc${R_ARCH}/Makeconf --file=GNUmakefile libnimble${ARCH_SUFFIX}.a ARCH_SUFFIX=${ARCH_SUFFIX} OS=Windows R_ARCH=$R_ARCH
 
 if test -d "$R_PACKAGE_DIR/CppCode" ; then
   echo "Package CppCode directory exists"
@@ -59,5 +63,3 @@ if test -d "$R_PACKAGE_DIR/CppCode" ; then
 else
    echo "The R package directory has not been created yet"
 fi
-
-
