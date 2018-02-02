@@ -322,6 +322,16 @@ Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log=0)
   logres = CondExpLe(prob, Type(1.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
   if (give_log) return logres; else return exp(logres);
 }
+
+template<class Type>
+Type nimDerivs_dchisq(Type x, Type df, int give_log=0)
+{	
+  Type logres = CondExpGe(df, Type(0.0), (df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - lgamma(df/Type(2.0)) , Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CondExpGt(x, Type(0.0), logres, -Type( std::numeric_limits<double>::infinity()));
+  if (give_log) return logres; else return exp(logres);
+}
+
+
 template<class Type> 
 Type nimDerivs_lfactorial(Type x) {
 	return(lgamma(x + 1));
