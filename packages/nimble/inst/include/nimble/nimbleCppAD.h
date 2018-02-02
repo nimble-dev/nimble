@@ -37,7 +37,7 @@
 
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction
    object
-   to generic CppAD driver wrappers like calcGradient.
+   to generic CppAD driver wrappers like calcjacobian.
    Each nimbleFunction enabled for CppAD will have an object of this class. */
 
 class nimbleCppADinfoClass {
@@ -98,7 +98,7 @@ public:
         }
       }
       if (ordersFound[1] == true) {
-        ansList->gradient.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
+        ansList->jacobian.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
       }
       if (ordersFound[2] == true) {
         ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
@@ -140,11 +140,11 @@ public:
             for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
               if(infIndicators[dy_ind] == false){
                 int dx1_ind = wrtVector[vec_ind] - 1;
-                ansList->gradient[vec_ind * q + dy_ind] =
+                ansList->jacobian[vec_ind * q + dy_ind] =
                     cppad_derivOut[dx1_ind * maxOrder + 0];
               }
               else{
-                ansList->gradient[vec_ind * q + dy_ind] =
+                ansList->jacobian[vec_ind * q + dy_ind] =
                 CppAD::numeric_limits<double>::quiet_NaN();
               }     
             }
