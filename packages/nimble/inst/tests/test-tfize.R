@@ -81,7 +81,7 @@ test_that('Tensorflow works with nimDerivs() for log(x)', {
     expect_error({
         tf_fun <- compileNimble(fun)
         x <- 1.2
-        expect_equal(tf_fun$run(x)$gradient[1], 1 / x)
+        expect_equal(tf_fun$run(x)$jacobian[1], 1 / x)
     })
 })
 
@@ -112,6 +112,6 @@ test_that('Tensorflow works with nimDerivs() for sum(x)', {
         tf_fun <- compileNimble(fun)
         x <- 1.2
         Rderiv <- 1
-        expect_equal(tf_fun$run(x)$gradient[1], eval(Rderiv))
+        expect_equal(tf_fun$run(x)$jacobian[1], eval(Rderiv))
     })
 })

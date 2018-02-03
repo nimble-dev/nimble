@@ -63,14 +63,14 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   }
 
   // Initialize the Jacobian and Hessian of the returned list
-  (*ansList).gradient.initialize(0, 1, 1, nodes.totalOutWrtSize);
+  (*ansList).jacobian.initialize(0, 1, 1, nodes.totalOutWrtSize);
   if (hessianFlag) {
     (*ansList).hessian.initialize(0, 1, nodes.totalOutWrtSize,
                                   nodes.totalOutWrtSize, 1);
   }
-  Map<MatrixXd> ansJacobian((*ansList).gradient.getPtr(),
-                            (*ansList).gradient.dim()[0],
-                            (*ansList).gradient.dim()[1]);
+  Map<MatrixXd> ansJacobian((*ansList).jacobian.getPtr(),
+                            (*ansList).jacobian.dim()[0],
+                            (*ansList).jacobian.dim()[1]);
   Map<MatrixXd> ansHessian((*ansList).hessian.getPtr(),
                            (*ansList).hessian.dim()[0],
                            (*ansList).hessian.dim()[1]);
@@ -151,7 +151,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 
         if(isAddedScalarNode){
           thisDerivList->value[0] = 0;
-          thisDerivList->gradient = nodes.thisAddedNodeJacobianList[0];
+          thisDerivList->jacobian = nodes.thisAddedNodeJacobianList[0];
           if(hessianFlag){
             thisDerivList->hessian.initialize(0, 1, nodes.totalOutWrtSize,
                                   nodes.totalOutWrtSize, 1);
@@ -163,8 +163,8 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
             thisDerivList);  // Derivatives of calculate() for
                              // node i are computed here.
         }
-        thisRows = (*thisDerivList).gradient.dimSize(0);
-        thisCols = (*thisDerivList).gradient.dimSize(1);
+        thisRows = (*thisDerivList).jacobian.dimSize(0);
+        thisCols = (*thisDerivList).jacobian.dimSize(1);
         vector<Map<MatrixXd, Unaligned, EigStrDyn> > thisHessian;
         derivOutputFlag =
             (isDeterminisitic) ? false : true;  // derivOutputFlag is true if
@@ -187,7 +187,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
           }
         }
         chainRuleJacobians[i] = MatrixXd::Zero(thisRows, nodes.totalWrtSize);
-        Map<MatrixXd> thisJacobian((*thisDerivList).gradient.getPtr(), thisRows,
+        Map<MatrixXd> thisJacobian((*thisDerivList).jacobian.getPtr(), thisRows,
                                    thisCols);
         jLength =
             nodes.topLevelWrtDeps[i].size();  /// also need to ensure that if

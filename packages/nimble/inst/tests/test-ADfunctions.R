@@ -26,7 +26,7 @@ test_that('Derivatives of dnorm function correctly.',
     cADfunInst <- compileNimble(ADfunInst)
     cderivs <- cADfunInst$run(x)
     expect_equal(cderivs$value, Rderivs$value)
-    expect_equal(cderivs$gradient, Rderivs$gradient)
+    expect_equal(cderivs$jacobian, Rderivs$jacobian)
     expect_equal(cderivs$hessian, Rderivs$hessian)
   }
 )
@@ -56,7 +56,7 @@ test_that('Derivatives of x^2 function correctly.',
             cADfunInst <- compileNimble(ADfunInst)
             cderivs <- cADfunInst$run(x)
             expect_equal(cderivs$value, Rderivs$value)
-            expect_equal(cderivs$gradient, Rderivs$gradient, tolerance = 0.01)
+            expect_equal(cderivs$jacobian, Rderivs$jacobian, tolerance = 0.01)
             expect_equal(cderivs$hessian, Rderivs$hessian, tolerance = 0.01)
           }
 )
@@ -84,7 +84,7 @@ test_that('Derivatives of sum(log(x)) function correctly.',
             cADfunInst <- compileNimble(ADfunInst)
             cderivs <- cADfunInst$run(x)
             expect_equal(cderivs$value, Rderivs$value)
-            expect_equal(cderivs$gradient, Rderivs$gradient, tolerance = 0.01)
+            expect_equal(cderivs$jacobian, Rderivs$jacobian, tolerance = 0.01)
             expect_equal(cderivs$hessian, Rderivs$hessian, tolerance = 0.01)
           }
 )

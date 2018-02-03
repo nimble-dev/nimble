@@ -360,7 +360,7 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} returned by \code{\link{nimDerivs}}.
 #'
 #' @field value The value of the function evaluated at the given input arguments. 
-#' @field gradient	The gradient of the function evaluated at the given input arguments. 
+#' @field jacobian	The Jacobian of the function evaluated at the given input arguments. 
 #' @field hessian The Hessian of the function evaluated at the given input arguments. 
 #' @field thirdDerivs Currently unused.
 #'
@@ -368,7 +368,7 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #' @seealso \code{\link{nimDerivs}}
 
 ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
-                                 nimbleType('gradient', 'double', 2),
+                                 nimbleType('jacobian', 'double', 2),
                                  nimbleType('hessian', 'double', 3),
                                  nimbleType('thirdDerivs', 'double', 4)),
                             name = "NIMBLE_ADCLASS", predefined = TRUE)

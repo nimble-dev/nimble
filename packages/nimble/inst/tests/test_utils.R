@@ -1240,7 +1240,7 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
                         if(testR){
                           chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order, chainRuleDerivs = TRUE)
                           if(0 %in% order) expect_equal(wrapperDerivs$value, chainRuleDerivs$value, tolerance = tolerance)
-                          if(1 %in% order) expect_equal(wrapperDerivs$gradient, chainRuleDerivs$gradient, tolerance = tolerance)
+                          if(1 %in% order) expect_equal(wrapperDerivs$jacobian, chainRuleDerivs$jacobian, tolerance = tolerance)
                           if(2 %in% order) expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = tolerance)
                         }
                         if(testCompiled){
@@ -1250,7 +1250,7 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
                           expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model, resetFunctions = TRUE))
                           cDerivs <- ctestFunctionInstance$run()
                           if(0 %in% order) expect_equal(wrapperDerivs$value, cDerivs$value, tolerance = tolerance)
-                          if(1 %in% order) expect_equal(wrapperDerivs$gradient, cDerivs$gradient, tolerance = tolerance)
+                          if(1 %in% order) expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian, tolerance = tolerance)
                           if(2 %in% order) expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = tolerance)
                         }
                       })
@@ -1306,7 +1306,7 @@ testADDistribution <- function(ADfunGen, argsList, name){
       RderivsList <- eval(as.call(RfunCallList))
       CderivsList <- eval(as.call(CfunCallList))
       expect_equal(RderivsList$value, CderivsList$value, tolerance = .01)
-      expect_equal(RderivsList$gradient, CderivsList$gradient, tolerance = .1)
+      expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = .1)
       expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1)
   }
 }

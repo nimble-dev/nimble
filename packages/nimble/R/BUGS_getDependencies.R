@@ -263,7 +263,7 @@ nimDerivsInfoClass <- setRefClass(
                                     }
           )
           
-          ## toIndices are the indices of the returned deriv element (e.g. gradient)
+          ## toIndices are the indices of the returned deriv element (e.g. Jacobian)
           ## that this wrt param will map to
           wrtToIndices[[i]] <<- thisWrtNodeInds[which(thisWrtNodeInds != 0)]
           ## lineIndices are the full indices of this wrt node (could be longer than toIndices if only one element of a multivar node is used for wrt)

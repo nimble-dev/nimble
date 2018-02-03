@@ -118,19 +118,19 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
 
 #' Nimble Derivatives
 #' 
-#' EXPERIMENTAL Computes the value, gradient, and Hessian of a given  \code{nimbleFunction} method.  
+#' EXPERIMENTAL Computes the value, Jacobian, and Hessian of a given  \code{nimbleFunction} method.  
 #' 
 #' @param nimFxn a call to a \code{nimbleFunction} method with arguments included.  Can also be a call to  \code{model$calculate(nodes)}, or to \code{calculate(model, nodes)}.
-#' @param order an integer vector with values within the set {0, 1, 2}, corresponding to whether the function value, gradient, and Hessian should be returned respectively.  Defaults to \code{c(0, 1, 2)}.
+#' @param order an integer vector with values within the set {0, 1, 2}, corresponding to whether the function value, Jacobian, and Hessian should be returned respectively.  Defaults to \code{c(0, 1, 2)}.
 #' @param dropArgs a vector of integers specifying any arguments to \code{nimFxn} that derivatives should not be taken with respect to.  For example, \code{dropArgs = 2} means that the second argument to \code{nimFxn} will not have derivatives taken with respect to it.  Defaults to an empty vector. 
-#' @param wrt a character vector of node names to take derivatives with respect to.  If left empty, derivatives will be taken with respect to all arguments to \code{nimFxn}.
+#' @param wrt a character vector of either: names of function arguments (if taking derivatives of a \code{nimbleFunction} method), or node names (if taking derivatives of \code{model$calculate(nodes)}) to take derivatives with respect to.  If left empty, derivatives will be taken with respect to all arguments to \code{nimFxn}.
 #' @param chainRuleDerivs a logical argument indicating whether to take derivatives of calls to \code{model$calculate(nodes)} using NIMBLE's implementation of the chain rule for testing purposes.  Defaults to \code{FALSE}.    
 #' @param silent a logical argument that determines whether warnings will be displayed.
 #' @details Derivatives for uncompiled nimbleFunctions are calculated using the
 #' \code{numDeriv} package.  If this package is not installed, an error will
 #' be issued.  Derivatives for matrix valued arguments will be returned in column-major order.
 #' 
-#' @return a \code{nimbleList} with elements \code{value}, \code{gradient}, and \code{hessian}.
+#' @return a \code{nimbleList} with elements \code{value}, \code{jacobian}, and \code{hessian}.
 #' 
 #' @examples 
 #' 
@@ -261,7 +261,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA, wrt = NUL
   }
   outList <- ADNimbleList$new()
   if(valueFlag) outList$value = outVal
-  if(jacobianFlag) outList$gradient = outGrad
+  if(jacobianFlag) outList$jacobian = outGrad
   if(hessianFlag) outList$hessian = outHess
   return(outList)
 }
@@ -287,7 +287,7 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
   }
   derivInfo <- nimDerivsInfoClass(wrtPars, nodes, model)
   hessianFlag <- 2 %in% order
-  jacobianFlag <- 1 %in% order || hessianFlag ## note that to calculate Hessians using chain rule, must have gradients. 
+  jacobianFlag <- 1 %in% order || hessianFlag ## note that to calculate Hessians using chain rule, must have jacobians. 
   if(jacobianFlag && !(1 %in% order)) order <- c(order, 1)
   valueFlag <- 0 %in% order
   nfv <-  nodeFunctionVector(model, model$expandNodeNames(c(nodes, 
@@ -301,7 +301,7 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
   totalOutWrtSize <- sum(sapply(derivInfo$wrtToIndices, function(x){return(length(x))}))
   ## outDerivList will be returned from this function.
   if(valueFlag) outDerivList$value = 0
-  outDerivList$gradient = matrix(0, ncol = totalOutWrtSize, nrow = 1)
+  outDerivList$jacobian = matrix(0, ncol = totalOutWrtSize, nrow = 1)
   if(hessianFlag) outDerivList$hessian = array(0, dim = c(totalOutWrtSize, totalOutWrtSize, 1))
   totalWrtSize <-  sum(sapply(derivInfo$wrtLineSize, function(x){return(x)}))
   allWrtLines <- derivInfo$wrtLineNums
@@ -326,27 +326,27 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
         calcWithArgs <- model$nodeFunctions[[declID]]$calculateWithArgs
         
         ## Below we construct two lists:
-        ## parentGradients, a list of all the gradients of the parent nodes of each argument of this node.
+        ## parentjacobians, a list of all the jacobians of the parent nodes of each argument of this node.
         ## parentHessians, a list of all the hessians of the parent nodes of this node.  
-        parentGradients <- vector('list', length = length(derivInfo$parentIndicesList[[i]]))
+        parentjacobians <- vector('list', length = length(derivInfo$parentIndicesList[[i]]))
         if(hessianFlag) parentHessians <- vector('list', length = length(derivInfo$parentIndicesList[[i]]))
         for(k in seq_along(derivInfo$parentIndicesList[[i]])){
           if(k == 1 && isWrtLine){
             ## The first argument (k = 1) of a node's calculateWithArgs function will always be the node itself.
-            ## If this node is a wrt node, we want to set the parent gradient of the first arg (the derivative of this node wrt itself)
+            ## If this node is a wrt node, we want to set the parent jacobian of the first arg (the derivative of this node wrt itself)
             ## to the identity.
-            parentGradients[[k]] <- matrix(0, nrow = derivInfo$wrtLineSize[[thisWrtLine]],
+            parentjacobians[[k]] <- matrix(0, nrow = derivInfo$wrtLineSize[[thisWrtLine]],
                                            ncol = totalWrtSize)
-            parentGradients[[k]][, derivInfo$wrtLineIndices[[thisWrtLine]]] <- diag(derivInfo$wrtLineSize[[thisWrtLine]])
+            parentjacobians[[k]][, derivInfo$wrtLineIndices[[thisWrtLine]]] <- diag(derivInfo$wrtLineSize[[thisWrtLine]])
           }
           else if(derivInfo$parentIndicesList[[i]][[k]][1] > 0){
-            ## Otherwise, if argument k has parents that depend on a wrt node, grab the parent gradients (which will have already been calculated)
+            ## Otherwise, if argument k has parents that depend on a wrt node, grab the parent jacobians (which will have already been calculated)
             ## and combine them into a single matrix.
-            parentGradientsList <- chainRuleDerivList[derivInfo$parentIndicesList[[i]][[k]]]
-            parentGradients[[k]] <- parentGradientsList[[1]]
-            if(length(parentGradientsList) > 1){
-              for(i_listEntry in 2:length(parentGradientsList)){
-                parentGradients[[k]] <- rbind(parentGradients[[k]], parentGradientsList[[i_listEntry]])
+            parentjacobiansList <- chainRuleDerivList[derivInfo$parentIndicesList[[i]][[k]]]
+            parentjacobians[[k]] <- parentjacobiansList[[1]]
+            if(length(parentjacobiansList) > 1){
+              for(i_listEntry in 2:length(parentjacobiansList)){
+                parentjacobians[[k]] <- rbind(parentjacobians[[k]], parentjacobiansList[[i_listEntry]])
               }
             }
             ## Similarly, grab the parent Hessians (which will have already been calculated)
@@ -375,7 +375,7 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
             model$nodeFunctions[[declID]]$calculate(unrolledIndicesMatrixRow)
           }
           print(paste(i, "hessian:"))
-          print(derivList$gradient)
+          print(derivList$jacobian)
           ## The derivOutputFlag determines whether the derivatives of this node (node i): 
           ## should be calculated for inclusion in the chain rule output (TRUE),
           ## should be calculated for later use in the chain rule (FALSE), 
@@ -397,17 +397,17 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
             thisArgIndex <- 0
             ## Iterate over this line's parent nodes.
             for(k in seq_along(derivInfo$parentIndicesList[[i]])){
-              if(!is.null(parentGradients[[k]])){
+              if(!is.null(parentjacobians[[k]])){
                 ## Calculate derivs of this node (i) wrt this parameter (j) for this parent node (k) via chain rule.
                 chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[j]]] <- chainRuleDerivList[[i]][,derivInfo$wrtLineIndices[[j]]] +
-                  derivList$gradient[,(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]), drop = FALSE]%*%parentGradients[[k]][,derivInfo$wrtLineIndices[[j]], drop = FALSE]
+                  derivList$jacobian[,(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]), drop = FALSE]%*%parentjacobians[[k]][,derivInfo$wrtLineIndices[[j]], drop = FALSE]
                 
               }
               thisArgIndex <- thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]
             }
             if(derivOutputFlag == TRUE){
               ## If this line is included in output, add the derivative of this line (i) wrt this param (j).
-              outDerivList$gradient[, derivInfo$wrtToIndices[[j]]] <- outDerivList$gradient[, derivInfo$wrtToIndices[[j]]]  +  
+              outDerivList$jacobian[, derivInfo$wrtToIndices[[j]]] <- outDerivList$jacobian[, derivInfo$wrtToIndices[[j]]]  +  
                 chainRuleDerivList[[i]][,derivInfo$wrtFromIndices[[j]]]
             }
             if(hessianFlag){
@@ -421,18 +421,18 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
                     for(dim1 in derivInfo$wrtLineIndices[[j]]){
                       for(dim2 in derivInfo$wrtLineIndices[[j_2]]){
                         chainRuleHessianList[[i]][dim1, dim2, ] <- chainRuleHessianList[[i]][dim1, dim2, ] +
-                          c(derivList$gradient[ ,(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]), drop = FALSE]%*%parentHessians[[k]][dim1, dim2, , drop = FALSE])
+                          c(derivList$jacobian[ ,(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]), drop = FALSE]%*%parentHessians[[k]][dim1, dim2, , drop = FALSE])
                       }
                     }
                   }
                   thisArgIndex_2 <- 0
                   for(k_2 in seq_along(derivInfo$parentIndicesList[[i]])){
-                    if(!is.null(parentGradients[[k]])){
-                      if(!is.null(parentGradients[[k_2]])){
+                    if(!is.null(parentjacobians[[k]])){
+                      if(!is.null(parentjacobians[[k_2]])){
                         for(dim3 in 1:dim(derivList$hessian)[3]){
                           chainRuleHessianList[[i]][derivInfo$wrtLineIndices[[j]], derivInfo$wrtLineIndices[[j_2]], dim3] <- chainRuleHessianList[[i]][derivInfo$wrtLineIndices[[j]], derivInfo$wrtLineIndices[[j_2]], dim3] +
-                            t(parentGradients[[k]][, derivInfo$wrtLineIndices[[j]], drop = FALSE])%*%derivList$hessian[(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]),(thisArgIndex_2 + 1):(thisArgIndex_2 + derivInfo$lineWrtArgSizeInfo[[i]][k_2]), dim3]%*%
-                            parentGradients[[k_2]][, derivInfo$wrtLineIndices[[j_2]], drop = FALSE]
+                            t(parentjacobians[[k]][, derivInfo$wrtLineIndices[[j]], drop = FALSE])%*%derivList$hessian[(thisArgIndex + 1):(thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]),(thisArgIndex_2 + 1):(thisArgIndex_2 + derivInfo$lineWrtArgSizeInfo[[i]][k_2]), dim3]%*%
+                            parentjacobians[[k_2]][, derivInfo$wrtLineIndices[[j_2]], drop = FALSE]
                         }
                       }
                       
@@ -528,12 +528,15 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   ## Determine sizes of each function arg.
   fxnArgsDimSizes <- lapply(nimFxnArgs, function(x){
     if(x[[2]] == 0) return(1)
-    else if(x[[2]] == 1){
-      if(length(x[[3]]) == 1) return(x[[3]])
-      else return(x[[3]][[2]])
+    else if(x[[2]] > 1){
+      if(length(x) < 3) stop('Sizes of arguments to nimbleFunctions must be explictly specified (e.g. x = double(1, 4)) in order to take derivatives.')
+      if(x[[2]] == 1){
+        if(length(x[[3]]) == 1) return(x[[3]])
+        else return(x[[3]][[2]])
+      }
+      else if(x[[2]] == 2) return(c(x[[3]][[2]], x[[3]][[3]]))
     }
-    else if(x[[2]] == 2) return(c(x[[3]][[2]], x[[3]][[3]]))}
-  )
+  })
   ## Same as above sizes, except that matrix sizes are reported as nrow*ncol instead of c(nrow, ncol).
   fxnArgsTotalSizes <- sapply(fxnArgsDimSizes, function(x){
     return(prod(x))
