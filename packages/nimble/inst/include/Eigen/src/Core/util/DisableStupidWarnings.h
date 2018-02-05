@@ -41,14 +41,16 @@
   #ifndef EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
     #pragma clang diagnostic push
   #endif
-  #pragma clang diagnostic ignored "-Wconstant-logical-operand"
+// disabled for nimble because of CRAN flag: File which contains pragma(s) suppressing important diagnostics:
+//  #pragma clang diagnostic ignored "-Wconstant-logical-operand"
 
 #elif defined __GNUC__ && __GNUC__>=6
 
   #ifndef EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
     #pragma GCC diagnostic push
   #endif
-  #pragma GCC diagnostic ignored "-Wignored-attributes"
+// disabled for nimble because of CRAN flag: File which contains pragma(s) suppressing important diagnostics:
+//  #pragma GCC diagnostic ignored "-Wignored-attributes"
 
 #endif
 
