@@ -12,7 +12,8 @@ License:
    This Source Code Form is subject to the terms of the Mozilla
    Public License v. 2.0. If a copy of the MPL was not distributed
    with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-Note that several pragmas in Core/arch/SSE/Complex.h and Core/util/DisableStupidWarnings.h have been disabled by the NIMBLE development team as they triggered warnings on CRAN. 
+Note that several pragmas in Core/arch/SSE/Complex.h and Core/util/DisableStupidWarnings.h
+have been disabled by the NIMBLE development team as they triggered warnings on CRAN. 
 
 Files: include/Eigen/* (files with Intel copyright)
 Copyright: Copyright (c) 2011, Intel Corporation. All rights reserved.

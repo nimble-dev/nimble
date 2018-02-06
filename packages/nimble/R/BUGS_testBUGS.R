@@ -2,7 +2,7 @@
 # infrastructure code for nimble testing; it uses readBUGSmodel() for the heavy lifting of reading in the model information
 
 # May 2014 (revised June 2014)
-# Chris Paciorek
+# Christopher Paciorek
 
 #' Tests BUGS examples in the NIMBLE system
 #'

@@ -926,7 +926,7 @@ nimCat <- function(...) {
 #' 
 #' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{numeric}, \code{integer} and \code{logical} are immediately converted to \code{nimNumeric}, \code{nimInteger} and \code{nimLogical}, respectively.  
 #' 
-#' @author Daniel Turek, Chris Paciorek, Perry de Valpine
+#' @author Daniel Turek, Christopher Paciorek, Perry de Valpine
 #' @aliases numeric
 #' @seealso \code{\link{nimMatrix}}, \code{\link{nimArray}}
 #' @export

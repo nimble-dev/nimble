@@ -38,7 +38,7 @@ These functions are similar to R's \code{\link{numeric}}, \code{\link{integer}},
 When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{numeric}, \code{integer} and \code{logical} are immediately converted to \code{nimNumeric}, \code{nimInteger} and \code{nimLogical}, respectively.
 }
 \author{
-Daniel Turek, Chris Paciorek, Perry de Valpine
+Daniel Turek, Christopher Paciorek, Perry de Valpine
 }
 \seealso{
 \code{\link{nimMatrix}}, \code{\link{nimArray}}
