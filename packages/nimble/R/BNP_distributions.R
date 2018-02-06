@@ -39,9 +39,11 @@
 #' The chineese restaurant process
 #' distribution with concentration parameter \eqn{=\alpha}{= conc} has 
 #' probability function 
-#' \deqn{f(x_i)=\frac{\alpha}{i-1+\alpha}}
+#' \deqn{f(x_i \mid x_1, \ldots, x_{i-1})=\frac{1}{i-1+\alpha}\sum_{j=1}^{i-1}\delta_{x_j}+
+#' \frac{\alpha}{i-1+\alpha}\delta_{x^{new}},}
+#' where \eqn{x^{new}} is a new integer not in \eqn{x_1, \ldots, x_{i-1}}.
 #' 
-#' If \code{conc} is not sepcified, it assumes the default value of 1. 
+#' If \code{conc} is not specified, it assumes the default value of 1. 
 #' @return \code{dCRP} gives the density, and \code{rCRP} gives random generation.
 #' @references Blackwell, D., & MacQueen, J. B. (1973) Ferguson distributions via 
 #' Pólya urn schemes \emph{The annals of statistics}, 353-355.
@@ -66,33 +68,16 @@ rCRP=nimbleFunction(
   {
     returnType(double(1))
     
-    n <- floor(n)
-    if( length(n) > 1){
-      n <- floor(n[1])
-      print('length(n) > 1 only the first element will be used')
-    }
-    
-    if( conc[1] <= 0 ){
-      concCond1 <- 0
+    if( conc <= 0 ){
+      concCond1 <- 1
       print('conc parameter has to be larger than zero')
     }else{
-      concCond1 <- 1
+      concCond1 <- 0
     }
     
-    if( length(conc) > 1 ){
-      concCond2 <- 0
-      print('conc parameter has to be a scalar')
+    if(concCond1 == 1){
+      return(c(NaN))
     }else{
-      concCond2 <- 1
-    }
-    
-    if(concCond1 == 0 ){
-      return(NaN)
-    }
-    if( concCond2 == 0 ){
-      return(NaN)
-    }
-    if( concCond1+concCond2 == 2){
       x=numeric(n)# returned vector:
       x[1]=1
       if(n>1){
@@ -111,7 +96,8 @@ rCRP=nimbleFunction(
 )
 
 
-
+#' @rdname ChinesseRestaurantProcess
+#' @export
 dCRP=nimbleFunction(
   run=function(x=double(1), 
                conc=double(0, default=1), 
@@ -121,27 +107,16 @@ dCRP=nimbleFunction(
     n=length(x) 
     tmpden=numeric(n) 
     
-    if( conc[1] <= 0 ){
-      concCond1 <- 0
+    if( conc <= 0 ){
+      concCond1 <- 1
       print('conc parameter has to be larger than zero')
     }else{
-      concCond1 <- 1
+      concCond1 <- 0
     }
     
-    if( length(conc) > 1 ){
-      concCond2 <- 0
-      print('conc parameter has to be a scalar')
+    if(concCond1 == 1){
+      return(NaN)
     }else{
-      concCond2 <- 1
-    }
-    
-    if(concCond1 == 0 ){
-      return(NaN)
-    }
-    if( concCond2 == 0 ){
-      return(NaN)
-    }
-    if( concCond1+concCond2 == 2){
       tmpden[1]=1
       if(n>1){
         for(i in 2:n){
