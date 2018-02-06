@@ -31,6 +31,12 @@ Type lfactorial(Type x){
   return ::atomic::D_lgamma(tx)[0];
 }
 // VECTORIZE1_t(lfactorial)
+template<class Type>
+Type zero_NaNderiv(Type x){
+   CppAD::vector<Type> tx(1);
+   tx[0] = x;
+  return ::atomic::zero_NaNderiv(tx)[0];
+}
 
 /* Old lgamma approximation */
 // template <class Type>
@@ -165,6 +171,15 @@ Type nimDerivs_dgamma(Type y, Type shape, Type scale, int give_log)
   logres = CondExpGt(scale, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
   if(give_log)return logres; else return exp(logres);
 }
+
+template<class Type>
+Type dinvgamma(Type x, Type shape, Type rate, int give_log)
+{
+  Type xinv = Type(1.0)/x;
+  if(give_log) return(nimDerivs_dgamma(xinv, shape, rate, give_log) - 2*log(x));
+  else return(nimDerivs_dgamma(xinv, shape, rate, give_log) * xinv * xinv);
+}
+
 // VECTORIZE4_ttti(dgamma)
 
 /** \brief Density of log(X) where X~gamma distributed 

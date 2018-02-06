@@ -1305,9 +1305,18 @@ testADDistribution <- function(ADfunGen, argsList, name){
       CfunCallList <- c(list(quote(CADfun$run)), argsList[[iArg]])
       RderivsList <- eval(as.call(RfunCallList))
       CderivsList <- eval(as.call(CfunCallList))
-      expect_equal(RderivsList$value, CderivsList$value, tolerance = .01)
-      expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = .1)
-      expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1)
+      argValsText <- paste(sapply(names(argsList[[iArg]]), 
+                          function(x){return(paste(x, " = ",
+                          argsList[[iArg]][[x]]))}), collapse = ', ')
+      expect_equal(RderivsList$value, CderivsList$value, tolerance = .01, 
+                   info = paste("Values of", name , "not equal for arguments: ",
+                                argValsText, '.'))
+      expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = .1,
+                   info = paste("Jacobians of", name , "not equal for arguments: ",
+                                argValsText, '.'))
+      expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1,
+                   info = paste("Hessians of", name , "not equal for arguments: ",
+                                argValsText, '.'))
   }
 }
 

@@ -212,11 +212,29 @@ T nimDerivs_iprobit(T x){
 template<class Type> 
 Type nimDerivs_dexp_nimble(Type x, Type rate, int give_log=0)
 {
-	if(!give_log)
-		return CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0));
-	else
-		return CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY));
+	if(!give_log){
+		Type res = CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0));
+		return  CppAD::CondExpGe(rate, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	}
+	else{
+		Type res = CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY));
+		return  CppAD::CondExpGe(rate, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	}
 }
+	
+template<class Type>
+Type nimDerivs_dexp(Type x, Type scale, int give_log=0)
+{
+	if(!give_log){
+		Type res = CppAD::CondExpGe(x,Type(0),exp(-x/scale)/scale,Type(0));
+		return  CppAD::CondExpGe(scale, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	}
+	else{
+		Type res = CppAD::CondExpGe(x,Type(0),-log(scale)-x/scale,Type(-INFINITY));
+		return CppAD::CondExpGe(scale, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	}
+}
+
 	
 template<class Type> 
 Type nimDerivs_dunif(Type x, Type a, Type b, int give_log=0)
@@ -326,11 +344,17 @@ Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log=0)
 template<class Type>
 Type nimDerivs_dchisq(Type x, Type df, int give_log=0)
 {	
-  Type logres = CondExpGe(df, Type(0.0), (df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - lgamma(df/Type(2.0)) , Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-  logres = CondExpGt(x, Type(0.0), logres, -Type( std::numeric_limits<double>::infinity()));
-  if (give_log) return logres; else return exp(logres);
+  Type logres = CondExpGt(x, Type(0.0), (df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - lgamma(df/Type(2.0)), 
+	  -Type( std::numeric_limits<double>::infinity()));	
+  logres =  CondExpEq(x, Type(0.0), Type( std::numeric_limits<double>::infinity()), logres); // to match R: dchisq(0, df) is infinity in R.
+  logres = CondExpGt(df, Type(0.0), logres, -Type( std::numeric_limits<double>::infinity()));	
+  logres =  CondExpLt(df, Type(0.0), Type(CppAD::numeric_limits<Type>::quiet_NaN()), logres); 
+  if (give_log) return logres; 
+  else{
+	  logres = CondExpEq(df, Type(0.0), zero_NaNderiv(df), exp(logres));
+	  return(logres);
+  }
 }
-
 
 template<class Type> 
 Type nimDerivs_lfactorial(Type x) {
@@ -433,6 +457,7 @@ template <class Type>
 Type nimDerivs_dlogis(Type x, Type location, Type scale, int give_log)
 {
 	Type logres = -(x-location)/scale - log(scale) - 2*log(1+exp(-(x-location)/scale));
+	logres = CppAD::CondExpGt(scale, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
 	if(!give_log) return exp(logres);
 	else return logres;
 }
@@ -467,7 +492,17 @@ Type nimDerivs_dnorm(Type x, Type mean, Type sd, int give_log=0)
 {
   Type logres;
   logres=-log(Type(sqrt(2*M_PI))*sd)-Type(.5)*pow((x-mean)/sd,2);
-  //return 1/(sqrt(2*M_PI)*sd)*exp(-.5*pow((x-mean)/sd,2));
+  logres = CppAD::CondExpGe(sd, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CppAD::CondExpEq(sd, Type(0.0), -Type(std::numeric_limits<double>::infinity()) ,  logres);
+  if(give_log)return logres; else return exp(logres);
+}
+
+template<class Type>
+Type nimDerivs_dlnorm(Type x, Type mean, Type sd, int give_log=0)
+{
+  Type logres = CppAD::CondExpGe(x, Type(0.0), -log(x) - log(sd) - Type(0.5)*log(Type(2.0*M_PI)) - Type(.5)*pow((log(x)-mean)/sd, 2), -Type(std::numeric_limits<double>::infinity())); 
+  logres = CppAD::CondExpGe(sd, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CppAD::CondExpEq(sd, Type(0.0), -Type(std::numeric_limits<double>::infinity()) ,  logres);
   if(give_log)return logres; else return exp(logres);
 }
 

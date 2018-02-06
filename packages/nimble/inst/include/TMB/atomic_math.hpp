@@ -333,12 +333,33 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 			   px[0 * q1 + 0] = Type(0.0);
 			   px[0 * q1 + 1]  = Type(0.0);
 			   if(q1 == 2){
-				   px[0 * q1 + 0] += py[0 * q1 + 1] * Rmath::D_lgamma(tx[0],2.0) * tx[0 * q1 + 1] * tx[0 * q1 + 1];
+				   px[0 * q1 + 0] += py[0 * q1 + 1] * Rmath::D_lgamma(tx[0],2.0) * tx[0 * q1 + 1];
 				   px[0 * q1 + 1] += py[0 * q1 + 1] * Rmath::D_lgamma(tx[0],1.0) ;
 			   }
 			   px[0 * q1 + 0] += Rmath::D_lgamma(tx[0],1.0) * py[0];
 			   px[1 * q1 + 0] = 0;
+			)
+			   
+TMB_ATOMIC_VECTOR_FUNCTION(
+			   // ATOMIC_NAME
+			   zero_NaNderiv
+			   ,
+			   // OUTPUT_DIM
+			   1
+			   ,
+			   // ATOMIC_DOUBLE
+			   ty[0]=0;
+			   if(q == 1){
+				 ty[1]=CppAD::numeric_limits<double>::quiet_NaN();
+				}
+				cout << "q: " << q << "\n";
+			   ,
+			   // ATOMIC_REVERSE
+			   px[0] = CppAD::numeric_limits<double>::quiet_NaN();
+			   px[1] = CppAD::numeric_limits<double>::quiet_NaN();
 			   )
+
+
 
 /** \brief Atomic version of poisson cdf \f$ppois(n,\lambda)\f$.
     Valid parameter range: \f$x =(n,\lambda) \in \mathbb{N}_0\times\mathbb{R}_+\f$.
