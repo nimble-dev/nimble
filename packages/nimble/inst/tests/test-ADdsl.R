@@ -2,12 +2,10 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
 nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for distributions and dsl functions")
-## Note: cppad first derivatives of f(x) = x evaluated at x = 0 are 0
 
 # untested:
 # 'dcat', 'ddirch',
-# 'dlnorm',
-# 'dmulti', 'dmnorm', 'dmvt', 'dnegbin', 'dnorm', 'dpois', 
+# 'dmulti', 'dmvt', 'dnegbin', 'dnorm', 'dpois', 
 # 'dt', 'dunif', 'dweib', 'dwish')
 
 # tested:
@@ -18,6 +16,8 @@ context("Testing of derivatives for distributions and dsl functions")
 # 'dgamma',
 # 'dinvgamma',
 # 'dlogis',
+# 'dlnorm',
+# 'dmnorm',
 
 distributionArgsList <- list()
 

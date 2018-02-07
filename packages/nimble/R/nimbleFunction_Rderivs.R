@@ -536,6 +536,10 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
       }
       else if(x[[2]] == 2) return(c(x[[3]][[2]], x[[3]][[3]]))
     }
+    else{
+      if(length(x) < 3) stop('Sizes of arguments to nimbleFunctions must be explictly specified (e.g. x = double(1, 4)) in order to take derivatives.')
+      return(x[[3]])
+    }
   })
   ## Same as above sizes, except that matrix sizes are reported as nrow*ncol instead of c(nrow, ncol).
   fxnArgsTotalSizes <- sapply(fxnArgsDimSizes, function(x){
