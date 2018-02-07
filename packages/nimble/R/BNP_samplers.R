@@ -404,12 +404,29 @@ sampler_G <- nimbleFunction(
 #   - mvSaved: modelValues object with the samples of xi, the tilde variables, and the conc parameter, if sampled 
 
 #-- we return a model Values object where each row has the sampled weights and atoms of measure G.
+getTildeVarVirtual <- nimbleFunctionVirtual(
+  run = function(iiter = double(0), rangeii = double(0))
+    returnType(double(0))
+)
+
+getTildeVar <- nimbleFunction(
+  contains = getTildeVarVirtual,
+  setup = function(mvSaved, tildeVar){
+  },
+  run = function(iiter = double(0), rangeii = double(0)){
+    outVal <- mvSaved[tildeVar, iiter][rangeii]
+    returnType(double(0))
+    return(outVal)
+  }
+)
+
+
 sampler_G2 <- nimbleFunction(
   # name = 'sampler_G'
   
-  setup=function(model, mvSaved){#, target, varNames
+  setup=function(model, mvSaved, useCompiled = TRUE){#, target, varNames
     # cheking the mvSaved object:
-    m0 <- length(mvSaved[[]]) 
+    m0 <- length(mvSaved$varNames) 
     if( m0 == 1 ){
       stop('you need at least one random variable depending on the random indexes') # 
     }
@@ -447,7 +464,6 @@ sampler_G2 <- nimbleFunction(
         }
       }
     }
-    xi <- mvSaved[[dCRPVar]]
     
     # getting variable and node conc,  assuming there is only one conc parameter
     #NodeDependXi <- c()
@@ -469,22 +485,30 @@ sampler_G2 <- nimbleFunction(
     concDistr <- model$getDistribution(concNode)
     if(is.na(concDistr)){
       concRnd <- FALSE
+      concVar <- mvSaved$varNames[1] ## in this case, concVar won't be used, but must be a name in the mvSaved in order to compile
     }else{
       concRnd <- TRUE
+      concVar <- concNode
     }
-    concVar <- concNode
     AproxError <- 1e-10
     if(concRnd){ # defining truncation
-      conc <- mvSaved[[concVar]]
+      if(useCompiled){
+        conc <- mvSaved$CobjectInterface[[concVar]]
+      }
+      else{
+        conc <- mvSaved[[concVar]]
+      }
       concHat <- mean(unlist(conc))
       Trunc <- ceiling(log(AproxError)/log(concHat/(concHat+1))+1) # gives an error of at most AproxError.
-    }else{
+      algoConc <- 0
+    }
+    else{
       conc <- model$getParam(dCRPNode, 'conc') 
       Trunc <- ceiling(log(AproxError)/log(conc/(conc+1))+1)
+      algoConc <- conc
     }
     
     targetElements <- model$expandNodeNames(dCRPNode, returnScalarComponents=TRUE)
-    niter <- length(xi) # number of iterations of the MCMC
     N <- length(targetElements) # sample size
     
     if(Trunc > N){
@@ -541,22 +565,27 @@ sampler_G2 <- nimbleFunction(
     
     # storaging object:
     mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
-    mv <- modelValues(mvConf, m = niter)
+    mv <- modelValues(mvConf, m = 1)
+    getTildeVarList <- nimbleFunctionList(getTildeVarVirtual)
+    for(j in 1:p){
+      getTildeVarList[[j]] <- getTildeVar(mvSaved, tildevarNames[j])
+    }
   },
   
   run=function(){
+    niter <- getsize(mvSaved)
+    resize(mv, niter)
     for(iiter in 1:niter){
-      
       if(concRnd==FALSE){
-        conciter <- conc 
+        conciter <- algoConc
       }else{
-        conciter <- conc[[iiter]]
+        conciter <- mvSaved[concVar, iiter][1]
       }
-      
-      #-- getting the unique values in the samples and their probabilities of beign sampled. Need for computing G later.
+      #   
+      #   #-- getting the unique values in the samples and their probabilities of beign sampled. Need for computing G later.
       probs <- numeric(N)
       uniqueValues <- matrix(0, ncol=p, nrow=N) # is this ok?
-      xiiter <- xi[[iiter]]
+      xiiter <- mvSaved[dCRPVar, iiter]
       rangei <- min(xiiter):max(xiiter) # is this ok??
       index <- 1
       for(i in 1:length(rangei)){
@@ -564,7 +593,7 @@ sampler_G2 <- nimbleFunction(
         if(cond>0){
           probs[index] <- cond
           for(j in 1:p){
-            uniqueValues[index, j] <- mvSaved[[tildevarNames[j]]][[iiter]][rangei[i]]
+            uniqueValues[index, j] <- getTildeVarList[[j]]$run(iiter, rangei[i])
           }
           index <- index+1
         }
@@ -572,7 +601,7 @@ sampler_G2 <- nimbleFunction(
       probs[index] <- conciter #probs <- probs/sum(probs)
       newvalueindex <- index
       
-      #-- computing G: 
+      #-- computing G:
       vaux <- rbeta(1, 1, conciter+N)
       v1prod <- 1
       Taux <- 0
@@ -580,13 +609,13 @@ sampler_G2 <- nimbleFunction(
       while(Taux < Trunc-1){
         index <- rcat(prob=probs[1:newvalueindex])
         if(index==newvalueindex){# sample from G_0
-          for(j in 1:p){ 
-            model$simulate(tildevarNames[j])
-            paramaux[j] <- values(model, tildevarNames[j])[1]  
+          model$simulate(tildevarNames)
+          for(j in 1:p){
+            paramaux[j] <- values(model, tildevarNames)[j]
           }
         }else{# sample one of the existing values
           for(j in 1:p){
-            paramaux[j] <- uniqueValues[index, j] 
+            paramaux[j] <- uniqueValues[index, j]
           }
         }
         condaux <- uniqueValues[1:newvalueindex, 1] == paramaux[1] # check if we sample a new atom or an atom that ir in G already
@@ -597,7 +626,7 @@ sampler_G2 <- nimbleFunction(
           }
           v1prod <- v1prod*(1-vaux)
           vaux <-rbeta(1, 1, conciter+N)
-          mv['G', iiter][repindex, 1] <<- mv$G[[iiter]][repindex, 1] + vaux*v1prod
+          mv['G', iiter][repindex, 1] <<- mv['G', iiter][repindex, 1] + vaux*v1prod
         }else{ # agument the truncation and keep the same parameters
           Taux <-Taux+1
           for(j in 1:p){
@@ -614,13 +643,12 @@ sampler_G2 <- nimbleFunction(
       }
       # complete the vector of probabiities and atoms
       mv['G', iiter][Trunc, 1] <<- 1- sum(mv['G', iiter][1:(Trunc-1), 1])
-      for(j in 1:p){ 
-        model$simulate(tildevarNames[j])
-        mv['G', iiter][Trunc, j+1] <<- values(model, tildevarNames[j])[1]  
+      model$simulate(tildevarNames)
+      for(j in 1:p){
+        mv['G', iiter][Trunc, j+1] <<- values(model, tildevarNames[j])[1]
       }
     }
   },
-  
   methods = list( reset = function () {} )
 )
 
