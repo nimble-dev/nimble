@@ -76,7 +76,7 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
   Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
   xCopy = eigenChol*xCopy;
   xCopy = xCopy.array()*xCopy.array();
-  dens += -0.5*xCopy.sum();
+  dens += -Type(0.5)*xCopy.sum();
 
   return give_log ? dens : exp(dens);
 }

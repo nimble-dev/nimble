@@ -5,8 +5,8 @@ context("Testing of derivatives for distributions and dsl functions")
 
 # untested:
 # 'dcat', 'ddirch',
-# 'dmulti', 'dmvt', 'dnegbin', 'dnorm', 'dpois', 
-# 'dt', 'dunif', 'dweib', 'dwish')
+# 'dmulti', 'dmvt', 'dnegbin',  'dpois', 
+# 'dunif', 'dweib', 'dwish'
 
 # tested:
 # 'dbeta' (although boundary at x=0 and x=1 not consistent between R and c++),
@@ -17,7 +17,9 @@ context("Testing of derivatives for distributions and dsl functions")
 # 'dinvgamma',
 # 'dlogis',
 # 'dlnorm',
-# 'dmnorm',
+# 'dmnorm_chol',
+# 'dnorm',
+# 'dt'
 
 distributionArgsList <- list()
 
@@ -147,20 +149,79 @@ distributionArgsList[['dlnorm']] <- list(
     list(x = .1, meanlog = 1, taulog = 2),
     list(x = 22.2, meanlog = 10, taulog = 15.2))
 )
-runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dlnorm']]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dlnorm']]))
+
+distributionArgsList[['dmnorm_chol']] <- list(
+  distnName = 'dmnorm_chol',
+  args = list(x = quote(double(1, 2)),
+              mean = quote(double(1, 2)),
+              cholesky = quote(double(2, c(2, 2)))),
+  argsValues = list(
+    list(x = numeric(2), mean = numeric(2), cholesky = -diag(2)),
+    # list(x = numeric(2), mean = numeric(2), cholesky = matrix(c(0,0,0,0), nrow = 2)) R and C inconsistency
+    list(x = numeric(2), mean = numeric(2), cholesky = diag(2))
+    # list(x = c(1.3, 4.1), mean = c(1,4), cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2))) # inconsistency between R and C++ hessians, hypothesis is that R finite element diff. is giving incorrect results for cholesky param.
+  )
+)
+
+distributionArgsList[['dnorm']] <- list(
+  distnName = 'dnorm',
+  args = list(x = quote(double(0)),
+              mean = quote(double(0)),
+              tau = quote(double(0))),
+  argsValues = list(
+    # list(x = -1, mean = 1, tau = 0), # same issue with inconsistent R/C++ derivs of un-logged prob wrt tau
+    list(x = -1, mean = -1, tau = -1),
+    list(x = -1, mean = 1, tau = 1),
+    list(x = .1, mean = 1, tau = 2),
+    list(x = 22.2, mean = 10, tau = 15.2))
+)
+
+distributionArgsList[['dt']] <- list(
+  distnName = 'dt',
+  args = list(x = quote(double(0)),
+              df = quote(double(0))),
+  argsValues = list(
+    # list(x = -1, mean = 1, tau = 0), # same issue with inconsistent R/C++ derivs of un-logged prob wrt tau
+    list(x = -1, df = -1),
+    list(x = -1, df = 0),
+    list(x = .1, df = .5),
+    list(x = 22.2, df = 10))
+)
+
+runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dmnorm_chol']]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dmnorm_chol']]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
-testADDistribution(thisNf, distributionArgsList[['dlnorm']]$argsValues, distributionArgsList[['dlnorm']]$distnName)
 
-testFn <- function(x, shape1, shape2){
-  - lgamma(shape1) - lgamma(shape2) ;
+lapply(distributionArgsList, function(x){
+  runFun <- gen_runFunCore(makeADDistributionTestList(x))
+  methodFun <- gen_runFunCore(makeADDistributionMethodTestList(x))
+  thisNf <- nimbleFunction(setup = function(){},
+                           run = runFun,
+                           methods = list(
+                             method1 = methodFun
+                           ),
+                           enableDerivs = list('method1'))
+  testADDistribution(thisNf, x$argsValues,
+                     x$distnName)
+  
+})
+
+
+testADDistribution(thisNf, distributionArgsList[['dmnorm_chol']]$argsValues,
+                   distributionArgsList[['dmnorm_chol']]$distnName)
+
+testFn <- function(x, mu, chol){
+  out <- dmvnc(x, mu, chol, TRUE)
+  return(out)
 }
-nimDerivs(dbinom(1,2,1),wrt = c('prob'))
+nimDerivs(testFn(x = c(1.3, 4.1), mu = c(1,4), 
+                 chol = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2))),wrt = c('chol'))
+
 
 
 testMod <- nimbleCode({

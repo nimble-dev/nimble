@@ -442,16 +442,10 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
                   thisArgIndex <- thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]
                 }
                 if(derivOutputFlag == TRUE){
-                  print(paste("i:", i))
-                  print(paste("j1:", i))
-                  print(paste("j2:", i))
                   ## If this line is included in output, add the Hessian of this line (i) wrt this param #1 (j) and this param #2 (j_2).
                   outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ] <-  outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ]   +
                     chainRuleHessianList[[i]][derivInfo$wrtFromIndices[[j]], derivInfo$wrtFromIndices[[j_2]],]
-                  print(i)
-                  print("crHessian")
-                  print(chainRuleHessianList[[i]])
-                  
+
                 }
               }
             }
@@ -528,18 +522,12 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   ## Determine sizes of each function arg.
   fxnArgsDimSizes <- lapply(nimFxnArgs, function(x){
     if(x[[2]] == 0) return(1)
-    else if(x[[2]] > 1){
-      if(length(x) < 3) stop('Sizes of arguments to nimbleFunctions must be explictly specified (e.g. x = double(1, 4)) in order to take derivatives.')
-      if(x[[2]] == 1){
-        if(length(x[[3]]) == 1) return(x[[3]])
-        else return(x[[3]][[2]])
-      }
-      else if(x[[2]] == 2) return(c(x[[3]][[2]], x[[3]][[3]]))
+    if(length(x) < 3) stop('Sizes of arguments to nimbleFunctions must be explictly specified (e.g. x = double(1, 4)) in order to take derivatives.')
+    if(x[[2]] == 1){
+      if(length(x[[3]]) == 1) return(x[[3]])
+      else return(x[[3]][[2]])
     }
-    else{
-      if(length(x) < 3) stop('Sizes of arguments to nimbleFunctions must be explictly specified (e.g. x = double(1, 4)) in order to take derivatives.')
-      return(x[[3]])
-    }
+    else if(x[[2]] == 2) return(c(x[[3]][[2]], x[[3]][[3]]))
   })
   ## Same as above sizes, except that matrix sizes are reported as nrow*ncol instead of c(nrow, ncol).
   fxnArgsTotalSizes <- sapply(fxnArgsDimSizes, function(x){

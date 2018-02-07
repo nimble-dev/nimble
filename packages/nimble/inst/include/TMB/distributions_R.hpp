@@ -510,9 +510,9 @@ Type nimDerivs_dlnorm(Type x, Type mean, Type sd, int give_log=0)
 template <class Type>
 Type nimDerivs_dt(Type x, Type df, int give_log)
 {
-	Type logres = lgamma((df+1)/2) - Type(1)/2*log(df*M_PI) -lgamma(df/2) - (df+1)/2*log(1+x*x/df);
-	if(!give_log) return exp(logres);
-	else return logres;
+  Type logres = lgamma((df+1)/2) - Type(1)/2*log(df*M_PI) -lgamma(df/2) - (df+1)/2*log(1+x*x/df);
+  logres =  CondExpLt(df, Type(0.0), Type(CppAD::numeric_limits<Type>::quiet_NaN()), logres); 
+  if (give_log) return logres; else return(exp(logres));
 }
 
 // Vectorize dt
