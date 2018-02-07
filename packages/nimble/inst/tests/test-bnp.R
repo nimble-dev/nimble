@@ -42,6 +42,23 @@ Code=nimbleCode(
   }
 )
 
+#-- BUGS definition of the model: no deterministic nodes= works fine
+Code=nimbleCode(
+  {
+    for(i in 1:N3){
+      thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+      s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
+    }
+    xi[1:N2] ~ dCRP(conc)
+    
+    for(i in 1:N){
+      y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])#
+    }
+    conc<-1;mu0<-0; tau20<-40 ; a0<-1; b0<-0.5; 
+  }
+)
+
+
 conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
 Consts=list(N=50, N2=50, N3=50)
 set.seed(1)
@@ -189,11 +206,8 @@ Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))
 model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
 cmodel<-compileNimble(model)
 
-#-- standarized output:
-modelConf<-configureMCMC(model, print=FALSE, thin=10) # less samples!
-
+modelConf<-configureMCMC(model, print=FALSE, thin=100) # less samples!
 modelConf$addMonitors('xi')
-
 modelConf$removeSamplers(c("conc"), print="TRUE")
 modelConf$addSampler(c("conc"), type="sampler_Augmented_BetaGamma")
 modelConf$printSamplers(c("conc"))
@@ -204,17 +218,18 @@ CmodelNewMCMC=compileNimble(modelMCMC, project=model,
                             resetFunctions=TRUE, showCompilerOutput = TRUE)
 #-- MCMC samples
 set.seed(1)
-nsave=100
+nsave=1000
 t1=proc.time()
 CmodelNewMCMC$run(nsave)
 proc.time()-t1
 
 
-mvSaved=CmodelNewMCMC$mvSamples
+mvSaved=modelMCMC$mvSamples
 
-SamplerG <- nimble:::sampler_G2(model, mvSaved)
-SamplerG$run()
-aux=as.matrix(SamplerG$mv)  ## the mv object is accessed here
+SamplerG <- sampler_G2(model, mvSaved)#nimble:::sampler_G3(model, mvSaved)
+cSamplerG <- compileNimble(SamplerG, project = model)
+cSamplerG$run()
+aux=as.matrix(cSamplerG$mv)  ## the mv object is accessed here
 
 trunc=length(aux[1,])/3
 for(i in 1:nrow(aux)){
