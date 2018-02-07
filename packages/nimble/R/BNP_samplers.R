@@ -162,6 +162,9 @@ sampler_MarginalizedG_general <- nimbleFunction(
                 if(detDepExpr[[3]] != targetElements[1]) {
                     conjugate <- FALSE
                 } else clusterNodes <- model$expandNodeNames(deparse(detDepExpr[[2]]))  # e.g., 'thetatilde[1]',...,
+            }else{ # case when we have y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])
+              # nInterm=1 and detDepExpr = sqrt(s2tilde[xi[1]])
+              conjugate <- FALSE # we should determine conjugacy!!
             }
         } else {  # 0 intermediates; e.g., y[i] ~ dnorm(theta[xi[i]], 1)
             stochDep <- model$getDependencies(targetElements[1], self = FALSE)  # e.g., y[1]
@@ -403,6 +406,41 @@ sampler_G <- nimbleFunction(
 #   - model: the model
 #   - mvSaved: modelValues object with the samples of xi, the tilde variables, and the conc parameter, if sampled 
 
+# models that work with this sampler:
+#-- 1
+#   Code=nimbleCode( {
+#    for(i in 1:N3){
+#      thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+#      s2tilde[i] ~ dinvgamma(shape=a0, scale=b0)     }
+#    xi[1:N2] ~ dCRP(conc)
+#    for(i in 1:N){
+#      theta[i] <- thetatilde[xi[i]]
+#      s2[i] <- s2tilde[xi[i]]
+#      y[i] ~ dnorm(theta[i], var=s2[i])    }
+#    conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40  })
+#-- 2
+#Code=nimbleCode({
+#    for(i in 1:N3){
+#      thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+#      s2tilde[i] ~ dinvgamma(shape=a0, scale=b0)     }
+#    xi[1:N2] ~ dCRP(conc)
+#    for(i in 1:N){
+#      y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])#    }
+#    conc<-1;mu0<-0; tau20<-40 ; a0<-1; b0<-0.5;   })
+#-- 3: as long as xi is monitored!
+#   Code=nimbleCode( {
+#    for(i in 1:N3){
+#      thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+#      s2tilde[i] ~ dinvgamma(shape=a0, scale=b0)     }
+#    xi[1:N2] ~ dCRP(conc)
+#    conc ~ dgamma(1, 1)
+#    for(i in 1:N){
+#      theta[i] <- thetatilde[xi[i]]
+#      s2[i] <- s2tilde[xi[i]]
+#      y[i] ~ dnorm(theta[i], var=s2[i])    }
+#    conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40  })
+
+
 #-- we return a model Values object where each row has the sampled weights and atoms of measure G.
 getTildeVarVirtual <- nimbleFunctionVirtual(
   run = function(iiter = double(0), rangeii = double(0))
@@ -494,15 +532,13 @@ sampler_G2 <- nimbleFunction(
     if(concRnd){ # defining truncation
       if(useCompiled){
         conc <- mvSaved$CobjectInterface[[concVar]]
-      }
-      else{
+      }else{
         conc <- mvSaved[[concVar]]
       }
       concHat <- mean(unlist(conc))
       Trunc <- ceiling(log(AproxError)/log(concHat/(concHat+1))+1) # gives an error of at most AproxError.
       algoConc <- 0
-    }
-    else{
+    }else{
       conc <- model$getParam(dCRPNode, 'conc') 
       Trunc <- ceiling(log(AproxError)/log(conc/(conc+1))+1)
       algoConc <- conc
@@ -604,21 +640,41 @@ sampler_G2 <- nimbleFunction(
       #-- computing G:
       vaux <- rbeta(1, 1, conciter+N)
       v1prod <- 1
-      Taux <- 0
+      Taux <- 1#Taux <- 0
       paramaux <- numeric(p)
-      while(Taux < Trunc-1){
+      
+      # first sampled value:
+      index <- rcat(prob=probs[1:newvalueindex])
+      if(index==newvalueindex){# sample from G_0
+        model$simulate(tildevarNames)
+        for(j in 1:p){ 
+          paramaux[j] <- values(model, tildevarNames)[j]#values(model, tildevarNames)[(j-1)*N+1]  #
+        }
+      }else{# sample one of the existing values
+        for(j in 1:p){
+          paramaux[j] <- uniqueValues[index, j] 
+        }
+      }
+      for(j in 1:p){
+        mv['G', iiter][Taux, j+1] <<- paramaux[j] # <<-
+      }
+      mv['G', iiter][Taux, 1] <<- vaux # <<-
+      Taux <- Taux + 1
+      
+      # the rest of the values
+      while(Taux <= Trunc-1){
         index <- rcat(prob=probs[1:newvalueindex])
         if(index==newvalueindex){# sample from G_0
           model$simulate(tildevarNames)
-          for(j in 1:p){
-            paramaux[j] <- values(model, tildevarNames)[j]
+          for(j in 1:p){ 
+            paramaux[j] <- values(model, tildevarNames)[j]#values(model, tildevarNames)[(j-1)*N+1]  #
           }
         }else{# sample one of the existing values
           for(j in 1:p){
-            paramaux[j] <- uniqueValues[index, j]
+            paramaux[j] <- uniqueValues[index, j] 
           }
         }
-        condaux <- uniqueValues[1:newvalueindex, 1] == paramaux[1] # check if we sample a new atom or an atom that ir in G already
+        condaux <- mv['G', iiter][1:(Taux-1), 2] == paramaux[1]#uniqueValues[1:newvalueindex, 1] == paramaux[1] # check if we sample a new atom or an atom that ir in G already
         if(sum(condaux) >0){ # the atom already exists and we have to update the weights and not increase Trunc
           repindex=1
           while(condaux[repindex]==FALSE){
@@ -628,24 +684,20 @@ sampler_G2 <- nimbleFunction(
           vaux <-rbeta(1, 1, conciter+N)
           mv['G', iiter][repindex, 1] <<- mv['G', iiter][repindex, 1] + vaux*v1prod
         }else{ # agument the truncation and keep the same parameters
-          Taux <-Taux+1
           for(j in 1:p){
             mv['G', iiter][Taux, j+1] <<- paramaux[j]
           }
-          if( Taux==1 ){
-            mv['G', iiter][Taux, 1] <<-vaux
-          }else{
-            v1prod <- v1prod*(1-vaux)
-            vaux <- rbeta(1, 1, conciter+N)
-            mv['G', iiter][Taux, 1] <<-vaux*v1prod
-          }
+          v1prod <- v1prod*(1-vaux)
+          vaux <- rbeta(1, 1, conciter+N)
+          mv['G', iiter][Taux, 1] <<- vaux*v1prod 
+          Taux <- Taux+1
         }
       }
-      # complete the vector of probabiities and atoms
+      # complete the vector of probabilities and atoms
       mv['G', iiter][Trunc, 1] <<- 1- sum(mv['G', iiter][1:(Trunc-1), 1])
       model$simulate(tildevarNames)
-      for(j in 1:p){
-        mv['G', iiter][Trunc, j+1] <<- values(model, tildevarNames[j])[1]
+      for(j in 1:p){ 
+        mv['G', iiter][Trunc, j+1] <<- values(model, tildevarNames)[j]#values(model, tildevarNames)[(j-1)*N+1]  
       }
     }
   },
