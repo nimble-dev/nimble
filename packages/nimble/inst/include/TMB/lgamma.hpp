@@ -69,11 +69,6 @@ Type zero_NaNderiv(Type x){
 //   return term1 + (term2 - Type(7.0));
 // }
 
-// /** \brief Negative binomial probability function.
-//   \ingroup R_style_distribution
-
-//     Parameterized through size and prob parameters, following R-convention.
-// */
 
 
 namespace {
@@ -93,7 +88,13 @@ namespace {
     CPPAD_DISCRETE_FUNCTION(double, discrete_wrapper)
 
 }
-      
+
+// /** \brief Negative binomial probability function.
+//   \ingroup R_style_distribution
+
+//     Parameterized through size and prob parameters, following R-convention.
+// */
+
 
 template<class Type>
 inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
@@ -101,8 +102,15 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
 {
   Type n=size;
   Type p=prob;
-  Type logres = lgamma(x+n)-lgamma(n)-lgamma(x+Type(1))+
-    n*log(p)+x*log(Type(1)-p);
+  Type roundx = discrete_round(x);
+
+  Type logres =  CondExpEq(x, roundx, lgamma(roundx+n)-lgamma(n)-lgamma(roundx+Type(1))+
+    n*log(p)+roundx*log(Type(1)-p), -Type(std::numeric_limits<double>::infinity()));
+  logres = CondExpGe(roundx, Type(0.0), logres, -Type(std::numeric_limits<double>::infinity()));
+  logres = CondExpGe(n, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CondExpGe(prob, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres = CondExpLe(prob, Type(1.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+
   if (give_log) return logres; else return exp(logres);
 }
 
@@ -153,7 +161,11 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
 template<class Type>
 inline Type nimDerivs_dpois(const Type &x, const Type &lambda, int give_log)
 {
-  Type logres = -lambda + x*log(lambda) - lgamma(x+Type(1));
+  Type roundx = discrete_round(x);
+  Type logres = CondExpEq(x, roundx, -lambda + roundx*log(lambda) - lgamma(roundx+Type(1)), -Type(std::numeric_limits<double>::infinity()));
+  logres = CondExpGe(roundx, Type(0.0), logres, -Type(std::numeric_limits<double>::infinity()));
+  logres = CondExpEq(lambda, Type(0.0), CondExpEq(roundx, Type(0.0), zero_NaNderiv(lambda), -Type(std::numeric_limits<double>::infinity())), logres);
+  logres = CondExpGe(lambda, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
   if (give_log) return logres; else return exp(logres);
 }
 // VECTORIZE3_tti(dpois)

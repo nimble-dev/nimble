@@ -1246,6 +1246,7 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
                         if(testCompiled){
                           print(calcNodeNames[[i]])
                           print(wrt[[j]])
+                          browser()
                           testFunctionInstance <- testCompiledModelDerivsNimFxn(model, calcNodeNames[[i]], wrt[[j]], order)
                           expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model, resetFunctions = TRUE))
                           cDerivs <- ctestFunctionInstance$run()
@@ -1278,17 +1279,19 @@ makeADDistributionMethodTestList <- function(distnList){
   argsList <- lapply(distnList$args, function(x){
     return(x)
   })
+  argsValsList <- list()
+  for(iArg in seq_along(distnList$args)){
+    argsValsList[[names(distnList$args)[iArg]]] <- parse(text = names(distnList$args)[iArg])[[1]]
+  }
   ansList <- list(args = argsList,
                   expr = substitute({out <- numeric(2);
                                      out[1] <- DISTNEXPR;
                                      out[2] <- LOGDISTNEXPR;},
                                     list(DISTNEXPR = as.call(c(list(parse(text = distnList$distnName)[[1]]),
-                                                               lapply(names(distnList$args),
-                                                                      function(x){return(parse(text = x)[[1]])}),
+                                                               argsValsList,
                                                                list(log = FALSE))),
                                          LOGDISTNEXPR = as.call(c(list(parse(text = distnList$distnName)[[1]]),
-                                                               lapply(names(distnList$args),
-                                                                      function(x){return(parse(text = x)[[1]])}),
+                                                               argsValsList,
                                                                list(log = TRUE)))
                                          
                                     )),
@@ -1297,7 +1300,7 @@ makeADDistributionMethodTestList <- function(distnList){
   return(ansList)
 }
 
-testADDistribution <- function(ADfunGen, argsList, name){
+testADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
     ADfun <- ADfunGen()
     CADfun <- compileNimble(ADfun)
     for(iArg in seq_along(argsList)){
@@ -1308,6 +1311,8 @@ testADDistribution <- function(ADfunGen, argsList, name){
       argValsText <- paste(sapply(names(argsList[[iArg]]), 
                           function(x){return(paste(x, " = ",
                           argsList[[iArg]][[x]]))}), collapse = ', ')
+      if(is.logical(debug) && debug == TRUE) browser()
+      else if(is.numeric(debug) && debug == iArg) browser()
       expect_equal(RderivsList$value, CderivsList$value, tolerance = .01, 
                    info = paste("Values of", name , "not equal for arguments: ",
                                 argValsText, '.'))

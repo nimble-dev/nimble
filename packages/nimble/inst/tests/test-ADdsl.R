@@ -5,8 +5,8 @@ context("Testing of derivatives for distributions and dsl functions")
 
 # untested:
 # 'dcat', 'ddirch',
-# 'dmulti', 'dmvt', 'dnegbin',  'dpois', 
-# 'dunif', 'dweib', 'dwish'
+# 'dmulti', 'dmvt',  'dt_nonstandard', 
+# 'dweib', 'dwish'
 
 # tested:
 # 'dbeta' (although boundary at x=0 and x=1 not consistent between R and c++),
@@ -18,8 +18,11 @@ context("Testing of derivatives for distributions and dsl functions")
 # 'dlogis',
 # 'dlnorm',
 # 'dmnorm_chol',
+# 'dnegbin'
 # 'dnorm',
+# 'dpois',
 # 'dt'
+# 'dunif'
 
 distributionArgsList <- list()
 
@@ -46,6 +49,7 @@ distributionArgsList[['dbeta']] <- list(
                          shape1 = 10,
                          shape2 = 1))
 )
+
 distributionArgsList[['dbinom']] <- list(
   distnName = 'dbinom',
   args = list(x = quote(double(0)),
@@ -66,6 +70,7 @@ distributionArgsList[['dbinom']] <- list(
   WRT = c('prob') ## only take derivs wrt 'prob' argument, otherwise warnings
                   ## from R, and inconsistencies between R and C++ will occur.
 )
+
 distributionArgsList[['dchisq']] <- list(
   distnName = 'dchisq',
   args = list(x = quote(double(0)),
@@ -163,6 +168,27 @@ distributionArgsList[['dmnorm_chol']] <- list(
   )
 )
 
+distributionArgsList[['dnbinom']] <- list(
+  distnName = 'dnbinom',
+  args = list(x = quote(double(0)),
+              prob = quote(double(0)),
+              size = quote(double(0))),
+  argsValues = list(
+    list(x = -1, prob = .1, size = 1),
+    list(x = 0, prob = .1, size = 1),
+    list(x = 1.5, prob = .1, size = 1),
+    list(x = 1.5, prob = .1, size = 2),
+    list(x = 2, prob = .1, size = 1),
+    list(x = 2, prob = .1, size = 2.5),
+    list(x = 2, prob = -1, size = 3),
+    list(x = 2, prob = 10, size = 3),
+    # list(x = 2, prob = 0, size = 3), #again issue with prob at boundaries
+    # list(x = 2, prob = 1, size = 3),
+    list(x = 2, prob = .1, size = 3),
+    list(x = 25, prob = .5, size = 50)),
+  WRT = c('prob') ## only take derivs wrt 'prob' argument, otherwise warnings
+  ## from R, and inconsistencies between R and C++ will occur.
+)
 distributionArgsList[['dnorm']] <- list(
   distnName = 'dnorm',
   args = list(x = quote(double(0)),
@@ -176,26 +202,60 @@ distributionArgsList[['dnorm']] <- list(
     list(x = 22.2, mean = 10, tau = 15.2))
 )
 
+distributionArgsList[['dpois']] <- list(
+  distnName = 'dpois',
+  args = list(x = quote(double(0)),
+              lambda = quote(double(0))),
+  argsValues = list(
+    list(x = -1, lambda = -1),
+    list(x = 0, lambda = -1),
+    list(x = 1, lambda = -1),
+    # list(x = -1, lambda = 0),
+    # list(x = 0, lambda = 0), #some R and C inconsistencies here
+    # list(x = 1, lambda = 0),
+    list(x = 1, lambda = 1),
+    list(x = 14, lambda = 12)),
+  WRT = c('lambda')
+)
+
 distributionArgsList[['dt']] <- list(
   distnName = 'dt',
   args = list(x = quote(double(0)),
               df = quote(double(0))),
   argsValues = list(
-    # list(x = -1, mean = 1, tau = 0), # same issue with inconsistent R/C++ derivs of un-logged prob wrt tau
     list(x = -1, df = -1),
     list(x = -1, df = 0),
     list(x = .1, df = .5),
     list(x = 22.2, df = 10))
 )
 
-runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dmnorm_chol']]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dmnorm_chol']]))
+distributionArgsList[['dunif']] <- list(
+  distnName = 'dunif',
+  args = list(x = quote(double(0)),
+              min = quote(double(0)),
+              max = quote(double(0))),
+  argsValues = list(
+    list(x = -1, min = 0, max = 1),
+    list(x = -1, min = 0, max = 0),
+    list(x = 0, min = 0, max = 0),
+    list(x = 0, min = 0, max = -1),
+    # list(x = 0, min = 0, max = 1), # R derivs problem at boundary
+    list(x = .5, min = 0, max = 1))
+)
+
+
+runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dunif']]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dunif']]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
+testADDistribution(thisNf, distributionArgsList[['dunif']]$argsValues,
+                   distributionArgsList[['dunif']]$distnName, debug = FALSE)
+
+
 
 lapply(distributionArgsList, function(x){
   runFun <- gen_runFunCore(makeADDistributionTestList(x))
@@ -211,9 +271,11 @@ lapply(distributionArgsList, function(x){
   
 })
 
-
-testADDistribution(thisNf, distributionArgsList[['dmnorm_chol']]$argsValues,
-                   distributionArgsList[['dmnorm_chol']]$distnName)
+r <- 2.5
+k <- 2
+p <- 0.1
+(gamma(k+r)/(factorial(k)*gamma(r)))*p^(r)*(1-p)^k
+dnbinom(k,r,p)
 
 testFn <- function(x, mu, chol){
   out <- dmvnc(x, mu, chol, TRUE)

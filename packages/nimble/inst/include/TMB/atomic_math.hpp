@@ -352,7 +352,6 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 			   if(q == 1){
 				 ty[1]=CppAD::numeric_limits<double>::quiet_NaN();
 				}
-				cout << "q: " << q << "\n";
 			   ,
 			   // ATOMIC_REVERSE
 			   px[0] = CppAD::numeric_limits<double>::quiet_NaN();

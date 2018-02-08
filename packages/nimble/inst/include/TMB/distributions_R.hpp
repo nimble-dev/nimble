@@ -239,10 +239,10 @@ Type nimDerivs_dexp(Type x, Type scale, int give_log=0)
 template<class Type> 
 Type nimDerivs_dunif(Type x, Type a, Type b, int give_log=0)
 {   
-	Type check = CppAD::CondExpGt(b, a, Type(1), Type(0)); 
-	Type ans = check*CppAD::CondExpGt(x, a, CppAD::CondExpLt(x, b, 1/(b-a), Type(0)), Type(0));
-	if(!give_log) return ans;
-	else return(log(ans));
+	Type res = CppAD::CondExpGt(b, a, Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN())); 
+	res += CppAD::CondExpGe(x, a, CppAD::CondExpLe(x, b, 1/(b-a), Type(0)), Type(0));
+	if(!give_log) return res;
+	else return(log(res));
 }
 
 // Vectorize dexp
