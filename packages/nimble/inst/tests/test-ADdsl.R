@@ -21,8 +21,9 @@ context("Testing of derivatives for distributions and dsl functions")
 # 'dnegbin'
 # 'dnorm',
 # 'dpois',
-# 'dt'
-# 'dunif'
+# 'dt',
+# 'dunif',
+# 'dweib'
 
 distributionArgsList <- list()
 
@@ -243,17 +244,31 @@ distributionArgsList[['dunif']] <- list(
     list(x = .5, min = 0, max = 1))
 )
 
+distributionArgsList[['dweibull']] <- list(
+  distnName = 'dweibull',
+  args = list(x = quote(double(0)),
+              shape = quote(double(0)),
+              scale = quote(double(0))),
+  argsValues = list(
+    list(x = -1, shape = 0, scale = 1),
+    list(x = -1, shape = 0, scale = 0),
+    # list(x = 0, shape = 0, scale = 0), #R derivs at x = 0 incorrect
+    # list(x = 0, shape = 1, scale = 1),
+    list(x = 0.5, shape = 0, scale = 0),
+    list(x = 0.5, shape = 1, scale = 1),
+    list(x = 2, shape = 3, scale = 2))
+)
 
-runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dunif']]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dunif']]))
+runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dweibull']]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dweibull']]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
-testADDistribution(thisNf, distributionArgsList[['dunif']]$argsValues,
-                   distributionArgsList[['dunif']]$distnName, debug = FALSE)
+testADDistribution(thisNf, distributionArgsList[['dweibull']]$argsValues,
+                   distributionArgsList[['dweibull']]$distnName, debug = FALSE)
 
 
 
@@ -271,9 +286,13 @@ lapply(distributionArgsList, function(x){
   
 })
 
-r <- 2.5
-k <- 2
-p <- 0.1
+x <- 0
+shape <- .1
+scale <- 1
+
+(shape/scale)*(x/scale)^(shape-1)*exp(-(x/scale)^shape)
+dweibull(0, .1, 1)
+
 (gamma(k+r)/(factorial(k)*gamma(r)))*p^(r)*(1-p)^k
 dnbinom(k,r,p)
 

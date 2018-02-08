@@ -290,10 +290,10 @@ Type nimDerivs_dunif(Type x, Type a, Type b, int give_log=0)
 template<class Type> 
 Type nimDerivs_dweibull(Type x, Type shape, Type scale, int give_log=0)
 {
-	if(!give_log)
-		return CppAD::CondExpGe(x,Type(0),shape/scale * pow(x/scale,shape-1) * exp(-pow(x/scale,shape)),Type(0));
-	else
-		return CppAD::CondExpGe(x,Type(0),log(shape) - log(scale) + (shape-1)*(log(x)-log(scale)) - pow(x/scale,shape),Type(-INFINITY));
+	Type res = CppAD::CondExpGt(shape, Type(0), CppAD::CondExpGt(scale, Type(0), Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN())), Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	res += CppAD::CondExpGe(x, Type(0), shape/scale * pow(x/scale,shape-1) * exp(-pow(x/scale,shape)), Type(0));
+	res = CppAD::CondExpEq(Type(give_log), Type(0), res, log(res));
+	return(res);
 }
 
 // Vectorize dweibull
