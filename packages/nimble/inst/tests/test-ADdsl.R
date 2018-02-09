@@ -257,6 +257,24 @@ distributionArgsList[['dt']] <- list(
     list(x = 22.2, df = 10))
 )
 
+distributionArgsList[['dt_nonstandard']] <- list(
+  distnName = 'dt_nonstandard',
+  args = list(x = quote(double(0)),
+              df = quote(double(0)),
+              mu = quote(double(0)),
+              sigma = quote(double(0))),
+  argsValues = list(
+    list(x = -1, df = -1, mu = 0, sigma = 1),
+    list(x = -1, df = 0, mu = 0, sigma = 1),
+    #list(x = -1, df = 0, mu = -1, sigma = 0), # R and C derivs don't align
+    #list(x = -1, df = 1, mu = -1, sigma = 0), # R and C derivs don't align
+    # list(x = -1, df = 2, mu = -2, sigma = 0), # R and C derivs don't align
+    list(x = -1, df = 2, mu = -2, sigma = -1),
+    list(x = .1, df = .5, mu = 0, sigma = 1),
+    list(x = 22.2, df = 10, mu = 0, sigma = 1))
+)
+
+
 distributionArgsList[['dunif']] <- list(
   distnName = 'dunif',
   args = list(x = quote(double(0)),
@@ -286,22 +304,21 @@ distributionArgsList[['dweibull']] <- list(
     list(x = 2, shape = 3, scale = 2))
 )
 
-distributionArgsList[['dt_nonstandard']] <- list(
-  distnName = 'dt_nonstandard',
-  args = list(x = quote(double(0)),
-              df = quote(double(0)),
-              mu = quote(double(0)),
-              sigma = quote(double(0))),
+distributionArgsList[['ddirch']] <- list(
+  distnName = 'ddirch',
+  args = list(x = quote(double(1)),
+              alpha = quote(double(1))),
   argsValues = list(
-    list(x = -1, df = -1, mu = 0, sigma = 1),
-    list(x = -1, df = 0, mu = 0, sigma = 1),
-    #list(x = -1, df = 0, mu = -1, sigma = 0), # R and C derivs don't align
-    #list(x = -1, df = 1, mu = -1, sigma = 0), # R and C derivs don't align
-    # list(x = -1, df = 2, mu = -2, sigma = 0), # R and C derivs don't align
-    list(x = -1, df = 2, mu = -2, sigma = -1),
-    list(x = .1, df = .5, mu = 0, sigma = 1),
-    list(x = 22.2, df = 10, mu = 0, sigma = 1))
+    list(x = -1, shape = 0, scale = 1),
+    list(x = -1, shape = 0, scale = 0),
+    # list(x = 0, shape = 0, scale = 0), #R derivs at x = 0 incorrect
+    # list(x = 0, shape = 1, scale = 1),
+    list(x = 0.5, shape = 0, scale = 0),
+    list(x = 0.5, shape = 1, scale = 1),
+    list(x = 2, shape = 3, scale = 2))
 )
+
+
 
 nimbleOptions(pauseAfterWritingFiles = FALSE)
 
@@ -314,7 +331,7 @@ thisNf <- nimbleFunction(setup = function(){},
                       ),
                       enableDerivs = list('method1'))
 testADDistribution(thisNf, distributionArgsList[['dt_nonstandard']]$argsValues,
-                   distributionArgsList[['dt_nonstandard']]$distnName, debug = FALSE)
+                   distributionArgsList[['dt_nonstandard']]$distnName, debug = 4)
 
 
 lapply(distributionArgsList, function(x){
