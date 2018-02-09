@@ -199,7 +199,9 @@ distClass <- setRefClass(
         },
         
         init_types_makeArgList = function(typeArgCharVector) {
-            parsedArgList <- lapply(typeArgCharVector, function(x) parse(text=x)[[1]])
+            parsedArgList <- try(lapply(typeArgCharVector, function(x) parse(text=x)[[1]]))
+            if(is(parsedArgList, 'try-error'))
+                stop("init_types_makeArgList: problem with arguments ", paste(typeArgCharVector, collapse = ","), ". Perhaps you didn't define types for your user-defined distribution nimbleFunctions?")
             allNames <- unlist(lapply(parsedArgList, function(pa) as.character(pa[[2]])))
             declExprs <- lapply(parsedArgList, function(pa) pa[[3]])
             allTypes <- unlist(lapply(parsedArgList, function(pa) as.character(pa[[3]][[1]])))

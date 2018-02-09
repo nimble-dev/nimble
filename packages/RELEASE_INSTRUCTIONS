@@ -41,6 +41,8 @@ rebuild manual as further test of package
 
 put new version of manual in inst/doc (perhaps - not sure if we want to add that much to the size of the tarball/package install)
 
+make sure no calls to compileNimble are in any examples that are not wrapped in a \dontrun; these calls will cause installation failure on Solaris and big headaches with CRAN
+
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
 and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
 and change to requireNamespace('rstan') from require('rstan')

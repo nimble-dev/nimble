@@ -12,19 +12,19 @@ AC_PROG_CXX
 
 NEED_MAKEVARS_FILE=TRUE
 
-# Define -fPIC rather than -fpic when possibly, to overcome -fpic's limit on
-# the number of exported symbols.
-CXXPICFLAGS="-fPIC"
-case "${CXX}" in
-  ## Intel compilers
-  *icpc|*icc)
-    CXXPICFLAGS="-fpic"
-    ;;
-  ## Portland Group
-  *pgCC)
-    CXXPICFLAGS="-fpic"
-    ;;
-esac
+dnl # Define -fPIC rather than -fpic when possibly, to overcome -fpic's limit on
+dnl # the number of exported symbols.
+dnl CXXPICFLAGS="-fPIC"
+dnl case "${CXX}" in
+dnl   ## Intel compilers
+dnl   *icpc|*icc)
+dnl     CXXPICFLAGS="-fpic"
+dnl     ;;
+dnl   ## Portland Group
+dnl   *pgCC)
+dnl     CXXPICFLAGS="-fpic"
+dnl     ;;
+dnl esac
 
 dnl The caller can specify where their Eigen/ directory is using, e.g.,
 dnl    --configure-args='--with-eigen=/home/bob/local'
@@ -64,9 +64,9 @@ ENABLE_DEBUGGING=no)
 
 if test "${ENABLE_DEBUGGING}" = "yes"; then
    echo "enabling R's default debugging information in libnimble"
-   GNUMAKEFILE_INCLUDE_MAKECONF="include \$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="\$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
 else
-   GNUMAKEFILE_INCLUDE_MAKECONF="include ./Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="Makeconf"
 fi
 AC_SUBST(GNUMAKEFILE_INCLUDE_MAKECONF)
 
@@ -148,7 +148,7 @@ dnl                rm -rf inst/Eigen_local
                   ])
 
 dnl Somewhat confused if this is redundant with the CPPFLAGS entry above
-if test -n "CPPAD_DIR" ; then
+if test -n "$CPPAD_DIR" ; then
 echo "Using CppAD directory ${CPPAD_DIR}"
 CPPAD_INC="-I$CPPAD_DIR"
 fi
@@ -158,7 +158,7 @@ echo "Using Eigen directory ${EIGEN_DIR}"
 EIGEN_INC="-I$EIGEN_DIR"
 fi
 
-AC_SUBST(CXXPICFLAGS)
+dnl AC_SUBST(CXXPICFLAGS)
 AC_SUBST(CPPAD_INC)
 AC_SUBST(EIGEN_INC)
 AC_SUBST(NEED_MAKEVARS_FILE)
@@ -212,7 +212,7 @@ AC_SUBST(PKG_LIBS)
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 AC_SUBST(USE_REGISTRATION)
 
-AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars inst/CppCode/GNUmakefile)
+AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars)
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then
   echo "removing debugging flags"
@@ -221,7 +221,7 @@ fi
 
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
-(cd inst/CppCode ; ${MAKE} )
+(cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile)
 
 else
   echo "Building libnimble.a"
@@ -230,7 +230,7 @@ else
   cp inst/CppCode/nimbleGraph.cpp src
   cp inst/CppCode/eigenUsingClasses.cpp src
 
-  (cd inst/CppCode ; ${MAKE} libnimble.a)
+  (cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile libnimble.a)
 fi
 
 if test "${ENABLE_DEBUGGING}" != "yes"; then

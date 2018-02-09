@@ -1,4 +1,39 @@
-                           CHANGES IN VERSION 0.6-8 and 0.6-7 (November 2017)
+                           CHANGES IN VERSION 0.6-9 (January 2018)
+
+USER LEVEL CHANGES
+
+-- Dimensions will now be determined from either 'inits' or 'data' if not otherwise available. 
+
+-- Can now specify "nBootReps = NA" in the runCrossValidate() function, which will prevent the Monte Carlo error from being calculated.
+
+-- runCrossValidate() now returns the averaged loss over all k folds, instead of the summed loss.
+
+-- Added besselK function to DSL.
+						   
+BUG FIXES
+
+-- Fixed bug that prevented use of dynamic index combined with an index specified by a constant because of duplicated dynamicIndex nodeFunctionNames.
+
+-- Added error trapping for dynamic indexing of constants.
+
+-- Fixed a bug where calling nimbleModel() on a BUGS model with a node that was its own parent caused R to crash.
+
+-- Fixed a bug in runCrossValidate(), where for certain models using the "random" foldFunction would cause an error.
+
+-- Fixed a name conflict that caused an error when user-defined distributions had parameters named 'lower' or 'upper'.
+
+-- Fixed WAIC bug in getting dependencies of logProb variables.
+
+DEVELOPER LEVEL CHANGES
+
+-- Fixed configure error that caused issues with -fpic compiler flag.
+
+-- Removed use of "include" directive in Makefile on a path derived from R_HOME variable at request of CRAN.
+
+-- Removed pragma regarding -Wno-ignored-attributes from NimArrBase.h to satisfy CRAN policy.
+
+
+		           CHANGES IN VERSION 0.6-8 and 0.6-7 (November 2017)
 
 Note: versions 0.6-8 and 0.6-7 are the same except for a non-user-facing change to the withNimbleOptions function example to pass CRAN checks.
 

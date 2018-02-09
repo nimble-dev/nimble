@@ -90,6 +90,19 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 	}
 )
 
+besselK_keywordInfo <- keywordInfoClass(
+    keyword = 'besselK',
+    processor = function(code, nfProc) {
+        expon.scaledArg <- code$expon.scaled
+        if(is.null(expon.scaledArg))
+            expon.scaledArg <- FALSE
+        if(is.numeric(expon.scaledArg) || is.logical(expon.scaledArg)) {
+            code$expon.scaled <- 1 + as.logical(expon.scaledArg)
+        } else code$expon.scaled <- substitute(1 + A, list(A = expon.scaledArg))
+        return(code)
+    }
+)
+
 
 nimSeq_keywordInfo <- keywordInfoClass(
     keyword = 'nimSeq',
@@ -539,10 +552,50 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             singleAccess_ArgList <- list(code = code, model = code[[2]], nodeExpr = code[[3]])
             nodeArg <- code[[3]]
             if(is.character(nodeArg)){
-                if(length(nodeArg) > 1) stop(paste0("Problem in ", deparse(code), ". ", deparse(code[[3]])," is too long.  It can only have one element."), call. = FALSE)
-                varAndIndices <- getVarAndIndices(nodeArg)
-                nDim <- sum(1 - unlist(lapply(varAndIndices$indices, is.numeric) ) )
+                if(length(nodeArg) > 1)
+                    stop(paste0("Problem in ",
+                                deparse(code), ". ",
+                                deparse(code[[3]]),
+                                " is too long.  It can only have one element."),
+                         call. = FALSE)
+                varAndIndices <- nimbleInternalFunctions$getVarAndIndices(nodeArg)
+                
+                allNDims <- lapply(nfProc$instances, function(x) {
+                    model <- eval(singleAccess_ArgList$model,
+                                  envir = x)
+                    if(length(nodeArg) != 1)
+                        stop(paste0("Length of ",
+                                    nodeArg,
+                                    " requested from ",
+                                    deparse(singleAccess_ArgList$model),
+                                    " using '[[' is ",
+                                    length(nodeArg),
+                                    ". It must be 1.")
+                           , call. = FALSE)
+                    determineNdimFromOneCase(model, varAndIndices)
+                } )
+
+                if(length(unique(allNDims)) > 1)
+                    stop(paste0('Error for ', deparse(code),
+                                '. Inconsistent numbers of dimensions for different instances.'),
+                         call. = FALSE)
+                nDim <- allNDims[[1]]
                 useMap <- nDim > 0
+                
+                ## ##
+                ## ## If input is of the form model[['a']]
+                ## ## and a is non-scalar,
+                ## ## we treat it like model$a, which handles either
+                if(useMap & length(varAndIndices$indices) == 0) {
+                    return(
+                        keywordList[['$']]$processor(code, nfProc)
+                    )
+                }
+                ## ## Following line adds up 0 for each scalar index
+                ## ## and 1 for each non-scalar index to determine if the
+                ## ## accessed node is scalar
+                ## nDim <- sum(1 - unlist(lapply(varAndIndices$indices, is.numeric) ) )
+                ## useMap <- nDim > 0
             }
             else{
                 allNDims <- determineNdimsFromNfproc(singleAccess_ArgList$model, nodeArg, nfProc)
@@ -724,6 +777,7 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
+keywordList[['besselK']] <- besselK_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo
@@ -779,6 +833,7 @@ matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['nimDerivs']] <- nimDerivs
+matchFunctions[['besselK']] <- function(x, nu, expon.scaled = FALSE){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
@@ -1247,10 +1302,18 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
     allNDims <- lapply(nfProc$instances, function(x) {
         model <- eval(modelExpr, envir = x)
         if(!exists(as.character(varOrNodeExpr), x, inherits = FALSE) ) {
-            stop(paste0('Problem accessing node ', deparse(varOrNodeExpr), '.'), call. = FALSE)
+            stop(paste0('Problem accessing node or variable ', deparse(varOrNodeExpr), '.'), call. = FALSE)
         }
         lab <- eval(varOrNodeExpr, envir = x)
-        if(length(lab) != 1) stop(paste0("Length of ", deparse(varOrNodeExpr), " requested from ", deparse(modelExpr), " using '[[' is ", length(lab),". It must be 1." ) , call. = FALSE)
+        if(length(lab) != 1)
+            stop(paste0("Length of ",
+                        deparse(varOrNodeExpr),
+                        " requested from ",
+                        deparse(modelExpr),
+                        " using '[[' is ",
+                        length(lab),
+                        ". It must be 1." )
+               , call. = FALSE)
         varAndIndices <- nimbleInternalFunctions$getVarAndIndices(lab)
         determineNdimFromOneCase(model, varAndIndices)
     } )
