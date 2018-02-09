@@ -14,8 +14,9 @@
 	#define IF_TMB_PRECOMPILE(x)
 	#include <Eigen/Dense>
 	#include <Eigen/Sparse>
-  #include <TMB/lgamma.hpp>
-  
+    #include <TMB/lgamma.hpp>
+  	#include <nimble/NimArr.h>
+
 
 /** \brief Distribution function of the normal distribution (following R argument convention).
     \ingroup R_style_distribution
@@ -515,6 +516,41 @@ Type nimDerivs_dt(Type x, Type df, int give_log)
   if (give_log) return logres; else return(exp(logres));
 }
 
+
+
+template <class Type>
+Type nimDerivs_dt_nonstandard(Type x, Type df, Type mu, Type sigma, int give_log)
+{
+  Type logres = CondExpGe(sigma, Type(0), CondExpEq(sigma, Type(0), CondExpEq(x, mu, Type(std::numeric_limits<double>::infinity()), -Type(std::numeric_limits<double>::infinity())), Type(0)),
+	Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres +=  nimDerivs_dt( (x - mu)/sigma, df, 1) - log(sigma);
+  logres =  CondExpLt(df, Type(0.0), Type(CppAD::numeric_limits<Type>::quiet_NaN()), logres); 
+  if (give_log) return logres; else return(exp(logres));
+}
+
+
+// template<class Type>
+// CppAD::AD<Type> nimDerivs_nimArr_dcat(CppAD::AD<Type> x, CppAD::VecAD<Type> &prob, int give_log){
+//   typedef Eigen::Matrix<Type, Eigen::Dynamic, 1> VectorXt;
+//   int n = prob.size();
+// //   Eigen::Map<VectorXt > eigenProb(prob.getPtr(), prob.size(), 1);
+// //   Type roundX = discrete_round(x);
+// //   Type u;
+// //   for(u = 0; u < n; u += 1.){
+// // 	adProb[u] = prob[ Integer(u) ];
+// //   }
+//   CppAD::AD<Type> thisProb = prob[x - Type(1)];  
+//   Type probSum = Type(12);
+//   CppAD::AD<Type> res = thisProb/probSum;
+
+// //   Type resMult = CppAD::CondExpGt(roundX, Type(0), Type(1), Type(0));
+// //   resMult = CppAD::CondExpLe(roundX, Type(n), resMult, Type(0));
+// //   resMult = CppAD::CondExpEq(x, roundX,  resMult, Type(0));
+// //   CppAD::AD<Type> outRes = res*resMult;
+// //   outRes  = CppAD::CondExpEq(Type(give_log), Type(0), outRes, log(outRes));
+//   return(res);
+// };
+
 // Vectorize dt
 // VECTORIZE3_tti(dt)
 
@@ -524,14 +560,20 @@ Type nimDerivs_dt(Type x, Type df, int give_log)
         \param p Vector of length K, specifying the probability for the K classes (note, unlike in R these must sum to 1).
 	\param give_log true if one wants the log-probability, false otherwise.
 	*/
-template <class Type>
-Type nimDerivs_dmultinom(vector<Type> x, vector<Type> p, int give_log=0)
-{
-	vector<Type> xp1 = x+Type(1);
-	Type logres = lgamma(x.sum() + Type(1)) - lgamma(xp1).sum() + (x*log(p)).sum();
-	if(give_log) return logres;
-	else return exp(logres);
-}
+
+// template <class Type>
+// Type nimDerivs_nimArr_dmulti(NimArr<1, Type> &x, Type size, NimArr<1, Type> &prob, int give_log)
+// {
+//   typedef Eigen::Matrix<Type, Eigen::Dynamic, 1> VectorXt;
+//   Eigen::Map<VectorXt > eigenX(x.getPtr(), x.size(), 1);
+//   Eigen::Map<VectorXt > eigenP(prob.getPtr(), prob.size(), 1);
+//   VectorXt oneVec = VectorXt::Ones(x.size(), 1);
+//   VectorXt eigenXp1 = eigenX + oneVec;
+//   Type logres = lgamma(eigenX.sum() + Type(1)) - lgamma(eigenXp1.sum()) + Type((eigenX*eigenP.array().log().matrix()).sum());
+// 	if(give_log) return logres;
+// 	else return exp(logres);
+// }
+
 
 /** 	@name Sinh-asinh distribution.
   	Functions relative to the sinh-asinh distribution.

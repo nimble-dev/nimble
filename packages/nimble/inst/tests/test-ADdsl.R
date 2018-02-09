@@ -4,24 +4,27 @@ nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for distributions and dsl functions")
 
 # untested:
-# 'dcat', 'ddirch',
-# 'dmulti', 'dmvt',  'dt_nonstandard', 
-# 'dweib', 'dwish'
+# 'ddirch',
+# 'dmvt', 
+#  'dwish'
 
 # tested:
 # 'dbeta' (although boundary at x=0 and x=1 not consistent between R and c++),
 # 'dbinom' (works as long as wrt = prob and not x or size),
 # 'dchisq' (inconsistencies at df = 0, incorrect R derivs at x = 0),
+# 'dcat' #not implemented
 # 'dexp',
 # 'dgamma',
 # 'dinvgamma',
 # 'dlogis',
 # 'dlnorm',
 # 'dmnorm_chol',
+# 'dmulti', # not implemented
 # 'dnegbin'
 # 'dnorm',
 # 'dpois',
 # 'dt',
+# 'dt_nonstandard',
 # 'dunif',
 # 'dweib'
 
@@ -71,6 +74,17 @@ distributionArgsList[['dbinom']] <- list(
   WRT = c('prob') ## only take derivs wrt 'prob' argument, otherwise warnings
                   ## from R, and inconsistencies between R and C++ will occur.
 )
+
+# distributionArgsList[['dcat']] <- list(
+#   distnName = 'dcat',
+#   args = list(x = quote(double(0)),
+#               prob = quote(double(1, 3))),
+#   argsValues = list(
+#     list(x = 3, prob = 1:3),
+#     list(x = 2, prob = 1:3*2)
+#   ),
+#   WRT = c('prob')
+# )
 
 distributionArgsList[['dchisq']] <- list(
   distnName = 'dchisq',
@@ -169,6 +183,19 @@ distributionArgsList[['dmnorm_chol']] <- list(
   )
 )
 
+#   distnName = 'dmulti',
+#   args = list(x = quote(double(1, 3)),
+#               size = quote(double(0)),
+#               prob = quote(double(1, 3))),
+#   argsValues = list(
+#     list(x = numeric(3), size = 0, prob = numeric(3)),
+#     list(x = numeric(3) - 1, size = -3, prob = numeric(3)),
+#     list(x = numeric(3) - 1, size = -3, prob = numeric(3) + 1/3),
+#     list(x = 1:3, size = sum(1:3), prob = numeric(3) + 1/3)
+#   ),
+#   WRT = c('prob')
+# )
+
 distributionArgsList[['dnbinom']] <- list(
   distnName = 'dnbinom',
   args = list(x = quote(double(0)),
@@ -259,17 +286,35 @@ distributionArgsList[['dweibull']] <- list(
     list(x = 2, shape = 3, scale = 2))
 )
 
-runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dweibull']]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dweibull']]))
+distributionArgsList[['dt_nonstandard']] <- list(
+  distnName = 'dt_nonstandard',
+  args = list(x = quote(double(0)),
+              df = quote(double(0)),
+              mu = quote(double(0)),
+              sigma = quote(double(0))),
+  argsValues = list(
+    list(x = -1, df = -1, mu = 0, sigma = 1),
+    list(x = -1, df = 0, mu = 0, sigma = 1),
+    #list(x = -1, df = 0, mu = -1, sigma = 0), # R and C derivs don't align
+    #list(x = -1, df = 1, mu = -1, sigma = 0), # R and C derivs don't align
+    # list(x = -1, df = 2, mu = -2, sigma = 0), # R and C derivs don't align
+    list(x = -1, df = 2, mu = -2, sigma = -1),
+    list(x = .1, df = .5, mu = 0, sigma = 1),
+    list(x = 22.2, df = 10, mu = 0, sigma = 1))
+)
+
+nimbleOptions(pauseAfterWritingFiles = FALSE)
+
+runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dt_nonstandard']]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dt_nonstandard']]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
-testADDistribution(thisNf, distributionArgsList[['dweibull']]$argsValues,
-                   distributionArgsList[['dweibull']]$distnName, debug = FALSE)
-
+testADDistribution(thisNf, distributionArgsList[['dt_nonstandard']]$argsValues,
+                   distributionArgsList[['dt_nonstandard']]$distnName, debug = FALSE)
 
 
 lapply(distributionArgsList, function(x){
