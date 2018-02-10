@@ -1246,7 +1246,6 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
                         if(testCompiled){
                           print(calcNodeNames[[i]])
                           print(wrt[[j]])
-                          browser()
                           testFunctionInstance <- testCompiledModelDerivsNimFxn(model, calcNodeNames[[i]], wrt[[j]], order)
                           expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model, resetFunctions = TRUE))
                           cDerivs <- ctestFunctionInstance$run()
