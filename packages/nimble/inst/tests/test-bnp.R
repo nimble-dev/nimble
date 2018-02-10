@@ -54,13 +54,13 @@ Code=nimbleCode(
     for(i in 1:N){
       y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])#
     }
-    conc<-1;mu0<-0; tau20<-40 ; a0<-1; b0<-0.5; 
+    conc<-1;mu0<-0; tau20<-40; a0<-1; b0<-0.5; 
   }
 )
 
+Consts=list(N=50, N2=50, N3=50)
 
 conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
-Consts=list(N=50, N2=50, N3=50)
 set.seed(1)
 aux=sample(1:10, size=Consts$N2, replace=TRUE)
 Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)),s2tilde=rinvgamma(Consts$N3, shape=a0, scale=b0))#list(xi=aux, thetatilde=c(10,-10,rnorm(98, mu0,tau0)),s2tilde=rep(1,100))#
@@ -75,8 +75,6 @@ cmodel<-compileNimble(model)
 
 #-- MCMC configuration:
 modelConf<-configureMCMC(model, print=FALSE)
-#modelConf$removeSamplers(c("xi"), print="TRUE")
-#modelConf$addSampler(c("xi"), type="MarginalizedG_xi")
 modelConf$printSamplers(c("xi"))
 modelMCMC=buildMCMC(modelConf)
 
@@ -94,7 +92,7 @@ proc.time()-t1
 #-- results:
 N=Consts$N
 samples=as.matrix(CmodelNewMCMC$mvSamples)
-xisamples=samples[, (2*N+1):(3*N)]#samples[, 1+(N+1):(2*N)]
+xisamples=samples[, (N+1):(2*N)]#samples[, 1+(N+1):(2*N)]
 s2samples=samples[, 1:N]
 thetasamples=samples[, (N+1):(2*N)]
 s2i=t(sapply(1:nsave, function(i)s2samples[i, xisamples[i,]]))
@@ -102,7 +100,7 @@ thetai=t(sapply(1:nsave, function(i)thetasamples[i, xisamples[i,]]))
 
 
 apply(xisamples, 1, table)
-
+sapply(1:10, function(i)table(thetasamples[xisamples[i,]]))
 
 #-- predictive:
 sec=seq(-20,20,len=100)
@@ -138,6 +136,10 @@ points(sec,fhat, col="black", lwd=2, type="l")
 #-- standarized output:
 modelConf<-configureMCMC(model, print=FALSE, thin=100) # less samples!
 modelConf$printSamplers(c("xi"))
+#modelConf$removeSamplers(c("xi"), print="TRUE")
+#modelConf$addSampler(c("xi"), type="sampler_MarginalizedG_general")
+#modelConf$printSamplers(c("xi"))
+
 modelMCMC=buildMCMC(modelConf)
 #-- compiling the sampler
 CmodelNewMCMC=compileNimble(modelMCMC, project=model,
@@ -151,11 +153,8 @@ proc.time()-t1
 
 
 mvSaved=modelMCMC$mvSamples
-#target='xi'
-#varNames=c('thetatilde', 's2tilde') #  in this order!!!!
-#rndconc='FALSE'
-
-
+#mvSaved <- CmodelNewMCMC$mvSamples
+#samples=as.matrix(cmvSaved)
 #SamplerG <- nimble:::sampler_G(model, mvSaved, target, varNames, rndconc)#nimble:::sampler_G(model, mvSaved, target, varNames)## 
 SamplerG <- sampler_G2(model, mvSaved)#nimble:::sampler_G3(model, mvSaved)
 cSamplerG <- compileNimble(SamplerG, project = model)
@@ -164,8 +163,85 @@ aux=as.matrix(cSamplerG$mv)  ## the mv object is accessed here
 
 trunc=length(aux[1,])/3
 for(i in 1:nrow(aux)){
+  plot(aux[i, (2*trunc+1):(3*trunc)], aux[i, 1:trunc], type="h", main=sum(aux[i, 1:trunc]),
+       xlim=c(-10,10)); readline()
+}
+for(i in 1:nrow(aux)){
   plot(aux[i, (trunc+1):(2*trunc)], aux[i, 1:trunc], type="h", main=sum(aux[i, 1:trunc])); readline()
 }
+
+# less parameters in teh model
+trunc=length(aux[1,])/2
+for(i in 1:nrow(aux)){
+  plot(aux[i, (trunc+1):(2*trunc)], aux[i, 1:trunc], type="h", main=sum(aux[i, 1:trunc]),
+       xlim=c(-10,10)); readline()
+}
+
+
+#--------------------------------------------------
+
+Code=nimbleCode(
+  {
+    for(i in 1:N3){
+      thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+      #s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
+    }
+    xi[1:N2] ~ dCRP(conc)
+    
+    for(i in 1:N){
+      #theta[i] <- thetatilde[xi[i]]
+      y[i] ~ dnorm(thetatilde[xi[i]] , var=2)#s2tilde[xi[i]]
+    }
+    conc<-1;a0<-1 ; b0<- 0.5; mu0<-0; tau20<-40; 
+  }
+)
+
+
+
+conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
+Consts=list(N=50, N2=50, N3=50)
+set.seed(1)
+aux=sample(1:10, size=Consts$N2, replace=TRUE)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)))#s2tilde=rinvgamma(Consts$N3, a0, b0)
+
+s20=4; s21=4
+mu01=5; mu11=-5
+Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
+
+#-- compiling the model:
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
+
+
+Code=nimbleCode(
+  {
+    for(i in 1:N3){
+      lambdatilde[i] ~ dgamma(1,1) 
+      #s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
+    }
+    xi[1:N2] ~ dCRP(conc)
+    
+    for(i in 1:N){
+      #theta[i] <- thetatilde[xi[i]]
+      y[i] ~ dpois(lambdatilde[xi[i]])
+    }
+    conc<-1
+  }
+)
+
+
+
+conc<-1
+Consts=list(N=50, N2=60, N3=20)
+set.seed(1)
+aux=sample(1:10, size=Consts$N2, replace=TRUE)
+Inits=list(xi=aux, lambdatilde=rgamma(Consts$N3,1,1))#list(xi=aux, thetatilde=c(10,-10,rnorm(98, mu0,tau0)),s2tilde=rep(1,100))#
+
+Data=list(y=c(rpois(Consts$N, 3)))
+
+#-- compiling the model:
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
 
 
 
