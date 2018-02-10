@@ -306,32 +306,32 @@ distributionArgsList[['dweibull']] <- list(
 
 distributionArgsList[['ddirch']] <- list(
   distnName = 'ddirch',
-  args = list(x = quote(double(1)),
-              alpha = quote(double(1))),
+  args = list(x = quote(double(1, 3)),
+              alpha = quote(double(1, 3))),
   argsValues = list(
-    list(x = -1, shape = 0, scale = 1),
-    list(x = -1, shape = 0, scale = 0),
-    # list(x = 0, shape = 0, scale = 0), #R derivs at x = 0 incorrect
-    # list(x = 0, shape = 1, scale = 1),
-    list(x = 0.5, shape = 0, scale = 0),
-    list(x = 0.5, shape = 1, scale = 1),
-    list(x = 2, shape = 3, scale = 2))
+    list(x = c(0,0,0), alpha = c(0,0,0)),
+    list(x = c(0,-1,0), alpha = c(0,0,0)),
+    list(x = c(0,0,0), alpha = c(-1,0,0)),
+    # list(x = c(.1,0,0), alpha = c(1,2,3)), # R and C Hessians don't match
+    list(x = c(1/3,1/3,1/3), alpha = c(1,2,3))
+  ),
+  WRT = 'alpha'
 )
 
 
 
 nimbleOptions(pauseAfterWritingFiles = FALSE)
 
-runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dt_nonstandard']]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dt_nonstandard']]))
+runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['ddirch']]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['ddirch']]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
-testADDistribution(thisNf, distributionArgsList[['dt_nonstandard']]$argsValues,
-                   distributionArgsList[['dt_nonstandard']]$distnName, debug = 4)
+testADDistribution(thisNf, distributionArgsList[['ddirch']]$argsValues,
+                   distributionArgsList[['ddirch']]$distnName, debug = FALSE)
 
 
 lapply(distributionArgsList, function(x){

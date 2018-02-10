@@ -1312,7 +1312,7 @@ testADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
                           function(x){return(paste(x, " = ",
                           argsList[[iArg]][[x]]))}), collapse = ', ')
       if(is.logical(debug) && debug == TRUE) browser()
-      else if(is.numeric(debug) && debug == iArg)
+      else if(is.numeric(debug) && debug == iArg) browser()
       expect_equal(RderivsList$value, CderivsList$value, tolerance = .01, 
                    info = paste("Values of", name , "not equal for arguments: ",
                                 argValsText, '.'))
