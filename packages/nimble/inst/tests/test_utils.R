@@ -1303,6 +1303,9 @@ testADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
     ADfun <- ADfunGen()
     CADfun <- compileNimble(ADfun)
     for(iArg in seq_along(argsList)){
+      iOrdersToCheck <- argsList[[iArg]][['ordersToCheck']]
+      if(is.null(iOrdersToCheck)) iOrdersToCheck <- 0:2 ## check all orders if not specified
+      else argsList[[iArg]][['ordersToCheck']] <- NULL
       RfunCallList <- c(list(quote(ADfun$run)), argsList[[iArg]])
       CfunCallList <- c(list(quote(CADfun$run)), argsList[[iArg]])
       RderivsList <- eval(as.call(RfunCallList))
@@ -1312,15 +1315,27 @@ testADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
                           argsList[[iArg]][[x]]))}), collapse = ', ')
       if(is.logical(debug) && debug == TRUE) browser()
       else if(is.numeric(debug) && debug == iArg) browser()
-      expect_equal(RderivsList$value, CderivsList$value, tolerance = .01, 
-                   info = paste("Values of", name , "not equal for arguments: ",
-                                argValsText, '.'))
-      expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = .1,
-                   info = paste("Jacobians of", name , "not equal for arguments: ",
-                                argValsText, '.'))
-      expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1,
-                   info = paste("Hessians of", name , "not equal for arguments: ",
-                                argValsText, '.'))
+      if(0 %in% iOrdersToCheck)
+        expect_equal(RderivsList$value, CderivsList$value, tolerance = .01, 
+                     info = paste("Values of", name , "not equal for arguments: ",
+                                  argValsText, '.'))
+      else
+        print(paste("Skipping check of R and C++ `value` equality for ",
+                    name, " with arguments: ", argValsText ))
+      if(1 %in% iOrdersToCheck)
+        expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = .1,
+                     info = paste("Jacobians of", name , "not equal for arguments: ",
+                                  argValsText, '.'))
+      else
+        print(paste("Skipping check of R and C++ `jacobian` equality for ",
+                    name, " with arguments: ", argValsText ))
+      if(2 %in% iOrdersToCheck)
+        expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1,
+                     info = paste("Hessians of", name , "not equal for arguments: ",
+                                  argValsText, '.'))
+      else
+        print(paste("Skipping check of R and C++ `hessian` equality for ",
+                    name, " with arguments: ", argValsText ))
   }
 }
 

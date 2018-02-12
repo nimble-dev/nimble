@@ -101,6 +101,20 @@ distributionArgsList[['dchisq']] <- list(
   )
 )
 
+distributionArgsList[['ddirch']] <- list(
+  distnName = 'ddirch',
+  args = list(x = quote(double(1, 3)),
+              alpha = quote(double(1, 3))),
+  argsValues = list(
+    list(x = c(0,0,0), alpha = c(0,0,0)),
+    list(x = c(0,-1,0), alpha = c(0,0,0)),
+    list(x = c(0,0,0), alpha = c(-1,0,0)),
+    # list(x = c(.1,0,0), alpha = c(1,2,3)), # R and C Hessians don't match
+    list(x = c(1/3,1/3,1/3), alpha = c(1,2,3))
+  ),
+  WRT = 'alpha'
+)
+
 distributionArgsList[['dexp']] <- list(
   distnName = 'dexp',
   args = list(x = quote(double(0)),
@@ -304,49 +318,70 @@ distributionArgsList[['dweibull']] <- list(
     list(x = 2, shape = 3, scale = 2))
 )
 
-distributionArgsList[['ddirch']] <- list(
-  distnName = 'ddirch',
-  args = list(x = quote(double(1, 3)),
-              alpha = quote(double(1, 3))),
+
+distributionArgsList[['dmvt_chol']] <- list(
+  distnName = 'dmvt_chol',
+  args = list(x = quote(double(1, 2)),
+              mu = quote(double(1, 2)),
+              cholesky = quote(double(2, c(2, 2))),
+              df = quote(double()),
+              prec_param = quote(double())),
   argsValues = list(
-    list(x = c(0,0,0), alpha = c(0,0,0)),
-    list(x = c(0,-1,0), alpha = c(0,0,0)),
-    list(x = c(0,0,0), alpha = c(-1,0,0)),
-    # list(x = c(.1,0,0), alpha = c(1,2,3)), # R and C Hessians don't match
-    list(x = c(1/3,1/3,1/3), alpha = c(1,2,3))
-  ),
-  WRT = 'alpha'
+    # list(x = numeric(2), mu = numeric(2), cholesky = -diag(2), df = 1, prec_param = 1),
+    # list(x = numeric(2), mean = numeric(2), cholesky = matrix(c(0,0,0,0), nrow = 2)) R and C inconsistency
+    # list(x = numeric(2), mu = numeric(2), cholesky = diag(2), df = 1, prec_param = 1),
+    list(x = c(1.3, 4.1), mu = c(1,4),
+         cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
+         df = 3, prec_param = 0),
+    list(x = c(12.1, 42.1), mu = c(10,40),
+         cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2)),
+         df = 3, prec_param = 0),
+    list(x = c(1.3, 4.1), mu = c(1,4),
+         cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
+         df = 3, prec_param = 1),
+    list(x = c(12.1, 42.1), mu = c(10,40),
+         cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2)),
+         df = 3, prec_param = 1)
+      )
 )
-
-
 
 nimbleOptions(pauseAfterWritingFiles = FALSE)
 
-runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['ddirch']]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['ddirch']]))
+runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dmvt_chol']]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dmvt_chol']]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
-testADDistribution(thisNf, distributionArgsList[['ddirch']]$argsValues,
-                   distributionArgsList[['ddirch']]$distnName, debug = FALSE)
+testADDistribution(thisNf, distributionArgsList[['dmvt_chol']]$argsValues,
+                   distributionArgsList[['dmvt_chol']]$distnName, debug = 1)
 
 
-lapply(distributionArgsList, function(x){
-  runFun <- gen_runFunCore(makeADDistributionTestList(x))
-  methodFun <- gen_runFunCore(makeADDistributionMethodTestList(x))
-  thisNf <- nimbleFunction(setup = function(){},
-                           run = runFun,
-                           methods = list(
-                             method1 = methodFun
-                           ),
-                           enableDerivs = list('method1'))
-  testADDistribution(thisNf, x$argsValues,
-                     x$distnName)
-  
-})
+
+
+x = matrix(c(12.1, 42.1), nrow = 2)
+mu = matrix(c(10,40), nrow = 2)
+cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2))
+df = 3
+n = 2
+dmvt_chol(x, mu = mu, cholesky = cholesky, df = 3, prec_param = FALSE, TRUE)
+
+
+# lapply(distributionArgsList, function(x){
+#   runFun <- gen_runFunCore(makeADDistributionTestList(x))
+#   methodFun <- gen_runFunCore(makeADDistributionMethodTestList(x))
+#   thisNf <- nimbleFunction(setup = function(){},
+#                            run = runFun,
+#                            methods = list(
+#                              method1 = methodFun
+#                            ),
+#                            enableDerivs = list('method1'))
+#   testADDistribution(thisNf, x$argsValues,
+#                      x$distnName)
+#   
+# })
 
 x <- 0
 shape <- .1
@@ -366,10 +401,26 @@ nimDerivs(testFn(x = c(1.3, 4.1), mu = c(1,4),
                  chol = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2))),wrt = c('chol'))
 
 
+logres = 0
+logres = logres + lgamma((df + n) / 2) - lgamma(df / (2)) - n * (log(sqrt(pi))) - n * log(df) / (2);
+i = 1
+logCholSum = 0
+while(i <= n){
+  logCholSum = logCholSum + log(cholesky[i, i]);
+  i = i + 1
+}
+logres = logres -logCholSum;
+eigenXcopy = x - mu;
+eigenXcopy = solve(t(cholesky), eigenXcopy);
+tmp = 0
+for(i in 1:n)
+  tmp = tmp + eigenXcopy[i] * eigenXcopy[i];
 
-testMod <- nimbleCode({
-  a ~ dbin(.1, 5)
-})
+logres = logres -0.5 * (df + n) * log(1 + tmp / df);
+logres
+
+
+
 
 testMod1 <- nimbleModel(testMod)
 ctestMod1 <- compileNimble(testMod1)

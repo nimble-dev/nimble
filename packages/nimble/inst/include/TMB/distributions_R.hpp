@@ -21,10 +21,10 @@
 /** \brief Distribution function of the normal distribution (following R argument convention).
     \ingroup R_style_distribution
 */
-// #ifndef M_LN_SQRT_PI
-// #define M_LN_SQRT_PI	0.572364942924700087071713675677	/* log(sqrt(pi))
-// 								   == log(pi)/2 */
-// #endif
+#ifndef M_LN_SQRT_PI
+#define M_LN_SQRT_PI	0.572364942924700087071713675677	/* log(sqrt(pi))
+								   == log(pi)/2 */
+#endif
 // template<class Type>
 // Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr, int df, int scale_param, int give_log, int overwrite_inputs){
 //   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
@@ -555,6 +555,45 @@ Type nimDerivs_nimArr_ddirch(NimArr<1, Type> &x, NimArr<1, Type> &alpha, int giv
   logres += lgamma(sumAlpha);
   return give_log ? logres : exp(logres);
 }
+
+template <class Type>
+Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, int give_log, int overwrite_inputs) { 
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, 1> VectorXt;
+
+  int n = x.size();
+  Type logres = CppAD::CondExpEq(Type(mu.size()), Type(n), Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  logres += CppAD::CondExpEq(Type(chol.dim()[0]), Type(n),  CppAD::CondExpEq(Type(chol.dim()[1]), Type(n), Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN())), Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  
+  logres += lgamma((df + n) / Type(2)) - lgamma(df / Type(2)) - n * Type(M_LN_SQRT_PI) - n * log(df) / Type(2);
+  int i;
+  Type logCholSum;
+  for(i = 0; i < n*n; i += n + 1){
+	logCholSum += log(chol[i]);
+  }
+  logres += CppAD::CondExpEq(prec_param, Type(1), logCholSum, -logCholSum);	
+  VectorXt eigenXcopy(n);	
+  for(i = 0; i < n; i++)
+	eigenXcopy(i,0) = x[i] - mu[i];
+
+  Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n); 
+  if(Integer(prec_param) == 0){
+	eigenXcopy = eigenChol.template triangularView<Eigen::Upper>()*eigenXcopy;
+  }
+  else{
+	 eigenXcopy = eigenChol.template triangularView<Eigen::Upper>().solve(eigenXcopy).transpose();
+  }
+  // sum of squares to calculate quadratic form
+  Type tmp = Type(0.0);
+  for(i = 0; i < n; i++)
+	tmp += eigenXcopy(i,0) * eigenXcopy(i,0);
+
+
+  logres += Type(-0.5) * (df + n) * log(Type(1) + tmp / df);
+
+  return give_log ? logres : exp(logres);
+}
+
 
 
 

@@ -510,17 +510,21 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   if(any(argNameCheck != TRUE)) stop('Incorrect names passed to wrt argument of nimDerivs: ', fxnName, 
                                      ' does not have arguments named: ', paste(wrtArgNames[!argNameCheck], collapse = ', ' ), '.')
   ## Make sure all wrt args have type double.
+  nameCheck <- sapply(wrtMatchArgs, function(x){return(class(nimFxnArgs[[x]]))})
+  if(any(nameCheck == 'name')) stop('Derivatives of ', fxnName, ' being taken WRT an argument that does not have type double().')
   doubleCheck <- sapply(wrtMatchArgs, function(x){return(deparse(nimFxnArgs[[x]][[1]]) == 'double')})
   if(any(doubleCheck != TRUE)) stop('Derivatives of ', fxnName, ' being taken WRT an argument that does not have type double().')
   ## Make sure that all wrt arg dims are < 2.
   fxnArgsDims <- sapply(wrtMatchArgs, function(x){
-    outDim <- nimFxnArgs[[x]][[2]]
+    if(length(nimFxnArgs[[x]]) == 1) outDim <- 0
+    else outDim <- nimFxnArgs[[x]][[2]]
     names(outDim) <- names(nimFxnArgs)[x]
     return(outDim)})
   
   if(any(fxnArgsDims > 2)) stop('Derivatives cannot be taken WRT an argument with dimension > 2')
   ## Determine sizes of each function arg.
   fxnArgsDimSizes <- lapply(nimFxnArgs, function(x){
+    if(length(x) == 1) return(1)
     if(x[[2]] == 0) return(1)
     if(length(x) < 3) stop('Sizes of arguments to nimbleFunctions must be explictly specified (e.g. x = double(1, 4)) in order to take derivatives.')
     if(x[[2]] == 1){
