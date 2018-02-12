@@ -226,7 +226,7 @@ sampler_MarginalizedG_general <- nimbleFunction(
     #    }
     #  }
     #}
-    
+    if(exists('AAA')) browser()
     nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
     dataNodes <- rep("", n)
     type <- 'indivCalcs'
@@ -243,15 +243,17 @@ sampler_MarginalizedG_general <- nimbleFunction(
       if(length(detDeps) != nInterm) {
         type <- 'allCalcs'  # give up again; should only occur in strange situations
       } else {
-        dataNodes[i] <- stochDeps[1] 
-        if(nInterm >= 1)
-          intermNodes[i] <- detDeps[1]; intermNodes2[i] <- detDeps[1];
-          intermNodes3[i] <- detDeps[1]
-          if(nInterm >= 2)
-            intermNodes2[i] <- detDeps[2]
-          if(nInterm >= 3)
-            intermNodes3[i] <- detDeps[3]
+          dataNodes[i] <- stochDeps[1]
           
+          if(nInterm >= 1) {  # this should handle case of no intermediates - Chris
+              intermNodes[i] <- detDeps[1]
+              intermNodes2[i] <- detDeps[1]
+              intermNodes3[i] <- detDeps[1]
+          }
+          if(nInterm >= 2)
+              intermNodes2[i] <- detDeps[2]
+          if(nInterm >= 3)
+              intermNodes3[i] <- detDeps[3]
         #if(nInterm==0){ # find tilde variables?
         #  intermNodes[i] <- tildeVariable[xi[i]]?????
         #}  
@@ -345,7 +347,7 @@ sampler_MarginalizedG_general <- nimbleFunction(
             }
             model[[target]][i] <<- newind
             if(type == 'indivCalcs') {
-              model$calculate(intermNodes[i])
+              if(nInterm >= 1) model$calculate(intermNodes[i])
               if(nInterm >= 2) model$calculate(intermNodes2[i])
               if(nInterm >= 3) model$calculate(intermNodes3[i])
               model$calculate(dataNodes[i])
@@ -354,7 +356,7 @@ sampler_MarginalizedG_general <- nimbleFunction(
             newind <- xi_i
             model[[target]][i] <<- newind
             if(type == 'indivCalcs') {
-              model$calculate(intermNodes[i])
+              if(nInterm >= 1) model$calculate(intermNodes[i])
               if(nInterm >= 2) model$calculate(intermNodes2[i])
               if(nInterm >= 3) model$calculate(intermNodes3[i])
               model$calculate(dataNodes[i])
@@ -364,7 +366,7 @@ sampler_MarginalizedG_general <- nimbleFunction(
         }else{
           model[[target]][i] <<- model[[target]][j]
           if(type == 'indivCalcs') {
-            model$calculate(intermNodes[i])
+            if(nInterm >= 1) model$calculate(intermNodes[i])
             if(nInterm >= 2) model$calculate(intermNodes2[i])
             if(nInterm >= 3) model$calculate(intermNodes3[i])
             model$calculate(dataNodes[i])
