@@ -25,36 +25,60 @@
 #define M_LN_SQRT_PI	0.572364942924700087071713675677	/* log(sqrt(pi))
 								   == log(pi)/2 */
 #endif
-// template<class Type>
-// Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr, int df, int scale_param, int give_log, int overwrite_inputs){
-//   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-//    int p = xNimArr.dim()[0];
 
-//   char uplo('U');
-//   char sideL('L');
-//   char sideR('R');
-//   char diag('N');
-//   char transN('N');
-//   int info(0);
-//   double alpha(1.0);
-//   int i, j;
+template<class Type>
+Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, double prec_param, int give_log, int overwrite_inputs) { 
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int n = x.dimSize(0);
+  int i;
+  Type dens = Type(-n * M_LN_SQRT_2PI);
+  if(prec_param) {
+    for(i = 0; i < n*n; i += n + 1) 
+      dens += log(chol[i]);
+  } else {
+    for(i = 0; i < n*n; i += n + 1) 
+      dens -= log(chol[i]);
+  }
+  MatrixXt xCopy(n, 1);
+  for(i = 0; i < n; i++)
+    xCopy(i, 0) = x[i] - mean[i];
 
-// //   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
-// //     return NA_REAL;
-// // #ifdef IEEE_754
-// //   if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
-// //     return R_NaN;
-// // #endif
+  Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n);
+  xCopy = eigenChol*xCopy;
+  xCopy = xCopy.array()*xCopy.array();
+  dens += -Type(0.5)*xCopy.sum();
 
-//   // also covers df < 0
-// //   if(df < (double) p) ML_ERR_return_NAN;
+  return give_log ? dens : exp(dens);
+}
 
-// //   if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+template<class Type>
+Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
+	 Type df, Type scale_param, Type give_log, Type overwrite_inputs){
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+   Type p = xNimArr.dim()[0];
+  Type i, j;
 
-//   Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
-//   for(i = 0; i < p; i++)
-//     dens -= lgamma((df - i) / 2);
+//   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+//     return NA_REAL;
+// #ifdef IEEE_754
+//   if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+//     return R_NaN;
+// #endif
 
+  // also covers df < 0
+//   if(df < (double) p) ML_ERR_return_NAN;
+
+//   if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+
+  Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
+  for(i = 0; i < p; i++)
+    dens -= lgamma((df - i) / 2);
+
+  Type sumLogCholNimArr;
+  for(i = 0; i < p; i++){ 
+	sumLogCholNimArr += df * log(cholNimArr(i, i));
+  }
+  dens += CppAD::CondExpEq(scale_param, Type(0), sumLogCholNimArr, -sumLogCholNimArr)
 //   if(scale_param) {
 //     for(i = 0; i < p; i++){ 
 // 	  dens -= df * log(cholNimArr(i, i));
@@ -65,58 +89,28 @@
 // 	}
 //   }
 
-//   // determinant of x using Cholesky:
-//   Eigen::Map<MatrixXt > x(xNimArr.getPtr(), p, p);
+  // determinant of x using Cholesky:
+  Eigen::Map<MatrixXt > eigenX(xNimArr.getPtr(), p, p);
 
 
-// MatrixXt eigenXChol = x.llt().matrixL();
-// for(i = 0; i < p; i++){ 
-// 	for(j = 0; j < p; j++){ 
-//   		dens += (df - p - 1) *  log(eigenXChol(i, j));
-// 	}
-// }
+MatrixXt eigenXChol = eigenX.llt().matrixL();
+for(i = 0; i < p; i++){ 
+  	dens += (df - p - 1) *  log(eigenXChol(i, i));
+}
 
-// Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
-//   Type tmp_dens = 0.0;
-//   if(scale_param) {
-// 	// chol(x) %*% inverse(chol)
-	
-// 	//   SUBROUTINE DTRSM ( SIDE, UPLO, TRANSA, DIAG, M, N, ALPHA, A, LDA,
-// 	//  $                   B, LDB )
-	 
-// 	//  #     op( A )*X = alpha*B,   or   X*op( A ) = alpha*B,
-
-// 	//  alpha = 1
-// 	//  A = chol
-// 	//  B = xChol
-// 	//  diag = N
-// 	//  N = M = p
-// 	//  TransA = N
-// 	//  uplo = U
-// 	// side = R
-// 	// LDA = LDB = p
-	
-// 	// so X*chol = xChol
-// 	// aka cholT*xT = xChol
-// 	MatrixXt eigenSolved = eigenChol.transpose().colPivHouseholderQr().solve(x).transpose();
-
-// 	for(j = 0; j < p; j++){ 
-//       for(i = 0; i <= j; i++){ 
-// 		tmp_dens += eigenSolved(i,j)*eigenSolved(i,j);
-// 	}
-// 	}
-//   } else {
-// 	  MatrixXt cholMultX = eigenChol*x;
-//     for(j = 0; j < p; j++) {
-//       for(i = 0; i <= j; i++) {
-//         tmp_dens += cholMultX(i, j) * eigenChol(i, j);
-//       }
-//     }
-//   }
-
-//   dens += -0.5 * tmp_dens;
-//   return give_log ? dens : exp(dens);
-// }
+ Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
+  Type tmp_dens = 0.0;
+  	MatrixXt eigenSolved = eigenChol.transpose().colPivHouseholderQr().solve(eigenX).transpose();
+	  MatrixXt cholMultX = eigenChol*eigenX;
+	for(j = 0; j < p; j++){ 
+		for(i = 0; i <= j; i++){ 
+			   CppAD::CondExpEq(scale_param, Type(1), eigenSolved(i,j)*eigenSolved(i,j), 
+			   cholMultX(i, j) * eigenChol(i, j));
+			}
+	}
+  dens += -0.5 * tmp_dens;
+  return give_log ? dens : exp(dens);
+}
 
 template<class Type>
 Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){
@@ -588,9 +582,7 @@ Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<
   for(i = 0; i < n; i++)
 	tmp += eigenXcopy(i,0) * eigenXcopy(i,0);
 
-
   logres += Type(-0.5) * (df + n) * log(Type(1) + tmp / df);
-
   return give_log ? logres : exp(logres);
 }
 

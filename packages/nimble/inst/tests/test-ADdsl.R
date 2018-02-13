@@ -345,18 +345,57 @@ distributionArgsList[['dmvt_chol']] <- list(
       )
 )
 
+distributionArgsList[['dmvt_chol']] <- list(
+  distnName = 'dmvt_chol',
+  args = list(x = quote(double(1, 2)),
+              mu = quote(double(1, 2)),
+              cholesky = quote(double(2, c(2, 2))),
+              df = quote(double()),
+              prec_param = quote(double())),
+  argsValues = list(
+    # list(x = numeric(2), mu = numeric(2), cholesky = -diag(2), df = 1, prec_param = 1),
+    # list(x = numeric(2), mean = numeric(2), cholesky = matrix(c(0,0,0,0), nrow = 2)) R and C inconsistency
+    # list(x = numeric(2), mu = numeric(2), cholesky = diag(2), df = 1, prec_param = 1),
+    list(x = c(1.3, 4.1), mu = c(1,4),
+         cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
+         df = 3, prec_param = 0),
+    list(x = c(12.1, 42.1), mu = c(10,40),
+         cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2)),
+         df = 3, prec_param = 0),
+    list(x = c(1.3, 4.1), mu = c(1,4),
+         cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
+         df = 3, prec_param = 1),
+    list(x = c(12.1, 42.1), mu = c(10,40),
+         cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2)),
+         df = 3, prec_param = 1)
+  )
+)
+
+distributionArgsList[['dwish_chol']] <- list(
+  distnName = 'dwish_chol',
+  args = list(x = quote(double(2, c(2,2))),
+              cholesky = quote(double(2, c(2, 2))),
+              df = quote(double()),
+              scale_param = quote(double())),
+  argsValues = list(
+    list(x = matrix(c(1,2,2,1), nrow = 2), 
+         cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
+         df = 3, scale_param = 0)
+  )
+)
+
 nimbleOptions(pauseAfterWritingFiles = FALSE)
 
-runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dmvt_chol']]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dmvt_chol']]))
+runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dwish_chol']]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dwish_chol']]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
-testADDistribution(thisNf, distributionArgsList[['dmvt_chol']]$argsValues,
-                   distributionArgsList[['dmvt_chol']]$distnName, debug = 1)
+testADDistribution(thisNf, distributionArgsList[['dwish_chol']]$argsValues,
+                   distributionArgsList[['dwish_chol']]$distnName, debug = FALSE)
 
 
 
