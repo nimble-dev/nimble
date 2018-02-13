@@ -619,22 +619,24 @@ sampler_G2 <- nimbleFunction(
     # here I'm considering that xi is monitored and that there is only one dCRP distr in the model
     # -- there could be more than one dCRP distribution in the model. In this case we have more
     #    than one vector of xi, how do we identify the tilde variables for each?
+    
     dCRPdistrindex <- distributions == 'dCRP'
     if(sum(dCRPdistrindex) == 1){
       dCRPDistr <- distributions[dCRPdistrindex]
       dCRPNode <- stochNodes[ dCRPdistrindex ] # xi nodes. Is the order in stochNodes and their distributions always the same?!?!?!!
-      dCRPVarindex <- FALSE
-      i=1
-      while(dCRPVarindex == FALSE && i<=length(VarNames)){
-        aux <- model$getDistribution(VarNames[i])
-        aux2 <- aux[1] == 'dCRP'
-        if(sum(aux2, na.rm=TRUE)==0){
-          i=i+1
-        }else{
-          dCRPVar <- VarNames[i]
-          dCRPVarindex <- TRUE
-        }
-      }
+      dCRPVar <- model$getVarNames(nodes=dCRPNode)
+      #dCRPVarindex <- FALSE
+      #i=1
+      #while(dCRPVarindex == FALSE && i<=length(VarNames)){
+      #  aux <- model$getDistribution(VarNames[i])
+      #  aux2 <- aux[1] == 'dCRP'
+      #  if(sum(aux2, na.rm=TRUE)==0){
+      #    i=i+1
+      #  }else{
+      #    dCRPVar <- VarNames[i]
+      #    dCRPVarindex <- TRUE
+      #  }
+      #}
     }else{
       if( sum(dCRPdistrindex) == 0 ){
         stop('there are no random indexes')
@@ -643,6 +645,8 @@ sampler_G2 <- nimbleFunction(
         stop('only one dCRP distribution is allowed for now')
       }
     }
+    
+    
     
     # getting variable and node conc,  assuming there is only one conc parameter
     concNode <- FALSE
@@ -689,54 +693,72 @@ sampler_G2 <- nimbleFunction(
   
     # getting tilde variables
     targetElements <- model$expandNodeNames(dCRPNode, returnScalarComponents=TRUE)
-    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
+    #nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
     tildevarNames=c()
     itildeVar <- 1
     stochDepOnly <- FALSE
     
-    if(nInterm == 0){ stochDepOnly <- TRUE } # only stoch dependency on xi
-    if(nInterm >= 1){
-      detDep <- model$getDependencies(targetElements[1], determOnly = TRUE)
-      for(i in 1:length(detDep)){ # find the deterministic variables that depend xi
-        detDepi <- detDep[i]
-        detDepExpr <- model$getValueExpr(detDepi)
-        if(is.call(detDepExpr) && detDepExpr[[1]]=='['){ # deter. nodes that can depend on xi
-          if(detDepExpr[[3]] == 'xi[1]'){
-            tildevarNames[itildeVar] <- VarNames[which(VarNames==detDepExpr[[2]])]
-            itildeVar <- itildeVar+1 
-          }
-        }
-        if(is.call(detDepExpr) && detDepExpr[[1]]!='[' && length(detDep)==1){ # another case of stochDepe only: where the deterministic node (only 1) is the reparam of variance 
-          stochDepOnly <- TRUE # if length(detDep)>1 ????
-        }
+    detDep <- model$getDependencies(targetElements[1])
+    for(i in 1:length(detDep)){ 
+      detDepi <- detDep[i]
+      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(detDepi))
+      expr <- parse(text = expr)[[1]]
+      if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
+        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        itildeVar <- itildeVar+1 
       }
     }
-    if(stochDepOnly){
-      stochDep1 <- model$getDependencies(targetElements[1], self = FALSE) # y[1] and reparametrization
-      stochDep2 <- model$getDependencies(targetElements[1], self = FALSE, stochOnly=TRUE) # y[1]
-      paramExprs1 <- nimble:::cc_getNodesInExpr(model$getValueExpr(stochDep1)) #e.g., 'mean = theta[xi[i]], var = sigma' 
-      paramExprs2 <- nimble:::cc_getNodesInExpr(model$getValueExpr(stochDep2)) #e.g., 'mean = theta[xi[i]], var = sigma' 
+        
+    
+    #if(nInterm == 0){ stochDepOnly <- TRUE } # only stoch dependency on xi
+    #if(nInterm >= 1){
+    #  detDep <- model$getDependencies(targetElements[1], determOnly = TRUE)
+    #  for(i in 1:length(detDep)){ # find the deterministic variables that depend xi
+    #    detDepi <- detDep[i]
+        #detDepExpr <- model$getValueExpr(detDepi)
+    #    expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(detDepi))
+    #    expr <- parse(text = expr)[[1]]
+    #    if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
+    #      tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+    #      itildeVar <- itildeVar+1 
+    #    }
+        #if(is.call(detDepExpr) && detDepExpr[[1]]=='['){ # deter. nodes that can depend on xi
+        #  if(detDepExpr[[3]] == 'xi[1]'){
+        #    tildevarNames[itildeVar] <- VarNames[which(VarNames==detDepExpr[[2]])]
+        #    itildeVar <- itildeVar+1 
+        #  }
+        #}
+        #if(is.call(detDepExpr) && detDepExpr[[1]]!='[' && length(detDep)==1){ # another case of stochDepe only: where the deterministic node (only 1) is the reparam of variance 
+        #  stochDepOnly <- TRUE # if length(detDep)>1 ????
+        #}
+    #  }
+    #}
+    #if(stochDepOnly){
+    #  stochDep1 <- model$getDependencies(targetElements[1], self = FALSE) # y[1] and reparametrization
+      #stochDep2 <- model$getDependencies(targetElements[1], self = FALSE, stochOnly=TRUE) # y[1]
+    #  paramExprs1 <- nimble:::cc_getNodesInExpr(model$getValueExpr(stochDep1)) #e.g., 'mean = theta[xi[i]], var = sigma' 
+      #paramExprs2 <- nimble:::cc_getNodesInExpr(model$getValueExpr(stochDep2)) #e.g., 'mean = theta[xi[i]], var = sigma' 
       
-      for(i in 1:length(paramExprs1)){ # we get the tilde variance
-        expr <- parse(text = paramExprs1[i])[[1]]
-        if(is.call(expr) && expr[[1]]=='['){ # case where we have random sigma and its reparametrication; can it be >3?
-          if(expr[[3]] == 'xi[1]'){
-            tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
-            itildeVar <- itildeVar+1 
-          }
-        }
-      }
-      for(i in 1:length(paramExprs2)){ # we get the tilde mean
-        expr <- parse(text = paramExprs2[i])[[1]]
-        if(is.call(expr) && expr[[1]]=='['){ # case where we have random sigm yand its reparametrication; can it be >3?
-          if(expr[[3]] == 'xi[1]'){
-            tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
-            itildeVar <- itildeVar+1 
-          }
-        }
-      }
-    }
-    tildevarNames <- unique(tildevarNames)
+    #  for(i in 1:length(paramExprs1)){ # we get the tilde variance
+    #    expr <- parse(text = paramExprs1[i])[[1]]
+    #    if(is.call(expr) && expr[[1]]=='['){ # case where we have random sigma and its reparametrication; can it be >3?
+    #      if(expr[[3]] == 'xi[1]'){
+    #        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+    #        itildeVar <- itildeVar+1 
+    #      }
+    #    }
+    #  }
+    #  for(i in 1:length(paramExprs2)){ # we get the tilde mean
+    #    expr <- parse(text = paramExprs2[i])[[1]]
+    #    if(is.call(expr) && expr[[1]]=='['){ # case where we have random sigm yand its reparametrication; can it be >3?
+    #      if(expr[[3]] == 'xi[1]'){
+    #        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+    #        itildeVar <- itildeVar+1 
+    #      }
+    #    }
+    #  }
+    #}
+    #tildevarNames <- unique(tildevarNames)
     
     p <- length(tildevarNames)
     
