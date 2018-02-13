@@ -130,20 +130,21 @@ sampler_MarginalizedG_general <- nimbleFunction(
     
     # first check that the sampler can be used: N=N2
     N2 <- length(model[[target]]) # number of xi in the model
+    N <- length(model$getDependencies(targetElements, dataOnly = TRUE) )
     VarNames <- model$getVarNames()
     data <- model$getDependencies(targetElements[1], dataOnly = TRUE) 
-    i <- 1
-    condaux <- TRUE
-    while(condaux && i<=length(VarNames)){
-      expandVarNames <- model$expandNodeNames(VarNames[i])
-      if(expandVarNames[1] == data){
-        dataVar=VarNames[i]
-        condaux <- FALSE
-      }else{
-        i=i+1
-      }
-    }
-    N <- length(model[[dataVar]])
+    #i <- 1
+    #condaux <- TRUE
+    #while(condaux && i<=length(VarNames)){
+    #  expandVarNames <- model$expandNodeNames(VarNames[i])
+    #  if(expandVarNames[1] == data){
+    #    dataVar=VarNames[i]
+    #    condaux <- FALSE
+    #  }else{
+    #    i=i+1
+    #  }
+    #}
+    #N <- length(model[[dataVar]])
     
     if(N != N2){ stop('length of random indexes and observations has to be the same') }
     
@@ -253,7 +254,7 @@ sampler_MarginalizedG_general <- nimbleFunction(
           if(nInterm >= 2)
               intermNodes2[i] <- detDeps[2]
           if(nInterm >= 3)
-              intermNodes3[i] <- detDeps[3]
+            intermNodes3[i] <- detDeps[3]
         #if(nInterm==0){ # find tilde variables?
         #  intermNodes[i] <- tildeVariable[xi[i]]?????
         #}  
@@ -270,20 +271,32 @@ sampler_MarginalizedG_general <- nimbleFunction(
       if(nInterm) {  # 1 intermediate; e.g. theta[i] <- thetatilde[xi[i]]
         detDep <- model$getDependencies(targetElements[1], determOnly = TRUE)  # e.g., 'theta[1]'
         detDepExpr <- model$getValueExpr(detDep)  # e.g., thetatilde[xi[1]]
-        if(is.call(detDepExpr)){ #detects clusterNodes for thetatilde and s2tilde
-          if(detDepExpr[[1]] == '['){
+        if(is.call(detDepExpr)){ #detects clusterNodes for thetatilde and s2tilde when nInterm=1
+          if(detDepExpr[[1]] == '['){  # detects thetatilde when thetatilde defined a deterministc node
             if(detDepExpr[[3]] != targetElements[1]) {
               conjugate <- FALSE
             } else clusterNodes <- model$expandNodeNames(deparse(detDepExpr[[2]]))  # e.g., 'thetatilde[1]',...,
-          }
-          if(detDepExpr[[1]] == 'sqrt'){ # case when we have y[i] ~ dnorm(0, var=s2tilde[xi[i]]):  nInterm=1 and detDepExpr = sqrt(s2tilde[xi[1]]))
-            detDepExpr2 <-  detDepExpr[[2]]
-            if(detDepExpr2[[1]] == '['){
-              if(detDepExpr2[[3]] != targetElements[1]) {
+          }else{ # detects s2tilde when no deteministic nodes involve s2tilde
+            expr <- nimble:::cc_getNodesInExpr(detDepExpr) # s2tilde[xi[1]]
+            if(expr==detDepExpr[[2]]){ # making sure that var= s2tilde[xi[1]] and not var=2+ s2tilde[xi[1]] 
+              expr <- parse(text = expr)[[1]]
+              if(is.call(expr) && expr[[1]] == '[' && expr[[3]] != targetElements[1]) {
                 conjugate <- FALSE
-              } else clusterNodes <- model$expandNodeNames(deparse(detDepExpr2[[2]]))  # e.g., 'thetatilde[1]',...,
+              }else{
+                clusterNodes <- model$expandNodeNames(deparse(expr[[2]]))
+              }
+            }else{
+              conjugate <- FALSE
             }
           }
+          #if(detDepExpr[[1]] == 'sqrt'){ # case when we have y[i] ~ dnorm(0, var=s2tilde[xi[i]]):  nInterm=1 and detDepExpr = sqrt(s2tilde[xi[1]]))
+          #  detDepExpr2 <-  detDepExpr[[2]]
+          #  if(detDepExpr2[[1]] == '['){
+          #    if(detDepExpr2[[3]] != targetElements[1]) {
+          #      conjugate <- FALSE
+          #    } else clusterNodes <- model$expandNodeNames(deparse(detDepExpr2[[2]]))  # e.g., 'thetatilde[1]',...,
+          #  }
+          #}
         }else{
           conjugate <- FALSE # we should determine conjugacy!?
         }
