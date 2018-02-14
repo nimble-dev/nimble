@@ -227,7 +227,6 @@ sampler_MarginalizedG_general <- nimbleFunction(
     #    }
     #  }
     #}
-    if(exists('AAA')) browser()
     nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
     dataNodes <- rep("", n)
     type <- 'indivCalcs'
