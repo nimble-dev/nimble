@@ -238,6 +238,16 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     ## if node distribution is discrete, assign 'slice' sampler
                     if(discrete) { addSampler(target = node, type = 'slice');     next }
                     
+                    ## if node distribution is dgamma and its dependency is dCRP, assign 'augmented_BetaGamma' sampler
+                    if(nodeDist == 'dgamma'){
+                      depNode <- model$getDependencies(node, self=FALSE)
+                      depNodeDist <- model$getDistribution(depNode)
+                      if(depNodeDist == 'dCRP'){
+                        addSampler(target = node, type = 'Augmented_BetaGamma')
+                      }
+                      next
+                    }
+                    
                     ## default: 'RW' sampler
                     addSampler(target = node, type = 'RW');     next
                 }
