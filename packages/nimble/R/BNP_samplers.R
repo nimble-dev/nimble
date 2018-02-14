@@ -873,7 +873,7 @@ sampler_G2 <- nimbleFunction(
 #-- Sampler for concentration parameter, conc, of the dCRP distribution.
 
 sampler_Augmented_BetaGamma <- nimbleFunction(
-  #name = 'sampler_Augmente_BetaGamma',
+  name = 'sampler_Augmented_BetaGamma',
   contains=sampler_BASE,
   
   setup=function(model, mvSaved, target, control){
