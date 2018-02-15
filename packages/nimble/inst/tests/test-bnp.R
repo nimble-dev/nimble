@@ -12,6 +12,50 @@ library(nimble)
 #source("./packages/nimble/R/BNP_distributions.R")
 #source("./packages/nimble/R/BNP_samplers.R")
 
+
+#--------------------------------------------------
+# no deterministic nodes
+Code=nimbleCode(
+  {
+    for(i in 1:N3){
+      thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+      #s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
+    }
+    xi[1:N2] ~ dCRP(conc)
+    
+    for(i in 1:N){
+      #theta[i] <- thetatilde[xi[i]]
+      y[i] ~ dnorm(thetatilde[xi[i]] , var=2)#s2tilde[xi[i]]
+    }
+    conc<-1;a0<-1 ; b0<- 0.5; mu0<-0; tau20<-40; 
+  }
+)
+
+
+
+conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
+Consts=list(N=50, N2=50, N3=50)
+set.seed(1)
+aux=sample(1:10, size=Consts$N2, replace=TRUE)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20))) #, s2tilde=rinvgamma(Consts$N3, a0, b0)
+
+s20=4; s21=4
+mu01=5; mu11=-5
+Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
+
+#-- compiling the model:
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
+
+modelConf<-configureMCMC(model, print=FALSE)
+modelConf$printSamplers(c("xi"))
+modelMCMC=buildMCMC(modelConf)
+
+#-- compiling the sampler
+CmodelNewMCMC=compileNimble(modelMCMC, project=model,
+                            resetFunctions=TRUE, showCompilerOutput = TRUE)
+
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 #-- tests for BNP models using CRP prior for labels.
@@ -187,7 +231,7 @@ Code=nimbleCode(
       #s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
     }
     xi[1:N2] ~ dCRP(conc)
-    
+     
     for(i in 1:N){
       #theta[i] <- thetatilde[xi[i]]
       y[i] ~ dnorm(thetatilde[xi[i]] , var=2)#s2tilde[xi[i]]
@@ -202,7 +246,7 @@ conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
 Consts=list(N=50, N2=50, N3=50)
 set.seed(1)
 aux=sample(1:10, size=Consts$N2, replace=TRUE)
-Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)))#s2tilde=rinvgamma(Consts$N3, a0, b0)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20))) #, s2tilde=rinvgamma(Consts$N3, a0, b0)
 
 s20=4; s21=4
 mu01=5; mu11=-5
