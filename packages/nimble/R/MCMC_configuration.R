@@ -242,7 +242,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     if(nodeDist == 'dgamma'){
                       depNode <- model$getDependencies(node, self=FALSE)
                       depNodeDist <- model$getDistribution(depNode)
-                      if(depNodeDist == 'dCRP'){
+                      if(depNodeDist == 'dCRP' && length(depNodeDist) == 1){
                         addSampler(target = node, type = 'Augmented_BetaGamma')
                       }
                       next
