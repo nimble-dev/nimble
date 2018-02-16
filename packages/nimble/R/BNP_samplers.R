@@ -254,39 +254,43 @@ sampler_MarginalizedG_general <- nimbleFunction(
     #    }
     #  }
     #}
-    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
-    dataNodes <- rep("", n)
-    type <- 'indivCalcs'
+      nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
+      dataNodes <- rep(targetElements[1], n) ## this serves as dummy nodes that may be replaced below
+      ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
+      type <- 'indivCalcs'
     
-    intermNodes <- dataNodes
-    intermNodes2 <- dataNodes
-    intermNodes3 <- dataNodes
-    if(nInterm > 3) type <- "allCalcs"  ## give up and do the inefficient approach
-    for(i in seq_len(n)) {
-      stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self=FALSE) 
-      detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
-      if(length(stochDeps) != 1) 
-        stop("Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
-      if(length(detDeps) != nInterm) {
-        type <- 'allCalcs'  # give up again; should only occur in strange situations
+      intermNodes <- dataNodes
+      intermNodes2 <- dataNodes
+      intermNodes3 <- dataNodes
+      if(nInterm > 3) {
+          type <- "allCalcs"  ## give up and do the inefficient approach
       } else {
-          dataNodes[i] <- stochDeps[1]
-          
-          if(nInterm >= 1) {  # this should handle case of no intermediates - Chris
-              intermNodes[i] <- detDeps[1]
-              intermNodes2[i] <- detDeps[1]
-              intermNodes3[i] <- detDeps[1]
-          }
-          if(nInterm >= 2)
-              intermNodes2[i] <- detDeps[2]
-          if(nInterm >= 3)
-            intermNodes3[i] <- detDeps[3]
-        #if(nInterm==0){ # find tilde variables?
+          for(i in seq_len(n)) {
+              stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self=FALSE) 
+              detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+              if(length(stochDeps) != 1) 
+                  stop("Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+              if(length(detDeps) != nInterm) {
+                  type <- 'allCalcs'  # give up again; should only occur in strange situations
+              } else {
+                  dataNodes[i] <- stochDeps[1]
+                  
+                  if(nInterm >= 1) {  # this should handle case of no intermediates - Chris
+                      intermNodes[i] <- detDeps[1]
+                      intermNodes2[i] <- detDeps[1]
+                      intermNodes3[i] <- detDeps[1]
+                  }
+                  if(nInterm >= 2)
+                      intermNodes2[i] <- detDeps[2]
+                  if(nInterm >= 3)
+                      intermNodes3[i] <- detDeps[3]
+                                        #if(nInterm==0){ # find tilde variables?
         #  intermNodes[i] <- tildeVariable[xi[i]]?????
         #}  
+              }
+          }
       }
-    }
-    
+          
     ## determination of conjugacy for one tilde node that has 1 or 0 determnistic nodes
     ## does not find conjugacy when we have random mean and variance defined by deterministic nodes
     ## does find conjugacy when we have random mean  defined or not by deterministic nodes
