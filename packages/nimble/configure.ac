@@ -66,7 +66,7 @@ if test "${ENABLE_DEBUGGING}" = "yes"; then
    echo "enabling R's default debugging information in libnimble"
    GNUMAKEFILE_INCLUDE_MAKECONF="\$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
 else
-   GNUMAKEFILE_INCLUDE_MAKECONF="./Makeconf"
+   GNUMAKEFILE_INCLUDE_MAKECONF="Makeconf"
 fi
 AC_SUBST(GNUMAKEFILE_INCLUDE_MAKECONF)
 

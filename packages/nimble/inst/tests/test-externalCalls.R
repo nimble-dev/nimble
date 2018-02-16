@@ -81,12 +81,11 @@ void my_internal_function(double *p, double *ans, int n) {
     demoCode <- nimbleCode({
         for(i in 1:4) {x[i] ~ dnorm(0,1)} ## just to get a vector
         y[1:4] <- wrappedRadd1p5(x[1:4])
-        z[1:4] <- Radd2p5(x[1:4])
+        z[1:4] <- Radd2p5(x[1:4]) 
     })
-    
-    demoModel <- nimbleModel(demoCode, inits = list(x = rnorm(4)), check = FALSE, calculate = FALSE)
+    ## building model will test uncompiled execution.
+    demoModel <- nimbleModel(demoCode, inits = list(x = rnorm(4)), check = FALSE)
     ## Again ignore the error during checking.  We'll have to trap and handle that, but right now I'm focused on core functionality.
-    ## The model will not work uncompiled!
     
     CdemoModel <- compileNimble(demoModel, dirName = '.') ## last arg puts the C++ code in your working directory so you can look at it if you like
 

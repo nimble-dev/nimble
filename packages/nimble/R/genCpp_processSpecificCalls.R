@@ -275,7 +275,7 @@ rFunHandler <- function(code, symTab) {
     ## strip the 1 from the first argument.  In the future we will need to condition on whether this is 1 or >1
     ## This is a funny step because building the R function *inserted* the 1 from the BUGS code
     notOK <- if(!is.numeric(code$args[[1]])) TRUE else code$args[[1]] != 1
-    if(notOK) writeLines(paste('Warning: we currently expect to see a 1 and only a 1 as the first argument to an r[dist] call'))
+    if(notOK) writeLines(paste('Warning: we currently expect to see a 1 and only a 1 as the first argument to an rcat or rinterval call'))
     code$args[[1]] <- NULL
     for(i in seq_along(code$args)) {
         if(inherits(code$args[[i]], 'exprClass')) {

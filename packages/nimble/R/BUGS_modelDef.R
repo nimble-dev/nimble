@@ -2556,6 +2556,15 @@ modelDefClass$methods(genVarInfo3 = function() {
         if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }
+
+    ## check for mins or maxs zero or less (these trigger various errors including R crashes)
+    if(any(sapply(varInfo, function(x) length(x$mins) && min(x$mins) < 1)) ||
+       any(sapply(varInfo, function(x) length(x$maxs) && min(x$maxs) < 1))) {
+           problemVars <- c(which(sapply(varInfo, function(x) min(x$mins)) < 1),
+                         which(sapply(varInfo, function(x) min(x$maxs)) < 1))
+           stop("genVarInfo3: index value of zero or less found for model variable(s): ",
+                paste(names(varInfo)[problemVars], collapse = ' '))
+    }
 })
 
 modelDefClass$methods(addUnknownIndexVars = function(debug = FALSE) {

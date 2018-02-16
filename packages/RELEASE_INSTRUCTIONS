@@ -64,6 +64,10 @@ chmod go+w nimble_${VERSION}.tar.gz
 
 ./writePackages
 
+put new user manual in /web/R-nimble/wordpress/manuals
+and change symlink to point to newest pdf
+and change to g+w for NimbleUserManual_$VERSION.pdf
+
 go to website: R-nimble.org/login and login 
 
 note that to make a new blog post or modify pages, need to 
@@ -71,9 +75,7 @@ deactivate Google analyticator on Plugins -> Installed Plugins page
 
 change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version on Archived versions page.
 
-put new user manual in /web/R-nimble/wordpress/manuals
-and change symlink to point to newest pdf
-and change to g+w for NimbleUserManual_$VERSION.pdf
+update previous releases page
 
 update documentation page with link to updated manual
 
@@ -81,7 +83,7 @@ add info on new release to release notes page
 
 update version numbering on license and citation page
 
-make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers)
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 

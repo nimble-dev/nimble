@@ -1,5 +1,5 @@
 #' Class \code{modelBaseClass}
-#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData isEndNode getDistribution isDiscrete isBinary isStoch isDeterm isTruncated isUnivariate getDimension getDependencies setInits checkConjugacy newModel [[,modelBaseClass-method [[<-,modelBaseClass-method initializeInfo
+#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData isEndNode getDistribution isDiscrete isBinary isStoch isDeterm isTruncated isUnivariate isMultivariate getDimension getDependencies getDependenciesList getDownstream expandNodeNames setInits checkConjugacy getCode newModel [[,modelBaseClass-method [[<-,modelBaseClass-method initializeInfo
 #' @export
 #' @description
 #' This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
@@ -903,8 +903,10 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                       e <- try(.self$getParam(nfn, nms[k]))
 
                                                       if(!is(e, "try-error")) {
-                                                          sizes[[nms[k]]] <- nimbleInternalFunctions$dimOrLength(e)
-                                                          if(prod(sizes[[nms[[k]]]]) == 1) sizes[[nms[[k]]]] <- numeric()
+                                                          if(!is.null(e)) {
+                                                              sizes[[nms[k]]] <- nimbleInternalFunctions$dimOrLength(e)
+                                                              if(prod(sizes[[nms[[k]]]]) == 1) sizes[[nms[[k]]]] <- numeric()
+                                                          } else sizes[[nms[[k]]]] <- NA # when have param with dim > 2
                                                       } else warning(paste0("Unable to calculate parameter '", nms[k], "'; this may simply reflect that there are missing values in model variables."))
                                                   }
                                         # check dimensions based on varInfo

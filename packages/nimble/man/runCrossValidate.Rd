@@ -6,7 +6,7 @@
 \usage{
 runCrossValidate(MCMCconfiguration, k, foldFunction = "random",
   lossFunction = "MSE", MCMCcontrol = list(), returnSamples = FALSE,
-  nCores = 1, nBootReps = 200)
+  nCores = 1, nBootReps = 200, silent = FALSE)
 }
 \arguments{
 \item{MCMCconfiguration}{a NIMBLE MCMC configuration object, returned by a 
@@ -43,7 +43,10 @@ parallelizing the CV calculation. Only MacOS and Linux operating systems support
 cores at this time.  Defaults to 1.}
 
 \item{nBootReps}{number of bootstrap samples
-to use when estimating the Monte Carlo error of the cross-validation metric.}
+to use when estimating the Monte Carlo error of the cross-validation metric. Defaults to 200.  If no Monte Carlo error estimate is desired,
+\code{nBootReps} can be set to \code{NA}, which can potentially save significant computation time.}
+
+\item{silent}{Boolean specifying whether to show output from the algorithm as it's running (default = FALSE).}
 }
 \value{
 an R list with four elements:
