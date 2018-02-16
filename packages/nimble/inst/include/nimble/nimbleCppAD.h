@@ -19,6 +19,9 @@
  * https://www.R-project.org/Licenses/
  */
 
+// define this to include timing code
+#define _TIME_AD
+
 /* Definitions only to be included when a nimbleFunction needs CppAD */
 #include <cppad/cppad.hpp>
 #include <cppad/utility/nan.hpp>
@@ -34,6 +37,81 @@
 #include <cstdio>
 #include <vector>
 
+#ifdef _TIME_AD
+extern "C" {
+  SEXP reset_AD_timers(SEXP SreportInterval);
+}
+#include <chrono>
+#include <cstdio>
+#include <iostream>
+#include <string>
+typedef std::chrono::high_resolution_clock::time_point timetype;
+class ad_timer {
+private:
+  timetype t1, t2;
+  double totaltime;
+  unsigned int ticks, totalticks;
+  unsigned int report_interval;
+  bool touched;
+public:
+  std::string name;
+  ad_timer(std::string myname) {
+    touched = false;
+    name = myname;
+    reset();
+    set_interval(100);
+    std::cout << std::chrono::high_resolution_clock::duration::period::den << std::endl;
+  }
+  void reset() {
+    totaltime = 0;
+    ticks = 0;
+    totalticks = 0;
+  }
+  void set_interval(int ri) {
+    report_interval = static_cast<unsigned int>(ri);
+  }
+  void start(bool verbose = false) {
+    touched = true;
+      t1 = std::chrono::high_resolution_clock::now();
+    if(verbose) {
+      printf("start %g\n", static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(t1.time_since_epoch()).count()));
+    }
+  }
+  void tick() {
+    ++ticks;
+  }
+  void stop(bool verbose = false) {
+    t2 = std::chrono::high_resolution_clock::now();
+    double oldtotaltime = totaltime;
+    if(verbose) {
+      printf("stop %g (%g) (%g)",
+	     static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(t2.time_since_epoch()).count()),
+	     static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()),
+	     totaltime);
+    }
+    totaltime += static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count());
+    if(verbose) {
+      printf(" (%g) (%g)\n", totaltime, oldtotaltime-totaltime);
+    }
+  }
+  void report() {
+    tick();
+    if(ticks >= report_interval) {
+      totalticks += ticks;
+      printf("Reporting time for %s (%i): %g (%i)\n",
+	     name.c_str(),
+	     totalticks,
+	     totaltime,
+	     static_cast<int>(touched));
+      ticks = 0;
+    }
+  }
+};
+void derivs_getDerivs_timer_start();
+void derivs_getDerivs_timer_stop();
+void derivs_run_tape_timer_start();
+void derivs_run_tape_timer_stop();
+#endif
 
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction
    object
@@ -54,105 +132,8 @@ public:
   void                        getDerivs(nimbleCppADinfoClass &ADinfo,
                                         NimArr<1, double> &derivOrders,
                                         const NimArr<1, double> &wrtVector,
-                                        nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
-    std::size_t n = ADinfo.independentVars.size();  // dim of independent vars
-
-    std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
-    if(wrt_n == 2){
-      if(wrtVector[1] == -1){
-        wrt_n = 1;
-      }
-    }
-    int orderSize = derivOrders.size();
-    double array_derivOrders[orderSize];
-
-    std::memcpy(array_derivOrders, derivOrders.getPtr(),
-                orderSize * sizeof(double));
-
-    int maxOrder =
-        *std::max_element(array_derivOrders, array_derivOrders + orderSize);
-    bool ordersFound[3] = {false};
-
-    for (int i = 0; i < orderSize; i++) {
-      if ((array_derivOrders[i] > 2) | (array_derivOrders[i] < 0)) {
-        printf("Error: Derivative orders must be between 0 and 2.\n");
-      }
-      ordersFound[static_cast<int>(array_derivOrders[i])] = true;
-    }
-    vector<double> value_ans;
-    value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
-    if (ordersFound[0] == true) {
-      ansList->value = vectorDouble_2_NimArr(value_ans);
-    }
-    if(maxOrder > 0){
-      std::size_t q = value_ans.size();
-      vector<bool> infIndicators(q); 
-      for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
-        if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
-          (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
-          (isnan(value_ans[inf_ind]))){
-          infIndicators[inf_ind] = true;
-        }
-        else{
-          infIndicators[inf_ind] = false;
-        }
-      }
-      if (ordersFound[1] == true) {
-        ansList->jacobian.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
-      }
-      if (ordersFound[2] == true) {
-        ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
-      }
-        vector<double> cppad_derivOut;
-        for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
-          std::vector<double> w(q, 0);
-          w[dy_ind] = 1;
-          if (maxOrder == 1) {   
-            if(infIndicators[dy_ind] == false){
-              cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
-            }
-          } else {
-            for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-              if(infIndicators[dy_ind] == false){
-                int dx1_ind = wrtVector[vec_ind] - 1;
-                std::vector<double> x1(n, 0);  // vector specifying first derivatives.
-                                              // first specify coeffs for first dim
-                                              // of s across all directions r, then
-                                              // second dim, ...
-                x1[dx1_ind] = 1;
-                ADinfo.ADtape->Forward(1, x1);
-                cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
-              }
-              for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
-                if(infIndicators[dy_ind] == false){
-                  int dx2_ind = wrtVector[vec_ind2] - 1;
-                  ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
-                      cppad_derivOut[dx2_ind * 2 + 1];
-                }
-                else{
-                  ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] = 
-                  CppAD::numeric_limits<double>::quiet_NaN();
-                }
-              }
-            }
-          }
-          if (ordersFound[1] == true) {
-            for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-              if(infIndicators[dy_ind] == false){
-                int dx1_ind = wrtVector[vec_ind] - 1;
-                ansList->jacobian[vec_ind * q + dy_ind] =
-                    cppad_derivOut[dx1_ind * maxOrder + 0];
-              }
-              else{
-                ansList->jacobian[vec_ind * q + dy_ind] =
-                CppAD::numeric_limits<double>::quiet_NaN();
-              }     
-            }
-          }
-      }
-    }
-  };
-
+                                        nimSmartPtr<NIMBLE_ADCLASS> &ansList);
+  
    nimSmartPtr<NIMBLE_ADCLASS> getDerivs_wrapper(nimbleCppADinfoClass &ADinfo,
                                         NimArr<1, double> &derivOrders,
                                         const NimArr<1, double> &wrtVector){
