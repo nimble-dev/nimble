@@ -126,10 +126,10 @@ sampler_MarginalizedG_general <- nimbleFunction(
     
     calcNodes <- model$getDependencies(target)
     targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
-    n <- length(targetElements)
+    n <- length(targetElements) # N2
     
     # first check that the sampler can be used: N=N2
-    N2 <- length(model[[target]]) # number of xi in the model
+    #N2 <- length(model[[target]]) # number of xi in the model
     N <- length(model$getDependencies(targetElements, dataOnly = TRUE) )
     VarNames <- model$getVarNames()
     data <- model$getDependencies(targetElements[1], dataOnly = TRUE) 
@@ -146,7 +146,7 @@ sampler_MarginalizedG_general <- nimbleFunction(
     #}
     #N <- length(model[[dataVar]])
     
-    if(N != N2){ stop('length of random indexes and observations has to be the same') }
+    if(N != n){ stop('length of random indexes and observations has to be the same') }
     
     # finding tilde variables:
     tildevarNames=c()
@@ -182,7 +182,7 @@ sampler_MarginalizedG_general <- nimbleFunction(
       stop('tilde variables have different length')
     }
     for(i in 1:length(N3)){
-      if(N3[i] < N2){ stop('length of tilde node has to be at least equal to length of random indexes') }   
+      if(N3[i] < n){ stop('length of tilde node has to be at least equal to length of random indexes') }   
     }
     
     #tildeVariable <- c()
