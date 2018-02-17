@@ -55,6 +55,9 @@ Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
+Once CRAN package accepted:
+
+
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
 
@@ -103,6 +106,12 @@ probably best at this point also to merge master onto devel
 
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote
+
+### updating Github README
+
+Update version number in README.md and create a new release based on the new version tag
+This will autogenerate a zenodo page and DOI
+update the DOI tag at top of README and the DOI url in the citations in README
 
 ### building binaries
 
