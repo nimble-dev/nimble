@@ -4,6 +4,7 @@
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/nimble-dev/nimble?branch=devel&svg=true)](https://ci.appveyor.com/project/nimble-dev/nimble)
 [![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1174525.svg)](https://zenodo.org/record/1174525)
+[![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/nimble-users)
 
 [Website](https://r-nimble.org/) |
 [Documentation](https://r-nimble.org/manuals/NimbleUserManual.pdf) |
