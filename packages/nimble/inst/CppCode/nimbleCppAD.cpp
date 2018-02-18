@@ -6,10 +6,32 @@ ad_timer derivs_calc_timer("derivs_calc");
 ad_timer derivs_node_iteration_timer("derivs_node_iteration");
 ad_timer derivs_getDerivs_timer("derivs_getDerivs");
 ad_timer derivs_run_tape_timer("derivs_run_tape");
-void derivs_getDerivs_timer_start() {derivs_getDerivs_timer.start(true);}
+int id(0);
+// Include the following line to see node by node timing timing
+// results within use of getDerivs and use of CppAD tapes.  This
+// generates a lot of output.
+//#define _SHOW_NODE_BY_NODE 
+void derivs_getDerivs_timer_start() {derivs_getDerivs_timer.start(false);}
+void derivs_run_tape_timer_start() {derivs_run_tape_timer.start(false);}
+#ifdef _SHOW_NODE_BY_NODE 
 void derivs_getDerivs_timer_stop() {derivs_getDerivs_timer.stop(true);}
-void derivs_run_tape_timer_start() {derivs_run_tape_timer.start();}
-void derivs_run_tape_timer_stop() {derivs_run_tape_timer.stop();}
+void derivs_run_tape_timer_stop() {derivs_run_tape_timer.stop(true);}
+void derivs_show_id() {std::cout<<"(id "<<id<<")"<<std::endl;}
+#else
+void derivs_getDerivs_timer_stop() {derivs_getDerivs_timer.stop(false);}
+void derivs_run_tape_timer_stop() {derivs_run_tape_timer.stop(false);}
+void derivs_show_id() {}
+#endif
+  void derivs_tick_id() {++id;}
+
+SEXP report_AD_timers() {
+  derivs_main_timer.show_report();
+  derivs_calc_timer.show_report();
+  derivs_node_iteration_timer.show_report();
+  derivs_getDerivs_timer.show_report();
+  derivs_run_tape_timer.show_report();
+  return(R_NilValue);
+}
 
 SEXP reset_AD_timers(SEXP SreportInterval) {
   derivs_main_timer.reset();
@@ -24,13 +46,15 @@ SEXP reset_AD_timers(SEXP SreportInterval) {
   derivs_run_tape_timer.set_interval(INTEGER(SreportInterval)[0]);
   return(R_NilValue);
 }
+
 #endif
 
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
-    const NodeVectorClassNew_derivs &nodes,
-    const NimArr<1, double> &derivOrders) {
-
+						 const NodeVectorClassNew_derivs &nodes,
+						 const NimArr<1, double> &derivOrders) {
+#ifdef _TIME_AD
   derivs_main_timer.start();
+#endif
   
   nimSmartPtr<NIMBLE_ADCLASS> ansList =
       new NIMBLE_ADCLASS;  // This will be returned from this funciton.
@@ -146,7 +170,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   iLength = nodes.parentIndicesList.size();
   int sumAddedScalarNodes = 0;
   for (int i = 0; i < iLength; i++) {
+#ifdef _TIME_AD
     derivs_node_iteration_timer.start();
+#endif
     isDeterminisitic =
         1 - nodes.stochNodeIndicators[i];  // Is node i deterministic?
     isWrtLine = (nodes.cumulativeWrtLineNums[i] >= 0);  // Is node i a wrt node
@@ -187,12 +213,16 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
           }
         }
         else{
+#ifdef _TIME_AD
 	  derivs_calc_timer.start();
+#endif
 	  instructions[i - sumAddedScalarNodes].nodeFunPtr->calculateWithArgs_derivBlock(
 											 instructions[i - sumAddedScalarNodes].operand, newDerivOrders, nodes.cppWrtArgIndices[i],
 											 thisDerivList);  // Derivatives of calculate() for
 	  // node i are computed here.
+#ifdef _TIME_AD
 	  derivs_calc_timer.stop();
+#endif
         }
         thisRows = (*thisDerivList).jacobian.dimSize(0);
         thisCols = (*thisDerivList).jacobian.dimSize(1);
@@ -690,19 +720,22 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
         (*ansList).value[0] = (*ansList).value[0] + (*thisDerivList).value[0];
       }
     }
+#ifdef _TIME_AD
     derivs_node_iteration_timer.stop();	
+#endif
   }
   if (hessianFlag) {  // reflect Hessian across the diagonal
     ansHessian.triangularView<Eigen::Lower>() =
         ansHessian.transpose().triangularView<Eigen::Lower>();
   }
+#ifdef _TIME_AD
   derivs_main_timer.stop();
   derivs_main_timer.report();
   derivs_node_iteration_timer.report();
   derivs_calc_timer.report();
   derivs_getDerivs_timer.report();
   derivs_run_tape_timer.report();
-
+#endif
   return (ansList);
 }
 
@@ -734,7 +767,11 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
                                         NimArr<1, double> &derivOrders,
                                         const NimArr<1, double> &wrtVector,
                                         nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
+#ifdef _TIME_AD
   derivs_getDerivs_timer_start();
+  derivs_tick_id();
+  derivs_show_id();  
+#endif
   std::size_t n = ADinfo.independentVars.size();  // dim of independent vars
 
   std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
@@ -760,9 +797,16 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
     ordersFound[static_cast<int>(array_derivOrders[i])] = true;
   }
   vector<double> value_ans;
+#ifdef _TIME_AD
   derivs_run_tape_timer_start();
+#ifdef _SHOW_NODE_BY_NODE 
+  std::cout<<"Running value "<<std::endl;
+#endif
+#endif
   value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
+#ifdef _TIME_AD
   derivs_run_tape_timer_stop();
+#endif
   if (ordersFound[0] == true) {
     ansList->value = vectorDouble_2_NimArr(value_ans);
   }
@@ -791,9 +835,16 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
       w[dy_ind] = 1;
       if (maxOrder == 1) {   
 	if(infIndicators[dy_ind] == false){
+#ifdef _TIME_AD
+#ifdef _SHOW_NODE_BY_NODE 
+	  std::cout<<"Running deriv "<<dy_ind<<std::endl;
+#endif
 	  derivs_run_tape_timer_start();
+#endif
 	  cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
+#ifdef _TIME_AD
 	  derivs_run_tape_timer_stop();
+#endif
 	}
       } else {
 	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
@@ -804,11 +855,14 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 	    // of s across all directions r, then
 	    // second dim, ...
 	    x1[dx1_ind] = 1;
+#ifdef _TIME_AD
 	    derivs_run_tape_timer_start();
+#endif
 	    ADinfo.ADtape->Forward(1, x1);
 	    cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
+#ifdef _TIME_AD
 	    derivs_run_tape_timer_stop();
-
+#endif
 	  }
 	  for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
 	    if(infIndicators[dy_ind] == false){
@@ -838,5 +892,7 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
       }
     }
   }
+#ifdef _TIME_AD
   derivs_getDerivs_timer_stop();
+#endif
 }

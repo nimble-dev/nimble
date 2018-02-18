@@ -21,6 +21,13 @@
 
 // define this to include timing code
 #define _TIME_AD
+// To see all timing components, use:
+//.Call(getNativeSymbolInfo("report_AD_timers", compiled_model$dll))
+//.Call(getNativeSymbolInfo("report_AD_timers", compiled_nf_using_derivs$dll))
+// Calling both is necessary because NIMBLE will create one DLL for the model
+// and one for nimbleFunctions using the model, and the two DLLs won't
+// see the same timer objects.  The zeros in each indicate which timers
+// were not used by stuff in that DLL.
 
 /* Definitions only to be included when a nimbleFunction needs CppAD */
 #include <cppad/cppad.hpp>
@@ -40,6 +47,7 @@
 #ifdef _TIME_AD
 extern "C" {
   SEXP reset_AD_timers(SEXP SreportInterval);
+  SEXP report_AD_timers();
 }
 #include <chrono>
 #include <cstdio>
@@ -60,6 +68,7 @@ public:
     name = myname;
     reset();
     set_interval(100);
+    std::cout << "setting up "<<name<<std::endl;
     std::cout << std::chrono::high_resolution_clock::duration::period::den << std::endl;
   }
   void reset() {
@@ -84,33 +93,33 @@ public:
     t2 = std::chrono::high_resolution_clock::now();
     double oldtotaltime = totaltime;
     if(verbose) {
-      printf("stop %g (%g) (%g)",
-	     static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(t2.time_since_epoch()).count()),
-	     static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count()),
-	     totaltime);
+      std::cout<<name<<" increment "<<static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count())<<std::endl;
     }
     totaltime += static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count());
-    if(verbose) {
-      printf(" (%g) (%g)\n", totaltime, oldtotaltime-totaltime);
-    }
   }
   void report() {
     tick();
     if(ticks >= report_interval) {
       totalticks += ticks;
+      show_report();
+      ticks = 0;
+    }
+  }
+  void show_report() {
       printf("Reporting time for %s (%i): %g (%i)\n",
 	     name.c_str(),
 	     totalticks,
 	     totaltime,
 	     static_cast<int>(touched));
-      ticks = 0;
-    }
   }
 };
+
 void derivs_getDerivs_timer_start();
 void derivs_getDerivs_timer_stop();
 void derivs_run_tape_timer_start();
 void derivs_run_tape_timer_stop();
+void derivs_tick_id();
+void show_tick_id();
 #endif
 
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction
