@@ -129,6 +129,7 @@ class NimArrBase : public NimArrType {
   T &valueNoMap(int i) const { return (*(v + i)); }
   virtual int calculateIndex(vector<int> &i) const = 0;
   T *getPtr() { return (&((*vPtr)[0])); }
+  const T *getConstPtr() const { return (&((*vPtr)[0])); }
   virtual void setSize(vector<int> sizeVec, bool copyValues = true,
                        bool fillZeros = true) = 0;
   // Warning, this does not make sense if vPtr is pointing to someone else's

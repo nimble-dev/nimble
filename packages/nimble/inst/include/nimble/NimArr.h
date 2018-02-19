@@ -50,10 +50,13 @@ template<int nDim, class T>
   orig.mapCopy(possibleCopy);
 }
 
-template<int nDim, class T>
-  void NimArr_map_2_allocatedMemory(NimArr<nDim, T> &val, T *ans, int length) {
+// only case where T and T2 need to be different is
+// T = bool and
+// T2 = int, since R represents bools as ints
+template<int nDim, class T, class T2>
+  void NimArr_map_2_allocatedMemory(const NimArr<nDim, T> &val, T2 **ans, int length) {
   if(val.isMap()) {
-    NimArr<nDim, T> target;
+    NimArr<nDim, T2> target;
     vector<int> sizes(nDim);
     vector<int> strides(nDim);
     strides[0] = 1;
@@ -62,13 +65,14 @@ template<int nDim, class T>
       if(iii > 0)
 	strides[iii] = strides[iii-1]*sizes[iii-1];
     }
-    // just use val to be able to call setMap
-    target.setMap(val, 0, strides, sizes);
+    // just use dummy to be able to call setMap
+    NimArr<nDim, T2> dummy;
+    target.setMap(dummy, 0, strides, sizes);
     // then reset the Vptr to ans
-    target.getVptrRef() = &ans;
-    target = val;
+    target.getVptrRef() = ans;
+    target.mapCopy(val);
   } else {
-    std::copy(val.getPtr(), val.getPtr() + length, ans);
+    std::copy(val.getConstPtr(), val.getConstPtr() + length, *ans);
   }
 }
 
