@@ -33,11 +33,12 @@ class NimArr;
 template<int nDim, class T>
 T* nimArrPtr_copyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
   if(orig.isMap()) {
-    possibleCopy = orig;
-    return(possibleCopy.getPtr());
-  } else {
-    return(orig.getPtr());
+    // if(!isMapEntire(orig)) { // not ready for this yet.
+      possibleCopy = orig;
+      return(possibleCopy.getPtr());
+      // }
   }
+  return(orig.getPtr());
 }
 
 template<int nDim, class T>
@@ -47,6 +48,42 @@ template<int nDim, class T>
     NIMERROR("Problem in unconverting from an external call\n");
   }
   orig.mapCopy(possibleCopy);
+}
+
+template<int nDim, class T>
+  void NimArr_map_2_allocatedMemory(NimArr<nDim, T> &val, T *ans, int length) {
+  if(val.isMap()) {
+    NimArr<nDim, T> target;
+    vector<int> sizes(nDim);
+    vector<int> strides(nDim);
+    strides[0] = 1;
+    for(int iii = 0; iii < nDim; ++iii) {
+      sizes[iii] = val.dim()[iii];
+      if(iii > 0)
+	strides[iii] = strides[iii-1]*sizes[iii-1];
+    }
+    // just use val to be able to call setMap
+    target.setMap(val, 0, strides, sizes);
+    // then reset the Vptr to ans
+    target.getVptrRef() = &ans;
+    target = val;
+  } else {
+    std::copy(val.getPtr(), val.getPtr() + length, ans);
+  }
+}
+
+template<int nDim, class T>
+  bool isMapEntire(const NimArr<nDim, T> &v) {
+  const int *s = v.strides();
+  if(s[0] != 1) {return false;}
+  if(nDim == 1) {return true;}
+  const int *d = v.dim();
+  int nextStride = 1;
+  for(unsigned int iii = 1; iii < nDim; ++iii) {
+    nextStride *= d[iii-1];
+    if(s[iii] != nextStride) {return false;}
+  }
+  return true;
 }
 
 // Here is the specialization for 1 dimensions (for any type, T = double, int or

@@ -3349,7 +3349,6 @@ generalFunSizeHandlerFromSymbols <- function(code, symTab, typeEnv, returnSymbol
             if(code$args[[i]]$name == "[") {
                 if(inherits(code$args[[i]]$args[[1]],
                             'exprClass')) { ## must be true, but I'm being defensive
-                    code$args[[i]]$args[[1]]$isName
                     if(code$args[[i]]$args[[1]]$isName) {
                         insertExprClassLayer(code, i, 'passByMap')
                     }

@@ -105,6 +105,7 @@ class NimArrBase : public NimArrType {
   T **vPtr;
   std::size_t element_size() { return (sizeof(T)); }
   void setVptr() { vPtr = &v; }
+  T** &getVptrRef() {return vPtr;}
   T **getVptr() const { return vPtr; }
   bool own_v;
   int NAdims[4];
