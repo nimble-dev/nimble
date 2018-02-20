@@ -1,9 +1,61 @@
 #include <nimble/nimbleCppAD.h>
 
-nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
-    const NodeVectorClassNew_derivs &nodes,
-    const NimArr<1, double> &derivOrders) {
+#ifdef _TIME_AD
+ad_timer derivs_main_timer("derivs_main");
+ad_timer derivs_calc_timer("derivs_calc");
+ad_timer derivs_node_iteration_timer("derivs_node_iteration");
+ad_timer derivs_getDerivs_timer("derivs_getDerivs");
+ad_timer derivs_run_tape_timer("derivs_run_tape");
+int id(0);
+// Include the following line to see node by node timing timing
+// results within use of getDerivs and use of CppAD tapes.  This
+// generates a lot of output.
+//#define _SHOW_NODE_BY_NODE 
+void derivs_getDerivs_timer_start() {derivs_getDerivs_timer.start(false);}
+void derivs_run_tape_timer_start() {derivs_run_tape_timer.start(false);}
+#ifdef _SHOW_NODE_BY_NODE 
+void derivs_getDerivs_timer_stop() {derivs_getDerivs_timer.stop(true);}
+void derivs_run_tape_timer_stop() {derivs_run_tape_timer.stop(true);}
+void derivs_show_id() {std::cout<<"(id "<<id<<")"<<std::endl;}
+#else
+void derivs_getDerivs_timer_stop() {derivs_getDerivs_timer.stop(false);}
+void derivs_run_tape_timer_stop() {derivs_run_tape_timer.stop(false);}
+void derivs_show_id() {}
+#endif
+  void derivs_tick_id() {++id;}
 
+SEXP report_AD_timers() {
+  derivs_main_timer.show_report();
+  derivs_calc_timer.show_report();
+  derivs_node_iteration_timer.show_report();
+  derivs_getDerivs_timer.show_report();
+  derivs_run_tape_timer.show_report();
+  return(R_NilValue);
+}
+
+SEXP reset_AD_timers(SEXP SreportInterval) {
+  derivs_main_timer.reset();
+  derivs_calc_timer.reset();
+  derivs_node_iteration_timer.reset();
+  derivs_getDerivs_timer.reset();
+  derivs_run_tape_timer.reset();
+  derivs_main_timer.set_interval(INTEGER(SreportInterval)[0]);
+  derivs_calc_timer.set_interval(INTEGER(SreportInterval)[0]);
+  derivs_node_iteration_timer.set_interval(INTEGER(SreportInterval)[0]);
+  derivs_getDerivs_timer.set_interval(INTEGER(SreportInterval)[0]);
+  derivs_run_tape_timer.set_interval(INTEGER(SreportInterval)[0]);
+  return(R_NilValue);
+}
+
+#endif
+
+nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
+						 const NodeVectorClassNew_derivs &nodes,
+						 const NimArr<1, double> &derivOrders) {
+#ifdef _TIME_AD
+  derivs_main_timer.start();
+#endif
+  
   nimSmartPtr<NIMBLE_ADCLASS> ansList =
       new NIMBLE_ADCLASS;  // This will be returned from this funciton.
   nimSmartPtr<NIMBLE_ADCLASS> thisDerivList =
@@ -118,6 +170,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   iLength = nodes.parentIndicesList.size();
   int sumAddedScalarNodes = 0;
   for (int i = 0; i < iLength; i++) {
+#ifdef _TIME_AD
+    derivs_node_iteration_timer.start();
+#endif
     isDeterminisitic =
         1 - nodes.stochNodeIndicators[i];  // Is node i deterministic?
     isWrtLine = (nodes.cumulativeWrtLineNums[i] >= 0);  // Is node i a wrt node
@@ -158,10 +213,16 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
           }
         }
         else{
-        instructions[i - sumAddedScalarNodes].nodeFunPtr->calculateWithArgs_derivBlock(
-            instructions[i - sumAddedScalarNodes].operand, newDerivOrders, nodes.cppWrtArgIndices[i],
-            thisDerivList);  // Derivatives of calculate() for
-                             // node i are computed here.
+#ifdef _TIME_AD
+	  derivs_calc_timer.start();
+#endif
+	  instructions[i - sumAddedScalarNodes].nodeFunPtr->calculateWithArgs_derivBlock(
+											 instructions[i - sumAddedScalarNodes].operand, newDerivOrders, nodes.cppWrtArgIndices[i],
+											 thisDerivList);  // Derivatives of calculate() for
+	  // node i are computed here.
+#ifdef _TIME_AD
+	  derivs_calc_timer.stop();
+#endif
         }
         thisRows = (*thisDerivList).jacobian.dimSize(0);
         thisCols = (*thisDerivList).jacobian.dimSize(1);
@@ -659,11 +720,22 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
         (*ansList).value[0] = (*ansList).value[0] + (*thisDerivList).value[0];
       }
     }
+#ifdef _TIME_AD
+    derivs_node_iteration_timer.stop();	
+#endif
   }
   if (hessianFlag) {  // reflect Hessian across the diagonal
     ansHessian.triangularView<Eigen::Lower>() =
         ansHessian.transpose().triangularView<Eigen::Lower>();
   }
+#ifdef _TIME_AD
+  derivs_main_timer.stop();
+  derivs_main_timer.report();
+  derivs_node_iteration_timer.report();
+  derivs_calc_timer.report();
+  derivs_getDerivs_timer.report();
+  derivs_run_tape_timer.report();
+#endif
   return (ansList);
 }
 
@@ -689,4 +761,138 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   // (*ADlist).value[1] +=
   // oneUseInfo.nodeFunPtr->calculateBlock(oneUseInfo.operand);
   return (ADlist);
+}
+
+void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
+                                        NimArr<1, double> &derivOrders,
+                                        const NimArr<1, double> &wrtVector,
+                                        nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
+#ifdef _TIME_AD
+  derivs_getDerivs_timer_start();
+  derivs_tick_id();
+  derivs_show_id();  
+#endif
+  std::size_t n = ADinfo.independentVars.size();  // dim of independent vars
+
+  std::size_t wrt_n = wrtVector.size();            // dim of wrt vars
+  if(wrt_n == 2){
+    if(wrtVector[1] == -1){
+      wrt_n = 1;
+    }
+  }
+  int orderSize = derivOrders.size();
+  double array_derivOrders[orderSize];
+
+  std::memcpy(array_derivOrders, derivOrders.getPtr(),
+	      orderSize * sizeof(double));
+
+  int maxOrder =
+    *std::max_element(array_derivOrders, array_derivOrders + orderSize);
+  bool ordersFound[3] = {false};
+
+  for (int i = 0; i < orderSize; i++) {
+    if ((array_derivOrders[i] > 2) | (array_derivOrders[i] < 0)) {
+      printf("Error: Derivative orders must be between 0 and 2.\n");
+    }
+    ordersFound[static_cast<int>(array_derivOrders[i])] = true;
+  }
+  vector<double> value_ans;
+#ifdef _TIME_AD
+  derivs_run_tape_timer_start();
+#ifdef _SHOW_NODE_BY_NODE 
+  std::cout<<"Running value "<<std::endl;
+#endif
+#endif
+  value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
+#ifdef _TIME_AD
+  derivs_run_tape_timer_stop();
+#endif
+  if (ordersFound[0] == true) {
+    ansList->value = vectorDouble_2_NimArr(value_ans);
+  }
+  if(maxOrder > 0){
+    std::size_t q = value_ans.size();
+    vector<bool> infIndicators(q); 
+    for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
+      if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
+          (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
+	 (isnan(value_ans[inf_ind]))){
+	infIndicators[inf_ind] = true;
+      }
+      else{
+	infIndicators[inf_ind] = false;
+      }
+    }
+    if (ordersFound[1] == true) {
+      ansList->jacobian.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
+    }
+    if (ordersFound[2] == true) {
+      ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
+    }
+    vector<double> cppad_derivOut;
+    for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
+      std::vector<double> w(q, 0);
+      w[dy_ind] = 1;
+      if (maxOrder == 1) {   
+	if(infIndicators[dy_ind] == false){
+#ifdef _TIME_AD
+#ifdef _SHOW_NODE_BY_NODE 
+	  std::cout<<"Running deriv "<<dy_ind<<std::endl;
+#endif
+	  derivs_run_tape_timer_start();
+#endif
+	  cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
+#ifdef _TIME_AD
+	  derivs_run_tape_timer_stop();
+#endif
+	}
+      } else {
+	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+	  if(infIndicators[dy_ind] == false){
+	    int dx1_ind = wrtVector[vec_ind] - 1;
+	    std::vector<double> x1(n, 0);  // vector specifying first derivatives.
+	    // first specify coeffs for first dim
+	    // of s across all directions r, then
+	    // second dim, ...
+	    x1[dx1_ind] = 1;
+#ifdef _TIME_AD
+	    derivs_run_tape_timer_start();
+#endif
+	    ADinfo.ADtape->Forward(1, x1);
+	    cppad_derivOut = ADinfo.ADtape->Reverse(2, w);
+#ifdef _TIME_AD
+	    derivs_run_tape_timer_stop();
+#endif
+	  }
+	  for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
+	    if(infIndicators[dy_ind] == false){
+	      int dx2_ind = wrtVector[vec_ind2] - 1;
+	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
+		cppad_derivOut[dx2_ind * 2 + 1];
+	    }
+	    else{
+	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] = 
+		CppAD::numeric_limits<double>::quiet_NaN();
+	    }
+	  }
+	}
+      }
+      if (ordersFound[1] == true) {
+	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+	  if(infIndicators[dy_ind] == false){
+	    int dx1_ind = wrtVector[vec_ind] - 1;
+	    ansList->jacobian[vec_ind * q + dy_ind] =
+	      cppad_derivOut[dx1_ind * maxOrder + 0];
+	  }
+	  else{
+	    ansList->jacobian[vec_ind * q + dy_ind] =
+	      CppAD::numeric_limits<double>::quiet_NaN();
+	  }     
+	}
+      }
+    }
+  }
+#ifdef _TIME_AD
+  derivs_getDerivs_timer_stop();
+#endif
 }
