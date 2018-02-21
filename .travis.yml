@@ -14,15 +14,15 @@ matrix:
     - os: osx
       env: NIMBLE_TEST_BATCH=1 NIMBLE_USE_TENSORFLOW=0
     - os: osx
-      env: NIMBLE_TEST_BATCH=1
+      env: NIMBLE_TEST_BATCH=1 NIMBLE_USE_TENSORFLOW=0
     - os: osx
-      env: NIMBLE_TEST_BATCH=2
+      env: NIMBLE_TEST_BATCH=2 NIMBLE_USE_TENSORFLOW=0
     - os: osx
-      env: NIMBLE_TEST_BATCH=3
+      env: NIMBLE_TEST_BATCH=3 NIMBLE_USE_TENSORFLOW=0
     - os: osx
-      env: NIMBLE_TEST_BATCH=4
+      env: NIMBLE_TEST_BATCH=4 NIMBLE_USE_TENSORFLOW=0
     - os: osx
-      env: NIMBLE_TEST_BATCH=5
+      env: NIMBLE_TEST_BATCH=5 NIMBLE_USE_TENSORFLOW=0
 
 warnings_are_errors: true
 
