@@ -57,7 +57,7 @@ script:
   - source /home/travis/.virtualenvs/r-tensorflow/bin/activate \
     || echo 'Missing tensorflow'
   # - pip freeze
-  - ./run_tests.R copy
+  - ./run_tests.R
 
 after_success:
   - Rscript -e 'library(covr); if(R.version$os == "linux-gnu") codecov()'

@@ -1,8 +1,0 @@
-EIGEN_INC=
-CPPAD_INC=
-NIMBLE_INC_DIR=/Library/Frameworks/R.framework/Versions/3.4/Resources/library/nimble/include
-NIMBLE_LIB_DIR=/Library/Frameworks/R.framework/Versions/3.4/Resources/library/nimble/CppCode
-NIMBLE_DIR=/Library/Frameworks/R.framework/Versions/3.4/Resources/library/nimble
-RPATH=-rpath /Library/Frameworks/R.framework/Versions/3.4/Resources/library/nimble/CppCode
-
-include /Library/Frameworks/R.framework/Versions/3.4/Resources/library/nimble/make/Makevars
