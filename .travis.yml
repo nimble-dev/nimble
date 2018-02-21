@@ -13,15 +13,15 @@ matrix:
   include:
     - os: osx
       env: NIMBLE_TEST_BATCH=1 NIMBLE_USE_TENSORFLOW=0
-    - os: linux
+    - os: osx
       env: NIMBLE_TEST_BATCH=1
-    - os: linux
+    - os: osx
       env: NIMBLE_TEST_BATCH=2
-    - os: linux
+    - os: osx
       env: NIMBLE_TEST_BATCH=3
-    - os: linux
+    - os: osx
       env: NIMBLE_TEST_BATCH=4
-    - os: linux
+    - os: osx
       env: NIMBLE_TEST_BATCH=5
 
 warnings_are_errors: true
