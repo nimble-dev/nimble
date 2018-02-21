@@ -13,7 +13,7 @@ nimbleOptions(verbose = FALSE)
 
 context('Testing of nimCopy and values')
 
-expect_true(false, "at least testing works")
+expect_true(FALSE, "at least testing works")
 #############
 ## Here is a model with deterministic and stochastic variables of dimensions 0-4, including a multivariate node
 copyTestModelCode <- nimbleCode({
@@ -118,8 +118,7 @@ copyTestCaseList <- list(
             lpNames <- m$getVarNames(includeLogProb = TRUE)
             lpNames <- lpNames[grep('logProb_', lpNames)]
             for(oneName in lpNames) {
-                test_that('single', expect_false(identical(m[[oneName]], mv[[oneName]][[3]],
-                                                           info = 'Model2MVall_logProbFALSE')))
+                test_that('single', expect_false(identical(m[[oneName]], mv[[oneName]][[3]])))
             }
         })
     ),
@@ -284,7 +283,7 @@ copyTestCaseListMVtoModel <- list(
             lpNames <- mv$getVarNames(includeLogProb = TRUE)
             lpNames <- lpNames[grep('logProb_', lpNames)]
             for(oneName in lpNames) {
-                test_that('single', expect_false(identical(m[[oneName]], mv[[oneName]][[3]], info = 'MV2ModelAll_logProbFALSE' )))
+                test_that('single', expect_false(identical(m[[oneName]], mv[[oneName]][[3]])))
             }
         })
     ),
