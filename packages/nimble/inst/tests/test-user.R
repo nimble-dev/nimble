@@ -291,6 +291,35 @@ test_that("Test that truncation works with nodeFunctions and MCMC for user-suppl
     expect_lt(max(smp[ , 'lambda']), (upper))
 })
 
+
+test_that("Test that user-defined distributions with 'lower' and 'upper' params don't cause problems", {
+    dmyunif <- nimbleFunction(
+    run = function(x = double(0), lower = double(0), upper = double(0), log = integer(0, default = 0)) {
+        if(x > lower & x < upper)
+            return(1) else return(0)
+        returnType(double())
+    })
+    rmyunif <- nimbleFunction(
+        run = function(n = double(0), lower = double(0), upper = double(0)) {
+            return(0)
+            returnType(double(0))
+        })
+    temporarilyAssignInGlobalEnv(dmyunif)
+    temporarilyAssignInGlobalEnv(rmyunif)
+
+    code = nimbleCode({
+        y ~ dmyunif(lower = 3, upper = 7)
+    })
+    m <- nimbleModel(code, inits = list(y=4))
+    cm <- compileNimble(m)
+    expect_equal(m$getParam('y','lower'), 3)
+    expect_equal(cm$getParam('y','lower'), 3)
+    expect_equal(m$getBound('y','lower'), -Inf)
+    expect_equal(cm$getBound('y','lower'), -Inf)
+})
+
+
+
 test_that("Test that deregistration of user-supplied distributions works", {
     deregisterDistributions('ddirchmulti')
     expect_true(is.null(nimble:::nimbleUserNamespace$distributions[['ddirchmulti']]),

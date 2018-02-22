@@ -195,7 +195,7 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, ADconstantsInfo,
             methodList[['get_value']] <- ndf_generateGetParamFunction(LHS, type, nDim)
             ## add accessor functions for stochastic node distribution parameters
             for(param in names(RHS[-1])) {
-                if(!param %in% c("lower", "upper")) {
+                if(!param %in% c("lower_", "upper_")) {
                     type = getType(distName, param)
                     nDim <- getDimension(distName, param)
                     methodList[[paste0('get_',param)]] <- ndf_generateGetParamFunction(RHS[[param]], type, nDim)

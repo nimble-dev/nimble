@@ -24,7 +24,7 @@
 
 \def\cd#1{\texttt{#1}}
 \def\nm#1{\textit{#1}}
-\newcommand{\ver}{0.6-7}
+\newcommand{\ver}{0.6-9}
 
 \hypersetup{colorlinks=true, linkcolor=red, urlcolor=blue}
 

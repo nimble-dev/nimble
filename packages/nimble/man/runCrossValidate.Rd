@@ -6,7 +6,7 @@
 \usage{
 runCrossValidate(MCMCconfiguration, k, foldFunction = "random",
   lossFunction = "MSE", MCMCcontrol = list(), returnSamples = FALSE,
-  nCores = 1, nBootReps = 200)
+  nCores = 1, nBootReps = 200, silent = FALSE)
 }
 \arguments{
 \item{MCMCconfiguration}{a NIMBLE MCMC configuration object, returned by a 
@@ -43,7 +43,10 @@ parallelizing the CV calculation. Only MacOS and Linux operating systems support
 cores at this time.  Defaults to 1.}
 
 \item{nBootReps}{number of bootstrap samples
-to use when estimating the Monte Carlo error of the cross-validation metric.}
+to use when estimating the Monte Carlo error of the cross-validation metric. Defaults to 200.  If no Monte Carlo error estimate is desired,
+\code{nBootReps} can be set to \code{NA}, which can potentially save significant computation time.}
+
+\item{silent}{Boolean specifying whether to show output from the algorithm as it's running (default = FALSE).}
 }
 \value{
 an R list with four elements:
@@ -98,12 +101,12 @@ See \sQuote{Examples} for an example of a user-defined loss function.
 
 The \code{MCMCcontrol} argument is a list with the following elements:
 \itemize{
-  \item{\code{nMCMCiters}}{
-     an integer argument determining how many MCMC iterations should be run for each posterior predictive p-value calculation.  Defaults to 10000, but should probably be manually set.
+  \item{\code{niter}}{
+     an integer argument determining how many MCMC iterations should be run for each loss value calculation.  Defaults to 10000, but should probably be manually set.
   }
-\item{\code{burnInProp}}{
-   the proportion of the MCMC chain to discard as burn-in for each posterior predictive p-value calculation.  Must be between 0 and 1.  Defaults to 0.
-}
+\item{\code{nburnin}}{
+   the number of samples from the start of the MCMC chain to discard as burn-in for each loss value calculation.  Must be between 0 and \code{niter}.  Defaults to 10% of \code{niter}.
+  }
  }
 }
 \examples{
@@ -172,8 +175,8 @@ crossValOutput <- runCrossValidate(MCMCconfiguration = dyesMCMCconfiguration,
                                    k = 6,
                                    foldFunction = dyesFoldFunction,
                                    lossFunction = RMSElossFunction,
-                                   MCMCcontrol = list(nMCMCiters = 5000,
-                                                      burnInProp = .1))
+                                   MCMCcontrol = list(niter = 5000,
+                                                      nburnin = 500))
 }  
 
 }

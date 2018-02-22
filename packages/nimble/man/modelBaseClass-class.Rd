@@ -5,9 +5,13 @@
 \alias{[[,modelBaseClass-method}
 \alias{[[<-,modelBaseClass-method}
 \alias{checkConjugacy}
+\alias{expandNodeNames}
+\alias{getCode}
 \alias{getDependencies}
+\alias{getDependenciesList}
 \alias{getDimension}
 \alias{getDistribution}
+\alias{getDownstream}
 \alias{getNodeNames}
 \alias{getVarNames}
 \alias{initializeInfo}
@@ -16,6 +20,7 @@
 \alias{isDeterm}
 \alias{isDiscrete}
 \alias{isEndNode}
+\alias{isMultivariate}
 \alias{isStoch}
 \alias{isTruncated}
 \alias{isUnivariate}

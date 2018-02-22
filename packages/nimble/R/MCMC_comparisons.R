@@ -46,11 +46,13 @@ compareMCMCs <- function(modelInfo, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stan
         }
     } else {
         if(!is.list(modelInfo)) stop('modelInfo must be a list if it is not a vector of BUGS example names')
-        if(!is.list(modelInfo[[1]])) {
+        if('code' %in% names(modelInfo)) {
             modelContents <- list(modelInfo)
             if('name' %in% names(modelInfo)) names(modelContents) <- modelInfo$name
         }
         else modelContents <- modelInfo
+        if(!all(sapply(modelContents, function(x) any(names(x) == 'code'))))
+            stop("compareMCMCs: 'code' element is missing from one or more of the models specified in 'modelInfo'")
 
         inputNames <- names(modelContents)
         if(is.null(inputNames)) models <- paste0('model', seq_along(modelContents))

@@ -31,7 +31,7 @@
 #' 
 #' @references
 #'
-#' Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. arXiv: 1503.05621. 
+#' Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. <arXiv:1503.05621>. 
 #'
 #' @export
 autoBlock <- function(Rmodel,

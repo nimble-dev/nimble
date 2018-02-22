@@ -102,5 +102,33 @@ test_that('non-scalar 2', expect_equal(pr2, cm$getParam('a', 'prec')))
 test_that('non-scalar 3', expect_equal(solve(pr1), m$getParam('a', 'cov')))
 test_that('non-scalar 4', expect_equal(solve(pr2), cm$getParam('a', 'cov')))
 
-options(warn = RwarnLevel)
-nimbleOptions(verbose = nimbleVerboseSetting)
+test_that('getParam, three-dimensional', {
+    dtest <- nimbleFunction(
+        run = function(x = double(0), theta = double(3), log = integer(0, default = 0)) {
+            returnType(double(0))
+            return(0)
+        })
+    rtest <- nimbleFunction(
+        run = function(n = integer(0), theta = double(3)) {
+            returnType(double(0))
+            return(0)
+        })
+    temporarilyAssignInGlobalEnv(dtest)
+    temporarilyAssignInGlobalEnv(rtest)
+    code <- nimbleCode({
+        y ~ dtest(theta[1:2,1:3,1:4])
+    })
+    init <- array(as.numeric(1:24), c(2,3,4))
+    m <- nimbleModel(code, inits = list(theta = init))
+    cm <- compileNimble(m)
+    expect_identical(m$getParam('y','theta'), NULL, 'getParam_3D in uncompiled model')
+    expect_identical(m$getParam('y','theta'), NULL, 'getParam_3D in compiled model')
+    
+    mynf <- nimbleFunction(setup = function(model, node, param) {},
+                           run = function() {
+                               tmp <- model$getParam(node, param)
+                           })
+    rnf <- mynf(m, 'y', 'theta')
+    expect_identical(rnf$run(), NULL, 'getParam_3D in uncompiled nf')
+    expect_error(cnf <- compileNimble(rnf, project = m), 'Failed to create the shared library')
+})

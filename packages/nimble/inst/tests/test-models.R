@@ -327,6 +327,32 @@ test_that("test of preventing overwriting of data values by inits:", {
 
 })
 
+test_that("test of using dimensions of inits when dimension information not available:", {
+    code <- nimbleCode({
+        for(i in 1:3) {
+            y[i] ~ dnorm(mu[k[i]], 1)
+            k[i] ~ dcat(p[1:5])
+        }
+    })
+    expect_error(m <- nimbleModel(code, data = list(y = rep(1, 3))), info = "expected error because dimension of mu is unknown")
+    m <- nimbleModel(code, data = list(y = rep(1, 3)), inits = list(k = rep(1, 3), mu = 1:5))
+    expect_equal(m$modelDef$dimensionsList$mu, 5, info = "dimension for mu not equal to that given in inits")
+    expect_warning(m <- nimbleModel(code, data = list(y = rep(1, 3)), inits = list(k = rep(1, 3), mu = 1:8), dimensions = list(mu = 5)), info = "expected error because of dimension mismatch")
+})
+
+test_that("test of using dimensions of data when dimension information not available:", {
+    code <- nimbleCode({
+        for(i in 1:3) {
+            y[i] ~ dnorm(mu[k[i]], 1)
+            k[i] ~ dcat(p[1:5])
+        }
+    })
+    expect_error(m <- nimbleModel(code, data = list(y = rep(1, 3))), info = "expected error because dimension of mu is unknown")
+    m <- nimbleModel(code, data = list(y = rep(1, 3), mu = 1:5), inits = list(k = rep(1, 3)))
+    expect_equal(m$modelDef$dimensionsList$mu, 5, info = "dimension for mu not equal to that given in data")
+    expect_error(m <- nimbleModel(code, data = list(y = rep(1, 3), mu = 1:8), inits = list(k = rep(1, 3)), dimensions = list(mu = 5)), info = "expected error because of dimension mismatch")  # error emitted by setData() and warning by assignDimensions()
+})
+
 test_that("test of the handling of missing covariates:", {
 
     code <- nimbleCode({
@@ -373,6 +399,12 @@ test_that("test of the handling of missing covariates:", {
 
 })
 
+test_that("test of error trapping for indexes that are zero or less:", {
+    code <- nimbleCode( {
+        for(i in 1:n)
+            y[i] ~ dnorm(mu[n-i], 1)})
+    expect_error(m <- nimbleModel(code, constants = list(n=3)), 'index value of zero or less')
+})
 
 ## test of use of alias names for distributions
 

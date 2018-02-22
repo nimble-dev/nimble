@@ -18,6 +18,7 @@ expr as evaluated with given options.
 Temporarily set some NIMBLE options.
 }
 \examples{
+\dontrun{
 if (!(getNimbleOption('showCompilerOutput') == FALSE)) stop()
 nf <- nimbleFunction(run = function(){ return(0); returnType(double()) })
 cnf <- withNimbleOptions(list(showCompilerOutput = TRUE), {
@@ -25,5 +26,6 @@ cnf <- withNimbleOptions(list(showCompilerOutput = TRUE), {
     compileNimble(nf)
 })
 if (!(getNimbleOption('showCompilerOutput') == FALSE)) stop()
+}
 }
 
