@@ -206,7 +206,7 @@ defaultParamInfo <- function() {
 #' which one was used to declare the node.
 getParam <- function(model, node, param, nodeFunctionIndex) {
     if(missing(param)) { ## already converted by keyword conversion
-        stop('This case of getParam (after keyword replacement) has not been updated for R execution with newNodeFunction system')
+        stop('Missing either the node or the parameter. Please specify both the node and the parameter of interest. This error may also be triggered if this case of getParam (after keyword replacement) has not been updated for R execution with newNodeFunction system')
         ## nodeFunctionIndex would only be used here, when we make this part work
         nodeFunction <- model
         paramInfo <- node
@@ -226,6 +226,10 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
     nDim <- paramInfo$nDim
     type <- paramInfo$type
     unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ indexingInfo$unrolledIndicesMatrixRows[1], ]
+    if(nDim > 2) {
+        warning("Note that getParam is not available for parameters of dimension greater than two, but other calculations with models are unaffected")
+        return(NULL)
+    }
     funName <- paste0('getParam_',nDim,'D_',type)
 
     useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')

@@ -33,7 +33,8 @@ code1 <- nimbleCode({
     for(i in 1:3) y[i] ~ dnorm(b, sd = sigma)
 })
 
-input1 <- list(code = code1, data = list(y = 1:3), inits = list(a = 0.5))
+## note this also tests having 'code' not as first argument per issue #615
+input1 <- list(data = list(y = 1:3), code = code1, inits = list(a = 0.5))
 
 test_that("Basic MCMC comparison, multiple parameters", {
     expect_output(results1 <- compareMCMCs(input1, MCMCs = c('nimble')))

@@ -442,16 +442,10 @@ nimDerivs_calculate <- function(model, nodes = NA, order, wrtPars, silent = TRUE
                   thisArgIndex <- thisArgIndex + derivInfo$lineWrtArgSizeInfo[[i]][k]
                 }
                 if(derivOutputFlag == TRUE){
-                  print(paste("i:", i))
-                  print(paste("j1:", i))
-                  print(paste("j2:", i))
                   ## If this line is included in output, add the Hessian of this line (i) wrt this param #1 (j) and this param #2 (j_2).
                   outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ] <-  outDerivList$hessian[derivInfo$wrtToIndices[[j]], derivInfo$wrtToIndices[[j_2]], ]   +
                     chainRuleHessianList[[i]][derivInfo$wrtFromIndices[[j]], derivInfo$wrtFromIndices[[j_2]],]
-                  print(i)
-                  print("crHessian")
-                  print(chainRuleHessianList[[i]])
-                  
+
                 }
               }
             }
@@ -516,26 +510,28 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   if(any(argNameCheck != TRUE)) stop('Incorrect names passed to wrt argument of nimDerivs: ', fxnName, 
                                      ' does not have arguments named: ', paste(wrtArgNames[!argNameCheck], collapse = ', ' ), '.')
   ## Make sure all wrt args have type double.
+  nameCheck <- sapply(wrtMatchArgs, function(x){return(class(nimFxnArgs[[x]]))})
+  if(any(nameCheck == 'name')) stop('Derivatives of ', fxnName, ' being taken WRT an argument that does not have type double().')
   doubleCheck <- sapply(wrtMatchArgs, function(x){return(deparse(nimFxnArgs[[x]][[1]]) == 'double')})
   if(any(doubleCheck != TRUE)) stop('Derivatives of ', fxnName, ' being taken WRT an argument that does not have type double().')
   ## Make sure that all wrt arg dims are < 2.
   fxnArgsDims <- sapply(wrtMatchArgs, function(x){
-    outDim <- nimFxnArgs[[x]][[2]]
+    if(length(nimFxnArgs[[x]]) == 1) outDim <- 0
+    else outDim <- nimFxnArgs[[x]][[2]]
     names(outDim) <- names(nimFxnArgs)[x]
     return(outDim)})
   
   if(any(fxnArgsDims > 2)) stop('Derivatives cannot be taken WRT an argument with dimension > 2')
   ## Determine sizes of each function arg.
   fxnArgsDimSizes <- lapply(nimFxnArgs, function(x){
+    if(length(x) == 1) return(1)
     if(x[[2]] == 0) return(1)
-    else if(x[[2]] > 1){
-      if(length(x) < 3) stop('Sizes of arguments to nimbleFunctions must be explictly specified (e.g. x = double(1, 4)) in order to take derivatives.')
-      if(x[[2]] == 1){
-        if(length(x[[3]]) == 1) return(x[[3]])
-        else return(x[[3]][[2]])
-      }
-      else if(x[[2]] == 2) return(c(x[[3]][[2]], x[[3]][[3]]))
+    if(length(x) < 3) stop('Sizes of arguments to nimbleFunctions must be explictly specified (e.g. x = double(1, 4)) in order to take derivatives.')
+    if(x[[2]] == 1){
+      if(length(x[[3]]) == 1) return(x[[3]])
+      else return(x[[3]][[2]])
     }
+    else if(x[[2]] == 2) return(c(x[[3]][[2]], x[[3]][[3]]))
   })
   ## Same as above sizes, except that matrix sizes are reported as nrow*ncol instead of c(nrow, ncol).
   fxnArgsTotalSizes <- sapply(fxnArgsDimSizes, function(x){

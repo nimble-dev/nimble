@@ -92,7 +92,9 @@ buildMCMC <- nimbleFunction(
         ## WAIC setup below:
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
-        sampledNodes <- model$getVarNames(FALSE, colnames(as.matrix(mvSamples)))
+        sampledNodes <- model$getVarNames(FALSE, monitors)
+        ## Remove any logProb variables from nodes used in WAIC calculation:
+        sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(FALSE)]
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
     },
 
@@ -109,6 +111,8 @@ buildMCMC <- nimbleFunction(
             resize(mvSamples2, niter/thin2)
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
         } else {
+            my_initializeModel$run()  ## helps with restarting MCMC in new R session
+            nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)   ##
             mvSamples_offset  <- getsize(mvSamples)
             mvSamples2_offset <- getsize(mvSamples2)
             resize(mvSamples,  mvSamples_offset  + niter/thin)

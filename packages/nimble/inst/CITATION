@@ -1,4 +1,4 @@
-citHeader("Please cite the Journal of Computational and Graphical Statistics article for general purposes, the package if you need to cite a specific package version, or the manual if you need to cite material from the manual.")
+citHeader("In published work that uses or mentions NIMBLE, please cite the Journal of Computational and Graphical Statistics article. To cite a specific version of the package or to cite material from the manual, please cite the package itself or the manual.")
 
 year <- sub("-.*", "", meta$Date)
 note <- sprintf("{R} package version %s", meta$Version)
@@ -15,7 +15,7 @@ bibentry(
  year = "2017",
  author = "de Valpine, P., D. Turek, C.J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik",
  doi = "10.1080/10618600.2016.1172487",
- textVersion = "de Valpine, P., D. Turek, C.J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik. 2017. Programming with models: writing statistical algorithms for general model structures with NIMBLE. Journal of Computational and Graphical Statistics 26: 403-413. doi: 10.1080/10618600.2016.1172487."
+ textVersion = "de Valpine, P., D. Turek, C.J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik. 2017. Programming with models: writing statistical algorithms for general model structures with NIMBLE. Journal of Computational and Graphical Statistics 26: 403-413. <DOI:10.1080/10618600.2016.1172487>."
 )
 
 bibentry(

@@ -87,7 +87,10 @@ testsBasicMath = list(
   list(name = 'power of vector and constant via pow', expr = quote(out <- pow(arg1, 2)), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and scalar via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and scalar via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(1,0), outputDim = 1),
-  list(name = 'modulo of vector and scalar', expr = quote(out <- abs(arg1) %% abs(arg2)), inputDim = c(1,0), outputDim = 1, knownFailure = '.*compiles') ## not set up to work for vectors
+  list(name = 'modulo of vector and scalar', expr = quote(out <- abs(arg1) %% abs(arg2)), inputDim = c(1,0), outputDim = 1, knownFailure = '.*compiles'), ## not set up to work for vectors
+  list(name = 'besselK of scalar', expr = quote(out <- besselK(exp(arg1), arg2)), inputDim = c(0, 0), outputDim = 0),
+  list(name = 'besselK of scalar, expon.scaled', expr = quote(out <- besselK(exp(arg1), arg2, 1)), inputDim = c(0, 0), outputDim = 0),
+  list(name = 'besselK of vector with vector arg', expr = quote(out <- besselK(exp(arg1), arg2)), inputDim = c(1, 1), outputDim = 1)
   )
 
 testsMoreMath = list(

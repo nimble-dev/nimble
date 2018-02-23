@@ -1278,17 +1278,19 @@ makeADDistributionMethodTestList <- function(distnList){
   argsList <- lapply(distnList$args, function(x){
     return(x)
   })
+  argsValsList <- list()
+  for(iArg in seq_along(distnList$args)){
+    argsValsList[[names(distnList$args)[iArg]]] <- parse(text = names(distnList$args)[iArg])[[1]]
+  }
   ansList <- list(args = argsList,
                   expr = substitute({out <- numeric(2);
                                      out[1] <- DISTNEXPR;
                                      out[2] <- LOGDISTNEXPR;},
                                     list(DISTNEXPR = as.call(c(list(parse(text = distnList$distnName)[[1]]),
-                                                               lapply(names(distnList$args),
-                                                                      function(x){return(parse(text = x)[[1]])}),
+                                                               argsValsList,
                                                                list(log = FALSE))),
                                          LOGDISTNEXPR = as.call(c(list(parse(text = distnList$distnName)[[1]]),
-                                                               lapply(names(distnList$args),
-                                                                      function(x){return(parse(text = x)[[1]])}),
+                                                               argsValsList,
                                                                list(log = TRUE)))
                                          
                                     )),
@@ -1297,17 +1299,43 @@ makeADDistributionMethodTestList <- function(distnList){
   return(ansList)
 }
 
-testADDistribution <- function(ADfunGen, argsList, name){
+testADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
     ADfun <- ADfunGen()
     CADfun <- compileNimble(ADfun)
     for(iArg in seq_along(argsList)){
+      iOrdersToCheck <- argsList[[iArg]][['ordersToCheck']]
+      if(is.null(iOrdersToCheck)) iOrdersToCheck <- 0:2 ## check all orders if not specified
+      else argsList[[iArg]][['ordersToCheck']] <- NULL
       RfunCallList <- c(list(quote(ADfun$run)), argsList[[iArg]])
       CfunCallList <- c(list(quote(CADfun$run)), argsList[[iArg]])
       RderivsList <- eval(as.call(RfunCallList))
       CderivsList <- eval(as.call(CfunCallList))
-      expect_equal(RderivsList$value, CderivsList$value, tolerance = .01)
-      expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = .1)
-      expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1)
+      argValsText <- paste(sapply(names(argsList[[iArg]]), 
+                          function(x){return(paste(x, " = ",
+                          argsList[[iArg]][[x]]))}), collapse = ', ')
+      if(is.logical(debug) && debug == TRUE) browser()
+      else if(is.numeric(debug) && debug == iArg) browser()
+      if(0 %in% iOrdersToCheck)
+        expect_equal(RderivsList$value, CderivsList$value, tolerance = .01, 
+                     info = paste("Values of", name , "not equal for arguments: ",
+                                  argValsText, '.'))
+      else
+        print(paste("Skipping check of R and C++ `value` equality for ",
+                    name, " with arguments: ", argValsText ))
+      if(1 %in% iOrdersToCheck)
+        expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = .1,
+                     info = paste("Jacobians of", name , "not equal for arguments: ",
+                                  argValsText, '.'))
+      else
+        print(paste("Skipping check of R and C++ `jacobian` equality for ",
+                    name, " with arguments: ", argValsText ))
+      if(2 %in% iOrdersToCheck)
+        expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1,
+                     info = paste("Hessians of", name , "not equal for arguments: ",
+                                  argValsText, '.'))
+      else
+        print(paste("Skipping check of R and C++ `hessian` equality for ",
+                    name, " with arguments: ", argValsText ))
   }
 }
 
@@ -1325,9 +1353,9 @@ test_dynamic_indexing_model <- function(param) {
                 
 test_dynamic_indexing_model_internal <- function(param) {
         if(!is.null(param$expectError) && param$expectError) {
-            expect_error(m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data), param$expectErrorMsg, info = "expected error not generated")
+            expect_error(m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data, constants = param$constants), param$expectErrorMsg, info = "expected error not generated")
         } else {
-            m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data)
+            m <- nimbleModel(param$code, dimensions = param$dims, inits = param$inits, data = param$data, constants = param$constants)
             expect_true(inherits(m, 'modelBaseClass'), info = "problem creating model")
             for(i in seq_along(param$expectedDeps)) 
                 expect_identical(m$getDependencies(param$expectedDeps[[i]]$parent, stochOnly = TRUE),

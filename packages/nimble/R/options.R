@@ -56,6 +56,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         ## samplerAssignmentRules object that controls the default sampler assignments by configureMCMC.
         ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
         MCMCuseSamplerAssignmentRules = FALSE,
+        saveMCMChistory = FALSE,
         MCMCdefaultSamplerAssignmentRules = NULL
         
         ## default settings for MCMC samplers
@@ -177,6 +178,7 @@ nimbleOptions <- function(...) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' if (!(getNimbleOption('showCompilerOutput') == FALSE)) stop()
 #' nf <- nimbleFunction(run = function(){ return(0); returnType(double()) })
 #' cnf <- withNimbleOptions(list(showCompilerOutput = TRUE), {
@@ -184,6 +186,7 @@ nimbleOptions <- function(...) {
 #'     compileNimble(nf)
 #' })
 #' if (!(getNimbleOption('showCompilerOutput') == FALSE)) stop()
+#' }
 withNimbleOptions <- function(options, expr) {
     old <- nimbleOptions()
     cleanup <- substitute(do.call(nimbleOptions, old))
