@@ -35,18 +35,8 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                          names(Rnames2CppNames) <<- c(names(modelDef$varInfo), names(modelDef$logProbVarInfo))
                                      },
                                      ## buildVars creates the cppVar objects for each variable needed for the class. Currently those are NimArr<> objects for the variables inthe model
-                                     buildVars = function() {
-                                         for(v in names(modelDef$varInfo)) {
-                                             cname <- Rnames2CppNames[[v]]
-                                             nDim <- max(modelDef$varInfo[[v]]$nDim, 1) ## set scalars (nDim = 0) to vectors (dim = 1)
-                                             addObject(cname, cppNimArrPtr(name = cname, nDim = nDim, type = 'double'))
-                                         }
-                                         for(v in names(modelDef$logProbVarInfo)) {
-                                             cname <- Rnames2CppNames[[v]]
-                                             nDim <- max(modelDef$logProbVarInfo[[v]]$nDim, 1) 
-                                             addObject(cname, cppNimArrPtr(name = cname, nDim = nDim, type = 'double'))
-                                         }
-                                         addObject('defaultModelValues_', cppVar(name = 'defaultModelValues_', baseType = CmodelValuesClassName))
+                                     buildVars = function(forAD = FALSE) {
+                                         cppDef_model_buildVar_impl(.self, forAD)
                                      },
                                      ## buildConstructorFunctionDef adds a cppFunctionDef object for the constructor to the functionDefs field (inherited from cppNamespaceClass via cppNamedObjectsClass).  Most of this comprises the namedObjects assignments generated from  namedObjectsConstructorCodeBlock() inherited from cppNamedObjectsClass
                                      buildConstructorFunctionDef = function() {
@@ -94,14 +84,37 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                          
                                      },
                                     
-                                     buildAll = function(buildNodeDefs = TRUE, where = globalenv(), ...) {
+                                     buildAll = function(buildNodeDefs = TRUE, where = globalenv(), forAD = FALSE, ...) {
                                          makeCppNames() 
-                                         buildVars()
+                                         buildVars(forAD = forAD)
                                          buildConstructorFunctionDef()
                                          buildSEXPgenerator(finalizer = 'namedObjects_Finalizer')
                                          buildPointAtAll()
                                          if(buildNodeDefs) buildNodes(where = where, debugCpp = debugCpp)
+                                         if(forAD)
+                                             Hincludes <<- c(Hincludes, nimbleIncludeFile("nimbleCppAD.h"))
                                      }
                                      )
                                  )
 
+cppDef_model_buildVar_impl <- function(.self, forAD) {
+    modelDef <- .self$modelDef
+    Rnames2CppNames <- .self$Rnames2CppNames
+    for(v in names(modelDef$varInfo)) {
+        cname <- Rnames2CppNames[[v]]
+        nDim <- max(modelDef$varInfo[[v]]$nDim, 1) ## set scalars (nDim = 0) to vectors (dim = 1)
+        if(!forAD) 
+            .self$addObject(cname, cppNimArrPtr(name = cname, nDim = nDim, type = 'double'))
+        else
+            .self$addObject(cname, cppNimArrPtr(name = cname, nDim = nDim, type = 'CppAD::AD<double> '))
+    }
+    for(v in names(modelDef$logProbVarInfo)) {
+        cname <- Rnames2CppNames[[v]]
+        nDim <- max(modelDef$logProbVarInfo[[v]]$nDim, 1)
+        if(!forAD)
+            .self$addObject(cname, cppNimArrPtr(name = cname, nDim = nDim, type = 'double'))
+        else
+            .self$addObject(cname, cppNimArrPtr(name = cname, nDim = nDim, type = 'CppAD::AD<double> '))
+    }
+    .self$addObject('defaultModelValues_', cppVar(name = 'defaultModelValues_', baseType = .self$CmodelValuesClassName))
+}
