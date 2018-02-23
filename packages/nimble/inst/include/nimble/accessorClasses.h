@@ -63,132 +63,139 @@ class NodeVectorClassNew {
   vector<NodeInstruction> &getInstructions() { return instructions; }
 };
 
+#define _DERIVS_FULLTAPE
+#ifdef _DERIVS_FULLTAPE
+
+
+#else
+
 // This is a collection of instructions denoting a sort of "program".
-class NodeVectorClassNew_derivs : public NodeVectorClassNew {
-public:
-  vector<vector<NimArr<1, int> > > parentIndicesList;
-  vector<vector<vector<NimArr<1, int> > > > topLevelWrtDeps;
-  NimArr<1, int> stochNodeIndicators;
-  NimArr<1, int> isAddedScalarNode;
-	NimArr<1, int> calcNodeIndicators;
-	vector<NimArr<1, double> > cppWrtArgIndices;
-	NimArr<1, int> wrtLineNums;
-	NimArr<1, int> nodeLengths;
-	vector<NimArr<1, int> > wrtToIndices;
-	vector<NimArr<1, int> > wrtFromIndices;
-	vector<NimArr<1, int> > wrtLineIndices;
-  vector<NimArr<1, int> > lineWrtArgSizeInfo;
-  vector<NimArr<1, int> > allNeededWRTCopyVars;
-  vector<NimArr<2, double> > thisAddedNodeJacobianList;
-	int totalOutWrtSize;
-	int totalWrtSize;
-  NimArr<1, int> cumulativeWrtLineNums;
-  NimArr<1, int> wrtLineSize;
-	const vector<NodeInstruction> &getConstInstructions() const { 
-    return instructions; }
+/* class NodeVectorClassNew_derivs : public NodeVectorClassNew { */
+/* public: */
+/*   vector<vector<NimArr<1, int> > > parentIndicesList; */
+/*   vector<vector<vector<NimArr<1, int> > > > topLevelWrtDeps; */
+/*   NimArr<1, int> stochNodeIndicators; */
+/*   NimArr<1, int> isAddedScalarNode; */
+/* 	NimArr<1, int> calcNodeIndicators; */
+/* 	vector<NimArr<1, double> > cppWrtArgIndices; */
+/* 	NimArr<1, int> wrtLineNums; */
+/* 	NimArr<1, int> nodeLengths; */
+/* 	vector<NimArr<1, int> > wrtToIndices; */
+/* 	vector<NimArr<1, int> > wrtFromIndices; */
+/* 	vector<NimArr<1, int> > wrtLineIndices; */
+/*   vector<NimArr<1, int> > lineWrtArgSizeInfo; */
+/*   vector<NimArr<1, int> > allNeededWRTCopyVars; */
+/*   vector<NimArr<2, double> > thisAddedNodeJacobianList; */
+/* 	int totalOutWrtSize; */
+/* 	int totalWrtSize; */
+/*   NimArr<1, int> cumulativeWrtLineNums; */
+/*   NimArr<1, int> wrtLineSize; */
+/* 	const vector<NodeInstruction> &getConstInstructions() const {  */
+/*     return instructions; } */
 
-	void populateDerivsInfo(SEXP SderivsInfo) {
-		SEXP S_pxData;
-		SEXP S_parentInds;
-    SEXP S_thisList;
-    SEXP S_thisListI;
-		SEXP S_stochNodeIndicators;
-		SEXP S_calcNodeIndicators;
-		SEXP S_cppWrtArgIndices;
-		SEXP S_wrtLineNums;
-		SEXP S_wrtToIndices;
-		SEXP S_wrtFromIndices;
-		SEXP S_wrtLineIndices;
-		SEXP S_lineWrtArgSizeInfo;
-    SEXP S_nodeLengths;
-    SEXP S_topLevelWrtDeps;
-    SEXP S_allNeededWRTCopyVars;
-    SEXP S_isAddedScalarNode;
-    SEXP S_thisAddedNodeJacobianList;
-		int numNodes;
-    int numNodesI;
-		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1));
-		SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData"));
-		PROTECT(S_parentInds = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												Rf_install("parentIndicesList")));
-		numNodes = Rf_length(S_parentInds);
-    parentIndicesList.resize(numNodes);
-		for(int i = 0; i < numNodes; i++){
-			PROTECT(S_thisList =  VECTOR_ELT(S_parentInds, i));
-			SEXP_list_2_NimArr_int_vec(S_thisList, parentIndicesList[i]);
-    }
+/* 	void populateDerivsInfo(SEXP SderivsInfo) { */
+/* 		SEXP S_pxData; */
+/* 		SEXP S_parentInds; */
+/*     SEXP S_thisList; */
+/*     SEXP S_thisListI; */
+/* 		SEXP S_stochNodeIndicators; */
+/* 		SEXP S_calcNodeIndicators; */
+/* 		SEXP S_cppWrtArgIndices; */
+/* 		SEXP S_wrtLineNums; */
+/* 		SEXP S_wrtToIndices; */
+/* 		SEXP S_wrtFromIndices; */
+/* 		SEXP S_wrtLineIndices; */
+/* 		SEXP S_lineWrtArgSizeInfo; */
+/*     SEXP S_nodeLengths; */
+/*     SEXP S_topLevelWrtDeps; */
+/*     SEXP S_allNeededWRTCopyVars; */
+/*     SEXP S_isAddedScalarNode; */
+/*     SEXP S_thisAddedNodeJacobianList; */
+/* 		int numNodes; */
+/*     int numNodesI; */
+/* 		PROTECT(S_pxData = Rf_allocVector(STRSXP, 1)); */
+/* 		SET_STRING_ELT(S_pxData, 0, Rf_mkChar(".xData")); */
+/* 		PROTECT(S_parentInds = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												Rf_install("parentIndicesList"))); */
+/* 		numNodes = Rf_length(S_parentInds); */
+/*     parentIndicesList.resize(numNodes); */
+/* 		for(int i = 0; i < numNodes; i++){ */
+/* 			PROTECT(S_thisList =  VECTOR_ELT(S_parentInds, i)); */
+/* 			SEXP_list_2_NimArr_int_vec(S_thisList, parentIndicesList[i]); */
+/*     } */
 
-    PROTECT(S_thisAddedNodeJacobianList = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-                        Rf_install("thisAddedNodeJacobianList")));
-    SEXP_list_2_NimArr_double_vec(S_thisAddedNodeJacobianList, thisAddedNodeJacobianList);
+/*     PROTECT(S_thisAddedNodeJacobianList = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/*                         Rf_install("thisAddedNodeJacobianList"))); */
+/*     SEXP_list_2_NimArr_double_vec(S_thisAddedNodeJacobianList, thisAddedNodeJacobianList); */
 
-    PROTECT(S_topLevelWrtDeps = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												Rf_install("topLevelWrtDeps")));
-    topLevelWrtDeps.resize(numNodes);
-    int sumNodesI = 0;
-		for(int i = 0; i < numNodes; i++){
-      PROTECT(S_thisList =  VECTOR_ELT(S_topLevelWrtDeps, i));
-      numNodesI  = Rf_length(S_thisList);
-      sumNodesI += numNodesI;
-      topLevelWrtDeps[i].resize(numNodesI);
-		  for(int j = 0; j < numNodesI; j++){
-			  PROTECT(S_thisListI =  VECTOR_ELT(S_thisList, j));
-		  	SEXP_list_2_NimArr_int_vec(S_thisListI, topLevelWrtDeps[i][j]);
-      }
-    }
+/*     PROTECT(S_topLevelWrtDeps = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												Rf_install("topLevelWrtDeps"))); */
+/*     topLevelWrtDeps.resize(numNodes); */
+/*     int sumNodesI = 0; */
+/* 		for(int i = 0; i < numNodes; i++){ */
+/*       PROTECT(S_thisList =  VECTOR_ELT(S_topLevelWrtDeps, i)); */
+/*       numNodesI  = Rf_length(S_thisList); */
+/*       sumNodesI += numNodesI; */
+/*       topLevelWrtDeps[i].resize(numNodesI); */
+/* 		  for(int j = 0; j < numNodesI; j++){ */
+/* 			  PROTECT(S_thisListI =  VECTOR_ELT(S_thisList, j)); */
+/* 		  	SEXP_list_2_NimArr_int_vec(S_thisListI, topLevelWrtDeps[i][j]); */
+/*       } */
+/*     } */
 
-    PROTECT(S_isAddedScalarNode = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-														  Rf_install("isAddedScalarNode")));
-		SEXP_2_NimArr(S_isAddedScalarNode, isAddedScalarNode);
-		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-														  Rf_install("stochNodeIndicators")));
-		SEXP_2_NimArr(S_stochNodeIndicators, stochNodeIndicators);
-		PROTECT(S_calcNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												         Rf_install("calcNodeIndicators")));
-  		SEXP_2_NimArr(S_calcNodeIndicators, calcNodeIndicators);
-		PROTECT(S_wrtLineNums = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												         Rf_install("wrtLineNums")));
-  		SEXP_2_NimArr(S_wrtLineNums, wrtLineNums);
-		PROTECT(S_nodeLengths = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												         Rf_install("nodeLengths")));
-  		SEXP_2_NimArr(S_nodeLengths, nodeLengths);
-		PROTECT(S_cppWrtArgIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												         Rf_install("cppWrtArgIndices")));
-		SEXP_list_2_NimArr_double_vec(S_cppWrtArgIndices, cppWrtArgIndices);
-		PROTECT(S_wrtToIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												         Rf_install("wrtToIndices")));
-		SEXP_list_2_NimArr_int_vec(S_wrtToIndices, wrtToIndices);
-		PROTECT(S_wrtFromIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												         Rf_install("wrtFromIndices")));
-		SEXP_list_2_NimArr_int_vec(S_wrtFromIndices, wrtFromIndices);
-		PROTECT(S_wrtLineIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												         Rf_install("wrtLineIndices")));
-		SEXP_list_2_NimArr_int_vec(S_wrtLineIndices, wrtLineIndices);
-		PROTECT(S_lineWrtArgSizeInfo = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												         Rf_install("lineWrtArgSizeInfo")));
-		SEXP_list_2_NimArr_int_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo);
-		PROTECT(S_allNeededWRTCopyVars = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)),
-												         Rf_install("allNeededWRTCopyVars")));
-		SEXP_list_2_NimArr_int_vec(S_allNeededWRTCopyVars, allNeededWRTCopyVars);
+/*     PROTECT(S_isAddedScalarNode = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 														  Rf_install("isAddedScalarNode"))); */
+/* 		SEXP_2_NimArr(S_isAddedScalarNode, isAddedScalarNode); */
+/* 		PROTECT(S_stochNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 														  Rf_install("stochNodeIndicators"))); */
+/* 		SEXP_2_NimArr(S_stochNodeIndicators, stochNodeIndicators); */
+/* 		PROTECT(S_calcNodeIndicators = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												         Rf_install("calcNodeIndicators"))); */
+/*   		SEXP_2_NimArr(S_calcNodeIndicators, calcNodeIndicators); */
+/* 		PROTECT(S_wrtLineNums = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												         Rf_install("wrtLineNums"))); */
+/*   		SEXP_2_NimArr(S_wrtLineNums, wrtLineNums); */
+/* 		PROTECT(S_nodeLengths = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												         Rf_install("nodeLengths"))); */
+/*   		SEXP_2_NimArr(S_nodeLengths, nodeLengths); */
+/* 		PROTECT(S_cppWrtArgIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												         Rf_install("cppWrtArgIndices"))); */
+/* 		SEXP_list_2_NimArr_double_vec(S_cppWrtArgIndices, cppWrtArgIndices); */
+/* 		PROTECT(S_wrtToIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												         Rf_install("wrtToIndices"))); */
+/* 		SEXP_list_2_NimArr_int_vec(S_wrtToIndices, wrtToIndices); */
+/* 		PROTECT(S_wrtFromIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												         Rf_install("wrtFromIndices"))); */
+/* 		SEXP_list_2_NimArr_int_vec(S_wrtFromIndices, wrtFromIndices); */
+/* 		PROTECT(S_wrtLineIndices = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												         Rf_install("wrtLineIndices"))); */
+/* 		SEXP_list_2_NimArr_int_vec(S_wrtLineIndices, wrtLineIndices); */
+/* 		PROTECT(S_lineWrtArgSizeInfo = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												         Rf_install("lineWrtArgSizeInfo"))); */
+/* 		SEXP_list_2_NimArr_int_vec(S_lineWrtArgSizeInfo, lineWrtArgSizeInfo); */
+/* 		PROTECT(S_allNeededWRTCopyVars = Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, S_pxData)), */
+/* 												         Rf_install("allNeededWRTCopyVars"))); */
+/* 		SEXP_list_2_NimArr_int_vec(S_allNeededWRTCopyVars, allNeededWRTCopyVars); */
 
-		UNPROTECT(29 + 2*numNodes + sumNodesI);
+/* 		UNPROTECT(29 + 2*numNodes + sumNodesI); */
 		
-		totalOutWrtSize = 0;
-		for(int i = 0; i < length(wrtToIndices); i++){
-			totalOutWrtSize += wrtToIndices[i].dimSize(0);
-		}
+/* 		totalOutWrtSize = 0; */
+/* 		for(int i = 0; i < length(wrtToIndices); i++){ */
+/* 			totalOutWrtSize += wrtToIndices[i].dimSize(0); */
+/* 		} */
 		
-		cumulativeWrtLineNums.initialize(-1, 1, numNodes);
-		wrtLineSize.setSize(wrtLineNums.dimSize(0));
-		totalWrtSize = 0;
-		for(int i = 0; i < wrtLineNums.dimSize(0); i++){
-			cumulativeWrtLineNums[wrtLineNums[i] - 1] = i;
-			wrtLineSize[i] = nodeLengths[wrtLineNums[i] -1];
-			totalWrtSize += wrtLineSize[i];
-		}
-	}
- };
- 
+/* 		cumulativeWrtLineNums.initialize(-1, 1, numNodes); */
+/* 		wrtLineSize.setSize(wrtLineNums.dimSize(0)); */
+/* 		totalWrtSize = 0; */
+/* 		for(int i = 0; i < wrtLineNums.dimSize(0); i++){ */
+/* 			cumulativeWrtLineNums[wrtLineNums[i] - 1] = i; */
+/* 			wrtLineSize[i] = nodeLengths[wrtLineNums[i] -1]; */
+/* 			totalWrtSize += wrtLineSize[i]; */
+/* 		} */
+/* 	} */
+/* }; */
+#endif
+
 ///// Using NodeVectors:
 // utilities for calling node functions from a vector of node pointers
 // see .cpp file for definitions
@@ -696,7 +703,12 @@ void populateNodeFxnVectorNew_internal_forDerivs(NodeVectorClassNew* nfv, SEXP S
 void populateNodeFxnVectorNew_copyFromRobject_forDerivs(void *nodeFxnVec_to, SEXP S_nodeFxnVec_from );
 void populateNodeFxnVectorNew_internal(NodeVectorClassNew* nfv, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS );
 void populateNodeFxnVectorNew_copyFromRobject(void *nodeFxnVec_to, SEXP S_nodeFxnVec_from );
-
+void populateValueMapAccessorsFromNodeNames_internal(ManyVariablesMapAccessorBase* valuesAccessor,
+						     SEXP SnodeNames,
+						     SEXP SsizesAndNdims,
+						     SEXP SModelOrModelValuesPtr);
+void populateValueMapAccessorsFromNodeNames_copyFromRobject(void *VvaluesAccessor,
+							    SEXP Sargs);
 extern "C" {
   SEXP resizeManyModelVarAccessor(SEXP manyModelVarPtr, SEXP size);
   SEXP resizeManyModelValuesAccessor(SEXP manyModelValuesPtr, SEXP size);	 
@@ -725,4 +737,66 @@ void ManyMV_Finalizer(SEXP Sv);
 
 indexedNodeInfo generateDummyIndexedNodeInfo();
 
+
+#ifdef _DERIVS_FULLTAPE
+
+class NodeVectorClassNew_derivs : public NodeVectorClassNew {
+ public:
+  ManyVariablesMapAccessor model_wrt_accessor;
+  void populateDerivsInfo(SEXP SderivsInfo) {
+    std::cout<<"In populateDerivsInfo\n"<<std::endl;
+    int success = 0;
+    SEXP SpxData;
+    SEXP Swrt;
+    SEXP Smodel, SCobjInt, SbasePtr, SADptrs, SbasePtrAD;
+    SEXP SnodeNames, SsizesAndNdims;
+    PROTECT(SpxData = Rf_allocVector(STRSXP, 1));
+    SET_STRING_ELT(SpxData, 0, Rf_mkChar(".xData"));
+    //Swrt <- SderivsInfo$wrtMapInfo
+    std::cout<<++success<<std::endl;
+    PROTECT(Swrt =
+	    Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, SpxData)),
+			      Rf_install("wrtMapInfo")));
+    std::cout<<++success<<std::endl;
+    PROTECT(SnodeNames = VECTOR_ELT(Swrt, 0));
+    std::cout<<++success<<std::endl;
+    PROTECT(SsizesAndNdims = VECTOR_ELT(Swrt, 1));
+    
+    std::cout<<++success<<std::endl;
+    //Smodel <- SderivsInfo$model
+    PROTECT(Smodel =
+	    Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, SpxData)),
+			      Rf_install("model")));
+    std::cout<<++success<<std::endl;
+    //SCobjInt <- Smodel$CobjectInterface
+    PROTECT(SCobjInt = 
+	    Rf_findVarInFrame(PROTECT(GET_SLOT(Smodel, SpxData)),
+			      Rf_install("CobjectInterface")));
+    std::cout<<++success<<std::endl;
+    // SbasePtr <- SCobjInt$.basePtr
+    PROTECT(SbasePtr = 
+	    Rf_findVarInFrame(PROTECT(GET_SLOT(SCobjInt, SpxData)),
+			      Rf_install(".basePtr")));
+    std::cout<<++success<<std::endl;
+    // SADptrs <- SCobjInt$.ADptrs
+    PROTECT(SADptrs = 
+	    Rf_findVarInFrame(PROTECT(GET_SLOT(SCobjInt, SpxData)),
+			      Rf_install(".ADptrs")));
+    std::cout<<++success<<std::endl;
+    // SbasePtrAD <- SADptrs[[".ADptrs"]]
+    PROTECT(SbasePtrAD = 
+	    VECTOR_ELT(SADptrs, 0));
+    std::cout<<++success<<std::endl;
+    
+    populateValueMapAccessorsFromNodeNames_internal(&model_wrt_accessor,
+						    SnodeNames,
+						    SsizesAndNdims,
+						    SbasePtr);
+    UNPROTECT(14);
+  }
+};
+
+#endif
+
+  
 #endif

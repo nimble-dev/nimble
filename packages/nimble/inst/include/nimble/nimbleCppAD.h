@@ -29,6 +29,9 @@
 // see the same timer objects.  The zeros in each indicate which timers
 // were not used by stuff in that DLL.
 
+#ifndef _NIMBLE_CPPAD
+#define _NIMBLE_CPPAD
+
 /* Definitions only to be included when a nimbleFunction needs CppAD */
 #include <cppad/cppad.hpp>
 #include <cppad/utility/nan.hpp>
@@ -159,3 +162,5 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
     NodeVectorClassNew_derivs &nodes, int iNodeFunction,
     NimArr<1, double> &derivOrders);
+
+#endif

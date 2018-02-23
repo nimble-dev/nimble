@@ -1033,12 +1033,14 @@ SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim) {
 
 //#define _DEBUG_POPULATE_MAP_ACCESSORS
 
-// call both with a bunch of output generated...
-SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr ) {
+
+void populateValueMapAccessorsFromNodeNames_internal(ManyVariablesMapAccessorBase* valuesAccessor,
+						     SEXP SnodeNames,
+						     SEXP SsizesAndNdims,
+						     SEXP SModelOrModelValuesPtr) {
   vector<string> nodeNames;
   STRSEXP_2_vectorString(SnodeNames, nodeNames);
   NamedObjects *sourceNamedObject = static_cast<NamedObjects*>(R_ExternalPtrAddr(SModelOrModelValuesPtr));
-  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StargetPtr) );
   int numNames = nodeNames.size();
   valuesAccessor->resize(numNames);
   vector<SingleVariableMapAccessBase *> *singleAccessors = &(valuesAccessor->getMapAccessVector());
@@ -1048,7 +1050,7 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
   SEXP SoneSizesAndNdims;
   mapInfoClass mapInfo;
   int totalLength = 0;
-
+  
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
   _nimble_global_output<<"New: "<<numNames<<"\n";
   nimble_print_to_R(_nimble_global_output);
@@ -1102,6 +1104,28 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
   _nimble_global_output<<totalLength<<"\n";
   nimble_print_to_R(_nimble_global_output);
 #endif
+}
+
+void populateValueMapAccessorsFromNodeNames_copyFromRobject(void *VvaluesAccessor,
+							    SEXP Sargs) {
+  _nimble_global_output<<"In new copy system\n";
+  nimble_print_to_R(_nimble_global_output);
+  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(VvaluesAccessor);
+  SEXP SnodeNames, SsizesAndNdims, SModelOrModelValuesPtr;
+  PROTECT(SnodeNames = VECTOR_ELT(Sargs, 0));
+  PROTECT(SsizesAndNdims = VECTOR_ELT(Sargs, 1));
+  PROTECT(SModelOrModelValuesPtr = VECTOR_ELT(Sargs, 2));
+  populateValueMapAccessorsFromNodeNames_internal(valuesAccessor,
+						  SnodeNames,
+						  SsizesAndNdims,
+						  SModelOrModelValuesPtr);
+  UNPROTECT(3);
+}
+
+// call both with a bunch of output generated...
+SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr ) {
+  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StargetPtr) );
+  populateValueMapAccessorsFromNodeNames_internal(valuesAccessor, SnodeNames, SsizesAndNdims, SModelOrModelValuesPtr);
   return(R_NilValue);
 }
 

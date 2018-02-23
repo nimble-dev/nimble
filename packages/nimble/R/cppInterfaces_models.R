@@ -199,7 +199,6 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                           dll[['handle']], model$name))
 
                                                 if(isTRUE(nimbleOptions('experimentalEnableDerivs'))) {
-                                                    browser()
                                                     basePtrCallAD <- paste0(basePtrCall, "_AD")
                                                     newPtrPairAD <- eval(parse(text = ".Call(basePtrCallAD)"))
                                                     .ADptrs <<- list(

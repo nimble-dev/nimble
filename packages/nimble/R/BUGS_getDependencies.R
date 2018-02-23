@@ -63,10 +63,38 @@ gd_getDependencies_IDs <- function(graph, maps, nodes, omit, downstream) {
 
 gd_allNeighbors <- function(graph, nodes) stop("shouldn't be calling gd_allNeighbors any more")
 
-
+nimDerivsInfoClass_init_impl <- function(.self,
+                                         wrtNodes,
+                                         model) {
+    wrtAccessor <- modelVariableAccessorVector(model,
+                                               wrtNodes,
+                                               logProb = FALSE)
+    .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtAccessor)
+    .self$model <- model
+    NULL
+}
 
 nimDerivsInfoClass <- setRefClass(
     'nimDerivsInfoClass',
+    fields = list(
+        ##allWrtAndCalcNodeNames = 'ANY',
+      ##wrtNodeNames = 'ANY',
+      ##calcNodeNames = 'ANY',
+      wrtMapInfo = 'ANY'
+      , model = 'ANY'
+    ),
+    methods = list(
+        initialize = function(wrtNodes = NA,
+                              calcNodes = NA,
+                              thisModel = NA,
+                              cInfo = FALSE, ...) {
+            nimDerivsInfoClass_init_impl(.self, wrtNodes, thisModel)
+        }
+    )
+)
+
+nimDerivsInfoClass_ORIG <- setRefClass(
+    'nimDerivsInfoClass_ORIG',
     fields = list(
       allWrtAndCalcNodeNames = 'ANY',
       wrtNodeNames = 'ANY',
