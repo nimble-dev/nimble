@@ -156,9 +156,9 @@ public:
 };
 
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
-    const NodeVectorClassNew_derivs &nodes, const NimArr<1, double> &derivOrders);
+    NodeVectorClassNew_derivs &nodes, const NimArr<1, double> &derivOrders);
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
-    const NodeVectorClassNew_derivs &nodes, const double derivOrders);
+    NodeVectorClassNew_derivs &nodes, const double derivOrders);
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
     NodeVectorClassNew_derivs &nodes, int iNodeFunction,
     NimArr<1, double> &derivOrders);

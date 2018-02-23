@@ -217,7 +217,7 @@ void nimArr_2_ManyModelAccessIndex(ManyVariablesMapAccessor &MMVAPtr, NimArrBase
 
 template<class T>
 void ManyModelAccess_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
-  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  const vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
   int nimCurrent = 0;
   int nimEnd = nimArr.size();
   int nimArrStride = nimArr.strides()[0];
@@ -288,6 +288,8 @@ void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int ind
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   ManyModelAccessIndex_2_nimArr<int>(MVA, nimArr, index-1);
 }
+
+
 
 void nimCopy(const copierVectorClass &copiers) {
   vector<copierClass*>::const_iterator iCopy;

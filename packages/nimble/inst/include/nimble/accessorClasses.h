@@ -36,8 +36,6 @@
 #include "R.h"
 //#include <nimble/nimbleCppAD.h>
 
-
-
 using std::cout;
 
 #include "nodeFun.h" 
@@ -318,6 +316,7 @@ class ManyVariablesMapAccessorBase {
  ManyVariablesMapAccessorBase() : totalLength(0) {}
   int &getTotalLength() {return(totalLength);}
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector()=0;
+  virtual const vector<SingleVariableMapAccessBase *> &getConstMapAccessVector() const =0;
   virtual void  setRow(int i) = 0;
   virtual ~ManyVariablesMapAccessorBase() {};
   virtual void resize(int n) = 0;
@@ -342,6 +341,7 @@ class ManyVariablesMapAccessor : public ManyVariablesMapAccessorBase {
  public:
   vector<SingleVariableMapAccessBase *> varAccessors;
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
+  virtual const vector<SingleVariableMapAccessBase *> &getConstMapAccessVector() const {return(varAccessors);}
   int &getNodeLength(int index) {return(varAccessors[index-1]->getLength());}
   ~ManyVariablesMapAccessor();
   void setRow(int i){PRINTF("Bug detected in code: attempting to setRow for model. Can only setRow for modelValues\n");}
@@ -376,6 +376,7 @@ class ManyModelValuesMapAccessor : public ManyVariablesMapAccessorBase {
  ManyModelValuesMapAccessor() : currentRow(0) {}
   vector<SingleVariableMapAccessBase *> varAccessors;
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
+  virtual const vector<SingleVariableMapAccessBase *> &getConstMapAccessVector() const {return(varAccessors);}
   virtual void setRow(int i);// see .cpp
   ~ManyModelValuesMapAccessor();
   void resize(int n){
