@@ -217,7 +217,7 @@ conjugacyRelationshipsClass <- setRefClass(
                 #    conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
                 #    if(not conj) next
 
-                # now try to guess if finding paths will be more intensive than simply looking at target-dependent pairs, to avoid path finding when there is nested structure such as stick-breaking
+                # now try to guess if finding paths will be more intensive than simply looking at target-dependent pairs, to avoid path finding when there is nested structure such as stickbreaking
                 numPaths <- sapply(nodeIDsFromOneDecl, model$getDependencyPathCountOneNode)
                 deps <- lapply(nodeIDsFromOneDecl, function(x) model$getDependencies(x, stochOnly = TRUE, self = FALSE))
                 numDeps <- sapply(deps, length)
@@ -322,7 +322,7 @@ conjugacyClass <- setRefClass(
         dependentDistNames =  'ANY',   ## character vector of the names of all allowable dependent sampling distributions.  same as: names(dependents)
         posteriorObject =     'ANY',   ## an object of posteriorClass
         needsLinearityCheck = 'ANY',   ## logical specifying whether we need to do the linearity check; if the link is 'multiplicative' or 'linear'
-        needsStickbreakingCheck = 'ANY',   ## logical specifying whether we need to do the sb check
+        needsStickbreakingCheck = 'ANY',   ## logical specifying whether we need to do the stickbreaking check
         model                  = 'ANY',   ## these fields ONLY EXIST TO PREVENT A WARNING for '<<-',
         DEP_VALUES_VAR_INDEXED = 'ANY',   ## in the code for generating the conjugate sampler functions
         DEP_PARAM_VAR_INDEXED  = 'ANY',   ##
@@ -474,7 +474,7 @@ conjugacyClass <- setRefClass(
                 }
             }
             if(any(needsStickbreakingCheck)) {
-                ## cautions: need to think through possibility that a non sb-dcat conjugate dep of target may be included in the model
+                ## cautions: need to think through possibility that a non stickbreaking-dcat conjugate dep of target may be included in the model
                 for(iDepCount in seq_along(dependentCounts)) {
                     distName <- names(dependentCounts)[iDepCount]
                     functionBody$addCode({
