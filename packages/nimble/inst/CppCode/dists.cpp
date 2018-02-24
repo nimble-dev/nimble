@@ -20,7 +20,7 @@
  */
 
 // various additional distributions functions needed by NIMBLE
-// Author: Chris Paciorek 
+// Author: Christopher Paciorek 
 // Date: Initial development in February 2014
 // uses various BLAS routines and constants from R's C API
 // compile as "R CMD SHLIB dists.cpp"
