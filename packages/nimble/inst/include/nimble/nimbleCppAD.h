@@ -23,7 +23,7 @@
 #ifndef _NIMBLE_AD
 #define _NIMBLE_AD
 // define this to include timing code
-#define _TIME_AD
+// #define _TIME_AD
 // To see all timing components, use:
 //.Call(getNativeSymbolInfo("report_AD_timers", compiled_model$dll))
 //.Call(getNativeSymbolInfo("report_AD_timers", compiled_nf_using_derivs$dll))
