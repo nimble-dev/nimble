@@ -63,24 +63,47 @@ gd_getDependencies_IDs <- function(graph, maps, nodes, omit, downstream) {
 
 gd_allNeighbors <- function(graph, nodes) stop("shouldn't be calling gd_allNeighbors any more")
 
-nimDerivsInfoClass_init_impl <- function(.self,
-                                         wrtNodes,
-                                         model) {
+nimDerivsInfoClass_init_impl <- function(.self
+                                         , wrtNodes
+                                         , calcNodes
+                                         , model) {
+    .self$model <- model
+
+    ## wrt nodes
     wrtAccessor <- modelVariableAccessorVector(model,
                                                wrtNodes,
                                                logProb = FALSE)
     .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtAccessor)
-    .self$model <- model
+
+    calcNodeNames <- model$expandNodeNames(calcNodes)
+    wrtNodeNames <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
+    independentNodes <- model$expandNodeNames(c(wrtNodeNames, calcNodeNames), sort = TRUE)
+    ## independent nodes
+    independentNodesAccessor <- modelVariableAccessorVector(model,
+                                                            independentNodes,
+                                                            logProb = FALSE)
+    .self$independentMapInfo <- makeMapInfoFromAccessorVectorFaster(independentNodesAccessor)
+
+    ## output nodes: deterministic nodes in calcNodes plus logProb nodes
+    ##   but not the actual data nodes.
+    logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodeNames)
+    isDetermCalcNodes <- model$isDeterm(calcNodeNames)
+    outputNodes <- c(calcNodeNames[isDetermCalcNodes],
+                     logProbCalcNodeNames)
+
+    outputNodesAccessor <- modelVariableAccessorVector(model,
+                                                       outputNodes,
+                                                       logProb = FALSE)
+    .self$outputMapInfo <- makeMapInfoFromAccessorVectorFaster(outputNodesAccessor)
     NULL
 }
 
 nimDerivsInfoClass <- setRefClass(
     'nimDerivsInfoClass',
     fields = list(
-        ##allWrtAndCalcNodeNames = 'ANY',
-      ##wrtNodeNames = 'ANY',
-      ##calcNodeNames = 'ANY',
-      wrtMapInfo = 'ANY'
+        wrtMapInfo = 'ANY'
+      , independentMapInfo = 'ANY'
+      , outputMapInfo = 'ANY'
       , model = 'ANY'
     ),
     methods = list(
@@ -88,7 +111,10 @@ nimDerivsInfoClass <- setRefClass(
                               calcNodes = NA,
                               thisModel = NA,
                               cInfo = FALSE, ...) {
-            nimDerivsInfoClass_init_impl(.self, wrtNodes, thisModel)
+            nimDerivsInfoClass_init_impl(.self,
+                                         wrtNodes,
+                                         calcNodes,
+                                         thisModel)
         }
     )
 )

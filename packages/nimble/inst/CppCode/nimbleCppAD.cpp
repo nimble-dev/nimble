@@ -56,14 +56,14 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 						 NodeVectorClassNew_derivs &nodes,
 						 const NimArr<1, double> &derivOrders) {
   std::cout<<"In new NIM_DERIVS_CALCULATE\n"<<std::endl;
-  NimArr<1, double> v;
-  v.setSize(10);
-  getValues(v, nodes.model_wrt_accessor);
   std::cout<<"need to propagate const-ness"<<std::endl;
-  for(int i = 0; i < 10; ++i)
-    std::cout<<v[i]<<" ";
-  std::cout<<std::endl;
+
+  if(!nodes.tapeRecorded()) nodes.recordTape();
+  
   nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
+
+  ansList->value = nodes.runTape(derivOrders);
+
   return ansList;
 }
 

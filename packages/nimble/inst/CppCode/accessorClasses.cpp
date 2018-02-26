@@ -166,6 +166,48 @@ void ManyModelValuesMapAccessor::setRow(int i) {
 //  return(varAccessors);
 }
 
+void nimArr_2_SingleModelAccess_AD_AD(SingleVariableMapAccessBase* SMVAPtr,
+				      NimArrBase< CppAD::AD<double> > &nimArr,
+				      int nimBegin,
+				      int nimStride) {
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  if(SMVAPtr->getSingleton()) {
+    (*static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
+  } else {
+    dynamicMapCopyFlatToDim< CppAD::AD<double> , CppAD::AD<double> >(static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr),
+								     SMVAPtr->getOffset(),
+								     SMVAPtr->getStrides(),
+								     SMVAPtr->getSizes(),
+								     &nimArr,
+								     nimBegin,
+								     nimStride);
+  }
+}
+
+
+void nimArr_2_ManyModelAccess_AD_AD(ManyVariablesMapAccessor &MMVAPtr, NimArrBase< CppAD::AD<double> > &nimArr){
+  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int k = SMVA_Vec->size();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  for(int i = 0; i < k ; i++){
+    curSingleAccess = (*SMVA_Vec)[i];
+    nextNumVals = (*curSingleAccess).getLength();
+    if(nextNumVals + nimCurrent > nimEnd){
+      PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+      break;
+    }
+    nimArr_2_SingleModelAccess_AD_AD(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+    nimCurrent += nextNumVals;
+    nimCurrentOffset += nextNumVals * nimArrStride;
+  }
+  if(nimCurrent != nimEnd)
+    PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
 
 template<class T>
 void nimArr_2_ManyModelAccess(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
@@ -214,6 +256,47 @@ void nimArr_2_ManyModelAccessIndex(ManyVariablesMapAccessor &MMVAPtr, NimArrBase
 ///////////////
 // [accessors]_2_nimArr
 // nimArr is "to". SMVAPtr is "from"
+void SingleModelAccess_2_nimArr_AD_AD(SingleVariableMapAccessBase* SMVAPtr,
+				      NimArrBase< CppAD::AD<double> > &nimArr,
+				      int nimBegin,
+				      int nimStride) {
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  if(SMVAPtr->getSingleton()) {
+    (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr))[SMVAPtr->offset];
+  } else {
+    dynamicMapCopyDimToFlat< CppAD::AD<double>, CppAD::AD<double> >(&nimArr,
+								  nimBegin,
+								  nimStride,
+								  static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr),
+								  SMVAPtr->getOffset(),
+								  SMVAPtr->getStrides(),
+								  SMVAPtr->getSizes() );
+  }
+}
+
+void ManyModelAccess_2_nimArr_AD_AD(ManyVariablesMapAccessor &MMVAPtr, NimArrBase< CppAD::AD<double> > &nimArr){
+  const vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int k = SMVA_Vec->size();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  for(int i = 0; i < k ; i++){
+    curSingleAccess = (*SMVA_Vec)[i];
+    nextNumVals = (*curSingleAccess).getLength();
+    if(nextNumVals + nimCurrent > nimEnd){
+      PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+      break;
+    }
+    SingleModelAccess_2_nimArr_AD_AD(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+    nimCurrent += nextNumVals;
+    nimCurrentOffset += nextNumVals * nimArrStride;
+  }
+  if(nimCurrent != nimEnd)
+    PRINTF("Warning: after completing ManyModelAccess_2_nimArr, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
 
 template<class T>
 void ManyModelAccess_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
@@ -240,6 +323,7 @@ void ManyModelAccess_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &
     PRINTF("Warning: after completing ManyModelAccess_2_nimArr, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
 
+
 template<class T>
 void ManyModelAccessIndex_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr, int index) {
   vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
@@ -259,31 +343,33 @@ void ManyModelAccessIndex_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase
 
 //////////
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA){
-	nimArr_2_ManyModelAccess<double>(MVA, nimArr);
+  nimArr_2_ManyModelAccess<double>(MVA, nimArr);
 }
-
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA){
-	nimArr_2_ManyModelAccess<int>(MVA, nimArr);
+  nimArr_2_ManyModelAccess<int>(MVA, nimArr);
 }
-
+void setValues_AD_AD(NimArrBase< CppAD::AD<double> > &nimArr,  ManyVariablesMapAccessor &MVA){
+  nimArr_2_ManyModelAccess_AD_AD(MVA, nimArr);
+}
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   nimArr_2_ManyModelAccessIndex<double>(MVA, nimArr, index-1);
 }
-
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   nimArr_2_ManyModelAccessIndex<int>(MVA, nimArr, index-1);
 }
-
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA){
-	ManyModelAccess_2_nimArr<double>(MVA, nimArr);
+  ManyModelAccess_2_nimArr<double>(MVA, nimArr);
 }
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA){
-	ManyModelAccess_2_nimArr<int>(MVA, nimArr);
+  ManyModelAccess_2_nimArr<int>(MVA, nimArr);
+}
+void getValues_AD_AD(NimArr<1, CppAD::AD<double> > &nimArr, ManyVariablesMapAccessor &MVA){
+  ManyModelAccess_2_nimArr_AD_AD(MVA, nimArr);
 }
 
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   ManyModelAccessIndex_2_nimArr<double>(MVA, nimArr, index-1);
-  } 
+} 
 
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   ManyModelAccessIndex_2_nimArr<int>(MVA, nimArr, index-1);
