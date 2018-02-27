@@ -194,17 +194,6 @@ class NodeVectorClassNew {
 /* }; */
 #endif
 
-///// Using NodeVectors:
-// utilities for calling node functions from a vector of node pointers
-// see .cpp file for definitions
-double calculate(NodeVectorClassNew &nodes);
-double calculate(NodeVectorClassNew &nodes, int iNodeFunction);
-double calculateDiff(NodeVectorClassNew &nodes);
-double calculateDiff(NodeVectorClassNew &nodes, int iNodeFunction);
-double getLogProb(NodeVectorClassNew &nodes);
-double getLogProb(NodeVectorClassNew &nodes, int iNodeFunction);
-void simulate(NodeVectorClassNew &nodes);
-void simulate(NodeVectorClassNew &nodes, int iNodeFunction);
 
 // ideas on efficiency
 /* ## could propagate const-ness through getParam_0D_double_block etc. - that helped */
@@ -751,6 +740,10 @@ indexedNodeInfo generateDummyIndexedNodeInfo();
 
 #ifdef _DERIVS_FULLTAPE
 
+class NodeVectorClassNew_derivs;
+
+CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes);
+
 class NodeVectorClassNew_derivs : public NodeVectorClassNew {
  public:
   // Groups of nodes are labeled as:
@@ -792,7 +785,6 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   bool tapeRecorded() {return(tapeRecorded_);}
   void recordTape() {
     std::cout<<"In record tape\n";
-    int success = 0;
     int length_output = model_output_accessor.getTotalLength();
     int length_dependent = 1 + length_output; // 1 for the logProb
     vector< CppAD::AD<double> > dependentVars(length_dependent);
@@ -808,59 +800,80 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     vModel.setSize(length_independent);
     NimArrIndependentVars.setSize(length_independent);
     // model -> NimArr vector
-    std::cout<<++success<<std::endl;
     getValues( vModel, model_independent_accessor );
-    std::cout<<++success<<std::endl;
     // NimArr vector -> NimArr vector_AD
     std::copy( vModel.getPtr(), vModel.getPtr() + length_independent, NimArrIndependentVars.getPtr());
-    std::cout<<++success<<std::endl;
     // NimArr vector_AD -> modelAD
     // This may not be necessary: setting values before starting tape
     setValues_AD_AD( NimArrIndependentVars, model_AD_independent_accessor);
-    std::cout<<++success<<std::endl;
-    // 3. Start taping
+        // 3. Start taping
     std::vector< CppAD::AD<double> > independentVars(length_independent);
-    std::cout<<++success<<std::endl;
     std::copy(NimArrIndependentVars.getPtr(),
 	      NimArrIndependentVars.getPtr() + length_independent,
 	      independentVars.begin());
-    std::cout<<++success<<std::endl;
     CppAD::Independent(independentVars);
     // 4. Copy all independentNodes from NimArrIndependentVars -> model_AD.
     // Now setting the values is recorded
-    std::cout<<++success<<std::endl;
+    for(int i = 0; i < independentVars.size(); ++i)
+      NimArrIndependentVars[i] = independentVars[i];
+    /* std::copy(independentVars.begin(), */
+    /* 	      independentVars.begin() + length_independent, */
+    /* 	      NimArrIndependentVars.getPtr()); */
     setValues_AD_AD( NimArrIndependentVars, model_AD_independent_accessor);
-    std::cout<<++success<<std::endl;
     // 5. call calculate
+    std::cout<<"Calling calculate_ADproxyModel"<<std::endl;
+    CppAD::AD<double> logProb = calculate_ADproxyModel( *this );
+    // Next four lines are dummy logProb for debugging
+    //  CppAD::AD<double> logProb = 0;
+    //  std::vector< CppAD::AD<double> > model_AD_dummy(length_independent);
+    //  for(int i = 0; i < length_independent; ++i) model_AD_dummy[i] = NimArrIndependentVars[i];
+    //  for(int i = 0; i < length_independent; ++i) logProb += model_AD_dummy[i];
     // 6. Copy logProb to dependentVars[0]
-    dependentVars[0] = 1.23;
+    dependentVars[0] = logProb;
     // 7. Copy all outputNodes from model_AD -> dependentVars (starting at 1)
-    std::cout<<++success<<std::endl;
     getValues_AD_AD( NimArrOutputVars, model_AD_output_accessor);
-    std::cout<<++success<<std::endl;
     std::copy(NimArrOutputVars.getPtr(),
 	      NimArrOutputVars.getPtr() + length_output,
 	      dependentVars.begin() + 1);
-    std::cout<<++success<<std::endl;
     // 8. Finish taping
+    std::cout<<"independentVars.size()="<<independentVars.size()<<". dependentVars.size()="<<dependentVars.size()<<std::endl;
     ADtape = new CppAD::ADFun<double>(independentVars, dependentVars);
     // 9. Call tape->optimize()
+    tapeRecorded_ = true;
   };
   double runTape( const NimArr<1, double> &derivOrders) {
-    
     // 1. Copy all independentNodes from model -> independentVars;
+    std::cout<<"Running tape"<<std::endl;
+    int success = 0;
     int length_independent = model_independent_accessor.getTotalLength();
+    std::cout<<++success<<std::endl;
     std::vector< double > independentVars(length_independent);
+    std::cout<<++success<<std::endl;
     NimArr<1, double > NimArrIndependentVars;
+    std::cout<<++success<<std::endl;
     NimArrIndependentVars.setSize(length_independent);
+    std::cout<<++success<<std::endl;
     getValues(NimArrIndependentVars, model_independent_accessor);
+    std::cout<<++success<<std::endl;
     std::copy(NimArrIndependentVars.getPtr(),
 	      NimArrIndependentVars.getPtr() + length_independent,
 	      independentVars.begin());
-    std::vector<double> dependentVars;
-    dependentVars = ADtape->Forward(0, independentVars);
-    return(dependentVars[0]);
+    std::cout<<++success<<std::endl;
     // 2. Run tape
+    std::vector<double> dependentVars;
+    std::cout<<++success<<std::endl;
+    std::cout<<"independentVars.size()="<<independentVars.size()<<". dependentVars.size()="<<dependentVars.size()<<std::endl;
+    dependentVars = ADtape->Forward(0, independentVars);
+    std::cout<<"independentVars.size()="<<independentVars.size()<<". dependentVars.size()="<<dependentVars.size()<<std::endl;
+    std::cout<<++success<<std::endl;
+    for(int i = 0; i < independentVars.size(); ++i)
+      std::cout<<independentVars[i]<<" ";
+    std::cout<<std::endl;
+    for(int i = 0; i < dependentVars.size(); ++i)
+      std::cout<<dependentVars[i]<<" ";
+    std::cout<<std::endl;
+
+    return(dependentVars[0]);
     // 3. Copy logProb value (scalar)
     // 4. Copy outputNodes values from dependentVars -> model
     // 5. Collect derivatives
@@ -918,6 +931,9 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     PROTECT(SbasePtrAD = 
 	    VECTOR_ELT(SADptrs, 0));
     std::cout<<++success<<std::endl;
+
+    std::cout<<R_ExternalPtrAddr(SbasePtr)<<std::endl;
+    std::cout<<R_ExternalPtrAddr(SbasePtrAD)<<std::endl;
     
     populateValueMapAccessorsFromNodeNames_internal(&model_wrt_accessor,
 						    SwrtNodeNames,
@@ -984,7 +1000,21 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   }
 };
 
+
+
 #endif
+
+///// Using NodeVectors:
+// utilities for calling node functions from a vector of node pointers
+// see .cpp file for definitions
+double calculate(NodeVectorClassNew &nodes);
+double calculate(NodeVectorClassNew &nodes, int iNodeFunction);
+double calculateDiff(NodeVectorClassNew &nodes);
+double calculateDiff(NodeVectorClassNew &nodes, int iNodeFunction);
+double getLogProb(NodeVectorClassNew &nodes);
+double getLogProb(NodeVectorClassNew &nodes, int iNodeFunction);
+void simulate(NodeVectorClassNew &nodes);
+void simulate(NodeVectorClassNew &nodes, int iNodeFunction);
 
   
 #endif

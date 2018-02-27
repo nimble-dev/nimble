@@ -206,6 +206,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                         .ModelBasePtr = newPtrPairAD[[ defaults$extPtrTypeIndex['ModelBase'] ]],
                                                         .namedObjectsPtr = newPtrPairAD[[ defaults$extPtrTypeIndex['NamedObjects'] ]]
                                                     )
+                                                    model$ADproxyModel$CobjectInterface <- list(.basePtr = .ADptrs$.basePtr)
                                                 }
                                                 
                                                 .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.ModelBasePtr, dll = dll) ## this is a Values*

@@ -23,6 +23,7 @@
 #define __NODEFUN
 #include "NimArr.h"
 #include "smartPtrs.h"
+#include <cppad/cppad.hpp>
 
 class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
  public:
@@ -70,8 +71,14 @@ class nodeFun : public NamedObjects {
   }
 
   virtual double calculate(const indexedNodeInfo &iNI) const =0;
+  virtual CppAD::AD<double> calculate_ADproxyModel(const indexedNodeInfo &iNI) const {
+    return(CppAD::AD<double>(0)); // need a default in case generating deriv functions is turned off.
+  };
+  CppAD::AD<double> calculateBlock_ADproxyModel(int operand) const { return calculate_ADproxyModel(indexedNodeInfoTable[operand]); }
+
   virtual void calculateWithArgs_deriv(const indexedNodeInfo &iNI, NimArr<1, double> & ARG2_nimDerivsOrders_, const NimArr<1, double> & ARG3_wrtVector_, nimSmartPtr<NIMBLE_ADCLASS> ansList) = 0;
   virtual double calculateDiff(const indexedNodeInfo &iNI) const =0;
+  // virtual CppAD::AD<double> calculateDiff_ADproxyModel(const indexedNodeInfo &iNI) const =0;
   virtual void simulate(const indexedNodeInfo &iNI) const =0;
   virtual double getLogProb(const indexedNodeInfo &iNI) const =0;
 

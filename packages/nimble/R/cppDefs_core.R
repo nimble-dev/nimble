@@ -232,10 +232,19 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                             methods = list(
                                 generate = function(indent = '', ...) {
                                     if(identical(cppADCode, TRUE)){
-                                      if(!identical(nimbleUserNamespace$cppADCode, TRUE)){
+                                        oldCppADCode <- nimbleUserNamespace$cppADCode
                                         nimbleUserNamespace$cppADCode <- TRUE
-                                        on.exit(nimbleUserNamespace$cppADCode <- FALSE)
-                                      }
+                                        on.exit(nimbleUserNamespace$cppADCode <- oldCppADCode)
+                                    }
+                                    ## if(!identical(nimbleUserNamespace$cppADCode, TRUE)){
+                                    ##     nimbleUserNamespace$cppADCode <- TRUE
+                                    ##     on.exit(nimbleUserNamespace$cppADCode <- FALSE)
+                                    ##   }
+                                    ## }
+                                    if(identical(cppADCode, 2L)){
+                                        oldCppADCode <- nimbleUserNamespace$cppADCode
+                                        nimbleUserNamespace$cppADCode <- 2L
+                                        on.exit(nimbleUserNamespace$cppADCode <- oldCppADCode)
                                     }
                                     if(inherits(typeDefs, 'uninitializedField')) typeDefs <<- list()
                                     typeDefsToUse <- if(inherits(typeDefs, 'symbolTable')) typeDefs$symbols else typeDefs

@@ -59,11 +59,12 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   std::cout<<"need to propagate const-ness"<<std::endl;
 
   if(!nodes.tapeRecorded()) nodes.recordTape();
-  
+  std::cout<<"tape recorded"<<std::endl;
   nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
-
-  ansList->value = nodes.runTape(derivOrders);
-
+  std::cout<<"ansList allocated"<<std::endl;
+  ansList->value.setSize(1);
+  ansList->value[0] = nodes.runTape(derivOrders);
+  std::cout<<"rape run"<<std::endl;
   return ansList;
 }
 

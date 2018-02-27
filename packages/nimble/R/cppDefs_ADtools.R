@@ -1,3 +1,39 @@
+
+## proxy model for model_AD
+## This class needs just enough pieces to be used like a model
+## for purposes of nodeFunction compilation.
+## The model will contain an ADproxyModel
+## and then the nodeFunction setup code will extract it.
+## The model interface will population the proxy model's CobjectInterface
+ADproxyModelClass <- setRefClass(
+    'ADproxyModelClass',
+    fields = list(
+        CobjectInterface = 'ANY' ## needs .basePtr
+      , model = 'ANY'
+    ),
+    methods = list(
+        getVarInfo = function(...) {model$getVarInfo(...)},
+        initialize = function(Rmodel) {
+            model <<- Rmodel
+        }
+        ## symbolNimArrDoublePtr
+    )
+)
+
+## This is not a reference class (or other class)
+## definition because if it was, then when it is used
+## in a nodeFunction, R would check to see that variable
+## names exist as fields in the class, and that is
+## more trouble than it is worth.  A simple environment
+## will pass muster here.
+## ADproxyModelClass <- function(Rmodel) {
+##     ans <- new.env()
+##     model <- Rmodel ## for getVarInfo
+##     ans$getVarInfo <- function(...) model$getVarInfo(...)
+##     ans$CobjectInterface <- NULL
+##     ans
+## }
+
 ## Convert one symbol object for a C++ var into a symbol object for C++ templated CppAD code
 # See symbolTable2templateTypeSymbolTable
 cppVarSym2templateTypeCppVarSym <- function(oldSym, addRef = FALSE, clearRef = FALSE, replacementBaseType = 'TYPE_', replacementTemplateArgs = list()) {

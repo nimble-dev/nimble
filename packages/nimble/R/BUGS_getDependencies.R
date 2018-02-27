@@ -77,7 +77,8 @@ nimDerivsInfoClass_init_impl <- function(.self
 
     calcNodeNames <- model$expandNodeNames(calcNodes)
     wrtNodeNames <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
-    independentNodes <- model$expandNodeNames(c(wrtNodeNames, calcNodeNames), sort = TRUE)
+    stochCalcNodeNames <- calcNodeNames[ model$isStoch(calcNodeNames) ]
+    independentNodes <- model$expandNodeNames(c(wrtNodeNames, stochCalcNodeNames), sort = TRUE)
     ## independent nodes
     independentNodesAccessor <- modelVariableAccessorVector(model,
                                                             independentNodes,

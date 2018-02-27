@@ -161,7 +161,8 @@ cppOutputEigBlank <- function(code, symTab) {
 }
 
 cppOutputNimDerivsPrepend <- function(code, symTab){
-  if(identical(nimbleUserNamespace$cppADCode, TRUE)){
+    if(identical(nimbleUserNamespace$cppADCode, TRUE) |
+       identical(nimbleUserNamespace$cppADCode, 2L)){
       paste0('nimDerivs_', code$name, '(',
              paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
   }
@@ -178,8 +179,12 @@ cppOutputNimDerivsPrependType <- function(code, symTab){
              paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ),
                     ')', collapse = ', '), ', ', nimGenerateCpp(code$args[length(code$args)][[1]], symTab, asArg = TRUE), ')')
   }
-  else{
-    paste0(code$name, '(',
+  else if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+      paste0('nimDerivs_',code$name, '(', 
+             paste0('CppAD::AD<double>(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ),
+                    ')', collapse = ', '), ', ', nimGenerateCpp(code$args[length(code$args)][[1]], symTab, asArg = TRUE), ')')
+  } else {
+     paste0(code$name, '(',
            paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
   }
 }

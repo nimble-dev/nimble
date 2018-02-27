@@ -56,6 +56,15 @@ double calculate(NodeVectorClassNew &nodes) {
   return(ans);
 }
 
+CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes) {
+  CppAD::AD<double> ans = 0;
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  vector<NodeInstruction>::const_iterator iNode(instructions.begin());
+  vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
+  for(; iNode != iNodeEnd; iNode++)
+    ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
+  return(ans);
+}
 
 double calculate(NodeVectorClassNew &nodes, int iNodeFunction) {
   if(nodes.getInstructions().size() < static_cast<unsigned int>(iNodeFunction)) {
@@ -172,8 +181,10 @@ void nimArr_2_SingleModelAccess_AD_AD(SingleVariableMapAccessBase* SMVAPtr,
 				      int nimStride) {
   NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
   if(SMVAPtr->getSingleton()) {
+    std::cout<<"nA_2_sma via singleton"<<std::endl;
     (*static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
   } else {
+    std::cout<<"nA_2_sma via dynamicMapCopy"<<std::endl;
     dynamicMapCopyFlatToDim< CppAD::AD<double> , CppAD::AD<double> >(static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr),
 								     SMVAPtr->getOffset(),
 								     SMVAPtr->getStrides(),
@@ -262,8 +273,10 @@ void SingleModelAccess_2_nimArr_AD_AD(SingleVariableMapAccessBase* SMVAPtr,
 				      int nimStride) {
   NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
   if(SMVAPtr->getSingleton()) {
+    std::cout<<"sma_2_na via singleton"<<std::endl;
     (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr))[SMVAPtr->offset];
   } else {
+    std::cout<<"sma_2_na via dynamicMapCopy"<<std::endl;
     dynamicMapCopyDimToFlat< CppAD::AD<double>, CppAD::AD<double> >(&nimArr,
 								  nimBegin,
 								  nimStride,
