@@ -163,7 +163,12 @@ cppOutputEigBlank <- function(code, symTab) {
 cppOutputNimDerivsPrepend <- function(code, symTab){
   if(identical(nimbleUserNamespace$cppADCode, TRUE)){
       paste0('nimDerivs_', code$name, '(',
-             paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
+             paste0(unlist(lapply(code$args, function(x){
+               if(is.numeric(x) || is.logical(x)){
+                 return(paste0('TYPE_(', nimGenerateCpp(x, symTab, asArg = TRUE), ')'))
+               }
+               return(nimGenerateCpp(x, symTab, asArg = TRUE))
+             })), collapse = ', '), ')')
   }
   else{
     paste0(code$name, '(',
@@ -174,9 +179,13 @@ cppOutputNimDerivsPrepend <- function(code, symTab){
 
 cppOutputNimDerivsPrependType <- function(code, symTab){
   if(identical(nimbleUserNamespace$cppADCode, TRUE)){
-      paste0('nimDerivs_',code$name, '(', 
-             paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ),
-                    ')', collapse = ', '), ', ', nimGenerateCpp(code$args[length(code$args)][[1]], symTab, asArg = TRUE), ')')
+    paste0('nimDerivs_', code$name, '(',
+           paste0(unlist(lapply(code$args, function(x){
+             if(is.numeric(x) || is.logical(x)){
+               return(paste0('TYPE_(', nimGenerateCpp(x, symTab, asArg = TRUE), ')'))
+             }
+             return(nimGenerateCpp(x, symTab, asArg = TRUE))
+           })), collapse = ', '), ')')
   }
   else{
     paste0(code$name, '(',

@@ -333,6 +333,6 @@ operatorRank <- c(
 )
 
 nimDerivsPrependOperators <- c("nimArr_ddirch", "nimArr_dmvt_chol", "nimArr_dmnorm_chol", "nimArr_dwish_chol", "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
-                               "nimEquals", "lfactorial", "factorial", "logit", "pairmax", "pairmin", "cube", "inprod")
+                               "nimEquals", "lfactorial", "factorial", "logit", "cube", "inprod")
 nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dexp_nimble", "dexp", "dlnorm", "dweibull", "dbinom", "dbeta", "dchisq", "dlogis", "dt",
-                                   "dt_nonstandard", "dmultinom", "dnbinom", "dunif")
+                                   "dt_nonstandard", "dmultinom", "dnbinom", "dunif", "pairmax", "pairmin")

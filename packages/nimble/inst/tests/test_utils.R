@@ -1312,7 +1312,7 @@ testADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
       CderivsList <- eval(as.call(CfunCallList))
       argValsText <- paste(sapply(names(argsList[[iArg]]), 
                           function(x){return(paste(x, " = ",
-                          argsList[[iArg]][[x]]))}), collapse = ', ')
+                          paste(argsList[[iArg]][[x]], collapse = ', ')))}), collapse = ', ')
       if(is.logical(debug) && debug == TRUE) browser()
       else if(is.numeric(debug) && debug == iArg) browser()
       if(0 %in% iOrdersToCheck)

@@ -17,7 +17,6 @@
     #include <TMB/lgamma.hpp>
   	#include <nimble/NimArr.h>
 
-
 /** \brief Distribution function of the normal distribution (following R argument convention).
     \ingroup R_style_distribution
 */
@@ -51,66 +50,60 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
   return give_log ? dens : exp(dens);
 }
 
-// template<class Type>
-// Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
-// 	 Type df, Type scale_param, Type give_log, Type overwrite_inputs){
-//   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-//    Type p = xNimArr.dim()[0];
-//   Type i, j;
+template<class Type>
+Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
+	 Type df, Type scale_param, Type give_log, Type overwrite_inputs){
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int p = xNimArr.dim()[0];
+  int i, j;
 
-// //   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
-// //     return NA_REAL;
-// // #ifdef IEEE_754
-// //   if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
-// //     return R_NaN;
-// // #endif
+//   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+//     return NA_REAL;
+// #ifdef IEEE_754
+//   if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+//     return R_NaN;
+// #endif
 
-//   // also covers df < 0
-// //   if(df < (double) p) ML_ERR_return_NAN;
+  // also covers df < 0
+//   if(df < (double) p) ML_ERR_return_NAN;
 
-// //   if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+//   if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+  Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
+  for(i = 0; i < p; i++)
+    dens -= lgamma((df - Type(i)) / Type(2.0));
 
-//   Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
-//   for(i = 0; i < p; i++)
-//     dens -= lgamma((df - i) / 2);
+  Type sumLogCholNimArr;
+  for(i = 0; i < p; i++){ 
+	sumLogCholNimArr += df * log(cholNimArr(i, i));
+  }
+  dens += CppAD::CondExpEq(scale_param, Type(1), -sumLogCholNimArr, sumLogCholNimArr);
 
-//   Type sumLogCholNimArr;
-//   for(i = 0; i < p; i++){ 
-// 	sumLogCholNimArr += df * log(cholNimArr(i, i));
-//   }
-//   dens += CppAD::CondExpEq(scale_param, Type(0), sumLogCholNimArr, -sumLogCholNimArr)
-// //   if(scale_param) {
-// //     for(i = 0; i < p; i++){ 
-// // 	  dens -= df * log(cholNimArr(i, i));
-// // 	}
-// //   } else {
-// //     for(i = 0; i < p; i++){ 
-// // 	  dens += df *  log(cholNimArr(i, i));
-// // 	}
-// //   }
+//   determinant of x using Cholesky:
+  Eigen::Map<MatrixXt > eigenX(xNimArr.getPtr(), p, p);
 
-//   // determinant of x using Cholesky:
-//   Eigen::Map<MatrixXt > eigenX(xNimArr.getPtr(), p, p);
+   Eigen::LLT<MatrixXt > llt(eigenX);
+   MatrixXt    eigenXChol = llt.matrixL();
+ 
+eigenXChol.template triangularView<Eigen::Upper>() =
+		eigenXChol.transpose().template triangularView<Eigen::Upper>();
 
+for(i = 0; i < p; i++){ 
+  	dens += (df - p - 1) *  log(eigenXChol(i, i));
+}
 
-// MatrixXt eigenXChol = eigenX.llt().matrixL();
-// for(i = 0; i < p; i++){ 
-//   	dens += (df - p - 1) *  log(eigenXChol(i, i));
-// }
-
-//  Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
-//   Type tmp_dens = 0.0;
-//   	MatrixXt eigenSolved = eigenChol.transpose().colPivHouseholderQr().solve(eigenX).transpose();
-// 	  MatrixXt cholMultX = eigenChol*eigenX;
-// 	for(j = 0; j < p; j++){ 
-// 		for(i = 0; i <= j; i++){ 
-// 			   CppAD::CondExpEq(scale_param, Type(1), eigenSolved(i,j)*eigenSolved(i,j), 
-// 			   cholMultX(i, j) * eigenChol(i, j));
-// 			}
-// 	}
-//   dens += -0.5 * tmp_dens;
-//   return give_log ? dens : exp(dens);
-// }
+ Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
+ Type tmp_dens = 0.0;
+ MatrixXt eigenSolved = eigenChol.transpose().lu().solve(eigenXChol.transpose());
+ MatrixXt cholMultX = eigenChol*eigenX;
+	for(j = 0; j < p; j++){ 
+		for(i = 0; i <= j; i++){ 
+			 tmp_dens +=  CppAD::CondExpEq(scale_param, Type(1), eigenSolved(j,i)*eigenSolved(j,i), 
+			   cholMultX(i, j) * eigenChol(i, j));
+		}
+	}
+  dens += -0.5 * tmp_dens;
+  return CppAD::CondExpEq(give_log, Type(1.0), dens, exp(dens));
+}
 
 template<class Type>
 Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){
