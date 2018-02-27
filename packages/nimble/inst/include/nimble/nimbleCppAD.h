@@ -19,6 +19,9 @@
  * https://www.R-project.org/Licenses/
  */
 
+ // prevent class redefinitions
+#ifndef _NIMBLE_AD
+#define _NIMBLE_AD
 // define this to include timing code
 // #define _TIME_AD
 // To see all timing components, use:
@@ -159,3 +162,4 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
     NodeVectorClassNew_derivs &nodes, int iNodeFunction,
     NimArr<1, double> &derivOrders);
+#endif
