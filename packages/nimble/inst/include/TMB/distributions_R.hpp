@@ -198,29 +198,35 @@ T nimDerivs_iprobit(T x){
 // 	\param give_log true if one wants the log-probability, false otherwise.
 // 	*/
 template<class Type> 
-Type nimDerivs_dexp_nimble(Type x, Type rate, int give_log=0)
+Type nimDerivs_dexp_nimble(Type x, Type rate, Type give_log)
 {
-	if(!give_log){
-		Type res = CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0));
-		return  CppAD::CondExpGe(rate, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	}
-	else{
-		Type res = CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY));
-		return  CppAD::CondExpGe(rate, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	}
+	Type res = CppAD::CondExpEq(give_log, Type(0), CppAD::CondExpGe(rate, Type(0), CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0)), Type(CppAD::numeric_limits<Type>::quiet_NaN())),
+					CppAD::CondExpGe(rate, Type(0), CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY)), Type(CppAD::numeric_limits<Type>::quiet_NaN())));
+	// if(!give_log){
+	// 	Type res = CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0));
+	// 	return  CppAD::CondExpGe(rate, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	// }
+	// else{
+	// 	Type res = CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY));
+	// 	return  CppAD::CondExpGe(rate, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	// }
+	return(res);
 }
 	
 template<class Type>
-Type nimDerivs_dexp(Type x, Type scale, int give_log=0)
+Type nimDerivs_dexp(Type x, Type scale, Type give_log)
 {
-	if(!give_log){
-		Type res = CppAD::CondExpGe(x,Type(0),exp(-x/scale)/scale,Type(0));
-		return  CppAD::CondExpGe(scale, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	}
-	else{
-		Type res = CppAD::CondExpGe(x,Type(0),-log(scale)-x/scale,Type(-INFINITY));
-		return CppAD::CondExpGe(scale, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	}
+	Type res = CppAD::CondExpEq(give_log, Type(0),  CppAD::CondExpGe(scale, Type(0),  CppAD::CondExpGe(x,Type(0),exp(-x/scale)/scale,Type(0)), Type(CppAD::numeric_limits<Type>::quiet_NaN())),
+					CppAD::CondExpGe(scale, Type(0),  CppAD::CondExpGe(x,Type(0),-log(scale)-x/scale,Type(-INFINITY)), Type(CppAD::numeric_limits<Type>::quiet_NaN())));
+	// if(!give_log){
+	// 	Type res = CppAD::CondExpGe(x,Type(0),exp(-x/scale)/scale,Type(0));
+	// 	return  CppAD::CondExpGe(scale, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	// }
+	// else{
+	// 	Type res = CppAD::CondExpGe(x,Type(0),-log(scale)-x/scale,Type(-INFINITY));
+	// 	return CppAD::CondExpGe(scale, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	// }
+	return(res);
 }
 
 	

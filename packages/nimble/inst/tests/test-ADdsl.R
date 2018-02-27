@@ -3,58 +3,7 @@ nimbleOptions(experimentalEnableDerivs = TRUE)
 nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for distributions and dsl functions")
 
-  testNFgen <- nimbleFunction(setup = function(){
-    cholMat = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2))
-  },
-  run = function(x = double(2), df = double()){
-    returnType(ADNimbleList())
-    return(nimDerivs(ADmethod(x, cholMat, df), order = c(0,1,2)))
-  },
-  methods = list(
-    ADmethod = function(x = double(2, c(2,2)), chol = double(2, c(2,2)), df = double()){
-      returnType(double(0))
-      return(dwish_chol(x, cholesky = chol, df = df, scale_param = TRUE))
-    }
-  ),
-  enableDerivs = 'ADmethod')
-  nimbleOptions(pauseAfterWritingFiles = TRUE)
-  
-  file.copy("C:\\Users\\iateb\\Documents\\GitHub\\nimble\\packages\\nimble\\inst\\include\\TMB\\distributions_R.hpp",
-  "C:\\Users\\iateb\\Documents\\R\\win-library\\3.4\\nimble\\include\\TMB\\distributions_R.hpp",
-  overwrite = TRUE)
-  
-  
-  
-  testNF <- testNFgen()
-  ctestNF <- compileNimble(testNF)
-nimbleOptions(pauseAfterWritingFiles = FALSE)
 
-# testNF$ADmethod( matrix(c(1,.7,.7,1), nrow = 2),chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)), 3)
-ctestNF$ADmethod( matrix(c(1,.7,.7,1), nrow = 2),chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)), 3)
-ctestNF$run( matrix(c(1,.7,.7,1), nrow = 2), 3)
-
-
-dwish_chol(matrix(c(1,.7,.7,1), nrow = 2),chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)), 3)
-
-# testNF$run( matrix(c(1,.7,.7,1), nrow = 2))
-
-chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2))
-chol(matrix(c(1,.7,.7,1), nrow = 2))
-ADindependentVars[0] = 1;
-ADindependentVars[1] = 0;
-ADindependentVars[2] = 0;
-ADindependentVars[3] = 1;
-ADindependentVars[4] = 1;
-ADindependentVars[5] = 0;
-ADindependentVars[6] = 0;
-ADindependentVars[7] = 1;
-ADindependentVars[8] = 3;
-ADindependentVars[9] = 1;
-
-# untested:
-# 'ddirch',
-# 'dmvt', 
-#  'dwish'
 
 # tested:
 # 'dbeta' (although boundary at x=0 and x=1 not consistent between R and c++),
@@ -74,7 +23,10 @@ ADindependentVars[9] = 1;
 # 'dt',
 # 'dt_nonstandard',
 # 'dunif',
-# 'dweib'
+# 'dweib''
+# 'ddirch',
+# 'dmvt', 
+#  'dwish'
 
 distributionArgsList <- list()
 
@@ -426,13 +378,13 @@ distributionArgsList[['dwish_chol']] <- list(
               df = quote(double()),
               scale_param = quote(double())),
   argsValues = list(
-    list(x = matrix(c(1,.7,.7,1), nrow = 2), 
+    list(x = matrix(c(1,.8,.8,1), nrow = 2), 
          cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
          df = 3, scale_param = 1)
   )
 )
 
-nimbleOptions(pauseAfterWritingFiles = TRUE)
+# nimbleOptions(pauseAfterWritingFiles = TRUE)
 
 file.copy("C:\\Users\\iateb\\Documents\\GitHub\\nimble\\packages\\nimble\\inst\\include\\TMB\\distributions_R.hpp",
           "C:\\Users\\iateb\\Documents\\R\\win-library\\3.4\\nimble\\include\\TMB\\distributions_R.hpp",
@@ -441,16 +393,16 @@ file.copy("C:\\Users\\iateb\\Documents\\GitHub\\nimble\\packages\\nimble\\inst\\
 
 
 
-  runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dwish_chol']]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dwish_chol']]))
+  runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dexp']]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dexp']]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
-testADDistribution(thisNf, distributionArgsList[['dwish_chol']]$argsValues,
-                   distributionArgsList[['dwish_chol']]$distnName, debug = TRUE)
+testADDistribution(thisNf, distributionArgsList[['dexp']]$argsValues,
+                   distributionArgsList[['dexp']]$distnName, debug = TRUE)
 
 nimbleOptions(pauseAfterWritingFiles = FALSE)
 
