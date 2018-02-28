@@ -961,7 +961,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                         for(v in .self$getVarNames()){
                                           if(!nimble:::isValid(.self[[v]])){
                                             message(' This model is not fully initialized. This is not an error. To see which variables are not initialized, use model$initializeInfo(). For more information on model initialization, see help(modelInitialization).', appendLF = FALSE)
-                                            break()
+                                            break
                                           }
                                         }
                                       }
