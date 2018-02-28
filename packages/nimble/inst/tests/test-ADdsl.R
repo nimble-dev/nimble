@@ -188,13 +188,19 @@ distributionArgsList[['dmnorm_chol']] <- list(
   distnName = 'dmnorm_chol',
   args = list(x = quote(double(1, 2)),
               mean = quote(double(1, 2)),
-              cholesky = quote(double(2, c(2, 2)))),
+              cholesky = quote(double(2, c(2, 2))),
+              prec_param = quote(double())),
   argsValues = list(
-    list(x = numeric(2), mean = numeric(2), cholesky = -diag(2)),
+    list(x = numeric(2), mean = numeric(2), cholesky = -diag(2), prec_param = F),
+    list(x = numeric(2), mean = numeric(2), cholesky = -diag(2), prec_param = T),
+    
     # list(x = numeric(2), mean = numeric(2), cholesky = matrix(c(0,0,0,0), nrow = 2)) R and C inconsistency
-    list(x = numeric(2), mean = numeric(2), cholesky = diag(2))
+    list(x = numeric(2), mean = numeric(2), cholesky = diag(2), prec_param = F),
+    list(x = numeric(2), mean = numeric(2), cholesky = diag(2), prec_param = T)
+    
     # list(x = c(1.3, 4.1), mean = c(1,4), cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2))) # inconsistency between R and C++ hessians, hypothesis is that R finite element diff. is giving incorrect results for cholesky param.
-  )
+  ),
+  WRT = c('x', 'mean', 'cholesky')
 )
 
 #   distnName = 'dmulti',
@@ -386,23 +392,23 @@ distributionArgsList[['dwish_chol']] <- list(
 
 # nimbleOptions(pauseAfterWritingFiles = TRUE)
 
-file.copy("C:\\Users\\iateb\\Documents\\GitHub\\nimble\\packages\\nimble\\inst\\include\\TMB\\distributions_R.hpp",
-          "C:\\Users\\iateb\\Documents\\R\\win-library\\3.4\\nimble\\include\\TMB\\distributions_R.hpp",
-          overwrite = TRUE)
+# file.copy("C:\\Users\\iateb\\Documents\\GitHub\\nimble\\packages\\nimble\\inst\\include\\TMB\\distributions_R.hpp",
+#           "C:\\Users\\iateb\\Documents\\R\\win-library\\3.4\\nimble\\include\\TMB\\distributions_R.hpp",
+#           overwrite = TRUE)
 
 
 
 
-  runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dexp']]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dexp']]))
+  runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dmnorm_chol']]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dmnorm_chol']]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
-testADDistribution(thisNf, distributionArgsList[['dexp']]$argsValues,
-                   distributionArgsList[['dexp']]$distnName, debug = TRUE)
+testADDistribution(thisNf, distributionArgsList[['dmnorm_chol']]$argsValues,
+                   distributionArgsList[['dmnorm_chol']]$distnName, debug = TRUE)
 
 nimbleOptions(pauseAfterWritingFiles = FALSE)
 
