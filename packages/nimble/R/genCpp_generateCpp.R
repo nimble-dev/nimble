@@ -2,8 +2,7 @@
 ## Section for outputting C++ code from an exprClass object ##
 ##############################################################
 
-cppOutputCalls <- c(makeCallList(nimDerivsPrependOperators, 'cppOutputNimDerivsPrepend'),
-                    makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
+cppOutputCalls <- c(makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
                     makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryMidLogicalOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryOrUnaryOperators, 'cppOutputBinaryOrUnary'),
@@ -159,23 +158,6 @@ cppOutputSkip <- function(code, symTab) nimGenerateCpp(code$args[[1]], symTab)
 cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')
 }
-
-cppOutputNimDerivsPrepend <- function(code, symTab){
-  if(identical(nimbleUserNamespace$cppADCode, TRUE)){
-      paste0('nimDerivs_', code$name, '(',
-             paste0(unlist(lapply(code$args, function(x){
-               if(is.numeric(x) || is.logical(x)){
-                 return(paste0('TYPE_(', nimGenerateCpp(x, symTab, asArg = TRUE), ')'))
-               }
-               return(nimGenerateCpp(x, symTab, asArg = TRUE))
-             })), collapse = ', '), ')')
-  }
-  else{
-    paste0(code$name, '(',
-           paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
-  }
-}
-
 
 cppOutputNimDerivsPrependType <- function(code, symTab){
   if(identical(nimbleUserNamespace$cppADCode, TRUE)){
