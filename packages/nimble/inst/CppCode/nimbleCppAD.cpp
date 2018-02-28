@@ -55,16 +55,43 @@ SEXP reset_AD_timers(SEXP SreportInterval) {
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 						 NodeVectorClassNew_derivs &nodes,
 						 const NimArr<1, double> &derivOrders) {
-  std::cout<<"In new NIM_DERIVS_CALCULATE\n"<<std::endl;
   std::cout<<"need to propagate const-ness"<<std::endl;
 
   if(!nodes.tapeRecorded()) nodes.recordTape();
-  std::cout<<"tape recorded"<<std::endl;
+#ifdef _TIME_AD
+  derivs_main_timer.start();
+#endif
+
   nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
-  std::cout<<"ansList allocated"<<std::endl;
+#ifdef _TIME_AD
+  derivs_getDerivs_timer.start();
+#endif
+  std::vector<double> independentVars;
+  nodes.runTape_setIndependent(independentVars);
+  std::vector<double> dependentVars;
+
+#ifdef _TIME_AD
+  derivs_run_tape_timer.start();
+#endif
+    
+  nodes.runTape_runTape(independentVars, dependentVars);
+
+#ifdef _TIME_AD
+  derivs_run_tape_timer.stop();
+#endif
+
+#ifdef _TIME_AD
+  derivs_getDerivs_timer.stop();
+#endif
+
   ansList->value.setSize(1);
-  ansList->value[0] = nodes.runTape(derivOrders);
-  std::cout<<"rape run"<<std::endl;
+  //  ansList->value[0] = nodes.runTape(derivOrders);
+  ansList->value[0] = nodes.runTape_unpackDependent(dependentVars);
+
+#ifdef _TIME_AD
+  derivs_main_timer.stop();
+#endif
+
   return ansList;
 }
 

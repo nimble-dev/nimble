@@ -181,10 +181,8 @@ void nimArr_2_SingleModelAccess_AD_AD(SingleVariableMapAccessBase* SMVAPtr,
 				      int nimStride) {
   NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
   if(SMVAPtr->getSingleton()) {
-    std::cout<<"nA_2_sma via singleton"<<std::endl;
     (*static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
   } else {
-    std::cout<<"nA_2_sma via dynamicMapCopy"<<std::endl;
     dynamicMapCopyFlatToDim< CppAD::AD<double> , CppAD::AD<double> >(static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr),
 								     SMVAPtr->getOffset(),
 								     SMVAPtr->getStrides(),
@@ -273,10 +271,8 @@ void SingleModelAccess_2_nimArr_AD_AD(SingleVariableMapAccessBase* SMVAPtr,
 				      int nimStride) {
   NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
   if(SMVAPtr->getSingleton()) {
-    std::cout<<"sma_2_na via singleton"<<std::endl;
     (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr))[SMVAPtr->offset];
   } else {
-    std::cout<<"sma_2_na via dynamicMapCopy"<<std::endl;
     dynamicMapCopyDimToFlat< CppAD::AD<double>, CppAD::AD<double> >(&nimArr,
 								  nimBegin,
 								  nimStride,
