@@ -306,6 +306,7 @@ sampler_MarginalizedG_general <- nimbleFunction(
         conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
         conjugate <- TRUE
         marginalizedParam <- conjugacy$target
+        conjugacytype <- conjugacy$type
         ## print(conjugacy) # will show information you can use for conjugate sampler
         ## I think you will simply want to use things like this in run code:
         ## this would be the case for the simple normal-normal conjugacy
@@ -425,7 +426,23 @@ sampler_MarginalizedG_general <- nimbleFunction(
               model$calculate(dataNodes[i])
             } else model$calculate(calcNodes)  
           }
-          curLogProb[j] <<- log(conc) + model$getLogProb(dataNodes[i]) #<<-
+          if(conjugate){ # would it be better to get some parameters in the setup code?
+            if(conjugacytype == 'conjugate_dnorm'){
+              meany <- model$getParam(marginalizedParam, 'mean')
+              vary <- model$getParam(marginalizedParam, 'var') + model$getParam(dataNodes[i], 'var')
+              y_i <- values(model, dataNodes[i])[1]
+              lpriorpred <- dnorm(y_i, meany, sqrt(vary), log=TRUE)
+            }
+            if(conjugacytype == 'conjugate_dgamma'){
+              a <- model$getParam(marginalizedParam, 'shape') 
+              b <- model$getParam(marginalizedParam, 'rate')  
+              y_i <- values(model, dataNodes[i])[1]
+              lpriorpred <- a*log(b) - (a+y_i)*log(b+1) + lgamma(a+y_i) - lgamma(a) - lfactorial(y_i)
+            }
+            curLogProb[j] <<- log(conc) + lpriorpred
+          }else{
+            curLogProb[j] <<- log(conc) + model$getLogProb(dataNodes[i]) #<<-  
+          }
         }else{
           model[[target]][i] <<- model[[target]][j]
           if(type == 'indivCalcs') {
