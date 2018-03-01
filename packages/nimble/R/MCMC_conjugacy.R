@@ -3,12 +3,12 @@ conjugacyRelationshipsInputList <- list(
 
     ## beta
     list(prior = 'dbeta',
-         link = c(rep('identity', 3), 'stick_breaking'),
+         link = 'identity',
          dependents = list(
              dbern   = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = '1 - value'   ),
              dbin    = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
              dnegbin = list(param = 'prob', contribution_shape1 = 'size',  contribution_shape2 = 'value'       ),
-             dcat    = list(param = 'prob', contribution_shape1 = 'value == offset',
+             dcat    = list(param = 'prob', link = 'stick_breaking', contribution_shape1 = 'value == offset',
                             contribution_shape2 = 'value > offset')),  ## offset is set to be where in the broken stick the target is
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
@@ -321,8 +321,8 @@ conjugacyClass <- setRefClass(
         dependents =          'ANY',   ## (named) list of dependentClass objects, each contains conjugacy information specific to a particular sampling distribution (name is sampling distribution name)
         dependentDistNames =  'ANY',   ## character vector of the names of all allowable dependent sampling distributions.  same as: names(dependents)
         posteriorObject =     'ANY',   ## an object of posteriorClass
-        needsLinearityCheck = 'ANY',   ## logical specifying whether we need to do the linearity check; if the link is 'multiplicative' or 'linear'
-        needsStickbreakingCheck = 'ANY',   ## logical specifying whether we need to do the stickbreaking check
+        ## needsLinearityCheck = 'ANY',   ## logical specifying whether we need to do the linearity check; if the link is 'multiplicative' or 'linear'
+        ## needsStickbreakingCheck = 'ANY',   ## logical specifying whether we need to do the stickbreaking check
         model                  = 'ANY',   ## these fields ONLY EXIST TO PREVENT A WARNING for '<<-',
         DEP_VALUES_VAR_INDEXED = 'ANY',   ## in the code for generating the conjugate sampler functions
         DEP_PARAM_VAR_INDEXED  = 'ANY',   ##
@@ -337,8 +337,9 @@ conjugacyClass <- setRefClass(
             prior <<- cr$prior
             link <<- cr$link
             initialize_addDependents(cr$dependents)
-            needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
-            needsStickbreakingCheck <<- link %in% c('stick_breaking')
+            ## removed because link info in specific conjugacy can now override default link
+            ## needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
+            ## needsStickbreakingCheck <<- link %in% c('stick_breaking')
             posteriorObject <<- posteriorClass(cr$posterior, prior)
             },
 
@@ -357,8 +358,8 @@ conjugacyClass <- setRefClass(
             if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
             depNodeDist <- model$getDistribution(depNode)
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
-            if(length(link) > 1) currentLink <- link[which(depNodeDist == dependentDistNames)] else currentLink <- link # handle multiple link case introduced for beta stickbreaking
             dependentObj <- dependents[[depNodeDist]]
+            if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
             if(currentLink != 'stick_breaking') {
                 linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
@@ -457,13 +458,13 @@ conjugacyClass <- setRefClass(
             
             ## more new array() setup outputs, instead of declare() statements, for offset and coeff variables
             ## July 2017
-
-            ## the any() here is because of beta-stickbreaking stuff and needs to be considered more carefully 
-            if(any(needsLinearityCheck) || (nimbleOptions()$allowDynamicIndexing && any(link == 'identity') && doDependentScreen)) {
-                targetNdim <- getDimension(prior)
-                targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
-                for(iDepCount in seq_along(dependentCounts)) {
-                    distName <- names(dependentCounts)[iDepCount]
+            
+            targetNdim <- getDimension(prior)
+            targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
+            for(iDepCount in seq_along(dependentCounts)) {
+                distName <- names(dependentCounts)[iDepCount]
+                if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link else currentLink <- link
+                if(currentLink %in% c('multiplicative', 'linear') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
                     functionBody$addCode({
                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
                         DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)                    ## assigning into member variable names using
@@ -473,26 +474,27 @@ conjugacyClass <- setRefClass(
                             DECLARE_SIZE_COEFF  = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), quote(d),                                          targetCoeffNdim)))
                 }
             }
-            if(any(needsStickbreakingCheck)) {
-                ## cautions: need to think through possibility that a non stickbreaking-dcat conjugate dep of target may be included in the model
-                for(iDepCount in seq_along(dependentCounts)) {
-                    distName <- names(dependentCounts)[iDepCount]
+
+            for(iDepCount in seq_along(dependentCounts)) {
+                distName <- names(dependentCounts)[iDepCount]
+                if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link else currentLink <- link
+                if(currentLink == 'stick_breaking') {       
                     functionBody$addCode({
                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
                     }, list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
                             DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), as.name(paste0('dep_', distName, '_nodeSizeMax')), 0))
                     )
+                    functionBody$addCode({
+                        stickbreakingCheckExpr <- model$getValueExpr(calcNodesDeterm)
+                        stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = target)
+                    })
+                    functionBody$addCode(DEP_OFFSET_VAR2 <- rep(cc_checkStickbreaking(stickbreakingCheckExpr, target)$offset, DEP_OFFSET_SIZE), 
+                                         list(DEP_OFFSET_VAR2 = as.name(paste0('dep_', distName, '_offset')),
+                                              DEP_OFFSET_SIZE = as.name(paste0('N_dep_', distName))))
                 }
-                functionBody$addCode({
-                    stickbreakingCheckExpr <- model$getValueExpr(calcNodesDeterm)
-                    stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = target)
-                })
-                functionBody$addCode(DEP_OFFSET_VAR2 <- rep(cc_checkStickbreaking(stickbreakingCheckExpr, target)$offset, DEP_OFFSET_SIZE), 
-                                     list(DEP_OFFSET_VAR2 = as.name(paste0('dep_', distName, '_offset')),
-                                          DEP_OFFSET_SIZE = as.name(paste0('N_dep_', distName))))
             }
             ## adding declarations for the contribution terms, to remove Windows compiler warnings, DT August 2015
-            ## moved these numeric() and array() declarations for contributino terms to setup outputs, July 2017
+            ## moved these numeric() and array() declarations for contribution terms to setup outputs, July 2017
             for(contributionName in posteriorObject$neededContributionNames) {
                 contribNdim <- posteriorObject$neededContributionDims[[contributionName]]
                 functionBody$addCode(CONTRIB_NAME2 <- CONTRIB_INITIAL_DECLARATION,                   ## the 2's here are *only* to prevent warnings about
@@ -611,7 +613,14 @@ conjugacyClass <- setRefClass(
             }
 
             ## if we need to determine 'coeff' and/or 'offset'
-            if(any(needsLinearityCheck) || (nimbleOptions()$allowDynamicIndexing && any(link == 'identity') && doDependentScreen)) {
+            ## with addition of possible multiple links for stick_breaking conjugacy, for simplicity calculate offset/coeff
+            ## for all dependencies, even only some need offset/coeff
+            links <- rep(link, length(dependentCounts))
+            for(iDepCount in seq_along(dependentCounts)) {
+                distName <- names(dependentCounts)[iDepCount]
+                if(!is.null(dependents[[distName]]$link)) links[iDepCount] <- dependents[[distName]]$link)
+            }
+            if(any(links %in% c('multiplicative', 'linear')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
@@ -760,7 +769,7 @@ conjugacyClass <- setRefClass(
                        stop()
                        )
 
-            } # end if(needsLinearityCheck)
+            } # end if linearity check needed
 
             targetNdim <- getDimension(prior)
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
@@ -833,20 +842,23 @@ dependentClass <- setRefClass(
         param =                    'ANY',   ## the name of the sampling distribution parameter in which target must appear
         contributionExprs =        'ANY',   ## a (named) list of expressions, giving the (additive) contribution to any parameters of the posterior. names correspond to variables in the posterior expressions
         contributionNames =        'ANY',   ## names of the contributions to the parameters of the posterior distribution.  same as names(posteriorExprs)
-        neededParamsForPosterior = 'ANY'    ## names of all parameters appearing in the posteriorExprs
+        neededParamsForPosterior = 'ANY',    ## names of all parameters appearing in the posteriorExprs
+        link =                     'ANY'    ## optional specific link for a given conjugacy; currently only used for stick_breaking case
     ),
     methods = list(
         initialize = function(depInfoList, depDistName) {
         	contributionExprs <<- list()
-            distribution <<- depDistName
-            param <<- depInfoList$param
-            initialize_contributionExprs(depInfoList)
-            initialize_neededParamsForPosterior()
+                distribution <<- depDistName
+                param <<- depInfoList$param
+                link <<- depInfoList$link  ## will be NULL unless specific conjugacy overrides default link
+                initialize_contributionExprs(depInfoList)
+                initialize_neededParamsForPosterior()
         },
         initialize_contributionExprs = function(depInfoList) {
             depInfoList['param'] <- NULL
             depInfoList <- lapply(depInfoList, function(di) parse(text=di)[[1]])
             contributionExprs <<- depInfoList
+            contributionExprs[['link']] <<- NULL   ## so link not included in neededParamsForPosterior
             contributionNames <<- names(depInfoList)
         },
         initialize_neededParamsForPosterior = function() {
