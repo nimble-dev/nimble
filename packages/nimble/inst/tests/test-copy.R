@@ -13,7 +13,9 @@ nimbleOptions(verbose = FALSE)
 
 context('Testing of nimCopy and values')
 
-expect_true(FALSE, "at least testing works")
+
+
+
 #############
 ## Here is a model with deterministic and stochastic variables of dimensions 0-4, including a multivariate node
 copyTestModelCode <- nimbleCode({
@@ -419,11 +421,12 @@ copyTestCaseListMVtoModel <- list(
 
 ## This is code that works for all cases to check that the state of compiled and uncompiled models are identical
 compareCompiledToUncompiled_code <- quote({
-    info <- paste("compareCompiledToUncompiled",oneName)
     for(oneName in m$getVarNames(includeLogProb = TRUE)) {
+        info <- paste("compareCompiledToUncompiled",oneName)
         test_that('single', expect_identical(as.numeric(origM[[oneName]]), as.numeric(m[[oneName]]), info = info ))
     }
     for(oneName in mv$getVarNames(includeLogProb = TRUE)) {
+        info <- paste("compareCompiledToUncompiled",oneName)
         test_that('single', expect_identical(as.numeric(origMV[[oneName]][[3]]), as.numeric(mv[[oneName]][[3]], info = info )))
     }
 })
