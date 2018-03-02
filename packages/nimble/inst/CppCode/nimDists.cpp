@@ -40,7 +40,9 @@ bool R_isnancpp(NimArr<1, double> &P) {
 template<int nDim, class T>
 NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
   if(orig.isMap()) {
+    //    printf("It is a map\n");
     if(!isMapEntire<nDim, T>(orig)) {
+      //      printf("It is not an entire map\n");
       possibleCopy = orig;
       return(possibleCopy);
     }
