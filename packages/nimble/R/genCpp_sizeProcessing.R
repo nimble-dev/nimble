@@ -99,7 +99,7 @@ sizeCalls <- c(
                                   scalar_distribution_pFuns,
                                   scalar_distribution_qFuns,
                                   scalar_distribution_rFuns))
-    ], 'sizeScalarRecurse'),
+    ], 'sizeScalarRecurseAllowMaps'),
     ## R dist functions that are not used by NIMBLE but we allow in DSL
     makeCallList(paste0(c('d','q','p'), 't'), 'sizeRecyclingRule'),
     rt = 'sizeRecyclingRuleRfunction',
@@ -115,7 +115,7 @@ sizeCalls <- c(
                    'nimArr_dmulti',
                    'nimArr_dcat',
                    'nimArr_dinterval',
-                   'nimArr_ddirch'), 'sizeScalarRecurse'),
+                   'nimArr_ddirch'), 'sizeScalarRecurseAllowMaps'),
     makeCallList(c('nimArr_rmnorm_chol',
                    'nimArr_rmvt_chol',
                    'nimArr_rwish_chol',
@@ -2085,6 +2085,46 @@ sizeSimulate <- function(code, symTab, typeEnv) {
 
 sizeScalarRecurse <- function(code, symTab, typeEnv, recurse = TRUE) {
     ## use something different for distributionFuns
+    asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
+    ## This just forces any argument expression to be lifted.  Can we lift only things to be eigenized?
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            if(!code$args[[i]]$isName) {
+                asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+            }
+        }
+    }
+    
+    code$nDim <- 0
+    outputType <- scalarOutputTypes[[code$name]]
+    if(is.null(outputType)) code$type <- 'double'
+    else code$type <- outputType
+    code$sizeExprs <- list()
+    code$toEigenize <- 'maybe' ## a scalar can be eigenized or not
+    if(length(asserts)==0) NULL else asserts
+}
+
+sizeScalarRecurseAllowMaps <- function(code, symTab, typeEnv, recurse = TRUE) {
+    ## use something different for distributionFuns
+
+    ## Ensure that simple maps being passed will be passed without extra
+    ## copy that would occur from lifting an Eigen expression.
+    for(i in seq_along(code$args)) {
+        ## check if each argument is purely of the form x[...]
+        ## (note that x[...][...] might also be valid for passByMap
+        ## but it is not handled that way currently.
+        if(inherits(code$args[[i]], 'exprClass')) {
+            if(code$args[[i]]$name == "[") {
+                if(inherits(code$args[[i]]$args[[1]],
+                            'exprClass')) { ## must be true, but I'm being defensive
+                    if(code$args[[i]]$args[[1]]$isName) {
+                        insertExprClassLayer(code, i, 'passByMap')
+                    }
+                }
+            }
+        }
+    }
+
     asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
     ## This just forces any argument expression to be lifted.  Can we lift only things to be eigenized?
     for(i in seq_along(code$args)) {
