@@ -210,7 +210,21 @@ print: A logical argument, specifying whether to print the ordered list of defau
                         if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
-                        if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'MarginalizedG_general'); next }
+                        if(nodeDist == 'dCRP') {
+                            type = 'dCRP_nonconjugate'
+                            if(useConjugacy) {
+                                conjugacyResult <- checkCRPconjugacy(model, node)
+                                if(!is.null(conjugacyResult)) {
+                                    type <- switch(conjugacyResult,
+                                                   ## add cases here as the specific conjugacy case samplers are written
+                                                   conjugate_dnorm_dnorm = 'dCRP_conjugate_dnorm_dnorm',
+                                                   conjugate_dpois_dgamma = 'dCRP_conjugate_dpois_dgamma',
+                                                   'dCRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
+                                }
+                            }
+                            addSampler(target = node, type = type)
+                            next
+                        }
                         if(nodeDist == 'dwish')        { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
@@ -634,6 +648,54 @@ Details: See the initialize() function
         }
     )
 )
+
+checkCRPconjugacy <- function(model, target) {
+    ## Checks if can use conjugacy in drawing new components for dCRP node updating.
+    
+    conjugate <- FALSE 
+    
+    targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
+    VarNames <- model$getVarNames()
+    
+    # finding tilde variables:
+    tildevarNames=c()
+    itildeVar <- 1
+    
+    Dep <- model$getDependencies(targetElementExample, self=FALSE)
+    for(i in 1:length(Dep)){ 
+      Depi <- Dep[i]
+      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
+      expr <- parse(text = expr)[[1]]
+      if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElementExample){
+        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        itildeVar <- itildeVar+1 
+      }
+    }
+          
+    ## determination of conjugacy for one tilde node that has 1 or 0 determnistic nodes
+    ## does not find conjugacy when we have random mean and variance defined by deterministic nodes
+    ## does find conjugacy when we have random mean  defined or not by deterministic nodes
+    ## dont know what does when y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]]). here nInterm=1
+    ## dont know what does when y[i] ~ dnorm(0, var=s2tilde[xi[i]]). here nInterm=1
+    
+    ## new checking for conjugacy using tilde variables: check conjugacy for one tilde node and
+    ## then make sure all tilde nodes and all of their dependent nodes are exchangeable
+    if(length(tildevarNames) == 1){  ## for now avoid case of mixing over multiple parameters
+        clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+        conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+        if(length(conjugacy)) {
+            if(length(unique(model$getDeclID(clusterNodes))) == 1) { ## make sure all tilde nodes from same declaration (i.e., exchangeable)
+                depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
+                if(length(unique(model$getDeclID(depNodes))) == 1) { ## make sure all dependent nodes from same declaration (i.e., exchangeable)
+                    
+                    conjugacyType <- paste0(types, '_', sub('dep_', '', names(conjugacy[[1]]$control)))
+                    conjugate <- TRUE
+                }
+            }
+        }
+    }
+    if(conjugate) return(conjugacyType) else return(NULL)
+}
 
 
 rule <- setRefClass(
