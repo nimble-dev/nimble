@@ -218,8 +218,8 @@ print: A logical argument, specifying whether to print the ordered list of defau
                                     type <- switch(conjugacyResult,
                                                    ## add cases here as the specific conjugacy case samplers are written
                                                    conjugate_dnorm_dnorm = 'dCRP_conjugate_dnorm_dnorm',
-                                                   conjugate_dpois_dgamma = 'dCRP_conjugate_dpois_dgamma',
-                                                   'dCRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
+                                                   conjugate_dpois_dgamma = 'dCRP_conjugate_dpois_dgamma')#,
+                                                   #'dCRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
                                 }
                             }
                             addSampler(target = node, type = type)
@@ -687,8 +687,8 @@ checkCRPconjugacy <- function(model, target) {
             if(length(unique(model$getDeclID(clusterNodes))) == 1) { ## make sure all tilde nodes from same declaration (i.e., exchangeable)
                 depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
                 if(length(unique(model$getDeclID(depNodes))) == 1) { ## make sure all dependent nodes from same declaration (i.e., exchangeable)
-                    
-                    conjugacyType <- paste0(types, '_', sub('dep_', '', names(conjugacy[[1]]$control)))
+
+                    conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) # clau: change 'types' by 'conjugacy[[1]]$type'. 
                     conjugate <- TRUE
                 }
             }
