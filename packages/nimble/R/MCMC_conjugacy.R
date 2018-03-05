@@ -618,7 +618,7 @@ conjugacyClass <- setRefClass(
             links <- rep(link, length(dependentCounts))
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
-                if(!is.null(dependents[[distName]]$link)) links[iDepCount] <- dependents[[distName]]$link)
+                if(!is.null(dependents[[distName]]$link)) links[iDepCount] <- dependents[[distName]]$link # clau: extra ) deleted.
             }
             if(any(links %in% c('multiplicative', 'linear')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
