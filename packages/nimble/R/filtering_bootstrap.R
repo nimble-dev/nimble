@@ -2,6 +2,51 @@
 ##  We have a build function (buildBootstrapFilter),
 ##  and step function.
 
+
+residResampleFunction <- nimbleFunction(
+  run = function(wts = double(1)){
+    n <- length(wts)
+    expectedN <- numeric(n)
+    ids <- integer(n, 0)
+    sumIds <- numeric(n, 0)
+    for(i in 1:n){
+      expectedN[i] <- wts[i]*n
+    }
+    floorN <- floor(expectedN)
+    sumFloorN <- sum(floorN)
+    remainder <- n - sumFloorN
+    if(remainder > 0){
+      barWts <- (expectedN - floorN)/remainder
+      sumIds <- rmulti(1, remainder,  barWts)
+      # rankSample(barWts, remainder, tmpIds, FALSE) ## maybe write version that doesn't return filled-in ids?
+      
+      # for(i in 1:remainder){
+      #   sumIds[tmpIds[i]] <- sumIds[tmpIds[i]] + 1
+      # }
+      numberOfSamples <- floorN + sumIds
+      idCounter <- 1
+      for(i in 1:n){
+        if(numberOfSamples[i] > 0){
+          ids[idCounter:(idCounter + numberOfSamples[i])] <- i
+          idCounter <- idCounter + numberOfSamples[i]
+        }
+      }
+    }
+    else{
+      idCounter <- 1
+      for(i in 1:n){
+        if(floorN[i] > 0){
+          ids[idCounter:(idCounter + floorN[i])] <- i
+          idCounter <- idCounter + floorN[i]
+        }
+      }
+    }
+    returnType(integer(1))
+    return(ids)
+  }
+)
+
+
 bootStepVirtual <- nimbleFunctionVirtual(
   run = function(m = integer(), threshNum=double(), prevSamp = logical()) {
     returnType(double(1))
@@ -19,7 +64,7 @@ bootStepVirtual <- nimbleFunctionVirtual(
 bootFStep <- nimbleFunction(
     name = 'bootFStep',
   contains = bootStepVirtual,
-  setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names, saveAll, smoothing, silent = FALSE) {
+  setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names, saveAll, smoothing, resamplingMethod, silent = FALSE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     thisNode <- nodes[iNode]
@@ -48,6 +93,10 @@ bootFStep <- nimbleFunction(
     }
     isLast <- (iNode == length(nodes))
     ess <- 0
+    if(resamplingMethod == 'residual')
+      residResamp <- TRUE
+    else
+      residResamp <- FALSE
   },
   run = function(m = integer(), threshNum = double(), prevSamp = logical()) {
     returnType(double(1))
@@ -104,7 +153,12 @@ bootFStep <- nimbleFunction(
     
     # Determine whether to resample by weights or not
     if(ess < threshNum){
-      rankSample(wts, m, ids, silent)
+      if(residResamp == TRUE){
+        ids <- residResampleFunction(wts)
+      }
+      else{
+        rankSample(wts, m, ids, silent)
+      }
       # out[2] is an indicator of whether resampling takes place
       # affects how ll estimate is calculated at next time point.
       out[2] <- 1
@@ -206,11 +260,13 @@ buildBootstrapFilter <- nimbleFunction(
     silent <- control[['silent']]
     timeIndex <- control[['timeIndex']]
     initModel <- control[['initModel']]
+    resamplingMethod <- control[['resamplingMethod']]
     if(is.null(thresh)) thresh <- .8
     if(is.null(silent)) silent <- TRUE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
     if(is.null(initModel)) initModel <- TRUE
+    if(is.null(resamplingMethod)) resamplingMethod <- 'multinomial'
     #latent state info
     varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
     if(length(unique(varName))>1){
@@ -284,7 +340,7 @@ buildBootstrapFilter <- nimbleFunction(
     bootStepFunctions <- nimbleFunctionList(bootStepVirtual)
     for(iNode in seq_along(nodes)){
       bootStepFunctions[[iNode]] <- bootFStep(model, mvEWSamples, mvWSamples, nodes,
-                                              iNode, names, saveAll, smoothing, silent) 
+                                              iNode, names, saveAll, smoothing, resamplingMethod, silent) 
     }
     essVals <- rep(0, length(nodes))
   },
