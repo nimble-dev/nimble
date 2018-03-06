@@ -289,6 +289,43 @@ cmodel<-compileNimble(model)
 
 
 
+
+
+#--------------------------------------------------
+# status: done
+Code=nimbleCode(
+  {
+    for(i in 1:N3){
+      p[i,1:3] ~ ddirch(alpha=alpha0[1:3])
+    }
+    xi[1:N2] ~ dCRP(conc)
+    
+    for(i in 1:N){
+      y[i,1:3] ~ dmulti(prob=p[xi[i],1:3], size=3)
+    }
+    conc<-1
+  }
+)
+
+
+conc<-1
+Consts=list(N=50, N2=50, N3=50, alpha0=c(1,1,1) )
+set.seed(1)
+p0 <- matrix(0, ncol=3, nrow=Consts$N)
+y0 <- matrix(0, ncol=3, nrow=Consts$N)
+for(i in 1:Consts$N){
+  p0[i,]=rdirch(1, c(1, 1, 1))
+  y0[i,] = rmulti(1, prob=c(0.3,0.3,0.4), size=3)
+}
+aux=sample(1:10, size=Consts$N2, replace=TRUE)
+Inits=list(p=p0, xi=aux)
+Data=list(y=y0)
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+modelConf<-configureMCMC(model, print=TRUE)
+# conjugate_ddirch_dmulti sampler: p[1:3]
+
+
+
 #--------------------------------------------------
 # model with random concentration parameter
 #-- BUGS definition of the model
@@ -514,4 +551,160 @@ for(i in 1:nsave){
 
 hist(Data$y, freq=FALSE, xlim=c(min(grid), max(grid)))
 points(grid, apply(predSB, 2, mean), col="blue", type="l", lwd=2)
+
+
+
+
+##########################################################################
+# conjugate samplers that are/will be added the BNP models:
+##########################################################################
+
+
+#--------------------------------------------------
+# status: not identified by nimble
+Code=nimbleCode(
+  {
+    p ~ dbeta(1, 1)
+    for(i in 1:N){
+      y[i] ~ dbin(5, p) # dbinom(5, p)
+    }
+  }
+)
+
+
+Consts=list(N=50)
+set.seed(1)
+Inits=list(p=rbeta(1, 1, 1))
+Data=list(y=rbinom(Consts$N, size=5, prob=0.5))
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+modelConf<-configureMCMC(model, print=TRUE)
+# there are warnings and the assigned sampler is a RW sampler.
+
+#--------------------------------------------------
+# status: 
+Code=nimbleCode(
+  {
+    l ~ dgamma(shape=1, rate=1)
+    for(i in 1:N){
+      y[i] ~ dgamma(shape=1, rate=l)
+    }
+  }
+)
+
+
+Consts=list(N=50)
+set.seed(1)
+Inits=list(l=rgamma(1, shape=1, rate=1))
+Data=list(y=rgamma(Consts$N, shape=1 ,rate=1))
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+modelConf<-configureMCMC(model, print=TRUE)
+# conjugate_dgamma_dgamma sampler: l
+
+
+
+#--------------------------------------------------
+# status: 
+Code=nimbleCode(
+  {
+    l ~ dgamma(shape=1, rate=1)
+    for(i in 1:N){
+      y[i] ~ dexp(rate=l)
+    }
+  }
+)
+
+
+Consts=list(N=50)
+set.seed(1)
+Inits=list(l=rgamma(1, 1, 1))
+Data=list(y=rexp(Consts$N, rate=1))
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+modelConf<-configureMCMC(model, print=TRUE)
+# conjugate_dgamma_dexp sampler: l
+
+
+#--------------------------------------------------
+# status: done
+Code=nimbleCode(
+  {
+    p[1:3] ~ ddirch(alpha=alpha0[1:3])
+    #for(i in 1:N){
+      y[1:3] ~ dmulti(prob=p[1:3], size=3)
+    #}
+    #alpha0 <- c(1,1,1)  
+  }
+)
+
+
+Consts=list(N=1, alpha0=c(1,1,1)  )
+set.seed(1)
+Inits=list(p=rdirch(1, c(1, 1, 1)))
+Data=list(y=rmulti(Consts$N, prob=c(0.3,0.3,0.4), size=3))
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+modelConf<-configureMCMC(model, print=TRUE)
+# conjugate_ddirch_dmulti sampler: p[1:3]
+
+
+#--------------------------------------------------
+# status: done
+Code=nimbleCode(
+  {
+    p ~ dbeta(1, 1)
+    for(i in 1:N){
+      y[i] ~ dbern(p)
+    }
+  }
+)
+
+
+Consts=list(N=50)
+set.seed(1)
+Inits=list(p=rbeta(1, 1, 1))
+Data=list(y=rbinom(Consts$N, prob=0.5))
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+modelConf<-configureMCMC(model, print=TRUE)
+# conjugate_dbeta_dbern sampler: p
+
+
+#--------------------------------------------------
+# status: done
+Code=nimbleCode(
+  {
+    mu ~ dnorm(0, 10)
+    for(i in 1:N){
+      y[i] ~ dnorm(mu, 1)
+    }
+  }
+)
+Consts=list(N=50)
+set.seed(1)
+Inits=list(mu=rnorm(1, 0, 10))
+Data=list(y=rnorm(Consts$N, 0, 1))
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+modelConf<-configureMCMC(model, print=TRUE)
+
+#--------------------------------------------------
+# status: done 
+Code=nimbleCode(
+  {
+    lambda ~ dgamma(1,1)
+    for(i in 1:N){
+      y[i] ~ dpois(lambda)
+    }
+  }
+)
+
+
+Consts=list(N=50)
+set.seed(1)
+Inits=list(lambda=dgamma(1, 1, 1))
+Data=list(y=rpois(Consts$N, 1))
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+modelConf<-configureMCMC(model, print=TRUE)
+# conjugate_dgamma_dpois sampler: lambda
+
+
+
+
+
 
