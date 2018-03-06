@@ -218,8 +218,11 @@ print: A logical argument, specifying whether to print the ordered list of defau
                                     type <- switch(conjugacyResult,
                                                    ## add cases here as the specific conjugacy case samplers are written
                                                    conjugate_dnorm_dnorm = 'dCRP_conjugate_dnorm_dnorm',
-                                                   conjugate_dpois_dgamma = 'dCRP_conjugate_dpois_dgamma')#,
-                                                   #'dCRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
+                                                   conjugate_dgamma_dpois = 'dCRP_conjugate_dgamma_dpois',
+                                                   conjugate_dbeta_dbern = 'dCRP_conjugate_dbeta_dbern',
+                                                   conjugate_ddirch_dmulti = 'dCRP_conjugate_ddirch_dmulti',
+                                                   conjugate_dgamma_dexp = 'dCRP_conjugate_dgamma_dexp',)#,
+                                                   'dCRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
                                 }
                             }
                             addSampler(target = node, type = type)
