@@ -784,15 +784,19 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
  NodeVectorClassNew_derivs() : tapeRecorded_(false) {}
   bool tapeRecorded() {return(tapeRecorded_);}
   void recordTape() {
+    std::cout<<"recordTape"<<std::endl;
     if(instructions.size() == 0) {
       printf("No nodes for calculation\n");
       return;
     }
     nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
 
-    
     int length_output = model_output_accessor.getTotalLength();
+    
+    std::cout<<"length_output ="<<length_output<<std::endl;
     int length_dependent = 1 + length_output; // 1 for the logProb
+
+    std::cout<<"length_dependent ="<<length_dependent<<std::endl;
     vector< CppAD::AD<double> > dependentVars(length_dependent);
     NimArr<1, CppAD::AD<double> > NimArrOutputVars;
     NimArrOutputVars.setSize(length_output);
@@ -803,6 +807,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     NimArr<1, double> vModel;
     NimArr<1, CppAD::AD<double> > NimArrIndependentVars;
     int length_independent = model_independent_accessor.getTotalLength();
+    std::cout<<"length_independent ="<<length_independent<<std::endl;
     vModel.setSize(length_independent);
     NimArrIndependentVars.setSize(length_independent);
     // model -> NimArr vector
@@ -813,10 +818,18 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     // This may not be necessary: setting values before starting tape
     setValues_AD_AD( NimArrIndependentVars, model_AD_independent_accessor);
         // 3. Start taping
-    std::vector< CppAD::AD<double> > independentVars(length_independent);
+
+    // EXPERIMENT
+    std::vector< CppAD::AD<double> > independentVars(4);
     std::copy(NimArrIndependentVars.getPtr(),
-	      NimArrIndependentVars.getPtr() + length_independent,
+	      NimArrIndependentVars.getPtr() + 4,
 	      independentVars.begin());
+
+    /* std::vector< CppAD::AD<double> > independentVars(length_independent); */
+    /* std::copy(NimArrIndependentVars.getPtr(), */
+    /* 	      NimArrIndependentVars.getPtr() + length_independent, */
+    /* 	      independentVars.begin()); */
+    
     // Following step needs to happen in the model DLL, so that the
     // same set of CppAD globals will be used as in taping.
     nodeFunInModelDLL->setTapeIndependent(independentVars);
@@ -840,10 +853,12 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     // 6. Copy logProb to dependentVars[0]
     dependentVars[0] = logProb;
     // 7. Copy all outputNodes from model_AD -> dependentVars (starting at 1)
+
     getValues_AD_AD( NimArrOutputVars, model_AD_output_accessor);
     std::copy(NimArrOutputVars.getPtr(),
-	      NimArrOutputVars.getPtr() + length_output,
-	      dependentVars.begin() + 1);
+    	      NimArrOutputVars.getPtr() + length_output,
+    	      dependentVars.begin() + 1);
+
     // 8. Finish taping
     // Next step also needs to happen in model DLL
     nodeFunInModelDLL->finishADFun(ADtape,
@@ -854,16 +869,29 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     tapeRecorded_ = true;
   };
   void runTape_setIndependent(std::vector<double> &independentVars) {
+    //   std::cout<<"runTape_setInd"<<std::endl;
     // 1. Copy all independentNodes from model -> independentVars;
     int length_independent = model_independent_accessor.getTotalLength();
+    // std::cout<<"length_independent ="<<length_independent<<std::endl;
     //std::vector< double > independentVars(length_independent);
-    independentVars.resize(length_independent);
+
+    //EXPERIMENT
+    //independentVars.resize(length_independent);
+    independentVars.resize(4);
+    
     NimArr<1, double > NimArrIndependentVars;
     NimArrIndependentVars.setSize(length_independent);
     getValues(NimArrIndependentVars, model_independent_accessor);
+
+    //EXPERIMENT
     std::copy(NimArrIndependentVars.getPtr(),
-	      NimArrIndependentVars.getPtr() + length_independent,
+	      NimArrIndependentVars.getPtr() + 4,
 	      independentVars.begin());
+    /* std::copy(NimArrIndependentVars.getPtr(), */
+    /* 	      NimArrIndependentVars.getPtr() + length_independent, */
+    /* 	      independentVars.begin()); */
+
+    //std::cout<<"done runTape_setInd"<<std::endl;
     // 2. Run tape
     //    std::vector<double> dependentVars;
     //dependentVars = ADtape.Forward(0, independentVars);
@@ -875,14 +903,23 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   }
   void runTape_runTape(std::vector<double> &independentVars,
 		       std::vector<double> &dependentVars) {
+    nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
+    //std::cout<<"runTape_runTape"<<std::endl;
+
     int q = 1 + model_output_accessor.getTotalLength();
+        
+    //std::cout<<"runTape_runTape q = "<<q<<std::endl;
     std::vector<double> w(q, 0);
     w[0] = 1;
     vector<double> cppad_derivOut;
-    dependentVars = ADtape.Forward(0, independentVars);
-    cppad_derivOut = ADtape.Reverse(1, w);
+    //std::cout<<"runTape_runTape before forward "<<q<<std::endl;
+    nodeFunInModelDLL->runTape(ADtape, independentVars, dependentVars); //ADtape.Forward(0, independentVars);
+    // std::cout<<"runTape_runTape before reverse "<<q<<std::endl;
+    //    cppad_derivOut = ADtape.Reverse(1, w);
+    //std::cout<<"done runTape_runTape"<<std::endl;
   }
   double runTape_unpackDependent(std::vector<double> &dependentVars) {
+    //  std::cout<<"runTape_unpackDep"<<std::endl;
     return(dependentVars[0]);
   }
   double runTape( const NimArr<1, double> &derivOrders) {
@@ -917,6 +954,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     PROTECT(SpxData = Rf_allocVector(STRSXP, 1));
     SET_STRING_ELT(SpxData, 0, Rf_mkChar(".xData"));
     //Swrt <- SderivsInfo$wrtMapInfo
+
     PROTECT(Swrt =
 	    Rf_findVarInFrame(PROTECT(GET_SLOT(SderivsInfo, SpxData)),
 			      Rf_install("wrtMapInfo")));

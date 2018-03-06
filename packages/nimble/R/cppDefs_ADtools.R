@@ -101,7 +101,7 @@ makeTypeTemplateFunction = function(newName, .self) {
 ## (which is in permanent C++, not generated from R)
 ## We do not assume that in the target function the arguments are independent variables and the
 ## returned value is the dependent variable.  Those are set by the independentVarNames and dependentVarNames
-makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, ADfunName, independentVarNames, dependentVarNames, isNode, allFunDefs) {
+makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, ADfunName, independentVarNames, dependentVarNames, isNode, allFunDefs, className = "className") {
     ## Make new function definition to call for taping (CFT)
     CFT <- RCfunctionDef$new(static = TRUE)
     CFT$returnType <- cppVarFull(baseType = "CppAD::ADFun", templateArgs = list('double'), ptr = 1, name = 'RETURN_TAPE_') ##cppVoid()
@@ -246,8 +246,10 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     ## line to finish taping
     finishTapingCall <- cppLiteral('RETURN_TAPE_->Dependent(ADindependentVars, ADresponseVars);')
 
-    ADoptimizeCalls <- list(cppLiteral("std::cout<<\"size before optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"),
-                            cppLiteral("RETURN_TAPE_->optimize();"),
+    ADoptimizeCalls <- list(
+        cppLiteral(paste0("std::cout<<\"about to optimize for ", className,"\"<<std::endl;")),
+        cppLiteral("std::cout<<\"size before optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"),
+                            ##cppLiteral("RETURN_TAPE_->optimize();"),
                             cppLiteral("std::cout<<\"size after optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"))
 
     returnCall <- cppLiteral("return(RETURN_TAPE_);")

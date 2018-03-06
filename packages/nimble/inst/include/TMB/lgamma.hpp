@@ -98,7 +98,7 @@ namespace {
 
 template<class Type>
 inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
-		    int give_log=0)
+		    Type give_log)
 {
   Type n=size;
   Type p=prob;
@@ -110,8 +110,8 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
   logres = CondExpGe(n, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
   logres = CondExpGe(prob, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
   logres = CondExpLe(prob, Type(1.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-
-  if (give_log) return logres; else return exp(logres);
+	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+	return(logres);
 }
 
 // VECTORIZE4_ttti(dnbinom)
@@ -159,14 +159,15 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
 // */
 
 template<class Type>
-inline Type nimDerivs_dpois(const Type &x, const Type &lambda, int give_log)
+inline Type nimDerivs_dpois(const Type &x, const Type &lambda, Type give_log)
 {
   Type roundx = discrete_round(x);
   Type logres = CondExpEq(x, roundx, -lambda + roundx*log(lambda) - lgamma(roundx+Type(1)), -Type(std::numeric_limits<double>::infinity()));
   logres = CondExpGe(roundx, Type(0.0), logres, -Type(std::numeric_limits<double>::infinity()));
   logres = CondExpEq(lambda, Type(0.0), CondExpEq(roundx, Type(0.0), zero_NaNderiv(lambda), -Type(std::numeric_limits<double>::infinity())), logres);
   logres = CondExpGe(lambda, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-  if (give_log) return logres; else return exp(logres);
+	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+	return(logres);
 }
 // VECTORIZE3_tti(dpois)
 
@@ -174,22 +175,23 @@ inline Type nimDerivs_dpois(const Type &x, const Type &lambda, int give_log)
   \ingroup R_style_distribution
 */
 template<class Type>
-Type nimDerivs_dgamma(Type y, Type shape, Type scale, int give_log)
+Type nimDerivs_dgamma(Type y, Type shape, Type scale, Type give_log)
 {
   Type logres = CondExpGt(y, Type(0.0), 
    -lgamma(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale),
    -Type( std::numeric_limits<double>::infinity() ));
   logres = CondExpGt(shape, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
   logres = CondExpGt(scale, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
-  if(give_log)return logres; else return exp(logres);
+	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+	return(logres);
 }
 
 template<class Type>
-Type dinvgamma(Type x, Type shape, Type rate, int give_log)
+Type dinvgamma(Type x, Type shape, Type rate, Type give_log)
 {
   Type xinv = Type(1.0)/x;
-  if(give_log) return(nimDerivs_dgamma(xinv, shape, rate, give_log) - 2*log(x));
-  else return(nimDerivs_dgamma(xinv, shape, rate, give_log) * xinv * xinv);
+  Type res = CppAD::CondExpEq(give_log, Type(1), nimDerivs_dgamma(xinv, shape, rate, give_log) - 2*log(x), nimDerivs_dgamma(xinv, shape, rate, give_log) * xinv * xinv);
+  return(res);
 }
 
 // VECTORIZE4_ttti(dgamma)

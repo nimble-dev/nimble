@@ -63,10 +63,39 @@ gd_getDependencies_IDs <- function(graph, maps, nodes, omit, downstream) {
 
 gd_allNeighbors <- function(graph, nodes) stop("shouldn't be calling gd_allNeighbors any more")
 
+## This is an experimental function needed for derivatives.
+## If it works well, it could be raised to the status of a
+## model method.  It is something we've thought about needing before.
+getParentNodes <- function(nodes, model) {
+    
+}
+
+## wrtNodes are nodes with respect to which derivatives will be taken
+##     (i.e. denominator of dy/dx).  wrtNodes may or may not be part of
+##     calcNodes
+## extraInputNodes are nodes needed in calculation of derivatives but
+##     are not wrtNodes.  They include two categories: (i) parents of
+##     any calcNodes that are not themselves calcNodes or wrtNodes;
+##     (ii) any stochastic calcNodes, because the node values are needed.
+##     However, stochastic calcNodes that are in constantNodes are not
+##     included in extraInputNodes.
+## constantNodes are nodes that are assumed to be constant for all
+##     derivative calls throughout the life of the nimbleFunction.
+##     They will be baked in to the CppAD tape and cannot then be changed.
+##     They will typically be model data.
+## modelOutputNodes are nodes whose values are calculated as part of the
+##     tape "forward-zero" stage (value calculation) and need to be stored
+##     in the model.  It appears more efficient to copy them in to the model
+##     than to use the regular model$calculate() itself.
+##     modelOutputNodes will include all deterministic nodes in calcNodes
+##     as well as the logProb_ node for any stochastic nodes in calcNodes.
+## calcNodes is the same as calcNodes for model$calculate(calcNodes).  It is
+##     the ordered sequence of nodes to be calculated
 nimDerivsInfoClass_init_impl <- function(.self
-                                         , wrtNodes
-                                         , calcNodes
-                                         , model) {
+                                       , wrtNodes
+                                       , calcNodes
+                                       , constantNodes  
+                                       , model) {
     .self$model <- model
 
     ## wrt nodes

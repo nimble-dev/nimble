@@ -3,10 +3,7 @@ nimbleOptions(experimentalEnableDerivs = TRUE)
 nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for distributions and dsl functions")
 
-# untested:
-# 'ddirch',
-# 'dmvt', 
-#  'dwish'
+
 
 # tested:
 # 'dbeta' (although boundary at x=0 and x=1 not consistent between R and c++),
@@ -26,7 +23,10 @@ context("Testing of derivatives for distributions and dsl functions")
 # 'dt',
 # 'dt_nonstandard',
 # 'dunif',
-# 'dweib'
+# 'dweib''
+# 'ddirch',
+# 'dmvt', 
+#  'dwish'
 
 distributionArgsList <- list()
 
@@ -188,13 +188,19 @@ distributionArgsList[['dmnorm_chol']] <- list(
   distnName = 'dmnorm_chol',
   args = list(x = quote(double(1, 2)),
               mean = quote(double(1, 2)),
-              cholesky = quote(double(2, c(2, 2)))),
+              cholesky = quote(double(2, c(2, 2))),
+              prec_param = quote(double())),
   argsValues = list(
-    list(x = numeric(2), mean = numeric(2), cholesky = -diag(2)),
+    list(x = numeric(2), mean = numeric(2), cholesky = -diag(2), prec_param = F),
+    list(x = numeric(2), mean = numeric(2), cholesky = -diag(2), prec_param = T),
+    
     # list(x = numeric(2), mean = numeric(2), cholesky = matrix(c(0,0,0,0), nrow = 2)) R and C inconsistency
-    list(x = numeric(2), mean = numeric(2), cholesky = diag(2))
+    list(x = numeric(2), mean = numeric(2), cholesky = diag(2), prec_param = F),
+    list(x = numeric(2), mean = numeric(2), cholesky = diag(2), prec_param = T)
+    
     # list(x = c(1.3, 4.1), mean = c(1,4), cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2))) # inconsistency between R and C++ hessians, hypothesis is that R finite element diff. is giving incorrect results for cholesky param.
-  )
+  ),
+  WRT = c('x', 'mean', 'cholesky')
 )
 
 #   distnName = 'dmulti',
@@ -378,27 +384,75 @@ distributionArgsList[['dwish_chol']] <- list(
               df = quote(double()),
               scale_param = quote(double())),
   argsValues = list(
-    list(x = matrix(c(1,2,2,1), nrow = 2), 
+    list(x = matrix(c(1,.8,.8,1), nrow = 2), 
          cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
-         df = 3, scale_param = 0)
+         df = 3, scale_param = 1)
   )
 )
 
-nimbleOptions(pauseAfterWritingFiles = FALSE)
+# nimbleOptions(pauseAfterWritingFiles = TRUE)
 
-runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dwish_chol']]))
-methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dwish_chol']]))
+# file.copy("C:\\Users\\iateb\\Documents\\GitHub\\nimble\\packages\\nimble\\inst\\include\\TMB\\distributions_R.hpp",
+#           "C:\\Users\\iateb\\Documents\\R\\win-library\\3.4\\nimble\\include\\TMB\\distributions_R.hpp",
+#           overwrite = TRUE)
+
+
+
+
+  runFun <- gen_runFunCore(makeADDistributionTestList(distributionArgsList[['dmnorm_chol']]))
+methodFun <- gen_runFunCore(makeADDistributionMethodTestList(distributionArgsList[['dmnorm_chol']]))
 thisNf <- nimbleFunction(setup = function(){},
                       run = runFun,
                       methods = list(
                         method1 = methodFun
                       ),
                       enableDerivs = list('method1'))
-testADDistribution(thisNf, distributionArgsList[['dwish_chol']]$argsValues,
-                   distributionArgsList[['dwish_chol']]$distnName, debug = FALSE)
+testADDistribution(thisNf, distributionArgsList[['dmnorm_chol']]$argsValues,
+                   distributionArgsList[['dmnorm_chol']]$distnName, debug = TRUE)
+
+nimbleOptions(pauseAfterWritingFiles = FALSE)
 
 
+ADindependentVars[0] = 1;
+ADindependentVars[1] = 0;
+ADindependentVars[2] = 0;
+ADindependentVars[3] = 1;
+ADindependentVars[4] = 1;
+ADindependentVars[5] = 0;
+ADindependentVars[6] = 0;
+ADindependentVars[7] = 1;
+ADindependentVars[8] = 3;
+ADindependentVars[9] = 1;
 
+testNFgen <- nimbleFunction(setup = function(){
+                              cholMat = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2))
+                            },
+                         run = function(x = double(2)){
+                           nimDerivs(ADmethod(x, cholMat, 3))
+                         },
+                         methods = list(
+                           ADmethod = function(x = double(2, c(2,2)), chol = double(2, c(2,2)), df = double()){
+                             returnType(double(0))
+                             return(dwish_chol(x, cholesky = chol, df = df, scale_param = TRUE))
+                           }
+                         ),
+                         enableDerivs = 'ADmethod')
+
+
+nimbleOptions(pauseAfterWritingFiles = TRUE)
+
+testNF <- testNFgen()
+ctestNF <- compileNimble(testNF)
+nimbleOptions(pauseAfterWritingFiles = FALSE)
+
+testNF$ADmethod( matrix(c(1,.7,.7,1), nrow = 2),chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)), 3)
+ctestNF$ADmethod( matrix(c(1,.7,.7,1), nrow = 2),chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)), 3)
+
+dwish_chol(x = matrix(c(1,.7,.7,1), nrow = 2), cholesky =  chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
+           df = 3, log = T, scale_param = T)
+
+a <- rwish_chol( cholesky =  chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
+            df = 3)
 
 x = matrix(c(12.1, 42.1), nrow = 2)
 mu = matrix(c(10,40), nrow = 2)

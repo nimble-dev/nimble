@@ -125,6 +125,9 @@ class nodeFun : public NamedObjects {
   virtual void finishADFun(CppAD::ADFun< double > &ADtape,
 			   std::vector< CppAD::AD<double> > &independentVars,
 			   std::vector< CppAD::AD<double> > &dependentVars);
+  virtual void runTape(CppAD::ADFun< double > &ADtape,
+		       std::vector< double > &independentVars,
+		       std::vector< double > &dependentVars);
   virtual CppAD::AD<double> call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV);
 
 };
