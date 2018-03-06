@@ -27,6 +27,28 @@
 #include <cppad/cppad.hpp>
 class NodeVectorClassNew_derivs;
 
+#define ADvector CppAD::vector
+
+class atomic_extraInputObject : public CppAD::atomic_base<double> {
+  public:
+ atomic_extraInputObject(const std::string& name,
+			 NodeVectorClassNew_derivs* NV) :
+  CppAD::atomic_base<double>(name),
+    NV_(NV)
+    { }
+ private:
+  NodeVectorClassNew_derivs* NV_;//model_extraInput_accessor_ptr_;
+  
+  virtual bool forward(
+		       size_t                    p ,
+		       size_t                    q ,
+		       const ADvector<bool>&      vx ,
+		       ADvector<bool>&      vy ,
+		       const ADvector<double>&    tx ,
+		       ADvector<double>&    ty
+		       );
+};
+
 class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
  public:
   NimArr<1, double> value;
@@ -128,6 +150,10 @@ class nodeFun : public NamedObjects {
   virtual void runTape(CppAD::ADFun< double > &ADtape,
 		       std::vector< double > &independentVars,
 		       std::vector< double > &dependentVars);
+  virtual atomic_extraInputObject*
+    runExtraInputObject(NodeVectorClassNew_derivs &NV,
+			std::vector< CppAD::AD<double> > &extraInputDummyInput,
+			std::vector< CppAD::AD<double> > &extraInputResult);
   virtual CppAD::AD<double> call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV);
 
 };

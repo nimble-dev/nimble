@@ -67,7 +67,17 @@ gd_allNeighbors <- function(graph, nodes) stop("shouldn't be calling gd_allNeigh
 ## If it works well, it could be raised to the status of a
 ## model method.  It is something we've thought about needing before.
 getParentNodes <- function(nodes, model) {
+    ## adapted from BUGS_modelDef creation of edgesFrom2To
+    maps <- model$modelDef$maps
+    maxNodeID <- length(maps$vertexID_2_nodeID) ## should be same as length(maps$nodeNames)
     
+    edgesLevels <- if(maxNodeID > 0) 1:maxNodeID else numeric(0)
+    fedgesTo <- factor(maps$edgesTo, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
+    edgesTo2From <<- split(maps$edgesFrom, fedgesTo)
+    nodeIDs <- model$expandNodeNames(nodes, returnType = "ids")
+    fromIDs <- sort(unique(unlist(edgesTo2From[nodeIDs])))
+    fromNodes <- maps$graphID_2_nodeName[fromIDs]
+    fromNodes
 }
 
 ## wrtNodes are nodes with respect to which derivatives will be taken
@@ -94,37 +104,54 @@ getParentNodes <- function(nodes, model) {
 nimDerivsInfoClass_init_impl <- function(.self
                                        , wrtNodes
                                        , calcNodes
-                                       , constantNodes  
+                                       , constantNodes = character()
                                        , model) {
     .self$model <- model
 
     ## wrt nodes
-    wrtAccessor <- modelVariableAccessorVector(model,
+    wrtNodesAccessor <- modelVariableAccessorVector(model,
                                                wrtNodes,
                                                logProb = FALSE)
-    .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtAccessor)
+    .self$wrtMapInfo <- makeMapInfoFromAccessorVectorFaster(wrtNodesAccessor)
 
-    calcNodeNames <- model$expandNodeNames(calcNodes)
-    wrtNodeNames <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
-    stochCalcNodeNames <- calcNodeNames[ model$isStoch(calcNodeNames) ]
-    independentNodes <- model$expandNodeNames(c(wrtNodeNames, stochCalcNodeNames), sort = TRUE)
-    ## independent nodes
-    independentNodesAccessor <- modelVariableAccessorVector(model,
-                                                            independentNodes,
-                                                            logProb = FALSE)
-    .self$independentMapInfo <- makeMapInfoFromAccessorVectorFaster(independentNodesAccessor)
+    constantNodesAccessor <- modelVariableAccessorVector(model,
+                                                         constantNodes,
+                                                         logProb = FALSE)
+    .self$constantMapInfo <- makeMapInfoFromAccessorVectorFaster(constantNodesAccessor)
+
+    nonWrtCalcNodes <- setdiff(calcNodes, wrtNodes)
+    nonWrtCalcNodeNames <- model$expandNodeNames(nonWrtCalcNodes)
+##    wrtNodeNames <- model$expandNodeNames(wrtNodes, returnScalarComponents = TRUE)
+    nonWrtStochCalcNodeNames <- nonWrtCalcNodeNames[ model$isStoch(nonWrtCalcNodeNames) ]
+
+    ## Some duplication of work in expandNodeNames
+    parentNodes <- getParentNodes(calcNodes, model)
+    neededParentNodes <- setdiff(parentNodes, c(wrtNodes, nonWrtCalcNodeNames))
+    
+    extraInputNodes <- model$expandNodeNames(c(neededParentNodes,
+                                               nonWrtStochCalcNodeNames),
+                                             sort = TRUE)
+    ##extraInputNodes <- model$expandNodeNames(c(wrtNodeNames, stochCalcNodeNames), sort = TRUE)
+    ## extraInput nodes
+    extraInputNodesAccessor <- modelVariableAccessorVector(model,
+                                                           extraInputNodes,
+                                                           logProb = FALSE)
+    .self$extraInputMapInfo <-
+        makeMapInfoFromAccessorVectorFaster(extraInputNodesAccessor)
 
     ## output nodes: deterministic nodes in calcNodes plus logProb nodes
     ##   but not the actual data nodes.
+    calcNodeNames <- model$expandNodeNames(calcNodes)
     logProbCalcNodeNames <- model$modelDef$nodeName2LogProbName(calcNodeNames)
     isDetermCalcNodes <- model$isDeterm(calcNodeNames)
-    outputNodes <- c(calcNodeNames[isDetermCalcNodes],
-                     logProbCalcNodeNames)
+    modelOutputNodes <- c(calcNodeNames[isDetermCalcNodes],
+                          logProbCalcNodeNames)
 
-    outputNodesAccessor <- modelVariableAccessorVector(model,
-                                                       outputNodes,
-                                                       logProb = FALSE)
-    .self$outputMapInfo <- makeMapInfoFromAccessorVectorFaster(outputNodesAccessor)
+    modelOutputNodesAccessor <- modelVariableAccessorVector(model,
+                                                            modelOutputNodes,
+                                                            logProb = FALSE)
+    .self$modelOutputMapInfo <-
+        makeMapInfoFromAccessorVectorFaster(modelOutputNodesAccessor)
     NULL
 }
 
@@ -132,8 +159,9 @@ nimDerivsInfoClass <- setRefClass(
     'nimDerivsInfoClass',
     fields = list(
         wrtMapInfo = 'ANY'
-      , independentMapInfo = 'ANY'
-      , outputMapInfo = 'ANY'
+      , extraInputMapInfo = 'ANY'
+      , modelOutputMapInfo = 'ANY'
+      , constantMapInfo = 'ANY'
       , model = 'ANY'
     ),
     methods = list(
@@ -141,10 +169,10 @@ nimDerivsInfoClass <- setRefClass(
                               calcNodes = NA,
                               thisModel = NA,
                               cInfo = FALSE, ...) {
-            nimDerivsInfoClass_init_impl(.self,
-                                         wrtNodes,
-                                         calcNodes,
-                                         thisModel)
+            nimDerivsInfoClass_init_impl(.self = .self,
+                                         wrtNodes = wrtNodes,
+                                         calcNodes = calcNodes,
+                                         model = thisModel)
         }
     )
 )
