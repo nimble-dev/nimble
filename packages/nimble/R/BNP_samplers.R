@@ -728,15 +728,7 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
       conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
       if(length(conjugacy)) { # should always be this case
         conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-        #conjugate <- TRUE
         marginalizedParam <- conjugacy$target # should be the same as tildevarNames
-        #conjugacytype <- conjugacy$type
-        ## print(conjugacy) # will show information you can use for conjugate sampler
-        ## I think you will simply want to use things like this in run code:
-        ## this would be the case for the simple normal-normal conjugacy
-        ## getParam(marginalizedParam, 'mean')
-        ## getParam(marginalizedParam, 'var') + getParam(dataNodes[i], 'var')
-        ## to construct the marginal you need
       } else conjugate <- FALSE
     }
     #cat("Conjugacy detected: ", conjugate)
@@ -747,6 +739,7 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
   
   run = function() {
     conc <- model$getParam(target, 'conc')
+    meany <- model$getParam(marginalizedParam, 'mean')
     #  -- udating xi:
     for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
       xi_i <- model[[target]][i]
@@ -780,7 +773,6 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
           }
         
           # conjugate normal_normal with known variane case:
-          meany <- model$getParam(marginalizedParam, 'mean')
           vary <- model$getParam(marginalizedParam, 'var') + model$getParam(dataNodes[i], 'var')
           y_i <- values(model, dataNodes[i])[1]
           lpriorpred <- dnorm(y_i, meany, sqrt(vary), log=TRUE)
@@ -815,9 +807,503 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
 
 
 
-# conjugate poisson_gamma case
-sampler_dCRP_conjugate_dpois_dgamma <- nimbleFunction(
+# conjugate gamma_poisson case
+sampler_dCRP_conjugate_dgamma_dpois <- nimbleFunction(
   name = 'sampler_dCRP_conjugate_dpois_dgamma',
+  contains=sampler_BASE,
+  
+  setup=function(model, mvSaved, target, control){
+    ## note that even in inefficient case, we need to do individual dataNodes[i] <- model$getDependencies(targetElements[i], stochOnly = TRUE) because we are not guaranteed that xi[i] is the cluster membership for y[i]; it could be xi[i] is associated with y[n-i+1], e.g.
+    
+    ## browser()  # uncomment this to be able to step through code in debug mode ('n' for next line of code, 'f' to finish a loop or function, 'c' to continue to the next browser() call)
+    calcNodes <- model$getDependencies(target)
+    targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
+    n <- length(targetElements) # N2
+    
+    # first check that the sampler can be used: N=n (n=N2)
+    N <- length(model$getDependencies(targetElements, dataOnly = TRUE) )
+    VarNames <- model$getVarNames()
+    data <- model$getDependencies(targetElements[1], dataOnly = TRUE)
+    if(N != n){ stop('length of random indexes and observations has to be the same') }
+    
+    # finding tilde variables:
+    tildevarNames=c()
+    itildeVar <- 1
+    
+    Dep <- model$getDependencies(targetElements[1], self=FALSE)
+    for(i in 1:length(Dep)){ 
+      Depi <- Dep[i]
+      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
+      expr <- parse(text = expr)[[1]]
+      if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
+        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        itildeVar <- itildeVar+1 
+      }
+    }
+    
+    # second check that the sampler can be used: N3 < N2. 
+    # N3>N2 might be inefficient, but should still run
+    N3 <- c()
+    for(i in 1: length(tildevarNames)){
+      N3[i] <- length(model[[tildevarNames[i]]])
+    }
+    
+    if(sum(N3==N3[1]) != length(N3)){
+      stop('tilde variables have different length')
+    }
+    for(i in 1:length(N3)){
+      if(N3[i] < n){ stop('length of tilde node has to be at least equal to length of random indexes') }   
+    }
+    
+    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
+    dataNodes <- rep(targetElements[1], n) ## this serves as dummy nodes that may be replaced below
+    ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
+    type <- 'indivCalcs'
+    
+    intermNodes <- dataNodes
+    intermNodes2 <- dataNodes
+    intermNodes3 <- dataNodes
+    if(nInterm > 3) {
+      type <- "allCalcs"  ## give up and do the inefficient approach
+    } else {
+      for(i in seq_len(n)) {
+        stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self=FALSE) 
+        detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+        if(length(stochDeps) != 1) 
+          stop("Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+        if(length(detDeps) != nInterm) {
+          type <- 'allCalcs'  # give up again; should only occur in strange situations
+        } else {
+          dataNodes[i] <- stochDeps[1]
+          
+          if(nInterm >= 1) {  # this should handle case of no intermediates - Chris
+            intermNodes[i] <- detDeps[1]
+            intermNodes2[i] <- detDeps[1]
+            intermNodes3[i] <- detDeps[1]
+          }
+          if(nInterm >= 2)
+            intermNodes2[i] <- detDeps[2]
+          if(nInterm >= 3)
+            intermNodes3[i] <- detDeps[3]
+        }
+      }
+    }
+    
+    if(length(tildevarNames)==1){ # should always be this case
+      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+      if(length(conjugacy)) { # should always be this case
+        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+        marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+      } else conjugate <- FALSE
+    }
+    #cat("Conjugacy detected: ", conjugate)
+    
+    curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
+  },
+  
+  
+  run = function() {
+    conc <- model$getParam(target, 'conc')
+    a <- model$getParam(marginalizedParam, 'shape') 
+    b <- model$getParam(marginalizedParam, 'rate') 
+    #  -- udating xi:
+    for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      xi_i <- model[[target]][i]
+      xi <- model[[target]]
+      cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
+      for(j in 1:n){ # calculate probability of sampling indexes 1,...,n   
+        if(i==j){ # index i denotes a new indicator xi_i
+          if(cond>1){ # a new parameter has to be created to calculate the prob
+            newind <- 1
+            mySum <- sum(xi == newind)
+            while(mySum>0 & newind <= n) { # need to make sure don't go beyond length of vector
+              newind <- newind+1
+              mySum <- sum(xi == newind)
+            }
+            model[[target]][i] <<- newind
+            if(type == 'indivCalcs') {
+              if(nInterm >= 1) model$calculate(intermNodes[i])
+              if(nInterm >= 2) model$calculate(intermNodes2[i])
+              if(nInterm >= 3) model$calculate(intermNodes3[i])
+              model$calculate(dataNodes[i])
+            } else model$calculate(calcNodes) 
+          }else{ # we keep the old parameter as the "new" one
+            newind <- xi_i
+            model[[target]][i] <<- newind
+            if(type == 'indivCalcs') {
+              if(nInterm >= 1) model$calculate(intermNodes[i])
+              if(nInterm >= 2) model$calculate(intermNodes2[i])
+              if(nInterm >= 3) model$calculate(intermNodes3[i])
+              model$calculate(dataNodes[i])
+            } else model$calculate(calcNodes)  
+          }
+          
+          # conjugate poisson_gamma case:
+          y_i <- values(model, dataNodes[i])[1]
+          lpriorpred <- a*log(b) - (a+y_i)*log(b+1) + lgamma(a+y_i) - lgamma(a) - lfactorial(y_i)
+          curLogProb[j] <<- log(conc) + lpriorpred
+        }else{
+          model[[target]][i] <<- model[[target]][j]
+          if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+          } else model$calculate(calcNodes) 
+          curLogProb[j] <<- model$getLogProb(dataNodes[i]) #<<-
+        }  
+        model[[target]][i] <<- xi_i
+      } # 
+      
+      index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
+      if(index==i){# creates a new component: one that is not used
+        model[[target]][i] <<- newind
+      }else{
+        model[[target]][i] <<- model[[target]][index]
+      } 
+    }
+    model$calculate(calcNodes)
+    
+    
+    copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+  },
+  methods = list( reset = function () {})
+)
+
+
+# conjugate beta_bernoulli case
+sampler_dCRP_conjugate_dbeta_dbern <- nimbleFunction(
+  name = 'sampler_dCRP_conjugate_dbeta_dbern',
+  contains=sampler_BASE,
+  
+  setup=function(model, mvSaved, target, control){
+    ## note that even in inefficient case, we need to do individual dataNodes[i] <- model$getDependencies(targetElements[i], stochOnly = TRUE) because we are not guaranteed that xi[i] is the cluster membership for y[i]; it could be xi[i] is associated with y[n-i+1], e.g.
+    
+    ## browser()  # uncomment this to be able to step through code in debug mode ('n' for next line of code, 'f' to finish a loop or function, 'c' to continue to the next browser() call)
+    calcNodes <- model$getDependencies(target)
+    targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
+    n <- length(targetElements) # N2
+    
+    # first check that the sampler can be used: N=n (n=N2)
+    N <- length(model$getDependencies(targetElements, dataOnly = TRUE) )
+    VarNames <- model$getVarNames()
+    data <- model$getDependencies(targetElements[1], dataOnly = TRUE)
+    if(N != n){ stop('length of random indexes and observations has to be the same') }
+    
+    # finding tilde variables:
+    tildevarNames=c()
+    itildeVar <- 1
+    
+    Dep <- model$getDependencies(targetElements[1], self=FALSE)
+    for(i in 1:length(Dep)){ 
+      Depi <- Dep[i]
+      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
+      expr <- parse(text = expr)[[1]]
+      if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
+        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        itildeVar <- itildeVar+1 
+      }
+    }
+    
+    # second check that the sampler can be used: N3 < N2. 
+    # N3>N2 might be inefficient, but should still run
+    N3 <- c()
+    for(i in 1: length(tildevarNames)){
+      N3[i] <- length(model[[tildevarNames[i]]])
+    }
+    
+    if(sum(N3==N3[1]) != length(N3)){
+      stop('tilde variables have different length')
+    }
+    for(i in 1:length(N3)){
+      if(N3[i] < n){ stop('length of tilde node has to be at least equal to length of random indexes') }   
+    }
+    
+    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
+    dataNodes <- rep(targetElements[1], n) ## this serves as dummy nodes that may be replaced below
+    ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
+    type <- 'indivCalcs'
+    
+    intermNodes <- dataNodes
+    intermNodes2 <- dataNodes
+    intermNodes3 <- dataNodes
+    if(nInterm > 3) {
+      type <- "allCalcs"  ## give up and do the inefficient approach
+    } else {
+      for(i in seq_len(n)) {
+        stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self=FALSE) 
+        detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+        if(length(stochDeps) != 1) 
+          stop("Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+        if(length(detDeps) != nInterm) {
+          type <- 'allCalcs'  # give up again; should only occur in strange situations
+        } else {
+          dataNodes[i] <- stochDeps[1]
+          
+          if(nInterm >= 1) {  # this should handle case of no intermediates - Chris
+            intermNodes[i] <- detDeps[1]
+            intermNodes2[i] <- detDeps[1]
+            intermNodes3[i] <- detDeps[1]
+          }
+          if(nInterm >= 2)
+            intermNodes2[i] <- detDeps[2]
+          if(nInterm >= 3)
+            intermNodes3[i] <- detDeps[3]
+        }
+      }
+    }
+    
+    if(length(tildevarNames)==1){ # should always be this case
+      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+      if(length(conjugacy)) { # should always be this case
+        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+        marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+      } else conjugate <- FALSE
+    }
+    #cat("Conjugacy detected: ", conjugate)
+    
+    curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
+  },
+  
+  
+  run = function() {
+    conc <- model$getParam(target, 'conc')
+    a <- model$getParam(marginalizedParam, 'shape1') 
+    b <- model$getParam(marginalizedParam, 'shape2')  
+    #  -- udating xi:
+    for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      xi_i <- model[[target]][i]
+      xi <- model[[target]]
+      cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
+      for(j in 1:n){ # calculate probability of sampling indexes 1,...,n   
+        if(i==j){ # index i denotes a new indicator xi_i
+          if(cond>1){ # a new parameter has to be created to calculate the prob
+            newind <- 1
+            mySum <- sum(xi == newind)
+            while(mySum>0 & newind <= n) { # need to make sure don't go beyond length of vector
+              newind <- newind+1
+              mySum <- sum(xi == newind)
+            }
+            model[[target]][i] <<- newind
+            if(type == 'indivCalcs') {
+              if(nInterm >= 1) model$calculate(intermNodes[i])
+              if(nInterm >= 2) model$calculate(intermNodes2[i])
+              if(nInterm >= 3) model$calculate(intermNodes3[i])
+              model$calculate(dataNodes[i])
+            } else model$calculate(calcNodes) 
+          }else{ # we keep the old parameter as the "new" one
+            newind <- xi_i
+            model[[target]][i] <<- newind
+            if(type == 'indivCalcs') {
+              if(nInterm >= 1) model$calculate(intermNodes[i])
+              if(nInterm >= 2) model$calculate(intermNodes2[i])
+              if(nInterm >= 3) model$calculate(intermNodes3[i])
+              model$calculate(dataNodes[i])
+            } else model$calculate(calcNodes)  
+          }
+          
+          # conjugate poisson_gamma case:
+          y_i <- values(model, dataNodes[i])[1]
+          lpriorpred <- lgamma(a+y_i) + lgamma(b+1-y_i) - lgamma(a) - lgamma(b) - log(a+b)
+          curLogProb[j] <<- log(conc) + lpriorpred
+        }else{
+          model[[target]][i] <<- model[[target]][j]
+          if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+          } else model$calculate(calcNodes) 
+          curLogProb[j] <<- model$getLogProb(dataNodes[i]) #<<-
+        }  
+        model[[target]][i] <<- xi_i
+      } # 
+      
+      index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
+      if(index==i){# creates a new component: one that is not used
+        model[[target]][i] <<- newind
+      }else{
+        model[[target]][i] <<- model[[target]][index]
+      } 
+    }
+    model$calculate(calcNodes)
+    
+    
+    copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+  },
+  methods = list( reset = function () {})
+)
+
+
+# conjugate gamma_exponential case
+sampler_dCRP_conjugate_dgamma_dexp <- nimbleFunction(
+  name = 'sampler_dCRP_conjugate_dgamma_dexp',
+  contains=sampler_BASE,
+  
+  setup=function(model, mvSaved, target, control){
+    ## note that even in inefficient case, we need to do individual dataNodes[i] <- model$getDependencies(targetElements[i], stochOnly = TRUE) because we are not guaranteed that xi[i] is the cluster membership for y[i]; it could be xi[i] is associated with y[n-i+1], e.g.
+    
+    ## browser()  # uncomment this to be able to step through code in debug mode ('n' for next line of code, 'f' to finish a loop or function, 'c' to continue to the next browser() call)
+    calcNodes <- model$getDependencies(target)
+    targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
+    n <- length(targetElements) # N2
+    
+    # first check that the sampler can be used: N=n (n=N2)
+    N <- length(model$getDependencies(targetElements, dataOnly = TRUE) )
+    VarNames <- model$getVarNames()
+    data <- model$getDependencies(targetElements[1], dataOnly = TRUE)
+    if(N != n){ stop('length of random indexes and observations has to be the same') }
+    
+    # finding tilde variables:
+    tildevarNames=c()
+    itildeVar <- 1
+    
+    Dep <- model$getDependencies(targetElements[1], self=FALSE)
+    for(i in 1:length(Dep)){ 
+      Depi <- Dep[i]
+      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
+      expr <- parse(text = expr)[[1]]
+      if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
+        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        itildeVar <- itildeVar+1 
+      }
+    }
+    
+    # second check that the sampler can be used: N3 < N2. 
+    # N3>N2 might be inefficient, but should still run
+    N3 <- c()
+    for(i in 1: length(tildevarNames)){
+      N3[i] <- length(model[[tildevarNames[i]]])
+    }
+    
+    if(sum(N3==N3[1]) != length(N3)){
+      stop('tilde variables have different length')
+    }
+    for(i in 1:length(N3)){
+      if(N3[i] < n){ stop('length of tilde node has to be at least equal to length of random indexes') }   
+    }
+    
+    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
+    dataNodes <- rep(targetElements[1], n) ## this serves as dummy nodes that may be replaced below
+    ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
+    type <- 'indivCalcs'
+    
+    intermNodes <- dataNodes
+    intermNodes2 <- dataNodes
+    intermNodes3 <- dataNodes
+    if(nInterm > 3) {
+      type <- "allCalcs"  ## give up and do the inefficient approach
+    } else {
+      for(i in seq_len(n)) {
+        stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self=FALSE) 
+        detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+        if(length(stochDeps) != 1) 
+          stop("Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+        if(length(detDeps) != nInterm) {
+          type <- 'allCalcs'  # give up again; should only occur in strange situations
+        } else {
+          dataNodes[i] <- stochDeps[1]
+          
+          if(nInterm >= 1) {  # this should handle case of no intermediates - Chris
+            intermNodes[i] <- detDeps[1]
+            intermNodes2[i] <- detDeps[1]
+            intermNodes3[i] <- detDeps[1]
+          }
+          if(nInterm >= 2)
+            intermNodes2[i] <- detDeps[2]
+          if(nInterm >= 3)
+            intermNodes3[i] <- detDeps[3]
+        }
+      }
+    }
+    
+    if(length(tildevarNames)==1){ # should always be this case
+      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+      if(length(conjugacy)) { # should always be this case
+        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+        marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+      } else conjugate <- FALSE
+    }
+    #cat("Conjugacy detected: ", conjugate)
+    
+    curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
+  },
+  
+  
+  run = function() {
+    conc <- model$getParam(target, 'conc')
+    a <- model$getParam(marginalizedParam, 'shape') 
+    b <- model$getParam(marginalizedParam, 'rate') 
+    #  -- udating xi:
+    for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      xi_i <- model[[target]][i]
+      xi <- model[[target]]
+      cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
+      for(j in 1:n){ # calculate probability of sampling indexes 1,...,n   
+        if(i==j){ # index i denotes a new indicator xi_i
+          if(cond>1){ # a new parameter has to be created to calculate the prob
+            newind <- 1
+            mySum <- sum(xi == newind)
+            while(mySum>0 & newind <= n) { # need to make sure don't go beyond length of vector
+              newind <- newind+1
+              mySum <- sum(xi == newind)
+            }
+            model[[target]][i] <<- newind
+            if(type == 'indivCalcs') {
+              if(nInterm >= 1) model$calculate(intermNodes[i])
+              if(nInterm >= 2) model$calculate(intermNodes2[i])
+              if(nInterm >= 3) model$calculate(intermNodes3[i])
+              model$calculate(dataNodes[i])
+            } else model$calculate(calcNodes) 
+          }else{ # we keep the old parameter as the "new" one
+            newind <- xi_i
+            model[[target]][i] <<- newind
+            if(type == 'indivCalcs') {
+              if(nInterm >= 1) model$calculate(intermNodes[i])
+              if(nInterm >= 2) model$calculate(intermNodes2[i])
+              if(nInterm >= 3) model$calculate(intermNodes3[i])
+              model$calculate(dataNodes[i])
+            } else model$calculate(calcNodes)  
+          }
+          # gamma_exponential case
+          y_i <- values(model, dataNodes[i])[1]
+          lpriorpred <- log(a) + a*log(b) - (a+1)*log(b+y_i)
+          curLogProb[j] <<- log(conc) + lpriorpred
+        }else{
+          model[[target]][i] <<- model[[target]][j]
+          if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+          } else model$calculate(calcNodes) 
+          curLogProb[j] <<- model$getLogProb(dataNodes[i]) #<<-
+        }  
+        model[[target]][i] <<- xi_i
+      } # 
+      
+      index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
+      if(index==i){# creates a new component: one that is not used
+        model[[target]][i] <<- newind
+      }else{
+        model[[target]][i] <<- model[[target]][index]
+      } 
+    }
+    model$calculate(calcNodes)
+    
+    
+    copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+  },
+  methods = list( reset = function () {})
+)
+
+
+# conjugate gamma_gamma case
+sampler_dCRP_conjugate_dgamma_dgamma <- nimbleFunction(
+  name = 'sampler_dCRP_conjugate_dgamma_dgamma',
   contains=sampler_BASE,
   
   setup=function(model, mvSaved, target, control){
@@ -921,6 +1407,182 @@ sampler_dCRP_conjugate_dpois_dgamma <- nimbleFunction(
   
   run = function() {
     conc <- model$getParam(target, 'conc')
+    shape_y <- model$getParam(dataNodes[1], 'shape')
+    a <- model$getParam(marginalizedParam, 'shape') 
+    b <- model$getParam(marginalizedParam, 'rate')  
+    #  -- udating xi:
+    for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      xi_i <- model[[target]][i]
+      xi <- model[[target]]
+      cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
+      for(j in 1:n){ # calculate probability of sampling indexes 1,...,n   
+        if(i==j){ # index i denotes a new indicator xi_i
+          if(cond>1){ # a new parameter has to be created to calculate the prob
+            newind <- 1
+            mySum <- sum(xi == newind)
+            while(mySum>0 & newind <= n) { # need to make sure don't go beyond length of vector
+              newind <- newind+1
+              mySum <- sum(xi == newind)
+            }
+            model[[target]][i] <<- newind
+            if(type == 'indivCalcs') {
+              if(nInterm >= 1) model$calculate(intermNodes[i])
+              if(nInterm >= 2) model$calculate(intermNodes2[i])
+              if(nInterm >= 3) model$calculate(intermNodes3[i])
+              model$calculate(dataNodes[i])
+            } else model$calculate(calcNodes) 
+          }else{ # we keep the old parameter as the "new" one
+            newind <- xi_i
+            model[[target]][i] <<- newind
+            if(type == 'indivCalcs') {
+              if(nInterm >= 1) model$calculate(intermNodes[i])
+              if(nInterm >= 2) model$calculate(intermNodes2[i])
+              if(nInterm >= 3) model$calculate(intermNodes3[i])
+              model$calculate(dataNodes[i])
+            } else model$calculate(calcNodes)  
+          }
+          # gamma_gamma case
+          y_i <- values(model, dataNodes[i])[1]
+          lpriorpred <- (shape_y-1)*log(y_i) + a*log(b) + lgamma(shape_y+a) -
+            lgamma(shape_y) - lgamma(a) -(shape_y+a)*log(b+y_i)
+          curLogProb[j] <<- log(conc) + lpriorpred
+        }else{
+          model[[target]][i] <<- model[[target]][j]
+          if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+          } else model$calculate(calcNodes) 
+          curLogProb[j] <<- model$getLogProb(dataNodes[i]) #<<-
+        }  
+        model[[target]][i] <<- xi_i
+      } # 
+      
+      index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
+      if(index==i){# creates a new component: one that is not used
+        model[[target]][i] <<- newind
+      }else{
+        model[[target]][i] <<- model[[target]][index]
+      } 
+    }
+    model$calculate(calcNodes)
+    
+    
+    copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+  },
+  methods = list( reset = function () {})
+)
+
+
+
+# conjugate dirichlet_multinomial case
+sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
+  name = 'sampler_dCRP_conjugate_ddirch_dmulti',
+  contains=sampler_BASE,
+  
+  setup=function(model, mvSaved, target, control){
+    ## note that even in inefficient case, we need to do individual dataNodes[i] <- model$getDependencies(targetElements[i], stochOnly = TRUE) because we are not guaranteed that xi[i] is the cluster membership for y[i]; it could be xi[i] is associated with y[n-i+1], e.g.
+    
+    ## browser()  # uncomment this to be able to step through code in debug mode ('n' for next line of code, 'f' to finish a loop or function, 'c' to continue to the next browser() call)
+    calcNodes <- model$getDependencies(target)
+    targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
+    n <- length(targetElements) # N2
+    
+    # first check that the sampler can be used: N=n (n=N2)
+    N <- length(model$getDependencies(targetElements, dataOnly = TRUE) )
+    VarNames <- model$getVarNames()
+    data <- model$getDependencies(targetElements[1], dataOnly = TRUE)
+    if(N != n){ stop('length of random indexes and observations has to be the same') }
+    
+    # finding tilde variables:
+    tildevarNames=c()
+    itildeVar <- 1
+    
+    Dep <- model$getDependencies(targetElements[1], self=FALSE)
+    for(i in 1:length(Dep)){ 
+      Depi <- Dep[i]
+      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
+      expr <- parse(text = expr)[[1]]
+      if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
+        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        itildeVar <- itildeVar+1 
+      }
+    }
+    
+    # second check that the sampler can be used: N3 < N2. 
+    # N3>N2 might be inefficient, but should still run
+    N3 <- c()
+    for(i in 1: length(tildevarNames)){
+      N3[i] <- length(model[[tildevarNames[i]]])
+    }
+    
+    if(sum(N3==N3[1]) != length(N3)){
+      stop('tilde variables have different length')
+    }
+    for(i in 1:length(N3)){
+      if(N3[i] < n){ stop('length of tilde node has to be at least equal to length of random indexes') }   
+    }
+    
+    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
+    dataNodes <- rep(targetElements[1], n) ## this serves as dummy nodes that may be replaced below
+    ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
+    type <- 'indivCalcs'
+    
+    intermNodes <- dataNodes
+    intermNodes2 <- dataNodes
+    intermNodes3 <- dataNodes
+    if(nInterm > 3) {
+      type <- "allCalcs"  ## give up and do the inefficient approach
+    } else {
+      for(i in seq_len(n)) {
+        stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self=FALSE) 
+        detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+        if(length(stochDeps) != 1) 
+          stop("Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+        if(length(detDeps) != nInterm) {
+          type <- 'allCalcs'  # give up again; should only occur in strange situations
+        } else {
+          dataNodes[i] <- stochDeps[1]
+          
+          if(nInterm >= 1) {  # this should handle case of no intermediates - Chris
+            intermNodes[i] <- detDeps[1]
+            intermNodes2[i] <- detDeps[1]
+            intermNodes3[i] <- detDeps[1]
+          }
+          if(nInterm >= 2)
+            intermNodes2[i] <- detDeps[2]
+          if(nInterm >= 3)
+            intermNodes3[i] <- detDeps[3]
+        }
+      }
+    }
+    
+    if(length(tildevarNames)==1){ # should always be this case
+      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+      if(length(conjugacy)) { # should always be this case
+        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+        #conjugate <- TRUE
+        marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+        alpha0 <- model$getParam(marginalizedParam, 'alpha')
+        #conjugacytype <- conjugacy$type
+        ## print(conjugacy) # will show information you can use for conjugate sampler
+        ## I think you will simply want to use things like this in run code:
+        ## this would be the case for the simple normal-normal conjugacy
+        ## getParam(marginalizedParam, 'mean')
+        ## getParam(marginalizedParam, 'var') + getParam(dataNodes[i], 'var')
+        ## to construct the marginal you need
+      } else conjugate <- FALSE
+    }
+    #cat("Conjugacy detected: ", conjugate)
+    
+    curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
+  },
+  
+  
+  run = function() {
+    conc <- model$getParam(target, 'conc')
     #  -- udating xi:
     for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
       xi_i <- model[[target]][i]
@@ -954,10 +1616,9 @@ sampler_dCRP_conjugate_dpois_dgamma <- nimbleFunction(
           }
           
           # conjugate poisson_gamma case:
-          a <- model$getParam(marginalizedParam, 'shape') 
-          b <- model$getParam(marginalizedParam, 'rate')  
-          y_i <- values(model, dataNodes[i])[1]
-          lpriorpred <- a*log(b) - (a+y_i)*log(b+1) + lgamma(a+y_i) - lgamma(a) - lfactorial(y_i)
+          y_i <- values(model, dataNodes[i]) 
+          lpriorpred <- lfactorial(n) - sum(lfactorial(y_i)+lgamma(alpha0))+
+            lgamma(sum(alpha0)) + sum(lgamma(alpha0+y_i)) - lgamma(sum(alpha0+y_i))
           curLogProb[j] <<- log(conc) + lpriorpred
         }else{
           model[[target]][i] <<- model[[target]][j]
@@ -986,6 +1647,9 @@ sampler_dCRP_conjugate_dpois_dgamma <- nimbleFunction(
   },
   methods = list( reset = function () {})
 )
+
+
+
 
 
 #-- Standarized output nimbleFunction
