@@ -221,7 +221,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                                                    conjugate_dgamma_dpois = 'dCRP_conjugate_dgamma_dpois',
                                                    conjugate_dbeta_dbern = 'dCRP_conjugate_dbeta_dbern',
                                                    conjugate_ddirch_dmulti = 'dCRP_conjugate_ddirch_dmulti',
-                                                   conjugate_dgamma_dexp = 'dCRP_conjugate_dgamma_dexp',)#,
+                                                   conjugate_dgamma_dexp = 'dCRP_conjugate_dgamma_dexp',#,
                                                    'dCRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
                                 }
                             }
