@@ -554,22 +554,22 @@ sampler_dCRP_nonconjugate <- nimbleFunction(
     }
     
     # for getting: marginalizedParam
-    if(length(tildevarNames)==1){
-      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
-      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-      if(length(conjugacy)) {
-        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-        #conjugate <- TRUE
-        marginalizedParam <- conjugacy$target
-        #conjugacytype <- conjugacy$type
-        ## print(conjugacy) # will show information you can use for conjugate sampler
-        ## I think you will simply want to use things like this in run code:
-        ## this would be the case for the simple normal-normal conjugacy
-        ## getParam(marginalizedParam, 'mean')
-        ## getParam(marginalizedParam, 'var') + getParam(dataNodes[i], 'var')
-        ## to construct the marginal you need
-      } else conjugate <- FALSE
-    }
+    #if(length(tildevarNames)==1){
+    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+    #  if(length(conjugacy)) {
+    #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+    #    #conjugate <- TRUE
+    #    marginalizedParam <- conjugacy$target
+    #    #conjugacytype <- conjugacy$type
+    #    ## print(conjugacy) # will show information you can use for conjugate sampler
+    #    ## I think you will simply want to use things like this in run code:
+    #    ## this would be the case for the simple normal-normal conjugacy
+    #    ## getParam(marginalizedParam, 'mean')
+    #    ## getParam(marginalizedParam, 'var') + getParam(dataNodes[i], 'var')
+    #    ## to construct the marginal you need
+    #  } else conjugate <- FALSE
+    #}
     #cat("Conjugacy detected: ", conjugate)
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
@@ -723,15 +723,16 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
       }
     }
     
-    if(length(tildevarNames)==1){ # should always be this case
-      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
-      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-      if(length(conjugacy)) { # should always be this case
-        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-        marginalizedParam <- conjugacy$target # should be the same as tildevarNames
-      } else conjugate <- FALSE
-    }
+    #if(length(tildevarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+    #  if(length(conjugacy)) { # should always be this case
+    #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #  } else conjugate <- FALSE
+    #}
     #cat("Conjugacy detected: ", conjugate)
+    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -739,9 +740,12 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
   
   run = function() {
     conc <- model$getParam(target, 'conc')
-    meany <- model$getParam(marginalizedParam, 'mean')
+    priormean <- model$getParam(marginalizedParam, 'mean')
+    priorvar <- model$getParam(marginalizedParam, 'var')
+    datavar <- model$getParam(dataNodes[i], 'var')
     #  -- udating xi:
     for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      y_i <- values(model, dataNodes[i])[1]
       xi_i <- model[[target]][i]
       xi <- model[[target]]
       cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
@@ -773,9 +777,8 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
           }
         
           # conjugate normal_normal with known variane case:
-          vary <- model$getParam(marginalizedParam, 'var') + model$getParam(dataNodes[i], 'var')
-          y_i <- values(model, dataNodes[i])[1]
-          lpriorpred <- dnorm(y_i, meany, sqrt(vary), log=TRUE)
+          priorpredvar <- datavar + priorvar
+          lpriorpred <- dnorm(y_i, priormean, sqrt(priorpredvar), log=TRUE)
           curLogProb[j] <<- log(conc) + lpriorpred
         }else{
           model[[target]][i] <<- model[[target]][j]
@@ -793,12 +796,14 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
       index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
       if(index==i){# creates a new component: one that is not used
         model[[target]][i] <<- newind
+        postvar <- 1/(1/datavar + 1/priorvar)
+        postmean <- postvar*(y_i/datavar + priormean/priorvar)
+        model[[tildeVarNames]][newind] <<- rnorm(1, postmean, sqrt(postvar))
       }else{
         model[[target]][i] <<- model[[target]][index]
       } 
     }
     model$calculate(calcNodes)
-    
     
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
@@ -889,15 +894,16 @@ sampler_dCRP_conjugate_dgamma_dpois <- nimbleFunction(
       }
     }
     
-    if(length(tildevarNames)==1){ # should always be this case
-      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
-      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-      if(length(conjugacy)) { # should always be this case
-        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-        marginalizedParam <- conjugacy$target # should be the same as tildevarNames
-      } else conjugate <- FALSE
-    }
+    #if(length(tildevarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+    #  if(length(conjugacy)) { # should always be this case
+    #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #  } else conjugate <- FALSE
+    #}
     #cat("Conjugacy detected: ", conjugate)
+    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -905,10 +911,11 @@ sampler_dCRP_conjugate_dgamma_dpois <- nimbleFunction(
   
   run = function() {
     conc <- model$getParam(target, 'conc')
-    a <- model$getParam(marginalizedParam, 'shape') 
-    b <- model$getParam(marginalizedParam, 'rate') 
+    priora <- model$getParam(marginalizedParam, 'shape') 
+    priorb <- model$getParam(marginalizedParam, 'rate') 
     #  -- udating xi:
     for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      y_i <- values(model, dataNodes[i])[1]
       xi_i <- model[[target]][i]
       xi <- model[[target]]
       cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
@@ -940,8 +947,7 @@ sampler_dCRP_conjugate_dgamma_dpois <- nimbleFunction(
           }
           
           # conjugate poisson_gamma case:
-          y_i <- values(model, dataNodes[i])[1]
-          lpriorpred <- a*log(b) - (a+y_i)*log(b+1) + lgamma(a+y_i) - lgamma(a) - lfactorial(y_i)
+          lpriorpred <- priora*log(priorb) - (priora+y_i)*log(priorb+1) + lgamma(priora+y_i) - lgamma(priora) - lfactorial(y_i)
           curLogProb[j] <<- log(conc) + lpriorpred
         }else{
           model[[target]][i] <<- model[[target]][j]
@@ -959,6 +965,7 @@ sampler_dCRP_conjugate_dgamma_dpois <- nimbleFunction(
       index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
       if(index==i){# creates a new component: one that is not used
         model[[target]][i] <<- newind
+        model[[tildeVarNames]][newind] <<- rgamma(1, shape=priora+y_i, rate=priorb+1)
       }else{
         model[[target]][i] <<- model[[target]][index]
       } 
@@ -1054,15 +1061,16 @@ sampler_dCRP_conjugate_dbeta_dbern <- nimbleFunction(
       }
     }
     
-    if(length(tildevarNames)==1){ # should always be this case
-      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
-      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-      if(length(conjugacy)) { # should always be this case
-        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-        marginalizedParam <- conjugacy$target # should be the same as tildevarNames
-      } else conjugate <- FALSE
-    }
+    #if(length(tildevarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+    #  if(length(conjugacy)) { # should always be this case
+    #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #  } else conjugate <- FALSE
+    #}
     #cat("Conjugacy detected: ", conjugate)
+    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -1070,10 +1078,11 @@ sampler_dCRP_conjugate_dbeta_dbern <- nimbleFunction(
   
   run = function() {
     conc <- model$getParam(target, 'conc')
-    a <- model$getParam(marginalizedParam, 'shape1') 
-    b <- model$getParam(marginalizedParam, 'shape2')  
+    priora <- model$getParam(marginalizedParam, 'shape1') 
+    priorb <- model$getParam(marginalizedParam, 'shape2')  
     #  -- udating xi:
     for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      y_i <- values(model, dataNodes[i])[1]
       xi_i <- model[[target]][i]
       xi <- model[[target]]
       cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
@@ -1106,7 +1115,7 @@ sampler_dCRP_conjugate_dbeta_dbern <- nimbleFunction(
           
           # conjugate poisson_gamma case:
           y_i <- values(model, dataNodes[i])[1]
-          lpriorpred <- lgamma(a+y_i) + lgamma(b+1-y_i) - lgamma(a) - lgamma(b) - log(a+b)
+          lpriorpred <- lgamma(priora+y_i) + lgamma(priorb+1-y_i) - lgamma(priora) - lgamma(priorb) - log(priora+priorb)
           curLogProb[j] <<- log(conc) + lpriorpred
         }else{
           model[[target]][i] <<- model[[target]][j]
@@ -1124,6 +1133,7 @@ sampler_dCRP_conjugate_dbeta_dbern <- nimbleFunction(
       index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
       if(index==i){# creates a new component: one that is not used
         model[[target]][i] <<- newind
+        model[[tildeVarNames]][newind] <<- rbeta(1, shape1=priora+y_i, shape2=priorb+1-y_i)
       }else{
         model[[target]][i] <<- model[[target]][index]
       } 
@@ -1219,15 +1229,16 @@ sampler_dCRP_conjugate_dgamma_dexp <- nimbleFunction(
       }
     }
     
-    if(length(tildevarNames)==1){ # should always be this case
-      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
-      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-      if(length(conjugacy)) { # should always be this case
-        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-        marginalizedParam <- conjugacy$target # should be the same as tildevarNames
-      } else conjugate <- FALSE
-    }
+    #if(length(tildevarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+    #  if(length(conjugacy)) { # should always be this case
+    #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #  } else conjugate <- FALSE
+    #}
     #cat("Conjugacy detected: ", conjugate)
+    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -1235,14 +1246,15 @@ sampler_dCRP_conjugate_dgamma_dexp <- nimbleFunction(
   
   run = function() {
     conc <- model$getParam(target, 'conc')
-    a <- model$getParam(marginalizedParam, 'shape') 
-    b <- model$getParam(marginalizedParam, 'rate') 
+    priora <- model$getParam(marginalizedParam, 'shape') 
+    priorb <- model$getParam(marginalizedParam, 'rate') 
     #  -- udating xi:
     for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      y_i <- values(model, dataNodes[i])[1]
       xi_i <- model[[target]][i]
       xi <- model[[target]]
       cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
-      for(j in 1:n){ # calculate probability of sampling indexes 1,...,n   
+      for(j in 1:n){ # calculate probability of sampling indexes 1,...,n 
         if(i==j){ # index i denotes a new indicator xi_i
           if(cond>1){ # a new parameter has to be created to calculate the prob
             newind <- 1
@@ -1269,8 +1281,7 @@ sampler_dCRP_conjugate_dgamma_dexp <- nimbleFunction(
             } else model$calculate(calcNodes)  
           }
           # gamma_exponential case
-          y_i <- values(model, dataNodes[i])[1]
-          lpriorpred <- log(a) + a*log(b) - (a+1)*log(b+y_i)
+          lpriorpred <- log(priora) + priora*log(priorb) - (priora+1)*log(priorb+y_i)
           curLogProb[j] <<- log(conc) + lpriorpred
         }else{
           model[[target]][i] <<- model[[target]][j]
@@ -1288,6 +1299,7 @@ sampler_dCRP_conjugate_dgamma_dexp <- nimbleFunction(
       index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
       if(index==i){# creates a new component: one that is not used
         model[[target]][i] <<- newind
+        model[[tildeVarNames]][newind] <<- rgamma(1, shape=priora+1, rate=priorb+y_i)
       }else{
         model[[target]][i] <<- model[[target]][index]
       } 
@@ -1383,23 +1395,24 @@ sampler_dCRP_conjugate_dgamma_dgamma <- nimbleFunction(
       }
     }
     
-    if(length(tildevarNames)==1){ # should always be this case
-      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
-      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-      if(length(conjugacy)) { # should always be this case
-        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-        #conjugate <- TRUE
-        marginalizedParam <- conjugacy$target # should be the same as tildevarNames
-        #conjugacytype <- conjugacy$type
-        ## print(conjugacy) # will show information you can use for conjugate sampler
-        ## I think you will simply want to use things like this in run code:
-        ## this would be the case for the simple normal-normal conjugacy
-        ## getParam(marginalizedParam, 'mean')
-        ## getParam(marginalizedParam, 'var') + getParam(dataNodes[i], 'var')
-        ## to construct the marginal you need
-      } else conjugate <- FALSE
-    }
+    #if(length(tildevarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+    #  if(length(conjugacy)) { # should always be this case
+    #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+    #    #conjugate <- TRUE
+    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #    #conjugacytype <- conjugacy$type
+    #    ## print(conjugacy) # will show information you can use for conjugate sampler
+    #    ## I think you will simply want to use things like this in run code:
+    #    ## this would be the case for the simple normal-normal conjugacy
+    #    ## getParam(marginalizedParam, 'mean')
+    #    ## getParam(marginalizedParam, 'var') + getParam(dataNodes[i], 'var')
+    #    ## to construct the marginal you need
+    #  } else conjugate <- FALSE
+    #}
     #cat("Conjugacy detected: ", conjugate)
+    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -1407,11 +1420,12 @@ sampler_dCRP_conjugate_dgamma_dgamma <- nimbleFunction(
   
   run = function() {
     conc <- model$getParam(target, 'conc')
-    shape_y <- model$getParam(dataNodes[1], 'shape')
-    a <- model$getParam(marginalizedParam, 'shape') 
-    b <- model$getParam(marginalizedParam, 'rate')  
+    datashape <- model$getParam(dataNodes[1], 'shape')
+    priora <- model$getParam(marginalizedParam, 'shape') 
+    priorb <- model$getParam(marginalizedParam, 'rate')  
     #  -- udating xi:
     for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      y_i <- values(model, dataNodes[i])[1]
       xi_i <- model[[target]][i]
       xi <- model[[target]]
       cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
@@ -1442,9 +1456,8 @@ sampler_dCRP_conjugate_dgamma_dgamma <- nimbleFunction(
             } else model$calculate(calcNodes)  
           }
           # gamma_gamma case
-          y_i <- values(model, dataNodes[i])[1]
-          lpriorpred <- (shape_y-1)*log(y_i) + a*log(b) + lgamma(shape_y+a) -
-            lgamma(shape_y) - lgamma(a) -(shape_y+a)*log(b+y_i)
+          lpriorpred <- (datashape-1)*log(y_i) + priora*log(priorb) + lgamma(datashape+priora) -
+            lgamma(datashape) - lgamma(priora) -(datashape+priora)*log(priorb+y_i)
           curLogProb[j] <<- log(conc) + lpriorpred
         }else{
           model[[target]][i] <<- model[[target]][j]
@@ -1462,6 +1475,7 @@ sampler_dCRP_conjugate_dgamma_dgamma <- nimbleFunction(
       index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
       if(index==i){# creates a new component: one that is not used
         model[[target]][i] <<- newind
+        model[[tildeVarNames]][newind] <<- rgamma(1, shape=datashape+priora, rate=priorb+y_i)
       }else{
         model[[target]][i] <<- model[[target]][index]
       } 
@@ -1558,24 +1572,25 @@ sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
       }
     }
     
-    if(length(tildevarNames)==1){ # should always be this case
-      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
-      conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
-      if(length(conjugacy)) { # should always be this case
-        conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-        #conjugate <- TRUE
-        marginalizedParam <- conjugacy$target # should be the same as tildevarNames
-        alpha0 <- model$getParam(marginalizedParam, 'alpha')
-        #conjugacytype <- conjugacy$type
-        ## print(conjugacy) # will show information you can use for conjugate sampler
-        ## I think you will simply want to use things like this in run code:
-        ## this would be the case for the simple normal-normal conjugacy
-        ## getParam(marginalizedParam, 'mean')
-        ## getParam(marginalizedParam, 'var') + getParam(dataNodes[i], 'var')
-        ## to construct the marginal you need
-      } else conjugate <- FALSE
-    }
+    #if(length(tildevarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
+    #  if(length(conjugacy)) { # should always be this case
+    #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
+    #    #conjugate <- TRUE
+    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #    
+    #    #conjugacytype <- conjugacy$type
+    #    ## print(conjugacy) # will show information you can use for conjugate sampler
+    #    ## I think you will simply want to use things like this in run code:
+    #    ## this would be the case for the simple normal-normal conjugacy
+    #    ## getParam(marginalizedParam, 'mean')
+    #    ## getParam(marginalizedParam, 'var') + getParam(dataNodes[i], 'var')
+    #    ## to construct the marginal you need
+    #  } else conjugate <- FALSE
+    #}
     #cat("Conjugacy detected: ", conjugate)
+    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -1583,8 +1598,10 @@ sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
   
   run = function() {
     conc <- model$getParam(target, 'conc')
+    prioralpha <- model$getParam(marginalizedParam, 'alpha')
     #  -- udating xi:
     for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      y_i <- values(model, dataNodes[i]) 
       xi_i <- model[[target]][i]
       xi <- model[[target]]
       cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
@@ -1614,11 +1631,8 @@ sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
               model$calculate(dataNodes[i])
             } else model$calculate(calcNodes)  
           }
-          
-          # conjugate poisson_gamma case:
-          y_i <- values(model, dataNodes[i]) 
-          lpriorpred <- lfactorial(n) - sum(lfactorial(y_i)+lgamma(alpha0))+
-            lgamma(sum(alpha0)) + sum(lgamma(alpha0+y_i)) - lgamma(sum(alpha0+y_i))
+          lpriorpred <- lfactorial(n) - sum(lfactorial(y_i)+lgamma(prioralpha))+
+            lgamma(sum(prioralpha)) + sum(lgamma(prioralpha+y_i)) - lgamma(sum(prioralpha+y_i))
           curLogProb[j] <<- log(conc) + lpriorpred
         }else{
           model[[target]][i] <<- model[[target]][j]
@@ -1636,6 +1650,7 @@ sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
       index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
       if(index==i){# creates a new component: one that is not used
         model[[target]][i] <<- newind
+        model[[tildevarNames]][newind, ] <<- rdirch(alpha=prioralpha_y_i)
       }else{
         model[[target]][i] <<- model[[target]][index]
       } 
