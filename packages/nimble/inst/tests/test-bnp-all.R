@@ -309,22 +309,22 @@ test_that("Testing sampler assigment with bnp models", {
 ######################################################################
 
 
-context("Testing of bnp models")
+#context("Testing of bnp models")
 
 
-test_that("Testing bnp models", { 
+#test_that("Testing bnp models", { 
   
-  code = nimbleCode({
-    for(i in 1:4) 
-      y[i] ~ dnorm(thetatilde[xi[i]], sd = 1)
-    xi[1:4] ~ dCRP(alpha)
-    alpha ~ dgamma(1, 1)
-    for(j in 1:5) 
-      thetatilde[j] ~ dnorm(0, 1)
-  })
-  m = nimbleModel(code, data = list(y = rnorm(4)),
+#  code = nimbleCode({
+#    for(i in 1:4) 
+#      y[i] ~ dnorm(thetatilde[xi[i]], sd = 1)
+#    xi[1:4] ~ dCRP(alpha)
+#    alpha ~ dgamma(1, 1)
+#    for(j in 1:5) 
+#      thetatilde[j] ~ dnorm(0, 1)
+#  })
+#  m = nimbleModel(code, data = list(y = rnorm(4)),
                   inits = list(xi = rep(1,4), thetatilde=rnorm(5), alpha=1))
   
   # ???testBUGSmodel('m', dir="")
   
-})
+#})
