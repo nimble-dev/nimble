@@ -142,3 +142,91 @@ dCRP=nimbleFunction(
 )
 
 
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+
+
+#----------------------------------------------#
+# stick_breaking nimbleFunction
+#----------------------------------------------#
+
+#' The Stick Breaking function
+#'
+#'   Based on the stick breaking construction, weights are computed 
+#'   with the argument vector.
+#' 
+#' @name StickBreakingFunction 
+#' 
+#' @param z vector argument.
+#' @param log logical; if TRUE, weights are returned on the log scale.
+#' @author Claudia Wehrhahn
+#' @details values in \code{z} have to be between \deqn{[0,1)]}. If one of the components 
+#' is equal to 1, then the returned vector has length smaller than \code{z}. If one of the
+#' components is smaller than 0 or greater than 1, NaNs are returned.
+#' @references Sethuraman, J. (1994) A constructive definition of Dirichlet 
+#' priors. \emph{Statistica sinica}, 639-650.
+#' @examples
+#' z <- rbeta(5, 1,1)
+#' stick_breaking(z)
+#' 
+#' cstick_breaking <- compileNimble(stick_breaking)
+#' cstick_breaking(z)
+NULL
+
+#' @rdname StickBreakingFunction
+#' @export
+stick_breaking=nimbleFunction(
+  run=function(z=double(1),
+               log=integer(0, default=0)){ # z values must be different of 1, otherwise the process is truncated to a smaller value tha N; never use z[N]!
+    returnType(double(1))
+    
+    cond <- sum(z < 0)
+    if(cond > 0){
+      print('values in vector z have to be in [0,1)')
+      cond1 <- 1
+    }else{
+      cond1 <- 0
+    }
+    cond <- sum(z > 1)
+    if(cond > 0){
+      print('values in vector z have to be in [0,1)')
+      cond2 <- 1
+    }else{
+      cond2 <- 0
+    }
+    
+    cond <- sum(z == 1)
+    if(cond > 0){ # el vector de probabilidades es mas chico
+      print('length of returned vector is less than length(z)')
+      N <- 1
+      while(z[N] != 1){
+        N <- N + 1
+      }
+    }else{
+      N<-length(z)
+    }
+    
+    if(cond1 + cond2 > 0){
+      return(c(NaN))
+    }else{
+      x<-numeric(N) # returned vector
+      tmp<-0#1
+      
+      x[1]<-log(z[1]) #z[1]
+      for(i in 2:(N-1)){
+        tmp=tmp+log(1-z[i-1]) #tmp*(1-z[i-1])
+        x[i]<-log(z[i])+tmp #z[i]*tmp
+      }
+      x[N]<-tmp+log(1-z[N-1])#tmp*(1-z[N-1])
+      if(log) return(x)
+      else return(exp(x))
+    }
+  }
+)
+
+z <- rbeta(5, 1,1)
+stick_breaking(z)
+
+cstick_breaking <- compileNimble(stick_breaking)
+cstick_breaking(z)
