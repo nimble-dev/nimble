@@ -742,9 +742,9 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
     conc <- model$getParam(target, 'conc')
     priormean <- model$getParam(marginalizedParam, 'mean')
     priorvar <- model$getParam(marginalizedParam, 'var')
-    datavar <- model$getParam(dataNodes[i], 'var')
     #  -- udating xi:
     for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
+      datavar <- model$getParam(dataNodes[i], 'var')
       y_i <- values(model, dataNodes[i])[1]
       xi_i <- model[[target]][i]
       xi <- model[[target]]
