@@ -323,7 +323,7 @@ test_that("Testing sampler assigment with bnp models", {
 #      thetatilde[j] ~ dnorm(0, 1)
 #  })
 #  m = nimbleModel(code, data = list(y = rnorm(4)),
-                  inits = list(xi = rep(1,4), thetatilde=rnorm(5), alpha=1))
+#                  inits = list(xi = rep(1,4), thetatilde=rnorm(5), alpha=1))
   
   # ???testBUGSmodel('m', dir="")
   
