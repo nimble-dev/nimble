@@ -3,7 +3,7 @@
 ##  and step function.
 
 
-residResampleFunction <- nimbleFunction(
+residualResampleFunction <- nimbleFunction(
   run = function(wts = double(1)){
     n <- length(wts)
     expectedN <- numeric(n)
@@ -18,11 +18,6 @@ residResampleFunction <- nimbleFunction(
     if(remainder > 0){
       barWts <- (expectedN - floorN)/remainder
       sumIds <- rmulti(1, remainder,  barWts)
-      # rankSample(barWts, remainder, tmpIds, FALSE) ## maybe write version that doesn't return filled-in ids?
-      
-      # for(i in 1:remainder){
-      #   sumIds[tmpIds[i]] <- sumIds[tmpIds[i]] + 1
-      # }
       numberOfSamples <- floorN + sumIds
       idCounter <- 1
       for(i in 1:n){
@@ -46,6 +41,33 @@ residResampleFunction <- nimbleFunction(
   }
 )
 
+
+
+systematicResampleFunction <- nimbleFunction(
+  run = function(wts = double(1)){
+    n <- length(wts)
+    if(n == 1){
+      return(numeric(1, 1))
+    }
+    ids <- integer(n)
+    sumWts <- numeric(wts)
+    sumWts[1] <- wts[1]
+    for(i in 2:n){
+      sumWts[i] <- sumWts[i-1] + wts[i]
+    }
+    unifRV <- runif(1, 0, 1/n)
+    wtsCounter <- 1
+    for(i in 1:n){
+      while(unifRV < sumWts[wtsCounter]){
+        ids[i] <- wtsCounter
+        unifRV <- unifRV + 1/n
+      }
+      wtsCounter <- wtsCounter + 1
+    }
+    returnType(integer(1))
+    return(ids)
+  }
+)
 
 bootStepVirtual <- nimbleFunctionVirtual(
   run = function(m = integer(), threshNum=double(), prevSamp = logical()) {
@@ -154,7 +176,7 @@ bootFStep <- nimbleFunction(
     # Determine whether to resample by weights or not
     if(ess < threshNum){
       if(residResamp == TRUE){
-        ids <- residResampleFunction(wts)
+        ids <- residualResampleFunction(wts)
       }
       else{
         rankSample(wts, m, ids, silent)
