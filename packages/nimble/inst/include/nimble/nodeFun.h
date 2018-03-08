@@ -32,12 +32,9 @@ class NodeVectorClassNew_derivs;
 class atomic_extraInputObject : public CppAD::atomic_base<double> {
   public:
  atomic_extraInputObject(const std::string& name,
-			 NodeVectorClassNew_derivs* NV) :
-  CppAD::atomic_base<double>(name),
-    NV_(NV)
-    { }
+			 NodeVectorClassNew_derivs* NV);
  private:
-  NodeVectorClassNew_derivs* NV_;//model_extraInput_accessor_ptr_;
+  NodeVectorClassNew_derivs* NV_;//for access to model_extraInput_accessor;
   
   virtual bool forward(
 		       size_t                    p ,
@@ -47,7 +44,66 @@ class atomic_extraInputObject : public CppAD::atomic_base<double> {
 		       const ADvector<double>&    tx ,
 		       ADvector<double>&    ty
 		       );
+  virtual
+    bool reverse(
+		 size_t                    q ,
+		 const ADvector<double>&    tx ,
+		 const ADvector<double>&    ty ,
+		 ADvector<double>&    px ,
+		 const ADvector<double>&    py
+		 );
+  virtual
+    bool for_sparse_jac(
+			size_t                     q ,
+			const ADvector<bool>&   rt ,
+			ADvector<bool>&         st ,
+			const ADvector<double>&      x );
+  virtual
+    bool rev_sparse_jac(
+			size_t                     q ,
+			const ADvector<bool>&   rt ,
+			ADvector<bool>&         st ,
+			const ADvector<double>&      x );
 };
+
+
+class atomic_extraOutputObject : public CppAD::atomic_base<double> {
+  public:
+ atomic_extraOutputObject(const std::string& name,
+			  NodeVectorClassNew_derivs* NV);
+ private:
+  NodeVectorClassNew_derivs* NV_;//for access to model_modelOutput_accessor;
+  
+  virtual bool forward(
+		       size_t                    p ,
+		       size_t                    q ,
+		       const ADvector<bool>&      vx ,
+		       ADvector<bool>&      vy ,
+		       const ADvector<double>&    tx ,
+		       ADvector<double>&    ty
+		       );
+  virtual
+    bool reverse(
+		 size_t                    q ,
+		 const ADvector<double>&    tx ,
+		 const ADvector<double>&    ty ,
+		 ADvector<double>&    px ,
+		 const ADvector<double>&    py
+		 );
+  virtual
+    bool for_sparse_jac(
+			size_t                     q ,
+			const ADvector<bool>&   r ,
+			ADvector<bool>&         s ,
+			const ADvector<double>&      x );
+  virtual
+    bool rev_sparse_jac(
+			size_t                     q ,
+			const ADvector<bool>&   rt ,
+			ADvector<bool>&         st ,
+			const ADvector<double>&      x );
+};
+
 
 class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
  public:
@@ -143,6 +199,7 @@ class nodeFun : public NamedObjects {
   }
   // Next 3 functions are virtual to ensure the code in the model DLL
   // will be used so that the correct CppAD globals / statics will be found.
+  void recordTape(NodeVectorClassNew_derivs &NV);
   virtual void setTapeIndependent(std::vector< CppAD::AD<double> > &independentVars);
   virtual void finishADFun(CppAD::ADFun< double > &ADtape,
 			   std::vector< CppAD::AD<double> > &independentVars,
@@ -154,8 +211,12 @@ class nodeFun : public NamedObjects {
     runExtraInputObject(NodeVectorClassNew_derivs &NV,
 			std::vector< CppAD::AD<double> > &extraInputDummyInput,
 			std::vector< CppAD::AD<double> > &extraInputResult);
+  virtual atomic_extraOutputObject*
+    runExtraOutputObject(NodeVectorClassNew_derivs &NV,
+			 //			 std::vector< CppAD::AD<double> > &extraOutputs,
+			 //std::vector< CppAD::AD<double> > &extraOutputDummyResult,
+			 CppAD::AD<double> &logProb);
   virtual CppAD::AD<double> call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV);
-
 };
 
 #endif

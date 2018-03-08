@@ -55,7 +55,7 @@ SEXP reset_AD_timers(SEXP SreportInterval) {
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 						 NodeVectorClassNew_derivs &nodes,
 						 const NimArr<1, double> &derivOrders) {
-  std::cout<<"need to propagate const-ness"<<std::endl;
+  // std::cout<<"need to propagate const-ness"<<std::endl;
 
   if(!nodes.tapeRecorded()) nodes.recordTape();
 #ifdef _TIME_AD

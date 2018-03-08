@@ -790,141 +790,17 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   ManyVariablesMapAccessor model_AD_constant_accessor;
   CppAD::ADFun< double > ADtape;
   atomic_extraInputObject *extraInputObject;
+  atomic_extraOutputObject *extraOutputObject;
   bool tapeRecorded_;
  NodeVectorClassNew_derivs() : tapeRecorded_(false) {}
   bool tapeRecorded() {return(tapeRecorded_);}
   void recordTape() {
-    int step = 0;
-    std::cout<<"recordTape "<<step++<<std::endl;
     if(instructions.size() == 0) {
       printf("No nodes for calculation\n");
       return;
     }
     nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
-    vector< CppAD::AD<double> > dependentVars(1);
-
-    NimArr<1, double> NimArrValues;
-    NimArr<1, CppAD::AD<double> > NimArrValues_AD;
-
-    // 1. Copy all constantNodes values from model -> model_AD
-    std::cout<<"recordTape "<<step++<<std::endl;
-    int length_constant = model_constant_accessor.getTotalLength();
-    if(length_constant > 0) {
-      NimArr<1, double> NimArrValues;
-      NimArr<1, CppAD::AD<double> > NimArrValues_AD;
-      NimArrValues.setSize(length_constant);
-      NimArrValues_AD.setSize(length_constant);
-      getValues(NimArrValues, model_constant_accessor);
-      std::copy( NimArrValues.getPtr(),
-		 NimArrValues.getPtr() + length_constant,
-		 NimArrValues_AD.getPtr());
-      setValues_AD_AD(NimArrValues_AD, model_AD_constant_accessor);
-    }
-
-    // 2. Copy all wrtNodes values from model -> model_AD, AND
-    std::cout<<"recordTape "<<step++<<std::endl;
-    // 3. Copy all wrtNodes values from model -> independentVars, AND
-    // 4. independentVars should have an extra dummy element for getExtraInputs and setExtraInputs
-    int length_wrt = model_wrt_accessor.getTotalLength();
-    int length_independent = length_wrt + 1; // extra element is dummy
-    vector< CppAD::AD<double> > independentVars(length_independent);
-    if(length_wrt > 0) {
-      NimArrValues.setSize(length_wrt);
-      getValues(NimArrValues, model_wrt_accessor);
-      // 2
-      std::cout<<"recordTape "<<step++<<std::endl;
-      NimArrValues_AD.setSize(length_wrt);
-      std::copy( NimArrValues.getPtr(),
-		 NimArrValues.getPtr() + length_wrt,
-		 NimArrValues_AD.getPtr());
-      setValues_AD_AD(NimArrValues_AD, model_AD_wrt_accessor);
-      // 3
-      std::cout<<"recordTape "<<step++<<std::endl;
-      std::copy(  NimArrValues.getPtr(),
-		  NimArrValues.getPtr() + length_wrt,
-		  independentVars.begin() );
-    }
-
-    // 5. Copy all extraInputNodes values from model -> model_AD (ditto, may be redundant)
-    std::cout<<"recordTape "<<step++<<std::endl;
-	
-    int length_extraInput = model_extraInput_accessor.getTotalLength();
-    if(length_extraInput > 0) {
-      NimArrValues.setSize(length_extraInput);
-      NimArrValues_AD.setSize(length_extraInput);
-      getValues(NimArrValues, model_extraInput_accessor);
-      std::copy( NimArrValues.getPtr(),
-		 NimArrValues.getPtr() + length_extraInput,
-		 NimArrValues_AD.getPtr());
-      setValues_AD_AD(NimArrValues_AD, model_AD_extraInput_accessor);
-    }
-    
-    // 6. Start taping    
-    // Steps done via nodeFunInModelDLL-> need to happen in the model DLL,
-    // so that the same set of CppAD globals will be used as in taping.
-    std::cout<<"recordTape "<<step++<<std::endl;
-    nodeFunInModelDLL->setTapeIndependent(independentVars);
-    
-    // 7. Instantiate and call getExtraInputs atomic object, AND
-    // 8. Copy arr extraInputNodes AD objects from extraInputResult -> model_AD
-    if(length_extraInput > 0) {
-      std::vector< CppAD::AD<double> > extraInputDummyInput(1);
-      extraInputDummyInput[0] = independentVars[ length_independent - 1 ];
-      std::vector< CppAD::AD<double> > extraInputResults(length_extraInput);
-      // After this, the tape treats extraInputResults as a function of
-      // extraInputDummy.  This means during tape use, the extraInputObject
-      // functor will be called, and the extraInputResults will contain
-      // node values from the model.  By copying those during taping
-      // into the model_AD, those nodes play the right roles in the tape.
-      // 7.
-      std::cout<<"recordTape "<<step++<<std::endl;
-      std::cout<<"runExtraInputObject"<<std::endl;
-      extraInputObject = nodeFunInModelDLL->
-	runExtraInputObject(*this,
-			    extraInputDummyInput,
-			    extraInputResults);
-      // During recording this will no put values in extraInputResults
-      // but I don't think that will be a problem.  We are recording via
-      // ADtape.Dependent(X, Y), which does not call Forward(0) for values.
-      // 8.
-      std::cout<<"recordTape "<<step++<<std::endl;
-	  
-      NimArrValues_AD.setSize(length_extraInput);
-      std::copy(extraInputResults.begin(),
-    		extraInputResults.end(),
-    		NimArrValues_AD.getPtr());
-      setValues_AD_AD(NimArrValues_AD, model_AD_extraInput_accessor);
-    }
-    // 9. Copy all wrtNodes AD objects from independentVars -> model_AD.
-    std::cout<<"recordTape "<<step++<<std::endl;
-    if(length_wrt > 0) {
-      NimArrValues_AD.setSize(length_wrt);
-      std::copy(independentVars.begin(),
-		independentVars.begin() + length_wrt,
-		NimArrValues_AD.getPtr());
-      setValues_AD_AD(NimArrValues_AD, model_AD_wrt_accessor);
-    }
-    // 10. call calculate
-    std::cout<<"recordTape "<<step++<<std::endl;
-    CppAD::AD<double> logProb = nodeFunInModelDLL->call_calculate_ADproxyModel( *this );
-    // 11. Copy logProb to dependentVars[0]
-    std::cout<<"recordTape "<<step++<<std::endl;
-    dependentVars[0] = logProb;
-    // 12. Copy all outputNodes from model_AD -> dependentVars (starting at 1)
-    // NOT DONE YET
-    /* getValues_AD_AD( NimArrOutputVars, model_AD_output_accessor); */
-    /* std::copy(NimArrOutputVars.getPtr(), */
-    /* 	      NimArrOutputVars.getPtr() + length_output, */
-    /* 	      dependentVars.begin() + 1); */
-
-    // 13. Finish taping, AND
-    // 14. Call tape->optimize()
-    std::cout<<"recordTape "<<step++<<std::endl;
-    
-    nodeFunInModelDLL->finishADFun(ADtape,
-				   independentVars,
-				   dependentVars);
-    
+    nodeFunInModelDLL->recordTape(*this);
     tapeRecorded_ = true;
   }
   void runTape_setIndependent(std::vector<double> &independentVars) {

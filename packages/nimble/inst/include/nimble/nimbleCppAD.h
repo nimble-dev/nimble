@@ -94,7 +94,6 @@ public:
   }
   void stop(bool verbose = false) {
     t2 = std::chrono::high_resolution_clock::now();
-    double oldtotaltime = totaltime;
     if(verbose) {
       std::cout<<name<<" increment "<<static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count())<<std::endl;
     }
