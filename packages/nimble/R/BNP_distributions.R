@@ -225,8 +225,4 @@ stick_breaking=nimbleFunction(
   }
 )
 
-z <- rbeta(5, 1,1)
-stick_breaking(z)
 
-cstick_breaking <- compileNimble(stick_breaking)
-cstick_breaking(z)
