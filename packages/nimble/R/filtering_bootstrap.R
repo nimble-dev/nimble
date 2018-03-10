@@ -2,73 +2,6 @@
 ##  We have a build function (buildBootstrapFilter),
 ##  and step function.
 
-
-residualResampleFunction <- nimbleFunction(
-  run = function(wts = double(1)){
-    n <- length(wts)
-    expectedN <- numeric(n)
-    ids <- integer(n, 0)
-    sumIds <- numeric(n, 0)
-    for(i in 1:n){
-      expectedN[i] <- wts[i]*n
-    }
-    floorN <- floor(expectedN)
-    sumFloorN <- sum(floorN)
-    remainder <- n - sumFloorN
-    if(remainder > 0){
-      barWts <- (expectedN - floorN)/remainder
-      sumIds <- rmulti(1, remainder,  barWts)
-      numberOfSamples <- floorN + sumIds
-      idCounter <- 1
-      for(i in 1:n){
-        if(numberOfSamples[i] > 0){
-          ids[idCounter:(idCounter + numberOfSamples[i])] <- i
-          idCounter <- idCounter + numberOfSamples[i]
-        }
-      }
-    }
-    else{
-      idCounter <- 1
-      for(i in 1:n){
-        if(floorN[i] > 0){
-          ids[idCounter:(idCounter + floorN[i])] <- i
-          idCounter <- idCounter + floorN[i]
-        }
-      }
-    }
-    returnType(integer(1))
-    return(ids)
-  }
-)
-
-
-
-systematicResampleFunction <- nimbleFunction(
-  run = function(wts = double(1)){
-    n <- length(wts)
-    if(n == 1){
-      return(numeric(1, 1))
-    }
-    ids <- integer(n)
-    sumWts <- numeric(wts)
-    sumWts[1] <- wts[1]
-    for(i in 2:n){
-      sumWts[i] <- sumWts[i-1] + wts[i]
-    }
-    unifRV <- runif(1, 0, 1/n)
-    wtsCounter <- 1
-    for(i in 1:n){
-      while(unifRV < sumWts[wtsCounter]){
-        ids[i] <- wtsCounter
-        unifRV <- unifRV + 1/n
-      }
-      wtsCounter <- wtsCounter + 1
-    }
-    returnType(integer(1))
-    return(ids)
-  }
-)
-
 bootStepVirtual <- nimbleFunctionVirtual(
   run = function(m = integer(), threshNum=double(), prevSamp = logical()) {
     returnType(double(1))
@@ -288,7 +221,12 @@ buildBootstrapFilter <- nimbleFunction(
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
     if(is.null(initModel)) initModel <- TRUE
-    if(is.null(resamplingMethod)) resamplingMethod <- 'multinomial'
+    
+    if(is.null(resamplingMethod)) resamplingMethod <- 'systematic'
+    if(!(resamplingMethod %in% c('multinomial', 'systematic', 'stratified',
+                                 'residual'))
+       stop('resamplingMethod must be one of: "multinomial", "systematic",
+            "stratified", or "residual". ')
     #latent state info
     varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
     if(length(unique(varName))>1){

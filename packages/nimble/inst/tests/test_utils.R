@@ -999,6 +999,49 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
   return(returnVal)
 }
 
+## Testing for correct behavior of different resampling methods
+## used within PFs.
+##   samplerNAmes - A character vector with the names of 
+##                  the resampling functions to be tested.
+##   wts - A vector of weights to use for testing, given as input to the 
+##         resampler functions.
+##   reps - An integer, the number of repetitions to conduct.
+##
+## For each provided samplerName, the test will produce 'reps' number of samples
+## from that function.  For each set of samples, the number of times each 
+## element was sampled is recorded.  These recorded counts are averaged over the
+## 'reps' number of samples, and then
+## the averages are compared to the expected count of each element 
+## (i.e. wts*length(wts)).
+
+test_resampler <- function(samplerNames, wts, reps = 200){
+  n = length(wts)
+  output <- matrix(0, nrow = n, ncol = length(samplerNames))
+  avgCounts <- output
+  for(rep in 1:reps){
+    for(i in 1:length(samplerNames)){
+      samplerArgsList <- list(wts = wts)
+      output[,i] <-     do.call(samplerNames[i], args = samplerArgsList)
+    }
+    counts <- apply(output, 2, function(x){
+      outvec <- numeric(length(x))
+      for(i in 1:n){
+        outvec[i] <- length(which(x == i))
+      }
+      return(outvec)
+    })
+    avgCounts <- avgCounts + counts
+  }
+  avgCounts <- avgCounts / reps
+  expectedValue <- n*wts
+  for(i in 1:length(samplerNames)){
+    expect_equal(avgCounts[,i], expectedValue, tolerance = sqrt(n),
+                 info = paste("Test of accurate samples for resampling method",
+                              samplerNames[i]))
+  }
+}
+
+
 weightedMetricFunc <- function(index, samples, weights, metric, samplesToWeightsMatch){
   samples <- samples[,index]
   weights <- exp(weights[,samplesToWeightsMatch[index]])/sum(exp(weights[,samplesToWeightsMatch[index]]))

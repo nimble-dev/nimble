@@ -230,3 +230,9 @@ test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, 
 ##                 sigma_y = sigma_y)),
 ##   resultsTolerance = list(mean = list(sigma_x = .1,
 ##                                       sigma_y = .1)))
+
+
+n <- 100
+wts <- rep(1/n, n)
+samplerTesting(c('systematicResampleFunction', 'stratifiedResampleFunction', 'residualResampleFunction'), wts)
+
