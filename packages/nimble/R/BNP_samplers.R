@@ -2333,7 +2333,7 @@ sampler_CRP <- nimbleFunction(
       ## Claudia: please check that this correctly chooses nonconjugate if we have two tilde variables
       
       marginalizedNodes <- model$expandNodeNames(tildeVarNames[1])
-      helperFunctions <- nimbleFunctionList(dCRP_helper)
+      helperFunctions <- nimbleFunctionList(CRP_helper)
 
       ## use conjugacy to determine which helper functions to use
       conjugacyResult <- checkCRPconjugacy(model, target)
