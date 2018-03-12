@@ -145,7 +145,6 @@ sampler_MarginalizedG_general <- nimbleFunction(
     #  }
     #}
     #N <- length(model[[dataVar]])
-    browser()
     if(N != n){ stop('length of random indexes and observations has to be the same') }
     
     # finding tilde variables:
