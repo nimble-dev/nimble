@@ -64,7 +64,7 @@ NULL
 #' @export
 rCRP=nimbleFunction(
   run=function(n=integer(0), 
-               conc=double(0, default=1))
+               conc=double(0, default=1), size = double(0))
   {
     returnType(double(1))
     
@@ -100,7 +100,8 @@ rCRP=nimbleFunction(
 #' @export
 dCRP=nimbleFunction(
   run=function(x=double(1), 
-               conc=double(0, default=1), 
+               conc=double(0, default=1),
+               size = double(0),
                log=integer(0, default=0))
   {
     returnType(double(0))
