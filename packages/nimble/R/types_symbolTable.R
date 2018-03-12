@@ -147,7 +147,6 @@ resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject)
         listST$name <- name
         return(list(listST, newNeededType))
         ##symTab$addSymbol(listST, allowReplace = TRUE)
-        next
     } else { ## either create the type, or in the case of 'return', search recursively into neededTypes
         possibleTypeName <- type
         ## look for a valid nlGenerator in the global environment
@@ -162,7 +161,6 @@ resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject)
                     listST$name <- name
                     return(list(listST, newNeededType))
                     ##   symTab$addSymbol(listST, allowReplace = TRUE)
-                   ## next
                 }
                 ## for the case of 'return' only, see if it matches a type nested within a neededType
                 if(name == 'return') {
@@ -171,7 +169,6 @@ resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject)
                         listST$name <- name
                         return(list(listST, newNeededType))
 ##                        symTab$addSymbol(listST, allowReplace = TRUE)
-##                        next
                     }
                 }
                 ## can't find it anywhere, so create it and add to newNeededTypes
@@ -186,7 +183,6 @@ resolveOneUnknownType <- function(unknownSym, neededTypes = NULL, nimbleProject)
                 returnSym <- symbolNimbleList(name = name, nlProc = nlp)
 ##                symTab$addSymbol(lireturnSymstST, allowReplace = TRUE)
                 return(list(returnSym, newNeededType))
-                ##next
             }
         } else {
             stop(paste0("Can't figure out what ", possibleTypeName, " is."))
