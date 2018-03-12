@@ -2203,7 +2203,7 @@ CRP_helper <- nimbleFunctionVirtual(
 )
 
 CRP_nonconjugate <- nimbleFunction(
-    contains = dCRP_helper,
+    contains = CRP_helper,
     setup = function(model, marginalizedNodes, dataNodes) {
     },
     methods = list(
