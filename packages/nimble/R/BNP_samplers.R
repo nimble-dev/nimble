@@ -2218,7 +2218,7 @@ CRP_nonconjugate <- nimbleFunction(
 ## Claudia to create versions of this for the various conjugacies using code she has already
 ## written in the conjugacy-specific full samplers
 CRP_conjugate_dnorm_dnorm <- nimbleFunction(
-    contains = dCRP_helper,
+    contains = CRP_helper,
     setup = function(model, marginalizedNodes, dataNodes) {
         ## this makes sure that we create objects to store persistent information used for all 'i'
         priorMean <- nimNumeric(1)
