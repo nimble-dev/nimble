@@ -210,24 +210,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                         if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
-                        if(nodeDist == 'dCRP') {
-                            type = 'dCRP_nonconjugate'
-                            if(useConjugacy) {
-                                conjugacyResult <- checkCRPconjugacy(model, node)
-                                if(!is.null(conjugacyResult)) {
-                                    type <- switch(conjugacyResult,
-                                                   ## add cases here as the specific conjugacy case samplers are written
-                                                   conjugate_dnorm_dnorm = 'dCRP_conjugate_dnorm_dnorm',
-                                                   conjugate_dgamma_dpois = 'dCRP_conjugate_dgamma_dpois',
-                                                   conjugate_dbeta_dbern = 'dCRP_conjugate_dbeta_dbern',
-                                                   conjugate_ddirch_dmulti = 'dCRP_conjugate_ddirch_dmulti',
-                                                   conjugate_dgamma_dexp = 'dCRP_conjugate_dgamma_dexp',#,
-                                                   'dCRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
-                                }
-                            }
-                            addSampler(target = node, type = type)
-                            next
-                        }
+                        if(nodeDist == 'dCRP') { addSampler(target = node, type = 'CRP'); next }
                         if(nodeDist == 'dwish')        { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
