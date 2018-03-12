@@ -145,11 +145,11 @@ sampler_MarginalizedG_general <- nimbleFunction(
     #  }
     #}
     #N <- length(model[[dataVar]])
-    
+    browser()
     if(N != n){ stop('length of random indexes and observations has to be the same') }
     
     # finding tilde variables:
-    tildevarNames=c()
+    tildeVarNames=c()
     itildeVar <- 1
     
     Dep <- model$getDependencies(targetElements[1], self=FALSE)
@@ -158,7 +158,7 @@ sampler_MarginalizedG_general <- nimbleFunction(
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
         itildeVar <- itildeVar+1 
       }
     }
@@ -174,8 +174,8 @@ sampler_MarginalizedG_general <- nimbleFunction(
     #out=try(model$getDependencies('thetatilde[n]'))
     #if(out=='try-error' && grep("dynamic index out of bounds", out) == 1){stop('stop')}
     N3 <- c()
-    for(i in 1: length(tildevarNames)){
-      N3[i] <- length(model[[tildevarNames[i]]])
+    for(i in 1: length(tildeVarNames)){
+      N3[i] <- length(model[[tildeVarNames[i]]])
     }
     
     if(sum(N3==N3[1]) != length(N3)){
@@ -298,9 +298,9 @@ sampler_MarginalizedG_general <- nimbleFunction(
     ## dont know what does when y[i] ~ dnorm(0, var=s2tilde[xi[i]]). here nInterm=1
     
     # new checking for conjugacy using tilde variables:
-    if(length(tildevarNames)>1){ conjugate <- FALSE }
-    if(length(tildevarNames)==1){
-      clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    if(length(tildeVarNames)>1){ conjugate <- FALSE }
+    if(length(tildeVarNames)==1){
+      clusterNodes <- model$expandNodeNames(tildeVarNames[1])  # e.g., 'thetatilde[1]',...,
       conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
       if(length(conjugacy)) {
         conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
@@ -493,7 +493,7 @@ sampler_dCRP_nonconjugate <- nimbleFunction(
     if(N != n){ stop('length of random indexes and observations has to be the same') }
     
     # finding tilde variables:
-    tildevarNames=c()
+    tildeVarNames=c()
     itildeVar <- 1
     
     Dep <- model$getDependencies(targetElements[1], self=FALSE)
@@ -502,14 +502,14 @@ sampler_dCRP_nonconjugate <- nimbleFunction(
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
         itildeVar <- itildeVar+1 
       }
     }
     
     N3 <- c()
-    for(i in 1: length(tildevarNames)){
-      N3[i] <- length(model[[tildevarNames[i]]])
+    for(i in 1: length(tildeVarNames)){
+      N3[i] <- length(model[[tildeVarNames[i]]])
     }
     
     if(sum(N3==N3[1]) != length(N3)){
@@ -554,8 +554,8 @@ sampler_dCRP_nonconjugate <- nimbleFunction(
     }
     
     # for getting: marginalizedParam
-    #if(length(tildevarNames)==1){
-    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #if(length(tildeVarNames)==1){
+    #  clusterNodes <- model$expandNodeNames(tildeVarNames[1])  # e.g., 'thetatilde[1]',...,
     #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
     #  if(length(conjugacy)) {
     #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
@@ -661,7 +661,7 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
     if(N != n){ stop('length of random indexes and observations has to be the same') }
     
     # finding tilde variables:
-    tildevarNames=c()
+    tildeVarNames=c()
     itildeVar <- 1
     
     Dep <- model$getDependencies(targetElements[1], self=FALSE)
@@ -670,7 +670,7 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
         itildeVar <- itildeVar+1 
       }
     }
@@ -678,8 +678,8 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
     # second check that the sampler can be used: N3 < N2. 
     # N3>N2 might be inefficient, but should still run
     N3 <- c()
-    for(i in 1: length(tildevarNames)){
-      N3[i] <- length(model[[tildevarNames[i]]])
+    for(i in 1: length(tildeVarNames)){
+      N3[i] <- length(model[[tildeVarNames[i]]])
     }
     
     if(sum(N3==N3[1]) != length(N3)){
@@ -723,16 +723,16 @@ sampler_dCRP_conjugate_dnorm_dnorm <- nimbleFunction(
       }
     }
     
-    #if(length(tildevarNames)==1){ # should always be this case
-    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #if(length(tildeVarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildeVarNames[1])  # e.g., 'thetatilde[1]',...,
     #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
     #  if(length(conjugacy)) { # should always be this case
     #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #    marginalizedParam <- conjugacy$target # should be the same as tildeVarNames
     #  } else conjugate <- FALSE
     #}
     #cat("Conjugacy detected: ", conjugate)
-    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
+    marginalizedParam <- model$expandNodeNames(tildeVarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -832,7 +832,7 @@ sampler_dCRP_conjugate_dgamma_dpois <- nimbleFunction(
     if(N != n){ stop('length of random indexes and observations has to be the same') }
     
     # finding tilde variables:
-    tildevarNames=c()
+    tildeVarNames=c()
     itildeVar <- 1
     
     Dep <- model$getDependencies(targetElements[1], self=FALSE)
@@ -841,7 +841,7 @@ sampler_dCRP_conjugate_dgamma_dpois <- nimbleFunction(
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
         itildeVar <- itildeVar+1 
       }
     }
@@ -849,8 +849,8 @@ sampler_dCRP_conjugate_dgamma_dpois <- nimbleFunction(
     # second check that the sampler can be used: N3 < N2. 
     # N3>N2 might be inefficient, but should still run
     N3 <- c()
-    for(i in 1: length(tildevarNames)){
-      N3[i] <- length(model[[tildevarNames[i]]])
+    for(i in 1: length(tildeVarNames)){
+      N3[i] <- length(model[[tildeVarNames[i]]])
     }
     
     if(sum(N3==N3[1]) != length(N3)){
@@ -894,16 +894,16 @@ sampler_dCRP_conjugate_dgamma_dpois <- nimbleFunction(
       }
     }
     
-    #if(length(tildevarNames)==1){ # should always be this case
-    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #if(length(tildeVarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildeVarNames[1])  # e.g., 'thetatilde[1]',...,
     #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
     #  if(length(conjugacy)) { # should always be this case
     #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #    marginalizedParam <- conjugacy$target # should be the same as tildeVarNames
     #  } else conjugate <- FALSE
     #}
     #cat("Conjugacy detected: ", conjugate)
-    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
+    marginalizedParam <- model$expandNodeNames(tildeVarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -999,7 +999,7 @@ sampler_dCRP_conjugate_dbeta_dbern <- nimbleFunction(
     if(N != n){ stop('length of random indexes and observations has to be the same') }
     
     # finding tilde variables:
-    tildevarNames=c()
+    tildeVarNames=c()
     itildeVar <- 1
     
     Dep <- model$getDependencies(targetElements[1], self=FALSE)
@@ -1008,7 +1008,7 @@ sampler_dCRP_conjugate_dbeta_dbern <- nimbleFunction(
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
         itildeVar <- itildeVar+1 
       }
     }
@@ -1016,8 +1016,8 @@ sampler_dCRP_conjugate_dbeta_dbern <- nimbleFunction(
     # second check that the sampler can be used: N3 < N2. 
     # N3>N2 might be inefficient, but should still run
     N3 <- c()
-    for(i in 1: length(tildevarNames)){
-      N3[i] <- length(model[[tildevarNames[i]]])
+    for(i in 1: length(tildeVarNames)){
+      N3[i] <- length(model[[tildeVarNames[i]]])
     }
     
     if(sum(N3==N3[1]) != length(N3)){
@@ -1061,16 +1061,16 @@ sampler_dCRP_conjugate_dbeta_dbern <- nimbleFunction(
       }
     }
     
-    #if(length(tildevarNames)==1){ # should always be this case
-    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #if(length(tildeVarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildeVarNames[1])  # e.g., 'thetatilde[1]',...,
     #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
     #  if(length(conjugacy)) { # should always be this case
     #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #    marginalizedParam <- conjugacy$target # should be the same as tildeVarNames
     #  } else conjugate <- FALSE
     #}
     #cat("Conjugacy detected: ", conjugate)
-    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
+    marginalizedParam <- model$expandNodeNames(tildeVarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -1167,7 +1167,7 @@ sampler_dCRP_conjugate_dgamma_dexp <- nimbleFunction(
     if(N != n){ stop('length of random indexes and observations has to be the same') }
     
     # finding tilde variables:
-    tildevarNames=c()
+    tildeVarNames=c()
     itildeVar <- 1
     
     Dep <- model$getDependencies(targetElements[1], self=FALSE)
@@ -1176,7 +1176,7 @@ sampler_dCRP_conjugate_dgamma_dexp <- nimbleFunction(
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
         itildeVar <- itildeVar+1 
       }
     }
@@ -1184,8 +1184,8 @@ sampler_dCRP_conjugate_dgamma_dexp <- nimbleFunction(
     # second check that the sampler can be used: N3 < N2. 
     # N3>N2 might be inefficient, but should still run
     N3 <- c()
-    for(i in 1: length(tildevarNames)){
-      N3[i] <- length(model[[tildevarNames[i]]])
+    for(i in 1: length(tildeVarNames)){
+      N3[i] <- length(model[[tildeVarNames[i]]])
     }
     
     if(sum(N3==N3[1]) != length(N3)){
@@ -1229,16 +1229,16 @@ sampler_dCRP_conjugate_dgamma_dexp <- nimbleFunction(
       }
     }
     
-    #if(length(tildevarNames)==1){ # should always be this case
-    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #if(length(tildeVarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildeVarNames[1])  # e.g., 'thetatilde[1]',...,
     #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
     #  if(length(conjugacy)) { # should always be this case
     #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
-    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #    marginalizedParam <- conjugacy$target # should be the same as tildeVarNames
     #  } else conjugate <- FALSE
     #}
     #cat("Conjugacy detected: ", conjugate)
-    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
+    marginalizedParam <- model$expandNodeNames(tildeVarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -1333,7 +1333,7 @@ sampler_dCRP_conjugate_dgamma_dgamma <- nimbleFunction(
     if(N != n){ stop('length of random indexes and observations has to be the same') }
     
     # finding tilde variables:
-    tildevarNames=c()
+    tildeVarNames=c()
     itildeVar <- 1
     
     Dep <- model$getDependencies(targetElements[1], self=FALSE)
@@ -1342,7 +1342,7 @@ sampler_dCRP_conjugate_dgamma_dgamma <- nimbleFunction(
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
         itildeVar <- itildeVar+1 
       }
     }
@@ -1350,8 +1350,8 @@ sampler_dCRP_conjugate_dgamma_dgamma <- nimbleFunction(
     # second check that the sampler can be used: N3 < N2. 
     # N3>N2 might be inefficient, but should still run
     N3 <- c()
-    for(i in 1: length(tildevarNames)){
-      N3[i] <- length(model[[tildevarNames[i]]])
+    for(i in 1: length(tildeVarNames)){
+      N3[i] <- length(model[[tildeVarNames[i]]])
     }
     
     if(sum(N3==N3[1]) != length(N3)){
@@ -1395,13 +1395,13 @@ sampler_dCRP_conjugate_dgamma_dgamma <- nimbleFunction(
       }
     }
     
-    #if(length(tildevarNames)==1){ # should always be this case
-    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #if(length(tildeVarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildeVarNames[1])  # e.g., 'thetatilde[1]',...,
     #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
     #  if(length(conjugacy)) { # should always be this case
     #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
     #    #conjugate <- TRUE
-    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #    marginalizedParam <- conjugacy$target # should be the same as tildeVarNames
     #    #conjugacytype <- conjugacy$type
     #    ## print(conjugacy) # will show information you can use for conjugate sampler
     #    ## I think you will simply want to use things like this in run code:
@@ -1412,7 +1412,7 @@ sampler_dCRP_conjugate_dgamma_dgamma <- nimbleFunction(
     #  } else conjugate <- FALSE
     #}
     #cat("Conjugacy detected: ", conjugate)
-    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
+    marginalizedParam <- model$expandNodeNames(tildeVarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -1510,7 +1510,7 @@ sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
     if(N != n){ stop('length of random indexes and observations has to be the same') }
     
     # finding tilde variables:
-    tildevarNames=c()
+    tildeVarNames=c()
     itildeVar <- 1
     
     Dep <- model$getDependencies(targetElements[1], self=FALSE)
@@ -1519,7 +1519,7 @@ sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
         itildeVar <- itildeVar+1 
       }
     }
@@ -1527,8 +1527,8 @@ sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
     # second check that the sampler can be used: N3 < N2. 
     # N3>N2 might be inefficient, but should still run
     N3 <- c()
-    for(i in 1: length(tildevarNames)){
-      N3[i] <- length(model[[tildevarNames[i]]])
+    for(i in 1: length(tildeVarNames)){
+      N3[i] <- length(model[[tildeVarNames[i]]])
     }
     
     if(sum(N3==N3[1]) != length(N3)){
@@ -1572,13 +1572,13 @@ sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
       }
     }
     
-    #if(length(tildevarNames)==1){ # should always be this case
-    #  clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+    #if(length(tildeVarNames)==1){ # should always be this case
+    #  clusterNodes <- model$expandNodeNames(tildeVarNames[1])  # e.g., 'thetatilde[1]',...,
     #  conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
     #  if(length(conjugacy)) { # should always be this case
     #    conjugacy <- conjugacy[[1]]  # it's a one-element list of lists, so simplify it
     #    #conjugate <- TRUE
-    #    marginalizedParam <- conjugacy$target # should be the same as tildevarNames
+    #    marginalizedParam <- conjugacy$target # should be the same as tildeVarNames
     #    
     #    #conjugacytype <- conjugacy$type
     #    ## print(conjugacy) # will show information you can use for conjugate sampler
@@ -1590,7 +1590,7 @@ sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
     #  } else conjugate <- FALSE
     #}
     #cat("Conjugacy detected: ", conjugate)
-    marginalizedParam <- model$expandNodeNames(tildevarNames)[1]
+    marginalizedParam <- model$expandNodeNames(tildeVarNames)[1]
     
     curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
@@ -1650,7 +1650,7 @@ sampler_dCRP_conjugate_ddirch_dmulti <- nimbleFunction(
       index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
       if(index==i){# creates a new component: one that is not used
         model[[target]][i] <<- newind
-        model[[tildevarNames]][newind, ] <<- rdirch(alpha=prioralpha_y_i)
+        model[[tildeVarNames]][newind, ] <<- rdirch(alpha=prioralpha_y_i)
       }else{
         model[[target]][i] <<- model[[target]][index]
       } 
@@ -1953,7 +1953,7 @@ sampler_G2 <- nimbleFunction(
     # getting tilde variables
     targetElements <- model$expandNodeNames(dCRPNode, returnScalarComponents=TRUE)
     #nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
-    tildevarNames=c()
+    tildeVarNames=c()
     itildeVar <- 1
     stochDepOnly <- FALSE
     
@@ -1963,7 +1963,7 @@ sampler_G2 <- nimbleFunction(
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
         itildeVar <- itildeVar+1 
       }
     }
@@ -1978,12 +1978,12 @@ sampler_G2 <- nimbleFunction(
     #    expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(detDepi))
     #    expr <- parse(text = expr)[[1]]
     #    if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-    #      tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+    #      tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
     #      itildeVar <- itildeVar+1 
     #    }
         #if(is.call(detDepExpr) && detDepExpr[[1]]=='['){ # deter. nodes that can depend on xi
         #  if(detDepExpr[[3]] == 'xi[1]'){
-        #    tildevarNames[itildeVar] <- VarNames[which(VarNames==detDepExpr[[2]])]
+        #    tildeVarNames[itildeVar] <- VarNames[which(VarNames==detDepExpr[[2]])]
         #    itildeVar <- itildeVar+1 
         #  }
         #}
@@ -2002,7 +2002,7 @@ sampler_G2 <- nimbleFunction(
     #    expr <- parse(text = paramExprs1[i])[[1]]
     #    if(is.call(expr) && expr[[1]]=='['){ # case where we have random sigma and its reparametrication; can it be >3?
     #      if(expr[[3]] == 'xi[1]'){
-    #        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+    #        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
     #        itildeVar <- itildeVar+1 
     #      }
     #    }
@@ -2011,15 +2011,15 @@ sampler_G2 <- nimbleFunction(
     #    expr <- parse(text = paramExprs2[i])[[1]]
     #    if(is.call(expr) && expr[[1]]=='['){ # case where we have random sigm yand its reparametrication; can it be >3?
     #      if(expr[[3]] == 'xi[1]'){
-    #        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+    #        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
     #        itildeVar <- itildeVar+1 
     #      }
     #    }
     #  }
     #}
-    #tildevarNames <- unique(tildevarNames)
+    #tildeVarNames <- unique(tildeVarNames)
     
-    p <- length(tildevarNames)
+    p <- length(tildeVarNames)
     
     # storaging object:
     mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
@@ -2027,7 +2027,7 @@ sampler_G2 <- nimbleFunction(
     getTildeVarList <- nimbleFunctionList(getTildeVarVirtual)
     #getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
     for(j in 1:p){
-      getTildeVarList[[j]] <- getTildeVar(mvSaved, tildevarNames[j])
+      getTildeVarList[[j]] <- getTildeVar(mvSaved, tildeVarNames[j])
     }
   },
   
@@ -2069,9 +2069,9 @@ sampler_G2 <- nimbleFunction(
       # first sampled value:
       index <- rcat(prob=probs[1:newvalueindex])
       if(index==newvalueindex){# sample from G_0
-        model$simulate(tildevarNames)
+        model$simulate(tildeVarNames)
         for(j in 1:p){ 
-          paramaux[j] <- values(model, tildevarNames)[j]#values(model, tildevarNames)[(j-1)*N+1]  #
+          paramaux[j] <- values(model, tildeVarNames)[j]#values(model, tildeVarNames)[(j-1)*N+1]  #
         }
       }else{# sample one of the existing values
         for(j in 1:p){
@@ -2088,9 +2088,9 @@ sampler_G2 <- nimbleFunction(
       while(Taux <= Trunc-1){
         index <- rcat(prob=probs[1:newvalueindex])
         if(index==newvalueindex){# sample from G_0
-          model$simulate(tildevarNames)
+          model$simulate(tildeVarNames)
           for(j in 1:p){ 
-            paramaux[j] <- values(model, tildevarNames)[j]#values(model, tildevarNames)[(j-1)*N+1]  #
+            paramaux[j] <- values(model, tildeVarNames)[j]#values(model, tildeVarNames)[(j-1)*N+1]  #
           }
         }else{# sample one of the existing values
           for(j in 1:p){
@@ -2118,9 +2118,9 @@ sampler_G2 <- nimbleFunction(
       }
       # complete the vector of probabilities and atoms
       mv['G', iiter][Trunc, 1] <<- 1- sum(mv['G', iiter][1:(Trunc-1), 1])
-      model$simulate(tildevarNames)
+      model$simulate(tildeVarNames)
       for(j in 1:p){ 
-        mv['G', iiter][Trunc, j+1] <<- values(model, tildevarNames)[j]#values(model, tildevarNames)[(j-1)*N+1]  
+        mv['G', iiter][Trunc, j+1] <<- values(model, tildeVarNames)[j]#values(model, tildeVarNames)[(j-1)*N+1]  
       }
     }
   },
