@@ -80,6 +80,7 @@ template<int nDim, class T>
   bool isMapEntire(const NimArr<nDim, T> &v) {
   const int *s = v.strides();
   if(s[0] != 1) {return false;}
+  if(v.getOffset() != 0) {return false;} // This could be relaxed, but we'd have to fix how functions handle this case.
   if(nDim == 1) {return true;}
   const int *d = v.dim();
   int nextStride = 1;

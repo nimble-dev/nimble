@@ -42,6 +42,12 @@ NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &poss
   if(orig.isMap()) {
     //    printf("It is a map\n");
     if(!isMapEntire<nDim, T>(orig)) {
+      // NOTE that a map that has offset != 0 always returns false.
+      // This could be improved.
+      // E.g. mu[1:3, i] could always be handled without copying
+      // currently isMapEntire returns FALSE if i > 0 because then offset != 0
+      // We would need more care with checking when to copy back at end of functions
+      // below.
       //      printf("It is not an entire map\n");
       possibleCopy = orig;
       return(possibleCopy);

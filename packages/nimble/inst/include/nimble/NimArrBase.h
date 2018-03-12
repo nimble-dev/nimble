@@ -113,7 +113,7 @@ class NimArrBase : public NimArrType {
   int NAstrides[4];
   // Everyone has a stride1, and the flat [] operator needs it, so it is here.
   int stride1, offset;
-  int getOffset() { return offset; }
+  int getOffset() const { return offset; }
   bool boolMap;
   bool isMap() const { return boolMap; }
   const int *strides() const { return NAstrides; }
