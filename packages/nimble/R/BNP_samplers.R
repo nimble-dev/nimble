@@ -2234,7 +2234,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
             y <- values(model, dataNodes[i])[1]
             return(dnorm(y, priorMean, sqrt(priorVar + dataVar), log=TRUE))
         },
-        sample = function(i in integer()) {
+        sample = function(i = integer()) {
             dataVar <- model$getParam(dataNodes[i], 'var')
             y <- values(model, dataNodes[i])[1]
             postVar <- 1/(1/dataVar + 1/priorVar)
