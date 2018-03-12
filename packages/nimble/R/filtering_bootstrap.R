@@ -48,10 +48,15 @@ bootFStep <- nimbleFunction(
     }
     isLast <- (iNode == length(nodes))
     ess <- 0
+    resamplerFunctionList <- nimbleFunctionList(resamplerVirtual)
     if(resamplingMethod == 'residual')
-      residResamp <- TRUE
-    else
-      residResamp <- FALSE
+      resamplerFunctionList[[1]] <- residualResampleFunction()
+    if(resamplingMethod == 'multinomial')
+      resamplerFunctionList[[1]] <- multinomialResampleFunction()
+    if(resamplingMethod == 'stratified')
+      resamplerFunctionList[[1]] <- stratifiedResampleFunction()
+    if(resamplingMethod == 'systematic')
+      resamplerFunctionList[[1]] <- systematicResampleFunction()
   },
   run = function(m = integer(), threshNum = double(), prevSamp = logical()) {
     returnType(double(1))
@@ -108,12 +113,7 @@ bootFStep <- nimbleFunction(
     
     # Determine whether to resample by weights or not
     if(ess < threshNum){
-      if(residResamp == TRUE){
-        ids <- residualResampleFunction(wts)
-      }
-      else{
-        rankSample(wts, m, ids, silent)
-      }
+      ids <- resamplerFunctionList[[1]]$run(wts)
       # out[2] is an indicator of whether resampling takes place
       # affects how ll estimate is calculated at next time point.
       out[2] <- 1

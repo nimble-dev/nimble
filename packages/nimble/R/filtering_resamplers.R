@@ -1,4 +1,11 @@
+resamplerVirtual <- nimbleFunctionVirtual(
+  run = function(wts = integer(1)) {
+    returnType(double(1))
+  }
+)
+
 multinomialResampleFunction <- nimbleFunction(
+  setup = function(){},
   run = function(wts = double(1)){
     n <- size(wts)
     idCounts <- rmulti(1, n, wts)
@@ -10,11 +17,13 @@ multinomialResampleFunction <- nimbleFunction(
     }
     returnType(double(1))
     return(ids)
-  }
+  },
+  contains = resamplerVirtual
 )
 
 
 residualResampleFunction <- nimbleFunction(
+  setup = function(){},
   run = function(wts = double(1)){
     n <- length(wts)
     if(n == 1){
@@ -49,10 +58,12 @@ residualResampleFunction <- nimbleFunction(
     }
     returnType(integer(1))
     return(ids)
-  }
+  },
+  contains = resamplerVirtual
 )
 
 stratifiedResampleFunction <- nimbleFunction(
+  setup = function(){},
   run = function(wts = double(1)){
     n <- length(wts)
     if(n == 1){
@@ -74,10 +85,12 @@ stratifiedResampleFunction <- nimbleFunction(
     }
     returnType(integer(1))
     return(ids)
-  }
+  },
+  contains = resamplerVirtual
 )
 
 systematicResampleFunction <- nimbleFunction(
+  setup = function(){},
   run = function(wts = double(1)){
     n <- length(wts)
     if(n == 1){
@@ -100,5 +113,6 @@ systematicResampleFunction <- nimbleFunction(
     }
     returnType(integer(1))
     return(ids)
-  }
+  },
+  contains = resamplerVirtual
 )

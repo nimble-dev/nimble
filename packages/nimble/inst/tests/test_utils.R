@@ -1018,8 +1018,13 @@ test_resampler <- function(samplerNames, wts, reps = 200){
   n = length(wts)
   output <- matrix(0, nrow = n, ncol = length(samplerNames))
   avgCounts <- output
+  samplerFunction <- list(length(samplerNames))
+  for(i in 1:length(samplerNames)){
+    samplerFunction[[i]] <-  do.call(samplerNames[i])
+  }
   for(rep in 1:reps){
     for(i in 1:length(samplerNames)){
+      browser()
       samplerArgsList <- list(wts = wts)
       output[,i] <-     do.call(samplerNames[i], args = samplerArgsList)
     }

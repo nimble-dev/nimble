@@ -234,5 +234,7 @@ test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, 
 
 n <- 100
 wts <- rep(1/n, n)
-samplerTesting(c('systematicResampleFunction', 'stratifiedResampleFunction', 'residualResampleFunction'), wts)
+test_resampler(c('systematicResampleFunction', 'stratifiedResampleFunction',
+                 'residualResampleFunction', 'multinomialResampleFunction'),
+               wts)
 
