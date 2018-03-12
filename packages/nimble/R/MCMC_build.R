@@ -32,13 +32,27 @@
 #' The compiled function will function identically to the uncompiled object, except acting on the compiled model object.
 #'
 #' @section Calculating WAIC:
-#' After the MCMC has been run, calling the \code{calculateWAIC()} method of the MCMC object will return the WAIC for the model, calculated using the posterior samples from the MCMC run.
+#' After the MCMC has been run, calling the \code{calculateWAIC()} method of the
+#' MCMC object will return the WAIC for the model, calculated using the 
+#' posterior samples from the MCMC run.
 #' 
 #' \code{calculateWAIC()} has a single arugment:
 #'
-#' \code{nburnin}: The number of iterations to subtract from the beginning of the posterior samples of the MCMC object for WAIC calculation.  Defaults to 0.
+#' \code{nburnin}: The number of iterations to subtract from the beginning of
+#' the posterior samples of the MCMC object for WAIC calculation.
+#' Defaults to 0.
 #' 
-#' The \code{calculateWAIC} method calculates the WAIC of the model that the MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from Equations 5, 12, and 13 in Gelman (2014).  Note that the set of all parameters monitored by the mcmc object will be treated as \eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014).  All parameters downstream of the monitored parameters that are necessary to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of \eqn{theta}.
+#' The \code{calculateWAIC} method calculates the WAIC of the model that the
+#' MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from
+#' Equations 5, 12, and 13 in Gelman (2014).  Note that the set of all
+#' stochastic nodes monitored by the mcmc object will be treated as \eqn{theta} for
+#' the purposes of e.g. Equation 5 from Gelman (2014).  \eqn{y} from  Equation 5 
+#' will be set to all data nodes downstream of the monitored nodes \eqn{theta}.
+#' All non-data nodes downstream of the monitored nodes that are necessary to calculate
+#' \eqn{p(y|theta)} will be simulated from the posterior samples of \eqn{theta}.  Any 
+#' stochastic nodes that are not included in or downstream from the monitored nodes will have their values
+#' fixed during the WAIC calculation - this means that if only a subset of the top-level parameters in a model
+#' are monitored, the unmonitored parameters will have their values fixed while the WAIC is calculated.
 #'
 #' @examples
 #' \dontrun{
