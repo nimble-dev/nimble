@@ -226,3 +226,11 @@ stick_breaking=nimbleFunction(
 )
 
 
+registerDistributions(list(
+    dCRP = list(
+        BUGSdist = 'dCRP(conc, size)',
+        discrete = TRUE,
+        range = c(1, Inf),
+        types = c('value = double(1)')
+    )
+), verbose = FALSE)
