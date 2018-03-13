@@ -224,7 +224,7 @@ buildBootstrapFilter <- nimbleFunction(
     
     if(is.null(resamplingMethod)) resamplingMethod <- 'systematic'
     if(!(resamplingMethod %in% c('multinomial', 'systematic', 'stratified',
-                                 'residual'))
+                                 'residual')))
        stop('resamplingMethod must be one of: "multinomial", "systematic",
             "stratified", or "residual". ')
     #latent state info
