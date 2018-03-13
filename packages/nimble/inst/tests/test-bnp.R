@@ -21,7 +21,7 @@ Code=nimbleCode(
       thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
       #s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
     }
-    xi[1:N2] ~ dCRP(conc)
+    xi[1:N2] ~ dCRP(conc=conc, size=N2)
     
     for(i in 1:N){
       #theta[i] <- thetatilde[xi[i]]
@@ -30,7 +30,6 @@ Code=nimbleCode(
     conc<-1;a0<-1 ; b0<- 0.5; mu0<-0; tau20<-40; 
   }
 )
-
 
 
 conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
@@ -43,11 +42,40 @@ s20=4; s21=4
 mu01=5; mu11=-5
 Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
 
+
+# no deterministic nodes
+Code=nimbleCode(
+  {
+    for(i in 1:N3){
+      #thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+      s2tilde[i] ~ dgamma(shape=a0, scale=b0) 
+    }
+    xi[1:N2] ~ dCRP(conc=conc, size=N2)
+    
+    for(i in 1:N){
+      #theta[i] <- thetatilde[xi[i]]
+      y[i] ~ dnorm(0 , var=s2tilde[xi[i]])#
+    }
+    conc<-1;a0<-1 ; b0<- 0.5; 
+  }
+)
+
+
+conc<-1; a0<-1; b0<-0.5;
+Consts=list(N=50, N2=50, N3=50)
+set.seed(1)
+aux=sample(1:10, size=Consts$N2, replace=TRUE)
+Inits=list(xi=aux, s2tilde=rgamma(Consts$N3,1,1)) #, s2tilde=rinvgamma(Consts$N3, a0, b0)
+
+s20=4; s21=4
+mu01=5; mu11=-5
+Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
+
 #-- compiling the model:
 model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
 cmodel<-compileNimble(model)
 
-modelConf<-configureMCMC(model, print=FALSE)
+modelConf<-configureMCMC(model, print=TRUE)
 modelConf$printSamplers(c("xi"))
 modelMCMC=buildMCMC(modelConf)
 
@@ -263,7 +291,7 @@ Code=nimbleCode(
       lambdatilde[i] ~ dgamma(1,1) 
       #s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
     }
-    xi[1:N2] ~ dCRP(conc)
+    xi[1:N2] ~ dCRP(conc=conc, size=N2)
     
     for(i in 1:N){
       #theta[i] <- thetatilde[xi[i]]
@@ -276,7 +304,7 @@ Code=nimbleCode(
 
 
 conc<-1
-Consts=list(N=50, N2=60, N3=20)
+Consts=list(N=50, N2=50, N3=50)
 set.seed(1)
 aux=sample(1:10, size=Consts$N2, replace=TRUE)
 Inits=list(xi=aux, lambdatilde=rgamma(Consts$N3,1,1))#list(xi=aux, thetatilde=c(10,-10,rnorm(98, mu0,tau0)),s2tilde=rep(1,100))#
