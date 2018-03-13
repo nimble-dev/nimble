@@ -2204,7 +2204,7 @@ CRP_helper <- nimbleFunctionVirtual(
 
 CRP_nonconjugate <- nimbleFunction(
     contains = CRP_helper,
-    setup = function(model, marginalizedNodes, dataNodes) {
+    setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
     },
     methods = list(
         storeParams = function() {},  ## nothing needed for non-conjugate
@@ -2219,7 +2219,7 @@ CRP_nonconjugate <- nimbleFunction(
 ## written in the conjugacy-specific full samplers
 CRP_conjugate_dnorm_dnorm <- nimbleFunction(
     contains = CRP_helper,
-    setup = function(model, marginalizedNodes, dataNodes) {
+    setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
         ## this makes sure that we create objects to store persistent information used for all 'i'
         priorMean <- nimNumeric(1)
         priorVar <- nimNumeric(1)
@@ -2239,7 +2239,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
             y <- values(model, dataNodes[i])[1]
             postVar <- 1/(1/dataVar + 1/priorVar)
             postMean <- postVar*(y/dataVar + priorMean/priorVar)
-            model[[marginalizedNodes[i]]] <<- rnorm(1, postMean, sqrt(postVar))
+            model[[tildeVarNames]][i] <<- rnorm(1, postMean, sqrt(postVar)) # model[[marginalizedNodes[i]]] <<- rnorm(1, postMean, sqrt(postVar)) can not be accesed  when compiling the MCMC configuration
         }
     ))
         
@@ -2261,7 +2261,7 @@ sampler_CRP <- nimbleFunction(
     targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
     n <- length(targetElements) # N2
     
-    # first check that the sampler can be used: N=n, n=N2
+    # first check that the sampler can be used: N=n, (n=N2)
     N <- length(model$getDependencies(targetElements, dataOnly = TRUE) )
     VarNames <- model$getVarNames()
     data <- model$getDependencies(targetElements[1], dataOnly = TRUE) 
@@ -2278,10 +2278,16 @@ sampler_CRP <- nimbleFunction(
       expr <- parse(text = expr)[[1]]
       ## see Chris' comments in email about reworking this a bit:
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
+        tildeVarNames[itildeVar] <- deparse(expr[[2]])#VarNames[which(VarNames==expr[[2]])] 
         itildeVar <- itildeVar+1 
       }
+      #if(is.call(expr) && expr[[1]] == '[' && all.vars(expr[[3]]) == model$getVarNames(nodes=target)){
+      #    tildeVarNames[itildeVar] <- deparse(expr[[2]])
+      #    itildeVar <- itildeVar+1 
+      #} all.vars(expr[[3]]) == model$getVarNames(nodes=target): problems when model can be reparametrized
     }
+    tildeVarNames <- unique(tildeVarNames) # avoids repetition in reparametrized models
+    
 
     
     N3 <- c()
@@ -2301,7 +2307,7 @@ sampler_CRP <- nimbleFunction(
     ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
     type <- 'indivCalcs'
     
-      intermNodes <- dataNodes
+    intermNodes <- dataNodes
     intermNodes2 <- dataNodes
     intermNodes3 <- dataNodes
     if(nInterm > 3) {
@@ -2334,6 +2340,7 @@ sampler_CRP <- nimbleFunction(
       
       marginalizedNodes <- model$expandNodeNames(tildeVarNames[1])
       helperFunctions <- nimbleFunctionList(CRP_helper)
+      # helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
 
       ## use conjugacy to determine which helper functions to use
       conjugacyResult <- checkCRPconjugacy(model, target)
@@ -2342,9 +2349,9 @@ sampler_CRP <- nimbleFunction(
       } else 
           sampler <- switch(conjugacyResult,
                             conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
-                            conjugate_dgamma_dpois = 'CRP_conjugate_dgamma_dpois',
+                            #conjugate_dgamma_dpois = 'CRP_conjugate_dgamma_dpois',
                             'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
-      helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dateNodes)
+      helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVarNames, marginalizedNodes, dataNodes)
       
       curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
