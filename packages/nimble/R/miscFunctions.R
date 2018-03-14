@@ -20,7 +20,7 @@ calc_dmnormAltParams <- nimbleFunction(
         if(prec_param == return_prec) {
             ans <- t(cholesky) %*% cholesky
         } else {
-            I <- identityMatrix(dim(cholesky)[1])
+            I <- diag(dim(cholesky)[1])
             ans <- backsolve(cholesky, forwardsolve(t(cholesky), I))
             ## Chris suggests:
             ## tmp <- forwardsolve(L, I)
@@ -68,7 +68,7 @@ calc_dwishAltParams <- nimbleFunction(
         if(scale_param == return_scale) {
             ans <- t(cholesky) %*% cholesky
         } else {
-            I <- identityMatrix(dim(cholesky)[1])
+            I <- diag(dim(cholesky)[1])
             ans <- backsolve(cholesky, forwardsolve(t(cholesky), I))
             ## Chris suggests:
             ## tmp <- forwardsolve(L, I)
