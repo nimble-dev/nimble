@@ -2957,10 +2957,5 @@ modelDefClass$methods(checkForSelfParents = function(){
                    paste(maps$graphID_2_nodeName[problemNodes], collapse = ", ")),
              call. = FALSE)
     }
-  ##   for(i in seq_along(maps$edgesFrom)){
-  ##   if(maps$edgesFrom[i] == maps$edgesTo[i]){
-  ##     stop(paste("In building model, node", maps$graphID_2_nodeName[maps$edgesFrom[i]], "is its own parent node."), call. = FALSE)
-  ##   }
-  ## }
 })
 
