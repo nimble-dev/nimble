@@ -2345,11 +2345,12 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
   ))
 
 
+## Chris please check the following 2 comments
 CRP_conjugate_ddirch_dmulti <- nimbleFunction(
   contains = CRP_helper,
   setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
-    ## Chris: check that this is the best way to get the dimension of the Dirichelt distribution's parameter
+    ## comment 1: check that this is the best way to get the dimension of the Dirichelt distribution's parameter
     d <- length(model[[marginalizedNodes[1]]])
     prioralpha <- nimNumeric(d)
   },
@@ -2365,7 +2366,8 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
     },
     sample = function(i = integer()) {
       y <- values(model, dataNodes[i])
-      model[[tildeVarNames]][i] <<- rdirch(alpha=prioralpha_y)
+      ## comment 2: check that this is the way to upadte the vector parameter
+      model[[tildeVarNames]][i, ] <<- rdirch(alpha=prioralpha_y)
     }
   ))
 
@@ -2381,7 +2383,7 @@ sampler_CRP <- nimbleFunction(
     
     ## browser()  # uncomment this to be able to step through code in debug mode ('n' for next line of code, 'f' to finish a loop or function, 'c' to continue to the next browser() call)
 
-      ## Claudia - note that I've assumed essentially all the code below (up to the conjugacy checking I inserted) is the same for all of the different conjugate samplers as for the non-conjugate
+    ## Claudia - note that I've assumed essentially all the code below (up to the conjugacy checking I inserted) is the same for all of the different conjugate samplers as for the non-conjugate: yes, it is
       
     calcNodes <- model$getDependencies(target)
     targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
@@ -2403,16 +2405,24 @@ sampler_CRP <- nimbleFunction(
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       ## see Chris' comments in email about reworking this a bit:
-      if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildeVarNames[itildeVar] <- deparse(expr[[2]])#VarNames[which(VarNames==expr[[2]])] 
-        itildeVar <- itildeVar+1 
-      }
+      #if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
+      #  tildeVarNames[itildeVar] <- deparse(expr[[2]])#VarNames[which(VarNames==expr[[2]])] 
+      #  itildeVar <- itildeVar+1 
+      #}
       #if(is.call(expr) && expr[[1]] == '[' && all.vars(expr[[3]]) == model$getVarNames(nodes=target)){
       #    tildeVarNames[itildeVar] <- deparse(expr[[2]])
       #    itildeVar <- itildeVar+1 
-      #} all.vars(expr[[3]]) == model$getVarNames(nodes=target): problems when model can be reparametrized
+      #}# all.vars(expr[[3]]) == model$getVarNames(nodes=target) does not work (logica(0)) when the models is reparametrized
+      #for using the code proposed by Chris:
+      cond1 <- all.vars(expr[[3]]) == model$getVarNames(nodes=target)
+      if( length(cond) > 0  ){
+        if( is.call(expr) && expr[[1]] == '[' ){
+          tildeVarNames[itildeVar] <- deparse(expr[[2]])
+          itildeVar <- itildeVar+1 
+        }
+      }
     }
-    tildeVarNames <- unique(tildeVarNames) # avoids repetition in reparametrized models
+    #tildeVarNames <- unique(tildeVarNames) # avoids repetition in reparametrized models
     
 
     
@@ -2475,7 +2485,11 @@ sampler_CRP <- nimbleFunction(
       } else 
           sampler <- switch(conjugacyResult,
                             conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
-                            #conjugate_dgamma_dpois = 'CRP_conjugate_dgamma_dpois',
+                            conjugate_dgamma_dpois = 'CRP_conjugate_dgamma_dpois',
+                            conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
+                            conjugate_dgamma_dexp = 'CRP_conjugate_dgamma_dexp',
+                            conjugate_dgamma_dgamma = 'CRP_conjugate_dgamma_dgamma',
+                            conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
                             'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
       helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVarNames, marginalizedNodes, dataNodes)
       
@@ -2485,7 +2499,7 @@ sampler_CRP <- nimbleFunction(
   
   run = function() {
       ## Claudia, this assumes all code is the same for conjugate samplers and for nonconjugate except
-      ## the three specific places 'helperFunctions[[1]]' is used
+      ## the three specific places 'helperFunctions[[1]]' is used. yes, it is
       conc <- model$getParam(target, 'conc')
       helperFunctions[[1]]$storeParams()
     #  -- udating xi:
