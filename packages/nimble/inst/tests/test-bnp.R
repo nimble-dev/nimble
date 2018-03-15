@@ -24,8 +24,8 @@ Code=nimbleCode(
     xi[1:N2] ~ dCRP(conc=conc, size=N2)
     
     for(i in 1:N){
-      #theta[i] <- thetatilde[xi[i]]
-      y[i] ~ dnorm(thetatilde[xi[i]] , var=2)#s2tilde[xi[i]]
+      theta[i] <- thetatilde[xi[i]]
+      y[i] ~ dnorm(theta[i], var=2)#s2tilde[xi[i]]
     }
     conc<-1;a0<-1 ; b0<- 0.5; mu0<-0; tau20<-40; 
   }
@@ -42,6 +42,8 @@ s20=4; s21=4
 mu01=5; mu11=-5
 Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
 
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
 
 # no deterministic nodes
 Code=nimbleCode(
@@ -54,7 +56,8 @@ Code=nimbleCode(
     
     for(i in 1:N){
       #theta[i] <- thetatilde[xi[i]]
-      y[i] ~ dnorm(0 , var=s2tilde[xi[i]])#
+      s2[i ]<- s2tilde[xi[i]]
+      y[i] ~ dnorm(0 , var=s2[i])#
     }
     conc<-1;a0<-1 ; b0<- 0.5; 
   }
