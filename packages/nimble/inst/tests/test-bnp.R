@@ -326,7 +326,7 @@ Code=nimbleCode(
     for(i in 1:N3){
       p[i,1:3] ~ ddirch(alpha=alpha0[1:3])
     }
-    xi[1:N2] ~ dCRP(conc)
+    xi[1:N2] ~ dCRP(conc, size=N2)
     
     for(i in 1:N){
       y[i,1:3] ~ dmulti(prob=p[xi[i],1:3], size=3)
@@ -594,7 +594,7 @@ Code=nimbleCode(
   {
     p ~ dbeta(1, 1)
     for(i in 1:N){
-      y[i] ~ dbin(5, p) # dbinom(5, p)
+      y[i] ~ dbin( p, 5) # dbinom(5, p)
     }
   }
 )
