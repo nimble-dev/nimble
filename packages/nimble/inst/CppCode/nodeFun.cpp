@@ -187,15 +187,51 @@ void nodeFun::finishADFun(CppAD::ADFun< double > &ADtape,
 
 void nodeFun::runTape(CppAD::ADFun< double > &ADtape,
 		      std::vector< double > &independentVars,
-		      std::vector< double > &dependentVars) {
+		      std::vector< double > &dependentVars,
+		      const NimArr<1, double> &derivOrders,
+		      nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
   // dependentVars = ADtape.Jacobian(independentVars);
   std::cout<<"running tape with input length "<<independentVars.size()<<std::endl;
+
+  // Always calculate value, regardless of valueFlag.
+  // Is this the right behavior?
   dependentVars = ADtape.Forward(0, independentVars);
-  std::vector<double> rev;
-  std::vector<double> w(1);
-  w[0] = 1;
-  rev = ADtape.Reverse(1, w);
-  //can't run reverse before adding that method to the atomic_getExtraInputs
+  std::cout<<"done forward"<<std::endl;
+  ansList->value.setSize(1, false, false);
+  ansList->value[0] = dependentVars[0];
+  
+  bool hessianFlag = false;   // Are second order derivs requested?
+  bool jacobianFlag = false;  // Are first order derivs requested?
+  bool valueFlag = false;     // Is the function value requested?
+
+  for (int i = 0; i < derivOrders.dimSize(0); i++) {
+    if (derivOrders[i] == 0) {
+      valueFlag = true;
+    }
+    if (derivOrders[i] == 1) {
+      jacobianFlag = true;
+    }
+    if (derivOrders[i] == 2) {
+      hessianFlag = true;
+      jacobianFlag = true;  // If second order is asked for, first order must be
+                            // calculated as well (although we could technically
+                            // skip copying this into output)
+    }
+  }
+  if(jacobianFlag) {
+    std::vector<double> rev;
+    std::vector<double> w(1);
+    w[0] = 1;
+    rev = ADtape.Reverse(1, w);
+    int jacSize = rev.size()-1;
+    ansList->jacobian.setSize( 1, jacSize, false, false);
+    std::cout<<"done jac "<<jacSize<<std::endl;
+    std::copy(rev.begin(), rev.begin() + jacSize, ansList->jacobian.getPtr());
+  }
+  if(hessianFlag) {
+    std::cout<<"No Hessians returned yet"<<std::endl;
+  }
+
 }
 
 atomic_extraInputObject*
@@ -271,9 +307,8 @@ bool atomic_extraInputObject::forward(
 				      )
 {
     
-  std::cout<<"Entering atomic_extraInputObject with p = "<<p<<" and q = "<<q<<std::endl;
-  std::cout<<"vx.size() = "<<vx.size()<<" and vy.size() = "<<vy.size()<<std::endl;
-
+  // std::cout<<"Entering atomic_extraInputObject with p = "<<p<<" and q = "<<q<<std::endl;
+  // std::cout<<"vx.size() = "<<vx.size()<<" and vy.size() = "<<vy.size()<<std::endl;
       
   // return flag
   bool ok = q <= 1; // max order currently implemented
@@ -341,7 +376,7 @@ atomic_extraInputObject::reverse(
 				 )
 {
   size_t n = px.size();
-  std::cout<<"in atomic_extraInputObject::reverse"<<std::endl;
+  //std::cout<<"in atomic_extraInputObject::reverse"<<std::endl;
   for(size_t i = 0; i < n; ++i)
     px[i] = 0;
   return true;
@@ -354,10 +389,10 @@ atomic_extraInputObject::for_sparse_jac(
 					ADvector<bool>&         s ,
 					const ADvector<double>&      x )
 {
-  std::cout<<"in for_sparse_jac r.size() = "<<r.size()<<" s.size() = "<<s.size()<<std::endl;
-  for(size_t j = 0; j < r.size(); ++j)
-    std::cout<<r[j]<<" ";
-  std::cout<<std::endl;
+  // std::cout<<"in for_sparse_jac r.size() = "<<r.size()<<" s.size() = "<<s.size()<<std::endl;
+  // for(size_t j = 0; j < r.size(); ++j)
+  //   std::cout<<r[j]<<" ";
+  // std::cout<<std::endl;
   // sparsity for first row of S(x) = f'(x) * R
   for(size_t j = 0; j < s.size(); j++)
     s[ j ] = true;
@@ -372,10 +407,10 @@ atomic_extraInputObject::rev_sparse_jac(
 					ADvector<bool>&         st ,
 					const ADvector<double>&      x )
 { 
-  std::cout<<"in rev_sparse_jac rt.size() = "<<rt.size()<<" st.size() = "<<st.size()<<std::endl;
-  for(size_t j = 0; j < rt.size(); ++j)
-    std::cout<<rt[j]<<" ";
-  std::cout<<std::endl;
+  // std::cout<<"in rev_sparse_jac rt.size() = "<<rt.size()<<" st.size() = "<<st.size()<<std::endl;
+  // for(size_t j = 0; j < rt.size(); ++j)
+  //   std::cout<<rt[j]<<" ";
+  // std::cout<<std::endl;
 
   // sparsity for first row of S(x) = f'(x) * R
   for(size_t j = 0; j < st.size(); j++)
@@ -415,8 +450,8 @@ bool atomic_extraOutputObject::forward(
 				      ADvector<double>&    ty
 				      )
 {
-  std::cout<<"Entering atomic_extraOutputObject with p = "<<p<<" and q = "<<q<<std::endl;
-  std::cout<<"tx.size() = "<<tx.size()<<" and ty.size() = "<<ty.size()<<std::endl;
+  // std::cout<<"Entering atomic_extraOutputObject with p = "<<p<<" and q = "<<q<<std::endl;
+  // std::cout<<"tx.size() = "<<tx.size()<<" and ty.size() = "<<ty.size()<<std::endl;
       
   // return flag
   bool ok = true;
@@ -427,22 +462,22 @@ bool atomic_extraOutputObject::forward(
   }
       
   int length_modelOutput_accessor = NV_->model_modelOutput_accessor.getTotalLength();
-  std::cout << "length_modelOutput_accessor =" << length_modelOutput_accessor << std::endl;
-  if(length_modelOutput_accessor < tx.size()) {
-    std::cout<<"Problem: length_modelOutput_accessor < vx.size()"<<std::endl;
-  }
+  // std::cout << "length_modelOutput_accessor =" << length_modelOutput_accessor << std::endl;
+  // if(length_modelOutput_accessor < tx.size()) {
+  //   std::cout<<"Problem: length_modelOutput_accessor < vx.size()"<<std::endl;
+  // }
   
   // 0th-order
   if( p <= 0 ) {
     // Put values in model.
-    std::cout<<"copying modelOutputs to model"<<std::endl;
+    //    std::cout<<"copying modelOutputs to model"<<std::endl;
     NimArr<1, double> NimArr_tx;
     NimArr_tx.setSize(length_modelOutput_accessor);
     for(unsigned int i = 0; i < length_modelOutput_accessor; ++i) {
       NimArr_tx[i] = tx[i*(q+1) + 0];
-      std::cout<<NimArr_tx[i]<<" ";
+      // std::cout<<NimArr_tx[i]<<" ";
     }
-    std::cout<<std::endl;
+    // std::cout<<std::endl;
     setValues(NimArr_tx, NV_->model_modelOutput_accessor);
   }
 
@@ -464,7 +499,7 @@ atomic_extraOutputObject::reverse(
 				 )
 {
   size_t n = px.size();
-  std::cout<<"in atomic_extraOutputObject::reverse"<<std::endl;
+  //  std::cout<<"in atomic_extraOutputObject::reverse"<<std::endl;
   for(size_t i = 0; i < n; ++i)
     px[i] = 0;
   return true;

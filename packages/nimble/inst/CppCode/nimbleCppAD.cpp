@@ -73,9 +73,10 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 #ifdef _TIME_AD
   derivs_run_tape_timer.start();
 #endif
-    
-  nodes.runTape_runTape(independentVars, dependentVars);
-
+  
+  nodes.runTape_runTape(independentVars, dependentVars,
+			derivOrders, ansList);
+  std::cout<<"back from running tape"<<std::endl;
 #ifdef _TIME_AD
   derivs_run_tape_timer.stop();
 #endif
@@ -84,9 +85,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   derivs_getDerivs_timer.stop();
 #endif
 
-  ansList->value.setSize(1);
+  //  ansList->value.setSize(1);
   //  ansList->value[0] = nodes.runTape(derivOrders);
-  ansList->value[0] = nodes.runTape_unpackDependent(dependentVars);
+  //  ansList->value[0] = nodes.runTape_unpackDependent(dependentVars);
 
 #ifdef _TIME_AD
   derivs_main_timer.stop();

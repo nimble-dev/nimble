@@ -25,9 +25,26 @@
 #include "smartPtrs.h"
 #include "NamedObjects.h"
 #include <cppad/cppad.hpp>
-class NodeVectorClassNew_derivs;
 
 #define ADvector CppAD::vector
+
+class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
+ public:
+  NimArr<1, double> value;
+  NimArr<2, double> jacobian;
+  NimArr<3, double> hessian;
+  NimArr<4, double> thirdDerivs;
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  void copyFromSEXP(SEXP S_nimList_);
+  SEXP copyToSEXP();
+  void createNewSEXP();
+  void resetFlags();
+  void copyFromRobject(SEXP Robject);
+  NIMBLE_ADCLASS();
+};
+
+class NodeVectorClassNew_derivs;
 
 class atomic_extraInputObject : public CppAD::atomic_base<double> {
   public:
@@ -102,23 +119,6 @@ class atomic_extraOutputObject : public CppAD::atomic_base<double> {
 			const ADvector<bool>&   rt ,
 			ADvector<bool>&         st ,
 			const ADvector<double>&      x );
-};
-
-
-class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
- public:
-  NimArr<1, double> value;
-  NimArr<2, double> jacobian;
-  NimArr<3, double> hessian;
-  NimArr<4, double> thirdDerivs;
-  SEXP RObjectPointer;
-  bool RCopiedFlag;
-  void copyFromSEXP(SEXP S_nimList_);
-  SEXP copyToSEXP();
-  void createNewSEXP();
-  void resetFlags();
-  void copyFromRobject(SEXP Robject);
-  NIMBLE_ADCLASS();
 };
 
 
@@ -206,7 +206,9 @@ class nodeFun : public NamedObjects {
 			   std::vector< CppAD::AD<double> > &dependentVars);
   virtual void runTape(CppAD::ADFun< double > &ADtape,
 		       std::vector< double > &independentVars,
-		       std::vector< double > &dependentVars);
+		       std::vector< double > &dependentVars,
+		       const NimArr<1, double> &derivOrders,
+		       nimSmartPtr<NIMBLE_ADCLASS> &ansList);
   virtual atomic_extraInputObject*
     runExtraInputObject(NodeVectorClassNew_derivs &NV,
 			std::vector< CppAD::AD<double> > &extraInputDummyInput,

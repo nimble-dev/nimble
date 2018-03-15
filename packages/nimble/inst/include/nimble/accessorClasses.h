@@ -832,10 +832,13 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
     // 6. Sift derivatives into return object
   }
   void runTape_runTape(std::vector<double> &independentVars,
-		       std::vector<double> &dependentVars) {
+		       std::vector<double> &dependentVars,
+		       const NimArr<1, double> &derivOrders,
+		       nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
     nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
     //std::cout<<"runTape_runTape"<<std::endl;
-    nodeFunInModelDLL->runTape(ADtape, independentVars, dependentVars); //ADtape.Forward(0, independentVars);
+    nodeFunInModelDLL->runTape(ADtape, independentVars, dependentVars,
+			       derivOrders, ansList); //ADtape.Forward(0, independentVars);
     // std::cout<<"runTape_runTape before reverse "<<q<<std::endl;
     //    cppad_derivOut = ADtape.Reverse(1, w);
     //std::cout<<"done runTape_runTape"<<std::endl;
