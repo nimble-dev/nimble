@@ -175,6 +175,18 @@ makeParamInfo <- function(model, nodes, param) {
     ans
 }
 
+makeParamInfo_delayed <- function(model, nodes, param) {
+    ans <- list(model, substitute(nodes), substitute(param), parent.frame())
+    class(ans) <- c('getParam_info', 'getParam_info_delayed')
+    ans
+}
+
+makeParamInfo_eval <- function(paramInfo_delayed) {
+    nodes <- eval(paramInfo_delayed[[2]], envir = paramInfo_delayed[[4]])
+    param <- eval(paramInfo_delayed[[3]], envir = paramInfo_delayed[[4]])
+    makeParamInfo(paramInfo_delayed[[1]], nodes, param)
+}
+
 defaultParamInfo <- function() {
     ans <- list(paramID = integer(), type = 'double', nDim = 0)
     class(ans) <- 'getParam_info'
