@@ -5,6 +5,7 @@
 #'
 #' @param conf An object of class MCMCconf that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCconf objects.  Alternatively, \code{MCMCconf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.
 #' @param ... Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object
+#' @param enableWAIC Boolean specifying whether to enable WAIC calculations for this model and set of monitored nodes (default = FALSE).
 #'
 #' @details
 #' Calling buildMCMC(conf) will produce an uncompiled (R) R mcmc function object, say 'Rmcmc'.
@@ -42,18 +43,35 @@
 #' the posterior samples of the MCMC object for WAIC calculation.
 #' Defaults to 0.
 #' 
+#' The \code{calculateWAIC} method can only be used if the \code{enableWAIC} 
+#' argument to \code{buildMCMC} is set to \code{TRUE}, or if the NIMBLE option
+#' \code{enableWAIC} is set to \code{TRUE}.  If a user attempts
+#' to call \code{calculateWAIC} without having set \code{enableWAIC = TRUE}
+#' (either in the call to \code{buildMCMC} or as a NIMBLE option),
+#' an error will occur.  
+#' 
 #' The \code{calculateWAIC} method calculates the WAIC of the model that the
 #' MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from
-#' Equations 5, 12, and 13 in Gelman (2014).  Note that the set of all
-#' stochastic nodes monitored by the mcmc object will be treated as \eqn{theta} for
-#' the purposes of e.g. Equation 5 from Gelman (2014).  \eqn{y} from  Equation 5 
-#' will be set to all data nodes downstream of the monitored nodes \eqn{theta}.
-#' All non-data nodes downstream of the monitored nodes that are necessary to calculate
-#' \eqn{p(y|theta)} will be simulated from the posterior samples of \eqn{theta}.  Any 
-#' stochastic nodes that are not included in or downstream from the monitored nodes will have their values
-#' fixed during the WAIC calculation - this means that if only a subset of the top-level parameters in a model
-#' are monitored, the unmonitored parameters will have their values fixed while the WAIC is calculated.
-#'
+#' Equations 5, 12, and 13 in Gelman (2014).  The set of all
+#' stochastic nodes monitored by the MCMC object will be treated as \eqn{theta} 
+#' for the purposes of e.g. Equation 5 from Gelman (2014). 
+#' All non-monitored nodes downstream of the monitored nodes that are necessary
+#' to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of 
+#' \eqn{theta}.  This allows customization of exactly what predictive 
+#' distrtibution \eqn{p(y|theta)} to use for calculations.  For more detail
+#' on the use of different predictive distributions, see Section 2.5 from Gelman
+#' (2014).  
+#' 
+#' Note that there exist sets of monitored parameters that do not lead to valid
+#' WAIC calculations.  Specifically, for a valid WAIC calculation, every 
+#' stochastic node that a data node depends on must be either monitored, or be
+#' downstream from monitored nodes.  An easy way to ensure this is satsified
+#' is to monitor all top-level parameters in a model (NIMBLE's default).  
+#' However, other combinations of monitored nodes are also valid.  
+#' If \code{enableWAIC = TRUE}, NIMBLE checks to see if the set of monitored 
+#' nodes is valid, and returns an error if not.
+#' 
+#' 
 #' @examples
 #' \dontrun{
 #' code <- nimbleCode({
@@ -62,7 +80,7 @@
 #' })
 #' Rmodel <- nimbleModel(code)
 #' conf <- configureMCMC(Rmodel)
-#' Rmcmc <- buildMCMC(conf)
+#' Rmcmc <- buildMCMC(conf, enableWAIC = TRUE)
 #' Cmodel <- compileNimble(Rmodel)
 #' Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
 #' Cmcmc$run(10000)
@@ -78,7 +96,8 @@
 #' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
-    setup = function(conf, ...) {
+    setup = function(conf, ..., enableWAIC = FALSE) {
+      if(identical(nimbleOptions('enableWAIC'), TRUE)) enableWAIC <- TRUE
     	if(inherits(conf, 'modelBaseClass'))
             conf <- configureMCMC(conf, ...)
 
@@ -104,12 +123,27 @@ buildMCMC <- nimbleFunction(
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
         
         ## WAIC setup below:
-        dataNodes <- model$getNodeNames(dataOnly = TRUE)
-        dataNodeLength <- length(dataNodes)
-        sampledNodes <- model$getVarNames(FALSE, monitors)
-        ## Remove any logProb variables from nodes used in WAIC calculation:
-        sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(FALSE)]
-        paramDeps <- model$getDependencies(sampledNodes, self = FALSE)
+        if(enableWAIC){
+          dataNodes <- model$getNodeNames(dataOnly = TRUE)
+          dataNodeLength <- length(dataNodes)
+          if(dataNodeLength == 0)
+            stop(paste0("WAIC cannot be calculated, as no data nodes",
+                        " were detected in the model."))
+          sampledNodes <- model$getVarNames(FALSE, monitors)
+          sampledNodes <- sampledNodes[sampledNodes %in% 
+                                         model$getVarNames(FALSE)]
+          paramDeps <- model$getDependencies(sampledNodes, self = FALSE,
+                                             downstream = TRUE)
+          checkWAICmonitors(model, sampledNodes, dataNodes)
+          browser()
+        }
+        else{
+          dataNodes <- c('')
+          dataNodeLength <- 0
+          sampledNodes <- c('')
+          sampledNodes <- c('')
+          paramDeps <- c('')
+        }
     },
 
     run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
@@ -162,10 +196,20 @@ buildMCMC <- nimbleFunction(
             returnType(double(1))
             return(samplerTimes[1:(length(samplerTimes)-1)])
         },
-        calculateWAIC = function(nburnin = integer(default = 0), burnIn = integer(default = 0)) {
+        calculateWAIC = function(nburnin = integer(default = 0),
+                                 burnIn = integer(default = 0)) {
+            if(!enableWAIC){
+              print('Error, must set enableWAIC = TRUE in buildMCMC.
+                    See help(buildMCMC) for additional information.')
+              return(NaN)
+            }
             if(burnIn != 0) {
-                print("Warning, `burnIn` argument is deprecated and will not be supported in future versions of NIMBLE. Please use the `nburnin` argument instead.")
-                if(nburnin == 0) {  ## if nburnin has not been changed from default, we replace with `burnIn` value here.
+                print("Warning, `burnIn` argument is deprecated and will not be
+                      supported in future versions of NIMBLE. Please use the
+                      `nburnin` argument instead.")
+                ## If nburnin has not been changed from default, 
+                ## we replace with `burnIn` value here.
+                if(nburnin == 0) {  
                     nburnin <- burnIn
                 }
             }
@@ -179,7 +223,8 @@ buildMCMC <- nimbleFunction(
             pWAIC <- 0
             currentVals <- values(model, sampledNodes)
             for(i in 1:numMCMCSamples) {
-                copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburnin)
+                copy(mvSamples, model, nodesTo = sampledNodes,
+                     row = i + nburnin)
                 model$simulate(paramDeps)
                 model$calculate(dataNodes)
                 for(j in 1:dataNodeLength) {
@@ -188,7 +233,8 @@ buildMCMC <- nimbleFunction(
             }
             for(j in 1:dataNodeLength) {
                 maxLogPred <- max(logPredProbs[,j])
-                thisDataLogAvgProb <- maxLogPred + log(mean(exp(logPredProbs[,j] - maxLogPred)))
+                thisDataLogAvgProb <- maxLogPred + 
+                  log(mean(exp(logPredProbs[,j] - maxLogPred)))
                 logAvgProb <- logAvgProb + thisDataLogAvgProb
                 pointLogPredVar <- var(logPredProbs[,j])
                 pWAIC <- pWAIC + pointLogPredVar
@@ -217,3 +263,35 @@ processMonitorNames <- function(model, nodes){
 }
 
 
+checkWAICmonitors <- function(model, monitors, dataNodes){
+  thisNodes <- model$getNodeNames(stochOnly = TRUE, topOnly = TRUE)
+  thisVars <- model$getVarNames(nodes = thisNodes)
+  thisVars <- thisVars[!(thisVars %in% monitors)]
+  while(length(thisVars) > 0){
+    nextNodes <- model$getDependencies(thisVars, stochOnly = TRUE, self = FALSE,
+                                       includeData = TRUE)
+    if(any(nextNodes %in% dataNodes)){
+      badDataNodes <- dataNodes[dataNodes %in% nextNodes]
+      stop(paste0("In order for a valid WAIC calculation, all parameters of",
+                  " data nodes in the model must be montiored, or be", 
+                  " downstream from monitored nodes.", 
+                  " See help(buildMCMC) for more information on valid sets of",
+                  " monitored nodes for WAIC calculations.", "\n",
+                  " Currently, the following data nodes have un-monitored",
+                  " upstream parameters:", "\n ", badDataNodes,
+                  collapse = ', '))
+    }
+    thisVars <- model$getVarNames(nodes = nextNodes)
+    thisVars <- thisVars[!(thisVars %in% monitors)]
+  }
+  message(paste0('Monitored nodes are valid for WAIC.'))
+  simNodes <- model$getDependencies(monitors, self = FALSE,
+                                    downstream = TRUE, includeData = FALSE)
+  if(length(simNodes) > 0){
+    message(paste0('The following non-data stochastic nodes will be simulated",
+                   " for WAIC: ', '\n',
+                   if(length(simNodes) > 1){paste0(simNodes[-length(simNodes)],
+                                                   sep = ", ")},
+                   simNodes[length(simNodes)]))
+  }
+}
