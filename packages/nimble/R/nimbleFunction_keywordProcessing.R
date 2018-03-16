@@ -1047,7 +1047,7 @@ paramInfo_SetupTemplate <- setupCodeTemplateClass(
     makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$node), deparse(argList$param), 'paramInfo', sep='_'))},
     makeOtherNames = function(name,argList) {Rname2CppName(paste0(name,'_ID'))},
     codeTemplate = quote({
-        PARAMINFONAME <- makeParamInfo_delayed(MODEL, NODE, PARAM)
+        PARAMINFONAME <- makeParamInfo(MODEL, NODE, PARAM)
         PARAMIDNAME <- PARAMINFONAME$paramID
        }),
     makeCodeSubList = function(resultName, argList){

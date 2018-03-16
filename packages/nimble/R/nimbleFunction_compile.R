@@ -529,13 +529,9 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
   if(inherits(instances[[1]][[name]], 'getParam_info')) { ## the paramInfo in an instance is allowed to be NULL (see GitHub Issue #327). Hence we search for the first valid case and default to double()
       iInst <- 1
       paramInfo <- instances[[iInst]][[name]]
-      if(inherits(paramInfo, 'getParam_info_delayed'))
-          paramInfo <- makeParamInfo_eval(paramInfo)
       while(is.na(paramInfo$type) & iInst < length(instances)) {
           iInst <- iInst + 1
           paramInfo <- instances[[iInst]][[name]]
-          if(inherits(paramInfo, 'getParam_info_delayed'))
-              paramInfo <- makeParamInfo_eval(paramInfo)
       }
       if(is.na(paramInfo$type)) paramInfo <- defaultParamInfo()
       return(symbolGetParamInfo(name = name, paramInfo = paramInfo))
