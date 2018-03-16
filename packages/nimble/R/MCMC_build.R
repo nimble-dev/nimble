@@ -58,14 +58,14 @@
 #' All non-monitored nodes downstream of the monitored nodes that are necessary
 #' to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of 
 #' \eqn{theta}.  This allows customization of exactly what predictive 
-#' distrtibution \eqn{p(y|theta)} to use for calculations.  For more detail
+#' distribution \eqn{p(y|theta)} to use for calculations.  For more detail
 #' on the use of different predictive distributions, see Section 2.5 from Gelman
 #' (2014).  
 #' 
 #' Note that there exist sets of monitored parameters that do not lead to valid
 #' WAIC calculations.  Specifically, for a valid WAIC calculation, every 
 #' stochastic node that a data node depends on must be either monitored, or be
-#' downstream from monitored nodes.  An easy way to ensure this is satsified
+#' downstream from monitored nodes.  An easy way to ensure this is satisfied
 #' is to monitor all top-level parameters in a model (NIMBLE's default).  
 #' However, other combinations of monitored nodes are also valid.  
 #' If \code{enableWAIC = TRUE}, NIMBLE checks to see if the set of monitored 
@@ -77,8 +77,9 @@
 #' code <- nimbleCode({
 #'     mu ~ dnorm(0, 1)
 #'     x ~ dnorm(mu, 1)
+#'     y ~ dnorm(x, 1)
 #' })
-#' Rmodel <- nimbleModel(code)
+#' Rmodel <- nimbleModel(code, data = list(y = 0))
 #' conf <- configureMCMC(Rmodel)
 #' Rmcmc <- buildMCMC(conf, enableWAIC = TRUE)
 #' Cmodel <- compileNimble(Rmodel)
