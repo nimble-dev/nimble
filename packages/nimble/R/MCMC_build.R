@@ -274,7 +274,7 @@ checkWAICmonitors <- function(model, monitors, dataNodes){
     if(any(nextNodes %in% dataNodes)){
       badDataNodes <- dataNodes[dataNodes %in% nextNodes]
       stop(paste0("In order for a valid WAIC calculation, all parameters of",
-                  " data nodes in the model must be montiored, or be", 
+                  " data nodes in the model must be monitored, or be", 
                   " downstream from monitored nodes.", 
                   " See help(buildMCMC) for more information on valid sets of",
                   " monitored nodes for WAIC calculations.", "\n",
@@ -290,7 +290,7 @@ checkWAICmonitors <- function(model, monitors, dataNodes){
                                     downstream = TRUE, includeData = FALSE)
   if(length(simNodes) > 0){
     message(paste0('The following non-data stochastic nodes will be simulated',
-                   ' for WAIC: ', '\n',
+                   ' for WAIC calculation: ', '\n',
                    paste0(simNodes, collapse = ", ")))
   }
 }
