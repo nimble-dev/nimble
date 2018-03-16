@@ -67,9 +67,10 @@
 #' stochastic node that a data node depends on must be either monitored, or be
 #' downstream from monitored nodes.  An easy way to ensure this is satisfied
 #' is to monitor all top-level parameters in a model (NIMBLE's default).  
-#' However, other combinations of monitored nodes are also valid.  
-#' If \code{enableWAIC = TRUE}, NIMBLE checks to see if the set of monitored 
-#' nodes is valid, and returns an error if not.
+#' Another way to guarantee correctness is to monitor all stochastic nodes
+#' directly upstream from a data node. However, other combinations of monitored
+#' nodes are also valid.  If \code{enableWAIC = TRUE}, NIMBLE checks to see if
+#' the set of monitored nodes is valid, and returns an error if not.
 #' 
 #' 
 #' @examples
@@ -136,7 +137,6 @@ buildMCMC <- nimbleFunction(
           paramDeps <- model$getDependencies(sampledNodes, self = FALSE,
                                              downstream = TRUE)
           checkWAICmonitors(model, sampledNodes, dataNodes)
-          browser()
         }
         else{
           dataNodes <- c('')
@@ -279,8 +279,8 @@ checkWAICmonitors <- function(model, monitors, dataNodes){
                   " See help(buildMCMC) for more information on valid sets of",
                   " monitored nodes for WAIC calculations.", "\n",
                   " Currently, the following data nodes have un-monitored",
-                  " upstream parameters:", "\n ", badDataNodes,
-                  collapse = ', '))
+                  " upstream parameters:", "\n ", paste0(badDataNodes,
+                                                         collapse = ", ")))
     }
     thisVars <- model$getVarNames(nodes = nextNodes)
     thisVars <- thisVars[!(thisVars %in% monitors)]
@@ -289,10 +289,8 @@ checkWAICmonitors <- function(model, monitors, dataNodes){
   simNodes <- model$getDependencies(monitors, self = FALSE,
                                     downstream = TRUE, includeData = FALSE)
   if(length(simNodes) > 0){
-    message(paste0('The following non-data stochastic nodes will be simulated",
-                   " for WAIC: ', '\n',
-                   if(length(simNodes) > 1){paste0(simNodes[-length(simNodes)],
-                                                   sep = ", ")},
-                   simNodes[length(simNodes)]))
+    message(paste0('The following non-data stochastic nodes will be simulated',
+                   ' for WAIC: ', '\n',
+                   paste0(simNodes, collapse = ", ")))
   }
 }
