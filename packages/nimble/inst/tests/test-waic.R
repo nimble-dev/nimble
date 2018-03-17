@@ -70,7 +70,7 @@ test_that("voter model WAIC is accurate", {
   CvoterModel <- compileNimble(voterModel)
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1', 'beta_2',
                                                           'sigma'))
-  votermcmc <- buildMCMC(votermcmcConf)
+  votermcmc <- buildMCMC(votermcmcConf, enableWAIC = TRUE)
   temporarilyAssignInGlobalEnv(votermcmc)
   Cvotermcmc <- compileNimble(votermcmc, project = voterModel)
   Cvotermcmc$run(50000)
@@ -102,7 +102,7 @@ test_that("Radon model WAIC is accurate", {
   temporarilyAssignInGlobalEnv(radonModel)
   CradonModel <- compileNimble(radonModel)
   radonmcmcConf <- configureMCMC(radonModel, monitors = c('beta'))
-  radonmcmc <- buildMCMC(radonmcmcConf)
+  radonmcmc <- buildMCMC(radonmcmcConf, enableWAIC = TRUE)
   temporarilyAssignInGlobalEnv(radonmcmc)
   Cradonmcmc <- compileNimble(radonmcmc, project = radonModel)
   Cradonmcmc$run(10000)

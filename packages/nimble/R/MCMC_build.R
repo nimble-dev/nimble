@@ -123,27 +123,19 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
-        
         ## WAIC setup below:
+        dataNodes <- model$getNodeNames(dataOnly = TRUE)
+        dataNodeLength <- length(dataNodes)
+        sampledNodes <- model$getVarNames(FALSE, monitors)
+        sampledNodes <- sampledNodes[sampledNodes %in% 
+                                       model$getVarNames(FALSE)]
+        paramDeps <- model$getDependencies(sampledNodes, self = FALSE,
+                                           downstream = TRUE)
         if(enableWAIC){
-          dataNodes <- model$getNodeNames(dataOnly = TRUE)
-          dataNodeLength <- length(dataNodes)
           if(dataNodeLength == 0)
             stop(paste0("WAIC cannot be calculated, as no data nodes",
                         " were detected in the model."))
-          sampledNodes <- model$getVarNames(FALSE, monitors)
-          sampledNodes <- sampledNodes[sampledNodes %in% 
-                                         model$getVarNames(FALSE)]
-          paramDeps <- model$getDependencies(sampledNodes, self = FALSE,
-                                             downstream = TRUE)
           checkWAICmonitors(model, sampledNodes, dataNodes)
-        }
-        else{
-          dataNodes <- c('')
-          dataNodeLength <- 0
-          sampledNodes <- c('')
-          sampledNodes <- c('')
-          paramDeps <- c('')
         }
     },
 
@@ -201,7 +193,7 @@ buildMCMC <- nimbleFunction(
                                  burnIn = integer(default = 0)) {
             if(!enableWAIC){
               print('Error, must set enableWAIC = TRUE in buildMCMC.
-                    See help(buildMCMC) for additional information.')
+See help(buildMCMC) for additional information.')
               return(NaN)
             }
             if(burnIn != 0) {
@@ -273,6 +265,9 @@ checkWAICmonitors <- function(model, monitors, dataNodes){
                                        includeData = TRUE)
     if(any(nextNodes %in% dataNodes)){
       badDataNodes <- dataNodes[dataNodes %in% nextNodes]
+      if(length(badDataNodes) > 10){
+        badDataNodes <- c(badDataNodes[1:10], "...")
+      }
       stop(paste0("In order for a valid WAIC calculation, all parameters of",
                   " data nodes in the model must be monitored, or be", 
                   " downstream from monitored nodes.", 
@@ -286,11 +281,11 @@ checkWAICmonitors <- function(model, monitors, dataNodes){
     thisVars <- thisVars[!(thisVars %in% monitors)]
   }
   message(paste0('Monitored nodes are valid for WAIC.'))
-  simNodes <- model$getDependencies(monitors, self = FALSE,
-                                    downstream = TRUE, includeData = FALSE)
-  if(length(simNodes) > 0){
-    message(paste0('The following non-data stochastic nodes will be simulated',
-                   ' for WAIC calculation: ', '\n',
-                   paste0(simNodes, collapse = ", ")))
-  }
+  # simNodes <- model$getDependencies(monitors, self = FALSE,
+  #                                   downstream = TRUE, includeData = FALSE)
+  # if(length(simNodes) > 0){
+  #   message(paste0('The following non-data stochastic nodes will be simulated',
+  #                  ' for WAIC calculation: ', '\n',
+  #                  paste0(simNodes, collapse = ", ")))
+  # }
 }
