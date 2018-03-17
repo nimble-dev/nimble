@@ -98,8 +98,7 @@
 #' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
-    setup = function(conf, ..., enableWAIC = FALSE) {
-      if(identical(nimbleOptions('enableWAIC'), TRUE)) enableWAIC <- TRUE
+    setup = function(conf, enableWAIC = nimbleOptions('enableWAIC'), ...) {
     	if(inherits(conf, 'modelBaseClass'))
             conf <- configureMCMC(conf, ...)
 
