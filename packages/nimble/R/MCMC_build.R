@@ -281,11 +281,4 @@ checkWAICmonitors <- function(model, monitors, dataNodes){
     thisVars <- thisVars[!(thisVars %in% monitors)]
   }
   message(paste0('Monitored nodes are valid for WAIC.'))
-  # simNodes <- model$getDependencies(monitors, self = FALSE,
-  #                                   downstream = TRUE, includeData = FALSE)
-  # if(length(simNodes) > 0){
-  #   message(paste0('The following non-data stochastic nodes will be simulated',
-  #                  ' for WAIC calculation: ', '\n',
-  #                  paste0(simNodes, collapse = ", ")))
-  # }
 }

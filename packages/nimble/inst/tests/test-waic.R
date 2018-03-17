@@ -40,7 +40,7 @@ test_that("school model WAIC is accurate", {
   expect_equal(CschoolSATmcmc$calculateWAIC(), 61.8, tolerance = 2.0)
   schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu', 'itau'))
   expect_message(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE), 
-  "The following non-data stochastic nodes will be simulated for WAIC: \nlifted_d1_over_sqrt_oPitau_cP, schoolmean[1], schoolmean[2], schoolmean[3], schoolmean[4], schoolmean[5], schoolmean[6], schoolmean[7], schoolmean[8]\n",
+  "Monitored nodes are valid for WAIC.",
   all = FALSE, fixed = TRUE)
   schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu'))
   expect_error(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE))
