@@ -6,14 +6,16 @@
 \alias{rCRP}
 \title{The Chinesse Restaurant Process Distribution}
 \usage{
-rCRP(n, conc = 1)
+rCRP(n, conc = 1, size)
 
-dCRP(x, conc = 1, log = 0)
+dCRP(x, conc = 1, size, log = 0)
 }
 \arguments{
-\item{n}{number of observations.}
+\item{n}{number of observations (only n = 1 is handled currently).}
 
 \item{conc}{scalar with concentration parameter.}
+
+\item{size}{integer of length of vector x.}
 
 \item{x}{vector of values.}
 
@@ -40,8 +42,8 @@ where \eqn{x^{new}} is a new integer not in \eqn{x_1, \ldots, x_{i-1}}.
 If \code{conc} is not specified, it assumes the default value of 1.
 }
 \examples{
-x <- rCRP(10, conc = 1)
-dCRP(x, conc = 1)
+x <- rCRP(n=1, conc = 1, size=10)
+dCRP(x, conc = 1, size=10)
 }
 \author{
 Claudia Wehrhahn

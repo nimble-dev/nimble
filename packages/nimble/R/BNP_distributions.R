@@ -5,10 +5,11 @@
 
 # random number generator: rCRP
 #   input:
-#      n: sample size
+#      n:  size of the sample
 #      conc: concentration parameter of the DP (related to sampling a new value)
 #   output:
 #      x: vector of size n
+#      size: 
 #
 #   a new value is sampled with probability conc/(i-1+conc), an existing
 #   value is sampled otherwise.
@@ -30,8 +31,9 @@
 #' @name ChinesseRestaurantProcess 
 #' 
 #' @param x vector of values.
-#' @param n number of observations.
+#' @param n number of observations (only n = 1 is handled currently).
 #' @param conc scalar with concentration parameter.
+#' @param size integer of length of vector x.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Claudia Wehrhahn
 #' @details The chineese restaurant process distribution is a distribution
@@ -56,17 +58,22 @@
 #'  Mathematical Statistics, Hayward, CA, 1996.
 #' 
 #' @examples
-#' x <- rCRP(10, conc = 1)
-#' dCRP(x, conc = 1)
+#' x <- rCRP(n=1, conc = 1, size=10)
+#' dCRP(x, conc = 1, size=10)
 NULL
 
 #' @rdname ChinesseRestaurantProcess
 #' @export
 rCRP=nimbleFunction(
-  run=function(n=integer(0), 
-               conc=double(0, default=1), size = double(0))
+  run=function(n = integer(0), 
+               conc = double(0, default=1),
+               size = integer(0))
   {
     returnType(double(1))
+    
+    if(n>1){
+      print(paste('Warning message: In rCRP(', n, ',', conc, ',', size, ') : rCRP only handles n = 1 at the moment'))
+    }
     
     if( conc <= 0 ){
       concCond1 <- 1
@@ -78,15 +85,15 @@ rCRP=nimbleFunction(
     if(concCond1 == 1){
       return(c(NaN))
     }else{
-      x=numeric(n)# returned vector:
-      x[1]=1
-      if(n>1){
-        for(i in 2:n){
-          if(runif(1)<=conc/(conc+i-1)){# a new value
-            x[i]=max(x[1:(i-1)])+1 
+      x <- numeric(size)# returned vector:
+      x[1] <- 1
+      if(size>1){
+        for(i in 2:size){
+          if( runif(1)<=conc/(conc+i-1) ){# a new value
+            x[i] <- max(x[1:(i-1)])+1 
           }else{# an old value
-            index=rcat(n=1, rep(1, i-1)) 
-            x[i]=x[index]
+            index <- rcat(n=1, rep(1, i-1)) 
+            x[i] <- x[index]
           }
         }
       }
@@ -99,14 +106,14 @@ rCRP=nimbleFunction(
 #' @rdname ChinesseRestaurantProcess
 #' @export
 dCRP=nimbleFunction(
-  run=function(x=double(1), 
-               conc=double(0, default=1),
-               size = double(0),
-               log=integer(0, default=0))
+  run=function(x = double(1), 
+               conc = double(0, default=1),
+               size = integer(0),
+               log = integer(0, default=0))
   {
     returnType(double(0))
-    n=length(x) 
-    tmpden=numeric(n) 
+    n <- length(x) 
+    tmpden <- numeric(n) 
     
     if( conc <= 0 ){
       concCond1 <- 1
@@ -118,7 +125,7 @@ dCRP=nimbleFunction(
     if(concCond1 == 1){
       return(NaN)
     }else{
-      tmpden[1]=1
+      tmpden[1] <- 1
       if(n>1){
         for(i in 2:n){
           #counts=0 # replaces sum(x[i]==x[1:(i-1)]) (works in nimble?)
@@ -127,11 +134,11 @@ dCRP=nimbleFunction(
           #    counts=counts+1
           #  }
           #}
-          counts=sum(x[i]==x[1:(i-1)])
-          if(counts>0){
-            tmpden[i]=1/(i-1+conc)
+          counts <- sum(x[i]==x[1:(i-1)])
+          if( counts>0 ){
+            tmpden[i] <- 1/(i-1+conc)
           }else{
-            tmpden[i]=conc/(i-1+conc)
+            tmpden[i] <- conc/(i-1+conc)
           }
         }
       }
