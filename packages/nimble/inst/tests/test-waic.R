@@ -44,6 +44,17 @@ test_that("school model WAIC is accurate", {
   all = FALSE, fixed = TRUE)
   schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu'))
   expect_error(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE))
+  ## different set of monitors than above, so different waic value expected
+  expect_equal(nimbleMCMC(model = schoolSATmodel, WAIC = TRUE)$WAIC, 67, 
+               tolerance = 8) 
+  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
+  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE)
+  CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel, 
+                                  resetFunctions = TRUE)
+  expect_equal(runMCMC(CschoolSATmcmc, WAIC = TRUE)$WAIC, 61.8, 
+               tolerance = 2) 
+  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = FALSE)
+  expect_error(runMCMC(schoolSATmcmc, WAIC = TRUE))
 })
 
 test_that("voter model WAIC is accurate", {

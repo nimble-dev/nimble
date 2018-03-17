@@ -27,7 +27,7 @@
 #' 
 #' @param summary Logical argument.  When \code{TRUE}, summary statistics for the posterior samples of each parameter are also returned, for each MCMC chain.  This may be returned in addition to the posterior samples themselves.  Default value is \code{FALSE}.  See details.
 #'
-#' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.
+#' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.
 #'
 #' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
 #'
@@ -94,6 +94,7 @@ runMCMC <- function(mcmc,
         if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
         if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
     }
+    if(WAIC == TRUE && mcmc$enableWAIC == FALSE) stop('mcmc argument must have been created with "enableWAIC = TRUE" in order to calculate WAIC.')
     model <- if(is.Cnf(mcmc)) mcmc$Robject$model$CobjectInterface else mcmc$model
     if(!is.model(model)) stop('something went wrong')
     samplesList <- vector('list', nchains)
@@ -262,7 +263,7 @@ nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
         if(!is.Rmodel(Rmodel)) stop('something went wrong')
     }
     conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin)
-    Rmcmc <- buildMCMC(conf)
+    Rmcmc <- buildMCMC(conf, enableWAIC = WAIC)
     compiledList <- compileNimble(Rmodel, Rmcmc)    ## only one compileNimble() call
     Cmcmc <- compiledList$Rmcmc
     nburnin <- ceiling(nburnin/thin)    ## accounts for thinning *first*, then dropping burnin
