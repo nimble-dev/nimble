@@ -533,7 +533,7 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
     sample = function(i = integer()) {
       y <- values(model, dataNodes[i])
       ## comment 2: check that this is the way to upadte the vector parameter
-      model[[tildeVarNames]][i, ] <<- rdirch(alpha=prioralpha_y)
+      model[[tildeVarNames]][i, ] <<- rdirch(alpha=prioralpha+y)
     }
   ))
 
