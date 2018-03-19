@@ -584,6 +584,8 @@ Details: If a provided value (or the current value in the model when only a name
                                           varName <- namesData[iData]
                                           varValue <- data[[varName]]
                                           if(is.data.frame(varValue)) {
+                                              if(!all(sapply(varValue, is.numeric)))
+                                                  stop("setData: '", varName, " must be numeric")
                                               varValue <- as.matrix(varValue)
                                               dimnames(varValue) <- NULL
                                           }
