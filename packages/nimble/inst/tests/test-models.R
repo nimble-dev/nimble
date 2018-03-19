@@ -510,6 +510,22 @@ test_that("use of dbin/dbinom and dnegbin/dnbinom are identical", {
                  info = "compiled calculate gives different results for dbin and dbinom")
 })
 
+
+test_that("test of using data frame as 'data' in model:", {
+    code <- nimbleCode({
+        for(i in 1:3) 
+            for(j in 1:2) 
+            y[i,j] ~ dnorm(0, 1)
+    })
+    expect_error(m <- nimbleModel(code, data = list(y = data.frame(a = 1:3, b = c('a','b','c')))), info = "expected error because data frame entry to data is non-numeric")
+    y <- data.frame(a = rnorm(3), b = rnorm(3))
+    m <- nimbleModel(code, data = list(y = y))
+    cm <- compileNimble(m)
+    y <- as.matrix(y); dimnames(y) <- NULL
+    expect_identical(m$y, y, info = "input data frame as data not handled correctly")
+    expect_identical(cm$y, y, info = "input data frame as data not handled correctly")
+})
+
 sink(NULL)
 
 if(!generatingGoldFile) {

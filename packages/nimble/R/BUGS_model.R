@@ -583,6 +583,10 @@ Details: If a provided value (or the current value in the model when only a name
                                       for(iData in seq_along(data)) {
                                           varName <- namesData[iData]
                                           varValue <- data[[varName]]
+                                          if(is.data.frame(varValue)) {
+                                              varValue <- as.matrix(varValue)
+                                              dimnames(varValue) <- NULL
+                                          }
                                           if(!(varName %in% names(isDataVars))) {
                                               ## when data is from modelDef$constantsList,
                                               ## it is possible that the constants don't exist on LHS of BUGS decls
