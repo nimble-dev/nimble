@@ -525,6 +525,7 @@ test_that("test of using data frame as 'data' in model:", {
     y <- as.matrix(y); dimnames(y) <- NULL
     expect_identical(m$y, y, info = "input data frame as data not handled correctly")
     expect_identical(cm$y, y, info = "input data frame as data not handled correctly")
+    expect_error(m$setData(list(y = data.frame(a = 1:3, b = c('a','b','c')))))
 })
 
 sink(NULL)
