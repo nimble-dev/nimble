@@ -655,9 +655,13 @@ NULL
 #' @export
 getDistributionInfo <- function(dist) {
     if(is.na(dist)) return(NA)
-    if(dist %in% distributions$namesVector) return(distributions[[dist]])
-    if(exists('distributions', nimbleUserNamespace) && dist %in% nimbleUserNamespace$distributions$namesVector)
-        return(nimbleUserNamespace$distributions[[dist]])
+    ans <- distributions[[dist]]
+    if(!is.null(ans)) return(ans)
+    ##    if(dist %in% distributions$namesVector) return(distributions[[dist]])
+    ans <- nimbleUserNamespace$distributions[[dist]]
+    if(!is.null(ans)) return(ans)
+    ##if(exists('distributions', nimbleUserNamespace) && dist %in% nimbleUserNamespace$distributions$namesVector)
+    ##    return(nimbleUserNamespace$distributions[[dist]])
     stop(paste0("getDistributionInfo: ", dist, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 

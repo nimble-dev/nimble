@@ -93,7 +93,10 @@ Details: The return value is logical vector with an element for each node indica
 
                                   ## returns the declaration ID corresponding to nodes
                                   getDeclID = function(nodes) {
-                                      graphIDs <- modelDef$nodeName2GraphIDs(nodes, unique = FALSE)
+                                      graphIDs <- if(is.character(nodes))
+                                                      modelDef$nodeName2GraphIDs(nodes, unique = FALSE)
+                                                  else
+                                                      nodes
                                       declIDs <- getMaps('graphID_2_declID')[graphIDs]
                                       return(declIDs)
                                   },
@@ -130,10 +133,10 @@ nodes: A character vector specifying one or more node or variable names.
 
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.
 '
-                                      nodeNames <- expandNodeNames(nodes, unique = FALSE)
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE, returnType = "ids")
                                       out <- sapply(nodeNames, function(x)
 				      	getDeclInfo(x)[[1]]$getDistributionName())
-                                      names(out) <- nodeNames
+                                      names(out) <- modelDef$maps$graphID_2_nodeName[nodeNames]
                                       return(out)
                                   },
 
