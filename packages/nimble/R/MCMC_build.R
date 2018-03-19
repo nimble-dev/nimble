@@ -52,9 +52,9 @@
 #' 
 #' The \code{calculateWAIC} method calculates the WAIC of the model that the
 #' MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from
-#' Equations 5, 12, and 13 in Gelman (2014).  The set of all
-#' stochastic nodes monitored by the MCMC object will be treated as \eqn{theta} 
-#' for the purposes of e.g. Equation 5 from Gelman (2014). 
+#' Equations 5, 12, and 13 in Gelman (2014) (i.e. using \emph{p}WAIC2).  The set
+#' of all stochastic nodes monitored by the MCMC object will be treated as
+#' \eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014). 
 #' All non-monitored nodes downstream of the monitored nodes that are necessary
 #' to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of 
 #' \eqn{theta}.  This allows customization of exactly what predictive 

@@ -581,7 +581,7 @@ Obtaining samples as matrices is most common, but see Section \ref{sec:modelValu
 \section{Calculating WAIC}
 \label{sec:WAIC}
 
-Once an MCMC algorithm has been run, as dscribed in \ref{sec:executing-the-mcmc-algorithm}, the WAIC \citep{Watanabe_2010} can be calculated from the posterior samples produced by the MCMC algorithm.  Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument \cd{enableWAIC = TRUE} must have been supplied to the call to \cd{buildMCMC}, or the \cd{enableWAIC} nimble option must have been set to \cd{TRUE}.
+Once an MCMC algorithm has been run, as described in \ref{sec:executing-the-mcmc-algorithm}, the WAIC \citep{Watanabe_2010} can be calculated from the posterior samples produced by the MCMC algorithm.  Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument \cd{enableWAIC = TRUE} must have been supplied to the call to \cd{buildMCMC}, or the \cd{enableWAIC} NIMBLE option must have been set to \cd{TRUE}.
 
 The WAIC is calculated by calling the member method \cd{mcmc\$calculateWAIC} (see \cd{help(buildMCMC)} in R for more details).  The \cd{calculateWAIC} method has one required argument, \cd{nburnin}, the number of initial samples to discard prior to WAIC calculation.  \cd{nburnin} defaults to 0.
 
