@@ -2878,12 +2878,15 @@ parseEvalNumericMany <- function(x, env) {
     )
 }
 
+
 parseEvalNumericManyList <- function(x, env) {
     withCallingHandlers(
-        if(length(x) > 1) {
-            eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
-        } else 
-            eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
+        eval(.Call(makeParsedVarList, x), envir = env)
+        ## Above line replaces:
+        ## if(length(x) > 1) {
+        ##     eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
+        ## } else 
+        ##     eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
        ,
         error = function(cond) {
             parseEvalNumericManyHandleError(cond, x, env)
