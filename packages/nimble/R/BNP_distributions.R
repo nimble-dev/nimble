@@ -120,7 +120,7 @@ dCRP=nimbleFunction(
             counts <- sum(x[i] == x[1:(i-1)])
             if( counts > 0 ){
                 ## Claudia: shouldn't this be 'counts / (i-1+conc)' ???
-                dens[i] <- 1 / (i-1+conc)
+                dens[i] <- counts / (i-1+conc)
             } else {
                 dens[i] <- conc / (i-1+conc)
             }
