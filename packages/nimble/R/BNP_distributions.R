@@ -180,36 +180,35 @@ stick_breaking <- nimbleFunction(
 
         ## Claudia: should we require z to be length of output? The main issue is that then there needs to be an unused (last) 'z' that is just sampled from its prior... but maybe it's less confusing to have z and the output be the same length?
         
-        N <- length(z)
+        N <- length(z) 
         cond <- sum(z < 0) | sum(z > 1)
         if(cond) {
-            warning("values in 'z' have to be in [0,1)")
+            nimCat("values in 'z' have to be in [0,1)")
             return(rep(NaN, N))
         }
         
-        cond <- sum(z == 1)
-        if(cond > 0){ # el vector de probabilidades es mas chico
-            ## Claudia: I don't understand why we need this block of code; if a 'z' value is 1, then won't the code below (corrrectly) insert zeros for all the remaining elements?
-            ## In particular, I think if we return a shorter vector that will cause errors later in nimble calculations where the model expects a vector of length N.
-            ## If we alter this, then make sure to modify the roxygen regardin the length of N
-            print('length of returned vector is less than length(z)')
-            N <- 1
-            while(z[N] != 1){
-                N <- N + 1
-            }
-        }else{
-            N <- length(z)
-        }
+        #cond <- sum(z == 1)
+        #if(cond > 0){ # el vector de probabilidades es mas chico
+        #    ## Claudia: I don't understand why we need this block of code; if a 'z' value is 1, then won't the code below (corrrectly) insert zeros for all the remaining elements?
+        #    ## In particular, I think if we return a shorter vector that will cause errors later in nimble calculations where the model expects a vector of length N.
+        #    ## If we alter this, then make sure to modify the roxygen regardin the length of N
+        #    print('length of returned vector is less than length(z)')
+        #    N <- 1
+        #    while(z[N] != 1){
+        #        N <- N + 1
+        #    }
+        #}else{
+        #    N <- length(z)
+        #}
         
         x <- nimNumeric(N) 
         remainingLogProb <- 0 
         
         x[1] <- log(z[1]) 
-        for(i in 2:(N-1)) {
+        for(i in 2:N) {
             remainingLogProb <- remainingLogProb + log(1-z[i-1]) 
             x[i] <- log(z[i]) + remainingLogProb 
         }
-        x[N] <- remainingLogProb + log(1-z[N-1]) 
         if(log) return(x)
         else return(exp(x))
     }
