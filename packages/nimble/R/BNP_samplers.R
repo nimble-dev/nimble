@@ -417,7 +417,37 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
             model[[tildeVarNames]][i] <<- rnorm(1, postMean, sqrt(postVar)) # model[[marginalizedNodes[i]]] <<- rnorm(1, postMean, sqrt(postVar)) can not be accesed  when compiling the MCMC configuration
         }
     ))
-        
+ 
+
+#CRP_conjugate_dnorm_dnorm <- nimbleFunction(
+#  contains = CRP_helper,
+#  setup = function(model, marginalizedNodes, dataNodes) {
+#    ## this makes sure that we create objects to store persistent information used for all 'i'
+#    priorMean <- nimNumeric(1)
+#    priorVar <- nimNumeric(1)
+#  },
+#  methods = list(
+#    storeParams = function() {
+#      priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
+#      priorVar <<- model$getParam(marginalizedNodes[1], 'var')
+#    },
+#    calculate_prior_predictive = function(i = integer()) {
+#      returnType(double())
+#      dataVar <- model$getParam(dataNodes[i], 'var')
+#      y <- values(model, dataNodes[i])[1]
+#      return(dnorm(y, priorMean, sqrt(priorVar + dataVar), log=TRUE))
+#    },
+#    sample = function(i = integer()) {
+#      dataVar <- model$getParam(dataNodes[i], 'var')
+#      y <- values(model, dataNodes[i])[1]
+#      postVar <- 1 / (1 / dataVar + 1 / priorVar)
+#      postMean <- postVar * (y / dataVar + priorMean / priorVar)
+#      ## Claudia, tildeVarNames and marginalizedNodes should be the same
+#      ## does this work and if so, I think we should remove 'tildeVarNames' in all of these conjugate cases
+#      model[[marginalizedNodes]][i] <<- rnorm(1, postMean, sqrt(postVar)) # model[[marginalizedNodes[i]]] <<- rnorm(1, postMean, sqrt(postVar)) can not be accesed  when compiling the MCMC configuration
+#    }
+#  ))
+
 
 CRP_conjugate_dgamma_dpois <- nimbleFunction(
   contains = CRP_helper,
@@ -588,7 +618,7 @@ sampler_CRP <- nimbleFunction(
       #}# all.vars(expr[[3]]) == model$getVarNames(nodes=target) does not work (logica(0)) when the models is reparametrized
       #for using the code proposed by Chris:
       cond1 <- all.vars(expr[[3]]) == model$getVarNames(nodes=target)
-      if( length(cond) > 0  ){
+      if( length(cond1) > 0  ){
         if( is.call(expr) && expr[[1]] == '[' ){
           tildeVarNames[itildeVar] <- deparse(expr[[2]])
           itildeVar <- itildeVar+1 
@@ -664,7 +694,7 @@ sampler_CRP <- nimbleFunction(
                             conjugate_dgamma_dgamma = 'CRP_conjugate_dgamma_dgamma',
                             conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
                             'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
-      helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVarNames, marginalizedNodes, dataNodes)
+      helperFunctions[[1]] <- eval(as.name(sampler))(model,tildeVarNames, marginalizedNodes, dataNodes)# 
       
       curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
   },
