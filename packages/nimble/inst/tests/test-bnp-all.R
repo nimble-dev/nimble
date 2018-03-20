@@ -14,19 +14,19 @@ x <- c(1,1,3,1,1,3)
 conc <- 1
 
 truth <- (conc/(conc+1-1))*(1/(conc+2-1))*(conc/(conc+3-1))*
-  (1/(conc+4-1))*(1/(conc+5-1))*(1/(conc+6-1))
+  (2/(conc+4-1))*(3/(conc+5-1))*(1/(conc+6-1))
 
 try(test_that("dCRP nimble function calculates density correctly: ",
-              expect_equal(dCRP(x, conc, log=FALSE),
+              expect_equal(dCRP(x, conc, size=length(x), log=FALSE),
                            truth,
                            info = paste0("incorrect dCRP nimble function calculation"))))
 
 ## test use through log scale
 ltruth <- log((conc/(conc+1-1))*(1/(conc+2-1))*(conc/(conc+3-1))*
-  (1/(conc+4-1))*(1/(conc+5-1))*(1/(conc+6-1)))
+                (2/(conc+4-1))*(3/(conc+5-1))*(1/(conc+6-1)))
 
 try(test_that("dCRP nimble function calculates density correctly in log scale: ",
-              expect_equal(dCRP(x, conc, log=TRUE),
+              expect_equal(dCRP(x, conc, size=length(x), log=TRUE),
                            ltruth,
                            info = paste0("incorrect dCRP nimble function calculation in log scale"))))
 
@@ -35,19 +35,21 @@ try(test_that("dCRP nimble function calculates density correctly in log scale: "
 cdCRP <- compileNimble(dCRP)
 
 try(test_that("Test that dCRP works correctly in compiled nimble function: ",
-              expect_equal(cdCRP(x, conc), (truth), 
+              expect_equal(cdCRP(x, conc, size=length(x)), (truth), 
                            info = paste0("incorrect dCRP value in compiled nimble function"))))
 
 
 ## test use through compile nimble function in log scale
 
 try(test_that("Test that dCRP works correctly in compiled nimble function in log scale: ",
-              expect_equal(cdCRP(x, conc, log=TRUE), (ltruth), 
+              expect_equal(cdCRP(x, conc, size=length(x), log=TRUE), (ltruth), 
                            info = paste0("incorrect dCRP value in compiled nimble function  in log scale"))))
 
-## test use in model
+
+
+## test: use in model
 CRP_code <- nimbleCode({
-  x[1:6] ~ dCRP(conc)
+  x[1:6] ~ dCRP(conc, size=6)
 })
 
 Consts <- list(conc = 1)
@@ -60,11 +62,55 @@ try(test_that("Test that dCRP calculation is correct in model likelihood calcula
               expect_equal(exp(CRP_model$calculate()), (truth),
                            info = paste0("incorrect likelihood value for dCRP"))))
 
+
 c_CRP_model <- compileNimble(CRP_model)
 c_CRP_model$x
 try(test_that("Test that dCRP (compiled) calculation is correct in model likelihood calculation: ",
               expect_equal(exp(c_CRP_model$calculate()), (truth),
-                           info = paste0("incorrect likelihood value for dCRP (compiled)"))))
+                           info = paste0("incorrect likelihood value for compiled dCRP"))))
+
+
+#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------
+
+## test of misspecification of 'conc'
+try(test_that("dCRP nimble function correctly returns NaN for conc parameter < 0: ",
+              expect_equal(dCRP(x, conc=-1, size=length(x), log=FALSE),
+                           NaN,
+                           info = paste0("incorrect parameters space allowed"))))
+
+
+## wrong specification of size: size larger than length xi:
+CRP_code <- nimbleCode({
+  x ~ dnorm(xi[1],1)
+  y ~ dnorm(xi[2],1)
+  xi[1:2] ~ dCRP(1, 4)
+})
+
+
+data <- list(x = 0, y = 0)
+inits <- list(xi=c(1,3))
+CRP_model <- nimbleModel(CRP_code, data=data, inits=inits)
+
+CRP_model$xi
+CRP_model$simulate('xi')
+CRP_model$xi
+
+# length(xi) larger than size
+CRP_code <- nimbleCode({
+  x ~ dnorm(xi[1],1)
+  y ~ dnorm(xi[2],1)
+  xi[1:3] ~ dCRP(1, 2)
+})
+
+
+data <- list(x = 0, y = 0)
+inits <- list(xi=c(1,3,3))
+CRP_model <- nimbleModel(CRP_code, data=data, inits=inits)
+
+CRP_model$xi
+CRP_model$simulate('xi')
+CRP_model$xi
 
 
 ## random sampling
