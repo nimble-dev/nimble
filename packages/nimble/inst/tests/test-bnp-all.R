@@ -113,6 +113,7 @@ CRP_model$simulate('xi')
 CRP_model$xi
 
 
+
 ## random sampling
 set.seed(0)
 n <- 6
