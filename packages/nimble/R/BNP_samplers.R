@@ -313,25 +313,32 @@ sampler_CRP_concentration <- nimbleFunction(
     #if(length(calcNodes)>2){ assign M-H sampler} # two dCRP distributions with same conc, or something like 'conc+conc1', conc1 random or not
     #if(length(detDeps)>0){assign M-H sampler} # conc param is deterministic
     
-    aux <- targetElements==calcNodes
-    xiNodes <- calcNodes[ aux == FALSE ]
+    #aux <- targetElements==calcNodes
+    xiNodes <- model$getDependencies(target, self = FALSE)#calcNodes[ aux == FALSE ]
     xiNodesi <- model$expandNodeNames(xiNodes, returnScalarComponents=TRUE)
     
     N <- length(xiNodesi) # number of observations
-    conc <- model$getParam(xiNodes, 'conc')
-    a <- model$getParam(target, 'shape')
-    b <- model$getParam(target, 'rate')
-    xi <- model[[xiNodes]]
-    k <- length(unique(xi))
-    
-    ak <- a+k
-    ak1 <- ak -1
-    
-    
   },
   
   
   run = function() {
+    a <- model$getParam(target, 'shape')
+    b <- model$getParam(target, 'rate')
+    conc <- model[[target]] # model$getParam(xiNodes, 'conc')  
+    xi <- model[[xiNodes]]
+    
+    k <- 0 #length(unique(xi))
+    kunique <- numeric(N)
+    for(i in 1:N){
+      cond <- xi[i] == kunique
+      if(sum(cond) == 0){ # save xi[i]
+        k <- k+1
+        kunique[k] <- xi[i]
+      }
+    }
+    
+    ak <- a + k
+    ak1 <- ak - 1
     
     # -- generating augmented r.v. and computing the weight.
     x <- rbeta(1, conc+1, N)
