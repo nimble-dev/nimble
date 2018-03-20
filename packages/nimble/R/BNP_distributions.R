@@ -74,8 +74,8 @@ rCRP <- nimbleFunction(
         }
         
         if( conc <= 0 ){
-            nimCat("value of concentration parameter has to be larger than zero")
-        #    return(nimNumeric(size))
+          nimCat("value of concentration parameter has to be larger than zero")
+          return(rep(NaN,size))
         }
 
         x <- nimNumeric(size) 
@@ -107,12 +107,12 @@ dCRP=nimbleFunction(
                log = integer(0, default=0))
   {
     returnType(double(0))
-    n <- size #length(x) 
+    n <- length(x)  #size #
     dens <- nimNumeric(n) 
     
     if( conc <= 0 ){
       nimCat("value of concentration parameter has to be larger than zero")
-    #    return(nimNumeric(size))
+      return(NaN)
     }
     dens[1] <- 1
     if(n > 1){
