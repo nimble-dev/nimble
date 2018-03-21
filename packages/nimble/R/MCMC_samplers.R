@@ -937,7 +937,7 @@ sampler_RW_PF <- nimbleFunction(
                 instead.")
           filterControl$lookahead  <-  control$pfLookahead
         }                    
-        else if(is.null(filterControl$lookahead){
+        else if(is.null(filterControl$lookahead)) {
           filterControl$lookahead  <-  'simulate'
         } 
         
@@ -1113,7 +1113,7 @@ sampler_RW_PF_block <- nimbleFunction(
                 instead.")
           filterControl$lookahead  <-  control$pfLookahead
         }                    
-        else if(is.null(filterControl$lookahead){
+        else if(is.null(filterControl$lookahead)) {
           filterControl$lookahead  <-  'simulate'
         } 
         
