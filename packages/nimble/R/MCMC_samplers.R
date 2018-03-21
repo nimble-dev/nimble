@@ -926,9 +926,21 @@ sampler_RW_PF <- nimbleFunction(
         m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
         resample       <- if(!is.null(control$pfResample))           control$pfResample           else FALSE
         filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
-        lookahead      <- if(!is.null(control$pfLookahead))          control$pfLookahead          else 'simulate'
+        filterControl  <- if(!is.null(control$pfControl))            control$pfControl            else list()
         optimizeM      <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
         latents        <- if(!is.null(control$latents))              control$latents              else stop('RW_PF sampler missing required control argument: latents')
+        
+        if(!is.null(control$pfLookahead)) {
+          print("Warning, the `pfLookahead` control list argument is deprecated
+                and will not be supported in future versions of NIMBLE. Please
+                specify the lookahead function via the pfControl argument 
+                instead.")
+          filterControl$lookahead  <-  control$pfLookahead
+        }                    
+        else if(is.null(filterControl$lookahead){
+          filterControl$lookahead  <-  'simulate'
+        } 
+        
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -953,27 +965,40 @@ sampler_RW_PF <- nimbleFunction(
         gamma1          <- 0
         storeParticleLP <- -Inf
         storeLLVar      <- 0
-        nVarReps        <- 7    # number of LL estimates to compute to get each LL variance estimate for m optimization
-        mBurnIn         <- 15   # number of LL variance estimates to compute before deciding optimal m
+        ## Number of LL estimates to compute to get each LL
+        ## variance estimate for m optimization.
+        nVarReps        <- 7   
+        ## Number of LL variance estimates to compute before deciding optimal m.
+        mBurnIn         <- 15   
         d               <- length(targetAsScalar)
         if(optimizeM) m <- 3000
-        ## nested function and function list definitions
+        ## Nested function and function list definitions.
         my_setAndCalculate <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         if(latentSamp == TRUE) { 
-          saveAllVal <- TRUE
-          smoothingVal <- TRUE
+          filterControl$saveAllVal <- TRUE
+          filterControl$smoothingVal <- TRUE
         } else {
-          saveAllVal <- FALSE
-          smoothingVal <- FALSE
+          filterControl$saveAllVal <- FALSE
+          filterControl$smoothingVal <- FALSE
         }
+        filterControl$initModel <- FALSE
         if(filterType == 'auxiliary') {
-            my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, lookahead = lookahead, initModel = FALSE))
+            my_particleFilter <- buildAuxiliaryFilter(model, latents, 
+                                                      control = filterControl)
         }
         else if(filterType == 'bootstrap') {
-            my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, initModel = FALSE))
+            my_particleFilter <- buildBootstrapFilter(model, latents,
+                                                      control = filterControl)
         }
-        else   stop('filter type must be either bootstrap or auxiliary')
+        else if(is.nfGenerator(filterType)){
+          my_particleFilter <- filterType(model, latents,
+                                          control = filterControl)
+                              
+        }
+        else stop('filter type must be either "bootstrap", "auxiliary", or a
+                  user defined filtering algorithm created by a call to 
+                  nimbleFunction(...).')
         particleMV <- my_particleFilter$mvEWSamples
         ## checks
         if(any(target%in%model$expandNodeNames(latents)))   stop('PMCMC \'target\' argument cannot include latent states')
@@ -1077,9 +1102,21 @@ sampler_RW_PF_block <- nimbleFunction(
         m              <- if(!is.null(control$pfNparticles))         control$pfNparticles         else 1000
         resample       <- if(!is.null(control$pfResample))           control$pfResample           else FALSE
         filterType     <- if(!is.null(control$pfType))               control$pfType               else 'bootstrap'
-        lookahead      <- if(!is.null(control$pfLookahead))          control$pfLookahead          else 'simulate'
+        filterControl  <- if(!is.null(control$pfControl))            control$pfControl            else list()
         optimizeM      <- if(!is.null(control$pfOptimizeNparticles)) control$pfOptimizeNparticles else FALSE
         latents        <- if(!is.null(control$latents))              control$latents              else stop('RW_PF sampler missing required control argument: latents')
+        
+        if(!is.null(control$pfLookahead)) {
+          print("Warning, the `pfLookahead` control list argument is deprecated
+                and will not be supported in future versions of NIMBLE. Please
+                specify the lookahead function via the pfControl argument 
+                instead.")
+          filterControl$lookahead  <-  control$pfLookahead
+        }                    
+        else if(is.null(filterControl$lookahead){
+          filterControl$lookahead  <-  'simulate'
+        } 
+        
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -1116,19 +1153,30 @@ sampler_RW_PF_block <- nimbleFunction(
         my_setAndCalculate <- setAndCalculate(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d)
-        if(latentSamp == TRUE) { saveAllVal <- TRUE
-                                 smoothingVal <- TRUE
-                             } else {
-                                 saveAllVal <- FALSE
-                                 smoothingVal <- FALSE
-                             }
+        if(latentSamp == TRUE) { 
+          filterControl$saveAllVal <- TRUE
+          filterControl$smoothingVal <- TRUE
+        } else {
+          filterControl$saveAllVal <- FALSE
+          filterControl$smoothingVal <- FALSE
+        }
+        filterControl$initModel <- FALSE
         if(filterType == 'auxiliary') {
-            my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, lookahead = lookahead, initModel = FALSE))
+          my_particleFilter <- buildAuxiliaryFilter(model, latents, 
+                                                    control = filterControl)
         }
         else if(filterType == 'bootstrap') {
-            my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, initModel = FALSE))
+          my_particleFilter <- buildBootstrapFilter(model, latents,
+                                                    control = filterControl)
         }
-        else   stop('filter type must be either bootstrap or auxiliary')
+        else if(is.nfGenerator(filterType)){
+          my_particleFilter <- filterType(model, latents,
+                                          control = filterControl)
+          
+        }
+        else stop('filter type must be either "bootstrap", "auxiliary", or a
+                  user defined filtering algorithm created by a call to 
+                  nimbleFunction(...).')
         particleMV <- my_particleFilter$mvEWSamples
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
@@ -1877,7 +1925,9 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section RW_PF sampler:
 #'
-#' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF} sampler uses a Metropolis-Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap or auxiliary particle filter can be used to integrate over latent states.
+#' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF} sampler uses a Metropolis-Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap, auxiliary, or user defined particle filter can be used to integrate over latent states.
+#'
+#' For more information about using a user defined sampler within a PMCMC sampler, see the NIMBLE User Manual.
 #'
 #' The \code{RW_PF} sampler accepts the following control list elements:
 #' \itemize{
@@ -1887,15 +1937,17 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item pfNparticles.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
 #' \item pfType.  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
-#' \item pfLookahead. Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if \code{pfType} is set to \code{"auxiliary"}.
+#' \item pfControl.  A control list that is passed to the particle filter function.  For details on control lists for bootstrap or auxiliary particle filters, see \code{\link{buildBootstrapFilter}} or \code{\link{buildAuxiliaryFilter}} respectively.  Additionally, this can be used to pass custom arguments into a user defined particle filter.
 #' \item pfResample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each MCMC step, or whether to use log likelihood from previous step.
-#' \item pfOptimizeNparticles.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
+#' \item pfOptimizeNparticles.  A logical argument, specifying whether to use an experimental procedure to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
 #' }
 #' 
 #' @section RW_PF_block sampler:
 #'
-#' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF_block} sampler uses a Metropolis-Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap or auxiliary particle filter can be used to integrate over latent states.
+#' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF_block} sampler uses a Metropolis-Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap, auxiliary, or user defined particle filter can be used to integrate over latent states.
 #'
+#' For more information about using a user defined sampler within a PMCMC sampler, see the NIMBLE User Manual.
+#' 
 #' The \code{RW_PF_block} sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
@@ -1905,9 +1957,9 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the \code{'identity'}, in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default is \code{'identity'})
 #' \item pfNparticles.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function.
-#' \item pfResample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
 #' \item pfType.  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
-#' \item pfLookahead. Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if \code{pfType = "auxiliary"}.
+#' \item pfControl.  A control list that is passed to the particle filter function.  For details on control lists for bootstrap or auxiliary particle filters, see \code{\link{buildBootstrapFilter}} or \code{\link{buildAuxiliaryFilter}} respectively.  Additionally, this can be used to pass custom arguments into a user defined particle filter.
+#' \item pfResample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
 #' \item pfOptimizeNparticles.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
 #' }
 #'
