@@ -13,6 +13,9 @@ nimbleOptions(verbose = FALSE)
 
 context('Testing of nimCopy and values')
 
+
+
+
 #############
 ## Here is a model with deterministic and stochastic variables of dimensions 0-4, including a multivariate node
 copyTestModelCode <- nimbleCode({
@@ -96,7 +99,8 @@ copyTestCaseList <- list(
         nfMcode = quote({nf(m, mv, logProb = TRUE)}), ## code for specializing the nf
         testThatLines = quote({            ## code for testing
             for(oneName in m$getVarNames(includeLogProb = TRUE)) {
-                test_that('single', expect_identical(m[[oneName]], mv[[oneName]][[3]] ))
+                test_that('single', expect_identical(m[[oneName]], mv[[oneName]][[3]],
+                                                     info = 'Model2MVall_logProbTRUE'))
             }
         })
     ),
@@ -110,12 +114,13 @@ copyTestCaseList <- list(
         nfMcode = quote({nf(m, mv, logProb = FALSE)}),
         testThatLines = quote({
             for(oneName in m$getVarNames(includeLogProb = FALSE)) {
-                test_that('single', expect_identical(m[[oneName]], mv[[oneName]][[3]] ))
+                test_that('single', expect_identical(m[[oneName]], mv[[oneName]][[3]],
+                                                     info = 'Model2MVall_logProbFALSE'))
             }
             lpNames <- m$getVarNames(includeLogProb = TRUE)
             lpNames <- lpNames[grep('logProb_', lpNames)]
             for(oneName in lpNames) {
-                test_that('single', expect_false(identical(m[[oneName]], mv[[oneName]][[3]] )))
+                test_that('single', expect_false(identical(m[[oneName]], mv[[oneName]][[3]])))
             }
         })
     ),
@@ -131,18 +136,19 @@ copyTestCaseList <- list(
                                        'x3[2:3,2:3,2:3]','d3[2:3,2:3,2:3]', 'x4[2:3,2:3,2:3,2:3]','d4[2:3,2:3,2:3,2:3]',
                                              'v1[2:3]', 'w1[2:3,2:3]'), logProb = FALSE)}),
         testThatLines = quote({
-            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['x1']])[2:3], as.numeric(mv[['x1']][[3]])[2:3] ))
-            test_that('single', expect_identical(as.numeric(m[['d1']])[2:3], as.numeric(mv[['d1']][[3]])[2:3] ))
-            test_that('single', expect_identical(as.numeric(m[['x2']][2:3, 2:3]), as.numeric(mv[['x2']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d2']][2:3, 2:3]), as.numeric(mv[['d2']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['x3']][2:3, 2:3, 2:3]), as.numeric(mv[['x3']][[3]][2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d3']][2:3, 2:3, 2:3]), as.numeric(mv[['d3']][[3]][2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['x4']][[3]][2:3, 2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['d4']][[3]][2:3, 2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['v1']][2:3]), as.numeric(mv[['v1']][[3]][2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['w1']][2:3, 2:3]), as.numeric(mv[['w1']][[3]][2:3, 2:3]) ))
+            info <- 'Model2MVsomeSame_logProbFALSE'
+            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x1']])[2:3], as.numeric(mv[['x1']][[3]])[2:3], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d1']])[2:3], as.numeric(mv[['d1']][[3]])[2:3], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x2']][2:3, 2:3]), as.numeric(mv[['x2']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d2']][2:3, 2:3]), as.numeric(mv[['d2']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x3']][2:3, 2:3, 2:3]), as.numeric(mv[['x3']][[3]][2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d3']][2:3, 2:3, 2:3]), as.numeric(mv[['d3']][[3]][2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['x4']][[3]][2:3, 2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['d4']][[3]][2:3, 2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['v1']][2:3]), as.numeric(mv[['v1']][[3]][2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['w1']][2:3, 2:3]), as.numeric(mv[['w1']][[3]][2:3, 2:3]), info = info ))
         })
        ),
         Model2MVsomeSame_logProbTRUE = list(
@@ -156,25 +162,26 @@ copyTestCaseList <- list(
                                        'x3[2:3,2:3,2:3]','d3[2:3,2:3,2:3]', 'x4[2:3,2:3,2:3,2:3]','d4[2:3,2:3,2:3,2:3]',
                                              'v1[2:3]', 'w1[2:3,2:3]'), logProb = TRUE)}),
         testThatLines = quote({
-            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['x1']])[2:3], as.numeric(mv[['x1']][[3]])[2:3] ))
-            test_that('single', expect_identical(as.numeric(m[['d1']])[2:3], as.numeric(mv[['d1']][[3]])[2:3] ))
-            test_that('single', expect_identical(as.numeric(m[['x2']][2:3, 2:3]), as.numeric(mv[['x2']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d2']][2:3, 2:3]), as.numeric(mv[['d2']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['x3']][2:3, 2:3, 2:3]), as.numeric(mv[['x3']][[3]][2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d3']][2:3, 2:3, 2:3]), as.numeric(mv[['d3']][[3]][2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['x4']][[3]][2:3, 2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['d4']][[3]][2:3, 2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['v1']][2:3]), as.numeric(mv[['v1']][[3]][2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['w1']][2:3, 2:3]), as.numeric(mv[['w1']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x0']]), as.numeric(mv[['logProb_x0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x1']])[2:3], as.numeric(mv[['logProb_x1']][[3]])[2:3] ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x2']][2:3, 2:3]), as.numeric(mv[['logProb_x2']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x3']][2:3, 2:3, 2:3]), as.numeric(mv[['logProb_x3']][[3]][2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['logProb_x4']][[3]][2:3, 2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_v1']][1]), as.numeric(mv[['logProb_v1']][[3]][1]) )) ## Note these last two use the collapsing of logProb vars for multivariate nodes
-            test_that('single', expect_identical(as.numeric(m[['logProb_w1']][2, 2:3]), as.numeric(mv[['logProb_w1']][[3]][2, 2:3]) ))
+            info = 'Model2MVsomeSame_logProbTRUE'
+            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x1']])[2:3], as.numeric(mv[['x1']][[3]])[2:3], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d1']])[2:3], as.numeric(mv[['d1']][[3]])[2:3], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x2']][2:3, 2:3]), as.numeric(mv[['x2']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d2']][2:3, 2:3]), as.numeric(mv[['d2']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x3']][2:3, 2:3, 2:3]), as.numeric(mv[['x3']][[3]][2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d3']][2:3, 2:3, 2:3]), as.numeric(mv[['d3']][[3]][2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['x4']][[3]][2:3, 2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['d4']][[3]][2:3, 2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['v1']][2:3]), as.numeric(mv[['v1']][[3]][2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['w1']][2:3, 2:3]), as.numeric(mv[['w1']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x0']]), as.numeric(mv[['logProb_x0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x1']])[2:3], as.numeric(mv[['logProb_x1']][[3]])[2:3], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x2']][2:3, 2:3]), as.numeric(mv[['logProb_x2']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x3']][2:3, 2:3, 2:3]), as.numeric(mv[['logProb_x3']][[3]][2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['logProb_x4']][[3]][2:3, 2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_v1']][1]), as.numeric(mv[['logProb_v1']][[3]][1]), info = info )) ## Note these last two use the collapsing of logProb vars for multivariate nodes
+            test_that('single', expect_identical(as.numeric(m[['logProb_w1']][2, 2:3]), as.numeric(mv[['logProb_w1']][[3]][2, 2:3]), info = info ))
         })
         ),
 ## Next 2 copy some node blocks, with different nodes and nodesTo
@@ -193,18 +200,19 @@ copyTestCaseList <- list(
                 'v1[3:4]', 'w1[3:4,3:4]'),
             logProb = FALSE)}),
         testThatLines = quote({
-            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['x1']])[1:2], as.numeric(mv[['x1']][[3]])[3:4] ))
-            test_that('single', expect_identical(as.numeric(m[['d1']])[1:2], as.numeric(mv[['d1']][[3]])[3:4] ))
-            test_that('single', expect_identical(as.numeric(m[['x2']][1:2, 1:2]), as.numeric(mv[['x2']][[3]][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['d2']][1:2, 1:2]), as.numeric(mv[['d2']][[3]][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['x3']][1:2, 1:2, 1:2]), as.numeric(mv[['x3']][[3]][3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['d3']][1:2, 1:2, 1:2]), as.numeric(mv[['d3']][[3]][3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['x4']][1:2, 1:2, 1:2, 1:2]), as.numeric(mv[['x4']][[3]][3:4, 3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['d4']][1:2, 1:2, 1:2, 1:2]), as.numeric(mv[['d4']][[3]][3:4, 3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['v1']][1:2]), as.numeric(mv[['v1']][[3]][3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['w1']][1:2, 1:2]), as.numeric(mv[['w1']][[3]][3:4, 3:4]) ))
+            info = 'Model2MVsomeDiff_logProbFALSE'
+            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x1']])[1:2], as.numeric(mv[['x1']][[3]])[3:4], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d1']])[1:2], as.numeric(mv[['d1']][[3]])[3:4], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x2']][1:2, 1:2]), as.numeric(mv[['x2']][[3]][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d2']][1:2, 1:2]), as.numeric(mv[['d2']][[3]][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x3']][1:2, 1:2, 1:2]), as.numeric(mv[['x3']][[3]][3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d3']][1:2, 1:2, 1:2]), as.numeric(mv[['d3']][[3]][3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x4']][1:2, 1:2, 1:2, 1:2]), as.numeric(mv[['x4']][[3]][3:4, 3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d4']][1:2, 1:2, 1:2, 1:2]), as.numeric(mv[['d4']][[3]][3:4, 3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['v1']][1:2]), as.numeric(mv[['v1']][[3]][3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['w1']][1:2, 1:2]), as.numeric(mv[['w1']][[3]][3:4, 3:4]), info = info ))
         })
     ),
     Model2MVsomeDiff_logProbTRUE = list( ## diff = different nodesTo from nodes
@@ -221,25 +229,26 @@ copyTestCaseList <- list(
                 'v1[3:4]', 'w1[3:4,3:4]'),
             logProb = TRUE)}),
         testThatLines = quote({
-            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['x1']])[1:2], as.numeric(mv[['x1']][[3]])[3:4] ))
-            test_that('single', expect_identical(as.numeric(m[['d1']])[1:2], as.numeric(mv[['d1']][[3]])[3:4] ))
-            test_that('single', expect_identical(as.numeric(m[['x2']][1:2, 1:2]), as.numeric(mv[['x2']][[3]][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['d2']][1:2, 1:2]), as.numeric(mv[['d2']][[3]][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['x3']][1:2, 1:2, 1:2]), as.numeric(mv[['x3']][[3]][3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['d3']][1:2, 1:2, 1:2]), as.numeric(mv[['d3']][[3]][3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['x4']][1:2, 1:2, 1:2, 1:2]), as.numeric(mv[['x4']][[3]][3:4, 3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['d4']][1:2, 1:2, 1:2, 1:2]), as.numeric(mv[['d4']][[3]][3:4, 3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['v1']][1:2]), as.numeric(mv[['v1']][[3]][3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['w1']][1:2, 1:2]), as.numeric(mv[['w1']][[3]][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x0']]), as.numeric(mv[['logProb_x0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x1']])[1:2], as.numeric(mv[['logProb_x1']][[3]])[3:4] ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x2']][1:2, 1:2]), as.numeric(mv[['logProb_x2']][[3]][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x3']][1:2, 1:2, 1:2]), as.numeric(mv[['logProb_x3']][[3]][3:4, 3:4, 3:4]) ))
+            info = 'Model2MVsomeDiff_logProbTRUE'
+            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x1']])[1:2], as.numeric(mv[['x1']][[3]])[3:4], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d1']])[1:2], as.numeric(mv[['d1']][[3]])[3:4], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x2']][1:2, 1:2]), as.numeric(mv[['x2']][[3]][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d2']][1:2, 1:2]), as.numeric(mv[['d2']][[3]][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x3']][1:2, 1:2, 1:2]), as.numeric(mv[['x3']][[3]][3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d3']][1:2, 1:2, 1:2]), as.numeric(mv[['d3']][[3]][3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x4']][1:2, 1:2, 1:2, 1:2]), as.numeric(mv[['x4']][[3]][3:4, 3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d4']][1:2, 1:2, 1:2, 1:2]), as.numeric(mv[['d4']][[3]][3:4, 3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['v1']][1:2]), as.numeric(mv[['v1']][[3]][3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['w1']][1:2, 1:2]), as.numeric(mv[['w1']][[3]][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x0']]), as.numeric(mv[['logProb_x0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x1']])[1:2], as.numeric(mv[['logProb_x1']][[3]])[3:4], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x2']][1:2, 1:2]), as.numeric(mv[['logProb_x2']][[3]][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x3']][1:2, 1:2, 1:2]), as.numeric(mv[['logProb_x3']][[3]][3:4, 3:4, 3:4]), info = info ))
             test_that('single', expect_identical(as.numeric(m[['logProb_x4']][1:2, 1:2, 1:2, 1:2]), as.numeric(mv[['logProb_x4']][[3]][3:4, 3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_v1']][1]), as.numeric(mv[['logProb_v1']][[3]][1]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_w1']][2, 1:2]), as.numeric(mv[['logProb_w1']][[3]][2, 3:4]) )) ## curious case, logProbs go in [2, i]
+            test_that('single', expect_identical(as.numeric(m[['logProb_v1']][1]), as.numeric(mv[['logProb_v1']][[3]][1]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_w1']][2, 1:2]), as.numeric(mv[['logProb_w1']][[3]][2, 3:4]), info = info )) ## curious case, logProbs go in [2, i]
         })
     )
 )
@@ -257,7 +266,7 @@ copyTestCaseListMVtoModel <- list(
         nfMcode = quote({nf(mv, m, logProb = TRUE)}),
         testThatLines = quote({
             for(oneName in mv$getVarNames(includeLogProb = TRUE)) {
-                test_that('single', expect_identical(m[[oneName]], mv[[oneName]][[3]] ))
+                test_that('single', expect_identical(m[[oneName]], mv[[oneName]][[3]], info = 'MV2ModelAll_logProbTRUE' ))
             }
         })
     ),
@@ -276,7 +285,7 @@ copyTestCaseListMVtoModel <- list(
             lpNames <- mv$getVarNames(includeLogProb = TRUE)
             lpNames <- lpNames[grep('logProb_', lpNames)]
             for(oneName in lpNames) {
-                test_that('single', expect_false(identical(m[[oneName]], mv[[oneName]][[3]] )))
+                test_that('single', expect_false(identical(m[[oneName]], mv[[oneName]][[3]])))
             }
         })
     ),
@@ -292,18 +301,19 @@ copyTestCaseListMVtoModel <- list(
                                        'x3[2:3,2:3,2:3]','d3[2:3,2:3,2:3]', 'x4[2:3,2:3,2:3,2:3]','d4[2:3,2:3,2:3,2:3]',
                                              'v1[2:3]', 'w1[2:3,2:3]'), logProb = FALSE)}),
         testThatLines = quote({
-            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['x1']])[2:3], as.numeric(mv[['x1']][[3]])[2:3] ))
-            test_that('single', expect_identical(as.numeric(m[['d1']])[2:3], as.numeric(mv[['d1']][[3]])[2:3] ))
-            test_that('single', expect_identical(as.numeric(m[['x2']][2:3, 2:3]), as.numeric(mv[['x2']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d2']][2:3, 2:3]), as.numeric(mv[['d2']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['x3']][2:3, 2:3, 2:3]), as.numeric(mv[['x3']][[3]][2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d3']][2:3, 2:3, 2:3]), as.numeric(mv[['d3']][[3]][2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['x4']][[3]][2:3, 2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['d4']][[3]][2:3, 2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['v1']][2:3]), as.numeric(mv[['v1']][[3]][2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['w1']][2:3, 2:3]), as.numeric(mv[['w1']][[3]][2:3, 2:3]) ))
+            info <- 'MV2ModelSomeSame_logProbFALSE'
+            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x1']])[2:3], as.numeric(mv[['x1']][[3]])[2:3], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d1']])[2:3], as.numeric(mv[['d1']][[3]])[2:3], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x2']][2:3, 2:3]), as.numeric(mv[['x2']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d2']][2:3, 2:3]), as.numeric(mv[['d2']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x3']][2:3, 2:3, 2:3]), as.numeric(mv[['x3']][[3]][2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d3']][2:3, 2:3, 2:3]), as.numeric(mv[['d3']][[3]][2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['x4']][[3]][2:3, 2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['d4']][[3]][2:3, 2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['v1']][2:3]), as.numeric(mv[['v1']][[3]][2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['w1']][2:3, 2:3]), as.numeric(mv[['w1']][[3]][2:3, 2:3]), info = info ))
         })
        ),
     MV2ModelsomeSame_logProbTRUE = list(
@@ -317,25 +327,26 @@ copyTestCaseListMVtoModel <- list(
                                        'x3[2:3,2:3,2:3]','d3[2:3,2:3,2:3]', 'x4[2:3,2:3,2:3,2:3]','d4[2:3,2:3,2:3,2:3]',
                                              'v1[2:3]', 'w1[2:3,2:3]'), logProb = TRUE)}),
         testThatLines = quote({
-            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['x1']])[2:3], as.numeric(mv[['x1']][[3]])[2:3] ))
-            test_that('single', expect_identical(as.numeric(m[['d1']])[2:3], as.numeric(mv[['d1']][[3]])[2:3] ))
-            test_that('single', expect_identical(as.numeric(m[['x2']][2:3, 2:3]), as.numeric(mv[['x2']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d2']][2:3, 2:3]), as.numeric(mv[['d2']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['x3']][2:3, 2:3, 2:3]), as.numeric(mv[['x3']][[3]][2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d3']][2:3, 2:3, 2:3]), as.numeric(mv[['d3']][[3]][2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['x4']][[3]][2:3, 2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['d4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['d4']][[3]][2:3, 2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['v1']][2:3]), as.numeric(mv[['v1']][[3]][2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['w1']][2:3, 2:3]), as.numeric(mv[['w1']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x0']]), as.numeric(mv[['logProb_x0']][[3]]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x1']])[2:3], as.numeric(mv[['logProb_x1']][[3]])[2:3] ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x2']][2:3, 2:3]), as.numeric(mv[['logProb_x2']][[3]][2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x3']][2:3, 2:3, 2:3]), as.numeric(mv[['logProb_x3']][[3]][2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['logProb_x4']][[3]][2:3, 2:3, 2:3, 2:3]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_v1']][1]), as.numeric(mv[['logProb_v1']][[3]][1]) ))
-            test_that('single', expect_identical(as.numeric(m[['logProb_w1']][2, 2:3]), as.numeric(mv[['logProb_w1']][[3]][2, 2:3]) ))
+            info <- 'MV2ModelSomeSame_logProbTRUE'
+            test_that('single', expect_identical(as.numeric(m[['x0']]), as.numeric(mv[['x0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d0']]), as.numeric(mv[['d0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x1']])[2:3], as.numeric(mv[['x1']][[3]])[2:3], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d1']])[2:3], as.numeric(mv[['d1']][[3]])[2:3], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x2']][2:3, 2:3]), as.numeric(mv[['x2']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d2']][2:3, 2:3]), as.numeric(mv[['d2']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x3']][2:3, 2:3, 2:3]), as.numeric(mv[['x3']][[3]][2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d3']][2:3, 2:3, 2:3]), as.numeric(mv[['d3']][[3]][2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['x4']][[3]][2:3, 2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['d4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['d4']][[3]][2:3, 2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['v1']][2:3]), as.numeric(mv[['v1']][[3]][2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['w1']][2:3, 2:3]), as.numeric(mv[['w1']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x0']]), as.numeric(mv[['logProb_x0']][[3]]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x1']])[2:3], as.numeric(mv[['logProb_x1']][[3]])[2:3], info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x2']][2:3, 2:3]), as.numeric(mv[['logProb_x2']][[3]][2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x3']][2:3, 2:3, 2:3]), as.numeric(mv[['logProb_x3']][[3]][2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_x4']][2:3, 2:3, 2:3, 2:3]), as.numeric(mv[['logProb_x4']][[3]][2:3, 2:3, 2:3, 2:3]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_v1']][1]), as.numeric(mv[['logProb_v1']][[3]][1]), info = info ))
+            test_that('single', expect_identical(as.numeric(m[['logProb_w1']][2, 2:3]), as.numeric(mv[['logProb_w1']][[3]][2, 2:3]), info = info ))
         })
     ),
 ## Next 2 are MV2Model with nodes and nodesTo provided
@@ -354,18 +365,19 @@ copyTestCaseListMVtoModel <- list(
                 'v1[3:4]', 'w1[3:4,3:4]'),
             logProb = FALSE)}),
         testThatLines = quote({
-            test_that('single', expect_identical(as.numeric(mv[['x0']][[3]]), as.numeric(m[['x0']]) ))
-            test_that('single', expect_identical(as.numeric(mv[['d0']][[3]]), as.numeric(m[['d0']]) ))
-            test_that('single', expect_identical(as.numeric(mv[['x1']][[3]])[1:2], as.numeric(m[['x1']])[3:4] ))
-            test_that('single', expect_identical(as.numeric(mv[['d1']][[3]])[1:2], as.numeric(m[['d1']])[3:4] ))
-            test_that('single', expect_identical(as.numeric(mv[['x2']][[3]][1:2, 1:2]), as.numeric(m[['x2']][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['d2']][[3]][1:2, 1:2]), as.numeric(m[['d2']][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['x3']][[3]][1:2, 1:2, 1:2]), as.numeric(m[['x3']][3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['d3']][[3]][1:2, 1:2, 1:2]), as.numeric(m[['d3']][3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['x4']][[3]][1:2, 1:2, 1:2, 1:2]), as.numeric(m[['x4']][3:4, 3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['d4']][[3]][1:2, 1:2, 1:2, 1:2]), as.numeric(m[['d4']][3:4, 3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['v1']][[3]][1:2]), as.numeric(m[['v1']][3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['w1']][[3]][1:2, 1:2]), as.numeric(m[['w1']][3:4, 3:4]) ))
+            info <- 'MV2ModelsomeDiff_logProbFALSE'
+            test_that('single', expect_identical(as.numeric(mv[['x0']][[3]]), as.numeric(m[['x0']]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['d0']][[3]]), as.numeric(m[['d0']]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['x1']][[3]])[1:2], as.numeric(m[['x1']])[3:4], info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['d1']][[3]])[1:2], as.numeric(m[['d1']])[3:4], info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['x2']][[3]][1:2, 1:2]), as.numeric(m[['x2']][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['d2']][[3]][1:2, 1:2]), as.numeric(m[['d2']][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['x3']][[3]][1:2, 1:2, 1:2]), as.numeric(m[['x3']][3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['d3']][[3]][1:2, 1:2, 1:2]), as.numeric(m[['d3']][3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['x4']][[3]][1:2, 1:2, 1:2, 1:2]), as.numeric(m[['x4']][3:4, 3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['d4']][[3]][1:2, 1:2, 1:2, 1:2]), as.numeric(m[['d4']][3:4, 3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['v1']][[3]][1:2]), as.numeric(m[['v1']][3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['w1']][[3]][1:2, 1:2]), as.numeric(m[['w1']][3:4, 3:4]), info = info ))
         })
     ),
     MV2ModelSomeDiff_logProbTRUE = list( ## diff = different nodesTo from nodes
@@ -383,25 +395,26 @@ copyTestCaseListMVtoModel <- list(
                 'v1[3:4]', 'w1[3:4,3:4]'),
             logProb = TRUE)}),
         testThatLines = quote({
-            test_that('single', expect_identical(as.numeric(mv[['x0']][[3]]), as.numeric(m[['x0']]) ))
-            test_that('single', expect_identical(as.numeric(mv[['d0']][[3]]), as.numeric(m[['d0']]) ))
-            test_that('single', expect_identical(as.numeric(mv[['x1']][[3]])[1:2], as.numeric(m[['x1']])[3:4] ))
-            test_that('single', expect_identical(as.numeric(mv[['d1']][[3]])[1:2], as.numeric(m[['d1']])[3:4] ))
-            test_that('single', expect_identical(as.numeric(mv[['x2']][[3]][1:2, 1:2]), as.numeric(m[['x2']][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['d2']][[3]][1:2, 1:2]), as.numeric(m[['d2']][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['x3']][[3]][1:2, 1:2, 1:2]), as.numeric(m[['x3']][3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['d3']][[3]][1:2, 1:2, 1:2]), as.numeric(m[['d3']][3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['x4']][[3]][1:2, 1:2, 1:2, 1:2]), as.numeric(m[['x4']][3:4, 3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['d4']][[3]][1:2, 1:2, 1:2, 1:2]), as.numeric(m[['d4']][3:4, 3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['v1']][[3]][1:2]), as.numeric(m[['v1']][3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['w1']][[3]][1:2, 1:2]), as.numeric(m[['w1']][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['logProb_x0']][[3]]), as.numeric(m[['logProb_x0']]) ))
-            test_that('single', expect_identical(as.numeric(mv[['logProb_x1']][[3]])[1:2], as.numeric(m[['logProb_x1']])[3:4] ))
-            test_that('single', expect_identical(as.numeric(mv[['logProb_x2']][[3]][1:2, 1:2]), as.numeric(m[['logProb_x2']][3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['logProb_x3']][[3]][1:2, 1:2, 1:2]), as.numeric(m[['logProb_x3']][3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['logProb_x4']][[3]][1:2, 1:2, 1:2, 1:2]), as.numeric(m[['logProb_x4']][3:4, 3:4, 3:4, 3:4]) ))
-            test_that('single', expect_identical(as.numeric(mv[['logProb_v1']][[3]][1]), as.numeric(m[['logProb_v1']][1]) ))
-            test_that('single', expect_identical(as.numeric(mv[['logProb_w1']][[3]][2, 1:2]), as.numeric(m[['logProb_w1']][2, 3:4]) ))
+            info = 'MV2ModelsomeDiff_logProbTRUE'
+            test_that('single', expect_identical(as.numeric(mv[['x0']][[3]]), as.numeric(m[['x0']]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['d0']][[3]]), as.numeric(m[['d0']]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['x1']][[3]])[1:2], as.numeric(m[['x1']])[3:4], info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['d1']][[3]])[1:2], as.numeric(m[['d1']])[3:4], info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['x2']][[3]][1:2, 1:2]), as.numeric(m[['x2']][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['d2']][[3]][1:2, 1:2]), as.numeric(m[['d2']][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['x3']][[3]][1:2, 1:2, 1:2]), as.numeric(m[['x3']][3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['d3']][[3]][1:2, 1:2, 1:2]), as.numeric(m[['d3']][3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['x4']][[3]][1:2, 1:2, 1:2, 1:2]), as.numeric(m[['x4']][3:4, 3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['d4']][[3]][1:2, 1:2, 1:2, 1:2]), as.numeric(m[['d4']][3:4, 3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['v1']][[3]][1:2]), as.numeric(m[['v1']][3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['w1']][[3]][1:2, 1:2]), as.numeric(m[['w1']][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['logProb_x0']][[3]]), as.numeric(m[['logProb_x0']]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['logProb_x1']][[3]])[1:2], as.numeric(m[['logProb_x1']])[3:4], info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['logProb_x2']][[3]][1:2, 1:2]), as.numeric(m[['logProb_x2']][3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['logProb_x3']][[3]][1:2, 1:2, 1:2]), as.numeric(m[['logProb_x3']][3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['logProb_x4']][[3]][1:2, 1:2, 1:2, 1:2]), as.numeric(m[['logProb_x4']][3:4, 3:4, 3:4, 3:4]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['logProb_v1']][[3]][1]), as.numeric(m[['logProb_v1']][1]), info = info ))
+            test_that('single', expect_identical(as.numeric(mv[['logProb_w1']][[3]][2, 1:2]), as.numeric(m[['logProb_w1']][2, 3:4]), info = info ))
         })
     )
 )
@@ -409,10 +422,12 @@ copyTestCaseListMVtoModel <- list(
 ## This is code that works for all cases to check that the state of compiled and uncompiled models are identical
 compareCompiledToUncompiled_code <- quote({
     for(oneName in m$getVarNames(includeLogProb = TRUE)) {
-        test_that('single', expect_identical(as.numeric(origM[[oneName]]), as.numeric(m[[oneName]]) ))
+        info <- paste("compareCompiledToUncompiled",oneName)
+        test_that('single', expect_identical(as.numeric(origM[[oneName]]), as.numeric(m[[oneName]]), info = info ))
     }
     for(oneName in mv$getVarNames(includeLogProb = TRUE)) {
-        test_that('single', expect_identical(as.numeric(origMV[[oneName]][[3]]), as.numeric(mv[[oneName]][[3]] )))
+        info <- paste("compareCompiledToUncompiled",oneName)
+        test_that('single', expect_identical(as.numeric(origMV[[oneName]][[3]]), as.numeric(mv[[oneName]][[3]], info = info )))
     }
 })
 
@@ -500,7 +515,7 @@ copyTestCaseListValues <- list(
             P <- nfM$run()
             checkP <- numeric()
             for(i in nodes) checkP <- c(checkP, m[[i]])
-            test_that('getValues', expect_identical(P, checkP))
+            test_that('getValues', expect_identical(P, checkP, info = "getValues copyTestCaseListValues"))
         })
     ),
     setValues = list(
@@ -523,7 +538,7 @@ copyTestCaseListValues <- list(
                 modelP <- m[[oneName]]
                 checkP <- P[i + 1:length(modelP)]
                 i <- i + length(modelP)
-                test_that('setValues', expect_identical(as.numeric(modelP), as.numeric(checkP )))
+                test_that('setValues', expect_identical(as.numeric(modelP), as.numeric(checkP ), info = "setValues copyTestCaseListValues"))
             }
         })
         )
@@ -579,7 +594,7 @@ copyTestCaseListValuesIndexed <- list(
         testThatLines = quote({
             for(i in seq_along(nodes)) {
                 P <- nfM$run(i)
-                test_that('getValues', expect_identical(P, as.numeric(m[[nodes[i]]])))
+                test_that('getValues', expect_identical(P, as.numeric(m[[nodes[i]]]), info = "getValues copyTestCaseListValuesIndexed"))
             }
         })
     ),
@@ -598,7 +613,7 @@ copyTestCaseListValuesIndexed <- list(
                 oneName <- nodes[i]
                 P <- rnorm(length(m[[oneName]]))
                 nfM$run(P, i)
-                test_that('setValues', expect_identical(as.numeric(m[[oneName]]), P))
+                test_that('setValues', expect_identical(as.numeric(m[[oneName]]), P, info = "setValues copyTestCaseListValuesIndexed"))
             }
         })
     )
@@ -639,7 +654,7 @@ copyTestCaseListValuesIndexedLoop <- list(
         nfMcode = quote({nf(m, nodes = nodes)}),
         testThatLines = quote({
             P <- nfM$run()
-            test_that('getValues', expect_identical(as.numeric(P), as.numeric(m[['mu']])))
+            test_that('getValues', expect_identical(as.numeric(P), as.numeric(m[['mu']]), info = "getValues copyTestCaseListValuesIndexedLoop"))
         })
     ),
     setValues = list(
@@ -653,7 +668,7 @@ copyTestCaseListValuesIndexedLoop <- list(
         testThatLines = quote({
             P <- rnorm(length(m$expandNodeNames('mu')))
             nfM$run(P)
-            test_that('setValues', expect_identical(as.numeric(P), as.numeric(m[['mu']])))
+            test_that('setValues', expect_identical(as.numeric(P), as.numeric(m[['mu']]), info = "setValues copyTestCaseListValuesIndexedLoop"))
         })
         )
 )

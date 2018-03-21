@@ -196,11 +196,11 @@ getLogProbNodesMV <- nimbleFunction(
 
 
 
-#' Create an Identity matrix
+#' Create an Identity matrix (Deprecated)
 #'
 #' Returns a d-by-d identity matrix (square matrix of 0's, with 1's on the main diagnol).
 #'
-#' This function can be used in NIMBLE run code.
+#' This function can be used in NIMBLE run code.  It is deprecated because now one can use diag(d) instead.
 #'
 #' @param d The size of the identity matrix to return, will return a d-by-d matrix
 #'
