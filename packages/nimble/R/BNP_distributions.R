@@ -65,7 +65,7 @@ NULL
 rCRP <- nimbleFunction(
     run = function(n = integer(0), 
                    conc = double(0, default=1),
-                   size = integer(0))
+                   size = integer(0)) # size is the length of the simulated vector
     {
         returnType(double(1))
         
@@ -110,6 +110,9 @@ dCRP=nimbleFunction(
     n <- length(x)  #size #
     dens <- nimNumeric(n) 
     
+    if(n != size){
+      stop("length of x has to be equal to size")
+    }
     if( conc <= 0 ){
       nimCat("value of concentration parameter has to be larger than zero")
       return(NaN)
