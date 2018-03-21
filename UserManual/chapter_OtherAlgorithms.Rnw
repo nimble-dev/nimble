@@ -158,9 +158,9 @@ aEWSamp <- as.matrix(cLWF$mvEWSamples, "a")
 \subsection{Particle MCMC (PMCMC)}
 \label{sec:particle-mcmc}
 
-In addition to our four particle filters, NIMBLE also has particle MCMC samplers implemented. These sample top-level parameters by using either a bootstrap filter or auxiliary particle filter to obtain estimates of the likelihood of a model(marginalizing over the latent states) for use in a Metropolis-Hastings MCMC step.  The \cd{RW\_PF}  sampler uses a univariate normal proposal distribution, and should be used to sample scalar top-level parameters.  The \cd{RW\_PF\_block} sampler uses a multivariate normal proposal distribution for vectors of top-level parameters.  Each PMCMC sampler also includes an optional algorithm to estimate the optimal number of particles to use in the particle filter at each iteration, based on a trade-off between computational time and efficiency.  The PMCMC samplers can be specified with a call to \cd{addSampler} with \cd{type = "RW\_PF"} or \cd{type = "RW\_PF\_block"}, a syntax similar to the other MCMC samplers listed in Section \ref{sec:samplers-provided}.
+In addition to our four particle filters, NIMBLE also has particle MCMC samplers implemented. These sample top-level parameters by using either a bootstrap filter, and auxiliary particle, or a user defined filter to obtain estimates of the likelihood of a model (marginalizing over the latent states) for use in a Metropolis-Hastings MCMC step.  The \cd{RW\_PF}  sampler uses a univariate normal proposal distribution, and should be used to sample scalar top-level parameters.  The \cd{RW\_PF\_block} sampler uses a multivariate normal proposal distribution for vectors of top-level parameters.  The PMCMC samplers can be specified with a call to \cd{addSampler} with \cd{type = "RW\_PF"} or \cd{type = "RW\_PF\_block"}, a syntax similar to the other MCMC samplers listed in Section \ref{sec:samplers-provided}.
 
-The \cd{RW\_PF} sampler and \cd{RW\_PF\_block} sampler can be customized using the \cd{control} list argument to set the adaptive properties of the sampler and options for the particle filter algorithm to be run.  In addition, setting the \cd{pfOptimizeNparticles} \cd{control} list option to be \cd{TRUE} will allow the sampler to estimate the optimal number of particles for the bootstrap filter.   See \cd{help(samplers)} for details. The MCMC configuration for the \cd{timeModel} in the previous section will serve as an example for the use of our PMCMC sampler.  Here we use the identity matrix as our proposal covariance matrix.
+The \cd{RW\_PF} sampler and \cd{RW\_PF\_block} sampler can be customized using the \cd{control} list argument to set the type adaptive properties of the sampler and options for the particle filter algorithm to be used.  In addition, setting the \cd{pfOptimizeNparticles} \cd{control} list option to be \cd{TRUE} will use an experimental algorithm to estimate the optimal number of particles to use in the particle filter.   See \cd{help(samplers)} for details. The MCMC configuration for the \cd{timeModel} in the previous section will serve as an example for the use of our PMCMC sampler.  Here we use the identity matrix as our proposal covariance matrix.
 
 <<pmcmc_Chunk, results = "hide">>=
 timeConf <- configureMCMC(rTimeModel)   # default MCMC configuration
@@ -171,7 +171,13 @@ timeConf$addSampler(target = c("a", "b", "c", "mu_0"), type = "RW_PF_block",
                                  latents = "x", pfOptimizeNparticles = TRUE))
 @
   
+The  \cd{type = "RW\_PF"} and \cd{type = "RW\_PF\_block"} samplers default to using a bootstrap filter to estimate the likelihood at each MCMC iteration.  However, more efficient results can often be obtained by using a custom filtering algorithm.  To enable use of customized filtering algorithms in NIMBLE's PMCMC, the \cd{pfType} control list argument allows for user specification of the type of particle filter to be used.  The \cd{pfType} argument can be set either to \code{'bootstrap'} (the default), \code{'auxiliary'}, or can be provided with a user created filtering algorithm object.  
 
+Any user defined filtering algorithm that will be provided as the \cd{pfType} control list argument must satsify the following:
+
+\begin{enumerate}
+\item 
+\end{enumerate}
     
 \section{Monte Carlo Expectation Maximization (MCEM)}
 
