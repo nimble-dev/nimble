@@ -50,8 +50,8 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   getModelDef = function() modelDef,
                                   setModelDef = function(value) modelDef <<- value,
                                   getMaps = function(mapName, all = FALSE){
-                                  	if(all == TRUE)		return(modelDef$maps)
-                                  	return(modelDef$maps[[mapName]])
+                                      if(all == TRUE)		return(modelDef$maps)
+                                      return(modelDef$maps[[mapName]])
                                   },
                                   getCode = function() {
                                       '
@@ -59,9 +59,10 @@ Return the code for a model after\n,
 processing if-then-else statements,\n
 expanding macros, and replacing some\n
 keywords (e.g. nimStep for step) to \n
-avoid R ambiguity.'
+avoid R ambiguity.
+'
                                       modelDef$BUGScode
-                                   },
+                                  },
                                   isEndNode = function(nodes){  #Note: it says nodes, but graphIDs are fine too. Actually they are better
                                                                           '
 Determines whether one or more nodes are end nodes (nodes with no stochastic dependences)
@@ -538,50 +539,36 @@ Details: If a provided value (or the current value in the model when only a name
                                           ## but this simplifies the addition without changing exisiting code.
                                            data = list(...)
                                            ## Check if a single list or character vector was provided
-                                           if(length(data)==0) return()
-                                           if(length(data)==1)
-                                               if(is.null(data[[1]])) return()
-                                               if(is.character(data[[1]])) {
-                                                   if(length(data[[1]]) > 1)
+                                           if(length(data) == 0) return()
+                                           if(is.null(names(data))) {  ## if no names, should be either characters or single list
+                                               if(length(data) == 1) {
+                                                   if(is.character(data[[1]])) { # e.g., c('a','b','c')
                                                        data <- as.list(data[[1]])
-                                               } else {
-                                                   if(is.list(data[[1]])) {
-                                                       data <- data[[1]]
+                                                   } else {
+                                                       if(is.list(data[[1]])) {
+                                                           data <- data[[1]]
+                                                       } else stop("setData: single input should be a list or character strings")
                                                    }
-                                               }
-                                           if(length(data)==0) return()
-                                           ## When a variable name was provided, make it the list name and put the model's value for that variable as the list element
+                                               } else if(!all(sapply(data, function(x) is.character(x) && length(x) == 1)))
+                                                   stop("setData: multiple inputs must be named or be individual variable names")
+                                           } ##  otherwise, treat each element of ... as variable
                                            dataNames <- names(data)
                                            if(is.null(dataNames)) dataNames <- rep("", length(data))
                                            for(i in seq_along(data)) {
-                                               if(dataNames[i]=="") {
+                                               if(dataNames[i] == "" && is.character(data[[i]])) {
                                                    dataNames[i] <- data[[i]]
-                                                   data[[i]] <- get(dataNames[i])
+                                                   if(exists(dataNames[i]))
+                                                       data[[i]] <- get(dataNames[i])
                                                }
                                            }
                                            names(data) <- dataNames
-                                           data
 
-
-                                      ##  if(is.character(data)) {
-                                      ##     dataNames <- data
-                                      ##     data <- lapply(data, function(x) get(x))
-                                      ##     names(data) <- dataNames
-                                      ## }
                                       origData <<- data
                                       ## argument is a named list of data values.
                                       ## all nodes specified (except with NA) are set to that value, and have isDataEnv$VAR set to TRUE
-                                      if(length(data) == 0) return()
-                                      if(is.null(names(data)))
-                                          stop('\'data\' argument must by a named list')
 
-                                      ## Get names here because
-                                      ## unnecessary variables may be
-                                      ## stripped out of data in the
-                                      ## for loop.
-                                      namesData <- names(data)
                                       for(iData in seq_along(data)) {
-                                          varName <- namesData[iData]
+                                          varName <- dataNames[iData]
                                           varValue <- data[[varName]]
                                           if(is.data.frame(varValue)) {
                                               if(!all(sapply(varValue, is.numeric)))
@@ -595,6 +582,9 @@ Details: If a provided value (or the current value in the model when only a name
                                               ## and so are not variables in the model.  In that case we don't want to issue the warning.
                                               if(warnAboutMissingNames
                                                  & nimbleOptions("verbose")) {
+                                                  if(varName == '') {
+                                                      warning('unnamed element provided to setData')
+                                                  } else 
                                                       warning('data not used in model: ',
                                                               varName)
                                               }
