@@ -367,7 +367,7 @@ sampler_CRP_concentration <- nimbleFunction(
 ## this virtual base class
 CRP_helper <- nimbleFunctionVirtual(
     methods = list(
-        storeParams = function() {},
+        storeParams = function() { },
         calculate_prior_predictive = function(i = integer()) {
             returnType(double())
         },
@@ -382,7 +382,7 @@ CRP_nonconjugate <- nimbleFunction(
     methods = list(
         storeParams = function() {},  ## nothing needed for non-conjugate
         calculate_prior_predictive = function(i = integer()) {
-          returnType(double())
+            returnType(double())
             return(model$getLogProb(dataNodes[i]))
         },
         sample = function(i = integer()) {} ## nothing needed for non-conjugate
@@ -390,281 +390,266 @@ CRP_nonconjugate <- nimbleFunction(
 )
             
 CRP_conjugate_dnorm_dnorm <- nimbleFunction(
-  contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
-    ## this makes sure that we create objects to store persistent information used for all 'i'
-    priorMean <- nimNumeric(1)
-    priorVar <- nimNumeric(1)
-  },
-  methods = list(
-    storeParams = function() {
-      priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
-      priorVar <<- model$getParam(marginalizedNodes[1], 'var')
+    contains = CRP_helper,
+    setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+        ## this makes sure that we create objects to store persistent information used for all 'i'
+        priorMean <- nimNumeric(1)
+        priorVar <- nimNumeric(1)
     },
-    calculate_prior_predictive = function(i = integer()) {
-      returnType(double())
-      dataVar <- model$getParam(dataNodes[i], 'var')
-      y <- values(model, dataNodes[i])[1]
-      return(dnorm(y, priorMean, sqrt(priorVar + dataVar), log=TRUE))
-    },
-    sample = function(i = integer()) {
-      dataVar <- model$getParam(dataNodes[i], 'var')
-      y <- values(model, dataNodes[i])[1]
-      postVar <- 1 / (1 / dataVar + 1 / priorVar)
-      postMean <- postVar * (y / dataVar + priorMean / priorVar)
-      ## Claudia, tildeVarNames and marginalizedNodes should be the same
-      ## does this work and if so, I think we should remove 'tildeVarNames' in all of these conjugate cases
-      model[[marginalizedVar]][i] <<- rnorm(1, postMean, sqrt(postVar)) # model[[marginalizedNodes[i]]] <<- rnorm(1, postMean, sqrt(postVar)) can not be accesed  when compiling the MCMC configuration
-    }
-  ))
+    methods = list(
+        storeParams = function() {
+            priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
+            priorVar <<- model$getParam(marginalizedNodes[1], 'var')
+        },
+        calculate_prior_predictive = function(i = integer()) {
+            returnType(double())
+            dataVar <- model$getParam(dataNodes[i], 'var')
+            y <- values(model, dataNodes[i])[1]
+            return(dnorm(y, priorMean, sqrt(priorVar + dataVar), log=TRUE))
+        },
+        sample = function(i = integer()) {
+            dataVar <- model$getParam(dataNodes[i], 'var')
+            y <- values(model, dataNodes[i])[1]
+            postVar <- 1 / (1 / dataVar + 1 / priorVar)
+            postMean <- postVar * (y / dataVar + priorMean / priorVar)
+            ## Claudia, tildeVarNames and marginalizedNodes should be the same
+            ## does this work and if so, I think we should remove 'tildeVarNames' in all of these conjugate cases
+            model[[marginalizedVar]][i] <<- rnorm(1, postMean, sqrt(postVar)) # model[[marginalizedNodes[i]]] <<- rnorm(1, postMean, sqrt(postVar)) can not be accesed  when compiling the MCMC configuration
+        }
+    )
+)
 
 ## Claudia: I changed parameter names to be more informative - is this ok and can you do it for all conjugacies?
 ## also added some spacing to the cod
 CRP_conjugate_dgamma_dpois <- nimbleFunction(
-  contains = CRP_helper,
-  setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
-    ## this makes sure that we create objects to store persistent information used for all 'i'
-    priorShape <- nimNumeric(1)
-    priorRate <- nimNumeric(1)
-  },
-  methods = list(
-    storeParams = function() {
-      priorShape <<- model$getParam(marginalizedNodes, 'shape') 
-      priorRate <<- model$getParam(marginalizedNodes, 'rate') 
+    contains = CRP_helper,
+    setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+        ## this makes sure that we create objects to store persistent information used for all 'i'
+        priorShape <- nimNumeric(1)
+        priorRate <- nimNumeric(1)
     },
-    calculate_prior_predictive = function(i = integer()) {
-      returnType(double())
-      y <- values(model, dataNodes[i])[1]
-      return(priorShape * log(priorRate) - (priorShape + y) * log(priorRate + 1) +
+    methods = list(
+        storeParams = function() {
+          priorShape <<- model$getParam(marginalizedNodes, 'shape') 
+          priorRate <<- model$getParam(marginalizedNodes, 'rate') 
+        },
+        calculate_prior_predictive = function(i = integer()) {
+            returnType(double())
+            y <- values(model, dataNodes[i])[1]
+            return(priorShape * log(priorRate) - (priorShape + y) * log(priorRate + 1) +
                lgamma(priorShape + y) - lgamma(priorShape) - lfactorial(y))
-    },
-    sample = function(i = integer()) {
-      y <- values(model, dataNodes[i])[1]
-      model[[tildeVarNames]][i] <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
-    }
-  ))
+        },
+        sample = function(i = integer()) {
+            y <- values(model, dataNodes[i])[1]
+            model[[marginalizedVar]][i] <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
+        }
+    )
+)
 
 
 CRP_conjugate_dbeta_dbern <- nimbleFunction(
-  contains = CRP_helper,
-  setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
-    ## this makes sure that we create objects to store persistent information used for all 'i'
-    priorShape1 <- nimNumeric(1)
-    priorShape2 <- nimNumeric(1)
-  },
-  methods = list(
-    storeParams = function() {
-      priorShape1 <<- model$getParam(marginalizedNodes, 'shape1') 
-      priorShape2 <<- model$getParam(marginalizedNodes, 'shape2')
+    contains = CRP_helper,
+    setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+        ## this makes sure that we create objects to store persistent information used for all 'i'
+        priorShape1 <- nimNumeric(1)
+        priorShape2 <- nimNumeric(1)
     },
-    calculate_prior_predictive = function(i = integer()) {
-      returnType(double())
-      y <- values(model, dataNodes[i])[1]
-      return(lgamma(priorShape1+y) + lgamma(priorShape2+1-y) - lgamma(priorShape1) - lgamma(priorShape2) - log(priorShape1+priorShape2))
-    },
-    sample = function(i = integer()) {
-      y <- values(model, dataNodes[i])[1]
-      model[[tildeVarNames]][i] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
-    }
-  ))
+    methods = list(
+        storeParams = function() {
+            priorShape1 <<- model$getParam(marginalizedNodes, 'shape1') 
+            priorShape2 <<- model$getParam(marginalizedNodes, 'shape2')
+        },
+        calculate_prior_predictive = function(i = integer()) {
+            returnType(double())
+            y <- values(model, dataNodes[i])[1]
+            return(lgamma(priorShape1+y) + lgamma(priorShape2+1-y) - lgamma(priorShape1) - lgamma(priorShape2) - log(priorShape1+priorShape2))
+        },
+        sample = function(i = integer()) {
+            y <- values(model, dataNodes[i])[1]
+            model[[marginalizedVar]][i] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
+        }
+    )
+)
 
 
 CRP_conjugate_dgamma_dexp <- nimbleFunction(
-  contains = CRP_helper,
-  setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
-    ## this makes sure that we create objects to store persistent information used for all 'i'
-    priorShape <- nimNumeric(1)
-    priorRate <- nimNumeric(1)
-  },
-  methods = list(
-    storeParams = function() {
-      priorShape <<- model$getParam(marginalizedNodes, 'shape') 
-      priorRate <<- model$getParam(marginalizedNodes, 'rate') 
+    contains = CRP_helper,
+    setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+        ## this makes sure that we create objects to store persistent information used for all 'i'
+        priorShape <- nimNumeric(1)
+        priorRate <- nimNumeric(1)
     },
-    calculate_prior_predictive = function(i = integer()) {
-      returnType(double())
-      y <- values(model, dataNodes[i])[1]
-      return(log(priorShape) + priorShape*log(priorRate) - (priorShape+1)*log(priorRate+y))
-    },
-    sample = function(i = integer()) {
-      y <- values(model, dataNodes[i])[1]
-      model[[tildeVarNames]][i] <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
-    }
-  ))
+    methods = list(
+        storeParams = function() {
+            priorShape <<- model$getParam(marginalizedNodes, 'shape') 
+            priorRate <<- model$getParam(marginalizedNodes, 'rate') 
+        },
+        calculate_prior_predictive = function(i = integer()) {
+            returnType(double())
+            y <- values(model, dataNodes[i])[1]
+            return(log(priorShape) + priorShape*log(priorRate) - (priorShape+1)*log(priorRate+y))
+        },
+        sample = function(i = integer()) {
+            y <- values(model, dataNodes[i])[1]
+            model[[marginalizedVar]][i] <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
+        }
+    )
+)
 
 
 CRP_conjugate_dgamma_dgamma <- nimbleFunction(
-  contains = CRP_helper,
-  setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
-    ## this makes sure that we create objects to store persistent information used for all 'i'
-    priorShape <- nimNumeric(1)
-    priorRate <- nimNumeric(1)
-  },
-  methods = list(
-    storeParams = function() {
-      priorShape <<- model$getParam(marginalizedNodes, 'shape') 
-      priorRate <<- model$getParam(marginalizedNodes, 'rate')  
+    contains = CRP_helper,
+    setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+        ## this makes sure that we create objects to store persistent information used for all 'i'
+        priorShape <- nimNumeric(1)
+        priorRate <- nimNumeric(1)
     },
-    calculate_prior_predictive = function(i = integer()) {
-      returnType(double())
-      datashape <- model$getParam(dataNodes[i], 'shape')
-      y <- values(model, dataNodes[i])[1]
-      return((datashape-1)*log(y) + priorShape*log(priorRate) + lgamma(datashape+priorShape) -
+    methods = list(
+        storeParams = function() {
+            priorShape <<- model$getParam(marginalizedNodes, 'shape') 
+            priorRate <<- model$getParam(marginalizedNodes, 'rate')  
+        },
+        calculate_prior_predictive = function(i = integer()) {
+            returnType(double())
+            datashape <- model$getParam(dataNodes[i], 'shape')
+            y <- values(model, dataNodes[i])[1]
+            return((datashape-1)*log(y) + priorShape*log(priorRate) + lgamma(datashape+priorShape) -
                lgamma(datashape) - lgamma(priorShape) -(datashape+priorShape)*log(priorRate+y))
-    },
-    sample = function(i = integer()) {
-      datashape <- model$getParam(dataNodes[i], 'shape')
-      y <- values(model, dataNodes[i])[1]
-      model[[tildeVarNames]][i] <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
-    }
-  ))
+        },
+        sample = function(i = integer()) {
+            datashape <- model$getParam(dataNodes[i], 'shape')
+            y <- values(model, dataNodes[i])[1]
+            model[[marginalizedVar]][i] <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
+        }
+    )
+)
 
 
 CRP_conjugate_ddirch_dmulti <- nimbleFunction(
-  contains = CRP_helper,
-  setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
-    d <- length(model[[marginalizedNodes[1]]])
-    priorAlpha <- nimNumeric(d)
-  },
-  methods = list(
-    storeParams = function() {
-      priorAlpha <<- model$getParam(marginalizedNodes, 'alpha')
+    contains = CRP_helper,
+    setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+        d <- length(model[[marginalizedNodes[1]]])
+        priorAlpha <- nimNumeric(d)
     },
-    calculate_prior_predictive = function(i = integer()) {
-      returnType(double())
-      y <- values(model, dataNodes[i])
-      return(lfactorial(n) - sum(lfactorial(y)+lgamma(priorAlpha))+
+    methods = list(
+        storeParams = function() {
+            priorAlpha <<- model$getParam(marginalizedNodes, 'alpha')
+        },
+        calculate_prior_predictive = function(i = integer()) {
+            returnType(double())
+            y <- values(model, dataNodes[i])
+            return(lfactorial(n) - sum(lfactorial(y)+lgamma(priorAlpha))+
                lgamma(sum(priorAlpha)) + sum(lgamma(priorAlpha+y)) - lgamma(sum(priorAlpha+y)))
-    },
-    sample = function(i = integer()) {
-      y <- values(model, dataNodes[i])
-      model[[tildeVarNames]][i, ] <<- rdirch(alpha=priorAlpha+y)
-    }
-  ))
+        },
+        sample = function(i = integer()) {
+            y <- values(model, dataNodes[i])
+            model[[marginalizedVar]][i, ] <<- rdirch(alpha=priorAlpha+y)
+        }
+    )
+)
 
 
 
 # general dCRP sampler covering nonconjugate and conjugate cases
 sampler_CRP <- nimbleFunction(
-  name = 'sampler_CRP',
-  contains=sampler_BASE,
+    name = 'sampler_CRP',
+    contains=sampler_BASE,
   
-  setup=function(model, mvSaved, target, control){
-    ## note that even in inefficient case, we need to do individual dataNodes[i] <- model$getDependencies(targetElements[i], stochOnly = TRUE) because we are not guaranteed that xi[i] is the cluster membership for y[i]; it could be xi[i] is associated with y[n-i+1], e.g.
+    setup=function(model, mvSaved, target, control){
+        ## note that even in inefficient case, we need to do individual dataNodes[i] <- model$getDependencies(targetElements[i], stochOnly = TRUE) because we are not guaranteed that xi[i] is the cluster membership for y[i]; it could be xi[i] is associated with y[n-i+1], e.g.
     
-    ## browser()  # uncomment this to be able to step through code in debug mode ('n' for next line of code, 'f' to finish a loop or function, 'c' to continue to the next browser() call)
-
-    ## Claudia - note that I've assumed essentially all the code below (up to the conjugacy checking I inserted) is the same for all of the different conjugate samplers as for the non-conjugate: yes, it is
-      
-    calcNodes <- model$getDependencies(target)
-    targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
-    n <- length(targetElements) # N2
+        calcNodes <- model$getDependencies(target)
+        targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
+        targetVar <- model$getVarNames(nodes = target)  
+        n <- length(targetElements) 
     
-    # first check that the sampler can be used: N=n, (n=N2)
-    N <- length(model$getDependencies(targetElements, dataOnly = TRUE) )
-    VarNames <- model$getVarNames()
-    data <- model$getDependencies(targetElements[1], dataOnly = TRUE) 
-    if(N != n){ stop('length of random indexes and observations has to be the same') }
+        # first check that the sampler can be used: we need one observation per random index
+        nObs <- length(model$getDependencies(targetElements, dataOnly = TRUE) )
+        if(n != nObs){ stop("sampler_CRP: The length of random indexes and observations has to be the same") }
     
-    # finding tilde variables:
-    tildeVarNames=c()
-    itildeVar <- 1
+        ## finding 'tilde' variables (the parameters that are being clustered):
+        tildeVars <- NULL
+        itildeVar <- 1
     
-    Dep <- model$getDependencies(targetElements[1], self=FALSE)
-    for(i in 1:length(Dep)){ 
-      Depi <- Dep[i]
-      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
-      expr <- parse(text = expr)[[1]]
-      ## see Chris' comments in email about reworking this a bit:
-      #if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-      #  tildeVarNames[itildeVar] <- deparse(expr[[2]])#VarNames[which(VarNames==expr[[2]])] 
-      #  itildeVar <- itildeVar+1 
-      #}
-      #if(is.call(expr) && expr[[1]] == '[' && all.vars(expr[[3]]) == model$getVarNames(nodes=target)){
-      #    tildeVarNames[itildeVar] <- deparse(expr[[2]])
-      #    itildeVar <- itildeVar+1 
-      #}# all.vars(expr[[3]]) == model$getVarNames(nodes=target) does not work (logica(0)) when the models is reparametrized
-      #for using the code proposed by Chris:
-      cond1 <- all.vars(expr[[3]]) == model$getVarNames(nodes=target)
-      if( length(cond1) > 0  ){
-        if( is.call(expr) && expr[[1]] == '[' ){
-          tildeVarNames[itildeVar] <- deparse(expr[[2]])
-          itildeVar <- itildeVar+1 
+        dep <- model$getDependencies(targetElements[1], self=FALSE)
+        for(i in 1:length(dep)) { 
+            expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i])) # cc_getNodesInExpr(model$getValueExpr(dep[i]))
+            expr <- parse(text = expr)[[1]]
+            foundTarget <- all.vars(expr[[3]]) == targetVar
+            if( length(foundTarget) > 0 ) {
+                if( is.call(expr) && expr[[1]] == '[' ) {
+                    tildeVars[itildeVar] <- deparse(expr[[2]])
+                    itildeVar <- itildeVar+1 
+                }
+            }
         }
-      }
-    }
-    #tildeVarNames <- unique(tildeVarNames) # avoids repetition in reparametrized models
     
-
+        nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
     
-    N3 <- c()
-    for(i in 1: length(tildeVarNames)){
-      N3[i] <- length(model[[tildeVarNames[i]]])
-    }
+        if(length(unique(nTilde)) != 1)
+            stop('sampler_CRP: When multiple parameters are being clustered, the number of those parameters must all be the same')
     
-    if(sum(N3==N3[1]) != length(N3)){
-      stop('tilde variables have different length')
-    }
-    for(i in 1:length(N3)){
-      if(N3[i] < n){ stop('length of tilde node has to be at least equal to length of random indexes') }   
-    }
+        if(min(nTilde) < n)
+            stop('sampler_CRP: The number of parameters being clustered has to be at least equal to the number of random indexes') 
+            ## Claudia what do you think about allowing nTilde<n and then in run code warning (and rejecting) if the MCMC tries to use an index that is too big. That would save a lot of computation and work in many cases, I think.
     
-    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
-    dataNodes <- rep(targetElements[1], n) ## this serves as dummy nodes that may be replaced below
-    ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
-    type <- 'indivCalcs'
+        ## Here we try to set up some data structures that allow us to do observation-specific
+        ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
+        ## At the moment, this is the only way we can easily handle dependencies for multiple node elements in a
+        ## 'vectorized' way.
+        nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
+        dataNodes <- rep(targetElements[1], n) ## this serves as dummy nodes that may be replaced below
+        ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
+        type <- 'indivCalcs'
     
-    intermNodes <- dataNodes
-    intermNodes2 <- dataNodes
-    intermNodes3 <- dataNodes
-    if(nInterm > 3) {
-      type <- "allCalcs"  ## give up and do the inefficient approach
-    } else {
-      for(i in seq_len(n)) {
-        stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self=FALSE) 
-        detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
-        if(length(stochDeps) != 1) 
-          stop("Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
-        if(length(detDeps) != nInterm) {
-          type <- 'allCalcs'  # give up again; should only occur in strange situations
+        intermNodes <- dataNodes
+        intermNodes2 <- dataNodes
+        intermNodes3 <- dataNodes
+        if(nInterm > 3) {
+            type <- "allCalcs"  ## give up and do the inefficient approach
         } else {
-          dataNodes[i] <- stochDeps[1]
+            for(i in seq_len(n)) {
+                stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self=FALSE) 
+                detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
+                if(length(stochDeps) != 1) 
+                    stop("Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+                if(length(detDeps) != nInterm) {
+                    type <- 'allCalcs'  # give up again; should only occur in strange situations
+                } else {
+                    dataNodes[i] <- stochDeps[1]
           
-          if(nInterm >= 1) {  # this should handle case of no intermediates - Chris
-            intermNodes[i] <- detDeps[1]
-            intermNodes2[i] <- detDeps[1]
-            intermNodes3[i] <- detDeps[1]
-          }
-          if(nInterm >= 2)
-            intermNodes2[i] <- detDeps[2]
-          if(nInterm >= 3)
-            intermNodes3[i] <- detDeps[3]
+                    if(nInterm >= 1) 
+                        intermNodes[i] <- detDeps[1]
+                    if(nInterm >= 2)
+                        intermNodes2[i] <- detDeps[2]
+                    if(nInterm >= 3)
+                        intermNodes3[i] <- detDeps[3]
+                }
+            }
         }
-      }
-    }
-
-      ## Claudia: please check that this correctly chooses nonconjugate if we have two tilde variables
-      
-      marginalizedNodes <- model$expandNodeNames(tildeVarNames[1])
-      helperFunctions <- nimbleFunctionList(CRP_helper)
-      # helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
-
-      ## use conjugacy to determine which helper functions to use
-      conjugacyResult <- checkCRPconjugacy(model, target)
-      if(is.null(conjugacyResult)) {
-          sampler <- 'CRP_nonconjugate'
-      } else 
-          sampler <- switch(conjugacyResult,
-                            conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
-                            conjugate_dgamma_dpois = 'CRP_conjugate_dgamma_dpois',
-                            conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
-                            conjugate_dgamma_dexp = 'CRP_conjugate_dgamma_dexp',
-                            conjugate_dgamma_dgamma = 'CRP_conjugate_dgamma_dgamma',
-                            conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
-                            'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
-      helperFunctions[[1]] <- eval(as.name(sampler))(model,tildeVarNames, marginalizedNodes, dataNodes)# 
-      
-      curLogProb <- numeric(n) # stores the los probabilities of sampling existing or not indicators
+    
+        ## Claudia: please check that this correctly chooses nonconjugate if we have two tilde variables
+    
+        helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
+    
+        ## use conjugacy to determine which helper functions to use
+        conjugacyResult <- checkCRPconjugacy(model, target)
+        if(is.null(conjugacyResult)) {
+            sampler <- 'CRP_nonconjugate'
+        } else 
+            sampler <- switch(conjugacyResult,
+                        conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
+                        conjugate_dgamma_dpois = 'CRP_conjugate_dgamma_dpois',
+                        conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
+                        conjugate_dgamma_dexp = 'CRP_conjugate_dgamma_dexp',
+                        conjugate_dgamma_dgamma = 'CRP_conjugate_dgamma_dgamma',
+                        conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
+                        'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
+        ## we use [1] here because the 2nd/3rd args only used for conjugate cases and currently that is only setup for
+        ## single parameters
+        helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
+    
+        curLogProb <- numeric(n) 
   },
   
   
