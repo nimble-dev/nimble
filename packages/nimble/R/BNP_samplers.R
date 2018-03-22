@@ -4,19 +4,19 @@
 
 #-- we return a model Values object where each row has the sampled weights and atoms of measure G.
 getTildeVarVirtual <- nimbleFunctionVirtual(
-  run = function(iiter = double(0), rangeii = double(0))
-    returnType(double(0))
+    run = function(iiter = double(0), rangeii = double(0))
+      returnType(double(0))
 )
 
 getTildeVar <- nimbleFunction(
-  contains = getTildeVarVirtual,
-  setup = function(mvSaved, tildeVar){
-  },
-  run = function(iiter = double(0), rangeii = double(0)){
-    outVal <- mvSaved[tildeVar, iiter][rangeii]
-    returnType(double(0))
-    return(outVal)
-  }
+    contains = getTildeVarVirtual,
+    setup = function(mvSaved, tildeVar){
+    },
+    run = function(iiter = double(0), rangeii = double(0)) {
+      outVal <- mvSaved[tildeVar, iiter][rangeii]
+      returnType(double(0))
+      return(outVal)
+    }
 )
 
 
@@ -298,65 +298,48 @@ sampler_G2 <- nimbleFunction(
 #-- Sampler for concentration parameter, conc, of the dCRP distribution.
 
 sampler_CRP_concentration <- nimbleFunction(
-  name = 'sampler_CRP_concentration',
-  contains=sampler_BASE,
+    name = 'sampler_CRP_concentration',
+    contains=sampler_BASE,
   
-  setup=function(model, mvSaved, target, control){
-    #conjugate <- FALSE # default
-    
-    calcNodes <- model$getDependencies(target)
-    targetElements <- model$expandNodeNames(target, returnScalarComponents=TRUE)
-    detDeps <- model$getDependencies(targetElements, determOnly = TRUE)
-    
-    # do this sampler only when conc ~ gamma(ac, bc) and only one dCRP distribution depends on conc
-    #if(length(calcNodes) & length(detDeps)==0){ do this sampler!}else{M-H}
-    #if(length(calcNodes)>2){ assign M-H sampler} # two dCRP distributions with same conc, or something like 'conc+conc1', conc1 random or not
-    #if(length(detDeps)>0){assign M-H sampler} # conc param is deterministic
-    
-    #aux <- targetElements==calcNodes
-    xiNodes <- model$getDependencies(target, self = FALSE)#calcNodes[ aux == FALSE ]
-    xiNodesi <- model$expandNodeNames(xiNodes, returnScalarComponents=TRUE)
-    
-    N <- length(xiNodesi) # number of observations
-  },
+    setup=function(model, mvSaved, target, control){
+        calcNodes <- model$getDependencies(target)
+        ## only dependency should be membership vector because configureMCMC checks for only one dependency  
+        xiNode <- model$getDependencies(target, self = FALSE) 
+        N <- length(model[[xiNode]])
+    },
   
   
-  run = function() {
-    a <- model$getParam(target, 'shape')
-    b <- model$getParam(target, 'rate')
-    conc <- model[[target]] # model$getParam(xiNodes, 'conc')  
-    xi <- model[[xiNodes]]
+    run = function() {
+        shapeParam <- model$getParam(target, 'shape')
+        rateParam <- model$getParam(target, 'rate')
+        conc <- model[[target]] # model$getParam(xiNodes, 'conc')  
+        xi <- model[[xiNode]]
     
-    k <- 0 #length(unique(xi))
-    kunique <- numeric(N)
-    for(i in 1:N){
-      cond <- xi[i] == kunique
-      if(sum(cond) == 0){ # save xi[i]
-        k <- k+1
-        kunique[k] <- xi[i]
-      }
-    }
+        occupied <- numeric( N)
+        for( i in 1:N )
+            occupied[xi[i]] <- 1
+        k <- sum(occupied)
     
-    ak <- a + k
-    ak1 <- ak - 1
+        aux1 <- shapeParam + k
+        aux2 <- aux1 - 1
     
-    # -- generating augmented r.v. and computing the weight.
-    x <- rbeta(1, conc+1, N)
-    blog <- b-log(x)
-    w <- ak1/(ak1 + N*blog)
+        # -- generating augmented r.v. and computing the weight.
+        x <- rbeta(1, conc+1, N)
+        aux3 <- rateParam - log(x)
+        w <- aux2/(aux2 + N*blog)
     
-    # -- updating the concentration parameter.
-    if(runif(1)<=w){
-      model[[target]] <<- rgamma(1, ak, blog)
-    }else{
-      model[[target]] <<- rgamma(1, ak1, blog)
-    }
-    model$calculate(calcNodes)
+        # -- updating the concentration parameter.
+        if(runif(1) <= w){
+            model[[target]] <<- rgamma(1, aux1, aux3)
+        }else{
+            model[[target]] <<- rgamma(1, aux2, aux3)
+        }
+        model$calculate(calcNodes)
     
     
-    copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-  },
-  methods = list( reset = function () {})
+        copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list( reset = function () {})
 )
 
 
@@ -590,8 +573,7 @@ sampler_CRP <- nimbleFunction(
             stop('sampler_CRP: When multiple parameters are being clustered, the number of those parameters must all be the same')
     
         if(min(nTilde) < n)
-            warning('sampler_CRP: The number of parameters being clustered is less than the number of random indexes. 
-The MCMC is not strictly valid if ever it proposes more componentsthan exist')
+            warning('sampler_CRP: The number of parameters to be clustered is less than the number of random indexes. The MCMC is not strictly valid if ever it proposes more components than exist')
         
             #stop('sampler_CRP: The number of parameters being clustered has to be at least equal to the number of random indexes') 
             ## Claudia what do you think about allowing nTilde<n and then in run code warning (and rejecting) if the MCMC tries to use an index that is too big. That would save a lot of computation and work in many cases, I think.
@@ -653,72 +635,77 @@ The MCMC is not strictly valid if ever it proposes more componentsthan exist')
         helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
     
         curLogProb <- numeric(n) 
-  },
+    },
   
   
-  run = function() {
-      ## Claudia, this assumes all code is the same for conjugate samplers and for nonconjugate except
-      ## the three specific places 'helperFunctions[[1]]' is used. yes, it is
-      conc <- model$getParam(target, 'conc')
-      helperFunctions[[1]]$storeParams()
-    #  -- udating xi:
-    for(i in 1:n){ # updates one xi_i at the time , i=1,...,n
-      xi_i <- model[[target]][i]
-      xi <- model[[target]]
-      cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
-      for(j in 1:n){ # calculate probability of sampling indexes 1,...,n   
-        if(i==j){ # index i denotes a new indicator xi_i
-          if(cond>1){ # a new parameter has to be created to calculate the prob
-            newind <- 1
-            mySum <- sum(xi == newind)
-            while(mySum>0 & newind <= n) { # need to make sure don't go beyond length of vector
-              newind <- newind+1
-              mySum <- sum(xi == newind)
-            }
-            model[[target]][i] <<- newind
-            if(type == 'indivCalcs') {
-              if(nInterm >= 1) model$calculate(intermNodes[i])
-              if(nInterm >= 2) model$calculate(intermNodes2[i])
-              if(nInterm >= 3) model$calculate(intermNodes3[i])
-              model$calculate(dataNodes[i])
-            } else model$calculate(calcNodes) 
-          }else{ # we keep the old parameter as the "new" one
-            newind <- xi_i
-            model[[target]][i] <<- newind
-            if(type == 'indivCalcs') {
-              if(nInterm >= 1) model$calculate(intermNodes[i])
-              if(nInterm >= 2) model$calculate(intermNodes2[i])
-              if(nInterm >= 3) model$calculate(intermNodes3[i])
-              model$calculate(dataNodes[i])
-            } else model$calculate(calcNodes)  
-          }
-          curLogProb[j] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i)
-        }else{
-          model[[target]][i] <<- model[[target]][j]
-          if(type == 'indivCalcs') {
-            if(nInterm >= 1) model$calculate(intermNodes[i])
-            if(nInterm >= 2) model$calculate(intermNodes2[i])
-            if(nInterm >= 3) model$calculate(intermNodes3[i])
-            model$calculate(dataNodes[i])
-          } else model$calculate(calcNodes) 
-          curLogProb[j] <<- model$getLogProb(dataNodes[i])
-        }  
-        model[[target]][i] <<- xi_i
-      } # 
+    run = function() {
+        ## Claudia, this assumes all code is the same for conjugate samplers and for nonconjugate except
+        ## the three specific places 'helperFunctions[[1]]' is used. yes, it is
+        conc <- model$getParam(target, 'conc')
+        helperFunctions[[1]]$storeParams()
+        #  -- udating xi:
+        for(i in 1:n) { # updates one xi_i at the time , i=1,...,n
+            xi_i <- model[[target]][i]
+            xi <- model[[target]]
+            cond <- sum(xi_i==xi) # if cond=1, xi_i is a singleton
+            for(j in 1:n) { # calculate probability of sampling indexes 1,...,n   
+                if(i==j) { # index i denotes a new indicator xi_i
+                    if(cond>1) { # a new parameter has to be created to calculate the prob
+                        newind <- 1
+                        mySum <- sum(xi == newind)
+                        while(mySum>0 & newind <= n) { # need to make sure don't go beyond length of vector
+                            newind <- newind+1
+                            mySum <- sum(xi == newind)
+                        }
+                        ## Clau: warning when a component that does not exist should be sampled
+                        if(newind > nTilde){
+                          nimCat('CRP_sampler: This MCMC is not fully non parametric. More components than exist are requiered')
+                          newind <- nTilde # Clau: is this what we want to do?
+                        }
+                        model[[target]][i] <<- newind
+                        if(type == 'indivCalcs') {
+                            if(nInterm >= 1) model$calculate(intermNodes[i])
+                            if(nInterm >= 2) model$calculate(intermNodes2[i])
+                            if(nInterm >= 3) model$calculate(intermNodes3[i])
+                            model$calculate(dataNodes[i])
+                        } else model$calculate(calcNodes) 
+                    }else{ # we keep the old parameter as the "new" one
+                        newind <- xi_i
+                        model[[target]][i] <<- newind
+                        if(type == 'indivCalcs') {
+                            if(nInterm >= 1) model$calculate(intermNodes[i])
+                            if(nInterm >= 2) model$calculate(intermNodes2[i])
+                            if(nInterm >= 3) model$calculate(intermNodes3[i])
+                            model$calculate(dataNodes[i])
+                        } else model$calculate(calcNodes)  
+                    }
+                    curLogProb[j] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i)
+                } else {
+                    model[[target]][i] <<- model[[target]][j]
+                    if(type == 'indivCalcs') {
+                        if(nInterm >= 1) model$calculate(intermNodes[i])
+                        if(nInterm >= 2) model$calculate(intermNodes2[i])
+                        if(nInterm >= 3) model$calculate(intermNodes3[i])
+                        model$calculate(dataNodes[i])
+                    } else model$calculate(calcNodes) 
+                    curLogProb[j] <<- model$getLogProb(dataNodes[i])
+                }  
+                model[[target]][i] <<- xi_i
+            } # 
       
-      index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
-      if(index==i){# creates a new component: one that is not used
-          model[[target]][i] <<- newind
-          helperFunctions[[1]]$sample(i)
-      }else{
-        model[[target]][i] <<- model[[target]][index]
-      } 
-    }
-    model$calculate(calcNodes)
+            index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
+            if(index==i) {# creates a new component: one that is not used
+                model[[target]][i] <<- newind
+                helperFunctions[[1]]$sample(i)
+            }else{
+            model[[target]][i] <<- model[[target]][index]
+            } 
+        }
+        model$calculate(calcNodes)
     
     
-    copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-  },
-  methods = list( reset = function () {})
+        copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list( reset = function () {})
 )
 
