@@ -590,7 +590,10 @@ sampler_CRP <- nimbleFunction(
             stop('sampler_CRP: When multiple parameters are being clustered, the number of those parameters must all be the same')
     
         if(min(nTilde) < n)
-            stop('sampler_CRP: The number of parameters being clustered has to be at least equal to the number of random indexes') 
+            warning('sampler_CRP: The number of parameters being clustered is less than the number of random indexes. 
+The MCMC is not strictly valid if ever it proposes more componentsthan exist')
+        
+            #stop('sampler_CRP: The number of parameters being clustered has to be at least equal to the number of random indexes') 
             ## Claudia what do you think about allowing nTilde<n and then in run code warning (and rejecting) if the MCMC tries to use an index that is too big. That would save a lot of computation and work in many cases, I think.
     
         ## Here we try to set up some data structures that allow us to do observation-specific
@@ -629,7 +632,7 @@ sampler_CRP <- nimbleFunction(
         }
     
         ## Claudia: please check that this correctly chooses nonconjugate if we have two tilde variables
-    
+        ## Answer: assigns CRP_nonconjugate when ther are  and are not determinstic nodes in a model with two tilde variables.
         helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
     
         ## use conjugacy to determine which helper functions to use
