@@ -65,22 +65,22 @@ NULL
 rCRP <- nimbleFunction(
     run = function(n = integer(0), 
                    conc = double(0, default=1),
-                   size = integer(0)) # size is the length of the simulated vector
+                   size = integer(0))
     {
         returnType(double(1))
         
-        if(n != 1){
+        if(n != 1) {
             stop("rCRP only handles n = 1 at the moment")
         }
         
-        if( conc <= 0 ){
-          nimCat("value of concentration parameter has to be larger than zero")
-          return(rep(NaN,size))
+        if( conc <= 0 ) {
+            nimCat("value of concentration parameter has to be larger than zero")
+            return(rep(NaN, size))
         }
 
         x <- nimNumeric(size) 
         x[1] <- 1
-        if(size > 1){
+        if(size > 1) {
             numComponents <- 1
             ones <- rep(1, size)
             for(i in 2:size) {
@@ -93,6 +93,7 @@ rCRP <- nimbleFunction(
                 }
             }
         }
+        
         return(x)
     }
 )
@@ -101,38 +102,42 @@ rCRP <- nimbleFunction(
 #' @rdname ChineseRestaurantProcess
 #' @export
 dCRP=nimbleFunction(
-  run=function(x = double(1), 
+    run=function(x = double(1), 
                conc = double(0, default=1),
                size = integer(0),
                log = integer(0, default=0))
-  {
-    returnType(double(0))
-    n <- length(x)  #size #
-    dens <- nimNumeric(n) 
+    {
+        returnType(double(0))
+        n <- length(x)  
+        dens <- nimNumeric(n) 
     
-    if(n != size){
-      stop("length of x has to be equal to size")
-    }
-    if( conc <= 0 ){
-      nimCat("value of concentration parameter has to be larger than zero")
-      return(NaN)
-    }
-    dens[1] <- 1
-    if(n > 1){
-        for(i in 2:n){
-            counts <- sum(x[i] == x[1:(i-1)])
-            if( counts > 0 ){
-                ## Claudia: shouldn't this be 'counts / (i-1+conc)' ???
-                dens[i] <- counts / (i-1+conc)
-            } else {
+        if(n != size) {
+            stop("length of x has to be equal to size")
+        }
+    
+        if( conc <= 0 ) {
+            nimCat("value of concentration parameter has to be larger than zero")
+            return(NaN)
+        }
+        
+        dens[1] <- 1
+        if(n > 1) {
+            for(i in 2:n) {
+                counts <- sum(x[i] == x[1:(i-1)])
+                if( counts > 0 ) {
+                    ## Claudia: shouldn't this be 'counts / (i-1+conc)' ???
+                    ## Answer: yes
+                    dens[i] <- counts / (i-1+conc)
+                } else {
                 dens[i] <- conc / (i-1+conc)
+                }
             }
         }
+        
+        logProb <- sum(log(dens))
+        if(log) return(logProb)
+        else return(exp(logProb)) 
     }
-    logProb <- sum(log(dens))
-    if(log) return(logProb)
-    else return(exp(logProb)) 
-  }
 )
 
 
@@ -177,41 +182,27 @@ NULL
 #' @export
 stick_breaking <- nimbleFunction(
     run = function(z = double(1),
-                   log = integer(0, default=0)) {
-        ## z values must be different of 1, otherwise the process is truncated to a smaller value than N; never use z[N]!
+                 log = integer(0, default=0)) 
+    {
         returnType(double(1))
-
-        ## Claudia: should we require z to be length of output? The main issue is that then there needs to be an unused (last) 'z' that is just sampled from its prior... but maybe it's less confusing to have z and the output be the same length?
-        
-        N <- length(z) 
+    
+        N <- length(z)   
         cond <- sum(z < 0) | sum(z > 1)
         if(cond) {
-            nimCat("values in 'z' have to be in [0,1)")
-            return(rep(NaN, N))
+            nimCat("values in 'z' have to be in (0,1)")
+            return(rep(NaN, N+1))
         }
-        
-        #cond <- sum(z == 1)
-        #if(cond > 0){ # el vector de probabilidades es mas chico
-        #    ## Claudia: I don't understand why we need this block of code; if a 'z' value is 1, then won't the code below (corrrectly) insert zeros for all the remaining elements?
-        #    ## In particular, I think if we return a shorter vector that will cause errors later in nimble calculations where the model expects a vector of length N.
-        #    ## If we alter this, then make sure to modify the roxygen regardin the length of N
-        #    print('length of returned vector is less than length(z)')
-        #    N <- 1
-        #    while(z[N] != 1){
-        #        N <- N + 1
-        #    }
-        #}else{
-        #    N <- length(z)
-        #}
-        
+    
         x <- nimNumeric(N) 
         remainingLogProb <- 0 
-        
+    
         x[1] <- log(z[1]) 
         for(i in 2:N) {
             remainingLogProb <- remainingLogProb + log(1-z[i-1]) 
             x[i] <- log(z[i]) + remainingLogProb 
         }
+        
+        x[N+1] <- remainingLogProb + log(1-z[N]) 
         if(log) return(x)
         else return(exp(x))
     }
