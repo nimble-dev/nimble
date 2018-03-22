@@ -1,3 +1,16 @@
+                           CHANGES IN VERSION 0.6-10 (March 2018)
+
+USER LEVEL CHANGES
+
+-- To run WAIC, a user now must set 'enableWAIC' to 'TRUE', either in nimble's options or as an argument to buildMCMC().
+
+-- If 'enableWAIC' is 'TRUE', buildMCMC() will now check to make sure that the nodes monitored by the MCMC algorithm will lead to a valid WAIC calculation.	
+
+BUG FIXES
+
+--	Fixed a WAIC bug where downstream nodes were not being re-simulated for certain combinations of models and monitored variables.
+
+
                            CHANGES IN VERSION 0.6-9 (January 2018)
 
 USER LEVEL CHANGES
