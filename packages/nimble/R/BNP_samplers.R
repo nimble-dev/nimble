@@ -389,86 +389,58 @@ CRP_nonconjugate <- nimbleFunction(
     )
 )
             
-## Claudia to create versions of this for the various conjugacies using code she has already
-## written in the conjugacy-specific full samplers
 CRP_conjugate_dnorm_dnorm <- nimbleFunction(
-    contains = CRP_helper,
-    setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
-        ## this makes sure that we create objects to store persistent information used for all 'i'
-        priorMean <- nimNumeric(1)
-        priorVar <- nimNumeric(1)
+  contains = CRP_helper,
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+    ## this makes sure that we create objects to store persistent information used for all 'i'
+    priorMean <- nimNumeric(1)
+    priorVar <- nimNumeric(1)
+  },
+  methods = list(
+    storeParams = function() {
+      priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
+      priorVar <<- model$getParam(marginalizedNodes[1], 'var')
     },
-    methods = list(
-        storeParams = function() {
-            priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
-            priorVar <<- model$getParam(marginalizedNodes[1], 'var')
-        },
-        calculate_prior_predictive = function(i = integer()) {
-          returnType(double())
-            dataVar <- model$getParam(dataNodes[i], 'var')
-            y <- values(model, dataNodes[i])[1]
-            return(dnorm(y, priorMean, sqrt(priorVar + dataVar), log=TRUE))
-        },
-        sample = function(i = integer()) {
-            dataVar <- model$getParam(dataNodes[i], 'var')
-            y <- values(model, dataNodes[i])[1]
-            postVar <- 1/(1/dataVar + 1/priorVar)
-            postMean <- postVar*(y/dataVar + priorMean/priorVar)
-            model[[tildeVarNames]][i] <<- rnorm(1, postMean, sqrt(postVar)) # model[[marginalizedNodes[i]]] <<- rnorm(1, postMean, sqrt(postVar)) can not be accesed  when compiling the MCMC configuration
-        }
-    ))
- 
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      dataVar <- model$getParam(dataNodes[i], 'var')
+      y <- values(model, dataNodes[i])[1]
+      return(dnorm(y, priorMean, sqrt(priorVar + dataVar), log=TRUE))
+    },
+    sample = function(i = integer()) {
+      dataVar <- model$getParam(dataNodes[i], 'var')
+      y <- values(model, dataNodes[i])[1]
+      postVar <- 1 / (1 / dataVar + 1 / priorVar)
+      postMean <- postVar * (y / dataVar + priorMean / priorVar)
+      ## Claudia, tildeVarNames and marginalizedNodes should be the same
+      ## does this work and if so, I think we should remove 'tildeVarNames' in all of these conjugate cases
+      model[[marginalizedVar]][i] <<- rnorm(1, postMean, sqrt(postVar)) # model[[marginalizedNodes[i]]] <<- rnorm(1, postMean, sqrt(postVar)) can not be accesed  when compiling the MCMC configuration
+    }
+  ))
 
-#CRP_conjugate_dnorm_dnorm <- nimbleFunction(
-#  contains = CRP_helper,
-#  setup = function(model, marginalizedNodes, dataNodes) {
-#    ## this makes sure that we create objects to store persistent information used for all 'i'
-#    priorMean <- nimNumeric(1)
-#    priorVar <- nimNumeric(1)
-#  },
-#  methods = list(
-#    storeParams = function() {
-#      priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
-#      priorVar <<- model$getParam(marginalizedNodes[1], 'var')
-#    },
-#    calculate_prior_predictive = function(i = integer()) {
-#      returnType(double())
-#      dataVar <- model$getParam(dataNodes[i], 'var')
-#      y <- values(model, dataNodes[i])[1]
-#      return(dnorm(y, priorMean, sqrt(priorVar + dataVar), log=TRUE))
-#    },
-#    sample = function(i = integer()) {
-#      dataVar <- model$getParam(dataNodes[i], 'var')
-#      y <- values(model, dataNodes[i])[1]
-#      postVar <- 1 / (1 / dataVar + 1 / priorVar)
-#      postMean <- postVar * (y / dataVar + priorMean / priorVar)
-#      ## Claudia, tildeVarNames and marginalizedNodes should be the same
-#      ## does this work and if so, I think we should remove 'tildeVarNames' in all of these conjugate cases
-#      model[[marginalizedNodes]][i] <<- rnorm(1, postMean, sqrt(postVar)) # model[[marginalizedNodes[i]]] <<- rnorm(1, postMean, sqrt(postVar)) can not be accesed  when compiling the MCMC configuration
-#    }
-#  ))
-
-
+## Claudia: I changed parameter names to be more informative - is this ok and can you do it for all conjugacies?
+## also added some spacing to the cod
 CRP_conjugate_dgamma_dpois <- nimbleFunction(
   contains = CRP_helper,
   setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
-    priora <- nimNumeric(1)
-    priorb <- nimNumeric(1)
+    priorShape <- nimNumeric(1)
+    priorRate <- nimNumeric(1)
   },
   methods = list(
     storeParams = function() {
-      priora <<- model$getParam(marginalizedParam, 'shape') 
-      priorb <<- model$getParam(marginalizedParam, 'rate') 
+      priorShape <<- model$getParam(marginalizedNodes, 'shape') 
+      priorRate <<- model$getParam(marginalizedNodes, 'rate') 
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
-      return(priora*log(priorb) - (priora+y)*log(priorb+1) + lgamma(priora+y) - lgamma(priora) - lfactorial(y))
+      return(priorShape * log(priorRate) - (priorShape + y) * log(priorRate + 1) +
+               lgamma(priorShape + y) - lgamma(priorShape) - lfactorial(y))
     },
     sample = function(i = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[tildeVarNames]][i] <<- rgamma(1, shape=priora+y, rate=priorb+1)
+      model[[tildeVarNames]][i] <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
     }
   ))
 
@@ -477,22 +449,22 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
   contains = CRP_helper,
   setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
-    priora <- nimNumeric(1)
-    priorb <- nimNumeric(1)
+    priorShape1 <- nimNumeric(1)
+    priorShape2 <- nimNumeric(1)
   },
   methods = list(
     storeParams = function() {
-      priora <<- model$getParam(marginalizedParam, 'shape1') 
-      priorb <<- model$getParam(marginalizedParam, 'shape2')
+      priorShape1 <<- model$getParam(marginalizedNodes, 'shape1') 
+      priorShape2 <<- model$getParam(marginalizedNodes, 'shape2')
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
-      return(lgamma(priora+y) + lgamma(priorb+1-y) - lgamma(priora) - lgamma(priorb) - log(priora+priorb))
+      return(lgamma(priorShape1+y) + lgamma(priorShape2+1-y) - lgamma(priorShape1) - lgamma(priorShape2) - log(priorShape1+priorShape2))
     },
     sample = function(i = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[tildeVarNames]][i] <<- rbeta(1, shape1=priora+y, shape2=priorb+1-y)
+      model[[tildeVarNames]][i] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
     }
   ))
 
@@ -501,22 +473,22 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
   contains = CRP_helper,
   setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
-    priora <- nimNumeric(1)
-    priorb <- nimNumeric(1)
+    priorShape <- nimNumeric(1)
+    priorRate <- nimNumeric(1)
   },
   methods = list(
     storeParams = function() {
-      priora <<- model$getParam(marginalizedParam, 'shape') 
-      priorb <<- model$getParam(marginalizedParam, 'rate') 
+      priorShape <<- model$getParam(marginalizedNodes, 'shape') 
+      priorRate <<- model$getParam(marginalizedNodes, 'rate') 
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
-      return(log(priora) + priora*log(priorb) - (priora+1)*log(priorb+y))
+      return(log(priorShape) + priorShape*log(priorRate) - (priorShape+1)*log(priorRate+y))
     },
     sample = function(i = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[tildeVarNames]][i] <<- rgamma(1, shape=priora+1, rate=priorb+y)
+      model[[tildeVarNames]][i] <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
     }
   ))
 
@@ -525,52 +497,48 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
   contains = CRP_helper,
   setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
-    priora <- nimNumeric(1)
-    priorb <- nimNumeric(1)
+    priorShape <- nimNumeric(1)
+    priorRate <- nimNumeric(1)
   },
   methods = list(
     storeParams = function() {
-      priora <<- model$getParam(marginalizedParam, 'shape') 
-      priorb <<- model$getParam(marginalizedParam, 'rate')  
+      priorShape <<- model$getParam(marginalizedNodes, 'shape') 
+      priorRate <<- model$getParam(marginalizedNodes, 'rate')  
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       datashape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      return((datashape-1)*log(y) + priora*log(priorb) + lgamma(datashape+priora) -
-               lgamma(datashape) - lgamma(priora) -(datashape+priora)*log(priorb+y))
+      return((datashape-1)*log(y) + priorShape*log(priorRate) + lgamma(datashape+priorShape) -
+               lgamma(datashape) - lgamma(priorShape) -(datashape+priorShape)*log(priorRate+y))
     },
     sample = function(i = integer()) {
       datashape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      model[[tildeVarNames]][i] <<- rgamma(1, shape=datashape+priora, rate=priorb+y)
+      model[[tildeVarNames]][i] <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
     }
   ))
 
 
-## Chris please check the following 2 comments
 CRP_conjugate_ddirch_dmulti <- nimbleFunction(
   contains = CRP_helper,
   setup = function(model, tildeVarNames, marginalizedNodes, dataNodes) {
-    ## this makes sure that we create objects to store persistent information used for all 'i'
-    ## comment 1: check that this is the best way to get the dimension of the Dirichelt distribution's parameter
     d <- length(model[[marginalizedNodes[1]]])
-    prioralpha <- nimNumeric(d)
+    priorAlpha <- nimNumeric(d)
   },
   methods = list(
     storeParams = function() {
-      prioralpha <<- model$getParam(marginalizedParam, 'alpha')
+      priorAlpha <<- model$getParam(marginalizedNodes, 'alpha')
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])
-      return(lfactorial(n) - sum(lfactorial(y)+lgamma(prioralpha))+
-               lgamma(sum(prioralpha)) + sum(lgamma(prioralpha+y)) - lgamma(sum(prioralpha+y)))
+      return(lfactorial(n) - sum(lfactorial(y)+lgamma(priorAlpha))+
+               lgamma(sum(priorAlpha)) + sum(lgamma(priorAlpha+y)) - lgamma(sum(priorAlpha+y)))
     },
     sample = function(i = integer()) {
       y <- values(model, dataNodes[i])
-      ## comment 2: check that this is the way to upadte the vector parameter
-      model[[tildeVarNames]][i, ] <<- rdirch(alpha=prioralpha+y)
+      model[[tildeVarNames]][i, ] <<- rdirch(alpha=priorAlpha+y)
     }
   ))
 
