@@ -171,7 +171,7 @@ timeConf$addSampler(target = c("a", "b", "c", "mu_0"), type = "RW_PF_block",
                                  latents = "x", pfOptimizeNparticles = TRUE))
 @
   
-The  \cd{type = "RW\_PF"} and \cd{type = "RW\_PF\_block"} samplers default to using a bootstrap filter to estimate the likelihood at each MCMC iteration.  However, more efficient results can often be obtained by using a custom filtering algorithm.  To enable use of customized filtering algorithms in NIMBLE's PMCMC, the \cd{pfType} control list argument allows for user specification of the type of particle filter to be used.  The \cd{pfType} argument can be set either to \code{'bootstrap'} (the default), \code{'auxiliary'}, or can be provided with a user created filtering algorithm object.  
+The  \cd{type = "RW\_PF"} and \cd{type = "RW\_PF\_block"} samplers default to using a bootstrap filter to estimate the likelihood at each MCMC iteration.  However, more efficient results can often be obtained by using a custom filtering algorithm.  To enable use of customized filtering algorithms in NIMBLE's PMCMC, the \cd{pfType} control list argument allows for user specification of the type of particle filter to be used.  The \cd{pfType} argument can be set either to \cd{'bootstrap'} (the default), \cd{'auxiliary'}, or can be provided with a user created filtering algorithm object.  
 
 Any user defined filtering function that will be provided as the \cd{pfType} control list argument must satsify the following:
 
@@ -183,7 +183,8 @@ Any user defined filtering function that will be provided as the \cd{pfType} con
 \item \cd{latents}, a character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
 \item \cd{control}, an \cd{R} \cd{list} object.  Note that the \cd{control} list can be used to pass in any additional information or arguments that the custom filter may require. 
 \end{enumerate}
-\item The \cd{nimbleFunction} provided to \cd{pfType} must have a \code{run} function that accepts a single integer arugment (the number of particles to use), and returns a scalar double (the log-likelihood estimate).
+\item The \cd{nimbleFunction} provided to \cd{pfType} must have a \cd{run} function that accepts a single integer arugment (the number of particles to use), and returns a scalar double (the log-likelihood estimate).
+\item The \cd{nimbleFunction} provided to \cd{pfType} must define, in setup code, a \cd{modelValues} object named \cd{mvEWSamples} that is used to contain equally weighted samples of the latent states (that is, the \cd{latents} argument to the setup function.)  Each time the \cd{run()} method of the \cd{nimbleFunction} is called  with number of particles \cd{m}, the \cd{mvEWSamples} \cd{modelValues} object should be resized to be of size \cd{m} via a call to \cd{resize(mvEWSamples, m)}.
 \end{enumerate}
 
 

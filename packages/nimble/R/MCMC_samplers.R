@@ -983,11 +983,11 @@ sampler_RW_PF <- nimbleFunction(
           filterControl$smoothingVal <- FALSE
         }
         filterControl$initModel <- FALSE
-        if(filterType == 'auxiliary') {
+        if(is.character(filterType) && filterType == 'auxiliary') {
             my_particleFilter <- buildAuxiliaryFilter(model, latents, 
                                                       control = filterControl)
         }
-        else if(filterType == 'bootstrap') {
+        else if(is.character(filterType) && filterType == 'bootstrap') {
             my_particleFilter <- buildBootstrapFilter(model, latents,
                                                       control = filterControl)
         }
@@ -1161,11 +1161,11 @@ sampler_RW_PF_block <- nimbleFunction(
           filterControl$smoothingVal <- FALSE
         }
         filterControl$initModel <- FALSE
-        if(filterType == 'auxiliary') {
+        if(is.character(filterType) && filterType == 'auxiliary') {
           my_particleFilter <- buildAuxiliaryFilter(model, latents, 
                                                     control = filterControl)
         }
-        else if(filterType == 'bootstrap') {
+        else if(is.character(filterType) && filterType == 'bootstrap') {
           my_particleFilter <- buildBootstrapFilter(model, latents,
                                                     control = filterControl)
         }
