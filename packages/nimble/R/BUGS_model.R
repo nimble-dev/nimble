@@ -539,7 +539,7 @@ Details: If a provided value (or the current value in the model when only a name
                                           ## but this simplifies the addition without changing exisiting code.
                                            data = list(...)
                                            ## Check if a single list or character vector was provided
-                                           if(length(data) == 0 || (length(data) == 1 && is.null(data[[1]])) ## NULL catches case that occurs with test_size
+                                           if(length(data) == 0 || (length(data) == 1 && is.null(data[[1]]))) ## NULL catches case that occurs with test_size
                                                return()
                                            if(is.null(names(data))) {  ## if no names, should be either characters or single list
                                                if(length(data) == 1) {
