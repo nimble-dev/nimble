@@ -99,7 +99,7 @@
 #' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. \emph{Journal of Machine Learning Research} 11: 3571-3594.
 #' 
 #' Gelman, A., Hwang, J. and Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. \emph{Statistics and Computing} 24(6): 997-1016.
-#'   @export
+#' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
     setup = function(conf, enableWAIC = nimbleOptions('enableWAIC'), ...) {
