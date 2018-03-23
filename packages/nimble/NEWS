@@ -10,6 +10,10 @@ USER LEVEL CHANGES
 
 -- Deprecated use of identityMatrix() in favor of diag().
 
+-- Some steps of model and algorithm building and compilation are faster.
+
+-- Compiled execution with multivariate distributions or function arguments may be faster.
+
 BUG FIXES
 
 -- Fixed bug related to handling of MCMC history that caused MCMC to stop.
@@ -18,7 +22,7 @@ BUG FIXES
 
 DEVELOPER LEVEL CHANGES
 
--- Made arguments like x[1:10] (i.e., those without gaps in indexing) avoid copies for faster C++ calculations.
+-- Made non-scalar arguments in model distributions, like x[1:10] (i.e., those without gaps in indexing), avoid copies for faster C++ calculations.
 
 -- Moved parse step of parseEvalNumericManyList() to C++ for faster model processing.
 
