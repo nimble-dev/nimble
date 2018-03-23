@@ -1034,7 +1034,7 @@ Checks for errors in model specification and for missing values that prevent use
 
                                   },
 
-newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = getNimbleOption('checkModel')) {
+newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = getNimbleOption('checkModel'), calculate = TRUE) {
                                       '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
@@ -1044,24 +1044,27 @@ data: A named list specifying data nodes and values, for use in the newly return
 
 inits: A named list specifying initial values, for use in the newly returned model.  If not provided, the inits argument from the creation of the original R model object will be used.
 
-replicate: Logical specifying whether to repliate all current values and data flags from the current model in the new model.  If TRUE, then the data and inits arguments are not used.  Default value is FALSE.
-
-check: A logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option \'checkModel\', see help on \'nimbleOptions\' for details.
-
 modelName: An optional character string, used to set the internal name of the model object.  If provided, this name will propagate throughout the generated C++ code, serving to improve readability.
+
+replicate: Logical specifying whether to replicate all current values and data flags from the current model in the new model.  If TRUE, then the data and inits arguments are not used.  Default value is FALSE.
+
+check: A logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option \'checkModel\', see help on \'nimbleOptions\' for details. 
+
+calculate: A logical indicating whether to run \'calculate\' on the model; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be NA. 
 
 Details: The newly created model object will be identical to the original model in terms of structure and functionality, but entirely distinct in terms of the internal values.
 '
                                       if(replicate) {
-                                          newlyCreatedModel <- modelDef$newModel(check = FALSE)
+                                          newlyCreatedModel <- modelDef$newModel(check = FALSE, calculate = FALSE)
                                           nimCopy(from = .self, to = newlyCreatedModel, logProb = TRUE)
                                           for(var in ls(isDataEnv)) newlyCreatedModel$isDataEnv[[var]] <- isDataEnv[[var]]
                                           if(check) newlyCreatedModel$check()
+                                          if(calculate) newlyCreatedModel$calculate()
                                           return(newlyCreatedModel)
                                       }
                                       if(is.null(data)) data <- if( inherits(origData, 'uninitializedField') ) list() else origData
                                       if(is.null(inits)) inits <- if( inherits(origInits, 'uninitializedField') ) list() else origInits
-                                      modelDef$newModel(data = data, inits = inits, modelName = modelName, check = check)
+                                      modelDef$newModel(data = data, inits = inits, modelName = modelName, check = check, calculate = calculate)
                                   }
                               )
                               )
