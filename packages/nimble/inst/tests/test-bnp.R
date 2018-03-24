@@ -587,6 +587,92 @@ points(grid, apply(predSB, 2, mean), col="blue", type="l", lwd=2)
 
 
 ##########################################################################
+# testing sampler_G
+##########################################################################
+
+
+
+Code=nimbleCode(
+  {
+    mu0 ~ dnorm(0,1)
+    for(i in 1:N3){
+      thetatilde[i] ~ dnorm(mean=mu0, var=40) 
+      s2tilde[i] ~ dinvgamma(shape=1, scale=0.5) 
+    }
+    xi[1:N2] ~ dCRP(conc1, size=N2)
+    conc1 <- beta + alpha + 3
+    alpha ~ dgamma(1,3)
+    beta ~ dgamma(4,5)
+    
+    for(i in 1:N){
+      s2[i] <- s2tilde[xi[i]]
+      y[i] ~ dnorm(thetatilde[xi[i]], var=s2[i])
+    }
+  }
+)
+
+conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
+Consts=list(N=50, N2=50, N3=50)
+set.seed(1)
+aux=sample(1:10, size=Consts$N2, replace=TRUE)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)),
+           s2tilde=rinvgamma(Consts$N3, a0, b0),
+           mu0 =1, alpha=1, beta=1)
+
+s20=4; s21=4
+mu01=5; mu11=-5
+Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
+
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
+
+modelConf<-configureMCMC(model, print=TRUE, thin=100) # less samples!
+modelConf$printSamplers(c("xi"))
+#modelConf$removeSamplers(c("xi"), print="TRUE")
+#modelConf$addSampler(c("xi"), type="sampler_MarginalizedG_general")
+#modelConf$printSamplers(c("xi"))
+
+modelMCMC=buildMCMC(modelConf)
+#-- compiling the sampler
+CmodelNewMCMC=compileNimble(modelMCMC, project=model,
+                            resetFunctions=TRUE, showCompilerOutput = TRUE)
+#-- MCMC samples
+set.seed(1)
+nsave=1000
+t1=proc.time()
+CmodelNewMCMC$run(nsave)
+proc.time()-t1
+
+
+mvSaved=modelMCMC$mvSamples
+#mvSaved <- CmodelNewMCMC$mvSamples
+#samples=as.matrix(cmvSaved)
+#SamplerG <- nimble:::sampler_G(model, mvSaved, target, varNames, rndconc)#nimble:::sampler_G(model, mvSaved, target, varNames)## 
+SamplerG <- sampler_G2(model, mvSaved)#nimble:::sampler_G3(model, mvSaved)
+cSamplerG <- compileNimble(SamplerG, project = model)
+cSamplerG$run()
+aux=as.matrix(cSamplerG$mv)  ## the mv object is accessed here
+
+trunc=length(aux[1,])/3
+for(i in 1:nrow(aux)){
+  plot(aux[i, (2*trunc+1):(3*trunc)], aux[i, 1:trunc], type="h", main=sum(aux[i, 1:trunc]),
+       xlim=c(-10,10)); readline()
+}
+for(i in 1:nrow(aux)){
+  plot(aux[i, (trunc+1):(2*trunc)], aux[i, 1:trunc], type="h", main=sum(aux[i, 1:trunc])); readline()
+}
+
+# less parameters in teh model
+trunc=length(aux[1,])/2
+for(i in 1:nrow(aux)){
+  plot(aux[i, (trunc+1):(2*trunc)], aux[i, 1:trunc], type="h", main=sum(aux[i, 1:trunc]),
+       xlim=c(-10,10)); readline()
+}
+
+
+
+
+##########################################################################
 # conjugate samplers that are/will be added the BNP models:
 ##########################################################################
 
