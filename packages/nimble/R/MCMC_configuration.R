@@ -244,8 +244,8 @@ print: A logical argument, specifying whether to print the ordered list of defau
                       depNodeDist <- model$getDistribution(depNode)
                       if(length(depNodeDist) == 1 && depNodeDist == 'dCRP'){
                         addSampler(target = node, type = 'CRP_concentration')
+                        next
                       }
-                      next
                     }
                     
                     ## default: 'RW' sampler
