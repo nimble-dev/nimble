@@ -31,9 +31,6 @@
 
 std::ostringstream _nimble_global_output;
 
-string _NIMBLE_WHITESPACE_UTIL(" \t");
-string _NIMBLE_WHITESPACEBRACKET_UTIL(" \t[");
-
 void nimble_print_to_R(std::ostringstream &input) {
   PRINTF("%s", input.str().c_str());
   input.str("");
@@ -743,13 +740,30 @@ SEXP C_rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s) {
   return(output);
 }
 
+string _NIMBLE_WHITESPACE(" \t");
+string _NIMBLE_WHITESPACEBRACKET(" \t[");
+string _NIMBLE_NUMERICS("0123456789.");
+string _NIMBLE_SPACECOMMABRACKET(" ,]");
+
+// std::stoi not consistent across C++ and not worth the portability worries, so we made our own using istringstream
+int nimble_stoi(const string &input) {
+  istringstream converter;
+  std::size_t iStart(input.find_first_not_of(_NIMBLE_WHITESPACE));
+  std::size_t iEnd(input.find_first_not_of(_NIMBLE_NUMERICS, iStart));
+  if(iEnd != std::string::npos && iEnd > iStart) iEnd--;
+  converter.str(input.substr(iStart, iEnd - iStart + 1));
+  int ans;
+  converter >> ans;
+  return ans;
+}
+
 void parseVar(const vector<string> &input, vector<string> &output) {
   int vecSize = input.size();
   std::size_t iEnd, iBegin;
   output.resize( vecSize );
   for(int i = 0; i < vecSize; i++) {
-    iBegin = input[i].find_first_not_of(_NIMBLE_WHITESPACE_UTIL);
-    iEnd = input[i].find_first_of(_NIMBLE_WHITESPACEBRACKET_UTIL, iBegin);
+    iBegin = input[i].find_first_not_of(_NIMBLE_WHITESPACE);
+    iEnd = input[i].find_first_of(_NIMBLE_WHITESPACEBRACKET, iBegin);
     if(iBegin < iEnd)
       output[i].assign( input[i].substr(iBegin, iEnd - iBegin) );
     else
@@ -761,13 +775,125 @@ void parseVar(const vector<string> &input, vector<string> &output) {
   }
 }
 
-SEXP parseVar(SEXP Sinput) {
+SEXP parseVar(SEXP Sinput) { // Not actually called?
   vector<string> input, output;
   STRSEXP_2_vectorString(Sinput, input);
   parseVar(input, output);
   return(vectorString_2_STRSEXP(output));
 }
 
+void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string &varName, vector<vector<int> > &inds) {
+  output.indices.resize(0);
+  std::size_t iBracket = input.find_first_of('[');
+  //std::cout<<iBracket<<"\n";
+  if(iBracket == std::string::npos) { // no bracket
+    output.varName = input;
+    //    std::cout<<output.varName<<"\n";
+    return;
+  }
+  output.varName = input.substr(0, iBracket);
+  //  std::cout<<output.varName<<"\n";
+
+  string restOfInput = input.substr(iBracket+1);
+  //  std::cout<<restOfInput<<"\n";
+  bool done(false);
+
+  vector<int> oneAns;
+  std::size_t iColon, iComma;
+  int firstNum, secondNum;
+  std::size_t iNextStart, iNonBlank;
+  iBracket = restOfInput.find_first_of(']');
+  if(iBracket == std::string::npos) {
+    _nimble_global_output<<"problem in parseVarAndInds: there is no closing bracket\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
+  while(!done) {
+    iColon   = restOfInput.find_first_of(':');
+    iComma   = restOfInput.find_first_of(',');
+    if((iColon < iBracket) & (iColon < iComma)) { // next is a colon expr like 2:5
+      firstNum = nimble_stoi(restOfInput);
+      iNextStart = iColon + 1;
+      restOfInput = restOfInput.substr(iNextStart);
+      iComma   = restOfInput.find_first_of(',');
+      iBracket = restOfInput.find_first_of(']');
+      secondNum   = nimble_stoi(restOfInput);
+      if(iComma < iBracket) iNextStart = iComma + 1; else {iNextStart = iBracket; done = true;}
+      restOfInput = restOfInput.substr(iNextStart);
+      oneAns.push_back(firstNum);
+      oneAns.push_back(secondNum);
+      output.indices.push_back(oneAns);
+      oneAns.clear();
+    } else {
+      if(iComma >= iBracket) {iComma = iBracket; done = true;} // now iComma is the ending index after here
+      iNonBlank = restOfInput.find_first_not_of(_NIMBLE_SPACECOMMABRACKET);
+      if(iNonBlank < iComma) { // there is a number
+	firstNum = nimble_stoi(restOfInput);
+	if(iComma < iBracket) iNextStart = iComma + 1; else iNextStart = iBracket;
+	restOfInput = restOfInput.substr(iNextStart);
+	oneAns.push_back(firstNum);
+	output.indices.push_back(oneAns);
+	oneAns.clear();
+      } else { // there is a blank
+	output.indices.push_back(oneAns);
+	if(iComma < iBracket) iNextStart = iComma + 1; else iNextStart = iBracket;
+	restOfInput = restOfInput.substr(iNextStart);
+      }
+    }
+    iBracket = restOfInput.find_first_of(']');
+  }
+}
+
+SEXP makeAsNumeric_LANGSXP(SEXP Sarg) {
+  SEXP Sans = PROTECT(Rf_allocVector(LANGSXP, 2));
+  SETCAR(Sans, Rf_install("as.numeric"));
+  SETCADR(Sans, Sarg);
+  UNPROTECT(1);
+  return Sans;
+}
+
+SEXP varAndIndices_2_LANGSXP(const varAndIndicesClass &varAndInds) {
+  SEXP Sans, t;
+  size_t ansLen =
+    1 +  //var
+    (varAndInds.indices.size() > 0) + // `[`
+    varAndInds.indices.size(); // indices
+  if(ansLen == 1) {
+    Sans = PROTECT(Rf_install(varAndInds.varName.c_str()));
+  } else {
+    t = Sans = PROTECT(Rf_allocVector(LANGSXP, ansLen));
+    SETCAR(t, R_BracketSymbol); t = CDR(t);
+    SETCAR(t, Rf_install(varAndInds.varName.c_str())); t = CDR(t);
+    for(size_t i = 0; i < varAndInds.indices.size(); ++i) {
+      if(varAndInds.indices[i].size() == 1) {
+	SETCAR(t, Rf_ScalarInteger(varAndInds.indices[i][0])); t = CDR(t);
+      } else {
+	SEXP ScolonExpr = PROTECT(Rf_allocVector(LANGSXP, 3));
+	SETCAR(ScolonExpr, Rf_install(":"));
+	SETCADR(ScolonExpr, Rf_ScalarInteger(varAndInds.indices[i][0]));
+	SETCADDR(ScolonExpr, Rf_ScalarInteger(varAndInds.indices[i][1]));
+	SETCAR(t, ScolonExpr); t = CDR(t);
+	UNPROTECT(1);
+      }
+    }
+  }
+  UNPROTECT(1);
+  return Sans;
+}
+
+SEXP makeParsedVarList(SEXP Sx) {
+  vector<string> x;
+  STRSEXP_2_vectorString(Sx, x);
+  SEXP Sans, t;
+  t = Sans = PROTECT(Rf_allocVector(LANGSXP, 1 + x.size()));
+  SETCAR(t, Rf_install("list")); t = CDR(t);
+  varAndIndicesClass varAndInds;
+  for(size_t i = 0; i < x.size(); ++i) {
+    parseVarAndInds(x[i], varAndInds);
+    SETCAR(t, makeAsNumeric_LANGSXP(varAndIndices_2_LANGSXP(varAndInds))); t = CDR(t);
+  }
+  UNPROTECT(1);
+  return Sans;
+}
 
 SEXP makeNewNimbleList(SEXP S_listName) {
   SEXP SnimbleInternalFunctionsEnv;

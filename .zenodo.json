@@ -1,0 +1,33 @@
+{
+    "license": "BSD_3_clause plus compatible licenses for included third-party libraries", 
+    "creators": [
+        {
+            "affiliation": "University of California, Berkeley, CA, USA", 
+            "name": "Perry de Valpine"
+        }, 
+        {
+            "affiliation": "University of California, Berkeley, CA, USA", 
+            "name": "Christopher J. Paciorek"
+        }, 
+        {
+            "affiliation": "Williams College, Williamstown, MA, USA",
+            "name": "Daniel Turek"
+        }, 
+        {
+            "name": "Nick Michaud",
+            "affiliation": "University of California, Berkeley, CA, USA"
+        }, 
+        {
+            "name": "Clifford Anderson-Bergman",
+            "affiliation": "Sandia National Laboratory, Livermore, CA, USA"
+        }, 
+        {
+            "name": "Fritz Obermeyer",
+        }, 
+        {
+            "name": "Duncan Temple Lang",
+            "affiliation": "University of California, Davis, CA, USA"
+        }
+    ], 
+    "access_right": "open", 
+}

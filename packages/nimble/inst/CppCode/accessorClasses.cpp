@@ -761,97 +761,12 @@ SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP S
   return(R_NilValue);
 }
 
-
-string _NIMBLE_WHITESPACE(" \t");
-string _NIMBLE_WHITESPACEBRACKET(" \t[");
-string _NIMBLE_NUMERICS("0123456789.");
-string _NIMBLE_SPACECOMMABRACKET(" ,]");
-
-// std::stoi not consistent across C++ and not worth the portability worries, so we made our own using istringstream
-int nimble_stoi(const string &input) {
-  istringstream converter;
-  std::size_t iStart(input.find_first_not_of(_NIMBLE_WHITESPACE));
-  std::size_t iEnd(input.find_first_not_of(_NIMBLE_NUMERICS, iStart));
-  if(iEnd != std::string::npos && iEnd > iStart) iEnd--;
-  converter.str(input.substr(iStart, iEnd - iStart + 1));
-  int ans;
-  converter >> ans;
-  return ans;
-}
-
-class varAndIndicesClass {
-public:
-  string varName;
-  vector< vector<int> > indices;
-};
-
 class mapInfoClass {
 public:
   int offset;
   vector<int> sizes;
   vector<int> strides;
 };
-
-void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string &varName, vector<vector<int> > &inds) {
-  output.indices.resize(0);
-  std::size_t iBracket = input.find_first_of('[');
-  //std::cout<<iBracket<<"\n";
-  if(iBracket == std::string::npos) { // no bracket
-    output.varName = input;
-    //    std::cout<<output.varName<<"\n";
-    return;
-  }
-  output.varName = input.substr(0, iBracket);
-  //  std::cout<<output.varName<<"\n";
-
-  string restOfInput = input.substr(iBracket+1);
-  //  std::cout<<restOfInput<<"\n";
-  bool done(false);
-
-  vector<int> oneAns;
-  std::size_t iColon, iComma;
-  int firstNum, secondNum;
-  std::size_t iNextStart, iNonBlank;
-  iBracket = restOfInput.find_first_of(']');
-  if(iBracket == std::string::npos) {
-    _nimble_global_output<<"problem in parseVarAndInds: there is no closing bracket\n";
-    nimble_print_to_R(_nimble_global_output);
-  }
-  while(!done) {
-    iColon   = restOfInput.find_first_of(':');
-    iComma   = restOfInput.find_first_of(',');
-    if((iColon < iBracket) & (iColon < iComma)) { // next is a colon expr like 2:5
-      firstNum = nimble_stoi(restOfInput);
-      iNextStart = iColon + 1;
-      restOfInput = restOfInput.substr(iNextStart);
-      iComma   = restOfInput.find_first_of(',');
-      iBracket = restOfInput.find_first_of(']');
-      secondNum   = nimble_stoi(restOfInput);
-      if(iComma < iBracket) iNextStart = iComma + 1; else {iNextStart = iBracket; done = true;}
-      restOfInput = restOfInput.substr(iNextStart);
-      oneAns.push_back(firstNum);
-      oneAns.push_back(secondNum);
-      output.indices.push_back(oneAns);
-      oneAns.clear();
-    } else {
-      if(iComma >= iBracket) {iComma = iBracket; done = true;} // now iComma is the ending index after here
-      iNonBlank = restOfInput.find_first_not_of(_NIMBLE_SPACECOMMABRACKET);
-      if(iNonBlank < iComma) { // there is a number
-	firstNum = nimble_stoi(restOfInput);
-	if(iComma < iBracket) iNextStart = iComma + 1; else iNextStart = iBracket;
-	restOfInput = restOfInput.substr(iNextStart);
-	oneAns.push_back(firstNum);
-	output.indices.push_back(oneAns);
-	oneAns.clear();
-      } else { // there is a blank
-	output.indices.push_back(oneAns);
-	if(iComma < iBracket) iNextStart = iComma + 1; else iNextStart = iBracket;
-	restOfInput = restOfInput.substr(iNextStart);
-      }
-    }
-    iBracket = restOfInput.find_first_of(']');
-  }
-}
 
 SEXP varAndIndices2Rlist(const varAndIndicesClass &input) {
   SEXP Soutput, Sindices;

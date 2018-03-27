@@ -7,6 +7,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
 # These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
+        disallow_multivariate_argument_expressions = TRUE,
         stop_after_processing_model_code = FALSE,
         enableModelMacros = FALSE,
         allowDynamicIndexing = TRUE,
@@ -57,8 +58,9 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         ## value is set to samplerAssignmentRules() (the defaults) in MCMC_configuration.R
         MCMCuseSamplerAssignmentRules = FALSE,
         saveMCMChistory = FALSE,
-        MCMCdefaultSamplerAssignmentRules = NULL
+        MCMCdefaultSamplerAssignmentRules = NULL,
         
+        enableWAIC = FALSE
         ## default settings for MCMC samplers
         ## control list defaults for MCMC samplers are
         ## now part of the sampler functions (setup code).
