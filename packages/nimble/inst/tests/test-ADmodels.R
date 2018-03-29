@@ -14,9 +14,8 @@ test_that('Derivs of calculate function work for model ADMod1', {
   ADMod1 <- nimbleModel(code = ADCode1, data = list(y = numeric(2)), dimensions = list(y = c(2)),
                         inits = list(x = c(1,1)))
   test_ADModelCalculate(ADMod1, name = 'ADMod1', calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod1$getDependencies('x'))),
-                        wrt = list(c('x', 'y'), c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]'), c('x[1]', 'y', 'x[2]')), order = c(0, 1, 2))
+                        wrt = list(c('x', 'y'), c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]'), c('x[1]', 'y', 'x[2]')), order = c(0, 1))
 })
-
 
 test_that('Derivs of calculate function work for model ADMod2', {
   ADCode2 <- nimbleCode({
@@ -29,7 +28,7 @@ test_that('Derivs of calculate function work for model ADMod2', {
     code = ADCode2, dimensions = list(x = 2, y = 2, z = 2), constants = list(diagMat = diag(2)),
     inits = list(x = c(2.1, 1.2), y  = c(-.1,-.2)))
   test_ADModelCalculate(ADMod2, name = 'ADMod2', calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod2$getDependencies('x'))),
-                        wrt = list(c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')))
+                        wrt = list(c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), order = c(0, 1))
 })
 
 #C++ derivs of below model won't work until we've implemented derivs of wishart
