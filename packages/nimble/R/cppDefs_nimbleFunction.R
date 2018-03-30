@@ -262,12 +262,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
                                                   }
                                               },
-                                              addADtypeDef = function( funName ){
-                                                ADtypeDefs <- symbolTable()
-                                                ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd") )
-                                                functionDefs[[funName]]$code$typeDefs <<- ADtypeDefs
-                                                invisible(NULL)
-                                              },
                                               addTypeTemplateFunction = function( funName ) {
                                                   newFunName <- paste0(funName, '_AD_')
                                                   regularFun <- RCfunDefs[[funName]]
@@ -334,8 +328,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                                                   name = 'allADtapePtrs_'))
                                                   objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup',
                                                                                   baseType = 'nimbleCppADinfoClass'))
-                                                  ## Add typedef for cppad matrixXd to ADproxy calculate.
-                                                  addADtypeDef( "calculate_ADproxyModel")
                                                   for(adEnabledFun in environment(nfProc$nfGenerator)$enableDerivs){
                                                       addADclassContentOneFun(adEnabledFun)
                                                   }
@@ -435,6 +427,9 @@ updateADproxyModelMethods <- function(.self) {
                                                 replacementTemplateArgs = "double" )
         thisDef$code$objectDefs$setParentST(parentST)
         thisDef$code$cppADCode <- 2L 
+        ADtypeDefs <- symbolTable()
+        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd") )
+        thisDef$code$typeDefs <- ADtypeDefs
     }
     classST <- .self$objectDefs
     classSymNames <- classST$getSymbolNames()
