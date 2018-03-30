@@ -547,7 +547,7 @@ sampler_CRP <- nimbleFunction(
     n <- length(targetElements) 
     
     # first check that the sampler can be used: we need one observation per random index
-    nObs <- length(model$getDependencies(targetElements, dataOnly = TRUE) )
+    nObs <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
     if(n != nObs){ stop("sampler_CRP: The length of random indexes and observations has to be the same") }
     
     ## finding 'tilde' variables (the parameters that are being clustered):
@@ -557,12 +557,19 @@ sampler_CRP <- nimbleFunction(
     dep <- model$getDependencies(targetElements[1], self=FALSE)
     for(i in 1:length(dep)) { 
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i])) # nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i]))
-      expr <- parse(text = expr)[[1]]
-      foundTarget <- all.vars(expr[[3]]) == targetVar
-      if( length(foundTarget) > 0 ) {
-        if( is.call(expr) && expr[[1]] == '[' ) {
-          tildeVars[itildeVar] <- deparse(expr[[2]])
-          itildeVar <- itildeVar+1 
+      for(j in 1:length(expr)) {
+        tmpexpr <- parse(text = expr[j])[[1]]
+        
+        if(length(tmpexpr) > 1) {
+          tmp <- tmpexpr[[3]]
+        } else tmp <- tmpexpr
+        foundTarget <- all.vars(tmp) == targetVar
+        
+        if( length(foundTarget) > 0 ) {
+          if( is.call(tmpexpr) && tmpexpr[[1]] == '[' ) {
+            tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
+            itildeVar <- itildeVar+1 
+          }
         }
       }
     }
