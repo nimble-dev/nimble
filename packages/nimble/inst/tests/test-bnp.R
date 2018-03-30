@@ -427,6 +427,195 @@ for(i in 1:nrow(aux)){
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
+# big model:
+codeBNP <- nimbleCode({
+  for(i in 1:nStudies) {
+    y[i] ~ dbin(size = nStudies, prob = q[i])#dbin(size = m[i], prob = q[i])
+    x[i] ~ dbin(size = nStudies, prob = p[i])#dbin(size = n[i], prob = p[i])
+    q[i] <- expit(theta + gamma[i])
+    p[i] <- expit(gamma[i])
+    gamma[i] ~ dnorm(mu[i], var = tau[i])
+    mu[i] <- muTilde[xi[i]]
+    tau[i] <- tauTilde[xi[i]]
+  }
+  for(i in 1:nStudies) {
+    muTilde[i] ~ dnorm(mu0, sd = sd0)
+    tauTilde[i] ~ dinvgamma(a0, b0)
+  }
+  xi[1:nStudies] ~ dCRP(conc, size = nStudies)
+  conc <- 1 #~ dgamma(1, 1)
+  mu0 <- 0 #~ dflat()
+  sd0 <- 10 #~ dunif(0, 100)
+  a0 <- 1 #~ dunif(0, 100)
+  b0 <- 1 #~ dunif(0, 100)
+  theta <- 0 #~ dflat()
+})
+
+Consts=list(nStudies=10)
+set.seed(1)
+Inits=list(gamma=rep(1,10),
+           muTilde=rep(1,10),
+           tauTilde=rep(1,10),
+           xi=rep(1,10))
+
+Data=list(y=rbinom(10, 10, 0.5), x=rbinom(10, 10, 0.5))
+
+model<-nimbleModel(codeBNP, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
+
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+# other big model
+library(emplik)
+data(myeloma)
+
+n <- nrow(myeloma)
+time <-  myeloma[ , 1]
+vstatus <- myeloma[ , 2]  # 0 = alive (i.e., censored)
+alive <- vstatus == 0
+cens_time <- rep(NA, n)
+cens_time[alive] <- time[alive]
+cens_time[!alive] <- Inf
+time[alive] <- NA
+
+logBUN <- myeloma[ , 3]
+HGB <- myeloma[ , 4]
+logBUN <- (logBUN - mean(logBUN)) / sd(logBUN)
+HGB <- (HGB - mean(HGB)) / sd(HGB)
+
+## accelerated failure time model per https://www4.stat.ncsu.edu/~ghosal/papers/PMR.pdf for Bayesian semiparametric AFT models
+codeAFT <- nimbleCode({
+  for(i in 1:n) {
+    x[i] ~ dweib(alpha, 1+exp(lambda[i]))   # 'data' nodes
+    is_cens[i] ~ dinterval(x[i], c[i])
+    lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
+    eta[i] <- etaTilde[xi[i]]
+  }
+  xi[1:n] ~ dCRP(conc, size = n)
+  conc ~ dgamma(1, 1)
+  for(i in 1:n)
+    etaTilde[i] ~ dunif(b0, B0)
+  alpha ~ dunif(a0, A0)
+  for(j in 1:p)
+    delta[j] ~ dflat()
+})
+
+constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
+                 = cens_time, Z = cbind(logBUN, HGB))
+data = list(is_cens = as.numeric(alive), x = time)
+xInit <- rep(NA, n)
+xInit[alive] <- cens_time[alive] + 10
+inits = list(alpha = 1, delta = c(0, 0), conc = 1, etaTilde = runif(n,
+                                                                    constants$b0, constants$B0),
+             xi = sample(1:3, n, replace = TRUE), x = xInit)
+
+model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
+conf = configureMCMC(model, print = TRUE)
+mcmc = buildMCMC(conf)
+
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+Code=nimbleCode(
+  {
+    for(i in 1:N){
+      s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
+    }
+    xi[1:N] ~ dCRP(conc, size=N)
+    conc ~ dgamma(1, 1)
+    
+    for(i in 1:N){
+      s2[i] <- s2tilde[xi[i]]
+      y[i] ~ dnorm(mu1 + mu2, s2[i])
+    }
+    mu1 ~ dnorm(0,1)
+    mu2 ~ dnorm(0,1)
+    a0<-1; b0<-0.5 
+  }
+)
+
+Code=nimbleCode(
+  {
+    for(i in 1:N){
+      #thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+      s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
+    }
+    xi[1:N] ~ dCRP(conc, size=N)
+    conc ~ dgamma(1, 1)
+    
+    for(i in 1:N){
+      #theta[i] <- thetatilde[xi[i]]
+      #s2[i] <- s2tilde[xi[i]]
+      y[i] ~ dnorm(mu1 + mu2, exp(s2tilde[xi[i]]))#y[i] ~ dnorm(theta[i], var=s2[i])
+    }
+    mu1 ~ dnorm(0,1)
+    mu2 ~ dnorm(0,1)
+    a0<-1; b0<-0.5 # tau20<-40 #; mu0<-0;
+  }
+)
+
+conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
+Consts=list(N=50)
+set.seed(1)
+aux=sample(1:10, size=Consts$N, replace=TRUE)
+Inits=list(xi=aux, #thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)),
+           s2tilde=rinvgamma(Consts$N, shape=a0, scale=b0),
+           conc=1, mu1=1, mu2=2)
+
+s20=4; s21=4
+mu01=5; mu11=-5
+Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
+
+#-- compiling the model:
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
+
+
+Code=nimbleCode(
+  {
+    for(i in 1:N){
+      thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+      #s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
+    }
+    xi[1:N] ~ dCRP(conc, size=N)
+    conc ~ dgamma(1, 1)
+    
+    for(i in 1:N){
+      #theta[i] <- thetatilde[xi[i]]
+      #s2[i] <- s2tilde[xi[i]]
+      y[i] ~ dnorm( mu1+ thetatilde[xi[i]] , exp(s2))#y[i] ~ dnorm(theta[i], var=s2[i])
+    }
+    mu1 ~ dnorm(0,1)
+    s2 ~ dinvgamma(1,1)
+    tau20<-40 ; mu0<-0; # 
+  }
+)
+
+conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
+Consts=list(N=50)
+set.seed(1)
+aux=sample(1:10, size=Consts$N, replace=TRUE)
+Inits=list(xi=aux, #thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)),
+           thetatilde=rnorm(Consts$N, 0,1),
+           conc=1, mu1=1, s2=2)
+
+s20=4; s21=4
+mu01=5; mu11=-5
+Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
+
+#-- compiling the model:
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
+
+
+# OK: y[i] ~ dnorm(mu1 + mu2, sigma[xi[i]])
+# OK: y[i] ~ dnorm(mu1 + mu2, exp(sigma[xi[i]]))
+y[i] ~ dnorm(mu + theta[xi[i]], sigma)
+
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 #-- stick_breaking representation and BUGS Code
 
 #-- stick breaking nimble function:
