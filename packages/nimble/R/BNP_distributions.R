@@ -193,7 +193,7 @@ stick_breaking <- nimbleFunction(
             return(rep(NaN, N+1))
         }
     
-        x <- nimNumeric(N) 
+        x <- nimNumeric(N+1) 
         remainingLogProb <- 0 
     
         x[1] <- log(z[1]) 
