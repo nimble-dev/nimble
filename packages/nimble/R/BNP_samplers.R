@@ -326,7 +326,7 @@ sampler_CRP_concentration <- nimbleFunction(
     # -- generating augmented r.v. and computing the weight.
     x <- rbeta(1, conc+1, N)
     aux3 <- rateParam - log(x)
-    w <- aux2/(aux2 + N*blog)
+    w <- aux2/(aux2 + N*aux3)
     
     # -- updating the concentration parameter.
     if(runif(1) <= w){
@@ -577,7 +577,7 @@ sampler_CRP <- nimbleFunction(
 
     min_nTilde <- min(nTilde) ## we need a scalar for use in run code
     if(min_nTilde < n)
-      warning('sampler_CRP: The number of parameters to be clustered is less than the number of random indexes. The MCMC is not strictly valid if ever it proposes more components than exist')
+      warning('sampler_CRP: The number of parameters to be clustered is less than the number of random indexes. The MCMC is not strictly valid if ever it proposes more components than exist; NIMBLE will warn you if this occurs.')
     
     ## Here we try to set up some data structures that allow us to do observation-specific
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
