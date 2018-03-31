@@ -556,24 +556,20 @@ sampler_CRP <- nimbleFunction(
     
     dep <- model$getDependencies(targetElements[1], self=FALSE)
     for(i in 1:length(dep)) { 
-      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i])) # nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i]))
+      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i])) 
       for(j in 1:length(expr)) {
+        ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
         tmpexpr <- parse(text = expr[j])[[1]]
-        
-        if(length(tmpexpr) > 1) {
-          tmp <- tmpexpr[[3]]
-        } else tmp <- tmpexpr
-        foundTarget <- all.vars(tmp) == targetVar
-        
-        if( length(foundTarget) > 0 ) {
-          if( is.call(tmpexpr) && tmpexpr[[1]] == '[' ) {
-            tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
-            itildeVar <- itildeVar+1 
-          }
+        if(length(tmpexpr) == 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') {   
+            foundTarget <- all.vars(tmpexpr[[3]]) == targetVar   
+            if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
+                tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
+                itildeVar <- itildeVar+1 
+            }
         }
       }
     }
-    
+
     nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
     
     if(length(unique(nTilde)) != 1)
@@ -581,9 +577,6 @@ sampler_CRP <- nimbleFunction(
     
     if(min(nTilde) < n)
       warning('sampler_CRP: The number of parameters to be clustered is less than the number of random indexes. The MCMC is not strictly valid if ever it proposes more components than exist')
-    
-    #stop('sampler_CRP: The number of parameters being clustered has to be at least equal to the number of random indexes') 
-    ## Claudia what do you think about allowing nTilde<n and then in run code warning (and rejecting) if the MCMC tries to use an index that is too big. That would save a lot of computation and work in many cases, I think.
     
     ## Here we try to set up some data structures that allow us to do observation-specific
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
@@ -620,9 +613,7 @@ sampler_CRP <- nimbleFunction(
       }
     }
     
-    ## Claudia: please check that this correctly chooses nonconjugate if we have two tilde variables
-    ## Answer: assigns CRP_nonconjugate when ther are  and are not determinstic nodes in a model with two tilde variables.
-    helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)#nimble:::
+    helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
     
     ## use conjugacy to determine which helper functions to use
     conjugacyResult <- checkCRPconjugacy(model, target)
