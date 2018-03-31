@@ -574,8 +574,9 @@ sampler_CRP <- nimbleFunction(
     
     if(length(unique(nTilde)) != 1)
       stop('sampler_CRP: When multiple parameters are being clustered, the number of those parameters must all be the same')
-    
-    if(min(nTilde) < n)
+
+    min_nTilde <- min(nTilde) ## we need a scalar for use in run code
+    if(min_nTilde < n)
       warning('sampler_CRP: The number of parameters to be clustered is less than the number of random indexes. The MCMC is not strictly valid if ever it proposes more components than exist')
     
     ## Here we try to set up some data structures that allow us to do observation-specific
@@ -652,7 +653,7 @@ sampler_CRP <- nimbleFunction(
               mySum <- sum(xi == newind)
             }
             ## Clau: warning when a component that does not exist should be sampled
-            if(newind > min(nTilde)) {
+            if(newind > min_nTilde) {
               nimCat('CRP_sampler: This MCMC is not fully non parametric. More components than exist are requiered')
               newind <- xi[i] # Clau: is this what we want to do?
             }
