@@ -498,7 +498,8 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
          } else {
             nms <- names(distributionsInput)
           }
-        if(verbose) cat("Registering the following user-provided distributions:", nms, ".\n")
+        if(nimbleOptions('verbose'))
+            cat("Registering the following user-provided distributions:", nms, ".\n")
         dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
             distributionsInput[dupl] <- NULL
