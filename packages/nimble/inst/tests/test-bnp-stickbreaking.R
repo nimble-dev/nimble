@@ -54,11 +54,13 @@ SB_model$z <- x
 SB_model$calculate()
 
 # Chris, this test is not passed. Don't know why.... Later the compiled version is passed (test in line 71)!
-# maybe diference in decimals?
+                                        # maybe diference in decimals?
+# Claudia, it's awkward becasue SB_model$w is an array not a vector. You'll need to convert to a vector before comparing to 'truth' 
 try(test_that("Test that SB_model calculation is correct in weights calculation: ",
               expect_equal(SB_model$w, truth,
                            info = paste0("incorrect stick breaking weigths in model"))))
 
+# Claudia, I'm not sure we need this - if the elements are all equal in the test above, then the mean is necessarily equal. Right?
 try(test_that("Test that SB_model calculation is correct in mean of weights calculation: ",
               expect_equal(mean(SB_model$w), mean(truth), tol=0.01,
                            info = paste0("incorrect stick breaking mean weigths in model"))))
