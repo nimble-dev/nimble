@@ -714,7 +714,7 @@ conjugacyClass <- setRefClass(
                                ## I <- model[[target]] * 0
                                ## for(sizeIndex in 1:d)   { I[sizeIndex, sizeIndex] <- 1 }
                                ## model[[target]] <<- I   ## initially, propogate through X = I
-                               I <- identityMatrix(d)
+                               I <- diag(d)
                                model[[target]] <<- I   ## initially, propogate through X = I
                                calculate(model, calcNodesDeterm)
                            })

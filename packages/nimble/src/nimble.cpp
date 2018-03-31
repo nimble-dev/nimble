@@ -57,7 +57,7 @@ R_CallMethodDef CallEntries[] = {
  FUN(matrix2ListInt, 5),
  FUN(C_rankSample, 4),
  FUN(parseVar, 1),
-
+ FUN(makeParsedVarList, 1),
  FUN(C_setGraph, 7),
  FUN(C_anyStochDependencies, 1),
  FUN(C_anyStochParents, 1),

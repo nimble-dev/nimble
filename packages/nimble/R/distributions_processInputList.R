@@ -199,7 +199,9 @@ distClass <- setRefClass(
         },
         
         init_types_makeArgList = function(typeArgCharVector) {
-            parsedArgList <- lapply(typeArgCharVector, function(x) parse(text=x)[[1]])
+            parsedArgList <- try(lapply(typeArgCharVector, function(x) parse(text=x)[[1]]))
+            if(is(parsedArgList, 'try-error'))
+                stop("init_types_makeArgList: problem with arguments ", paste(typeArgCharVector, collapse = ","), ". Perhaps you didn't define types for your user-defined distribution nimbleFunctions?")
             allNames <- unlist(lapply(parsedArgList, function(pa) as.character(pa[[2]])))
             declExprs <- lapply(parsedArgList, function(pa) pa[[3]])
             allTypes <- unlist(lapply(parsedArgList, function(pa) as.character(pa[[3]][[1]])))
@@ -254,10 +256,10 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
     if(!exists(densityName, where = userEnv) ||
         !is.rcf(get(densityName, pos = userEnv)))
         stop(paste0("checkDistributionFunctions: density function for ", densityName,
-                    " is not available as a nimbleFunction without setup code."))
+                    " is not available.  It must be a nimbleFunction (with no setup code)."))
     if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {
         cat(paste0("Warning: random generation function for ", densityName,
-                    " is not available as a nimbleFunction without setup code. NIMBLE is generating a placeholder function that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.\n"))
+                    " is not available. NIMBLE is generating a placeholder function that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.\n"))
         rargInfo <- environment(get(densityName, pos = userEnv))$nfMethodRCobject$argInfo
         returnType <- deparse(unlist(rargInfo[[1]]))
         rargInfo <- rargInfo[-length(rargInfo)]  # remove 'log' argument
@@ -289,7 +291,7 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         quantileName <- sub('^d', 'q', densityName)
         if(!is.rcf(get(cdfName, pos = userEnv)) || !is.rcf(get(quantileName, pos = userEnv)))
             stop(paste0("checkDistributionFunctions: Either distribution (CDF) or quantile (inverse CDF) functions for ", densityName,
-                        " are not available as nimbleFunctions without setup code."))
+                        " are not available.  If needed, they must be nimbleFunction (with no setup code)."))
 
         pargs <- args <- formals(get(cdfName, pos = userEnv))
         nArgs <- length(args)
@@ -394,7 +396,7 @@ prepareDistributionInput <- function(dist) {
 #' a character string in the form of the density name (starting with 'd') followed by the names of the parameters in parentheses. When alternative parameterizations are given in \code{Rdist}, this should be an exhaustive list of the unique parameter names from all possible parameterizations, with the default parameters specified first.
 #' }
 #' \item{\code{Rdist}} {
-#' an optional character vector with one or more alternative specifications of the density; each alternative specification can be an alternative name for the density, a different ordering of the parameters, different parameter name(s), or an alternative parameterization. In the latter case, the character string in parentheses should provide a given reparameterization as comma-separated name = value pairs, one for each default parameter, where name is the name of the default parameter and value is a mathematical expression relating the default parameter to the alternative parameters or other default parameters. The default parameters should correspond to the input arguments of the nimbleFunctions provided as the density and random generation functions. The mathematical expression can use any of the math functions allowed in NIMBLE (see the User Manual) as well as user-supplied nimbleFunctions without setup code. The names of your nimbleFunctions for the distribution functions must match the function name in the \code{Rdist} entry (or if missing, the function name in the \code{BUGSdist} entry
+#' an optional character vector with one or more alternative specifications of the density; each alternative specification can be an alternative name for the density, a different ordering of the parameters, different parameter name(s), or an alternative parameterization. In the latter case, the character string in parentheses should provide a given reparameterization as comma-separated name = value pairs, one for each default parameter, where name is the name of the default parameter and value is a mathematical expression relating the default parameter to the alternative parameters or other default parameters. The default parameters should correspond to the input arguments of the nimbleFunctions provided as the density and random generation functions. The mathematical expression can use any of the math functions allowed in NIMBLE (see the User Manual) as well as user-supplied nimbleFunctions (which must have no setup code). The names of your nimbleFunctions for the distribution functions must match the function name in the \code{Rdist} entry (or if missing, the function name in the \code{BUGSdist} entry
 #' }
 #' \item{\code{discrete}} {
 #' a optional logical indicating if the distribution is that of a discrete random variable. If not supplied, distribution is assumed to be for a continuous random variable.
@@ -653,9 +655,13 @@ NULL
 #' @export
 getDistributionInfo <- function(dist) {
     if(is.na(dist)) return(NA)
-    if(dist %in% distributions$namesVector) return(distributions[[dist]])
-    if(exists('distributions', nimbleUserNamespace) && dist %in% nimbleUserNamespace$distributions$namesVector)
-        return(nimbleUserNamespace$distributions[[dist]])
+    ans <- distributions[[dist]]
+    if(!is.null(ans)) return(ans)
+    ##    if(dist %in% distributions$namesVector) return(distributions[[dist]])
+    ans <- nimbleUserNamespace$distributions[[dist]]
+    if(!is.null(ans)) return(ans)
+    ##if(exists('distributions', nimbleUserNamespace) && dist %in% nimbleUserNamespace$distributions$namesVector)
+    ##    return(nimbleUserNamespace$distributions[[dist]])
     stop(paste0("getDistributionInfo: ", dist, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 

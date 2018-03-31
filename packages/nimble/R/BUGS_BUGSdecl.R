@@ -548,41 +548,41 @@ BUGSdeclClass$methods(
         if(type == 'stoch') {
             RHSreplaced <- codeReplaced[[3]]
             if(length(RHSreplaced) > 1) { ## It actually has argument(s)
-                boundNames <- c('lower', 'upper')
+                boundNames <- c('lower_', 'upper_')
                 boundExprs <<- as.list(RHSreplaced[boundNames])
                 if(truncated) {  # check for user-provided constant bounds inconsistent with distribution range
                     distName <- as.character(RHSreplaced[[1]])
                     distRange <- getDistributionInfo(distName)$range
-                    if(is.numeric(boundExprs$lower) &&
+                    if(is.numeric(boundExprs$lower_) &&
                        is.numeric(distRange$lower) &&
-                       is.numeric(boundExprs$upper) &&
+                       is.numeric(boundExprs$upper_) &&
                        is.numeric(distRange$upper) &&
-                       boundExprs$lower <= distRange$lower &&
-                       boundExprs$upper >= distRange$upper)  # user specified bounds irrelevant
+                       boundExprs$lower_ <= distRange$lower &&
+                       boundExprs$upper_ >= distRange$upper)  # user specified bounds irrelevant
                         truncated <<- FALSE
                     
-                    if(is.numeric(boundExprs$lower) &&
-                       is.numeric(boundExprs$upper) &&
-                       boundExprs$lower >= boundExprs$upper)
+                    if(is.numeric(boundExprs$lower_) &&
+                       is.numeric(boundExprs$upper_) &&
+                       boundExprs$lower_ >= boundExprs$upper_)
                         warning(paste0("Lower bound is greater than or equal to upper bound in ",
                                        deparse(codeReplaced),
                                        "; proceeding anyway, but this is likely to cause numerical issues."))
-                    if(is.numeric(boundExprs$lower) &&
+                    if(is.numeric(boundExprs$lower_) &&
                        is.numeric(distRange$lower) &&
-                       boundExprs$lower < distRange$lower) {
+                       boundExprs$lower_ < distRange$lower) {
                         warning(paste0("Lower bound is less than or equal to distribution lower bound in ",
                                        deparse(codeReplaced), "; ignoring user-provided lower bound."))
-                        boundExprs$lower <<- distRange$lower
-                        codeReplaced[[3]]['lower'] <<- distRange$lower
+                        boundExprs$lower_ <<- distRange$lower
+                        codeReplaced[[3]]['lower_'] <<- distRange$lower
                     }
-                    if(is.numeric(boundExprs$upper) &&
+                    if(is.numeric(boundExprs$upper_) &&
                        is.numeric(distRange$upper) &&
-                       boundExprs$upper > distRange$upper) {
+                       boundExprs$upper_ > distRange$upper) {
                         warning(paste0("Upper bound is greater than or equal to distribution upper bound in ",
                                        deparse(codeReplaced),
                                        "; ignoring user-provided upper bound."))
-                        boundExprs$upper <<- distRange$upper
-                        codeReplaced[[3]]['upper'] <<- distRange$upper
+                        boundExprs$upper_ <<- distRange$upper
+                        codeReplaced[[3]]['upper_'] <<- distRange$upper
                     }
                 }
                 if(!truncated) {
@@ -695,7 +695,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
               indexingBracket <- FALSE
             } 
         }
-        if(indexingBracket) { 
+        if(indexingBracket) {
             ## recurse on the index arguments
             contents <-
                 lapply(code[-c(1,2)],
@@ -728,7 +728,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                               indexNames,
                                               nimbleFunctionNames,
                                               contextID)
-
+            
             ## error if it looks like mu[i][j] where i is a for-loop index
             if(variable$hasIndex)
                 stop('Error: Variable',
@@ -738,6 +738,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             if(variable$replaceable) {
                 ## a case like x[ block[i] ], dealing with the
                 ## block[i], so block is replaceable
+                if(!all(contentsReplaceable)) 
+                    ## dynamic index on a constant
+                    stop('getSymbolicParentNodesRecurse: dynamic indexing of constants is not allowed in ', deparse(code), '. Try adding the dynamically-indexed constant as data instead (using the data argument of nimbleModel).')
                 boolIndexingBlock <-
                     unlist(
                         lapply(code[-c(1,2)],
@@ -770,7 +773,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                     if(!nimbleOptions()$allowDynamicIndexing) {
                         warning("It appears you are trying to use dynamic indexing (i.e., the index of a variable is determined by something that is not a constant) in: ",
                                 deparse(code),
-                                ". This is now allowed in version 0.6-6 as an optional beta feature. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
+                                ". This is now allowed as of version 0.6-6 (as an optional beta feature) and by default as of version 0.6-7. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
                         dynamicIndexParent <- code[[2]]
                     } else {
                         if(any(
@@ -989,9 +992,18 @@ genReplacementsAndCodeRecurse <- function(code,
             contentsReplaceable  <- list()
             allContentsReplaceable <- TRUE
         }
-        if(deparse(code[[1]]) %in%
-           functionsThatShouldNeverBeReplacedInBUGScode)
-            return(replaceWhatWeCan(code,
+        ## Do not replace if it is from a special set of functions
+        ## or is a nimbleFunction (specifically, an RCfunction)
+        if(
+        {
+            funName <- deparse(code[[1]])
+            (
+                (funName %in% functionsThatShouldNeverBeReplacedInBUGScode) ||
+                (exists(funName) && is.rcf(get(funName)))
+            )
+        }
+        )
+           return(replaceWhatWeCan(code,
                                     contentsCodeReplaced,
                                     contentsReplacements,
                                     contentsReplaceable,

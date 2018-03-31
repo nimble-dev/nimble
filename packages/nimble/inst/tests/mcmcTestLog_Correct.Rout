@@ -1,7 +1,4 @@
-Detected rc,rt as data within 'constants'.
-Adding rc,rt as data for building model.
 ===== Starting MCMC test for blocker. =====
-done compiling model
                 d    delta[1]    delta[2]    delta[3]    delta[4]   delta[5]
 mean  -0.26026517 -0.25120540 -0.27968572 -0.26862728 -0.25336106 -0.2190743
 sd     0.04905698  0.13707416  0.09981310  0.11587649  0.09272171  0.1244749
@@ -93,10 +90,7 @@ delta[21]  -0.1997730 -0.5367254  -0.111033116       1
 delta[22]  -0.2837074 -0.5019304  -0.128003956       1
 delta.new  -0.2446101 -0.5003740  -0.037889987       1
 ===== Finished MCMC test for blocker. =====
-Detected grade as data within 'constants'.
-Adding grade as data for building model.
 ===== Starting MCMC test for bones. =====
-done compiling model
       grade[1, 1] grade[2, 1] grade[3, 1] grade[4, 1] grade[5, 1] grade[6, 1]
 mean            1           2           2           2           2           2
 sd              0           0           0           0           0           0
@@ -574,10 +568,7 @@ grade[13, 11]  2.0000000  1.0000000  2.0000000       1
 grade[13, 23]  3.0000000  1.0000000  3.0000000       1
 grade[13, 25]  1.0000000  1.0000000  3.0000000       1
 ===== Finished MCMC test for bones. =====
-Detected y as data within 'constants'.
-Adding y as data for building model.
 ===== Starting MCMC test for dyes. =====
-done compiling model
            mu[1]      mu[2]      mu[3]      mu[4]      mu[5]      mu[6]
 mean  1511.48325 1526.98925 1552.92534 1504.39581 1579.12426 1485.06725
 sd      20.01998   20.53597   20.90363   20.39036   26.01235   21.74603
@@ -601,10 +592,7 @@ mu[4]       1.527654e+03 1.514603e+03 1.552534e+03       1
 mu[5]       1.527487e+03 1.501950e+03 1.544254e+03       1
 mu[6]       1.527106e+03 1.507653e+03 1.546605e+03       1
 ===== Finished MCMC test for dyes. =====
-Detected Y as data within 'constants'.
-Adding Y as data for building model.
 ===== Starting MCMC test for equiv. =====
-done compiling model
              d[1]        d[2]        d[3]        d[4]         d[5]        d[6]
 mean   0.05513637  0.11413325  0.04450563  0.05592088  0.159077176 -0.16673642
 sd     0.07428945  0.08776353  0.07197367  0.07106224  0.090621781  0.09289552
@@ -639,10 +627,7 @@ d[8]   -2.249864e-02 -0.09987515    0.07907550       1
 d[9]   -4.402598e-04 -0.08371215    0.09010775       1
 d[10]   1.835687e-01 -0.04816298    0.13967460       0
 ===== Finished MCMC test for equiv. =====
-Detected Y as data within 'constants'.
-Adding Y,x as data for building model.
 ===== Starting MCMC test for line. =====
-done compiling model
           alpha       beta       tau
 mean  2.9994887 0.80244849 1.8764998
 sd    0.5542363 0.37192857 1.5339500
@@ -655,10 +640,7 @@ alpha 2.9941995 2.6301427 4.469102       1
 beta  0.8109641 0.1966222 1.377661       1
 tau   1.8515638 0.1791601 8.173658       1
 ===== Finished MCMC test for line. =====
-Detected r0,r1 as data within 'constants'.
-Adding r0,r1 as data for building model.
 ===== Starting MCMC test for oxford. =====
-done compiling model
            alpha        b[1]       b[2]        b[3]       b[4]        b[5]
 mean  0.56434701  0.03637019  0.1109392 -0.09701937  0.1031572  0.04615031
 sd    0.06037802  0.92397353  1.0512030  0.96078467  1.0049901  1.05151285
@@ -1112,10 +1094,7 @@ beta1   -0.043193587 -0.075063248 -0.009851079       1
 beta2    0.003669918 -0.003546150  0.009128991       1
 sigma    0.157026802  0.003980449  0.228610132       1
 ===== Finished MCMC test for oxford. =====
-Detected x as data within 'constants'.
-Adding x as data for building model.
 ===== Starting MCMC test for pump. =====
-done compiling model
           alpha      beta   theta[1]   theta[2]   theta[3]   theta[4]  theta[5]
 mean  0.7178852 0.9722373 0.05923072 0.10363590 0.08924375 0.11555747 0.5965869
 sd    0.2684778 0.5905496 0.02560501 0.07808950 0.04073619 0.02774463 0.3227135
@@ -1142,10 +1121,7 @@ theta[8]  0.07807098 0.0001503955 1.96981673       1
 theta[9]  0.38299224 0.0002089551 1.04770194       1
 theta[10] 0.32034750 0.0888603599 0.74371339       1
 ===== Finished MCMC test for pump. =====
-Detected Y as data within 'constants'.
-Adding Y,x as data for building model.
 ===== Starting MCMC test for rats. =====
-done compiling model
         alpha[1]   alpha[2]   alpha[3]   alpha[4]   alpha[5]   alpha[6]
 mean  239.731024 247.678402 252.526030 232.623359 231.603053 249.842651
 sd      2.685767   2.753459   2.660872   2.735464   2.697834   2.734684
@@ -1265,10 +1241,7 @@ beta[28]    6.12955410   5.64064159   6.26382690       1
 beta[29]    5.80088379   5.84173213   6.46600545       0
 beta[30]    5.95474770   5.59071252   6.21690800       1
 ===== Finished MCMC test for rats. =====
-Detected r as data within 'constants'.
-Adding r as data for building model.
 ===== Starting MCMC test for seeds. =====
-done compiling model
           alpha0     alpha1    alpha12    alpha2       b[1]        b[2]
 mean  -0.5242105  0.1199246 -0.8681264 1.3170888 -0.1973951 -0.01909777
 sd     0.1547613  0.2229987  0.3743817 0.2294306  0.2587969  0.24283592
@@ -1324,10 +1297,7 @@ b[19]    0.095070721 -0.1370423   0.38024612       1
 b[20]   -0.270044022 -0.3593081   0.21829982       1
 b[21]   -0.048937633 -0.2569549   0.36341054       1
 ===== Finished MCMC test for seeds. =====
-Detected Y as data within 'constants'.
-Adding Y as data for building model.
 ===== Starting MCMC test for dugongs. =====
-done compiling model
            alpha       beta      gamma       tau
 mean  2.66215818 0.98474173 0.86636216 112.54271
 sd    0.06120492 0.06911893 0.02747454  32.04013
@@ -1341,10 +1311,7 @@ beta   1.048876  0.9114539   1.2881267       1
 gamma  0.895671  0.8911462   0.9427739       1
 tau   94.761011 68.3516335 213.8132591       1
 ===== Finished MCMC test for dugongs. =====
-Detected y as data within 'constants'.
-Adding y as data for building model.
 ===== Starting MCMC test for epil. =====
-done compiling model
         alpha.Age   alpha.BT alpha.Base  alpha.Trt    alpha.V4    alpha0
 mean  -0.02204864 0.34627476 0.24512954 -0.8930258 -0.16050725 1.4118824
 sd     0.04422417 0.04079585 0.16544034  0.1772558  0.05390429 0.1473323
@@ -1470,10 +1437,7 @@ b1[57]      0.489572942  0.18266761  1.011454906       1
 b1[58]     -0.136696664 -0.30864963  0.702255030       1
 b1[59]     -1.761056546 -2.78634367 -0.821032104       1
 ===== Finished MCMC test for epil. =====
-Detected y as data within 'constants'.
-Adding y as data for building model.
 ===== Starting MCMC test for epil. =====
-done compiling model
         alpha.Age   alpha.BT   alpha.Base   alpha.Trt   alpha.V4     alpha0
 mean  -0.02561073 0.23856849  0.225757867 -0.59533220 -0.1220667 1.36326407
 sd     0.06833382 0.04418444  0.177170362  0.18481350  0.1057798 0.09753714
@@ -2036,10 +2000,7 @@ b[59, 2]   -0.695014123 -0.721775509  0.519835566       1
 b[59, 3]   -0.082205104 -0.723324690  0.482577475       1
 b[59, 4]    0.027044581 -0.851463388  0.730377615       1
 ===== Finished MCMC test for epil. =====
-Detected r as data within 'constants'.
-Adding r as data for building model.
 ===== Starting MCMC test for seeds. =====
-done compiling model
           alpha0      alpha1    alpha12    alpha2       b[1]        b[2]
 mean  -0.5371744 -0.02144285 -0.5213877 1.1957395 -0.5859269  0.06324449
 sd     0.1290223  0.28373639  0.4400787 0.2233805  0.8981808  0.66851331
@@ -2095,10 +2056,7 @@ b[19]    0.05329416 -1.58165709  1.5754527       1
 b[20]    0.68601174 -1.07166078  1.7497167       1
 b[21]   -0.06209576 -1.47831580  2.1955848       1
 ===== Finished MCMC test for seeds. =====
-Detected r as data within 'constants'.
-Adding r as data for building model.
 ===== Starting MCMC test for seeds. =====
-done compiling model
           alpha0      alpha1    alpha12    alpha2       b[1]       b[2]
 mean  -0.5812451  0.09810335 -0.8936769 1.3458615 -0.5820418  0.1034359
 sd     0.2305803  0.35442927  0.6067327 0.3456042  0.7636963  0.7076207
@@ -2154,10 +2112,7 @@ b[19]    0.002489228 -2.42400957  1.169629747       1
 b[20]    0.850039371 -1.06150441  2.373769280       1
 b[21]   -0.153876206 -1.53769223  1.735597822       1
 ===== Finished MCMC test for seeds. =====
-Detected Y as data within 'constants'.
-Adding Y,x as data for building model.
 ===== Starting MCMC test for birats. =====
-done compiling model
       beta[1, 1] beta[2, 1] beta[3, 1] beta[4, 1] beta[5, 1] beta[6, 1]
 mean  239.973985 247.883995 252.472584 232.662452 231.578222  249.54081
 sd      2.676499   2.745652   2.689279   2.757155   2.840088    2.66702
@@ -2282,10 +2237,7 @@ beta[28, 2] 6.098514e+00 5.437531e+00 6.252862e+00       1
 beta[29, 2] 5.082474e+00 5.200582e+00 6.010727e+00       0
 beta[30, 2] 5.558123e+00 4.945693e+00 5.816377e+00       1
 ===== Finished MCMC test for birats. =====
-Detected Y as data within 'constants'.
-Adding Y,x as data for building model.
 ===== Starting MCMC test for birats. =====
-done compiling model
       beta[1, 1] beta[2, 1] beta[3, 1] beta[4, 1] beta[5, 1] beta[6, 1]
 mean  106.812767  97.030250  108.74383 113.577336  91.245673 112.506156
 sd      5.343776   5.195878    5.39965   5.659877   5.369027   5.289545
@@ -2410,10 +2362,7 @@ beta[28, 2] 6.096516e+00 5.417856e+00   6.13779852       1
 beta[29, 2] 5.101321e+00 4.926857e+00   5.76837083       1
 beta[30, 2] 5.567212e+00 5.074523e+00   5.76601123       1
 ===== Finished MCMC test for birats. =====
-Detected Y as data within 'constants'.
-Adding Y,x,R as data for building model.
 ===== Starting MCMC test for birats. =====
-done compiling model
       Omega.beta[1, 1] Omega.beta[2, 1] Omega.beta[1, 2] Omega.beta[2, 2]
 mean       0.008365883      -0.12466173      -0.12466173         5.576114
 sd         0.002476919       0.06384533       0.06384533         2.457463
@@ -2545,10 +2494,7 @@ beta[29, 2]        4.856137898   4.753997617   5.86132258       1
 beta[30, 1]      128.705627166 127.078374432 140.57415383       1
 beta[30, 2]        4.113127468   3.045910063   4.29078840       1
 ===== Finished MCMC test for birats. =====
-Detected cases as data within 'constants'.
-Adding cases as data for building model.
 ===== Starting MCMC test for ice. =====
-done compiling model
       alpha[1]   alpha[2]   alpha[3]  alpha[4] alpha[5]  alpha[6] alpha[7]
 mean         0 -0.7671176  0.2162388 1.1220573 1.807688 2.2555337 2.295530
 sd           0  0.4453137  0.3969372 0.3795979 0.386365 0.3936388 0.403419
@@ -2597,10 +2543,7 @@ beta[9]   -2191.4992817 -2193.4611794 -2191.698935       0
 beta[10]  -2495.2215282 -2498.4720430 -2495.986634       0
 beta[11]  -2799.3248688 -2803.8579702 -2799.398676       0
 ===== Finished MCMC test for ice. =====
-Detected cases as data within 'constants'.
-Adding cases as data for building model.
 ===== Starting MCMC test for icear.bug. =====
-done compiling model
       alpha[1]   alpha[2]   alpha[3]  alpha[4]  alpha[5]  alpha[6]  alpha[7]
 mean         0 -0.4398563 0.53008136 1.4490723 2.1464460 2.6011546 2.6630532
 sd           0  0.3268182 0.24036275 0.2289639 0.2404884 0.2396365 0.2391573
@@ -2649,10 +2592,7 @@ beta[9]    -4.6133629  -4.6495547 -4.5608903       1
 beta[10]   -3.2342140  -3.2778479 -3.2033487       1
 beta[11]   -1.5206015  -1.5316884 -1.5055535       1
 ===== Finished MCMC test for icear.bug. =====
-Detected r as data within 'constants'.
-Adding x,r as data for building model.
 ===== Starting MCMC test for beetles. =====
-done compiling model
       alpha.star      beta
 mean   0.7655989 34.817075
 sd     0.1509127  3.148661
@@ -2664,10 +2604,7 @@ True values with 95% posterior interval:
 alpha.star  0.7281518  0.3254515  0.8305276       1
 beta       32.9680001 25.7040818 35.1888011       1
 ===== Finished MCMC test for beetles. =====
-Detected dN as data within 'constants'.
-Adding dN as data for building model.
 ===== Starting MCMC test for leuk. =====
-done compiling model
            beta      dL0[1]      dL0[2]       dL0[3]     dL0[4]      dL0[5]
 mean  1.5855532 0.035788891 0.039673699 0.0224731651 0.04599909 0.046742860
 sd    0.4353196 0.025750298 0.029351426 0.0213681371 0.03137835 0.035801388
@@ -2684,10 +2621,7 @@ sd    0.070474827 0.064226159 0.080304230 0.084580684 0.18614305 0.27519630
 2.5%  0.001973674 0.002208471 0.002784985 0.001549134 0.03335224 0.05452936
 97.5% 0.239024077 0.231728699 0.301224140 0.313472313 0.76689266 1.07945846
 ===== Finished MCMC test for leuk. =====
-Detected y as data within 'constants'.
-Adding x,y as data for building model.
 ===== Starting MCMC test for salm. =====
-done compiling model
       alpha.star       beta        gamma lambda[1, 1] lambda[2, 1] lambda[3, 1]
 mean   2.6903642  0.1435729 0.0012129517    0.5913324    0.5542120    0.4191101
 sd     0.5465301  0.2918899 0.0000812297    1.1053878    0.9110771    0.7205516
@@ -2714,24 +2648,31 @@ sd    2.0964852
 2.5%  0.1527566
 97.5% 8.1880579
 ===== Finished MCMC test for salm. =====
-Detected y as data within 'constants'.
-Adding y as data for building model.
 ===== Starting MCMC test for air. =====
-done compiling model
            X[1]     X[2]      X[3]    theta[1]    theta[2]
 mean  14.317240 28.01231 40.113994  0.29713447 0.055619030
 sd     9.792281  8.17861  7.678043  0.21438290 0.061441548
 2.5%  -2.730651 11.35546 24.864287 -0.07212012 0.002984953
 97.5% 34.072690 40.93349 56.041721  0.79543169 0.229423934
 ===== Finished MCMC test for air. =====
-Detected Y as data within 'constants'.
-Adding Y,age,R as data for building model.
 ===== Starting MCMC test for jaw-linear. =====
-done compiling model
-Detected x as data within 'constants'.
-Adding x as data for building model.
+      Omega[1, 1] Omega[2, 1] Omega[3, 1]  Omega[4, 1] Omega[1, 2] Omega[2, 2]
+mean    2.5491039  -2.6089777   0.1837938  0.003580245  -2.6089777    3.925170
+sd      0.7603593   0.8864759   0.6643952  0.486552428   0.8864759    1.174205
+2.5%    1.3345747  -4.3634088  -1.1363973 -0.942518597  -4.3634088    2.072221
+97.5%   3.9937366  -1.1824717   1.4965813  0.905217159  -1.1824717    6.453191
+      Omega[3, 2] Omega[4, 2] Omega[1, 3] Omega[2, 3] Omega[3, 3] Omega[4, 3]
+mean   -1.7071568   0.4067699   0.1837938  -1.7071568    4.043152  -2.5265766
+sd      0.8347977   0.5844572   0.6643952   0.8347977    1.136676   0.8119921
+2.5%   -3.6844271  -0.6777500  -1.1363973  -3.6844271    2.092973  -4.4378238
+97.5%  -0.3115224   1.6733895   1.4965813  -0.3115224    6.631924  -1.2377342
+       Omega[1, 4] Omega[2, 4] Omega[3, 4] Omega[4, 4]      beta0     beta1
+mean   0.003580245   0.4067699  -2.5265766   2.1759207 49.9424803 1.8234329
+sd     0.486552428   0.5844572   0.8119921   0.6409234  0.5233501 0.2060471
+2.5%  -0.942518597  -0.6777500  -4.4378238   1.0782484 48.8407564 1.4094675
+97.5%  0.905217159   1.6733895  -1.2377342   3.6637302 50.8854577 2.2343348
+===== Finished MCMC test for jaw-linear. =====
 ===== Starting MCMC test for pump. =====
-done compiling model
           alpha      beta   theta[1]   theta[2]   theta[3]   theta[4]  theta[5]
 mean  0.7178852 0.9722373 0.05923072 0.10363590 0.08924375 0.11555747 0.5965869
 sd    0.2684778 0.5905496 0.02560501 0.07808950 0.04073619 0.02774463 0.3227135
@@ -2759,7 +2700,6 @@ theta[9]  0.38272607 0.0004188969 1.06790433       1
 theta[10] 0.32238381 0.0728626949 0.74262498       1
 ===== Finished MCMC test for pump. =====
 ===== Starting MCMC test for unnamed case. =====
-done compiling model
 Setting samplers to:
 [[1]]
 RW sampler: a[2]
@@ -2769,30 +2709,21 @@ sd       0  0.99264534
 2.5%     1 -1.93454422
 97.5%    1  1.95180164
 ===== Finished MCMC test for unnamed case. =====
-Detected y as data within 'constants'.
-Adding y as data for building model.
 ===== Starting MCMC test for very simple example. =====
-done compiling model
               x         z
 mean  1.1862803 4.9894547
 sd    0.4469023 0.5324733
 2.5%  0.2876852 4.0208670
 97.5% 2.0595649 6.0008362
 ===== Finished MCMC test for very simple example. =====
-Detected y as data within 'constants'.
-Adding y as data for building model.
 ===== Starting MCMC test for basic no-block sampler. =====
-done compiling model
             x[1]         x[2]       x[3]
 mean  -0.5911590 -0.004110959  0.6744219
 sd     0.5747248  0.554504602  0.5909339
 2.5%  -1.7403393 -1.166189127 -0.5209287
 97.5%  0.5457517  0.968690985  1.7782673
 ===== Finished MCMC test for basic no-block sampler. =====
-Detected y as data within 'constants'.
-Adding y as data for building model.
 ===== Starting MCMC test for basic block sampler on scalars. =====
-done compiling model
 Setting samplers to:
 [[1]]
 RW_block sampler: x[1]
@@ -2806,10 +2737,7 @@ sd     0.5665057  0.58214637  0.5848763
 2.5%  -1.7387819 -1.17720807 -0.4792921
 97.5%  0.4935765  1.08559327  1.8521099
 ===== Finished MCMC test for basic block sampler on scalars. =====
-Detected y as data within 'constants'.
-Adding y as data for building model.
 ===== Starting MCMC test for basic block sampler on vector. =====
-done compiling model
 Setting samplers to:
 [[1]]
 RW_block sampler: x,  adaptInterval: 500
@@ -2820,7 +2748,6 @@ sd     0.5612210  0.572441402  0.5628929
 97.5%  0.4357639  1.112966289  1.7568088
 ===== Finished MCMC test for basic block sampler on vector. =====
 ===== Starting MCMC test for slice sampler example. =====
-done compiling model
 Setting samplers to:
 [[1]]
 slice sampler: z,  adaptInterval: 10
@@ -2840,10 +2767,7 @@ sd    0.28270482 0.16799844   1.627662   2.160193  10.377061  0.985188443
 2.5%  0.02181908 0.08646724   2.000000   2.000000 -15.880115 -1.969317628
 97.5% 0.95973554 0.69565699   8.000000  10.000000  25.386365  2.088955705
 ===== Finished MCMC test for slice sampler example. =====
-Detected y as data within 'constants'.
-Adding y,prec_y,prec_x,mu_x as data for building model.
 ===== Starting MCMC test for exact values of elliptical slice sampler. =====
-done compiling model
 Setting samplers to:
 [[1]]
 ess sampler: x
@@ -2853,10 +2777,7 @@ sd     0.9428768  0.2963220  0.700003
 2.5%  -0.9976979 -1.0433852 -0.211599
 97.5%  2.8308216  0.1693795  2.648151
 ===== Finished MCMC test for exact values of elliptical slice sampler. =====
-Detected y as data within 'constants'.
-Adding y,prec_y,prec_x,mu_x as data for building model.
 ===== Starting MCMC test for results to tolerance of elliptical slice sampler. =====
-done compiling model
 Setting samplers to:
 [[1]]
 ess sampler: x
@@ -2866,10 +2787,7 @@ sd     0.8754241  0.2751629  0.6715417
 2.5%  -0.6912637 -0.9395145 -0.1800125
 97.5%  2.7357979  0.1390640  2.4658279
 ===== Finished MCMC test for results to tolerance of elliptical slice sampler. =====
-Detected y as data within 'constants'.
-Adding y as data for building model.
 ===== Starting MCMC test for check of beta-binom conjugacy. =====
-done compiling model
                x
 mean  0.21173927
 sd    0.06201258
@@ -2877,11 +2795,18 @@ sd    0.06201258
 97.5% 0.34105267
 ===== Finished MCMC test for check of beta-binom conjugacy. =====
 ===== Starting MCMC test for check various conjugacies. =====
-done compiling model
-Detected y as data within 'constants'.
-Adding y as data for building model.
+               a         a2         b       b2            c      jNorm[1]
+mean  -0.2696309  0.0821446  7.162000 1.468000 0.0332369593 6.924006e-310
+sd     1.3774025  0.8071084  7.283258 1.786437 0.0442702984  0.000000e+00
+2.5%  -2.7877917 -1.6209669  0.000000 0.000000 0.0001384284 6.924006e-310
+97.5%  3.1058576  1.8959631 26.000000 6.000000 0.1641237378 6.924006e-310
+        jNorm[2]   jNorm[3]   kLogNorm[1]  kLogNorm[2]  kLogNorm[3]         x
+mean  -1.9151143 -2.9167958 6.924006e-310 4.410446e-05 8.092161e-08 1.4309348
+sd     1.0129447  1.0130531  0.000000e+00 2.827583e-04 4.134156e-07 1.3507640
+2.5%  -3.8534313 -4.8527621 6.924006e-310 2.155498e-07 6.357858e-10 0.1105842
+97.5%  0.2188795 -0.8877351 6.924006e-310 1.346811e-04 3.505232e-07 5.0629371
+===== Finished MCMC test for check various conjugacies. =====
 ===== Starting MCMC test for Dirichlet-multinomial example. =====
-done compiling model
          alpha[1]    alpha[2]    alpha[3]   alpha[4]    alpha[5]       p[1]
 mean   73.1833335  82.8578426  34.7006903 253.788794  3.68488449 0.15982695
 sd     89.1620109  89.0242760  38.1799568 281.875886  5.39850170 0.03875476
@@ -2893,10 +2818,7 @@ sd    0.03969248 0.02640541 0.05141185 0.0091993590
 2.5%  0.12479234 0.03759108 0.45524779 0.0005262836
 97.5% 0.27806439 0.13872150 0.66350833 0.0355919787
 ===== Finished MCMC test for Dirichlet-multinomial example. =====
-Detected y as data within 'constants'.
-Adding y as data for building model.
 ===== Starting MCMC test for Dirichlet-multinomial with replication. =====
-done compiling model
        alpha[1] alpha[2] alpha[3]  alpha[4]  alpha[5]    p[1, 1]    p[2, 1]
 mean  16.960828 50.82113 24.16545 104.59690 1.4905037 0.10356645 0.07629187
 sd     3.881371 10.53164  5.02322  20.79268 0.6431885 0.01841368 0.01602986
@@ -2987,10 +2909,8 @@ mean  0.0048167722 0.0084871386 0.0047730482 5.044441e-03
 sd    0.0041260200 0.0060139798 0.0043107456 4.494168e-03
 2.5%  0.0001218686 0.0009599834 0.0001301124 8.902263e-05
 97.5% 0.0143488420 0.0240560038 0.0167183640 1.667511e-02
-Detected y as data within 'constants'.
-Adding y as data for building model.
+===== Finished MCMC test for Dirichlet-multinomial with replication. =====
 ===== Starting MCMC test for Dirichlet-categorical example. =====
-done compiling model
          alpha[1]    alpha[2]    alpha[3]   alpha[4]    alpha[5]       p[1]
 mean   73.1833335  82.8578426  34.7006903 253.788794  3.68488449 0.15982695
 sd     89.1620109  89.0242760  38.1799568 281.875886  5.39850170 0.03875476
@@ -3002,9 +2922,7 @@ sd    0.03969248 0.02640541 0.05141185 0.0091993590
 2.5%  0.12479234 0.03759108 0.45524779 0.0005262836
 97.5% 0.27806439 0.13872150 0.66350833 0.0355919787
 ===== Finished MCMC test for Dirichlet-categorical example. =====
-Adding Q as data for building model.
 ===== Starting MCMC test for block sampler on multivariate node. =====
-done compiling model
 Setting samplers to:
 [[1]]
 RW_block sampler: x[1:3]
@@ -3014,9 +2932,7 @@ sd     1.050178  0.5112476  0.3235469
 2.5%   8.068871 18.9026452 29.4326184
 97.5% 12.207275 20.9195985 30.7179918
 ===== Finished MCMC test for block sampler on multivariate node. =====
-Adding mu,P as data for building model.
 ===== Starting MCMC test for second block sampler on multivariate node. =====
-done compiling model
 Setting samplers to:
 [[1]]
 RW_block sampler: x[1:3]
@@ -3026,20 +2942,14 @@ sd     0.9896711  1.4078710  1.719680
 2.5%  -0.9746862 -0.7549449 -0.398418
 97.5%  2.9166944  4.7263645  6.368479
 ===== Finished MCMC test for second block sampler on multivariate node. =====
-Detected y as data within 'constants'.
-Adding y,B,a,Q,Q0,mu0 as data for building model.
 ===== Starting MCMC test for two-level multivariate normal. =====
-done compiling model
           mu[1]    mu[2]     mu[3]
 mean  3.0471981 2.031455 2.0844332
 sd    0.5340714 0.379844 0.6566556
 2.5%  2.0102616 1.304831 0.7852252
 97.5% 4.1174818 2.787496 3.3782215
 ===== Finished MCMC test for two-level multivariate normal. =====
-Detected y as data within 'constants'.
-Adding y,B,a,Q,Q0,mu0 as data for building model.
 ===== Starting MCMC test for two-level multivariate normal with scalar updaters. =====
-done compiling model
 Setting samplers to:
 [[1]]
 RW sampler: mu[1]
@@ -3053,11 +2963,7 @@ sd    0.5302264 0.3841694 0.6566953
 2.5%  2.0083246 1.2743309 0.8071704
 97.5% 4.0685767 2.7783310 3.3740688
 ===== Finished MCMC test for two-level multivariate normal with scalar updaters. =====
-Adding prior_mean,prior_cov,a,B,M_y as data for building model.
-Detected Y as data within 'constants'.
-Adding R,mu,Y as data for building model.
 ===== Starting MCMC test for conjugate Wishart. =====
-done compiling model
       Omega[1, 1] Omega[2, 1] Omega[3, 1] Omega[1, 2] Omega[2, 2] Omega[3, 2]
 mean    1.1833772  -0.6257656  -1.9637099  -0.6257656   0.8395324   1.3025695
 sd      0.3153378   0.2176358   0.6607385   0.2176358   0.2410763   0.5216073
@@ -3069,25 +2975,7 @@ sd      0.6607385   0.5216073    1.807713
 2.5%   -3.3270012   0.4077250    3.190403
 97.5%  -0.7673714   2.3647559   10.362390
 ===== Finished MCMC test for conjugate Wishart. =====
-===== Starting MCMC test for conjugate MVN with ragged dependencies. =====Adding mu0,ident,a,B,prec_y as data for building model.
-===== Starting MCMC test for binary sampler. ========== Starting MCMC test for binary sampler handles out of bounds. =====[1] binary sampler: px
-[2] binary sampler: py
-===== Starting MCMC test for RW_multinomial sampler. =====[1] RW_multinomial sampler: X[1:5]
-[2] RW_multinomial sampler: Y[1:5]
-===== Starting MCMC test RW_multinomial sampler on distribution of size 2. =====[1] posterior_predictive sampler: y
-[2] posterior_predictive sampler: x[1:2]
-[1] RW_multinomial sampler: x
-[2] slice sampler: y
-[1] RW_multinomial sampler: x
-[2] slice sampler: y
-===== Starting MCMC test if RW_dirichlet sampler consistent with conjugate multinomial sampler. ========== Starting MCMC test RW_dirichlet sampler more complicated. =====[1] RW sampler: alpha[2]
-[2] RW sampler: alpha[3]
-[3] RW sampler: theta[1]
-[4] RW sampler: theta[2]
-[5] RW sampler: theta[3]
-[6] RW_dirichlet sampler: p1[1:4]
-[7] RW sampler: theta[4]
-thin = 1: alpha, theta, p1, p2
-===== Starting MCMC test dcar_normal sampling. =====Adding num,adj,weights as data for building model.
-===== Starting test dcar_proper density evaluations. ========== Starting MCMC test dcar_proper sampling. =====Adding mu,adj,num as data for building model.
-thin = 1: tau, gamma, x
+===== Starting MCMC test for conjugate MVN with ragged dependencies. ========== Starting MCMC test for binary sampler. ========== Starting MCMC test for binary sampler handles out of bounds. ========== Starting MCMC test for RW_multinomial sampler. ========== Starting MCMC test RW_multinomial sampler on distribution of size 2. ========== Starting MCMC test if RW_dirichlet sampler consistent with conjugate multinomial sampler. ========== Starting MCMC test RW_dirichlet sampler more complicated. =====thin = 1: alpha, theta, p1, p2
+===== Starting MCMC test dcar_normal sampling. ========== Starting test dcar_proper density evaluations. ========== Starting MCMC test dcar_proper sampling. =====thin = 1: tau, gamma, x
+===== Starting MCMC test of logProb variable monitoring =====
+

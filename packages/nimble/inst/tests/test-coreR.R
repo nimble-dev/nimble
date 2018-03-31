@@ -1,12 +1,11 @@
-
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-context("Testing of core R functions in NIMBLE code")
 
 RwarnLevel <- options('warn')$warn
-options(warn = -1)
+options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
-nimbleOptions(verbose = TRUE)
+nimbleOptions(verbose = FALSE)
 
+context("Testing of core R functions in NIMBLE code")
 
 ## fix result_type in nimbleEigen.h
 
@@ -192,17 +191,17 @@ repTests <- list(
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- 4}), outputType = quote(double(1))),
     ##11
     list(name = "rep(vector double, first arg)", expr = quote(out <- rep(arg1, each = arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(integer(1))),
-         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.integer(4:5)}), outputType = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.integer(4:5)}), outputType = quote(double(1)), expectWarnings = list("R eval" = 'Expected warning: vector each', "R run" = "Expected warning: vector each")),
 
     ## basic cases with x, times and each
     list(name = "rep(vector double, variable, each = 2)", expr = quote(out <- rep(arg1, times = arg2, each = 2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(4))}), outputType = quote(double(1))),
     list(name = "rep(vector double, variable, variable)", expr = quote(out <- rep(arg1, times = arg2, each = arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(4); arg3 <- 5}), outputType = quote(double(1))),
-    list(name = "rep(vector double, variable, firstarg)", expr = quote(out <- rep(arg1, times = arg2, each = arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(1))),
-         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- 4; arg3 <- c(5, 7)}), outputType = quote(double(1))),
+    list(name = "rep(vector double, variable, first arg)", expr = quote(out <- rep(arg1, times = arg2, each = arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- 4; arg3 <- c(5, 7)}), outputType = quote(double(1)), expectWarnings = list("R eval" = 'Expected warning: vector each', "R run" = 'Expected warning: vector each')),
     ## basic cases with x and length.out
-    list(name = "rep(1, lenght.out = 3)", expr = quote(out <- rep(1, length.out = 3)), args = list(arg1 = quote(double(0))),
+    list(name = "rep(1, length.out = 3)", expr = quote(out <- rep(1, length.out = 3)), args = list(arg1 = quote(double(0))),
          setArgVals = quote({arg1 <- 3}), outputType = quote(double(1))),
     ## 16
     list(name = "rep(vector double, length.out = larger than vector)", expr = quote(out <- rep(arg1, length.out = 5)), args = list(arg1 = quote(double(1))),
@@ -212,7 +211,7 @@ repTests <- list(
     list(name = "rep(vector double, length.out = 0)", expr = quote(out <- rep(arg1, length.out = 0)), args = list(arg1 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(1))),
     list(name = "rep(vector double, length.out = first arg)", expr = quote(out <- rep(arg1, length.out = arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
-         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8))}), outputType = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8))}), outputType = quote(double(1)), expectWarnings = list("R eval" = 'Expected warning: vector each', "R run" = "Expected warning: vector each")),
     list(name = "rep(vector double, length.out = scalar from vectors)", expr = quote(out <- rep(arg1, length.out = sum(arg2))), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8))}), outputType = quote(double(1))),
     #21
@@ -223,8 +222,7 @@ repTests <- list(
     list(name = "rep(vector double, times to ignore, each, length.out = scalar from vectors)", expr = quote(out <- rep(arg1, each = 3, times = 10, length.out = sum(arg2))), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8))}), outputType = quote(double(1))),
     list(name = "rep(vector double, times to ignore, each = first arg, length.out = first arg)", expr = quote(out <- rep(arg1, each = arg3, times = 10, length.out = arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
-         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8)); arg3 <- as.numeric(4:5)}), outputType = quote(double(1))),
-    
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8)); arg3 <- as.numeric(4:5)}), outputType = quote(double(1)), expectWarnings = list("R eval" = 'Expected warning: vector each', "R run" = "Expected warning: vector each")),
 
     ## x, times expressions
     list(name = "rep(vector double expression, expression)", expr = quote(out <- rep(exp(arg1), arg2^2)), args = list(arg1 = quote(double(1)), arg2 = quote(integer())),
@@ -267,7 +265,7 @@ diagTests <- list(
     list(name = "diag(vector expression)", expr = quote(out <- diag(arg1 + arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(10,20, 30))}), outputType = quote(double(2))),
     list(name = "diag(vector) with expression", expr = quote(out <- exp(diag(arg1)) + arg2), args = list(arg1 = quote(double(1)), arg2 = quote(double(2))),
-         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- matrix(as.numeric(11:19), nrow = 3)}), outputType = quote(double(2))), ## ISSUE HERE
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- matrix(as.numeric(11:19), nrow = 3)}), outputType = quote(double(2))), 
 
     ## diag(matrix)
     list(name = "diag(square matrix)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(2))),

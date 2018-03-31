@@ -1,7 +1,9 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+
 context("Testing of compareMCMCs")
-iCase <- 1
 
 code1 <- nimbleCode({
     a ~ dnorm(0, 1)
@@ -11,36 +13,17 @@ code1 <- nimbleCode({
 
 input1 <- list(code = code1, data = list(y = 1:3), inits = list(a = 0.5))
 
-test <- try(results1 <- compareMCMCs(input1, MCMCs = c('nimble')))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
+test_that("Basic MCMC comparison", {
+    expect_output(results1 <- compareMCMCs(input1, MCMCs = c('nimble')))
+    expect_message(make_MCMC_comparison_pages(results1, 'model1'), "geom_path")
+    expect_output(results2 <- compareMCMCs(input1, MCMCs = c('nimble','noConj')))
+    expect_silent(make_MCMC_comparison_pages(results2, 'model1b'))
+    expect_silent(results2[[1]] <- rename_MCMC_comparison_method('nimble', 'another nimble', results2[[1]]))
+    expect_silent(results3 <- combine_MCMC_comparison_results(results1[[1]], results2[[1]], name = 'combined results'))
+    expect_silent(make_MCMC_comparison_pages(results3, 'model1c'))
+})
 
-## This will generate a warning -- sensibly -- which is ok.
-test <- try(make_MCMC_comparison_pages(results1, 'model1'))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
 
-## two MCMC methods
-test <- try(results2 <- compareMCMCs(input1, MCMCs = c('nimble','noConj')))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
-
-test <- try(make_MCMC_comparison_pages(results2, 'model1b'))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
-
-## rename a result
-test <- try(results2[[1]] <- rename_MCMC_comparison_method('nimble', 'another nimble', results2[[1]]))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
-
-test <- try(results3 <- combine_MCMC_comparison_results(results1[[1]], results2[[1]], name = 'combined results'))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
-
-test <- try(make_MCMC_comparison_pages(results3, 'model1c'))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
 
 #### Now repeat in case of multiple parameters
 code1 <- nimbleCode({
@@ -50,48 +33,28 @@ code1 <- nimbleCode({
     for(i in 1:3) y[i] ~ dnorm(b, sd = sigma)
 })
 
-input1 <- list(code = code1, data = list(y = 1:3), inits = list(a = 0.5))
-test <- try(results1 <- compareMCMCs(input1, MCMCs = c('nimble')))
-## This will generate a warning -- sensibly -- which is ok.
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
+## note this also tests having 'code' not as first argument per issue #615
+input1 <- list(data = list(y = 1:3), code = code1, inits = list(a = 0.5))
 
-test <- try(make_MCMC_comparison_pages(results1, 'model1'))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
-
-## two MCMC methods
-test <- try(results2 <- compareMCMCs(input1, MCMCs = c('nimble','noConj')))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
-
-test <- try(make_MCMC_comparison_pages(results2, 'model1b'))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
-
-## rename a result
-test <- try(results2[[1]] <- rename_MCMC_comparison_method('nimble', 'another nimble', results2[[1]]))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
-
-test <- try(results3 <- combine_MCMC_comparison_results(results1[[1]], results2[[1]], name = 'combined results'))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
-
-test <- try(make_MCMC_comparison_pages(results3, 'model1c'))
-expect_true(!inherits(test, 'try-error'), paste('case', iCase))
-iCase <- iCase + 1
-
-test <- try({
+test_that("Basic MCMC comparison, multiple parameters", {
+    expect_output(results1 <- compareMCMCs(input1, MCMCs = c('nimble')))
+    expect_message(make_MCMC_comparison_pages(results1, 'model1'), "geom_path")
+    expect_output(results2 <- compareMCMCs(input1, MCMCs = c('nimble','noConj')))
+    expect_silent(make_MCMC_comparison_pages(results2, 'model1b'))
+    expect_silent(results2[[1]] <- rename_MCMC_comparison_method('nimble', 'another nimble', results2[[1]]))
+    expect_silent(results3 <- combine_MCMC_comparison_results(results1[[1]], results2[[1]], name = 'combined results'))
+    expect_silent(make_MCMC_comparison_pages(results3, 'model1c'))
     mfiles <- list.files("model1", full.names = TRUE)
-    file.remove(mfiles)
-    file.remove('model1')
+    expect_identical(file.remove(mfiles), rep(TRUE, 5))
+    expect_identical(file.remove('model1'), TRUE)
     mfiles <- list.files("model1b", full.names = TRUE)
-    file.remove(mfiles)
-    file.remove('model1b')
+    expect_identical(file.remove(mfiles), rep(TRUE, 5))
+    expect_identical(file.remove('model1b'), TRUE)
     mfiles <- list.files("model1c", full.names = TRUE)
-    file.remove(mfiles)
-    file.remove('model1c')
+    expect_identical(file.remove(mfiles), rep(TRUE, 5))
+    expect_identical(file.remove('model1c'), TRUE)
 })
 
-expect_true(!inherits(test, 'try-error'), paste('clearing files: case', iCase))
+
+
+options(warn = RwarnLevel)

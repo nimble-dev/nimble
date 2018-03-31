@@ -142,7 +142,11 @@ sampler_RW <- nimbleFunction(
         timesRan      <- 0
         timesAccepted <- 0
         timesAdapted  <- 0
-        ##scaleHistory  <- c(0, 0)   ## scaleHistory
+        scaleHistory  <- c(0, 0)   ## scaleHistory
+        acceptanceHistory  <- c(0, 0)   ## scaleHistory
+        if(nimbleOptions('saveMCMChistory')) {
+            saveMCMChistory <- TRUE
+        } else saveMCMChistory <- FALSE
         optimalAR     <- 0.44
         gamma1        <- 0
         ## checks
@@ -178,8 +182,12 @@ sampler_RW <- nimbleFunction(
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
-                ##setSize(scaleHistory, timesAdapted)         ## scaleHistory
-                ##scaleHistory[timesAdapted] <<- scale        ## scaleHistory
+                if(saveMCMChistory) {
+                    setSize(scaleHistory, timesAdapted)         ## scaleHistory
+                    scaleHistory[timesAdapted] <<- scale        ## scaleHistory
+                    setSize(acceptanceHistory, timesAdapted)         ## scaleHistory
+                    acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
+                }   
                 gamma1 <<- 1/((timesAdapted + 3)^0.8)
                 gamma2 <- 10 * gamma1
                 adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
@@ -188,7 +196,24 @@ sampler_RW <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
-        ##getScaleHistory = function() { returnType(double(1)); return(scaleHistory) },          ## scaleHistory
+        getScaleHistory = function() {  ## scaleHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(scaleHistory)
+            } else {
+                print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
+                return(numeric(1, 0))
+            }
+        },          
+        getAcceptanceHistory = function() {  ## scaleHistory
+            returnType(double(1))
+            if(saveMCMChistory) {
+                return(acceptanceHistory)
+            } else {
+                print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
+                return(numeric(1, 0))
+            }
+        },          
         ##getScaleHistoryExpanded = function() {                                                 ## scaleHistory
         ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)            ## scaleHistory
         ##    for(iTA in 1:timesAdapted)                                                         ## scaleHistory
@@ -200,7 +225,10 @@ sampler_RW <- nimbleFunction(
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
-            ##scaleHistory  <<- scaleHistory * 0    ## scaleHistory
+            if(saveMCMChistory) {
+                scaleHistory  <<- c(0, 0)    ## scaleHistory
+                acceptanceHistory  <<- c(0, 0)
+            }
             gamma1 <<- 0
         }
     ), where = getLoadingNamespace()
@@ -233,8 +261,10 @@ sampler_RW_block <- nimbleFunction(
         timesAccepted <- 0
         timesAdapted  <- 0
         d <- length(targetAsScalar)
-        ##scaleHistory   <- c(0, 0)                       ## scaleHistory
-        ##propCovHistory <- array(0, dim = c(2, d, d))    ## scaleHistory
+        scaleHistory  <- c(0, 0)                                                 ## scaleHistory
+        acceptanceHistory  <- c(0, 0)                                            ## scaleHistory
+        propCovHistory <- if(d<=10) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
+        saveMCMChistory <- if(nimbleOptions('saveMCMChistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
@@ -269,14 +299,20 @@ sampler_RW_block <- nimbleFunction(
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
-                ##setSize(scaleHistory, timesAdapted)                                     ## scaleHistory
-                ##scaleHistory[timesAdapted] <<- scale                                    ## scaleHistory
-                ##propCovTemp <- propCovHistory                                           ## scaleHistory
-                ##setSize(propCovHistory, timesAdapted, d, d)                             ## scaleHistory
-                ##if(timesAdapted > 1)                                                    ## scaleHistory
-                ##    for(iTA in 1:(timesAdapted-1))                                      ## scaleHistory
-                ##        propCovHistory[iTA, 1:d, 1:d] <<- propCovTemp[iTA, 1:d, 1:d]    ## scaleHistory
-                ##propCovHistory[timesAdapted, 1:d, 1:d] <<- propCov[1:d, 1:d]            ## scaleHistory
+                if(saveMCMChistory) {
+                    setSize(scaleHistory, timesAdapted)                 ## scaleHistory
+                    scaleHistory[timesAdapted] <<- scale                ## scaleHistory
+                    setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
+                    acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
+                    if(d <= 10) {
+                        propCovTemp <- propCovHistory                                           ## scaleHistory
+                        setSize(propCovHistory, timesAdapted, d, d)                             ## scaleHistory
+                        if(timesAdapted > 1)                                                    ## scaleHistory
+                            for(iTA in 1:(timesAdapted-1))                                      ## scaleHistory
+                                propCovHistory[iTA, 1:d, 1:d] <<- propCovTemp[iTA, 1:d, 1:d]    ## scaleHistory
+                        propCovHistory[timesAdapted, 1:d, 1:d] <<- propCov[1:d, 1:d]            ## scaleHistory
+                    }
+                }
                 adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
@@ -292,8 +328,21 @@ sampler_RW_block <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
-        ##getScaleHistory   = function() { returnType(double(1)); return(scaleHistory)   },                   ## scaleHistory
-        ##getPropCovHistory = function() { returnType(double(3)); return(propCovHistory) },                   ## scaleHistory
+        getScaleHistory = function() {  ## scaleHistory
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
+            returnType(double(1))
+            return(scaleHistory)
+        },          
+        getAcceptanceHistory = function() {  ## scaleHistory
+            returnType(double(1))
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
+            return(acceptanceHistory)
+        },                  
+        getPropCovHistory = function() { ## scaleHistory
+            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
+            returnType(double(3))
+            return(propCovHistory)
+        },
         ##getScaleHistoryExpanded = function() {                                                              ## scaleHistory
         ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)                         ## scaleHistory
         ##    for(iTA in 1:timesAdapted)                                                                      ## scaleHistory
@@ -314,9 +363,12 @@ sampler_RW_block <- nimbleFunction(
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
-            ##scaleHistory  <<- scaleHistory * 0                                       ## scaleHistory
-            ##for(iTA in 1:dim(scaleHistory)[1])                                       ## scaleHistory
-            ##    propCovHistory[iTA, 1:d, 1:d] <<- propCovHistory[1, 1:d, 1:d] * 0    ## scaleHistory
+            if(saveMCMChistory) {
+                scaleHistory  <<- c(0, 0)    ## scaleHistory
+                acceptanceHistory  <<- c(0, 0)
+                if(d <= 10) 
+                    propCovHistory <<- nimArray(0, dim = c(2,d,d))
+            }
             my_calcAdaptationFactor$reset()
         }
     ), where = getLoadingNamespace()

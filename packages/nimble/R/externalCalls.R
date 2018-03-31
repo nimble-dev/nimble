@@ -224,4 +224,13 @@ nimbleRcall <- function(prototype, returnType, Rfun, envir = .GlobalEnv) {
     body(fun) <- as.call(allLines)
     ans <- quote(RCfunction(fun, check = FALSE))
     ans <- eval(ans)
+    ## By calling RCfunction, there is an nfMethodRC with the necessary body
+    ## for subsequent compiler processing.
+    ## Now we can replace the body of the R function with something that
+    ## will actually execute in R.
+    Rcall <- as.call(c(list(as.name(as.character(Rfun))),
+                       lapply(argNames, as.name)))
+    body(ans) <- substitute({ RCALL },
+                            list(RCALL = Rcall))
+    ans
 }

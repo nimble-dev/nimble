@@ -3,7 +3,7 @@
 
 #' NIMBLE language functions for R-like vector construction
 #'
-#' These functions can be used in nimbleFunctions and compiled using \code{compileNimble}.
+#' The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{length}, and \code{diag} can be used in nimbleFunctions and compiled using \code{compileNimble}.
 #' 
 #' @name nimble-R-functions
 #' 
@@ -158,17 +158,17 @@ makeParamInfo <- function(model, nodes, param) {
 
     distNames <- model$getDistribution(nodes)
 
-    ## if(length(nodes) != 1) stop(paste0("Problem with nodes argument while setting up getParam.  Should be length 1 but was: ", paste0(nodes, collapse = ",")))
-    ## distInfo <- getDistributionList(model$getDistribution(nodes))[[1]]
-    ## ## If nodes is invalid, an error from the above line will be trapped in parseEvalNumericMany
     if(length(param) != 1) stop(paste0(paste0('Problem with param(s) ', paste0(param, collapse = ','), ' while setting up getParam for node ', nodes,
-                 '\nOnly one parameter is allowed.')))
-    ## paramID <- distInfo$paramIDs[param]
-    ## if(length(paramID)!=1 | any(is.na(paramID))) stop(paste0('Problem with param ', paste0(param, collapse = ','), ' while setting up getParam for node ', nodes,
-    ##                                    '\nThe parameter name is not valid.'))
-    paramIDvec <- sapply(distNames, getParamID, param)
-    typeVec <- sapply(distNames, getType, param)
-    nDimVec <- sapply(distNames, getDimension, param)
+                                              '\nOnly one parameter is allowed.')))
+
+    distInfos <- lapply(distNames, getDistributionInfo)
+    paramIDvec <- unlist(lapply(distInfos, function(x) x$paramIDs[param]))
+    typeVec <- unlist(lapply(distInfos, function(x) x$types[[param]]$type))
+    nDimVec <- unlist(lapply(distInfos, function(x) x$types[[param]]$nDim))
+    
+   ## paramIDvec <- sapply(distNames, getParamID, param)
+   ## typeVec <- sapply(distNames, getType, param)
+   ## nDimVec <- sapply(distNames, getDimension, param)
     if(length(unique(typeVec)) != 1 || length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.') 
     ans <- c(list(paramID = paramIDvec), type = typeVec[1], nDim = nDimVec[1])
     class(ans) <- 'getParam_info'
@@ -206,7 +206,7 @@ defaultParamInfo <- function() {
 #' which one was used to declare the node.
 getParam <- function(model, node, param, nodeFunctionIndex) {
     if(missing(param)) { ## already converted by keyword conversion
-        stop('This case of getParam (after keyword replacement) has not been updated for R execution with newNodeFunction system')
+        stop('Missing either the node or the parameter. Please specify both the node and the parameter of interest. This error may also be triggered if this case of getParam (after keyword replacement) has not been updated for R execution with newNodeFunction system')
         ## nodeFunctionIndex would only be used here, when we make this part work
         nodeFunction <- model
         paramInfo <- node
@@ -226,6 +226,10 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
     nDim <- paramInfo$nDim
     type <- paramInfo$type
     unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ indexingInfo$unrolledIndicesMatrixRows[1], ]
+    if(nDim > 2) {
+        warning("Note that getParam is not available for parameters of dimension greater than two, but other calculations with models are unaffected")
+        return(NULL)
+    }
     funName <- paste0('getParam_',nDim,'D_',type)
 
     useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')

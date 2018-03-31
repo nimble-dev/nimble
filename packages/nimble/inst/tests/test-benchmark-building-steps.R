@@ -4,6 +4,11 @@
 
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
+
 context('Benchmarking model and MCMC building and compiling steps')
 cat('\n')
 
@@ -97,3 +102,6 @@ test_that('Benchmarking model and MCMC building and compiling steps',
     print(results)
 }
 )
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

@@ -24,9 +24,10 @@
 
 /* fix to avoid warnings exemplified by edison.nersc.gov SUSE Linux - Github
  * issue #214 */
-#if defined __GNUC__ && __GNUC__ >= 6
-#pragma GCC diagnostic ignored "-Wignored-attributes"
-#endif
+/* based on CRAN complaint, remove this as of 0.6-9 */
+/* #if defined __GNUC__ && __GNUC__ >= 6 */
+/* #pragma GCC diagnostic ignored "-Wignored-attributes" */
+/* #endif */
 
 #include <R.h>
 #include <Eigen/Core>
@@ -104,6 +105,7 @@ class NimArrBase : public NimArrType {
   T **vPtr;
   std::size_t element_size() { return (sizeof(T)); }
   void setVptr() { vPtr = &v; }
+  T** &getVptrRef() {return vPtr;}
   T **getVptr() const { return vPtr; }
   bool own_v;
   int NAdims[4];
@@ -111,7 +113,7 @@ class NimArrBase : public NimArrType {
   int NAstrides[4];
   // Everyone has a stride1, and the flat [] operator needs it, so it is here.
   int stride1, offset;
-  int getOffset() { return offset; }
+  int getOffset() const { return offset; }
   bool boolMap;
   bool isMap() const { return boolMap; }
   const int *strides() const { return NAstrides; }
@@ -127,6 +129,7 @@ class NimArrBase : public NimArrType {
   T &valueNoMap(int i) const { return (*(v + i)); }
   virtual int calculateIndex(vector<int> &i) const = 0;
   T *getPtr() { return (&((*vPtr)[0])); }
+  const T *getConstPtr() const { return (&((*vPtr)[0])); }
   virtual void setSize(vector<int> sizeVec, bool copyValues = true,
                        bool fillZeros = true) = 0;
   // Warning, this does not make sense if vPtr is pointing to someone else's
@@ -151,6 +154,8 @@ class NimArrBase : public NimArrType {
         if (fillZeros) std::fill(new_v, new_v + l, static_cast<T>(0));
       }
       nimble_free(v);
+    } else {
+      if (fillZeros) std::fill(new_v, new_v + l, static_cast<T>(0));
     }
     NAlength = l;
     v = new_v;
@@ -179,13 +184,14 @@ class NimArrBase : public NimArrType {
   virtual ~NimArrBase() {
     if (own_v) nimble_free(v);
   }
-  // Do we ever use this case?
+  // Base class copy constructor:
+  // This will be used by derived class copy constructors,
+  // which will be called when a VecNimArr resizes its vector of NimArr<>s.
   NimArrBase(const NimArrBase<T> &other)
-      :  // own_v isn't a map but we'll only set to true when giving it values.
-        own_v(false),
-        offset(0),
-        boolMap(false),
-        NAlength(other.size()) {
+    :   own_v(false), // this may get set to true in a derived copy constructor
+    offset(0),
+    boolMap(false),
+    NAlength(other.size()) {
     std::memcpy(NAdims, other.dim(), other.numDims() * sizeof(int));
     myType = other.getNimType();
   }

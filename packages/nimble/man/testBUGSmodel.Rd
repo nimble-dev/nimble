@@ -5,7 +5,8 @@
 \title{Tests BUGS examples in the NIMBLE system}
 \usage{
 testBUGSmodel(example = NULL, dir = NULL, model = NULL, data = NULL,
-  inits = NULL, useInits = TRUE, debug = FALSE)
+  inits = NULL, useInits = TRUE, debug = FALSE,
+  verbose = nimbleOptions("verbose"))
 }
 \arguments{
 \item{example}{(optional) example character vector indicating name of BUGS example to test; can be null if \code{model} is provided}
@@ -21,6 +22,8 @@ testBUGSmodel(example = NULL, dir = NULL, model = NULL, data = NULL,
 \item{useInits}{boolean indicating whether to test model with initial values provided via \code{inits}}
 
 \item{debug}{logical indicating whether to put the user in a browser for debugging when \code{testBUGSmodel} calls \code{readBUGSmodel}.  Intended for developer use.}
+
+\item{verbose}{logical indicating whether to print additional logging information}
 }
 \description{
 \code{testBUGSmodel} builds a BUGS model in the NIMBLE system and simulates from the model, comparing the values of the nodes and their log probabilities in the uncompiled and compiled versions of the model

@@ -33,11 +33,12 @@ class NimArr;
 template<int nDim, class T>
 T* nimArrPtr_copyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
   if(orig.isMap()) {
-    possibleCopy = orig;
-    return(possibleCopy.getPtr());
-  } else {
-    return(orig.getPtr());
+    // if(!isMapEntire(orig)) { // not ready for this yet.
+      possibleCopy = orig;
+      return(possibleCopy.getPtr());
+      // }
   }
+  return(orig.getPtr());
 }
 
 template<int nDim, class T>
@@ -47,6 +48,47 @@ template<int nDim, class T>
     NIMERROR("Problem in unconverting from an external call\n");
   }
   orig.mapCopy(possibleCopy);
+}
+
+// only case where T and T2 need to be different is
+// T = bool and
+// T2 = int, since R represents bools as ints
+template<int nDim, class T, class T2>
+  void NimArr_map_2_allocatedMemory(const NimArr<nDim, T> &val, T2 **ans, int length) {
+  if(val.isMap()) {
+    NimArr<nDim, T2> target;
+    vector<int> sizes(nDim);
+    vector<int> strides(nDim);
+    strides[0] = 1;
+    for(int iii = 0; iii < nDim; ++iii) {
+      sizes[iii] = val.dim()[iii];
+      if(iii > 0)
+	strides[iii] = strides[iii-1]*sizes[iii-1];
+    }
+    // just use dummy to be able to call setMap
+    NimArr<nDim, T2> dummy;
+    target.setMap(dummy, 0, strides, sizes);
+    // then reset the Vptr to ans
+    target.getVptrRef() = ans;
+    target.mapCopy(val);
+  } else {
+    std::copy(val.getConstPtr(), val.getConstPtr() + length, *ans);
+  }
+}
+
+template<int nDim, class T>
+  bool isMapEntire(const NimArr<nDim, T> &v) {
+  const int *s = v.strides();
+  if(s[0] != 1) {return false;}
+  if(v.getOffset() != 0) {return false;} // This could be relaxed, but we'd have to fix how functions handle this case.
+  if(nDim == 1) {return true;}
+  const int *d = v.dim();
+  int nextStride = 1;
+  for(unsigned int iii = 1; iii < nDim; ++iii) {
+    nextStride *= d[iii-1];
+    if(s[iii] != nextStride) {return false;}
+  }
+  return true;
 }
 
 // Here is the specialization for 1 dimensions (for any type, T = double, int or
@@ -163,7 +205,7 @@ class NimArr<1, T> : public NimArrBase<T> {
   }
 
   NimArr<1, T>(const NimArr<1, T> &other) : NimArrBase<T>(other) {
-    NimArrBase<T>::NAdims[0] = other.dim()[0];
+    NimArrBase<T>::NAdims[0] = other.dim()[0]; // redundant with base class copy constructor?
     size1 = NimArrBase<T>::NAdims[0];
 
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;

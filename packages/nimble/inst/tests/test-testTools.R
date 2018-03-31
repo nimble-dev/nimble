@@ -1,5 +1,9 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+
+
 context("Testing of testing tools")
 
 ## new way to force anything compiled to be clear-compiled
@@ -54,8 +58,10 @@ test_that('testing expect_compiles', {
     bar <- nimbleFunction(
         run = function(x = double(1)) {return(foo(x) + 1); returnType(double(1))}
     )
-    temporarilyAssignInGlobalEnv(foo)
+    ## temporarilyAssignInGlobalEnv(foo) ## why is this being done again?
+    cat("\nBegin expected error message:\n")
     expect_compiles(bar, dirName = '.' ) ## arguments as for compileNimble
+    cat("End expected error message.\n")
     ## will bail out with "Error : safely stopping before linking"
     ## alternative format in test_util would use
     ##    expect_compiles(compileNimble(bar))
@@ -66,11 +72,13 @@ test_that('testing expect_compiles expected failure', {
         run = function(x = double(1)) {return(x + 1); returnType(double(1))}
     )
     temporarilyAssignInGlobalEnv(foo) ## unfortunately this is necessary for bar to find foo
-    bar <- nimbleFunction(
+    expect_warning(bar <- nimbleFunction(
         run = function(x = double(1)) {return(foo_oops(x) + 1); returnType(double(1))}
-    )
-    temporarilyAssignInGlobalEnv(foo)
+    ), "For this nimbleFunction to compile, these objects must be defined as nimbleFunctions")
+    ## temporarilyAssignInGlobalEnv(foo) ## why is this being done again?
+    cat("\nBegin expected error message:\n")
     expect_failure(expect_compiles(bar, dirName = '.', info = 'trying to compile foobar')) ## arguments as for compileNimble
+    cat("End expected error message.\n")
     ## uncomment to see an actual failure:
     ##expect_compiles(bar, dirName = '.', info = 'trying to compile foobar')
     ## will bail out with "Error : safely stopping before linking"
@@ -78,3 +86,4 @@ test_that('testing expect_compiles expected failure', {
     ##    expect_compiles(compileNimble(bar))
 })
 
+options(warn = RwarnLevel)

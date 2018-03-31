@@ -2,7 +2,7 @@
 % Please edit documentation in R/NF_utils.R
 \name{identityMatrix}
 \alias{identityMatrix}
-\title{Create an Identity matrix}
+\title{Create an Identity matrix (Deprecated)}
 \usage{
 identityMatrix(d)
 }
@@ -16,7 +16,7 @@ A d-by-d identity matrix
 Returns a d-by-d identity matrix (square matrix of 0's, with 1's on the main diagnol).
 }
 \details{
-This function can be used in NIMBLE run code.
+This function can be used in NIMBLE run code.  It is deprecated because now one can use diag(d) instead.
 }
 \examples{
 Id <- identityMatrix(d = 3)

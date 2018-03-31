@@ -6,7 +6,7 @@
 require(nimble)
 @ 
 
-\chapter{Writing nimbleFunctions that interact with models}
+\chapter{Writing nimbleFunctions to interact with models}
 \label{cha:progr-with-models}
 
 <<echo=FALSE>>=
@@ -233,12 +233,13 @@ can only be indexed within a call to \cd{calculate}, \cd{calculateDiff},
 \subsubsection{Using indexing with nodes}
   
 
-Here is an example that illustrates getting and setting of nodes and subsets of nodes.  Note the following:
+Here is an example that illustrates getting and setting of nodes,
+subsets of nodes, or variables.  Note the following:
 
 \begin{itemize}
-  \item In \cd{model[[node]]}, \cd{node} can only be a single node name, not a vector of multiple nodes nor an element of such a vector (\cd{model[[ nodes[i] ]]} does not work).  The node itself may be a vector, matrix or array node.
-  \item In fact, \cd{node} can be a node-name-like character string, even if it is not actually a node in the model.  See example 4 in the code below.
-  \item One can also use \cd{model\$nodeName}, with the caveat that \cd{nodeName} can't be a variable (i.e., it needs to be the actual name of a variable or node) and so would only make sense for a nimbleFunction written for models known to have a specific node.
+  \item In \cd{model[[v]]}, \cd{v} can only be a single node or variable name, not a vector of multiple nodes nor an element of such a vector (\cd{model[[ nodes[i] ]]} does not work).  The node itself may be a vector, matrix or array node.
+  \item In fact, \cd{v} can be a node-name-like character string, even if it is not actually a node in the model.  See example 4 in the code below.
+  \item One can also use \cd{model\$varName}, with the caveat that \cd{varName} must be a variable name.  This usage would only make sense for a nimbleFunction written for models known to have a specific variable.  (Note that if \cd{a} is a scalar node in \cd{model}, then \cd{model[['a']]} will be a scalar but \cd{model\$a} will be a vector of length 1.)
  \item one should use the \cd{<<-} global assignment operator to assign into model nodes. 
 \end{itemize}
 

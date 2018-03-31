@@ -85,8 +85,9 @@ nimbleModel <- function(code,
     if(length(data) && sum(names(data) == ""))
         stop("BUGSmodel: 'data' must be a named list")
     if(any(!sapply(data, function(x) {
-        is.numeric(x) || is.logical(x) })))
-        stop("BUGSmodel: elements of 'data' must be numeric and cannot be data frames")
+        is.numeric(x) || is.logical(x) ||
+            (is.data.frame(x) && all(sapply(x, 'is.numeric'))) })))
+        stop("BUGSmodel: elements of 'data' must be numeric")
     ## constantLengths <- unlist(lapply(constants, length))
     ## if(any(constantLengths > 1)) {
     ##     iLong <- which(constantLengths > 1)
@@ -96,7 +97,7 @@ nimbleModel <- function(code,
     ## }
     md <- modelDefClass$new(name = name)
     if(nimbleOptions('verbose')) message("defining model...")
-    md$setupModel(code=code, constants=constants, dimensions=dimensions, userEnv = userEnv, debug=debug)
+    md$setupModel(code=code, constants=constants, dimensions=dimensions, inits = inits, data = data, userEnv = userEnv, debug=debug)
     if(!returnModel) return(md)
     # move any data lumped in 'constants' into 'data' for
     # backwards compatibility with JAGS/BUGS
@@ -107,7 +108,7 @@ nimbleModel <- function(code,
         warning("BUGSmodel: found the same variable(s) in both 'data' and 'constants'; using variable(s) from 'data'.\n")
     if(sum(dataVarIndices)) {
         data <- c(data, constants[dataVarIndices])
-        if(nimbleOptions('verbose')) cat("Adding", paste(names(constants)[dataVarIndices], collapse = ','), "as data for building model.\n")
+        if(nimbleOptions('verbose')) message("Adding ", paste(names(constants)[dataVarIndices], collapse = ','), " as data for building model.")
     }
     if(nimbleOptions('verbose')) message("building model...")
     model <- md$newModel(data=data, inits=inits, where=where, check=check, calculate = calculate, debug = debug)

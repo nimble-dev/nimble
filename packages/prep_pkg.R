@@ -103,7 +103,8 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-inte
 
 ### 3. Create nimble-math.Rd as documentation for various math functions we don't want to write individual documentation for given similarity to BUGS or base R functions
 
-mathFuns <- c('cloglog',
+mathFuns <- c('besselK',
+              'cloglog',
               'cube',
               'expit',
               'icloglog',
@@ -142,7 +143,8 @@ importFroms <- c("coda, effectiveSize, as.mcmc, is.mcmc.list",
                  "R6, R6Class",
                  "grDevices, dev.off, jpeg",
                  "graphics, lines, plot, text",
-                 "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile")
+                 "stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var, median, quantile",
+                 "parallel, mclapply")
 ##                 "R2WinBUGS, bugs",
 ##                 "rjags, jags.model",
 ##                 "rjags, coda.samples",

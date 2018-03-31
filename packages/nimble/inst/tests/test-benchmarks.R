@@ -11,7 +11,10 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 # This makes it easier to debug compiler and linker errors on travis.
 if (nchar(Sys.getenv('CI'))) nimbleOptions(showCompilerOutput = TRUE)
 
-context('Benchmarking Nimble code')
+RwarnLevel <- options('warn')$warn
+options(warn = 1)
+
+context('Benchmarking NIMBLE code')
 cat('\n')
 
 ## Computes number of iterations per second.
@@ -147,3 +150,5 @@ test_that('Benchmarking vectorized special functions', {
     }
     cat('-----------------------------------------\n')
 })
+
+options(warn = RwarnLevel)

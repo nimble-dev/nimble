@@ -302,3 +302,26 @@ Cmcmc$run(100)
 Csamples <- as.matrix(Cmcmc$mvSamples)
 test_that('binary sampler out-of-bounds', expect_true(all(as.numeric(Csamples) == 1)))
 
+test_that('MCMC with logProb variable being monitored builds and compiles.', {
+  cat('===== Starting MCMC test of logProb variable monitoring =====')
+  code <- nimbleCode({
+    prob[1] <- p
+    prob[2] <- 1-p
+    x[1:2] ~ dmultinom(size = N, prob = prob[1:2])
+    y      ~ dbinom(   size = N, prob = p)
+  })
+  set.seed(0)
+  N <- 100
+  p <- 0.3
+  x1 <- rbinom(1, size=N, prob=p)
+  x2 <- N - x1
+  inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
+  Rmodel <- nimbleModel(code, constants=list(), data=list(), inits=inits)
+  Cmodel <- compileNimble(Rmodel)
+  conf <- configureMCMC(Rmodel, monitors = 'logProb_y')
+  Rmcmc  <- buildMCMC(conf)
+  Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+  Cmcmc$run(10)
+})
+
+

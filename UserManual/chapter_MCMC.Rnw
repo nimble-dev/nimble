@@ -18,7 +18,7 @@ require(igraph, warn.conflicts = FALSE, quietly = TRUE)  # same question
 
 NIMBLE provides a variety of paths to creating and executing an MCMC algorithm, which differ greatly in their simplicity of use, and also in the options available and customizability.
 
-The most direct approach to invoking the MCMC engine is using the \cd{nimbleMCMC} function (Section \ref{sec:nimbleMCMC}).  This one-line call creates and executes an MCMC, and provides a wide range of options for controlling the MCMC: specifying monitors, burn-in, and thinning, running multiple MCMC chains with different initial values, and returning posterior samples, summary statistics, and/or WAIC values.  However, this approach is restricted to using NIMBLE's default MCMC algorithm; further customization of, for example, the specific samplers employed, is not possible.
+The most direct approach to invoking the MCMC engine is using the \cd{nimbleMCMC} function (Section \ref{sec:nimbleMCMC}).  This one-line call creates and executes an MCMC, and provides a wide range of options for controlling the MCMC: specifying monitors, burn-in, and thinning, running multiple MCMC chains with different initial values, and returning posterior samples, summary statistics, and/or a WAIC value.  However, this approach is restricted to using NIMBLE's default MCMC algorithm; further customization of, for example, the specific samplers employed, is not possible.
 
 The lengthier and more customizable approach to invoking the MCMC engine on a particular NIMBLE model object involves the following steps:
 
@@ -81,34 +81,34 @@ End-to-end examples of MCMC in NIMBLE can be found in Sections \ref{sec:creating
 % \end{itemize}
 
 
-\section{One-line invocation of MCMC engine: \cd{nimbleMCMC}}
+\section{One-line invocation of MCMC: \cd{nimbleMCMC}}
 \label{sec:nimbleMCMC}
 
-The most direct approach to executing an MCMC algorithm in NIMBLE is using \cd{nimbleMCMC}.  This single function can be used to create an underlying model and associated MCMC algorithm, compile both of these, execute the MCMC, and return samples, summary statistics, and WAIC values.  This approach circumvents the longer (and more flexible) approach using \cd{nimbleModel}, \cd{configureMCMC}, \cd{buildMCMC}, \cd{compileNimble}, and \cd{runMCMC}, which is described subsequently.
+The most direct approach to executing an MCMC algorithm in NIMBLE is using \cd{nimbleMCMC}.  This single function can be used to create an underlying model and associated MCMC algorithm, compile both of these, execute the MCMC, and return samples, summary statistics, and a WAIC value.  This approach circumvents the longer (and more flexible) approach using \cd{nimbleModel}, \cd{configureMCMC}, \cd{buildMCMC}, \cd{compileNimble}, and \cd{runMCMC}, which is described subsequently.
 
-The \cd{nimbleMCMC} function provides control over:
+The \cd{nimbleMCMC} function provides control over the:
 
 \begin{itemize}
-\item Number of MCMC iterations in each chain;
-\item Number of MCMC chains to execute;
-\item Number of burn-in samples to discard from each chain;
-\item Thinning interval on which samples should be recorded;
-\item Model variables to monitor and return posterior samples;
-\item Initial values, or a function for generating initial values for each chain;
-\item Setting the random number seed;
-\item Returning posterior samples as a matrix or a \cd{coda} \cd{mcmc} object;
-\item Returning posterior summary statistics; and
-\item Returning WAIC values calculated from each chain.
+\item number of MCMC iterations in each chain;
+\item number of MCMC chains to execute;
+\item number of burn-in samples to discard from each chain;
+\item thinning interval on which samples should be recorded;
+\item model variables to monitor and return posterior samples;
+\item initial values, or a function for generating initial values for each chain;
+\item setting the random number seed;
+\item returning posterior samples as a matrix or a \cd{coda} \cd{mcmc} object;
+\item returning posterior summary statistics; and
+\item returning a WAIC value calculated using samples from all chains.
 \end{itemize}
 
-This entry point for using \cd{nimbleMCMC} is the \cd{code}, \cd{constants}, \cd{data}, and \cd{inits} arguments which are used for building a NIMBLE model (see Chapters \ref{cha:writing-models} and \ref{cha:building-models}).  However, when using \cd{nimbleMCMC}, the \cd{inits} argument can also specify a list of lists of initial values which will be used for each MCMC chain, or a function which generates a list of initial values, which will be generated at the onset of each chain.  As an alternative entry point, a NIMBLE \cd{model} object can also be supplied to \cd{nimbleMCMC}, in which case this model will be used to build the MCMC algorithm.
+This entry point for using \cd{nimbleMCMC} is the \cd{code}, \cd{constants}, \cd{data}, and \cd{inits} arguments that are used for building a NIMBLE model (see Chapters \ref{cha:writing-models} and \ref{cha:building-models}).  However, when using \cd{nimbleMCMC}, the \cd{inits} argument can also specify a list of lists of initial values that will be used for each MCMC chain, or a function that generates a list of initial values, which will be generated at the onset of each chain.  As an alternative entry point, a NIMBLE \cd{model} object can also be supplied to \cd{nimbleMCMC}, in which case this model will be used to build the MCMC algorithm.
 
-Based on its arguments, \cd{nimbleMCMC} optionally returns any combination of:
+Based on its arguments, \cd{nimbleMCMC} optionally returns any combination of
 
 \begin{itemize}
-\item Posterior samples
-\item Posterior summary statistics
-\item WAIC values
+\item posterior samples,
+\item Posterior summary statistics, and
+\item WAIC value.
 \end{itemize}
 
 The above are calculated and returned for each MCMC chain.  Additionally, posterior summary statistics are calculated for all chains combined when multiple chains are run.
@@ -142,13 +142,13 @@ Rmodel <- nimbleModel(code, data = data, inits = initsList)
 ## specified burn-in.  return samples, summary statistics, and WAIC.
 mcmc.out <- nimbleMCMC(model = Rmodel,
                        niter = 20000, nchains = 3, nburnin = 2000,
-                       returnSummary = TRUE, returnWAIC = TRUE)
+                       summary = TRUE, WAIC = TRUE)
 
 ## run ten chains, generating random initial values for each
 ## chain using the inits function specified above.
 ## only return summary statistics from each chain; not all the samples.
 mcmc.out <- nimbleMCMC(model = Rmodel, nchains = 10, inits = initsFunction,
-                       returnSamples = FALSE, returnSummary = TRUE)
+                       samples = FALSE, summary = TRUE)
 
 
 @
@@ -429,10 +429,12 @@ The \cd{samples} matrix will contain both MCMC samples and model log-probabiliti
 Once the MCMC configuration object has been created, and customized to one's liking, it may be used to build an MCMC function:
 
 <<buildMCMC, eval=FALSE>>=
-Rmcmc <- buildMCMC(mcmcConf)
+Rmcmc <- buildMCMC(mcmcConf, enableWAIC = TRUE)
 @
 
-\cd{buildMCMC} is a nimbleFunction.  The returned object \cd{Rmcmc} is an instance  of the nimbleFunction specific to configuration \cd{mcmcConf} (and of course its associated model).
+\cd{buildMCMC} is a nimbleFunction.  The returned object \cd{Rmcmc} is an instance  of the nimbleFunction specific to configuration \cd{mcmcConf} (and of course its associated model).  
+
+Note that if you would like to be able to calculate the WAIC of the model after the MCMC function has been run, you must set \cd{enableWAIC = TRUE} as an argument to \cd{buildMCMC}, or set \cd{nimbleOptions(enableWAIC = TRUE)}, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \ref{sec:WAIC} or \cd{help(buildMCMC)} in R.
 
 When no customization is needed, one can skip \cd{configureMCMC} and simply provide a model object to \cd{buildMCMC}. The following two MCMC functions will be identical:
 
@@ -466,7 +468,7 @@ Cmcmc$Rmcmc$run(niter = 1000)
 \section{User-friendly execution of MCMC algorithms: \cd{runMCMC}}
 \label{sec:runMCMC}
 
-Once an MCMC algorithm has been created using \cd{buildMCMC}, the function \cd{runMCMC} can be used to run multiple chains and extract posterior samples, summary statistics and/or WAIC values.  This is a simpler approach to executing an MCMC algorithm, than the process of executing and extracting samples as described in Sections \ref{executing-the-mcmc-algorithm} and \ref{sec:extracting-samples}.
+Once an MCMC algorithm has been created using \cd{buildMCMC}, the function \cd{runMCMC} can be used to run multiple chains and extract posterior samples, summary statistics and/or a WAIC value.  This is a simpler approach to executing an MCMC algorithm, than the process of executing and extracting samples as described in Sections \ref{executing-the-mcmc-algorithm} and \ref{sec:extracting-samples}.
 
 \cd{runMCMC} also provides several user-friendly options such as burn-in, running multiple chains, and different initial values for each chain.  However, using \cd{runMCMC} does not support several lower-level options, such as timing the individual samplers internal to the MCMC, or continuing an exisiting MCMC run (picking up where it left off).
 
@@ -482,7 +484,7 @@ Once an MCMC algorithm has been created using \cd{buildMCMC}, the function \cd{r
 \item Setting the random number seed;
 \item Returning the posterior samples as a \cd{coda} \cd{mcmc} object;
 \item Returning summary statistics calculated from each chains; and
-\item Returning WAIC values calculated from each chain.
+\item Returning a WAIC value calculated using samples from all chains.
 \end{itemize}
 
 % See \cd{help(runMCMC)} for details of these arguments.
@@ -503,7 +505,7 @@ mcmc.out <- runMCMC(Cmcmc, niter = 10000, nburnin = 1000, nchains = 3)
 
 ## run three chains, returning posterior samples, summary statistics,
 ## and the WAIC value for each chain
-mcmc.out <- runMCMC(Cmcmc, nchains = 3, returnSummary = TRUE, returnWAIC = TRUE)
+mcmc.out <- runMCMC(Cmcmc, nchains = 3, summary = TRUE, WAIC = TRUE)
 
 ## run two chains, and specify the initial values for each
 initsList <- list(list(mu = 1, sigma = 1),
@@ -517,7 +519,7 @@ initsFunction <- function()
     list(mu = rnorm(1,0,1), sigma = runif(1,0,100))
 mcmc.out <- runMCMC(Cmcmc, niter = 100000, nchains = 10,
                     inits = initsFunction, setSeed = TRUE,
-                    returnSamples = FALSE, returnSummary = TRUE)
+                    samples = FALSE, summary = TRUE)
 @
 
 
@@ -579,12 +581,17 @@ Obtaining samples as matrices is most common, but see Section \ref{sec:modelValu
 \section{Calculating WAIC}
 \label{sec:WAIC}
 
-Once an MCMC algorithm has been run, as dscribed in \ref{sec:executing-the-mcmc-algorithm}, the WAIC \citep{Watanabe_2010} can be calculated from the posterior samples produced by the MCMC algorithm.  The WAIC is calculated by calling the member method \cd{mcmc\$calculateWAIC} (see \cd{help(buildMCMC)} in R).  The \cd{calculateWAIC} method has one required argument, \cd{nburnin}, the number of initial samples to discard prior to WAIC calculation.  \cd{nburnin} defaults to 0.
+Once an MCMC algorithm has been run, as described in \ref{sec:executing-the-mcmc-algorithm}, the WAIC \citep{Watanabe_2010} can be calculated from the posterior samples produced by the MCMC algorithm.  Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument \cd{enableWAIC = TRUE} must have been supplied to the call to \cd{buildMCMC}, or the \cd{enableWAIC} NIMBLE option must have been set to \cd{TRUE}.
+
+The WAIC is calculated by calling the member method \cd{mcmc\$calculateWAIC} (see \cd{help(buildMCMC)} in R for more details).  The \cd{calculateWAIC} method has one required argument, \cd{nburnin}, the number of initial samples to discard prior to WAIC calculation.  \cd{nburnin} defaults to 0.
 
 <<eval=FALSE>>=
 Cmcmc$calculateWAIC(nburnin = 100)
 @ 
 
+\section{k-fold cross-validation}
+
+The \cd{runCrossValidate} function in NIMBLE performs k-fold cross-validation on a \cd{nimbleModel} fit via MCMC.  More information can be found by calling \cd{help(runCrossValidate)}. This feature is EXPERIMENTAL - please report any problems or questions to the NIMBLE development team.
 
 
 
