@@ -652,10 +652,9 @@ sampler_CRP <- nimbleFunction(
               newind <- newind+1
               mySum <- sum(xi == newind)
             }
-            ## Clau: warning when a component that does not exist should be sampled
             if(newind > min_nTilde) {
-              nimCat('CRP_sampler: This MCMC is not fully non parametric. More components than exist are requiered')
-              newind <- xi[i] # Clau: is this what we want to do?
+              nimCat('CRP_sampler: This MCMC is not fully nonparametric. More components than exist are required.\n')
+              newind <- xi[i] 
             }
             model[[target]][i] <<- newind
             if(type == 'indivCalcs') {
