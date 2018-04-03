@@ -157,8 +157,8 @@ test_that("random sampling from model works fine:", {
   set.seed(1)
   Inits <- list(z = rgamma(5, 10, 10))
   data <- list(xi = rep(1,10))
-  SB_model3 <- nimbleModel(SB_code3, data=data, inits=Inits)
-  # ?????
+  expect_message(nimbleModel(SB_code3, data=data, inits=Inits)) # message is sent because z >1.
+  
   
   
   # good stating values for stick variables
@@ -166,10 +166,9 @@ test_that("random sampling from model works fine:", {
   Inits <- list(z = rbeta(5, 1, 1))
   data <- list(xi = rep(1,10))
   SB_model3 <- nimbleModel(SB_code3, data=data, inits=Inits)
-  
-  SB_model3$simulate()
-  expect_equal(c(SB_model3$w), rep(NaN, length(x)+1),
-               info = "incorrect distribution for stick variables not identified")
+  expect_message(SB_model3$simulate(), message="values in 'z' have to be in") # message is sent because z >1.
+  #expect_equal(c(SB_model3$w), rep(NaN, length(x)+1),
+  #             info = "incorrect distribution for stick variables not identified")
 
   
   # wrong specification of length in stick variables, should be 5
@@ -187,8 +186,7 @@ test_that("random sampling from model works fine:", {
   set.seed(1)
   Inits <- list(z = rbeta(4, 10, 10))
   data <- list(xi = rep(1,10))
-  SB_model4 <- nimbleModel(SB_code4, data=data, inits=Inits)
-  # ????
+  expect_warning(nimbleModel(SB_code4, data=data, inits=Inits), message = "number of items to replace")
   
   
   # wrong specification of length in stick variables, should be 5
@@ -206,9 +204,10 @@ test_that("random sampling from model works fine:", {
   Inits <- list(z = rbeta(2, 10, 10))
   data <- list(xi = rep(1,10))
   SB_model5 <- nimbleModel(SB_code5, data=data, inits=Inits)
+  cSB_model5 <- compileNimble(SB_model5)
+  expect_output(cSB_model5$calculate('w'), "Error in mapCopy")
   
-  expect_equal(sum(c(SB_model5$w)), 1,
-               info = "incorrect length for stick variables")
+  
   
   # longer vector of stick variables
   SB_code6 <- nimbleCode({
@@ -225,9 +224,7 @@ test_that("random sampling from model works fine:", {
   set.seed(1)
   Inits <- list(z = rbeta(10, 10, 10))
   data <- list(xi = rep(1,10))
-  SB_model6 <- nimbleModel(SB_code6, data=data, inits=Inits)
-  # ????
-  
+  expect_warning(nimbleModel(SB_code6, data=data, inits=Inits), message = "number of items to replace")
 })
 
 
@@ -452,7 +449,7 @@ CmodelMCMC$run(10000)
 samples = as.matrix(CmodelMCMC$mvSamples)
 s2Sam = samples[, 1:25]
 thetaSam = samples[, 26:50]
-zSam = samples[, 51:75]
+zSam = samples[, 51:74]
 Tr = 25
 Wpost = t(apply(zSam, 1, function(x)c(x[1], x[2:(Tr-1)]*cumprod(1-x[1:(Tr-2)]), cumprod(1-x[1:(Tr-1)])[N=Tr-1])))
 
@@ -521,17 +518,9 @@ test_that("dCRP nimble function calculates density correctly: ",{
                NaN,
                info = paste0("incorrect parameters space allowed"))
   
-  # how to recognize this error?
-  dCRP(x, conc=1, size=3, log=FALSE)
-  #expect_equal(dCRP(x, conc=1, size=3, log=FALSE),
-  #             NaN,
-  #             info = paste0("size is less than length of x"))
+  expect_error(dCRP(x, conc=1, size=3, log=FALSE), "length of x has to be equal to size")
   
-  # how to recognize this error?
-  dCRP(x, conc=1, size=10, log=FALSE)
-  #expect_equal(dCRP(x, conc=1, size=10, log=FALSE),
-  #             NaN,
-  #             info = paste0("size is larger than length of x"))
+  expect_error(dCRP(x, conc=1, size=10, log=FALSE), "length of x has to be equal to size")
   
 })
 
