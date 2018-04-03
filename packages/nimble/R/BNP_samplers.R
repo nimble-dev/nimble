@@ -359,6 +359,7 @@ CRP_helper <- nimbleFunctionVirtual(
 )
 
 CRP_nonconjugate <- nimbleFunction(
+  name = "CRP_nonconjugate",
   contains = CRP_helper,
   setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
   },
@@ -373,6 +374,7 @@ CRP_nonconjugate <- nimbleFunction(
 )
 
 CRP_conjugate_dnorm_dnorm <- nimbleFunction(
+  name = "CRP_conjugate_dnorm_dnorm",
   contains = CRP_helper,
   setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
@@ -405,6 +407,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
 ## Claudia: I changed parameter names to be more informative - is this ok and can you do it for all conjugacies?
 ## also added some spacing to the cod
 CRP_conjugate_dgamma_dpois <- nimbleFunction(
+  name = "CRP_conjugate_dgamma_dpois",
   contains = CRP_helper,
   setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
@@ -431,6 +434,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
 
 
 CRP_conjugate_dbeta_dbern <- nimbleFunction(
+  name = "CRP_conjugate_dbeta_dbern",
   contains = CRP_helper,
   setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
@@ -456,6 +460,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
 
 
 CRP_conjugate_dgamma_dexp <- nimbleFunction(
+  name = "CRP_conjugate_dgamma_dexp",
   contains = CRP_helper,
   setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
@@ -481,6 +486,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
 
 
 CRP_conjugate_dgamma_dgamma <- nimbleFunction(
+  name = "CRP_conjugate_dgamma_dgamma",
   contains = CRP_helper,
   setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
@@ -509,6 +515,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
 
 
 CRP_conjugate_ddirch_dmulti <- nimbleFunction(
+  name = "CRP_conjugate_ddirch_dmulti",
   contains = CRP_helper,
   setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
     d <- length(model[[marginalizedNodes[1]]])
