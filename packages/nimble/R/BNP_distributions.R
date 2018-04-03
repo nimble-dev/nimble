@@ -88,7 +88,7 @@ rCRP <- nimbleFunction(
                     numComponents <- numComponents + 1
                     x[i] <- numComponents
                 } else {                             # an old value
-                    index <- rcat(n=1, ones[1:i-1])
+                    index <- rcat(n=1, ones[1:(i-1)])
                     x[i] <- x[index]
                 }
             }
