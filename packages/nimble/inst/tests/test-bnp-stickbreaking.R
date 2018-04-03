@@ -526,7 +526,219 @@ test_that("dCRP nimble function calculates density correctly: ",{
 
 
 ##-- test: use in model:
+test_that("CRP model calculation and dimensionas are correct:", {
+  
+  x <- c(1,1,2,1,1,2)
+  conc <- 1
+  
+  truth <- (conc/(conc+1-1))*(1/(conc+2-1))*(conc/(conc+3-1))*
+    (2/(conc+4-1))*(3/(conc+5-1))*(1/(conc+6-1))
+  ltruth <- log(truth)
+  
+  CRP_code <- nimbleCode({
+    x[1:6] ~ dCRP(conc, size=6)
+  })
+  
+  Consts <- list(conc = 1)
+  Inits <- list(x = c(1,1,2,1,1,2))
+  CRP_model <- nimbleModel(CRP_code, data=Inits, constants=Consts)
+  
+  CRP_model$x <- x
+  expect_equal(exp(CRP_model$calculate()), truth,
+               info = paste0("incorrect likelihood value for dCRP"))
+  
+  c_CRP_model <- compileNimble(CRP_model)
+  c_CRP_model$x
+  expect_equal(exp(c_CRP_model$calculate()), truth,
+               info = paste0("incorrect likelihood value for compiled dCRP"))
+  
+  
+  # different length of x and size:
+  CRP_code2 <- nimbleCode({
+    x[1:6] ~ dCRP(1, size=10)
+  })
+  
+  Inits <- list(x = c(1,1,2,1,1,2))
+  CRP_model2 <- nimbleModel(CRP_code2, data=Inits)
+  expect_error(CRP_model2$calculate(), "length of x has to be equal to size")
+  
+  # different length of x and size:
+  CRP_code3 <- nimbleCode({
+    x[1:6] ~ dCRP(1, size=3)
+  })
+  
+  Inits <- list(x = c(1,1,2,1,1,2))
+  CRP_model3 <- nimbleModel(CRP_code3, data=Inits)
+  expect_error(CRP_model3$calculate(), "length of x has to be equal to size")
+  
+  
+})
 
+  
+##-- test: random sampling from a compiled model adding one more level:
+test_that("random sampling from CRP and model works fine:", {
+  
+  conc <- 1
+  set.seed(0)
+  size <- 6
+  r_samps <- t(replicate(10000, rCRP(n = 1, conc, size = size)))
+  # K is the number of unique components in x of length 6
+  true_EK <- sum(conc/(conc+1:size-1))
+  
+  expect_equal(mean(apply(r_samps, 1, function(x)length(unique(x)))), true_EK, 
+               tol = 0.01,
+               info = "Difference in expected mean of K exceeds tolerance")
+  
+  # sampling from the model:
+  set.seed(1)
+  CRP_code <- nimbleCode({
+    x[1:6] ~ dCRP(conc=1, size=6)
+    for(i in 1:6){
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[x[i]], 1)
+    }
+  })
+  Inits <- list(x = c(1,1,2,1,1,2), mu = 1:6)
+  Data <- list( y =  rnorm(6))
+  CRP_model <- nimbleModel(CRP_code, data=Data, inits=Inits)
+  c_CRP_model <- compileNimble(CRP_model)
+  
+  simul_samp <- function(model) {
+    model$simulate()
+    return(model$x)
+  }
+  simul_samps <- t(replicate(10000, simul_samp(c_CRP_model)))
+  
+  expect_equal(mean(apply(simul_samps, 1, function(x)length(unique(x)))), true_EK, 
+               tol = 0.01,
+               info = "Difference in expected mean of K, from compiled model, exceeds tolerance")
+  
+})
+  
+
+
+
+context("Testing of bnp conjugacy")
+
+test_that("Testing conjugacy detection with models using CRP: ", { 
+  
+  # dnorm_dnorm
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
+
+  
+  # dgamma_dpois
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      y[i] ~ dpois(mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rpois(4, 4)),
+                  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
+  
+  
+  # dgamma_dexp
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      y[i] ~ dexp(mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rexp(4, 4)),
+                  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dexp")
+  
+  
+  # dgamma_dgamma
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      y[i] ~ dgamma(4, mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rgamma(4, 4, 4)),
+                  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dgamma")
+  
+ 
+  # dbeta_dbern
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dbeta(1,1)
+      y[i] ~ dbern(mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rbinom(4, size=1, prob=0.5)),
+                  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dbern")
+  
+  
+  # dbeta_dbern
+  code=nimbleCode(
+    {
+      for(i in 1:4){
+        p[i,1:3] ~ ddirch(alpha=alpha0[1:3])
+        y[i,1:3] ~ dmulti(prob=p[xi[i],1:3], size=3)
+      }
+      xi[1:4] ~ dCRP(conc=1, size=4)
+    }
+  )
+  set.seed(1)
+  p0 <- matrix(0, ncol=3, nrow=4)
+  y0 <- matrix(0, ncol=3, nrow=4)
+  for(i in 1:4){
+    p0[i,]=rdirch(1, c(1, 1, 1))
+    y0[i,] = rmulti(1, prob=c(0.3,0.3,0.4), size=3)
+  }
+  m = nimbleModel(code, 
+                  data = list(y = y0),
+                  inits = list(xi = rep(1,4), p=p0), 
+                  constants=list(alpha0 = c(1,1,1)))
+  conf <- configureMCMC(m)
+  mcmc <- buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_ddirch_dmulti")
+  
+  # dnorm_dnorm_dinvgamma
+  code = nimbleCode({
+    for(i in 1:4) {
+      s2[i] ~ dinvgamma(1, 1)
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], var = s2[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4), s2=rinvgamma(4, 1,1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[9]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  
+  
+})
 
 #---- OLD TESTS:
 #set.seed(0)
