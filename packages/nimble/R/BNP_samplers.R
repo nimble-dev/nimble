@@ -567,7 +567,7 @@ sampler_CRP <- nimbleFunction(
       for(j in 1:length(expr)) {
         ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
         tmpexpr <- parse(text = expr[j])[[1]]
-        if(length(tmpexpr) == 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') {   
+        if(length(tmpexpr) >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') {   
             foundTarget <- all.vars(tmpexpr[[3]]) == targetVar   
             if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
                 tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
