@@ -14,7 +14,8 @@ test_that('Derivs of calculate function work for model ADMod1', {
   ADMod1 <- nimbleModel(code = ADCode1, data = list(y = numeric(2)), dimensions = list(y = c(2)),
                         inits = list(x = c(1,1)))
   test_ADModelCalculate(ADMod1, name = 'ADMod1', calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod1$getDependencies('x'))),
-                        wrt = list(c('x', 'y'), c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]'), c('x[1]', 'y', 'x[2]')), order = c(0, 1))
+                        wrt = list(c('x', 'y'), c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]'), c('x[1]', 'y', 'x[2]')),
+                        order = c(0, 1, 2))
 })
 
 test_that('Derivs of calculate function work for model ADMod2', {
@@ -28,7 +29,7 @@ test_that('Derivs of calculate function work for model ADMod2', {
     code = ADCode2, dimensions = list(x = 2, y = 2, z = 2), constants = list(diagMat = diag(2)),
     inits = list(x = c(2.1, 1.2), y  = c(-.1,-.2)))
   test_ADModelCalculate(ADMod2, name = 'ADMod2', calcNodeNames = list(c('x', 'y'), c('y[2]'), c(ADMod2$getDependencies('x'))),
-                        wrt = list(c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), order = c(0, 1))
+                        wrt = list(c('x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), order = c(0, 1, 2))
 })
 
 #C++ derivs of below model won't work until we've implemented derivs of wishart
@@ -69,7 +70,8 @@ test_that('Derivs of calculate function work for model ADMod4', {
     code = ADCode4, data = list(y = 0.5+1:3), inits = list(x0 = 1.23, x = 1:3))
   ADMod4$simulate(ADMod4$getDependencies('x'))
   test_ADModelCalculate(ADMod4, name = 'ADMod4', calcNodeNames = list(c('y'), c('y[2]'), c(ADMod4$getDependencies(c('x', 'x0')))),
-                        wrt = list(c('x0'), c('x0', 'x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), tolerance = .1, order = c(0, 1))
+                        wrt = list(c('x0'), c('x0', 'x[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), tolerance = .1,
+                        order = c(0, 1, 2))
 })
 
 test_that('Derivs of calculate function work for model ADmod5 (tricky indexing)', {
@@ -84,7 +86,8 @@ test_that('Derivs of calculate function work for model ADmod5 (tricky indexing)'
     code = ADCode5, dimensions = list(x = 2, y = 2, z = 3), constants = list(diagMat = diag(2)),
     inits = list(x = c(1, 1.2), y  = c(-.1,-.2)))
   test_ADModelCalculate(ADMod5, name = 'ADMod5', calcNodeNames = list(c('y'), c('y[2]'), c(ADMod5$getDependencies(c('x')))),
-                        wrt = list(c('x'), c('x[1]', 'z[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), tolerance = .1, order = c(0, 1))
+                        wrt = list(c('x'), c('x[1]', 'z[1]', 'y[1]'), c('x[1:2]', 'y[1:2]')), tolerance = .1,
+                        order = c(0, 1, 2))
 })
 
 
@@ -97,7 +100,8 @@ test_that('Derivs of calculate function work for model equiv', {
   ## Higher tolerance for more complex chain rule calculations in this model.
   test_ADModelCalculate(Rmodel, name = 'equiv', calcNodeNames = list(Rmodel$getDependencies('tau'), Rmodel$getDependencies('sigma'),  Rmodel$getDependencies('d'),
                                                      Rmodel$getDependencies('d[1]')),
-                        wrt = list(c('tau'), c('sigma'), c('d'), c('d[2]')), tolerance = .5, order = c(0, 1))
+                        wrt = list(c('tau'), c('sigma'), c('d'), c('d[2]')), tolerance = .5,
+                        order = c(0, 1, 2))
 })
 
 test_that("Derivs of calculate function work for Daniel's SSM", {
@@ -120,7 +124,8 @@ Rmodel <- nimbleModel(code = ssmCode, name = 'SSMcorrelated', constants = ssmCon
 test_ADModelCalculate(Rmodel, name = 'SSM', calcNodeNames = list(Rmodel$getDependencies('a'), Rmodel$getDependencies('b'),
                                                                  Rmodel$getDependencies('sigPN'),
                                                                    Rmodel$getDependencies('x')),
-                      wrt = list(c('a', 'b'), c('sigPN'), c('x[1]')), tolerance = .5, order = c(0, 1))
+                      wrt = list(c('a', 'b'), c('sigPN'), c('x[1]')), tolerance = .5,
+                      order = c(0, 1, 2))
 })
 
 
@@ -130,7 +135,8 @@ test_that("Derivs of calculate function work for rats model", {
                                                                     Rmodel$getDependencies('mu[1, 2]'),
                                                                     Rmodel$getDependencies('alpha'),
                                                                     Rmodel$getDependencies('beta')),
-                        wrt = list(c('alpha[1]', 'beta[1]'), c('mu[1,1]')), tolerance = .5, order = c(0, 1))
+                        wrt = list(c('alpha[1]', 'beta[1]'), c('mu[1,1]')), tolerance = .5,
+                        order = c(0, 1, 2))
 })
 
 ## Ragged arrays not supported for derivs yet.
