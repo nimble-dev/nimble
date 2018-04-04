@@ -636,7 +636,53 @@ test_that("Testing conjugacy detection with models using CRP: ", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
 
+  # dnorm_dnorm one more level of hierarchy
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dnorm(beta,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+    beta ~ dnorm(0,1)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4), beta =1))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
+  
+  # dnorm_dnorm and determinictic nodes
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dnorm(0,1)
+      mui[i] <- mu[xi[i]]
+      y[i] ~ dnorm(mui[i], sd = 1)
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
+  
+  
+  # dnorm_dnorm
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dpois(10)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rpois(4, 10)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  
+
   # dgamma_dpois
   code = nimbleCode({
     for(i in 1:4) {
@@ -697,7 +743,7 @@ test_that("Testing conjugacy detection with models using CRP: ", {
   expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dbern")
   
   
-  # dbeta_dbern
+  # ddirch_dmulti
   code=nimbleCode(
     {
       for(i in 1:4){
@@ -720,7 +766,7 @@ test_that("Testing conjugacy detection with models using CRP: ", {
                   constants=list(alpha0 = c(1,1,1)))
   conf <- configureMCMC(m)
   mcmc <- buildMCMC(conf)
-  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_ddirch_dmulti")
+  expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_ddirch_dmulti")
   
   # dnorm_dnorm_dinvgamma
   code = nimbleCode({
@@ -737,111 +783,396 @@ test_that("Testing conjugacy detection with models using CRP: ", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[9]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
+  # dgamma_dexp and deterministic nodes
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      mui[i] <- mu[xi[i]]
+      y[i] ~ dexp(mui[i])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rexp(4, 4)),
+                  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dexp")
+  
+  
+  # dgamma_dexp, deterministic nodes, and conjugacy is broken
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      mui[i] <- mu[xi[i]]
+      y[i] ~ dexp(mui[i]+3)
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rexp(4, 4)),
+                  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+
+  
+  # dgamma_dexp, deterministic nodes, and conjugacy is broken
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      mui[i] <- mu[xi[i]]
+      y[i] ~ dexp(3*mui[i])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rexp(4, 4)),
+                  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  
+    
+})
+
+
+
+##-- simple tests of models
+
+model <- function() {
+  for(i in 1:4) {
+    mu[i] ~ dnorm(0,1)
+    y[i] ~ dnorm(mu[xi[i]], sd = 1)
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits = list(xi = rep(1,4), mu=rnorm(4))
+data = list(y = rnorm(4))
+
+testBUGSmodel(example = 'test1', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+
+model <- function() {
+  for(i in 1:4) {
+    mu[i] ~ dgamma(1,1)
+    y[i] ~ dpois(mu[xi[i]])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+data = list(y = rpois(4, 4))
+
+testBUGSmodel(example = 'test2', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+
+model <- function() {
+  for(i in 1:4) {
+    mu[i] ~ dgamma(1,1)
+    y[i] ~ dexp(mu[xi[i]])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+data = list(y = rexp(4, 4))
+
+testBUGSmodel(example = 'test3', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+
+model <- function() {
+  for(i in 1:4) {
+    mu[i] ~ dgamma(1,1)
+    y[i] ~ dgamma(4, mu[xi[i]])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+data = list(y = rgamma(4, 4, 4))
+
+testBUGSmodel(example = 'test4', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+
+model <- function() {
+  for(i in 1:4) {
+    mu[i] ~ dbeta(1,1)
+    y[i] ~ dbern(mu[xi[i]])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1))
+data = list(y = rbinom(4, size=1, prob=0.5))
+
+testBUGSmodel(example = 'test5', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+
+model <- function() {
+  for(i in 1:4){
+    p[i,1:3] ~ ddirch(alpha=alpha0[1:3])
+    y[i,1:3] ~ dmulti(prob=p[xi[i],1:3], size=3)
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+set.seed(1)
+p0 <- matrix(0, ncol=3, nrow=4)
+y0 <- matrix(0, ncol=3, nrow=4)
+for(i in 1:4){
+  p0[i,]=rdirch(1, c(1, 1, 1))
+  y0[i,] = rmulti(1, prob=c(0.3,0.3,0.4), size=3)
+}
+inits = list(xi = rep(1,4), p=p0)
+data = list(y = y0)
+alpha0 = c(1,1,1)
+
+testBUGSmodel(example = 'test6', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+
+model <- function() {
+  for(i in 1:4) {
+    s2[i] ~ dinvgamma(1, 1)
+    mu[i] ~ dnorm(0,1)
+    y[i] ~ dnorm(mu[xi[i]], var = s2[xi[i]])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits = list(xi = rep(1,4), mu=rnorm(4), s2=rinvgamma(4, 1,1))
+data = list(y = rnorm(4))
+
+testBUGSmodel(example = 'test7', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+
+
+## testing smapler assigment for conc parameter
+
+context("Testing of sampler assignment and priors for conc parameter in CRP")
+
+test_that("Testing sampler assignment and misspecification of priors for conc parameter: ", { 
+  
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    xi[1:4] ~ dCRP(alpha, size=4)
+    alpha ~ dgamma(1, 1) 
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu = rnorm(4), alpha = 1))
+  conf <- configureMCMC(m)
+  expect_equal(conf$getSamplers()[[5]]$name, "CRP_concentration")
+  
+  
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    xi[1:4] ~ dCRP(alpha, size=4)
+    alpha ~ dexp(1) 
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu = rnorm(4), alpha = 1))
+  conf <- configureMCMC(m)
+  expect_equal(conf$getSamplers()[[5]]$name, "RW")
+  
+  
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    xi[1:4] ~ dCRP(alpha, size=4)
+    alpha ~ dunif(0,1) 
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu = rnorm(4), alpha = 1))
+  conf <- configureMCMC(m)
+  expect_equal(conf$getSamplers()[[5]]$name, "RW")
+  
+  
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    xi[1:4] ~ dCRP(alpha, size=4)
+    alpha ~ dnorm(-10,1) 
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu = rnorm(4), alpha = 1))
+  expect_message(m$simulate(), message="value of concentration parameter ")
+  expect_error(m$calculate())
+  # better way to tell the user that the prior for alpha is wrong?
+  
+  
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    xi[1:4] ~ dCRP(0, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu = rnorm(4)))
+  expect_message(m$simulate(), message="value of concentration parameter has to be larger than zero")
+  expect_error(m$calculate())
   
 })
 
-#---- OLD TESTS:
-#set.seed(0)
-#x <- rbeta(5, 1, 1)
 
-#truth <- c(x[1], x[2:5]*cumprod(1-x[1:4]), prod(1-x[1:5]))
-#sum(truth)
-#ltruth <- log(truth)
+## testing misspecification of dimension in a model
 
-#try(test_that("stick_breaking nimble function calculates weights correctly: ",
-#              expect_equal(stick_breaking(x, log=FALSE),
-#                           truth,
-#                           info = paste0("incorrect stick_breaking nimble function calculation"))))
+context("Testing of misspecification of dimension when using CRP")
 
-#try(test_that("stick_breaking nimble function calculates log weights correctly: ",
-#              expect_equal(stick_breaking(x, log=TRUE),
-#                           ltruth,
-#                           info = paste0("incorrect stick_breaking nimble function log calculation"))))
+test_that("Testing of misspecification of dimension when using CRP: ", { 
+  
+  # more labels than observations
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    xi[1:10] ~ dCRP(conc=1, size=10)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,10), mu=rnorm(4)))
+  conf <- configureMCMC(m)
+  expect_error(buildMCMC(conf))
 
-##-- test: use through compile nimble function
+  
+  # more observations than labels 
+  code = nimbleCode({
+    for(i in 1:10) {
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  expect_error(nimbleModel(code, data = list(y = rnorm(10)),
+                  inits = list(xi = rep(1,4), mu=rnorm(10))))
+  
+  
+  # different obervations with same label
+  code = nimbleCode({
+    mu[1] ~ dnorm(0,1)
+    mu[2] ~ dnorm(0,1)
+    y[1] ~ dnorm(mu[xi[1]], 1)
+    y[2] ~ dnorm(mu[xi[1]], 1)
+    xi[1:2] ~ dCRP(conc=1, size=2)
+  })
+  m <- nimbleModel(code, data = list(y = rnorm(2)),
+                   inits = list(xi = rep(1,2), mu=rnorm(2)))
+  conf <- configureMCMC(m)
+  expect_error(buildMCMC(conf))
 
-#cSB <- compileNimble(stick_breaking)
-#try(test_that("compiled stick_breaking nimble function calculates weights correctly: ",
-#              expect_equal(cSB(x, log=FALSE),
-#                           truth,
-#                           info = paste0("incorrect compiled stick_breaking nimble function calculation"))))
+  
+  # same obervation with different label
+  code = nimbleCode({
+    mu[1] ~ dnorm(0,1)
+    mu[2] ~ dnorm(0,1)
+    y[1] ~ dnorm(mu[xi[1]], 1)
+    y[1] ~ dnorm(mu[xi[2]], 1)
+    xi[1:2] ~ dCRP(conc=1, size=2)
+  })
+  expect_error(nimbleModel(code, data = list(y = rnorm(2)),
+                   inits = list(xi = rep(1,2), mu=rnorm(2))))
+  
+  # less tilde variables than observations
+  code = nimbleCode({
+    for(i in 1:50){
+      mu[i] ~ dnorm(0,1)  
+    }
+    for(i in 1:100){
+      y[i] ~ dnorm(mu[xi[i]], var=1)  
+    }
+    xi[1:100] ~ dCRP(conc=1, size=100)
+  })
+  m <- nimbleModel(code, data = list(y = rnorm(100)),
+                   inits = list(xi = rep(1,100), mu=rnorm(50)))
+  conf <- configureMCMC(m)
+  expect_warning(buildMCMC(conf))
+  
+  
+  
+  # multiple tilde parameters
+  code = nimbleCode({
+    for(i in 1:50){
+      mu[i] ~ dnorm(0,1)
+      s2[i] ~ dinvgamma(1,1)
+    }
+    for(i in 1:100){
+      y[i] ~ dnorm(mu[xi[i]], var=s2[xi[i]])  
+    }
+    xi[1:100] ~ dCRP(conc=1, size=100)
+  })
+  m <- nimbleModel(code, data = list(y = rnorm(100)),
+                   inits = list(xi = rep(1,100), mu=rnorm(50), s2=rinvgamma(50,1,1)))
+  conf <- configureMCMC(m)
+  expect_warning(buildMCMC(conf))
+  
+  
+  # multiple tilde parameters, one is common for every observation
+  code = nimbleCode({
+    for(i in 1:50){
+      mu[i] ~ dnorm(0,1)
+      s2[i] ~ dinvgamma(1,1)
+    }
+    for(i in 1:100){
+      y[i] ~ dnorm(mu[xi[i]], var=s2[xi[1]])  
+    }
+    xi[1:100] ~ dCRP(conc=1, size=100)
+  })
+  m <- nimbleModel(code, data = list(y = rnorm(100)),
+                   inits = list(xi = rep(1,100), mu=rnorm(50), s2=rinvgamma(50,1,1)))
+  conf <- configureMCMC(m)
+  expect_error(buildMCMC(conf))
+  
+  # more than one label used for each observation
+  code = nimbleCode({
+    for(i in 1:50){
+      mu[i] ~ dnorm(0,1)  
+    }
+    for(i in 1:99){
+      y[i] ~ dnorm(mu[xi[i]]+mu[xi[i+1]], var=1)  
+    }
+    y[100] ~ dnorm(mu[xi[100]], 1)
+    xi[1:100] ~ dCRP(conc=1, size=100)
+  })
+  m <- nimbleModel(code, data = list(y = rnorm(100)),
+                   inits = list(xi = rep(1,100), mu=rnorm(50)))
+  conf <- configureMCMC(m)
+  expect_error(buildMCMC(conf))
+  
+  # test that a message issent when more tilde variables than defined are needed
+  code = nimbleCode({
+    for(i in 1:3){
+      mu[i] ~ dnorm(0,1)  
+    }
+    for(i in 1:100){
+      y[i] ~ dnorm(mu[xi[i]], var=1)  
+    }
+    xi[1:100] ~ dCRP(conc=1, size=100)
+  })
+  m <- nimbleModel(code, data = list(y = c(rnorm(20, -5) , rnorm(20, 0), rnorm(20, 5),
+                                           rnorm(20, 10), rnorm(20, 20))),
+                   inits = list(xi = rep(1,100), mu=rnorm(3)))
+  cm <- compileNimble(m)
+  conf <- configureMCMC(m)
+  expect_warning(mMCMC <- buildMCMC(conf))
+  cmMCMC=compileNimble(mMCMC, project=m,
+                              resetFunctions=TRUE, showCompilerOutput = TRUE)
+  set.seed(1)
+  expect_message(cmMCMC$run(1), message="CRP_sampler: This MCMC is not fully nonparametric.")
 
-#try(test_that("compiled stick_breaking nimble function calculates log weights correctly: ",
-#              expect_equal(cSB(x, log=TRUE),
-#                          ltruth,
-#                           info = paste0("incorrect compiled stick_breaking nimble function log calculation"))))
-
-
-#SB_code <- nimbleCode({
-#  for(i in 1:5) z[i] ~ dbeta(1, 1)
-#  w[1:6] <- stick_breaking(z[1:5])
-#})
-
-#set.seed(1)
-#Inits <- list(z = rbeta(5, 1, 1))
-#SB_model <- nimbleModel(SB_code, data=Inits)
-
-#SB_model$z <- x
-#SB_model$calculate()
-
-# Chris, this test is not passed. Don't know why.... Later the compiled version is passed (test in line 71)!
-# maybe diference in decimals?
-# Claudia, it's awkward becasue SB_model$w is an array not a vector. You'll need to convert to a vector before comparing to 'truth' 
-#try(test_that("Test that SB_model calculation is correct in weights calculation: ",
-#              expect_equal(SB_model$w, truth,
-#                           info = paste0("incorrect stick breaking weigths in model"))))
-
-# Claudia, I'm not sure we need this - if the elements are all equal in the test above, then the mean is necessarily equal. Right?
-# If the above test works we don't need this! 
-#try(test_that("Test that SB_model calculation is correct in mean of weights calculation: ",
-#              expect_equal(mean(SB_model$w), mean(truth), tol=0.01,
-#                           info = paste0("incorrect stick breaking mean weigths in model"))))
-
-
-#try(test_that("Test that compiled SB_model calculation is correct in weights calculation: ",
-#              expect_equal(c_SB_model$w, truth,
-#                           info = paste0("incorrect stick breaking weigths in compiled model"))))
-
-
-#SB_code2 <- nimbleCode({
-#  for(i in 1:5) 
-#    z[i] ~ dbeta(1, 1)
-#  w[1:6] <- stick_breaking(z[1:5])
-#  for(i in 1:10){
-#    xi[i] ~ dcat(w[1:6])
-#  }
-#})
-
-#set.seed(1)
-#Inits <- list(z = rbeta(5, 1, 1))
-#data <- list(xi = rep(1,10))
-#SB_model2 <- nimbleModel(SB_code2, data=data, inits=Inits)
-
-#c_SB_model2 <- compileNimble(SB_model2)
-
-#c_SB_model2$z <- x
-#c_SB_model2$calculate()
-
-#-- checking some computations
-#try(test_that("Test that SB_model2 calculation is correct in weights calculation: ",
-#              expect_equal(c_SB_model2$w, truth,
-#                           info = paste0("incorrect stick breaking weigths in SB_model2"))))
-
-#-- sampling via simulate:
-#set.seed(0)
-#simul_samp <- function(model) {
-#  model$simulate()
-#  return(model$w)
-#}
-#simul_samps <- t(replicate(10000, simul_samp(c_SB_model2)))
-
-#trueE <- c(0.5^(1:5) )
-
-#-- checking the mean of the components of a vector that has a generalized dirichelt distribution
-#-- if z_i ~ beta then weights, w, defined by a SB representation have a generalized dirichlet distribution
-#-- and the expectation of w_j=0.5^j (in this case a=b=1).
-
-#try(test_that("Test that expectation of w_j is correct based on simulations: ",
-#              expect_equal(apply(simul_samps, 2, mean)[1:5], trueE, tol=0.01,
-#                           info = paste0("incorrect weights (w) sampling  in SB_model2"))))
-
+})
+  
