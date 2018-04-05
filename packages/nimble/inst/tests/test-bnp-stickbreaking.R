@@ -1172,7 +1172,394 @@ test_that("Testing of misspecification of dimension when using CRP: ", {
   cmMCMC=compileNimble(mMCMC, project=m,
                               resetFunctions=TRUE, showCompilerOutput = TRUE)
   set.seed(1)
-  expect_message(cmMCMC$run(1), message="CRP_sampler: This MCMC is not fully nonparametric.")
-
+  expect_output(cmMCMC$run(1), message="CRP_sampler: This MCMC is not fully nonparametric.")
+  
 })
   
+
+
+## Test real BNP models:
+context('Testing BNP models based on CRP')
+
+test_that("Testing BNP model based on CRP", { 
+
+  # DPM of Poisson distribution:
+  code <- nimbleCode({
+    for(i in 1:n){
+      lambda[i] ~ dgamma(shape=1, rate=0.01)
+      y[i] ~ dpois(lambda[xi[i]])
+    }
+    xi[1:n] ~ dCRP(conc = conc0, size=n)
+  })
+  
+  data0 <- list(y = c(rpois(20, 10), rpois(20, 5), rpois(60, 50)))
+  Consts <- list(n = 100, conc0 = 1)
+  Inits <- list( xi = 1:Consts$n, lambda = rgamma(Consts$n, shape=1, rate=0.01))
+  m <- nimbleModel(code, data = data0, inits = Inits, constants = Consts,  calculate=TRUE)
+  cm <- compileNimble(m) 
+  
+  mConf <- configureMCMC(m, print=FALSE)
+  mMCMC <- buildMCMC(mConf)
+  expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
+  
+  CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE, showCompilerOutput = FALSE)
+  
+  nburn <- 500
+  nsave <- 100
+  ntotal <- nburn + nsave
+  itersave <- nburn + (1:nsave)
+  set.seed(1)
+  CmMCMC$run(ntotal)
+  
+  #-- results:
+  n <- Consts$n
+  samples <- as.matrix(CmMCMC$mvSamples)
+  lamSam <- samples[itersave, 1:n]
+  xiSam <- samples[itersave, (n+1):(2*n)]
+  kSam <- apply(xiSam, 1, function(x)length(unique(x)))
+  
+  ygrid <- 0:100
+  fSam <- matrix(0, ncol = length(ygrid), nrow = nsave)
+  
+  lamPost <- c()
+  Trunc <- 25
+  vj=c(rbeta(Trunc-1, 1, Consts$conc0+Consts$n), 1)
+  wj=c(vj[1], vj[2:(Trunc-1)]*cumprod(1-vj[1:(Trunc-2)]), cumprod(1-vj[1:(Trunc-1)])[Trunc-1])
+  probs=c(rep(1/(Consts$conc0+Consts$n), Consts$n), Consts$conc0/(Consts$conc0+Consts$n))
+  for(i in 1:nsave){
+    for(j in 1:Trunc){
+      index=sample(1:(Consts$n+1), size=1, prob=probs)
+      if(index==(Consts$n+1)){
+        lamPost[j] <- rgamma(1,shape=1, rate=0.01)
+      }else{
+        lamPost[j]=lamSam[i, xiSam[i,index]]
+      }
+    }
+    fSam[i, ]=sapply(ygrid, function(x)sum(wj*dpois(x, lamPost)))
+  }
+  fHat=apply(fSam, 2, mean)
+  
+  f0 <- function(x) 0.2*dpois(x, 10) + 0.2*dpois(x, 5) + 0.6*dpois(x, 50)
+  f0grid <- sapply(ygrid, f0)
+  
+  L1dist <- mean(abs(f0grid - fHat))
+  
+  expect_equal(L1dist, 0.01, tol=0.01,
+               info = "wrong estimation of density in DPM of Poisson distrbutions")
+  
+  
+  # DPM of Poisson distribution with prior for conc parameter:
+  code <- nimbleCode({
+    for(i in 1:n){
+      lambda[i] ~ dgamma(shape=1, rate=0.01)
+      y[i] ~ dpois(lambda[xi[i]])
+    }
+    xi[1:n] ~ dCRP(conc = alpha, size=n)
+    alpha ~ dgamma(1, 1)
+  })
+  
+  data0 <- list(y = c(rpois(20, 10), rpois(20, 5), rpois(60, 50)))
+  Consts <- list(n = 100, conc0 = 1)
+  Inits <- list( xi = 1:Consts$n, lambda = rgamma(Consts$n, shape=1, rate=0.01), alpha = 1)
+  m <- nimbleModel(code, data = data0, inits = Inits, constants = Consts,  calculate=TRUE)
+  cm <- compileNimble(m) 
+  
+  mConf <- configureMCMC(m, print=FALSE)
+  mConf$addMonitors('xi')
+  mMCMC <- buildMCMC(mConf)
+  expect_equal(mConf$getSamplers()[[101]]$name, "CRP_concentration")
+  expect_equal(class(mMCMC$samplerFunctions[[102]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
+  
+  CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE, showCompilerOutput = FALSE)
+  
+  nburn <- 500
+  nsave <- 100
+  ntotal <- nburn + nsave
+  itersave <- nburn + (1:nsave)
+  set.seed(1)
+  CmMCMC$run(ntotal)
+  
+  #-- results:
+  n <- Consts$n
+  samples <- as.matrix(CmMCMC$mvSamples)
+  concSam <- samples[itersave, 1]
+  lamSam <- samples[itersave, 2:(n+1)]
+  xiSam <- samples[itersave, (n+2):ncol(samples)]
+  kSam <- apply(xiSam, 1, function(x)length(unique(x)))
+  
+  ygrid <- 0:100
+  fSam <- matrix(0, ncol = length(ygrid), nrow = nsave)
+  
+  lamPost <- c()
+  aproxError <- 10^(-10)
+  Trunc <- ceiling(log(aproxError)/log(mean(concSam)/(mean(concSam)+1))+1)
+  for(i in 1:nsave){
+    vj=c(rbeta(Trunc-1, 1, concSam[i]+Consts$n), 1)
+    wj=c(vj[1], vj[2:(Trunc-1)]*cumprod(1-vj[1:(Trunc-2)]), cumprod(1-vj[1:(Trunc-1)])[Trunc-1])
+    probs=c(rep(1/(concSam[i]+Consts$n), Consts$n), concSam[i]/(concSam[i]+Consts$n))
+    
+    for(j in 1:Trunc){
+      index=sample(1:(Consts$n+1), size=1, prob=probs)
+      if(index==(Consts$n+1)){
+        lamPost[j] <- rgamma(1,shape=1, rate=0.01)
+      }else{
+        lamPost[j]=lamSam[i, xiSam[i,index]]
+      }
+    }
+    fSam[i, ]=sapply(ygrid, function(x)sum(wj*dpois(x, lamPost)))
+  }
+  fHat=apply(fSam, 2, mean)
+  
+  #plot(ygrid, fHat, type="l")
+  #lines(ygrid, f0grid)
+  
+  L1dist <- mean(abs(f0grid - fHat))
+  
+  expect_equal(L1dist, 0.01, tol=0.01,
+               info = "wrong estimation of density in DPM of Poisson distrbutions")
+  
+
+  # DPM of normal densities with random means and variances
+  Code=nimbleCode(
+    {
+      for(i in 1:50){
+        thetatilde[i] ~ dnorm(mean=0, var=100) 
+        s2tilde[i] ~ dinvgamma(shape=1, scale=0.01) 
+      }
+      for(i in 1:100){
+        y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])
+      }
+      xi[1:100] ~ dCRP(conc=1, size=100)
+    }
+  )
+  
+  set.seed(1)
+  aux <- sample(1:10, size=100, replace=TRUE)
+  Inits <- list(xi = aux,
+                thetatilde = rnorm(50, 0, sqrt(100)),
+                s2tilde = rinvgamma(50, shape=1, scale=0.01))
+  Data <- list(y = c(rnorm(50, 5,sqrt(4)), rnorm(50, -5, sqrt(2))))
+  
+  #-- compiling the model:
+  m <- nimbleModel(Code, data=Data, inits=Inits, calculate=TRUE)
+  cmodel <- compileNimble(m)
+  
+  mConf <- configureMCMC(m, print=FALSE)
+  expect_warning(mMCMC <- buildMCMC(mConf))
+  expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  
+  #-- compiling the sampler
+  CmMCMC=compileNimble(mMCMC, project=m, resetFunctions=TRUE, showCompilerOutput = FALSE)
+  
+  #-- MCMC samples
+  nburn <- 500
+  nsave <- 100
+  ntotal <- nburn + nsave
+  itersave <- nburn + (1:nsave)
+  set.seed(1)
+  CmMCMC$run(ntotal)
+  
+  N <- 100
+  samples <- as.matrix(CmMCMC$mvSamples)
+  xisamples <- samples[, (100+1):(2*N)]
+  s2samples <- samples[, 1:50]
+  thetasamples <- samples[, (50+1):(100)]
+  
+  conc <- 1
+  sec=seq(-20,20,len=100)
+  Trunc=35
+  thetaNew=matrix(0, ncol=2, nrow=Trunc)
+  vj=c(rbeta(Trunc-1, 1, N+conc), 1)
+  wj=c(vj[1], vj[2:(Trunc-1)]*cumprod(1-vj[1:(Trunc-2)]), cumprod(1-vj[1:(Trunc-1)])[Trunc-1])
+  probs=c(rep(1/(N+conc), N), conc/(N+conc))
+  fsam=matrix(0,ncol=length(sec), nrow=nsave)
+  for(i in 1:nsave){
+    for(j in 1:Trunc){
+      index=sample(1:(N+1), size=1, prob=probs)
+      if(index==(N+1)){
+        thetaNew[j,1] <- rnorm(1, 0, sqrt(100))
+        thetaNew[j,2] <- rinvgamma(1, 1, 0.01)
+      }else{
+        thetaNew[j,]=c(thetasamples[i, xisamples[i,index]],s2samples[i, xisamples[i,index]])
+      }
+    }
+    fsam[i, ]=sapply(sec, function(x)sum(wj*dnorm(x,thetaNew[,1],sqrt(thetaNew[,2]))))
+  }
+  fHat=apply(fsam, 2, mean)
+  
+  f0sec <- sapply(sec, function(x) 0.5*dnorm(x, 5, sqrt(4)) + 0.5*dnorm(x, -5, sqrt(4)))
+  L1dist <- mean(abs(f0sec - fHat))
+  
+  expect_equal(L1dist, 0.01, tol=0.01,
+               info = "wrong estimation of density in DPM of Poisson distrbutions")
+  
+})
+
+
+context('Testing more BNP models based on CRP')
+#-- Chris model 1
+codeBNP <- nimbleCode({
+  for(i in 1:nStudies) {
+    y[i] ~ dbin(size = nStudies, prob = q[i])#dbin(size = m[i], prob = q[i])
+    x[i] ~ dbin(size = nStudies, prob = p[i])#dbin(size = n[i], prob = p[i])
+    q[i] <- expit(theta + gamma[i])
+    p[i] <- expit(gamma[i])
+    gamma[i] ~ dnorm(mu[i], var = tau[i])
+    mu[i] <- muTilde[xi[i]]
+    tau[i] <- tauTilde[xi[i]]
+  }
+  for(i in 1:nStudies) {
+    muTilde[i] ~ dnorm(mu0, sd = sd0)
+    tauTilde[i] ~ dinvgamma(a0, b0)
+  }
+  xi[1:nStudies] ~ dCRP(conc, size = nStudies)
+  conc ~ dgamma(1, 1)
+  mu0 ~ dflat()
+  sd0 ~ dunif(0, 100)
+  a0 ~ dunif(0, 100)
+  b0 ~ dunif(0, 100)
+  theta ~ dflat()
+})
+
+Consts=list(nStudies=10)
+set.seed(1)
+Inits=list(gamma=rep(1,10),
+           muTilde=rep(1,10),
+           tauTilde=rep(1,10),
+           xi=rep(1,10),
+           conc =1,
+           mu0 = 0,
+           sd0 = 1,
+           a0 = 1,
+           b0 = 1,
+           theta = 0)
+
+Data=list(y=rbinom(10, 10, 0.5), x=rbinom(10, 10, 0.5))
+
+model<-nimbleModel(codeBNP, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
+
+# Using testBUGSmodel
+model <- function() {
+  for(i in 1:10) {
+    y[i] ~ dbin(size = 10, prob = q[i])#dbin(size = m[i], prob = q[i])
+    x[i] ~ dbin(size = 10, prob = p[i])#dbin(size = n[i], prob = p[i])
+    q[i] <- expit(theta + gamma[i])
+    p[i] <- expit(gamma[i])
+    gamma[i] ~ dnorm(mu[i], var = tau[i])
+    mu[i] <- muTilde[xi[i]]
+    tau[i] <- tauTilde[xi[i]]
+  }
+  for(i in 1:10) {
+    muTilde[i] ~ dnorm(mu0, sd = sd0)
+    tauTilde[i] ~ dinvgamma(a0, b0)
+  }
+  xi[1:10] ~ dCRP(conc, size = 10)
+  conc ~ dgamma(1, 1)
+  mu0 ~ dflat()
+  sd0 ~ dunif(0, 100)
+  a0 ~ dunif(0, 100)
+  b0 ~ dunif(0, 100)
+  theta ~ dflat()
+}
+set.seed(1)
+Inits=list(gamma=rep(1,10),
+           muTilde=rep(1,10),
+           tauTilde=rep(1,10),
+           xi=rep(1,10),
+           conc =1,
+           mu0 = 0,
+           sd0 = 1,
+           a0 = 1,
+           b0 = 1,
+           theta = 0)
+
+Data=list(y=rbinom(10, 10, 0.5), x=rbinom(10, 10, 0.5))
+
+testBUGSmodel(example = 'test8', dir = "",
+              model = model, data = Data, inits = Inits,
+              useInits = TRUE)
+
+
+#-- Chris model 2
+library(emplik)
+data(myeloma)
+
+n <- nrow(myeloma)
+time <-  myeloma[ , 1]
+vstatus <- myeloma[ , 2]  # 0 = alive (i.e., censored)
+alive <- vstatus == 0
+cens_time <- rep(NA, n)
+cens_time[alive] <- time[alive]
+cens_time[!alive] <- Inf
+time[alive] <- NA
+
+logBUN <- myeloma[ , 3]
+HGB <- myeloma[ , 4]
+logBUN <- (logBUN - mean(logBUN)) / sd(logBUN)
+HGB <- (HGB - mean(HGB)) / sd(HGB)
+
+## accelerated failure time model per https://www4.stat.ncsu.edu/~ghosal/papers/PMR.pdf for Bayesian semiparametric AFT models
+codeAFT <- nimbleCode({
+  for(i in 1:n) {
+    x[i] ~ dweib(alpha, 1+exp(lambda[i]))   # 'data' nodes
+    is_cens[i] ~ dinterval(x[i], c[i])
+    lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
+    eta[i] <- etaTilde[xi[i]]
+  }
+  xi[1:n] ~ dCRP(conc, size = n)
+  conc ~ dgamma(1, 1)
+  for(i in 1:n){
+    etaTilde[i] ~ dunif(b0, B0)
+  }
+  alpha ~ dunif(a0, A0)
+  for(j in 1:p){
+    delta[j] ~ dflat() 
+  }
+})
+
+constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
+                 = cens_time, Z = cbind(logBUN, HGB))
+data = list(is_cens = as.numeric(alive), x = time)
+xInit <- rep(NA, n)
+xInit[alive] <- cens_time[alive] + 10
+inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
+             etaTilde = runif(n,constants$b0, constants$B0),
+             xi = sample(1:3, n, replace = TRUE), x = xInit)
+
+model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
+conf = configureMCMC(model, print = TRUE)
+mcmc = buildMCMC(conf)
+
+
+# Using testBUGSmodel
+model <- function() {
+  for(i in 1:n) {
+    x[i] ~ dweib(alpha, 1+exp(lambda[i]))   # 'data' nodes
+    is_cens[i] ~ dinterval(x[i], c[i])
+    lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
+    eta[i] <- etaTilde[xi[i]]
+  }
+  xi[1:n] ~ dCRP(conc, size = n)
+  conc ~ dgamma(1, 1)
+  for(i in 1:n){
+    etaTilde[i] ~ dunif(b0, B0)
+  }
+  alpha ~ dunif(a0, A0)
+  for(j in 1:p){
+    delta[j] ~ dflat() 
+  }
+}
+
+constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
+                 = cens_time, Z = cbind(logBUN, HGB))
+Data = list(is_cens = as.numeric(alive), x = time)
+xInit <- rep(NA, n)
+xInit[alive] <- cens_time[alive] + 10
+Inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
+             etaTilde = runif(n,constants$b0, constants$B0),
+             xi = sample(1:3, n, replace = TRUE), x = xInit)
+
+testBUGSmodel(example = 'test9', dir = "",
+              model = model, data = Data, inits = Inits, constants=constants,
+              useInits = TRUE)
