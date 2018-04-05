@@ -106,7 +106,7 @@ Code=nimbleCode(
       thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
       s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
     }
-    xi[1:N2] ~ dCRP(conc)
+    xi[1:N2] ~ dCRP(conc, size=N2)
     
     for(i in 1:N){
       theta[i] <- thetatilde[xi[i]]
