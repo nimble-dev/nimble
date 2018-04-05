@@ -416,8 +416,8 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
   },
   methods = list(
     storeParams = function() {
-      priorShape <<- model$getParam(marginalizedNodes, 'shape') 
-      priorRate <<- model$getParam(marginalizedNodes, 'rate') 
+      priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
+      priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
@@ -443,8 +443,8 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
   },
   methods = list(
     storeParams = function() {
-      priorShape1 <<- model$getParam(marginalizedNodes, 'shape1') 
-      priorShape2 <<- model$getParam(marginalizedNodes, 'shape2')
+      priorShape1 <<- model$getParam(marginalizedNodes[1], 'shape1') 
+      priorShape2 <<- model$getParam(marginalizedNodes[1], 'shape2')
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
@@ -469,8 +469,8 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
   },
   methods = list(
     storeParams = function() {
-      priorShape <<- model$getParam(marginalizedNodes, 'shape') 
-      priorRate <<- model$getParam(marginalizedNodes, 'rate') 
+      priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
+      priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
@@ -495,8 +495,8 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
   },
   methods = list(
     storeParams = function() {
-      priorShape <<- model$getParam(marginalizedNodes, 'shape') 
-      priorRate <<- model$getParam(marginalizedNodes, 'rate')  
+      priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
+      priorRate <<- model$getParam(marginalizedNodes[1], 'rate')  
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
@@ -523,7 +523,7 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
   },
   methods = list(
     storeParams = function() {
-      priorAlpha <<- model$getParam(marginalizedNodes, 'alpha')
+      priorAlpha <<- model$getParam(marginalizedNodes[1], 'alpha')
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
