@@ -1179,6 +1179,10 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   code$args[[1]]$toEigenize <- "yes"
   code$args[[1]]$nDim <- 0
   asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))  ## currently only works for nf methods
+  if(!nimbleOptions('experimentalSelfLiftStage')) {
+    if(!(code$caller$name %in% assignmentOperators))
+      asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+  }
   #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # Sets variables argument, not yet implemented.
   if(length(asserts) == 0) NULL else asserts
 }
@@ -1214,6 +1218,10 @@ sizeNimDerivsCalculate <- function(code, symTab, typeEnv){
   }
   if(code$args[[1]]$toEigenize == 'yes') { ## not sure when this would be TRUE
     asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+  }
+  if(!nimbleOptions('experimentalSelfLiftStage')) {
+    if(!(code$caller$name %in% assignmentOperators))
+      asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   }
   if(length(asserts) == 0) NULL else asserts
 }
