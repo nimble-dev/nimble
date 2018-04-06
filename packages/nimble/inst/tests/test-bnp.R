@@ -1551,15 +1551,15 @@ model <- function() {
   }
 }
 
-constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
-                 = cens_time, Z = cbind(logBUN, HGB))
-Data = list(is_cens = as.numeric(alive), x = time)
+Data = list(is_cens = as.numeric(alive), x = time, 
+            b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
+            = cens_time, Z = cbind(logBUN, HGB))
 xInit <- rep(NA, n)
 xInit[alive] <- cens_time[alive] + 10
 Inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
-             etaTilde = runif(n,constants$b0, constants$B0),
+             etaTilde = runif(n,Data$b0, Data$B0),
              xi = sample(1:3, n, replace = TRUE), x = xInit)
 
 testBUGSmodel(example = 'test9', dir = "",
-              model = model, data = Data, inits = Inits, constants=constants,
+              model = model, data = Data, inits = Inits, 
               useInits = TRUE)
