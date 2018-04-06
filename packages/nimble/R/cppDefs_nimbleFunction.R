@@ -427,6 +427,9 @@ updateADproxyModelMethods <- function(.self) {
                                                 replacementTemplateArgs = "double" )
         thisDef$code$objectDefs$setParentST(parentST)
         thisDef$code$cppADCode <- 2L 
+        ADtypeDefs <- symbolTable()
+        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd") )
+        thisDef$code$typeDefs <- ADtypeDefs
     }
     classST <- .self$objectDefs
     classSymNames <- classST$getSymbolNames()
