@@ -372,7 +372,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
       }
   }
   if(isNLG){
-    nlp <- nimbleProject$compileNimbleList(nlGen, initialTypeInferenceOnly = TRUE)
+    nlp <- .self$nimbleProject$compileNimbleList(nlGen, initialTypeInferenceOnly = TRUE)
     className <- nl.getListDef(nlGen)$className
     newSym <- symbolNimbleList(name = name, nlProc = nlp)
     .self$neededTypes[[className]] <- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
@@ -387,7 +387,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
     ## trigger initial procesing to set up an nlProc object
     ## that will have a symbol table.
     ## Issue: We may also need to trigger this step from run code
-    nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+    nlp <- .self$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
     ## get the unique name that we use to generate a unique C++ definition
     className <- nlList[[1]]$nimbleListDef$className
     ## add the setupOutput name to objects that we need to instantiate and point to
@@ -411,7 +411,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
       baseClassName <- environment(baseClass)$className
       
       if(!(baseClassName %in% names(.self$neededTypes))) {
-          nfp <- nimbleProject$setupVirtualNimbleFunction(baseClass, fromModel = inModel)
+          nfp <- .self$nimbleProject$setupVirtualNimbleFunction(baseClass, fromModel = .self$inModel)
           newSym <- symbolNimbleFunctionList(name = name, type = 'nimbleFunctionList', baseClass = baseClass, nfProc = nfp)
           neededTypeSim <- symbolNimbleFunction(name = baseClassName, type = 'virtualNimbleFunction', nfProc = nfp)
           .self$neededTypes[[baseClassName]] <- newSym
@@ -420,7 +420,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
       }
     
       allInstances <- unlist(lapply(instances, function(x) x[[name]]$contentsList), recursive = FALSE)
-      newNFprocs <- nimbleProject$compileNimbleFunctionMulti(allInstances, initialTypeInference = TRUE)
+      newNFprocs <- .self$nimbleProject$compileNimbleFunctionMulti(allInstances, initialTypeInference = TRUE)
       ## only types are needed here, not initialTypeInference, because nfVar's from a nimbleFunctionList are not available (could be in future)
       for(nfp in newNFprocs) {
           newTypeName <- environment(nfp$nfGenerator)$name
@@ -431,7 +431,7 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
   }
   if(is.nf(instances[[1]][[name]])) { ## nimbleFunction
     funList <- lapply(instances, `[[`, name)
-    nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
+    nfp <- .self$nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
     className <- class(nf_getRefClassObject(funList[[1]]))
     .self$neededObjectNames <- c(.self$neededObjectNames, name)
     newSym <- symbolNimbleFunction(name = name, type = 'nimbleFunction', nfProc = nfp)
