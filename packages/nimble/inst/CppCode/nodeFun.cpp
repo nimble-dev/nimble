@@ -192,6 +192,7 @@ void nodeFun::runTape(CppAD::ADFun< double > &ADtape,
 		      nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
   // dependentVars = ADtape.Jacobian(independentVars);
   std::cout<<"running tape with input length "<<independentVars.size()<<std::endl;
+  std::size_t n = independentVars.size();
   // Always calculate value, regardless of valueFlag.
   // Is this the right behavior?
   dependentVars = ADtape.Forward(0, independentVars);
@@ -229,7 +230,7 @@ void nodeFun::runTape(CppAD::ADFun< double > &ADtape,
     if(hessianFlag) {
       ansList->hessian.setSize( jacSize, jacSize, 1, false, false);
       for (size_t dx_ind = 0; dx_ind < jacSize; dx_ind++) {
-        std::vector<double> x1(jacSize, 0);
+        std::vector<double> x1(n, 0);
         x1[dx_ind] = 1;
         ADtape.Forward(1, x1);
         rev = ADtape.Reverse(2, w);

@@ -55,6 +55,12 @@ Type nimDerivs_pow(Type x, Type y) {
 	return(outVal);
 }
 
+template<class Type> 
+Type nimDerivs_pow(Type x, int y) {
+	Type outVal = CppAD::pow(x, y);
+	return(outVal);
+}
+
 template<class Type>
 Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
 	 Type df, Type scale_param, Type give_log, Type overwrite_inputs){

@@ -461,15 +461,24 @@ cppOutputPow <- function(code, symTab) {
     useStaticCase <- if(identical(nimbleUserNamespace$cppADCode, TRUE)) FALSE else if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
     if(useStaticCase) {
         static_cast <- '( static_cast<double>('
-        if(identical(nimbleUserNamespace$cppADCode, 2L))
+        nimDerivs_text <- ''
+          if(identical(nimbleUserNamespace$cppADCode, 2L)){
             static_cast <- '( CppAD::AD<double>('
-        paste0('nimDerivs_', exprName2Cpp(code, symTab), static_cast, nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
-    } else{
+            nimDerivs_text <- 'nimDerivs_'
+        }
+        paste0(nimDerivs_text, exprName2Cpp(code, symTab), static_cast,
+               nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', 
+               nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+      } else{
       if(identical(nimbleUserNamespace$cppADCode, 2L)){
-        paste0('nimDerivs_', exprName2Cpp(code, symTab), '(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+        paste0('nimDerivs_', exprName2Cpp(code, symTab), 
+               '(', nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',',
+               nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
       }
       else{
-        paste0(exprName2Cpp(code, symTab), '(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+        paste0(exprName2Cpp(code, symTab), '(', 
+               nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',',
+               nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
       }
     }
 }
