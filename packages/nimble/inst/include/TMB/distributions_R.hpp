@@ -49,6 +49,12 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
   return(dens);
 }
 
+template<class Type> 
+Type nimDerivs_pow(Type x, Type y) {
+	Type outVal = CppAD::CondExpGt(x, Type(0), CppAD::pow(x, y), CppAD::CondExpEq(y, discrete_round(y), CppAD::pow(x, CppAD::Integer(y)), Type(CppAD::numeric_limits<Type>::quiet_NaN())));
+	return(outVal);
+}
+
 template<class Type>
 Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
 	 Type df, Type scale_param, Type give_log, Type overwrite_inputs){
