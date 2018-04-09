@@ -488,7 +488,7 @@ prepareDistributionInput <- function(dist) {
 #'         types = c('value = double(1)', 'alpha = double(1)')
 #'         )
 #'     ))
-registerDistributions <- function(distributionsInput, userEnv = parent.frame(), verbose = TRUE) {
+registerDistributions <- function(distributionsInput, userEnv = parent.frame(), verbose = nimbleOptions('verbose')) {
     if(missing(distributionsInput)) {
         cat("No distribution information supplied.\n")
     } else {
@@ -500,7 +500,7 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
          } else {
             nms <- names(distributionsInput)
           }
-        if(nimbleOptions('verbose'))
+        if(verbose)
             cat("Registering the following user-provided distributions:", nms, ".\n")
         dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
