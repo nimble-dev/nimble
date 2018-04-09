@@ -74,8 +74,7 @@ rCRP <- nimbleFunction(
         }
         
         if( conc <= 0 ) {
-            nimCat("rCRP: value of concentration parameter is not positive. NaNs
-produced.\n")
+            nimCat("rCRP: value of concentration parameter is not positive. NaNs produced.\n")
             return(rep(NaN, size))
         }
 
