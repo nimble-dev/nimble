@@ -70,7 +70,7 @@ rCRP <- nimbleFunction(
         returnType(double(1))
         
         if(n != 1) {
-            stop("rCRP only handles n = 1 at the moment")
+            stop("rCRP only handles n = 1 at the moment.\n")
         }
         
         if( conc <= 0 ) {
@@ -112,11 +112,11 @@ dCRP=nimbleFunction(
         dens <- nimNumeric(n) 
     
         if(n != size) {
-            stop("length of x has to be equal to size")
+            stop("dCRP: length of x has to be equal to size.\n")
         }
     
         if( conc <= 0 ) {
-            nimCat("value of concentration parameter has to be larger than zero")
+            nimCat("dCRP: value of concentration parameter has to be larger than zero.\n")
             return(NaN)
         }
         
@@ -189,7 +189,7 @@ stick_breaking <- nimbleFunction(
         N <- length(z)   
         cond <- sum(z < 0) | sum(z > 1)
         if(cond) {
-            nimCat("values in 'z' have to be in (0,1)")
+            nimCat("stick_breaking: values in 'z' have to be in (0,1).\n")
             return(rep(NaN, N+1))
         }
     
