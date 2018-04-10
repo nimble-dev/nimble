@@ -37,15 +37,15 @@ test_that("stick_breaking nimble function calculation and use is correct:", {
                info = paste0("incorrect compiled stick_breaking nimble function log calculation"))
   
   x <- c(0.1, 0.4, -0.1, 0.3)
-  aux <- stick_breaking(x, log=FALSE)
+  expect_output(aux <- stick_breaking(x, log=FALSE), "values in 'z' have to be in (0,1)", 
+              info = "stick_breaking not warning of negative component")
   expect_equal(aux, rep(NaN, length(x)+1),
-               info = "incorrect argument use (negative component) of stick breaking function")
-  
+               info = "stick_breaking not correctly handling negative component")
   
   x <- c(0.1, 5, 0.4, 0.3)
   aux <- stick_breaking(x, log=FALSE)
   expect_equal(aux, rep(NaN, length(x)+1),
-               info = "incorrect argument use (larger than 1 component) of stick breaking function")
+               info = "stick_breaking incorrectly handling larger than 1 component")
   
   x <- c(0.1, 0.2, 0, 0.3, 0.8)
   truth <- c(x[1], x[2:5]*cumprod(1-x[1:4]), prod(1-x[1:5]))
@@ -83,7 +83,7 @@ test_that("Stick breaking model calculation is correct:", {
   SB_model$calculate()
   
   expect_equal(c(SB_model$w), truth,
-               info = paste0("incorrect stick breaking weigths in model"))
+               info = paste0("incorrect stick breaking weights in model"))
   
   c_SB_model <- compileNimble(SB_model)
   
@@ -92,7 +92,7 @@ test_that("Stick breaking model calculation is correct:", {
   c_SB_model$w
   
   expect_equal(c(c_SB_model$w), truth,
-               info = paste0("incorrect stick breaking weigths in compiled model"))
+               info = paste0("incorrect stick breaking weights in compiled model"))
 
 })
 
@@ -123,7 +123,7 @@ test_that("random sampling from model works fine:", {
   c_SB_model2$calculate()
   
   expect_equal(c_SB_model2$w, truth,
-               info = paste0("incorrect stick breaking weigths in SB_model2"))
+               info = paste0("incorrect stick breaking weights in SB_model2"))
   
   #-- sampling via simulate:
   set.seed(0)
@@ -156,8 +156,8 @@ test_that("random sampling from model works fine:", {
   # wrong prior and starting values for stick variables: how to recognize this wrong specification?
   set.seed(1)
   Inits <- list(z = rgamma(5, 10, 10))
-  data <- list(xi = rep(1,10))
-  expect_message(nimbleModel(SB_code3, data=data, inits=Inits)) # message is sent because z >1.
+  data <- list(xi = 1:10)
+  expect_output(nimbleModel(SB_code3, data=data, inits=Inits)) # message is sent because z >1.
   
   
   
@@ -220,11 +220,12 @@ test_that("random sampling from model works fine:", {
   })
   
   # wrong length for stick variables, a warning is sent in the nimbleModel function
-  # how to recognize this wrong specification in the test?
   set.seed(1)
   Inits <- list(z = rbeta(10, 10, 10))
   data <- list(xi = rep(1,10))
-  expect_warning(nimbleModel(SB_code6, data=data, inits=Inits), message = "number of items to replace")
+  expect_warning(SB_model6 <- nimbleModel(SB_code6, data=data, inits=Inits), message = "number of items to replace")
+  cSB_model6 <- compileNimble(SB_model6)
+  expect_output(cSB_model6$calculate('w'), "Error in mapCopy")
 })
 
 
@@ -241,7 +242,7 @@ model <- function() {
 }
 
 Inits <- list(z = rep(0.5,5))
-Data <- list(xi = rep(1,10))
+Data <- list(xi = 1:10)
 
 testBUGSmodel(example = 'test1', dir = "",
               model = model, data = Data, inits = Inits,
@@ -263,7 +264,7 @@ model <- function(){
   w[1:10] <- stick_breaking(z[1:9])
 }
 
-Inits=list(thetatilde=rep(0,10), z=rep(0.5, 9), xi=rep(1, 10))
+Inits=list(thetatilde=rep(0,10), z=rep(0.5, 9), xi=1:10)
 Data=list(y=rnorm(10))
 
 testBUGSmodel(example = 'test2', dir = "",
@@ -287,7 +288,7 @@ model <- function(){
   w[1:10] <- stick_breaking(z[1:9])
 }
 
-Inits=list(thetatilde=rep(0,10), z=rep(0.5, 9), xi=rep(1, 10))
+Inits=list(thetatilde=rep(0,10), z=rep(0.5, 9), xi=1:10)
 Data=list(y=rnorm(10))
 
 testBUGSmodel(example = 'test3', dir = "",
@@ -312,7 +313,7 @@ model <- function(){
   w[1:10] <- stick_breaking(z[1:9])
 }
 
-Inits=list(thetatilde=rep(0,10), z=rep(0.5, 9), xi=rep(1, 10), s2tilde=rep(1,10))
+Inits=list(thetatilde=rep(0,10), z=rep(0.5, 9), xi=1:10, s2tilde=rep(1,10))
 Data=list(y=rnorm(10))
 
 testBUGSmodel(example = 'test4', dir = "",
@@ -365,8 +366,9 @@ test_that("Testing conjugacy detection with bnp stick breaking models", {
   m = nimbleModel(code, data = list(y = rnorm(5)),
                   inits = list(xi = rep(1,5), thetatilde=rep(0,5), z=rep(0.5,4)))
   conf <- configureMCMC(m)
-  expect_match(conf$getSamplers()[[6]]$name, "conjugate_dbeta_dcat",
-               info = "failed to detect categorical-beta conjugacy")
+  expect_failure(expect_match(conf$getSamplers()[[6]]$name,
+                              "conjugate_dbeta_dcat",
+                              info = "failed to detect categorical-beta conjugacy"))
   
   
   # concentration parameter added in beta distribution
@@ -844,7 +846,7 @@ model <- function() {
   }
   xi[1:4] ~ dCRP(conc=1, size=4)
 }
-inits = list(xi = rep(1,4), mu=rnorm(4))
+inits = list(xi = 1:4, mu=rnorm(4))
 data = list(y = rnorm(4))
 
 testBUGSmodel(example = 'test1', dir = "",
@@ -859,7 +861,7 @@ model <- function() {
   }
   xi[1:4] ~ dCRP(conc=1, size=4)
 }
-inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+inits = list(xi = 1:4, mu=rgamma(4, 1, 1))
 data = list(y = rpois(4, 4))
 
 testBUGSmodel(example = 'test2', dir = "",
@@ -874,7 +876,7 @@ model <- function() {
   }
   xi[1:4] ~ dCRP(conc=1, size=4)
 }
-inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+inits = list(xi = 1:4, mu=rgamma(4, 1, 1))
 data = list(y = rexp(4, 4))
 
 testBUGSmodel(example = 'test3', dir = "",
@@ -889,7 +891,7 @@ model <- function() {
   }
   xi[1:4] ~ dCRP(conc=1, size=4)
 }
-inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+inits = list(xi = 1:4, mu=rgamma(4, 1, 1))
 data = list(y = rgamma(4, 4, 4))
 
 testBUGSmodel(example = 'test4', dir = "",
@@ -904,7 +906,7 @@ model <- function() {
   }
   xi[1:4] ~ dCRP(conc=1, size=4)
 }
-inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1))
+inits = list(xi = 1:4, mu=rbeta(4, 1, 1))
 data = list(y = rbinom(4, size=1, prob=0.5))
 
 testBUGSmodel(example = 'test5', dir = "",
@@ -926,7 +928,7 @@ for(i in 1:4){
   p0[i,]=rdirch(1, c(1, 1, 1))
   y0[i,] = rmulti(1, prob=c(0.3,0.3,0.4), size=3)
 }
-inits = list(xi = rep(1,4), p=p0)
+inits = list(xi = 1:4, p=p0)
 data = list(y = y0)
 alpha0 = c(1,1,1)
 
@@ -943,7 +945,7 @@ model <- function() {
   }
   xi[1:4] ~ dCRP(conc=1, size=4)
 }
-inits = list(xi = rep(1,4), mu=rnorm(4), s2=rinvgamma(4, 1,1))
+inits = list(xi = 1:4, mu=rnorm(4), s2=rinvgamma(4, 1,1))
 data = list(y = rnorm(4))
 
 testBUGSmodel(example = 'test7', dir = "",
@@ -1153,7 +1155,7 @@ test_that("Testing of misspecification of dimension when using CRP: ", {
   conf <- configureMCMC(m)
   expect_error(buildMCMC(conf))
   
-  # test that a message issent when more tilde variables than defined are needed
+  # test that a message is sent when more tilde variables than defined are needed
   code = nimbleCode({
     for(i in 1:3){
       mu[i] ~ dnorm(0,1)  
@@ -1439,6 +1441,13 @@ Data=list(y=rbinom(10, 10, 0.5), x=rbinom(10, 10, 0.5))
 model<-nimbleModel(codeBNP, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
 cmodel<-compileNimble(model)
 
+mConf <- configureMCMC(model, print=FALSE)
+mMCMC <- buildMCMC(mConf)
+
+expect_equal(mConf$getSamplers()[[1]]$name, "CRP_concentration")
+expect_equal(mConf$getSamplers()[[7]]$name, "CRP")
+expect_equal(class(mMCMC$samplerFunctions[[7]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+
 # Using testBUGSmodel
 model <- function() {
   for(i in 1:10) {
@@ -1502,7 +1511,7 @@ HGB <- (HGB - mean(HGB)) / sd(HGB)
 ## accelerated failure time model per https://www4.stat.ncsu.edu/~ghosal/papers/PMR.pdf for Bayesian semiparametric AFT models
 codeAFT <- nimbleCode({
   for(i in 1:n) {
-    x[i] ~ dweib(alpha, 1+exp(lambda[i]))   # 'data' nodes
+    x[i] ~ dweib(alpha, exp(lambda[i]))   # 'data' nodes
     is_cens[i] ~ dinterval(x[i], c[i])
     lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
     eta[i] <- etaTilde[xi[i]]
@@ -1530,6 +1539,10 @@ inits = list(alpha = 1, delta = c(0, 0), conc = 1,
 model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
 conf = configureMCMC(model, print = TRUE)
 mcmc = buildMCMC(conf)
+
+expect_equal(conf$getSamplers()[[1]]$name, "CRP_concentration")
+expect_equal(conf$getSamplers()[[70]]$name, "CRP")
+expect_equal(class(mcmc$samplerFunctions[[70]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
 
 
 # Using testBUGSmodel
