@@ -27,7 +27,7 @@ sampler_G2 <- nimbleFunction(
     # cheking the mvSaved object:
     m0 <- length(mvSaved$varNames) 
     if( m0 == 1 ){
-      stop('you need at least one random variable depending on the random indexes') # 
+      stop('sampler_G2: you need at least one random variable depending on the random indexes.\n') # 
     }
     
     # I need the names of the variables to access content in mvSaved.
@@ -63,10 +63,10 @@ sampler_G2 <- nimbleFunction(
       #}
     }else{
       if( sum(dCRPdistrindex) == 0 ){
-        stop('there are no random indexes')
+        stop('sampler_G2: there are no random indexes.\n')
       }
       if( sum(dCRPdistrindex)>1 ){ # how to get tilde variables for each dCRP? Maybe no even a problem
-        stop('only one dCRP distribution is allowed for now')
+        stop('sampler_G2: only one dCRP distribution is allowed for now.\n')
       }
     }
     
@@ -111,7 +111,7 @@ sampler_G2 <- nimbleFunction(
     N <- length(dataNodes) # sample size
     
     if(Trunc > N){
-      print('for an approximation error smaller than 1e-10, Trunc > N.')
+      print('sampler_G2: for an approximation error smaller than 1e-10, Trunc > N.\n')
     }
     
     
@@ -555,7 +555,7 @@ sampler_CRP <- nimbleFunction(
     
     # first check that the sampler can be used: we need one observation per random index
     nObs <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
-    if(n != nObs){ stop("sampler_CRP: The length of random indexes and observations has to be the same") }
+    if(n != nObs){ stop("sampler_CRP: The length of random indexes and observations has to be the same.\n") }
     
     ## finding 'tilde' variables (the parameters that are being clustered):
     tildeVars <- NULL
@@ -580,11 +580,11 @@ sampler_CRP <- nimbleFunction(
     nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
     
     if(length(unique(nTilde)) != 1)
-      stop('sampler_CRP: When multiple parameters are being clustered, the number of those parameters must all be the same')
+      stop('sampler_CRP: When multiple parameters are being clustered, the number of those parameters must all be the same.\n')
 
     min_nTilde <- min(nTilde) ## we need a scalar for use in run code
     if(min_nTilde < n)
-      warning('sampler_CRP: The number of parameters to be clustered is less than the number of random indexes. The MCMC is not strictly valid if ever it proposes more components than exist; NIMBLE will warn you if this occurs.')
+      warning('sampler_CRP: The number of parameters to be clustered is less than the number of random indexes. The MCMC is not strictly valid if ever it proposes more components than exist; NIMBLE will warn you if this occurs.\n')
     
     ## Here we try to set up some data structures that allow us to do observation-specific
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
@@ -605,7 +605,7 @@ sampler_CRP <- nimbleFunction(
         stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self=FALSE) 
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
         if(length(stochDeps) != 1) 
-          stop("Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+          stop("sampler_CRP: Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
         if(length(detDeps) != nInterm) {
           type <- 'allCalcs'  # give up again; should only occur in strange situations
         } else {
