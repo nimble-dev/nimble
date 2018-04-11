@@ -37,6 +37,7 @@ test_that('Derivatives of x^2 function correctly.',
           {
             listOfADLists <- nimbleList(list1 = ADNimbleList(),
                                         list2 = ADNimbleList())
+            temporarilyAssignInGlobalEnv(listOfADLists)  
             ADfun2 <- nimbleFunction(
               setup = function(){},
               run = function(y = double(1, c(2))) {
