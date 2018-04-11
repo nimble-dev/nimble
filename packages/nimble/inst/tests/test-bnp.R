@@ -37,7 +37,7 @@ test_that("stick_breaking nimble function calculation and use is correct:", {
                info = paste0("incorrect compiled stick_breaking nimble function log calculation"))
   
   x <- c(0.1, 0.4, -0.1, 0.3)
-  expect_output(aux <- stick_breaking(x, log=FALSE), "values in 'z' have to be in (0,1)", 
+  expect_output(aux <- stick_breaking(x, log=FALSE), "values in 'z' have to be in", 
               info = "stick_breaking not warning of negative component")
   expect_equal(aux, rep(NaN, length(x)+1),
                info = "stick_breaking not correctly handling negative component")
