@@ -39,8 +39,7 @@
 #' 
 #' \code{calculateWAIC()} has a single arugment:
 #'
-#' \code{nburnin}: The number of iterations to subtract from the beginning of
-#' the posterior samples of the MCMC object for WAIC calculation.
+#' \code{nburnin}: The number of pre-thinning MCMC samples to remove from the beginning of the posterior samples for WAIC calculation.
 #' Defaults to 0.
 #' 
 #' The \code{calculateWAIC} method can only be used if the \code{enableWAIC} 
@@ -195,9 +194,8 @@ buildMCMC <- nimbleFunction(
         calculateWAIC = function(nburnin = integer(default = 0),
                                  burnIn = integer(default = 0)) {
             if(!enableWAIC){
-              print('Error, must set enableWAIC = TRUE in buildMCMC.
-See help(buildMCMC) for additional information.')
-              return(NaN)
+                print('Error, must set enableWAIC = TRUE in buildMCMC. See help(buildMCMC) for additional information.')
+                return(NaN)
             }
             if(burnIn != 0) {
                 print("Warning, `burnIn` argument is deprecated and will not be
@@ -209,7 +207,8 @@ See help(buildMCMC) for additional information.')
                     nburnin <- burnIn
                 }
             }
-            numMCMCSamples <- getsize(mvSamples) - nburnin
+            nburninPostThinning <- ceiling(nburnin/thin)
+            numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
             if((numMCMCSamples) < 2) {
                 print('Error, need more than one post burn-in MCMC samples')
                 return(-Inf)
@@ -220,7 +219,7 @@ See help(buildMCMC) for additional information.')
             currentVals <- values(model, sampledNodes)
             for(i in 1:numMCMCSamples) {
                 copy(mvSamples, model, nodesTo = sampledNodes,
-                     row = i + nburnin)
+                     row = i + nburninPostThinning)
                 model$simulate(paramDeps)
                 model$calculate(dataNodes)
                 for(j in 1:dataNodeLength) {
