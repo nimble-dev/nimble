@@ -189,5 +189,37 @@ test_that("pi case 3", {
     }
 )
 
+## From GitHub Issue #695
+test_that("setInits works in complicated case", {
+    mc1 <- nimbleCode({
+        for(i in 1:2) {
+            for(j in f[i]:n) {
+                x[i, j] ~ dnorm(0,1)
+            }
+        }
+    })
+    inits = list(x = matrix(1:6, nrow = 2))
+    data = list(x = matrix(c(100, NA, 100, NA, NA, NA), nrow = 2))
+    m <- nimbleModel(mc1,
+                     constants = list(f = c(1, 2),
+                                      n = 3),
+                     data = data,
+                     inits = inits)
+    ## This model defines x[1, 1], x[1, 2], x[1, 3], x[2, 2], and x[2, 3]. 
+    ## x[2,1] is not a node in the model.
+    ## data are provided for x[1, 1] and x[1, 2]
+
+    ##m$x ## This is wrong
+    ##       [,1] [,2] [,3]
+    ##[1,]   100   3    5
+    ##[2,]   NA    4    NA
+    ##matrix(c(100, 2, 100, 4, 5, 6), nrow = 2) ## It should be this
+    ##       [,1] [,2] [,3]
+    ##[1,]  100  100    5
+    ##[2,]    2    4    6
+    expect_equal(m$x, matrix(c(100, 2, 100, 4, 5, 6), nrow = 2))
+}
+)
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
