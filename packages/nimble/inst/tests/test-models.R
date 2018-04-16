@@ -367,7 +367,7 @@ test_that("test of preventing overwriting of data values by inits:", {
     })
     xVal <- c(3, NA)
     xInit <- c(4, 4)
-    expect_warning(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring values in inits for data nodes")
+    expect_warning(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring some or all values in inits for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test")

@@ -818,7 +818,7 @@ inits: A named list.  The names of list elements must correspond to model variab
                                           if(any(dataVals)) {
                                               .self[[names(inits)[i]]][!dataVals] <- inits[[i]][!dataVals]
                                               if(any(!is.na(inits[[i]][dataVals])))
-                                                  warning("Ignoring elements in inits for data nodes: ", names(inits)[[i]], ".", call. = FALSE)
+                                                  warning("Ignoring some or all values in inits for data nodes: ", names(inits)[[i]], ".", call. = FALSE)
                                           } else  .self[[names(inits)[i]]] <- inits[[i]]
                                       }
                                   },
