@@ -740,7 +740,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 ## block[i], so block is replaceable
                 if(!all(contentsReplaceable)) 
                     ## dynamic index on a constant
-                    stop('getSymbolicParentNodesRecurse: dynamic indexing of constants is not allowed in ', deparse(code))
+                    stop('getSymbolicParentNodesRecurse: dynamic indexing of constants is not allowed in ', deparse(code), '. Try adding the dynamically-indexed constant as data instead (using the data argument of nimbleModel).')
                 boolIndexingBlock <-
                     unlist(
                         lapply(code[-c(1,2)],

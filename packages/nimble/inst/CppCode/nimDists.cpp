@@ -37,6 +37,24 @@ bool R_isnancpp(NimArr<1, double> &P) {
   return(false);
 }
 
+template<int nDim, class T>
+NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
+  if(orig.isMap()) {
+    //    printf("It is a map\n");
+    if(!isMapEntire<nDim, T>(orig)) {
+      // NOTE that a map that has offset != 0 always returns false.
+      // This could be improved.
+      // E.g. mu[1:3, i] could always be handled without copying
+      // currently isMapEntire returns FALSE if i > 0 because then offset != 0
+      // We would need more care with checking when to copy back at end of functions
+      // below.
+      //      printf("It is not an entire map\n");
+      possibleCopy = orig;
+      return(possibleCopy);
+    }
+  }
+  return(orig);
+}
 
 double nimArr_dmulti(NimArr<1, double> &x, double size, NimArr<1, double> &prob, int give_log) {
   int K = prob.size();
@@ -130,7 +148,8 @@ void nimArr_rdirch(NimArr<1, double> &ans, NimArr<1, double> &alpha) {
   alphaptr = nimArrCopyIfNeeded<1, double>(alpha, alphaCopy).getPtr();
   
   rdirch(ansptr, alphaptr, K);
-  if(ans.isMap()) {ans = ansCopy;}
+  if(ansptr != ans.getPtr()) {ans = ansCopy;} 
+  //  if(ans.isMap()) {ans = ansCopy;}
 }
 
 double nimArr_dwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log, int overwrite_inputs) {
@@ -176,7 +195,8 @@ void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double d
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
 
   rwish_chol(ansptr, cholptr, df, p, scale_param, overwrite_inputs);
-  if(ans.isMap()) {ans = ansCopy;}
+  if(ansptr != ans.getPtr()) {ans = ansCopy;} 
+  //  if(ans.isMap()) {ans = ansCopy;}
 }
 
 double nimArr_dinvwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log, int overwrite_inputs) {
@@ -222,7 +242,8 @@ void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, doubl
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
 
   rinvwish_chol(ansptr, cholptr, df, p, scale_param, overwrite_inputs);
-  if(ans.isMap()) {ans = ansCopy;}
+  if(ansptr != ans.getPtr()) {ans = ansCopy;} 
+  //if(ans.isMap()) {ans = ansCopy;}
 }
 
 
@@ -269,9 +290,10 @@ void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<
   cholPtr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
   rmnorm_chol(ansPtr, meanPtr, cholPtr, n, prec_param);
 
-  if(ans.isMap()) {
-    ans = ansCopy;
-  }
+  if(ansPtr != ans.getPtr()) {ans = ansCopy;} 
+  // if(ans.isMap()) {
+  //   ans = ansCopy;
+  // }
 }
 
 // Begin multivariate t
@@ -320,10 +342,11 @@ void nimArr_rmvt_chol(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<2, d
   muPtr = nimArrCopyIfNeeded<1, double>(mu, muCopy).getPtr();
   cholPtr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
   rmvt_chol(ansPtr, muPtr, cholPtr, df, n, prec_param);
-  
-  if(ans.isMap()) {
-    ans = ansCopy;
-  }
+
+  if(ansPtr != ans.getPtr()) {ans = ansCopy;} 
+  // if(ans.isMap()) {
+  //   ans = ansCopy;
+  // }
 }
 
 // the next two handle when 'c' is a vector (e.g., interval censoring)
@@ -499,10 +522,11 @@ void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1,
   evsptr = nimArrCopyIfNeeded<1, double>(evs, evsCopy).getPtr();
   
   rcar_proper(ansptr, muptr, Cptr, adjptr, numptr, Mptr, tau, gamma, evsptr, N, L);
-  
-  if(ans.isMap()) {
-    ans = ansCopy;
-  }
+
+  if(ansptr != ans.getPtr()) {ans = ansCopy;} 
+  // if(ans.isMap()) {
+  //   ans = ansCopy;
+  // }
 }
 
 

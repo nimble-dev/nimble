@@ -105,6 +105,7 @@ class NimArrBase : public NimArrType {
   T **vPtr;
   std::size_t element_size() { return (sizeof(T)); }
   void setVptr() { vPtr = &v; }
+  T** &getVptrRef() {return vPtr;}
   T **getVptr() const { return vPtr; }
   bool own_v;
   int NAdims[4];
@@ -112,7 +113,7 @@ class NimArrBase : public NimArrType {
   int NAstrides[4];
   // Everyone has a stride1, and the flat [] operator needs it, so it is here.
   int stride1, offset;
-  int getOffset() { return offset; }
+  int getOffset() const { return offset; }
   bool boolMap;
   bool isMap() const { return boolMap; }
   const int *strides() const { return NAstrides; }
@@ -128,6 +129,7 @@ class NimArrBase : public NimArrType {
   T &valueNoMap(int i) const { return (*(v + i)); }
   virtual int calculateIndex(vector<int> &i) const = 0;
   T *getPtr() { return (&((*vPtr)[0])); }
+  const T *getConstPtr() const { return (&((*vPtr)[0])); }
   virtual void setSize(vector<int> sizeVec, bool copyValues = true,
                        bool fillZeros = true) = 0;
   // Warning, this does not make sense if vPtr is pointing to someone else's

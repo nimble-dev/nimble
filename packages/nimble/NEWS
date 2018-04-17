@@ -1,3 +1,39 @@
+                           CHANGES IN VERSION 0.6-10 (March 2018)
+
+USER LEVEL CHANGES
+
+-- Data can now be provided as a numeric data frame rather than a matrix.
+
+-- To run WAIC, a user now must set 'enableWAIC' to 'TRUE', either in NIMBLE's options or as an argument to buildMCMC().
+
+-- If 'enableWAIC' is 'TRUE', buildMCMC() will now check to make sure that the nodes monitored by the MCMC algorithm will lead to a valid WAIC calculation.
+
+-- Deprecated use of identityMatrix() in favor of diag().
+
+-- Some steps of model and algorithm building and compilation are faster.
+
+-- Compiled execution with multivariate distributions or function arguments may be faster.
+
+BUG FIXES
+
+-- Fixed bug related to handling of MCMC history that caused MCMC to stop.
+
+-- Fixed a bug in WAIC calculation where downstream nodes were not being re-simulated for certain combinations of models and monitored variables.
+
+DEVELOPER LEVEL CHANGES
+
+-- Made non-scalar arguments in model distributions, like x[1:10] (i.e., those without gaps in indexing), avoid copies for faster C++ calculations.
+
+-- Moved parse step of parseEvalNumericManyList() to C++ for faster model processing.
+
+-- Sped up makeParamInfo() and related functions/methods to speed up compilation, particularly in models with dynamic indexing.
+
+-- Sped up checkForSelfParents() for faster model processing.
+
+-- Clarified some error and warning messages when user attempts to dynamically index a constant and when components of user-defined distributions are missing.
+
+-- Removed extraneous break/next statements flagged by CRAN.
+
                            CHANGES IN VERSION 0.6-9 (January 2018)
 
 USER LEVEL CHANGES

@@ -152,7 +152,8 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     processBoundsAndTruncation()      ## puts bound expressions into declInfo, including transforming T(ddist(),lower,upper); need to do this before expandDistributions(), which is not set up to handle T() wrapping; need to save bound info for later use in reparameterizeDists() -- hence temporarily stored in boundExprs (can't put in code because it would be stripped out in expandDistributions, though alternative is to modify expandDistributions to add lower,upper back into code)
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
-    checkMultivarExpr()               ## checks that multivariate params are not expressions
+    if(getNimbleOption('disallow_multivariate_argument_expressions'))
+       checkMultivarExpr()               ## checks that multivariate params are not expressions
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName; also processes bound info to evaluate in context of model
     replaceAllConstants()
@@ -2878,12 +2879,15 @@ parseEvalNumericMany <- function(x, env) {
     )
 }
 
+
 parseEvalNumericManyList <- function(x, env) {
     withCallingHandlers(
-        if(length(x) > 1) {
-            eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
-        } else 
-            eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
+        eval(.Call(makeParsedVarList, x), envir = env)
+        ## Above line replaces:
+        ## if(length(x) > 1) {
+        ##     eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
+        ## } else 
+        ##     eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
        ,
         error = function(cond) {
             parseEvalNumericManyHandleError(cond, x, env)
@@ -2950,10 +2954,12 @@ detectDynamicIndexes <- function(expr) {
 }
 
 modelDefClass$methods(checkForSelfParents = function(){
-  for(i in seq_along(maps$edgesFrom)){
-    if(maps$edgesFrom[i] == maps$edgesTo[i]){
-      stop(paste("In building model, node", maps$graphID_2_nodeName[maps$edgesFrom[i]], "is its own parent node."), call. = FALSE)
+    if(any(maps$edgesFrom == maps$edgesTo)) {
+        problemNodes <- maps$edgesFrom[maps$edgesFrom == maps$edgesTo]
+        stop(paste("In building model, each of the following nodes",
+                   "has itself as a parent node:",
+                   paste(maps$graphID_2_nodeName[problemNodes], collapse = ", ")),
+             call. = FALSE)
     }
-  }
 })
 

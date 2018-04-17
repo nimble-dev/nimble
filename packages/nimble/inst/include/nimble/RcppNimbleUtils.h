@@ -309,7 +309,7 @@ SEXP NimArr_2_SEXP(NimArr<ndim, double> &val) {
   PROTECT(Sans = Rf_allocVector(REALSXP, outputLength));
   double *ans = REAL(Sans);
 
-  std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
+  NimArr_map_2_allocatedMemory(val, &ans, outputLength);
   if(val.numDims() > 1) {
     SEXP Sdim;
     PROTECT(Sdim = Rf_allocVector(INTSXP, val.numDims() ) );
@@ -329,7 +329,8 @@ SEXP NimArr_2_SEXP(NimArr<ndim, int> &val) {
   PROTECT(Sans = Rf_allocVector(INTSXP, outputLength));
   int *ans = INTEGER(Sans);
 
-  std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
+  NimArr_map_2_allocatedMemory(val, &ans, outputLength);
+  //  std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
   if(val.numDims() > 1) {
     SEXP Sdim;
     PROTECT(Sdim = Rf_allocVector(INTSXP, val.numDims() ) );
@@ -349,7 +350,8 @@ SEXP NimArr_2_SEXP(NimArr<ndim, bool> &val) {
   PROTECT(Sans = Rf_allocVector(LGLSXP, outputLength));
   int *ans = LOGICAL(Sans);
 
-  std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
+  NimArr_map_2_allocatedMemory(val, &ans, outputLength);
+  //  std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
   if(val.numDims() > 1) {
     SEXP Sdim;
     PROTECT(Sdim = Rf_allocVector(LGLSXP, val.numDims() ) );
