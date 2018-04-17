@@ -294,7 +294,6 @@ for(i in seq_len(g))
     for(j in seq_len(m))
         y[j, i, ] <- rmulti(1, n, p[i, ])
 
-
 model <- function() {
     for(i in 1:g)
         for(j in 1:m)
