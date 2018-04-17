@@ -106,7 +106,7 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
   Type n=size;
   Type p=prob;
   Type res = lgamma(x+n)-lgamma(n)-lgamma(x+Type(1))+
-    n*log(p)+x*log(Type(1)-p)
+    n*log(p)+x*log(Type(1)-p);
 	res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
 	return(res);
 }
@@ -118,7 +118,7 @@ inline Type nimDerivs_dnbinom_logFixed(const Type &x, const Type &size, const Ty
   Type n=size;
   Type p=prob;
   Type res = lgamma(x+n)-lgamma(n)-lgamma(x+Type(1))+
-  n*log(p)+x*log(Type(1)-p)
+    n*log(p)+x*log(Type(1)-p);
   if(!give_log){
     res = exp(res);
   }
@@ -225,10 +225,10 @@ Type dinvgamma_logFixed(Type x, Type shape, Type rate, int give_log)
   Type xinv = Type(1.0)/x;
   Type res;
   if(give_log){
-    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) - 2*log(x)
+    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) - 2*log(x);
   }
   else{
-    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) * xinv * xinv
+    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) * xinv * xinv;
   }
   return(res);
 }
