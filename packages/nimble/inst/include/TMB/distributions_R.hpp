@@ -1,6 +1,9 @@
 // Copyright (C) 2013-2015 Kasper Kristensen
 // License: GPL-2
 
+// Copyright (C) 2018 the NIMBLE authors 
+// License: GPL (>=2)
+
 /**	\file
 	\brief Probability distribution functions.
 	*/
