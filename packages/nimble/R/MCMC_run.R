@@ -99,7 +99,7 @@ runMCMC <- function(mcmc,
     if(!is.model(model)) stop('something went wrong')
     samplesList <- vector('list', nchains)
     names(samplesList) <- paste0('chain', 1:nchains)
-    if(mcmc$thin > 1 && nburnin > 0) message('The behaviour of runMCMC() has recently changed with respect to the nburnin argument.  Previously, nburnin specified the number of *post-thinning* MCMC samples to discard.  It has been changed to now specify the number of *pre-thinning* MCMC samples to discard.  So, the final number of samples returned will be floor((niter-nburnin)/thin).  This change will result in more posterior samples being returned, but at the expense of the leading samples being from earlier in the full MCMC chain, thus having had less time to "forget" the initial conditions.')
+    if(mcmc$thin > 1 && nburnin > 0) message('The behavior of runMCMC() has recently changed with respect to the nburnin argument.  Previously, nburnin specified the number of *post-thinning* MCMC samples to discard.  It has been changed to now specify the number of *pre-thinning* MCMC samples to discard.  So, the final number of samples returned will be floor((niter-nburnin)/thin).  This change will result in more posterior samples being returned, but at the expense of the leading samples being from earlier in the full MCMC chain, thus having had less time to "forget" the initial conditions.')
     for(i in 1:nchains) {
         if(nimbleOptions('verbose')) message('running chain ', i, '...')
         ##if(setSeed) set.seed(i)
