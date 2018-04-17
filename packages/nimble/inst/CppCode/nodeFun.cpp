@@ -3,13 +3,11 @@
 
 void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
   int step = 0;
-  std::cout<<"recordTape "<<step++<<std::endl;
   vector< CppAD::AD<double> > dependentVars(1);
   NimArr<1, double> NimArrValues;
   NimArr<1, CppAD::AD<double> > NimArrValues_AD;
   
   // 1. Copy all constantNodes values from model -> model_AD
-  std::cout<<"recordTape "<<step++<<std::endl;
   int length_constant = NV.model_constant_accessor.getTotalLength();
   if(length_constant > 0) {
     NimArr<1, double> NimArrValues;
@@ -39,7 +37,6 @@ void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
   }
   
   // 2. Copy all wrtNodes values from model -> model_AD, AND
-  std::cout<<"recordTape "<<step++<<std::endl;
   // 3. Copy all wrtNodes values from model -> independentVars, AND
   // 4. independentVars should have an extra dummy element for getExtraInputs and setExtraInputs
   int length_wrt = NV.model_wrt_accessor.getTotalLength();
@@ -49,14 +46,12 @@ void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
     NimArrValues.setSize(length_wrt);
     getValues(NimArrValues, NV.model_wrt_accessor);
     // 2
-    std::cout<<"recordTape "<<step++<<std::endl;
     NimArrValues_AD.setSize(length_wrt);
     std::copy( NimArrValues.getPtr(),
 	       NimArrValues.getPtr() + length_wrt,
 	       NimArrValues_AD.getPtr());
     setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
     // 3
-    std::cout<<"recordTape "<<step++<<std::endl;
     std::copy(  NimArrValues.getPtr(),
 		NimArrValues.getPtr() + length_wrt,
 		independentVars.begin() );
@@ -64,7 +59,6 @@ void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
   independentVars[ length_independent - 1 ] = 0;
   
   // 5. Copy all extraInputNodes values from model -> model_AD (ditto, may be redundant)
-  std::cout<<"recordTape "<<step++<<std::endl;
   
   int length_extraInput = NV.model_extraInput_accessor.getTotalLength();
   if(length_extraInput > 0) {
@@ -80,7 +74,6 @@ void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
   // 6. Start taping    
   // Steps done via nodeFunInModelDLL-> need to happen in the model DLL,
   // so that the same set of CppAD globals will be used as in taping.
-  std::cout<<"recordTape "<<step++<<std::endl;
   setTapeIndependent(independentVars);
   
   // 7. Instantiate and call getExtraInputs atomic object, AND
@@ -95,7 +88,6 @@ void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
       // node values from the model.  By copying those during taping
       // into the model_AD, those nodes play the right roles in the tape.
       // 7.
-    std::cout<<"recordTape "<<step++<<std::endl;
 
     NV.extraInputObject = 
       runExtraInputObject(NV,
@@ -106,7 +98,6 @@ void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
     // but I don't think that will be a problem.  We are recording via
     // ADtape.Dependent(X, Y), which does not call Forward(0) for values.
     // 8.
-    std::cout<<"recordTape "<<step++<<std::endl;
     
     NimArrValues_AD.setSize(length_extraInput);
     std::copy(extraInputResults.begin(),
@@ -115,7 +106,6 @@ void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
     setValues_AD_AD(NimArrValues_AD, NV.model_AD_extraInput_accessor);
   }
   // 9. Copy all wrtNodes AD objects from independentVars -> model_AD.
-  std::cout<<"recordTape "<<step++<<std::endl;
     if(length_wrt > 0) {
       NimArrValues_AD.setSize(length_wrt);
       std::copy(independentVars.begin(),
@@ -124,13 +114,10 @@ void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
       setValues_AD_AD(NimArrValues_AD, NV.model_AD_wrt_accessor);
     }
     // 10. call calculate
-    std::cout<<"recordTape "<<step++<<std::endl;
     CppAD::AD<double> logProb = call_calculate_ADproxyModel( NV );
     // 11. Copy logProb to dependentVars[0]
-    std::cout<<"recordTape "<<step++<<std::endl;
     
     // 12. Call setModelOutputs to put AD modelOutputs into model
-    std::cout<<"recordTape "<<step++<<std::endl;
     /* int length_modelOutput = model_modelOutput_accessor.getTotalLength(); */
     /* NimArr<1, CppAD::AD<double> > NAV_AD; */
     /* NAV_AD.setSize(length_modelOutput); */
@@ -153,13 +140,11 @@ void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
     dependentVars[0] = logProb;
     // 13. Finish taping, AND
     // 14. Call tape->optimize()
-    std::cout<<"recordTape "<<step++<<std::endl;
     
     finishADFun(NV.ADtape,
 		independentVars,
 		dependentVars);
     
-    std::cout<<"recordTape "<<step++<<std::endl;
         
 }
 
@@ -173,13 +158,10 @@ void nodeFun::finishADFun(CppAD::ADFun< double > &ADtape,
   // DO NOT USE THE CONSTRUCTOR VERSION BECAUSE IT ALWAYS DOES .Forward(0)
   // INSTEAD MAKE THE BLANK OBJECT AND USE .Dependent(...)
   // TRY USING CppAD's vector type
-  std::cout<<"recording tape with input length "<<independentVars.size()<<std::endl;
   CppAD::ADFun<double> localADtape(independentVars, dependentVars);
   //  CppAD::ADFun<double> localADtape;
   //  localADtape.Dependent(independentVars, dependentVars);
-  std::cout<<"Tape memory size before optimize: "<< localADtape.size_op_seq() <<std::endl;
   localADtape.optimize(); //("no_compare_op") makes almost no difference;
-  std::cout<<"Tape memory size after optimize: "<< localADtape.size_op_seq() <<std::endl;
   // then copy it back to object from another DLL
   ADtape = localADtape;
   //  ADtape.capacity_order(2); // makes only a tiny improvement
@@ -191,12 +173,10 @@ void nodeFun::runTape(CppAD::ADFun< double > &ADtape,
 		      const NimArr<1, double> &derivOrders,
 		      nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
   // dependentVars = ADtape.Jacobian(independentVars);
-  std::cout<<"running tape with input length "<<independentVars.size()<<std::endl;
   std::size_t n = independentVars.size();
   // Always calculate value, regardless of valueFlag.
   // Is this the right behavior?
   dependentVars = ADtape.Forward(0, independentVars);
-  std::cout<<"done forward"<<std::endl;
   ansList->value.setSize(1, false, false);
   ansList->value[0] = dependentVars[0];
   
@@ -225,7 +205,6 @@ void nodeFun::runTape(CppAD::ADFun< double > &ADtape,
     rev = ADtape.Reverse(1, w);
     int jacSize = rev.size()-1;
     ansList->jacobian.setSize( 1, jacSize, false, false);
-    std::cout<<"done jac "<<jacSize<<std::endl;
     std::copy(rev.begin(), rev.begin() + jacSize, ansList->jacobian.getPtr());
     if(hessianFlag) {
       ansList->hessian.setSize( jacSize, jacSize, 1, false, false);
@@ -326,7 +305,6 @@ bool atomic_extraInputObject::forward(
     return ok;
     
   if(vx.size() > 0) {// only true for Forward(0)
-    std::cout<<"SETTING UP vy"<<std::endl;
     for(unsigned int i = 0; i < vx.size(); ++i)
       std::cout<<vx[i]<<" ";
     std::cout<<std::endl;

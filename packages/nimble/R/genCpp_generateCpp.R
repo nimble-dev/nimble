@@ -170,13 +170,28 @@ cppOutputNimDerivsPrependType <- function(code, symTab){
            })), collapse = ', '), ')')
   }
   else if(identical(nimbleUserNamespace$cppADCode, 2L)) {
-   paste0('nimDerivs_', code$name, '(',
-           paste0(unlist(lapply(code$args, function(x){
-             if(is.numeric(x) || is.logical(x)){
-               return(paste0('CppAD::AD<double>(', nimGenerateCpp(x, symTab, asArg = TRUE), ')'))
-             }
-             return(nimGenerateCpp(x, symTab, asArg = TRUE))
-           })), collapse = ', '), ')')
+    argList <- list()
+    logFixedString <- ''
+    for(iName in names(code$args)){
+      iArg <- code$args[[iName]]
+      if(iName == 'log' && (is.numeric(iArg) | is.logical(iArg))){
+        logFixedString <- '_logFixed'
+        argList[[length(argList) + 1]] <- nimGenerateCpp(iArg, symTab,
+                                                         asArg = TRUE)
+      }
+      else if(is.numeric(iArg) || is.logical(iArg)){
+        argList[[length(argList) + 1]] <- paste0('CppAD::AD<double>(', 
+                                                 nimGenerateCpp(iArg, symTab,
+                                                                asArg = TRUE),
+                                                 ')')
+      }
+      else{
+        argList[[length(argList) + 1]] <- nimGenerateCpp(iArg, symTab,
+                                                         asArg = TRUE)
+      }
+    }
+    paste0('nimDerivs_', code$name, logFixedString, '(', 
+           paste0(unlist(argList), collapse = ', '), ')')
   } else {
      paste0(code$name, '(',
            paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')

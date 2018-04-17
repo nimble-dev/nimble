@@ -76,7 +76,6 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
   
   nodes.runTape_runTape(independentVars, dependentVars,
 			derivOrders, ansList);
-  std::cout<<"back from running tape"<<std::endl;
 #ifdef _TIME_AD
   derivs_run_tape_timer.stop();
 #endif
@@ -147,7 +146,6 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 #ifdef _TIME_AD
   derivs_run_tape_timer_start();
 #ifdef _SHOW_NODE_BY_NODE 
-  std::cout<<"Running value "<<std::endl;
 #endif
 #endif
   value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
@@ -184,7 +182,6 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 	if(infIndicators[dy_ind] == false){
 #ifdef _TIME_AD
 #ifdef _SHOW_NODE_BY_NODE 
-	  std::cout<<"Running deriv "<<dy_ind<<std::endl;
 #endif
 	  derivs_run_tape_timer_start();
 #endif
