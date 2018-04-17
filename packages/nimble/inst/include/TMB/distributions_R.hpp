@@ -470,7 +470,7 @@ Type nimDerivs_dbinom_logFixed(Type k, Type size, Type prob, int give_log)
 template<class Type>
 Type nimDerivs_dchisq(Type x, Type df, Type give_log)
 {	
-  Type res = df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - lgamma(df/Type(2.0));
+  Type res = df/Type(2.0) - Type(1.0)*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - lgamma(df/Type(2.0));
   res = CondExpEq(give_log, Type(0), exp(res), res);
   return(res);
 }
@@ -478,7 +478,7 @@ Type nimDerivs_dchisq(Type x, Type df, Type give_log)
 template<class Type>
 Type nimDerivs_dchisq_logFixed(Type x, Type df, int give_log)
 {	
-  Type res = df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - lgamma(df/Type(2.0));
+  Type res = df/Type(2.0) - Type(1.0)*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - lgamma(df/Type(2.0));
   if(!give_log){
 	res = exp(res);
   }
@@ -593,7 +593,7 @@ Type nimDerivs_dlogis_logFixed(Type x, Type location, Type scale, int give_log)
 {
 	Type res = -(x-location)/scale - log(scale) - 2*log(1+exp(-(x-location)/scale));
 	if(!give_log){
-		res = exp(res)
+		res = exp(res);
 	}
 	return(res);
 }

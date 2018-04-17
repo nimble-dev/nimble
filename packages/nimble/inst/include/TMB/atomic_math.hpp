@@ -684,5 +684,3 @@ Type nldmvnorm(vector<Type> x, matrix<Type> Sigma){
 }
 
 } /* End namespace atomic */
-
-#include "TMB/checkpoint_macro.hpp"
