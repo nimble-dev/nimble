@@ -9,17 +9,17 @@
 #'
 #' @param mcmc A NIMBLE MCMC algorithm.  See details.
 #'
-#' @param niter Number of iterations to run each MCMC chain (default = 10000).
+#' @param niter Number of iterations to run each MCMC chain.  Default value is 10000.
 #'
-#' @param nburnin Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
+#' @param nburnin Number of initial, pre-thinning, MCMC iterations to discard.  Default value is 0.
 #'
-#' @param nchains Number of MCMC chains to run (default = 1).
+#' @param nchains Number of MCMC chains to run.  Default value is 1.
 #'
 #' @param inits Optional argument to specify initial values for each chain.  See details.
 #'
-#' @param setSeed Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain (default = \code{FALSE}).
+#' @param setSeed Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.
 #'
-#' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain (default = \code{TRUE}).
+#' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is \code{TRUE}.
 #'
 #' @param samples Logical argument.  If \code{TRUE}, then posterior samples are returned from each MCMC chain.  These samples are optionally returned as \code{coda} \code{mcmc} objects, depending on the \code{samplesAsCodaMCMC} argument.  Default value is \code{TRUE}.  See details.
 #'
