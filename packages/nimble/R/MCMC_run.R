@@ -9,17 +9,17 @@
 #'
 #' @param mcmc A NIMBLE MCMC algorithm.  See details.
 #'
-#' @param niter Number of iterations to run each MCMC chain (default = 10000).
+#' @param niter Number of iterations to run each MCMC chain.  Default value is 10000.
 #'
-#' @param nburnin Number of initial samples to discard from each MCMC chain (default = 0).
+#' @param nburnin Number of initial, pre-thinning, MCMC iterations to discard.  Default value is 0.
 #'
-#' @param nchains Number of MCMC chains to run (default = 1).
+#' @param nchains Number of MCMC chains to run.  Default value is 1.
 #'
 #' @param inits Optional argument to specify initial values for each chain.  See details.
 #'
-#' @param setSeed Logical argument.  If \code{TRUE}, then R's random number seed is set to \code{i} (using \code{set.seed(i)}) at the onset of each MCMC chain number \code{i} (default = \code{FALSE}).
+#' @param setSeed Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.
 #'
-#' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain (default = \code{TRUE}).
+#' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is \code{TRUE}.
 #'
 #' @param samples Logical argument.  If \code{TRUE}, then posterior samples are returned from each MCMC chain.  These samples are optionally returned as \code{coda} \code{mcmc} objects, depending on the \code{samplesAsCodaMCMC} argument.  Default value is \code{TRUE}.  See details.
 #'
@@ -49,7 +49,7 @@
 #' 
 #' Other aspects of the MCMC algorithm, such as sampler assignments and thinning, must be specified in advance using the MCMC configuration object (created using \code{configureMCMC}), which is then used to build the MCMC algorithm (using \code{buildMCMC}) argument.
 #'
-#' The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument will remove post-thinning samples.
+#' The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument specifies the number of pre-thinning MCMC samples to discard.  After discarding these burn-in samples, thinning of the remaining samples will take place.  The total number of posterior samples returned will be floor((niter-nburnin)/thin).
 #'
 #' The MCMC option \code{mcmc$run(..., reset = FALSE)}, used to continue execution of an MCMC chain, is not available through \code{runMCMC()}.
 #' 
@@ -99,9 +99,17 @@ runMCMC <- function(mcmc,
     if(!is.model(model)) stop('something went wrong')
     samplesList <- vector('list', nchains)
     names(samplesList) <- paste0('chain', 1:nchains)
+    if(mcmc$thin > 1 && nburnin > 0) message('The behavior of runMCMC() has recently changed with respect to the nburnin argument.  Previously, nburnin specified the number of *post-thinning* MCMC samples to discard.  It has been changed to now specify the number of *pre-thinning* MCMC samples to discard.  So, the final number of samples returned will be floor((niter-nburnin)/thin).  This change will result in more posterior samples being returned, but at the expense of the leading samples being from earlier in the full MCMC chain, thus having had less time to "forget" the initial conditions.')
     for(i in 1:nchains) {
         if(nimbleOptions('verbose')) message('running chain ', i, '...')
-        if(setSeed) set.seed(i)
+        ##if(setSeed) set.seed(i)
+        if(is.numeric(setSeed)) {
+            if(length(setSeed) == 1) {
+                set.seed(setSeed)
+            } else {
+                if(length(setSeed) == nchains) set.seed(setSeed[i]) else stop('setSeed argument has different length from nchains')
+            }
+        } else if(setSeed) set.seed(i)
         if(!missing(inits)) {
             if(is.function(inits)) {
                 theseInits <- inits()
@@ -111,10 +119,15 @@ runMCMC <- function(mcmc,
             model$setInits(theseInits)
         }
         model$calculate()
-        mcmc$run(niter, progressBar = progressBar)
-        samplesMatrix <- as.matrix(mcmc$mvSamples)
-        if(nburnin > 0) samplesMatrix <- samplesMatrix[-(1:nburnin), , drop = FALSE]
-        samplesList[[i]] <- samplesMatrix
+        if(nburnin > 0) {
+            mcmc$run(nburnin, progressBar = FALSE)
+            resize(mcmc$mvSamples,  0)
+            resize(mcmc$mvSamples2, 0)   ## not technically necessary
+            mcmc$run(niter-nburnin, reset = FALSE, progressBar = progressBar)
+        } else {
+            mcmc$run(niter, progressBar = progressBar)
+        }
+        samplesList[[i]] <- as.matrix(mcmc$mvSamples)
     }
     if(WAIC) {
         if(nchains > 1) {
@@ -176,7 +189,7 @@ runMCMC <- function(mcmc,
 #' 
 #' @param check Logical argument, specifying whether to check the model object for missing or invalid values.  Default value is \code{TRUE}.
 #' 
-#' @param setSeed Logical argument.  If \code{TRUE}, then R's random number seed is set to a fixed value at the onset of each MCMC chain, which allows for reproducible results.  Default value is \code{FALSE}.
+#' @param setSeed Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.
 #'
 #' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is \code{TRUE}.
 #'
@@ -206,6 +219,8 @@ runMCMC <- function(mcmc,
 #' 
 #' The \code{inits} argument may also be omitted, in which case the model will not be provided with initial values.  This is not recommended.
 #'
+#' The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument specifies the number of pre-thinning MCMC samples to discard.  After discarding these burn-in samples, thinning of the remaining samples will take place.  The total number of posterior samples returned will be floor((niter-nburnin)/thin).
+#' 
 #' @examples
 #' 
 #' \dontrun{
@@ -266,7 +281,6 @@ nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
     Rmcmc <- buildMCMC(conf, enableWAIC = WAIC)
     compiledList <- compileNimble(Rmodel, Rmcmc)    ## only one compileNimble() call
     Cmcmc <- compiledList$Rmcmc
-    nburnin <- ceiling(nburnin/thin)    ## accounts for thinning *first*, then dropping burnin
     runMCMC(Cmcmc, niter = niter, nburnin = nburnin, nchains = nchains, inits = inits,
             setSeed = setSeed, progressBar = progressBar, samples = samples,
             samplesAsCodaMCMC = samplesAsCodaMCMC, summary = summary, WAIC = WAIC)
