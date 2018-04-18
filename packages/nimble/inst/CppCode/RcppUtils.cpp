@@ -806,6 +806,8 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
   if(iBracket == std::string::npos) {
     _nimble_global_output<<"problem in parseVarAndInds: there is no closing bracket\n";
     nimble_print_to_R(_nimble_global_output);
+    output.varName = input;
+    return;
   }
   while(!done) {
     iColon   = restOfInput.find_first_of(':');
@@ -864,15 +866,21 @@ SEXP varAndIndices_2_LANGSXP(const varAndIndicesClass &varAndInds) {
     SETCAR(t, R_BracketSymbol); t = CDR(t);
     SETCAR(t, Rf_install(varAndInds.varName.c_str())); t = CDR(t);
     for(size_t i = 0; i < varAndInds.indices.size(); ++i) {
-      if(varAndInds.indices[i].size() == 1) {
+      if(varAndInds.indices[i].size() == 0) { // blank
+	SETCAR(t, R_MissingArg); t = CDR(t);
+      } else if(varAndInds.indices[i].size() == 1) {
 	SETCAR(t, Rf_ScalarInteger(varAndInds.indices[i][0])); t = CDR(t);
-      } else {
+      } else if(varAndInds.indices[i].size() == 2) {
 	SEXP ScolonExpr = PROTECT(Rf_allocVector(LANGSXP, 3));
 	SETCAR(ScolonExpr, Rf_install(":"));
 	SETCADR(ScolonExpr, Rf_ScalarInteger(varAndInds.indices[i][0]));
 	SETCADDR(ScolonExpr, Rf_ScalarInteger(varAndInds.indices[i][1]));
 	SETCAR(t, ScolonExpr); t = CDR(t);
 	UNPROTECT(1);
+      } else {
+	_nimble_global_output<<"problem in varAndIndices_2_LANGSXP: there is badly formed input\n";
+	nimble_print_to_R(_nimble_global_output);
+	
       }
     }
   }
