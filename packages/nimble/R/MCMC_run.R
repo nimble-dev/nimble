@@ -265,7 +265,7 @@ nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
             if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
             if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
             if(is.function(inits)) {
-                if(setSeed) set.seed(0)
+                if(is.numeric(setSeed) || setSeed) { if(is.numeric(setSeed)) set.seed(setSeed[1]) else set.seed(0) }
                 theseInits <- inits()
             } else if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]])) {
                 theseInits <- inits[[1]]
