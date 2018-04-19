@@ -404,7 +404,9 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
 ## Note this does some work similar to BUGScontextClass::embedCodeInForLoop
 makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, incrementIndex, isNode = FALSE) {
   indexNames <- names(indexList)
-  indexedBracketExpr <- do.call('call', c(list('[', as.name('TO_BE_REPLACED')), lapply(indexNames, as.name)), quote = TRUE)
+  indexedBracketExpr <- do.call('call', c(list('[', as.name('TO_BE_REPLACED')),
+                                          lapply(rev(indexNames), as.name)), ## use rev() to force column-major order for results
+                                quote = TRUE)
   if(indicesRHS) {
     if(isNode)   RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = cppLiteral(paste0('(**model_', deparse(RHSvar), ')')))), list(indexedBracketExpr = indexedBracketExpr)))
     else RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = RHSvar)), list(indexedBracketExpr = indexedBracketExpr)))

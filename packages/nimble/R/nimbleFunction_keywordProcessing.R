@@ -823,6 +823,9 @@ nimDerivs_keywordInfo <- keywordInfoClass(
       addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)
       code[['wrt']] <- substitute(VECNAME,
                                   list(VECNAME = as.name(accessName)))
+      browser()
+      if(is.numeric(code[['order']])) code[['order']] <- substitute(nimC(CODE),
+                                                                    list(CODE = code[['order']]))
     }
     return(code)
   }

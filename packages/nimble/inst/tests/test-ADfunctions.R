@@ -130,3 +130,66 @@ test_that('Derivatives of model$calculate() work in expressions.',
             expect_equal(cderivs, Rderivs, tolerance = 0.01)
           }
 )
+
+test_that('Derivatives of matrix multiplication function correctly.',
+          {
+            ADfun5 <- nimbleFunction(
+              setup = function(){},
+              run = function(x = double(2, c(2, 2)),
+                             y = double(2, c(2, 4))) {
+                outVals <- derivs(testMethod(x, y), wrt = 'x', order = 1)$jacobian
+                returnType(double(2))
+                return(outVals)
+              },
+              methods = list(
+                testMethod = function(x = double(2, c(2, 2)),
+                                      y = double(2, c(2, 4))) {
+                  returnType(double(2, c(2, 4)))
+                  return(x%*%y)
+                }
+              ), enableDerivs = list('testMethod')
+            )
+            ADfunInst <- ADfun5()
+            x <- diag(2)
+            set.seed(1)
+            y <- matrix(rnorm(8), ncol = 4, nrow = 2)
+            Rderivs <- ADfunInst$run(x, y)
+            temporarilyAssignInGlobalEnv(ADfunInst)  
+            cADfunInst <- compileNimble(ADfunInst, showCompilerOutput = TRUE)
+            cderivs <- cADfunInst$run(x, y)
+            expect_equal(cderivs, Rderivs, tolerance = 0.01)
+          }
+)
+
+
+
+test_that('Derivatives of matrix exponentiation function correctly.',
+          {
+            ADfun6 <- nimbleFunction(
+              setup = function(){},
+              run = function(x = double(2, c(2, 2))) {
+                outVals <- derivs(testMethod(x), wrt = 'x', order = 1)$jacobian
+                returnType(double(2))
+                return(outVals)
+              },
+              methods = list(
+                testMethod = function(x = double(2, c(2, 2))) {
+                  returnType(double(2, c(2, 2)))
+                  return(exp(x))
+                }
+              ), enableDerivs = list('testMethod')
+            )
+            ADfunInst <- ADfun5()
+            x <- diag(2)
+            y <- matrix(1, ncol = 4, nrow = 2)
+            Rderivs <- ADfunInst$run(x, y)
+            temporarilyAssignInGlobalEnv(ADfunInst)  
+            cADfunInst <- compileNimble(ADfunInst, showCompilerOutput = TRUE)
+            cderivs <- cADfunInst$run(x, y)
+            expect_equal(cderivs, Rderivs, tolerance = 0.01)
+          }
+)
+
+
+## one for exp(mat)
+## get order to owrk without c()!
