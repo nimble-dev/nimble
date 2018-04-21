@@ -813,11 +813,12 @@ inits: A named list.  The names of list elements must correspond to model variab
                                       origInits <<- inits
 
                                       for(i in seq_along(inits)) {
-                                          dataVals <- .self$isData(names(inits)[[i]])
+                                          ##dataVals <- .self$isData(names(inits)[[i]])
+                                          dataVals <- .self$isDataEnv[[names(inits)[[i]] ]]
                                           if(any(dataVals)) {
                                               .self[[names(inits)[i]]][!dataVals] <- inits[[i]][!dataVals]
                                               if(any(!is.na(inits[[i]][dataVals])))
-                                                  warning("Ignoring values in inits for data nodes: ", names(inits)[[i]], ".")
+                                                  warning("Ignoring some or all values in inits for data nodes: ", names(inits)[[i]], ".", call. = FALSE)
                                           } else  .self[[names(inits)[i]]] <- inits[[i]]
                                       }
                                   },
