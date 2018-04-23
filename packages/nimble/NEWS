@@ -1,3 +1,9 @@
+USER LEVEL CHANGES
+
+-- Both nimbleMCMC and runMCMC functions now drop burnin samples as "pre-thinning", if a thinning interval is specified.
+
+-- Increased functionality for the setSeed argument in nimbleMCMC and runMCMC functions.
+
                            CHANGES IN VERSION 0.6-10 (March 2018)
 
 USER LEVEL CHANGES
