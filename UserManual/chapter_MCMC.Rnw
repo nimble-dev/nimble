@@ -106,7 +106,7 @@ This entry point for using \cd{nimbleMCMC} is the \cd{code}, \cd{constants}, \cd
 Based on its arguments, \cd{nimbleMCMC} optionally returns any combination of
 
 \begin{itemize}
-\item posterior samples,
+\item Posterior samples,
 \item Posterior summary statistics, and
 \item WAIC value.
 \end{itemize}
@@ -375,6 +375,33 @@ samplerConfList[[4]]$setTarget("y", model)   ## model argument required
 mcmcConf$setSamplers(samplerConfList)
 @
 
+\subsubsection{Customizing the sampler execution order}
+
+The ordering of sampler execution can be controlled as well.  This allows for sampler functions to execute multiple times within a single MCMC iteration, or the execution of different sampler functions to be interleaved with one another.
+
+The sampler execution order is set using the function \cd{setSamplerExecutionOrder}, and the current ordering of execution is retrieved using \cd{getSamplerExecutionOrder}.  For example, assuming the MCMC configuration object \cd{mcmcConf} contains 5 samplers:
+
+<<setSamplerExecutionOrder, eval=FALSE>>=
+## first sampler to execute twice, in succession:
+mcmcConf$setSamplerExecutionOrder(c(1, 1, 2, 3, 4, 5))
+
+## first sampler to execute multiple times, interleaved:
+mcmcConf$setSamplerExecutionOrder(c(1, 2, 1, 3, 1, 4, 1, 5))
+
+## fourth sampler to execute 10 times, only
+mcmcConf$setSamplerExecutionOrder(rep(4, 10))
+
+## omitting the argument to setSamplerExecutionOrder()
+## resets the ordering to each sampler executing once, sequentially
+mcmcConf$setSamplerExecutionOrder()
+
+## retrieve the current ordering of sampler execution
+ordering <- mcmcConf$getSamplerExecutionOrder()
+
+## print the sampler functions in the order of execution
+mcmcConf$printSamplers(executionOrder = TRUE)
+@
+
 \subsubsection{Monitors and thinning intervals: \cd{printMonitors}, \cd{getMonitors}, \cd{addMonitors}, \cd{setThin}, and \cd{resetMonitors}}
 
 An MCMC configuration object contains two independent sets of variables to monitor, each with their own thinning interval: \cd{thin} corresponding to \cd{monitors}, and \cd{thin2} corresponding to \cd{monitors2}.  Monitors operate at the \textit{variable} level.  Only entire model variables may be monitored.  Specifying a monitor on a \textit{node}, e.g., \cd{x[1]}, will result in the entire variable \cd{x} being monitored.
@@ -470,7 +497,7 @@ Cmcmc$Rmcmc$run(niter = 1000)
 
 Once an MCMC algorithm has been created using \cd{buildMCMC}, the function \cd{runMCMC} can be used to run multiple chains and extract posterior samples, summary statistics and/or a WAIC value.  This is a simpler approach to executing an MCMC algorithm, than the process of executing and extracting samples as described in Sections \ref{executing-the-mcmc-algorithm} and \ref{sec:extracting-samples}.
 
-\cd{runMCMC} also provides several user-friendly options such as burn-in, running multiple chains, and different initial values for each chain.  However, using \cd{runMCMC} does not support several lower-level options, such as timing the individual samplers internal to the MCMC, or continuing an exisiting MCMC run (picking up where it left off).
+\cd{runMCMC} also provides several user-friendly options such as burn-in, running multiple chains, and different initial values for each chain.  However, using \cd{runMCMC} does not support several lower-level options, such as timing the individual samplers internal to the MCMC, continuing an exisiting MCMC run (picking up where it left off), or modifying the sampler execution ordering.
 
 \cd{runMCMC} takes arguments that will control the following aspects of the MCMC:
 
@@ -552,6 +579,17 @@ Cmcmc$run(niter, time = TRUE)
 Cmcmc$getTimes()
 @ 
 will return a vector of the total time spent in each sampler, measured in seconds. 
+
+
+\subsection{Modifying the order of sampler execution: \cd{samplerExecutionOrder}} \label{sec:runtime-sampler-execution-order}
+
+The order in which the MCMC sampler functions execute can also be specified at MCMC runtime.  This is done using the argument \cd{samplerExecutionOrder}.  Providing this runtime argument will override any modified execution ordering that was specified in the MCMC configuration.  For example,
+
+<<eval=FALSE>>=
+## interleave execution of the first sampler with other sampler functions
+Cmcmc$run(niter, samplerExecutionOrder = c(1, 2, 1, 3, 1, 4, 1, 5))
+@ 
+
 
 \section{Extracting MCMC samples}
 \label{sec:extracting-samples}

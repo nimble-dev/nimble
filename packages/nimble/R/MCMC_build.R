@@ -22,6 +22,8 @@
 #'
 #' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
 #'
+#' \code{samplerExecutionOrder}: Numeric vector specifying the order of execution of the sampler functions (as were defined in the MCMC configuration object).  This allows sampler functions to execute multiple times on each MCMC iteration, be interleaved with other sampler functions, or omitted entirely.  If provided, this argument will override the default sampler execution ordering that was specified in the MCMC configuration.  However, supplying this argument will not overwrite the default ordering from the configuration; subsequent runs of the MCMC will revert back to using that ordering from the configuration, if this runtime argument is omitted.  Different runs of the same MCMC may specify different orderings for sampler execution, if desired.  Note that unlike in the MCMC configuration, no checking of the vailidity of this sampler execution ordering argument is carried out, so supplying invalid values (for example, -7, or 3.5) will most likely result in a horrible crash.
+#'
 #' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
 #' These may be accessed and converted into R matrix objects via:
 #' \code{as.matrix(mcmc$mvSamples)}
@@ -113,7 +115,7 @@ buildMCMC <- nimbleFunction(
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
         for(i in seq_along(conf$samplerConfs))
             samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
-
+        samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
         monitors  <- processMonitorNames(model, conf$monitors)
         monitors2 <- processMonitorNames(model, conf$monitors2)
         thin  <- conf$thin
@@ -125,7 +127,7 @@ buildMCMC <- nimbleFunction(
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
         progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
-        ## WAIC setup below:
+        ## WAIC setup:
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
         sampledNodes <- model$getVarNames(FALSE, monitors)
@@ -141,7 +143,7 @@ buildMCMC <- nimbleFunction(
         }
     },
 
-    run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
+    run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE), samplerExecutionOrder = integer(1, default=-1)) {
         if(reset) {
             if(simulateAll)   simulate(model)
             my_initializeModel$run()
@@ -163,6 +165,14 @@ buildMCMC <- nimbleFunction(
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)
                 samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
         }
+        if(dim(samplerExecutionOrder)[1] > 0 & samplerExecutionOrder[1] == -1) {   ## runtime argument samplerExecutionOrder was not provided
+            lengthSamplerExecutionOrderFromConf <- dim(samplerExecutionOrderFromConfPlusTwoZeros)[1] - 2
+            print('length of order from conf: ', lengthSamplerExecutionOrderFromConf)   #####XXXXXXXXXXXXXXXXXXXXXXXX
+            if(lengthSamplerExecutionOrderFromConf == 0) samplerExecutionOrderToUse <- numeric(0) else samplerExecutionOrderToUse <- samplerExecutionOrderFromConfPlusTwoZeros[1:lengthSamplerExecutionOrderFromConf]
+        } else {   ## runtime argument samplerExecutionOrder was provided
+            samplerExecutionOrderToUse <- samplerExecutionOrder
+        }
+        print('samplerExecutionOrderToUse = ', samplerExecutionOrderToUse)   ##### XXXXXXXXXXXXXXXXXXXXXXXX
         if(niter < progressBarLength+3 | !progressBarDefaultSetting) progressBar <- progressBar & 0  ## cheap way to avoid compiler warning
         if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; print('|'); cat('|') }
         progressBarIncrement <- niter/(progressBarLength+3)
@@ -171,11 +181,17 @@ buildMCMC <- nimbleFunction(
         for(iter in 1:niter) {
             checkInterrupt()
             if(time)
-                for(i in seq_along(samplerFunctions))
-                    samplerTimes[i] <<- samplerTimes[i] + run.time(samplerFunctions[[i]]$run())
-            else 
-                for(i in seq_along(samplerFunctions))
-                    samplerFunctions[[i]]$run()
+                for(i in seq_along(samplerExecutionOrderToUse)) {
+                    ind <- samplerExecutionOrderToUse[i]
+                    samplerTimes[ind] <<- samplerTimes[ind] + run.time(samplerFunctions[[ind]]$run())
+                }
+            else {
+                for(i in seq_along(samplerExecutionOrderToUse)) {
+                    ind <- samplerExecutionOrderToUse[i]
+                    print(ind)   #############XXXXXXXXXXXXXXXXX
+                    samplerFunctions[[ind]]$run()
+                }     #############XXXXXXXXXXXXXXXXX
+            }      #############XXXXXXXXXXXXXXXXX
             if(iter %% thin  == 0)
                 nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thin,  nodes = monitors)
             if(iter %% thin2 == 0)

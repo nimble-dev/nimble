@@ -78,6 +78,7 @@ MCMCconf <- setRefClass(
         thin                = 'ANY',
         thin2               = 'ANY',
         samplerConfs        = 'ANY',
+        samplerExecutionOrder = 'ANY',
         controlDefaults     = 'ANY',
         namedSamplerLabelMaker = 'ANY',
         mvSamples1Conf      = 'ANY',
@@ -131,23 +132,25 @@ onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, 
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 
-warnNoSamplerAssigned: A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
+warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
-print: A logical argument, specifying whether to print the ordered list of default samplers.
+print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
 '
-            samplerConfs <<- list(); controlDefaults <<- list(); monitors <<- character(); monitors2 <<- character();
-            namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
-            ##model <<- model
             if(is(model, 'RmodelBaseClass')) {
                 model <<- model
             } else if(is(model, 'CmodelBaseClass')) {
                 model <<- model$Rmodel
             } else stop('\'model\' must be a compiled or un-compiled NIMBLE model object')
+            monitors  <<- character()
+            monitors2 <<- character()
             addMonitors( monitors,  print = FALSE)
             addMonitors2(monitors2, print = FALSE)
             thin  <<- thin
             thin2 <<- thin2
-            samplerConfs    <<- list()
+            samplerConfs <<- list()
+            samplerExecutionOrder <<- numeric()
+            controlDefaults <<- list()
+            namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
             if(identical(nodes, character())) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                                             } else             { if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
@@ -242,7 +245,6 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 }
             }
             
-            ##if(TRUE) { dynamicConjugateSamplerWrite(); message('don\'t forget to turn off writing dynamic sampler function file!') }
             if(print)   printSamplers()
         },
 
@@ -341,6 +343,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
             
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=target, control=thisControlList, model=model)
+            samplerExecutionOrder <<- c(samplerExecutionOrder, newSamplerInd)
             
             if(print) printSamplers(newSamplerInd)
             return(invisible(samplerConfs))
@@ -352,14 +355,17 @@ Removes one or more samplers from an MCMCconf object.
 
 Arguments:
 
+This function also has the side effect of resetting the sampler execution ordering so as to iterate over the remaining set of samplers, sequentially, executing each sampler once.
+
 ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose \'target\' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
-print: A logical argument, default value FALSE, specifying whether to print the current list of samplers once the removal has been done.
+print: A logical argument specifying whether to print the current list of samplers once the removal has been done (default FALSE).
 '      
             if(missing(ind))        ind <- seq_along(samplerConfs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
             samplerConfs[ind] <<- NULL
+            samplerExecutionOrder <<- seq_along(samplerConfs)
             if(print) printSamplers()
             return(invisible(NULL))
         },
@@ -367,6 +373,8 @@ print: A logical argument, default value FALSE, specifying whether to print the 
         setSamplers = function(ind, print = FALSE) {
             '
 Sets the ordering of the list of MCMC samplers.
+
+This function also has the side effect of resetting the sampler execution ordering so as to iterate over the specified set of samplers, sequentially, executing each sampler once.
 
 Arguments:
 
@@ -377,7 +385,7 @@ Alternatively, a character vector may be used to specify a set of model nodes an
 
 As another alternative, a list of samplerConf objects may be used as the argument, in which case this ordered list of samplerConf objects will define the samplers in this MCMC configuration object, completely over-writing the current list of samplers.  No checking is done to ensure the validity of the contents of these samplerConf objects; only that all elements of the list argument are, in fact, samplerConf objects.
 
-print: A logical argument, default value TRUE, specifying whether to print the new list of samplers.
+print: A logical argument specifying whether to print the new list of samplers (default FALSE).
 '   
             if(missing(ind))        ind <- numeric(0)
             if(is.list(ind)) {
@@ -388,11 +396,12 @@ print: A logical argument, default value TRUE, specifying whether to print the n
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
             samplerConfs <<- samplerConfs[ind]
+            samplerExecutionOrder <<- seq_along(samplerConfs)
             if(print) printSamplers()
             return(invisible(NULL))
         },
         
-        printSamplers = function(ind, displayControlDefaults=FALSE, displayNonScalars=FALSE, displayConjugateDependencies=FALSE) {
+        printSamplers = function(ind, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE) {
             '
 Prints details of the MCMC samplers.
 
@@ -403,15 +412,20 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
 displayConjugateDependencies: A logical argument, specifying whether to display the dependency lists of conjugate samplers (default FALSE).
 
 displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).
+
+executionOrder: A logical argument, specifying whether to print the sampler functions in the (possibly modified) order of execution (default FALSE).
 '
             if(missing(ind))        ind <- seq_along(samplerConfs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
+            if(executionOrder)      ind <- samplerExecutionOrder[samplerExecutionOrder %in% ind]
             for(i in ind)
                 cat(paste0('[', i, '] ', makeSpaces(i), samplerConfs[[i]]$toStr(displayControlDefaults, displayNonScalars, displayConjugateDependencies), '\n'))
-            ##if(length(ind) == 1) return(invisible(samplerConfs[[ind]]))
-            ##return(invisible(samplerConfs[ind]))
+            if(!executionOrder && !identical(as.numeric(samplerExecutionOrder), as.numeric(seq_along(samplerConfs)))) {
+                cat('These sampler functions have a modified order of execution.\n')
+                cat('To print samplers in the modified order of execution, use printSamplers(executionOrder = TRUE).\n')
+            }
             return(invisible(NULL))
         },
 
@@ -455,6 +469,36 @@ Returns a list object, containing the setup function, run function, and addition
             def <- getDefinition(samplerConfs[[ind]]$samplerFunction)
             return(def)
         },
+
+        setSamplerExecutionOrder = function(order, print = FALSE) {
+            '
+Sets the ordering in which sampler functions will execute.
+
+This allows some samplers to be "turned off", or others to execute multiple times in a single MCMC iteration.  The ordering in which samplers execute can also be interleaved.
+
+Arguments:
+
+order: A numeric vector, specifying the ordering in which the sampler functions will execute.  The indices of execution specified in this numeric vector correspond to the enumeration of samplers printed by printSamplers(), or returned by getSamplers().  If this argument is omitted, the sampler execution ordering is reset so as to sequentially execute each sampler once.
+
+print: A logical argument specifying whether to print the current list of samplers in the modified order of execution (default FALSE).
+'
+            if(missing(order)) order <- seq_along(samplerConfs)
+            if(any(order < 1))                    stop('sampler execution ordering must all be positive integers')
+            if(any(order != floor(order)))        stop('sampler execution ordering must all be positive integers')
+            if(any(order > length(samplerConfs))) stop('sampler execution ordering contains indices larger than the number of sampler functions')
+            samplerExecutionOrder <<- order
+            if(print) printSamplers(executionOrder = TRUE)
+            return(invisible(NULL))
+        },
+
+        getSamplerExecutionOrder = function() {
+            '
+Returns a numeric vector, specifying the ordering of sampler function execution.
+
+The indices of execution specified in this numeric vector correspond to the enumeration of samplers printed by printSamplers(), or returned by getSamplers().
+'
+            return(samplerExecutionOrder)
+        },
         
         addMonitors = function(..., ind = 1, print = TRUE) {
             '
@@ -464,7 +508,7 @@ Arguments:
 
 ...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These are added onto the current monitors list.
 
-print: A logical argument, specifying whether to print all current monitors.
+print: A logical argument specifying whether to print all current monitors (default TRUE).
 
 Details: See the initialize() function
             '
@@ -499,7 +543,7 @@ Arguments:
 
 ...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These are added onto the current monitors2 list.
 
-print: A logical argument, specifying whether to print all current monitors.
+print: A logical argument specifying whether to print all current monitors (default TRUE).
 
 Details: See the initialize() function
             '
@@ -561,7 +605,7 @@ Arguments:
 
 thin: The new value for the thinning interval \'thin\'.
 
-print: A logical argument, specifying whether to print all current monitors.
+print: A logical argument specifying whether to print all current monitors (default TRUE).
 
 Details: See the initialize() function
             '
@@ -577,7 +621,7 @@ Arguments:
 
 thin2: The new value for the thinning interval \'thin2\'.
 
-print: A logical argument, specifying whether to print all current monitors.
+print: A logical argument specifying whether to print all current monitors (default TRUE).
 
 Details: See the initialize() function
             '
@@ -731,7 +775,7 @@ Arguments:
 
 empty: Logical argument (default = FALSE).  If TRUE, then a new samplerAssignmentRules object is created containing no rules.  The default behaviour creates new objects containing an exact copy of the default sampler assignment rules used by NIMBLE.
 
-print: Logical argument (default = FALSE).  If TRUE, the ordered list of sampler assignment rules is printed.
+print: Logical argument specifying whether to print the ordered list of sampler assignment rules (default FALSE).
 '
             ruleList <<- list()
             if(!empty) addDefaultSamplerAssignmentRules()
@@ -759,7 +803,7 @@ position: Index of the position to add the new rule.  By default, new rules are 
 
 name: Optional character string name for the sampler to be added, which is used by subsequent print methods.  If \'name\' is not provided, the \'sampler\' argument is used to generate the name.  Note, if the \'sampler\' argument is provided as an R expression making use of the addSampler method, then the \'name\' argument will not be passed on to the MCMC configuration object, and instead any call(s) to addSampler can explicitly make use of its own \'name\' argument.
 
-print: Logical argument (default = FALSE).  If TRUE, the newly-added sampler assignment rule is printed.
+print: Logical argument specifying whether to print the newly-added sampler assignment rule (default FALSE).
 '
             numRules <- length(ruleList)
             if(missing(position)) position <- numRules + 1  ## default adds new rules at the end
@@ -789,7 +833,7 @@ Arguments:
 
 ind: The indices of the current set of rules to keep.  Assuming there are 10 rules, reorder(1:5) will remove the final five rules, reorder(c(10,1:9)) will move the last (lowest priority) rule to the first position (highest priority), and reorder(8) deletes all rules except the eighth, making it the only (and hence first, highest priority) rule.
 
-print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list of sampler assignment rules is printed.
+print: Logical argument specifying whether to print the resulting ordered list of sampler assignment rules (default FALSE).
 '
             if(min(ind) < 1) stop('index is below one')
             if(max(ind) > length(ruleList)) stop('index is greater than number of rules')
