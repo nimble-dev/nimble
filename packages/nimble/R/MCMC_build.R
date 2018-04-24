@@ -167,12 +167,10 @@ buildMCMC <- nimbleFunction(
         }
         if(dim(samplerExecutionOrder)[1] > 0 & samplerExecutionOrder[1] == -1) {   ## runtime argument samplerExecutionOrder was not provided
             lengthSamplerExecutionOrderFromConf <- dim(samplerExecutionOrderFromConfPlusTwoZeros)[1] - 2
-            print('length of order from conf: ', lengthSamplerExecutionOrderFromConf)   #####XXXXXXXXXXXXXXXXXXXXXXXX
             if(lengthSamplerExecutionOrderFromConf == 0) samplerExecutionOrderToUse <- numeric(0) else samplerExecutionOrderToUse <- samplerExecutionOrderFromConfPlusTwoZeros[1:lengthSamplerExecutionOrderFromConf]
         } else {   ## runtime argument samplerExecutionOrder was provided
             samplerExecutionOrderToUse <- samplerExecutionOrder
         }
-        print('samplerExecutionOrderToUse = ', samplerExecutionOrderToUse)   ##### XXXXXXXXXXXXXXXXXXXXXXXX
         if(niter < progressBarLength+3 | !progressBarDefaultSetting) progressBar <- progressBar & 0  ## cheap way to avoid compiler warning
         if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; print('|'); cat('|') }
         progressBarIncrement <- niter/(progressBarLength+3)
@@ -180,18 +178,17 @@ buildMCMC <- nimbleFunction(
         progressBarNextFloor <- floor(progressBarNext)
         for(iter in 1:niter) {
             checkInterrupt()
-            if(time)
+            if(time) {
                 for(i in seq_along(samplerExecutionOrderToUse)) {
                     ind <- samplerExecutionOrderToUse[i]
                     samplerTimes[ind] <<- samplerTimes[ind] + run.time(samplerFunctions[[ind]]$run())
                 }
-            else {
+            } else {
                 for(i in seq_along(samplerExecutionOrderToUse)) {
                     ind <- samplerExecutionOrderToUse[i]
-                    print(ind)   #############XXXXXXXXXXXXXXXXX
                     samplerFunctions[[ind]]$run()
-                }     #############XXXXXXXXXXXXXXXXX
-            }      #############XXXXXXXXXXXXXXXXX
+                }
+            }
             if(iter %% thin  == 0)
                 nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thin,  nodes = monitors)
             if(iter %% thin2 == 0)
