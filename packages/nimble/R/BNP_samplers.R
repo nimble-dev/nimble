@@ -20,69 +20,103 @@ getTildeVar <- nimbleFunction(
 )
 
 
-sampler_G2 <- nimbleFunction(
+sampler_DP_density <- nimbleFunction(
   setup=function(model, mvSaved, useCompiled = TRUE){#, target, varNames
     # cheking the mvSaved object:
     mvSavedVar <- mvSaved$varNames
     m0 <- length(mvSavedVar) 
     if(m0 == 1){
-      stop('sampler_DP_density: You need at least one random variable depending on the random indexes') 
+      stop('sampler_DP_density: You need at least one random variable depending on the random indexes. \n') 
     }
     
     # We need the names of the variables to access content in mvSaved.
     nodes <- model$getNodeNames() 
-    VarNames <- model$getVarNames()
+    varNames <- model$getVarNames()
     
     stochNodes <- model$getNodeNames(stochOnly = TRUE)
-    #determNodes <- model$getNodeNames(determOnly = TRUE)
     dataNodes <- model$getNodeNames(dataOnly = TRUE) 
     distributions <- model$getDistribution(stochNodes) # finding  dCRP distr, if it exists, and the name of its node
     
-    dCRPindex <- which(distributions == 'dCRP')
-    if(length(dCRPindex) == 1) {
-      dCRPnode <- stochNodes[dCRPindex] 
-      dCRPvar <- model$getVarNames(nodes = dCRPnode)
+    #-- getting xi node and variable
+    dcrpIndex <- which(distributions == 'dCRP')
+    if(length(dcrpIndex) == 1) {
+      dcrpNode <- stochNodes[dcrpIndex] 
+      dcrpVar <- model$getVarNames(nodes = dCRPnode)
     } else {
-      if(length(dCRPindex) == 0 ){
-        stop('sampler_DP_density: There are no random indexes')
+      if(length(dcrpIndex) == 0 ){
+        stop('sampler_DP_density: There are no random indexes. \n')
       }
       ## how to get tilde variables for each dCRP? Maybe not even a problem
-      stop('sampler_DP_density: Currently only models with one node with a dCRP distribution are allowed')
+      stop('sampler_DP_density: Currently only models with one node with a dCRP distribution are allowed. \n')
     }
     
-    # a) Stochastic and deterministic parents of xi
-    parentNodes <- c()
+    #-- getting tilde variables
+    targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents=TRUE)
+    tildeVars <- NULL
+    itildeVar <- 1
+    
+    dep <- model$getDependencies(targetElements[1], self=FALSE)
+    for(i in 1:length(dep)){ 
+      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i]))
+      expr <- parse(text = expr)[[1]]
+      foundTarget <- all.vars(expr[[3]]) == dCRPvar#targetVar# 
+      if(length(foundTarget) > 0){
+        if(is.call(expr) && expr[[1]] == '['){
+          tildeVars[itildeVar] <- deparse(expr[[2]])
+          itildeVar <- itildeVar+1 
+        }
+      }
+    }
+    
+    
+    #-- a) Stochastic and deterministic parents of xi
+    # first get all dependencies of xi, including deterministic theta[i] <- thetatilde[xi[i]]:
+    allDep <- c()
     for(i in 1:length(stochNodes)){
       aux <- model$getDependencies(stochNodes[i])
       if (sum(aux==dCRPnode) > 0) { 
-        aux <- model$getDependencies(stochNodes[i], includeData=FALSE)
+        aux <- model$getDependencies(stochNodes[i], includeData=FALSE, )
         indexXi <- which(aux==dCRPnode)
-        parentNodes <- c(parentNodes, aux[-indexXi])  
+        allDep <- c(allDep, aux[-indexXi])  
       }
     }
-    # b) which parent nodes are in mvSaved:
+    # now eliminiate deterministic dependencies theta[i] <- thetatilde[xi[i]]: 
+    indexDetDep <- c()
+    for(i in 1:length(tildeVars)) {
+      stochDepTildeVars <- model$getDependencies(tildeVars[i], determOnly=TRUE)
+      if( sum(stochDepTildeVars[1] == allDep) >0 ) {
+        for(j in 1:length(stochDepTildeVars)) {
+          indexDetDep <- c(indexDetDep, which(stochDepTildeVars[j] == allDep))
+        }
+      }
+    }
+    parentNodes <- unique(allDep[-indexDetDep])
+    #-- b) which parent nodes are in mvSaved:
     savedParentNodes <- c()
     for(i in 1:length(parentNodes)) {
-      savedParentNodes <- c(savedParentNodes, parentNodes[parentNodes[i]==mvSavedVar])
+      savedParentNodes <- c(savedParentNodes, mvSavedVar[parentNodes[i]==mvSavedVar])
     }
     # c) create model with NA values
     modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
+    modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] # if not included in NA model: Error in if (counts > 0) { : missing value where TRUE/FALSE needed
     # d) copy savedParentNodes from mvSaved: doing thi I get an error
-    for(i in 1:length(savedParentNodes)) {
-      value <- mvSaved[[savedParentNodes[i]]][[1]]
-      modelWithNAs[[savedParentNodes[i]]] <- value
-      # e): 
-      #aux <- modelWithNAs$calculate(model$getDependencies(savedParentNodes[i]))
+    if( length(savedParentNodes) == 0 ) { # concentration parameter was not monitored
+      stop( paste('sampler_DP_density: Parent Node of', dcrpVar, 'variable is not being monitored. \n') )
+    } else {
+      for(i in 1:length(savedParentNodes)) {
+        value <- mvSaved[[savedParentNodes[i]]][[1]]
+        modelWithNAs[[savedParentNodes[i]]] <- value
+      }
+      # e): get an ERROR when savedParentNodes has less parents of xi than needed. 
+      for(i in 1:length(savedParentNodes)) {
+        modelWithNAs$calculate(model$getDependencies(savedParentNodes[i]))
+      }
+      # f)
+      dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
+      if( is.na(dcrpParam) ) {
+        stop(paste('sampler_DP_density: Some parent nodes of', dcrpVar, ' variable are not being monitored. \n'))
+      }
     }
-    
-    
-    
-    
-    # getting variable and node xi: 
-    # here I'm considering that xi is monitored and that there is only one dCRP distr in the model
-    # -- there could be more than one dCRP distribution in the model. In this case we have more
-    #    than one vector of xi, how do we identify the tilde variables for each?
-    
 
     
     
@@ -130,26 +164,7 @@ sampler_G2 <- nimbleFunction(
     }
     
     
-    # getting tilde variables
-    # getting tilde variables
-    targetElements <- model$expandNodeNames(dCRPNode, returnScalarComponents=TRUE)
-    #nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
-    
-    tildeVars <- NULL
-    itildeVar <- 1
-    
-    dep <- model$getDependencies(targetElements[1], self=FALSE)
-    for(i in 1:length(dep)){ 
-      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i]))
-      expr <- parse(text = expr)[[1]]
-      foundTarget <- all.vars(expr[[3]]) == dCRPvar#targetVar# 
-      if(length(foundTarget) > 0){
-        if(is.call(expr) && expr[[1]] == '['){
-          tildeVars[itildeVar] <- deparse(expr[[2]])
-          itildeVar <- itildeVar+1 
-        }
-      }
-    }
+
     p <- length(tildeVarNames)
     
     # storaging object:

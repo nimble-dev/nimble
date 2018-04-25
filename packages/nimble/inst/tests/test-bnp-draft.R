@@ -14,18 +14,21 @@ library(nimble)
 
 
 #--------------------------------------------------
-# no deterministic nodes
 Code=nimbleCode(
   {
     for(i in 1:N3){
       thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
       #s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
     }
-    xi[1:N2] ~ dCRP(conc=conc, size=N2)
+    xi[1:N2] ~ dCRP(conc0 + conc1, size=N2)
+    conc1 ~ dgamma(1,1)
+    conc0 ~ dgamma(a,b)
+    b ~ dgamma(1,1)
+    a ~ dgamma(1,1)
     
     for(i in 1:N){
       theta[i] <- thetatilde[xi[i]]
-      y[i] ~ dnorm(theta[i], var=2)#s2tilde[xi[i]]
+      y[i] ~ dnorm(theta[i], var=2)
     }
     conc<-1;a0<-1 ; b0<- 0.5; mu0<-0; tau20<-40; 
   }
@@ -36,7 +39,7 @@ conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
 Consts=list(N=50, N2=50, N3=50)
 set.seed(1)
 aux=sample(1:10, size=Consts$N2, replace=TRUE)
-Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20))) #, s2tilde=rinvgamma(Consts$N3, a0, b0)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)), conc0=1, conc1=1, a=1,  b=1)
 
 s20=4; s21=4
 mu01=5; mu11=-5
@@ -44,6 +47,40 @@ Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))
 
 model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
 cmodel<-compileNimble(model)
+
+#-- MCMC configuration:
+modelConf<-configureMCMC(model, print=FALSE)
+modelConf$printSamplers(c("xi"))
+#modelConf$addMonitors(c("conc0"))
+modelMCMC=buildMCMC(modelConf)
+
+
+#-- compiling the sampler
+CmodelMCMC=compileNimble(modelMCMC, project=model,
+                            resetFunctions=TRUE, showCompilerOutput = TRUE)
+
+#-- MCMC samples
+set.seed(1)
+nsave=100
+t1=proc.time()
+CmodelMCMC$run(nsave)
+proc.time()-t1
+
+mvSaved <- CmodelMCMC$mvSamples
+
+
+
+
+
+#-- results:
+N=Consts$N
+samples=as.matrix(CmodelMCMC$mvSamples)
+
+
+
+
+
+
 
 # no deterministic nodes
 Code=nimbleCode(
