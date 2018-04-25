@@ -21,55 +21,69 @@ getTildeVar <- nimbleFunction(
 
 
 sampler_G2 <- nimbleFunction(
-  # name = 'sampler_G'
-  
   setup=function(model, mvSaved, useCompiled = TRUE){#, target, varNames
     # cheking the mvSaved object:
-    m0 <- length(mvSaved$varNames) 
-    if( m0 == 1 ){
-      stop('sampler_G2: you need at least one random variable depending on the random indexes.\n') # 
+    mvSavedVar <- mvSaved$varNames
+    m0 <- length(mvSavedVar) 
+    if(m0 == 1){
+      stop('sampler_DP_density: You need at least one random variable depending on the random indexes') 
     }
     
-    # I need the names of the variables to access content in mvSaved.
+    # We need the names of the variables to access content in mvSaved.
     nodes <- model$getNodeNames() 
     VarNames <- model$getVarNames()
     
-    detNodes <- model$getNodeNames(determOnly=TRUE) 
-    stochNodes <- model$getNodeNames(stochOnly=TRUE) 
-    dataNodes <- model$getNodeNames(dataOnly=TRUE) 
+    stochNodes <- model$getNodeNames(stochOnly = TRUE)
+    #determNodes <- model$getNodeNames(determOnly = TRUE)
+    dataNodes <- model$getNodeNames(dataOnly = TRUE) 
     distributions <- model$getDistribution(stochNodes) # finding  dCRP distr, if it exists, and the name of its node
+    
+    dCRPindex <- which(distributions == 'dCRP')
+    if(length(dCRPindex) == 1) {
+      dCRPnode <- stochNodes[dCRPindex] 
+      dCRPvar <- model$getVarNames(nodes = dCRPnode)
+    } else {
+      if(length(dCRPindex) == 0 ){
+        stop('sampler_DP_density: There are no random indexes')
+      }
+      ## how to get tilde variables for each dCRP? Maybe not even a problem
+      stop('sampler_DP_density: Currently only models with one node with a dCRP distribution are allowed')
+    }
+    
+    # a) Stochastic and deterministic parents of xi
+    parentNodes <- c()
+    for(i in 1:length(stochNodes)){
+      aux <- model$getDependencies(stochNodes[i])
+      if (sum(aux==dCRPnode) > 0) { 
+        aux <- model$getDependencies(stochNodes[i], includeData=FALSE)
+        indexXi <- which(aux==dCRPnode)
+        parentNodes <- c(parentNodes, aux[-indexXi])  
+      }
+    }
+    # b) which parent nodes are in mvSaved:
+    savedParentNodes <- c()
+    for(i in 1:length(parentNodes)) {
+      savedParentNodes <- c(savedParentNodes, parentNodes[parentNodes[i]==mvSavedVar])
+    }
+    # c) create model with NA values
+    modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
+    # d) copy savedParentNodes from mvSaved: doing thi I get an error
+    for(i in 1:length(savedParentNodes)) {
+      value <- mvSaved[[savedParentNodes[i]]][[1]]
+      modelWithNAs[[savedParentNodes[i]]] <- value
+      # e): 
+      #aux <- modelWithNAs$calculate(model$getDependencies(savedParentNodes[i]))
+    }
+    
+    
+    
     
     # getting variable and node xi: 
     # here I'm considering that xi is monitored and that there is only one dCRP distr in the model
     # -- there could be more than one dCRP distribution in the model. In this case we have more
     #    than one vector of xi, how do we identify the tilde variables for each?
     
-    dCRPdistrindex <- distributions == 'dCRP'
-    if(sum(dCRPdistrindex) == 1){
-      dCRPDistr <- distributions[dCRPdistrindex]
-      dCRPNode <- stochNodes[ dCRPdistrindex ] # xi nodes. Is the order in stochNodes and their distributions always the same?!?!?!!
-      dCRPVar <- model$getVarNames(nodes=dCRPNode)
-      #dCRPVarindex <- FALSE
-      #i=1
-      #while(dCRPVarindex == FALSE && i<=length(VarNames)){
-      #  aux <- model$getDistribution(VarNames[i])
-      #  aux2 <- aux[1] == 'dCRP'
-      #  if(sum(aux2, na.rm=TRUE)==0){
-      #    i=i+1
-      #  }else{
-      #    dCRPVar <- VarNames[i]
-      #    dCRPVarindex <- TRUE
-      #  }
-      #}
-    }else{
-      if( sum(dCRPdistrindex) == 0 ){
-        stop('sampler_G2: there are no random indexes.\n')
-      }
-      if( sum(dCRPdistrindex)>1 ){ # how to get tilde variables for each dCRP? Maybe no even a problem
-        stop('sampler_G2: only one dCRP distribution is allowed for now.\n')
-      }
-    }
-    
+
     
     
     # getting variable and node conc,  assuming there is only one conc parameter
@@ -110,86 +124,38 @@ sampler_G2 <- nimbleFunction(
     
     N <- length(dataNodes) # sample size
     
-    if(Trunc > N){
-      print('sampler_G2: for an approximation error smaller than 1e-10, Trunc > N.\n')
+    if(trunc > N){
+      ## Claudia, can you make this message more clear? I don't know what it means.
+      print('for an approximation error smaller than 1e-10, trunc > N.')
     }
     
     
     # getting tilde variables
+    # getting tilde variables
     targetElements <- model$expandNodeNames(dCRPNode, returnScalarComponents=TRUE)
     #nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
-    tildeVarNames=c()
-    itildeVar <- 1
-    stochDepOnly <- FALSE
     
-    Dep <- model$getDependencies(targetElements[1], self=FALSE)
-    for(i in 1:length(Dep)){ 
-      Depi <- Dep[i]
-      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
+    tildeVars <- NULL
+    itildeVar <- 1
+    
+    dep <- model$getDependencies(targetElements[1], self=FALSE)
+    for(i in 1:length(dep)){ 
+      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i]))
       expr <- parse(text = expr)[[1]]
-      if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
-        itildeVar <- itildeVar+1 
+      foundTarget <- all.vars(expr[[3]]) == dCRPvar#targetVar# 
+      if(length(foundTarget) > 0){
+        if(is.call(expr) && expr[[1]] == '['){
+          tildeVars[itildeVar] <- deparse(expr[[2]])
+          itildeVar <- itildeVar+1 
+        }
       }
     }
-    
-    
-    #if(nInterm == 0){ stochDepOnly <- TRUE } # only stoch dependency on xi
-    #if(nInterm >= 1){
-    #  detDep <- model$getDependencies(targetElements[1], determOnly = TRUE)
-    #  for(i in 1:length(detDep)){ # find the deterministic variables that depend xi
-    #    detDepi <- detDep[i]
-    #detDepExpr <- model$getValueExpr(detDepi)
-    #    expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(detDepi))
-    #    expr <- parse(text = expr)[[1]]
-    #    if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElements[1]){
-    #      tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
-    #      itildeVar <- itildeVar+1 
-    #    }
-    #if(is.call(detDepExpr) && detDepExpr[[1]]=='['){ # deter. nodes that can depend on xi
-    #  if(detDepExpr[[3]] == 'xi[1]'){
-    #    tildeVarNames[itildeVar] <- VarNames[which(VarNames==detDepExpr[[2]])]
-    #    itildeVar <- itildeVar+1 
-    #  }
-    #}
-    #if(is.call(detDepExpr) && detDepExpr[[1]]!='[' && length(detDep)==1){ # another case of stochDepe only: where the deterministic node (only 1) is the reparam of variance 
-    #  stochDepOnly <- TRUE # if length(detDep)>1 ????
-    #}
-    #  }
-    #}
-    #if(stochDepOnly){
-    #  stochDep1 <- model$getDependencies(targetElements[1], self = FALSE) # y[1] and reparametrization
-    #stochDep2 <- model$getDependencies(targetElements[1], self = FALSE, stochOnly=TRUE) # y[1]
-    #  paramExprs1 <- nimble:::cc_getNodesInExpr(model$getValueExpr(stochDep1)) #e.g., 'mean = theta[xi[i]], var = sigma' 
-    #paramExprs2 <- nimble:::cc_getNodesInExpr(model$getValueExpr(stochDep2)) #e.g., 'mean = theta[xi[i]], var = sigma' 
-    
-    #  for(i in 1:length(paramExprs1)){ # we get the tilde variance
-    #    expr <- parse(text = paramExprs1[i])[[1]]
-    #    if(is.call(expr) && expr[[1]]=='['){ # case where we have random sigma and its reparametrication; can it be >3?
-    #      if(expr[[3]] == 'xi[1]'){
-    #        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
-    #        itildeVar <- itildeVar+1 
-    #      }
-    #    }
-    #  }
-    #  for(i in 1:length(paramExprs2)){ # we get the tilde mean
-    #    expr <- parse(text = paramExprs2[i])[[1]]
-    #    if(is.call(expr) && expr[[1]]=='['){ # case where we have random sigm yand its reparametrication; can it be >3?
-    #      if(expr[[3]] == 'xi[1]'){
-    #        tildeVarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
-    #        itildeVar <- itildeVar+1 
-    #      }
-    #    }
-    #  }
-    #}
-    #tildeVarNames <- unique(tildeVarNames)
-    
     p <- length(tildeVarNames)
     
     # storaging object:
     mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
     mv <- modelValues(mvConf, m = 1)
-    getTildeVarList <- nimbleFunctionList(getTildeVarVirtual)
+    getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
     #getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
     for(j in 1:p){
       getTildeVarList[[j]] <- getTildeVar(mvSaved, tildeVarNames[j])
