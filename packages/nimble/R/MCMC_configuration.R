@@ -1002,6 +1002,7 @@ makeNewConfFromOldConf <- function(oldMCMCconf){
     newMCMCconf$thin <- oldMCMCconf$thin
     newMCMCconf$thin2 <- oldMCMCconf$thin2
     newMCMCconf$samplerConfs <- oldMCMCconf$samplerConfs
+    newMCMCconf$samplerExecutionOrder <- oldMCMCconf$samplerExecutionOrder
     newMCMCconf$controlDefaults <- oldMCMCconf$controlDefaults
     newMCMCconf$namedSamplerLabelMaker <- oldMCMCconf$namedSamplerLabelMaker
     newMCMCconf$mvSamples1Conf <- oldMCMCconf$mvSamples1Conf
