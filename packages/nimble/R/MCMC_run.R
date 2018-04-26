@@ -77,7 +77,10 @@
 #'
 #' @export
 runMCMC <- function(mcmc,
-                    niter = 10000, nburnin = 0, nchains = 1,
+                    niter = 10000,
+                    nburnin = 0,
+                    thin,
+                    nchains = 1,
                     inits,
                     setSeed = FALSE,
                     progressBar = TRUE,
@@ -99,16 +102,15 @@ runMCMC <- function(mcmc,
     if(!is.model(model)) stop('something went wrong')
     samplesList <- vector('list', nchains)
     names(samplesList) <- paste0('chain', 1:nchains)
-    if(mcmc$thin > 1 && nburnin > 0) message('The behavior of runMCMC() has recently changed with respect to the nburnin argument.  Previously, nburnin specified the number of *post-thinning* MCMC samples to discard.  It has been changed to now specify the number of *pre-thinning* MCMC samples to discard.  So, the final number of samples returned will be floor((niter-nburnin)/thin).  This change will result in more posterior samples being returned, but at the expense of the leading samples being from earlier in the full MCMC chain, thus having had less time to "forget" the initial conditions.')
+    thinToUse <- if(!missing(thin)) thin else mcmc$thinFromConfVec[1]
+    if(thinToUse > 1 && nburnin > 0) message('The behavior of runMCMC() has recently changed with respect to the nburnin argument.  Previously, nburnin specified the number of *post-thinning* MCMC samples to discard.  It has been changed to now specify the number of *pre-thinning* MCMC samples to discard.  So, the final number of samples returned will be floor((niter-nburnin)/thin).  This change will result in more posterior samples being returned, but at the expense of the leading samples being from earlier in the full MCMC chain, thus having had less time to "forget" the initial conditions.')
     for(i in 1:nchains) {
         if(nimbleOptions('verbose')) message('running chain ', i, '...')
         ##if(setSeed) set.seed(i)
         if(is.numeric(setSeed)) {
             if(length(setSeed) == 1) {
                 set.seed(setSeed)
-            } else {
-                if(length(setSeed) == nchains) set.seed(setSeed[i]) else stop('setSeed argument has different length from nchains')
-            }
+            } else { if(length(setSeed) == nchains) set.seed(setSeed[i]) else stop('setSeed argument has different length from nchains') }
         } else if(setSeed) set.seed(i)
         if(!missing(inits)) {
             if(is.function(inits)) {
@@ -123,9 +125,9 @@ runMCMC <- function(mcmc,
             mcmc$run(nburnin, progressBar = FALSE)
             resize(mcmc$mvSamples,  0)
             resize(mcmc$mvSamples2, 0)   ## not technically necessary
-            mcmc$run(niter-nburnin, reset = FALSE, progressBar = progressBar)
+            mcmc$run(niter-nburnin, thin = thinToUse, reset = FALSE, progressBar = progressBar)
         } else {
-            mcmc$run(niter, progressBar = progressBar)
+            mcmc$run(niter, thin = thinToUse, progressBar = progressBar)
         }
         samplesList[[i]] <- as.matrix(mcmc$mvSamples)
     }
@@ -244,10 +246,23 @@ runMCMC <- function(mcmc,
 #' @author Daniel Turek
 #' 
 #' @export
-nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
-                       monitors, thin = 1, niter = 10000, nburnin = 0, nchains = 1,
-                       check = TRUE, setSeed = FALSE, progressBar = TRUE,
-                       samples = TRUE, samplesAsCodaMCMC = FALSE, summary = FALSE, WAIC = FALSE) {
+nimbleMCMC <- function(code,
+                       constants = list(),
+                       data = list(),
+                       inits,
+                       model,
+                       monitors,
+                       thin = 1,
+                       niter = 10000,
+                       nburnin = 0,
+                       nchains = 1,
+                       check = TRUE,
+                       setSeed = FALSE,
+                       progressBar = TRUE,
+                       samples = TRUE,
+                       samplesAsCodaMCMC = FALSE,
+                       summary = FALSE,
+                       WAIC = FALSE) {
     #### process 'code' argument, to accept a filename, or a function
     ##if(is.character(code) || is.function(code)) {
     ##    if(is.function(code)) modelText <- mergeMultiLineStatements(deparse(body(code)))
@@ -260,6 +275,7 @@ nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
     ##}
     if(missing(code) && missing(model)) stop('must provide either code or model argument')
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
+    if(inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
     if(missing(model)) {  ## model object not provided
         if(!missing(inits)) {
             if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')

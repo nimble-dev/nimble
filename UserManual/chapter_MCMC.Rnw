@@ -497,7 +497,7 @@ Cmcmc$Rmcmc$run(niter = 1000)
 
 Once an MCMC algorithm has been created using \cd{buildMCMC}, the function \cd{runMCMC} can be used to run multiple chains and extract posterior samples, summary statistics and/or a WAIC value.  This is a simpler approach to executing an MCMC algorithm, than the process of executing and extracting samples as described in Sections \ref{executing-the-mcmc-algorithm} and \ref{sec:extracting-samples}.
 
-\cd{runMCMC} also provides several user-friendly options such as burn-in, running multiple chains, and different initial values for each chain.  However, using \cd{runMCMC} does not support several lower-level options, such as timing the individual samplers internal to the MCMC, continuing an exisiting MCMC run (picking up where it left off), or modifying the sampler execution ordering.
+\cd{runMCMC} also provides several user-friendly options such as burn-in, thinning, running multiple chains, and different initial values for each chain.  However, using \cd{runMCMC} does not support several lower-level options, such as timing the individual samplers internal to the MCMC, continuing an exisiting MCMC run (picking up where it left off), or modifying the sampler execution ordering.
 
 \cd{runMCMC} takes arguments that will control the following aspects of the MCMC:
 
@@ -507,6 +507,7 @@ Once an MCMC algorithm has been created using \cd{buildMCMC}, the function \cd{r
 \item Number of iterations in each chain;
 \item Number of chains;
 \item Number of burn-in samples to discard from each chain;
+\item Thinning interval for recording samples;
 \item Initial values, or a function for generating initial values for each chain;
 \item Setting the random number seed;
 \item Returning the posterior samples as a \cd{coda} \cd{mcmc} object;
@@ -516,7 +517,7 @@ Once an MCMC algorithm has been created using \cd{buildMCMC}, the function \cd{r
 
 % See \cd{help(runMCMC)} for details of these arguments.
 
-% Other features of the MCMC can still be customized when using \cd{runMCMC}, which is done using the MCMC configuration object.  This includes setting monitors, customizing samplers, or setting a thinning interval (see Section \ref{sec:customizing-mcmc-conf}).  The MCMC configuration object is then used to create an MCMC algorithm, which is compiled and passed as an argument to \cd{runMCMC}.
+% Other features of the MCMC can still be customized when using \cd{runMCMC}, which is done using the MCMC configuration object.  This includes setting monitors, or customizing samplers (see Section \ref{sec:customizing-mcmc-conf}).  The MCMC configuration object is then used to create an MCMC algorithm, which is compiled and passed as an argument to \cd{runMCMC}.
 
 % When running a single chain, \cd{runMCMC} returns a matrix of MCMC samples (as described in Section \ref{sec:extracting-samples}).  When running multiple chains, a list of sample matrices is returned.  Using the argument \cd{samplesAsCodaMCMC=TRUE}, a \cd{coda} \cd{mcmc} object, or in the case of multiple chains, a \cd{coda} \cd{mcmc.list} object is returned instead.
 
@@ -526,9 +527,10 @@ The following examples demonstrate some uses of \cd{runMCMC}, and assume the exi
 ## run a single chain, and return a matrix of samples
 mcmc.out <- runMCMC(Cmcmc)
 
-## run three chains of 10,000 samples, discard a burn-in of 1,000,
+## run three chains of 10000 samples, discard initial burnin of 1000,
+## record samples thereafter using a thinning interval of 10,
 ## and return of list of sample matrices
-mcmc.out <- runMCMC(Cmcmc, niter = 10000, nburnin = 1000, nchains = 3)
+mcmc.out <- runMCMC(Cmcmc, niter=10000, nburnin=1000, thin=10, nchains=3)
 
 ## run three chains, returning posterior samples, summary statistics,
 ## and the WAIC value for each chain
@@ -557,6 +559,8 @@ See \cd{help(runMCMC)} for further details.
 \label{executing-the-mcmc-algorithm}
 
 The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method \cd{mcmc\$run} (see \cd{help(buildMCMC)} in R).  The \cd{run} method has one required argument, \cd{niter}, the number of iterations to be run.  %Calling \cd{mcmc\$run(niter)} causes the full list of samplers (as determined by the \cd{MCMCconf} object) to be executed \cd{niter} times, and the monitored variables to be stored into the internal \cd{mvSamples} and/or \cd{mvSamples2} objects as governed by the corresponding thinning intervals.
+
+The \cd{run} method has optional arguments \cd{thin} and \cd{thin2}.  These can be used to specify thinning intervals for recording samples (corresponding to \cd{monitors} and \cd{monitors2}).  If either of these arguments are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
 
 The \cd{run} method has an optional \cd{reset} argument.  When \cd{reset = TRUE} (the default value), the following occurs prior to running the MCMC:
 \begin{itemize}

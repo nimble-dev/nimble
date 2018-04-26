@@ -575,7 +575,7 @@ Prints all current monitors and monitors2
 
 Details: See the initialize() function
             '
-            if(length(monitors)  > 0)   cat(paste0('thin = ', thin,  ': ', paste0(monitors,  collapse = ', '), '\n'))
+            if(length(monitors)  > 0)   cat(paste0('thin = ',  thin,  ': ', paste0(monitors,  collapse = ', '), '\n'))
             if(length(monitors2) > 0)   cat(paste0('thin2 = ', thin2, ': ', paste0(monitors2, collapse = ', '), '\n'))
         },
 
@@ -609,7 +609,7 @@ print: A logical argument specifying whether to print all current monitors (defa
 
 Details: See the initialize() function
             '
-            thin  <<- thin
+            thin <<- thin
             if(print) printMonitors()
             return(invisible(NULL))
         },
