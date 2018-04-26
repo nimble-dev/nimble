@@ -41,7 +41,7 @@ sampler_DP_density <- nimbleFunction(
     dcrpIndex <- which(distributions == 'dCRP')
     if(length(dcrpIndex) == 1) {
       dcrpNode <- stochNodes[dcrpIndex] 
-      dcrpVar <- model$getVarNames(nodes = dCRPnode)
+      dcrpVar <- model$getVarNames(nodes = dcrpNode)
     } else {
       if(length(dcrpIndex) == 0 ){
         stop('sampler_DP_density: There are no random indexes. \n')
@@ -59,7 +59,7 @@ sampler_DP_density <- nimbleFunction(
     for(i in 1:length(dep)){ 
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i]))
       expr <- parse(text = expr)[[1]]
-      foundTarget <- all.vars(expr[[3]]) == dCRPvar#targetVar# 
+      foundTarget <- all.vars(expr[[3]]) == dcrpVar#targetVar# 
       if(length(foundTarget) > 0){
         if(is.call(expr) && expr[[1]] == '['){
           tildeVars[itildeVar] <- deparse(expr[[2]])
@@ -74,9 +74,9 @@ sampler_DP_density <- nimbleFunction(
     allDep <- c()
     for(i in 1:length(stochNodes)){
       aux <- model$getDependencies(stochNodes[i])
-      if (sum(aux==dCRPnode) > 0) { 
+      if (sum(aux==dcrpNode) > 0) { 
         aux <- model$getDependencies(stochNodes[i], includeData=FALSE, )
-        indexXi <- which(aux==dCRPnode)
+        indexXi <- which(aux==dcrpNode)
         allDep <- c(allDep, aux[-indexXi])  
       }
     }
