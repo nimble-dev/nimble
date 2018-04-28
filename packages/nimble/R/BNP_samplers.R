@@ -24,10 +24,6 @@ sampler_DP_density <- nimbleFunction(
   setup=function(model, mvSaved, useCompiled = TRUE){#, target, varNames
     # cheking the mvSaved object:
     mvSavedVar <- mvSaved$varNames
-    m0 <- length(mvSavedVar) 
-    if(m0 == 1){
-      stop('sampler_DP_density: You need at least one random variable depending on the random indexes. \n') 
-    }
     
     # We need the names of the variables to access content in mvSaved.
     nodes <- model$getNodeNames() 
@@ -68,6 +64,16 @@ sampler_DP_density <- nimbleFunction(
       }
     }
     
+    #-- checking that tilde variables are monitored in mvSaved object:
+    counts <- 0
+    for(i in 1:length(tildeVars)) {
+      if( sum(tildeVars[i] == mvSavedVar) == 1 ) {
+        counts <- counts + 1
+      }
+    }
+    if( counts != length(tildeVars) ) {
+      stop(paste('sampler_DP_density: Some unique variable is not monitored in model values object. \n'))
+    }
     
     #-- a) Stochastic and deterministic parents of xi
     # first get all dependencies of xi, including deterministic theta[i] <- thetatilde[xi[i]]:
@@ -80,101 +86,117 @@ sampler_DP_density <- nimbleFunction(
         allDep <- c(allDep, aux[-indexXi])  
       }
     }
-    # now eliminiate deterministic dependencies theta[i] <- thetatilde[xi[i]]: 
-    indexDetDep <- c()
-    for(i in 1:length(tildeVars)) {
-      stochDepTildeVars <- model$getDependencies(tildeVars[i], determOnly=TRUE)
-      if( sum(stochDepTildeVars[1] == allDep) >0 ) {
-        for(j in 1:length(stochDepTildeVars)) {
-          indexDetDep <- c(indexDetDep, which(stochDepTildeVars[j] == allDep))
+    if( length(allDep) == 0 ) { # conc parameter id fixed
+      fixedConc <- TRUE
+    } else { # conc parameter is random and need to find the parents of xi to check the mv object
+      fixedConc <- FALSE
+      # now eliminiate deterministic dependencies theta[i] <- thetatilde[xi[i]]: 
+      indexDetDep <- c()
+      for(i in 1:length(tildeVars)) {
+        stochDepTildeVars <- model$getDependencies(tildeVars[i], determOnly=TRUE)
+        if( sum(stochDepTildeVars[1] == allDep) >0 & is.na(sum(stochDepTildeVars[1] == allDep))==FALSE ) { # second condition checks that there are deterministic nodes
+          for(j in 1:length(stochDepTildeVars)) {
+            indexDetDep <- c(indexDetDep, which(stochDepTildeVars[j] == allDep))
+          }
+        }
+      }
+      if( is.null(indexDetDep) ) {
+        parentNodes <- unique(allDep)  
+      } else {
+        parentNodes <- unique(allDep[-indexDetDep])  
+      }
+      
+      #-- b) which parent nodes are in mvSaved:
+      savedParentNodes <- c()
+      for(i in 1:length(parentNodes)) {
+        savedParentNodes <- c(savedParentNodes, mvSavedVar[parentNodes[i]==mvSavedVar])
+      }
+      # c) create model with NA values
+      modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
+      modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] # if not included in NA model: Error in if (counts > 0) { : missing value where TRUE/FALSE needed
+      # d) copy savedParentNodes from mvSaved: doing thi I get an error
+      if( length(savedParentNodes) == 0 ) { # concentration parameter was not monitored
+        stop( paste('sampler_DP_density: Some variable of conc parameter is not being monitored in model values object. \n') )
+      } else {
+        for(i in 1:length(savedParentNodes)) {
+          value <- mvSaved[[savedParentNodes[i]]][[1]]
+          modelWithNAs[[savedParentNodes[i]]] <- value
+          # e): do calculate of model with NA
+          modelWithNAs$calculate(model$getDependencies(savedParentNodes[i]))
+        }
+        # f)
+        dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
+        if( is.na(dcrpParam) ) {
+          stop(paste('sampler_DP_density: Some variable of conc parameter is not being monitored in model values object. \n'))
         }
       }
     }
-    parentNodes <- unique(allDep[-indexDetDep])
-    #-- b) which parent nodes are in mvSaved:
-    savedParentNodes <- c()
-    for(i in 1:length(parentNodes)) {
-      savedParentNodes <- c(savedParentNodes, mvSavedVar[parentNodes[i]==mvSavedVar])
-    }
-    # c) create model with NA values
-    modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
-    modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] # if not included in NA model: Error in if (counts > 0) { : missing value where TRUE/FALSE needed
-    # d) copy savedParentNodes from mvSaved: doing thi I get an error
-    if( length(savedParentNodes) == 0 ) { # concentration parameter was not monitored
-      stop( paste('sampler_DP_density: Parent Node of', dcrpVar, 'variable is not being monitored. \n') )
-    } else {
-      for(i in 1:length(savedParentNodes)) {
-        value <- mvSaved[[savedParentNodes[i]]][[1]]
-        modelWithNAs[[savedParentNodes[i]]] <- value
-      }
-      # e): get an ERROR when savedParentNodes has less parents of xi than needed. 
-      for(i in 1:length(savedParentNodes)) {
-        modelWithNAs$calculate(model$getDependencies(savedParentNodes[i]))
-      }
-      # f)
-      dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
-      if( is.na(dcrpParam) ) {
-        stop(paste('sampler_DP_density: Some parent nodes of', dcrpVar, ' variable are not being monitored. \n'))
-      }
-    }
-
-    
-    
-    # getting variable and node conc,  assuming there is only one conc parameter
-    concNode <- FALSE
-    i <- 1
-    while(concNode == FALSE){ # finds the (first) node that depends on dCRPNode.
-      aux <- model$getDependencies(nodes[i], self=FALSE)
-      if(sum(aux == dCRPNode , na.rm=TRUE)==1){
-        concNode <- nodes[i]
-      }else{
-        i <- i+1
-      }
-    } 
-    concDistr <- model$getDistribution(concNode) # identifies if 'conc' is random or not
-    if(is.na(concDistr)){
-      concRnd <- FALSE
-      concVar <- mvSaved$varNames[1] ## in this case, concVar won't be used, but must be a name in the mvSaved in order to compile
-    }else{
-      concRnd <- TRUE
-      concVar <- concNode
-    }
-    # we could do this in te run code....
-    AproxError <- 1e-10
-    if(concRnd){ # defining truncation
-      if(useCompiled){
-        conc <- mvSaved$CobjectInterface[[concVar]]
-      }else{
-        conc <- mvSaved[[concVar]]
-      }
-      concHat <- mean(unlist(conc))
-      Trunc <- ceiling(log(AproxError)/log(concHat/(concHat+1))+1) # gives an error of at most AproxError.
-      algoConc <- 0
-    }else{
-      conc <- model$getParam(dCRPNode, 'conc') 
-      Trunc <- ceiling(log(AproxError)/log(conc/(conc+1))+1)
-      algoConc <- conc
-    }
-    
-    N <- length(dataNodes) # sample size
-    
-    if(trunc > N){
-      ## Claudia, can you make this message more clear? I don't know what it means.
-      print('for an approximation error smaller than 1e-10, trunc > N.')
-    }
-    
     
 
-    p <- length(tildeVarNames)
     
-    # storaging object:
-    mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
-    mv <- modelValues(mvConf, m = 1)
+    p <- length(tildeVars) 
+    
+    # storaging object: matrix with nrow = numer of iteration of MCMC and ncol = (1 + p)*Trunc
+    #                   Trunc is an integer given by the values of conc parameter
+    #mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
+    #mv <- modelValues(mvConf, m = 1)
+    #samples_den <- matrix(0, nrow=1, ncol=1) # initial dimension of output matrix
     getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
     #getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
     for(j in 1:p){
-      getTildeVarList[[j]] <- getTildeVar(mvSaved, tildeVarNames[j])
+      getTildeVarList[[j]] <- getTildeVar(mvSaved, tildeVars[j])
     }
+    
+    # create the matrix
+    # in run code: get the values of the concentration parameter
+    #             compute an update of the truncation parameter for the stcik breaking representation of G
+    
+    # getting variable and node conc,  assuming there is only one conc parameter
+    #concNode <- FALSE
+    #i <- 1
+    #while(concNode == FALSE){ # finds the (first) node that depends on dCRPNode.
+    #  aux <- model$getDependencies(nodes[i], self=FALSE)
+    #  if(sum(aux == dCRPNode , na.rm=TRUE)==1){
+    #    concNode <- nodes[i]
+    #  }else{
+    #    i <- i+1
+    #  }
+    #} 
+    #concDistr <- model$getDistribution(concNode) # identifies if 'conc' is random or not
+    #if(is.na(concDistr)){
+    #  concRnd <- FALSE
+    #  concVar <- mvSaved$varNames[1] ## in this case, concVar won't be used, but must be a name in the mvSaved in order to compile
+    #}else{
+    #  concRnd <- TRUE
+    #  concVar <- concNode
+    #}
+    # we could do this in te run code....
+    #AproxError <- 1e-10
+    #if(concRnd){ # defining truncation
+    #  if(useCompiled){
+    #    conc <- mvSaved$CobjectInterface[[concVar]]
+    #  }else{
+    #    conc <- mvSaved[[concVar]]
+    #  }
+    #  concHat <- mean(unlist(conc))
+    #  Trunc <- ceiling(log(AproxError)/log(concHat/(concHat+1))+1) # gives an error of at most AproxError.
+    #  algoConc <- 0
+    #}else{
+    #  conc <- model$getParam(dCRPNode, 'conc') 
+    #  Trunc <- ceiling(log(AproxError)/log(conc/(conc+1))+1)
+    #  algoConc <- conc
+    #}
+    
+    #N <- length(dataNodes) # sample size
+    
+    #if(trunc > N){
+    #  ## Claudia, can you make this message more clear? I don't know what it means.
+    #  print('for an approximation error smaller than 1e-10, trunc > N.')
+    #}
+    
+    
+
+    
   },
   
   run=function(){
