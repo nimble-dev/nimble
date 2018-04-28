@@ -51,7 +51,7 @@ cmodel<-compileNimble(model)
 #-- MCMC configuration:
 modelConf<-configureMCMC(model, print=FALSE)
 modelConf$printSamplers(c("xi"))
-#modelConf$addMonitors(c("conc0"))
+modelConf$addMonitors(c("conc0"))
 modelMCMC=buildMCMC(modelConf)
 
 
@@ -69,6 +69,101 @@ proc.time()-t1
 mvSaved <- CmodelMCMC$mvSamples
 
 
+## adding monitors:
+modelConf$addMonitors(c("conc0"))
+modelMCMC=buildMCMC(modelConf)
+
+
+#-- compiling the sampler
+CmodelMCMC=compileNimble(modelMCMC, project=model,
+                         resetFunctions=TRUE, showCompilerOutput = TRUE)
+
+#-- MCMC samples
+set.seed(1)
+nsave=100
+t1=proc.time()
+CmodelMCMC$run(nsave)
+proc.time()-t1
+
+mvSaved <- CmodelMCMC$mvSamples
+
+
+
+#-- tilde variables not being monitored:
+rm(list=ls())
+library(nimble)
+
+Code=nimbleCode(
+  {
+    for(i in 1:N3){
+      lambdatilde[i] ~ dgamma(ag,bg) 
+    }
+    bg ~ dgamma(1,1)
+    ag ~ dgamma(1,1) 
+    
+    xi[1:N2] ~ dCRP(conc0 + conc1, size=N2)#
+    conc1 ~ dgamma(1,1)
+    conc0 ~ dgamma(a,b)
+    b ~ dgamma(1,1)
+    a ~ dgamma(1,1)
+    
+    for(i in 1:N){
+      y[i] ~ dpois(lambdatilde[xi[i]])
+    }
+  }
+)
+
+Consts=list(N=50, N2=50, N3=50)
+set.seed(1)
+aux=sample(1:10, size=Consts$N2, replace=TRUE)
+Inits=list(xi=aux, lambdatilde=rgamma(Consts$N3,1,1), conc0=1, conc1=1, a=1,  b=1, ag=1,  bg=1)
+
+Data=list(y=c(rpois(Consts$N, 3)))
+
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
+
+#-- MCMC configuration:
+modelConf<-configureMCMC(model, print=FALSE)
+modelConf$printSamplers(c("xi"))
+modelMCMC=buildMCMC(modelConf)
+
+
+#-- compiling the sampler
+CmodelMCMC=compileNimble(modelMCMC, project=model,
+                         resetFunctions=TRUE, showCompilerOutput = TRUE)
+
+#-- MCMC samples
+set.seed(1)
+nsave=100
+t1=proc.time()
+CmodelMCMC$run(nsave)
+proc.time()-t1
+
+mvSaved <- CmodelMCMC$mvSamples
+mvSaved
+
+
+
+# adding mmonitors:
+modelConf$addMonitors(c("conc0"))
+modelConf$addMonitors(c("lambdatilde"))
+modelMCMC=buildMCMC(modelConf)
+
+
+#-- compiling the sampler
+CmodelMCMC=compileNimble(modelMCMC, project=model,
+                         resetFunctions=TRUE, showCompilerOutput = TRUE)
+
+#-- MCMC samples
+set.seed(1)
+nsave=100
+t1=proc.time()
+CmodelMCMC$run(nsave)
+proc.time()-t1
+
+mvSaved <- CmodelMCMC$mvSamples
+mvSaved
 
 
 
@@ -78,6 +173,53 @@ samples=as.matrix(CmodelMCMC$mvSamples)
 
 
 
+#-- conc parametr is fixed
+rm(list=ls())
+library(nimble)
+
+Code=nimbleCode(
+  {
+    for(i in 1:N3){
+      lambdatilde[i] ~ dgamma(1,1) 
+    }
+    
+    xi[1:N2] ~ dCRP(1, size=N2)#
+    
+    for(i in 1:N){
+      y[i] ~ dpois(lambdatilde[xi[i]])
+    }
+  }
+)
+
+Consts=list(N=50, N2=50, N3=50)
+set.seed(1)
+aux=sample(1:10, size=Consts$N2, replace=TRUE)
+Inits=list(xi=aux, lambdatilde=rgamma(Consts$N3,1,1))
+
+Data=list(y=c(rpois(Consts$N, 3)))
+
+model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+cmodel<-compileNimble(model)
+
+#-- MCMC configuration:
+modelConf<-configureMCMC(model, print=FALSE)
+modelConf$printSamplers(c("xi"))
+modelMCMC=buildMCMC(modelConf)
+
+
+#-- compiling the sampler
+CmodelMCMC=compileNimble(modelMCMC, project=model,
+                         resetFunctions=TRUE, showCompilerOutput = TRUE)
+
+#-- MCMC samples
+set.seed(1)
+nsave=100
+t1=proc.time()
+CmodelMCMC$run(nsave)
+proc.time()-t1
+
+mvSaved <- CmodelMCMC$mvSamples
+mvSaved
 
 
 
