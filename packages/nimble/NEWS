@@ -4,7 +4,7 @@ USER LEVEL CHANGES
 
 -- Increased functionality for the setSeed argument in nimbleMCMC and runMCMC functions.
 
--- New functionality in MCMC, to specify the order in which sampler functions are executed.  This can allow for samplers being repeated executed, interleaved, or omitted.  This ordering can be specified as part of the MCMC configuration, or at MCMC runtime.
+-- New functionality in MCMC, to specify the order in which sampler functions are executed.  This can allow for samplers being repeatedly executed, interleaved, or omitted.  This ordering can be specified as part of the MCMC configuration, or at MCMC runtime.
 
                            CHANGES IN VERSION 0.6-10 (March 2018)
 

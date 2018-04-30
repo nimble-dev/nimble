@@ -13,6 +13,8 @@
 #'
 #' @param nburnin Number of initial, pre-thinning, MCMC iterations to discard.  Default value is 0.
 #'
+#' @param thin Thinning interval for collecting MCMC samples.  Thinning occurs after the initial nburnin samples are discarded. Default value is 1.
+#'
 #' @param nchains Number of MCMC chains to run.  Default value is 1.
 #'
 #' @param inits Optional argument to specify initial values for each chain.  See details.
