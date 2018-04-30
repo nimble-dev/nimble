@@ -47,7 +47,7 @@
 #' 
 #' The \code{inits} argument may also be omitted, in which case the current values in the \code{model} object will be used as the initial values of the first chain, and subsequent chains will begin using starting values where the previous chain ended.
 #' 
-#' Other aspects of the MCMC algorithm, such as sampler assignments and thinning, must be specified in advance using the MCMC configuration object (created using \code{configureMCMC}), which is then used to build the MCMC algorithm (using \code{buildMCMC}) argument.
+#' Other aspects of the MCMC algorithm, such as the specific sampler assignments, must be specified in advance using the MCMC configuration object (created using \code{configureMCMC}), which is then used to build an MCMC algorithm (using \code{buildMCMC}) argument.
 #'
 #' The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument specifies the number of pre-thinning MCMC samples to discard.  After discarding these burn-in samples, thinning of the remaining samples will take place.  The total number of posterior samples returned will be floor((niter-nburnin)/thin).
 #'
