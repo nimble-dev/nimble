@@ -237,7 +237,8 @@ wtsList <- list(
   rep(1/n, n),
   c(1, rep(0, n-1)),
   rep(1, n),
-  rdirch(1, rep(1, n))
+  rdirch(1, rep(1, n)),
+  1
 )
 
 sapply(c('systematicResampleFunction', 'stratifiedResampleFunction',
