@@ -12,9 +12,10 @@ for CRAN, we need it in there, but it prevents easy source installation on Macs 
 
 Make sure src/Makevars.win is present.
 
-# before running prep_pkg.R make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
+# before running 'make man' (i.e., prep_pkg.R) make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
 
-./prep_pkg.R # this creates man pages and updates NAMESPACE
+run 'make man' (formerly ./prep_pkg.R)
+# this creates man pages and updates NAMESPACE
 
 ## note that an error: "section title spans multiple lines" will occur in roxygenization if any "@section" line does not have a ":" at the end of the line
 
@@ -39,6 +40,8 @@ run tests on all OS ideally
 
 rebuild manual as further test of package
 
+download .tar.gz for reverse dependencies (currently 'bcgam') and run R CMD check on it (having trouble with tools::tools::check_packages_in_dir, but should figure that out and add a Make task for this)
+
 put new version of manual in inst/doc (perhaps - not sure if we want to add that much to the size of the tarball/package install)
 
 make sure no calls to compileNimble are in any examples that are not wrapped in a \dontrun; these calls will cause installation failure on Solaris and big headaches with CRAN
@@ -46,6 +49,12 @@ make sure no calls to compileNimble are in any examples that are not wrapped in 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
 and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
 and change to requireNamespace('rstan') from require('rstan')
+
+before release to CRAN make sure we disable Eigen pragmas that suppress warnings that CRAN dislikes:
+line 102 of packages/nimble/inst/include/Eigen/src/Core/arch/SSE/Complex.h
+lines 44,51 of  packages/nimble/inst/include/Eigen/src/Core/util/DisableStupidWarnings.h
+see also commit fedb31ee21fd892f782b97a4b2d71482b954a9fd
+
 
 test cross-machine on Macs and on Windows
 
@@ -82,6 +91,8 @@ update previous releases page
 
 update documentation page with link to updated manual
 
+update archived versions of NIMBLE and User Manual
+
 add info on new release to release notes page
 
 update version numbering on license and citation page
@@ -112,6 +123,16 @@ git push --tags    ## this is how you push *tags* to the remote
 Update version number in README.md and create a new release based on the new version tag
 This will autogenerate a zenodo page and DOI
 update the DOI tag at top of README and the DOI url in the citations in README
+
+Unfortunately in v0.6-10 zenodo integration was somehow turned off and in the process of trying to add it manually, Chris got an entirely different zenodo instnace.
+
+Here's the new one:
+NIMBLE Development Team. (2018, March 26). nimble-dev/nimble (Version v0.6-10). Zenodo. http://doi.org/10.5281/zenodo.1211191
+10.5281/zenodo.1211190 is for all versions
+
+And here is the old one:
+Christopher Paciorek, perrydv, Daniel Turek, Nicholas Michaud, Fritz Obermeyer, Duncan Temple Lang, … David LeBauer. (2018, February 17). nimble-dev/nimble: v0.6-9 (Version v0.6-9). Zenodo. http://doi.org/10.5281/zenodo.1174525
+10.5281/zenodo.820704 is for all versions
 
 ### building binaries
 

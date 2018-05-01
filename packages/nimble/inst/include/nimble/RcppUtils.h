@@ -43,6 +43,12 @@ using namespace std;
 #define Inf R_PosInf
 #define NA 0
 
+class varAndIndicesClass {
+public:
+  std::string varName;
+  std::vector< std::vector<int> > indices;
+};
+
 #define SET_NEXT_LANG_ARG(SLANG, ARGNAME) SETCAR(SLANG, ARGNAME); \
   SLANG = CDR(SLANG);
 
@@ -77,6 +83,7 @@ void populate_SEXP_2_double_for_copyFromRobject(void *vPtr, SEXP rScalar);
 void populate_SEXP_2_int_for_copyFromRobject(void *vPtr, SEXP rScalar);
 void populate_SEXP_2_bool_for_copyFromRobject(void *vPtr, SEXP rScalar);
 
+void parseVarAndInds(const std::string &input, varAndIndicesClass &output);
 extern "C" {
   SEXP populate_SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar);
   SEXP extract_double_2_SEXP(SEXP rPtr, SEXP refNum);
@@ -97,6 +104,7 @@ extern "C" {
   SEXP C_rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s);
 
   SEXP parseVar(SEXP Sinput);
+  SEXP makeParsedVarList(SEXP Sx);
 }
 
 void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent);

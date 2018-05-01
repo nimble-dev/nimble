@@ -153,6 +153,33 @@ testBUGSmodel(example = 'testN', dir = "",
               model = model, data = data, inits = inits,
               useInits = TRUE)
 
+### Repeat simple test of dmnorm/wishart with a tweak
+## to test that copyIfNeeded operates correctly for a non-complete matrix
+
+K <- 2
+y <- c(.1, .3)
+model <- function() {
+    y[1:K] ~ dmnorm(mu[1:K], prec[1:K,1:K]);
+    for(i in 1:(K+1)) {
+        mu0[i] <- 0
+    }
+    R[1:3, 1:3] <- 0.01 * diag(3)
+    Omega[1:3, 1:3] <- 0.01 * diag(3)
+    cholR[1:3, 1:3] <- chol(R[1:3, 1:3])
+    mu[1:K] ~ dmnorm(mu0[1:K], Omega[1:K,1:K])
+    ## one shouldn't chop up a cholesky matrix like this,
+    ## but it is diagonal and the only purpose here is to test
+    ## the copyIfNeeded mechanism
+    prec[1:K,1:K] ~ dwish(cholesky = cholR[1:K,1:K], df = 5, scale_param = 1)
+}
+
+inits <- list(mu = c(0,0), prec = matrix(c(.005,.001,.001,.005), 2))
+data <- list(K = K, y = y)
+
+testBUGSmodel(example = 'testN', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
 ## test multi/Dirichlet
 
 set.seed(0)
@@ -178,6 +205,36 @@ model <- function() {
 
 inits <- list(p = rep(1/K, K), alpha = rep(1/K, K))
 data <- list(n = n, K = K, y = y)
+
+testBUGSmodel(example = 'test', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+## Repeat test of multi/Dirichlet using Km1 for length of p (and y).
+## This forces additional check in copyIfNeeded
+set.seed(0)
+n <- 100
+alpha <- c(10, 30, 15, 60, 1)
+K <- length(alpha)
+Km1 <- K-1
+if(require(nimble)) {
+    p <- rdirch(1, alpha[1:Km1])
+    y <- rmulti(1, n, p)
+} else {
+    p <- c(.12, .24, .10, .53)
+    p <- p/sum(p)
+    y <- c(rmultinom(1, n, p))
+}
+model <- function() {
+    y[1:Km1] ~ dmulti(p[1:Km1], n);
+    p[1:Km1] ~ ddirch(alpha[1:Km1]);
+    for(i in 1:K) {
+        log(alpha[i]) ~ dnorm(0, sd = 100);
+    }
+    ## log(alpha) ~ dmnorm(0, .001)
+}
+inits <- list(p = rep(1/Km1, Km1), alpha = rep(1/K, K))
+data <- list(n = n, K = K, y = y, Km1 = Km1)
 
 testBUGSmodel(example = 'test', dir = "",
               model = model, data = data, inits = inits,
@@ -236,7 +293,6 @@ if(require(nimble)) {
 for(i in seq_len(g))
     for(j in seq_len(m))
         y[j, i, ] <- rmulti(1, n, p[i, ])
-
 
 model <- function() {
     for(i in 1:g)
@@ -310,7 +366,7 @@ test_that("test of preventing overwriting of data values by inits:", {
     })
     xVal <- c(3, NA)
     xInit <- c(4, 4)
-    expect_warning(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring values in inits for data nodes")
+    expect_warning(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring some or all values in inits for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test")
@@ -320,7 +376,7 @@ test_that("test of preventing overwriting of data values by inits:", {
         x[2] ~ dnorm(mu,1)
         mu ~ dnorm(0, 1)
     })
-    expect_warning(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring values in inits for data nodes")
+    expect_warning(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring some or all values in inits for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fifth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fifth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fifth test")
@@ -451,6 +507,24 @@ test_that("use of dbin/dbinom and dnegbin/dnbinom are identical", {
     expect_equal(cm$y2, cm$yalt2, info = "compiled simulate gives different results for dbin and dbinom")
     expect_equal(getLogProb(cm, 'y2'), getLogProb(cm, 'yalt2'),
                  info = "compiled calculate gives different results for dbin and dbinom")
+})
+
+
+test_that("test of using data frame as 'data' in model:", {
+    code <- nimbleCode({
+        for(i in 1:3) 
+            for(j in 1:2) 
+                y[i,j] ~ dnorm(0, 1)
+        mu ~dnorm(0,1)
+    })
+    expect_error(m <- nimbleModel(code, data = list(y = data.frame(a = 1:3, b = c('a','b','c')))), info = "expected error because data frame entry to data is non-numeric")
+    y <- data.frame(a = rnorm(3), b = rnorm(3))
+    m <- nimbleModel(code, data = list(y = y))
+    cm <- compileNimble(m)
+    y <- as.matrix(y); dimnames(y) <- NULL
+    expect_identical(m$y, y, info = "input data frame as data not handled correctly")
+    expect_identical(cm$y, y, info = "input data frame as data not handled correctly")
+    expect_error(m$setData(list(y = data.frame(a = 1:3, b = c('a','b','c')))))
 })
 
 sink(NULL)
