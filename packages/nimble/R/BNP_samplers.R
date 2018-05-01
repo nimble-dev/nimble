@@ -46,6 +46,12 @@ sampler_DP_density <- nimbleFunction(
       stop('sampler_DP_density: Currently only models with one node with a dCRP distribution are allowed. \n')
     }
     
+    #-- checking that xi variable are monitored in mvSaved object:
+    if( sum(dcrpVar == mvSavedVar) == 0 ){
+      stop(paste('sampler_DP_density: labeling variable is not monitored in model values object. \n'))
+    }
+    
+    
     #-- getting tilde variables
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents=TRUE)
     tildeVars <- NULL
@@ -75,6 +81,7 @@ sampler_DP_density <- nimbleFunction(
       stop(paste('sampler_DP_density: Some unique variable is not monitored in model values object. \n'))
     }
     
+
     #-- a) Stochastic and deterministic parents of xi
     # first get all dependencies of xi, including deterministic theta[i] <- thetatilde[xi[i]]:
     allDep <- c()
@@ -127,92 +134,65 @@ sampler_DP_density <- nimbleFunction(
         # f)
         dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
         if( is.na(dcrpParam) ) {
-          stop(paste('sampler_DP_density: Some variable of conc parameter is not being monitored in model values object. \n'))
+          stop('sampler_DP_density: Some variable of conc parameter is not being monitored in model values object. \n')
         }
       }
     }
     
 
-    
+    N <- length(dataNodes)
     p <- length(tildeVars) 
+    niter <- getsize(mvSaved) # number of iterations in the MCMC
+    AproxError <- 1e-10 # error of approxiating g with the truncation represantation
     
-    # storaging object: matrix with nrow = numer of iteration of MCMC and ncol = (1 + p)*Trunc
-    #                   Trunc is an integer given by the values of conc parameter
-    #mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
-    #mv <- modelValues(mvConf, m = 1)
-    #samples_den <- matrix(0, nrow=1, ncol=1) # initial dimension of output matrix
     getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
-    #getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
     for(j in 1:p){
       getTildeVarList[[j]] <- getTildeVar(mvSaved, tildeVars[j])
     }
     
-    # create the matrix
-    # in run code: get the values of the concentration parameter
-    #             compute an update of the truncation parameter for the stcik breaking representation of G
-    
-    # getting variable and node conc,  assuming there is only one conc parameter
-    #concNode <- FALSE
-    #i <- 1
-    #while(concNode == FALSE){ # finds the (first) node that depends on dCRPNode.
-    #  aux <- model$getDependencies(nodes[i], self=FALSE)
-    #  if(sum(aux == dCRPNode , na.rm=TRUE)==1){
-    #    concNode <- nodes[i]
-    #  }else{
-    #    i <- i+1
-    #  }
-    #} 
-    #concDistr <- model$getDistribution(concNode) # identifies if 'conc' is random or not
-    #if(is.na(concDistr)){
-    #  concRnd <- FALSE
-    #  concVar <- mvSaved$varNames[1] ## in this case, concVar won't be used, but must be a name in the mvSaved in order to compile
-    #}else{
-    #  concRnd <- TRUE
-    #  concVar <- concNode
-    #}
-    # we could do this in te run code....
-    #AproxError <- 1e-10
-    #if(concRnd){ # defining truncation
-    #  if(useCompiled){
-    #    conc <- mvSaved$CobjectInterface[[concVar]]
-    #  }else{
-    #    conc <- mvSaved[[concVar]]
-    #  }
-    #  concHat <- mean(unlist(conc))
-    #  Trunc <- ceiling(log(AproxError)/log(concHat/(concHat+1))+1) # gives an error of at most AproxError.
-    #  algoConc <- 0
-    #}else{
-    #  conc <- model$getParam(dCRPNode, 'conc') 
-    #  Trunc <- ceiling(log(AproxError)/log(conc/(conc+1))+1)
-    #  algoConc <- conc
-    #}
-    
-    #N <- length(dataNodes) # sample size
-    
-    #if(trunc > N){
-    #  ## Claudia, can you make this message more clear? I don't know what it means.
-    #  print('for an approximation error smaller than 1e-10, trunc > N.')
-    #}
-    
-    
-
-    
+    # storaging object: matrix with ncol = numer of iteration of MCMC and row = (1 + p)*Trunc, where
+    #                   Trunc is an integer given by the values of conc parameter
+    samples <- matrix(0, nrow=1, ncol=niter) # initial dimension of output matrix
+  
+    #mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
+    #mv <- modelValues(mvConf, m = 1)
+  
   },
   
   run=function(){
-    niter <- getsize(mvSaved)
-    resize(mv, niter)
-    for(iiter in 1:niter){
-      if(concRnd==FALSE){
-        conciter <- algoConc
-      }else{
-        conciter <- mvSaved[concVar, iiter][1]
+    
+    #-- defining the Truncation level of the random measure's representation:
+    # if 'conc' parameter id random, we get its value using steps c) to f)
+    # if 'conc' is fixed, we get its value directly from the parameter of dCRP.
+    # the relation between 'conc', trunc level, and error of approximation is: (conc / (conc +1))^{Trunc-1}=e 
+    concSam <- numeric(niter)
+    if( fixedConc ) {
+      concSam[1:niter] <- nimNumeric( length = niter, value = model$getParam(dcrpNode, 'conc') )
+      dcrpAux <- model$getParam(dcrpNode, 'conc')
+    } else {
+      for( iiter in 1:niter ) {
+        for(i in 1:length(savedParentNodes)) {
+          value <- mvSaved[[ savedParentNodes[i] ]][[iiter]]
+          modelWithNAs[[savedParentNodes[i]]] <- value
+          # e): do calculate of model with NA
+          modelWithNAs$calculate(model$getDependencies(savedParentNodes[i]))
+        }
+        concSam[iiter] <- modelWithNAs$getParam(dcrpNode, 'conc')
       }
-      #   
-      #   #-- getting the unique values in the samples and their probabilities of beign sampled. Need for computing G later.
+      dcrpAux <- mean(concSam)
+    }
+    
+    Trunc <- log(AproxError)/log(dcrpAux/(dcrpAux+1)) + 1
+    Trunc <- round(Trunc)
+    
+    
+    setSize(samples, c(Trunc*(p+1), niter)) # first 1:Trunc rows are weights, then the atoms.
+    
+    for(iiter in 1:niter){
+      #-- getting the unique values in the samples and their probabilities of beign sampled. Need for computing G later.
       probs <- numeric(N)
-      uniqueValues <- matrix(0, ncol=p, nrow=N) # is this ok?
-      xiiter <- mvSaved[dCRPVar, iiter]
+      uniqueValues <- matrix(0, ncol=p, nrow=N) # 
+      xiiter <- mvSaved[dcrpVar, iiter]
       rangei <- min(xiiter):max(xiiter) # is this ok??
       index <- 1
       for(i in 1:length(rangei)){
@@ -225,70 +205,67 @@ sampler_DP_density <- nimbleFunction(
           index <- index+1
         }
       }
-      probs[index] <- conciter #probs <- probs/sum(probs)
+      probs[index] <- concSam[iiter] #probs <- probs/sum(probs)
       newvalueindex <- index
       
       #-- computing G:
-      vaux <- rbeta(1, 1, conciter+N)
+      vaux <- rbeta(1, 1, concSam[iiter]+N)
       v1prod <- 1
-      Taux <- 1#Taux <- 0
+      Taux <- 1
       paramaux <- numeric(p)
       
       # first sampled value:
       index <- rcat(prob=probs[1:newvalueindex])
       if(index==newvalueindex){# sample from G_0
-        model$simulate(tildeVarNames)
+        model$simulate(tildeVars)
         for(j in 1:p){ 
-          paramaux[j] <- values(model, tildeVarNames)[j]#values(model, tildeVarNames)[(j-1)*N+1]  #
+          samples[j*Trunc + Taux, iiter] <- values(model, tildeVars)[j]
         }
       }else{# sample one of the existing values
         for(j in 1:p){
-          paramaux[j] <- uniqueValues[index, j] 
+          samples[j*Trunc + Taux, iiter] <- uniqueValues[index, j] 
         }
       }
-      for(j in 1:p){
-        mv['G', iiter][Taux, j+1] <<- paramaux[j] # <<-
-      }
-      mv['G', iiter][Taux, 1] <<- vaux # <<-
+      samples[Taux, iiter] <<- vaux # <-
       Taux <- Taux + 1
       
       # the rest of the values
       while(Taux <= Trunc-1){
         index <- rcat(prob=probs[1:newvalueindex])
-        if(index==newvalueindex){# sample from G_0
-          model$simulate(tildeVarNames)
+        if(index == newvalueindex){# sample from G_0
+          model$simulate(tildeVars)
           for(j in 1:p){ 
-            paramaux[j] <- values(model, tildeVarNames)[j]#values(model, tildeVarNames)[(j-1)*N+1]  #
+            paramaux[j] <- values(model, tildeVars)[j]
           }
         }else{# sample one of the existing values
           for(j in 1:p){
             paramaux[j] <- uniqueValues[index, j] 
           }
         }
-        condaux <- mv['G', iiter][1:(Taux-1), 2] == paramaux[1]#uniqueValues[1:newvalueindex, 1] == paramaux[1] # check if we sample a new atom or an atom that ir in G already
-        if(sum(condaux) >0){ # the atom already exists and we have to update the weights and not increase Trunc
+        condaux <- samples[Trunc + 1:(Taux-1), iiter] == paramaux[1]#uniqueValues[1:newvalueindex, 1] == paramaux[1] # check if we sample a new atom or an atom that is in G already
+        if(sum(condaux) >0){ # the atom already exists and we have to update the weights and not include a new value of the params 
           repindex=1
           while(condaux[repindex]==FALSE){
-            repindex=repindex+1
+            repindex = repindex+1
           }
           v1prod <- v1prod*(1-vaux)
-          vaux <-rbeta(1, 1, conciter+N)
-          mv['G', iiter][repindex, 1] <<- mv['G', iiter][repindex, 1] + vaux*v1prod
+          vaux <-rbeta(1, 1, concSam[iiter]+N)
+          samples[repindex, iiter] <<- samples[repindex, iiter] + vaux*v1prod
         }else{ # agument the truncation and keep the same parameters
           for(j in 1:p){
-            mv['G', iiter][Taux, j+1] <<- paramaux[j]
+            samples[j*Trunc + Taux, iiter] <<- paramaux[j]
           }
           v1prod <- v1prod*(1-vaux)
-          vaux <- rbeta(1, 1, conciter+N)
-          mv['G', iiter][Taux, 1] <<- vaux*v1prod 
+          vaux <- rbeta(1, 1, concSam[iiter]+N)
+          samples[Taux, iiter] <<- vaux*v1prod 
           Taux <- Taux+1
         }
       }
       # complete the vector of probabilities and atoms
-      mv['G', iiter][Trunc, 1] <<- 1- sum(mv['G', iiter][1:(Trunc-1), 1])
-      model$simulate(tildeVarNames)
+      samples[Trunc, iiter] <<- 1 - sum(samples[1:(Trunc-1), iiter])
+      model$simulate(tildeVars)
       for(j in 1:p){ 
-        mv['G', iiter][Trunc, j+1] <<- values(model, tildeVarNames)[j]#values(model, tildeVarNames)[(j-1)*N+1]  
+        samples[(j+1)*Trunc, iiter] <<- values(model, tildeVars)[j]#values(model, tildeVarNames)[(j-1)*N+1]  
       }
     }
   },
