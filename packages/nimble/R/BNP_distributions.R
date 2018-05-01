@@ -73,7 +73,7 @@ rCRP <- nimbleFunction(
             stop("rCRP only handles n = 1 at the moment.\n")
         }
         
-        if( conc <= 0 ) {
+        if( conc <= 0 | is.na(conc) ) {
             nimCat("rCRP: value of concentration parameter is not positive. NaNs produced.\n")
             return(rep(NaN, size))
         }
@@ -115,7 +115,7 @@ dCRP=nimbleFunction(
             stop("dCRP: length of x has to be equal to size.\n")
         }
     
-        if( conc <= 0 ) {
+        if( conc <= 0 | is.na(conc) ) {
             nimCat("dCRP: value of concentration parameter has to be larger than zero.\n")
             return(NaN)
         }
