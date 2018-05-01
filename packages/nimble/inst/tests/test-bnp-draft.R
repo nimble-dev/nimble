@@ -52,6 +52,7 @@ cmodel<-compileNimble(model)
 modelConf<-configureMCMC(model, print=FALSE)
 modelConf$printSamplers(c("xi"))
 modelConf$addMonitors(c("conc0"))
+modelConf$addMonitors(c("xi"))
 modelMCMC=buildMCMC(modelConf)
 
 
@@ -67,6 +68,19 @@ CmodelMCMC$run(nsave)
 proc.time()-t1
 
 mvSaved <- CmodelMCMC$mvSamples
+
+
+## plot of samples from G:
+
+trunc=nrow(samples)/2
+for(i in 1:ncol(samples)){
+  plot(samples[(trunc+1):(2*trunc), i], samples[1:trunc, i], type="h", main=sum(samples[1:trunc, i]),
+       xlim=c(-10,10)); readline()
+}
+for(i in 1:nrow(aux)){
+  plot(aux[i, (trunc+1):(2*trunc)], aux[i, 1:trunc], type="h", main=sum(aux[i, 1:trunc])); readline()
+}
+
 
 
 ## adding monitors:
