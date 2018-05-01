@@ -1014,23 +1014,19 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
 ## the averages are compared to the expected count of each element 
 ## (i.e. wts*length(wts)).
 
-test_resampler <- function(samplerName, wtsList, reps = 200, creps = reps){
+test_resampler <- function(samplerName, wtsList, reps = 500, creps = reps){
   n <- sapply(wtsList, function(x){return(length(x))})
   output <- lapply(n, function(x){return(numeric(x))})
   avgCounts <- output
   samplerFunction <- getFromNamespace(samplerName, 'nimble')()
   for(rep in 1:reps){
+    counts <- list()
     for(i in 1:length(wtsList)){
       output[[i]] <-    samplerFunction$run(wtsList[[i]])
-    }
-    counts <- lapply(output, function(x){
-      outvec <- numeric(length(x))
-      for(i in 1:n[i]){
-        outvec[i] <- length(which(x == i))
+      counts[[i]] <- numeric(length(output[[i]]))
+      for(j in 1:n[i]){
+        counts[[i]][j] <- length(which(output[[i]] == j))
       }
-      return(outvec)
-    })
-    for(i in 1:length(wtsList)){
       avgCounts[[i]] <- avgCounts[[i]] + counts[[i]]
     }
   }
@@ -1043,34 +1039,32 @@ test_resampler <- function(samplerName, wtsList, reps = 200, creps = reps){
       test_that(paste0("Test of accurate samples for uncompiled resampling
                       method ", samplerName, ", weight set ", i,
                        ", weight number ", j), 
-                expect_lt(diffVec[j], sqrt(n[i])))
+                expect_lt(diffVec[j], sqrt(expectedValue[[i]][j]) + .01))
     }
   }
   avgCounts <- lapply(n, function(x){return(numeric(x))})
   compiledSamplerFunction <-  compileNimble(samplerFunction)
   for(rep in 1:reps){
+    counts <- list()
     for(i in 1:length(wtsList)){
       output[[i]] <-    compiledSamplerFunction$run(wtsList[[i]])
-    }
-    counts <- lapply(output, function(x){
-      outvec <- numeric(length(x))
-      for(i in 1:n[i]){
-        outvec[i] <- length(which(x == i))
+      counts[[i]] <- numeric(length(output[[i]]))
+      for(j in 1:n[i]){
+        counts[[i]][j] <- length(which(output[[i]] == j))
       }
-      return(outvec)
-    })
-    for(i in 1:length(wtsList)){
       avgCounts[[i]] <- avgCounts[[i]] + counts[[i]]
     }
   }
+  expectedValue <- list(length(wtsList))
   for(i in 1:length(wtsList)){
     avgCounts[[i]] <- avgCounts[[i]]/reps
+    expectedValue[[i]] <- n[i]*(wtsList[[i]]/sum(wtsList[[i]]))
     diffVec <- abs(expectedValue[[i]] - avgCounts[[i]])
     for(j in 1:n[i]){
       test_that(paste0("Test of accurate samples for compiled resampling
                        method ", samplerName, ", weight set ", i,
                        ", weight number ", j), 
-                expect_lt(diffVec[j], sqrt(n[i])))
+                expect_lt(diffVec[j], sqrt(expectedValue[[i]][j]) + .01))
     }
   }
 }

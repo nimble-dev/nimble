@@ -240,7 +240,7 @@ wtsList <- list(
   rdirch(1, rep(1, n)),
   1
 )
-
-sapply(c('systematicResampleFunction', 'stratifiedResampleFunction',
-         'residualResampleFunction', 'multinomialResampleFunction'),
-       test_resampler, wtsList = wtsList)
+test_resampler('systematicResampleFunction', wtsList)
+test_resampler('stratifiedResampleFunction', wtsList)
+test_resampler('residualResampleFunction', wtsList)
+test_resampler('multinomialResampleFunction', wtsList)
