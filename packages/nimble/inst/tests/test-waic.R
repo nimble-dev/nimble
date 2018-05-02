@@ -33,11 +33,28 @@ test_that("school model WAIC is accurate", {
   temporarilyAssignInGlobalEnv(schoolSATmodel)
   compileNimble(schoolSATmodel)
   schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
-  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf)
+  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE)
   temporarilyAssignInGlobalEnv(schoolSATmcmc)
   CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel)
   CschoolSATmcmc$run(50000)
   expect_equal(CschoolSATmcmc$calculateWAIC(), 61.8, tolerance = 2.0)
+  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu', 'itau'))
+  expect_message(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE), 
+  "Monitored nodes are valid for WAIC.",
+  all = FALSE, fixed = TRUE)
+  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('mu'))
+  expect_error(buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE))
+  ## different set of monitors than above, so different waic value expected
+  expect_equal(nimbleMCMC(model = schoolSATmodel, WAIC = TRUE)$WAIC, 67, 
+               tolerance = 8) 
+  schoolSATmcmcConf <- configureMCMC(schoolSATmodel, monitors = c('schoolmean'))
+  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = TRUE)
+  CschoolSATmcmc <- compileNimble(schoolSATmcmc, project = schoolSATmodel, 
+                                  resetFunctions = TRUE)
+  expect_equal(runMCMC(CschoolSATmcmc, WAIC = TRUE)$WAIC, 61.8, 
+               tolerance = 2) 
+  schoolSATmcmc <- buildMCMC(schoolSATmcmcConf, enableWAIC = FALSE)
+  expect_error(runMCMC(schoolSATmcmc, WAIC = TRUE))
 })
 
 test_that("voter model WAIC is accurate", {
@@ -64,11 +81,67 @@ test_that("voter model WAIC is accurate", {
   CvoterModel <- compileNimble(voterModel)
   votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1', 'beta_2',
                                                           'sigma'))
-  votermcmc <- buildMCMC(votermcmcConf)
+  votermcmc <- buildMCMC(votermcmcConf, enableWAIC = TRUE)
   temporarilyAssignInGlobalEnv(votermcmc)
   Cvotermcmc <- compileNimble(votermcmc, project = voterModel)
   Cvotermcmc$run(50000)
   expect_equal(Cvotermcmc$calculateWAIC(), 87.2, tolerance = 2.0)
+  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_2',
+                                                          'sigma'))
+  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE))
+  
+  ## additional testing of validity of monitored nodes below
+  voterCode = nimbleCode({
+    for(i in 1:N){
+      y[i] ~ dnorm(beta_12 + growth[i]*beta_2, sd = sigma_2)
+    }
+    beta_12 <- beta_1*2
+    sigma_2 ~ dexp(sigma*3)
+    sigma ~ dunif(0,50)
+    beta_1 ~ dnorm(0, .01)
+    beta_2 ~ dnorm(0, .01)
+  })
+  dataList = list(y = y);
+  constList = list(growth = growth, N = N)
+  voterModel = nimbleModel(code = voterCode, data = dataList, 
+                           constants = constList,
+                           inits = list(beta_1 = 44, beta_2 = 3.75, 
+                                        sigma = 4.4))
+  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1',
+                                                          'beta_2',
+                                                          'sigma'))
+  expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
+                 "Monitored nodes are valid for WAIC.",
+                 all = FALSE, fixed = TRUE)
+  
+  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1',
+                                                          'beta_2',
+                                                          'sigma_2'))
+  expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
+                 "Monitored nodes are valid for WAIC.",
+                 all = FALSE, fixed = TRUE)
+  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1',
+                                                          'beta_2',
+                                                          'sigma',
+                                                          'sigma_2'))
+  expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
+                 "Monitored nodes are valid for WAIC.",
+                 all = FALSE, fixed = TRUE)
+  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_12',
+                                                          'beta_2',
+                                                          'sigma_2'))
+  expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
+                 "Monitored nodes are valid for WAIC.",
+                 all = FALSE, fixed = TRUE)
+  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_12',
+                                                          'beta_2',
+                                                          'sigma'))
+  expect_message(buildMCMC(votermcmcConf, enableWAIC = TRUE), 
+                 "Monitored nodes are valid for WAIC.",
+                 all = FALSE, fixed = TRUE)
+  votermcmcConf <- configureMCMC(voterModel, monitors = c('beta_1',
+                                                          'beta_2'))
+  expect_error(buildMCMC(votermcmcConf, enableWAIC = TRUE))
 })
 
 
@@ -96,10 +169,20 @@ test_that("Radon model WAIC is accurate", {
   temporarilyAssignInGlobalEnv(radonModel)
   CradonModel <- compileNimble(radonModel)
   radonmcmcConf <- configureMCMC(radonModel, monitors = c('beta'))
-  radonmcmc <- buildMCMC(radonmcmcConf)
+  radonmcmc <- buildMCMC(radonmcmcConf, enableWAIC = TRUE)
   temporarilyAssignInGlobalEnv(radonmcmc)
   Cradonmcmc <- compileNimble(radonmcmc, project = radonModel)
   Cradonmcmc$run(10000)
+  expect_equal(Cradonmcmc$calculateWAIC(1000), 3937, tolerance = 10)
+  radonmcmcConf <- configureMCMC(radonModel, monitors = c('coefs'))
+  ## check to ensure monitoring deterministic nodes works
+  expect_message(radonmcmc <- buildMCMC(radonmcmcConf, enableWAIC = TRUE), 
+                 "Monitored nodes are valid for WAIC.",
+                 all = FALSE, fixed = TRUE)
+  Cradonmcmc <- compileNimble(radonmcmc, project = radonModel,
+                              resetFunctions = TRUE)
+  Cradonmcmc$run(10000)
+  ## monitoring coefs is equivalent to monitoring beta, so waic should match
   expect_equal(Cradonmcmc$calculateWAIC(1000), 3937, tolerance = 10)
 })
 

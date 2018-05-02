@@ -4,10 +4,12 @@
 \alias{buildMCMC}
 \title{Create an MCMC function, from an MCMCconf object}
 \usage{
-buildMCMC(conf, ...)
+buildMCMC(conf, enableWAIC = FALSE, ...)
 }
 \arguments{
 \item{conf}{An object of class MCMCconf that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCconf objects.  Alternatively, \code{MCMCconf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.}
+
+\item{enableWAIC}{Boolean specifying whether to enable WAIC calculations for this model and set of monitored nodes.  Defaults to the value of \code{nimbleOptions('enableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{buildMCMC()}.}
 
 \item{...}{Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object}
 }
@@ -41,23 +43,55 @@ The compiled function will function identically to the uncompiled object, except
 }
 \section{Calculating WAIC}{
 
-After the MCMC has been run, calling the \code{calculateWAIC()} method of the MCMC object will return the WAIC for the model, calculated using the posterior samples from the MCMC run.
+After the MCMC has been run, calling the \code{calculateWAIC()} method of the
+MCMC object will return the WAIC for the model, calculated using the 
+posterior samples from the MCMC run.
 
 \code{calculateWAIC()} has a single arugment:
 
-\code{nburnin}: The number of iterations to subtract from the beginning of the posterior samples of the MCMC object for WAIC calculation.  Defaults to 0.
+\code{nburnin}: The number of iterations to subtract from the beginning of
+the posterior samples of the MCMC object for WAIC calculation.
+Defaults to 0.
 
-The \code{calculateWAIC} method calculates the WAIC of the model that the MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from Equations 5, 12, and 13 in Gelman (2014).  Note that the set of all parameters monitored by the mcmc object will be treated as \eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014).  All parameters downstream of the monitored parameters that are necessary to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of \eqn{theta}.
+The \code{calculateWAIC} method can only be used if the \code{enableWAIC} 
+argument to \code{buildMCMC} is set to \code{TRUE}, or if the NIMBLE option
+\code{enableWAIC} is set to \code{TRUE}.  If a user attempts
+to call \code{calculateWAIC} without having set \code{enableWAIC = TRUE}
+(either in the call to \code{buildMCMC} or as a NIMBLE option),
+an error will occur.  
+
+The \code{calculateWAIC} method calculates the WAIC of the model that the
+MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from
+Equations 5, 12, and 13 in Gelman (2014) (i.e. using \emph{p}WAIC2).  The set
+of all stochastic nodes monitored by the MCMC object will be treated as
+\eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014). 
+All non-monitored nodes downstream of the monitored nodes that are necessary
+to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of 
+\eqn{theta}.  This allows customization of exactly what predictive 
+distribution \eqn{p(y|theta)} to use for calculations.  For more detail
+on the use of different predictive distributions, see Section 2.5 from Gelman
+(2014).  
+
+Note that there exist sets of monitored parameters that do not lead to valid
+WAIC calculations.  Specifically, for a valid WAIC calculation, every 
+node that a data node depends on must be either monitored, or be
+downstream from monitored nodes.  An easy way to ensure this is satisfied
+is to monitor all top-level parameters in a model (NIMBLE's default).  
+Another way to guarantee correctness is to monitor all nodes
+directly upstream from a data node. However, other combinations of monitored
+nodes are also valid.  If \code{enableWAIC = TRUE}, NIMBLE checks to see if
+the set of monitored nodes is valid, and returns an error if not.
 }
 \examples{
 \dontrun{
 code <- nimbleCode({
     mu ~ dnorm(0, 1)
     x ~ dnorm(mu, 1)
+    y ~ dnorm(x, 1)
 })
-Rmodel <- nimbleModel(code)
+Rmodel <- nimbleModel(code, data = list(y = 0))
 conf <- configureMCMC(Rmodel)
-Rmcmc <- buildMCMC(conf)
+Rmcmc <- buildMCMC(conf, enableWAIC = TRUE)
 Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
 Cmcmc$run(10000)
@@ -69,6 +103,11 @@ WAIC <- Cmcmc$calculateWAIC(nburnin = 1000)
 }
 \author{
 Daniel Turek
+}
+\references{
+Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. \emph{Journal of Machine Learning Research} 11: 3571-3594.
+
+Gelman, A., Hwang, J. and Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. \emph{Statistics and Computing} 24(6): 997-1016.
 }
 \seealso{
 \code{\link{configureMCMC}} \code{\link{runMCMC}} \code{\link{nimbleMCMC}}

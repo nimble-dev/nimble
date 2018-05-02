@@ -258,7 +258,8 @@ nodes: A character vector specifying one or more node or variable names.
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent nodes names, so the length of the output may be longer than that of the input}
 
 \item{\code{newModel(data = NULL, inits = NULL, modelName = character(),
-  replicate = FALSE, check = getNimbleOption("checkModel"))}}{Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
+  replicate = FALSE, check = getNimbleOption("checkModel"),
+  calculate = TRUE)}}{Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
 Arguments:
 
@@ -266,11 +267,13 @@ data: A named list specifying data nodes and values, for use in the newly return
 
 inits: A named list specifying initial values, for use in the newly returned model.  If not provided, the inits argument from the creation of the original R model object will be used.
 
-replicate: Logical specifying whether to repliate all current values and data flags from the current model in the new model.  If TRUE, then the data and inits arguments are not used.  Default value is FALSE.
-
-check: A logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on 'nimbleOptions' for details.
-
 modelName: An optional character string, used to set the internal name of the model object.  If provided, this name will propagate throughout the generated C++ code, serving to improve readability.
+
+replicate: Logical specifying whether to replicate all current values and data flags from the current model in the new model.  If TRUE, then the data and inits arguments are not used.  Default value is FALSE.
+
+check: A logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on 'nimbleOptions' for details. 
+
+calculate: A logical indicating whether to run 'calculate' on the model; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be NA. 
 
 Details: The newly created model object will be identical to the original model in terms of structure and functionality, but entirely distinct in terms of the internal values.}
 
