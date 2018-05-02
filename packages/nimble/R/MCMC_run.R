@@ -99,7 +99,7 @@ runMCMC <- function(mcmc,
         if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
         if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
     }
-    if(WAIC == TRUE && mcmc$enableWAIC == FALSE) stop('mcmc argument must have been created with "enableWAIC = TRUE" in order to calculate WAIC.')
+    if(WAIC && !mcmc$enableWAIC) stop('mcmc argument must have been created with "enableWAIC = TRUE" in order to calculate WAIC.')
     model <- if(is.Cnf(mcmc)) mcmc$Robject$model$CobjectInterface else mcmc$model
     if(!is.model(model)) stop('something went wrong')
     samplesList <- vector('list', nchains)
