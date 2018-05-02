@@ -177,7 +177,7 @@ Any user defined filtering function that will be provided as the \cd{pfType} con
 
 \begin{enumerate}
 \item The function provided to \cd{pfType} must be the result of a call to \cd{nimbleFunction()}
-\item The \cd{nimbleFunction} provided to \cd{pfType} must have setup code that accepts the following (and only the following arugments:)
+\item The \cd{nimbleFunction} provided to \cd{pfType} must have setup code that accepts the following (and only the following) arguments:
 \begin{itemize}
 \item \cd{model}, the nimble model object that the MCMC algorithm is defined on.
 \item \cd{latents}, a character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
