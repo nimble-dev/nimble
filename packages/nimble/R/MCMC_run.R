@@ -13,7 +13,9 @@
 #'
 #' @param nburnin Number of initial, pre-thinning, MCMC iterations to discard.  Default value is 0.
 #'
-#' @param thin Thinning interval for collecting MCMC samples.  Thinning occurs after the initial nburnin samples are discarded. Default value is 1.
+#' @param thin Thinning interval for collecting MCMC samples, corresponding to \code{monitors}.  Thinning occurs after the initial nburnin samples are discarded. Default value is 1.
+#'
+#' @param thin2 Thinning interval for collecting MCMC samples, corresponding to the second, optional set of \code{monitors2}.  Thinning occurs after the initial nburnin samples are discarded. Default value is 1.
 #'
 #' @param nchains Number of MCMC chains to run.  Default value is 1.
 #'
@@ -31,7 +33,7 @@
 #'
 #' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.
 #'
-#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
+#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless this list contains only a single element, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}, and when the MCMC is monitoring a second set of nodes using \code{monitors2}, also \code{samples2}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
 #'
 #' @details
 #'
@@ -82,6 +84,7 @@ runMCMC <- function(mcmc,
                     niter = 10000,
                     nburnin = 0,
                     thin,
+                    thin2,
                     nchains = 1,
                     inits,
                     setSeed = FALSE,
@@ -102,10 +105,13 @@ runMCMC <- function(mcmc,
     if(WAIC && !mcmc$enableWAIC) stop('mcmc argument must have been created with "enableWAIC = TRUE" in order to calculate WAIC.')
     model <- if(is.Cnf(mcmc)) mcmc$Robject$model$CobjectInterface else mcmc$model
     if(!is.model(model)) stop('something went wrong')
-    samplesList <- vector('list', nchains)
-    names(samplesList) <- paste0('chain', 1:nchains)
-    thinToUse <- if(!missing(thin)) thin else mcmc$thinFromConfVec[1]
-    if(thinToUse > 1 && nburnin > 0) message('The behavior of runMCMC() has recently changed with respect to the nburnin argument.  Previously, nburnin specified the number of *post-thinning* MCMC samples to discard.  It has been changed to now specify the number of *pre-thinning* MCMC samples to discard.  So, the final number of samples returned will be floor((niter-nburnin)/thin).  This change will result in more posterior samples being returned, but at the expense of the leading samples being from earlier in the full MCMC chain, thus having had less time to "forget" the initial conditions.')
+    hasMonitors2 <- length(if(is.Cnf(mcmc)) mcmc$Robject$monitors2 else mcmc$monitors2) > 0
+    samplesList  <- vector('list', nchains); names(samplesList)  <- paste0('chain', 1:nchains)
+    samplesList2 <- vector('list', nchains); names(samplesList2) <- paste0('chain', 1:nchains)
+    thinToUseVec <- c(0, 0)
+    thinToUseVec[1] <- if(!missing(thin))  thin  else mcmc$thinFromConfVec[1]
+    thinToUseVec[2] <- if(!missing(thin2)) thin2 else mcmc$thinFromConfVec[2]
+    if(thinToUseVec[1] > 1 && nburnin > 0) message('The behavior of runMCMC() has recently changed with respect to the nburnin argument.  Previously, nburnin specified the number of *post-thinning* MCMC samples to discard.  It has been changed to now specify the number of *pre-thinning* MCMC samples to discard.  So, the final number of samples returned will be floor((niter-nburnin)/thin).  This change will result in more posterior samples being returned, but at the expense of the leading samples being from earlier in the full MCMC chain, thus having had less time to "forget" the initial conditions.')
     for(i in 1:nchains) {
         if(nimbleOptions('verbose')) message('running chain ', i, '...')
         ##if(setSeed) set.seed(i)
@@ -126,12 +132,13 @@ runMCMC <- function(mcmc,
         if(nburnin > 0) {
             mcmc$run(nburnin, progressBar = FALSE)
             resize(mcmc$mvSamples,  0)
-            resize(mcmc$mvSamples2, 0)   ## not technically necessary
-            mcmc$run(niter-nburnin, thin = thinToUse, reset = FALSE, progressBar = progressBar)
+            resize(mcmc$mvSamples2, 0)
+            mcmc$run(niter-nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], reset = FALSE, progressBar = progressBar)
         } else {
-            mcmc$run(niter, thin = thinToUse, progressBar = progressBar)
+            mcmc$run(niter, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar)
         }
         samplesList[[i]] <- as.matrix(mcmc$mvSamples)
+        if(hasMonitors2)   samplesList2[[i]] <- as.matrix(mcmc$mvSamples2)
     }
     if(WAIC) {
         if(nchains > 1) {
@@ -145,22 +152,35 @@ runMCMC <- function(mcmc,
         }
         WAICvalue <- mcmc$calculateWAIC()
     }
-    if(samplesAsCodaMCMC) samplesList <- coda::as.mcmc.list(lapply(samplesList, as.mcmc))
-    if(nchains == 1) samplesList <- samplesList[[1]]  ## returns matrix when nchains = 1
+    if(samplesAsCodaMCMC) {
+        samplesList <- coda::as.mcmc.list(lapply(samplesList, as.mcmc))
+        if(hasMonitors2)   samplesList2 <- coda::as.mcmc.list(lapply(samplesList2, as.mcmc))
+    }
+    if(nchains == 1) {
+        samplesList <- samplesList[[1]]                       ## returns matrix when nchains = 1
+        if(hasMonitors2)   samplesList2 <- samplesList2[[1]]  ## returns matrix when nchains = 1
+    }
     if(summary) {
         if(nchains == 1) {
             summaryObject <- samplesSummary(samplesList)
+            if(hasMonitors2)   summaryObject <- rbind(summaryObject, samplesSummary(samplesList2))   ## combine summaries
         } else {
             summaryObject <- lapply(samplesList, samplesSummary)
             names(summaryObject) <- paste0('chain', 1:nchains)
             summaryObject$all.chains <- samplesSummary(do.call('rbind', samplesList))
+            if(hasMonitors2) {
+                summaryObject2 <- lapply(samplesList2, samplesSummary)
+                summaryObject2$all.chains <- samplesSummary(do.call('rbind', samplesList2))
+                summaryObject <- mapply(rbind, summaryObject, summaryObject2, SIMPLIFY = FALSE)      ## combine summaries
+            }
         }
     }
     retList <- list()
-    if(samples) retList$samples <- samplesList
-    if(summary) retList$summary <- summaryObject
-    if(WAIC)    retList$WAIC    <- WAICvalue
-    if(samples + summary + WAIC == 1) retList <- retList[[1]]
+    if(samples) { retList$samples <- samplesList
+                  if(hasMonitors2)   retList$samples2 <- samplesList2 }
+    if(summary)   retList$summary <- summaryObject
+    if(WAIC)      retList$WAIC    <- WAICvalue
+    if(length(retList) == 1) retList <- retList[[1]]
     return(retList)
 }
 
