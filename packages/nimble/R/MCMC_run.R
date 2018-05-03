@@ -21,6 +21,8 @@
 #'
 #' @param inits Optional argument to specify initial values for each chain.  See details.
 #'
+#' @param samplerExecutionOrder  Numeric vector specifying the order of execution of the sampler functions (as were defined in the MCMC configuration object).  This allows sampler functions to execute multiple times on each MCMC iteration, be interleaved with other sampler functions, or omitted entirely.  If provided, this argument will override the default sampler execution ordering that was specified in the MCMC configuration.
+#'
 #' @param setSeed Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.
 #'
 #' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is \code{TRUE}.
@@ -87,6 +89,7 @@ runMCMC <- function(mcmc,
                     thin2,
                     nchains = 1,
                     inits,
+                    samplerExecutionOrder,
                     setSeed = FALSE,
                     progressBar = TRUE,
                     samples = TRUE,
@@ -112,6 +115,7 @@ runMCMC <- function(mcmc,
     thinToUseVec[1] <- if(!missing(thin))  thin  else mcmc$thinFromConfVec[1]
     thinToUseVec[2] <- if(!missing(thin2)) thin2 else mcmc$thinFromConfVec[2]
     if(thinToUseVec[1] > 1 && nburnin > 0) message('The behavior of runMCMC() has recently changed with respect to the nburnin argument.  Previously, nburnin specified the number of *post-thinning* MCMC samples to discard.  It has been changed to now specify the number of *pre-thinning* MCMC samples to discard.  So, the final number of samples returned will be floor((niter-nburnin)/thin).  This change will result in more posterior samples being returned, but at the expense of the leading samples being from earlier in the full MCMC chain, thus having had less time to "forget" the initial conditions.')
+    samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
     for(i in 1:nchains) {
         if(nimbleOptions('verbose')) message('running chain ', i, '...')
         ##if(setSeed) set.seed(i)
@@ -130,12 +134,12 @@ runMCMC <- function(mcmc,
         }
         model$calculate()
         if(nburnin > 0) {
-            mcmc$run(nburnin, progressBar = FALSE)
+            mcmc$run(nburnin, progressBar = FALSE, samplerExecutionOrder = samplerExecutionOrderToUse)
             resize(mcmc$mvSamples,  0)
             resize(mcmc$mvSamples2, 0)
-            mcmc$run(niter-nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], reset = FALSE, progressBar = progressBar)
+            mcmc$run(niter-nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], reset = FALSE, progressBar = progressBar, samplerExecutionOrder = samplerExecutionOrderToUse)
         } else {
-            mcmc$run(niter, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar)
+            mcmc$run(niter, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar, samplerExecutionOrder = samplerExecutionOrderToUse)
         }
         samplesList[[i]] <- as.matrix(mcmc$mvSamples)
         if(hasMonitors2)   samplesList2[[i]] <- as.matrix(mcmc$mvSamples2)
