@@ -108,7 +108,7 @@ buildMCMC <- nimbleFunction(
     	if(inherits(conf, 'modelBaseClass'))   conf <- configureMCMC(conf, ...)
     	else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
         dotdotdotArgs <- list(...)
-        if(!is.null(dotdotdotArgs$enableWAIC)) conf$enableWAIC <- as.logical(dotdotdotArgs$enableWAIC)    ## process enableWAIC argument regardless
+        enableWAICargument <- if(!is.null(dotdotdotArgs$enableWAIC)) dotdotdotArgs$enableWAIC else nimbleOptions('enableWAIC')    ## accept enableWAIC argument regardless
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
@@ -133,7 +133,7 @@ buildMCMC <- nimbleFunction(
         sampledNodes <- model$getVarNames(FALSE, monitors)
         sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(FALSE)]
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE, downstream = TRUE)
-        enableWAIC <- conf$enableWAIC   ## now, enableWAIC comes from MCMC configuration
+        enableWAIC <- enableWAICargument || conf$enableWAIC   ## enableWAIC comes from MCMC configuration, or from argument to buildMCMC
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
             checkWAICmonitors(model, sampledNodes, dataNodes)
