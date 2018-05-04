@@ -5,8 +5,6 @@
 #'
 #' @param conf An MCMC configuration object of class \code{MCMCconf} that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMC configuration objects.  Alternatively, \code{conf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.
 #' 
-#' @param enableWAIC Boolean specifying whether to enable WAIC calculations for this model and set of monitored nodes.  Defaults to the value of \code{nimbleOptions('enableWAIC')}, which in turn defaults to \code{FALSE}.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{buildMCMC}.
-#' 
 #' @param ... Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object
 #'
 #' @details
@@ -48,10 +46,10 @@
 #' \code{nburnin}: The number of pre-thinning MCMC samples to remove from the beginning of the posterior samples for WAIC calculation (default = 0).
 #' 
 #' The \code{calculateWAIC} method can only be used if the \code{enableWAIC} 
-#' argument to \code{buildMCMC} is set to \code{TRUE}, or if the NIMBLE option
+#' argument to \code{configureMCMC} or to \code{buildMCMC} is set to \code{TRUE}, or if the NIMBLE option
 #' \code{enableWAIC} is set to \code{TRUE}.  If a user attempts
 #' to call \code{calculateWAIC} without having set \code{enableWAIC = TRUE}
-#' (either in the call to \code{buildMCMC} or as a NIMBLE option),
+#' (either in the call to \code{configureMCMC}, or \code{buildMCMC}, or as a NIMBLE option),
 #' an error will occur.  
 #' 
 #' The \code{calculateWAIC} method calculates the WAIC of the model that the
@@ -106,9 +104,11 @@
 #' @export
 buildMCMC <- nimbleFunction(
     name = 'MCMC',
-    setup = function(conf, enableWAIC = nimbleOptions('enableWAIC'), ...) {
+    setup = function(conf, ...) {
     	if(inherits(conf, 'modelBaseClass'))   conf <- configureMCMC(conf, ...)
     	else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
+        dotdotdotArgs <- list(...)
+        if(!is.null(dotdotdotArgs$enableWAIC)) conf$enableWAIC <- as.logical(dotdotdotArgs$enableWAIC)    ## process enableWAIC argument regardless
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
@@ -133,6 +133,7 @@ buildMCMC <- nimbleFunction(
         sampledNodes <- model$getVarNames(FALSE, monitors)
         sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(FALSE)]
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE, downstream = TRUE)
+        enableWAIC <- conf$enableWAIC   ## now, enableWAIC comes from MCMC configuration
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
             checkWAICmonitors(model, sampledNodes, dataNodes)

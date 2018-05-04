@@ -1,5 +1,7 @@
 USER LEVEL CHANGES
 
+-- MCMC thinning intervals (thin and thin2) can now be modified at MCMC runtime.  These may be passed as arguments to either mcmc$run or to runMCMC.
+
 -- Both nimbleMCMC and runMCMC functions now drop burnin samples as "pre-thinning", if a thinning interval is specified.
 
 -- Increased functionality for the setSeed argument in nimbleMCMC and runMCMC functions.

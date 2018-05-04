@@ -319,8 +319,8 @@ nimbleMCMC <- function(code,
         Rmodel <- if(is.Rmodel(model)) model else model$Rmodel
         if(!is.Rmodel(Rmodel)) stop('something went wrong')
     }
-    conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin)
-    Rmcmc <- buildMCMC(conf, enableWAIC = WAIC)
+    conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin, enableWAIC = WAIC)
+    Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(Rmodel, Rmcmc)    ## only one compileNimble() call
     Cmcmc <- compiledList$Rmcmc
     runMCMC(Cmcmc, niter = niter, nburnin = nburnin, nchains = nchains, inits = inits,

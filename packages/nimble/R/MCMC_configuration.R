@@ -77,6 +77,7 @@ MCMCconf <- setRefClass(
         monitors2           = 'ANY',
         thin                = 'ANY',
         thin2               = 'ANY',
+        enableWAIC          = 'ANY',
         samplerConfs        = 'ANY',
         samplerExecutionOrder = 'ANY',
         controlDefaults     = 'ANY',
@@ -94,6 +95,7 @@ MCMCconf <- setRefClass(
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = FALSE,
+            enableWAIC = nimbleOptions('enableWAIC'),
             warnNoSamplerAssigned = TRUE,
             print = FALSE) {
             '
@@ -132,6 +134,8 @@ onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, 
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 
+enableWAIC: A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of nimbleOptions(\'enableWAIC\'), which in turn defaults to FALSE.  Setting nimbleOptions(\'enableWAIC\' = TRUE) will ensure that WAIC is enabled for all calls to configureMCMC and buildMCMC.
+
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
 print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
@@ -147,6 +151,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             addMonitors2(monitors2, print = FALSE)
             thin  <<- thin
             thin2 <<- thin2
+            enableWAIC <<- enableWAIC
             samplerConfs <<- list()
             samplerExecutionOrder <<- numeric()
             controlDefaults <<- list()
@@ -629,6 +634,17 @@ Details: See the initialize() function
             if(print) printMonitors()
             return(invisible(NULL))
         },
+
+        setEnableWAIC = function(waic = TRUE) {
+            '
+Sets the value of enableWAIC.
+
+Arguments:
+
+waic: A logical argument, indicating whether to enable WAIC calculations in the resulting MCMC algorithm (default TRUE).
+'
+            enableWAIC <<- as.logical(waic)
+        },
         
         getMvSamplesConf  = function(ind = 1){
             
@@ -950,6 +966,7 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal nodes are assigned a posterior_predictive sampler (\link{sampler_posterior_predictive}).
 #'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
+#' @param enableWAIC A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of \code{nimbleOptions('enableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{configureMCMC} and \code{buildMCMC}.
 #'@param rules An object of class samplerAssignmentRules, which governs the assigment of MCMC sampling algorithms to stochastic model nodes.  The default set of sampler assignment rules is specified by the nimble option \'MCMCdefaultSamplerAssignmentRules\'.
 #'@param warnNoSamplerAssigned A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
@@ -963,6 +980,7 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
                           useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+                          enableWAIC = nimbleOptions('enableWAIC'),
                           print = FALSE, autoBlock = FALSE, oldConf,
                           rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
@@ -986,6 +1004,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          useConjugacy = useConjugacy,
                          onlyRW = onlyRW, onlySlice = onlySlice,
                          multivariateNodesAsScalars = multivariateNodesAsScalars,
+                         enableWAIC = enableWAIC,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
                          print = print)
     return(thisConf)	
