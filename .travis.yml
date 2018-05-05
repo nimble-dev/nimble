@@ -3,6 +3,8 @@ language: r
 dist: xenial
 sudo: false
 
+r_packages: rlang
+
 cache:
   packages: true
   directories:
