@@ -106,7 +106,7 @@ This entry point for using \cd{nimbleMCMC} is the \cd{code}, \cd{constants}, \cd
 Based on its arguments, \cd{nimbleMCMC} optionally returns any combination of
 
 \begin{itemize}
-\item posterior samples,
+\item Posterior samples,
 \item Posterior summary statistics, and
 \item WAIC value.
 \end{itemize}
@@ -375,6 +375,33 @@ samplerConfList[[4]]$setTarget("y", model)   ## model argument required
 mcmcConf$setSamplers(samplerConfList)
 @
 
+\subsubsection{Customizing the sampler execution order}
+
+The ordering of sampler execution can be controlled as well.  This allows for sampler functions to execute multiple times within a single MCMC iteration, or the execution of different sampler functions to be interleaved with one another.
+
+The sampler execution order is set using the function \cd{setSamplerExecutionOrder}, and the current ordering of execution is retrieved using \cd{getSamplerExecutionOrder}.  For example, assuming the MCMC configuration object \cd{mcmcConf} contains 5 samplers:
+
+<<setSamplerExecutionOrder, eval=FALSE>>=
+## first sampler to execute twice, in succession:
+mcmcConf$setSamplerExecutionOrder(c(1, 1, 2, 3, 4, 5))
+
+## first sampler to execute multiple times, interleaved:
+mcmcConf$setSamplerExecutionOrder(c(1, 2, 1, 3, 1, 4, 1, 5))
+
+## fourth sampler to execute 10 times, only
+mcmcConf$setSamplerExecutionOrder(rep(4, 10))
+
+## omitting the argument to setSamplerExecutionOrder()
+## resets the ordering to each sampler executing once, sequentially
+mcmcConf$setSamplerExecutionOrder()
+
+## retrieve the current ordering of sampler execution
+ordering <- mcmcConf$getSamplerExecutionOrder()
+
+## print the sampler functions in the order of execution
+mcmcConf$printSamplers(executionOrder = TRUE)
+@
+
 \subsubsection{Monitors and thinning intervals: \cd{printMonitors}, \cd{getMonitors}, \cd{addMonitors}, \cd{setThin}, and \cd{resetMonitors}}
 
 An MCMC configuration object contains two independent sets of variables to monitor, each with their own thinning interval: \cd{thin} corresponding to \cd{monitors}, and \cd{thin2} corresponding to \cd{monitors2}.  Monitors operate at the \textit{variable} level.  Only entire model variables may be monitored.  Specifying a monitor on a \textit{node}, e.g., \cd{x[1]}, will result in the entire variable \cd{x} being monitored.
@@ -434,7 +461,7 @@ Rmcmc <- buildMCMC(mcmcConf, enableWAIC = TRUE)
 
 \cd{buildMCMC} is a nimbleFunction.  The returned object \cd{Rmcmc} is an instance  of the nimbleFunction specific to configuration \cd{mcmcConf} (and of course its associated model).  
 
-Note that if you would like to be able to calculate the WAIC of the model after the MCMC function has been run, you must set \cd{enableWAIC = TRUE} as an argument to \cd{buildMCMC}, or set \cd{nimbleOptions(enableWAIC = TRUE)}, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \ref{sec:WAIC} or \cd{help(buildMCMC)} in R.
+Note that if you would like to be able to calculate the WAIC of the model after the MCMC function has been run, you must set \cd{enableWAIC = TRUE} as an argument to either \cd{configureMCMC} or \cd{buildMCMC}, or set \cd{nimbleOptions(enableWAIC = TRUE)}, which will enable WAIC calculations for all subsequently built MCMC functions.  For more information on WAIC calculations, see Section \ref{sec:WAIC} or \cd{help(buildMCMC)} in R.
 
 When no customization is needed, one can skip \cd{configureMCMC} and simply provide a model object to \cd{buildMCMC}. The following two MCMC functions will be identical:
 
@@ -470,7 +497,7 @@ Cmcmc$Rmcmc$run(niter = 1000)
 
 Once an MCMC algorithm has been created using \cd{buildMCMC}, the function \cd{runMCMC} can be used to run multiple chains and extract posterior samples, summary statistics and/or a WAIC value.  This is a simpler approach to executing an MCMC algorithm, than the process of executing and extracting samples as described in Sections \ref{executing-the-mcmc-algorithm} and \ref{sec:extracting-samples}.
 
-\cd{runMCMC} also provides several user-friendly options such as burn-in, running multiple chains, and different initial values for each chain.  However, using \cd{runMCMC} does not support several lower-level options, such as timing the individual samplers internal to the MCMC, or continuing an exisiting MCMC run (picking up where it left off).
+\cd{runMCMC} also provides several user-friendly options such as burn-in, thinning, running multiple chains, and different initial values for each chain.  However, using \cd{runMCMC} does not support several lower-level options, such as timing the individual samplers internal to the MCMC, continuing an exisiting MCMC run (picking up where it left off), or modifying the sampler execution ordering.
 
 \cd{runMCMC} takes arguments that will control the following aspects of the MCMC:
 
@@ -480,6 +507,7 @@ Once an MCMC algorithm has been created using \cd{buildMCMC}, the function \cd{r
 \item Number of iterations in each chain;
 \item Number of chains;
 \item Number of burn-in samples to discard from each chain;
+\item Thinning interval for recording samples;
 \item Initial values, or a function for generating initial values for each chain;
 \item Setting the random number seed;
 \item Returning the posterior samples as a \cd{coda} \cd{mcmc} object;
@@ -489,7 +517,7 @@ Once an MCMC algorithm has been created using \cd{buildMCMC}, the function \cd{r
 
 % See \cd{help(runMCMC)} for details of these arguments.
 
-% Other features of the MCMC can still be customized when using \cd{runMCMC}, which is done using the MCMC configuration object.  This includes setting monitors, customizing samplers, or setting a thinning interval (see Section \ref{sec:customizing-mcmc-conf}).  The MCMC configuration object is then used to create an MCMC algorithm, which is compiled and passed as an argument to \cd{runMCMC}.
+% Other features of the MCMC can still be customized when using \cd{runMCMC}, which is done using the MCMC configuration object.  This includes setting monitors, or customizing samplers (see Section \ref{sec:customizing-mcmc-conf}).  The MCMC configuration object is then used to create an MCMC algorithm, which is compiled and passed as an argument to \cd{runMCMC}.
 
 % When running a single chain, \cd{runMCMC} returns a matrix of MCMC samples (as described in Section \ref{sec:extracting-samples}).  When running multiple chains, a list of sample matrices is returned.  Using the argument \cd{samplesAsCodaMCMC=TRUE}, a \cd{coda} \cd{mcmc} object, or in the case of multiple chains, a \cd{coda} \cd{mcmc.list} object is returned instead.
 
@@ -499,9 +527,10 @@ The following examples demonstrate some uses of \cd{runMCMC}, and assume the exi
 ## run a single chain, and return a matrix of samples
 mcmc.out <- runMCMC(Cmcmc)
 
-## run three chains of 10,000 samples, discard a burn-in of 1,000,
+## run three chains of 10000 samples, discard initial burnin of 1000,
+## record samples thereafter using a thinning interval of 10,
 ## and return of list of sample matrices
-mcmc.out <- runMCMC(Cmcmc, niter = 10000, nburnin = 1000, nchains = 3)
+mcmc.out <- runMCMC(Cmcmc, niter=10000, nburnin=1000, thin=10, nchains=3)
 
 ## run three chains, returning posterior samples, summary statistics,
 ## and the WAIC value for each chain
@@ -531,6 +560,8 @@ See \cd{help(runMCMC)} for further details.
 
 The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method \cd{mcmc\$run} (see \cd{help(buildMCMC)} in R).  The \cd{run} method has one required argument, \cd{niter}, the number of iterations to be run.  %Calling \cd{mcmc\$run(niter)} causes the full list of samplers (as determined by the \cd{MCMCconf} object) to be executed \cd{niter} times, and the monitored variables to be stored into the internal \cd{mvSamples} and/or \cd{mvSamples2} objects as governed by the corresponding thinning intervals.
 
+The \cd{run} method has optional arguments \cd{thin} and \cd{thin2}.  These can be used to specify thinning intervals for recording samples (corresponding to \cd{monitors} and \cd{monitors2}).  If either of these arguments are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
+
 The \cd{run} method has an optional \cd{reset} argument.  When \cd{reset = TRUE} (the default value), the following occurs prior to running the MCMC:
 \begin{itemize}
 \item All model nodes are checked and filled or updated as needed, in valid (topological) order.  If a stochastic node is missing a value, it is populated using a call to \cd{simulate} and its log probability value is calculated.  The values of deterministic nodes are calculated from their parent nodes.  If any right-hand-side-only nodes (e.g., explanatory variables) are missing a value, an error results.
@@ -552,6 +583,17 @@ Cmcmc$run(niter, time = TRUE)
 Cmcmc$getTimes()
 @ 
 will return a vector of the total time spent in each sampler, measured in seconds. 
+
+
+\subsection{Modifying the order of sampler execution: \cd{samplerExecutionOrder}} \label{sec:runtime-sampler-execution-order}
+
+The order in which the MCMC sampler functions execute can also be specified at MCMC runtime.  This is done using the argument \cd{samplerExecutionOrder}.  Providing this runtime argument will override any modified execution ordering that was specified in the MCMC configuration.  For example,
+
+<<eval=FALSE>>=
+## interleave execution of the first sampler with other sampler functions
+Cmcmc$run(niter, samplerExecutionOrder = c(1, 2, 1, 3, 1, 4, 1, 5))
+@ 
+
 
 \section{Extracting MCMC samples}
 \label{sec:extracting-samples}
@@ -581,7 +623,7 @@ Obtaining samples as matrices is most common, but see Section \ref{sec:modelValu
 \section{Calculating WAIC}
 \label{sec:WAIC}
 
-Once an MCMC algorithm has been run, as described in \ref{sec:executing-the-mcmc-algorithm}, the WAIC \citep{Watanabe_2010} can be calculated from the posterior samples produced by the MCMC algorithm.  Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument \cd{enableWAIC = TRUE} must have been supplied to the call to \cd{buildMCMC}, or the \cd{enableWAIC} NIMBLE option must have been set to \cd{TRUE}.
+Once an MCMC algorithm has been run, as described in \ref{sec:executing-the-mcmc-algorithm}, the WAIC \citep{Watanabe_2010} can be calculated from the posterior samples produced by the MCMC algorithm.  Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument \cd{enableWAIC = TRUE} must have been supplied to \cd{configureMCMC} or to \cd{buildMCMC}, or the \cd{enableWAIC} NIMBLE option must have been set to \cd{TRUE}.
 
 The WAIC is calculated by calling the member method \cd{mcmc\$calculateWAIC} (see \cd{help(buildMCMC)} in R for more details).  The \cd{calculateWAIC} method has one required argument, \cd{nburnin}, the number of initial samples to discard prior to WAIC calculation.  \cd{nburnin} defaults to 0.
 
