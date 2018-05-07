@@ -633,7 +633,7 @@ Cmcmc$calculateWAIC(nburnin = 100)
 
 \section{k-fold cross-validation}
 
-The \cd{runCrossValidate} function in NIMBLE performs k-fold cross-validation on a \cd{nimbleModel} fit via MCMC.  More information can be found by calling \cd{help(runCrossValidate)}. This feature is EXPERIMENTAL - please report any problems or questions to the NIMBLE development team.
+The \cd{runCrossValidate} function in NIMBLE performs k-fold cross-validation on a \cd{nimbleModel} fit via MCMC.  More information can be found by calling \cd{help(runCrossValidate)}. 
 
 
 
