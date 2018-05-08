@@ -12,6 +12,79 @@ library(nimble)
 #source("./packages/nimble/R/BNP_distributions.R")
 #source("./packages/nimble/R/BNP_samplers.R")
 
+# Chris's test for smapler_G_density
+## Case 1: tilde vars exist; conc is random
+code <- nimbleCode({
+  for(i in 1:n){
+    lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
+    lambda[i] <- lambdaTilde[xi[i]]
+    y[i] ~ dpois(lambda[i])
+  }
+  xi[1:n] ~ dCRP(conc = conc0, size=n)
+  conc0 ~ dgamma(1, 1)
+})
+
+data0 <- list(y = c(rpois(20, 10), rpois(20, 5), rpois(60, 50)))
+Consts <- list(n = 100)
+Inits <- list( xi = 1:Consts$n, lambdaTilde = rgamma(Consts$n, shape=1, rate=0.01), conc0 = 1)
+monitors <- c('lambdaTilde','xi','conc0')
+
+
+## Case 2: no tilde vars exist; conc is random
+code <- nimbleCode({
+  for(i in 1:n){
+    lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
+    y[i] ~ dpois(lambdaTilde[xi[i]])
+  }
+  xi[1:n] ~ dCRP(conc = conc0, size=n)
+  conc0 ~ dgamma(1, 1)
+})
+
+data0 <- list(y = c(rpois(20, 10), rpois(20, 5), rpois(60, 50)))
+Consts <- list(n = 100)
+Inits <- list( xi = 1:Consts$n, lambdaTilde = rgamma(Consts$n, shape=1, rate=0.01), conc0 = 1)
+monitors <- c('lambdaTilde','xi','conc0')
+
+
+## Case 3: tilde vars exist; conc is not random
+code <- nimbleCode({
+  for(i in 1:n){
+    lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
+    lambda[i] <- lambdaTilde[xi[i]]
+    y[i] ~ dpois(lambda[i])
+  }
+  xi[1:n] ~ dCRP(conc = conc0, size=n)
+})
+
+data0 <- list(y = c(rpois(20, 10), rpois(20, 5), rpois(60, 50)))
+Consts <- list(n = 100, conc0 = 1)
+Inits <- list( xi = 1:Consts$n, lambdaTilde = rgamma(Consts$n, shape=1, rate=0.01))
+monitors <- c('lambdaTilde','xi')
+
+## now try the MCMC with one of the three models above
+
+model <- nimbleModel(code, data = data0, inits = Inits, constants = Consts,  calculate=TRUE)
+cm <- compileNimble(model) 
+
+mConf <- configureMCMC(model, print=FALSE, monitors = monitors)
+mMCMC <- buildMCMC(mConf)
+
+CmMCMC <- compileNimble(mMCMC, project=model, resetFunctions=TRUE, showCompilerOutput = FALSE)
+
+CmMCMC$run(1000)
+samples = as.matrix(CmMCMC$mvSamples)
+
+CmvSaved = CmMCMC$mvSamples
+mvSaved = mMCMC$mvSamples
+# based on manual, need to provide uncompiled mv object
+rdens = nimble:::sampler_DP_density(model, mvSaved)
+cdens = compileNimble(rdens, project = model)
+cdens$run()
+
+
+
+
+
 
 #--------------------------------------------------
 Code=nimbleCode(
