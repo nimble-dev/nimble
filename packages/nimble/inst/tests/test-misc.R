@@ -221,5 +221,17 @@ test_that("setInits works in complicated case", {
 }
 )
 
+test_that("missing return statement is trapped",
+{
+    ## capture.output here just suppresses the print()ed error
+    ## message to keep it out of Travis log files.
+    expect_error(msg <- capture.output({a <- nimbleFunction(
+                                            run = function() {
+                                                returnType(double(1))
+                                                out <- rnorm(10, 0, 1)
+                                            })}),
+                 info = "error-trapping missing return statement")
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
