@@ -137,7 +137,7 @@ test_that('getParam, three-dimensional', {
 test_that('getParam, user-defined integer-valued', {
     dtest <- nimbleFunction(
         run = function(x = integer(0), thetaInt = integer(0), thetaDbl = double(0), log = integer(0, default = 0)) {
-            returnType(integer(0))
+            returnType(double(0))
             return(0)
         })
     temporarilyAssignInGlobalEnv(dtest)
