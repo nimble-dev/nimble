@@ -118,19 +118,21 @@ sampler_DP_density <- nimbleFunction(
       for(i in 1:length(parentNodes)) {
         savedParentNodes <- c(savedParentNodes, mvSavedVar[parentNodes[i]==mvSavedVar])
       }
+      model$simulate(savedParentNodes)
       # c) create model with NA values
       modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
       modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] # if not included in NA model: Error in if (counts > 0) { : missing value where TRUE/FALSE needed
+      nimCopy(from = model, to = modelWithNAs, nodes = parentNodes) # can nodes be a vector?
       # d) copy savedParentNodes from mvSaved: doing thi I get an error
       if( length(savedParentNodes) == 0 ) { # concentration parameter was not monitored
         stop( paste('sampler_DP_density: Some variable of conc parameter is not being monitored in model values object. \n') )
       } else {
-        for(i in 1:length(savedParentNodes)) {
-          value <- mvSaved[[savedParentNodes[i]]][[1]]
-          modelWithNAs[[savedParentNodes[i]]] <- value
+        #for(i in 1:length(savedParentNodes)) {
+          #value <- mvSaved[[savedParentNodes[i]]][[1]]
+          #modelWithNAs[[savedParentNodes[i]]] <- value
           # e): do calculate of model with NA
-          modelWithNAs$calculate(model$getDependencies(savedParentNodes[i]))
-        }
+          modelWithNAs$calculate(model$getDependencies(savedParentNodes)) #[i]
+        #}
         # f)
         dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
         if( is.na(dcrpParam) ) {
@@ -139,6 +141,7 @@ sampler_DP_density <- nimbleFunction(
       }
     }
     
+    allDepsOfSavedParentNodes <- model$getDependencies(savedParentNodes)
 
     N <- length(dataNodes)
     p <- length(tildeVars) 
@@ -172,12 +175,13 @@ sampler_DP_density <- nimbleFunction(
     } else {
       for( iiter in 1:niter ) {
         for(i in 1:length(savedParentNodes)) {
-          value <- mvSaved[[ savedParentNodes[i] ]][[iiter]]
-          modelWithNAs[[savedParentNodes[i]]] <- value
+          nimCopy(from = mvSaved, to = model, nodes = allDepsOfSavedParentNodes, row=iiter) # can nodes be a vector?
+          #value <- mvSaved[[ savedParentNodes[i] ]][[iiter]]
+          #model[[savedParentNodes[i]]] <- value
           # e): do calculate of model with NA
-          modelWithNAs$calculate(model$getDependencies(savedParentNodes[i]))
+          model$calculate(model$getDependencies(savedParentNodes[i]))
         }
-        concSam[iiter] <- modelWithNAs$getParam(dcrpNode, 'conc')
+        concSam[iiter] <- model$getParam(dcrpNode, 'conc')
       }
       dcrpAux <- mean(concSam)
     }
