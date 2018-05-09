@@ -979,11 +979,11 @@ sampler_RW_PF <- nimbleFunction(
         my_setAndCalculate <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         if(latentSamp == TRUE) { 
-          filterControl$saveAllVal <- TRUE
-          filterControl$smoothingVal <- TRUE
+          filterControl$saveAll <- TRUE
+          filterControl$smoothing <- TRUE
         } else {
-          filterControl$saveAllVal <- FALSE
-          filterControl$smoothingVal <- FALSE
+          filterControl$saveAll <- FALSE
+          filterControl$smoothing <- FALSE
         }
         filterControl$initModel <- FALSE
         if(is.character(filterType) && filterType == 'auxiliary') {
@@ -1157,11 +1157,11 @@ sampler_RW_PF_block <- nimbleFunction(
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d)
         if(latentSamp == TRUE) { 
-          filterControl$saveAllVal <- TRUE
-          filterControl$smoothingVal <- TRUE
+          filterControl$saveAll <- TRUE
+          filterControl$smoothing <- TRUE
         } else {
-          filterControl$saveAllVal <- FALSE
-          filterControl$smoothingVal <- FALSE
+          filterControl$saveAll <- FALSE
+          filterControl$smoothing <- FALSE
         }
         filterControl$initModel <- FALSE
         if(is.character(filterType) && filterType == 'auxiliary') {
