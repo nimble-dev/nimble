@@ -114,7 +114,7 @@ runMCMC <- function(mcmc,
     thinToUseVec <- c(0, 0)
     thinToUseVec[1] <- if(!missing(thin))  thin  else mcmc$thinFromConfVec[1]
     thinToUseVec[2] <- if(!missing(thin2)) thin2 else mcmc$thinFromConfVec[2]
-    if(thinToUseVec[1] > 1 && nburnin > 0) message('The behavior of runMCMC() has recently changed with respect to the nburnin argument.  Previously, nburnin specified the number of *post-thinning* MCMC samples to discard.  It has been changed to now specify the number of *pre-thinning* MCMC samples to discard.  So, the final number of samples returned will be floor((niter-nburnin)/thin).  This change will result in more posterior samples being returned, but at the expense of the leading samples being from earlier in the full MCMC chain, thus having had less time to "forget" the initial conditions.')
+    if(thinToUseVec[1] > 1 && nburnin > 0) message("runMCMC's handling of nburnin changed in nimble version 0.6-11. Previously, nburnin samples were discarded *post-thinning*.  Now nburnin samples are discarded *pre-thinning*.  The number of samples returned will be floor((niter-nburnin)/thin).")
     samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
     for(i in 1:nchains) {
         if(nimbleOptions('verbose')) message('running chain ', i, '...')
