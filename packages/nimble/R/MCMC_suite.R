@@ -535,16 +535,11 @@ MCMCsuiteClass <- setRefClass(
 
             ## Record full set of model states
             allInitialModelStates <- list()
-            for(v in Cmodel$getVarNames(includeLogProb = TRUE))
-                allInitialModelStates[[v]] <- Cmodel[[v]]
+            allModelVars <- Cmodel$getVarNames(includeLogProb = TRUE)
+            for(var in allModelVars)   allInitialModelStates[[var]] <- Cmodel[[var]]
                 
             for(iMCMC in seq_along(nimbleMCMCs)) {
-                ## Previously the following two calls re-initialized between MCMCs.
-                ## However, that left in place any states not present in inits.
-                ## Therefore we now use allInitialModelStates
-                ##Cmodel$setInits(inits);     calculate(Cmodel)
-                for(v in Cmodel$getVarNames(includeLogProb = TRUE))
-                    Cmodel[[v]] <<- allInitialModelStates[[v]]
+                for(var in allModelVars)   Cmodel[[var]] <<- allInitialModelStates[[var]]
                 mcmcTag <- nimbleMCMCs[iMCMC]
                 Cmcmc <- CmcmcFunctionList[[mcmcTag]]
                 if(setSeed) set.seed(0)
