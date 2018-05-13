@@ -199,7 +199,7 @@ testsDynIndex <- list(
                             list(parent = 'mu', result = c(paste0('mu[', 1:5, ']'),
                                                            paste0('y[',1:4,']')))),
         validIndexes =list(list(var = c('k[8]','j[1]'), value = c(5,7))),
-        invalidIndexes = list(list(var = c('k[1]', 'j[1]'), value = c(1,-1)),
+        invalidIndexes = list(list(var = c('k[1]', 'j[1]'), value = c(1,8), expect_NA_in_if = TRUE),
                               list(var = c('k[2]', 'j[1]'), value = c(6,1)))
     ),
     list(  
