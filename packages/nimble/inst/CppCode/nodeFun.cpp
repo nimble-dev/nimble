@@ -2,7 +2,6 @@
 #include "nimble/accessorClasses.h"
 
 void nodeFun::recordTape(NodeVectorClassNew_derivs &NV) {
-  int step = 0;
   vector< CppAD::AD<double> > dependentVars(1);
   NimArr<1, double> NimArrValues;
   NimArr<1, CppAD::AD<double> > NimArrValues_AD;
@@ -182,12 +181,8 @@ void nodeFun::runTape(CppAD::ADFun< double > &ADtape,
   
   bool hessianFlag = false;   // Are second order derivs requested?
   bool jacobianFlag = false;  // Are first order derivs requested?
-  bool valueFlag = false;     // Is the function value requested?
 
   for (int i = 0; i < derivOrders.dimSize(0); i++) {
-    if (derivOrders[i] == 0) {
-      valueFlag = true;
-    }
     if (derivOrders[i] == 1) {
       jacobianFlag = true;
     }
@@ -203,7 +198,7 @@ void nodeFun::runTape(CppAD::ADFun< double > &ADtape,
     std::vector<double> w(1);
     w[0] = 1;
     rev = ADtape.Reverse(1, w);
-    int jacSize = rev.size()-1;
+    size_t jacSize = rev.size()-1;
     ansList->jacobian.setSize( 1, jacSize, false, false);
     std::copy(rev.begin(), rev.begin() + jacSize, ansList->jacobian.getPtr());
     if(hessianFlag) {
@@ -213,7 +208,6 @@ void nodeFun::runTape(CppAD::ADFun< double > &ADtape,
         x1[dx_ind] = 1;
         ADtape.Forward(1, x1);
         rev = ADtape.Reverse(2, w);
-        int hessSize = rev.size()-1;
 	      for (size_t dx_ind2 = 0; dx_ind2 < jacSize; dx_ind2++) {
 	        ansList->hessian[jacSize * dx_ind + dx_ind2] =
 		        rev[dx_ind2 * 2 + 1];
@@ -242,7 +236,7 @@ nodeFun::runExtraInputObject(NodeVectorClassNew_derivs &NV,
 atomic_extraOutputObject*
 nodeFun::runExtraOutputObject(NodeVectorClassNew_derivs &NV,
 			      CppAD::AD<double> &logProb) {
-  int length_modelOutput = NV.model_modelOutput_accessor.getTotalLength();
+  size_t length_modelOutput = NV.model_modelOutput_accessor.getTotalLength();
   NimArr<1, CppAD::AD<double> > NAV_AD;
   NAV_AD.setSize(length_modelOutput);
   std::vector< CppAD::AD<double> > extraOutputs(length_modelOutput);
@@ -305,15 +299,15 @@ bool atomic_extraInputObject::forward(
     return ok;
     
   if(vx.size() > 0) {// only true for Forward(0)
-    for(unsigned int i = 0; i < vx.size(); ++i)
+    for(size_t i = 0; i < vx.size(); ++i)
       std::cout<<vx[i]<<" ";
     std::cout<<std::endl;
-    for(unsigned int i = 0; i < vy.size(); ++i)
+    for(size_t i = 0; i < vy.size(); ++i)
       vy[i] = true;
   }
 
-  int lengthExtraInput = vy.size();
-  int length_extraNodes_accessor = NV_->model_extraInput_accessor.getTotalLength();
+  size_t lengthExtraInput = vy.size();
+  size_t length_extraNodes_accessor = NV_->model_extraInput_accessor.getTotalLength();
   if(length_extraNodes_accessor < lengthExtraInput) {
     // We should really check that the length is the right multiple of q
     std::cout<<"Problem: length_extraNodes_accessor < vy.size()"<<std::endl;
@@ -327,7 +321,7 @@ bool atomic_extraInputObject::forward(
     NimArr<1, double> NimArr_ty;
     NimArr_ty.setSize(length_extraNodes_accessor);
     getValues(NimArr_ty, NV_->model_extraInput_accessor);
-    for(unsigned int i = 0; i < length_extraNodes_accessor; ++i) {
+    for(size_t i = 0; i < length_extraNodes_accessor; ++i) {
       ty[i*(q+1) + 0] = NimArr_ty[i];
     }
   }
@@ -338,7 +332,7 @@ bool atomic_extraInputObject::forward(
   // std::cout<<"got to order 1"<<std::endl;
     
   if( p <= 1 ) {
-    for(unsigned int i = 0; i < length_extraNodes_accessor; ++i) {
+    for(size_t i = 0; i < length_extraNodes_accessor; ++i) {
       ty[i*(q+1) + 1] = 0.;
     }
   }    
@@ -449,7 +443,7 @@ bool atomic_extraOutputObject::forward(
       vy[i] = true;
   }
       
-  int length_modelOutput_accessor = NV_->model_modelOutput_accessor.getTotalLength();
+  size_t length_modelOutput_accessor = NV_->model_modelOutput_accessor.getTotalLength();
   // std::cout << "length_modelOutput_accessor =" << length_modelOutput_accessor << std::endl;
   // if(length_modelOutput_accessor < tx.size()) {
   //   std::cout<<"Problem: length_modelOutput_accessor < vx.size()"<<std::endl;
@@ -461,7 +455,7 @@ bool atomic_extraOutputObject::forward(
     //    std::cout<<"copying modelOutputs to model"<<std::endl;
     NimArr<1, double> NimArr_tx;
     NimArr_tx.setSize(length_modelOutput_accessor);
-    for(unsigned int i = 0; i < length_modelOutput_accessor; ++i) {
+    for(size_t i = 0; i < length_modelOutput_accessor; ++i) {
       NimArr_tx[i] = tx[i*(q+1) + 0];
       // std::cout<<NimArr_tx[i]<<" ";
     }
