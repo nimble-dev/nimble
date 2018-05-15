@@ -801,9 +801,6 @@ nimDerivs_keywordInfo <- keywordInfoClass(
     ## First check to see if nimFxn argument is a method.
     fxnCall <- code[[2]][[1]]
     order <- code[['order']]
-    # if(length(order) == 1){
-    #   code[['order']] <- substitute(nimC(ORDER), list(ORDER = order))
-    # }
     if(deparse(fxnCall) == 'calculate'){
       code <- calculate_keywordInfo$processor(code, nfProc)
     } 
@@ -823,9 +820,6 @@ nimDerivs_keywordInfo <- keywordInfoClass(
       addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)
       code[['wrt']] <- substitute(VECNAME,
                                   list(VECNAME = as.name(accessName)))
-      browser()
-      if(is.numeric(code[['order']])) code[['order']] <- substitute(nimC(CODE),
-                                                                    list(CODE = code[['order']]))
     }
     return(code)
   }

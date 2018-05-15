@@ -110,7 +110,7 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 }
 
 void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
-                                        NimArr<1, double> &derivOrders,
+                                        const NimArr<1, double> &derivOrders,
                                         const NimArr<1, double> &wrtVector,
                                         nimSmartPtr<NIMBLE_ADCLASS> &ansList) {
 #ifdef _TIME_AD
@@ -129,7 +129,9 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
   int orderSize = derivOrders.size();
   double array_derivOrders[orderSize];
 
-  std::memcpy(array_derivOrders, derivOrders.getPtr(),
+  
+
+  std::memcpy(array_derivOrders, derivOrders.getConstPtr(),
 	      orderSize * sizeof(double));
 
   int maxOrder =
@@ -239,4 +241,22 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 #ifdef _TIME_AD
   derivs_getDerivs_timer_stop();
 #endif
+}
+
+NimArr<1, double> make_vector_if_necessary(int a){
+      NimArr<1, double> intArray;
+      intArray.setSize(1);
+      intArray[0] = a;
+      return(intArray);
+}
+
+NimArr<1, double> make_vector_if_necessary(double a){
+      NimArr<1, double> intArray;
+      intArray.setSize(1);
+      intArray[0] = a;
+      return(intArray);
+}
+
+NimArr<1, double> make_vector_if_necessary(NimArr<1, double> a){
+      return(a);
 }

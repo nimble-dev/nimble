@@ -136,12 +136,12 @@ class nimbleCppADinfoClass {
 class nimbleFunctionCppADbase {
 public:
   void                        getDerivs(nimbleCppADinfoClass &ADinfo,
-                                        NimArr<1, double> &derivOrders,
+                                        const NimArr<1, double> &derivOrders,
                                         const NimArr<1, double> &wrtVector,
                                         nimSmartPtr<NIMBLE_ADCLASS> &ansList);
   
    nimSmartPtr<NIMBLE_ADCLASS> getDerivs_wrapper(nimbleCppADinfoClass &ADinfo,
-                                        NimArr<1, double> &derivOrders,
+                                        const NimArr<1, double> &derivOrders,
                                         const NimArr<1, double> &wrtVector){
             nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
             getDerivs(ADinfo, derivOrders, wrtVector, ansList);
@@ -156,5 +156,9 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
     NodeVectorClassNew_derivs &nodes, int iNodeFunction,
     NimArr<1, double> &derivOrders);
+
+NimArr<1, double> make_vector_if_necessary(int);
+NimArr<1, double> make_vector_if_necessary(double);
+NimArr<1, double> make_vector_if_necessary(NimArr<1, double>);
 
 #endif

@@ -1187,6 +1187,11 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
     if(!(code$caller$name %in% assignmentOperators))
       asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   }
+  a1 <- insertExprClassLayer(code$args[[1]], length(code$args[[1]]$args) - 1, 'make_vector_if_necessary',
+                             type = 'double',
+                             nDim = 1,
+                             sizeExprs = list())
+  
   #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # Sets variables argument, not yet implemented.
   if(length(asserts) == 0) NULL else asserts
 }
