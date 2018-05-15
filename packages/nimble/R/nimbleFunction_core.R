@@ -90,7 +90,7 @@ nimbleFunction <- function(setup         = NULL,
     className <- name
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
-    if(nimbleOptions('experimentalEnableDerivs') && (length(enableDerivs)>0 && nimbleOptions('allowDynamicIndexing'))) stop('Currently, nimble cannot handle dynamic indexing and derivatives.
+    if(nimbleOptions('experimentalEnableDerivs') && (length(enableDerivs)>0 && nimbleOptions('allowDynamicIndexing'))) stop('Currently, nimble cannot handle dynamic indexing and derivatives simultaneously.
       Please set nimbleOptions(allowDynamicIndexing = FALSE) before building a nimbleFunction with derivatives enabled.') 
     if(nimbleOptions('experimentalEnableDerivs') && length(enableDerivs)>0) methodList <- c(methodList, buildDerivMethods(methodList, enableDerivs))
     else if(!nimbleOptions('experimentalEnableDerivs') && length(enableDerivs)>0) stop('To enable nimbleFunction derivatives, you must first set "nimbleOptions(experimentalEnableDerivs = TRUE)".')
