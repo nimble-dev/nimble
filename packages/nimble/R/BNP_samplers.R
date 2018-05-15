@@ -25,7 +25,7 @@ sampler_DP_density <- nimbleFunction(
     # cheking the mvSaved object is compiled or not:
     mvIsCompiled <- exists('dll', envir = mvSaved)
     if( mvIsCompiled ) {
-      stop("sampler_DP_density: model value object has to be uncompiled.\n")
+      stop("sampler_DP_density: model value object should to be uncompiled.\n")
     }
     
     # variables in the mv object:
@@ -103,6 +103,7 @@ sampler_DP_density <- nimbleFunction(
     #if( length(allDep) == 0 ) { # one case where conc parameter is fixed
     #  fixedConc <- TRUE
     #}
+    allDepsOfSavedParentNodes <- " "
     if( length(allDep) > 0 ) { # length(allDep) == 0 implies conc parameter is fixed
       # now eliminiate deterministic dependencies ,e.g., theta[i] <- thetatilde[xi[i]], from allDep object: 
       indexDetDep <- c()
@@ -130,7 +131,15 @@ sampler_DP_density <- nimbleFunction(
         }
         model$simulate(savedParentNodes)
         # c) create model with NA values
+        
+        verbosity <- nimbleOptions('verbose')
+        nimbleOptions(verbose = FALSE)
         modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
+        nimbleOptions(verbose = verbosity)
+        
+        
+        
+        #modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
         modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] # if not included in NA model: Error in if (counts > 0) { : missing value where TRUE/FALSE needed
         nimCopy(from = model, to = modelWithNAs, nodes = parentNodes) # can nodes be a vector?
         # d) copy savedParentNodes from mvSaved: doing thi I get an error
@@ -181,8 +190,11 @@ sampler_DP_density <- nimbleFunction(
     # if 'conc' is fixed, we get its value directly from the parameter of dCRP.
     # the relation between 'conc', trunc level, and error of approximation is: (conc / (conc +1))^{Trunc-1}=e 
     concSam <- numeric(niter)
-    if( fixedConc ) {
-      concSam[1:niter] <- nimNumeric( length = niter, value = model$getParam(dcrpNode, 'conc') )
+    if( fixedConc == TRUE ) {
+      for( iiter in 1:niter ) {
+        concSam[iiter] <- model$getParam(dcrpNode, 'conc')
+      }
+      
       dcrpAux <- model$getParam(dcrpNode, 'conc')
     } else {
       for( iiter in 1:niter ) {

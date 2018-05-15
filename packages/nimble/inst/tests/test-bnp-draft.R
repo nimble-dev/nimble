@@ -29,8 +29,26 @@ Consts <- list(n = 100)
 Inits <- list( xi = 1:Consts$n, lambdaTilde = rgamma(Consts$n, shape=1, rate=0.01), conc0 = 1)
 monitors <- c('lambdaTilde','xi','conc0')
 
+model <- nimbleModel(code, data = data0, inits = Inits, constants = Consts,  calculate=TRUE)
+cm <- compileNimble(model) 
 
-## Case 2: no tilde vars exist; conc is random
+mConf <- configureMCMC(model, print=FALSE, monitors = monitors)
+mMCMC <- buildMCMC(mConf)
+
+mMCMC$run(10)
+mvSaved = mMCMC$mvSamples
+
+
+# based on manual, need to provide uncompiled mv object
+rdens = nimble:::sampler_DP_density(model, mvSaved)
+cdens = compileNimble(rdens, project = model)
+cdens$run()
+samplesdens = as.matrix(cdens$samples)
+
+
+
+
+## Case 1.2: no tilde vars exist; conc is random
 code <- nimbleCode({
   for(i in 1:n){
     lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
@@ -40,10 +58,26 @@ code <- nimbleCode({
   conc0 ~ dgamma(1, 1)
 })
 
-data0 <- list(y = c(rpois(20, 10), rpois(20, 5), rpois(60, 50)))
-Consts <- list(n = 100)
+data0 <- list(y = c(rpois(2, 10), rpois(2, 5), rpois(6, 50)))
+Consts <- list(n = 10)
 Inits <- list( xi = 1:Consts$n, lambdaTilde = rgamma(Consts$n, shape=1, rate=0.01), conc0 = 1)
 monitors <- c('lambdaTilde','xi','conc0')
+
+
+## Case 1.3: no tilde vars exist; conc is fixed
+code <- nimbleCode({
+  for(i in 1:n){
+    lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
+    y[i] ~ dpois(lambdaTilde[xi[i]])
+  }
+  xi[1:n] ~ dCRP(conc = 1, size=n)
+})
+
+data0 <- list(y = c(rpois(2, 10), rpois(2, 5), rpois(6, 50)))
+Consts <- list(n = 10)
+Inits <- list( xi = 1:Consts$n, lambdaTilde = rgamma(Consts$n, shape=1, rate=0.01))
+monitors <- c('lambdaTilde','xi')
+
 
 
 ## Case 3: tilde vars exist; conc is not random
@@ -56,8 +90,8 @@ code <- nimbleCode({
   xi[1:n] ~ dCRP(conc = conc0, size=n)
 })
 
-data0 <- list(y = c(rpois(20, 10), rpois(20, 5), rpois(60, 50)))
-Consts <- list(n = 100, conc0 = 1)
+data0 <- list(y = c(rpois(2, 10), rpois(2, 5), rpois(6, 50)))
+Consts <- list(n = 10, conc0 = 1)
 Inits <- list( xi = 1:Consts$n, lambdaTilde = rgamma(Consts$n, shape=1, rate=0.01))
 monitors <- c('lambdaTilde','xi')
 
@@ -71,10 +105,11 @@ mMCMC <- buildMCMC(mConf)
 
 CmMCMC <- compileNimble(mMCMC, project=model, resetFunctions=TRUE, showCompilerOutput = FALSE)
 
-CmMCMC$run(1000)
-samples = as.matrix(CmMCMC$mvSamples)
-
+CmMCMC$run(10)
+#samples = as.matrix(CmMCMC$mvSamples)
 CmvSaved = CmMCMC$mvSamples
+
+mMCMC$run(10)
 mvSaved = mMCMC$mvSamples
 # based on manual, need to provide uncompiled mv object
 rdens = nimble:::sampler_DP_density(model, mvSaved)
@@ -410,14 +445,74 @@ s20=4; s21=4
 mu01=5; mu11=-5
 Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
 
+
+Code=nimbleCode(
+  {
+    for(i in 1:N3){
+      thetatilde[i] ~ dnorm(mean=mu0, var=tau20) 
+    }
+    xi[1:N2] ~ dCRP(conc, size=N2)
+    
+    for(i in 1:N){
+      y[i] ~ dnorm(thetatilde[xi[i]], var=2)#
+    }
+    conc ~ dgamma(1,1)#conc<-1
+    mu0<-0; tau20<-40; a0<-1; b0<-0.5; 
+  }
+)
+
+Consts=list(N=10, N2=10, N3=10)
+
+conc<-1; a0<-1; b0<-0.5; mu0<-0; tau20<-40
+set.seed(1)
+aux=sample(1:10, size=Consts$N2, replace=TRUE)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)), conc=1)
+
+s20=4; s21=4
+mu01=5; mu11=-5
+Data=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
+
+
 #-- compiling the model:
 model<-nimbleModel(Code, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
 cmodel<-compileNimble(model)
 
+
+
+
 #-- MCMC configuration:
-modelConf<-configureMCMC(model, print=FALSE)
+monitors <- c('thetatilde','xi','conc')
+modelConf<-configureMCMC(model, print=FALSE, monitors = monitors)
 modelConf$printSamplers(c("xi"))
 modelMCMC=buildMCMC(modelConf)
+
+modelMCMC$run(10)
+mvSaved = modelMCMC$mvSamples
+
+
+#----------------------------------------------------------------------------
+#-- standarized output:
+rdens = nimble:::sampler_DP_density(model, mvSaved)
+cdens = compileNimble(rdens, project = model)
+cdens$run()
+samplesdens = as.matrix(cdens$samples)
+
+
+trunc=ncol(samplesdens)/2
+for(i in 1:nrow(samplesdens)){
+  plot(samplesdens[i, (trunc+1):(2*trunc)], samplesdens[i, 1:trunc], type="h", main=sum(samplesdens[i, 1:trunc]),
+       xlim=c(-10,10)); readline()
+}
+
+
+# less parameters in teh model
+trunc=length(aux[1,])/2
+for(i in 1:nrow(aux)){
+  plot(aux[i, (trunc+1):(2*trunc)], aux[i, 1:trunc], type="h", main=sum(aux[i, 1:trunc]),
+       xlim=c(-10,10)); readline()
+}
+
+
 
 #-- compiling the sampler
 CmodelNewMCMC=compileNimble(modelMCMC, project=model,
@@ -491,6 +586,12 @@ nsave=1000
 t1=proc.time()
 CmodelNewMCMC$run(nsave)
 proc.time()-t1
+
+
+rdens = nimble:::sampler_DP_density(model, mvSaved)
+cdens = compileNimble(rdens, project = model)
+cdens$run()
+samplesdens = as.matrix(cdens$samples)
 
 
 mvSaved=modelMCMC$mvSamples
