@@ -12,6 +12,92 @@ library(nimble)
 #source("./packages/nimble/R/BNP_distributions.R")
 #source("./packages/nimble/R/BNP_samplers.R")
 
+
+## Abel's realistic model using CRP:
+# simple model:
+code <- nimbleCode({
+  for(i in 1:5) {
+    for(j in 1:3) {
+      y[i,j] ~ dbern(theta[i, j])
+      theta[i, j] <- phi(mu[j] + alpha[j]*beta[i]) # iprobit
+    }
+  }
+  for(j in 1:3) {
+    mu[j] ~ dnorm(0, var=1)
+    alpha[j] ~ dnorm(0, var=1)
+  }
+  for(i in 1:5) {
+    beta[i] ~ dnorm(0, var=1)
+  }
+})
+
+set.seed(1)
+data <- list(y = matrix(rbinom(15, 1, 0.5), ncol=3, nrow=5))
+Inits <- list( mu = rnorm(3, 0, 1), alpha = rnorm(3, 0, 1), beta =rnorm(5, 0,1))
+
+model <- nimbleModel(code, data = data, inits = Inits, calculate=TRUE)
+cm <- compileNimble(model) 
+
+mConf <- configureMCMC(model, print=FALSE)
+mConf$printSamplers(c("mu", "alpha", "beta"))
+mMCMC <- buildMCMC(mConf)
+
+CmMCMC=compileNimble(mMCMC, project=model,
+                         resetFunctions=TRUE, showCompilerOutput = TRUE)
+
+CmMCMC$run(10)
+mvSaved = as.matrix(CmMCMC$mvSamples)
+
+
+# model adding CRP:
+code <- nimbleCode({
+  for(i in 1:5) {
+    for(j in 1:3) {
+      y[i,j] ~ dbern(theta[i, j])
+      gamma[j] <- xi[i, j]
+      theta[i, j] <- phi(mu[j] + alpha[j]*betatilde[i, gamma[j]]) #phi(mu[j] + alpha[j]*betatilde[i, xi[i,l]]) # iprobit
+    }
+  }
+  for(j in 1:3) {
+    mu[j] ~ dnorm(0, var=1)
+    alpha[j] ~ dnorm(0, var=1)
+  }
+  for(i in 1:5) {
+    for(l in 1:4){
+      betatilde[i, l] ~ dnorm(0, var=1)  
+    }
+  }
+  for(i in 1:5) {
+    xi[i, 1:4] ~ dCRP(conc0, size=4)
+  }
+  #xi[1:4] ~ dCRP(conc0, size=4)
+  conc0 ~ dgamma(1, 1)
+})
+
+set.seed(1)
+data <- list(y = matrix(rbinom(15, 1, 0.5), ncol=3, nrow=5))
+Inits <- list( mu = rnorm(3, 0, 1), alpha = rnorm(3, 0, 1), betatilde =matrix(rnorm(20, 0,1), ncol=4, nrow=5),
+               xi = matrix(rep(1, 20), , ncol=4, nrow=5), conc0=1)#
+
+model <- nimbleModel(code, data = data, inits = Inits, calculate=TRUE)
+cm <- compileNimble(model) 
+
+mConf <- configureMCMC(model, print=FALSE)
+mConf$printSamplers(c("mu", "alpha"))
+mConf$printSamplers(c("betatilde", "xi", "conc0"))
+mMCMC <- buildMCMC(mConf)
+
+CmMCMC=compileNimble(mMCMC, project=model,
+                     resetFunctions=TRUE, showCompilerOutput = TRUE)
+
+CmMCMC$run(10)
+mvSaved = as.matrix(CmMCMC$mvSamples)
+
+
+
+
+
+
 # Chris's test for smapler_G_density
 ## Case 1: tilde vars exist; conc is random
 code <- nimbleCode({
@@ -24,8 +110,8 @@ code <- nimbleCode({
   conc0 ~ dgamma(1, 1)
 })
 
-data0 <- list(y = c(rpois(20, 10), rpois(20, 5), rpois(60, 50)))
-Consts <- list(n = 100)
+data0 <- list(y = c(rpois(2, 10), rpois(2, 5), rpois(6, 50)))
+Consts <- list(n = 10)
 Inits <- list( xi = 1:Consts$n, lambdaTilde = rgamma(Consts$n, shape=1, rate=0.01), conc0 = 1)
 monitors <- c('lambdaTilde','xi','conc0')
 
@@ -39,12 +125,22 @@ mMCMC$run(10)
 mvSaved = mMCMC$mvSamples
 
 
+#CmMCMC <- compileNimble(mMCMC, project=model, resetFunctions=TRUE, showCompilerOutput = FALSE)
+#CmMCMC$run(10)
+#CmvSaved = CmMCMC$mvSamples
+#rdens = nimble:::sampler_DP_density(model, CmvSaved)
+
 # based on manual, need to provide uncompiled mv object
 rdens = nimble:::sampler_DP_density(model, mvSaved)
 cdens = compileNimble(rdens, project = model)
 cdens$run()
 samplesdens = as.matrix(cdens$samples)
 
+trunc=ncol(samplesdens)/2
+for(i in 1:nrow(samplesdens)){
+  plot(samplesdens[i, (trunc+1):(2*trunc)], samplesdens[i, 1:trunc], type="h", main=sum(samplesdens[i, 1:trunc]),
+       xlim=c(-10,60)); readline()
+}
 
 
 
@@ -501,7 +597,7 @@ samplesdens = as.matrix(cdens$samples)
 trunc=ncol(samplesdens)/2
 for(i in 1:nrow(samplesdens)){
   plot(samplesdens[i, (trunc+1):(2*trunc)], samplesdens[i, 1:trunc], type="h", main=sum(samplesdens[i, 1:trunc]),
-       xlim=c(-10,10)); readline()
+       xlim=c(-10,60)); readline()
 }
 
 
