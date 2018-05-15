@@ -1,7 +1,8 @@
-  source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-  nimbleOptions(experimentalEnableDerivs = TRUE)
-  nimbleOptions(showCompilerOutput = TRUE)
-  context("Testing of derivatives for calculate() for nimbleModels")
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+nimbleOptions(experimentalEnableDerivs = TRUE)
+nimbleOptions(allowDynamicIndexing = FALSE)
+nimbleOptions(showCompilerOutput = TRUE)
+context("Testing of derivatives for calculate() for nimbleModels")
   
 
 test_that('Derivs of calculate function work for model ADMod1', {

@@ -157,7 +157,7 @@ class nodeFun : public NamedObjects {
   };
   CppAD::AD<double> calculateBlock_ADproxyModel(int operand) const { return calculate_ADproxyModel(indexedNodeInfoTable[operand]); }
 
-  virtual void calculateWithArgs_deriv(const indexedNodeInfo &iNI, NimArr<1, double> & ARG2_nimDerivsOrders_, const NimArr<1, double> & ARG3_wrtVector_, nimSmartPtr<NIMBLE_ADCLASS> ansList) = 0;
+  virtual void calculateWithArgs_deriv(const indexedNodeInfo &iNI, const NimArr<1, double> & ARG2_nimDerivsOrders_, const NimArr<1, double> & ARG3_wrtVector_, nimSmartPtr<NIMBLE_ADCLASS> ansList) = 0;
   virtual double calculateDiff(const indexedNodeInfo &iNI) const =0;
   // virtual CppAD::AD<double> calculateDiff_ADproxyModel(const indexedNodeInfo &iNI) const =0;
   virtual void simulate(const indexedNodeInfo &iNI) const =0;
