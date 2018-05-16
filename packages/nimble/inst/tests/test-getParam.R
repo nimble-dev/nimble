@@ -140,7 +140,13 @@ test_that('getParam, user-defined integer-valued', {
             returnType(double(0))
             return(0)
         })
+    rtest <- nimbleFunction(
+        run = function(n = integer(0), thetaInt = integer(0), thetaDbl = double(0)) {
+            returnType(double(0))
+            return(0)
+        })
     temporarilyAssignInGlobalEnv(dtest)
+    temporarilyAssignInGlobalEnv(rtest)
 
     code <- nimbleCode({
         y ~ dtest(1, 1.3)
