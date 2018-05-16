@@ -103,7 +103,7 @@ sampler_DP_density <- nimbleFunction(
     #if( length(allDep) == 0 ) { # one case where conc parameter is fixed
     #  fixedConc <- TRUE
     #}
-    allDepsOfSavedParentNodes <- " "
+
     if( length(allDep) > 0 ) { # length(allDep) == 0 implies conc parameter is fixed
       # now eliminiate deterministic dependencies ,e.g., theta[i] <- thetatilde[xi[i]], from allDep object: 
       indexDetDep <- c()
@@ -159,7 +159,7 @@ sampler_DP_density <- nimbleFunction(
           }
         }
         allDepsOfSavedParentNodes <- model$getDependencies(savedParentNodes)
-      }
+      } else allDepsOfSavedParentNodes <- dcrpNode  ## CJP: I think we need to have allDepsOfSavedParentNodes only have nodes in the mvSaved for correct compilation
     }
     
 
