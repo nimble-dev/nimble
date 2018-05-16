@@ -9,12 +9,13 @@ addArg <- function(code, value, name) {
 }
 
 
-ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced) {
+ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
         ## error gracefully if dynamic index too small or large; we don't catch non-integers within the bounds though
         code <- substitute(if(CONDITION) LHS <<- RHS
-                           else {LHS <<- NaN
-                               print(TEXT)},
+                           else {
+                               LHS <<- NaN  ## need nimArray for non-scalar
+                               print(TEXT) },  
                            list(LHS = LHS,
                                 RHS = RHS,
                                 CONDITION = dynamicIndexLimitsExpr,
@@ -26,7 +27,7 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
 }
 
 ## changes 'dnorm(mean=1, sd=2)' into 'rnorm(1, mean=1, sd=2)'
-ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced) {
+ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
     BUGSdistName <- as.character(RHS[[1]])
     RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
@@ -36,8 +37,9 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
     } 
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
         code <- substitute(if(CONDITION) LHS <<- RHS
-                           else {LHS <<- NaN
-                               print(TEXT)},
+                           else {
+                               LHS <<- Nan  ## need nimArr
+                               print(TEXT) },  
                            list(LHS = LHS,
                                 RHS = RHS,
                                 CONDITION = dynamicIndexLimitsExpr,

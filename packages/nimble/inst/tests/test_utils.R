@@ -1256,8 +1256,11 @@ test_dynamic_indexing_model_internal <- function(param) {
                 expect_output(out <- calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculateDiff with invalid indexes, case: ", i))
                 expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculateDiff with invalid indexes, case: ", i))
                 deps <- m$getDependencies(param$invalidIndexes[[i]]$var, self = FALSE)
-                expect_output(simulate(cm, deps, includeData = TRUE), "dynamic index out of bounds", info = paste0("problem with lack of warning in C simulate with invalid indexes, case: ", i))
-                expect_true(sum(is.nan(values(cm, deps))) >= 1, info = paste0("problem with lack of NaN in C simulate with invalid indexes, case: ", i))
+                expect_error(simulate(cm, deps, includeData = TRUE), "dynamic index out of bounds", info = paste0("problem with lack of warning in C simulate with invalid indexes, case: ", i))
+                ## expect_true(sum(is.nan(values(cm, deps))) >= 1, info = paste0("problem with lack of NaN in C simulate with invalid indexes, case: ", i))
+            }
+            if(.Platform$OS.type != "windows") {
+                nimble:::clearCompiled(m)
             }
         }
     invisible(NULL)
