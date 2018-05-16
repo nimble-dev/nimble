@@ -103,25 +103,27 @@ sampler_DP_density <- nimbleFunction(
     #if( length(allDep) == 0 ) { # one case where conc parameter is fixed
     #  fixedConc <- TRUE
     #}
-
-    if( length(allDep) > 0 ) { # length(allDep) == 0 implies conc parameter is fixed
-      # now eliminiate deterministic dependencies ,e.g., theta[i] <- thetatilde[xi[i]], from allDep object: 
-      indexDetDep <- c()
-      for(i in 1:length(tildeVars)) {
-        stochDepTildeVars <- model$getDependencies(tildeVars[i], determOnly=TRUE)
-        if( sum(stochDepTildeVars[1] == allDep) >0 & is.na(sum(stochDepTildeVars[1] == allDep))==FALSE ) { # second condition checks that there are deterministic nodes
-          for(j in 1:length(stochDepTildeVars)) {
-            indexDetDep <- c(indexDetDep, which(stochDepTildeVars[j] == allDep))
-          }
+    
+    # now eliminiate deterministic dependencies ,e.g., theta[i] <- thetatilde[xi[i]], from allDep object: 
+    indexDetDep <- c()
+    for(i in 1:length(tildeVars)) {
+      stochDepTildeVars <- model$getDependencies(tildeVars[i], determOnly=TRUE)
+      if( sum(stochDepTildeVars[1] == allDep) >0 & is.na(sum(stochDepTildeVars[1] == allDep))==FALSE ) { # second condition checks that there are deterministic nodes
+        for(j in 1:length(stochDepTildeVars)) {
+          indexDetDep <- c(indexDetDep, which(stochDepTildeVars[j] == allDep))
         }
       }
-      if( is.null(indexDetDep) ) {
-        parentNodes <- unique(allDep)  
-      } else {
-        parentNodes <- unique(allDep[-indexDetDep])  
-      }
+    }
+    if( is.null(indexDetDep) ) {
+      parentNodes <- unique(allDep)  
+    } else {
+      parentNodes <- unique(allDep[-indexDetDep])  
+    }
+
+    if( length(parentNodes) > 0 ) { #length(allDep) > 0; length(allDep) == 0 implies conc parameter is fixed
       
-      if( length(parentNodes) > 0 ) { # conc parameter is random and need to find the parents of xi to check the mv object
+      
+      #if( length(parentNodes) > 0 ) { # conc parameter is random and need to find the parents of xi to check the mv object
         fixedConc <- FALSE
         
         #-- b) which parent nodes are in mvSaved:
@@ -159,8 +161,8 @@ sampler_DP_density <- nimbleFunction(
           }
         }
         allDepsOfSavedParentNodes <- model$getDependencies(savedParentNodes)
-      } else allDepsOfSavedParentNodes <- dcrpNode  ## CJP: I think we need to have allDepsOfSavedParentNodes only have nodes in the mvSaved for correct compilation
-    }
+      #} 
+    } else allDepsOfSavedParentNodes <- dcrpNode  ## CJP: I think we need to have allDepsOfSavedParentNodes only have nodes in the mvSaved for correct compilation
     
 
     N <- length(dataNodes)
