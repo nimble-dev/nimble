@@ -53,8 +53,7 @@ for(i in 1:nrow(samplesdens)){
 
 
 rm(list=ls())
-# 2: Model with fixed conc parameter: here the error is when running the compile and non compile
-# sampler_G_density. 
+# 2: Model with fixed conc parameter: here the error is when running the non compile sampler_G_density. 
 code <- nimbleCode({
   for(i in 1:n){
     lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
@@ -97,8 +96,7 @@ for(i in 1:nrow(samplesdens)){
 
 
 rm(list=ls())
-# 2: Model with fixed conc parameter: here the error is when running the compile and non compile
-# sampler_G_density. 
+# 3: Model with fixed conc parameter: here the error is when running the non compile sampler_G_density. 
 code <- nimbleCode({
   for(i in 1:n){
     lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
