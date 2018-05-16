@@ -247,10 +247,10 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     finishTapingCall <- cppLiteral('RETURN_TAPE_->Dependent(ADindependentVars, ADresponseVars);')
 
     ADoptimizeCalls <- list(
-        cppLiteral(paste0("std::cout<<\"about to optimize for ", className,"\"<<std::endl;")),
-        cppLiteral("std::cout<<\"size before optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"),
-                            ##cppLiteral("RETURN_TAPE_->optimize();"),
-                            cppLiteral("std::cout<<\"size after optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"))
+        # cppLiteral(paste0("std::cout<<\"about to optimize for ", className,"\"<<std::endl;")),
+        # cppLiteral("std::cout<<\"size before optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"),
+                            cppLiteral("RETURN_TAPE_->optimize();"))
+        #                     cppLiteral("std::cout<<\"size after optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"))
 
     returnCall <- cppLiteral("return(RETURN_TAPE_);")
     

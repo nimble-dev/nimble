@@ -1,5 +1,7 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
+nimbleOptions(allowDynamicIndexing = FALSE)
+
 context("Testing of derivatives for nimbleFunctions.")
 
 test_that('Derivatives of dnorm function correctly.',

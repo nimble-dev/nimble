@@ -1179,9 +1179,9 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
   code$args[[1]]$type <- 'nimbleList'
   code$args[[1]]$toEigenize <- "yes"
   code$args[[1]]$nDim <- 0
-  if(is.numeric(code$args[[1]]$args[[3]])){
-    code$args[[1]]$args[[3]] <- expression()
-  }
+  # if(is.numeric(code$args[[1]]$args[[3]])){
+  #   code$args[[1]]$args[[3]] <- expression()
+  # }
   asserts <- c(asserts, sizeNimbleFunction(code$args[[1]], symTab, typeEnv))  ## currently only works for nf methods
   if(!nimbleOptions('experimentalSelfLiftStage')) {
     if(!(code$caller$name %in% assignmentOperators))
@@ -1191,7 +1191,6 @@ sizeNimDerivs <- function(code, symTab, typeEnv){
                              type = 'double',
                              nDim = 1,
                              sizeExprs = list())
-  
   #setArg(code$args[[1]], length(code$args[[1]]$args) + 1, code$args[[3]]) # Sets variables argument, not yet implemented.
   if(length(asserts) == 0) NULL else asserts
 }
