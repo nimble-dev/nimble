@@ -21,11 +21,12 @@ getTildeVar <- nimbleFunction(
 
 
 sampler_DP_density <- nimbleFunction(
-  setup=function(model, mvSaved, useCompiled = TRUE){#, target, varNames
+  setup=function(model, mvSaved){
+    
     # cheking the mvSaved object is compiled or not:
     mvIsCompiled <- exists('dll', envir = mvSaved)
     if( mvIsCompiled ) {
-      stop("sampler_DP_density: model value object should to be uncompiled.\n")
+      stop("sampler_DP_density: Model value object has to be an uncompiled object.\n")
     }
     
     # variables in the mv object:
@@ -46,15 +47,14 @@ sampler_DP_density <- nimbleFunction(
       dcrpVar <- model$getVarNames(nodes = dcrpNode)
     } else {
       if(length(dcrpIndex) == 0 ){
-        stop('sampler_DP_density: There are no random indexes. \n')
+        stop('sampler_DP_density: One node with a dCRP distribution is required. \n')
       }
-      ## how to get tilde variables for each dCRP? Maybe not even a problem
       stop('sampler_DP_density: Currently only models with one node with a dCRP distribution are allowed. \n')
     }
     
     #-- checking that xi variable are monitored in mvSaved object:
     if( sum(dcrpVar == mvSavedVar) == 0 ){
-      stop(paste('sampler_DP_density: labeling variable is not monitored in model values object. \n'))
+      stop(paste('sampler_DP_density: The node having the dCRP distribution has to be monitored in the model values object. \n'))
     }
     
     
@@ -77,14 +77,15 @@ sampler_DP_density <- nimbleFunction(
     }
     
     #-- checking that tilde variables are monitored in mvSaved object:
-    counts <- 0
+    counts <- c()
     for(i in 1:length(tildeVars)) {
-      if( sum(tildeVars[i] == mvSavedVar) == 1 ) {
-        counts <- counts + 1
-      }
+      counts[i] <- sum(tildeVars[i] == mvSavedVar)
+      #if( sum(tildeVars[i] == mvSavedVar) == 1 ) {
+      #  counts <- counts + 1
+      #}
     }
-    if( counts != length(tildeVars) ) {
-      stop(paste('sampler_DP_density: Some unique variable is not monitored in model values object. \n'))
+    if( sum(counts) != length(tildeVars) ) {
+      stop(paste('sampler_DP_density: One or more nodes representing the centroid parameter are not monitored in the model values object. \n'))
     }
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
@@ -120,10 +121,7 @@ sampler_DP_density <- nimbleFunction(
       parentNodes <- unique(allDep[-indexDetDep])  
     }
 
-    if( length(parentNodes) > 0 ) { #length(allDep) > 0; length(allDep) == 0 implies conc parameter is fixed
-      
-      
-      #if( length(parentNodes) > 0 ) { # conc parameter is random and need to find the parents of xi to check the mv object
+    if( length(parentNodes) > 0 ) { #length(allDep) == 0 implies conc parameter is fixed
         fixedConc <- FALSE
         
         #-- b) which parent nodes are in mvSaved:
@@ -139,35 +137,28 @@ sampler_DP_density <- nimbleFunction(
         modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
         nimbleOptions(verbose = verbosity)
         
-        
-        
-        #modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
         modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] # if not included in NA model: Error in if (counts > 0) { : missing value where TRUE/FALSE needed
         nimCopy(from = model, to = modelWithNAs, nodes = parentNodes) # can nodes be a vector?
-        # d) copy savedParentNodes from mvSaved: doing thi I get an error
+        # d) copy savedParentNodes from mvSaved
         if( length(savedParentNodes) == 0 ) { # concentration parameter was not monitored
           stop( paste('sampler_DP_density: Some variable of conc parameter is not being monitored in model values object. \n') )
         } else {
-          #for(i in 1:length(savedParentNodes)) {
-          #value <- mvSaved[[savedParentNodes[i]]][[1]]
-          #modelWithNAs[[savedParentNodes[i]]] <- value
           # e): do calculate of model with NA
           modelWithNAs$calculate(model$getDependencies(savedParentNodes)) #[i]
-          #}
           # f)
           dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
           if( is.na(dcrpParam) ) {
-            stop('sampler_DP_density: Some variable of conc parameter is not being monitored in model values object. \n')
+            stop('sampler_DP_density: One or more variables related to concentration parameter are not being monitored in model values object. \n')
           }
         }
         allDepsOfSavedParentNodes <- model$getDependencies(savedParentNodes)
-      #} 
     } else allDepsOfSavedParentNodes <- dcrpNode  ## CJP: I think we need to have allDepsOfSavedParentNodes only have nodes in the mvSaved for correct compilation
     
 
     N <- length(dataNodes)
-    p <- length(tildeVars) 
-    AproxError <- 1e-10 # error of approxiating g with the truncation represantation
+    p <- length(tildeVars)
+    Ntilde <- length(values(model, tildeVars))/p # 
+    AproxError <- 1e-10 # error of approxiating G with the truncation represantation
     
     getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
     for(j in 1:p){
@@ -177,9 +168,6 @@ sampler_DP_density <- nimbleFunction(
     # storaging object: matrix with ncol = numer of iteration of MCMC and row = (1 + p)*Trunc, where
     #                   Trunc is an integer given by the values of conc parameter
     samples <- matrix(0, nrow=1, ncol=1) # initial dimension of output matrix
-  
-    #mvConf <- modelValuesConf(vars = 'G', type = 'double', size = list(G = c(Trunc, p+1)) )
-    #mv <- modelValues(mvConf, m = 1)
   
   },
   
@@ -196,17 +184,12 @@ sampler_DP_density <- nimbleFunction(
       for( iiter in 1:niter ) {
         concSam[iiter] <- model$getParam(dcrpNode, 'conc')
       }
-      
       dcrpAux <- model$getParam(dcrpNode, 'conc')
     } else {
       for( iiter in 1:niter ) {
-        #for(i in 1:length(savedParentNodes)) {
-          nimCopy(from = mvSaved, to = model, nodes = allDepsOfSavedParentNodes, row=iiter) # can nodes be a vector?
-          #value <- mvSaved[[ savedParentNodes[i] ]][[iiter]]
-          #model[[savedParentNodes[i]]] <- value
-          # e): do calculate of model with NA
-          model$calculate(allDepsOfSavedParentNodes)
-        #}
+        nimCopy(from = mvSaved, to = model, nodes = allDepsOfSavedParentNodes, row=iiter) # can nodes be a vector?
+        # e): do calculate of model with NA
+        model$calculate(allDepsOfSavedParentNodes)
         concSam[iiter] <- model$getParam(dcrpNode, 'conc')
       }
       dcrpAux <- mean(concSam)
@@ -248,7 +231,7 @@ sampler_DP_density <- nimbleFunction(
       if(index==newvalueindex){# sample from G_0
         model$simulate(tildeVars)
         for(j in 1:p){ 
-          samples[ iiter, j*Trunc + Taux] <<- values(model, tildeVars)[j]
+          samples[ iiter, j*Trunc + Taux] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
         }
       }else{# sample one of the existing values
         for(j in 1:p){
@@ -264,7 +247,7 @@ sampler_DP_density <- nimbleFunction(
         if(index == newvalueindex){# sample from G_0
           model$simulate(tildeVars)
           for(j in 1:p){ 
-            paramaux[j] <- values(model, tildeVars)[j]
+            paramaux[j] <- values(model, tildeVars)[(j-1)*Ntilde + 1]
           }
         }else{# sample one of the existing values
           for(j in 1:p){
@@ -290,11 +273,12 @@ sampler_DP_density <- nimbleFunction(
           Taux <- Taux+1
         }
       }
+      
       # complete the vector of probabilities and atoms
       samples[ iiter, Trunc] <<- 1 - sum(samples[ iiter, 1:(Trunc-1)])
       model$simulate(tildeVars)
       for(j in 1:p){ 
-        samples[ iiter, (j+1)*Trunc] <<- values(model, tildeVars)[j]#values(model, tildeVarNames)[(j-1)*N+1]  
+        samples[ iiter, (j+1)*Trunc] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]#values(model, tildeVarNames)[(j-1)*N+1]  
       }
     }
   },
