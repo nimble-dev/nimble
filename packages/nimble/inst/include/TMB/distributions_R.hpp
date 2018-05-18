@@ -96,60 +96,49 @@ Type nimDerivs_pow(Type x, int y) {
 	return(outVal);
 }
 
-template<class Type>
-Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
-	 Type df, Type scale_param, Type give_log, Type overwrite_inputs){
-  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-  int p = xNimArr.dim()[0];
-  int i, j;
+// template<class Type>
+// Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
+// 	 Type df, Type scale_param, Type give_log, Type overwrite_inputs){
+//   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+//   int p = xNimArr.dim()[0];
+//   int i, j;
 
-//   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
-//     return NA_REAL;
-// #ifdef IEEE_754
-//   if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
-//     return R_NaN;
-// #endif
+//   Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
+//   for(i = 0; i < p; i++)
+//     dens -= lgamma((df - Type(i)) / Type(2.0));
 
-  // also covers df < 0
-//   if(df < (double) p) ML_ERR_return_NAN;
+//   Type sumLogCholNimArr;
+//   for(i = 0; i < p; i++){ 
+// 	sumLogCholNimArr += df * log(cholNimArr(i, i));
+//   }
+//   dens += CppAD::CondExpEq(scale_param, Type(1), -sumLogCholNimArr, sumLogCholNimArr);
 
-//   if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
-  Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
-  for(i = 0; i < p; i++)
-    dens -= lgamma((df - Type(i)) / Type(2.0));
+// //   determinant of x using Cholesky:
+//   Eigen::Map<MatrixXt > eigenX(xNimArr.getPtr(), p, p);
 
-  Type sumLogCholNimArr;
-  for(i = 0; i < p; i++){ 
-	sumLogCholNimArr += df * log(cholNimArr(i, i));
-  }
-  dens += CppAD::CondExpEq(scale_param, Type(1), -sumLogCholNimArr, sumLogCholNimArr);
-
-//   determinant of x using Cholesky:
-  Eigen::Map<MatrixXt > eigenX(xNimArr.getPtr(), p, p);
-
-   Eigen::LLT<MatrixXt > llt(eigenX);
-   MatrixXt    eigenXChol = llt.matrixL();
+//    Eigen::LLT<MatrixXt > llt(eigenX);
+//    MatrixXt    eigenXChol = llt.matrixL();
  
-eigenXChol.template triangularView<Eigen::Upper>() =
-		eigenXChol.transpose().template triangularView<Eigen::Upper>();
+// eigenXChol.template triangularView<Eigen::Upper>() =
+// 		eigenXChol.transpose().template triangularView<Eigen::Upper>();
 
-for(i = 0; i < p; i++){ 
-  	dens += (df - p - 1) *  log(eigenXChol(i, i));
-}
+// for(i = 0; i < p; i++){ 
+//   	dens += (df - p - 1) *  log(eigenXChol(i, i));
+// }
 
- Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
- Type tmp_dens = 0.0;
- MatrixXt eigenSolved = eigenChol.transpose().lu().solve(eigenXChol.transpose());
- MatrixXt cholMultX = eigenChol*eigenX;
-	for(j = 0; j < p; j++){ 
-		for(i = 0; i <= j; i++){ 
-			 tmp_dens +=  CppAD::CondExpEq(scale_param, Type(1), eigenSolved(j,i)*eigenSolved(j,i), 
-			   cholMultX(i, j) * eigenChol(i, j));
-		}
-	}
-  dens += -0.5 * tmp_dens;
-  return CppAD::CondExpEq(give_log, Type(1.0), dens, exp(dens));
-}
+//  Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
+//  Type tmp_dens = 0.0;
+//  MatrixXt eigenSolved = eigenChol.transpose().lu().solve(eigenXChol.transpose());
+//  MatrixXt cholMultX = eigenChol*eigenX;
+// 	for(j = 0; j < p; j++){ 
+// 		for(i = 0; i <= j; i++){ 
+// 			 tmp_dens +=  CppAD::CondExpEq(scale_param, Type(1), eigenSolved(j,i)*eigenSolved(j,i), 
+// 			   cholMultX(i, j) * eigenChol(i, j));
+// 		}
+// 	}
+//   dens += -0.5 * tmp_dens;
+//   return CppAD::CondExpEq(give_log, Type(1.0), dens, exp(dens));
+// }
 
 template<class Type>
 Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){
@@ -158,66 +147,52 @@ Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){
   return ::atomic::pnorm1(tx)[0];
 }
 
-template<class Type>
-Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
-	 Type df, Type scale_param, int give_log, Type overwrite_inputs){
-  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-  int p = xNimArr.dim()[0];
-  int i, j;
+// template<class Type>
+// Type nimDerivs_nimArr_dwish_chol_logFixed(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
+// 	 Type df, Type scale_param, int give_log, Type overwrite_inputs){
+//   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+//   int p = xNimArr.dim()[0];
+//   int i, j;
 
-//   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
-//     return NA_REAL;
-// #ifdef IEEE_754
-//   if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
-//     return R_NaN;
-// #endif
+//   Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
+//   for(i = 0; i < p; i++)
+//     dens -= lgamma((df - Type(i)) / Type(2.0));
 
-  // also covers df < 0
-//   if(df < (double) p) ML_ERR_return_NAN;
+//   Type sumLogCholNimArr;
+//   for(i = 0; i < p; i++){ 
+// 	sumLogCholNimArr += df * log(cholNimArr(i, i));
+//   }
+//   dens += CppAD::CondExpEq(scale_param, Type(1), -sumLogCholNimArr, sumLogCholNimArr);
 
-//   if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
-  Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
-  for(i = 0; i < p; i++)
-    dens -= lgamma((df - Type(i)) / Type(2.0));
+// //   determinant of x using Cholesky:
+//   Eigen::Map<MatrixXt > eigenX(xNimArr.getPtr(), p, p);
 
-  Type sumLogCholNimArr;
-  for(i = 0; i < p; i++){ 
-	sumLogCholNimArr += df * log(cholNimArr(i, i));
-  }
-  dens += CppAD::CondExpEq(scale_param, Type(1), -sumLogCholNimArr, sumLogCholNimArr);
-
-//   determinant of x using Cholesky:
-  Eigen::Map<MatrixXt > eigenX(xNimArr.getPtr(), p, p);
-
-   Eigen::LLT<MatrixXt > llt(eigenX);
-   MatrixXt    eigenXChol = llt.matrixL();
+//    Eigen::LLT<MatrixXt > llt(eigenX);
+//    MatrixXt    eigenXChol = llt.matrixL();
  
-eigenXChol.template triangularView<Eigen::Upper>() =
-		eigenXChol.transpose().template triangularView<Eigen::Upper>();
+// eigenXChol.template triangularView<Eigen::Upper>() =
+// 		eigenXChol.transpose().template triangularView<Eigen::Upper>();
 
-for(i = 0; i < p; i++){ 
-  	dens += (df - p - 1) *  log(eigenXChol(i, i));
-}
+// for(i = 0; i < p; i++){ 
+//   	dens += (df - p - 1) *  log(eigenXChol(i, i));
+// }
 
- Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
- Type tmp_dens = 0.0;
- MatrixXt eigenSolved = eigenChol.transpose().lu().solve(eigenXChol.transpose());
- MatrixXt cholMultX = eigenChol*eigenX;
-	for(j = 0; j < p; j++){ 
-		for(i = 0; i <= j; i++){ 
-			 tmp_dens +=  CppAD::CondExpEq(scale_param, Type(1), eigenSolved(j,i)*eigenSolved(j,i), 
-			   cholMultX(i, j) * eigenChol(i, j));
-		}
-	}
-  dens += -0.5 * tmp_dens;
-  if(!give_log){
-    dens = exp(dens);
-  }
-  return dens;
-}
-
-// VECTORIZE3_ttt(pnorm)
-// VECTORIZE1_t(pnorm)
+//  Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
+//  Type tmp_dens = 0.0;
+//  MatrixXt eigenSolved = eigenChol.transpose().lu().solve(eigenXChol.transpose());
+//  MatrixXt cholMultX = eigenChol*eigenX;
+// 	for(j = 0; j < p; j++){ 
+// 		for(i = 0; i <= j; i++){ 
+// 			 tmp_dens +=  CppAD::CondExpEq(scale_param, Type(1), eigenSolved(j,i)*eigenSolved(j,i), 
+// 			   cholMultX(i, j) * eigenChol(i, j));
+// 		}
+// 	}
+//   dens += -0.5 * tmp_dens;
+//   if(!give_log){
+//     dens = exp(dens);
+//   }
+//   return dens;
+// }
 
 /** \brief Quantile function of the normal distribution (following R argument convention).
     \ingroup R_style_distribution
@@ -684,7 +659,7 @@ Type nimDerivs_dt_logFixed(Type x, Type df, int give_log)
 template <class Type>
 Type nimDerivs_dt_nonstandard(Type x, Type df, Type mu, Type sigma, Type give_log)
 {
-  Type res =  nimDerivs_dt( (x - mu)/sigma, df, 1) - log(sigma);
+  Type res =  nimDerivs_dt_logFixed( (x - mu)/sigma, df, 1) - log(sigma);
   res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
   return(res);
 }
@@ -692,7 +667,7 @@ Type nimDerivs_dt_nonstandard(Type x, Type df, Type mu, Type sigma, Type give_lo
 template <class Type>
 Type nimDerivs_dt_nonstandard_logFixed(Type x, Type df, Type mu, Type sigma, int give_log)
 {
-  Type res =  nimDerivs_dt( (x - mu)/sigma, df, 1) - log(sigma);
+  Type res =  nimDerivs_dt_logFixed( (x - mu)/sigma, df, 1) - log(sigma);
   if(!give_log){
 	res = exp(res);
   }
@@ -729,44 +704,117 @@ Type nimDerivs_nimArr_ddirch(NimArr<1, Type> &x, NimArr<1, Type> &alpha, Type gi
 }
 
 template <class Type>
-Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, Type give_log, Type overwrite_inputs) { 
-  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-  typedef Eigen::Matrix<Type, Eigen::Dynamic, 1> VectorXt;
+Type nimDerivs_nimArr_ddirch_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &alpha, int give_log)
+{
 
-  int n = x.size();
-  Type logres = CppAD::CondExpEq(Type(mu.size()), Type(n), Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-  logres += CppAD::CondExpEq(Type(chol.dim()[0]), Type(n),  CppAD::CondExpEq(Type(chol.dim()[1]), Type(n), Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN())), Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-  
-  logres += lgamma((df + n) / Type(2)) - lgamma(df / Type(2)) - n * Type(M_LN_SQRT_PI) - n * log(df) / Type(2);
-  int i;
-  Type logCholSum;
-  for(i = 0; i < n*n; i += n + 1){
-	logCholSum += log(chol[i]);
+  Type K = alpha.size();
+  Type n = x.size();
+  Type logres = CppAD::CondExpLt(K, Type(1), Type(CppAD::numeric_limits<Type>::quiet_NaN()), Type(0));
+  logres = CppAD::CondExpEq(K, n, logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	
+  Type sumAlpha = Type(0.0);
+  Type sumX = Type(0.0);
+  Type dens = Type(0.0);
+
+  for(int i = 0; i < K; i++) {
+	logres += CppAD::CondExpGt(alpha[i], Type(0), Type(0),   Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	logres += CppAD::CondExpGe(x[i], Type(0), Type(0), -Type(std::numeric_limits<double>::infinity()));
+	logres += CppAD::CondExpLe(x[i], Type(1), Type(0), -Type(std::numeric_limits<double>::infinity()));
+    logres += (alpha[i]-Type(1)) * log(x[i]) - lgamma(alpha[i]) ;
+    sumAlpha += alpha[i];
+    sumX += x[i];
   }
-  logres += CppAD::CondExpEq(prec_param, Type(1), logCholSum, -logCholSum);	
-  VectorXt eigenXcopy(n);	
-  for(i = 0; i < n; i++)
-	eigenXcopy(i,0) = x[i] - mu[i];
-
-  Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n); 
-  MatrixXt eigenXcopyCov = eigenChol.template triangularView<Eigen::Upper>()*eigenXcopy;
-  MatrixXt eigenXcopyPrec = eigenChol.template triangularView<Eigen::Upper>().solve(eigenXcopy).transpose();
-
-  if(Integer(prec_param) == 0){
-	eigenXcopy = eigenChol.template triangularView<Eigen::Upper>()*eigenXcopy;
+  logres += CppAD::CondExpLe(sumX, Type(1.0 + 100.0*numeric_limits<Type>::epsilon()), 
+	CppAD::CondExpGe(sumX, Type(1.0 - 100.0*numeric_limits<Type>::epsilon()), Type(0), -Type(std::numeric_limits<double>::infinity())),
+	-Type(std::numeric_limits<double>::infinity()));
+  logres += lgamma(sumAlpha);
+  if(!give_log){
+    logres = exp(logres);
   }
-  else{
-	 eigenXcopy = eigenChol.template triangularView<Eigen::Upper>().solve(eigenXcopy).transpose();
-  }
-  // sum of squares to calculate quadratic form
-  Type tmp = Type(0.0);
-  for(i = 0; i < n; i++)
-	tmp += CppAD::CondExpEq(prec_param, Type(0),  eigenXcopyCov(i,0) * eigenXcopyCov(i,0), eigenXcopyPrec(i,0) * eigenXcopyPrec(i,0));
-
-  logres += Type(-0.5) * (df + n) * log(Type(1) + tmp / df);
-	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
 	return(logres);
 }
+
+// template <class Type>
+// Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, Type give_log, Type overwrite_inputs) { 
+//   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+//   typedef Eigen::Matrix<Type, Eigen::Dynamic, 1> VectorXt;
+
+//   int n = x.size();
+//   Type logres = CppAD::CondExpEq(Type(mu.size()), Type(n), Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+//   logres += CppAD::CondExpEq(Type(chol.dim()[0]), Type(n),  CppAD::CondExpEq(Type(chol.dim()[1]), Type(n), Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN())), Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  
+//   logres += lgamma((df + n) / Type(2)) - lgamma(df / Type(2)) - n * Type(M_LN_SQRT_PI) - n * log(df) / Type(2);
+//   int i;
+//   Type logCholSum;
+//   for(i = 0; i < n*n; i += n + 1){
+// 	logCholSum += log(chol[i]);
+//   }
+//   logres += CppAD::CondExpEq(prec_param, Type(1), logCholSum, -logCholSum);	
+//   VectorXt eigenXcopy(n);	
+//   for(i = 0; i < n; i++)
+// 	eigenXcopy(i,0) = x[i] - mu[i];
+
+//   Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n); 
+//   MatrixXt eigenXcopyCov = eigenChol.template triangularView<Eigen::Upper>()*eigenXcopy;
+//   MatrixXt eigenXcopyPrec = eigenChol.template triangularView<Eigen::Upper>().solve(eigenXcopy).transpose();
+
+//   if(Integer(prec_param) == 0){
+// 	eigenXcopy = eigenChol.template triangularView<Eigen::Upper>()*eigenXcopy;
+//   }
+//   else{
+// 	 eigenXcopy = eigenChol.template triangularView<Eigen::Upper>().solve(eigenXcopy).transpose();
+//   }
+//   // sum of squares to calculate quadratic form
+//   Type tmp = Type(0.0);
+//   for(i = 0; i < n; i++)
+// 	tmp += CppAD::CondExpEq(prec_param, Type(0),  eigenXcopyCov(i,0) * eigenXcopyCov(i,0), eigenXcopyPrec(i,0) * eigenXcopyPrec(i,0));
+
+//   logres += Type(-0.5) * (df + n) * log(Type(1) + tmp / df);
+// 	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+// 	return(logres);
+// }
+
+// template <class Type>
+// Type nimDerivs_nimArr_dmvt_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, int give_log, Type overwrite_inputs) { 
+//   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+//   typedef Eigen::Matrix<Type, Eigen::Dynamic, 1> VectorXt;
+
+//   int n = x.size();
+//   Type logres = CppAD::CondExpEq(Type(mu.size()), Type(n), Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+//   logres += CppAD::CondExpEq(Type(chol.dim()[0]), Type(n),  CppAD::CondExpEq(Type(chol.dim()[1]), Type(n), Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN())), Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+  
+//   logres += lgamma((df + n) / Type(2)) - lgamma(df / Type(2)) - n * Type(M_LN_SQRT_PI) - n * log(df) / Type(2);
+//   int i;
+//   Type logCholSum;
+//   for(i = 0; i < n*n; i += n + 1){
+// 	logCholSum += log(chol[i]);
+//   }
+//   logres += CppAD::CondExpEq(prec_param, Type(1), logCholSum, -logCholSum);	
+//   VectorXt eigenXcopy(n);	
+//   for(i = 0; i < n; i++)
+// 	eigenXcopy(i,0) = x[i] - mu[i];
+
+//   Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n); 
+//   MatrixXt eigenXcopyCov = eigenChol.template triangularView<Eigen::Upper>()*eigenXcopy;
+//   MatrixXt eigenXcopyPrec = eigenChol.template triangularView<Eigen::Upper>().solve(eigenXcopy).transpose();
+
+//   if(Integer(prec_param) == 0){
+// 	eigenXcopy = eigenChol.template triangularView<Eigen::Upper>()*eigenXcopy;
+//   }
+//   else{
+// 	 eigenXcopy = eigenChol.template triangularView<Eigen::Upper>().solve(eigenXcopy).transpose();
+//   }
+//   // sum of squares to calculate quadratic form
+//   Type tmp = Type(0.0);
+//   for(i = 0; i < n; i++)
+// 	tmp += CppAD::CondExpEq(prec_param, Type(0),  eigenXcopyCov(i,0) * eigenXcopyCov(i,0), eigenXcopyPrec(i,0) * eigenXcopyPrec(i,0));
+
+//   logres += Type(-0.5) * (df + n) * log(Type(1) + tmp / df);
+//   if(!give_log){
+//     logres = exp(logres);
+//   }
+// 	return(logres);
+// }
 
 
 
@@ -815,503 +863,6 @@ Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<
 // 	if(give_log) return logres;
 // 	else return exp(logres);
 // }
-
-
-/** 	@name Sinh-asinh distribution.
-  	Functions relative to the sinh-asinh distribution.
-		*/
-/**@{*/
-/**	\brief Probability density function of the sinh-asinh distribution.
-  	\ingroup R_style_distribution
-	\param mu Location.
-	\param sigma Scale.
-	\param nu Skewness.
-	\param tau Kurtosis.
-	\param give_log true if one wants the log-probability, false otherwise.
-					
-	Notation adopted from R package "gamlss.dist".
-				
-	Probability density given in (2) in __Jones and Pewsey (2009) Biometrika (2009) 96 (4): 761-780__.
-								
-	It is not possible to call this function with nu a vector or tau a vector.
-*/
-// template <class Type>
-// Type dSHASHo(Type x, Type mu, Type sigma, Type nu, Type tau, int give_log = 0)
-// {
-// 	// TODO : Replace log(x+sqrt(x^2+1)) by a better approximation for asinh(x).
-		
-// 	Type z = (x-mu)/sigma;
-//    	Type c = cosh(tau*log(z+sqrt(z*z+1))-nu);
-//    	Type r = sinh(tau*log(z+sqrt(z*z+1))-nu);
-//    	Type logres = -log(sigma) + log(tau) -0.5*log(2*M_PI) -0.5*log(1+(z*z)) +log(c) -0.5*(r*r);
-					   	
-//   	if(!give_log) return exp(logres);
-//    	else return logres;
-// }
-
-// // Vectorize dSHASHo
-// VECTORIZE6_ttttti(dSHASHo)
-
-// /**	\brief Cumulative distribution function of the sinh-asinh distribution.
-//   	\ingroup R_style_distribution
-// 	\param mu Location.
-// 	\param sigma Scale.
-// 	\param nu Skewness.
-// 	\param tau Kurtosis.
-// 	\param give_log true if one wants the log-probability, false otherwise.
-		
-// 	Notation adopted from R package "gamlss.dist".
-	
-// 	It is not possible to call this function with nu a vector or tau a vector.
-// */
-// template <class Type>
-// Type pSHASHo(Type q,Type mu,Type sigma,Type nu,Type tau,int give_log=0)
-// {
-// 	// TODO : Replace log(x+sqrt(x^2+1)) by a better approximation for asinh(x).
-
-// 	Type z = (q-mu)/sigma;
-// 	Type r = sinh(tau * log(z+sqrt(z*z+1)) - nu);
-// 	Type p = pnorm(r);
-				  	
-// 	if (!give_log) return p;
-// 	else return log(p);
-// }
-
-// // Vectorize pSHASHo
-// VECTORIZE6_ttttti(pSHASHo)
-
-// /**	\brief Quantile function of the sinh-asinh distribution.
-// 	\ingroup R_style_distribution
-// 	\param mu Location.
-// 	\param sigma Scale.
-// 	\param nu Skewness.
-// 	\param tau Kurtosis.
-// 	\param log_p true if p is log-probability, false otherwise.
-	
-// 	Notation adopted from R package "gamlss.dist".
-	
-// 	It is not possible to call this function with nu a vector or tau a vector.
-// 	*/
-// template <class Type>
-// Type qSHASHo(Type p, Type mu, Type sigma, Type nu, Type tau, int log_p = 0)
-// {
-// 	// TODO : Replace log(x+sqrt(x^2+1)) by a better approximation for asinh(x).
-
-//    	if(!log_p) return mu + sigma*sinh((1/tau)* log(qnorm(p)+sqrt(qnorm(p)*qnorm(p)+1)) + (nu/tau));
-//    	else return mu + sigma*sinh((1/tau)*log(qnorm(exp(p))+sqrt(qnorm(exp(p))*qnorm(exp(p))+1))+(nu/tau));
-// }
-
-// // Vectorize qSHASHo
-// VECTORIZE6_ttttti(qSHASHo)
-
-// /**	\brief Transforms a normal variable into a sinh-asinh variable.
-// 	\param mu Location parameter of the result sinh-asinh distribution.
-// 	\param sigma Scale parameter of the result sinh-asinh distribution.
-// 	\param nu Skewness parameter of the result sinh-asinh distribution.
-// 	\param tau Kurtosis parameter of the result sinh-asinh distribution.
-// 	\param log_p true if p is log-probability, false otherwise.
-	
-// 	It is not possible to call this function with nu a vector or tau a vector.
-// 	*/
-// template <class Type>
-// Type norm2SHASHo(Type x, Type mu, Type sigma, Type nu, Type tau, int log_p = 0)
-// {
-
-// 	return qSHASHo(pnorm(x),mu,sigma,nu,tau,log_p);
-// }
-
-// // Vectorize norm2SHASHo
-// VECTORIZE6_ttttti(norm2SHASHo)
-// /**@}*/
-
-// /** \brief Distribution function of the beta distribution (following R
-//     argument convention).
-//     \note Non-centrality parameter (ncp) not implemented.
-//     \ingroup R_style_distribution
-// */
-// template<class Type>
-// Type pbeta(Type q, Type shape1, Type shape2){
-//   CppAD::vector<Type> tx(4);
-//   tx[0] = q;
-//   tx[1] = shape1;
-//   tx[2] = shape2;
-//   tx[3] = 0; // order
-//   Type ans = atomic::pbeta(tx)[0];
-//   return ans;
-// }
-// VECTORIZE3_ttt(pbeta)
-
-// /** \brief Quantile function of the beta distribution (following R
-//     argument convention).
-//     \note Non-centrality parameter (ncp) not implemented.
-//     \ingroup R_style_distribution
-// */
-// template<class Type>
-// Type qbeta(Type p, Type shape1, Type shape2){
-//   CppAD::vector<Type> tx(3);
-//   tx[0] = p;
-//   tx[1] = shape1;
-//   tx[2] = shape2;
-//   Type ans = atomic::qbeta(tx)[0];
-//   return ans;
-// }
-// VECTORIZE3_ttt(qbeta)
-
-// /** \brief besselK function (same as besselK from R).
-//     \note Derivatives wrt. both arguments are implemented
-//     \ingroup special_functions
-// */
-// template<class Type>
-// Type besselK(Type x, Type nu){
-//   Type ans;
-//   if(CppAD::Variable(nu)) {
-//     CppAD::vector<Type> tx(3);
-//     tx[0] = x;
-//     tx[1] = nu;
-//     tx[2] = 0;
-//     ans = atomic::bessel_k(tx)[0];
-//   } else {
-//     CppAD::vector<Type> tx(2);
-//     tx[0] = x;
-//     tx[1] = nu;
-//     ans = atomic::bessel_k_10(tx)[0];
-//   }
-//   return ans;
-// }
-// VECTORIZE2_tt(besselK)
-
-// /** \brief besselI function (same as besselI from R).
-//     \note Derivatives wrt. both arguments are implemented
-//     \ingroup special_functions
-// */
-// template<class Type>
-// Type besselI(Type x, Type nu){
-//   Type ans;
-//   if(CppAD::Variable(nu)) {
-//     CppAD::vector<Type> tx(3);
-//     tx[0] = x;
-//     tx[1] = nu;
-//     tx[2] = 0;
-//     ans = atomic::bessel_i(tx)[0];
-//   } else {
-//     CppAD::vector<Type> tx(2);
-//     tx[0] = x;
-//     tx[1] = nu;
-//     ans = atomic::bessel_i_10(tx)[0];
-//   }
-//   return ans;
-// }
-// VECTORIZE2_tt(besselI)
-
-// /** \brief besselJ function (same as besselJ from R).
-//     \note Derivatives wrt. both arguments are implemented
-//     \ingroup special_functions
-// */
-// template<class Type>
-// Type besselJ(Type x, Type nu){
-//   CppAD::vector<Type> tx(3);
-//   tx[0] = x;
-//   tx[1] = nu;
-//   tx[2] = 0;
-//   Type ans = atomic::bessel_j(tx)[0];
-//   return ans;
-// }
-// VECTORIZE2_tt(besselJ)
-
-// /** \brief besselY function (same as besselY from R).
-//     \note Derivatives wrt. both arguments are implemented
-//     \ingroup special_functions
-// */
-// template<class Type>
-// Type besselY(Type x, Type nu){
-//   CppAD::vector<Type> tx(3);
-//   tx[0] = x;
-//   tx[1] = nu;
-//   tx[2] = 0;
-//   Type ans = atomic::bessel_y(tx)[0];
-//   return ans;
-// }
-// VECTORIZE2_tt(besselY)
-
-// /** \brief dtweedie function (same as dtweedie.series from R package
-//     'tweedie').
-
-//     Silently returns NaN if not within the valid parameter range:
-//     \f[ (0 \leq y) \land (0 < \mu) \land (0 < \phi) \land (1 < p) \land (p < 2) \f] .
-
-//     \note Parameter order differs from the R version.
-
-//     \warning The derivative wrt. the y argument is disabled
-//     (zero). Hence the tweedie distribution can only be used for *data*
-//     (not random effects).
-
-//     \ingroup R_style_distribution
-// */
-// template<class Type>
-// Type dtweedie(Type y, Type mu, Type phi, Type p, int give_log = 0) {
-//   CppAD::vector<Type> tx(5);
-//   tx[0] = y;
-//   tx[1] = mu;
-//   tx[2] = phi;
-//   tx[3] = p;
-//   tx[4] = 0;
-//   Type ans = atomic::log_dtweedie(tx)[0];
-//   return ( give_log ? ans : exp(ans) );
-// }
-
-
-// /** \brief Conway-Maxwell-Poisson log normalizing constant.
-
-//     \f[ Z(\lambda, \nu) = \sum_{i=0}^{\infty} \frac{\lambda^i}{(i!)^\nu} \f] .
-
-//     \param loglambda \f$ \log(\lambda) \f$
-//     \param nu \f$ \nu \f$
-
-//     \return \f$ \log Z(\lambda, \nu) \f$
-// */
-// template<class Type>
-// Type compois_calc_logZ(Type loglambda, Type nu) {
-//   CppAD::vector<Type> tx(3);
-//   tx[0] = loglambda;
-//   tx[1] = nu;
-//   tx[2] = 0;
-//   return atomic::compois_calc_logZ(tx)[0];
-// }
-// VECTORIZE2_tt(compois_calc_logZ)
-
-// /** \brief Conway-Maxwell-Poisson. Calculate log(lambda) from
-//     log(mean).
-
-//     \param logmean \f$ \log(E[X]) \f$
-//     \param nu \f$ \nu \f$
-
-//     \return \f$ \log \lambda \f$
-// */
-// template<class Type>
-// Type compois_calc_loglambda(Type logmean, Type nu) {
-//   CppAD::vector<Type> tx(3);
-//   tx[0] = logmean;
-//   tx[1] = nu;
-//   tx[2] = 0;
-//   return atomic::compois_calc_loglambda(tx)[0];
-// }
-// VECTORIZE2_tt(compois_calc_loglambda)
-
-// /** \brief Conway-Maxwell-Poisson. Calculate density.
-
-//     \f[ P(X=x) \propto \frac{\lambda^x}{(x!)^\nu}\:,x=0,1,\ldots \f]
-
-//     Silently returns NaN if not within the valid parameter range:
-//     \f[ (0 \leq x) \land (0 < \lambda) \land (0 < \nu) \f] .
-
-//     \param x Observation
-//     \param mode Approximate mode \f$ \lambda^\nu \f$
-//     \param nu   \f$ \nu \f$
-
-//     \ingroup R_style_distribution
-// */
-// template<class T1, class T2, class T3>
-// T1 dcompois(T1 x, T2 mode, T3 nu, int give_log = 0) {
-//   T2 loglambda = nu * log(mode);
-//   T1 ans = x * loglambda - nu * lfactorial(x);
-//   ans -= compois_calc_logZ(loglambda, nu);
-//   return ( give_log ? ans : exp(ans) );
-// }
-
-// /** \brief Conway-Maxwell-Poisson. Calculate density parameterized via
-//     the mean.
-
-//     Silently returns NaN if not within the valid parameter range:
-//     \f[ (0 \leq x) \land (0 < E[X]) \land (0 < \nu) \f] .
-
-//     \param x Observation
-//     \param mean \f$ E[X] \f$
-//     \param nu   \f$ \nu \f$
-
-//     \ingroup R_style_distribution
-// */
-// template<class T1, class T2, class T3>
-// T1 dcompois2(T1 x, T2 mean, T3 nu, int give_log = 0) {
-//   T2 logmean = log(mean);
-//   T2 loglambda = compois_calc_loglambda(logmean, nu);
-//   T1 ans = x * loglambda - nu * lfactorial(x);
-//   ans -= compois_calc_logZ(loglambda, nu);
-//   return ( give_log ? ans : exp(ans) );
-// }
-
-// /********************************************************************/
-// /* SIMULATON CODE                                                   */
-// /********************************************************************/
-
-// extern "C" {
-//   double Rf_rnorm(double mu, double sigma);
-// }
-// /** \brief Simulate from a normal distribution  */
-// template<class Type>
-// Type rnorm(Type mu, Type sigma)
-// {
-//   return Rf_rnorm(asDouble(mu), asDouble(sigma));
-// }
-// VECTORIZE2_tt(rnorm)
-// VECTORIZE2_n(rnorm)
-
-// extern "C" {
-//   double Rf_rpois(double mu);
-// }
-// /** \brief Simulate from a Poisson distribution  */
-// template<class Type>
-// Type rpois(Type mu)
-// {
-//   return Rf_rpois(asDouble(mu));
-// }
-// VECTORIZE1_t(rpois)
-// VECTORIZE1_n(rpois)
-
-// extern "C" {
-//   double Rf_runif(double a, double b);
-// }
-// /** \brief Simulate from a uniform distribution  */
-// template<class Type>
-// Type runif(Type a, Type b)
-// {
-//   return Rf_runif(asDouble(a), asDouble(b));
-// }
-// VECTORIZE2_tt(runif)
-// VECTORIZE2_n(runif)
-
-// extern "C" {
-//   double Rf_rbinom(double size, double prob);
-// }
-// /** \brief Simulate from a binomial distribution  */
-// template<class Type>
-// Type rbinom(Type size, Type prob)
-// {
-//   return Rf_rbinom(asDouble(size), asDouble(prob));
-// }
-// VECTORIZE2_tt(rbinom)
-// VECTORIZE2_n(rbinom)
-
-// extern "C" {
-//   double Rf_rgamma(double shape, double scale);
-// }
-// /** \brief Simulate from a gamma distribution  */
-// template<class Type>
-// Type rgamma(Type shape, Type scale)
-// {
-//   return Rf_rgamma(asDouble(shape), asDouble(scale));
-// }
-// VECTORIZE2_tt(rgamma)
-// VECTORIZE2_n(rgamma)
-
-// extern "C" {
-//   double Rf_rexp(double rate);
-// }
-// /** \brief Simulate from an exponential distribution */
-// template<class Type>
-// Type rexp(Type rate)
-// {
-//   return Rf_rexp(asDouble(rate));
-// }
-
-// VECTORIZE1_t(rexp)
-// VECTORIZE1_n(rexp)
-
-// extern "C" {
-// 	double Rf_rbeta(double shape1, double shape2);
-// }
-// /** \brief Simulate from a beta distribution */
-// template<class Type>
-// Type rbeta(Type shape1, Type shape2)
-// {
-// 	return Rf_rbeta(asDouble(shape1), asDouble(shape2));
-// }
-
-// VECTORIZE2_tt(rbeta)
-// VECTORIZE2_n(rbeta)
-
-// extern "C" {
-// 	double Rf_rf(double df1, double df2);
-// }
-// /** \brief Simulate from an F distribution */
-// template<class Type>
-// Type rf(Type df1, Type df2)
-// {
-// 	return Rf_rf(asDouble(df1), asDouble(df2));
-// }
-
-// VECTORIZE2_tt(rf)
-// VECTORIZE2_n(rf)
-
-// extern "C" {
-// 	double Rf_rlogis(double location, double scale);
-// }
-// /** \brief Simulate from a logistic distribution */
-// template<class Type>
-// Type rlogis(Type location, Type scale)
-// {
-// 	return Rf_rlogis(asDouble(location), asDouble(scale));
-// }
-
-// VECTORIZE2_tt(rlogis)
-// VECTORIZE2_n(rlogis)
-
-// extern "C" {
-// 	double Rf_rt(double df);
-// }
-// /** \brief Simulate from a Student's t distribution */
-// template<class Type>
-// Type rt(Type df)
-// {
-// 	return Rf_rt(asDouble(df));
-// }
-
-// VECTORIZE1_t(rt)
-// VECTORIZE1_n(rt)
-
-// extern "C" {
-// 	double Rf_rweibull(double shape, double scale);
-// }
-// /** \brief Simulate from a Weibull distribution */
-// template<class Type>
-// Type rweibull(Type shape, Type scale)
-// {
-// 	return Rf_rweibull(asDouble(shape), asDouble(scale));
-// }
-
-// VECTORIZE2_tt(rweibull)
-// VECTORIZE2_n(rweibull)
-
-// /** \brief Simulate from a Conway-Maxwell-Poisson distribution  */
-// template<class Type>
-// Type rcompois(Type mode, Type nu)
-// {
-//   Type loglambda = nu * log(mode);
-//   return atomic::compois_utils::simulate(asDouble(loglambda), asDouble(nu));
-// }
-// VECTORIZE2_tt(rcompois)
-// VECTORIZE2_n(rcompois)
-
-// /** \brief Simulate from a Conway-Maxwell-Poisson distribution  */
-// template<class Type>
-// Type rcompois2(Type mean, Type nu)
-// {
-//   Type logmean = log(mean);
-//   Type loglambda = compois_calc_loglambda(logmean, nu);
-//   return atomic::compois_utils::simulate(asDouble(loglambda), asDouble(nu));
-// }
-// VECTORIZE2_tt(rcompois2)
-
-// // Note: Vectorize manually to avoid many identical calls to
-// // 'calc_loglambda'.
-// template<class Type>
-// vector<Type> rcompois2(int n, Type mean, Type nu)
-// {
-//   Type logmean = log(mean);
-//   Type loglambda = compois_calc_loglambda(logmean, nu);
-//   Type mode = exp(loglambda / nu);
-//   return rcompois(n, mode, nu);
-// }
-
 
 
 

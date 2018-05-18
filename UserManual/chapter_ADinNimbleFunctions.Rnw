@@ -157,3 +157,4 @@ The following distributions are known to not work (currently) in AD-enabled mode
   	\item \cd{dcat}: requires a fix to the indexing argument problem mentioned in the previous section.
   	\item \cd{dmulti}:  I could be wrong here, but I'm not sure if it makes sense to take derivatives w.r.t. any parameters of this distribution.  The only non-discrete parameter is \code{prob}, but since the elements of \code{prob} must sum to 1, I'm not clear on whether a derivative w.r.t e.g. \code{prob[1]} makes sense.
   	\item \cd{dmnorm_chol}: for this, and other distributions which take Cholesky decompositions of covariance matrices as arguments, it seems as though taking derivatives w.r.t. elements of the Cholesky decomposition doesn't make sense.
+  	\item \cd{dmvt_chol} and \cd{dwish_chol}:  Neither of these are currently functional 

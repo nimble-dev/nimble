@@ -175,13 +175,13 @@ distributionArgsList[['dlnorm']] <- list(
   distnName = 'dlnorm',
   args = list(x = quote(double(0)),
               meanlog = quote(double(0)),
-              taulog = quote(double(0))),
+              sdlog = quote(double(0))),
   argsValues = list(
     # list(x = -1, meanlog = 1, taulog = 0),
     # list(x = -1, meanlog = -1, taulog = -1),
     # list(x = -1, meanlog = 1, taulog = 1),
-    list(x = .1, meanlog = 1, taulog = 2),
-    list(x = 22.2, meanlog = 10, taulog = 15.2))
+    list(x = .1, meanlog = 1, sdlog = 2),
+    list(x = 22.2, meanlog = 10, sdlog = 15.2))
 )
 
 distributionArgsList[['dmnorm_chol']] <- list(
@@ -241,13 +241,13 @@ distributionArgsList[['dnorm']] <- list(
   distnName = 'dnorm',
   args = list(x = quote(double(0)),
               mean = quote(double(0)),
-              tau = quote(double(0))),
+              sd = quote(double(0))),
   argsValues = list(
     # list(x = -1, mean = 1, tau = 0), # same issue with inconsistent R/C++ derivs of un-logged prob wrt tau
     # list(x = -1, mean = -1, tau = -1),
-    list(x = -1, mean = 1, tau = 1),
-    list(x = .1, mean = 1, tau = 2),
-    list(x = 22.2, mean = 10, tau = 15.2))
+    list(x = -1, mean = 1, sd = 1),
+    list(x = .1, mean = 1, sd = 2),
+    list(x = 22.2, mean = 10, sd = 15.2))
 )
 
 distributionArgsList[['dpois']] <- list(
@@ -325,70 +325,45 @@ distributionArgsList[['dweibull']] <- list(
 )
 
 
-distributionArgsList[['dmvt_chol']] <- list(
-  distnName = 'dmvt_chol',
-  args = list(x = quote(double(1, 2)),
-              mu = quote(double(1, 2)),
-              cholesky = quote(double(2, c(2, 2))),
-              df = quote(double()),
-              prec_param = quote(double())),
-  argsValues = list(
-    # list(x = numeric(2), mu = numeric(2), cholesky = -diag(2), df = 1, prec_param = 1),
-    # list(x = numeric(2), mean = numeric(2), cholesky = matrix(c(0,0,0,0), nrow = 2)) R and C inconsistency
-    # list(x = numeric(2), mu = numeric(2), cholesky = diag(2), df = 1, prec_param = 1),
-    list(x = c(1.3, 4.1), mu = c(1,4),
-         cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
-         df = 3, prec_param = 0),
-    list(x = c(12.1, 42.1), mu = c(10,40),
-         cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2)),
-         df = 3, prec_param = 0),
-    list(x = c(1.3, 4.1), mu = c(1,4),
-         cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
-         df = 3, prec_param = 1),
-    list(x = c(12.1, 42.1), mu = c(10,40),
-         cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2)),
-         df = 3, prec_param = 1)
-      )
-)
 
-distributionArgsList[['dmvt_chol']] <- list(
-  distnName = 'dmvt_chol',
-  args = list(x = quote(double(1, 2)),
-              mu = quote(double(1, 2)),
-              cholesky = quote(double(2, c(2, 2))),
-              df = quote(double()),
-              prec_param = quote(double())),
-  argsValues = list(
-    # list(x = numeric(2), mu = numeric(2), cholesky = -diag(2), df = 1, prec_param = 1),
-    # list(x = numeric(2), mean = numeric(2), cholesky = matrix(c(0,0,0,0), nrow = 2)) R and C inconsistency
-    # list(x = numeric(2), mu = numeric(2), cholesky = diag(2), df = 1, prec_param = 1),
-    list(x = c(1.3, 4.1), mu = c(1,4),
-         cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
-         df = 3, prec_param = 0),
-    list(x = c(12.1, 42.1), mu = c(10,40),
-         cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2)),
-         df = 3, prec_param = 0),
-    list(x = c(1.3, 4.1), mu = c(1,4),
-         cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
-         df = 3, prec_param = 1),
-    list(x = c(12.1, 42.1), mu = c(10,40),
-         cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2)),
-         df = 3, prec_param = 1)
-  )
-)
+# distributionArgsList[['dmvt_chol']] <- list(
+#   distnName = 'dmvt_chol',
+#   args = list(x = quote(double(1, 2)),
+#               mu = quote(double(1, 2)),
+#               cholesky = quote(double(2, c(2, 2))),
+#               df = quote(double()),
+#               prec_param = quote(double())),
+#   argsValues = list(
+#     # list(x = numeric(2), mu = numeric(2), cholesky = -diag(2), df = 1, prec_param = 1),
+#     # list(x = numeric(2), mean = numeric(2), cholesky = matrix(c(0,0,0,0), nrow = 2)) R and C inconsistency
+#     # list(x = numeric(2), mu = numeric(2), cholesky = diag(2), df = 1, prec_param = 1),
+#     list(x = c(1.3, 4.1), mu = c(1,4),
+#          cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
+#          df = 3, prec_param = 0),
+#     list(x = c(12.1, 42.1), mu = c(10,40),
+#          cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2)),
+#          df = 3, prec_param = 0),
+#     list(x = c(1.3, 4.1), mu = c(1,4),
+#          cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
+#          df = 3, prec_param = 1),
+#     list(x = c(12.1, 42.1), mu = c(10,40),
+#          cholesky = chol(matrix(c(13.2, 2.14, 2.14, 2.73), nrow = 2)),
+#          df = 3, prec_param = 1)
+#   )
+# )
 
-distributionArgsList[['dwish_chol']] <- list(
-  distnName = 'dwish_chol',
-  args = list(x = quote(double(2, c(2,2))),
-              cholesky = quote(double(2, c(2, 2))),
-              df = quote(double()),
-              scale_param = quote(double())),
-  argsValues = list(
-    list(x = matrix(c(1,.8,.8,1), nrow = 2), 
-         cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
-         df = 3, scale_param = 1)
-  )
-)
+# distributionArgsList[['dwish_chol']] <- list(
+#   distnName = 'dwish_chol',
+#   args = list(x = quote(double(2, c(2,2))),
+#               cholesky = quote(double(2, c(2, 2))),
+#               df = quote(double()),
+#               scale_param = quote(double())),
+#   argsValues = list(
+#     list(x = matrix(c(1,.8,.8,1), nrow = 2), 
+#          cholesky = chol(matrix(c(1.2, .14, .14, 2.7), nrow = 2)),
+#          df = 3, scale_param = 1)
+#   )
+# )
 
 lapply(distributionArgsList, function(x){
   runFun <- gen_runFunCore(makeADDistributionTestList(x))
@@ -403,4 +378,3 @@ lapply(distributionArgsList, function(x){
                      x$distnName)
 
 })
-

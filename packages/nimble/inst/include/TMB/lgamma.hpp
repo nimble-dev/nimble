@@ -212,7 +212,7 @@ Type nimDerivs_dgamma_logFixed(Type y, Type shape, Type scale, int give_log)
 }
 
 template<class Type>
-Type dinvgamma(Type x, Type shape, Type rate, Type give_log)
+Type nimDerivs_dinvgamma(Type x, Type shape, Type rate, Type give_log)
 {
   Type xinv = Type(1.0)/x;
   Type res = CppAD::CondExpEq(give_log, Type(1), nimDerivs_dgamma(xinv, shape, rate, give_log) - 2*log(x), nimDerivs_dgamma(xinv, shape, rate, give_log) * xinv * xinv);
@@ -220,7 +220,7 @@ Type dinvgamma(Type x, Type shape, Type rate, Type give_log)
 }
 
 template<class Type>
-Type dinvgamma_logFixed(Type x, Type shape, Type rate, int give_log)
+Type nimDerivs_dinvgamma_logFixed(Type x, Type shape, Type rate, int give_log)
 {
   Type xinv = Type(1.0)/x;
   Type res;

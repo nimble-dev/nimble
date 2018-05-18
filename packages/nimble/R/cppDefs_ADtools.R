@@ -87,7 +87,7 @@ makeTypeTemplateFunction = function(newName, .self) {
     localArgs <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
     newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs, 
-                                      generatorSymTab = .self$code$objectDefs, cppADCode = TRUE)
+                                      generatorSymTab = .self$code$objectDefs, cppADCode = 2L)
     newCppFunDef
 }
 
