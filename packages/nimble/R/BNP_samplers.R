@@ -137,7 +137,7 @@ sampler_DP_density <- nimbleFunction(
         modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
         nimbleOptions(verbose = verbosity)
         
-        modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] # if not included in NA model: Error in if (counts > 0) { : missing value where TRUE/FALSE needed
+        modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] 
         nimCopy(from = model, to = modelWithNAs, nodes = parentNodes) # can nodes be a vector?
         # d) copy savedParentNodes from mvSaved
         if( length(savedParentNodes) == 0 ) { # concentration parameter was not monitored
@@ -165,7 +165,7 @@ sampler_DP_density <- nimbleFunction(
       getTildeVarList[[j]] <- getTildeVar(mvSaved, tildeVars[j])
     }
     
-    # storaging object: matrix with ncol = numer of iteration of MCMC and row = (1 + p)*Trunc, where
+    # storaging object: matrix with nrow = numer of iteration of MCMC, and ncol = (1 + p)*Trunc, where
     #                   Trunc is an integer given by the values of conc parameter
     samples <- matrix(0, nrow=1, ncol=1) # initial dimension of output matrix
   
@@ -181,9 +181,7 @@ sampler_DP_density <- nimbleFunction(
     # the relation between 'conc', trunc level, and error of approximation is: (conc / (conc +1))^{Trunc-1}=e 
     concSam <- numeric(niter)
     if( fixedConc == TRUE ) {
-      for( iiter in 1:niter ) {
-        concSam[iiter] <- model$getParam(dcrpNode, 'conc')
-      }
+      concSam[1:niter] <- model$getParam(dcrpNode, 'conc')
       dcrpAux <- model$getParam(dcrpNode, 'conc')
     } else {
       for( iiter in 1:niter ) {
@@ -198,10 +196,10 @@ sampler_DP_density <- nimbleFunction(
     Trunc <- log(AproxError)/log(dcrpAux/(dcrpAux+1)) + 1
     Trunc <- round(Trunc)
     
-    setSize(samples, c(niter, Trunc*(p+1))) # first 1:Trunc rows are weights, then the atoms.
+    setSize(samples, c(niter, Trunc*(p+1))) # first 1:Trunc columns are weights, then the atoms.
     
     for(iiter in 1:niter){
-      #-- getting the unique values in the samples and their probabilities of beign sampled. Need for computing G later.
+      #-- getting the sampled unique values (tilde variables) and their probabilities of beign sampled . Need for computing G later.
       probs <- numeric(N)
       uniqueValues <- matrix(0, ncol=p, nrow=N) # 
       xiiter <- mvSaved[dcrpVar, iiter]
@@ -220,13 +218,13 @@ sampler_DP_density <- nimbleFunction(
       probs[index] <- concSam[iiter] #probs <- probs/sum(probs)
       newvalueindex <- index
       
-      #-- computing G:
+      #-- computing G(.) = sum_{l=1}^{Trunc} w_l delta_{atom_l} (.):
       vaux <- rbeta(1, 1, concSam[iiter]+N)
       v1prod <- 1
       Taux <- 1
       paramaux <- numeric(p)
       
-      # first sampled value:
+      # first sampled values: w_1 and atom_1
       index <- rcat(prob=probs[1:newvalueindex])
       if(index==newvalueindex){# sample from G_0
         model$simulate(tildeVars)
@@ -241,7 +239,7 @@ sampler_DP_density <- nimbleFunction(
       samples[ iiter, Taux] <<- vaux # <-
       Taux <- Taux + 1
       
-      # the rest of the values
+      # the rest of the values: w_l and atom_l, l=1, ..Trunc-1
       while(Taux <= Trunc-1){
         index <- rcat(prob=probs[1:newvalueindex])
         if(index == newvalueindex){# sample from G_0
@@ -274,7 +272,7 @@ sampler_DP_density <- nimbleFunction(
         }
       }
       
-      # complete the vector of probabilities and atoms
+      # complete the vector of probabilities and atoms: w_Tunc and atom_Tunc
       samples[ iiter, Trunc] <<- 1 - sum(samples[ iiter, 1:(Trunc-1)])
       model$simulate(tildeVars)
       for(j in 1:p){ 
