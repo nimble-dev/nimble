@@ -49,19 +49,16 @@ cm <- compileNimble(model)
 mConf <- configureMCMC(model, print=TRUE, monitors = monitors)
 mMCMC <- buildMCMC(mConf)
 
-mMCMC$run(10) # Error: object 'dep_dgamma_coeff' not found
+set.seed(1)
+mMCMC$run(10) 
 
-CmMCMC=compileNimble(mMCMC, project=model,
-                     resetFunctions=TRUE, showCompilerOutput = TRUE) # ERROR
+mvSaved = mMCMC$mvSamples
 
-#mvSaved = mMCMC$mvSamples
-
-
-#rdens = nimble:::sampler_DP_density(model, mvSaved)
-#rdens$run() # ERROR:
+rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens$run()
 
 #cdens = compileNimble(rdens, project = model)
-#cdens$run() # no ERROR:
+#cdens$run() 
 
 #samplesdens = as.matrix(cdens$samples)
 
@@ -72,6 +69,118 @@ CmMCMC=compileNimble(mMCMC, project=model,
 #       xlim=c(-10,80)); 
 #  abline(v=c(-5,5), col="red"); readline()
 #}
+
+
+
+
+rm(list=ls())
+code=nimbleCode(
+  {
+    for(i in 1:N){
+      thetatilde[i] ~ dnorm(mean=0, var=40) 
+    }
+    xi[1:N] ~ dCRP(conc0 + 10, size=N)
+    conc0 ~ dgamma(1,1)
+    
+    for(i in 1:N){
+      theta[i] <- thetatilde[xi[i]]
+      y[i] ~ dnorm(theta[i], var=2)
+    }
+  }
+)
+
+
+Consts=list(N=20)
+set.seed(1)
+aux=sample(1:10, size=Consts$N, replace=TRUE)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N, 0, sqrt(40)), conc0=1)
+
+s20=4; s21=4
+mu01=5; mu11=-5
+data0=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
+
+monitors <- c('thetatilde','xi','conc0')
+
+model <- nimbleModel(code, data = data0, inits = Inits, constants = Consts,  calculate=TRUE)
+cm <- compileNimble(model) 
+
+mConf <- configureMCMC(model, print=TRUE, monitors = monitors)
+mMCMC <- buildMCMC(mConf)
+
+mMCMC$run(10)
+mvSaved = mMCMC$mvSamples
+
+rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens$run() 
+
+#cdens = compileNimble(rdens, project = model)
+#cdens$run() 
+
+#samplesdens = as.matrix(cdens$samples)
+
+# plot of the samples of G. Seems to be good for 10 iterations
+#trunc=ncol(samplesdens)/2
+#for(i in 1:nrow(samplesdens)){
+#  plot(samplesdens[i, (trunc+1):(2*trunc)], samplesdens[i, 1:trunc], type="h", main=sum(samplesdens[i, 1:trunc]),
+#       xlim=c(-10,80)); 
+#  abline(v=c(-5,5), col="red"); readline()
+#}
+
+
+rm(list=ls())
+code=nimbleCode(
+  {
+    for(i in 1:N){
+      thetatilde[i] ~ dnorm(mean=0, var=40) 
+    }
+    xi[1:N] ~ dCRP(conc0 , size=N)
+    conc0 ~ dgamma(a,1)
+    a ~ dgamma(1, 1)
+    
+    for(i in 1:N){
+      theta[i] <- thetatilde[xi[i]]
+      y[i] ~ dnorm(theta[i], var=2)
+    }
+  }
+)
+
+
+Consts=list(N=20)
+set.seed(1)
+aux=sample(1:10, size=Consts$N, replace=TRUE)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N, 0, sqrt(40)), conc0=1, a=1)
+
+s20=4; s21=4
+mu01=5; mu11=-5
+data0=list(y=c(rnorm(Consts$N/2,mu01,sqrt(s20)), rnorm(Consts$N/2,mu11,sqrt(s21))))
+
+monitors <- c('thetatilde','xi','conc0')
+
+model <- nimbleModel(code, data = data0, inits = Inits, constants = Consts,  calculate=TRUE)
+cm <- compileNimble(model) 
+
+mConf <- configureMCMC(model, print=TRUE, monitors = monitors)
+mMCMC <- buildMCMC(mConf)
+
+mMCMC$run(10)
+mvSaved = mMCMC$mvSamples
+
+rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens$run() 
+
+cdens = compileNimble(rdens, project = model)
+cdens$run() 
+
+samplesdens = as.matrix(cdens$samples)
+
+ plot of the samples of G. Seems to be good for 10 iterations
+trunc=ncol(samplesdens)/2
+for(i in 1:nrow(samplesdens)){
+  plot(samplesdens[i, (trunc+1):(2*trunc)], samplesdens[i, 1:trunc], type="h", main=sum(samplesdens[i, 1:trunc]),
+       xlim=c(-10,80)); 
+  abline(v=c(-5,5), col="red"); readline()
+}
+
 
 
 
@@ -146,7 +255,7 @@ rdens$run() # ERROR:
 
 cdens = compileNimble(rdens, project = model)
 cdens$run() # no ERROR:
- 
+
 samplesdens = as.matrix(cdens$samples)
 
 # plot of the samples of G. Seems to be good for 10 iterations
@@ -417,7 +526,7 @@ mConf$printSamplers(c("mu", "alpha", "beta"))
 mMCMC <- buildMCMC(mConf)
 
 CmMCMC=compileNimble(mMCMC, project=model,
-                         resetFunctions=TRUE, showCompilerOutput = TRUE)
+                     resetFunctions=TRUE, showCompilerOutput = TRUE)
 
 CmMCMC$run(10)
 mvSaved = as.matrix(CmMCMC$mvSamples)
@@ -636,7 +745,7 @@ modelMCMC=buildMCMC(modelConf)
 
 #-- compiling the sampler
 CmodelMCMC=compileNimble(modelMCMC, project=model,
-                            resetFunctions=TRUE, showCompilerOutput = TRUE)
+                         resetFunctions=TRUE, showCompilerOutput = TRUE)
 
 #-- MCMC samples
 set.seed(1)
@@ -986,7 +1095,7 @@ for(i in 1:nrow(aux)){
 
 #-- compiling the sampler
 CmodelNewMCMC=compileNimble(modelMCMC, project=model,
-                     resetFunctions=TRUE, showCompilerOutput = TRUE)
+                            resetFunctions=TRUE, showCompilerOutput = TRUE)
 
 #-- MCMC samples
 set.seed(1)
@@ -1099,7 +1208,7 @@ Code=nimbleCode(
       #s2tilde[i] ~ dinvgamma(shape=a0, scale=b0) 
     }
     xi[1:N2] ~ dCRP(conc, size=N2)
-     
+    
     for(i in 1:N){
       #theta[i] <- thetatilde[xi[i]]
       y[i] ~ dnorm(thetatilde[xi[i]] , var=2)#s2tilde[xi[i]]
@@ -1776,7 +1885,7 @@ Code=nimbleCode(
   {
     p[1:3] ~ ddirch(alpha=alpha0[1:3])
     #for(i in 1:N){
-      y[1:3] ~ dmulti(prob=p[1:3], size=3)
+    y[1:3] ~ dmulti(prob=p[1:3], size=3)
     #}
     #alpha0 <- c(1,1,1)  
   }
