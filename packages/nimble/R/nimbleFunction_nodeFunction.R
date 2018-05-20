@@ -12,12 +12,17 @@ addArg <- function(code, value, name) {
 ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
         ## error gracefully if dynamic index too small or large; we don't catch non-integers within the bounds though
+        if(is.null(nimDim)) {
+            nanExpr <- NaN
+        } else nanExpr <- substitute(nimArray(NaN, DIM),
+                                     DIM = nimDim)
         code <- substitute(if(CONDITION) LHS <<- RHS
                            else {
-                               LHS <<- NaN  ## need nimArray for non-scalar
+                               LHS <<- NANEXPR
                                print(TEXT) },  
                            list(LHS = LHS,
                                 RHS = RHS,
+                                NANEXPR = nanExpr,
                                 CONDITION = dynamicIndexLimitsExpr,
                                 TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
     } else code <- substitute(LHS <<- RHS,
@@ -36,12 +41,17 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
         RHS <- ndf_createStochSimulateTrunc(RHS, discrete = getAllDistributionsInfo('discrete')[BUGSdistName])
     } 
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+                if(is.null(nodeDim)) {
+            nanExpr <- NaN
+        } else nanExpr <- substitute(nimArray(NaN, DIM),
+                                     DIM = nimDim)
         code <- substitute(if(CONDITION) LHS <<- RHS
                            else {
-                               LHS <<- Nan  ## need nimArr
+                               LHS <<- NANEXPR
                                print(TEXT) },  
                            list(LHS = LHS,
                                 RHS = RHS,
+                                NANEXPR = nanExpr,
                                 CONDITION = dynamicIndexLimitsExpr,
                                 TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
     } else {
