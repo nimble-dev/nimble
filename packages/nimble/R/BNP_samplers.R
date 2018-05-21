@@ -138,8 +138,8 @@ sampler_DP_density <- nimbleFunction(
         nimbleOptions(verbose = verbosity)
         
         modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] 
-        nimCopy(from = model, to = modelWithNAs, nodes = parentNodes) # can nodes be a vector?
         # d) copy savedParentNodes from mvSaved
+        nimCopy(from = mvSaved, to = modelWithNAs, nodes = savedParentNodes, row=1) 
         if( length(savedParentNodes) == 0 ) { # concentration parameter was not monitored
           stop( paste('sampler_DP_density: Some variable of conc parameter is not being monitored in model values object. \n') )
         } else {
@@ -152,8 +152,10 @@ sampler_DP_density <- nimbleFunction(
           }
         }
         allDepsOfSavedParentNodes <- model$getDependencies(savedParentNodes)
-    } else allDepsOfSavedParentNodes <- dcrpNode  ## CJP: I think we need to have allDepsOfSavedParentNodes only have nodes in the mvSaved for correct compilation
-    
+    } else {
+      allDepsOfSavedParentNodes <- dcrpNode  ## CJP: I think we need to have allDepsOfSavedParentNodes only have nodes in the mvSaved for correct compilation
+      savedParentNodes <- dcrpNode
+    }
 
     N <- length(dataNodes)
     p <- length(tildeVars)
@@ -185,7 +187,7 @@ sampler_DP_density <- nimbleFunction(
       dcrpAux <- model$getParam(dcrpNode, 'conc')
     } else {
       for( iiter in 1:niter ) {
-        nimCopy(from = mvSaved, to = model, nodes = allDepsOfSavedParentNodes, row=iiter) # can nodes be a vector?
+        nimCopy(from = mvSaved, to = model, nodes = savedParentNodes, row=iiter) 
         # e): do calculate of model with NA
         model$calculate(allDepsOfSavedParentNodes)
         concSam[iiter] <- model$getParam(dcrpNode, 'conc')
