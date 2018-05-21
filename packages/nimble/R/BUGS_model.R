@@ -1184,6 +1184,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                                                                               BUGSdecl$unrolledIndicesMatrix)
                                                nodeDim <- nodeSizeAndDims[[deparse(BUGSdecl$targetVarExpr)]][[1]]$lengths
                                                nodeDim <- nodeDim[nodeDim != 1] ## will be NULL if scalar
+                                               if(!length(nodeDim)) nodeDim <- NULL
                                            } else nodeDim <- NULL
 
                                            altParams <- BUGSdecl$altParamExprs
