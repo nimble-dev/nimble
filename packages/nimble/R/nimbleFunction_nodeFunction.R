@@ -12,7 +12,7 @@ addArg <- function(code, value, name) {
 ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
         ## error gracefully if dynamic index too small or large; we don't catch non-integers within the bounds though
-        if(is.null(nimDim)) {
+        if(is.null(nodeDim)) {
             nanExpr <- NaN
         } else nanExpr <- substitute(nimArray(NaN, LENGTH),
                                      list(LENGTH = prod(nodeDim)))
@@ -41,7 +41,7 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
         RHS <- ndf_createStochSimulateTrunc(RHS, discrete = getAllDistributionsInfo('discrete')[BUGSdistName])
     } 
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
-                if(is.null(nodeDim)) {
+        if(is.null(nodeDim)) {
             nanExpr <- NaN
         } else nanExpr <- substitute(rep(NaN, LENGTH),
                                      list(LENGTH = prod(nodeDim)))
