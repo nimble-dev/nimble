@@ -14,8 +14,8 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
         ## error gracefully if dynamic index too small or large; we don't catch non-integers within the bounds though
         if(is.null(nimDim)) {
             nanExpr <- NaN
-        } else nanExpr <- substitute(nimArray(NaN, DIM),
-                                     list(DIM = nodeDim))
+        } else nanExpr <- substitute(nimArray(NaN, LENGTH),
+                                     list(LENGTH = prod(nodeDim)))
         code <- substitute(if(CONDITION) LHS <<- RHS
                            else {
                                LHS <<- NANEXPR
@@ -43,8 +43,8 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
                 if(is.null(nodeDim)) {
             nanExpr <- NaN
-        } else nanExpr <- substitute(nimArray(NaN, DIM),
-                                     list(DIM = nodeDim))
+        } else nanExpr <- substitute(rep(NaN, LENGTH),
+                                     list(LENGTH = prod(nodeDim)))
         code <- substitute(if(CONDITION) LHS <<- RHS
                            else {
                                LHS <<- NANEXPR
