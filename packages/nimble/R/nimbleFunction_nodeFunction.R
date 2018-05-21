@@ -15,7 +15,7 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
         if(is.null(nimDim)) {
             nanExpr <- NaN
         } else nanExpr <- substitute(nimArray(NaN, DIM),
-                                     list(DIM = nimDim))
+                                     list(DIM = nodeDim))
         code <- substitute(if(CONDITION) LHS <<- RHS
                            else {
                                LHS <<- NANEXPR
@@ -44,7 +44,7 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
                 if(is.null(nodeDim)) {
             nanExpr <- NaN
         } else nanExpr <- substitute(nimArray(NaN, DIM),
-                                     list(DIM = nimDim))
+                                     list(DIM = nodeDim))
         code <- substitute(if(CONDITION) LHS <<- RHS
                            else {
                                LHS <<- NANEXPR
