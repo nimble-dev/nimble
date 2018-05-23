@@ -10,7 +10,6 @@ rm(list=ls())
 library(nimble)
 
 
-rm(list=ls())
 # Model with fixed conc parameter: here the error is when running the non compile sampler_G_density. 
 code <- nimbleCode({
   for(i in 1:n){
@@ -55,7 +54,8 @@ for(i in 1:nrow(samplesdens)){
 
 
 
-
+rm(list=ls())
+library(nimble)
 code=nimbleCode(
   {
     for(i in 1:N3){
@@ -116,6 +116,32 @@ for(i in 1:nrow(samplesdens)){
 }
 
 
+
+
+## compile version of sampler G: test it!!!
+
+model <- nimbleModel(code, data = data0, inits = Inits, constants =
+                       Consts,  calculate=TRUE)
+cm <- compileNimble(model)
+mConf <- configureMCMC(model, print=TRUE, monitors = monitors)
+mMCMC <- buildMCMC(mConf)
+cMCMC <- compileNimble(mMCMC, project = model)
+cMCMC$run(1000)
+## mMCMC$run(10)  # hopefully we don't need this
+rdens = nimble:::sampler_DP_density(model, mMCMC$mvSamples)
+cdens = compileNimble(rdens, project = model)
+cdens$run()
+
+
+samplesdens = as.matrix(cdens$samples)
+
+# plot of the samples of G. Seems to be good for 10 iterations
+trunc=ncol(samplesdens)/2
+for(i in 990:nrow(samplesdens)){
+  plot(samplesdens[i, (trunc+1):(2*trunc)], samplesdens[i, 1:trunc], type="h", main=sum(samplesdens[i, 1:trunc]),
+       xlim=c(-10,80)); 
+  abline(v=c(-5,5), col="red"); readline()
+}
 
 
 rm(list=ls())
