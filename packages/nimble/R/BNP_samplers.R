@@ -184,7 +184,7 @@ sampler_DP_density <- nimbleFunction(
     # the relation between 'conc', trunc level, and error of approximation is: (conc / (conc +1))^{Trunc-1}=e 
     concSam <- numeric(niter)
     if( fixedConc == TRUE ) {
-      concSam[1:niter] <- model$getParam(dcrpNode, 'conc')
+      concSam[1:niter] <- rep( model$getParam(dcrpNode, 'conc'), niter)
       dcrpAux <- model$getParam(dcrpNode, 'conc')
     } else {
       for( iiter in 1:niter ) {
