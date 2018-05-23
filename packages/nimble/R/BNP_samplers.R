@@ -141,7 +141,7 @@ sampler_DP_density <- nimbleFunction(
       modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
       nimbleOptions(verbose = verbosity)
       
-      #modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] ## Claudia, why do we need this? Answer: we don't
+      modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] ## Claudia, why do we need this? Answer: if I don't do this I get the error: Error in if (counts > 0) { : missing value where TRUE/FALSE needed
       ## copy savedParentNodes from mvSaved
       nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) ## Claudia, shouldn't this be savedParentNodes not parentNodes? Answer: Yes
       if( length(savedParentNodes) == 0 ) { 
@@ -154,13 +154,16 @@ sampler_DP_density <- nimbleFunction(
         }
       }
       allDepsOfSavedParentNodes <- model$getDependencies(savedParentNodes)
-    } else allDepsOfSavedParentNodes <- dcrpNode  ## placeholder since allDepsOfSavedParentNodes must only have nodes in the mvSaved for correct compilation
+    } else { ## placeholder since allDepsOfSavedParentNodes must only have nodes in the mvSaved for correct compilation
+      allDepsOfSavedParentNodes <- dcrpNode
+      savedParentNodes <- dcrpNode
+    }   
     
     ## Claudia, should we check somewhere that there is at least one tildeVar in the model? Answer: Yes we should
     N <- length(dataNodes)
     p <- length(tildeVars)
     Ntilde <- length(values(model, tildeVars)) / p 
-    approxError <- 1e-10 ## maximum allowable error in approximating unknown density with the truncation representation
+    aproxError <- 1e-10 ## maximum allowable error in approximating unknown density with the truncation representation
     
     getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
     for(j in 1:p){
@@ -196,7 +199,7 @@ sampler_DP_density <- nimbleFunction(
       dcrpAux <- mean(concSam)
     }
     
-    Trunc <- log(AproxError)/log(dcrpAux/(dcrpAux+1)) + 1
+    Trunc <- log(aproxError)/log(dcrpAux/(dcrpAux+1)) + 1
     Trunc <- round(Trunc)
     
     setSize(samples, c(niter, Trunc*(p+1))) # first 1:Trunc columns are weights, then the atoms.
