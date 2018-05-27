@@ -53,6 +53,7 @@ sampler_DP_density <- nimbleFunction(
     
     
     ## Find the 'tilde' variables (the parameters that are being clustered). 
+    ## from now on this variables will be called "cluster variables"
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
     tildeVars <- NULL
     itildeVar <- 1
@@ -76,13 +77,13 @@ sampler_DP_density <- nimbleFunction(
       }
     }
     
-    ## Check that tilde variables are monitored.
+    ## Check that tilde (cluster) variables are monitored.
     counts <- sapply(tildeVars, function(x) x %in% mvSavedVars)  ## Claudia, please check this looks ok. Answer: it does!
     if( sum(counts) != length(tildeVars) ) {
-      stop(paste('sampler_DP_density: The nodes(s) representing the parameters that are being clustered must be monitored in the MCMC (and therefore stored in the modelValues object.\n'))  ## Claudia, please check this language in this message. 
+      stop(paste('sampler_DP_density: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object.\n'))  ## Claudia, please check this language in this message. Answer: checked
     }
-    if( is.null(tildeVars) ) {
-      stop('sampler_DP_density: The model should have at least one tilde variable.\n')
+    if( is.null(tildeVars) ) { # #  at least one cluster variable is in the model. Chris: Is this enoug?
+      stop('sampler_DP_density: The model should have at least one cluster variable.\n')
     }
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
@@ -94,7 +95,7 @@ sampler_DP_density <- nimbleFunction(
       aux <- model$getDependencies(stochNodes[i], includeData = FALSE, stochOnly = TRUE)  ## Claudia, ok, since dcrpNode would never be data?
       ## also, see below, can we simply add 'stochOnly = TRUE' above? Answer: yes, that is much shorter!
       if(sum(aux == dcrpNode)) { 
-        ## aux <- model$getDependencies(stochNodes[i], includeData=FALSE)  ## ok to remove?
+        ## aux <- model$getDependencies(stochNodes[i], includeData=FALSE)  ## ok to remove? Answer: yes
         allDep <- c(allDep, aux[aux != dcrpNode])
       }
     }
@@ -150,20 +151,20 @@ sampler_DP_density <- nimbleFunction(
         modelWithNAs$calculate(model$getDependencies(savedParentNodes)) 
         dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
         if( is.na(dcrpParam) ) {
-          stop('sampler_DP_density: One or more variables related to concentration parameter are not being monitored in modelValues object.\n')
+          stop('sampler_DP_density: Any variable involved in the concentration parameter must be monitored in the MCMC.\n')
         }
       }
       allDepsOfSavedParentNodes <- model$getDependencies(savedParentNodes)
     } else { ## placeholder since allDepsOfSavedParentNodes must only have nodes in the mvSaved for correct compilation
       allDepsOfSavedParentNodes <- dcrpNode
-      savedParentNodes <- dcrpNode
+      savedParentNodes <- dcrpNode # also used in run code
     }   
     
-    ## Claudia, should we check somewhere that there is at least one tildeVar in the model? Answer: Yes we should
+    ## Claudia, should we check somewhere that there is at least one tildeVar in the model? Answer: Yes we should, added in line 85
     N <- length(dataNodes)
     p <- length(tildeVars)
     Ntilde <- length(values(model, tildeVars)) / p 
-    aproxError <- 1e-10 ## maximum allowable error in approximating unknown density with the truncation representation
+    aproxError <- 1e-10 ## maximum allowable error in approximating unknown measure with the truncation representation
     
     getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
     for(j in 1:p){
@@ -211,7 +212,7 @@ sampler_DP_density <- nimbleFunction(
       xiiter <- mvSaved[dcrpVar, iiter]
       rangei <- min(xiiter):max(xiiter) # is this ok??
       index <- 1
-      for(i in 1:length(rangei)){
+      for(i in seq_along(rangei)){ # 1:length(rangei)
         cond <- sum(xiiter==rangei[i])
         if(cond>0){
           probs[index] <- cond
@@ -559,9 +560,9 @@ sampler_CRP <- nimbleFunction(
     itildeVar <- 1
     
     dep <- model$getDependencies(targetElements[1], self=FALSE)
-    for(i in 1:length(dep)) { 
+    for(i in seq_along(dep)) { 
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i])) 
-      for(j in 1:length(expr)) {
+      for(j in seq_along(expr)) {
         ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
         tmpexpr <- parse(text = expr[j])[[1]]
         if(length(tmpexpr) >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') {   
