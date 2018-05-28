@@ -680,10 +680,15 @@ modelDefClass$methods(checkMultivarExpr = function() {
         BUGSdecl <- declInfo[[i]]
         if(BUGSdecl$type != 'stoch') next
         dist <- deparse(BUGSdecl$valueExpr[[1]])
+        ## The following line is a one-time insertion to break testing in any case
+        ## where the condition fails.
+        ## If the condition is always met, we can use BUGSdecl$distributionName in place of deparse(BUGSdecl$valueExpr[[1]])
+        if(dist != BUGSdecl$distributionName)
+            stop(paste0("dist (", dist,") != BUGSdecl$distributionName (",BUGSdecl$distributionName,")"))
         types <- nimble:::distributionsInputList[[dist]]$types
         if(is.null(types)) next
-        tmp <- strsplit(types, " = ")
-        nms <- sapply(tmp, `[[`, 1)
+        ## tmp <- strsplit(types, " = ")
+        ## nms <- sapply(tmp, `[[`, 1)
         # originally was only checking for expr in multivar dist:
         ## if('value' %in% nms) next
         ## distDim <- parse(text = tmp[[which(nms == 'value')]])[[2]][[2]]
@@ -979,6 +984,9 @@ modelDefClass$methods(liftExpressionArgs = function() {
         
         if(BUGSdecl$type == 'stoch') {
             params <- as.list(valueExpr[-1])   ## extract the original distribution parameters
+
+            types <- nimble:::distributionsInputList[[BUGSdecl$distributionName]]$types
+            if(!is.null(types)) next ## don't lift multivariate expressions
             
             for(iParam in seq_along(params)) {
                 if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower_', 'upper_'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
