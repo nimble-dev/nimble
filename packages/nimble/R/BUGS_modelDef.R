@@ -986,37 +986,37 @@ modelDefClass$methods(liftExpressionArgs = function() {
             params <- as.list(valueExpr[-1])   ## extract the original distribution parameters
 
             types <- nimble:::distributionsInputList[[BUGSdecl$distributionName]]$types
-            if(!is.null(types)) next ## don't lift multivariate expressions
-            
-            for(iParam in seq_along(params)) {
-                if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower_', 'upper_'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
-                paramExpr <- params[[iParam]]
-                if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
-                requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
-                uniquePiece <- if(requireNewAndUniqueDecl) paste0("_L", BUGSdecl$sourceLineNumber) else ""
-                newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
-                if(deparse(paramExpr[[1]]) %in% liftedCallsDoNotAddIndexing) {   ## skip adding indexing to mixed-size calls
-                    newNodeNameExprIndexed <- newNodeNameExpr
-                } else {
-                    newNodeNameExprIndexed <- addNecessaryIndexingToNewNode(newNodeNameExpr, paramExpr, contexts[[BUGSdecl$contextID]]$indexVarExprs)  ## add indexing if necessary
-                }
+            if(is.null(types)) { ## don't lift multivariate expressions
                 
-                newValueExpr[[iParam + 1]] <- newNodeNameExprIndexed  ## update the newValueExpr
-                
-                newNodeCode <- substitute(LHS <- RHS, list(LHS = newNodeNameExprIndexed, RHS = paramExpr))     ## create code line for declaration of new node
-                ## if requireNewAndUniqueDecl is TRUE, the _L# is appended to the newNodeNameExpr and it should be impossible for this to be TRUE:
-                identicalNewDecl <- checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)
-                
-                if(!identicalNewDecl) {
-                    BUGSdeclClassObject <- BUGSdeclClass$new()
-                    BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, FALSE, NULL)   ## keep new declaration in the same context, regardless of presence/absence of indexing
-                    newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
+                for(iParam in seq_along(params)) {
+                    if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower_', 'upper_'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
+                    paramExpr <- params[[iParam]]
+                    if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
+                    requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
+                    uniquePiece <- if(requireNewAndUniqueDecl) paste0("_L", BUGSdecl$sourceLineNumber) else ""
+                    newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
+                    if(deparse(paramExpr[[1]]) %in% liftedCallsDoNotAddIndexing) {   ## skip adding indexing to mixed-size calls
+                        newNodeNameExprIndexed <- newNodeNameExpr
+                    } else {
+                        newNodeNameExprIndexed <- addNecessaryIndexingToNewNode(newNodeNameExpr, paramExpr, contexts[[BUGSdecl$contextID]]$indexVarExprs)  ## add indexing if necessary
+                    }
                     
-                    nextNewDeclInfoIndex <- nextNewDeclInfoIndex + 1     ## update for lifting other nodes, and re-adding BUGSdecl at the end
-                }
-            }    # closes loop over params
-        }
-        
+                    newValueExpr[[iParam + 1]] <- newNodeNameExprIndexed  ## update the newValueExpr
+                    
+                    newNodeCode <- substitute(LHS <- RHS, list(LHS = newNodeNameExprIndexed, RHS = paramExpr))     ## create code line for declaration of new node
+                    ## if requireNewAndUniqueDecl is TRUE, the _L# is appended to the newNodeNameExpr and it should be impossible for this to be TRUE:
+                    identicalNewDecl <- checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)
+                    
+                    if(!identicalNewDecl) {
+                        BUGSdeclClassObject <- BUGSdeclClass$new()
+                        BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, FALSE, NULL)   ## keep new declaration in the same context, regardless of presence/absence of indexing
+                        newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
+                        
+                        nextNewDeclInfoIndex <- nextNewDeclInfoIndex + 1     ## update for lifting other nodes, and re-adding BUGSdecl at the end
+                    }
+                }    # closes loop over params
+            }
+        }        
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
         
