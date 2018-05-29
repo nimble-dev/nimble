@@ -152,8 +152,8 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     processBoundsAndTruncation()      ## puts bound expressions into declInfo, including transforming T(ddist(),lower,upper); need to do this before expandDistributions(), which is not set up to handle T() wrapping; need to save bound info for later use in reparameterizeDists() -- hence temporarily stored in boundExprs (can't put in code because it would be stripped out in expandDistributions, though alternative is to modify expandDistributions to add lower,upper back into code)
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
-    if(getNimbleOption('disallow_multivariate_argument_expressions'))
-       checkMultivarExpr()               ## checks that multivariate params are not expressions
+   ## if(getNimbleOption('disallow_multivariate_argument_expressions'))
+   ##    checkMultivarExpr()               ## checks that multivariate params are not expressions
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName; also processes bound info to evaluate in context of model
     replaceAllConstants()
@@ -613,7 +613,7 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
         BUGSdecl <- declInfo[[i]]
 
         if(BUGSdecl$type != 'stoch') next
-        callName <- deparse(BUGSdecl$valueExpr[[1]])
+        callName <- BUGSdecl$distributionName ## replaces deparse(BUGSdecl$valueExpr[[1]])
         if(!(callName %in% c("T", "I"))) {
             truncated <- FALSE
             boundExprs <- getDistributionInfo(callName)$range
@@ -986,36 +986,35 @@ modelDefClass$methods(liftExpressionArgs = function() {
             params <- as.list(valueExpr[-1])   ## extract the original distribution parameters
 
             types <- nimble:::distributionsInputList[[BUGSdecl$distributionName]]$types
-            if(is.null(types)) { ## don't lift multivariate expressions
+            ## types may be NULL if all are scalar
+            
+            for(iParam in seq_along(params)) {
+                if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower_', 'upper_'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
+                paramExpr <- params[[iParam]]
+                if(!isExprLiftable(paramExpr, types))    next     ## if this param isn't an expression, go ahead to next parameter
+                requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
+                uniquePiece <- if(requireNewAndUniqueDecl) paste0("_L", BUGSdecl$sourceLineNumber) else ""
+                newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
+                if(deparse(paramExpr[[1]]) %in% liftedCallsDoNotAddIndexing) {   ## skip adding indexing to mixed-size calls
+                    newNodeNameExprIndexed <- newNodeNameExpr
+                } else {
+                    newNodeNameExprIndexed <- addNecessaryIndexingToNewNode(newNodeNameExpr, paramExpr, contexts[[BUGSdecl$contextID]]$indexVarExprs)  ## add indexing if necessary
+                }
                 
-                for(iParam in seq_along(params)) {
-                    if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower_', 'upper_'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
-                    paramExpr <- params[[iParam]]
-                    if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
-                    requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
-                    uniquePiece <- if(requireNewAndUniqueDecl) paste0("_L", BUGSdecl$sourceLineNumber) else ""
-                    newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
-                    if(deparse(paramExpr[[1]]) %in% liftedCallsDoNotAddIndexing) {   ## skip adding indexing to mixed-size calls
-                        newNodeNameExprIndexed <- newNodeNameExpr
-                    } else {
-                        newNodeNameExprIndexed <- addNecessaryIndexingToNewNode(newNodeNameExpr, paramExpr, contexts[[BUGSdecl$contextID]]$indexVarExprs)  ## add indexing if necessary
-                    }
+                newValueExpr[[iParam + 1]] <- newNodeNameExprIndexed  ## update the newValueExpr
+                
+                newNodeCode <- substitute(LHS <- RHS, list(LHS = newNodeNameExprIndexed, RHS = paramExpr))     ## create code line for declaration of new node
+                ## if requireNewAndUniqueDecl is TRUE, the _L# is appended to the newNodeNameExpr and it should be impossible for this to be TRUE:
+                identicalNewDecl <- checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)
+                
+                if(!identicalNewDecl) {
+                    BUGSdeclClassObject <- BUGSdeclClass$new()
+                    BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, FALSE, NULL)   ## keep new declaration in the same context, regardless of presence/absence of indexing
+                    newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
                     
-                    newValueExpr[[iParam + 1]] <- newNodeNameExprIndexed  ## update the newValueExpr
-                    
-                    newNodeCode <- substitute(LHS <- RHS, list(LHS = newNodeNameExprIndexed, RHS = paramExpr))     ## create code line for declaration of new node
-                    ## if requireNewAndUniqueDecl is TRUE, the _L# is appended to the newNodeNameExpr and it should be impossible for this to be TRUE:
-                    identicalNewDecl <- checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)
-                    
-                    if(!identicalNewDecl) {
-                        BUGSdeclClassObject <- BUGSdeclClass$new()
-                        BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, FALSE, NULL)   ## keep new declaration in the same context, regardless of presence/absence of indexing
-                        newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
-                        
-                        nextNewDeclInfoIndex <- nextNewDeclInfoIndex + 1     ## update for lifting other nodes, and re-adding BUGSdecl at the end
-                    }
-                }    # closes loop over params
-            }
+                    nextNewDeclInfoIndex <- nextNewDeclInfoIndex + 1     ## update for lifting other nodes, and re-adding BUGSdecl at the end
+                }
+            }    # closes loop over params
         }        
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
@@ -1026,20 +1025,25 @@ modelDefClass$methods(liftExpressionArgs = function() {
     }    # closes loop over declInfo
     declInfo <<- newDeclInfo
 })
-isExprLiftable <- function(paramExpr) {
+isExprLiftable <- function(paramExpr, types = NULL) {
     ## determines whether a parameter expression is worthy of lifiting up to a new node
     if(is.name(paramExpr))       return(FALSE)
     if(is.numeric(paramExpr))    return(FALSE)
     if(is.call(paramExpr)) {
-        if(paramExpr[[1]] == 'chol')        return(TRUE)    ## do lift calls to chol(...)
-        if(paramExpr[[1]] == 'inverse')     return(TRUE)    ## do lift calls to inverse(...)
-        if(paramExpr[[1]] == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
-        if(paramExpr[[1]] == 'CAR_calcC')   return(TRUE)    ## do lift calls to CAR_calcC(...)
-        if(paramExpr[[1]] == 'CAR_calcM'  ) return(TRUE)    ## do lift calls to CAR_calcM(...)
-        if(paramExpr[[1]] == 'CAR_calcEVs2')return(TRUE)    ## do lift calls to CAR_calcEVs2(...)
-        if(paramExpr[[1]] == 'CAR_calcEVs3')return(TRUE)    ## do lift calls to CAR_calcEVs3(...)
-        if(length(paramExpr) == 1)          return(FALSE)   ## don't generally lift function calls:   fun(...) ## this comment seems incorrect
-        if(getCallText(paramExpr) == '[')   return(FALSE)   ## don't lift simply indexed expressions:  x[...]
+        callText <- getCallText(paramExpr)
+        if(callText == 'chol')         return(TRUE)    ## do lift calls to chol(...)
+        if(callText == 'inverse')      return(TRUE)    ## do lift calls to inverse(...)
+        if(callText == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
+        if(callText == 'CAR_calcC')    return(TRUE)    ## do lift calls to CAR_calcC(...)
+        if(callText == 'CAR_calcM'  )  return(TRUE)    ## do lift calls to CAR_calcM(...)
+        if(callText == 'CAR_calcEVs2') return(TRUE)    ## do lift calls to CAR_calcEVs2(...)
+        if(callText == 'CAR_calcEVs3') return(TRUE)    ## do lift calls to CAR_calcEVs3(...)
+        if(length(paramExpr) == 1)     return(FALSE)   ## don't lift function calls with no arguments
+        if(callText == '[')            return(FALSE)   ## don't lift simply indexed expressions:  x[...]
+        if(any(grepl(callText, types))) return(FALSE)  ## beyond above cases, don't lift non-scalar arguments
+                                                       ## types has format c("mean = double(1)", "R = double(2)"),
+                                                       ## with no entries for scalars, so entry--> non-scalar
+                                                       ## This case comes after '[' to avoid using '[' as regexp in grepl
         ## if(getCallText(paramExpr) == '[') { ## these lines are for future handling of foo()[]
         ##     if(is.name(paramExpr))          return(FALSE)   ## don't lift simply indexed expressions:  x[...]
         ##                                     return(TRUE)    ## do lift foo(x)[...]
