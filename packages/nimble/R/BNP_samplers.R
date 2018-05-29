@@ -20,7 +20,7 @@ getTildeVar <- nimbleFunction(
 )
 
 
-sampler_DP_density <- nimbleFunction(
+sampler_DP_measure <- nimbleFunction(
   setup=function(model, mvSaved){
     
     ## Check if the mvSaved is compiled or not.
@@ -203,7 +203,8 @@ sampler_DP_density <- nimbleFunction(
     Trunc <- log(aproxError)/log(dcrpAux/(dcrpAux+1)) + 1
     Trunc <- round(Trunc)
     
-    setSize(samples, c(niter, Trunc*(p+1))) # first 1:Trunc columns are weights, then the atoms.
+    #setSize(samples, c(niter, Trunc*(p+1))) # first 1:Trunc columns are weights, then the atoms.
+    samples <<- matrix(0, nrow = niter, ncol = Trunc*(p+1))
     
     for(iiter in 1:niter){
       #-- getting the sampled unique values (tilde variables) and their probabilities of beign sampled . Need for computing G later.
