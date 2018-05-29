@@ -35,7 +35,7 @@ mMCMC$run(10)
 mvSaved = mMCMC$mvSamples
 
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 rdens$run() # ERROR:
 
 cdens = compileNimble(rdens, project = model)
@@ -99,7 +99,7 @@ mMCMC$run(10)
 
 mvSaved = mMCMC$mvSamples
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 rdens$run()
 
 cdens = compileNimble(rdens, project = model)
@@ -128,7 +128,7 @@ mMCMC <- buildMCMC(mConf)
 cMCMC <- compileNimble(mMCMC, project = model)
 cMCMC$run(1000)
 ## mMCMC$run(10)  # hopefully we don't need this
-rdens = nimble:::sampler_DP_density(model, mMCMC$mvSamples)
+rdens = nimble:::sampler_DP_measure(model, mMCMC$mvSamples)
 cdens = compileNimble(rdens, project = model)
 cdens$run()
 
@@ -191,7 +191,7 @@ mMCMC$run(10)
 
 mvSaved = mMCMC$mvSamples
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 rdens$run()
 
 cdens = compileNimble(rdens, project = model)
@@ -245,7 +245,7 @@ mMCMC <- buildMCMC(mConf)
 mMCMC$run(10)
 mvSaved = mMCMC$mvSamples
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 rdens$run() 
 
 cdens = compileNimble(rdens, project = model)
@@ -302,7 +302,7 @@ mMCMC <- buildMCMC(mConf)
 mMCMC$run(10)
 mvSaved = mMCMC$mvSamples
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 rdens$run() 
 
 cdens = compileNimble(rdens, project = model)
@@ -345,7 +345,7 @@ mMCMC <- buildMCMC(mConf)
 mMCMC$run(10)
 mvSaved = mMCMC$mvSamples
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 rdens$run()  # ERROR
 
 cdens = compileNimble(rdens, project = model)
@@ -389,7 +389,7 @@ mMCMC$run(10)
 mvSaved = mMCMC$mvSamples
 
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 rdens$run() # ERROR:
 
 cdens = compileNimble(rdens, project = model)
@@ -446,7 +446,7 @@ mMCMC$run(10)
 mvSaved = mMCMC$mvSamples
 
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 rdens$run() # ERROR:
 
 cdens = compileNimble(rdens, project = model)
@@ -505,7 +505,7 @@ mMCMC$run(10)
 mvSaved = mMCMC$mvSamples
 
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 rdens$run() # ERROR:
 
 cdens = compileNimble(rdens, project = model)
@@ -571,7 +571,7 @@ mMCMC$run(10) # Error: object 'dep_dgamma_coeff' not found
 mvSaved = mMCMC$mvSamples
 
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 rdens$run() # ERROR:
 
 cdens = compileNimble(rdens, project = model)
@@ -708,10 +708,10 @@ mvSaved = mMCMC$mvSamples
 #CmMCMC <- compileNimble(mMCMC, project=model, resetFunctions=TRUE, showCompilerOutput = FALSE)
 #CmMCMC$run(10)
 #CmvSaved = CmMCMC$mvSamples
-#rdens = nimble:::sampler_DP_density(model, CmvSaved)
+#rdens = nimble:::sampler_DP_measure(model, CmvSaved)
 
 # based on manual, need to provide uncompiled mv object
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 cdens = compileNimble(rdens, project = model)
 cdens$run()
 samplesdens = as.matrix(cdens$samples)
@@ -788,7 +788,7 @@ CmvSaved = CmMCMC$mvSamples
 mMCMC$run(10)
 mvSaved = mMCMC$mvSamples
 # based on manual, need to provide uncompiled mv object
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 cdens = compileNimble(rdens, project = model)
 cdens$run()
 
@@ -1168,7 +1168,7 @@ mvSaved = modelMCMC$mvSamples
 
 #----------------------------------------------------------------------------
 #-- standarized output:
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 cdens = compileNimble(rdens, project = model)
 cdens$run()
 samplesdens = as.matrix(cdens$samples)
@@ -1264,7 +1264,7 @@ CmodelNewMCMC$run(nsave)
 proc.time()-t1
 
 
-rdens = nimble:::sampler_DP_density(model, mvSaved)
+rdens = nimble:::sampler_DP_measure(model, mvSaved)
 cdens = compileNimble(rdens, project = model)
 cdens$run()
 samplesdens = as.matrix(cdens$samples)
