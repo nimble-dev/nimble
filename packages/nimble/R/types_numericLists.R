@@ -38,7 +38,6 @@ setSize <- function(numObj, ..., copy = TRUE, fillZeros = TRUE){ ## fillValues i
             newDims <- unlist(newDimsList)
         }
         if(any(is.na(newDims))) warning("Not sure what to do with NA dims in setSize")
-
         if(length(newDims) != length(oldDims))
             if(length(newDims) < length(oldDims))
                 stop("Number of dimensions provided does not match object to change in setSize")
