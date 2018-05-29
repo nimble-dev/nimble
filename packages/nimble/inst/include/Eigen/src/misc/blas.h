@@ -1,8 +1,6 @@
 #ifndef BLAS_H
 #define BLAS_H
 
-#include <stdint.h>
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -11,8 +9,8 @@ extern "C"
 #define BLASFUNC(FUNC) FUNC##_
 
 #ifdef __WIN64__
-typedef int64_t BLASLONG;
-typedef uint64_t BLASULONG;
+typedef long long BLASLONG;
+typedef unsigned long long BLASULONG;
 #else
 typedef long BLASLONG;
 typedef unsigned long BLASULONG;

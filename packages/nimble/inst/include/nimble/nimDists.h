@@ -25,7 +25,6 @@
 #include "NimArr.h"
 #include "dists.h"
 
-
 double nim_dnorm(double x, double mu, double sigma, int give_log);
 
 bool R_IsNA(NimArr<1, double> &P); // We use ISNA which is a macro for R_IsNA, so now to overload for the vector case, we muse overload R_IsNA

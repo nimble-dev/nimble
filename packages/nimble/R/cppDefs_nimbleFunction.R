@@ -108,6 +108,7 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                if(inherits(neededType, 'symbolNimbleList')) {
                                                  CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                                  generatorName <- neededType$nlProc$name
+                                                 if(generatorName == 'NIMBLE_ADCLASS') Hincludes <<- c(Hincludes, nimbleIncludeFile("nimbleCppAD.h"))
                                                  thisCppDef <- nimbleProject$getNimbleListCppDef(generatorName = generatorName)
                                                  if(is.null(thisCppDef)){
                                                       className <- names(nimCompProc$neededTypes)[i]
@@ -119,7 +120,6 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                  next
                                                }
                                                if(inherits(neededType, 'symbolNimbleFunctionList')) {
-                                                   
                                                    baseClassName <- environment(neededType$baseClass)$name
                                                    thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = baseClassName)
                                                    if(is.null(thisCppDef)) {
@@ -150,7 +150,7 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            ## The next line creates the cppCopyTypes exactly the same way as in buildNimbleObjInterface
                                            ## and CmultiNimbleObjClass::initialize.
                                            cppCopyTypes <- makeNimbleFxnCppCopyTypes(nimCompProc$getSymbolTable(), objectDefs$getSymbolNames())
-                                           copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes)
+                                           copyFromRobjectDefs <- makeCopyFromRobjectDef(className = nfProc$name, cppCopyTypes, .self$nfProc$instances[[1]])
                                            functionDefs[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectDef
                                           ## SEXPmemberInterfaceFuns[['copyFromRobject']] <<- copyFromRobjectDefs$copyFromRobjectInterfaceDef
                                        },
@@ -198,7 +198,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                       contains = 'cppNimbleClassClass',
                                       fields = list(
                                           nfProc = 'ANY', ## an nfProcessing class, needed to get the member data symbol table post-compilation
-                                          parentsSizeAndDims = 'ANY'
+                                          parentsSizeAndDims = 'ANY',
+                                          ADconstantsInfo = 'ANY'
                                           ),
                                           methods = list(
                                               getDefs = function() {
@@ -223,6 +224,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       if(is.null(baseClassObj)) {
                                                           inheritance <<- c(inheritance, 'nodeFun')
                                                           parentsSizeAndDims <<- environment(nfProc$nfGenerator)$parentsSizeAndDims
+                                                          ADconstantsInfo <<- environment(nfProc$nfGenerator)$ADconstantsInfo
+                                                          
                                                       }
                                                   }
                                               },
@@ -237,7 +240,16 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   for(i in seq_along(functionDefs)) {
                                                       functionDefs[[i]]$args$parentST <<- objectDefs
                                                   }
-                                                  SEXPmemberInterfaceFuns <<- lapply(functionDefs, function(x) x$SEXPinterfaceFun)
+                                                  SEXPmemberInterfaceFuns <<- lapply(functionDefs,
+                                                                                     function(x)
+                                                                                         if(inherits(x$SEXPinterfaceFun, "cppFunctionDef"))
+                                                                                             x$SEXPinterfaceFun
+                                                                                         else
+                                                                                             NULL
+                                                                                     )
+                                                  SEXPmemberInterfaceFuns <<-
+                                                      SEXPmemberInterfaceFuns[ !unlist(lapply(SEXPmemberInterfaceFuns, is.null)) ]
+                                                      
                                                   nimCompProc <<- nfProc
                                               },
                                               buildFunctionDefs = function() {
@@ -245,7 +257,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       RCname <- names(nfProc$RCfunProcs)[i]
                                                       functionDefs[[RCname]] <<- RCfunctionDef$new() ## all nodeFunction members are const f
                                                       functionDefs[[RCname]]$buildFunction(nfProc$RCfunProcs[[RCname]])
-                                                      functionDefs[[RCname]]$buildSEXPinterfaceFun(className = nfProc$name)
+                                                      if(!grepl("ADproxyModel", RCname)) ## don't build "CALL_" function for AD functions
+                                                          functionDefs[[RCname]]$buildSEXPinterfaceFun(className = nfProc$name)
                                                       RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
                                                   }
                                               },
@@ -259,14 +272,15 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ADfunName <- paste0(funName, '_AD_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   newFunName <- paste0(funName, '_callForADtaping_')
-                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames, nfProc$isNode, functionDefs)
+                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames, nfProc$isNode, functionDefs, className = name)
                                                   invisible(NULL)
                                               },
                                               addADargumentTransferFunction = function( funName, independentVarNames ) {
                                                   newFunName <- paste0(funName, '_ADargumentTransfer_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   funIndex <- which(environment(nfProc$nfGenerator)$enableDerivs == funName) ## needed for correct index for allADtapePtrs_
-                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, parentsSizeAndDims)
+                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames, funIndex, parentsSizeAndDims,
+                                                                                                                ADconstantsInfo)
                                               },
                                               addStaticInitClass = function() {
                                                   neededTypeDefs[['staticInitClass']] <<- makeStaticInitClass(.self, environment(nfProc$nfGenerator)$enableDerivs) ##
@@ -277,47 +291,60 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   checkADargument(funName, outSym, returnType = TRUE)
                                                   if(length(nfProc$RCfunProcs[[funName]]$nameSubList) == 0) stop(paste0('Derivatives cannot be enabled for method ', funName, ', since this method has no arguments.'))
                                                   if(!nfProc$isNode){
-                                                    for(iArg in seq_along(functionDefs[[funName]]$args$symbols)){
-                                                      arg <- functionDefs[[funName]]$args$symbols[[iArg]]
-                                                      argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)
-                                                      argName <- names(nfProc$RCfunProcs[[funName]]$nameSubList)[iArg]
-                                                      checkADargument(funName, argSym, argName = argName)
-                                                    }
+                                                      for(iArg in seq_along(functionDefs[[funName]]$args$symbols)){
+                                                          arg <- functionDefs[[funName]]$args$symbols[[iArg]]
+                                                          argSym <- nfProc$RCfunProcs[[funName]]$compileInfo$origLocalSymTab$getSymbolObject(arg$name)
+                                                          argName <- names(nfProc$RCfunProcs[[funName]]$nameSubList)[iArg]
+                                                          checkADargument(funName, argSym, argName = argName)
+                                                      }
                                                   }
                                                   addTypeTemplateFunction(funName)
                                                   independentVarNames <- names(functionDefs[[funName]]$args$symbols)
                                                   if(nfProc$isNode) independentVarNames <- independentVarNames[-1]  ## remove ARG1_INDEXEDNODEINFO__ from independentVars
-                                                  
                                                   addADtapingFunction(funName, independentVarNames = independentVarNames, dependentVarNames = 'ANS_' )
                                                   addADargumentTransferFunction(funName, independentVarNames = independentVarNames)
                                               },
                                               checkADargument = function(funName, argSym, argName = NULL, returnType = FALSE){
-                                                argTypeText <- if(returnType) 'returnType' else 'argument'
-                                                if(argSym$type != 'double')
-                                                  stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method is not a double, this method cannot have derivatives enabled.'))
-                                                if(!(argSym$nDim %in% c(0,1)))
-                                                   stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method must be a double scalar or double vector for derivatives to be enabled.'))
-                                                if((argSym$nDim == 1) && is.na(argSym$size)) stop(paste0('To enable derivatives, size must be given for the ', argName, ' ', argTypeText, ' of the ', funName,
-                                                                                                          ' method,  e.g. double(1, 3) for a length 3 vector.' ))
+                                                  argTypeText <- if(returnType) 'returnType' else 'argument'
+                                                  if(argSym$type != 'double')
+                                                      stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method is not a double, this method cannot have derivatives enabled.'))
+                                        # if(!(argSym$nDim %in% c(0,1)))
+                                        #    stop(paste0('The ', argName, ' ', argTypeText, ' of the ', funName, ' method must be a double scalar or double vector for derivatives to be enabled.'))
+                                                  if((argSym$nDim != 0) && is.na(argSym$size))
+                                                      stop(paste0('To enable derivatives, size must be given for the ',
+                                                                  argName, ' ', argTypeText, ' of the ', funName,
+                                                                  ' method,  e.g. double(1, 3) for a length 3 vector.' ))
                                               },
-
                                               addADclassContent = function() {
-                                                  CPPincludes <<- c("<cppad/cppad.hpp>", CPPincludes)
-                                                  Hincludes <<- c("<cppad/cppad.hpp>", nimbleIncludeFile("nimbleCppAD.h"), Hincludes)
+                                        # CPPincludes <<- c("<TMB/distributions_R.hpp>", CPPincludes)
+                                                  Hincludes <<- c(nimbleIncludeFile("nimbleCppAD.h"),
+                                                                  "<TMB/distributions_R.hpp>", Hincludes)
                                                   addInheritance("nimbleFunctionCppADbase")
-                                                  objectDefs$addSymbol(cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), static = TRUE, name = 'allADtapePtrs_'))
-                                                  objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
+                                                  objectDefs$addSymbol(cppVarFull(baseType = 'vector',
+                                                                                  templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun',
+                                                                                                                 templateArgs = list('double'),
+                                                                                                                 ptr = 1)),
+                                                                                  static = TRUE,
+                                                                                  name = 'allADtapePtrs_'))
+                                                  objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup',
+                                                                                  baseType = 'nimbleCppADinfoClass'))
                                                   for(adEnabledFun in environment(nfProc$nfGenerator)$enableDerivs){
-                                                    addADclassContentOneFun(adEnabledFun)
+                                                      addADclassContentOneFun(adEnabledFun)
                                                   }
                                                   ## static declaration in the class definition
                                                   ## globals to hold the global static definition
-                                                  globals <- cppGlobalObjects(name = paste0('staticGlobals_', name), staticMembers = TRUE)
-                                                  globals$objectDefs[['staticGlobalTape']] <- cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), name = paste0(name,'::allADtapePtrs_'))
+                                                  globals <- cppGlobalObjects(name = paste0('staticGlobals_', name),
+                                                                              staticMembers = TRUE)
+                                                  globals$objectDefs[['staticGlobalTape']] <-
+                                                      cppVarFull(baseType = 'vector',
+                                                                 templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun',
+                                                                                                templateArgs = list('double'),
+                                                                                                ptr = 1)),
+                                                                 name = paste0(name,'::allADtapePtrs_'))
                                                   neededTypeDefs[['allADtapePtrs_']] <<- globals
-
+                                                  
                                                   addStaticInitClass()
-
+                                                  
                                                   invisible(NULL)
                                               },
                                               buildCmultiInterface = function(dll = NULL) {
@@ -371,14 +398,53 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       addInheritance(baseClassName)
                                                       addAncestors('NamedObjects')
                                                   }
-                                                  if(nimbleOptions('experimentalEnableDerivs') && length(environment(nfProc$nfGenerator)$enableDerivs) > 0) addADclassContent()
-
+                                                  if(nimbleOptions('experimentalEnableDerivs') &&
+                                                     length(environment(nfProc$nfGenerator)$enableDerivs) > 0) {
+                                                      addADclassContent()
+                                                      updateADproxyModelMethods(.self)
+                                                  }
+                                                     
                                                   addCopyFromRobject()
                                                   
                                                   callSuper(where)
                                               }
                                           ),
                                       )
+
+updateADproxyModelMethods <- function(.self) {
+    ## Update return type and names of functions like dnorm -> nimDerivs_dnorm
+    functionNames <- names(.self$functionDefs)
+    ADproxyModel_functionNames <- functionNames[ grepl("_ADproxyModel", functionNames ) ]
+    for(fn in ADproxyModel_functionNames) {
+        thisDef <- .self$functionDefs[[fn]]
+        thisDef$returnType <- cppVarSym2templateTypeCppVarSym( thisDef$returnType,
+                                                              replacementBaseType = "CppAD::AD",
+                                                              replacementTemplateArgs = "double" )
+        parentST <- thisDef$code$objectDefs$getParentST()
+        thisDef$code$objectDefs <-
+            symbolTable2templateTypeSymbolTable(thisDef$code$objectDefs,
+                                                replacementBaseType = "CppAD::AD",
+                                                replacementTemplateArgs = "double" )
+        thisDef$code$objectDefs$setParentST(parentST)
+        thisDef$code$cppADCode <- 2L 
+        ADtypeDefs <- symbolTable()
+        ADtypeDefs$addSymbol(cppVarFull(baseType = "typedef Matrix<CppAD::AD<double>, Dynamic, Dynamic>", name = "MatrixXd") )
+        thisDef$code$typeDefs <- ADtypeDefs
+    }
+    classST <- .self$objectDefs
+    classSymNames <- classST$getSymbolNames()
+    ADproxySymNames <- classSymNames[ grepl("ADproxyModel_", classSymNames ) ]
+    for(sn in ADproxySymNames) {
+        newSym <-
+            cppVarSym2templateTypeCppVarSym(classST$getSymbolObject(sn),
+                                            replacementBaseType = "CppAD::AD",
+                                            replacementTemplateArgs = "double")
+        classST$addSymbol(newSym, allowReplace = TRUE)
+    }
+    
+    
+    NULL
+}
 
 makeSingleCopyCall <- function(varName, cppCopyType) {
     switch(cppCopyType,
@@ -400,10 +466,17 @@ makeSingleCopyCall <- function(varName, cppCopyType) {
            'nodeFxnVec' = {
                cppLiteral(paste0("COPY_NODE_FXN_VECTOR_FROM_R_OBJECT(\"", varName, "\");"))
            },
+           'nodeFxnVec_derivs' = {
+               cppLiteral(paste0("COPY_NODE_FXN_VECTOR_DERIVS_FROM_R_OBJECT(\"", varName, "\");"))
+           },
+           'modelVarAccess' = {
+               cppLiteral(paste0("COPY_VALUE_MAP_ACCESSORS_FROM_NODE_NAMES(\"", varName, "\");"))
+           },
+           
            NULL)
 }
 
-makeCopyFromRobjectDef <- function(className, cppCopyTypes) {
+makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj) {
     ## Make method for copying from R object
     copyFromRobjectDef <- RCfunctionDef()
     copyFromRobjectDef$name <- 'copyFromRobject'
@@ -415,7 +488,12 @@ makeCopyFromRobjectDef <- function(className, cppCopyTypes) {
     copyCalls <- list()
     varNames <- names(cppCopyTypes)
     for(i in seq_along(cppCopyTypes)) {
-        copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]])
+      if(cppCopyTypes[[i]] == "nodeFxnVec"){
+        if(!is.null(Robj[[varNames[i]]]$nimDerivsInfo)){
+          cppCopyTypes[[i]] = "nodeFxnVec_derivs"
+        }
+      } 
+      copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]])
     }
 
     if(length(copyCalls) == 0) {

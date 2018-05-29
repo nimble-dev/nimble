@@ -360,7 +360,7 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #' \code{\link{nimbleList}} definition for the type of \code{\link{nimbleList}} returned by \code{\link{nimDerivs}}.
 #'
 #' @field value The value of the function evaluated at the given input arguments. 
-#' @field gradient	The gradient of the function evaluated at the given input arguments. 
+#' @field jacobian	The Jacobian of the function evaluated at the given input arguments. 
 #' @field hessian The Hessian of the function evaluated at the given input arguments. 
 #' @field thirdDerivs Currently unused.
 #'
@@ -368,7 +368,7 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 #' @seealso \code{\link{nimDerivs}}
 
 ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
-                                 nimbleType('gradient', 'double', 2),
+                                 nimbleType('jacobian', 'double', 2),
                                  nimbleType('hessian', 'double', 3),
                                  nimbleType('thirdDerivs', 'double', 4)),
                             name = "NIMBLE_ADCLASS", predefined = TRUE)
@@ -439,7 +439,8 @@ optimControlNimbleList <- nimbleList(
 nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList, cppName = 'EIGEN_EIGEN'),
                                         nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"),
                                         nimDerivs = list(nlGen = ADNimbleList, cppName = "NIM_DERIVS"),
-                                        getDerivs = list(nlGen = ADNimbleList, cppName = 'getDerivs'),
+                                        nimDerivs_calculate = list(nlGen = ADNimbleList, cppName = "NIM_DERIVS_CALCULATE"),
+                                        getDerivs_wrapper = list(nlGen = ADNimbleList, cppName = 'getDerivs_wrapper'),
                                         nimOptim = list(nlGen = optimResultNimbleList, cppName = "OptimResultNimbleList"),
                                         nimOptimDefaultControl = list(nlGen = optimControlNimbleList, cppName = "OptimControlNimbleList"))
 

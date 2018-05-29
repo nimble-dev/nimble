@@ -1200,7 +1200,19 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## make a unique name
                                            thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
-                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, parentsSizeAndDims = parentsSizeAndDims, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, dynamicIndexInfo = dynamicIndexInfo, evaluate=TRUE, where = where)
+                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS,
+                                                                                   RHS=RHS,
+                                                                                   name = thisNodeGeneratorName,
+                                                                                   altParams=altParams,
+                                                                                   bounds=bounds,
+                                                                                   parentsSizeAndDims = parentsSizeAndDims,
+                                                                                   logProbNodeExpr=logProbNodeExpr,
+                                                                                   type=type,
+                                                                                   setupOutputExprs=setupOutputExprs,
+                                                                                   dynamicIndexInfo = dynamicIndexInfo,
+                                                                                   unrolledIndicesMatrix = BUGSdecl$unrolledIndicesMatrix,
+                                                                                   evaluate=TRUE,
+                                                                                   where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
                                            nodeFunctionGeneratorNames[i] <<- thisNodeGeneratorName
@@ -1231,6 +1243,11 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
     ## uncomment this line if we want to ensure that every model refClass we generate is uniquely named internally
     className <- paste0(className, '_', nimbleUniqueID())
 
+    allFields <- makeBUGSclassFields(varnames, vars)
+    if(nimbleOptions('experimentalEnableDerivs')) {
+        allFields[[length(allFields) + 1]] <- 'ANY'
+        names(allFields)[[length(allFields)]] <- 'ADproxyModel'
+    }
     eval(substitute(newClass <- setRefClass(
         Class = className,
         contains = 'RmodelBaseClass',
@@ -1247,11 +1264,14 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
                 callSuper(modelDef = inputList$modelDef, ...)
                 setupDefaultMV()
                 init_isDataEnv()
+                if(nimbleOptions('experimentalEnableDerivs')) {
+                    ADproxyModel <<- nimble:::ADproxyModelClass(.self)
+                }
                 # setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
                 # removed given new handling of lumped data and constants
             }
         ), where = where),
-                    list(FIELDS = makeBUGSclassFields(varnames, vars)
+                    list(FIELDS = allFields
                          )))
     ans <- function(name = character()) {
         newClass(inputList = inputList, name = name)

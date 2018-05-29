@@ -60,6 +60,7 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
             else{
               codeStartInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[2]])]
             }
+
             if(is.numeric(code[[i+2]][[3]])){
               codeEndInds <- code[[i+2]][[3]]
             }
@@ -68,7 +69,9 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
             }
             thisCodeLength <- codeEndInds - codeStartInds + 1
             if(!all(thisCodeLength == thisCodeLength[1])){
-              stop("Error: AD not currently supported for ragged arrays in model code", call. = FALSE)
+              stop("Error: AD not currently supported for ragged arrays in model 
+                    code.  Set nimbleOptions(experimentalEnableDerivs = FALSE) 
+                    to build this model.")
             }
             codeLength <- c(codeLength, thisCodeLength[1])
           }
@@ -85,13 +88,33 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
     }
     if(length(code) > 1){
       for(i in 2:length(code)){
-        allSizeAndDimList <- makeSizeAndDimList(code[[i]], nodesToExtract, indexedNodeInfo, allSizeAndDimList)
+        allSizeAndDimList <- makeSizeAndDimList(code[[i]], nodesToExtract, unrolledIndicesMatrix, allSizeAndDimList)
       }
     }
   }
   return(allSizeAndDimList)
 }
 
+makeSizeAndDimListForIndexedInfo <- function(code, nodeNamesToSkip,
+                                             unrolledIndicesMatrix = NULL, allSizeAndDimList = list()){
+  if(is.call(code)){
+    if((deparse(code[[1]]) == 'getNodeFunctionIndexedInfo') && length(code) == 3) {
+      thisCodeExprList <- list(indexColumn = code[[3]])
+      thisConstName <- colnames(unrolledIndicesMatrix)[code[[3]]]
+      if(is.null(allSizeAndDimList[[thisConstName]])) allSizeAndDimList[[thisConstName]][[1]] <- thisCodeExprList
+      else allSizeAndDimList[[thisConstName]][[length(allSizeAndDimList[[thisConstName]]) + 1]] <- thisCodeExprList
+      return(allSizeAndDimList)
+    }
+  }
+  if(length(code) > 1){
+    if(!((deparse(code[[1]]) == '[') && (deparse(code[[2]]) %in% nodeNamesToSkip))){
+      for(i in 2:length(code)){
+        allSizeAndDimList <- makeSizeAndDimListForIndexedInfo(code[[i]], nodeNamesToSkip, unrolledIndicesMatrix, allSizeAndDimList)
+      }
+    }
+  }
+  return(allSizeAndDimList)
+}
 
 
 ## This should add model$ in front of any names that are not already part of a '$' expression
@@ -119,13 +142,15 @@ addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     return(expr)
 }
 
-removeIndices <- function(expr) {
+removeIndices <- function(expr, exceptionNames = character(0)) {
   if(is.call(expr)) {
     if(expr[[1]] == '['){
-      return(expr[[2]])
+      if(!deparse(expr[[2]]) %in% exceptionNames){
+        return(expr[[2]])
+      }
     } 
     if(length(expr) > 1) {
-      expr[2:length(expr)] <- lapply(expr[-1], function(listElement) removeIndices(listElement))
+      expr[2:length(expr)] <- lapply(expr[-1], function(listElement) removeIndices(listElement, exceptionNames))
       return(expr)
     }
   }

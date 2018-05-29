@@ -77,7 +77,8 @@ cppNamespace <- setRefClass('cppNamespace',
 nimbleCppInheritanceInfo <- list(
     Values = c('NamedObjects'),
     ModelBase = c('NamedObjects'),
-    nodeFun = c('NamedObjects')
+    nodeFun = c('NamedObjects'),
+    derivNodeFun = c('nodeFun')
 )
 
 ## C++ class object.
@@ -230,6 +231,21 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                                           cppADCode = 'ANY', generatorSymTab = 'ANY'),			#'logical'),
                             methods = list(
                                 generate = function(indent = '', ...) {
+                                    if(identical(cppADCode, TRUE)){
+                                        oldCppADCode <- nimbleUserNamespace$cppADCode
+                                        nimbleUserNamespace$cppADCode <- TRUE
+                                        on.exit(nimbleUserNamespace$cppADCode <- oldCppADCode)
+                                    }
+                                    ## if(!identical(nimbleUserNamespace$cppADCode, TRUE)){
+                                    ##     nimbleUserNamespace$cppADCode <- TRUE
+                                    ##     on.exit(nimbleUserNamespace$cppADCode <- FALSE)
+                                    ##   }
+                                    ## }
+                                    if(identical(cppADCode, 2L)){
+                                        oldCppADCode <- nimbleUserNamespace$cppADCode
+                                        nimbleUserNamespace$cppADCode <- 2L
+                                        on.exit(nimbleUserNamespace$cppADCode <- oldCppADCode)
+                                    }
                                     if(inherits(typeDefs, 'uninitializedField')) typeDefs <<- list()
                                     typeDefsToUse <- if(inherits(typeDefs, 'symbolTable')) typeDefs$symbols else typeDefs
                                     if(length(typeDefsToUse) > 0) {
@@ -245,9 +261,7 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                                         if(inherits(generatorSymTab, 'symbolTable')) useSymTab <- generatorSymTab
                                         else if(!inherits(objectDefs, 'symbolTable')) stop('Error, with exprClass code in the cppCodeBlock, must have objectDefs be a symbolTable')
                                         else useSymTab <- objectDefs
-                                        if(identical(cppADCode, TRUE)) recurseSetCppADExprs(code, TRUE) 
-                                      outputCppCode <- c(outputCppCode, nimGenerateCpp(code, useSymTab, indent = ' ', showBracket = FALSE))
-                                        if(identical(cppADCode, TRUE)) recurseSetCppADExprs(code, FALSE) 
+                                        outputCppCode <- c(outputCppCode, nimGenerateCpp(code, useSymTab, indent = ' ', showBracket = FALSE))
                                     } else {
                                         outputCppCode <- c(outputCppCode, outputCppParseTree2(code, indent))
                                     }

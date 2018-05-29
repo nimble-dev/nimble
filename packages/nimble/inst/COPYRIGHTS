@@ -796,3 +796,13 @@ Files: classic-bugs/*
 Copyright: Copyright (C) Martyn Plummer
 License:
    GPL version 2 and MIT licenses
+
+Files: inst/include/TMB/atomic_macro.hpp inst/include/TMB/atomic_math.hpp
+inst/include/TMB/distributions_R.hpp inst/include/TMB/lgamma.hpp
+Copyright: Copyright (C) 2013-2015 Kasper Kristensen
+Copyright: Copyright (C) 2018 the NIMBLE authors
+License: GPL version 2
+
+Files: inst/include/TMB/tmbutils/*
+Copyright: Copyright (C) 2013-2015 Kasper Kristensen
+License: GPL version 2

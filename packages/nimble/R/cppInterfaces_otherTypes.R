@@ -7,16 +7,38 @@ populateCopierVector <- function(fxnPtr, Robject, vecName, dll) {
     eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateCopierVector, vecPtr, fromPtr, toPtr, as.integer(copierVectorObject[[3]]), as.integer(copierVectorObject[[4]])))
 }
 
+processModelVarAccess <- function(Robject, manyAccessName) {
+    if(class(Robject[[manyAccessName]])[1] != 'processedModelVarAccess') {
+        cModel <- Robject[[manyAccessName]][[1]]$CobjectInterface
+        if(is(cModel, 'uninitializedField'))
+            stop('Compiled C++ model not available; please include the model in your compilation call (or compile it in advance).', call. = FALSE)
+        mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
+        Robject[[manyAccessName]] <- structure(list(mapInfo[[1]], mapInfo[[2]], cModel$.basePtr),
+                                               class = 'processedModelVarAccess')
+    }
+}
+
+processModelValuesAccess <- function(Robject, manyAccessName) {
+
+}
+
 populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) { ## new version
     manyAccessPtr = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, manyAccessName))
-    cModel <- Robject[[manyAccessName]][[1]]$CobjectInterface
-    if(is(cModel, 'uninitializedField'))
-        stop('Compiled C++ model not available; please include the model in your compilation call (or compile it in advance).', call. = FALSE)
+    processModelVarAccess(Robject, manyAccessName)
+    eval(call('.Call',
+              nimbleUserNamespace$sessionSpecificDll$populateValueMapAccessorsFromNodeNames,
+              manyAccessPtr,
+              Robject[[manyAccessName]][[1]],
+              Robject[[manyAccessName]][[2]],
+              Robject[[manyAccessName]][[3]]))
+    ## cModel <- Robject[[manyAccessName]][[1]]$CobjectInterface
+    ## if(is(cModel, 'uninitializedField'))
+    ##     stop('Compiled C++ model not available; please include the model in your compilation call (or compile it in advance).', call. = FALSE)
 
-    mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
-    if(length(mapInfo[[1]]) > 0) {
-        eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateValueMapAccessorsFromNodeNames, manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr))
-    }
+    ## mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
+    ## if(length(mapInfo[[1]]) > 0) {
+    ##     eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateValueMapAccessorsFromNodeNames, manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr))
+    ## }
 }
 
 populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dll){ ## nearly identical to populateManyModelVarMapAccess
@@ -41,8 +63,24 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
     ## This is not really the most efficient way to do things; eventually 
     ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
-	
-    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID, fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices)))
+    if(!is.null(Robject[[fxnVecName]]$nimDerivsInfo)){
+        derivsInfo <- Robject[[fxnVecName]]$nimDerivsInfo
+        eval(call('.Call',
+                  nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID_forDerivs,
+                  fxnVecPtr, 
+                  as.integer(declIDs), ##as.integer(derivsInfo$declIDs),
+                  numberedPtrs,
+                  as.integer(rowIndices), ##as.integer(derivsInfo$rowIndices),
+                  derivsInfo))
+    }
+    else{
+        eval(call('.Call',
+                  nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID,
+                  fxnVecPtr,
+                  as.integer(declIDs),
+                  numberedPtrs,
+                  as.integer(rowIndices)))
+    }
 }
 
 populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName, dll) {

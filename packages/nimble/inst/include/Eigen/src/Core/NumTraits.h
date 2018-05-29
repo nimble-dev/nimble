@@ -41,6 +41,34 @@ struct default_digits10_impl<T,false,true> // Integer
   static int run() { return 0; }
 };
 
+
+// default implementation of digits(), based on numeric_limits if specialized,
+// 0 for integer types, and log2(epsilon()) otherwise.
+template< typename T,
+          bool use_numeric_limits = std::numeric_limits<T>::is_specialized,
+          bool is_integer = NumTraits<T>::IsInteger>
+struct default_digits_impl
+{
+  static int run() { return std::numeric_limits<T>::digits; }
+};
+
+template<typename T>
+struct default_digits_impl<T,false,false> // Floating point
+{
+  static int run() {
+    using std::log;
+    using std::ceil;
+    typedef typename NumTraits<T>::Real Real;
+    return int(ceil(-log(NumTraits<Real>::epsilon())/log(static_cast<Real>(2))));
+  }
+};
+
+template<typename T>
+struct default_digits_impl<T,false,true> // Integer
+{
+  static int run() { return 0; }
+};
+
 } // end namespace internal
 
 /** \class NumTraits
@@ -71,7 +99,7 @@ struct default_digits10_impl<T,false,true> // Integer
   *     and to \c 0 otherwise.
   * \li Enum values ReadCost, AddCost and MulCost representing a rough estimate of the number of CPU cycles needed
   *     to by move / add / mul instructions respectively, assuming the data is already stored in CPU registers.
-  *     Stay vague here. No need to do architecture-specific stuff.
+  *     Stay vague here. No need to do architecture-specific stuff. If you don't know what this means, just use \c Eigen::HugeCost.
   * \li An enum value \a IsSigned. It is equal to \c 1 if \a T is a signed type and to 0 if \a T is unsigned.
   * \li An enum value \a RequireInitialization. It is equal to \c 1 if the constructor of the numeric type \a T must
   *     be called, and to 0 if it is safe not to call it. Default is 0 if \a T is an arithmetic type, and 1 otherwise.
@@ -116,6 +144,12 @@ template<typename T> struct GenericNumTraits
   static inline int digits10()
   {
     return internal::default_digits10_impl<T>::run();
+  }
+
+  EIGEN_DEVICE_FUNC
+  static inline int digits()
+  {
+    return internal::default_digits_impl<T>::run();
   }
 
   EIGEN_DEVICE_FUNC

@@ -78,7 +78,7 @@ inline void nimble_free(T *ptr) {
 #endif  // NIMBLE_ALIGNED_MALLOC
 }
 
-enum nimType { INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1 };
+enum class nimType { INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1 };
 
 class NimArrType {
  public:
@@ -172,13 +172,13 @@ class NimArrBase : public NimArrType {
     }
   }
   void setMyType() {
-    myType = UNDEFINED;
+    myType = nimType::UNDEFINED;
     if (typeid(T) == typeid(int)) {
-      myType = INT;
+      myType = nimType::INT;
     } else if (typeid(T) == typeid(double)) {
-      myType = DOUBLE;
+      myType = nimType::DOUBLE;
     } else if (typeid(T) == typeid(bool)) {
-      myType = BOOL;
+      myType = nimType::BOOL;
     }
   }
   virtual ~NimArrBase() {
@@ -220,13 +220,13 @@ class VecNimArrBase : public NimVecType {
   }
 
   VecNimArrBase() {
-    myType = UNDEFINED;
+    myType = nimType::UNDEFINED;
     if (typeid(T) == typeid(int)) {
-      myType = INT;
+      myType = nimType::INT;
     } else if (typeid(T) == typeid(double)) {
-      myType = DOUBLE;
+      myType = nimType::DOUBLE;
     } else if (typeid(T) == typeid(bool)) {
-      myType = BOOL;
+      myType = nimType::BOOL;
     }
   }
 

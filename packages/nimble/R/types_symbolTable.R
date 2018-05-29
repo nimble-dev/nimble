@@ -75,7 +75,7 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
     if(type == "internalType") {
         return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
     }
-    if(type %in% c('double', 'integer', 'character', 'logical', 'void')){
+    if(type %in% c('double', 'integer', 'character', 'logical', 'void', 'constDouble')){
       nDim <- if(length(AT)==1) 0 else AT[[2]]
       if(!is.numeric(nDim) || nDim %% 1 != 0)
           stop("argType2symbol: unexpected dimension, '", AT[[2]], "', found in argument '", deparse(AT), "'. Dimension should be integer-valued.")
@@ -92,7 +92,11 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
               size <- if(any(is.na(size))) as.numeric(NA) else prod(size)
           }
           return(symbolString(name = name, type = "character", nDim = nDim, size = size))
-      }  else {
+      }
+      if(type == "constDouble"){
+        type <- 'double'
+        return(symbolConstDouble(name = name, type = type, nDim = nDim, size = size, const = TRUE))
+      } else {
           return(symbolBasic(name = name, type = type, nDim = nDim, size = size))
       }
     }
@@ -317,6 +321,23 @@ symbolBasic <-
                         }
                         })
     )
+
+
+symbolConstDouble <- setRefClass(
+  Class = "symbolConstDouble",
+  contains = "symbolBasic",
+  fields = list(const = 'ANY'),
+  methods = list(
+    show = function() writeLines(paste('symbolConstDouble', name)),
+    genCppVar = function(functionArg = FALSE) {
+      cppNimArr(name = name,
+                nDim = nDim,
+                type = 'double',
+                ref = functionArg,
+                const = TRUE)
+    })
+)
+
 
 symbolSEXP <- setRefClass(
     Class = "symbolSEXP",

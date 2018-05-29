@@ -121,7 +121,7 @@ matrixFlipOperators <- c('t')
 matrixSquareOperators <- c('chol','inverse')
 nimbleListReturningOperators <- c('nimEigen',
                                   'nimSvd',
-                                  'getDerivs')  ## These use sizeNimbleListReturningFunction. Note that nimOptim is handled separately.
+                                  'getDerivs_wrapper')  ## These use sizeNimbleListReturningFunction. Note that nimOptim and nimDerivs_calculate are handled separately.
 matrixSolveOperators <- c('solve','forwardsolve','backsolve')
 passThroughOperators <- c('return')
 
@@ -331,3 +331,8 @@ operatorRank <- c(
          '&&' = 13,
          '||' = 14)
 )
+
+nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dexp_nimble", "dexp", "dlnorm", "dweibull", "dbinom", "dbeta", "dchisq", "dlogis", "dt",
+                                   "dt_nonstandard", "dmultinom", "dnbinom", "dunif", "pairmax", "pairmin", 
+                                   "nimArr_ddirch", "nimArr_dmvt_chol", "nimArr_dmnorm_chol", "nimArr_dwish_chol", "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
+                                   "nimEquals", "lfactorial", "factorial", "logit", "cube", "inprod")

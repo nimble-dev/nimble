@@ -1199,6 +1199,140 @@ test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     invisible(NULL)
 }
 
+testCompiledModelDerivsNimFxn <- nimbleFunction(
+  setup = function(model, calcNodes, wrtNodes, order){
+  },
+  run = function(){
+    ansList <- nimDerivs(model$calculate(calcNodes), wrt = wrtNodes, order = order)
+    returnType(ADNimbleList())
+    return(ansList)
+  }
+)
+
+
+## Tests taking derivatives of calls to model$calculate(nodes) (or equivalently calculate(model, nodes))
+## Arguments:
+##   model:         The uncompiled nimbleModel object to use in the call to calculate(model, nodes).
+##   name:          The name of the model being tested.
+##   calcNodeNames: A list, each element of which should be a character vector.   List elements  
+##                  will be iterated through, and each element will be used as the 'nodes' argument
+##                  in the call to calculate(model, nodes).
+##   wrt:           A list, each element of which should be a character vector.  List elements will be iterated
+##                  through, and each element will be used as the 'wrt' argument in a call to nimDerivs(calculate(model, nodes), wrt)
+##   testR:         A logical argument.  If TRUE, the R version of nimDerivs will be checked for correct derivative calculations.
+##                  This is accomplished by comparing derivatives calculated using the chain rule to derivatives of a function that
+##                  wraps a call to calculate(model, nodes).
+##   testCompiled:  A logical argument.  Currently only checks whether the model can compile.
+##   tolerance:     A numeric argument, the tolerance to use when comparing wrapperDerivs to chainRuleDerivs.
+##   verbose:       A logical argument.  Currently serves no purpose.
+test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
+                                  testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
+  temporarilyAssignInGlobalEnv(model)  
+
+  if(testCompiled){
+    expect_message(cModel <- compileNimble(model))
+  }
+  for(i in seq_along(calcNodeNames)){
+    for(j in seq_along(wrt)){
+      test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes ', i, 
+                      'and wrt ', j), {
+                        wrapperDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
+                        if(testCompiled){
+                          print(calcNodeNames[[i]])
+                          print(wrt[[j]])
+                          testFunctionInstance <- testCompiledModelDerivsNimFxn(model, calcNodeNames[[i]], wrt[[j]], order)
+                          expect_message(ctestFunctionInstance <- compileNimble(testFunctionInstance, project =  model, resetFunctions = TRUE))
+                          cDerivs <- ctestFunctionInstance$run()
+                          if(0 %in% order) expect_equal(wrapperDerivs$value, cDerivs$value, tolerance = tolerance)
+                          if(1 %in% order) expect_equal(wrapperDerivs$jacobian, cDerivs$jacobian, tolerance = tolerance)
+                          if(2 %in% order) expect_equal(wrapperDerivs$hessian, cDerivs$hessian, tolerance = tolerance)
+                        }
+                      })
+    }
+  }
+}
+
+makeADDistributionTestList <- function(distnList){
+  argsList <- lapply(distnList$args, function(x){
+    return(x)
+  })
+  ansList <- list(args = argsList,
+                  expr = substitute(out <- nimDerivs(METHODEXPR, wrt = WRT, order = c(0,1,2)),
+                                    list(METHODEXPR = as.call(c(list(quote(method1)),
+                                                               lapply(names(distnList$args),
+                                                                      function(x){return(parse(text = x)[[1]])}))),
+                                         WRT = if(is.null(distnList$WRT)) names(distnList$args) else distnList$WRT
+                                    )),
+                  outputType = quote(ADNimbleList())
+  )
+  return(ansList)
+}
+
+makeADDistributionMethodTestList <- function(distnList){
+  argsList <- lapply(distnList$args, function(x){
+    return(x)
+  })
+  argsValsList <- list()
+  for(iArg in seq_along(distnList$args)){
+    argsValsList[[names(distnList$args)[iArg]]] <- parse(text = names(distnList$args)[iArg])[[1]]
+  }
+  ansList <- list(args = argsList,
+                  expr = substitute({out <- numeric(2);
+                                     out[1] <- DISTNEXPR;
+                                     out[2] <- LOGDISTNEXPR;},
+                                    list(DISTNEXPR = as.call(c(list(parse(text = distnList$distnName)[[1]]),
+                                                               argsValsList,
+                                                               list(log = FALSE))),
+                                         LOGDISTNEXPR = as.call(c(list(parse(text = distnList$distnName)[[1]]),
+                                                               argsValsList,
+                                                               list(log = TRUE)))
+                                         
+                                    )),
+                  outputType = quote(double(1, 2))
+  )
+  return(ansList)
+}
+
+testADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
+    ADfun <- ADfunGen()
+    CADfun <- compileNimble(ADfun)
+    for(iArg in seq_along(argsList)){
+      iOrdersToCheck <- argsList[[iArg]][['ordersToCheck']]
+      if(is.null(iOrdersToCheck)) iOrdersToCheck <- 0:2 ## check all orders if not specified
+      else argsList[[iArg]][['ordersToCheck']] <- NULL
+      RfunCallList <- c(list(quote(ADfun$run)), argsList[[iArg]])
+      CfunCallList <- c(list(quote(CADfun$run)), argsList[[iArg]])
+      RderivsList <- eval(as.call(RfunCallList))
+      CderivsList <- eval(as.call(CfunCallList))
+      argValsText <- paste(sapply(names(argsList[[iArg]]), 
+                          function(x){return(paste(x, " = ",
+                          paste(argsList[[iArg]][[x]], collapse = ', ')))}), collapse = ', ')
+      if(is.logical(debug) && debug == TRUE) browser()
+      else if(is.numeric(debug) && debug == iArg) browser()
+      if(0 %in% iOrdersToCheck)
+        expect_equal(RderivsList$value, CderivsList$value, tolerance = .01, 
+                     info = paste("Values of", name , "not equal for arguments: ",
+                                  argValsText, '.'))
+      else
+        print(paste("Skipping check of R and C++ `value` equality for ",
+                    name, " with arguments: ", argValsText ))
+      if(1 %in% iOrdersToCheck)
+        expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = .1,
+                     info = paste("Jacobians of", name , "not equal for arguments: ",
+                                  argValsText, '.'))
+      else
+        print(paste("Skipping check of R and C++ `jacobian` equality for ",
+                    name, " with arguments: ", argValsText ))
+      if(2 %in% iOrdersToCheck)
+        expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1,
+                     info = paste("Hessians of", name , "not equal for arguments: ",
+                                  argValsText, '.'))
+      else
+        print(paste("Skipping check of R and C++ `hessian` equality for ",
+                    name, " with arguments: ", argValsText ))
+  }
+}
+
 expandNames <- function(var, ...) {
     tmp <- as.matrix(expand.grid(...))
     indChars <- apply(tmp, 1, paste0, collapse=', ')
@@ -1255,7 +1389,6 @@ test_dynamic_indexing_model_internal <- function(param) {
 }
 
 
- 
 ## utilities for saving test output to a reference file
 ## and making the test a comparison of the file
 clearOldOutput <- function(filename) {
@@ -1307,3 +1440,5 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
               )
     invisible(NULL)
 }
+
+

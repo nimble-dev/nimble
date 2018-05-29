@@ -247,7 +247,6 @@ void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, doubl
 }
 
 
-
 double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log, int overwrite_inputs) { 
   double *xptr, *meanptr, *cholptr;
   NimArr<1, double> xCopy, meanCopy;

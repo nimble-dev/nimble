@@ -728,6 +728,230 @@ sampler_AF_slice <- nimbleFunction(
 
 
 
+####################################################################
+### langevin sampler ###############################################
+####################################################################
+
+sampler_langevin <- nimbleFunction(
+    name = 'sampler_langevin',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        scale         <- if(!is.null(control$scale))         control$scale         else 1      ## step-size multiplier
+        adaptive      <- if(!is.null(control$adaptive))      control$adaptive      else TRUE
+        adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        ## numeric value generation
+        d <- length(targetAsScalar)
+        scaleVec <- matrix(1, nrow = d, ncol = 1)
+        epsilonVec <- scale * scaleVec
+        q <- matrix(0, nrow = d, ncol = 1)
+        p <- matrix(0, nrow = d, ncol = 1)
+        grad <- matrix(0, nrow = d, ncol = 1)
+        empirSamp <- matrix(0, nrow = adaptInterval, ncol = d)
+        timesRan <- 0
+        timesAdapted <- 0
+        ## checks
+        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set options(experimentalEnableDerivs = TRUE)')
+        if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('langevin sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
+    },
+    run = function() {
+        q[1:d, 1] <<- values(model, target)         ## current position variables
+        for(i in 1:d)   p[i, 1] <<- rnorm(1, 0, 1)  ## randomly draw momentum variables
+        currentH <- model$getLogProb(calcNodes) - sum(p^2)/2
+        p <<- p + epsilonVec * gradient(q) / 2      ## initial half step for p
+        q <<- q + epsilonVec * p                    ## full step for q
+        p <<- p + epsilonVec * gradient(q) / 2      ## final half step for p
+        propH <- model$calculate(calcNodes) - sum(p^2)/2
+        jump <- decide(propH - currentH)
+        if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(adaptive)     adaptiveProcedure()
+    },
+    methods = list(
+        gradient = function(q = double(2)) {
+            values(model, target) <<- q[1:d, 1]
+            derivsOutput <- nimDerivs(model$calculate(calcNodes), order = 1, wrt = target)
+            grad[1:d, 1] <<- derivsOutput$gradient[1, 1:d]
+            returnType(double(2))
+            return(grad)
+        },
+        adaptiveProcedure = function() {
+            ## adapts leapfrog step-size for each dimension (epsilonVec),
+            ## as described in Neal, Handbook of MCMC (2011), Chapter 5 (section 5.4.2.4)
+            timesRan <<- timesRan + 1
+            empirSamp[timesRan, 1:d] <<- values(model, target)
+            if(timesRan %% adaptInterval == 0) {
+                timesRan <<- 0
+                timesAdapted <<- timesAdapted + 1
+                gamma1 <- 1/((timesAdapted + 3)^0.8)
+                for(i in 1:d)     scaleVec[i, 1] <<- gamma1 * sd(empirSamp[, i]) + (1-gamma1) * scaleVec[i, 1]
+                epsilonVec <<- scale * scaleVec
+            }
+        },
+        reset = function() {
+            timesRan     <<- 0
+            timesAdapted <<- 0
+            scaleVec     <<- matrix(1, nrow = d, ncol = 1)
+            epsilonVec   <<- scale * scaleVec
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+
+####################################################################
+### Hamiltonian Monte Carlo (HMC) sampler using NUTS ###############
+####################################################################
+
+#' @rdname samplers
+#' @export
+sampler_HMC <- nimbleFunction(
+    name = 'sampler_HMC',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        maxAdaptIter <- if(!is.null(control$maxAdaptIter)) control$maxAdaptIter else 1000
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        ## numeric value generation
+        d <- length(targetAsScalar)
+        timesRan <- 0
+        epsilon <- 0
+        mu <- 0
+        logEpsilonBar <- 0
+        Hbar <- 0
+        ## nested function and function list definitions
+        qpNLDef <- nimbleList(q = double(1), p = double(1))
+        btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
+        ## checks
+        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set nimbleOptions(experimentalEnableDerivs = TRUE)')
+        if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('HMC sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
+    },
+    run = function() {
+        ## implements No-U-Turm Sampler with Dual Averaging, as in Hoffman and Gelman (2014), Algorithm 6
+        if(timesRan == 0)    initializeEpsilon()
+        timesRan <<- timesRan + 1
+        q <- values(model, target)
+        p <- numeric(d)
+        for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
+        logu <- logH(q, p) - rexp(1, 1)    ## logu <- lp - rexp(1, 1), generate (log)-auxiliary variable: exp(logu) ~ uniform(0, exp(lp))
+        qL <- q;   qR <- q;   pL <- p;   pR <- p
+        j <- 0;     n <- 1;     s <- 1
+        qNew <- q
+        while(s == 1) {
+            v <- 2*rbinom(1, 1, 0.5) - 1    ## -1 or 1
+            if(v == -1) {
+                btNL <- buildtree(qL, pL, logu, v, j, epsilon, q, p)
+                qL <- btNL$q1
+                pL <- btNL$p1
+            } else {
+                btNL <- buildtree(qR, pR, logu, v, j, epsilon, q, p)
+                qR <- btNL$q2
+                pR <- btNL$p2
+            }
+            if(btNL$s == 1)
+                if(runif(1) < btNL$n / n)
+                    qNew <- btNL$q3
+            n <- n + btNL$n
+            qDiff <- qR - qL
+            s <- btNL$s * step(inprod(qDiff, pL)) * step(inprod(qDiff, pR))
+            j <- j + 1
+        }
+        values(model, target) <<- qNew
+        model$calculate(calcNodes)
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(timesRan <= maxAdaptIter) {
+            Hbar <<- (1 - 1/(timesRan+10)) * Hbar + 1/(timesRan+10) * (0.65 - btNL$a/btNL$na)
+            logEpsilon <- mu - sqrt(timesRan)/0.05 * Hbar
+            epsilon <<- exp(logEpsilon)
+            logEpsilonBar <<- timesRan^(-0.75) * logEpsilon + (1 - timesRan^(-0.75)) * logEpsilonBar
+            if(timesRan == maxAdaptIter)   epsilon <<- exp(logEpsilonBar)
+        }
+    },
+    methods = list(
+        logH = function(q = double(1), p = double(1)) {
+            values(model, target) <<- q
+            lp <- model$calculate(calcNodes) - sum(p^2)/2
+            returnType(double())
+            return(lp)
+        },
+        gradient = function(q = double(1)) {
+            values(model, target) <<- q
+            derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = target)
+            grad <- numeric(d)
+            grad[1:d] <- derivsOutput$gradient[1, 1:d]   ## preserve 1D vector object
+            returnType(double(1))
+            return(grad)
+        },
+        leapfrog = function(q = double(1), p = double(1), eps = double()) {
+            p <- p + eps/2 * gradient(q)
+            q <- q + eps   * p
+            p <- p + eps/2 * gradient(q)
+            returnType(qpNLDef())
+            return(qpNLDef$new(q = q, p = p))
+        },
+        initializeEpsilon = function() {
+            ## Algorithm 4 from Hoffman and Gelman (2014)
+            q <- values(model, target)
+            p <- numeric(d)
+            for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
+            epsilon <<- 1
+            qpNL <- leapfrog(q, p, epsilon)
+            a <- 2*step(exp(logH(qpNL$q, qpNL$p) - logH(q, p)) - 0.5) - 1
+            while((exp(logH(qpNL$q, qpNL$p) - logH(q, p)))^a > 2^(-a)) {
+                epsilon <<- epsilon * 2^a
+                qpNL <- leapfrog(q, p, epsilon)
+            }
+            mu <<- log(10*epsilon)     ## mu gets set with epsilon
+        },
+        buildtree = function(q = double(1), p = double(1), logu = double(), v = double(), j = double(), eps = double(), q0 = double(1), p0 = double(1)) {
+            returnType(btNLDef())
+            if(j == 0) {    ## one leapfrog step in the direction of v
+                qpNL <- leapfrog(q, p, v*eps)
+                q <- qpNL$q
+                p <- qpNL$p
+                n <- step(logH(q, p) - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
+                s <- step(logH(q, p) - logu + 1000)   ## use delta_max = 1000
+                a <- min(1, exp(logH(q, p) - logH(q0, p0)))
+                return(btNLDef$new(q1 = q, p1 = p, q2 = q, p2 = p, q3 = q, n = n, s = s, a = a, na = 1))
+            } else {        ## recursively build left and right subtrees
+                btNL1 <- buildtree(q, p, logu, v, j-1, eps, q0, p0)
+                if(btNL1$s == 1) {
+                    if(v == -1) {
+                        btNL2 <- buildtree(btNL1$q1, btNL1$p1, logu, v, j-1, eps, q0, p0)
+                        btNL1$q1 <- btNL2$q1
+                        btNL1$p1 <- btNL2$p1
+                    } else {
+                        btNL2 <- buildtree(btNL1$q2, btNL1$p2, logu, v, j-1, eps, q0, p0)
+                        btNL1$q2 <- btNL2$q2
+                        btNL1$p2 <- btNL2$p2
+                    }
+                    if(btNL1$n + btNL2$n == 0) print('******* divide by 0 case came up! need to look into that ******')   ## XXXXXXXXXXXXXXXXXXXXXXXXXXX
+                    if(runif(1) < btNL2$n / (btNL1$n + btNL2$n))   btNL1$q3 <- btNL2$q3
+                    btNL1$n <- btNL1$n + btNL2$n
+                    qDiff <- btNL1$q2-btNL1$q1
+                    btNL1$s <- btNL2$s * step(inprod(qDiff, btNL1$p1)) * step(inprod(qDiff, btNL1$p2))
+                    btNL1$a <- btNL1$a + btNL2$a
+                    btNL1$na <- btNL1$na + btNL2$na
+                }
+                return(btNL1)
+            }
+        },
+        reset = function() {
+            timesRan      <<- 0
+            epsilon       <<- 0
+            mu            <<- 0
+            logEpsilonBar <<- 0
+            Hbar          <<- 0
+        }
+    ), where = getLoadingNamespace()
+)
+
+
 
 ####################################################################
 ### crossLevel sampler #############################################
@@ -1836,7 +2060,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' 
 #' @section AF_slice sampler:
 #' 
-#' The automated factor slice sampler conducts a slice sampling algorithm on one or more model nodes.  The sampler uses the eigenvectors of the posterior covariance between these nodes as an orthogonal basis on which to perform its 'stepping Out' procedure.  The sampler is adaptive in updating both the width of the slices and the values of the eigenvectors.  The sampler can be applied to ay be applied to any set of continuous or discrete-valued model nodes, to any single continuous or discrete-valued multivariate model node, or to any combination thereof. 
+#' The automated factor slice sampler conducts a slice sampling algorithm on one or more model nodes.  The sampler uses the eigenvectors of the posterior covariance between these nodes as an orthogonal basis on which to perform its 'stepping out' procedure.  The sampler is adaptive in updating both the width of the slices and the values of the eigenvectors.  The sampler can be applied to ay be applied to any set of continuous or discrete-valued model nodes, to any single continuous or discrete-valued multivariate model node, or to any combination thereof.
 #
 #' The automated factor slice sampler accepts the following control list elements:
 #' \itemize{
@@ -1846,6 +2070,26 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item sliceAdaptWidthMaxIter.  The maximum number of iterations for which to adapt the widths for a given set of factors. (default = 512)
 #' \item sliceAdaptWidthTolerance. The tolerance for when widths no longer need to adapt, between 0 and 0.5. (default = 0.1)
 #' \item sliceMaxSteps.  The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
+#' }
+#'
+#' @section langevin sampler:
+#'
+#' The langevin sampler implements a special case of Hamiltonian Monte Carlo (HMC) sampling where only a single leapfrog step is taken on each sampling iteration, and the leapfrog stepsize is adapted to match the scale of the posterior distribution (independently for each dimension being sampled).  The single leapfrog step is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space (Neal, 2011).  Langevin sampling can operate on one or more continuous-valued posterior dimensions.  This sampling technique is also known as Langevin Monte Carlo (LMC), and the Metropolis-Adjusted Langevin Algorithm (MALA).
+#
+#' The langevin sampler accepts the following control list elements:
+#' \itemize{
+#' \item scale. An optional multiplier, to scale the stepsize of the leapfrog steps. If adaptation is turned off, this uniquely determines the leapfrog stepsize (default = 1)
+#' \item adaptive. A logical argument, specifying whether the sampler will adapt the leapfrog stepsize (scale) throughout the course of MCMC execution. The scale is adapted independently for each dimension being sampled. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
+#' }
+#'
+#' @section HMC sampler:
+#'
+#' The Hamiltonian Monte Carlo sampler implements the No-U-Turn algorithm (NUTS; Hoffman and Gelman, 2014) for performing joint updates of multiple continuous-valued posterior dimensions.  This is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  In contrast to standard HMC (Neal, 2011), the NUTS algorithm removes the tuning parameters of the leapfrog step size and the number of leapfrog steps, thus providing a sampling algorithm that can be used without hand tuning or trial runs.
+#
+#' The HMC sampler accepts the following control list elements:
+#' \itemize{
+#' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog stepsize. (default = 1000)
 #' }
 #'
 #' @section crossLevel sampler:
@@ -2013,9 +2257,13 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' Andrieu, C., Doucet, A., and Holenstein, R. (2010). Particle Markov Chain Monte Carlo Methods. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 72(3), 269-342.
 #'
+#' Hoffman, Matthew D., and Gelman, Andrew (2014). The No-U-Turn Sampler: Adaptively setting path lengths in Hamiltonian Monte Carlo. \emph{Journal of Machine Learning Research}, 15(1): 1593-1623.
+#'
 #' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
 #'
 #' Neal, Radford M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
+#'
+#' Neal, Radford M. (2011). MCMC Using Hamiltonian Dynamics. \emph{Handbook of Markov Chain Monte Carlo}, CRC Press, 2011.
 #'
 #' Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
 #'
