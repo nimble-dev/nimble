@@ -152,8 +152,8 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     processBoundsAndTruncation()      ## puts bound expressions into declInfo, including transforming T(ddist(),lower,upper); need to do this before expandDistributions(), which is not set up to handle T() wrapping; need to save bound info for later use in reparameterizeDists() -- hence temporarily stored in boundExprs (can't put in code because it would be stripped out in expandDistributions, though alternative is to modify expandDistributions to add lower,upper back into code)
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
-   ## if(getNimbleOption('disallow_multivariate_argument_expressions'))
-   ##    checkMultivarExpr()               ## checks that multivariate params are not expressions
+    if(getNimbleOption('disallow_multivariate_argument_expressions'))
+        checkMultivarExpr()               ## checks that multivariate params are not expressions
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName; also processes bound info to evaluate in context of model
     replaceAllConstants()
@@ -668,12 +668,17 @@ modelDefClass$methods(expandDistributions = function() {
 
 modelDefClass$methods(checkMultivarExpr = function() {
     checkForExpr <- function(expr) {
-        output <- FALSE
+        ##output <- FALSE
         if(length(expr) == 1 && class(expr) %in% c("name", "numeric")) return(FALSE)
-        if(!deparse(expr[[1]]) %in% c('[', ':')) return(TRUE)
-        for(i in 2:length(expr)) 
-            if(checkForExpr(expr[[i]])) output <- TRUE
-        return(output)
+        if(!deparse(expr[[1]]) == '[') return(TRUE)
+        ## recurse only on the first argument of the `[`
+        return(checkForExpr(expr[[2]]))
+        ## Previously we recursed more completely.  Now we stop because expressions
+        ## inside `[` are allowed.
+        ## if(!deparse(expr[[1]]) %in% c('[', ':')) return(TRUE)
+        ## for(i in 2:length(expr)) 
+        ##     if(checkForExpr(expr[[i]])) output <- TRUE
+        ## return(output)
     }
 
     for(i in seq_along(declInfo)) {
@@ -695,7 +700,8 @@ modelDefClass$methods(checkMultivarExpr = function() {
         ## if(distDim < 1) next
         for(k in 2:length(BUGSdecl$valueExpr))
             if(checkForExpr(BUGSdecl$valueExpr[[k]]))
-                stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
+                message("Warning about parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': This multivariate parameter is provided as an expression.  If this is a costly calculation, try making it a separate model declaration for it to improve efficiency.")
+        ## message("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
     }
 })
 
