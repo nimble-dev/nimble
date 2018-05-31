@@ -13,6 +13,7 @@ context('Testing sampler_DP_measure')
 test_that("required variables in (non compiled) mv object are monitored:", {
   
   # membership variable not being monitored:
+  rm(list=ls())
   set.seed(1)
   code <- nimbleCode({
     xi[1:6] ~ dCRP(conc0, 6)
@@ -25,7 +26,7 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, conc0 = 1)
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m, print=TRUE)
+  mConf <- configureMCMC(m, print=FALSE)
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
@@ -43,6 +44,7 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   
   
   # cluster variable not being monitored:
+  rm(list=ls())
   set.seed(1)
   code <- nimbleCode({
     xi[1:6] ~ dCRP(1, 6)
@@ -56,7 +58,7 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, mu0 = 0, s20 = 1)
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m, print=TRUE)
+  mConf <- configureMCMC(m, print=FALSE)
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
@@ -75,6 +77,7 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   
   # concentration parameter not being monitored:
   ## warning messages are printed when the monitors are added. Any idea?
+  rm(list=ls())
   set.seed(1)
   code <- nimbleCode({
     xi[1:6] ~ dCRP(conc0, 6)
@@ -89,7 +92,7 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, conc0 = 1, a = 1, b = 1)
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m, print=TRUE)
+  mConf <- configureMCMC(m, print=FALSE)
   mConf$addMonitors(c("xi"))
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
@@ -107,6 +110,371 @@ test_that("required variables in (non compiled) mv object are monitored:", {
                'concentration parameter not being monitored\n')
  
 })
+
+
+
+test_that("the mv object is uncompiled :", {
+  
+  rm(list=ls())
+  set.seed(1)
+  code <- nimbleCode({
+    xi[1:6] ~ dCRP(1, 6)
+    for(i in 1:6){
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], 1)
+    }
+  })
+  Inits <- list(xi = c(1,1,2,1,1,2), mu = rnorm(6))
+  Data <- list( y =  rnorm(6))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m) 
+  mConf <- configureMCMC(m, print=FALSE)
+  mMCMC <- buildMCMC(mConf)
+  CmMCMC <- compileNimble(mMCMC, project=m,
+                       resetFunctions=TRUE, showCompilerOutput = TRUE)
+  
+  CmMCMC$run(10)
+  CmvSaved  <- CmMCMC$mvSamples
+  
+  expect_error(nimble:::sampler_DP_measure(m, CmvSaved) ,
+               'sampler_DP_density: modelValues object has to be an uncompiled object.')
+  
+})
+
+
+test_that("sampler_DP_measure can be used for more complicated models  :", {
+  
+  # no deterministic node, conc param is fixed
+  rm(list=ls())
+  set.seed(1)
+  code <- nimbleCode({
+    for(i in 1:10){
+      lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
+      y[i] ~ dpois(lambdaTilde[xi[i]])
+    }
+    xi[1:10] ~ dCRP(conc = 1, size=10)
+  })
+  Inits <- list( xi = 1:10, 
+                 lambdaTilde = rgamma(10, shape=1, rate=0.01))
+  Data <- list(y = c(rpois(2, 10), rpois(2, 10), rpois(6, 40)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('lambdaTilde','xi')
+  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  cMCMC$run(1000)
+  
+  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  cdens = compileNimble(rdens, project = m)
+  cdens$run()
+  samplesG = as.matrix(cdens$samples)
+  
+  # no deterministic node, random conc param
+  rm(list=ls())
+  set.seed(1)
+  code <- nimbleCode({
+    for(i in 1:10){
+      lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
+      y[i] ~ dpois(lambdaTilde[xi[i]])
+    }
+    xi[1:10] ~ dCRP(conc0, size=10)
+    conc0 ~ dgamma(1,1)
+  })
+  Inits <- list( xi = 1:10, conc0=1,
+                 lambdaTilde = rgamma(10, shape=1, rate=0.01))
+  Data <- list(y = c(rpois(2, 10), rpois(2, 10), rpois(6, 40)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('lambdaTilde','xi', 'conc0')
+  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  cMCMC$run(1000)
+  
+  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  cdens = compileNimble(rdens, project = m)
+  cdens$run()
+  samplesG = as.matrix(cdens$samples)
+  
+  
+  # with deterministic node, conc param is fixed
+  rm(list=ls())
+  set.seed(1)
+  code <- nimbleCode({
+    for(i in 1:10){
+      lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
+      lambda[i] <- lambdaTilde[xi[i]]
+      y[i] ~ dpois(lambda[i])
+    }
+    xi[1:10] ~ dCRP(conc = 1, size=10)
+  })
+  Inits <- list( xi = 1:10, 
+                 lambdaTilde = rgamma(10, shape=1, rate=0.01))
+  Data <- list(y = c(rpois(2, 10), rpois(2, 10), rpois(6, 40)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('lambdaTilde','xi')
+  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  cMCMC$run(1000)
+  
+  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  cdens = compileNimble(rdens, project = m)
+  cdens$run()
+  samplesG = as.matrix(cdens$samples)
+  
+  
+  # with deterministic node, random conc param
+  rm(list=ls())
+  set.seed(1)
+  code <- nimbleCode({
+    for(i in 1:10){
+      lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
+      lambda[i] <- lambdaTilde[xi[i]]
+      y[i] ~ dpois(lambda[i])
+    }
+    xi[1:10] ~ dCRP(conc0, size=10)
+    conc0 ~ dgamma(1,1)
+  })
+  Inits <- list( xi = 1:10, conc0=1,
+                 lambdaTilde = rgamma(10, shape=1, rate=0.01))
+  Data <- list(y = c(rpois(2, 10), rpois(2, 10), rpois(6, 40)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('lambdaTilde','xi', 'conc0')
+  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  cMCMC$run(1000)
+  
+  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  cdens = compileNimble(rdens, project = m)
+  cdens$run()
+  samplesG = as.matrix(cdens$samples)
+  
+  # two cluster parameters, one deterministc parameter, fixed conc
+  rm(list=ls()) 
+  code=nimbleCode(
+    {
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+      }
+      xi[1:10] ~ dCRP( 1 , size=10)
+      for(i in 1:10){
+        theta[i] <- thetatilde[xi[i]]
+        y[i] ~ dnorm(theta[i], var=s2tilde[xi[i]])
+      }
+    }
+  )
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), 
+             thetatilde=rnorm(10, 0, sqrt(40)),
+             s2tilde = rinvgamma(10, 1, scale=0.5))
+  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('thetatilde', 's2tilde', 'xi')
+  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  cMCMC$run(1000)
+  
+  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  cdens = compileNimble(rdens, project = m)
+  cdens$run()
+  samplesG = as.matrix(cdens$samples)
+  
+  
+  # two cluster parameters, one deterministc parameter, random conc
+  rm(list=ls()) 
+  code=nimbleCode(
+    {
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+      }
+      xi[1:10] ~ dCRP( conc0 , size=10)
+      conc0 ~ dgamma(1, 1)
+      for(i in 1:10){
+        theta[i] <- thetatilde[xi[i]]
+        y[i] ~ dnorm(theta[i], var=s2tilde[xi[i]])
+      }
+    }
+  )
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 ,
+             thetatilde=rnorm(10, 0, sqrt(40)),
+             s2tilde = rinvgamma(10, 1, scale=0.5))
+  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0')
+  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  cMCMC$run(1000)
+  
+  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  cdens = compileNimble(rdens, project = m)
+  cdens$run()
+  samplesG = as.matrix(cdens$samples)
+  
+  
+  # two cluster parameters, two deterministc parameter, random conc with random parameters
+  rm(list=ls()) 
+  code=nimbleCode(
+    {
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+      }
+      xi[1:10] ~ dCRP( conc0 , size=10)
+      conc0 ~ dgamma(a,1)
+      a ~ dgamma(1, 1)
+      for(i in 1:10){
+        theta[i] <- thetatilde[xi[i]]
+        s2[i] <- s2tilde[xi[i]]
+        y[i] ~ dnorm(theta[i], var=s2[i])
+      }
+    }
+  )
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 , a=1,
+             thetatilde=rnorm(10, 0, sqrt(40)),
+             s2tilde = rinvgamma(10, 1, scale=0.5))
+  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0')
+  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  cMCMC$run(1000)
+  
+  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  cdens = compileNimble(rdens, project = m)
+  cdens$run()
+  samplesG = as.matrix(cdens$samples)
+  
+  
+  # two cluster parameters, two deterministc parameter, 
+  # random conc dfined by two random parameters
+  rm(list=ls()) 
+  set.seed(1)
+  code=nimbleCode(
+    {
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+      }
+      xi[1:10] ~ dCRP( conc0 + conc1 , size=10)
+      conc0 ~ dgamma(1,1)
+      conc1 ~ dgamma(1,1)
+      for(i in 1:10){
+        theta[i] <- thetatilde[xi[i]]
+        s2[i] <- s2tilde[xi[i]]
+        y[i] ~ dnorm(theta[i], var=s2[i])
+      }
+    }
+  )
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 , conc1=1,
+             thetatilde=rnorm(10, 0, sqrt(40)),
+             s2tilde = rinvgamma(10, 1, scale=0.5))
+  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
+  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  cMCMC$run(1000)
+  
+  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  cdens = compileNimble(rdens, project = m)
+  cdens$run()
+  samplesG = as.matrix(cdens$samples)
+  
+  
+  # two cluster parameters, two deterministc parameter, 
+  # random conc dfined by two random parameters
+  rm(list=ls()) 
+  set.seed(1)
+  code=nimbleCode(
+    {
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+      }
+      xi[1:10] ~ dCRP( conc0 + conc1 , size=10)
+      conc1 ~ dgamma(1,1)
+      conc0 ~ dgamma(a,b)
+      b ~ dgamma(1,1)
+      a ~ dgamma(1,1)
+      for(i in 1:10){
+        theta[i] <- thetatilde[xi[i]]
+        s2[i] <- s2tilde[xi[i]]
+        y[i] ~ dnorm(theta[i], var=s2[i])
+      }
+    }
+  )
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 , conc1=1,
+             a = 1, b = 1,
+             thetatilde=rnorm(10, 0, sqrt(40)),
+             s2tilde = rinvgamma(10, 1, scale=0.5))
+  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
+  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  cMCMC$run(1000)
+  
+  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  cdens = compileNimble(rdens, project = m)
+  cdens$run()
+  samplesG = as.matrix(cdens$samples)
+  
+  
+})
+
+
+
+
+
+# should be part of testing sampler_CRP
+test_that("the model has cluster variables :", {
+  
+  set.seed(1)
+  code <- nimbleCode({
+    xi[1:6] ~ dCRP(conc0, 6)
+    conc0 ~ dgamma(1, 1)
+    for(i in 1:6){
+      y[i] ~ dnorm(xi[i], 1)
+    }
+  })
+  Inits <- list(xi = c(1,1,2,1,1,2),  conc0 = 1)
+  Data <- list( y =  rnorm(6))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  mConf <- configureMCMC(m, print=TRUE)
+
+  expect_error(buildMCMC(mConf) ,
+               'sampler_CRP:  The model should have at least one cluster variable.')
+  
+})
+
+
+######################################################################
+
 
 
 ## Test stick_breaking nimble function:
@@ -162,6 +530,9 @@ test_that("stick_breaking nimble function calculation and use is correct:", {
                truth,
                info = paste0("incorrect stick_breaking nimble function calculation with one 1 component"))
 })
+
+
+
 
 
 
