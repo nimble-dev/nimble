@@ -82,7 +82,8 @@ sampler_DP_measure <- nimbleFunction(
     if( sum(counts) != length(tildeVars) ) {
       stop('sampler_DP_density: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  ## Claudia, please check this language in this message. Answer: checked
     }
-    if( is.null(tildeVars) ) { # #  at least one cluster variable is in the model. Chris: Is this enoug?
+    
+    if( is.null(tildeVars) ) { # Chris: I think this is not necessary because it is checked in the CRP sampler. # #  at least one cluster variable is in the model. Chris: Is this enoug?
       stop('sampler_DP_density: The model should have at least one cluster variable.\n')
     }
     
@@ -576,6 +577,9 @@ sampler_CRP <- nimbleFunction(
       }
     }
 
+    if(is.null(tildeVars))
+      stop('sampler_CRP:  The model should have at least one cluster variable.\n')
+    
     nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
     
     if(length(unique(nTilde)) != 1)
