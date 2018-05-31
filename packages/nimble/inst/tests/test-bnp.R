@@ -6,6 +6,109 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 
+## Test sampler_DP_measure:
+context('Testing sampler_DP_measure')
+
+##-- test: checking that all the necessary variables are monitored in mv object
+test_that("required variables in (non compiled) mv object are monitored:", {
+  
+  # membership variable not being monitored:
+  set.seed(1)
+  code <- nimbleCode({
+    xi[1:6] ~ dCRP(conc0, 6)
+    conc0 ~ dgamma(1, 1)
+    for(i in 1:6){
+      mu[i] ~ dnorm(0, 1)
+      y[i] ~ dnorm(mu[xi[i]], 1)
+    }
+  })
+  Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, conc0 = 1)
+  Data <- list( y =  rnorm(6))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  mConf <- configureMCMC(m, print=TRUE)
+  mMCMC <- buildMCMC(mConf)
+  mMCMC$run(10)
+  mvSaved = mMCMC$mvSamples
+  
+  expect_error(nimble:::sampler_DP_measure(m, mvSaved) ,
+               'sampler_DP_density: The node having the dCRP distribution has to be monitored in the MCMC')
+  
+  mConf$addMonitors(c("xi"))
+  mMCMC <- buildMCMC(mConf)
+  mMCMC$run(10)
+  mvSaved = mMCMC$mvSamples
+  expect_equal(sum(mvSaved$varNames == 'xi') == 1,
+               TRUE,
+               'membership variables not being monitored\n')
+  
+  
+  # cluster variable not being monitored:
+  set.seed(1)
+  code <- nimbleCode({
+    xi[1:6] ~ dCRP(1, 6)
+    mu0 ~ dnorm(0, 1)
+    s20 ~ dgamma(1, 1)
+    for(i in 1:6){
+      mu[i] ~ dnorm(mu0, s20)
+      y[i] ~ dnorm(mu[xi[i]], 1)
+    }
+  })
+  Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, mu0 = 0, s20 = 1)
+  Data <- list( y =  rnorm(6))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  mConf <- configureMCMC(m, print=TRUE)
+  mMCMC <- buildMCMC(mConf)
+  mMCMC$run(10)
+  mvSaved = mMCMC$mvSamples
+  
+  expect_error(nimble:::sampler_DP_measure(m, mvSaved) ,
+               'sampler_DP_density: The node') # if add (s) the messages do not match
+  
+  mConf$addMonitors(c("mu"))
+  mMCMC <- buildMCMC(mConf)
+  mMCMC$run(10)
+  mvSaved = mMCMC$mvSamples
+  expect_equal(sum(mvSaved$varNames == 'mu') == 1,
+               TRUE,
+               'cluster variables not being monitored\n')
+
+  
+  # concentration parameter not being monitored:
+  ## warning messages are printed when the monitors are added. Any idea?
+  set.seed(1)
+  code <- nimbleCode({
+    xi[1:6] ~ dCRP(conc0, 6)
+    conc0 ~ dgamma(a, b)
+    a ~ dgamma(1,1)
+    b ~ dgamma(1,1)
+    for(i in 1:6){
+      mu[i] ~ dnorm(0, 1)
+      y[i] ~ dnorm(mu[xi[i]], 1)
+    }
+  })
+  Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, conc0 = 1, a = 1, b = 1)
+  Data <- list( y =  rnorm(6))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  mConf <- configureMCMC(m, print=TRUE)
+  mConf$addMonitors(c("xi"))
+  mMCMC <- buildMCMC(mConf)
+  mMCMC$run(10)
+  mvSaved = mMCMC$mvSamples
+  
+  expect_error(nimble:::sampler_DP_measure(m, mvSaved) ,
+               'sampler_DP_density: Any variable involved in the concentration parameter must be monitored in the MCMC.')
+  
+  mConf$addMonitors(c("conc0"))
+  mMCMC <- buildMCMC(mConf)
+  mMCMC$run(10) 
+  mvSaved = mMCMC$mvSamples
+  expect_equal(sum(mvSaved$varNames == 'conc0') == 1,
+               TRUE,
+               'concentration parameter not being monitored\n')
+ 
+})
+
+
 ## Test stick_breaking nimble function:
 context('Testing stick breaking function')
 
