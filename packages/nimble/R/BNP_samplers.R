@@ -48,7 +48,7 @@ sampler_DP_measure <- nimbleFunction(
       stop('sampler_DP_density: Currently only models with one node with a dCRP distribution are allowed.\n')
     }
     if( sum(dcrpVar == mvSavedVars) == 0 ){
-      stop(paste('sampler_DP_density: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object.\n'))
+      stop(paste('sampler_DP_density: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n'))
     }
     
     
@@ -80,7 +80,7 @@ sampler_DP_measure <- nimbleFunction(
     ## Check that tilde (cluster) variables are monitored.
     counts <- sapply(tildeVars, function(x) x %in% mvSavedVars)  ## Claudia, please check this looks ok. Answer: it does!
     if( sum(counts) != length(tildeVars) ) {
-      stop(paste('sampler_DP_density: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object.\n'))  ## Claudia, please check this language in this message. Answer: checked
+      stop('sampler_DP_density: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  ## Claudia, please check this language in this message. Answer: checked
     }
     if( is.null(tildeVars) ) { # #  at least one cluster variable is in the model. Chris: Is this enoug?
       stop('sampler_DP_density: The model should have at least one cluster variable.\n')
@@ -554,7 +554,7 @@ sampler_CRP <- nimbleFunction(
     
     # first check that the sampler can be used: we need one observation per random index
     nObs <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
-    if(n != nObs){ stop("sampler_CRP: The length of random indexes and observations has to be the same.\n") }
+    if(n != nObs){ stop("sampler_CRP: The length of membership variable and observations has to be the same.\n") }
     
     ## finding 'tilde' variables (the parameters that are being clustered):
     tildeVars <- NULL
@@ -579,11 +579,11 @@ sampler_CRP <- nimbleFunction(
     nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
     
     if(length(unique(nTilde)) != 1)
-      stop('sampler_CRP: When multiple parameters are being clustered, the number of those parameters must all be the same.\n')
+      stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
 
     min_nTilde <- min(nTilde) ## we need a scalar for use in run code
     if(min_nTilde < n)
-      warning('sampler_CRP: The number of parameters to be clustered is less than the number of random indexes. The MCMC is not strictly valid if ever it proposes more components than exist; NIMBLE will warn you if this occurs.\n')
+      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if ever it proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
     ## Here we try to set up some data structures that allow us to do observation-specific
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
@@ -604,7 +604,7 @@ sampler_CRP <- nimbleFunction(
         stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self=FALSE) 
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
         if(length(stochDeps) != 1) 
-          stop("sampler_CRP: Nimble cannot currently assign a sampler to a dCRP node unless each cluster indicator is associated with a single observation.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+          stop("sampler_CRP: Nimble cannot currently assign a sampler to a dCRP node unless each membership element is associated with a single observation.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
         if(length(detDeps) != nInterm) {
           type <- 'allCalcs'  # give up again; should only occur in strange situations
         } else {
@@ -659,7 +659,7 @@ sampler_CRP <- nimbleFunction(
               mySum <- sum(xi == newind)
             }
             if(newind > min_nTilde) {
-              nimCat('CRP_sampler: This MCMC is not fully nonparametric. More components than exist are required.\n')
+              nimCat('CRP_sampler: This MCMC is not fully nonparametric. More components than cluster parameters exist are required.\n')
               newind <- xi[i] 
             }
             model[[target]][i] <<- newind
