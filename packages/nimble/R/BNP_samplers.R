@@ -147,12 +147,12 @@ sampler_DP_measure <- nimbleFunction(
       ## copy savedParentNodes from mvSaved
       nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) ## Claudia, shouldn't this be savedParentNodes not parentNodes? Answer: Yes
       if( length(savedParentNodes) == 0 ) { 
-        stop( paste('sampler_DP_density: Any variable involved in the concentration parameter must be monitored in the MCMC.\n') )
+        stop( paste('sampler_DP_density: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') )
       } else {
         modelWithNAs$calculate(model$getDependencies(savedParentNodes)) 
         dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
         if( is.na(dcrpParam) ) {
-          stop('sampler_DP_density: Any variable involved in the concentration parameter must be monitored in the MCMC.\n')
+          stop('sampler_DP_density: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n')
         }
       }
       allDepsOfSavedParentNodes <- model$getDependencies(savedParentNodes)
