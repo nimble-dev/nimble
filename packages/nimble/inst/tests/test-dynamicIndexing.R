@@ -28,7 +28,6 @@ nimbleOptions(MCMCprogressBar = FALSE)
 
 ans1 <- sapply(testsDynIndex, test_dynamic_indexing_model)
 ans2 <- sapply(testsInvalidDynIndex, test_dynamic_indexing_model)
-ans3 <- sapply(testsInvalidDynIndexValue, test_dynamic_indexing_model)
 
 ## check conjugacy detection
 

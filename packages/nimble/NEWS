@@ -10,6 +10,8 @@ USER LEVEL CHANGES
 
 -- New functionality in MCMC, to specify the order in which sampler functions are executed.  This can allow for samplers being repeatedly executed, interleaved, or omitted.  This ordering can be specified as part of the MCMC configuration, or at MCMC runtime.
 
+-- Invalid dynamic indexes are reported and now result in NaN values when calling calculate or simulate but no longer cause execution to error out. This allows MCMC sampling to continue when an invalid index is proposed and rejected.
+
                            CHANGES IN VERSION 0.6-10 (March 2018)
 
 USER LEVEL CHANGES
