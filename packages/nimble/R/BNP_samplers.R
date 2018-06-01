@@ -26,7 +26,7 @@ sampler_DP_measure <- nimbleFunction(
     ## Check if the mvSaved is compiled or not.
     mvIsCompiled <- exists('dll', envir = mvSaved)
     if( mvIsCompiled ) {
-      stop("sampler_DP_density: modelValues object has to be an uncompiled object.\n")
+      stop("sampler_DP_measure: modelValues object has to be an uncompiled object.\n")
     }
     
     ## Determine variables in the mv object and nodes/variables in the model.
@@ -43,24 +43,21 @@ sampler_DP_measure <- nimbleFunction(
       dcrpVar <- model$getVarNames(nodes = dcrpNode)
     } else {
       if(length(dcrpIndex) == 0 ){
-        stop('sampler_DP_density: One node with a dCRP distribution is required.\n')
+        stop('sampler_DP_measure: One node with a dCRP distribution is required.\n')
       }
-      stop('sampler_DP_density: Currently only models with one node with a dCRP distribution are allowed.\n')
+      stop('sampler_DP_measure: Currently only models with one node with a dCRP distribution are allowed.\n')
     }
     if( sum(dcrpVar == mvSavedVars) == 0 ){
-      stop(paste('sampler_DP_density: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n'))
+      stop(paste('sampler_DP_measure: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n'))
     }
     
     
     ## Find the 'tilde' variables (the parameters that are being clustered). 
-    ## from now on this variables will be called "cluster variables"
+    ## from now on these variables will be called "cluster variables"
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
     tildeVars <- NULL
     itildeVar <- 1
     
-    ## Claudia, shouldn't this code be the same as the block of code in CRP_sampler that we went back and forth on while refining it?
-    ## also, here and in CRP_sampler, it's best to use 'seq_along(dep)' in case 'dep' is of zero length. Same for 1:length(expr) in CRP_sampler
-    ## Answer: yes, here is the same code as in CRP_sampler using seq_along.
     dep <- model$getDependencies(targetElements[1], self=FALSE)
     for(i in seq_along(dep)) { 
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i])) 
@@ -78,49 +75,27 @@ sampler_DP_measure <- nimbleFunction(
     }
     
     ## Check that tilde (cluster) variables are monitored.
-    counts <- sapply(tildeVars, function(x) x %in% mvSavedVars)  ## Claudia, please check this looks ok. Answer: it does!
+    counts <- sapply(tildeVars, function(x) x %in% mvSavedVars)  
     if( sum(counts) != length(tildeVars) ) {
-      stop('sampler_DP_density: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  ## Claudia, please check this language in this message. Answer: checked
+      stop('sampler_DP_measure: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
     }
     
-    if( is.null(tildeVars) ) { # Chris: I think this is not necessary because it is checked in the CRP sampler. # #  at least one cluster variable is in the model. Chris: Is this enoug?
-      stop('sampler_DP_density: The model should have at least one cluster variable.\n')
+    if( is.null(tildeVars) ) { ## probably unnecessary as checked in CRP sampler, but best to be safe
+      stop('sampler_DP_measure: The model should have at least one cluster variable.\n')
     }
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
     ## Determine stochastic and deterministic dependencies of parents of dCRP node  
-    ## first get all dependencies of xi, including deterministic cases such as theta[i] <- thetatilde[xi[i]]: ## Claudia, aren't we getting deps of parents of xi not deps of xi? 
+    ## first get all dependencies of xi, including deterministic cases such as theta[i] <- thetatilde[xi[i]]:
+    ## Claudia, aren't we getting deps of parents of xi not deps of xi? Please modify the language in the comment
     allDep <- NULL
     for(i in seq_along(stochNodes)){
-      aux <- model$getDependencies(stochNodes[i], includeData = FALSE, stochOnly = TRUE)  ## Claudia, ok, since dcrpNode would never be data?
-      ## also, see below, can we simply add 'stochOnly = TRUE' above? Answer: yes, that is much shorter!
-      if(sum(aux == dcrpNode)) { 
-        ## aux <- model$getDependencies(stochNodes[i], includeData=FALSE)  ## ok to remove? Answer: yes
+      aux <- model$getDependencies(stochNodes[i], includeData = FALSE, stochOnly = TRUE)  
+      if(sum(aux == dcrpNode)) 
         allDep <- c(allDep, aux[aux != dcrpNode])
-      }
     }
     
-    ## Claudia, is this whole next block of code needed? In the code just above, can we do:
-    ## aux <- model$getDependencies(stochNodes[i], includeData = FALSE, stochOnly = TRUE)
-    ## actually, I'm confused about when we would even have 'theta' be in 'allDep'. Isn't allDep just going to be
-    ## nodes that parameterize the dCRP concentration?
-    
-    # now eliminate deterministic dependencies ,e.g., theta[i] <- thetatilde[xi[i]], from allDep object: 
-    #indexDetDep <- NULL
-    #for(i in 1:length(tildeVars)) {  ## Claudia, why is this working with the tildeVars? Aren't we needing to work with dependencies of the parents of 'xi'?
-    #  stochDepTildeVars <- model$getDependencies(tildeVars[i], determOnly=TRUE)
-    #  if( sum(stochDepTildeVars[1] == allDep) >0 & is.na(sum(stochDepTildeVars[1] == allDep))==FALSE ) { # second condition checks that there are deterministic nodes
-    #    for(j in 1:length(stochDepTildeVars)) {
-    #      indexDetDep <- c(indexDetDep, which(stochDepTildeVars[j] == allDep))
-    #    }
-    #  }
-    #}
-    #if( is.null(indexDetDep) ) {
-    #  parentNodes <- unique(allDep)  
-    #} else {
-    #  parentNodes <- unique(allDep[-indexDetDep])  
-    #}
     parentNodes <- allDep
     
     if( length(parentNodes) ) { # concentration parameter not fixed
@@ -130,29 +105,24 @@ sampler_DP_measure <- nimbleFunction(
       fixedConc <- FALSE
       
       ## Which parent nodes are saved.
-      ##savedParentNodes <- NULL
-      ##for(i in seq_along(parentNodes)) {
-      ##  savedParentNodes <- c(savedParentNodes, mvSavedVars[parentNodes[i]==mvSavedVars])
-      ##}
-      savedParentNodes <- parentNodes[parentNodes %in% mvSavedVars]  ## Claudia, ok to replace the above code with this? Answer: yes
+      savedParentNodes <- parentNodes[parentNodes %in% mvSavedVars]  
       
-      # model$simulate(savedParentNodes)  ## Claudia, why do we need this? Answer: we don't
       ## Create model with NA values
       verbosity <- nimbleOptions('verbose')
       nimbleOptions(verbose = FALSE)
       modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
       nimbleOptions(verbose = verbosity)
       
-      modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] ## Claudia, why do we need this? Answer: if I don't do this I get the error: Error in if (counts > 0) { : missing value where TRUE/FALSE needed
+      modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] 
       ## copy savedParentNodes from mvSaved
-      nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) ## Claudia, shouldn't this be savedParentNodes not parentNodes? Answer: Yes
+      nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) 
       if( length(savedParentNodes) == 0 ) { 
-        stop( paste('sampler_DP_density: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') )
+        stop( paste('sampler_DP_measure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') )
       } else {
         modelWithNAs$calculate(model$getDependencies(savedParentNodes)) 
         dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
         if( is.na(dcrpParam) ) {
-          stop('sampler_DP_density: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n')
+          stop('sampler_DP_measure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n')
         }
       }
       allDepsOfSavedParentNodes <- model$getDependencies(savedParentNodes)
@@ -161,11 +131,10 @@ sampler_DP_measure <- nimbleFunction(
       savedParentNodes <- dcrpNode # also used in run code
     }   
     
-    ## Claudia, should we check somewhere that there is at least one tildeVar in the model? Answer: Yes we should, added in line 85
     N <- length(dataNodes)
     p <- length(tildeVars)
     Ntilde <- length(values(model, tildeVars)) / p 
-    aproxError <- 1e-10 ## maximum allowable error in approximating unknown measure with the truncation representation
+    approxError <- 1e-10 ## maximum allowable error in approximating unknown measure with the truncation representation
     
     getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
     for(j in 1:p){
@@ -201,7 +170,7 @@ sampler_DP_measure <- nimbleFunction(
       dcrpAux <- mean(concSam)
     }
     
-    Trunc <- log(aproxError)/log(dcrpAux/(dcrpAux+1)) + 1
+    Trunc <- log(approxError)/log(dcrpAux/(dcrpAux+1)) + 1
     Trunc <- round(Trunc)
     
     #setSize(samples, c(niter, Trunc*(p+1))) # first 1:Trunc columns are weights, then the atoms.
