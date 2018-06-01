@@ -2558,9 +2558,10 @@ modelDefClass$methods(genVarInfo3 = function() {
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }
 
-    ## check for maxs < mins; this would generally be from a BUGS syntax error; in some cases
-    ## these would be caught by the check for mins or maxs zero or less but this error message
-    ## is more informative
+    ## check for maxs < mins; this would generally be from a BUGS syntax error,
+    ## e.g., for(i in 1:4) y[k] ~ dnorm(0,1);
+    ## in some cases these would be caught by the check for mins or maxs zero or less
+    ## but this error message is more informative
     if(any(sapply(varInfo, function(x) length(x$mins) && length(x$maxs) &&
                                        any(x$mins > x$maxs)))) {
         problemVars <- which(sapply(varInfo, function(x) any(x$mins > x$maxs)))
