@@ -2558,6 +2558,16 @@ modelDefClass$methods(genVarInfo3 = function() {
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }
 
+    ## check for maxs < mins; this would generally be from a BUGS syntax error; in some cases
+    ## these would be caught by the check for mins or maxs zero or less but this error message
+    ## is more informative
+    if(any(sapply(varInfo, function(x) length(x$mins) && length(x$maxs) &&
+                                       any(x$mins > x$maxs)))) {
+        problemVars <- which(sapply(varInfo, function(x) any(x$mins > x$maxs)))
+        stop("genVarInfo3: indexing error found for model variable(s): ",
+             paste(names(varInfo)[problemVars], "; please check that variables used for indexing are properly defined in the relevant for loop(s)", collapse = ' '))
+    }
+
     ## check for mins or maxs zero or less (these trigger various errors including R crashes)
     if(any(sapply(varInfo, function(x) length(x$mins) && min(x$mins) < 1)) ||
        any(sapply(varInfo, function(x) length(x$maxs) && min(x$maxs) < 1))) {
