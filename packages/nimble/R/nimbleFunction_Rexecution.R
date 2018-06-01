@@ -163,6 +163,12 @@ makeParamInfo <- function(model, nodes, param) {
 
     distInfos <- lapply(distNames, getDistributionInfo)
     paramIDvec <- unlist(lapply(distInfos, function(x) x$paramIDs[param]))
+
+    ## this check needed because getParamID no longer called
+    if(any(is.na(paramIDvec)))
+        stop(paste0("getParam: parameter '", param, "' not found in distribution ",
+                    paste0(unique(distNames), collapse = ','), "."))
+    
     typeVec <- unlist(lapply(distInfos, function(x) x$types[[param]]$type))
     nDimVec <- unlist(lapply(distInfos, function(x) x$types[[param]]$nDim))
     
@@ -212,7 +218,7 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
         paramInfo <- node
     } else {
         ## not already converted; this is regular execution
-        if(length(node) != 1) stop(paste0("getParam only works for one node at a time, but", length(node), "were provided."))
+        if(length(node) != 1) stop(paste0("getParam only works for one node at a time, but ", length(node), " were provided."))
         ## makeParamInfo, called by nodeFunctionVector, will check on length of param
         ## nodeFunctionIndex should never be used.
         nfv <- nodeFunctionVector(model, node)
