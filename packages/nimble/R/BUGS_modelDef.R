@@ -684,7 +684,7 @@ modelDefClass$methods(checkMultivarExpr = function() {
         if(is.null(types)) next
         tmp <- strsplit(types, " = ")
         nms <- sapply(tmp, `[[`, 1)
-        # originally was only checking for expr in multivar dist:
+        ## originally was only checking for expr in multivar dist:
         ## if('value' %in% nms) next
         ## distDim <- parse(text = tmp[[which(nms == 'value')]])[[2]][[2]]
         ## if(distDim < 1) next
