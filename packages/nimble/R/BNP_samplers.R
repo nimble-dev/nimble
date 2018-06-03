@@ -3,22 +3,24 @@
 # Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
 #-- we return a model Values object where each row has the sampled weights and atoms of measure G.
-getTildeVarVirtual <- nimbleFunctionVirtual(
-  run = function(iiter = double(0), rangeii = double(0))
-    returnType(double(0))
-)
+#getTildeVarVirtual <- nimbleFunctionVirtual(
+#  run = function(iiter = double(0), rangeii = double(0))
+#    returnType(double(0))
+#)
 
-getTildeVar <- nimbleFunction(
-  contains = getTildeVarVirtual,
-  setup = function(mvSaved, tildeVar){
-  },
-  run = function(iiter = double(0), rangeii = double(0)) {
-    outVal <- mvSaved[tildeVar, iiter][rangeii]
-    returnType(double(0))
-    return(outVal)
-  }
-)
+#getTildeVar <- nimbleFunction(
+#  contains = getTildeVarVirtual,
+#  setup = function(mvSaved, tildeVar){
+#  },
+#  run = function(iiter = double(0), rangeii = double(0)) {
+#    outVal <- mvSaved[tildeVar, iiter][rangeii]
+#    returnType(double(0))
+#    return(outVal)
+#  }
+#)
 
+# do discrete thing
+# find parents of tilde variables
 
 sampler_DP_measure <- nimbleFunction(
   setup=function(model, mvSaved){
@@ -52,8 +54,7 @@ sampler_DP_measure <- nimbleFunction(
     }
     
     
-    ## Find the 'tilde' variables (the parameters that are being clustered). 
-    ## from now on these variables will be called "cluster variables"
+    ## Find the cluster variables, named tildeVars
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
     tildeVars <- NULL
     itildeVar <- 1
@@ -74,7 +75,7 @@ sampler_DP_measure <- nimbleFunction(
       }
     }
     
-    ## Check that tilde (cluster) variables are monitored.
+    ## Check that cluster variables are monitored.
     counts <- sapply(tildeVars, function(x) x %in% mvSavedVars)  
     if( sum(counts) != length(tildeVars) ) {
       stop('sampler_DP_measure: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
@@ -86,19 +87,16 @@ sampler_DP_measure <- nimbleFunction(
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
-    ## Determine stochastic and deterministic dependencies of parents of dCRP node  
-    ## first get all dependencies of xi, including deterministic cases such as theta[i] <- thetatilde[xi[i]]:
-    ## Claudia, aren't we getting deps of parents of xi not deps of xi? Please modify the language in the comment
-    allDep <- NULL
+    ## Get all dependencies of xi, including deterministic cases such as theta[i] <- thetatilde[xi[i]]:
+    ## Chris: Now I'm not sure if I have to change the language in the  message or not.
+    parentNodes <- NULL
     for(i in seq_along(stochNodes)){
       aux <- model$getDependencies(stochNodes[i], includeData = FALSE, stochOnly = TRUE)  
       if(sum(aux == dcrpNode)) 
-        allDep <- c(allDep, aux[aux != dcrpNode])
+        parentNodes <- c(parentNodes, aux[aux != dcrpNode])
     }
     
-    parentNodes <- allDep
-    
-    if( length(parentNodes) ) { # concentration parameter not fixed
+    if( is.null(parentNodes) == FALSE ) { # concentration parameter is random
       ## Check that values stored in mvSaved are sufficient to calculate dcrp concentration.
       ## Do this by creating a model containing all NAs and then copying values from the mvSaved
       ## and then checking getParam gives a non-NA.
@@ -115,7 +113,7 @@ sampler_DP_measure <- nimbleFunction(
       
       modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] 
       ## copy savedParentNodes from mvSaved
-      nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) 
+      nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model, we want to check that mvSaved has all we need to get conc, right? 
       if( length(savedParentNodes) == 0 ) { 
         stop( paste('sampler_DP_measure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') )
       } else {
@@ -125,6 +123,7 @@ sampler_DP_measure <- nimbleFunction(
           stop('sampler_DP_measure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n')
         }
       }
+      ## Determine stochastic and deterministic dependencies of parents of dCRP node
       allDepsOfSavedParentNodes <- model$getDependencies(savedParentNodes)
     } else { ## placeholder since allDepsOfSavedParentNodes must only have nodes in the mvSaved for correct compilation
       allDepsOfSavedParentNodes <- dcrpNode
@@ -136,14 +135,12 @@ sampler_DP_measure <- nimbleFunction(
     Ntilde <- length(values(model, tildeVars)) / p 
     approxError <- 1e-10 ## maximum allowable error in approximating unknown measure with the truncation representation
     
-    getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
-    for(j in 1:p){
-      getTildeVarList[[j]] <- getTildeVar(mvSaved, tildeVars[j])
-    }
+    #getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
+    #for(j in 1:p){
+    #  getTildeVarList[[j]] <- getTildeVar(mvSaved, tildeVars[j])
+    #}
     
-    ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*Trunc, where
-    ##    Trunc is an integer given by the values of conc parameter
-    ##    size is a placeholder here as this will be set based on number of iterations in the mvSaved at run time
+    ## Storage object to be sized in run code based on MCMC output (Claudia note change to comment)
     samples <- matrix(0, nrow = 1, ncol = 1)
     
   },
@@ -152,109 +149,120 @@ sampler_DP_measure <- nimbleFunction(
     
     niter <- getsize(mvSaved) # number of iterations in the MCMC
     
-    #-- defining the Truncation level of the random measure's representation:
-    # if 'conc' parameter id random, we get its value using steps c) to f)
-    # if 'conc' is fixed, we get its value directly from the parameter of dCRP.
+    # defining the truncation level of the random measure's representation:
     # the relation between 'conc', trunc level, and error of approximation is: (conc / (conc +1))^{Trunc-1}=e 
-    concSam <- numeric(niter)
-    if( fixedConc == TRUE ) {
-      concSam[1:niter] <- rep( model$getParam(dcrpNode, 'conc'), niter)
+    if( fixedConc ) {
       dcrpAux <- model$getParam(dcrpNode, 'conc')
+      concSamples <- rep(dcrpAux, niter)   ## Claudia, I would rename 'concSam' as 'concSamples'
     } else {
+      concSamples <- numeric(niter)
       for( iiter in 1:niter ) {
         nimCopy(from = mvSaved, to = model, nodes = savedParentNodes, row=iiter) 
-        # e): do calculate of model with NA
         model$calculate(allDepsOfSavedParentNodes)
-        concSam[iiter] <- model$getParam(dcrpNode, 'conc')
+        concSamples[iiter] <- model$getParam(dcrpNode, 'conc')
       }
-      dcrpAux <- mean(concSam)
+      dcrpAux <- mean(concSamples)
     }
     
-    Trunc <- log(approxError)/log(dcrpAux/(dcrpAux+1)) + 1
-    Trunc <- round(Trunc)
+    # in general we don't capitalize first letter of variables, so I would make this 'trunc', but perhaps better to call it numAtoms?  
+    # Chris, what about truncG?
+    truncG <- log(approxError) / log(dcrpAux / (dcrpAux+1)) + 1
+    truncG <- round(truncG)
     
-    #setSize(samples, c(niter, Trunc*(p+1))) # first 1:Trunc columns are weights, then the atoms.
-    samples <<- matrix(0, nrow = niter, ncol = Trunc*(p+1))
+    ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
+    ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
+    ## (p+1) denoted the number of parameters, each of length truncG, to be stored: p is the number of cluster components (length(tildeVars)) and 1 is for the weights.
+    samples <<- matrix(0, nrow = niter, ncol = Trunc*(p+1)) 
+    
     
     for(iiter in 1:niter){
-      #-- getting the sampled unique values (tilde variables) and their probabilities of beign sampled . Need for computing G later.
+      
+      ## getting the sampled unique values (tilde variables) and their probabilities of being sampled,
+      ## need for computing density later.
       probs <- numeric(N)
-      uniqueValues <- matrix(0, ncol=p, nrow=N) # 
+      uniqueValues <- matrix(0, nrow = N, ncol = p)  
       xiiter <- mvSaved[dcrpVar, iiter]
-      rangei <- min(xiiter):max(xiiter) # is this ok??
+      range <- min(xiiter):max(xiiter) 
       index <- 1
-      for(i in seq_along(rangei)){ # 1:length(rangei)
-        cond <- sum(xiiter==rangei[i])
-        if(cond>0){
+      for(i in seq_along(range)){   ## Chris changed to 'range' from 'rangei' - confusing because 'i' is used in multiple ways in the code here - 'iiter' and 'i'
+        cond <- sum(xiiter == range[i])
+        if(cond > 0){
           probs[index] <- cond
           for(j in 1:p){
-            uniqueValues[index, j] <- getTildeVarList[[j]]$run(iiter, rangei[i])
+            uniqueValues[index, j] <- mvSaved[tildeVars[j], iiter][range[i]]
+            ## Claudia, can you just do 'mvSaved[tildeVars[j], iiter][range[i]]' without needing the getTildeVarList? 
           }
           index <- index+1
         }
       }
-      probs[index] <- concSam[iiter] #probs <- probs/sum(probs)
-      newvalueindex <- index
+      probs[index] <- concSam[iiter] 
+      newValueIndex <- index 
       
       #-- computing G(.) = sum_{l=1}^{Trunc} w_l delta_{atom_l} (.):
-      vaux <- rbeta(1, 1, concSam[iiter]+N)
+      vaux <- rbeta(1, 1, concSam[iiter] + N)
       v1prod <- 1
       Taux <- 1
-      paramaux <- numeric(p)
+      paramAux <- numeric(p)
+      
+      #nimCopy(mvSaved, model, row = iiter) ## I think you need this - see comment below
       
       # first sampled values: w_1 and atom_1
-      index <- rcat(prob=probs[1:newvalueindex])
-      if(index==newvalueindex){# sample from G_0
+      index <- rcat(prob = probs[1:newValueIndex])
+      if(index == newValueIndex){   # sample from G_0
+        
+        ## Claudia if you simulate from the model then you are always using the current values of any parents of tildeVars, but don't you want to get the values from mvSaved for parents of the tildeVars? I think your test cases may always have the hyperparameters of the density of the tildevars be fixed, but I don't think this is always the case.
         model$simulate(tildeVars)
         for(j in 1:p){ 
-          samples[ iiter, j*Trunc + Taux] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
+          samples[iiter, j*Trunc + Taux] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
         }
-      }else{# sample one of the existing values
+      } else {   # sample one of the existing values
         for(j in 1:p){
-          samples[ iiter, j*Trunc + Taux] <<- uniqueValues[index, j] 
+          samples[iiter, j*Trunc + Taux] <<- uniqueValues[index, j] 
         }
       }
-      samples[ iiter, Taux] <<- vaux # <-
+      samples[iiter, Taux] <<- vaux 
       Taux <- Taux + 1
       
       # the rest of the values: w_l and atom_l, l=1, ..Trunc-1
       while(Taux <= Trunc-1){
-        index <- rcat(prob=probs[1:newvalueindex])
-        if(index == newvalueindex){# sample from G_0
+        index <- rcat(prob = probs[1:newValueIndex])
+        if(index == newValueIndex){  # sample from G_0
           model$simulate(tildeVars)
           for(j in 1:p){ 
-            paramaux[j] <- values(model, tildeVars)[(j-1)*Ntilde + 1]
+            paramAux[j] <- values(model, tildeVars)[(j-1)*Ntilde + 1]
           }
-        }else{# sample one of the existing values
+        } else{  # sample one of the existing values
           for(j in 1:p){
-            paramaux[j] <- uniqueValues[index, j] 
+            paramAux[j] <- uniqueValues[index, j] 
           }
         }
-        condaux <- samples[ iiter, Trunc + 1:(Taux-1)] == paramaux[1]#uniqueValues[1:newvalueindex, 1] == paramaux[1] # check if we sample a new atom or an atom that is in G already
-        if(sum(condaux) >0){ # the atom already exists and we have to update the weights and not include a new value of the params 
-          repindex=1
-          while(condaux[repindex]==FALSE){
-            repindex = repindex+1
+        condaux <- samples[iiter, Trunc + 1:(Taux-1)] == paramAux[1]  # check if we sample a new atom or an atom that is in G already
+        
+        ## Claudia, if tildeVars are continuous, then if you sample from G_0 it will almost surely not equal to an existing atom, but if tildevars are  discrete variables, then if the sample from G_0 equals an existing value, is that considered a new atom or not? I guess not, in which case the code is fine, I think.
+        if(sum(condaux) > 0) { # the atom already exists and we have to update the weights and not include a new value of the params 
+          repindex = 1
+          while(!condaux[repindex]){
+            repindex = repindex + 1
           }
-          v1prod <- v1prod*(1-vaux)
-          vaux <-rbeta(1, 1, concSam[iiter]+N)
-          samples[ iiter, repindex] <<- samples[iiter, repindex] + vaux*v1prod
-        }else{ # agument the truncation and keep the same parameters
-          for(j in 1:p){
-            samples[ iiter, j*Trunc + Taux] <<- paramaux[j]
-          }
-          v1prod <- v1prod*(1-vaux)
+          v1prod <- v1prod * (1-vaux)
           vaux <- rbeta(1, 1, concSam[iiter]+N)
-          samples[iiter, Taux] <<- vaux*v1prod 
-          Taux <- Taux+1
+          samples[iiter, repindex] <<- samples[iiter, repindex] + vaux * v1prod
+        } else { # augment the truncation and keep the same parameters
+          for(j in 1:p){
+            samples[iiter, j*Trunc + Taux] <<- paramAux[j]
+          }
+          v1prod <- v1prod * (1-vaux)
+          vaux <- rbeta(1, 1, concSam[iiter]+N)
+          samples[iiter, Taux] <<- vaux * v1prod 
+          Taux <- Taux + 1
         }
       }
       
-      # complete the vector of probabilities and atoms: w_Tunc and atom_Tunc
-      samples[ iiter, Trunc] <<- 1 - sum(samples[ iiter, 1:(Trunc-1)])
+      # complete the vector of probabilities and atoms: w_Trunc and atom_Trunc
+      samples[iiter, Trunc] <<- 1 - sum(samples[iiter, 1:(Trunc-1)])
       model$simulate(tildeVars)
       for(j in 1:p){ 
-        samples[ iiter, (j+1)*Trunc] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]#values(model, tildeVarNames)[(j-1)*N+1]  
+        samples[iiter, (j+1)*Trunc] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
       }
     }
   },
@@ -537,15 +545,15 @@ sampler_CRP <- nimbleFunction(
         ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
         tmpexpr <- parse(text = expr[j])[[1]]
         if(length(tmpexpr) >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') {   
-            foundTarget <- all.vars(tmpexpr[[3]]) == targetVar   
-            if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
-                tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
-                itildeVar <- itildeVar+1 
-            }
+          foundTarget <- all.vars(tmpexpr[[3]]) == targetVar   
+          if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
+            tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
+            itildeVar <- itildeVar+1 
+          }
         }
       }
     }
-
+    
     if(is.null(tildeVars))
       stop('sampler_CRP:  The model should have at least one cluster variable.\n')
     
@@ -553,7 +561,7 @@ sampler_CRP <- nimbleFunction(
     
     if(length(unique(nTilde)) != 1)
       stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
-
+    
     min_nTilde <- min(nTilde) ## we need a scalar for use in run code
     if(min_nTilde < n)
       warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if ever it proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
