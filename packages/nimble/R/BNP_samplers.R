@@ -21,6 +21,7 @@
 
 # do discrete thing
 # find parents of tilde variables
+# eliminate message dCRP
 
 sampler_DP_measure <- nimbleFunction(
   setup=function(model, mvSaved){
@@ -58,7 +59,6 @@ sampler_DP_measure <- nimbleFunction(
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
     tildeVars <- NULL
     itildeVar <- 1
-    
     dep <- model$getDependencies(targetElements[1], self=FALSE)
     for(i in seq_along(dep)) { 
       expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i])) 
@@ -85,6 +85,31 @@ sampler_DP_measure <- nimbleFunction(
       stop('sampler_DP_measure: The model should have at least one cluster variable.\n')
     }
     
+    ## Check that tilde variables are continuous variables (for avoiding long trials in simulating atoms for G in run code:
+    for(i in seq_along(tildeVars)) {
+      if( isDiscrete(model$getDistribution(tildeVars[i])[1]) ) { # the argument has to be the distribution of one node
+          stop('sampler_DP_measure: cluster variables should be continuous random variables.\n')
+        }
+    }
+    
+    ## Geting all parent nodes of cluster variables:
+    parentNodesTildeVars <- NULL
+    tildeVarsElements <- list()
+    for(i in seq_along(tildeVars) ) {
+      tildeVarsElements[[i]] <- model$expandNodeNames(tildeVars[i])
+    }
+    for(i in seq_along(stochNodes)){ # Chris: do I also need deterministic nodes?
+      aux <- model$getDependencies(stochNodes[i], downstream = TRUE)
+      for(j in seq_along(tildeVars)) {
+        if( sum( aux == tildeVarsElements[[j]][1] ) )
+          parentNodesTildeVars <- c(parentNodesTildeVars, stochNodes[i])
+      }
+    }
+    ## Including cluster variables. Object to be used when simulating atoms in run code:
+    parentNodesWithTildeVars <- unique(c(parentNodesTildeVars, model$expandNodeNames(tildeVars)))
+
+    
+      
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
     ## Get all dependencies of xi, including deterministic cases such as theta[i] <- thetatilde[xi[i]]:
@@ -134,11 +159,6 @@ sampler_DP_measure <- nimbleFunction(
     p <- length(tildeVars)
     Ntilde <- length(values(model, tildeVars)) / p 
     approxError <- 1e-10 ## maximum allowable error in approximating unknown measure with the truncation representation
-    
-    #getTildeVarList <- nimble:::nimbleFunctionList(getTildeVarVirtual)
-    #for(j in 1:p){
-    #  getTildeVarList[[j]] <- getTildeVar(mvSaved, tildeVars[j])
-    #}
     
     ## Storage object to be sized in run code based on MCMC output (Claudia note change to comment)
     samples <- matrix(0, nrow = 1, ncol = 1)
@@ -211,7 +231,8 @@ sampler_DP_measure <- nimbleFunction(
       if(index == newValueIndex){   # sample from G_0
         
         ## Claudia if you simulate from the model then you are always using the current values of any parents of tildeVars, but don't you want to get the values from mvSaved for parents of the tildeVars? I think your test cases may always have the hyperparameters of the density of the tildevars be fixed, but I don't think this is always the case.
-        model$simulate(tildeVars)
+        # Chris: now should be everithing ok with simulating from the model?
+        model$simulate(parentNodesWithTildeVars)
         for(j in 1:p){ 
           samples[iiter, j*Trunc + Taux] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
         }
@@ -227,7 +248,7 @@ sampler_DP_measure <- nimbleFunction(
       while(Taux <= Trunc-1){
         index <- rcat(prob = probs[1:newValueIndex])
         if(index == newValueIndex){  # sample from G_0
-          model$simulate(tildeVars)
+          model$simulate(parentNodesWithTildeVars)
           for(j in 1:p){ 
             paramAux[j] <- values(model, tildeVars)[(j-1)*Ntilde + 1]
           }
@@ -260,7 +281,7 @@ sampler_DP_measure <- nimbleFunction(
       
       # complete the vector of probabilities and atoms: w_Trunc and atom_Trunc
       samples[iiter, Trunc] <<- 1 - sum(samples[iiter, 1:(Trunc-1)])
-      model$simulate(tildeVars)
+      model$simulate(parentNodesWithTildeVars)
       for(j in 1:p){ 
         samples[iiter, (j+1)*Trunc] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
       }
