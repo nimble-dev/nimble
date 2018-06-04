@@ -699,9 +699,10 @@ modelDefClass$methods(checkMultivarExpr = function() {
         ## distDim <- parse(text = tmp[[which(nms == 'value')]])[[2]][[2]]
         ## if(distDim < 1) next
         for(k in 2:length(BUGSdecl$valueExpr))
-            if(checkForExpr(BUGSdecl$valueExpr[[k]]))
-                message("Warning about parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': This multivariate parameter is provided as an expression.  If this is a costly calculation, try making it a separate model declaration for it to improve efficiency.")
-        ## message("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
+            if(checkForExpr(BUGSdecl$valueExpr[[k]])) {
+                ## Draft gentler warning for possible future adoption: message("Warning about parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': This multivariate parameter is provided as an expression.  If this is a costly calculation, try making it a separate model declaration for it to improve efficiency.")
+                stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
+            }
     }
 })
 
