@@ -684,12 +684,13 @@ modelDefClass$methods(checkMultivarExpr = function() {
     for(i in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[i]]
         if(BUGSdecl$type != 'stoch') next
-        dist <- deparse(BUGSdecl$valueExpr[[1]])
+        ## dist <- deparse(BUGSdecl$valueExpr[[1]])
+        dist <- BUGSdecl$distributionName
         ## The following line is a one-time insertion to break testing in any case
         ## where the condition fails.
         ## If the condition is always met, we can use BUGSdecl$distributionName in place of deparse(BUGSdecl$valueExpr[[1]])
-        if(dist != BUGSdecl$distributionName)
-            stop(paste0("dist (", dist,") != BUGSdecl$distributionName (",BUGSdecl$distributionName,")"))
+        ## if(dist != BUGSdecl$distributionName)
+        ##     stop(paste0("dist (", dist,") != BUGSdecl$distributionName (",BUGSdecl$distributionName,")"))
         types <- nimble:::distributionsInputList[[dist]]$types
         if(is.null(types)) next
         ## tmp <- strsplit(types, " = ")
