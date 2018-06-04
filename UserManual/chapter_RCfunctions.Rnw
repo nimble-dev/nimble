@@ -416,7 +416,7 @@ in the following code, \cd{x} must be created before being filled with
 contents for specific indices.
 
 <<exampleDeclare, eval=FALSE>>=
-x <- vector(10)
+x <- numeric(10)
 
 for(i in 1:10) 
    x[i] <- foo(y[i]) 
