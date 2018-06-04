@@ -684,7 +684,7 @@ modelDefClass$methods(checkMultivarExpr = function() {
         if(is.null(types)) next
         tmp <- strsplit(types, " = ")
         nms <- sapply(tmp, `[[`, 1)
-        # originally was only checking for expr in multivar dist:
+        ## originally was only checking for expr in multivar dist:
         ## if('value' %in% nms) next
         ## distDim <- parse(text = tmp[[which(nms == 'value')]])[[2]][[2]]
         ## if(distDim < 1) next
@@ -2556,6 +2556,17 @@ modelDefClass$methods(genVarInfo3 = function() {
         if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions for variable ', dimVarName)
         if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
+    }
+
+    ## check for maxs < mins; this would generally be from a BUGS syntax error,
+    ## e.g., for(i in 1:4) y[k] ~ dnorm(0,1);
+    ## in some cases these would be caught by the check for mins or maxs zero or less
+    ## but this error message is more informative
+    if(any(sapply(varInfo, function(x) length(x$mins) && length(x$maxs) &&
+                                       any(x$mins > x$maxs)))) {
+        problemVars <- which(sapply(varInfo, function(x) any(x$mins > x$maxs)))
+        stop("genVarInfo3: indexing error found for model variable(s): ",
+             paste(names(varInfo)[problemVars], "; please check that variables used for indexing are properly defined in the relevant for loop(s)", collapse = ' '))
     }
 
     ## check for mins or maxs zero or less (these trigger various errors including R crashes)
