@@ -131,6 +131,7 @@ test_that('getParam, three-dimensional', {
     rnf <- mynf(m, 'y', 'theta')
     expect_identical(rnf$run(), NULL, 'getParam_3D in uncompiled nf')
     expect_error(cnf <- compileNimble(rnf, project = m), 'Failed to create the shared library')
+    deregisterDistributions('dtest')  ## so can use it again in next test
 })
 
 
