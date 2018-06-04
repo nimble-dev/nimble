@@ -132,3 +132,23 @@ test_that('getParam, three-dimensional', {
     expect_identical(rnf$run(), NULL, 'getParam_3D in uncompiled nf')
     expect_error(cnf <- compileNimble(rnf, project = m), 'Failed to create the shared library')
 })
+
+test_that("Testing invalid parameter name in getParam", {
+    code <- nimbleCode({
+        for(i in 1:3)
+            y[i] ~ dnorm(0, 1)
+    })
+    m <- nimbleModel(code)
+    expect_error(m$getParam('y[1]', 'mu'), "parameter 'mu' not found")
+    mynf <- nimbleFunction(
+        setup=function(model,nodes){},
+        run=function(){
+            a = 0
+            for(i in seq_along(nodes))
+                a <- a + model$getParam(nodes[i], 'mu')
+            print(a)
+    })
+    rnf <- mynf(m, c('y[1]','y[2]','y[3]'))
+    cm <- compileNimble(m)
+    expect_error(cnf <- compileNimble(rnf, project = m), "parameter 'mu' not found")
+})
