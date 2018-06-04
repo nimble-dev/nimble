@@ -127,9 +127,7 @@ indexNames <- function(x) {
 }
 
 test_coreRfeature_batch <- function(input_batch, info = '', verbose = nimbleOptions('verbose'), dirName = NULL) {
-    test_that(info, {
         test_coreRfeature_batch_internal(input_batch, verbose = verbose, dirName)
-    })
 }
 
 test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOptions('verbose'), dirName = NULL) { ## a lot like test_math but a bit more flexible
