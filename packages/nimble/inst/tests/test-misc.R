@@ -50,16 +50,12 @@ test_that("Test of full model check", {
 
 test_that("No nimKeyword appears in specificCallReplacements", {
     duplicates <- intersect(names(nimble:::nimKeyWords), names(nimble:::specificCallReplacements))
-    if (length(duplicates) > 0) {
-        fail(paste('These symbols appear in both nimKeywords and specificCallReplacements:', paste(duplicates, collapse = ', ')))
-    }
+    expect_true(length(duplicates) == 0, "symbols appear in both nimKeywords and specificCallReplacements")
 })
 
 test_that("No nimKeyword appears in specificCallHandlers", {
     duplicates <- intersect(names(nimble:::nimKeyWords), names(nimble:::specificCallHandlers))
-    if (length(duplicates) > 0) {
-        fail(paste('These symbols appear in both nimKeywords and specificCallHandlers:', paste(duplicates, collapse = ', ')))
-    }
+    expect_true(length(duplicates) == 0, "symbols appear in both nimKeywords and specificCallHandlers")
 })
 
 test_that("keyword next works", {
