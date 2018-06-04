@@ -124,8 +124,8 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
           Cvals <- Cmodel[[varName]][!Rmodel$isData(varName)]
           initsVals <- inits[[varName]][!Rmodel$isData(varName)]
           attributes(Rvals) <- attributes(Cvals) <- attributes(initsVals) <- NULL
-          testthat::expect_that(Rvals, testthat::equals(initsVals), info = paste0('Initial value not maintained in R model for variable ', varName))
-          testthat::expect_that(Cvals, testthat::equals(initsVals), info = paste0('Initial value not maintained in C model for variable ', varName))
+          testthat::expect_equal(Rvals, initsVals, info = paste0('Initial value not maintained in R model for variable ', varName))
+          testthat::expect_equal(Cvals, initsVals, info = paste0('Initial value not maintained in C model for variable ', varName))
         }
       })
     }
@@ -135,7 +135,7 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
           Rvals <- Rmodel[[nodeName]]
           Cvals <- Cmodel[[nodeName]]
           attributes(Rvals) <- attributes(Cvals) <- NULL
-        testthat::expect_that(Rvals, testthat::equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
+        testthat::expect_equal(Rvals, Cvals, info = paste0('Unexpected result for variable ', nodeName))
       }
     })
     testthat::test_that(paste0(example, ": test of logProbs"), {
@@ -143,7 +143,7 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
         Rvals <- getLogProb(Rmodel, nodeName)
         Cvals <- getLogProb(Cmodel, nodeName)
         attributes(Rvals) <- attributes(Cvals) <- NULL
-        testthat::expect_that(Rvals, testthat::equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
+        testthat::expect_equal(Rvals, Cvals, info = paste0('Unexpected result for variable ', nodeName))
       }
     })
 
