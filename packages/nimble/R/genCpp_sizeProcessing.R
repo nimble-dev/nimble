@@ -2221,6 +2221,9 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             dropArgProvided <- TRUE
             iDropArg <- which(names(code$args) == 'drop')
         }
+
+    if(is.null(nDimVar)) 
+        stop(paste0("Error in '", nimDeparse(code), "'; has '", nimDeparse(code$args[[1]]), "' been created?"))
     if(nDimVar != length(code$args) - 1 - dropArgProvided) { ## check if number of indices is correct
         ## only valid case with fewer index arguments than source dimensions is matrix[indices], where matrix can be treated as a vector
         if(!( (nDimVar == 2) & (length(code$args) - dropArgProvided) == 1)) {
