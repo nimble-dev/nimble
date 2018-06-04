@@ -2,23 +2,6 @@
 # integrated out. 
 # Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
-#-- we return a model Values object where each row has the sampled weights and atoms of measure G.
-#getTildeVarVirtual <- nimbleFunctionVirtual(
-#  run = function(iiter = double(0), rangeii = double(0))
-#    returnType(double(0))
-#)
-
-#getTildeVar <- nimbleFunction(
-#  contains = getTildeVarVirtual,
-#  setup = function(mvSaved, tildeVar){
-#  },
-#  run = function(iiter = double(0), rangeii = double(0)) {
-#    outVal <- mvSaved[tildeVar, iiter][rangeii]
-#    returnType(double(0))
-#    return(outVal)
-#  }
-#)
-
 # do discrete thing
 # find parents of tilde variables
 # eliminate message dCRP
@@ -99,6 +82,15 @@ sampler_DP_measure <- nimbleFunction(
       tildeVarsElements[[i]] <- model$expandNodeNames(tildeVars[i])
     }
     for(i in seq_along(stochNodes)){ # Chris: do I also need deterministic nodes?
+        ## Claudia: Yes I think so because need to make sure deterministic nodes are calculated during the simulate call in the run code
+        ## usually this is handled in getDependencies(), but when we define parentNodesTildeVars we don't use getDependencies because we are only simulating nodes that are 'above' the tildeVars
+        ## to save time, I think you can exclude data nodes, so I think you want:
+        
+        ## candidateParentNodes <- model$getNodeNames(includeData = FALSE)
+        ## candidateParentNodes <- candidateParentNodes[!candidateParentNodes %in% tildeVarsElements]
+        ## for(i in seq_along(candidateParentNodes)) {
+        ## aux <- model$getDependencies(candidateParentNodes[i], downstream = TRUE)
+        ## etc.
       aux <- model$getDependencies(stochNodes[i], downstream = TRUE)
       for(j in seq_along(tildeVars)) {
         if( sum( aux == tildeVarsElements[[j]][1] ) )
@@ -106,14 +98,12 @@ sampler_DP_measure <- nimbleFunction(
       }
     }
     ## Including cluster variables. Object to be used when simulating atoms in run code:
-    parentNodesWithTildeVars <- unique(c(parentNodesTildeVars, model$expandNodeNames(tildeVars)))
+    ## Claudia note change, which ensures simulate() does its work in graphical order  
+    parentNodesWithTildeVars <- model$expandNodeNames(parentNodesTildeVars, tildeVars, sort = TRUE)
 
-    
-      
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
-    ## Get all dependencies of xi, including deterministic cases such as theta[i] <- thetatilde[xi[i]]:
-    ## Chris: Now I'm not sure if I have to change the language in the  message or not.
+    ## Get all parents of xi, including deterministic cases such as theta[i] <- thetatilde[xi[i]]:
     parentNodes <- NULL
     for(i in seq_along(stochNodes)){
       aux <- model$getDependencies(stochNodes[i], includeData = FALSE, stochOnly = TRUE)  
@@ -121,7 +111,7 @@ sampler_DP_measure <- nimbleFunction(
         parentNodes <- c(parentNodes, aux[aux != dcrpNode])
     }
     
-    if( is.null(parentNodes) == FALSE ) { # concentration parameter is random
+    if( !is.null(parentNodes) ) { # concentration parameter is random
       ## Check that values stored in mvSaved are sufficient to calculate dcrp concentration.
       ## Do this by creating a model containing all NAs and then copying values from the mvSaved
       ## and then checking getParam gives a non-NA.
@@ -184,8 +174,6 @@ sampler_DP_measure <- nimbleFunction(
       dcrpAux <- mean(concSamples)
     }
     
-    # in general we don't capitalize first letter of variables, so I would make this 'trunc', but perhaps better to call it numAtoms?  
-    # Chris, what about truncG?
     truncG <- log(approxError) / log(dcrpAux / (dcrpAux+1)) + 1
     truncG <- round(truncG)
     
@@ -204,13 +192,12 @@ sampler_DP_measure <- nimbleFunction(
       xiiter <- mvSaved[dcrpVar, iiter]
       range <- min(xiiter):max(xiiter) 
       index <- 1
-      for(i in seq_along(range)){   ## Chris changed to 'range' from 'rangei' - confusing because 'i' is used in multiple ways in the code here - 'iiter' and 'i'
+      for(i in seq_along(range)){   
         cond <- sum(xiiter == range[i])
         if(cond > 0){
           probs[index] <- cond
           for(j in 1:p){
             uniqueValues[index, j] <- mvSaved[tildeVars[j], iiter][range[i]]
-            ## Claudia, can you just do 'mvSaved[tildeVars[j], iiter][range[i]]' without needing the getTildeVarList? 
           }
           index <- index+1
         }
@@ -231,7 +218,8 @@ sampler_DP_measure <- nimbleFunction(
       if(index == newValueIndex){   # sample from G_0
         
         ## Claudia if you simulate from the model then you are always using the current values of any parents of tildeVars, but don't you want to get the values from mvSaved for parents of the tildeVars? I think your test cases may always have the hyperparameters of the density of the tildevars be fixed, but I don't think this is always the case.
-        # Chris: now should be everithing ok with simulating from the model?
+          ## Chris: now should be everithing ok with simulating from the model?
+          ## Claudia - see comment about deterministic nodes in setup code 
         model$simulate(parentNodesWithTildeVars)
         for(j in 1:p){ 
           samples[iiter, j*Trunc + Taux] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
@@ -259,7 +247,6 @@ sampler_DP_measure <- nimbleFunction(
         }
         condaux <- samples[iiter, Trunc + 1:(Taux-1)] == paramAux[1]  # check if we sample a new atom or an atom that is in G already
         
-        ## Claudia, if tildeVars are continuous, then if you sample from G_0 it will almost surely not equal to an existing atom, but if tildevars are  discrete variables, then if the sample from G_0 equals an existing value, is that considered a new atom or not? I guess not, in which case the code is fine, I think.
         if(sum(condaux) > 0) { # the atom already exists and we have to update the weights and not include a new value of the params 
           repindex = 1
           while(!condaux[repindex]){
