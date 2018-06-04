@@ -148,7 +148,7 @@ test_that("Testing invalid parameter name in getParam", {
                 a <- a + model$getParam(nodes[i], 'mu')
             print(a)
     })
-    rnf <- nf(m, c('y[1]','y[2]','y[3]'))
+    rnf <- mynf(m, c('y[1]','y[2]','y[3]'))
     cm <- compileNimble(m)
     expect_error(cnf <- compileNimble(rnf, project = m), "parameter 'mu' not found")
 })
