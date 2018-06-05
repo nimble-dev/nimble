@@ -1337,9 +1337,9 @@ test_that('MCMC with logProb variable being monitored builds and compiles.', {
   inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
   Rmodel <- nimbleModel(code, constants=list(), data=list(), inits=inits)
   Cmodel <- compileNimble(Rmodel)
-  conf <- configureMCMC(Rmodel, monitors = 'logProb_y')
-  Rmcmc  <- buildMCMC(conf)
-  Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+  expect_silent(conf <- configureMCMC(Rmodel, monitors = 'logProb_y'))
+  expect_silent(Rmcmc  <- buildMCMC(conf))
+  expect_message(Cmcmc <- compileNimble(Rmcmc, project = Rmodel), "compilation finished")
   Cmcmc$run(10)
 })
 
