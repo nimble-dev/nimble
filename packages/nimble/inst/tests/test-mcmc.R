@@ -1379,17 +1379,23 @@ test_that('MCMC with logProb variable being monitored builds and compiles.', {
   Cmcmc$run(10)
 })
 
-test_that('infinite loop in slice sampler bails out.', {
+test_that('slice sampler bails out of loop', {
     code <- nimbleCode({
         y ~ dnorm(0, sd = sigma)
-        sigma ~ dunif(0, 1)
+        sigma ~ dunif(0.5-1e-15, 0.5+1e-15)
     })
-    Rmodel <- nimbleModel(code, data = list(y = 0), inits = list(sigma = -100))
+    Rmodel <- nimbleModel(code, data = list(y = 0), inits = list(sigma = 0.5))
     Cmodel <- compileNimble(Rmodel)
     conf <- configureMCMC(Rmodel, monitors = 'logProb_y', onlySlice = TRUE)
     Rmcmc  <- buildMCMC(conf)
     Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
-    expect_output(Cmcmc$run(10), "slice sampler reached maximum number of contractions")
+    expect_silent(Cmcmc$run(10))
+
+    conf$removeSamplers('sigma')
+    conf$addSampler('sigma','slice', control = list(maxContractions = 10))
+    Rmcmc  <- buildMCMC(conf)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel, resetFunctions = TRUE)
+    expect_output(Cmcmc$run(1), "slice sampler reached maximum number of contractions")
 })
 
 
