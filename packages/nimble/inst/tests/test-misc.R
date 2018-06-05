@@ -196,11 +196,11 @@ test_that("setInits works in complicated case", {
     })
     inits = list(x = matrix(1:6, nrow = 2))
     data = list(x = matrix(c(100, NA, 100, NA, NA, NA), nrow = 2))
-    m <- nimbleModel(mc1,
+    expect_warning(m <- nimbleModel(mc1,
                      constants = list(f = c(1, 2),
                                       n = 3),
                      data = data,
-                     inits = inits)
+                     inits = inits), "Ignoring non-NA values in inits")
     ## This model defines x[1, 1], x[1, 2], x[1, 3], x[2, 2], and x[2, 3]. 
     ## x[2,1] is not a node in the model.
     ## data are provided for x[1, 1] and x[1, 2]
