@@ -699,14 +699,16 @@ modelDefClass$methods(checkMultivarExpr = function() {
         ## if('value' %in% nms) next
         ## distDim <- parse(text = tmp[[which(nms == 'value')]])[[2]][[2]]
         ## if(distDim < 1) next
-        for(k in 2:length(BUGSdecl$valueExpr)) {
-            paramName <- names(BUGSdecl$valueExpr)[k]
-            nDim <- types[[paramName]][['nDim']]
-            if(is.numeric(nDim))
-                if(nDim == 0) next
-            if(checkForExpr(BUGSdecl$valueExpr[[k]])) {
-                ## Draft gentler warning for possible future adoption: message("Warning about parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': This multivariate parameter is provided as an expression.  If this is a costly calculation, try making it a separate model declaration for it to improve efficiency.")
-                stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
+        if(length(BUGSdecl$valueExpr) > 1) {
+            for(k in 2:length(BUGSdecl$valueExpr)) {
+                paramName <- names(BUGSdecl$valueExpr)[k]
+                nDim <- types[[paramName]][['nDim']]
+                if(is.numeric(nDim))
+                    if(nDim == 0) next
+                if(checkForExpr(BUGSdecl$valueExpr[[k]])) {
+                    ## Draft gentler warning for possible future adoption: message("Warning about parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': This multivariate parameter is provided as an expression.  If this is a costly calculation, try making it a separate model declaration for it to improve efficiency.")
+                    stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
+                }
             }
         }
     }
