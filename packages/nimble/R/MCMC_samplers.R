@@ -477,7 +477,7 @@ sampler_slice <- nimbleFunction(
         x1 <- L + runif(1, 0, 1) * (R - L)
         lp <- setAndCalculateTarget(x1)
         numContractions <- 0
-        while((is.nan(lp) | lp < u) & (R-L)/(R+L+eps) > eps & numContractions < maxContractions) {   # must be is.nan()
+        while((is.nan(lp) | lp < u) & (R-L)/(abs(R)+abs(L)+eps) > eps & numContractions < maxContractions) {   # must be is.nan()
             ## The checks for R-L small and max number of contractions are for cases where model is in
             ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
             ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
@@ -487,7 +487,7 @@ sampler_slice <- nimbleFunction(
             lp <- setAndCalculateTarget(x1)
             numContractions <- numContractions + 1
         }
-        if((R-L)/(R+L+eps) <= eps | numContractions == maxContractions) {
+        if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
             if(maxContractionsWarning)
                 cat("Warning: slice sampler reached maximum number of contractions.\n")
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
