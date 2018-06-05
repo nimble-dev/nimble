@@ -81,25 +81,19 @@ sampler_DP_measure <- nimbleFunction(
     for(i in seq_along(tildeVars) ) {
       tildeVarsElements[[i]] <- model$expandNodeNames(tildeVars[i])
     }
-    for(i in seq_along(stochNodes)){ # Chris: do I also need deterministic nodes?
-        ## Claudia: Yes I think so because need to make sure deterministic nodes are calculated during the simulate call in the run code
-        ## usually this is handled in getDependencies(), but when we define parentNodesTildeVars we don't use getDependencies because we are only simulating nodes that are 'above' the tildeVars
-        ## to save time, I think you can exclude data nodes, so I think you want:
-        
-        ## candidateParentNodes <- model$getNodeNames(includeData = FALSE)
-        ## candidateParentNodes <- candidateParentNodes[!candidateParentNodes %in% tildeVarsElements]
-        ## for(i in seq_along(candidateParentNodes)) {
-        ## aux <- model$getDependencies(candidateParentNodes[i], downstream = TRUE)
-        ## etc.
-      aux <- model$getDependencies(stochNodes[i], downstream = TRUE)
+    
+    candidateParentNodes <- model$getNodeNames(includeData = FALSE)
+    candidateParentNodes <- candidateParentNodes[!candidateParentNodes %in% tildeVarsElements]
+    for(i in seq_along(candidateParentNodes)) {
+      aux <- model$getDependencies(candidateParentNodes[i], downstream = TRUE)
       for(j in seq_along(tildeVars)) {
         if( sum( aux == tildeVarsElements[[j]][1] ) )
-          parentNodesTildeVars <- c(parentNodesTildeVars, stochNodes[i])
+          parentNodesTildeVars <- c(parentNodesTildeVars, candidateParentNodes[i])#stochNodes[i])
       }
     }
     ## Including cluster variables. Object to be used when simulating atoms in run code:
     ## Claudia note change, which ensures simulate() does its work in graphical order  
-    parentNodesWithTildeVars <- model$expandNodeNames(parentNodesTildeVars, tildeVars, sort = TRUE)
+    parentNodesWithTildeVars <- model$expandNodeNames(c(parentNodesTildeVars, tildeVars), sort = TRUE)
 
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
@@ -128,7 +122,7 @@ sampler_DP_measure <- nimbleFunction(
       
       modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] 
       ## copy savedParentNodes from mvSaved
-      nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model, we want to check that mvSaved has all we need to get conc, right? 
+      nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model?, we want to check that mvSaved has all we need to get conc, right? 
       if( length(savedParentNodes) == 0 ) { 
         stop( paste('sampler_DP_measure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') )
       } else {
