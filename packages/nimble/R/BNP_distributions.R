@@ -67,16 +67,16 @@ rCRP <- nimbleFunction(
                    conc = double(0, default=1),
                    size = integer(0))
     {
-        returnType(double(1))
+        returnType(integer(1))
         
         if(n != 1) {
             stop("rCRP only handles n = 1 at the moment.\n")
         }
         
-        if( conc <= 0 | is.na(conc) ) {
-            nimCat("rCRP: value of concentration parameter is not positive. NaNs produced.\n")
-            return(rep(NaN, size))
-        }
+        #if( conc <= 0 | is.na(conc) ) {
+        #    nimCat("rCRP: value of concentration parameter is not positive. NaNs produced.\n")
+        #    return(rep(NaN, size))
+        #}
 
         x <- nimNumeric(size) 
         x[1] <- 1
@@ -102,7 +102,7 @@ rCRP <- nimbleFunction(
 #' @rdname ChineseRestaurantProcess
 #' @export
 dCRP=nimbleFunction(
-    run=function(x = double(1), 
+    run=function(x = integer(1), 
                conc = double(0, default=1),
                size = integer(0),
                log = integer(0, default=0))
@@ -115,18 +115,16 @@ dCRP=nimbleFunction(
             stop("dCRP: length of x has to be equal to size.\n")
         }
     
-        if( conc <= 0 | is.na(conc) ) {
-            nimCat("dCRP: value of concentration parameter has to be larger than zero.\n")
-            return(NaN)
-        }
+        #if( conc <= 0 | is.na(conc) ) {
+        #    nimCat("dCRP: value of concentration parameter has to be larger than zero.\n")
+        #    return(NaN)
+        #}
         
         dens[1] <- 1
         if(n > 1) {
             for(i in 2:n) {
                 counts <- sum(x[i] == x[1:(i-1)])
                 if( counts > 0 ) {
-                    ## Claudia: shouldn't this be 'counts / (i-1+conc)' ???
-                    ## Answer: yes
                     dens[i] <- counts / (i-1+conc)
                 } else {
                 dens[i] <- conc / (i-1+conc)
@@ -160,8 +158,8 @@ dCRP=nimbleFunction(
 #' @param log logical; if TRUE, weights are returned on the log scale.
 #' @author Claudia Wehrhahn
 #' @details
-#' The stick breaking construction produces a vector of probabilities that sums to one,
-#' based on a series of individual probabilities in \code{z} that have to be between \deqn{[0,1)]}.
+#' The stick breaking construction produces a vector of probabilities that adds up to one,
+#' based on a series of individual probabilities in \code{z} that should be between \deqn{(0,1)]}.
 #' The construction starts by breaking a piece of stick off of a stick of length one, based on
 #' \code{z[1]}. The first element the output is the length of the piece that was broken off.
 #' The construction then proceeds by breaking a piece of stick off of the remaining stick, based on
