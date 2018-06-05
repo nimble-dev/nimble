@@ -480,7 +480,6 @@ test_that('basic multivariate mixture model with conjugacy', {
                                          "p[4]" = .03,
                                          "myvars[1]" = .1,
                                          "myvars[2]" = .1)), avoidNestedTest = TRUE)
-              )
 })
 }
 
