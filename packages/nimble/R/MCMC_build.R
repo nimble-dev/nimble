@@ -184,6 +184,8 @@ buildMCMC <- nimbleFunction(
         progressBarIncrement <- niter/(progressBarLength+3)
         progressBarNext <- progressBarIncrement
         progressBarNextFloor <- floor(progressBarNext)
+        returnType(void())
+        if(niter < 1) return()
         for(iter in 1:niter) {
             checkInterrupt()
             if(time) {

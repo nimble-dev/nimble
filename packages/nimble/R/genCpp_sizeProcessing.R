@@ -215,11 +215,13 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                 }
             }
             ## Add RCfunctions to neededRCfuns.
-            if(exists(code$name) && is.rcf(get(code$name))) {
-                nfmObj <- environment(get(code$name))$nfMethodRCobject
-                uniqueName <- nfmObj$uniqueName
-                if (is.null(typeEnv$neededRCfuns[[uniqueName]])) {
-                    typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
+            if(typeEnv[['.allowFunctionAsArgument']]) { 
+                if(exists(code$name) && is.rcf(get(code$name))) {
+                    nfmObj <- environment(get(code$name))$nfMethodRCobject
+                    uniqueName <- nfmObj$uniqueName
+                    if (is.null(typeEnv$neededRCfuns[[uniqueName]])) {
+                        typeEnv$neededRCfuns[[uniqueName]] <- nfmObj
+                    }
                 }
             }
             ## Note that generation of a symbol for LHS of an assignment is done in the sizeAssign function, which is the handler for assignments
@@ -1216,7 +1218,9 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
 }
 
 sizeOptim <- function(code, symTab, typeEnv) {
+    typeEnv$.allowFunctionAsArgument <- TRUE
     asserts <- recurseSetSizes(code, symTab, typeEnv)
+    typeEnv$.allowFunctionAsArgument <- FALSE
     code$type <- 'nimbleList'
     nlGen <- nimbleListReturningFunctionList[[code$name]]$nlGen
     nlDef <- nl.getListDef(nlGen)
@@ -2217,6 +2221,9 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             dropArgProvided <- TRUE
             iDropArg <- which(names(code$args) == 'drop')
         }
+
+    if(is.null(nDimVar)) 
+        stop(paste0("Error in '", nimDeparse(code), "'; has '", nimDeparse(code$args[[1]]), "' been created?"))
     if(nDimVar != length(code$args) - 1 - dropArgProvided) { ## check if number of indices is correct
         ## only valid case with fewer index arguments than source dimensions is matrix[indices], where matrix can be treated as a vector
         if(!( (nDimVar == 2) & (length(code$args) - dropArgProvided) == 1)) {
