@@ -261,7 +261,12 @@ BUGSdeclClass$methods(
         
         targetExpr <<- code[[2]]
         valueExpr <<- code[[3]]
-        
+
+        if(type == 'stoch')
+            distributionName <<- as.character(valueExpr[[1]])
+        else
+            distributionName <<- NA
+
         transExpr <<- NULL
         indexExpr <<- NULL
         

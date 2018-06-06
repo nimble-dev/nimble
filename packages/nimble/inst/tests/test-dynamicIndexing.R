@@ -301,7 +301,7 @@ system.in.dir(paste("echo 'x <- c(rep(as.numeric(NA), 115), rep(1, 1929))' >> ",
 
 test_that('cervix model and MCMC test', {
     testBUGSmodel('cervix', dir = "", model = system.file('classic-bugs','vol2','cervix','cervix.bug', package = 'nimble'), data = system.file('classic-bugs','vol2','cervix','cervix-data.R', package = 'nimble'),  inits = file.path(tempdir(), "cervix-inits.R"),  useInits = TRUE)
-    test_mcmc(model = system.file('classic-bugs','vol2','cervix','cervix.bug', package = 'nimble'), name = 'cervix', inits = file.path(tempdir(), "cervix-inits.R"), data = system.file('classic-bugs', 'vol2', 'cervix','cervix-data.R', package = 'nimble'), numItsC = 1000)
+    test_mcmc(model = system.file('classic-bugs','vol2','cervix','cervix.bug', package = 'nimble'), name = 'cervix', inits = file.path(tempdir(), "cervix-inits.R"), data = system.file('classic-bugs', 'vol2', 'cervix','cervix-data.R', package = 'nimble'), numItsC = 1000, avoidNestedTest = TRUE)
 })
 
 ## There are some issues with using the model as provided in the BUGS example because of use of zeros
@@ -328,7 +328,7 @@ model {\n
     system.in.dir(paste("sed 's/true/truex/g' biops-inits.R > ", file.path(tempdir(), "biops-inits.R")), dir = system.file('classic-bugs','vol2','biops', package = 'nimble'))
 system.in.dir(paste("echo 'error <- matrix(c(1,0,0,0, .5, .5, 0, 0, 1/3,1/3,1/3,0,1/4,1/4,1/4,1/4), 4,4, byrow=T)'  >> ", file.path(tempdir(), "biops-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
     testBUGSmodel('biops', dir = "", model = file.path(tempdir(), "biops.bug"), data = system.file('classic-bugs','vol2','biops','biops-data.R', package = 'nimble'),  inits = file.path(tempdir(), "biops-inits.R"),  useInits = TRUE)
-    test_mcmc(model = file.path(tempdir(), "biops.bug"), name = 'biops', inits = file.path(tempdir(), "biops-inits.R"), data = system.file('classic-bugs', 'vol2', 'biops','biops-data.R', package = 'nimble'), numItsC = 1000)
+    test_mcmc(model = file.path(tempdir(), "biops.bug"), name = 'biops', inits = file.path(tempdir(), "biops-inits.R"), data = system.file('classic-bugs', 'vol2', 'biops','biops-data.R', package = 'nimble'), numItsC = 1000, avoidNestedTest = TRUE)
 })
 
 
@@ -378,8 +378,8 @@ test_that('basic mixture model with conjugacy', {
                                                   "p[1]" = .02,
                                                   "p[2]" = .07,
                                                   "p[3]" = .05,
-                                                  "p[4]" = .02))
-              )
+                                                  "p[4]" = .02)),
+              avoidNestedTest = TRUE)
 
 })
 
@@ -423,8 +423,8 @@ test_that('basic mixture model without conjugacy', {
                                                   "p[1]" = .03,
                                                   "p[2]" = .12,
                                                   "p[3]" = .12,
-                                                  "p[4]" = .05))
-              )
+                                                  "p[4]" = .05)),
+              avoidNestedTest=TRUE)
 })
 
 if(FALSE) {
@@ -479,8 +479,7 @@ test_that('basic multivariate mixture model with conjugacy', {
                                          "p[3]" = .01,
                                          "p[4]" = .03,
                                          "myvars[1]" = .1,
-                                         "myvars[2]" = .1)),
-              )
+                                         "myvars[2]" = .1)), avoidNestedTest = TRUE)
 })
 }
 

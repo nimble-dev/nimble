@@ -127,9 +127,7 @@ indexNames <- function(x) {
 }
 
 test_coreRfeature_batch <- function(input_batch, info = '', verbose = nimbleOptions('verbose'), dirName = NULL) {
-    test_that(info, {
         test_coreRfeature_batch_internal(input_batch, verbose = verbose, dirName)
-    })
 }
 
 test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOptions('verbose'), dirName = NULL) { ## a lot like test_math but a bit more flexible
@@ -478,7 +476,7 @@ test_math_internal <- function(param, info, verbose = nimbleOptions('verbose'), 
 
 ### Function for testing MCMC called from test_mcmc.R
 
-test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NULL, knownFailures = list(), expectWarnings = list()) {
+test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NULL, knownFailures = list(), expectWarnings = list(), avoidNestedTest = FALSE) {
     ## imitate processing test_mcmc_internal just to get a name for the test_that description
     if(is.null(name)) {
         if(!missing(example)) {
@@ -503,12 +501,19 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NUL
         modelKnown <- !missing(model)
     }
 
-    test_that(name, {
+    if(avoidNestedTest) {  ## sometimes test_mcmc is called from within a test_that; this avoids report of empty test as of testthat v2.0.0
         expect_true(modelKnown, 'Neither BUGS example nor model code supplied.')
         Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = dir, useInits = TRUE,
                                 check = FALSE)
         test_mcmc_internal(Rmodel, ..., name = name, knownFailures = knownFailures, expectWarnings = expectWarnings)
-    })
+    } else {
+        test_that(name, {
+            expect_true(modelKnown, 'Neither BUGS example nor model code supplied.')
+            Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = dir, useInits = TRUE,
+                                    check = FALSE)
+            test_mcmc_internal(Rmodel, ..., name = name, knownFailures = knownFailures, expectWarnings = expectWarnings)
+        })
+    }
 }
 
 

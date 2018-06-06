@@ -50,16 +50,12 @@ test_that("Test of full model check", {
 
 test_that("No nimKeyword appears in specificCallReplacements", {
     duplicates <- intersect(names(nimble:::nimKeyWords), names(nimble:::specificCallReplacements))
-    if (length(duplicates) > 0) {
-        fail(paste('These symbols appear in both nimKeywords and specificCallReplacements:', paste(duplicates, collapse = ', ')))
-    }
+    expect_true(length(duplicates) == 0, "symbols appear in both nimKeywords and specificCallReplacements")
 })
 
 test_that("No nimKeyword appears in specificCallHandlers", {
     duplicates <- intersect(names(nimble:::nimKeyWords), names(nimble:::specificCallHandlers))
-    if (length(duplicates) > 0) {
-        fail(paste('These symbols appear in both nimKeywords and specificCallHandlers:', paste(duplicates, collapse = ', ')))
-    }
+    expect_true(length(duplicates) == 0, "symbols appear in both nimKeywords and specificCallHandlers")
 })
 
 test_that("keyword next works", {
@@ -200,11 +196,11 @@ test_that("setInits works in complicated case", {
     })
     inits = list(x = matrix(1:6, nrow = 2))
     data = list(x = matrix(c(100, NA, 100, NA, NA, NA), nrow = 2))
-    m <- nimbleModel(mc1,
+    expect_warning(m <- nimbleModel(mc1,
                      constants = list(f = c(1, 2),
                                       n = 3),
                      data = data,
-                     inits = inits)
+                     inits = inits), "Ignoring non-NA values in inits")
     ## This model defines x[1, 1], x[1, 2], x[1, 3], x[2, 2], and x[2, 3]. 
     ## x[2,1] is not a node in the model.
     ## data are provided for x[1, 1] and x[1, 2]
@@ -220,6 +216,18 @@ test_that("setInits works in complicated case", {
     expect_equal(m$x, matrix(c(100, 2, 100, 4, 5, 6), nrow = 2))
 }
 )
+
+test_that("missing return statement is trapped",
+{
+    ## capture.output here just suppresses the print()ed error
+    ## message to keep it out of Travis log files.
+    expect_error(msg <- capture.output({a <- nimbleFunction(
+                                            run = function() {
+                                                returnType(double(1))
+                                                out <- rnorm(10, 0, 1)
+                                            })}),
+                 info = "error-trapping missing return statement")
+})
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

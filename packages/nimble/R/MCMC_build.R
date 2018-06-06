@@ -25,8 +25,6 @@
 #'
 #' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
 #'
-#' \code{samplerExecutionOrder}: Numeric vector specifying the order of execution of the sampler functions (as were defined in the MCMC configuration object).  This allows sampler functions to execute multiple times on each MCMC iteration, be interleaved with other sampler functions, or omitted entirely.  If provided, this argument will override the default sampler execution ordering that was specified in the MCMC configuration.  However, supplying this argument will not overwrite the default ordering from the configuration; subsequent runs of the MCMC will revert back to using that ordering from the configuration, if this runtime argument is omitted.  Different runs of the same MCMC may specify different orderings for sampler execution, if desired.  Note that unlike in the MCMC configuration, no checking of the vailidity of this sampler execution ordering argument is carried out, so supplying invalid values (for example, -7, or 3.5) will most likely result in a horrible crash.
-#'
 #' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
 #' These may be accessed and converted into R matrix objects via:
 #' \code{as.matrix(mcmc$mvSamples)}
@@ -146,9 +144,11 @@ buildMCMC <- nimbleFunction(
         simulateAll           = logical(default = FALSE),
         time                  = logical(default = FALSE),
         progressBar           = logical(default = TRUE),
+        ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
+        ###' \code{samplerExecutionOrder}: Numeric vector specifying the order of execution of the sampler functions (as were defined in the MCMC configuration object).  This allows sampler functions to execute multiple times on each MCMC iteration, be interleaved with other sampler functions, or omitted entirely.  If provided, this argument will override the default sampler execution ordering that was specified in the MCMC configuration.  However, supplying this argument will not overwrite the default ordering from the configuration; subsequent runs of the MCMC will revert back to using that ordering from the configuration, if this runtime argument is omitted.  Different runs of the same MCMC may specify different orderings for sampler execution, if desired.  Note that unlike in the MCMC configuration, no checking of the vailidity of this sampler execution ordering argument is carried out, so supplying invalid values (for example, -7, or 3.5) will most likely result in a horrible crash.
+        ##samplerExecutionOrder = integer(1, default = -1)
         thin                  = integer(default = -1),
-        thin2                 = integer(default = -1),
-        samplerExecutionOrder = integer(1, default = -1)) {
+        thin2                 = integer(default = -1)) {
         thinToUseVec <<- thinFromConfVec
         if(thin  != -1)   thinToUseVec[1] <<- thin
         if(thin2 != -1)   thinToUseVec[2] <<- thin2
@@ -173,17 +173,22 @@ buildMCMC <- nimbleFunction(
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)
                 samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
         }
-        if(dim(samplerExecutionOrder)[1] > 0 & samplerExecutionOrder[1] == -1) {   ## runtime argument samplerExecutionOrder was not provided
-            lengthSamplerExecutionOrderFromConf <- dim(samplerExecutionOrderFromConfPlusTwoZeros)[1] - 2
-            if(lengthSamplerExecutionOrderFromConf == 0) samplerExecutionOrderToUse <- numeric(0) else samplerExecutionOrderToUse <- samplerExecutionOrderFromConfPlusTwoZeros[1:lengthSamplerExecutionOrderFromConf]
-        } else {   ## runtime argument samplerExecutionOrder was provided
-            samplerExecutionOrderToUse <- samplerExecutionOrder
-        }
+        ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
+        ##if(dim(samplerExecutionOrder)[1] > 0 & samplerExecutionOrder[1] == -1) {   ## runtime argument samplerExecutionOrder was not provided
+        ##    lengthSamplerExecutionOrderFromConf <- dim(samplerExecutionOrderFromConfPlusTwoZeros)[1] - 2
+        ##    if(lengthSamplerExecutionOrderFromConf == 0) samplerExecutionOrderToUse <- numeric(0) else samplerExecutionOrderToUse <- samplerExecutionOrderFromConfPlusTwoZeros[1:lengthSamplerExecutionOrderFromConf]
+        ##} else {   ## runtime argument samplerExecutionOrder was provided
+        ##    samplerExecutionOrderToUse <- samplerExecutionOrder
+        ##}
+        lengthSamplerExecutionOrderFromConf <- dim(samplerExecutionOrderFromConfPlusTwoZeros)[1] - 2
+        if(lengthSamplerExecutionOrderFromConf == 0) samplerExecutionOrderToUse <- numeric(0) else samplerExecutionOrderToUse <- samplerExecutionOrderFromConfPlusTwoZeros[1:lengthSamplerExecutionOrderFromConf]
         if(niter < progressBarLength+3 | !progressBarDefaultSetting) progressBar <- progressBar & 0  ## cheap way to avoid compiler warning
         if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; print('|'); cat('|') }
         progressBarIncrement <- niter/(progressBarLength+3)
         progressBarNext <- progressBarIncrement
         progressBarNextFloor <- floor(progressBarNext)
+        returnType(void())
+        if(niter < 1) return()
         for(iter in 1:niter) {
             checkInterrupt()
             if(time) {
