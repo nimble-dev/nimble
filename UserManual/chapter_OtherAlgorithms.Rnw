@@ -158,9 +158,36 @@ aEWSamp <- as.matrix(cLWF$mvEWSamples, "a")
 \subsection{Particle MCMC (PMCMC)}
 \label{sec:particle-mcmc}
 
-In addition to our four particle filters, NIMBLE also has particle MCMC samplers implemented. These sample top-level parameters by using either a bootstrap filter, and auxiliary particle, or a user defined filter to obtain estimates of the likelihood of a model (marginalizing over the latent states) for use in a Metropolis-Hastings MCMC step.  The \cd{RW\_PF}  sampler uses a univariate normal proposal distribution, and should be used to sample scalar top-level parameters.  The \cd{RW\_PF\_block} sampler uses a multivariate normal proposal distribution for vectors of top-level parameters.  The PMCMC samplers can be specified with a call to \cd{addSampler} with \cd{type = "RW\_PF"} or \cd{type = "RW\_PF\_block"}, a syntax similar to the other MCMC samplers listed in Section \ref{sec:samplers-provided}.
+Particle MCMC (PMCMC) is a method that uses MCMC for top-level model
+parameters and uses a particle filter to approximate the time-series
+likelihood for use in determining MCMC acceptance probabilities
+\citep{Andrieu_Doucet_Holenstein_2010}.  NIMBLE implements PMCMC by
+providing random-walk Metropolis-Hastings samplers for model
+parameters that make use of particle filters in this way. These
+samplers can use NIMBLE's bootstrap filter or auxiliary particle
+filter, or they can use a user-defined filter. Whichever filter is
+specified will be used to obtain estimates of the likelihood of the
+state-space model (marginalizing over the latent states), which is
+used for calculation of the Metropolis-Hastings acceptance
+probability.  The \cd{RW\_PF} sampler uses a univariate normal
+proposal distribution, and can be used to sample scalar top-level
+parameters.  The \cd{RW\_PF\_block} sampler uses a multivariate normal
+proposal distribution and can be used to jointly sample vectors of
+top-level parameters.  The PMCMC samplers can be specified with a call
+to \cd{addSampler} with \cd{type = "RW\_PF"} or \cd{type =
+  "RW\_PF\_block"}, a syntax similar to the other MCMC samplers listed
+in Section \ref{sec:samplers-provided}.
 
-The \cd{RW\_PF} sampler and \cd{RW\_PF\_block} sampler can be customized using the \cd{control} list argument to set the type adaptive properties of the sampler and options for the particle filter algorithm to be used.  In addition, setting the \cd{pfOptimizeNparticles} \cd{control} list option to be \cd{TRUE} will use an experimental algorithm to estimate the optimal number of particles to use in the particle filter.   See \cd{help(samplers)} for details. The MCMC configuration for the \cd{timeModel} in the previous section will serve as an example for the use of our PMCMC sampler.  Here we use the identity matrix as our proposal covariance matrix.
+The \cd{RW\_PF} sampler and \cd{RW\_PF\_block} sampler can be
+customized using the \cd{control} list argument to set the adaptive
+properties of the sampler and options for the particle filter
+algorithm to be used.  In addition, providing
+\cd{pfOptimizeNparticles=TRUE} in the \cd{control} list will use an
+experimental algorithm to estimate the optimal number of particles to
+use in the particle filter.  See \cd{help(samplers)} for details. The
+MCMC configuration for the \cd{timeModel} in the previous section will
+serve as an example for the use of our PMCMC sampler.  Here we use the
+identity matrix as our proposal covariance matrix.
 
 <<pmcmc_Chunk, results = "hide">>=
 timeConf <- configureMCMC(rTimeModel)   # default MCMC configuration
@@ -171,20 +198,43 @@ timeConf$addSampler(target = c("a", "b", "c", "mu_0"), type = "RW_PF_block",
                                  latents = "x", pfOptimizeNparticles = TRUE))
 @
   
-The  \cd{type = "RW\_PF"} and \cd{type = "RW\_PF\_block"} samplers default to using a bootstrap filter to estimate the likelihood at each MCMC iteration.  However, more efficient results can often be obtained by using a custom filtering algorithm.  To enable use of customized filtering algorithms in NIMBLE's PMCMC, the \cd{pfType} control list argument allows for user specification of the type of particle filter to be used.  The \cd{pfType} argument can be set either to \cd{'bootstrap'} (the default), \cd{'auxiliary'}, or can be provided with a user created filtering algorithm object.  
+The  \cd{type = "RW\_PF"} and \cd{type = "RW\_PF\_block"} samplers
+default to using a bootstrap filter.  However, more efficient results
+can often be obtained by using a custom filtering algorithm.  Choice
+of filtering algorithm can be controlled by the \cd{pfType} control
+list entry.  The \cd{pfType} entry can be set either to
+\cd{'bootstrap'} (the default), \cd{'auxiliary'}, or the name of a
+user-defined nimbleFunction that returns a likelihood approximation.
 
-Any user defined filtering function that will be provided as the \cd{pfType} control list argument must satsify the following:
+Any user-defined filtering nimbleFunction named in the \cd{pfType}
+control list entry must satsify the following:
 
 \begin{enumerate}
-\item The function provided to \cd{pfType} must be the result of a call to \cd{nimbleFunction()}
-\item The \cd{nimbleFunction} provided to \cd{pfType} must have setup code that accepts the following (and only the following) arguments:
+\item The nimbleFunction must be the result of a call to
+  \cd{nimbleFunction()}.
+\item The \cd{nimbleFunction} must have setup code that accepts the
+  following (and only the following) arguments:
 \begin{itemize}
-\item \cd{model}, the nimble model object that the MCMC algorithm is defined on.
-\item \cd{latents}, a character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
-\item \cd{control}, an \cd{R} \cd{list} object.  Note that the \cd{control} list can be used to pass in any additional information or arguments that the custom filter may require. 
+\item \cd{model}, the nimble model object that the MCMC algorithm is
+  defined on.
+\item \cd{latents}, a character vector specifying the latent model
+  nodes over which the particle filter will stochastically integrate
+  over to estimate the log-likelihood function.
+\item \cd{control}, an \cd{R} \cd{list} object.  Note that the
+  \cd{control} list can be used to pass in any additional information
+  or arguments that the custom filter may require.
 \end{enumerate}
-\item The \cd{nimbleFunction} provided to \cd{pfType} must have a \cd{run} function that accepts a single integer arugment (the number of particles to use), and returns a scalar double (the log-likelihood estimate).
-\item The \cd{nimbleFunction} provided to \cd{pfType} must define, in setup code, a \cd{modelValues} object named \cd{mvEWSamples} that is used to contain equally weighted samples of the latent states (that is, the \cd{latents} argument to the setup function.)  Each time the \cd{run()} method of the \cd{nimbleFunction} is called  with number of particles \cd{m}, the \cd{mvEWSamples} \cd{modelValues} object should be resized to be of size \cd{m} via a call to \cd{resize(mvEWSamples, m)}.
+\item The \cd{nimbleFunction} must have a \cd{run} function that
+  accepts a single integer arugment (the number of particles to use),
+  and returns a scalar double (the log-likelihood estimate).
+\item The \cd{nimbleFunction} must define, in setup code, a
+  \cd{modelValues} object named \cd{mvEWSamples} that is used to
+  contain equally weighted samples of the latent states (that is, the
+  \cd{latents} argument to the setup function).  Each time the
+  \cd{run()} method of the \cd{nimbleFunction} is called with number
+  of particles \cd{m}, the \cd{mvEWSamples} \cd{modelValues} object
+  should be resized to be of size \cd{m} via a call to
+  \cd{resize(mvEWSamples, m)}.
 \end{enumerate}
 
 
