@@ -306,6 +306,14 @@ The CAR_proper sampler accepts the following control list elements:
 }
 }
 
+
+\section{CRP sampler}{
+
+
+The CRP sampler is designed for Bayesian non-parametric mixture modeling. It is uniquely asigned to nodes having the Chinese Restaurant Process (CRP) distribution, \code{dCRP}. 
+
+}
+
 \section{posterior_predictive sampler}{
 
 
