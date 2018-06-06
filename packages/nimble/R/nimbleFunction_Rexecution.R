@@ -711,7 +711,7 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
         else
             accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
     } else
-        if(inherits(to, "modelValuesBaseClass")) {
+        if(inherits(to, "modelValuesBaseClass") || inherits(to, "CmodelValues")) {
             if(is.null(nodesTo) ) 
                 accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
             else
