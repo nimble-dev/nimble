@@ -153,7 +153,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     processBoundsAndTruncation()      ## puts bound expressions into declInfo, including transforming T(ddist(),lower,upper); need to do this before expandDistributions(), which is not set up to handle T() wrapping; need to save bound info for later use in reparameterizeDists() -- hence temporarily stored in boundExprs (can't put in code because it would be stripped out in expandDistributions, though alternative is to modify expandDistributions to add lower,upper back into code)
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
     if(getNimbleOption('disallow_multivariate_argument_expressions'))
-       checkMultivarExpr()               ## checks that multivariate params are not expressions
+        checkMultivarExpr()               ## checks that multivariate params are not expressions
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName; also processes bound info to evaluate in context of model
     replaceAllConstants()
@@ -613,7 +613,7 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
         BUGSdecl <- declInfo[[i]]
 
         if(BUGSdecl$type != 'stoch') next
-        callName <- deparse(BUGSdecl$valueExpr[[1]])
+        callName <- BUGSdecl$distributionName ## replaces deparse(BUGSdecl$valueExpr[[1]])
         if(!(callName %in% c("T", "I"))) {
             truncated <- FALSE
             boundExprs <- getDistributionInfo(callName)$range
@@ -668,29 +668,49 @@ modelDefClass$methods(expandDistributions = function() {
 
 modelDefClass$methods(checkMultivarExpr = function() {
     checkForExpr <- function(expr) {
-        output <- FALSE
+        ##output <- FALSE
         if(length(expr) == 1 && class(expr) %in% c("name", "numeric")) return(FALSE)
-        if(!deparse(expr[[1]]) %in% c('[', ':')) return(TRUE)
-        for(i in 2:length(expr)) 
-            if(checkForExpr(expr[[i]])) output <- TRUE
-        return(output)
+        if(!deparse(expr[[1]]) == '[') return(TRUE)
+        ## recurse only on the first argument of the `[`
+        return(checkForExpr(expr[[2]]))
+        ## Previously we recursed more completely.  Now we stop because expressions
+        ## inside `[` are allowed.
+        ## if(!deparse(expr[[1]]) %in% c('[', ':')) return(TRUE)
+        ## for(i in 2:length(expr)) 
+        ##     if(checkForExpr(expr[[i]])) output <- TRUE
+        ## return(output)
     }
 
     for(i in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[i]]
         if(BUGSdecl$type != 'stoch') next
-        dist <- deparse(BUGSdecl$valueExpr[[1]])
-        types <- nimble:::distributionsInputList[[dist]]$types
+        ## dist <- deparse(BUGSdecl$valueExpr[[1]])
+        dist <- BUGSdecl$distributionName
+        ## The following line is a one-time insertion to break testing in any case
+        ## where the condition fails.
+        ## If the condition is always met, we can use BUGSdecl$distributionName in place of deparse(BUGSdecl$valueExpr[[1]])
+        ## if(dist != BUGSdecl$distributionName)
+        ##     stop(paste0("dist (", dist,") != BUGSdecl$distributionName (",BUGSdecl$distributionName,")"))
+        types <- nimble:::distributions[[dist]]$types
         if(is.null(types)) next
-        tmp <- strsplit(types, " = ")
-        nms <- sapply(tmp, `[[`, 1)
-        ## originally was only checking for expr in multivar dist:
+        ## tmp <- strsplit(types, " = ")
+        ## nms <- sapply(tmp, `[[`, 1)
+        # originally was only checking for expr in multivar dist:
         ## if('value' %in% nms) next
         ## distDim <- parse(text = tmp[[which(nms == 'value')]])[[2]][[2]]
         ## if(distDim < 1) next
-        for(k in 2:length(BUGSdecl$valueExpr))
-            if(checkForExpr(BUGSdecl$valueExpr[[k]]))
-                stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
+        if(length(BUGSdecl$valueExpr) > 1) {
+            for(k in 2:length(BUGSdecl$valueExpr)) {
+                paramName <- names(BUGSdecl$valueExpr)[k]
+                nDim <- types[[paramName]][['nDim']]
+                if(is.numeric(nDim))
+                    if(nDim == 0) next
+                if(checkForExpr(BUGSdecl$valueExpr[[k]])) {
+                    ## Draft gentler warning for possible future adoption: message("Warning about parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': This multivariate parameter is provided as an expression.  If this is a costly calculation, try making it a separate model declaration for it to improve efficiency.")
+                    stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
+                }
+            }
+        }
     }
 })
 
@@ -979,11 +999,15 @@ modelDefClass$methods(liftExpressionArgs = function() {
         
         if(BUGSdecl$type == 'stoch') {
             params <- as.list(valueExpr[-1])   ## extract the original distribution parameters
+            paramNames <- names(valueExpr)[-1]
+            types <- nimble:::distributions[[BUGSdecl$distributionName]]$types
+            ## types may be NULL if all are scalar
             
             for(iParam in seq_along(params)) {
                 if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower_', 'upper_'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
                 paramExpr <- params[[iParam]]
-                if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
+                paramName <- paramNames[iParam]
+                if(!isExprLiftable(paramExpr, types[[paramName]]))    next     ## if this param isn't an expression, go ahead to next parameter
                 requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
                 uniquePiece <- if(requireNewAndUniqueDecl) paste0("_L", BUGSdecl$sourceLineNumber) else ""
                 newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
@@ -1007,8 +1031,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
                     nextNewDeclInfoIndex <- nextNewDeclInfoIndex + 1     ## update for lifting other nodes, and re-adding BUGSdecl at the end
                 }
             }    # closes loop over params
-        }
-        
+        }        
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
         
@@ -1018,20 +1041,25 @@ modelDefClass$methods(liftExpressionArgs = function() {
     }    # closes loop over declInfo
     declInfo <<- newDeclInfo
 })
-isExprLiftable <- function(paramExpr) {
+isExprLiftable <- function(paramExpr, type = NULL) {
     ## determines whether a parameter expression is worthy of lifiting up to a new node
     if(is.name(paramExpr))       return(FALSE)
     if(is.numeric(paramExpr))    return(FALSE)
     if(is.call(paramExpr)) {
-        if(paramExpr[[1]] == 'chol')        return(TRUE)    ## do lift calls to chol(...)
-        if(paramExpr[[1]] == 'inverse')     return(TRUE)    ## do lift calls to inverse(...)
-        if(paramExpr[[1]] == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
-        if(paramExpr[[1]] == 'CAR_calcC')   return(TRUE)    ## do lift calls to CAR_calcC(...)
-        if(paramExpr[[1]] == 'CAR_calcM'  ) return(TRUE)    ## do lift calls to CAR_calcM(...)
-        if(paramExpr[[1]] == 'CAR_calcEVs2')return(TRUE)    ## do lift calls to CAR_calcEVs2(...)
-        if(paramExpr[[1]] == 'CAR_calcEVs3')return(TRUE)    ## do lift calls to CAR_calcEVs3(...)
-        if(length(paramExpr) == 1)          return(FALSE)   ## don't generally lift function calls:   fun(...) ## this comment seems incorrect
-        if(getCallText(paramExpr) == '[')   return(FALSE)   ## don't lift simply indexed expressions:  x[...]
+        callText <- getCallText(paramExpr)
+        if(callText == 'chol')         return(TRUE)    ## do lift calls to chol(...)
+        if(callText == 'inverse')      return(TRUE)    ## do lift calls to inverse(...)
+        if(callText == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
+        if(callText == 'CAR_calcC')    return(TRUE)    ## do lift calls to CAR_calcC(...)
+        if(callText == 'CAR_calcM'  )  return(TRUE)    ## do lift calls to CAR_calcM(...)
+        if(callText == 'CAR_calcEVs2') return(TRUE)    ## do lift calls to CAR_calcEVs2(...)
+        if(callText == 'CAR_calcEVs3') return(TRUE)    ## do lift calls to CAR_calcEVs3(...)
+        if(length(paramExpr) == 1)     return(FALSE)   ## don't lift function calls with no arguments
+        if(callText == '[')            return(FALSE)   ## don't lift simply indexed expressions:  x[...]
+        nDim <- type[['nDim']]
+        if(is.numeric(nDim))
+            if(nDim > 0)               return(FALSE)  ## beyond above cases, don't lift non-scalar arguments
+                                                       ## This case comes after '[' to avoid using '[' as regexp in grepl
         ## if(getCallText(paramExpr) == '[') { ## these lines are for future handling of foo()[]
         ##     if(is.name(paramExpr))          return(FALSE)   ## don't lift simply indexed expressions:  x[...]
         ##                                     return(TRUE)    ## do lift foo(x)[...]
