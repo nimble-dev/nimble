@@ -10,11 +10,9 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context('Testing sampler_DP_measure')
 
 ##-- test: checking that all the necessary variables are monitored in mv object
-test_that("required variables in (non compiled) mv object are monitored:", {
+test_that("testing that required variables in (non compiled) mv object are monitored:", {
   
-                                        # membership variable not being monitored:
-    ## Claudia, please take out the rm(list=ls()) commands everywhere
-  rm(list=ls())
+  # membership variable not being monitored:
   set.seed(1)
   code <- nimbleCode({
     xi[1:6] ~ dCRP(conc0, 6)
@@ -33,22 +31,15 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   mvSaved = mMCMC$mvSamples
   
   expect_error(nimble:::sampler_DP_measure(m, mvSaved) ,
-               'sampler_DP_density: The node having the dCRP distribution has to be monitored in the MCMC')
+               'sampler_DP_measure: The node having the dCRP distribution has to be monitored in the MCMC')
   
   mConf$addMonitors(c("xi"))
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
-  ## Claudia, in next line I think you want to check that the sampler_DP_measure now succeeds. For example:
-  ## expect_silent(sampler <- nimble:::sampler_DP_measure(m, mvSaved))
-  ## otherwise, you are just checking our MCMC system not the BNP functionality
-  expect_equal(sum(mvSaved$varNames == 'xi') == 1,
-               TRUE,
-               'membership variables not being monitored\n')
-  
+  expect_silent(sampler <- nimble:::sampler_DP_measure(m, mvSaved))
   
   # cluster variable not being monitored:
-  rm(list=ls())
   set.seed(1)
   code <- nimbleCode({
     xi[1:6] ~ dCRP(1, 6)
@@ -68,22 +59,18 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   mvSaved = mMCMC$mvSamples
   
   expect_error(nimble:::sampler_DP_measure(m, mvSaved) ,
-               'sampler_DP_density: The node') # if add (s) the messages do not match
+               'sampler_DP_measure: The node') # if add (s) the messages do not match
   
   mConf$addMonitors(c("mu"))
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
-  ## Claudia same comment as in line 41
-  expect_equal(sum(mvSaved$varNames == 'mu') == 1,
-               TRUE,
-               'cluster variables not being monitored\n')
+  expect_silent(sampler <- nimble:::sampler_DP_measure(m, mvSaved))
 
   
   # concentration parameter not being monitored:
   ## warning messages are printed when the monitors are added. Any idea?
   ## Claudia, it's ok to have the warning
-  rm(list=ls())
   set.seed(1)
   code <- nimbleCode({
     xi[1:6] ~ dCRP(conc0, 6)
@@ -105,16 +92,13 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   mvSaved = mMCMC$mvSamples
   
   expect_error(nimble:::sampler_DP_measure(m, mvSaved) ,
-               'sampler_DP_density: Any variable involved in the concentration parameter must be monitored in the MCMC.')
+               'sampler_DP_measure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.')
   
   mConf$addMonitors(c("conc0"))
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10) 
   mvSaved = mMCMC$mvSamples
-  ## Claudia, see line 41
-  expect_equal(sum(mvSaved$varNames == 'conc0') == 1,
-               TRUE,
-               'concentration parameter not being monitored\n')
+  expect_silent(sampler <- nimble:::sampler_DP_measure(m, mvSaved))
  
 })
 
@@ -144,7 +128,7 @@ test_that("the mv object is uncompiled :", {
   CmvSaved  <- CmMCMC$mvSamples
   
   expect_error(nimble:::sampler_DP_measure(m, CmvSaved) ,
-               'sampler_DP_density: modelValues object has to be an uncompiled object.')
+               'sampler_DP_measure: modelValues object has to be an uncompiled object.')
   
 })
 
@@ -453,7 +437,6 @@ test_that("sampler_DP_measure can be used for more complicated models  :", {
   
   
 })
-
 
 
 
@@ -992,7 +975,7 @@ test_that("dCRP nimble function calculates density correctly: ",{
   cdCRP <- compileNimble(dCRP)
   
   expect_equal(cdCRP(x, conc, size=length(x)), (truth), 
-               info = paste0("incorrect dCRP value in compiled nimble function")))
+               info = paste0("incorrect dCRP value in compiled nimble function"))
   
   expect_equal(cdCRP(x, conc, size=length(x), log=TRUE), (ltruth), 
              info = paste0("incorrect dCRP value in compiled nimble function  in log scale"))
