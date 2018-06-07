@@ -37,7 +37,7 @@ get_DP_measure_samples <- nimbleFunction(
       stop('get_DP_measure_samples: Currently only models with one node with a dCRP distribution are allowed.\n')
     }
     if( sum(dcrpVar == mvSavedVars) == 0 ){
-      stop(paste('get_DP_measure_samples: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n'))
+      stop( 'get_DP_measure_samples: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
     }
     
     
@@ -127,13 +127,25 @@ get_DP_measure_samples <- nimbleFunction(
       modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
       nimbleOptions(verbose = verbosity)
       
+      allNodes <- modelWithNAs$getNodeNames(includeData = FALSE)
+      nimCopy(model, modelWithNAs)
+      ## next bit is in case model contains some NAs and therefore modelWithNAs has some NAs - we try to initialize these from the prior (since even if they are currently NA in the model, they should be not NA in any MCMC output
+      my_initializeModel <- initializeModel(modelWithNAs)
+      my_initializeModel$run() 
+      ## now make sure only savedParentNodes have non-NAs
+      savedParentNodesValues <- values(modelWithNAs, savedParentNodes)
+      values(modelWithNAs, allNodes) <- NA
+      values(modelWithNAs, savedParentNodes) <- savedParentNodesValues  # at this point modelWithNAs should be in a state similar to as if mvSaved had been used to set its values but without having to have run the MCMC
+      
       modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] 
       ## copy savedParentNodes from mvSaved
-      nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model?, we want to check that mvSaved has all we need to get conc, right? 
+      #nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model?, we want to check that mvSaved has all we need to get conc, right? 
+    
       if( length(savedParentNodes) == 0 ) { 
-        stop( paste('get_DP_measure_samples: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') )
+        stop( 'get_DP_measure_samples: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
       } else {
         modelWithNAs$calculate(model$getDependencies(savedParentNodes)) 
+        # Error in if (counts > 0) { : missing value where TRUE/FALSE needed
         dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
         if( is.na(dcrpParam) ) {
           stop('get_DP_measure_samples: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n')
