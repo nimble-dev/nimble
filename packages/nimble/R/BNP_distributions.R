@@ -109,7 +109,6 @@ dCRP=nimbleFunction(
     {
         returnType(double(0))
         n <- length(x)  
-        dens <- nimNumeric(n) 
     
         if(n != size) {
             stop("dCRP: length of x has to be equal to size.\n")
@@ -120,21 +119,20 @@ dCRP=nimbleFunction(
             return(NaN)
         }
         
-        dens[1] <- 1
+        ldens <- 0 # log scale
         if(n > 1) {
             for(i in 2:n) {
                 counts <- sum(x[i] == x[1:(i-1)])
                 if( counts > 0 ) {
-                    dens[i] <- counts / (i-1+conc)
+                    ldens <- ldens + log(counts / (i-1+conc))
                 } else {
-                dens[i] <- conc / (i-1+conc)
+                  ldens <- ldens + log(conc / (i-1+conc))
                 }
             }
         }
         
-        logProb <- sum(log(dens))
-        if(log) return(logProb)
-        else return(exp(logProb)) 
+        if(log) return(ldens)
+        else return(exp(ldens)) 
     }
 )
 
