@@ -99,13 +99,14 @@ sampler_DP_measure <- nimbleFunction(
     
     ## Get all parents of xi, including deterministic cases such as theta[i] <- thetatilde[xi[i]]:
     parentNodes <- NULL
-    for(i in seq_along(stochNodes)){
-      aux <- model$getDependencies(stochNodes[i], includeData = FALSE, stochOnly = TRUE)  
+    nodesToCheck <- stochNodes[!stochNodes %in% c(dataNodes, dcrpNode)]  
+    for(i in seq_along(nodesToCheck)){
+      aux <- model$getDependencies(nodesToCheck[i], includeData = FALSE, stochOnly = TRUE)  
       if(sum(aux == dcrpNode)) 
         parentNodes <- c(parentNodes, aux[aux != dcrpNode])
     }
     
-    if( !is.null(parentNodes) ) { # concentration parameter is random
+    if(length(parentNodes)) { # concentration parameter is random
       ## Check that values stored in mvSaved are sufficient to calculate dcrp concentration.
       ## Do this by creating a model containing all NAs and then copying values from the mvSaved
       ## and then checking getParam gives a non-NA.
