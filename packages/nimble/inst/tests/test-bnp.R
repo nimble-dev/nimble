@@ -6,8 +6,8 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 
-## Test sampler_DP_measure:
-context('Testing sampler_DP_measure')
+## Test get_DP_measure_samples:
+context('Testing get_DP_measure_samples')
 
 ##-- test: checking that all the necessary variables are monitored in mv object
 test_that("testing that required variables in (non compiled) mv object are monitored:", {
@@ -30,14 +30,14 @@ test_that("testing that required variables in (non compiled) mv object are monit
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
   
-  expect_error(nimble:::sampler_DP_measure(m, mvSaved) ,
-               'sampler_DP_measure: The node having the dCRP distribution has to be monitored in the MCMC')
+  expect_error(nimble:::get_DP_measure_samples(m, mvSaved) ,
+               'get_DP_measure_samples: The node having the dCRP distribution has to be monitored in the MCMC')
   
   mConf$addMonitors(c("xi"))
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
-  expect_silent(sampler <- nimble:::sampler_DP_measure(m, mvSaved))
+  expect_silent(sampler <- nimble:::get_DP_measure_samples(m, mvSaved))
   
   # cluster variable not being monitored:
   set.seed(1)
@@ -58,14 +58,14 @@ test_that("testing that required variables in (non compiled) mv object are monit
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
   
-  expect_error(nimble:::sampler_DP_measure(m, mvSaved) ,
-               'sampler_DP_measure: The node') # if add (s) the messages do not match
+  expect_error(nimble:::get_DP_measure_samples(m, mvSaved) ,
+               'get_DP_measure_samples: The node') # if add (s) the messages do not match
   
   mConf$addMonitors(c("mu"))
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
-  expect_silent(sampler <- nimble:::sampler_DP_measure(m, mvSaved))
+  expect_silent(sampler <- nimble:::get_DP_measure_samples(m, mvSaved))
 
   
   # concentration parameter not being monitored:
@@ -91,14 +91,14 @@ test_that("testing that required variables in (non compiled) mv object are monit
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
   
-  expect_error(nimble:::sampler_DP_measure(m, mvSaved) ,
-               'sampler_DP_measure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.')
+  expect_error(nimble:::get_DP_measure_samples(m, mvSaved) ,
+               'get_DP_measure_samples: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.')
   
   mConf$addMonitors(c("conc0"))
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10) 
   mvSaved = mMCMC$mvSamples
-  expect_silent(sampler <- nimble:::sampler_DP_measure(m, mvSaved))
+  expect_silent(sampler <- nimble:::get_DP_measure_samples(m, mvSaved))
  
 })
 
@@ -127,13 +127,13 @@ test_that("the mv object is uncompiled :", {
   CmMCMC$run(10)
   CmvSaved  <- CmMCMC$mvSamples
   
-  expect_error(nimble:::sampler_DP_measure(m, CmvSaved) ,
-               'sampler_DP_measure: modelValues object has to be an uncompiled object.')
+  expect_error(nimble:::get_DP_measure_samples(m, CmvSaved) ,
+               'get_DP_measure_samples: modelValues object has to be an uncompiled object.')
   
 })
 
 
-test_that("sampler_DP_measure can be used for more complicated models  :", {
+test_that("get_DP_measure_samples can be used for more complicated models  :", {
   
   # no deterministic node, conc param is fixed
   rm(list=ls())
@@ -157,7 +157,7 @@ test_that("sampler_DP_measure can be used for more complicated models  :", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  rdens = nimble:::get_DP_measure_samples(m, mMCMC$mvSamples)
   cdens = compileNimble(rdens, project = m)
   cdens$run()
   samplesG = as.matrix(cdens$samples)
@@ -185,7 +185,7 @@ test_that("sampler_DP_measure can be used for more complicated models  :", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  rdens = nimble:::get_DP_measure_samples(m, mMCMC$mvSamples)
   cdens = compileNimble(rdens, project = m)
   cdens$run()
   samplesG = as.matrix(cdens$samples)
@@ -214,7 +214,7 @@ test_that("sampler_DP_measure can be used for more complicated models  :", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  rdens = nimble:::get_DP_measure_samples(m, mMCMC$mvSamples)
   cdens = compileNimble(rdens, project = m)
   cdens$run()
   samplesG = as.matrix(cdens$samples)
@@ -244,7 +244,7 @@ test_that("sampler_DP_measure can be used for more complicated models  :", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  rdens = nimble:::get_DP_measure_samples(m, mMCMC$mvSamples)
   cdens = compileNimble(rdens, project = m)
   cdens$run()
   samplesG = as.matrix(cdens$samples)
@@ -277,7 +277,7 @@ test_that("sampler_DP_measure can be used for more complicated models  :", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  rdens = nimble:::get_DP_measure_samples(m, mMCMC$mvSamples)
   cdens = compileNimble(rdens, project = m)
   cdens$run()
   samplesG = as.matrix(cdens$samples)
@@ -312,7 +312,7 @@ test_that("sampler_DP_measure can be used for more complicated models  :", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  rdens = nimble:::get_DP_measure_samples(m, mMCMC$mvSamples)
   cdens = compileNimble(rdens, project = m)
   cdens$run()
   samplesG = as.matrix(cdens$samples)
@@ -349,7 +349,7 @@ test_that("sampler_DP_measure can be used for more complicated models  :", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  rdens = nimble:::get_DP_measure_samples(m, mMCMC$mvSamples)
   cdens = compileNimble(rdens, project = m)
   cdens$run()
   samplesG = as.matrix(cdens$samples)
@@ -388,7 +388,7 @@ test_that("sampler_DP_measure can be used for more complicated models  :", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  rdens = nimble:::get_DP_measure_samples(m, mMCMC$mvSamples)
   cdens = compileNimble(rdens, project = m)
   cdens$run()
   samplesG = as.matrix(cdens$samples)
@@ -430,7 +430,7 @@ test_that("sampler_DP_measure can be used for more complicated models  :", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = nimble:::sampler_DP_measure(m, mMCMC$mvSamples)
+  rdens = nimble:::get_DP_measure_samples(m, mMCMC$mvSamples)
   cdens = compileNimble(rdens, project = m)
   cdens$run()
   samplesG = as.matrix(cdens$samples)
