@@ -63,11 +63,11 @@ NULL
 #' @rdname ChineseRestaurantProcess
 #' @export
 rCRP <- nimbleFunction(
-    run = function(n = integer(0), 
+    run = function(n = double(0), 
                    conc = double(0, default=1),
                    size = integer(0))
     {
-        returnType(integer(1))
+        returnType(double(1))
         
         if(n != 1) {
             stop("rCRP only handles n = 1 at the moment.\n")
@@ -78,7 +78,7 @@ rCRP <- nimbleFunction(
         #    return(rep(NaN, size))
         #}
 
-        x <- nimInteger(size) 
+        x <- nimNumeric(size) 
         x[1] <- 1
         if(size > 1) {
             numComponents <- 1
@@ -102,7 +102,7 @@ rCRP <- nimbleFunction(
 #' @rdname ChineseRestaurantProcess
 #' @export
 dCRP=nimbleFunction(
-    run=function(x = integer(1), 
+    run=function(x = double(1), 
                conc = double(0, default=1),
                size = integer(0),
                log = integer(0, default=0))
