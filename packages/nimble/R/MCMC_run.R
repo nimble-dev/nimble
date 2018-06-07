@@ -88,7 +88,6 @@ runMCMC <- function(mcmc,
                     nchains = 1,
                     inits,
                     ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
-                    ###' @param samplerExecutionOrder  Numeric vector specifying the order of execution of the sampler functions (as were defined in the MCMC configuration object).  This allows sampler functions to execute multiple times on each MCMC iteration, be interleaved with other sampler functions, or omitted entirely.  If provided, this argument will override the default sampler execution ordering that was specified in the MCMC configuration.
                     ##samplerExecutionOrder,
                     setSeed = FALSE,
                     progressBar = TRUE,

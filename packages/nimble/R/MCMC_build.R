@@ -35,7 +35,7 @@
 #'
 #' The compiled function will function identically to the uncompiled object, except acting on the compiled model object.
 #'
-#' @section Calculating WAIC
+#' @section Calculating WAIC:
 #' 
 #' After the MCMC has been run, calling the \code{calculateWAIC()} method of the MCMC object will return the WAIC for the model, calculated using the posterior samples from the MCMC run.
 #' 
@@ -145,7 +145,6 @@ buildMCMC <- nimbleFunction(
         time                  = logical(default = FALSE),
         progressBar           = logical(default = TRUE),
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
-        ###' \code{samplerExecutionOrder}: Numeric vector specifying the order of execution of the sampler functions (as were defined in the MCMC configuration object).  This allows sampler functions to execute multiple times on each MCMC iteration, be interleaved with other sampler functions, or omitted entirely.  If provided, this argument will override the default sampler execution ordering that was specified in the MCMC configuration.  However, supplying this argument will not overwrite the default ordering from the configuration; subsequent runs of the MCMC will revert back to using that ordering from the configuration, if this runtime argument is omitted.  Different runs of the same MCMC may specify different orderings for sampler execution, if desired.  Note that unlike in the MCMC configuration, no checking of the vailidity of this sampler execution ordering argument is carried out, so supplying invalid values (for example, -7, or 3.5) will most likely result in a horrible crash.
         ##samplerExecutionOrder = integer(1, default = -1)
         thin                  = integer(default = -1),
         thin2                 = integer(default = -1)) {
