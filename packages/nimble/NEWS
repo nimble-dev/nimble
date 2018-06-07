@@ -1,4 +1,4 @@
-                            CHANGES IN VERSION 0.6-11 (May 2018)
+                            CHANGES IN VERSION 0.6-11 (June 2018)
 
 USER LEVEL CHANGES
 
@@ -8,9 +8,44 @@ USER LEVEL CHANGES
 
 -- Increased functionality for the setSeed argument in nimbleMCMC and runMCMC functions.
 
--- New functionality in MCMC, to specify the order in which sampler functions are executed.  This can allow for samplers being repeatedly executed, interleaved, or omitted.  This ordering can be specified as part of the MCMC configuration, or at MCMC runtime.
+-- New functionality in MCMC, to specify the order in which sampler functions are executed.  This can allow for samplers being repeatedly executed, interleaved, or omitted.  This ordering is specified as part of the MCMC configuration.
 
 -- Invalid dynamic indexes are reported and now result in NaN values when calling calculate or simulate but no longer cause execution to error out. This allows MCMC sampling to continue when an invalid index is proposed and rejected.
+
+-- We now fully initialize the model between MCMC runs in MCMCsuite().
+
+
+BUG FIXES
+
+-- Slice, AFSS, and ESS samplers now have a maximum number of contractions to avoid infinite loops under unusual circumstances.
+
+-- Fixed error in generating getParam nodeFunctions with user-supplied distributions using integer types.
+
+-- We no longer error out when seeing expressions inside brackets in multivariate distribution arguments. This allows, e.g., state space models with multivariate states.
+
+-- Fixed a bug involving getDependencies with downstream = TRUE.
+
+-- Fixed bug with using setSize in uncompiled nimbleFunction.
+
+-- Fixed bug in AF_slice sampler causing incorrect dependency updating that affected state space type models with intermediate deterministic nodes.
+
+-- Fixed issues with setInits in complicated cases.
+
+DEVELOPER LEVEL CHANGES
+
+-- Updated some testing to function better with version 2.0.0 of testthat.
+
+-- Now allow "to" to be a CmodelValues in R version of nimCopy.
+
+-- Added better error trapping when array indexed without initialization in a nimbleFunction.
+
+-- Fixed infinite recursion issue.
+
+-- Better error message when invalid parameter name supplied to getParam.
+
+-- Now check there is a return when returnType is provided.
+
+-- Improved error trapping with invalid indexing in BUGS models.
 
                            CHANGES IN VERSION 0.6-10 (March 2018)
 
