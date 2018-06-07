@@ -101,7 +101,7 @@ sampler_DP_measure <- nimbleFunction(
     parentNodes <- NULL
     nodesToCheck <- stochNodes[!stochNodes %in% c(dataNodes, dcrpNode)]  
     for(i in seq_along(nodesToCheck)){
-      aux <- model$getDependencies(nodesToCheck[i], includeData = FALSE, stochOnly = TRUE, downstream = TRUE)  
+      aux <- model$getDependencies(nodesToCheck[i], includeData = FALSE, stochOnly = TRUE)  
       if(sum(aux == dcrpNode)) 
         parentNodes <- c(parentNodes, aux[aux != dcrpNode])
     }
