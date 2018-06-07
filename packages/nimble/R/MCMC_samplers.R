@@ -437,6 +437,11 @@ sampler_slice <- nimbleFunction(
         adaptInterval <- if(!is.null(control$adaptInterval)) control$adaptInterval else 200
         width         <- if(!is.null(control$sliceWidth))    control$sliceWidth    else 1
         maxSteps      <- if(!is.null(control$sliceMaxSteps)) control$sliceMaxSteps else 100
+        maxContractions        <- if(!is.null(control$maxContractions))
+                                      control$maxContractions else 1000
+        maxContractionsWarning <- if(!is.null(control$maxContractionsWarning))
+                                      control$maxContractionsWarning else TRUE
+        eps <- 1e-15
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -471,15 +476,26 @@ sampler_slice <- nimbleFunction(
         }
         x1 <- L + runif(1, 0, 1) * (R - L)
         lp <- setAndCalculateTarget(x1)
-        while(is.nan(lp) | lp < u) {   # must be is.nan()
+        numContractions <- 0
+        while((is.nan(lp) | lp < u) & (R-L)/(abs(R)+abs(L)+eps) > eps & numContractions < maxContractions) {   # must be is.nan()
+            ## The checks for R-L small and max number of contractions are for cases where model is in
+            ## invalid state and lp calculations are NA/NaN or where R and L contract to each other
+            ## division by R+L+eps ensures we check relative difference and that contracting to zero is ok
             if(x1 < x0) { L <- x1
                       } else      { R <- x1 }
             x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
             lp <- setAndCalculateTarget(x1)
+            numContractions <- numContractions + 1
         }
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        jumpDist <- abs(x1 - x0)
-        if(adaptive)     adaptiveProcedure(jumpDist)
+        if((R-L)/(abs(R)+abs(L)+eps) <= eps | numContractions == maxContractions) {
+            if(maxContractionsWarning)
+                cat("Warning: slice sampler reached maximum number of contractions.\n")
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        } else {
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+            jumpDist <- abs(x1 - x0)
+            if(adaptive)     adaptiveProcedure(jumpDist)
+        }
     },
     methods = list(
         setAndCalculateTarget = function(value = double()) {
@@ -525,6 +541,12 @@ sampler_ess <- nimbleFunction(
     name = 'sampler_ess',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        maxContractions        <- if(!is.null(control$maxContractions))
+                                      control$maxContractions else 1000
+        maxContractionsWarning <- if(!is.null(control$maxContractionsWarning))
+                                      control$maxContractionsWarning else TRUE
+        eps <- 1e-15
         ## node list generation
         target <- model$expandNodeNames(target)
         calcNodes <- model$getDependencies(target, self = FALSE)
@@ -548,13 +570,23 @@ sampler_ess <- nimbleFunction(
         theta_max <- theta
         model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
         lp <- calculate(model, calcNodes)
-        while(is.nan(lp) | lp < u) {   # must be is.nan()
+        numContractions <- 0
+        while((is.nan(lp) | lp < u) & theta_max - theta_min > eps & numContractions < maxContractions) {   # must be is.nan()
+            ## The checks for theta_max - theta_min small and max number of contractions are
+            ## for cases where model is in invalid state and lp calculations are NA/NaN or where
+            ## theta interval contracts to zero
             if(theta < 0)   theta_min <- theta   else   theta_max <- theta
             theta <- runif(1, theta_min, theta_max)
             model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
             lp <- calculate(model, calcNodes)
+            numContractions <- numContractions + 1
         }
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(theta_max - theta_min <= eps | numContractions == maxContractions) {
+            if(maxContractionsWarning)
+                cat("Warning: elliptical slice sampler reached maximum number of contractions.\n")
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        } else
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
     methods = list(
         reset = function() { }
@@ -580,6 +612,10 @@ sampler_AF_slice <- nimbleFunction(
         adaptFactorInterval <- if(!is.null(control$sliceAdaptFactorInterval)) control$sliceAdaptFactorInterval else 1000
         adaptWidthMaxIter   <- if(!is.null(control$sliceAdaptWidthMaxIter))   control$sliceAdaptWidthMaxIter   else 512
         adaptWidthTolerance <- if(!is.null(control$sliceAdaptWidthTolerance)) control$sliceAdaptWidthTolerance else 0.1
+        maxContractions     <- if(!is.null(control$maxContractions))          control$maxContractions else 1000
+        maxContractionsWarning <- if(!is.null(control$maxContractionsWarning))
+                                      control$maxContractionsWarning else TRUE
+        eps <- 1e-15
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes      <- model$getDependencies(target)
@@ -609,6 +645,7 @@ sampler_AF_slice <- nimbleFunction(
         if(length(widthVec) != d)          stop('sliceWidths must have length = ', d)
     },
     run = function() {
+        maxContractionsReached <- FALSE
         for(i in 1:d) {
             eigenVec <- gammaMatrix[, i]
             width <- widthVec[i]
@@ -639,16 +676,28 @@ sampler_AF_slice <- nimbleFunction(
             prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
             x1 <- x0 + prop * eigenVec
             lp <- setAndCalculateTarget(x1)
-            while(is.nan(lp) | lp < u) {   # must be is.nan()
+            numContractions <- 0
+            while((is.nan(lp) | lp < u) & Rbound - Lbound > eps & numContractions < maxContractions) {   # must be is.nan()
+                ## The checks for Rbound - Lbound small and max number of contractions are
+                ## for cases where model is in invalid state and lp calculations are NA/NaN or where
+                ## interval contracts to zero
                 if(prop < 0) { Lbound <- prop }
                 else         { Rbound <- prop }
                 nContracts[i] <<- nContracts[i] + 1
                 prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
                 x1 <- x0 + prop * eigenVec
                 lp <- setAndCalculateTarget(x1)
+                numContractions <- numContractions + 1
             }
+            if(Rbound - Lbound <= eps | numContractions == maxContractions)
+                maxContractionsReached <- TRUE
         }
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(maxContractionsReached) {
+            if(maxContractionsWarning)
+                cat("Warning: AF slice sampler reached maximum number of contractions in at least one dimension.\n")
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        } else
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         if(allWidthsAdapted == 0)   adaptWidths()
         if(adaptFactorMaxIter > 0)  adaptFactors()
     },
@@ -1826,13 +1875,19 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' \item sliceWidth. The initial value of the width of each slice, and also the width of the expansion during the iterative 'stepping out' procedure. (default = 1)
 #' \item sliceMaxSteps. The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
+#' \item maxContractions. The maximum number of contractions of the interval that may occur during sampling (this prevents infinite looping in unusual situations). (default = 100)
+#' \item maxContractionsWarning. A logical argument specifying whether to warn when the maximum number of contractions is reached. (default = TRUE)
 #' }
 #'
 #' @section ess sampler:
 #'
 #' The ess sampler performs elliptical slice sampling of a single node, which must follow a multivariate normal distribution (Murray, 2010).  The algorithm is an extension of slice sampling (Neal, 2003), generalized to the multivariate normal context.  An auxilliary variable is used to identify points on an ellipse (which passes through the current node value) as candidate samples, which are accepted contingent upon a likelihood evaluation at that point.  This algorithm requires no tuning parameters and therefore no period of adaptation, and may result in very efficient sampling from multivariate Gaussian distributions.
 #'
-#' The ess sampler accepts no control list arguments.
+#' The ess sampler accepts the following control list arguments.
+#' \itemize{
+#' \item maxContractions. The maximum number of contractions of the interval that may occur during sampling (this prevents infinite looping in unusual situations). (default = 100)
+#' \item maxContractionsWarning. A logical argument specifying whether to warn when the maximum number of contractions is reached. (default = TRUE)
+#' }
 #' 
 #' @section AF_slice sampler:
 #' 
@@ -1846,6 +1901,8 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item sliceAdaptWidthMaxIter.  The maximum number of iterations for which to adapt the widths for a given set of factors. (default = 512)
 #' \item sliceAdaptWidthTolerance. The tolerance for when widths no longer need to adapt, between 0 and 0.5. (default = 0.1)
 #' \item sliceMaxSteps.  The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
+#' \item maxContractions. The maximum number of contractions of the interval that may occur during sampling (this prevents infinite looping in unusual situations). (default = 100)
+#' \item maxContractionsWarning. A logical argument specifying whether to warn when the maximum number of contractions is reached. (default = TRUE)
 #' }
 #'
 #' @section crossLevel sampler:
