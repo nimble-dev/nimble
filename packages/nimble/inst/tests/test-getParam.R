@@ -131,6 +131,7 @@ test_that('getParam, three-dimensional', {
     rnf <- mynf(m, 'y', 'theta')
     expect_identical(rnf$run(), NULL, 'getParam_3D in uncompiled nf')
     expect_error(cnf <- compileNimble(rnf, project = m), 'Failed to create the shared library')
+    deregisterDistributions('dtest')  ## so can use it again in next test
 })
 
 test_that("Testing invalid parameter name in getParam", {
@@ -152,3 +153,31 @@ test_that("Testing invalid parameter name in getParam", {
     cm <- compileNimble(m)
     expect_error(cnf <- compileNimble(rnf, project = m), "parameter 'mu' not found")
 })
+
+test_that('getParam, user-defined integer-valued', {
+    dtest <- nimbleFunction(
+        run = function(x = integer(0), thetaInt = integer(0), thetaDbl = double(0), log = integer(0, default = 0)) {
+            returnType(double(0))
+            return(0)
+        })
+    rtest <- nimbleFunction(
+        run = function(n = integer(0), thetaInt = integer(0), thetaDbl = double(0)) {
+            returnType(double(0))
+            return(0)
+        })
+    temporarilyAssignInGlobalEnv(dtest)
+    temporarilyAssignInGlobalEnv(rtest)
+
+    code <- nimbleCode({
+        y ~ dtest(1, 1.3)
+    })
+    m <- nimbleModel(code, data = list(y = 0))
+    cm <- compileNimble(m)
+    expect_identical(cm$getParam('y','value'), m$getParam('y', 'value'), 'issue with getParam with value')
+    expect_identical(cm$getParam('y','value'), 0, 'issue with getParam with value')
+    expect_identical(cm$getParam('y','thetaInt'), m$getParam('y', 'thetaInt'), 'issue with getParam with integer parameter')
+    expect_identical(cm$getParam('y','thetaInt'), 1, 'issue with getParam with integer parameter')
+})
+
+options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)

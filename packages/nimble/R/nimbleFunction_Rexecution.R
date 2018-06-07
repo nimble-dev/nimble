@@ -175,7 +175,10 @@ makeParamInfo <- function(model, nodes, param) {
    ## paramIDvec <- sapply(distNames, getParamID, param)
    ## typeVec <- sapply(distNames, getType, param)
    ## nDimVec <- sapply(distNames, getDimension, param)
-    if(length(unique(typeVec)) != 1 || length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.') 
+    if(length(unique(typeVec)) != 1 || length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.')
+
+    ## on C++ side, we always work with double
+    if(typeVec[1] %in% c('integer', 'logical')) typeVec[1] <- 'double'
     ans <- c(list(paramID = paramIDvec), type = typeVec[1], nDim = nDimVec[1])
     class(ans) <- 'getParam_info'
     ans
@@ -267,7 +270,9 @@ makeBoundInfo <- function(model, nodes, bound) {
     if(length(nodes) > 1) stop("'getBound' only set up to work with a single node'") # I think this is consistent with current getParam behavior
     distInfo <- getDistributionList(model$getDistribution(nodes))
     boundIDvec <- c('lower'=1,'upper'=2)[bound]
-    typeVec <- unlist(lapply(distInfo, function(x) x$types[['value']]$type)) # should always be 'double'
+    typeVec <- unlist(lapply(distInfo, function(x) x$types[['value']]$type)) 
+    ## on C++ side, we always work with double
+    if(typeVec[1] %in% c('integer', 'logical')) typeVec[1] <- 'double'
     
     # at moment have bound be scalar regardless of dimension of parameter, as assumed to be same value for all elements of a multivariate distribution; we are not fully handling truncation/bounds for multivariate nodes anyway:
     nDimVec <- 0  # unlist(lapply(distInfo, function(x) x$types[['value']]$nDim))
