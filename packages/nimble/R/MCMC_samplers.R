@@ -438,7 +438,7 @@ sampler_slice <- nimbleFunction(
         width         <- if(!is.null(control$sliceWidth))    control$sliceWidth    else 1
         maxSteps      <- if(!is.null(control$sliceMaxSteps)) control$sliceMaxSteps else 100
         maxContractions        <- if(!is.null(control$maxContractions))
-                                      control$maxContractions else 100
+                                      control$maxContractions else 1000
         maxContractionsWarning <- if(!is.null(control$maxContractionsWarning))
                                       control$maxContractionsWarning else TRUE
         eps <- 1e-15
@@ -543,7 +543,7 @@ sampler_ess <- nimbleFunction(
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
         maxContractions        <- if(!is.null(control$maxContractions))
-                                      control$maxContractions else 100
+                                      control$maxContractions else 1000
         maxContractionsWarning <- if(!is.null(control$maxContractionsWarning))
                                       control$maxContractionsWarning else TRUE
         eps <- 1e-15
@@ -612,7 +612,7 @@ sampler_AF_slice <- nimbleFunction(
         adaptFactorInterval <- if(!is.null(control$sliceAdaptFactorInterval)) control$sliceAdaptFactorInterval else 1000
         adaptWidthMaxIter   <- if(!is.null(control$sliceAdaptWidthMaxIter))   control$sliceAdaptWidthMaxIter   else 512
         adaptWidthTolerance <- if(!is.null(control$sliceAdaptWidthTolerance)) control$sliceAdaptWidthTolerance else 0.1
-        maxContractions     <- if(!is.null(control$maxContractions))          control$maxContractions else 100
+        maxContractions     <- if(!is.null(control$maxContractions))          control$maxContractions else 1000
         maxContractionsWarning <- if(!is.null(control$maxContractionsWarning))
                                       control$maxContractionsWarning else TRUE
         eps <- 1e-15
