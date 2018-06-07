@@ -28,7 +28,6 @@ nimbleOptions(MCMCprogressBar = FALSE)
 
 ans1 <- sapply(testsDynIndex, test_dynamic_indexing_model)
 ans2 <- sapply(testsInvalidDynIndex, test_dynamic_indexing_model)
-ans3 <- sapply(testsInvalidDynIndexValue, test_dynamic_indexing_model)
 
 ## check conjugacy detection
 
@@ -288,6 +287,22 @@ test_that("Testing initialization of uninitialized dynamic indexes", {
     
 ## MCMC testing
 
+test_that("MCMC with invalid indexes produce warning, but runs", {
+    code <- nimbleCode({
+        y ~ dnorm(x[k-1], 1)
+        k ~ dcat(p[1:3])
+    })
+    m <- nimbleModel(code, data = list(y = 0), inits = list(k = 2, x = c(0,1), p = rep(1/3,3)))
+    cm <- compileNimble(m)
+    mcmc = buildMCMC(m)
+    cmcmc = compileNimble(mcmc ,project=m)
+    set.seed(1)
+    expect_output(cmcmc$run(10000), "dynamic index out of bounds")
+    out <- as.matrix(cmcmc$mvSamples)
+    expect_equal(sum(out == 2) / sum(out == 3), dnorm(0)/dnorm(1), tolerance = .02)
+})
+
+
 models <- c('hearts')
 
 ### test BUGS examples - models and MCMC
@@ -482,6 +497,8 @@ test_that('basic multivariate mixture model with conjugacy', {
                                          "myvars[2]" = .1)), avoidNestedTest = TRUE)
 })
 }
+
+
 
 sink(NULL)
 

@@ -1177,8 +1177,16 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                              parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix)
                                              parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, BUGSdecl$unrolledIndicesMatrix,
                                                                                                allSizeAndDimList = parentsSizeAndDims)
-                                           }
-                                           else parentsSizeAndDims <- list()
+                                           } else parentsSizeAndDims <- list()
+
+                                           if(nimbleOptions()$allowDynamicIndexing) {  ## need dim for node for generating NaN with invalid dynamic indexes
+                                               nodeSizeAndDims <- nimble:::makeSizeAndDimList(LHS, deparse(BUGSdecl$targetVarExpr),
+                                                                                              BUGSdecl$unrolledIndicesMatrix)
+                                               nodeDim <- nodeSizeAndDims[[deparse(BUGSdecl$targetVarExpr)]][[1]]$lengths
+                                               nodeDim <- nodeDim[nodeDim != 1] ## will be NULL if scalar
+                                               if(!length(nodeDim)) nodeDim <- NULL
+                                           } else nodeDim <- NULL
+
                                            altParams <- BUGSdecl$altParamExprs
                                            altParams <- lapply(altParams, nimble:::insertSingleIndexBrackets, modelDef$varInfo)
                                            bounds <- BUGSdecl$boundExprs
@@ -1200,7 +1208,8 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## make a unique name
                                            thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
-                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, parentsSizeAndDims = parentsSizeAndDims, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, dynamicIndexInfo = dynamicIndexInfo, evaluate=TRUE, where = where)
+
+                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, parentsSizeAndDims = parentsSizeAndDims, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, dynamicIndexInfo = dynamicIndexInfo, nodeDim = nodeDim, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
                                            nodeFunctionGeneratorNames[i] <<- thisNodeGeneratorName

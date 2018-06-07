@@ -1229,7 +1229,7 @@ test_dynamic_indexing_model_internal <- function(param) {
             expect_true(is.Cmodel(cm), info = "compiled model object improperly formed")
             expect_identical(calculate(m), calculate(cm), info = "problem with R vs. C calculate with initial indexes")
             for(i in seq_along(param$validIndexes)) {
-                for(j in seq_along(param$invalidIndexes[[i]]$var)) {
+                for(j in seq_along(param$validIndexes[[i]]$var)) {
                     m[[param$validIndexes[[i]]$var[j]]] <- param$validIndexes[[i]]$value[j]
                     cm[[param$validIndexes[[i]]$var[j]]] <- param$validIndexes[[i]]$value[j]
                 }
@@ -1249,11 +1249,25 @@ test_dynamic_indexing_model_internal <- function(param) {
                     
                     cm[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
                 }
-                expect_error(calculate(m), info = paste0("problem with lack of error in R calculate with invalid indexes, case: ", i))  ## When NA is given, R calculate fails with missing value and dynamic index error not flagged explicitly
-                expect_error(calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of error in C calculate with invalid indexes, case: ", i))
-                expect_error(calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of error in C calculateDiff with invalid indexes, case: ", i))
+                ## use expect_equal not expect_identical because in certain cases we get NA not NaN (having to do with other components of calc/sim output)
+                if(any(is.na(param$invalidIndexes[[i]]$value)) || (!is.null(param$invalidIndexes[[i]]$expect_R_calc_error) && param$invalidIndexes[[i]]$expect_R_calc_error)) {
+                    expect_error(calculate(m), "(missing value where|argument is of length zero)", info = paste0("problem with lack of error in R calculate with NA indexes, case: ", i))
+                    ## When NA is given, R calculate fails with missing value and dynamic index error not flagged explicitly
+                    ## When 0 is the nested index, R calculate fails with length zero argument and dynamic index error not flagged
+                } else {
+                    expect_output(out <- calculate(m), "dynamic index out of bounds", info = paste0("problem with lack of warning in R calculate with non-NA invalid indexes, case: ", i))
+                    expect_equal(out, NaN, info = paste0("problem with lack of NaN in R calculate with non-NA invalid indexes, case: ", i))
+                }
+                expect_output(out <- calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculate with invalid indexes, case: ", i))
+                expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculate with invalid indexes, case: ", i))
+                expect_output(out <- calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculateDiff with invalid indexes, case: ", i))
+                expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculateDiff with invalid indexes, case: ", i))
                 deps <- m$getDependencies(param$invalidIndexes[[i]]$var, self = FALSE)
-                expect_error(simulate(cm, deps, includeData = TRUE), "dynamic index out of bounds", info = paste0("problem with lack of error in C simulate with invalid indexes, case: ", i))
+                expect_output(simulate(cm, deps, includeData = TRUE), "dynamic index out of bounds", info = paste0("problem with lack of warning in C simulate with invalid indexes, case: ", i))
+                expect_true(sum(is.nan(values(cm, deps))) >= 1, info = paste0("problem with lack of NaN in C simulate with invalid indexes, case: ", i))
+            }
+            if(.Platform$OS.type != "windows") {
+                nimble:::clearCompiled(m)
             }
         }
     invisible(NULL)

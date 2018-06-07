@@ -486,7 +486,7 @@ sampler_slice <- nimbleFunction(
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
             lp <- calculate(model, target)
-            if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
+            if(lp == -Inf) return(-Inf) 
             lp <- lp + calculate(model, calcNodesNoSelf)
             returnType(double())
             return(lp)
