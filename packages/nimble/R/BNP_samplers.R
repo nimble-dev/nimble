@@ -158,7 +158,7 @@ sampler_DP_measure <- nimbleFunction(
     # the relation between 'conc', trunc level, and error of approximation is: (conc / (conc +1))^{truncG-1}=e 
     if( fixedConc ) {
       dcrpAux <- model$getParam(dcrpNode, 'conc')
-      concSamples <- rep(dcrpAux, niter)   ## Claudia, I would rename 'concSam' as 'concSamples'
+      concSamples <- rep(dcrpAux, niter)   
     } else {
       concSamples <- numeric(niter)
       for( iiter in 1:niter ) {
@@ -191,8 +191,10 @@ sampler_DP_measure <- nimbleFunction(
         cond <- sum(xiiter == range[i])
         if(cond > 0){
           probs[index] <- cond
+          ## slight workaround because can't compile mvSaved[tildeVars[j], iiter]  
+          nimCopy(mvSaved, model, tildeVars, row = iiter)
           for(j in 1:p){
-            uniqueValues[index, j] <- mvSaved[tildeVars[j], iiter][range[i]]
+            uniqueValues[index, j] <- values(model, tildeVars[j])[range[i]]
           }
           index <- index+1
         }
