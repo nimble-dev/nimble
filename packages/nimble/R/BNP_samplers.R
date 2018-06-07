@@ -6,13 +6,16 @@
 # find parents of tilde variables
 # eliminate message dCRP
 
-sampler_DP_measure <- nimbleFunction(
+get_DP_measure_samples <- nimbleFunction(
+  name = 'get_DP_measure_samples',
+  contains=sampler_BASE,
+  
   setup=function(model, mvSaved){
     
     ## Check if the mvSaved is compiled or not.
     mvIsCompiled <- exists('dll', envir = mvSaved)
     if( mvIsCompiled ) {
-      stop("sampler_DP_measure: modelValues object has to be an uncompiled object.\n")
+      stop("get_DP_measure_samples: modelValues object has to be an uncompiled object.\n")
     }
     
     ## Determine variables in the mv object and nodes/variables in the model.
@@ -29,12 +32,12 @@ sampler_DP_measure <- nimbleFunction(
       dcrpVar <- model$getVarNames(nodes = dcrpNode)
     } else {
       if(length(dcrpIndex) == 0 ){
-        stop('sampler_DP_measure: One node with a dCRP distribution is required.\n')
+        stop('get_DP_measure_samples: One node with a dCRP distribution is required.\n')
       }
-      stop('sampler_DP_measure: Currently only models with one node with a dCRP distribution are allowed.\n')
+      stop('get_DP_measure_samples: Currently only models with one node with a dCRP distribution are allowed.\n')
     }
     if( sum(dcrpVar == mvSavedVars) == 0 ){
-      stop(paste('sampler_DP_measure: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n'))
+      stop(paste('get_DP_measure_samples: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n'))
     }
     
     
@@ -61,21 +64,21 @@ sampler_DP_measure <- nimbleFunction(
     ## Check that cluster variables are monitored.
     counts <- sapply(tildeVars, function(x) x %in% mvSavedVars)  
     if( sum(counts) != length(tildeVars) ) {
-      stop('sampler_DP_measure: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
+      stop('get_DP_measure_samples: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
     }
     
     if( is.null(tildeVars) ) { ## probably unnecessary as checked in CRP sampler, but best to be safe
-      stop('sampler_DP_measure: The model should have at least one cluster variable.\n')
+      stop('get_DP_measure_samples: The model should have at least one cluster variable.\n')
     }
     
     ## Check that tilde variables are continuous variables (for avoiding long trials in simulating atoms for G in run code:
     for(i in seq_along(tildeVars)) {
       if( isDiscrete(model$getDistribution(tildeVars[i])[1]) ) { # the argument has to be the distribution of one node
-          stop('sampler_DP_measure: cluster variables should be continuous random variables.\n')
+          stop('get_DP_measure_samples: cluster variables should be continuous random variables.\n')
       }
-      if( getDimension(model$getDistribution(tildeVars[i])[1]) ) {
-        stop( 'sampler_DP_measure: only univariate cluster variables are allowed in this sampler.\n' )
-      }
+      #if( nimble:::isMultivariate(tildeVars) ) {# getDimension(model$getDistribution(tildeVars[i])[1])
+      #  stop( 'get_DP_measure_samples: only univariate cluster variables are allowed in this sampler.\n' )
+      #}
     }
     
     ## Geting all parent nodes of cluster variables:
@@ -128,12 +131,12 @@ sampler_DP_measure <- nimbleFunction(
       ## copy savedParentNodes from mvSaved
       nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model?, we want to check that mvSaved has all we need to get conc, right? 
       if( length(savedParentNodes) == 0 ) { 
-        stop( paste('sampler_DP_measure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') )
+        stop( paste('get_DP_measure_samples: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') )
       } else {
         modelWithNAs$calculate(model$getDependencies(savedParentNodes)) 
         dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
         if( is.na(dcrpParam) ) {
-          stop('sampler_DP_measure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n')
+          stop('get_DP_measure_samples: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n')
         }
       }
       ## Determine stochastic and deterministic dependencies of parents of dCRP node
