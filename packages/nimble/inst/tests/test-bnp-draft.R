@@ -4,6 +4,81 @@
 #-- TESTS FOR BNP MODELS
 
 
+set.seed(1)
+code <- nimbleCode({
+  xi[1, 1:6] ~ dCRP(conc0, 6)
+  xi[2, 1:6] ~ dCRP(conc0, 6)
+  conc0 ~ dgamma(1, 1)
+  for(i in 1:6){
+    mu[i] ~ dnorm(0, 1)
+    y[i] ~ dnorm(mu[xi[1, i]], 1)
+    x[i]~ dnorm(mu[xi[2, i]], 1)
+  }
+})
+Inits <- list(xi = rbind(c(1,1,2,1,1,2),c(1,1,2,1,1,2)) , 
+             mu = 1:6, conc0 = 1)
+Data <- list( y =  rnorm(6), x= rnorm(6))
+m <- nimbleModel(code, data=Data, inits=Inits)
+mConf <- configureMCMC(m, print=TRUE, monitors = c('xi', 'mu', 'conc0'))
+mMCMC <- buildMCMC(mConf)
+mMCMC$run(10)
+mvSaved = mMCMC$mvSamples
+
+set.seed(1)
+code <- nimbleCode({
+  for(j in 1:2){
+    xi[j, 1:6] ~ dCRP(conc0, 6)
+  }
+  conc0 ~ dgamma(1, 1)
+  for(i in 1:6){
+    mu[i] ~ dnorm(0, 1)
+    y[i] ~ dnorm(mu[xi[1, i]], 1)
+    x[i]~ dnorm(mu[xi[2, i]], 1)
+  }
+})
+Inits <- list(xi = rbind(c(1,1,2,1,1,2),c(1,1,2,1,1,2)) , 
+              mu = 1:6, conc0 = 1)
+Data <- list( y =  rnorm(6), x= rnorm(6))
+m <- nimbleModel(code, data=Data, inits=Inits)
+mConf <- configureMCMC(m, print=TRUE, monitors = c('xi', 'mu', 'conc0'))
+mMCMC <- buildMCMC(mConf)
+mMCMC$run(10)
+mvSaved = mMCMC$mvSamples
+
+
+rm(list=ls())
+code=nimbleCode(
+  {
+    for(i in 1:4){
+      p[i,1:3] ~ ddirch(alpha=alpha0[1:3])
+      y[i,1:3] ~ dmulti(prob=p[xi[i],1:3], size=3)
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  }
+)
+set.seed(1)
+p0 <- matrix(0, ncol=3, nrow=4)
+y0 <- matrix(0, ncol=3, nrow=4)
+for(i in 1:4){
+  p0[i,]=rdirch(1, c(1, 1, 1))
+  y0[i,] = rmulti(1, prob=c(0.3,0.3,0.4), size=3)
+}
+m = nimbleModel(code, 
+                data = list(y = y0),
+                inits = list(xi = rep(1,4), p=p0), 
+                constants=list(alpha0 = c(1,1,1)))
+monitors <- c('xi', 'p')
+mConf <- configureMCMC(m, print=TRUE, monitors = monitors)
+mMCMC <- buildMCMC(mConf)
+set.seed(1)
+mMCMC$run(10) 
+# Error in lfactorial(n) : object 'n' not found
+
+
+mvSaved = mcmc$mvSamples
+
+
+
 
 rm(list=ls())
 library(nimble)
@@ -266,9 +341,7 @@ code=nimbleCode(
     }
     xi[1:N2] ~ dCRP(conc0 + conc1, size=N2)
     conc1 ~ dgamma(1,1)
-    conc0 ~ dgamma(a,b)
-    b ~ dgamma(1,1)
-    a ~ dgamma(1,1)
+    conc0 ~ dgamma(1,1)
     
     for(i in 1:N){
       theta[i] <- thetatilde[xi[i]]
@@ -283,7 +356,8 @@ mu0<-0; tau20<-40
 Consts=list(N=20, N2=20, N3=20)
 set.seed(1)
 aux=sample(1:10, size=Consts$N2, replace=TRUE)
-Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)), conc0=1, conc1=1, a=1,  b=1)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N3, mu0, sqrt(tau20)), 
+           conc0=1, conc1=1)
 
 s20=4; s21=4
 mu01=5; mu11=-5
@@ -474,8 +548,9 @@ code=nimbleCode(
       thetatilde[i] ~ dnorm(mean=0, var=40) 
     }
     xi[1:N] ~ dCRP(conc0 , size=N)
-    conc0 ~ dgamma(a,1)
+    conc0 ~ dgamma(a,b)
     a ~ dgamma(1, 1)
+    b ~ dgamma(1, 1)
     
     for(i in 1:N){
       theta[i] <- thetatilde[xi[i]]
@@ -488,7 +563,7 @@ code=nimbleCode(
 Consts=list(N=20)
 set.seed(1)
 aux=sample(1:10, size=Consts$N, replace=TRUE)
-Inits=list(xi=aux, thetatilde=rnorm(Consts$N, 0, sqrt(40)), conc0=1, a=1)
+Inits=list(xi=aux, thetatilde=rnorm(Consts$N, 0, sqrt(40)), conc0=1, a=1, b=1)
 
 s20=4; s21=4
 mu01=5; mu11=-5
@@ -857,6 +932,34 @@ code <- nimbleCode({
   conc0 ~ dgamma(1, 1)
 })
 
+
+code <- nimbleCode({
+  for(i in 1:5) {
+    for(j in 1:3) {
+      y[i,j] ~ dbern(theta[i, j])
+      gamma[j] <- xi[i, j]
+      theta[i, j] <- phi(mu[j] + alpha[j]*betatilde[i, gamma[j]]) #phi(mu[j] + alpha[j]*betatilde[i, xi[i,l]]) # iprobit
+    }
+  }
+  for(j in 1:3) {
+    mu[j] ~ dnorm(0, var=1)
+    alpha[j] ~ dnorm(0, var=1)
+  }
+  for(i in 1:5) {
+    for(l in 1:4){
+      betatilde[i, l] ~ dnorm(0, var=1)  
+    }
+  }
+    xi[1, 1:4] ~ dCRP(conc0, size=4)
+    xi[2, 1:4] ~ dCRP(conc0, size=4)
+    xi[3, 1:4] ~ dCRP(conc0, size=4)
+    xi[4, 1:4] ~ dCRP(conc0, size=4)
+    xi[5, 1:4] ~ dCRP(conc0, size=4)
+  
+  #xi[1:4] ~ dCRP(conc0, size=4)
+  conc0 ~ dgamma(1, 1)
+})
+
 set.seed(1)
 data <- list(y = matrix(rbinom(15, 1, 0.5), ncol=3, nrow=5))
 Inits <- list( mu = rnorm(3, 0, 1), alpha = rnorm(3, 0, 1), betatilde =matrix(rnorm(20, 0,1), ncol=4, nrow=5),
@@ -865,7 +968,7 @@ Inits <- list( mu = rnorm(3, 0, 1), alpha = rnorm(3, 0, 1), betatilde =matrix(rn
 model <- nimbleModel(code, data = data, inits = Inits, calculate=TRUE)
 cm <- compileNimble(model) 
 
-mConf <- configureMCMC(model, print=FALSE)
+mConf <- configureMCMC(model, print=TRUE)
 mConf$printSamplers(c("mu", "alpha"))
 mConf$printSamplers(c("betatilde", "xi", "conc0"))
 mMCMC <- buildMCMC(mConf)
