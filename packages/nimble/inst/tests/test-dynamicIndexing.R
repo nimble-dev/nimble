@@ -296,6 +296,7 @@ test_that("MCMC with invalid indexes produce warning, but runs", {
     cm <- compileNimble(m)
     mcmc = buildMCMC(m)
     cmcmc = compileNimble(mcmc ,project=m)
+    set.seed(1)
     expect_output(cmcmc$run(10000), "dynamic index out of bounds")
     out <- as.matrix(cmcmc$mvSamples)
     expect_equal(sum(out == 2) / sum(out == 3), dnorm(0)/dnorm(1), tolerance = .02)
