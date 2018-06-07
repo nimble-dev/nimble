@@ -78,7 +78,7 @@ rCRP <- nimbleFunction(
         #    return(rep(NaN, size))
         #}
 
-        x <- nimNumeric(size) 
+        x <- nimInteger(size) 
         x[1] <- 1
         if(size > 1) {
             numComponents <- 1
