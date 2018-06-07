@@ -72,7 +72,10 @@ sampler_DP_measure <- nimbleFunction(
     for(i in seq_along(tildeVars)) {
       if( isDiscrete(model$getDistribution(tildeVars[i])[1]) ) { # the argument has to be the distribution of one node
           stop('sampler_DP_measure: cluster variables should be continuous random variables.\n')
-        }
+      }
+      if( getDimension(model$getDistribution(tildeVars[i])[1]) ) {
+        stop( 'sampler_DP_measure: only univariate cluster variables are allowed in this sampler.\n' )
+      }
     }
     
     ## Geting all parent nodes of cluster variables:
