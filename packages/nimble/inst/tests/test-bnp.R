@@ -12,7 +12,8 @@ context('Testing sampler_DP_measure')
 ##-- test: checking that all the necessary variables are monitored in mv object
 test_that("required variables in (non compiled) mv object are monitored:", {
   
-  # membership variable not being monitored:
+                                        # membership variable not being monitored:
+    ## Claudia, please take out the rm(list=ls()) commands everywhere
   rm(list=ls())
   set.seed(1)
   code <- nimbleCode({
@@ -38,6 +39,9 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
+  ## Claudia, in next line I think you want to check that the sampler_DP_measure now succeeds. For example:
+  ## expect_silent(sampler <- nimble:::sampler_DP_measure(m, mvSaved))
+  ## otherwise, you are just checking our MCMC system not the BNP functionality
   expect_equal(sum(mvSaved$varNames == 'xi') == 1,
                TRUE,
                'membership variables not being monitored\n')
@@ -70,6 +74,7 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
+  ## Claudia same comment as in line 41
   expect_equal(sum(mvSaved$varNames == 'mu') == 1,
                TRUE,
                'cluster variables not being monitored\n')
@@ -77,6 +82,7 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   
   # concentration parameter not being monitored:
   ## warning messages are printed when the monitors are added. Any idea?
+  ## Claudia, it's ok to have the warning
   rm(list=ls())
   set.seed(1)
   code <- nimbleCode({
@@ -105,6 +111,7 @@ test_that("required variables in (non compiled) mv object are monitored:", {
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10) 
   mvSaved = mMCMC$mvSamples
+  ## Claudia, see line 41
   expect_equal(sum(mvSaved$varNames == 'conc0') == 1,
                TRUE,
                'concentration parameter not being monitored\n')

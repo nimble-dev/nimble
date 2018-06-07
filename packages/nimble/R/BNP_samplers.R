@@ -83,7 +83,7 @@ sampler_DP_measure <- nimbleFunction(
     }
     
     candidateParentNodes <- model$getNodeNames(includeData = FALSE)
-    candidateParentNodes <- candidateParentNodes[!candidateParentNodes %in% tildeVarsElements]
+    candidateParentNodes <- candidateParentNodes[!candidateParentNodes %in% unlist(tildeVarsElements)]
     for(i in seq_along(candidateParentNodes)) {
       aux <- model$getDependencies(candidateParentNodes[i], downstream = TRUE)
       for(j in seq_along(tildeVars)) {
