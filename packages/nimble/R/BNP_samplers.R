@@ -155,7 +155,7 @@ sampler_DP_measure <- nimbleFunction(
     niter <- getsize(mvSaved) # number of iterations in the MCMC
     
     # defining the truncation level of the random measure's representation:
-    # the relation between 'conc', trunc level, and error of approximation is: (conc / (conc +1))^{Trunc-1}=e 
+    # the relation between 'conc', trunc level, and error of approximation is: (conc / (conc +1))^{truncG-1}=e 
     if( fixedConc ) {
       dcrpAux <- model$getParam(dcrpNode, 'conc')
       concSamples <- rep(dcrpAux, niter)   ## Claudia, I would rename 'concSam' as 'concSamples'
@@ -175,7 +175,7 @@ sampler_DP_measure <- nimbleFunction(
     ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
     ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
     ## (p+1) denoted the number of parameters, each of length truncG, to be stored: p is the number of cluster components (length(tildeVars)) and 1 is for the weights.
-    samples <<- matrix(0, nrow = niter, ncol = Trunc*(p+1)) 
+    samples <<- matrix(0, nrow = niter, ncol = truncG*(p+1)) 
     
     
     for(iiter in 1:niter){
@@ -197,11 +197,11 @@ sampler_DP_measure <- nimbleFunction(
           index <- index+1
         }
       }
-      probs[index] <- concSam[iiter] 
+      probs[index] <- concSamples[iiter] 
       newValueIndex <- index 
       
-      #-- computing G(.) = sum_{l=1}^{Trunc} w_l delta_{atom_l} (.):
-      vaux <- rbeta(1, 1, concSam[iiter] + N)
+      #-- computing G(.) = sum_{l=1}^{truncG} w_l delta_{atom_l} (.):
+      vaux <- rbeta(1, 1, concSamples[iiter] + N)
       v1prod <- 1
       Taux <- 1
       paramAux <- numeric(p)
@@ -217,18 +217,18 @@ sampler_DP_measure <- nimbleFunction(
           ## Claudia - see comment about deterministic nodes in setup code 
         model$simulate(parentNodesWithTildeVars)
         for(j in 1:p){ 
-          samples[iiter, j*Trunc + Taux] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
+          samples[iiter, j*truncG + Taux] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
         }
       } else {   # sample one of the existing values
         for(j in 1:p){
-          samples[iiter, j*Trunc + Taux] <<- uniqueValues[index, j] 
+          samples[iiter, j*truncG + Taux] <<- uniqueValues[index, j] 
         }
       }
       samples[iiter, Taux] <<- vaux 
       Taux <- Taux + 1
       
-      # the rest of the values: w_l and atom_l, l=1, ..Trunc-1
-      while(Taux <= Trunc-1){
+      # the rest of the values: w_l and atom_l, l=1, ..truncG-1
+      while(Taux <= truncG-1){
         index <- rcat(prob = probs[1:newValueIndex])
         if(index == newValueIndex){  # sample from G_0
           model$simulate(parentNodesWithTildeVars)
@@ -240,7 +240,7 @@ sampler_DP_measure <- nimbleFunction(
             paramAux[j] <- uniqueValues[index, j] 
           }
         }
-        condaux <- samples[iiter, Trunc + 1:(Taux-1)] == paramAux[1]  # check if we sample a new atom or an atom that is in G already
+        condaux <- samples[iiter, truncG + 1:(Taux-1)] == paramAux[1]  # check if we sample a new atom or an atom that is in G already
         
         if(sum(condaux) > 0) { # the atom already exists and we have to update the weights and not include a new value of the params 
           repindex = 1
@@ -248,24 +248,24 @@ sampler_DP_measure <- nimbleFunction(
             repindex = repindex + 1
           }
           v1prod <- v1prod * (1-vaux)
-          vaux <- rbeta(1, 1, concSam[iiter]+N)
+          vaux <- rbeta(1, 1, concSamples[iiter]+N)
           samples[iiter, repindex] <<- samples[iiter, repindex] + vaux * v1prod
         } else { # augment the truncation and keep the same parameters
           for(j in 1:p){
-            samples[iiter, j*Trunc + Taux] <<- paramAux[j]
+            samples[iiter, j*truncG + Taux] <<- paramAux[j]
           }
           v1prod <- v1prod * (1-vaux)
-          vaux <- rbeta(1, 1, concSam[iiter]+N)
+          vaux <- rbeta(1, 1, concSamples[iiter]+N)
           samples[iiter, Taux] <<- vaux * v1prod 
           Taux <- Taux + 1
         }
       }
       
-      # complete the vector of probabilities and atoms: w_Trunc and atom_Trunc
-      samples[iiter, Trunc] <<- 1 - sum(samples[iiter, 1:(Trunc-1)])
+      # complete the vector of probabilities and atoms: w_truncG and atom_truncG
+      samples[iiter, truncG] <<- 1 - sum(samples[iiter, 1:(truncG-1)])
       model$simulate(parentNodesWithTildeVars)
       for(j in 1:p){ 
-        samples[iiter, (j+1)*Trunc] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
+        samples[iiter, (j+1)*truncG] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
       }
     }
   },
