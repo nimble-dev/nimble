@@ -133,7 +133,7 @@ The \cd{stick\_breaking} function is specified in NIMBLE for a probabilities vec
 
 Parameter \cd{v}  is a vector of values between 0 and 1 defining  the breaking length of the stick. It is of length $L-1$, implicitly assuming that its last component is equal to 1.
 
-In order to complete the definition of the weights in the stick-breaking representation of $G$, a beta prior distribution has to be assumed for $v_l$, $l =1, \ldots, L-1$.\\
+In order to complete the definition of the weights in the stick-breaking representation of $G$, a prior distribution on $(0,1)$ should to be assumed for $v_l$, $l =1, \ldots, L-1$, for instance a beta prior.\\
 
 
 \subsection{Example}\label{sec:exsb}
