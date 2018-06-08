@@ -160,8 +160,13 @@ get_DP_measure_samples <- nimbleFunction(
     
     N <- length(dataNodes)
     p <- length(tildeVars)
-    Ntilde <- length(values(model, tildeVars)) / p 
-    approxError <- 1e-10 ## maximum allowable error in approximating unknown measure with the truncation representation
+    nTilde <- length(values(model, tildeVars)) / p 
+    # we are going to define a truncation value trunG=50 and based on the posterior values of the conc parameter will report the approximation error of truncation G. 
+    # The error is given by (conc / (conc +1))^{truncG-1}. 
+    # Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
+    # Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
+    #approxError <- 1e-10 
+    truncG <- 50
     
     ## Storage object to be sized in run code based on MCMC output (Claudia note change to comment)
     samples <- matrix(0, nrow = 1, ncol = 1)
@@ -187,8 +192,10 @@ get_DP_measure_samples <- nimbleFunction(
       dcrpAux <- mean(concSamples)
     }
     
-    truncG <- log(approxError) / log(dcrpAux / (dcrpAux+1)) + 1
-    truncG <- round(truncG)
+    #truncG <- log(approxError) / log(dcrpAux / (dcrpAux+1)) + 1
+    #truncG <- round(truncG)
+    approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
+    nimCat(paste('get_DP_measure_samples: approximating the random measure by a truncation level of 50 leads to and error of', approxError, '.\n'))
     
     ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
     ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
@@ -237,7 +244,7 @@ get_DP_measure_samples <- nimbleFunction(
           ## Claudia - see comment about deterministic nodes in setup code 
         model$simulate(parentNodesWithTildeVars)
         for(j in 1:p){ 
-          samples[iiter, j*truncG + Taux] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
+          samples[iiter, j*truncG + Taux] <<- values(model, tildeVars)[(j-1)*nTilde + 1]
         }
       } else {   # sample one of the existing values
         for(j in 1:p){
@@ -253,7 +260,7 @@ get_DP_measure_samples <- nimbleFunction(
         if(index == newValueIndex){  # sample from G_0
           model$simulate(parentNodesWithTildeVars)
           for(j in 1:p){ 
-            paramAux[j] <- values(model, tildeVars)[(j-1)*Ntilde + 1]
+            paramAux[j] <- values(model, tildeVars)[(j-1)*nTilde + 1]
           }
         } else{  # sample one of the existing values
           for(j in 1:p){
@@ -285,7 +292,7 @@ get_DP_measure_samples <- nimbleFunction(
       samples[iiter, truncG] <<- 1 - sum(samples[iiter, 1:(truncG-1)])
       model$simulate(parentNodesWithTildeVars)
       for(j in 1:p){ 
-        samples[iiter, (j+1)*truncG] <<- values(model, tildeVars)[(j-1)*Ntilde + 1]
+        samples[iiter, (j+1)*truncG] <<- values(model, tildeVars)[(j-1)*nTilde + 1]
       }
     }
   },
