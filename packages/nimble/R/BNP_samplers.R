@@ -2,10 +2,6 @@
 # integrated out. 
 # Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
-# do discrete thing
-# find parents of tilde variables
-# eliminate message dCRP
-
 get_DP_measure_samples <- nimbleFunction(
   name = 'get_DP_measure_samples',
   contains=sampler_BASE,
@@ -74,13 +70,14 @@ get_DP_measure_samples <- nimbleFunction(
     ## Check that tilde variables are continuous and univariate variables (for avoiding long trials in simulating atoms for G in run code:
     for(i in seq_along(tildeVars)) {
       if( isDiscrete(model$getDistribution(tildeVars[i])[1]) ) { # the argument has to be the distribution of one node
-          stop('get_DP_measure_samples: cluster variables should be continuous random variables.\n')
+        stop('get_DP_measure_samples: cluster variables should be continuous random variables.\n')
       }
       if( sum(model$isMultivariate(tildeVars)) > 0 ) {# getDimension(model$getDistribution(tildeVars[i])[1])
         stop( 'get_DP_measure_samples: only univariate cluster variables are allowed.\n' )
       }
     }
     
+    ## Geting all parent nodes of cluster variables:
     ## Geting all parent nodes of cluster variables:
     parentNodesTildeVars <- NULL
     tildeVarsElements <- list()
@@ -100,7 +97,7 @@ get_DP_measure_samples <- nimbleFunction(
     ## Including cluster variables. Object to be used when simulating atoms in run code:
     ## Claudia note change, which ensures simulate() does its work in graphical order  
     parentNodesWithTildeVars <- model$expandNodeNames(c(parentNodesTildeVars, tildeVars), sort = TRUE)
-
+    
     ## Getting  stochastic parent nodes of tilde variables used later for copying from mvSAved to model
     if( is.null(parentNodesTildeVars) ) {
       parentStochNodesTildeVars <- tildeVars
@@ -115,6 +112,9 @@ get_DP_measure_samples <- nimbleFunction(
     }
     
     
+    
+    
+    
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
     ## Get all parents of xi, including deterministic cases such as theta[i] <- thetatilde[xi[i]]:
@@ -126,7 +126,7 @@ get_DP_measure_samples <- nimbleFunction(
         parentNodes <- c(parentNodes, aux[aux != dcrpNode])
     }
     
-    if(length(parentNodes)) { # concentration parameter is random
+    if( length(parentNodes) ) { # concentration parameter is random
       ## Check that values stored in mvSaved are sufficient to calculate dcrp concentration.
       ## Do this by creating a model containing all NAs and then copying values from the mvSaved
       ## and then checking getParam gives a non-NA.
@@ -141,21 +141,9 @@ get_DP_measure_samples <- nimbleFunction(
       modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
       nimbleOptions(verbose = verbosity)
       
-      allNodes <- modelWithNAs$getNodeNames(includeData = FALSE)
-      nimCopy(model, modelWithNAs)
-      ## next bit is in case model contains some NAs and therefore modelWithNAs has some NAs - we try to initialize these from the prior (since even if they are currently NA in the model, they should be not NA in any MCMC output
-      my_initializeModel <- initializeModel(modelWithNAs)
-      my_initializeModel$run() 
-      ## now make sure only savedParentNodes have non-NAs
-      savedParentNodesValues <- values(modelWithNAs, savedParentNodes)
-      values(modelWithNAs, allNodes) <- NA
-      values(modelWithNAs, savedParentNodes) <- savedParentNodesValues  # at this point modelWithNAs should be in a state similar to as if mvSaved had been used to set its values but without having to have run the MCMC
-
       modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] 
-      
       ## copy savedParentNodes from mvSaved
-      #nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model?, we want to check that mvSaved has all we need to get conc, right? 
-    
+      nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model, we want to check that mvSaved has all we need to get conc, right? 
       if( length(savedParentNodes) == 0 ) { 
         stop( 'get_DP_measure_samples: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
       } else {
@@ -171,7 +159,7 @@ get_DP_measure_samples <- nimbleFunction(
     } else { ## placeholder since allDepsOfSavedParentNodes must only have nodes in the mvSaved for correct compilation
       allDepsOfSavedParentNodes <- dcrpNode
       savedParentNodes <- dcrpNode # also used in run code
-    }   
+    }  
     
     N <- length(dataNodes)
     p <- length(tildeVars)
@@ -186,6 +174,7 @@ get_DP_measure_samples <- nimbleFunction(
     ## Storage object to be sized in run code based on MCMC output (Claudia note change to comment)
     samples <- matrix(0, nrow = 1, ncol = 1)
     
+    
   },
   
   run=function(){
@@ -195,7 +184,7 @@ get_DP_measure_samples <- nimbleFunction(
     # defining the truncation level of the random measure's representation:
     if( fixedConc ) {
       dcrpAux <- model$getParam(dcrpNode, 'conc')
-      concSamples <- rep(dcrpAux, niter)   
+      concSamples <- rep(dcrpAux, niter)   ## Claudia, I would rename 'concSamples' as 'concSamples'
     } else {
       concSamples <- numeric(niter)
       for( iiter in 1:niter ) {
@@ -209,8 +198,8 @@ get_DP_measure_samples <- nimbleFunction(
     truncG <- log(approxError) / log(dcrpAux / (dcrpAux+1)) + 1
     truncG <- round(truncG)
     #approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
-    # message indicating what the truncation level is for a approximation error equal to 10^(-10)
-    nimCat(paste('get_DP_measure_samples: Approximating the random measure by a finite stick-breaking representation with and error smaller than 1e-10, leads to a truncation level of', truncG, '.\n'))
+    # I think is good to send message indicating what the truncation level is for an approximation error smaller than to 10^(-10)
+    nimCat('get_DP_measure_samples: Approximating the random measure by a finite stick-breaking representation with and error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
     
     ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
     ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
@@ -227,7 +216,7 @@ get_DP_measure_samples <- nimbleFunction(
       xiiter <- mvSaved[dcrpVar, iiter]
       range <- min(xiiter):max(xiiter) 
       index <- 1
-      for(i in seq_along(range)){   
+      for(i in seq_along(range)){   ## Chris changed to 'range' from 'rangei' - confusing because 'i' is used in multiple ways in the code here - 'iiter' and 'i'
         cond <- sum(xiiter == range[i])
         if(cond > 0){
           probs[index] <- cond
@@ -286,6 +275,7 @@ get_DP_measure_samples <- nimbleFunction(
         }
         condaux <- samples[iiter, truncG + 1:(Taux-1)] == paramAux[1]  # check if we sample a new atom or an atom that is in G already
         
+        ## Claudia, if tildeVars are continuous, then if you sample from G_0 it will almost surely not equal to an existing atom, but if tildevars are  discrete variables, then if the sample from G_0 equals an existing value, is that considered a new atom or not? I guess not, in which case the code is fine, I think.
         if(sum(condaux) > 0) { # the atom already exists and we have to update the weights and not include a new value of the params 
           repindex = 1
           while(!condaux[repindex]){
@@ -305,7 +295,7 @@ get_DP_measure_samples <- nimbleFunction(
         }
       }
       
-      # complete the vector of probabilities and atoms: w_truncG and atom_truncG
+      # complete the vector of probabilities and atoms: w_Trunc and atom_Trunc
       samples[iiter, truncG] <<- 1 - sum(samples[iiter, 1:(truncG-1)])
       model$simulate(parentNodesWithTildeVars)
       for(j in 1:p){ 
