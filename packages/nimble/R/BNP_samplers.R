@@ -101,14 +101,19 @@ get_DP_measure_samples <- nimbleFunction(
     ## Claudia note change, which ensures simulate() does its work in graphical order  
     parentNodesWithTildeVars <- model$expandNodeNames(c(parentNodesTildeVars, tildeVars), sort = TRUE)
 
-    ## Getting  stochastic parent nodes of tilde variables
-    parentStochNodesTildeVars <- parentNodesTildeVars[model$isStoch(parentNodesTildeVars)]
-
-    ## Checking that stochastic parent nodes of tilde variables are in mvSaved:
-    counts <- sapply(parentStochNodesTildeVars, function(x) x %in% mvSavedVars)  
-    if( sum(counts) != length(parentStochNodesTildeVars) ) {
-      stop('get_DP_measure_samples: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
+    ## Getting  stochastic parent nodes of tilde variables used later for copying from mvSAved to model
+    if( is.null(parentNodesTildeVars) ) {
+      parentStochNodesTildeVars <- tildeVars
+    } else {
+      parentStochNodesTildeVars <- parentNodesTildeVars[model$isStoch(parentNodesTildeVars)]
+      
+      ## Checking that stochastic parent nodes of tilde variables are in mvSaved:
+      counts <- sapply(parentStochNodesTildeVars, function(x) x %in% mvSavedVars)  
+      if( sum(unlist(counts)) != length(parentStochNodesTildeVars) ) { # unlist in case of tilde variables with no parent nodes
+        stop('get_DP_measure_samples: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
+      }
     }
+    
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
@@ -145,8 +150,9 @@ get_DP_measure_samples <- nimbleFunction(
       savedParentNodesValues <- values(modelWithNAs, savedParentNodes)
       values(modelWithNAs, allNodes) <- NA
       values(modelWithNAs, savedParentNodes) <- savedParentNodesValues  # at this point modelWithNAs should be in a state similar to as if mvSaved had been used to set its values but without having to have run the MCMC
-      
+
       modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] 
+      
       ## copy savedParentNodes from mvSaved
       #nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model?, we want to check that mvSaved has all we need to get conc, right? 
     
@@ -249,8 +255,8 @@ get_DP_measure_samples <- nimbleFunction(
       if(index == newValueIndex){   # sample from G_0
         
         ## Claudia if you simulate from the model then you are always using the current values of any parents of tildeVars, but don't you want to get the values from mvSaved for parents of the tildeVars? I think your test cases may always have the hyperparameters of the density of the tildevars be fixed, but I don't think this is always the case.
-          ## Chris: now should be everithing ok with simulating from the model?
-          ## Claudia - see comment about deterministic nodes in setup code 
+        ## Chris: now should be everithing ok with simulating from the model?
+        ## Claudia - see comment about deterministic nodes in setup code 
         # we need to copy from mvSaved to model only once per iteration, right?
         nimCopy(mvSaved, model, parentStochNodesTildeVars, row = iiter) # copy posterior samples of parent nodes
         model$simulate(parentNodesWithTildeVars)
