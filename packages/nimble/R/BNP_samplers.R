@@ -71,14 +71,14 @@ get_DP_measure_samples <- nimbleFunction(
       stop('get_DP_measure_samples: The model should have at least one cluster variable.\n')
     }
     
-    ## Check that tilde variables are continuous variables (for avoiding long trials in simulating atoms for G in run code:
+    ## Check that tilde variables are continuous and univariate variables (for avoiding long trials in simulating atoms for G in run code:
     for(i in seq_along(tildeVars)) {
       if( isDiscrete(model$getDistribution(tildeVars[i])[1]) ) { # the argument has to be the distribution of one node
           stop('get_DP_measure_samples: cluster variables should be continuous random variables.\n')
       }
-      #if( nimble:::isMultivariate(tildeVars) ) {# getDimension(model$getDistribution(tildeVars[i])[1])
-      #  stop( 'get_DP_measure_samples: only univariate cluster variables are allowed in this sampler.\n' )
-      #}
+      if( sum(model$isMultivariate(tildeVars)) > 0 ) {# getDimension(model$getDistribution(tildeVars[i])[1])
+        stop( 'get_DP_measure_samples: only univariate cluster variables are allowed.\n' )
+      }
     }
     
     ## Geting all parent nodes of cluster variables:
@@ -101,6 +101,15 @@ get_DP_measure_samples <- nimbleFunction(
     ## Claudia note change, which ensures simulate() does its work in graphical order  
     parentNodesWithTildeVars <- model$expandNodeNames(c(parentNodesTildeVars, tildeVars), sort = TRUE)
 
+    ## Getting  stochastic parent nodes of tilde variables
+    parentStochNodesTildeVars <- parentNodesTildeVars[model$isStoch(parentNodesTildeVars)]
+
+    ## Checking that stochastic parent nodes of tilde variables are in mvSaved:
+    counts <- sapply(parentStochNodesTildeVars, function(x) x %in% mvSavedVars)  
+    if( sum(counts) != length(parentStochNodesTildeVars) ) {
+      stop('get_DP_measure_samples: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
+    }
+    
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
     ## Get all parents of xi, including deterministic cases such as theta[i] <- thetatilde[xi[i]]:
@@ -161,12 +170,12 @@ get_DP_measure_samples <- nimbleFunction(
     N <- length(dataNodes)
     p <- length(tildeVars)
     nTilde <- length(values(model, tildeVars)) / p 
-    # we are going to define a truncation value trunG=50 and based on the posterior values of the conc parameter will report the approximation error of truncation G. 
-    # The error is given by (conc / (conc +1))^{truncG-1}. 
+    # The error of approximation G wiht a is given by (conc / (conc +1))^{truncG-1}. 
+    # we are going to define an error of aproximation and based on the posterior values of the conc parameter define the truncation level of G
+    # the error is between errors that are considered very very small in the folowing papers
     # Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
     # Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
-    #approxError <- 1e-10 
-    truncG <- 50
+    approxError <- 1e-10 
     
     ## Storage object to be sized in run code based on MCMC output (Claudia note change to comment)
     samples <- matrix(0, nrow = 1, ncol = 1)
@@ -178,7 +187,6 @@ get_DP_measure_samples <- nimbleFunction(
     niter <- getsize(mvSaved) # number of iterations in the MCMC
     
     # defining the truncation level of the random measure's representation:
-    # the relation between 'conc', trunc level, and error of approximation is: (conc / (conc +1))^{truncG-1}=e 
     if( fixedConc ) {
       dcrpAux <- model$getParam(dcrpNode, 'conc')
       concSamples <- rep(dcrpAux, niter)   
@@ -192,10 +200,11 @@ get_DP_measure_samples <- nimbleFunction(
       dcrpAux <- mean(concSamples)
     }
     
-    #truncG <- log(approxError) / log(dcrpAux / (dcrpAux+1)) + 1
-    #truncG <- round(truncG)
-    approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
-    nimCat(paste('get_DP_measure_samples: approximating the random measure by a truncation level of 50 leads to and error of', approxError, '.\n'))
+    truncG <- log(approxError) / log(dcrpAux / (dcrpAux+1)) + 1
+    truncG <- round(truncG)
+    #approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
+    # message indicating what the truncation level is for a approximation error equal to 10^(-10)
+    nimCat(paste('get_DP_measure_samples: Approximating the random measure by a finite stick-breaking representation with and error smaller than 1e-10, leads to a truncation level of', truncG, '.\n'))
     
     ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
     ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
@@ -242,6 +251,8 @@ get_DP_measure_samples <- nimbleFunction(
         ## Claudia if you simulate from the model then you are always using the current values of any parents of tildeVars, but don't you want to get the values from mvSaved for parents of the tildeVars? I think your test cases may always have the hyperparameters of the density of the tildevars be fixed, but I don't think this is always the case.
           ## Chris: now should be everithing ok with simulating from the model?
           ## Claudia - see comment about deterministic nodes in setup code 
+        # we need to copy from mvSaved to model only once per iteration, right?
+        nimCopy(mvSaved, model, parentStochNodesTildeVars, row = iiter) # copy posterior samples of parent nodes
         model$simulate(parentNodesWithTildeVars)
         for(j in 1:p){ 
           samples[iiter, j*truncG + Taux] <<- values(model, tildeVars)[(j-1)*nTilde + 1]
