@@ -43,17 +43,18 @@
 #' \frac{\alpha}{i-1+\alpha}\delta_{x^{new}},}
 #' where \eqn{x^{new}} is a new integer not in \eqn{x_1, \ldots, x_{i-1}}.
 #' 
-#' If \code{conc} is not specified, it assumes the default value of 1. 
+#' If \code{conc} is not specified, it assumes the default value of 1. The \code{conc} 
+#' parameter has to be larger than zero. Otherwise, \code{NaN} are returned.
 #' @return \code{dCRP} gives the density, and \code{rCRP} gives random generation.
 #' @references Blackwell, D., and MacQueen, J. B. (1973). Ferguson distributions via 
 #' Pólya urn schemes. \emph{The Annals of Statistics}, 1: 353-355.
 #' 
-#' Aldous, D. J. (1985). Exchangeability and related topics. \emph{In École d'Été de 
-#' Probabilités de Saint-Flour XIII -- 1983}, Pages 1-198. Springer.
+#' Aldous, D. J. (1985). Exchangeability and related topics. In \emph{École d'Été 
+#' de Probabilités de Saint-Flour XIII—1983} (pp. 1-198). Springer, Berlin, 
+#' Heidelberg.
 #' 
-#' Pitman, Jim. Some developments of the Blackwell-MacQueen urn scheme (1986). 
-#' \emph{Statistics, Probability and Game Theory: Papers in Honor of David Blackwell},
-#' 30: 245--267.
+#'Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{Lecture
+#' Notes-Monograph Series}, 245-267.
 #' 
 #' @examples
 #' x <- rCRP(n=1, conc = 1, size=10)
@@ -156,16 +157,14 @@ dCRP=nimbleFunction(
 #' @param log logical; if TRUE, weights are returned on the log scale.
 #' @author Claudia Wehrhahn
 #' @details
-#' The stick breaking construction produces a vector of probabilities that adds up to one,
-#' based on a series of individual probabilities in \code{z} that should be between \deqn{(0,1)]}.
-#' The construction starts by breaking a piece of stick off of a stick of length one, based on
-#' \code{z[1]}. The first element the output is the length of the piece that was broken off.
-#' The construction then proceeds by breaking a piece of stick off of the remaining stick, based on
-#' \code{z[2]} and so forth. If \code{z[k]}
-#' is equal to 1, then the returned vector has length smaller than \code{z}. If one of the
-#' components is smaller than 0 or greater than 1, NaNs are returned.
-#' @references Sethuraman, J. (1994). A constructive definition of Dirichlet 
-#' priors. \emph{Statistica Sinica}, 4: 639-650.
+#' The stick breaking function produces a vector of probabilities that adds up to one,
+#' based on a series of individual probabilities in \code{z}, that should be between 
+#' \deqn{(0,1)]}, and define the breaking length of the stick.
+#' The returned vector has length equal to the length of z plus 1. 
+#' If \code{z[k]} is equal to 1, then the returned vector has length smaller than \code{z}. 
+#' If one of the components is smaller than 0 or greater than 1, NaNs are returned.
+#' @references Sethuraman, J. (1994). A constructive definition of Dirichlet priors.
+#'  \emph{Statistica Sinica}, 639-650.
 #' @examples
 #' z <- rbeta(5, 1, 1)
 #' stick_breaking(z)
