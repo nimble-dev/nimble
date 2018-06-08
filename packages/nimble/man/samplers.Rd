@@ -16,6 +16,8 @@
 \alias{sampler_BASE}
 \alias{sampler_CAR_normal}
 \alias{sampler_CAR_proper}
+\alias{sampler_CRP}
+\alias{get_DP_measure_samples}
 \alias{sampler_RW}
 \alias{sampler_RW_PF}
 \alias{sampler_RW_PF_block}
@@ -69,6 +71,10 @@ sampler_RW_dirichlet(model, mvSaved, target, control)
 sampler_CAR_normal(model, mvSaved, target, control)
 
 sampler_CAR_proper(model, mvSaved, target, control)
+
+sampler_CRP(model, mvSaved, target, control)
+
+get_DP_measure_samples(model, mvSaved)
 }
 \arguments{
 \item{model}{(uncompiled) model on which the MCMC is to be run}
@@ -309,10 +315,18 @@ The CAR_proper sampler accepts the following control list elements:
 
 \section{CRP sampler}{
 
-
-The CRP sampler is designed for Bayesian non-parametric mixture modeling. It is uniquely asigned to nodes having the Chinese Restaurant Process (CRP) distribution, \code{dCRP}. 
+The CRP sampler is designed for fitting models involving Dirichlet process mixtures. It is uniquely asigned to nodes having the Chinese Restaurant Process distribution, \code{dCRP}. It executes sequential sampling of each component of the node. Internally, any of two samplers can be assiged, depending on conjugate or non conjugate structures within the model. For conjugate and non conjugate model structures, updates are based on Algorithm 2 and Algorithm 8 in Neal (2000), respectively. 
 
 }
+
+\section{get_DP_measure_samples sampler}{
+
+The get_DP_measure_samples sampler is designed for sampling the random measure associated with the mixing distribution of a Dirichlet process mixture model. The random measure is represented by a stick-breaking (Sethuraman, 1994). This sampler can be used when a model having a CRP-distributed node is defined. 
+
+The mvSaved argument should be an uncompiled object and should include the following components from the mixture model: the membership variable, having the CRP distribution, the cluster parameters, all random parameters that are parents of the cluster parameters,  and the concentration parameter of the Dirichlet process, if random. To ensure this, use the \cd{monitors} argument when configuring the MCMC.
+}
+
+
 
 \section{posterior_predictive sampler}{
 
@@ -374,6 +388,13 @@ Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, B
 Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University.
 
 Tibbits, M. M.,  Groendyke, C.,  Haran, M., and Liechty, J. C. (2014).  Automated Factor Slice Sampling.  \emph{Journal of Computational and Graphical Statistics}, 23(2), 543-563.
+
+Neal, R. M. (2000). Markov chain sampling methods for Dirichlet process mixture models. \emph{Journal of Computational and Graphical Statistics}, 9(2), 249-265.
+
+Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
+
+Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
+
 }
 \seealso{
 \code{\link{configureMCMC}} \code{\link{addSampler}} \code{\link{buildMCMC}} \code{\link{runMCMC}}
