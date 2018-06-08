@@ -2,6 +2,26 @@
 # integrated out. 
 # Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
+DP_measure = function( MCMCobject ) {
+  model = MCMCobject$model  ## I think that the model object is accessible from somewhere in the MCMC object
+  rsampler = nimble:::get_DP_measure_samples(model, MCMCobject$mvSamples)
+  csampler = compileNimble(rsampler, project = model)
+  csampler$run()
+  samplesMeasure = csampler$samples
+  
+  namesVars <- rsampler$tildeVars
+  p <- length(namesVars)
+  truncG <- ncol(samplesMeasure) / (p+1)
+  namesW <- sapply(1:truncG, function(i) paste( "weight[", i, "]", sep="" ))
+  namesAtom <- unlist(sapply( 1:p, function(j) 
+    sapply(1:truncG, function(i) paste( namesVars[j], "[", i, "]", sep="" )) ))
+  
+  colnames(samplesMeasure) <- c(namesW, namesAtom)
+  return(samplesMeasure)
+}
+
+
+
 get_DP_measure_samples <- nimbleFunction(
   name = 'get_DP_measure_samples',
   contains=sampler_BASE,
