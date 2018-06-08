@@ -323,7 +323,7 @@ The CRP sampler is designed for fitting models involving Dirichlet process mixtu
 
 The get_DP_measure_samples sampler is designed for sampling the random measure associated with the mixing distribution of a Dirichlet process mixture model. The random measure is represented by a stick-breaking (Sethuraman, 1994). This sampler can be used when a model having a CRP-distributed node is defined. 
 
-The mvSaved argument should be an uncompiled object and should include the following components from the mixture model: the membership variable, having the CRP distribution, the cluster parameters, all random parameters that are parents of the cluster parameters,  and the concentration parameter of the Dirichlet process, if random. To ensure this, use the \cd{monitors} argument when configuring the MCMC.
+The mvSaved argument should be an uncompiled object and should include the following components from the mixture model: the membership variable, having the CRP distribution, the cluster parameters, all random parameters that are parents of the cluster parameters,  and the concentration parameter of the Dirichlet process, if random. To ensure this, use the \code{monitors} argument when configuring the MCMC.
 }
 
 
