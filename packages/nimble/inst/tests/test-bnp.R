@@ -1,10 +1,12 @@
-]
+
 ######################################################################
 ######################################################################
 
 
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
+nimbleOptions(MCMCprogressBar = FALSE)
 
 ## Test get_DP_measure_samples:
 context('Testing get_DP_measure_samples')
@@ -161,6 +163,9 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   samplesG = cdens$samples
   expect_true( sum(samplesG) != 'NaN')
   
+  #samplesG = DP_measure(mMCMC)
+  #expect_true( sum(samplesG) != 'NaN')
+  
   # no deterministic node, random conc param
   set.seed(1)
   code <- nimbleCode({
@@ -189,6 +194,8 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   samplesG = cdens$samples
   expect_true( sum(samplesG) != 'NaN')
   
+  #samplesG = DP_measure(mMCMC)
+  #expect_true( sum(samplesG) != 'NaN')
   
   # with deterministic node, conc param is fixed
   set.seed(1)
@@ -218,6 +225,8 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   samplesG = cdens$samples
   expect_true( sum(samplesG) != 'NaN')
   
+  #samplesG = DP_measure(mMCMC)
+  #expect_true( sum(samplesG) != 'NaN')
   
   # with deterministic node, random conc param
   set.seed(1)
@@ -247,6 +256,9 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   expect_output(cdens$run())
   samplesG = cdens$samples
   expect_true( sum(samplesG) != 'NaN')
+  
+  #samplesG = DP_measure(mMCMC)
+  #expect_true( sum(samplesG) != 'NaN')
   
   # two cluster parameters, one deterministc parameter, fixed conc
   code=nimbleCode(
@@ -280,6 +292,9 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   expect_output(cdens$run())
   samplesG = cdens$samples
   expect_true( sum(samplesG) != 'NaN')
+  
+  #samplesG = DP_measure(mMCMC)
+  #expect_true( sum(samplesG) != 'NaN')
   
   
   # two cluster parameters, one deterministc parameter, random conc
@@ -315,6 +330,9 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   expect_output(cdens$run())
   samplesG = cdens$samples
   expect_true( sum(samplesG) != 'NaN')
+  
+  #samplesG = DP_measure(mMCMC)
+  #expect_true( sum(samplesG) != 'NaN')
   
   
   # two cluster parameters, two deterministc parameter, random conc with random parameters
@@ -352,6 +370,9 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   expect_output(cdens$run())
   samplesG = cdens$samples
   expect_true( sum(samplesG) != 'NaN')
+  
+  #samplesG = DP_measure(mMCMC)
+  #expect_true( sum(samplesG) != 'NaN')
   
   
   # two cluster parameters, two deterministc parameter, 
@@ -391,6 +412,9 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   expect_output(cdens$run())
   samplesG = cdens$samples
   expect_true( sum(samplesG) != 'NaN')
+  
+  #samplesG = DP_measure(mMCMC)
+  #expect_true( sum(samplesG) != 'NaN')
   
   
   # two cluster parameters, two deterministc parameter, 
@@ -433,6 +457,9 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   expect_output(cdens$run())
   samplesG = cdens$samples
   expect_true( sum(samplesG) != 'NaN')
+  
+  #samplesG = DP_measure(mMCMC)
+  #expect_true( sum(samplesG) != 'NaN')
   
 })
 
