@@ -12,7 +12,7 @@ USER LEVEL CHANGES
 
 -- Invalid dynamic indexes are reported and now result in NaN values when calling calculate or simulate but no longer cause execution to error out. This allows MCMC sampling to continue when an invalid index is proposed and rejected.
 
--- We now fully initialize the model between MCMC runs in MCMCsuite().
+-- The model is fully (re-)initialized between MCMC runs in MCMCsuite(), so that every MCMC method will start from identical conditions.  This was usually but not always the case previously.
 
 
 BUG FIXES
@@ -21,13 +21,13 @@ BUG FIXES
 
 -- Fixed error in generating getParam nodeFunctions with user-supplied distributions using integer types.
 
--- We no longer error out when seeing expressions inside brackets in multivariate distribution arguments. This allows, e.g., state space models with multivariate states.
+-- In multivariate distribution arguments, general expressions continue to be disallowed, but expressions inside indexing brackets are now allowed. This allows, e.g., hidden Markov models implemented with a transition matrix and dcat to describe the time-dependence of latent states.
 
--- Fixed a bug involving getDependencies with downstream = TRUE.
+-- Fixed bug involving getDependencies with downstream = TRUE.
 
 -- Fixed bug with using setSize in uncompiled nimbleFunction.
 
--- Fixed bug in AF_slice sampler causing incorrect dependency updating that affected state space type models with intermediate deterministic nodes.
+-- Fixed bug in AF_slice sampler causing incorrect dependency updating that affected state-space type models with intermediate deterministic nodes.
 
 -- Fixed issues with setInits in complicated cases.
 
@@ -37,15 +37,15 @@ DEVELOPER LEVEL CHANGES
 
 -- Now allow "to" to be a CmodelValues in R version of nimCopy.
 
--- Added better error trapping when array indexed without initialization in a nimbleFunction.
+-- Added better error trapping when an array is used with an index before it has been created in a nimbleFunction.
 
 -- Fixed infinite recursion issue.
 
 -- Better error message when invalid parameter name supplied to getParam.
 
--- Now check there is a return when returnType is provided.
+-- Added a check that there is a return statement when a returnType is provided.
 
--- Improved error trapping with invalid indexing in BUGS models.
+-- Improved error trapping for invalid indexing in BUGS models.
 
                            CHANGES IN VERSION 0.6-10 (March 2018)
 
