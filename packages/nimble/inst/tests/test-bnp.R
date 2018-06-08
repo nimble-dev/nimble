@@ -1218,6 +1218,48 @@ test_that("Testing conjugacy detection with models using CRP: ", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dgamma")
   
+  # dgamma_dnorm
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      y[i] ~ dnorm(4, tau = mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4, 4, 4)),
+                  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dnorm")
+  
+  # dgamma_dweib
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      y[i] ~ dweib(shape=4, lambda = mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rweibull(4, 4, 4)),
+                  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dweib")
+  
+  # dgamma_dinvgamma
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1, rate=1)
+      y[i] ~ dinvgamma(shape=4, scale = mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rinvgamma(4, 4, 4)),
+                  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dinvgamma")
+  
   
   # dbeta_dbern
   code = nimbleCode({
@@ -1232,6 +1274,35 @@ test_that("Testing conjugacy detection with models using CRP: ", {
   conf <- configureMCMC(m)
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dbern")
+  
+  
+  # dbeta_dbinom
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dbeta(1,1)
+      y[i] ~ dbinom(size=10, prob=mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rbinom(4, size=10, prob=0.5)),
+                  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dbin")
+  
+  # dbeta_dnegbin
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dbeta(1,1)
+      y[i] ~ dnegbin(size=10, prob=mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnbinom(4, size=10, prob=0.5)),
+                  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dbeta_dnegbin")
   
   
   # ddirch_dmulti
@@ -1438,6 +1509,78 @@ inits = list(xi = 1:4, mu=rnorm(4), s2=rinvgamma(4, 1,1))
 data = list(y = rnorm(4))
 
 testBUGSmodel(example = 'test7', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+
+model <- function() {
+  for(i in 1:4) {
+    mu[i] ~ dgamma(1, rate=1)
+    y[i] ~ dinvgamma(shape=4, scale = mu[xi[i]])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+data = list(y = rinvgamma(4, 4, 4))
+
+testBUGSmodel(example = 'test8', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+model <- function() {
+  for(i in 1:4) {
+    mu[i] ~ dgamma(1,1)
+    y[i] ~ dweib(shape=4, lambda = mu[xi[i]])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits =  list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+data = list(y = rweibull(4, 4, 4))
+
+testBUGSmodel(example = 'test9', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+model <- function() {
+  for(i in 1:4) {
+    mu[i] ~ dgamma(1,1)
+    y[i] ~ dnorm(4, tau = mu[xi[i]])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits =  list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+data = list(y = rnorm(4, 4, 4))
+
+testBUGSmodel(example = 'test10', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+model <- function() {
+  for(i in 1:4) {
+    mu[i] ~ dbeta(1,1)
+    y[i] ~ dbinom(size=10, prob=mu[xi[i]])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits =  list(xi = rep(1,4), mu=rbeta(4, 1, 1))
+data = list(y = rbinom(4, size=10, prob=0.5))
+
+testBUGSmodel(example = 'test11', dir = "",
+              model = model, data = data, inits = inits,
+              useInits = TRUE)
+
+
+model <- function() {
+  for(i in 1:4) {
+    mu[i] ~ dbeta(1,1)
+    y[i] ~ dnegbin(size=10, prob=mu[xi[i]])
+  }
+  xi[1:4] ~ dCRP(conc=1, size=4)
+}
+inits =  list(xi = rep(1,4), mu=rbeta(4, 1, 1))
+data = list(y = rnbinom(4, size=10, prob=0.5))
+
+testBUGSmodel(example = 'test11', dir = "",
               model = model, data = data, inits = inits,
               useInits = TRUE)
 
