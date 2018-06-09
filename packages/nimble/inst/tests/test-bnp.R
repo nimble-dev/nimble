@@ -1,9 +1,7 @@
-
-######################################################################
-######################################################################
-
-
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+
+nimbleVerboseSetting <- nimbleOptions('verbose')
+nimbleOptions(verbose = FALSE)
 
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
@@ -122,8 +120,7 @@ test_that("the mv object is uncompiled :", {
   cm <- compileNimble(m) 
   mConf <- configureMCMC(m, print=FALSE)
   mMCMC <- buildMCMC(mConf)
-  CmMCMC <- compileNimble(mMCMC, project=m,
-                          resetFunctions=TRUE, showCompilerOutput = TRUE)
+  CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE)
   
   CmMCMC$run(10)
   CmvSaved  <- CmMCMC$mvSamples
@@ -931,8 +928,7 @@ test_that("Testing BNP model using stick breaking representation", {
                info = "failed to detect categorical-beta conjugacy in BNP model")
   
   modelMCMC = buildMCMC(modelConf)
-  CmodelMCMC = compileNimble(modelMCMC, project=model,
-                             resetFunctions=TRUE, showCompilerOutput = TRUE)
+  CmodelMCMC = compileNimble(modelMCMC, project=model, resetFunctions=TRUE)
   
   CmodelMCMC$run(10000)
   
@@ -1803,8 +1799,7 @@ test_that("Testing of misspecification of dimension when using CRP: ", {
   cm <- compileNimble(m)
   conf <- configureMCMC(m)
   expect_warning(mMCMC <- buildMCMC(conf))
-  cmMCMC=compileNimble(mMCMC, project=m,
-                       resetFunctions=TRUE, showCompilerOutput = TRUE)
+  cmMCMC=compileNimble(mMCMC, project=m, resetFunctions=TRUE)
   set.seed(1)
   expect_output(cmMCMC$run(1), message="CRP_sampler: This MCMC is not fully nonparametric.")
   
@@ -1836,7 +1831,7 @@ test_that("Testing BNP model based on CRP", {
   mMCMC <- buildMCMC(mConf)
   expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
   
-  CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE, showCompilerOutput = FALSE)
+  CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE)
   
   nburn <- 500
   nsave <- 100
@@ -1904,7 +1899,7 @@ test_that("Testing BNP model based on CRP", {
   expect_equal(mConf$getSamplers()[[101]]$name, "CRP_concentration")
   expect_equal(class(mMCMC$samplerFunctions[[102]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
   
-  CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE, showCompilerOutput = FALSE)
+  CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE)
   
   nburn <- 500
   nsave <- 100
@@ -1983,7 +1978,7 @@ test_that("Testing BNP model based on CRP", {
   expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   #-- compiling the sampler
-  CmMCMC=compileNimble(mMCMC, project=m, resetFunctions=TRUE, showCompilerOutput = FALSE)
+  CmMCMC=compileNimble(mMCMC, project=m, resetFunctions=TRUE)
   
   #-- MCMC samples
   nburn <- 500
@@ -2208,3 +2203,7 @@ Inits = list(alpha = 1, delta = c(0, 0), conc = 1,
 testBUGSmodel(example = 'test9', dir = "",
               model = model, data = Data, inits = Inits, 
               useInits = TRUE)
+
+## options(warn = RwarnLevel)
+nimbleOptions(verbose = nimbleVerboseSetting)
+nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
