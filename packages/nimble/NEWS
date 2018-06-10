@@ -14,6 +14,7 @@ USER LEVEL CHANGES
 
 -- The model is fully (re-)initialized between MCMC runs in MCMCsuite(), so that every MCMC method will start from identical conditions.  This was usually but not always the case previously.
 
+-- Four new resampling methods are available for use in the auxiliary and bootstrap filters.  Resampling methods can be specified by the resamplingMethod control list argument to buildBootstrapFilter and buildAuxiliaryFilter.
 
 BUG FIXES
 
