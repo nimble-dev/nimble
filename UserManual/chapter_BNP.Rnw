@@ -12,6 +12,8 @@ require(nimble)
 \chapter{Bayesian nonparametric models}
 \label{cha:bnp}
 
+As of version 0.6-11, NIMBLE provides initial support for Bayesian nonparametric (BNP) mixture modeling. These features are currently considered EXPERIMENTAL -- please let us know (via the NIMBLE user mailing list or by emailing us) if you have any problems or have suggestions about functionality you would like NIMBLE to support or the NIMBLE interface for using BNP.
+
 
 \section{Bayesian nonparametric mixture models}
 \label{sec:bnpmixtures}
@@ -72,9 +74,9 @@ $$p(\boldsymbol{z} \mid \alpha) \propto \frac{\Gamma{(\alpha)}}{\Gamma{(\alpha +
 
 \noindent where $m_k(\boldsymbol{z})$ denotes the number of elements in  $\boldsymbol{z}$ that are equal to $k$.  The full conditional distribution for $z_i$ given $z_{-i}$ is 
 
-$$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}\mathbbm{1}_{\{z_j\}} (m)+ \frac{\alpha}{n-1+\alpha}\mathbbm{1}_{\{z^{new}\}}(m),$$
+$$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}1_{\{z_j\}} (m)+ \frac{\alpha}{n-1+\alpha}1_{\{z^{new}\}}(m),$$
 
-where $z_{-i}$ denotes vector $\boldsymbol{z}$ after removing its $i-$th component, $z^{new}$ is a value not in $z_{-i}$, and  $\mathbbm{1}_{A}$ denotes the indicator function at set $A$.
+where $z_{-i}$ denotes vector $\boldsymbol{z}$ after removing its $i-$th component, $z^{new}$ is a value not in $z_{-i}$, and  $1_{A}$ denotes the indicator function at set $A$.
 
 Note that the probability of creating a new cluster is proportional to $\alpha$: the larger the concentration parameter, the more clusters are created.
 
@@ -198,7 +200,7 @@ Valid initial values should be provided for all elements of the process specifie
 
 \subsubsection{Sampling the random measure}
 
-In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$.  NIMBLE provides a sampler for this random measure when a CRP structure is involved in the model. This sampler is implemented  as  \cd{get_DP_measure_samples}. More details for using this function are available using \cd{help('get_DP_measure_samples')}.
+In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$.  NIMBLE provides a sampler for this random measure when a CRP structure is involved in the model. This sampler is implemented  as  \cd{getSamplesDPmeasure\_samples}. More details for using this function are available using \cd{help('getSamplesDPmeasure')}.
 
 The arguments of this sampler are a CRP-based BNP model and an uncompiled  model values object. The model values object should  include the membership variable, the cluster parameter, and the concentration parameter, if it is random. Use the \cd{monitors} argument when  configuring the MCMC to ensure this variables are monitored in the MCMC. 
 
