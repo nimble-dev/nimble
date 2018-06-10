@@ -161,13 +161,13 @@ sampleDPmeasure <- nimbleFunction(
       modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
       nimbleOptions(verbose = verbosity)
       
-      modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] 
+      ## modelWithNAs[[dcrpNode]] <- model[[dcrpNode]] 
       ## copy savedParentNodes from mvSaved
       nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model, we want to check that mvSaved has all we need to get conc, right? 
       if( length(savedParentNodes) == 0 ) { 
         stop( 'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
       } else {
-        modelWithNAs$calculate(model$getDependencies(savedParentNodes)) 
+        modelWithNAs$calculate(model$getDependencies(savedParentNodes, determOnly = TRUE)) 
         # Error in if (counts > 0) { : missing value where TRUE/FALSE needed
         dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
         if( is.na(dcrpParam) ) {
@@ -204,7 +204,7 @@ sampleDPmeasure <- nimbleFunction(
     # defining the truncation level of the random measure's representation:
     if( fixedConc ) {
       dcrpAux <- model$getParam(dcrpNode, 'conc')
-      concSamples <- numNumeric(length = niter, value = dcrpAux)
+      concSamples <- nimNumeric(length = niter, value = dcrpAux)
     } else {
       concSamples <- numeric(niter)
       for( iiter in 1:niter ) {
