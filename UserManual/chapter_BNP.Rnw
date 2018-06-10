@@ -74,9 +74,9 @@ $$p(\boldsymbol{z} \mid \alpha) \propto \frac{\Gamma{(\alpha)}}{\Gamma{(\alpha +
 
 \noindent where $m_k(\boldsymbol{z})$ denotes the number of elements in  $\boldsymbol{z}$ that are equal to $k$.  The full conditional distribution for $z_i$ given $z_{-i}$ is 
 
-$$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}1_{\{z_j\}} (m)+ \frac{\alpha}{n-1+\alpha}1_{\{z^{\mbox{new}}\}}(m),$$
+$$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}1_{\{z_j\}} (m)+ \frac{\alpha}{n-1+\alpha}1_{\{z^{new}\}}(m),$$
 
-\noindent where $z_{-i}$ denotes vector $\boldsymbol{z}$ after removing its $i-$th component, $z^{\mbox{new}}$ is a value not in $z_{-i}$, and  $1_{A}$ denotes the indicator function at set $A$.
+\noindent where $z_{-i}$ denotes vector $\boldsymbol{z}$ after removing its $i-$th component, $z^{new}$ is a value not in $z_{-i}$, and  $1_{A}$ denotes the indicator function at set $A$.
 
 Note that the probability of creating a new cluster is proportional to $\alpha$: the larger the concentration parameter, the more clusters are created.
 
@@ -85,8 +85,8 @@ Note that the probability of creating a new cluster is proportional to $\alpha$:
 The following example illustrates how to use NIMBLE to perform single density estimation for real-valued data, under a BNP approach, using the \cd{dCRP} distribution. (Note that the BNP approach is also often used to perform density estimation on random effects.) The model is given by  
 
 $$ y_i \mid \tilde{\boldsymbol{\theta}}, \tilde{\boldsymbol{\sigma}}^2, z_i \overset{ind}{\sim} N(\tilde{\theta}_{z_i}, \tilde{\sigma}^2_{z_i},)\hspace{0.5cm} i = 1, \ldots, N, $$
-$$ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim Gamma(1, 1), $$
-$$ \tilde{\theta}_j \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}\tilde{\sigma}^2_j \overset{iid}{\sim}InvGamma(1, 1),  \hspace{0.2cm} j=1, \ldots, M. $$
+$$ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim \mbox{Gamma}(1, 1), $$
+$$ \tilde{\theta}_j \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}\tilde{\sigma}^2_j \overset{iid}{\sim}\mbox{InvGamma}(1, 1),  \hspace{0.2cm} j=1, \ldots, M. $$
 
 <<dCRP_Chunk, results = "hide", message = FALSE>>=
 code <- nimbleCode({
@@ -105,7 +105,7 @@ constants <- list(N = 100, M = 50)
 data <- list(y = c(rnorm(50, -5, sqrt(3)), rnorm(50, 5, sqrt(4))))
 inits <- list(thetatilde = rnorm(constants$N, 0, 10), 
               s2tilde = rinvgamma(constants$N, 1, 1), 
-              xi = sample(1:10, size = constants$N, replace = TRUE),
+              z = sample(1:10, size = constants$N, replace = TRUE),
               alpha  = 1)
 Rmodel <- nimbleModel(code, constants, data, inits)
 @
@@ -145,8 +145,8 @@ Here we illustrate how to use NIMBLE for the example described in section \ref{s
 
 $$ y_i \mid \boldsymbol{\theta}^{\star}, {\boldsymbol{\sigma}^{\star}}^2, z_i \overset{ind}{\sim} N({{\theta}^{\star}}_{z_i}, {{\sigma}^2}^{\star}_{z_i}),\hspace{0.5cm}  i = 1, \ldots, N, $$
 $$ \boldsymbol{z} \sim Discrete(\boldsymbol{w}), \hspace{0.5cm} v_l\overset{iid}{\sim} Beta(1, \alpha), \hspace{0.2cm}l=1, \ldots, L-1, $$
-$$ \alpha \sim Gamma(1, 1),$$
-$${\theta}^{\star}_l \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}{{\sigma}^2}^{\star}_l  \overset{iid}{\sim}InvGamma(1, 1),  \hspace{0.2cm} l=1, \ldots, L.$$
+$$ \alpha \sim \mbox{Gamma}(1, 1),$$
+$${\theta}^{\star}_l \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}{{\sigma}^2}^{\star}_l  \overset{iid}{\sim}\mbox{InvGamma}(1, 1),  \hspace{0.2cm} l=1, \ldots, L.$$
 
 \noindent where $ w_1=v_1$, $w_l=v_l\prod_{m<l}(1-v_m)$, for $l=1, \ldots, L-1$, and   $ w_L=\prod_{m<L}(1-v_m). $
 
@@ -198,7 +198,7 @@ Note that both samplers are specialized versions that operate on a vector having
 
 \subsubsection{Initial values}
 
-Valid initial values should be provided for all elements of the process specified by a CRP structure before running the MCMC. A simple and safe choice for \cd{z} is to provide a sample of size \cd{N}, the same as its length, of values between 1 and some reasonable number of clusters (less than or equal to the length if \cd{z}, with replacement, as done in the preceding CRP example. For the concentration parameter, a safe initial value is 1.
+Valid initial values should be provided for all elements of the process specified by a CRP structure before running the MCMC. A simple and safe choice for \cd{z} is to provide a sample of size \cd{N}, the same as its length, of values between 1 and some reasonable number of clusters (less than or equal to the length of \cd{z}), with replacement, as done in the preceding CRP example. For the concentration parameter, a safe initial value is 1.
 
 \subsubsection{Sampling the random measure}
 
@@ -234,5 +234,5 @@ breaking function, updating each component of the weight vector sequentially. Th
 
 \subsubsection{Initial values}
 
-Valid initial values should be provided for all elements of the stick-breaking function and membership variable  before running the MCMC. A simple and safe choice for $z$ is to provide a sample of size \cd{N},  of values between 1 and some value less than $L$ with replacement, as done in the preceding stick-breaking example. For the stick variables, safe initial values can be simulated from a beta distribution.
+Valid initial values should be provided for all elements of the stick-breaking function and membership variable  before running the MCMC. A simple and safe choice for $z$ is to provide a sample of size \cd{N},  of values between 1 and some value less than $L$, with replacement, as done in the preceding stick-breaking example. For the stick variables, safe initial values can be simulated from a beta distribution.
 
