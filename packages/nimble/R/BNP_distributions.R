@@ -50,7 +50,7 @@
 #' P\'{o}lya urn schemes. \emph{The Annals of Statistics}, 1: 353-355.
 #' 
 #' Aldous, D. J. (1985). Exchangeability and related topics. In \emph{\'{E}cole d'\'{E}t\'{e} 
-#' de Probabilit\'{e}s de Saint-Flour XIII—1983} (pp. 1-198). Springer, Berlin, 
+#' de Probabilit\'{e}s de Saint-Flour XIII - 1983} (pp. 1-198). Springer, Berlin, 
 #' Heidelberg.
 #' 
 #'Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{Lecture
