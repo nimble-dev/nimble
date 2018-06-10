@@ -26,7 +26,7 @@ test_that("sampleDPmeasure: testing that required variables in (non compiled) mv
   Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, conc0 = 1)
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m,)
+  mConf <- configureMCMC(m)
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
@@ -54,7 +54,7 @@ test_that("sampleDPmeasure: testing that required variables in (non compiled) mv
   Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, mu0 = 0, s20 = 1)
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m,)
+  mConf <- configureMCMC(m)
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples

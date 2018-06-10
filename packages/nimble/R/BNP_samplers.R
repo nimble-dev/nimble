@@ -1,26 +1,38 @@
-# BNP sampler: sampling labels in a DPM model when the random measure G is 
-# integrated out. 
-# Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
+## samples from measure G after initial MCMC is run on a CRP-based model
+## Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
-getSamplesDPmeasure = function( MCMCobject ) {
-  model = MCMCobject$model  ## I think that the model object is accessible from somewhere in the MCMC object
-  rsampler = sampleDPmeasure(model, MCMCobject$mvSamples)
-  csampler = compileNimble(rsampler, project = model)
-  csampler$run()
-  samplesMeasure = csampler$samples
-  
-  namesVars <- rsampler$tildeVars
-  p <- length(namesVars)
-  truncG <- ncol(samplesMeasure) / (p+1)
-  namesW <- sapply(1:truncG, function(i) paste( "weight[", i, "]", sep="" ))
-  namesAtom <- unlist(sapply( 1:p, function(j) 
-    sapply(1:truncG, function(i) paste( namesVars[j], "[", i, "]", sep="" )) ))
-  
-  colnames(samplesMeasure) <- c(namesW, namesAtom)
-  return(samplesMeasure)
+#' @export
+getSamplesDPmeasure <- function(MCMC) {
+    if(exists('model', MCMC))
+        compiled <- FALSE else compiled <- TRUE
+    if(compiled) {
+        if(!exists('Robject', MCMC) || !exists('model', MCMC$Robject))
+            stop("getSamplesDPmeasure: problem with finding model object in compiled MCMC")
+        model <- MCMC$Robject$model
+        mvSamples <- MCMC$Robject$mvSamples
+    } else {
+        model <- MCMC$model
+        mvSamples <- MCMC$mvSamples
+    }
+    rsampler <- sampleDPmeasure(model, mvSamples)
+    if(compiled) {
+        csampler <- compileNimble(rsampler, project = model)
+        csampler$run()
+        samplesMeasure <- csampler$samples
+    } else {
+        rsampler$run()
+        samplesMeasure <- rsampler$samples
+    }
+    namesVars <- rsampler$tildeVars
+    p <- length(namesVars)
+    truncG <- ncol(samplesMeasure) / (p+1)
+    namesW <- sapply(1:truncG, function(i) paste( "weight[", i, "]", sep="" ))
+    namesAtom <- unlist(sapply( 1:p, function(j) 
+        sapply(1:truncG, function(i) paste( namesVars[j], "[", i, "]", sep="" )) ))
+    
+    colnames(samplesMeasure) <- c(namesW, namesAtom)
+    return(samplesMeasure)
 }
-
-
 
 sampleDPmeasure <- nimbleFunction(
   name = 'sampleDPmeasure',
