@@ -230,3 +230,17 @@ test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, 
 ##                 sigma_y = sigma_y)),
 ##   resultsTolerance = list(mean = list(sigma_x = .1,
 ##                                       sigma_y = .1)))
+context("Testing of different resampling algorithms")
+set.seed(1)
+n <- 1000
+wtsList <- list(
+  rep(1/n, n),
+  c(1, rep(0, n-1)),
+  rep(1, n),
+  rdirch(1, rep(1, n)),
+  1
+)
+test_resampler('systematicResampleFunction', wtsList)
+test_resampler('stratifiedResampleFunction', wtsList)
+test_resampler('residualResampleFunction', wtsList)
+test_resampler('multinomialResampleFunction', wtsList)

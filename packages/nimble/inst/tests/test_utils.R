@@ -1004,6 +1004,79 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
   return(returnVal)
 }
 
+## Testing for correct behavior of different resampling methods
+## used within PFs.
+##   samplerName - A string with the name of 
+##                 the resampling function to be tested.
+##   wtsList - A list, where each element is a vector of weights to use for 
+##             testing, given as input to the resampler functions.
+##   reps - An integer, the number of repetitions to conduct.
+##
+## For each provided set of weights in wtsList, the test will produce
+## 'reps' number of samples according to those weights.  For each set of
+## samples, the number of times each element was sampled is recorded.  These
+## recorded counts are averaged over the 'reps' number of samples, and then
+## the averages are compared to the expected count of each element 
+## (i.e. wts*length(wts)).
+
+test_resampler <- function(samplerName, wtsList, reps = 500, creps = reps){
+  n <- sapply(wtsList, function(x){return(length(x))})
+  output <- lapply(n, function(x){return(numeric(x))})
+  avgCounts <- output
+  samplerFunction <- getFromNamespace(samplerName, 'nimble')()
+  for(rep in 1:reps){
+    counts <- list()
+    for(i in 1:length(wtsList)){
+      output[[i]] <-    samplerFunction$run(wtsList[[i]])
+      counts[[i]] <- numeric(length(output[[i]]))
+      for(j in 1:n[i]){
+        counts[[i]][j] <- length(which(output[[i]] == j))
+      }
+      avgCounts[[i]] <- avgCounts[[i]] + counts[[i]]
+    }
+  }
+  expectedValue <- list(length(wtsList))
+  for(i in 1:length(wtsList)){
+    avgCounts[[i]] <- avgCounts[[i]]/reps
+    expectedValue[[i]] <- n[i]*(wtsList[[i]]/sum(wtsList[[i]]))
+    diffVec <- abs(expectedValue[[i]] - avgCounts[[i]])
+    for(j in 1:n[i]){
+      test_that(paste0("Test of accurate samples for uncompiled resampling
+                      method ", samplerName, ", weight set ", i,
+                       ", weight number ", j), 
+                expect_lt(diffVec[j], sqrt(expectedValue[[i]][j]) + .01))
+    }
+  }
+  avgCounts <- lapply(n, function(x){return(numeric(x))})
+  compiledSamplerFunction <-  compileNimble(samplerFunction)
+  for(rep in 1:reps){
+    counts <- list()
+    for(i in 1:length(wtsList)){
+      output[[i]] <-    compiledSamplerFunction$run(wtsList[[i]])
+      counts[[i]] <- numeric(length(output[[i]]))
+      for(j in 1:n[i]){
+        counts[[i]][j] <- length(which(output[[i]] == j))
+      }
+      avgCounts[[i]] <- avgCounts[[i]] + counts[[i]]
+    }
+  }
+  expectedValue <- list(length(wtsList))
+  for(i in 1:length(wtsList)){
+    avgCounts[[i]] <- avgCounts[[i]]/reps
+    expectedValue[[i]] <- n[i]*(wtsList[[i]]/sum(wtsList[[i]]))
+    diffVec <- abs(expectedValue[[i]] - avgCounts[[i]])
+    for(j in 1:n[i]){
+      test_that(paste0("Test of accurate samples for compiled resampling
+                       method ", samplerName, ", weight set ", i,
+                       ", weight number ", j), 
+                expect_lt(diffVec[j], sqrt(expectedValue[[i]][j]) + .01))
+    }
+  }
+}
+
+
+
+
 weightedMetricFunc <- function(index, samples, weights, metric, samplesToWeightsMatch){
   samples <- samples[,index]
   weights <- exp(weights[,samplesToWeightsMatch[index]])/sum(exp(weights[,samplesToWeightsMatch[index]]))

@@ -106,6 +106,7 @@ Collate:
     MCMC_autoBlock.R
     MCEM_build.R
     crossValidation.R
+	filtering_resamplers.R
     filtering_auxiliary.R
     filtering_liuwest.R
     filtering_enkf.R
