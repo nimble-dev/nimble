@@ -47,10 +47,10 @@
 #' parameter has to be larger than zero. Otherwise, \code{NaN} are returned.
 #' @return \code{dCRP} gives the density, and \code{rCRP} gives random generation.
 #' @references Blackwell, D., and MacQueen, J. B. (1973). Ferguson distributions via 
-#' Pólya urn schemes. \emph{The Annals of Statistics}, 1: 353-355.
+#' P\'{o}lya urn schemes. \emph{The Annals of Statistics}, 1: 353-355.
 #' 
-#' Aldous, D. J. (1985). Exchangeability and related topics. In \emph{École d'Été 
-#' de Probabilités de Saint-Flour XIII—1983} (pp. 1-198). Springer, Berlin, 
+#' Aldous, D. J. (1985). Exchangeability and related topics. In \emph{\'{E}cole d'\'{E}t\'{e} 
+#' de Probabilit\'{e}s de Saint-Flour XIII—1983} (pp. 1-198). Springer, Berlin, 
 #' Heidelberg.
 #' 
 #'Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{Lecture

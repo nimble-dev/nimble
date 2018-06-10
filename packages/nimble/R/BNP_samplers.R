@@ -4,7 +4,7 @@
 
 DP_measure = function( MCMCobject ) {
   model = MCMCobject$model  ## I think that the model object is accessible from somewhere in the MCMC object
-  rsampler = nimble:::get_DP_measure_samples(model, MCMCobject$mvSamples)
+  rsampler = get_DP_measure_samples(model, MCMCobject$mvSamples)
   csampler = compileNimble(rsampler, project = model)
   csampler$run()
   samplesMeasure = csampler$samples
@@ -63,7 +63,7 @@ get_DP_measure_samples <- nimbleFunction(
     itildeVar <- 1
     dep <- model$getDependencies(targetElements[1], self=FALSE)
     for(i in seq_along(dep)) { 
-      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i])) 
+      expr <- cc_getNodesInExpr(model$getValueExpr(dep[i])) 
       for(j in seq_along(expr)) {
         ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
         tmpexpr <- parse(text = expr[j])[[1]]
@@ -744,7 +744,7 @@ sampler_CRP <- nimbleFunction(
     
     dep <- model$getDependencies(targetElements[1], self=FALSE)
     for(i in seq_along(dep)) { 
-      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(dep[i])) 
+      expr <- cc_getNodesInExpr(model$getValueExpr(dep[i])) 
       for(j in seq_along(expr)) {
         ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
         tmpexpr <- parse(text = expr[j])[[1]]
@@ -804,7 +804,7 @@ sampler_CRP <- nimbleFunction(
       }
     }
     
-    helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
+    helperFunctions <- nimbleFunctionList(CRP_helper)
     
     ## use conjugacy to determine which helper functions to use
     conjugacyResult <- checkCRPconjugacy(model, target)

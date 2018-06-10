@@ -1062,6 +1062,8 @@ cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansions=FALSE
 cc_nodeInExpr <- function(node, expr) { return(node %in% cc_getNodesInExpr(expr)) }
 
 ## determines which nodes apppear in an expression
+## exporting as used in setup code of a nf called directly by user
+@export
 cc_getNodesInExpr <- function(expr) {
     if(is.numeric(expr)) return(character(0))   ## expr is numeric
     if(is.logical(expr)) return(character(0))   ## expr is logical

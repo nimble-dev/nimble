@@ -650,7 +650,7 @@ checkCRPconjugacy <- function(model, target) {
     Dep <- model$getDependencies(targetElementExample, self=FALSE)
     for(i in 1:length(Dep)){ 
       Depi <- Dep[i]
-      expr <- nimble:::cc_getNodesInExpr(model$getValueExpr(Depi))
+      expr <- cc_getNodesInExpr(model$getValueExpr(Depi))
       expr <- parse(text = expr)[[1]]
       if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElementExample){
         tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
