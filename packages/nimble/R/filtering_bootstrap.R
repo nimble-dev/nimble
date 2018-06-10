@@ -51,6 +51,10 @@ bootFStep <- nimbleFunction(
     isLast <- (iNode == length(nodes))
     ess <- 0
     resamplerFunctionList <- nimbleFunctionList(resamplerVirtual)
+    if(resamplingMethod == 'default'){
+      resamplerFunctionList[[1]] <- residualResampleFunction()
+      defaultResamplerFlag <- TRUE
+    }
     if(resamplingMethod == 'residual')
       resamplerFunctionList[[1]] <- residualResampleFunction()
     if(resamplingMethod == 'multinomial')
@@ -113,7 +117,12 @@ bootFStep <- nimbleFunction(
     
     ## Determine whether to resample by weights or not.
     if(ess < threshNum){
-      ids <- resamplerFunctionList[[1]]$run(wts)
+      if(defaultResamplerFlag == TRUE){
+        rankSample(normWts, m, ids, silent)	 
+      }
+      else{
+        ids <- resamplerFunctionList[[1]]$run(wts)  
+      }
       ## out[2] is an indicator of whether resampling takes place.
       ## Resampling affects how ll estimate is calculated at next time point.
       out[2] <- 1
@@ -166,7 +175,7 @@ bootFStep <- nimbleFunction(
 #' \describe{
 #'  \item{thresh}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
 #'   effective sample size is less than \code{thresh} times the number of particles.  Defaults to 0.8.}
-#'  \item{resamplingMethod}{The type of resampling algorithm to be used within the particle filter.  Can choose between \code{'systematic'}, \code{'stratified'}, \code{'residual'}, and \code{'multinomial'}.  Defaults to \code{'systematic'}.}
+#'  \item{resamplingMethod}{The type of resampling algorithm to be used within the particle filter. Can choose between \code{'default'} (which uses NIMBLE's \code{rankSample()} function),  \code{'systematic'}, \code{'stratified'}, \code{'residual'}, and \code{'multinomial'}.  Defaults to \code{'default'}.  Resampling methods other than \code{'default'} are currently experimental.}
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
 #'  \item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]) if \code{smoothing = TRUE}, or instead to save filtered samples from f(x[t]|y[1:t]) if \code{smoothing = FALSE}.  \code{smoothing = TRUE} only works if \code{saveAll = TRUE}.}
 #'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
@@ -226,10 +235,10 @@ buildBootstrapFilter <- nimbleFunction(
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
     if(is.null(initModel)) initModel <- TRUE
-    if(is.null(resamplingMethod)) resamplingMethod <- 'systematic'
-    if(!(resamplingMethod %in% c('multinomial', 'systematic', 'stratified',
+    if(is.null(resamplingMethod)) resamplingMethod <- 'default'
+    if(!(resamplingMethod %in% c('default', 'multinomial', 'systematic', 'stratified',
                                  'residual')))
-       stop('resamplingMethod must be one of: "multinomial", "systematic",
+       stop('resamplingMethod must be one of: "default", "multinomial", "systematic",
             "stratified", or "residual". ')
     #latent state info
     varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})

@@ -95,6 +95,11 @@ auxFStep <- nimbleFunction(
     }
     ess <- 0
     resamplerFunctionList <- nimbleFunctionList(resamplerVirtual)
+    defaultResamplerFlag <- FALSE
+    if(resamplingMethod == 'default'){
+      resamplerFunctionList[[1]] <- residualResampleFunction()
+      defaultResamplerFlag <- TRUE
+    }
     if(resamplingMethod == 'residual')
       resamplerFunctionList[[1]] <- residualResampleFunction()
     if(resamplingMethod == 'multinomial')
@@ -141,7 +146,12 @@ auxFStep <- nimbleFunction(
       }
       ## Normalize weights and resample.
       normAuxWts <- exp(auxWts)/sum(exp(auxWts))  
-      ids <- resamplerFunctionList[[1]]$run(normAuxWts)
+      if(defaultResamplerFlag == TRUE){
+        rankSample(normAuxWts, m, ids, silent)	 
+      }
+      else{
+        ids <- resamplerFunctionList[[1]]$run(normAuxWts)  
+      }
     }   
     for(i in 1:m) {
       if(notFirst) {
@@ -173,7 +183,12 @@ auxFStep <- nimbleFunction(
       ## Save weights for use in next timepoint's look-ahead step.
       mvWSamples['wts', i][currInd] <<- log(normWts[i])   
     }
-    ids <- resamplerFunctionList[[1]]$run(normWts)
+    if(defaultResamplerFlag == TRUE){
+      rankSample(normWts, m, ids, silent)	 
+    }
+    else{
+      ids <- resamplerFunctionList[[1]]$run(normWts)  
+    }
     for(i in 1:m){
       if(smoothing == 1){
         copy(mvWSamples, mvEWSamples, nodes = allPrevNodes, 
@@ -216,7 +231,7 @@ return(0)
 #' \describe{
 #' \item{lookahead}{The lookahead function used to calculate auxiliary weights.  Can choose between \code{'mean'} and \code{'simulate'}.
 #'  Defaults to \code{'simulate'}.}
-#'  \item{resamplingMethod}{The type of resampling algorithm to be used within the particle filter.  Can choose between \code{'systematic'}, \code{'stratified'}, \code{'residual'}, and \code{'multinomial'}.  Defaults to \code{'systematic'}.}
+#'  \item{resamplingMethod}{The type of resampling algorithm to be used within the particle filter.  Can choose between \code{'default'} (which uses NIMBLE's \code{rankSample()} function), \code{'systematic'}, \code{'stratified'}, \code{'residual'}, and \code{'multinomial'}.  Defaults to \code{'default'}. Resampling methods other than \code{'default'} are currently experimental.}
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (\code{TRUE}), or only for the most recent time point (\code{FALSE})}
 #'  \item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]) if \code{smoothing = TRUE}, or instead to save filtered samples from f(x[t]|y[1:t]) if \code{smoothing = FALSE}. \code{smoothing = TRUE} only works if \code{saveAll = TRUE}.}
 #'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time. This need only be set if the number of time points is less than or equal to the size of the latent state at each time point.}
@@ -292,10 +307,10 @@ buildAuxiliaryFilter <- nimbleFunction(
     else if(lookahead != "simulate"){
       stop("lookahead argument must be either 'simulate' or 'mean'")
     }
-    if(is.null(resamplingMethod)) resamplingMethod <- 'systematic'
-    if(!(resamplingMethod %in% c('multinomial', 'systematic', 'stratified',
+    if(is.null(resamplingMethod)) resamplingMethod <- 'default'
+    if(!(resamplingMethod %in% c('default', 'multinomial', 'systematic', 'stratified',
                                  'residual')))
-      stop('resamplingMethod must be one of: "multinomial", "systematic",
+      stop('resamplingMethod must be one of: "default", "multinomial", "systematic",
            "stratified", or "residual". ')
     
     ## Latent state info.
