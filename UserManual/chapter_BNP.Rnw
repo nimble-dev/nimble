@@ -20,33 +20,33 @@ As of version 0.6-11, NIMBLE provides initial support for Bayesian nonparametric
 
 NIMBLE provides support  for Bayesian nonparametric (BNP) mixture modeling.  The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures \citep{ferguson;73,ferguson;74,lo;84,escobar;94, escobar;west;95}.    More specifically, a DP mixture model takes the form
 
-$$y_i \mid G \overset{iid}{\sim} \int h(y_i \mid \theta) G(d\theta), (1)$$
+$$y_i \mid G \overset{iid}{\sim} \int h(y_i \mid \theta) G(d\theta),$$
 $$G \mid \alpha, G_0 \sim  DP(\alpha, G_0),$$
 
-\noindent where $h(\cdot \mid \theta)$ is a suitable kernel with parameter $\theta$,  and  $\alpha$  and $G_0$ are the concentration and  baseline distribution parameters of the DP, respectively. DP mixture models can be written with different levels of hierarchy, all being equivalent to  model (1) (I would like to add this a a reference to (1)).
+\noindent where $h(\cdot \mid \theta)$ is a suitable kernel with parameter $\theta$,  and  $\alpha$  and $G_0$ are the concentration and  baseline distribution parameters of the DP, respectively. DP mixture models can be written with different levels of hierarchy, all being equivalent to the model above.
 
 When the random measure $G$ is integrated out from the model, the DP mixture model can be written using  latent or membership variables, $z_i$,  following a Chinese Restaurant Process (CRP) distribution \citep{blackwell;mcqueen;73}, discussed in Section \ref{sec:crp}.  The model takes the form 
 
-$$y_i \mid \tilde{\boldsymbol{\theta}}, z_i \overset{ind}{\sim} h(\cdot \mid \tilde{\theta}_{z_i}), (2)$$
-$$\boldsymbol{z}\mid \alpha \sim CRP(\alpha),\hspace{0.5cm}  \tilde{\theta}_j \overset{iid}{\sim}G_0,$$
-where $CRP(\alpha)$ denotes the CRP  distribution with concentration parameter $\alpha$.
+$$y_i \mid \tilde{\boldsymbol{\theta}}, z_i \overset{ind}{\sim} h(\cdot \mid \tilde{\theta}_{z_i}),$$
+$$\boldsymbol{z}\mid \alpha \sim \mbox{CRP}(\alpha),\hspace{0.5cm}  \tilde{\theta}_j \overset{iid}{\sim}G_0,$$
+where $\mbox{CRP}(\alpha)$ denotes the CRP  distribution with concentration parameter $\alpha$.
 
 If a stick-breaking representation \citep{sethuraman;94}, discussed in section \ref{sec:sb}, is  assumed for the random measure $G$, then the model takes the form
 
-$$y_i \mid {\boldsymbol{\theta}}^{\star}, \boldsymbol{v} \overset{ind}{\sim} \sum_{l=1}^{\infty}\left\{ v_l\prod_{m<l}(1-v_m)\right\} h(\cdot \mid {\theta}_l^{\star}), (3) $$
+$$y_i \mid {\boldsymbol{\theta}}^{\star}, \boldsymbol{v} \overset{ind}{\sim} \sum_{l=1}^{\infty}\left\{ v_l\prod_{m<l}(1-v_m)\right\} h(\cdot \mid {\theta}_l^{\star}),$$
 $$v_l \mid \alpha \overset{iid}{\sim} Beta(1, \alpha),\hspace{0.5cm}  {\theta}_l^{\star} \overset{iid}{\sim}G_0.$$
 
 \noindent More general representations of the random measure can be specify by considering $v_l \mid \nu_l, \alpha_l \overset{ind}{\sim} Beta(\nu_l, \alpha_l)$. Finite dimensional approximations can be obtained by truncating the infinite sum to have $L$ components. 
 
-Different representations of  DP mixtures lead to different computational algorithms. NIMBLE supports sampling algorithms based on the CRP representation, as well as in the stick-breaking representation.  NIMBLE includes definitions of structures required to implement the CRP and stick-breaking distributions, and  the associated MCMC algorithms.
+Different representations of  DP mixtures lead to different computational algorithms. NIMBLE supports sampling algorithms based on the CRP representation, as well as on the stick-breaking representation.  NIMBLE includes definitions of structures required to implement the CRP and stick-breaking distributions, and  the associated MCMC algorithms.
 
 
 \section{Chinese Restaurant Process model}
 \label{sec:crp}
 
-The CRP is a distribution over the space of partitions of positive integers and is implemented in NIMBLE as the \cd{dCRP} distribution.  More details for using this distribution are available using \cd{help('CRP')}.
+The CRP is a distribution over the space of partitions of positive integers and is implemented in NIMBLE as the \cd{dCRP} distribution.  More details for using this distribution are available using \cd{help(CRP)}.
 
-The CRP can be described as a stochastic process in which customers arrive to a restaurant,  potentially with an infinite number of tables. Each customer sits on an empty or occupied table according to probabilities that depend on the number of customers in the occupied tables. Thus, the CRP partitions the set of customers, through their assignment to tables in the restaurant. 
+The CRP can be described as a stochastic process in which customers arrive at a restaurant,  potentially with an infinite number of tables. Each customer sits at an empty or occupied table according to probabilities that depend on the number of customers in the occupied tables. Thus, the CRP partitions the set of customers, through their assignment to tables in the restaurant. 
 
 \subsection{Specification and Density}
 
@@ -58,7 +58,7 @@ The \cd{dCRP} distribution is specified in NIMBLE for a membership vector \cd{z}
 
 $$\texttt{z[1:N] $\sim$ dCRP(conc, size)}$$
 
-The \cd{conc} parameter is the concentration parameter of the CRP,  controlling the probability of a customer sitting on a new table, i.e., creating a new cluster. The \cd{size} parameter defines the size of the integers set to be partitioned. See \cd{help('dCRP')} for details of these parameters. 
+The \cd{conc} parameter is the concentration parameter of the CRP,  controlling the probability of a customer sitting on a new table, i.e., creating a new cluster. The \cd{size} parameter defines the size of the set of integers to be partitioned.
 
 The \cd{conc} parameter is  a positive real value that can be treated as known or unknown. When a gamma prior is assumed for the \cd{conc} parameter, a specialized sampler is assigned. See more on this in section \ref{sec:mcmcdcrp}.
 
@@ -74,18 +74,18 @@ $$p(\boldsymbol{z} \mid \alpha) \propto \frac{\Gamma{(\alpha)}}{\Gamma{(\alpha +
 
 \noindent where $m_k(\boldsymbol{z})$ denotes the number of elements in  $\boldsymbol{z}$ that are equal to $k$.  The full conditional distribution for $z_i$ given $z_{-i}$ is 
 
-$$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}1_{\{z_j\}} (m)+ \frac{\alpha}{n-1+\alpha}1_{\{z^{new}\}}(m),$$
+$$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}1_{\{z_j\}} (m)+ \frac{\alpha}{n-1+\alpha}1_{\{z^{\mbox{new}}\}}(m),$$
 
-where $z_{-i}$ denotes vector $\boldsymbol{z}$ after removing its $i-$th component, $z^{new}$ is a value not in $z_{-i}$, and  $1_{A}$ denotes the indicator function at set $A$.
+\noindent where $z_{-i}$ denotes vector $\boldsymbol{z}$ after removing its $i-$th component, $z^{\mbox{new}}$ is a value not in $z_{-i}$, and  $1_{A}$ denotes the indicator function at set $A$.
 
 Note that the probability of creating a new cluster is proportional to $\alpha$: the larger the concentration parameter, the more clusters are created.
 
 \subsection{Example}\label{sec:excrp}
 
-The following example illustrates how to use NIMBLE to perform single density estimation for real-valued data, under a BNP approach, using the \cd{dCRP} distribution. The model is given by  
+The following example illustrates how to use NIMBLE to perform single density estimation for real-valued data, under a BNP approach, using the \cd{dCRP} distribution. (Note that the BNP approach is also often used to perform density estimation on random effects.) The model is given by  
 
 $$ y_i \mid \tilde{\boldsymbol{\theta}}, \tilde{\boldsymbol{\sigma}}^2, z_i \overset{ind}{\sim} N(\tilde{\theta}_{z_i}, \tilde{\sigma}^2_{z_i},)\hspace{0.5cm} i = 1, \ldots, N, $$
-$$ \boldsymbol{z} \sim CRP(\alpha), \hspace{0.5cm} \alpha \sim Gamma(1, 1), $$
+$$ \boldsymbol{z} \sim \mbox{CRP}(\alpha), \hspace{0.5cm} \alpha \sim Gamma(1, 1), $$
 $$ \tilde{\theta}_j \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}\tilde{\sigma}^2_j \overset{iid}{\sim}InvGamma(1, 1),  \hspace{0.2cm} j=1, \ldots, M. $$
 
 <<dCRP_Chunk, results = "hide", message = FALSE>>=
@@ -103,7 +103,7 @@ code <- nimbleCode({
 set.seed(1)
 constants <- list(N = 100, M = 50)
 data <- list(y = c(rnorm(50, -5, sqrt(3)), rnorm(50, 5, sqrt(4))))
-inits <- list(thetatilde = rnorm(constants$N, 0, var=100), 
+inits <- list(thetatilde = rnorm(constants$N, 0, 10), 
               s2tilde = rinvgamma(constants$N, 1, 1), 
               xi = sample(1:10, size = constants$N, replace = TRUE),
               alpha  = 1)
@@ -117,11 +117,11 @@ One of the advantages of BNP mixture models is that the number of clusters is tr
 
 \section{Stick-breaking model}\label{sec:sb}
 
-In NIMBLE, weights defined by sequentially breaking a stick, as in the stick-breaking process, are implemented as the \cd{stick\_breaking} link function. More details for using this function are available using \cd{help('stick\_breaking')}.
+In NIMBLE, weights defined by sequentially breaking a stick, as in the stick-breaking process, are implemented as the \cd{stick\_breaking} link function. More details for using this function are available using \cd{help(stick\_breaking)}.
 
 \subsection{Specification and Function}
 
-NIMBLE parametrizes the \cd{stick\_breaking} function by a $(0,1)-$valued vector.
+NIMBLE parametrizes the \cd{stick\_breaking} function by vector of values in $(0,1)$.
 
 \subsubsection*{Function}
 
@@ -130,10 +130,11 @@ The weights $(w_1, \ldots, w_L)$ follow a finite stick-breaking construction if 
 
 \subsubsection*{Specification}
 
-The \cd{stick\_breaking} function is specified in NIMBLE for a probabilities vector \cd{w} as 
-\texttt{w[1:L] <- stick\_breaking(v[1:(L-1)])}
+The \cd{stick\_breaking} function is specified in NIMBLE for a vector \cd{w} of probabilities as
 
-Parameter \cd{v}  is a vector of values between 0 and 1 defining  the breaking length of the stick. It is of length $L-1$, implicitly assuming that its last component is equal to 1.
+$$\texttt{w[1:L] <- stick\_breaking(v[1:(L-1)])}$$
+
+The argument \cd{v}  is a vector of values between 0 and 1 defining the sequential breaking points of the stick after removing the previous portions already broken off. It is of length $L-1$, implicitly assuming that its last component is equal to 1.
 
 In order to complete the definition of the weights in the stick-breaking representation of $G$, a prior distribution on $(0,1)$ should to be assumed for $v_l$, $l =1, \ldots, L-1$, for instance a beta prior.\\
 
@@ -143,7 +144,8 @@ In order to complete the definition of the weights in the stick-breaking represe
 Here we illustrate how to use NIMBLE for the example described in section \ref{sec:excrp}, but considering a stick-breaking representation for $G$. The model  is given by
 
 $$ y_i \mid \boldsymbol{\theta}^{\star}, {\boldsymbol{\sigma}^{\star}}^2, z_i \overset{ind}{\sim} N({{\theta}^{\star}}_{z_i}, {{\sigma}^2}^{\star}_{z_i}),\hspace{0.5cm}  i = 1, \ldots, N, $$
-$$ \boldsymbol{z} \sim Discrete(\boldsymbol{w}), \hspace{0.5cm} v_l\overset{iid}{\sim} Beta(1, 1), \hspace{0.2cm}l=1, \ldots, L-1, $$
+$$ \boldsymbol{z} \sim Discrete(\boldsymbol{w}), \hspace{0.5cm} v_l\overset{iid}{\sim} Beta(1, \alpha), \hspace{0.2cm}l=1, \ldots, L-1, $$
+$$ \alpha \sim Gamma(1, 1),$$
 $${\theta}^{\star}_l \overset{iid}{\sim} N(0, 100),  \hspace{0.5cm}{{\sigma}^2}^{\star}_l  \overset{iid}{\sim}InvGamma(1, 1),  \hspace{0.2cm} l=1, \ldots, L.$$
 
 \noindent where $ w_1=v_1$, $w_l=v_l\prod_{m<l}(1-v_m)$, for $l=1, \ldots, L-1$, and   $ w_L=\prod_{m<L}(1-v_m). $
@@ -173,7 +175,7 @@ inits <- list(thetastar = rnorm(constants$L, 0, 100),
               z = sample(1:10, size = constants$N, replace = TRUE),
               v  = rbeta(constants$L, 1, 1),
               alpha = 1)
-Rmodel <- nimbleModel(code, constants, data, inits)
+RmodelSB <- nimbleModel(code, constants, data, inits)
 @
 
 The resulting model may be carried through to MCMC sampling. NIMBLE will assign a specialized sampler to update \cd{v}. See chapter  \ref{cha:mcmc} for information about NIMBLE's MCMC engine, and section \ref{sec:mcmcsb} for details on  MCMC sampling of the stick-breaking weights. 
@@ -189,20 +191,20 @@ NIMBLE's MCMC engine provides specialized samplers for the \cd{dCRP} distributio
 
 \begin{enumerate}
 \item A conjugate sampler in the case of the baseline distribution being conjugate for the mixture kernel.
-\item A non conjugate sampler in the case of the baseline distribution  not being conjugate for the mixture kernel.
+\item A non-conjugate sampler in the case of the baseline distribution  not being conjugate for the mixture kernel.
 \end{enumerate}
 
-Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers.  Additionally, a specialized sampler is assigned to the \cd{conc} hyper parameter when a gamma hyper prior is assigned, see section 6 in \cite{escobar;west;95} for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned, case where \cd{NaN} can be produced in the MCMC steps.
+Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers.  Additionally, a specialized sampler is assigned to the \cd{conc} hyper parameter when a gamma hyper prior is assigned, see section 6 in \cite{escobar;west;95} for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
 
 \subsubsection{Initial values}
 
-Valid initial values should be provided for all elements of the process specified by a CRP structure before running the MCMC. A simple and safe choice for \cd{z} is to provide a sample of size \cd{N}, the same as its length, of values between 1 and 10, with replacement, as done in the preceding CRP example. For the concentration parameter, a safe initial value is 1.
+Valid initial values should be provided for all elements of the process specified by a CRP structure before running the MCMC. A simple and safe choice for \cd{z} is to provide a sample of size \cd{N}, the same as its length, of values between 1 and some reasonable number of clusters (less than or equal to the length if \cd{z}, with replacement, as done in the preceding CRP example. For the concentration parameter, a safe initial value is 1.
 
 \subsubsection{Sampling the random measure}
 
-In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$.  NIMBLE provides a sampler for this random measure when a CRP structure is involved in the model. This sampler is implemented  as  \cd{getSamplesDPmeasure\_samples}. More details for using this function are available using \cd{help('getSamplesDPmeasure')}.
+In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$.  NIMBLE provides a sampler for this random measure when a CRP structure is involved in the model. This sampler is implemented  as  \cd{getSamplesDPmeasure}. More details for using this function are available using \cd{help(getSamplesDPmeasure)}.
 
-The arguments of this sampler are a CRP-based BNP model and an uncompiled  model values object. The model values object should  include the membership variable, the cluster parameter, and the concentration parameter, if it is random. Use the \cd{monitors} argument when  configuring the MCMC to ensure this variables are monitored in the MCMC. 
+The arguments of this sampler are a CRP-based BNP model and an uncompiled  model values object. Note that the original MCMC should monitor the membership (clustering) variable, the cluster parameters, and the concentration parameter, if it is random. Use the \cd{monitors} argument when configuring the MCMC to ensure these variables are monitored in the MCMC. 
 
 The following code exemplifies how to generate samples from $G$ after defining the model as in section \ref{sec:excrp}.
 
@@ -232,5 +234,5 @@ breaking function, updating each component of the weight vector sequentially. Th
 
 \subsubsection{Initial values}
 
-Valid initial values should be provided for all elements of the stick-breaking function and membership variable  before running the MCMC. A simple and safe choice for $z$ is to provide a sample of size \cd{N},  of values between 1 and 10,  with replacement, $10\leq L$, as done in the preceding stick-breaking example. For the stick variables, safe initial values can be simulated from a beta distribution.
+Valid initial values should be provided for all elements of the stick-breaking function and membership variable  before running the MCMC. A simple and safe choice for $z$ is to provide a sample of size \cd{N},  of values between 1 and some value less than $L$ with replacement, as done in the preceding stick-breaking example. For the stick variables, safe initial values can be simulated from a beta distribution.
 
