@@ -189,7 +189,7 @@ get_DP_measure_samples <- nimbleFunction(
     # the error is between errors that are considered very very small in the folowing papers
     # Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
     # Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
-    approxError <- 1e-15 
+    approxError <- 1e-10 
     
     ## Storage object to be sized in run code based on MCMC output (Claudia note change to comment)
     samples <- matrix(0, nrow = 1, ncol = 1)
@@ -757,7 +757,6 @@ sampler_CRP <- nimbleFunction(
         }
       }
     }
-    
     if(is.null(tildeVars))
       stop('sampler_CRP:  The model should have at least one cluster variable.\n')
     
@@ -844,13 +843,13 @@ sampler_CRP <- nimbleFunction(
           if(cond>1) { # a new parameter has to be created to calculate the prob
             newind <- 1
             mySum <- sum(xi == newind)
-            while(mySum>0 & newind <= n) { # need to make sure don't go beyond length of vector
+            while(mySum>0 & newind < n) { # need to make sure don't go beyond length of vector
               newind <- newind+1
               mySum <- sum(xi == newind)
             }
             if(newind > min_nTilde) {
-              nimCat('CRP_sampler: This MCMC is not fully nonparametric. More components than cluster parameters exist are required.\n')
-              newind <- xi[i] 
+                nimCat('CRP_sampler: This MCMC is not fully nonparametric. More components than cluster parameters exist are required.\n')
+                newind <- xi[i]
             }
             model[[target]][i] <<- newind
             if(type == 'indivCalcs') {
@@ -887,9 +886,11 @@ sampler_CRP <- nimbleFunction(
       
       index <- rcat(n=1, exp(curLogProb-max(curLogProb)))#
       if(index==i) {# creates a new component: one that is not used
-        model[[target]][i] <<- newind
-        helperFunctions[[1]]$sample(i)
-      }else{
+          if(newind != xi[i]) {
+              model[[target]][i] <<- newind
+              helperFunctions[[1]]$sample(newind)
+          }  ## when newind == xi[i], it means we tried to create a cluster beyond min_nTilde, so don't sample new cluster parameters
+      } else{
         model[[target]][i] <<- model[[target]][index]
       } 
     }

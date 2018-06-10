@@ -209,8 +209,6 @@ conjugacyRelationshipsClass <- setRefClass(
                 dist <- model$getDistribution(firstNodeName)
                 conjugacyObj <- conjugacys[[dist]]
                 if(is.null(conjugacyObj)) next
-                if(!is.null(restrictLink))
-                    conjugacyObj$link <- restrictLink
                 # NO: insert logic here to check a single dependency and do next if can't be conjugate
                 #model$getDependencies('mu[1]',self=F,stochOnly=T)
                 #for( loop through deps )
@@ -229,7 +227,7 @@ conjugacyRelationshipsClass <- setRefClass(
                         function(index) {
                             targetNode <- maps$graphID_2_nodeName[nodeIDsFromOneDecl[index]]
                             depEnds <- deps[[index]]
-                            depTypes <- sapply(depEnds, function(x) conjugacyObj$checkConjugacyOneDep(model, targetNode, x))
+                            depTypes <- sapply(depEnds, function(x) conjugacyObj$checkConjugacyOneDep(model, targetNode, x, restrictLink))
                             if(!length(depTypes)) return(NULL)
                             if(!any(sapply(depTypes, is.null))) {
                                 uniqueDepTypes <- unique(depTypes)
@@ -263,7 +261,7 @@ conjugacyRelationshipsClass <- setRefClass(
                         firstDepPath <- depPathsByNodeUnlisted[[ uniquePathsUnlistedIndices[[j]][1] ]]
                         targetNode <- maps$graphID_2_nodeName[firstDepPath[1,1]]
                         depNode <- maps$graphID_2_nodeName[firstDepPath[nrow(firstDepPath), 1]]
-                        oneDepType <- conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
+                        oneDepType <- conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode, restrictLink)
                         conjDepTypes[j] <- if(is.null(oneDepType)) "" else oneDepType
                     }
                     
@@ -353,13 +351,15 @@ conjugacyClass <- setRefClass(
 
         ## used by new checkConjugacy() system
         ## see checkConjugacy for more explanation of each step
-        checkConjugacyOneDep = function(model, targetNode, depNode) {
+        checkConjugacyOneDep = function(model, targetNode, depNode, restrictLink = NULL) {
             if(model$getDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
             if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
             depNodeDist <- model$getDistribution(depNode)
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
             dependentObj <- dependents[[depNodeDist]]
-            if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
+            if(is.null(restrictLink)) {
+                if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
+            } else currentLink = restrictLink
             if(currentLink != 'stick_breaking') {
                 linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)

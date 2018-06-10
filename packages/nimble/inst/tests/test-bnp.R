@@ -6,11 +6,12 @@ nimbleOptions(verbose = FALSE)
 nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
+context('Testing of BNP functionality')
+
 ## Test get_DP_measure_samples:
-context('Testing get_DP_measure_samples')
 
 ##-- test: checking that all the necessary variables are monitored in mv object
-test_that("testing that required variables in (non compiled) mv object are monitored:", {
+test_that("get_DP_measure_samples: testing that required variables in (non compiled) mv object are monitored:", {
   
   # membership variable not being monitored:
   set.seed(1)
@@ -25,7 +26,7 @@ test_that("testing that required variables in (non compiled) mv object are monit
   Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, conc0 = 1)
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m, print=FALSE)
+  mConf <- configureMCMC(m,)
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
@@ -53,7 +54,7 @@ test_that("testing that required variables in (non compiled) mv object are monit
   Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, mu0 = 0, s20 = 1)
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m, print=FALSE)
+  mConf <- configureMCMC(m,)
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
   mvSaved = mMCMC$mvSamples
@@ -85,7 +86,7 @@ test_that("testing that required variables in (non compiled) mv object are monit
   Inits <- list(xi = c(1,1,2,1,1,2), mu = 1:6, conc0 = 1, a = 1, b = 1)
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m, print=FALSE)
+  mConf <- configureMCMC(m)
   mConf$addMonitors(c("xi"))
   mMCMC <- buildMCMC(mConf)
   mMCMC$run(10)
@@ -104,7 +105,7 @@ test_that("testing that required variables in (non compiled) mv object are monit
 
 
 
-test_that("the mv object is uncompiled :", {
+test_that("get_DP_measure_samples: the mv object is uncompiled :", {
   
   set.seed(1)
   code <- nimbleCode({
@@ -118,7 +119,7 @@ test_that("the mv object is uncompiled :", {
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m) 
-  mConf <- configureMCMC(m, print=FALSE)
+  mConf <- configureMCMC(m)
   mMCMC <- buildMCMC(mConf)
   CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE)
   
@@ -149,7 +150,7 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   cm <- compileNimble(m)
   
   monitors <- c('lambdaTilde','xi')
-  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
@@ -180,7 +181,7 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   cm <- compileNimble(m)
   
   monitors <- c('lambdaTilde','xi', 'conc0')
-  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
@@ -211,7 +212,7 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   cm <- compileNimble(m)
   
   monitors <- c('lambdaTilde','xi')
-  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
@@ -243,7 +244,7 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   cm <- compileNimble(m)
   
   monitors <- c('lambdaTilde','xi', 'conc0')
-  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
@@ -279,7 +280,7 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   cm <- compileNimble(m)
   
   monitors <- c('thetatilde', 's2tilde', 'xi')
-  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
@@ -317,7 +318,7 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   cm <- compileNimble(m)
   
   monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0')
-  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
@@ -357,7 +358,7 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   cm <- compileNimble(m)
   
   monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0')
-  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
@@ -399,7 +400,7 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   cm <- compileNimble(m)
   
   monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
-  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
@@ -444,7 +445,7 @@ test_that("get_DP_measure_samples can be used for more complicated models  :", {
   cm <- compileNimble(m)
   
   monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
-  mConf <- configureMCMC(m, print=FALSE, monitors = monitors)
+  mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
@@ -477,7 +478,7 @@ test_that("the model has cluster variables :", {
   Inits <- list(xi = c(1,1,2,1,1,2),  conc0 = 1)
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  mConf <- configureMCMC(m, print=TRUE)
+  mConf <- configureMCMC(m)
   
   expect_error(buildMCMC(mConf) ,
                'sampler_CRP:  The model should have at least one cluster variable.')
@@ -490,8 +491,6 @@ test_that("the model has cluster variables :", {
 
 
 ## Test stick_breaking nimble function:
-context('Testing stick breaking function')
-
 
 ##-- test: use through nimble function
 test_that("stick_breaking nimble function calculation and use is correct:", {
@@ -652,7 +651,7 @@ test_that("random sampling from model works fine:", {
   Inits <- list(z = rbeta(5, 1, 1))
   data <- list(xi = rep(1,10))
   SB_model3 <- nimbleModel(SB_code3, data=data, inits=Inits)
-  expect_message(SB_model3$simulate(), message="values in 'z' have to be in") # message is sent because z >1.
+  expect_output(SB_model3$simulate(), "values in 'z' have to be in") # message is sent because z >1.
   #expect_equal(c(SB_model3$w), rep(NaN, length(x)+1),
   #             info = "incorrect distribution for stick variables not identified")
   
@@ -922,7 +921,7 @@ test_that("Testing BNP model using stick breaking representation", {
   
   
   #-- MCMC configuration:
-  modelConf = configureMCMC(model, print=FALSE, thin=100)
+  modelConf = configureMCMC(model,, thin=100)
   
   expect_match(modelConf$getSamplers()[[51]]$name, "conjugate_dbeta_dcat",
                info = "failed to detect categorical-beta conjugacy in BNP model")
@@ -973,8 +972,6 @@ test_that("Testing BNP model using stick breaking representation", {
 #---------------------------------------------------------------------------------------------------------
 
 ## Testing CRP distribution
-
-context('Testing NIMBLE CRP distribution')
 
 test_that("dCRP nimble function calculates density correctly: ",{
   
@@ -1102,10 +1099,6 @@ test_that("random sampling from CRP and model works fine:", {
   
 })
 
-
-
-
-context("Testing of bnp conjugacy")
 
 test_that("Testing conjugacy detection with models using CRP: ", { 
   
@@ -1584,8 +1577,6 @@ testBUGSmodel(example = 'test11', dir = "",
 
 ## testing smapler assigment for conc parameter
 
-context("Testing of sampler assignment and priors for conc parameter in CRP")
-
 test_that("Testing sampler assignment and misspecification of priors for conc parameter: ", { 
   
   code = nimbleCode({
@@ -1640,7 +1631,9 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   })
   m = nimbleModel(code, data = list(y = rnorm(4)),
                   inits = list(xi = rep(1,4), mu = rnorm(4), alpha = 1))
-  expect_message(m$simulate(), message="value of concentration parameter ")
+  ## we do not warn of negative concentration values because there could be many such
+  ## warnings in certain MCMC samplers for the concentration parameter
+  expect_failure(expect_output(m$simulate(), "value of concentration parameter"))
   expect_error(m$calculate())
   # better way to tell the user that the prior for alpha is wrong?
   
@@ -1654,15 +1647,15 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   })
   m = nimbleModel(code, data = list(y = rnorm(4)),
                   inits = list(xi = rep(1,4), mu = rnorm(4)))
-  expect_message(m$simulate(), message="value of concentration parameter has to be larger than zero")
+  ## we do not warn of negative concentration values because there could be many such
+  ## warnings in certain MCMC samplers for the concentration parameter
+  expect_failure(expect_output(m$simulate(), "value of concentration parameter has to be larger than zero"))
   expect_error(m$calculate())
   
 })
 
 
 ## testing misspecification of dimension in a model
-
-context("Testing of misspecification of dimension when using CRP")
 
 test_that("Testing of misspecification of dimension when using CRP: ", { 
   
@@ -1801,14 +1794,13 @@ test_that("Testing of misspecification of dimension when using CRP: ", {
   expect_warning(mMCMC <- buildMCMC(conf))
   cmMCMC=compileNimble(mMCMC, project=m, resetFunctions=TRUE)
   set.seed(1)
-  expect_output(cmMCMC$run(1), message="CRP_sampler: This MCMC is not fully nonparametric.")
+  expect_output(cmMCMC$run(1), "CRP_sampler: This MCMC is not fully nonparametric.")
   
 })
 
 
 
 ## Test real BNP models:
-context('Testing BNP models based on CRP')
 
 test_that("Testing BNP model based on CRP", { 
   
@@ -1827,7 +1819,7 @@ test_that("Testing BNP model based on CRP", {
   m <- nimbleModel(code, data = data0, inits = Inits, constants = Consts,  calculate=TRUE)
   cm <- compileNimble(m) 
   
-  mConf <- configureMCMC(m, print=FALSE)
+  mConf <- configureMCMC(m)
   mMCMC <- buildMCMC(mConf)
   expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
   
@@ -1893,7 +1885,7 @@ test_that("Testing BNP model based on CRP", {
   m <- nimbleModel(code, data = data0, inits = Inits, constants = Consts,  calculate=TRUE)
   cm <- compileNimble(m) 
   
-  mConf <- configureMCMC(m, print=FALSE)
+  mConf <- configureMCMC(m)
   mConf$addMonitors('xi')
   mMCMC <- buildMCMC(mConf)
   expect_equal(mConf$getSamplers()[[101]]$name, "CRP_concentration")
@@ -1973,7 +1965,7 @@ test_that("Testing BNP model based on CRP", {
   m <- nimbleModel(Code, data=Data, inits=Inits, calculate=TRUE)
   cmodel <- compileNimble(m)
   
-  mConf <- configureMCMC(m, print=FALSE)
+  mConf <- configureMCMC(m)
   expect_warning(mMCMC <- buildMCMC(mConf))
   expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
@@ -2024,186 +2016,187 @@ test_that("Testing BNP model based on CRP", {
   
 })
 
-
-context('Testing more BNP models based on CRP')
-#-- Chris model 1
-codeBNP <- nimbleCode({
-  for(i in 1:nStudies) {
-    y[i] ~ dbin(size = nStudies, prob = q[i])#dbin(size = m[i], prob = q[i])
-    x[i] ~ dbin(size = nStudies, prob = p[i])#dbin(size = n[i], prob = p[i])
-    q[i] <- expit(theta + gamma[i])
-    p[i] <- expit(gamma[i])
-    gamma[i] ~ dnorm(mu[i], var = tau[i])
-    mu[i] <- muTilde[xi[i]]
-    tau[i] <- tauTilde[xi[i]]
-  }
-  for(i in 1:nStudies) {
-    muTilde[i] ~ dnorm(mu0, sd = sd0)
-    tauTilde[i] ~ dinvgamma(a0, b0)
-  }
-  xi[1:nStudies] ~ dCRP(conc, size = nStudies)
-  conc ~ dgamma(1, 1)
-  mu0 ~ dflat()
-  sd0 ~ dunif(0, 100)
-  a0 ~ dunif(0, 100)
-  b0 ~ dunif(0, 100)
-  theta ~ dflat()
+test_that("Testing more BNP models based on CRP", { 
+                                        #-- Chris model 1
+    codeBNP <- nimbleCode({
+        for(i in 1:nStudies) {
+            y[i] ~ dbin(size = nStudies, prob = q[i])#dbin(size = m[i], prob = q[i])
+            x[i] ~ dbin(size = nStudies, prob = p[i])#dbin(size = n[i], prob = p[i])
+            q[i] <- expit(theta + gamma[i])
+            p[i] <- expit(gamma[i])
+            gamma[i] ~ dnorm(mu[i], var = tau[i])
+            mu[i] <- muTilde[xi[i]]
+            tau[i] <- tauTilde[xi[i]]
+        }
+        for(i in 1:nStudies) {
+            muTilde[i] ~ dnorm(mu0, sd = sd0)
+            tauTilde[i] ~ dinvgamma(a0, b0)
+        }
+        xi[1:nStudies] ~ dCRP(conc, size = nStudies)
+        conc ~ dgamma(1, 1)
+        mu0 ~ dflat()
+        sd0 ~ dunif(0, 100)
+        a0 ~ dunif(0, 100)
+        b0 ~ dunif(0, 100)
+        theta ~ dflat()
+    })
+    
+    Consts=list(nStudies=10)
+    set.seed(1)
+    Inits=list(gamma=rep(1,10),
+               muTilde=rep(1,10),
+               tauTilde=rep(1,10),
+               xi=rep(1,10),
+               conc =1,
+               mu0 = 0,
+               sd0 = 1,
+               a0 = 1,
+               b0 = 1,
+               theta = 0)
+    
+    Data=list(y=rbinom(10, 10, 0.5), x=rbinom(10, 10, 0.5))
+    
+    model<-nimbleModel(codeBNP, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+    cmodel<-compileNimble(model)
+    
+    mConf <- configureMCMC(model)
+    mMCMC <- buildMCMC(mConf)
+    
+    expect_equal(mConf$getSamplers()[[1]]$name, "CRP_concentration")
+    expect_equal(mConf$getSamplers()[[7]]$name, "CRP")
+    expect_equal(class(mMCMC$samplerFunctions[[7]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+    
+                                        # Using testBUGSmodel
+    model <- function() {
+        for(i in 1:10) {
+            y[i] ~ dbin(size = 10, prob = q[i])#dbin(size = m[i], prob = q[i])
+            x[i] ~ dbin(size = 10, prob = p[i])#dbin(size = n[i], prob = p[i])
+            q[i] <- expit(theta + gamma[i])
+            p[i] <- expit(gamma[i])
+            gamma[i] ~ dnorm(mu[i], var = tau[i])
+            mu[i] <- muTilde[xi[i]]
+            tau[i] <- tauTilde[xi[i]]
+        }
+        for(i in 1:10) {
+            muTilde[i] ~ dnorm(mu0, sd = sd0)
+            tauTilde[i] ~ dinvgamma(a0, b0)
+        }
+        xi[1:10] ~ dCRP(conc, size = 10)
+        conc ~ dgamma(1, 1)
+        mu0 ~ dflat()
+        sd0 ~ dunif(0, 100)
+        a0 ~ dunif(0, 100)
+        b0 ~ dunif(0, 100)
+        theta ~ dflat()
+    }
+    set.seed(1)
+    Inits=list(gamma=rep(1,10),
+               muTilde=rep(1,10),
+               tauTilde=rep(1,10),
+               xi=rep(1,10),
+               conc =1,
+               mu0 = 0,
+               sd0 = 1,
+               a0 = 1,
+               b0 = 1,
+               theta = 0)
+    
+    Data=list(y=rbinom(10, 10, 0.5), x=rbinom(10, 10, 0.5))
+    
+    testBUGSmodel(example = 'test8', dir = "",
+                  model = model, data = Data, inits = Inits,
+                  useInits = TRUE)
+    
+    
+                                        #-- Chris model 2
+    library(emplik)
+    data(myeloma)
+    
+    n <- nrow(myeloma)
+    time <-  myeloma[ , 1]
+    vstatus <- myeloma[ , 2]  # 0 = alive (i.e., censored)
+    alive <- vstatus == 0
+    cens_time <- rep(NA, n)
+    cens_time[alive] <- time[alive]
+    cens_time[!alive] <- Inf
+    time[alive] <- NA
+    
+    logBUN <- myeloma[ , 3]
+    HGB <- myeloma[ , 4]
+    logBUN <- (logBUN - mean(logBUN)) / sd(logBUN)
+    HGB <- (HGB - mean(HGB)) / sd(HGB)
+    
+    ## accelerated failure time model per https://www4.stat.ncsu.edu/~ghosal/papers/PMR.pdf for Bayesian semiparametric AFT models
+    codeAFT <- nimbleCode({
+        for(i in 1:n) {
+            x[i] ~ dweib(alpha, exp(lambda[i]))   # 'data' nodes
+            is_cens[i] ~ dinterval(x[i], c[i])
+            lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
+            eta[i] <- etaTilde[xi[i]]
+        }
+        xi[1:n] ~ dCRP(conc, size = n)
+        conc ~ dgamma(1, 1)
+        for(i in 1:n){
+            etaTilde[i] ~ dunif(b0, B0)
+        }
+        alpha ~ dunif(a0, A0)
+        for(j in 1:p){
+            delta[j] ~ dflat() 
+        }
+    })
+    
+    constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
+                     = cens_time, Z = cbind(logBUN, HGB))
+    data = list(is_cens = as.numeric(alive), x = time)
+    xInit <- rep(NA, n)
+    xInit[alive] <- cens_time[alive] + 10
+    inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
+                 etaTilde = runif(n,constants$b0, constants$B0),
+                 xi = sample(1:3, n, replace = TRUE), x = xInit)
+    
+    model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
+    conf = configureMCMC(model)
+    mcmc = buildMCMC(conf)
+    
+    expect_equal(conf$getSamplers()[[1]]$name, "CRP_concentration")
+    expect_equal(conf$getSamplers()[[70]]$name, "CRP")
+    expect_equal(class(mcmc$samplerFunctions[[70]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+    
+    
+                                        # Using testBUGSmodel
+    model <- function() {
+        for(i in 1:n) {
+            x[i] ~ dweib(alpha, 1+exp(lambda[i]))   # 'data' nodes
+            is_cens[i] ~ dinterval(x[i], c[i])
+            lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
+            eta[i] <- etaTilde[xi[i]]
+        }
+        xi[1:n] ~ dCRP(conc, size = n)
+        conc ~ dgamma(1, 1)
+        for(i in 1:n){
+            etaTilde[i] ~ dunif(b0, B0)
+        }
+        alpha ~ dunif(a0, A0)
+        for(j in 1:p){
+            delta[j] ~ dflat() 
+        }
+    }
+    
+    Data = list(is_cens = as.numeric(alive), x = time, 
+                b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
+                = cens_time, Z = cbind(logBUN, HGB))
+    xInit <- rep(NA, n)
+    xInit[alive] <- cens_time[alive] + 10
+    Inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
+                 etaTilde = runif(n,Data$b0, Data$B0),
+                 xi = sample(1:3, n, replace = TRUE), x = xInit)
+    
+    testBUGSmodel(example = 'test9', dir = "",
+                  model = model, data = Data, inits = Inits, 
+                  useInits = TRUE)
 })
-
-Consts=list(nStudies=10)
-set.seed(1)
-Inits=list(gamma=rep(1,10),
-           muTilde=rep(1,10),
-           tauTilde=rep(1,10),
-           xi=rep(1,10),
-           conc =1,
-           mu0 = 0,
-           sd0 = 1,
-           a0 = 1,
-           b0 = 1,
-           theta = 0)
-
-Data=list(y=rbinom(10, 10, 0.5), x=rbinom(10, 10, 0.5))
-
-model<-nimbleModel(codeBNP, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
-cmodel<-compileNimble(model)
-
-mConf <- configureMCMC(model, print=FALSE)
-mMCMC <- buildMCMC(mConf)
-
-expect_equal(mConf$getSamplers()[[1]]$name, "CRP_concentration")
-expect_equal(mConf$getSamplers()[[7]]$name, "CRP")
-expect_equal(class(mMCMC$samplerFunctions[[7]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
-
-# Using testBUGSmodel
-model <- function() {
-  for(i in 1:10) {
-    y[i] ~ dbin(size = 10, prob = q[i])#dbin(size = m[i], prob = q[i])
-    x[i] ~ dbin(size = 10, prob = p[i])#dbin(size = n[i], prob = p[i])
-    q[i] <- expit(theta + gamma[i])
-    p[i] <- expit(gamma[i])
-    gamma[i] ~ dnorm(mu[i], var = tau[i])
-    mu[i] <- muTilde[xi[i]]
-    tau[i] <- tauTilde[xi[i]]
-  }
-  for(i in 1:10) {
-    muTilde[i] ~ dnorm(mu0, sd = sd0)
-    tauTilde[i] ~ dinvgamma(a0, b0)
-  }
-  xi[1:10] ~ dCRP(conc, size = 10)
-  conc ~ dgamma(1, 1)
-  mu0 ~ dflat()
-  sd0 ~ dunif(0, 100)
-  a0 ~ dunif(0, 100)
-  b0 ~ dunif(0, 100)
-  theta ~ dflat()
-}
-set.seed(1)
-Inits=list(gamma=rep(1,10),
-           muTilde=rep(1,10),
-           tauTilde=rep(1,10),
-           xi=rep(1,10),
-           conc =1,
-           mu0 = 0,
-           sd0 = 1,
-           a0 = 1,
-           b0 = 1,
-           theta = 0)
-
-Data=list(y=rbinom(10, 10, 0.5), x=rbinom(10, 10, 0.5))
-
-testBUGSmodel(example = 'test8', dir = "",
-              model = model, data = Data, inits = Inits,
-              useInits = TRUE)
-
-
-#-- Chris model 2
-library(emplik)
-data(myeloma)
-
-n <- nrow(myeloma)
-time <-  myeloma[ , 1]
-vstatus <- myeloma[ , 2]  # 0 = alive (i.e., censored)
-alive <- vstatus == 0
-cens_time <- rep(NA, n)
-cens_time[alive] <- time[alive]
-cens_time[!alive] <- Inf
-time[alive] <- NA
-
-logBUN <- myeloma[ , 3]
-HGB <- myeloma[ , 4]
-logBUN <- (logBUN - mean(logBUN)) / sd(logBUN)
-HGB <- (HGB - mean(HGB)) / sd(HGB)
-
-## accelerated failure time model per https://www4.stat.ncsu.edu/~ghosal/papers/PMR.pdf for Bayesian semiparametric AFT models
-codeAFT <- nimbleCode({
-  for(i in 1:n) {
-    x[i] ~ dweib(alpha, exp(lambda[i]))   # 'data' nodes
-    is_cens[i] ~ dinterval(x[i], c[i])
-    lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
-    eta[i] <- etaTilde[xi[i]]
-  }
-  xi[1:n] ~ dCRP(conc, size = n)
-  conc ~ dgamma(1, 1)
-  for(i in 1:n){
-    etaTilde[i] ~ dunif(b0, B0)
-  }
-  alpha ~ dunif(a0, A0)
-  for(j in 1:p){
-    delta[j] ~ dflat() 
-  }
-})
-
-constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
-                 = cens_time, Z = cbind(logBUN, HGB))
-data = list(is_cens = as.numeric(alive), x = time)
-xInit <- rep(NA, n)
-xInit[alive] <- cens_time[alive] + 10
-inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
-             etaTilde = runif(n,constants$b0, constants$B0),
-             xi = sample(1:3, n, replace = TRUE), x = xInit)
-
-model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
-conf = configureMCMC(model, print = TRUE)
-mcmc = buildMCMC(conf)
-
-expect_equal(conf$getSamplers()[[1]]$name, "CRP_concentration")
-expect_equal(conf$getSamplers()[[70]]$name, "CRP")
-expect_equal(class(mcmc$samplerFunctions[[70]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
-
-
-# Using testBUGSmodel
-model <- function() {
-  for(i in 1:n) {
-    x[i] ~ dweib(alpha, 1+exp(lambda[i]))   # 'data' nodes
-    is_cens[i] ~ dinterval(x[i], c[i])
-    lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
-    eta[i] <- etaTilde[xi[i]]
-  }
-  xi[1:n] ~ dCRP(conc, size = n)
-  conc ~ dgamma(1, 1)
-  for(i in 1:n){
-    etaTilde[i] ~ dunif(b0, B0)
-  }
-  alpha ~ dunif(a0, A0)
-  for(j in 1:p){
-    delta[j] ~ dflat() 
-  }
-}
-1
-Data = list(is_cens = as.numeric(alive), x = time, 
-            b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
-            = cens_time, Z = cbind(logBUN, HGB))
-xInit <- rep(NA, n)
-xInit[alive] <- cens_time[alive] + 10
-Inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
-             etaTilde = runif(n,Data$b0, Data$B0),
-             xi = sample(1:3, n, replace = TRUE), x = xInit)
-
-testBUGSmodel(example = 'test9', dir = "",
-              model = model, data = Data, inits = Inits, 
-              useInits = TRUE)
 
 ## options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
+    
