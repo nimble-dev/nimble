@@ -4,24 +4,28 @@
 \alias{runMCMC}
 \title{Run one or more chains of an MCMC algorithm and return samples, summary and/or WAIC}
 \usage{
-runMCMC(mcmc, niter = 10000, nburnin = 0, nchains = 1, inits,
+runMCMC(mcmc, niter = 10000, nburnin = 0, thin, thin2, nchains = 1, inits,
   setSeed = FALSE, progressBar = TRUE, samples = TRUE,
   samplesAsCodaMCMC = FALSE, summary = FALSE, WAIC = FALSE)
 }
 \arguments{
 \item{mcmc}{A NIMBLE MCMC algorithm.  See details.}
 
-\item{niter}{Number of iterations to run each MCMC chain (default = 10000).}
+\item{niter}{Number of iterations to run each MCMC chain.  Default value is 10000.}
 
-\item{nburnin}{Number of initial samples to discard from each MCMC chain (default = 0).}
+\item{nburnin}{Number of initial, pre-thinning, MCMC iterations to discard.  Default value is 0.}
 
-\item{nchains}{Number of MCMC chains to run (default = 1).}
+\item{thin}{Thinning interval for collecting MCMC samples, corresponding to \code{monitors}.  Thinning occurs after the initial nburnin samples are discarded. Default value is 1.}
+
+\item{thin2}{Thinning interval for collecting MCMC samples, corresponding to the second, optional set of \code{monitors2}.  Thinning occurs after the initial nburnin samples are discarded. Default value is 1.}
+
+\item{nchains}{Number of MCMC chains to run.  Default value is 1.}
 
 \item{inits}{Optional argument to specify initial values for each chain.  See details.}
 
-\item{setSeed}{Logical argument.  If \code{TRUE}, then R's random number seed is set to \code{i} (using \code{set.seed(i)}) at the onset of each MCMC chain number \code{i} (default = \code{FALSE}).}
+\item{setSeed}{Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.}
 
-\item{progressBar}{Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain (default = \code{TRUE}).}
+\item{progressBar}{Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is \code{TRUE}.}
 
 \item{samples}{Logical argument.  If \code{TRUE}, then posterior samples are returned from each MCMC chain.  These samples are optionally returned as \code{coda} \code{mcmc} objects, depending on the \code{samplesAsCodaMCMC} argument.  Default value is \code{TRUE}.  See details.}
 
@@ -32,7 +36,7 @@ runMCMC(mcmc, niter = 10000, nburnin = 0, nchains = 1, inits,
 \item{WAIC}{Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.}
 }
 \value{
-A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
+A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless this list contains only a single element, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}, and when the MCMC is monitoring a second set of nodes using \code{monitors2}, also \code{samples2}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
 }
 \description{
 Takes as input an MCMC algorithm (ideally a compiled one for speed)
@@ -54,9 +58,9 @@ If provided, the \code{inits} argument can be one of three things:
 
 The \code{inits} argument may also be omitted, in which case the current values in the \code{model} object will be used as the initial values of the first chain, and subsequent chains will begin using starting values where the previous chain ended.
 
-Other aspects of the MCMC algorithm, such as sampler assignments and thinning, must be specified in advance using the MCMC configuration object (created using \code{configureMCMC}), which is then used to build the MCMC algorithm (using \code{buildMCMC}) argument.
+Other aspects of the MCMC algorithm, such as the specific sampler assignments, must be specified in advance using the MCMC configuration object (created using \code{configureMCMC}), which is then used to build an MCMC algorithm (using \code{buildMCMC}) argument.
 
-The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument will remove post-thinning samples.
+The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument specifies the number of pre-thinning MCMC samples to discard.  After discarding these burn-in samples, thinning of the remaining samples will take place.  The total number of posterior samples returned will be floor((niter-nburnin)/thin).
 
 The MCMC option \code{mcmc$run(..., reset = FALSE)}, used to continue execution of an MCMC chain, is not available through \code{runMCMC()}.
 }

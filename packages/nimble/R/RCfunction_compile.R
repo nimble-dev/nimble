@@ -320,6 +320,7 @@ RCfunProcessing <- setRefClass(
             compileInfo$typeEnv[['neededRCfuns']] <<- list()
             compileInfo$typeEnv[['.AllowUnknowns']] <<- TRUE ## will be FALSE for RHS recursion in setSizes
             compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
+            compileInfo$typeEnv[['.allowFunctionAsArgument']] <<- FALSE ## will be TRUE when recursing on optim. See sizeOptim.
             compileInfo$typeEnv[['.nimbleProject']] <<- nimbleProject
 
             passedArgNames <-
