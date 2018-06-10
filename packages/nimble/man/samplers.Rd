@@ -17,6 +17,7 @@
 \alias{sampler_CAR_normal}
 \alias{sampler_CAR_proper}
 \alias{sampler_CRP}
+\alias{CRP_concentration}
 \alias{get_DP_measure_samples}
 \alias{sampler_RW}
 \alias{sampler_RW_PF}
@@ -313,26 +314,31 @@ The CAR_proper sampler accepts the following control list elements:
 }
 
 
-\section{CRP sampler}{
-
-The CRP sampler is designed for fitting models involving Dirichlet process mixtures. It is uniquely asigned to nodes having the Chinese Restaurant Process distribution, \code{dCRP}. It executes sequential sampling of each component of the node. Internally, any of two samplers can be assiged, depending on conjugate or non conjugate structures within the model. For conjugate and non conjugate model structures, updates are based on Algorithm 2 and Algorithm 8 in Neal (2000), respectively. 
-
-}
-
-\section{get_DP_measure_samples sampler}{
-
-The get_DP_measure_samples sampler is designed for sampling the random measure associated with the mixing distribution of a Dirichlet process mixture model. The random measure is represented by a stick-breaking (Sethuraman, 1994). This sampler can be used when a model having a CRP-distributed node is defined. 
-
-The mvSaved argument should be an uncompiled object and should include the following components from the mixture model: the membership variable, having the CRP distribution, the cluster parameters, all random parameters that are parents of the cluster parameters,  and the concentration parameter of the Dirichlet process, if random. To ensure this, use the \code{monitors} argument when configuring the MCMC.
-
-}
-
 \section{CRP_concentration sampler}{
 
 The CRP_concentration sampler is designed for Bayesian non-parametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process,  which, in the Chinese restaurant process, controls the probability of a customer sitting on a new table. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West, 1995.
 
+}
+
+
+\section{CRP sampler}{
+
+The CRP sampler is designed for fitting models involving Dirichlet process mixtures. It is exclusively asigned to nodes having the Chinese Restaurant Process distribution, \code{dCRP}. It executes sequential sampling of each component of the node. Internally, any of two samplers can be assiged, depending on conjugate or non conjugate structures within the model. For conjugate and non conjugate model structures, updates are based on Algorithm 2 and Algorithm 8 in Neal (2000), respectively. 
 
 }
+
+
+\section{get_DP_measure_samples sampler}{
+
+The DP_measure sampler is designed for sampling a truncated approximation of the random measure associated with the mixing distribution of a Dirichlet process mixture model. The random measure is represented by a stick-breaking (Sethuraman, 1994). This sampler can be used when a model having a CRP-distributed node is defined. 
+
+The truncation level of the random measure is given by a fixed error of approximation and posterior samples of the concentration parameter, if random. The error of approximation is the tail probability of the random measure (Section 4 in Ishwaran and Zarepour, 2000).
+
+The mvSaved argument should be an uncompiled object and should include the following components from the mixture model: the membership variable, having the CRP distribution, the cluster parameters, all stochastic parent nodes of the cluster variables, and the concentration parameter of the Dirichlet process, if random. To ensure this, use the \cd{monitors} argument when configuring the MCMC.
+
+}
+
+
 
 
 \section{posterior_predictive sampler}{
@@ -401,6 +407,8 @@ Neal, R. M. (2000). Markov chain sampling methods for Dirichlet process mixture 
 Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
 
 Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
+
+Ishwaran, H., and Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. \emph{Biometrika}, 87(2), 371-390.
 
 }
 \seealso{

@@ -189,7 +189,7 @@ get_DP_measure_samples <- nimbleFunction(
     # the error is between errors that are considered very very small in the folowing papers
     # Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
     # Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
-    approxError <- 1e-10 
+    approxError <- 1e-15 
     
     ## Storage object to be sized in run code based on MCMC output (Claudia note change to comment)
     samples <- matrix(0, nrow = 1, ncol = 1)
