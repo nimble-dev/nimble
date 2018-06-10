@@ -63,14 +63,14 @@ nimSeq <- function(from, to, by, length.out) { ## this creates default arguments
 
 #' Explicitly declare objects created in setup code to be preserved and compiled as member data
 #'
-#' Normally a \code{nimbleFunction} determines what objects from \code{setup} code need to be preserved for \code{run} code or other member functions.  \code{setupOutputs} allows explicit declaration for cases when an object created in setup output is not use in member functions.
+#' Normally a nimbleFunction determines what objects from setup code need to be preserved for run code or other member functions.  \code{setupOutputs} allows explicit declaration for cases when an object created in setup code is not used in member functions.
 #' 
 #' @name setupOutputs
 #'
 #' @param ... An arbitrary set of names
 #'
 #' @details
-#' Normally any object created in \code{setup} code whose name appears in \code{run} or another member function is included in the save results of setup code.  When the nimbleFunction is compiled, such objects will become member data of the resulting C++ class.  If it is desired to force an object to become member data even if it does not appear in a member function, declare it using \code{setupOutputs}.  E.g. \code{setupOutputs(a, b)} declares that \code{a} and \code{b} should be preserved.
+#' Normally any object created in \code{setup} whose name appears in \code{run} or another member function is included in the saved results of setup code.  When the nimbleFunction is compiled, such objects will become member data of the resulting C++ class.  If it is desired to force an object to become member data even if it does not appear in a member function, declare it using \code{setupOutputs}.  E.g., \code{setupOutputs(a, b)} declares that \code{a} and \code{b} should be preserved.
 #'
 #' The \code{setupOutputs} line will be removed from the setup code.  It is really a marker during nimbleFunction creation of what should be preserved.
 #' 
@@ -163,13 +163,22 @@ makeParamInfo <- function(model, nodes, param) {
 
     distInfos <- lapply(distNames, getDistributionInfo)
     paramIDvec <- unlist(lapply(distInfos, function(x) x$paramIDs[param]))
+
+    ## this check needed because getParamID no longer called
+    if(any(is.na(paramIDvec)))
+        stop(paste0("getParam: parameter '", param, "' not found in distribution ",
+                    paste0(unique(distNames), collapse = ','), "."))
+    
     typeVec <- unlist(lapply(distInfos, function(x) x$types[[param]]$type))
     nDimVec <- unlist(lapply(distInfos, function(x) x$types[[param]]$nDim))
     
    ## paramIDvec <- sapply(distNames, getParamID, param)
    ## typeVec <- sapply(distNames, getType, param)
    ## nDimVec <- sapply(distNames, getDimension, param)
-    if(length(unique(typeVec)) != 1 || length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.') 
+    if(length(unique(typeVec)) != 1 || length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.')
+
+    ## on C++ side, we always work with double
+    if(typeVec[1] %in% c('integer', 'logical')) typeVec[1] <- 'double'
     ans <- c(list(paramID = paramIDvec), type = typeVec[1], nDim = nDimVec[1])
     class(ans) <- 'getParam_info'
     ans
@@ -212,7 +221,7 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
         paramInfo <- node
     } else {
         ## not already converted; this is regular execution
-        if(length(node) != 1) stop(paste0("getParam only works for one node at a time, but", length(node), "were provided."))
+        if(length(node) != 1) stop(paste0("getParam only works for one node at a time, but ", length(node), " were provided."))
         ## makeParamInfo, called by nodeFunctionVector, will check on length of param
         ## nodeFunctionIndex should never be used.
         nfv <- nodeFunctionVector(model, node)
@@ -261,7 +270,9 @@ makeBoundInfo <- function(model, nodes, bound) {
     if(length(nodes) > 1) stop("'getBound' only set up to work with a single node'") # I think this is consistent with current getParam behavior
     distInfo <- getDistributionList(model$getDistribution(nodes))
     boundIDvec <- c('lower'=1,'upper'=2)[bound]
-    typeVec <- unlist(lapply(distInfo, function(x) x$types[['value']]$type)) # should always be 'double'
+    typeVec <- unlist(lapply(distInfo, function(x) x$types[['value']]$type)) 
+    ## on C++ side, we always work with double
+    if(typeVec[1] %in% c('integer', 'logical')) typeVec[1] <- 'double'
     
     # at moment have bound be scalar regardless of dimension of parameter, as assumed to be same value for all elements of a multivariate distribution; we are not fully handling truncation/bounds for multivariate nodes anyway:
     nDimVec <- 0  # unlist(lapply(distInfo, function(x) x$types[['value']]$nDim))
@@ -705,7 +716,7 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
         else
             accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
     } else
-        if(inherits(to, "modelValuesBaseClass")) {
+        if(inherits(to, "modelValuesBaseClass") || inherits(to, "CmodelValues")) {
             if(is.null(nodesTo) ) 
                 accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
             else
