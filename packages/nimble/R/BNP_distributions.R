@@ -24,22 +24,23 @@
 
 #' The Chinese Restaurant Process Distribution
 #'
-#'   Density and random generation for the Chinese
-#'   Restaurant Process distribution
+#'   EXPERIMENTAL Density and random generation for the Chinese
+#'   Restaurant Process distribution.
 #' 
 #' @name ChineseRestaurantProcess 
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only n = 1 is handled currently).
 #' @param conc scalar concentration parameter.
-#' @param size integer-valued length of \code{x}.
+#' @param size integer-valued length of \code{x} (required).
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Claudia Wehrhahn
 #' @details The Chinese restaurant process distribution is a distribution
 #' on the space of partitions of the positive integers. 
 #' The distribution with concentration parameter \eqn{=\alpha}{= conc} has 
 #' probability function 
-#' \deqn{f(x_i \mid x_1, \ldots, x_{i-1})=\frac{1}{i-1+\alpha}\sum_{j=1}^{i-1}\delta_{x_j}+
+#' \deqn{
+#' f(x_i \mid x_1, \ldots, x_{i-1})=\frac{1}{i-1+\alpha}\sum_{j=1}^{i-1}\delta_{x_j}+
 #' \frac{\alpha}{i-1+\alpha}\delta_{x^{new}},}
 #' where \eqn{x^{new}} is a new integer not in \eqn{x_1, \ldots, x_{i-1}}.
 #' 
@@ -53,13 +54,50 @@
 #' de Probabilit\'{e}s de Saint-Flour XIII - 1983} (pp. 1-198). Springer, Berlin, 
 #' Heidelberg.
 #' 
-#'Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{Lecture
-#' Notes-Monograph Series}, 245-267.
+#'Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{IMS Lecture
+#' Notes-Monograph Series}, 30: 245-267.
 #' 
 #' @examples
 #' x <- rCRP(n=1, conc = 1, size=10)
 #' dCRP(x, conc = 1, size=10)
 NULL
+
+#' @rdname ChineseRestaurantProcess
+#' @export
+dCRP=nimbleFunction(
+    run=function(x = double(1), 
+               conc = double(0, default=1),
+               size = integer(0),
+               log = integer(0, default=0))
+    {
+        returnType(double(0))
+        n <- length(x)  
+    
+        if(n != size) {
+            stop("dCRP: length of x has to be equal to size.\n")
+        }
+    
+        if( conc <= 0 | is.na(conc) ) {
+        #    nimCat("dCRP: value of concentration parameter has to be larger than zero.\n")
+            return(NaN)
+        }
+        
+        ldens <- 0 # log scale
+        if(n > 1) {
+            for(i in 2:n) {
+                counts <- sum(x[i] == x[1:(i-1)])
+                if( counts > 0 ) {
+                    ldens <- ldens + log(counts / (i-1+conc))
+                } else {
+                  ldens <- ldens + log(conc / (i-1+conc))
+                }
+            }
+        }
+        
+        if(log) return(ldens)
+        else return(exp(ldens)) 
+    }
+)
 
 #' @rdname ChineseRestaurantProcess
 #' @export
@@ -99,45 +137,6 @@ rCRP <- nimbleFunction(
     }
 )
 
-
-#' @rdname ChineseRestaurantProcess
-#' @export
-dCRP=nimbleFunction(
-    run=function(x = double(1), 
-               conc = double(0, default=1),
-               size = integer(0),
-               log = integer(0, default=0))
-    {
-        returnType(double(0))
-        n <- length(x)  
-    
-        if(n != size) {
-            stop("dCRP: length of x has to be equal to size.\n")
-        }
-    
-        if( conc <= 0 | is.na(conc) ) {
-        #    nimCat("dCRP: value of concentration parameter has to be larger than zero.\n")
-            return(NaN)
-        }
-        
-        ldens <- 0 # log scale
-        if(n > 1) {
-            for(i in 2:n) {
-                counts <- sum(x[i] == x[1:(i-1)])
-                if( counts > 0 ) {
-                    ldens <- ldens + log(counts / (i-1+conc))
-                } else {
-                  ldens <- ldens + log(conc / (i-1+conc))
-                }
-            }
-        }
-        
-        if(log) return(ldens)
-        else return(exp(ldens)) 
-    }
-)
-
-
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -149,28 +148,37 @@ dCRP=nimbleFunction(
 
 #' The Stick Breaking Function
 #'
-#' Computes probabilities based on stick breaking construction
+#' EXPERIMENTAL Computes probabilities based on stick breaking construction.
 #' 
-#' @name StickBreakingFunction 
+#' @name StickBreakingFunction
+#'
+#' @aliases stickbreaking
 #' 
 #' @param z vector argument.
 #' @param log logical; if TRUE, weights are returned on the log scale.
 #' @author Claudia Wehrhahn
 #' @details
-#' The stick breaking function produces a vector of probabilities that adds up to one,
-#' based on a series of individual probabilities in \code{z}, that should be between 
-#' \deqn{(0,1)]}, and define the breaking length of the stick.
-#' The returned vector has length equal to the length of z plus 1. 
+#' The stick breaking function produces a vector of probabilities that add up to one,
+#' based on a series of individual probabilities in \code{z}, that define the breaking
+#' points relative to the remaining stick length. The first element of \code{z} determines
+#' the first probability based on breaking a proportion \code{z[1]} from a stick of length one.
+#' The second element of \code{z} determines the second probability based on breaking a
+#' proportion \code{z[2]} from the remaining stick (of length \code{1-z[1]}), and so forth.
+#' Each element of \code{z} should be in 
+#' \eqn{(0,1)}.
+#' The returned vector has length equal to the length of \code{z} plus 1. 
 #' If \code{z[k]} is equal to 1, then the returned vector has length smaller than \code{z}. 
-#' If one of the components is smaller than 0 or greater than 1, NaNs are returned.
+#' If one of the components is smaller than 0 or greater than 1, \code{NaN}s are returned.
 #' @references Sethuraman, J. (1994). A constructive definition of Dirichlet priors.
 #'  \emph{Statistica Sinica}, 639-650.
 #' @examples
 #' z <- rbeta(5, 1, 1)
 #' stick_breaking(z)
-#' 
+#'
+#' \dontrun{
 #' cstick_breaking <- compileNimble(stick_breaking)
 #' cstick_breaking(z)
+#' }
 NULL
 
 #' @rdname StickBreakingFunction
@@ -182,7 +190,7 @@ stick_breaking <- nimbleFunction(
         returnType(double(1))
     
         N <- length(z)   
-        cond <- sum(z < 0) | sum(z > 1)
+        cond <- any(z < 0 | z > 1)
         if(cond) {
             nimCat("stick_breaking: values in 'z' have to be in (0,1).\n")
             return(rep(NaN, N+1))

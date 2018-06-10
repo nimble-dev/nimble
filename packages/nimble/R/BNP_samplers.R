@@ -2,9 +2,9 @@
 # integrated out. 
 # Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
-DP_measure = function( MCMCobject ) {
+getSamplesDPmeasure = function( MCMCobject ) {
   model = MCMCobject$model  ## I think that the model object is accessible from somewhere in the MCMC object
-  rsampler = get_DP_measure_samples(model, MCMCobject$mvSamples)
+  rsampler = sampleDPmeasure(model, MCMCobject$mvSamples)
   csampler = compileNimble(rsampler, project = model)
   csampler$run()
   samplesMeasure = csampler$samples
@@ -22,8 +22,8 @@ DP_measure = function( MCMCobject ) {
 
 
 
-get_DP_measure_samples <- nimbleFunction(
-  name = 'get_DP_measure_samples',
+sampleDPmeasure <- nimbleFunction(
+  name = 'sampleDPmeasure',
   contains=sampler_BASE,
   
   setup=function(model, mvSaved){
@@ -31,7 +31,7 @@ get_DP_measure_samples <- nimbleFunction(
     ## Check if the mvSaved is compiled or not.
     mvIsCompiled <- exists('dll', envir = mvSaved)
     if( mvIsCompiled ) {
-      stop("get_DP_measure_samples: modelValues object has to be an uncompiled object.\n")
+      stop("sampleDPmeasure: modelValues object has to be an uncompiled object.\n")
     }
     
     ## Determine variables in the mv object and nodes/variables in the model.
@@ -48,12 +48,12 @@ get_DP_measure_samples <- nimbleFunction(
       dcrpVar <- model$getVarNames(nodes = dcrpNode)
     } else {
       if(length(dcrpIndex) == 0 ){
-        stop('get_DP_measure_samples: One node with a dCRP distribution is required.\n')
+        stop('sampleDPmeasure: One node with a dCRP distribution is required.\n')
       }
-      stop('get_DP_measure_samples: Currently only models with one node with a dCRP distribution are allowed.\n')
+      stop('sampleDPmeasure: Currently only models with one node with a dCRP distribution are allowed.\n')
     }
     if( sum(dcrpVar == mvSavedVars) == 0 ){
-      stop( 'get_DP_measure_samples: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
+      stop( 'sampleDPmeasure: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
     }
     
     
@@ -80,20 +80,20 @@ get_DP_measure_samples <- nimbleFunction(
     ## Check that cluster variables are monitored.
     counts <- sapply(tildeVars, function(x) x %in% mvSavedVars)  
     if( sum(counts) != length(tildeVars) ) {
-      stop('get_DP_measure_samples: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
+      stop('sampleDPmeasure: The node(s) representing the cluster variables has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
     }
     
     if( is.null(tildeVars) ) { ## probably unnecessary as checked in CRP sampler, but best to be safe
-      stop('get_DP_measure_samples: The model should have at least one cluster variable.\n')
+      stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
     }
     
     ## Check that tilde variables are continuous and univariate variables (for avoiding long trials in simulating atoms for G in run code:
     for(i in seq_along(tildeVars)) {
       if( isDiscrete(model$getDistribution(tildeVars[i])[1]) ) { # the argument has to be the distribution of one node
-        stop('get_DP_measure_samples: cluster variables should be continuous random variables.\n')
+        stop('sampleDPmeasure: cluster variables should be continuous random variables.\n')
       }
       if( sum(model$isMultivariate(tildeVars)) > 0 ) {# getDimension(model$getDistribution(tildeVars[i])[1])
-        stop( 'get_DP_measure_samples: only univariate cluster variables are allowed.\n' )
+        stop( 'sampleDPmeasure: only univariate cluster variables are allowed.\n' )
       }
     }
     
@@ -127,7 +127,7 @@ get_DP_measure_samples <- nimbleFunction(
       ## Checking that stochastic parent nodes of tilde variables are in mvSaved:
       counts <- sapply(parentStochNodesTildeVars, function(x) x %in% mvSavedVars)  
       if( sum(unlist(counts)) != length(parentStochNodesTildeVars) ) { # unlist in case of tilde variables with no parent nodes
-        stop('get_DP_measure_samples: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
+        stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
       }
     }
     
@@ -165,13 +165,13 @@ get_DP_measure_samples <- nimbleFunction(
       ## copy savedParentNodes from mvSaved
       nimCopy(from = model, to = modelWithNAs, nodes = savedParentNodes) # Chris: should be mvSaved not model, we want to check that mvSaved has all we need to get conc, right? 
       if( length(savedParentNodes) == 0 ) { 
-        stop( 'get_DP_measure_samples: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
+        stop( 'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
       } else {
         modelWithNAs$calculate(model$getDependencies(savedParentNodes)) 
         # Error in if (counts > 0) { : missing value where TRUE/FALSE needed
         dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
         if( is.na(dcrpParam) ) {
-          stop('get_DP_measure_samples: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n')
+          stop('sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n')
         }
       }
       ## Determine stochastic and deterministic dependencies of parents of dCRP node
@@ -204,7 +204,7 @@ get_DP_measure_samples <- nimbleFunction(
     # defining the truncation level of the random measure's representation:
     if( fixedConc ) {
       dcrpAux <- model$getParam(dcrpNode, 'conc')
-      concSamples <- rep(dcrpAux, niter)   ## Claudia, I would rename 'concSamples' as 'concSamples'
+      concSamples <- numNumeric(length = niter, value = dcrpAux)
     } else {
       concSamples <- numeric(niter)
       for( iiter in 1:niter ) {
@@ -219,7 +219,7 @@ get_DP_measure_samples <- nimbleFunction(
     truncG <- round(truncG)
     #approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
     # I think is good to send message indicating what the truncation level is for an approximation error smaller than to 10^(-10)
-    nimCat('get_DP_measure_samples: Approximating the random measure by a finite stick-breaking representation with and error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
+    nimCat('sampleDPmeasure: Approximating the random measure by a finite stick-breaking representation with and error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
     
     ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
     ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)

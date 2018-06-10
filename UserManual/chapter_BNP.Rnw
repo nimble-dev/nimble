@@ -19,7 +19,7 @@ require(nimble)
 NIMBLE provides support  for Bayesian nonparametric (BNP) mixture modeling.  The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures \citep{ferguson;73,ferguson;74,lo;84,escobar;94, escobar;west;95}.    More specifically, a DP mixture model takes the form
 
 $$y_i \mid G \overset{iid}{\sim} \int h(y_i \mid \theta) G(d\theta), (1)$$
-$$G \mid \alpha, G_0 &\sim  DP(\alpha, G_0),$$
+$$G \mid \alpha, G_0 \sim  DP(\alpha, G_0),$$
 
 \noindent where $h(\cdot \mid \theta)$ is a suitable kernel with parameter $\theta$,  and  $\alpha$  and $G_0$ are the concentration and  baseline distribution parameters of the DP, respectively. DP mixture models can be written with different levels of hierarchy, all being equivalent to  model (1) (I would like to add this a a reference to (1)).
 
@@ -72,9 +72,9 @@ $$p(\boldsymbol{z} \mid \alpha) \propto \frac{\Gamma{(\alpha)}}{\Gamma{(\alpha +
 
 \noindent where $m_k(\boldsymbol{z})$ denotes the number of elements in  $\boldsymbol{z}$ that are equal to $k$.  The full conditional distribution for $z_i$ given $z_{-i}$ is 
 
-$$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}\indicator_{\{z_j\}} (m)+ \frac{\alpha}{n-1+\alpha}\indicator_{\{z^{new}\}}(m),$$
+$$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}\mathbbm{1}_{\{z_j\}} (m)+ \frac{\alpha}{n-1+\alpha}\mathbbm{1}_{\{z^{new}\}}(m),$$
 
-where $z_{-i}$ denotes vector $\boldsymbol{z}$ after removing its $i-$th component, $z^{new}$ is a value not in $z_{-i}$, and  $\indicator_{A}$ denotes the indicator function at set $A$.
+where $z_{-i}$ denotes vector $\boldsymbol{z}$ after removing its $i-$th component, $z^{new}$ is a value not in $z_{-i}$, and  $\mathbbm{1}_{A}$ denotes the indicator function at set $A$.
 
 Note that the probability of creating a new cluster is proportional to $\alpha$: the larger the concentration parameter, the more clusters are created.
 
