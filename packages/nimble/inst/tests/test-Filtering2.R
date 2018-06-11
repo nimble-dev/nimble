@@ -193,6 +193,34 @@ test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, 
   resultsTolerance = list(mean = list(sigma_x = .5,
                                       sigma_y = .5)))
 
+
+test_that("user defined pf algo works in PMCMC", {
+  
+  userDefinedPF <- nimbleFunction( 
+    setup = function(model, nodes, control = list()){
+      dims <- lapply(nodes, function(n) nimDim(model[[n]]))
+      mvEWSpec <- modelValuesConf(vars = c('x'), types = c('double'),
+                                  sizes = list(x = dims[[1]]))
+      mvEWSamples <- modelValues(mvEWSpec)
+    },
+    run = function(m = integer()){
+      returnType(double(0))
+      resize(mvEWSamples, m)
+      return(-Inf)
+    }
+  )
+  
+  testModel <- nimbleModel(code = code, constants = consts, data = testdata, inits = inits)
+  testModel$simulate()
+  testMCMCconf <- configureMCMC(testModel, nodes = NULL)
+  testMCMCconf$addSampler(target = c('sigma_x', 'sigma_y'), type = 'RW_PF_block', control = list(latents = 'x',
+                                                                                                 pfType = userDefinedPF))
+  testMCMC <- buildMCMC(testMCMCconf)
+  testMCMC$run(100)
+  ctestModel <- compileNimble(testModel)
+  ctestMCMC <- compileNimble(testMCMC, project = testModel)
+  ctestMCMC$run(100)
+})
 ## Let's stop here to save testing time
 ## # test MCMC with longer runs and lower tolerance
 ## set.seed(0)
