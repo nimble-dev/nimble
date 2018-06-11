@@ -1,6 +1,35 @@
 ## samples from measure G after initial MCMC is run on a CRP-based model
 ## Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
+#-----------------------------------------
+# Wrapper function of sampleDPmeasure
+#-----------------------------------------
+#' The get Samples DP measure function
+#'
+#' EXPERIMENTAL Wrap function for sampleDPmeasure sampler
+#' 
+#' @name GetSamplesDPmeasureFunction
+#'
+#' @aliases getsamplesDPmeasure
+#' 
+#' @param MCMC an MCMC class object including the model and mvSaved.
+#' @author Claudia Wehrhahn and Christopher Paciorek
+#' @details
+#' The get samples DP measure function generates samples of a truncated approximation to the random measure associated with the mixing distribution of a Dirichlet process mixture model using the sampleDPmeasure sampler internally.
+#' 
+#' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, containing samples from the posterior distribution of the parameters.
+#'  
+#' The returned matrix contains samples from the truncated approximation of the random measure in its rows, including the names of the components in the stick-breaking representation. The stick-breaking weights are named \code{weights} and the atoms, or point masses, are name by the cluster variables in the model.
+#' @seealso \code{\link{sampleDPmeasure}} \code{\link{buildMCMC}}
+#' @references Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
+#' @examples
+#' RmodelMCMC <- buildMCMC(RmodelConf)
+#' cRmodelMCMC <- compileNimble(RmodelMCMC, project = Rmodel)
+#' cRmodelMCMC$run(1000)
+#' getSamplesDPmeasure(RmodelMCMC)
+NULL
+
+#' @name GetSamplesDPmeasureFunction
 #' @export
 getSamplesDPmeasure <- function(MCMC) {
     if(exists('model', MCMC))
@@ -34,6 +63,14 @@ getSamplesDPmeasure <- function(MCMC) {
     return(samplesMeasure)
 }
 
+
+
+#-----------------------------------------
+# Sampler of DP random measure
+#-----------------------------------------
+
+#' @rdname samplers
+#' @export
 sampleDPmeasure <- nimbleFunction(
   name = 'sampleDPmeasure',
   contains=sampler_BASE,
@@ -341,8 +378,12 @@ sampleDPmeasure <- nimbleFunction(
 
 
 
-#-- Sampler for concentration parameter, conc, of the dCRP distribution.
 
+#-----------------------------------------------
+# Sampler of concentration parameter in dCRP
+#-----------------------------------------------
+#' @rdname samplers
+#' @export
 sampler_CRP_concentration <- nimbleFunction(
   name = 'sampler_CRP_concentration',
   contains=sampler_BASE,
@@ -389,6 +430,10 @@ sampler_CRP_concentration <- nimbleFunction(
 )
 
 
+
+#-----------------------------------
+# Conjugate cases in Sampler CRP
+#-----------------------------------
 ## we need a base class because it is possible (perhaps unlikely) that
 ## a user model might have two uses of dCRP samplers that are different versions
 ## e.g., a nonconjugate and a dnorm_dnorm conjugate
@@ -733,7 +778,11 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
 
 
 
-# general dCRP sampler covering nonconjugate and conjugate cases
+#----------------
+# Sampler CRP
+#----------------
+#' @rdname samplers
+#' @export
 sampler_CRP <- nimbleFunction(
   name = 'sampler_CRP',
   contains=sampler_BASE,
@@ -913,4 +962,14 @@ sampler_CRP <- nimbleFunction(
   },
   methods = list( reset = function () {})
 )
+
+
+
+
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+
+
+
 
