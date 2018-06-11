@@ -12,21 +12,22 @@
 #'
 #' @aliases getsamplesDPmeasure
 #' 
-#' @param MCMC an MCMC class object including the model and mvSaved.
+#' @param MCMC an MCMC class object including the model and mvSamples.
 #' @author Claudia Wehrhahn and Christopher Paciorek
 #' @details
-#' The get samples DP measure function generates samples of a truncated approximation to the random measure associated with the mixing distribution of a Dirichlet process mixture model using the sampleDPmeasure sampler internally.
+#' The getSamplesDPmeasure function generates samples of a truncated approximation of the random measure associated with the mixing distribution of a Dirichlet process mixture model using the sampleDPmeasure sampler, internally.
 #' 
-#' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, containing samples from the posterior distribution of the parameters.
+#' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compile version, containing the model and samples from the posterior distribution of the parameters.
 #'  
-#' The returned matrix contains samples from the truncated approximation of the random measure in its rows, including the names of the components in the stick-breaking representation. The stick-breaking weights are named \code{weights} and the atoms, or point masses, are name by the cluster variables in the model.
+#' The returned object is a matrix containing samples from the truncated approximation of the random measure in its rows, including the names of the components in the stick-breaking representation. The stick-breaking weights are named \code{weights} and the atoms, or point masses, are name by the cluster variables in the model.
 #' @seealso \code{\link{sampleDPmeasure}} \code{\link{buildMCMC}}
 #' @references Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
 #' @examples
 #' RmodelMCMC <- buildMCMC(RmodelConf)
 #' cRmodelMCMC <- compileNimble(RmodelMCMC, project = Rmodel)
 #' cRmodelMCMC$run(1000)
-#' getSamplesDPmeasure(RmodelMCMC)
+#' samplesG <- getSamplesDPmeasure(RmodelMCMC) 
+#' samplesG <- getSamplesDPmeasure(cRmodelMCMC) # compile version
 NULL
 
 #' @name GetSamplesDPmeasureFunction
@@ -238,7 +239,7 @@ sampleDPmeasure <- nimbleFunction(
     # the error is between errors that are considered very very small in the folowing papers
     # Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
     # Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
-    approxError <- 1e-10 
+    approxError <- 1e-15 
     
     ## Storage object to be sized in run code based on MCMC output (Claudia note change to comment)
     samples <- matrix(0, nrow = 1, ncol = 1)
