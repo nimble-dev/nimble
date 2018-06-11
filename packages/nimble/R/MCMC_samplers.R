@@ -1959,6 +1959,25 @@ sampler_CAR_proper <- nimbleFunction(
 #' }
 #'
 #'
+#' @section CRP sampler:
+#' 
+#' The CRP sampler is designed for fitting models involving Dirichlet process mixtures. It is exclusively assigned to nodes having the Chinese Restaurant Process distribution, \code{dCRP}. It executes sequential sampling of each component of the node. Internally, any of two samplers can be assigned, depending on conjugate or non conjugate structures within the model. For conjugate and non conjugate model structures, updates are based on Algorithm 2 and Algorithm 8 in Neal (2000), respectively.
+#'  
+#'  
+#' @section CRP_concentration sampler:
+#' 
+#' The CRP_concentration sampler is designed for Bayesian non-parametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process,  which, in   the Chinese restaurant process, controls the probability of a customer sitting on a new table, is assumed. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West, 1995.
+#' 
+#' 
+#' @section sampleDPmeasure sampler:
+#' 
+#' The DP_measure sampler is designed for sampling a truncated approximation to the random measure associated with the mixing distribution of a Dirichlet process mixture model. The random measure is represented by a stick-breaking (Sethuraman, 1994). This sampler can be used when a model having a CRP-distributed node is defined. 
+#' 
+#' The truncation level of the random measure is given by a fixed error of approximation and posterior samples of the concentration parameter, if random. The error of approximation is the tail probability of the random measure (Section 4 in Ishwaran and Zarepour, 2000).
+#' 
+#' The mvSaved argument should be an uncompiled object and should include the following components from the mixture model: the membership variable, having the CRP distribution, the cluster parameters, all stochastic parent nodes of the cluster parameters, and the concentration parameter of the Dirichlet process, if random. To ensure this, use the \code{monitors} argument when configuring the MCMC.
+#' 
+#' 
 #' @section posterior_predictive sampler:
 #'
 #' The posterior_predictive sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
@@ -1969,7 +1988,7 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @name samplers
 #'
-#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block
+#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block CRP CRP_concentration DPmeasure
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():
@@ -2023,6 +2042,15 @@ sampler_CAR_proper <- nimbleFunction(
 #' Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University.
 #'
 #' Tibbits, M. M.,  Groendyke, C.,  Haran, M., and Liechty, J. C. (2014).  Automated Factor Slice Sampling.  \emph{Journal of Computational and Graphical Statistics}, 23(2), 543-563.
+#' 
+#' Escobar, M. D., and West, M. (1995). Bayesian density estimation and inference using mixtures. \emph{Journal of the American Statistical Association}, 90(430), 577-588.
+#' 
+#' Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. \emph{Biometrika}, 87(2), 371-390.
+#' 
+#' Neal, R. M. (2000). Markov chain sampling methods for Dirichlet process mixture models. \emph{Journal of Computational and Graphical Statistics}, 9(2), 249-265.
+#' 
+#' Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
+#'
 NULL
 
 
