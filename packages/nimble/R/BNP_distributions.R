@@ -1,27 +1,3 @@
-
-#----------------------------------------------#
-# Chinese restaurant process distributions:
-#----------------------------------------------#
-
-# random number generator: rCRP
-#   input:
-#      n:  size of the sample
-#      conc: concentration parameter of the DP (related to sampling a new value)
-#   output:
-#      x: vector of size n
-#      size: 
-#
-#   a new value is sampled with probability conc/(i-1+conc), an existing
-#   value is sampled otherwise.
-
-# density evaluation: dCRP
-#   input: 
-#      x: a vector
-#      conc: concentration parameter of the DP
-#      log: density returned in log scale or not
-#   output:
-#      x: a value
-
 #' The Chinese Restaurant Process Distribution
 #'
 #'   EXPERIMENTAL Density and random generation for the Chinese
@@ -54,7 +30,7 @@
 #' de Probabilit\'{e}s de Saint-Flour XIII - 1983} (pp. 1-198). Springer, Berlin, 
 #' Heidelberg.
 #' 
-#'Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{IMS Lecture
+#' Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{IMS Lecture
 #' Notes-Monograph Series}, 30: 245-267.
 #' 
 #' @examples
@@ -74,7 +50,7 @@ dCRP=nimbleFunction(
         n <- length(x)  
     
         if(n != size) {
-            stop("dCRP: length of x has to be equal to size.\n")
+            stop("dCRP: length of 'x' has to be equal to 'size'.\n")
         }
     
         if( conc <= 0 | is.na(conc) ) {
@@ -137,15 +113,6 @@ rCRP <- nimbleFunction(
     }
 )
 
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-
-
-
-#----------------------------------------------#
-# stick_breaking nimbleFunction
-#----------------------------------------------#
-
 #' The Stick Breaking Function
 #'
 #' EXPERIMENTAL Computes probabilities based on stick breaking construction.
@@ -155,7 +122,7 @@ rCRP <- nimbleFunction(
 #' @aliases stickbreaking
 #' 
 #' @param z vector argument.
-#' @param log logical; if TRUE, weights are returned on the log scale.
+#' @param log logical; if \code{TRUE}, weights are returned on the log scale.
 #' @author Claudia Wehrhahn
 #' @details
 #' The stick breaking function produces a vector of probabilities that add up to one,
