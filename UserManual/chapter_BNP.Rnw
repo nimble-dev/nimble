@@ -183,7 +183,7 @@ The resulting model may be carried through to MCMC sampling. NIMBLE will assign 
 
 \section{MCMC sampling of BNP models}
 
-BNP models can be specified in different, yet equivalent, manners.  Examples \ref{sec:excrp} and \ref{sec:exsb} are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler \citep{neal;2000} is assigned.  Under this specification,  the random measure $G$ is integrated out from the model. When a stick-breaking representation is used, a blocked  Gibbs sampler is assigned, see  \cite{ishwaran2001gibbs} and \cite{ishwaran;james;2002}.
+BNP models can be specified in different, yet equivalent, manners.  Examples \ref{sec:excrp} and \ref{sec:exsb} are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler \citep{neal;2000} is assigned.  Under this specification,  the random measure $G$ is integrated out from the model. When a stick-breaking representation is used, a blocked  Gibbs sampler is assigned, see  \citep{ishwaran2001gibbs} and \citep{ishwaran;james;2002}.
 
 \subsection{Sampling  CRP models}\label{sec:mcmcdcrp}
 
@@ -194,7 +194,7 @@ NIMBLE's MCMC engine provides specialized samplers for the \cd{dCRP} distributio
 \item A non-conjugate sampler in the case of the baseline distribution  not being conjugate for the mixture kernel.
 \end{enumerate}
 
-Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers.  Additionally, a specialized sampler is assigned to the \cd{conc} hyper parameter when a gamma hyper prior is assigned, see section 6 in \cite{escobar;west;95} for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
+Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers.  Additionally, a specialized sampler is assigned to the \cd{conc} hyper parameter when a gamma hyper prior is assigned, see section 6 in \citep{escobar;west;95} for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
 
 \subsubsection{Initial values}
 
@@ -202,9 +202,9 @@ Valid initial values should be provided for all elements of the process specifie
 
 \subsubsection{Sampling the random measure}
 
-In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$.  NIMBLE provides a sampler for this random measure when a CRP structure is involved in the model. This sampler is implemented  as  \cd{getSamplesDPmeasure}. More details for using this function are available using \cd{help(getSamplesDPmeasure)}.
+In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$.  NIMBLE provides a sampler for this random measure when a CRP structure is involved in the model. This sampler is implemented  as  \cd{sampleDPmeasure} and used through the \cd{getsamplesDPmeasure} function. More details for using these functions are available using \cd{help(sampleDPmeasure)} and \cd{help(getsamplesDPmeasure)}, respectively.
 
-The arguments of this sampler are a CRP-based BNP model and an uncompiled  model values object. Note that the original MCMC should monitor the membership (clustering) variable, the cluster parameters, and the concentration parameter, if it is random. Use the \cd{monitors} argument when configuring the MCMC to ensure these variables are monitored in the MCMC. 
+The arguments of the \cd{getsamplesDPmeasure} function is a compile or uncompiled MCMC class object. The MCMC object should monitor the membership (clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the \cd{monitors} argument when configuring the MCMC to ensure these variables are monitored in the MCMC. 
 
 The following code exemplifies how to generate samples from $G$ after defining the model as in section \ref{sec:excrp}.
 
@@ -218,11 +218,13 @@ RmodelMCMC <- buildMCMC(RmodelConf)
 cRmodelMCMC <- compileNimble(RmodelMCMC, project = Rmodel)
 cRmodelMCMC$run(1000)
 
-rdens <- nimble:::get_DP_measure_samples(Rmodel, mRmodelMCMC$mvSamples)
-cdens <- compileNimble(rdens, project = Rmodel)
-cdens$run()
-samplesG <- cdens$samples
+samplesG <- getSamplesDPmeasure(cRmodelMCMC)
 @
+
+% rdens <- nimble:::get_DP_measure_samples(Rmodel, mRmodelMCMC$mvSamples)
+% cdens <- compileNimble(rdens, project = Rmodel)
+% cdens$run()
+% samplesG <- cdens$samples
 
 
 \subsection{Sampling stick breaking models}
