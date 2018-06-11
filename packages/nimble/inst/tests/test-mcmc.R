@@ -103,11 +103,11 @@ test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
 test_that('ice example reworked', {
                                         # rework ice example so that beta[1] and beta[2] will be top nodes
     system.in.dir(paste("sed 's/tau\\*1.0E-6/1.0E-6/g' icear.bug > ", file.path(tempdir(), "icear.bug")), dir = system.file('classic-bugs','vol2','ice', package = 'nimble'))
-    test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE)
+    test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
                                         # looks fine, but alpha and beta values shifted a bit (systematically) relative to JAGS results - on further inspection this is because mixing for this model is poor in both NIMBLE and JAGS - with longer runs they seem to agree (as best as one can tell given the mixing without doing a super long run)
     
     test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
-              data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
+              data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
                                         # getting warning; deterministic model node is NA or NaN in model initialization
                                         # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
     })
@@ -121,26 +121,26 @@ test_that('leuk example setup', {
     
     test_mcmc(model = file.path(tempdir(), "leuk.bug"), name = 'leuk', inits = system.file('classic-bugs', 'vol1', 'leuk','leuk-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'leuk','leuk-data.R', package = 'nimble'), numItsC = 1000,
               results = list(mean = list(beta = 1.58), sd = list(beta = 0.43)),
-              resultsTolerance = list(mean = list(beta = 0.02), sd = list(beta = 0.02)))
+              resultsTolerance = list(mean = list(beta = 0.02), sd = list(beta = 0.02)), avoidNestedTest = TRUE)
 })
 
 test_that('salm example setup', {
     writeLines(paste("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
     system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
-    test_mcmc(model = file.path(tempdir(), "salm.bug"), name = 'salm', inits = system.file('classic-bugs', 'vol1', 'salm','salm-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'salm','salm-data.R', package = 'nimble'), numItsC = 1000)
+    test_mcmc(model = file.path(tempdir(), "salm.bug"), name = 'salm', inits = system.file('classic-bugs', 'vol1', 'salm','salm-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'salm','salm-data.R', package = 'nimble'), numItsC = 1000, avoidNestedTest = TRUE)
                                         # looks good compared to JAGS
 })
 
 test_that('air example setup', {
     file.copy(system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), file.path(tempdir(), "air.bug"), overwrite=TRUE)
     system.in.dir(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug")))
-    test_mcmc(model = file.path(tempdir(), "air.bug"), name = 'air', inits = system.file('classic-bugs', 'vol2', 'air','air-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'air','air-data.R', package = 'nimble'), numItsC = 1000)
+    test_mcmc(model = file.path(tempdir(), "air.bug"), name = 'air', inits = system.file('classic-bugs', 'vol2', 'air','air-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'air','air-data.R', package = 'nimble'), numItsC = 1000, avoidNestedTest = TRUE)
                                         # theta[2] posterior is a bit off from JAGS - would be worth more investigation
 })
 
 test_that('jaw-linear setup', {
     system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) # alternative way to get size info in there
-    test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000) # , knownFailures = list('R MCMC' = 'Cholesky of NA matrix fails in R 3.4.2 in calculate(model) of initializeModel() but not in R 3.4.1'))
+    test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000, avoidNestedTest = TRUE) # , knownFailures = list('R MCMC' = 'Cholesky of NA matrix fails in R 3.4.2 in calculate(model) of initializeModel() but not in R 3.4.1'))
 })
 ## note R MCMC used to fail when tried to do Cholesky of 0 matrix in 2-point method, but no longer doing multiplicative link for Wishart targets
                                       
@@ -176,7 +176,8 @@ test_that('gap setup', {
     test_mcmc(model = gapCode, seed = 0, numItsC = 100000,
               results = list(mean = list(`a[2]` = 0) ),
               resultsTolerance = list(mean = list(`a[2]` = 0.1)),
-              samplers = list(list(type = 'RW', target = 'a[2]'))
+              samplers = list(list(type = 'RW', target = 'a[2]')),
+              avoidNestedTest = TRUE
               )
 })
 
@@ -204,7 +205,8 @@ test_that('very simple example setup', {
                   mean = list(x = 6/5, z = 5),
                   sd = list(x = 1/sqrt(5), z = 1/2)),
               resultsTolerance = list(mean = list(x = .1, z = .1),
-                                      sd = list(x = .05, z = .05)))
+                                      sd = list(x = .05, z = .05)),
+              avoidNestedTest = TRUE)
 })
 
 ### basic block sampler example
@@ -226,7 +228,8 @@ test_that('basic no-block sampler setup', {
                   mean = list(x = c(-2/3,0,2/3)),
                   var = list(x = rep(1/3,3))),
               resultsTolerance = list(mean = list(x = rep(.1,3)),
-                                      var = list(x = rep(.05,3))))
+                                      var = list(x = rep(.05,3))),
+              avoidNestedTest = TRUE)
     
     
     test_mcmc(model = code,
@@ -241,7 +244,8 @@ test_that('basic no-block sampler setup', {
                   list(type = 'RW_block', target = 'x[1]'),
                   list(type = 'RW_block', target = 'x[2]'),
                   list(type = 'RW_block', target = 'x[3]')
-              ), removeAllDefaultSamplers = TRUE, numItsC = 10000)
+              ), removeAllDefaultSamplers = TRUE, numItsC = 10000,
+              avoidNestedTest = TRUE)
     
     test_mcmc(model = code,
               name = 'basic block sampler on vector',
@@ -254,7 +258,7 @@ test_that('basic no-block sampler setup', {
                                       var = list(x = rep(.05,3))),
               samplers = list(
                   list(type = 'RW_block', target = 'x', control = list(adaptInterval = 500))
-              ), numItsC = 10000)  
+              ), numItsC = 10000, avoidNestedTest = TRUE)  
 })
 
 ### slice sampler example
@@ -289,7 +293,8 @@ test_that('slice sampler example setup', {
                               list(type = 'slice', target = 'beta1_1', control = list(adaptInterval = 10)),
                               list(type = 'slice', target = 'beta3_5', control = list(adaptInterval = 10)),
                               list(type = 'slice', target = 'binom10_p5', control = list(adaptInterval = 10)),
-                              list(type = 'slice', target = 'binom20_p3', control = list(adaptInterval = 10))))
+                              list(type = 'slice', target = 'binom20_p3', control = list(adaptInterval = 10))),
+              avoidNestedTest = TRUE)
     })
 
 
@@ -323,7 +328,7 @@ test_that('elliptical slice sampler setup', {
               results = list(mean = list(x = c(1.0216463, -0.4007247, 1.1416904))),
               resultsTolerance = list(mean = list(x = c(0.01, 0.01, 0.01))),
               numItsC = 100000,
-              samplers = list(list(type = 'ess', target = 'x')))
+              samplers = list(list(type = 'ess', target = 'x')), avoidNestedTest = TRUE)
     })
 
 
@@ -337,7 +342,7 @@ test_that('beta-binom conjugacy setup', {
     })
     data = list(y = c(3,4))
     
-    test_mcmc(model = code, name = 'check of beta-binom conjugacy', data = data, exactSample = list(x = c(0.195510839527966, 0.332847482503424,0.247768152764931, 0.121748195439553, 0.157842271774841, 0.197566496350904, 0.216991517500577, 0.276609942874852, 0.165733872345582, 0.144695512780252)), seed = 0)
+    test_mcmc(model = code, name = 'check of beta-binom conjugacy', data = data, exactSample = list(x = c(0.195510839527966, 0.332847482503424,0.247768152764931, 0.121748195439553, 0.157842271774841, 0.197566496350904, 0.216991517500577, 0.276609942874852, 0.165733872345582, 0.144695512780252)), seed = 0, avoidNestedTest = TRUE)
 })
 ### checkConjugacy_demo3_run.R - various conjugacies
 
@@ -362,7 +367,7 @@ test_that('various conjugacies setup', {
     sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),
                       c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
     
-    test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
+    test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), avoidNestedTest = TRUE)
     ## with fixing of jNorm[1] and kLogNorm[1] we no longer have: knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
 })
 
@@ -429,7 +434,7 @@ test_that('Dirichlet-multinomial conjugacy setup', {
     test_mcmc(model = code, name = 'Dirichlet-multinomial example', data= data, seed = 0, numItsC = 10000,
               inits = inits,
               results = list(mean = list(p = p)),
-              resultsTolerance = list(mean = list(p = rep(.06, K))))
+              resultsTolerance = list(mean = list(p = rep(.06, K))), avoidNestedTest = TRUE)
 })
 ## bad mixing for alphas; probably explains why posterior estimates for alphas changed so much as of v 0.4
   
@@ -467,7 +472,7 @@ test_that('Dirichlet-multinomial with replication setup', {
               resultsTolerance = list(mean = list(p = matrix(.05, m, K),
                                                   alpha = c(5,10,10,20,.5))),
               knownFailures = list('MCMC match to known posterior: p mean 39' = 'KNOWN ISSUE: two samples outside resultsTolerance',
-                                  'MCMC match to known posterior: p mean 76' = 'KNOWN ISSUE: two samples outside resultsTolerance'))
+                                  'MCMC match to known posterior: p mean 76' = 'KNOWN ISSUE: two samples outside resultsTolerance'), avoidNestedTest = TRUE)
 })
 # note alphas mix poorly (and are highly correlated),
 # presumably because of cross-level dependence between
@@ -501,7 +506,7 @@ test_that('Dirichlet-categorical conjugacy setup', {
     test_mcmc(model = code, name = 'Dirichlet-categorical example', data= data, seed = 0, numItsC = 10000,
               inits = inits,
               results = list(mean = list(p = p)),
-              resultsTolerance = list(mean = list(p = rep(.06, K))))
+              resultsTolerance = list(mean = list(p = rep(.06, K))), avoidNestedTest = TRUE)
 })
 
 ## also note that MCMC results here should be identical to those from
@@ -527,7 +532,7 @@ test_that('block sampler on MVN node setup', {
               resultsTolerance = list(mean = list(x = rep(1,3)),
                                       var = list(x = c(.1, .03, .01))),
               samplers = list(
-                  list(type = 'RW_block', target = 'x[1:3]')))
+                  list(type = 'RW_block', target = 'x[1:3]')), avoidNestedTest = TRUE)
                                         # caution: setting targetNodes='x' works but the initial end sampler is not removed because x[1:3] in targetNode in default sampler != 'x' in targetNodes passed in
     if(FALSE) {
         Rmodel <- nimbleModel(code, constants = list(Q=Q))
@@ -577,7 +582,7 @@ test_that('second block sampler on multivariate node', {
               resultsTolerance = list(mean = list(x = rep(.1,3)),
                                       var = list(x = c(.1,.1,.1))),
               samplers = list(
-                  list(type = 'RW_block', target = 'x[1:3]')))
+                  list(type = 'RW_block', target = 'x[1:3]')), avoidNestedTest = TRUE)
     })
 
 test_that('MVN conjugate setup', {
@@ -615,7 +620,7 @@ test_that('MVN conjugate setup', {
               results = list(mean = list(mu = muMeanTrue),
                              cov = list(mu = solve(muQtrue))),
               resultsTolerance = list(mean = list(mu = rep(.02,3)),
-                                      cov = list(mu = matrix(.01, 3, 3))))
+                                      cov = list(mu = matrix(.01, 3, 3))), avoidNestedTest = TRUE)
     
 
 ### scalar RW updates in place of conjugate mv update
@@ -628,7 +633,7 @@ test_that('MVN conjugate setup', {
               samplers = list(list(type = 'RW', target = 'mu[1]'),
                               list(type = 'RW', target = 'mu[2]'),
                               list(type = 'RW', target = 'mu[3]')),
-              removeAllDefaultSamplers = TRUE)
+              removeAllDefaultSamplers = TRUE, avoidNestedTest = TRUE)
     
 })
 
@@ -753,7 +758,7 @@ test_that('conjugate Wishart setup', {
               results = list(mean = list(Omega = OmegaTrueMean ),
                              sd = list(Omega = OmegaSimTrueSDs)),
               resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
-                                      sd = list(Omega = matrix(0.06, M, M))))
+                                      sd = list(Omega = matrix(0.06, M, M))), avoidNestedTest = TRUE)
                                         # issue with Chol in R MCMC - probably same issue as in jaw-linear
     
 })
@@ -975,52 +980,9 @@ test_that('RW_multinomial sampler', {
     cMcmcTest$run(niter)
     samples <- as.matrix(cMcmcTest$mvSamples)
     
-    test_that('exact results of RW_multinomial sampler', expect_identical(as.numeric(samples[10000,]), c(8, 25, 31, 115, 821, 25,19, 84, 510, 362)))
+    expect_identical(as.numeric(samples[10000,]), c(8, 25, 31, 115, 821, 25,19, 84, 510, 362),
+                     info = 'exact results of RW_multinomial sampler')
 })
-##################################
-## Trajectory Plots & Histogram ##
-##################################
-##iColsX <- 1:nGroups
-##iColsY <- iColsX + nGroups
-##plotHistograms <- N <= 1E4 ## FALSE ## TRUE
-##par(mfrow=c(2,1+plotHistograms))
-####
-##for (ii in 1:2) {
-##    if (ii == 1) {
-##        yMaxX <- 0
-##        yMaxY <- 0
-##    }
-##    ##
-##    plot (samples[,1],ylim=range(samples[,iColsX]), typ="n")
-##    for (ii in iColsX)
-##        lines(samples[,ii], col=rainbow(10,alpha=0.75)[ii])
-##    ##
-##    if (plotHistograms) {
-##        hist(samples[,1], col=rainbow(2*nGroups, alpha=0.1)[1], breaks=min(samples):max(samples), prob=TRUE, ylim=c(0,yMaxX))
-##        for (ii in iColsX) {
-##            h <- hist(samples[,ii], prob=TRUE, 
-##                      col=rainbow(2*nGroups, alpha=0.1)[ii],
-##                      border=rainbow(2*nGroups, alpha=0.1)[ii],
-##                      breaks=min(samples[,iColsX]):max(samples[,iColsX]), add=TRUE)
-##            yMaxX <- max(yMaxX, h$density)
-##        }
-##    }
-##    ## 
-##    plot (samples[,1],ylim=range(samples[,iColsY]), typ="n")
-##    for (ii in iColsY)
-##        lines(samples[,ii], col=rainbow(10,alpha=0.75)[ii])
-##    ##
-##    if (plotHistograms) {
-##        hist(samples[,1+nGroups], col=rainbow(2*nGroups, alpha=0.1)[1], breaks=min(samples[,iColsY]):max(samples[,iColsY]), prob=TRUE, ylim=c(0,yMaxY))
-##        for (ii in iColsY) {
-##            h <- hist(samples[,ii], prob=TRUE, 
-##                      col=rainbow(2*nGroups, alpha=0.1)[ii],
-##                      border=rainbow(2*nGroups, alpha=0.1)[ii],
-##                      breaks=min(samples[,iColsY]):max(samples[,iColsY]), add=TRUE)
-##            yMaxY <- max(yMaxY, h$density)
-##        }
-##    }
-##}
 
 ## testing the RW_multinomial sampler on distribution of size 2
 test_that('RW_multinomial sampler on distribution of size 2', {
@@ -1055,7 +1017,8 @@ test_that('RW_multinomial sampler on distribution of size 2', {
     
     samples <- as.matrix(Cmcmc$mvSamples)
     fracs <- apply(samples, 2, mean) / N
-    test_that('RW_multinomial sampler results within tolerance', expect_true(all(abs(as.numeric(fracs[c(1,3)]) - p) < 0.01)))
+    expect_true(all(abs(as.numeric(fracs[c(1,3)]) - p) < 0.01),
+                info = 'RW_multinomial sampler results within tolerance')
 })
 
 ## testing RW_dirichlet sampler
@@ -1102,7 +1065,8 @@ test_that('RW_dirichlet sampler consistent with conjugate multinomial sampler', 
     Csamples <- as.matrix(Cmcmc$mvSamples)
     means <- apply(Csamples, 2, mean)
 
-    expect_true( all(abs(means[c('p[1]','p[2]','p[3]')] - means[c('p2[1]','p2[2]','p2[3]')]) < 0.001), info = 'agreement between RW_dirichlet and conjugate dirichlet sampling' )
+    expect_true(all(abs(means[c('p[1]','p[2]','p[3]')] - means[c('p2[1]','p2[2]','p2[3]')]) < 0.001),
+                info = 'agreement between RW_dirichlet and conjugate dirichlet sampling' )
 })
     
 ## testing RW_dirichlet sampler
@@ -1373,10 +1337,31 @@ test_that('MCMC with logProb variable being monitored builds and compiles.', {
   inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
   Rmodel <- nimbleModel(code, constants=list(), data=list(), inits=inits)
   Cmodel <- compileNimble(Rmodel)
-  conf <- configureMCMC(Rmodel, monitors = 'logProb_y')
-  Rmcmc  <- buildMCMC(conf)
-  Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+  expect_silent(conf <- configureMCMC(Rmodel, monitors = 'logProb_y'))
+  expect_silent(Rmcmc  <- buildMCMC(conf))
+  if(nimbleOptions('verbose')) {
+      expect_message(Cmcmc <- compileNimble(Rmcmc, project = Rmodel), "compilation finished")
+  } else expect_silent(Cmcmc <- compileNimble(Rmcmc, project = Rmodel))
   Cmcmc$run(10)
+})
+
+test_that('slice sampler bails out of loop', {
+    code <- nimbleCode({
+        y ~ dnorm(0, sd = sigma)
+        sigma ~ dunif(0.5-1e-15, 0.5+1e-15)
+    })
+    Rmodel <- nimbleModel(code, data = list(y = 0), inits = list(sigma = 0.5))
+    Cmodel <- compileNimble(Rmodel)
+    conf <- configureMCMC(Rmodel, monitors = 'logProb_y', onlySlice = TRUE)
+    Rmcmc  <- buildMCMC(conf)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+    expect_silent(Cmcmc$run(10))
+
+    conf$removeSamplers('sigma')
+    conf$addSampler('sigma','slice', control = list(maxContractions = 10))
+    Rmcmc  <- buildMCMC(conf)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel, resetFunctions = TRUE)
+    expect_output(Cmcmc$run(1), "slice sampler reached maximum number of contractions")
 })
 
 

@@ -81,12 +81,12 @@ stochNodeInit <- nimbleFunction(
         theseVals <- values(model, node)
         if(is.na.vec(theseVals) | is.nan.vec(theseVals)) simulate(model, node)
         theseVals <- values(model, node)
-        if(is.na.vec(theseVals) | is.nan.vec(theseVals)) print('warning: value of stochastic node is NA or NaN')
+        if(is.na.vec(theseVals) | is.nan.vec(theseVals)) print('warning: value of stochastic node ',node,': value is NA or NaN even after trying to simulate.')
         lp <- calculate(model, node)
-        if(is.na(lp) | is.nan(lp)) print('warning: problem initializing stochastic node ', node, ', logProb is NA or NaN')
+        if(is.na(lp) | is.nan(lp)) print('warning: problem initializing stochastic node ', node, ': logProb is NA or NaN.')
         if(!(is.na(lp) | is.nan(lp))) {
             if(lp < -1e12) {
-                if(!silent) print('warning: problem initializing stochastic node, logProb less than -1e12')
+                if(!silent) print('warning: problem initializing stochastic node ', node, ': logProb less than -1e12.')
             }
         }
         model$calculate(thisDetermNodes)

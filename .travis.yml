@@ -1,6 +1,8 @@
 language: r
+r:
+    - 3.4     
 
-dist: trusty
+dist: xenial
 sudo: false
 
 cache:

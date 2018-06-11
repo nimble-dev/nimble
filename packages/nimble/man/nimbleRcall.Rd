@@ -2,7 +2,7 @@
 % Please edit documentation in R/externalCalls.R
 \name{nimbleRcall}
 \alias{nimbleRcall}
-\title{EXPERIMENTAL Make an R function callable from compiled nimbleFunctions (including nimbleModels).}
+\title{Make an R function callable from compiled nimbleFunctions (including nimbleModels).}
 \usage{
 nimbleRcall(prototype, returnType, Rfun, envir = .GlobalEnv)
 }
@@ -22,7 +22,7 @@ A \code{nimbleFunction} that wraps a call to \code{Rfun} with type-declared argu
 Normally compiled nimbleFunctions call other compiled nimbleFunctions.  nimbleRcall enables any R function (with viable argument types and return values) to be called (and evaluated in R) from compiled nimbleFunctions.
 }
 \details{
-This is an experimental feature. The \code{nimbleFunction} returned by \code{nimbleRcall} can be used in other \code{nimbleFunction}s.  When called from a compiled \code{nimbleFunction} (including from a model), arguments will be copied according to the declared types, the function named by \code{Rfun} will be called, and the returned object will be copied if necessary.  The example below shows use of an R function in a compiled \code{nimbleModel}.
+The \code{nimbleFunction} returned by \code{nimbleRcall} can be used in other \code{nimbleFunction}s.  When called from a compiled \code{nimbleFunction} (including from a model), arguments will be copied according to the declared types, the function named by \code{Rfun} will be called, and the returned object will be copied if necessary.  The example below shows use of an R function in a compiled \code{nimbleModel}.
 
 A \code{nimbleFunction} returned by \code{nimbleRcall} can only be used in a compiled \code{nimbleFunction}.  \code{Rfun} itself should work in an uncompiled \code{nimbleFunction}.
 }

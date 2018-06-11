@@ -9,11 +9,13 @@
 \alias{addSampler}
 \alias{getMonitors}
 \alias{getMonitors2}
+\alias{getSamplerExecutionOrder}
 \alias{getSamplers}
 \alias{printMonitors}
 \alias{printSamplers}
 \alias{removeSamplers}
 \alias{resetMonitors}
+\alias{setSamplerExecutionOrder}
 \alias{setSamplers}
 \alias{setThin}
 \alias{setThin2}
@@ -32,7 +34,7 @@ Arguments:
 
 ...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These are added onto the current monitors list.
 
-print: A logical argument, specifying whether to print all current monitors.
+print: A logical argument specifying whether to print all current monitors (default TRUE).
 
 Details: See the initialize() function
             }
@@ -43,7 +45,7 @@ Arguments:
 
 ...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These are added onto the current monitors2 list.
 
-print: A logical argument, specifying whether to print all current monitors.
+print: A logical argument specifying whether to print all current monitors (default TRUE).
 
 Details: See the initialize() function
             }
@@ -87,6 +89,10 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
 
 Returns a list object, containing the setup function, run function, and additional member methods for the specified nimbleFunction sampler.}
 
+\item{\code{getSamplerExecutionOrder()}}{Returns a numeric vector, specifying the ordering of sampler function execution.
+
+The indices of execution specified in this numeric vector correspond to the enumeration of samplers printed by printSamplers(), or returned by getSamplers().}
+
 \item{\code{getSamplers(ind)}}{Returns a list of samplerConf objects.
 
 Arguments:
@@ -96,7 +102,8 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
 \item{\code{initialize(model, nodes, control = list(), rules, monitors, thin = 1,
   monitors2 = character(), thin2 = 1, useConjugacy = TRUE,
   onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
-  warnNoSamplerAssigned = TRUE, print = FALSE)}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
+  enableWAIC = nimbleOptions("enableWAIC"), warnNoSamplerAssigned = TRUE,
+  print = FALSE)}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
 Arguments:
 
@@ -131,9 +138,11 @@ onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, 
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 
-warnNoSamplerAssigned: A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
+enableWAIC: A logical argument, specifying whether to enable WAIC calculations for the resulting MCMC algorithm.  Defaults to the value of nimbleOptions('enableWAIC'), which in turn defaults to FALSE.  Setting nimbleOptions('enableWAIC' = TRUE) will ensure that WAIC is enabled for all calls to configureMCMC and buildMCMC.
 
-print: A logical argument, specifying whether to print the ordered list of default samplers.}
+warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
+
+print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.}
 
 \item{\code{printMonitors()}}{Prints all current monitors and monitors2
 
@@ -141,7 +150,8 @@ Details: See the initialize() function
             }
 
 \item{\code{printSamplers(ind, displayControlDefaults = FALSE,
-  displayNonScalars = FALSE, displayConjugateDependencies = FALSE)}}{Prints details of the MCMC samplers.
+  displayNonScalars = FALSE, displayConjugateDependencies = FALSE,
+  executionOrder = FALSE)}}{Prints details of the MCMC samplers.
 
 Arguments:
 
@@ -149,22 +159,44 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
 
 displayConjugateDependencies: A logical argument, specifying whether to display the dependency lists of conjugate samplers (default FALSE).
 
-displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).}
+displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).
+
+executionOrder: A logical argument, specifying whether to print the sampler functions in the (possibly modified) order of execution (default FALSE).}
 
 \item{\code{removeSamplers(ind, print = FALSE)}}{Removes one or more samplers from an MCMCconf object.
 
 Arguments:
 
+This function also has the side effect of resetting the sampler execution ordering so as to iterate over the remaining set of samplers, sequentially, executing each sampler once.
+
 ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose 'target' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
-print: A logical argument, default value FALSE, specifying whether to print the current list of samplers once the removal has been done.}
+print: A logical argument specifying whether to print the current list of samplers once the removal has been done (default FALSE).}
 
 \item{\code{resetMonitors()}}{Resets the current monitors and monitors2 lists to nothing.
 
 Details: See the initialize() function
             }
 
+\item{\code{setEnableWAIC(waic = TRUE)}}{Sets the value of enableWAIC.
+
+Arguments:
+
+waic: A logical argument, indicating whether to enable WAIC calculations in the resulting MCMC algorithm (default TRUE).}
+
+\item{\code{setSamplerExecutionOrder(order, print = FALSE)}}{Sets the ordering in which sampler functions will execute.
+
+This allows some samplers to be "turned off", or others to execute multiple times in a single MCMC iteration.  The ordering in which samplers execute can also be interleaved.
+
+Arguments:
+
+order: A numeric vector, specifying the ordering in which the sampler functions will execute.  The indices of execution specified in this numeric vector correspond to the enumeration of samplers printed by printSamplers(), or returned by getSamplers().  If this argument is omitted, the sampler execution ordering is reset so as to sequentially execute each sampler once.
+
+print: A logical argument specifying whether to print the current list of samplers in the modified order of execution (default FALSE).}
+
 \item{\code{setSamplers(ind, print = FALSE)}}{Sets the ordering of the list of MCMC samplers.
+
+This function also has the side effect of resetting the sampler execution ordering so as to iterate over the specified set of samplers, sequentially, executing each sampler once.
 
 Arguments:
 
@@ -175,7 +207,7 @@ Alternatively, a character vector may be used to specify a set of model nodes an
 
 As another alternative, a list of samplerConf objects may be used as the argument, in which case this ordered list of samplerConf objects will define the samplers in this MCMC configuration object, completely over-writing the current list of samplers.  No checking is done to ensure the validity of the contents of these samplerConf objects; only that all elements of the list argument are, in fact, samplerConf objects.
 
-print: A logical argument, default value TRUE, specifying whether to print the new list of samplers.}
+print: A logical argument specifying whether to print the new list of samplers (default FALSE).}
 
 \item{\code{setThin(thin, print = TRUE)}}{Sets the value of thin.
 
@@ -183,7 +215,7 @@ Arguments:
 
 thin: The new value for the thinning interval 'thin'.
 
-print: A logical argument, specifying whether to print all current monitors.
+print: A logical argument specifying whether to print all current monitors (default TRUE).
 
 Details: See the initialize() function
             }
@@ -194,7 +226,7 @@ Arguments:
 
 thin2: The new value for the thinning interval 'thin2'.
 
-print: A logical argument, specifying whether to print all current monitors.
+print: A logical argument specifying whether to print all current monitors (default TRUE).
 
 Details: See the initialize() function
             }
