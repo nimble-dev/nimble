@@ -155,10 +155,12 @@ test_that("sampleDPmeasure can be used for more complicated models  :", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = nimble:::sampleDPmeasure(m, mMCMC$mvSamples)
-  cdens = compileNimble(rdens, project = m)
-  expect_output(cdens$run())
-  samplesG = cdens$samples
+  samplesG = getSamplesDPmeasure(mMCMC)
+  
+  #rdens = nimble:::sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run())
+  #samplesG = cdens$samples
   expect_true( sum(samplesG) != 'NaN')
   
   #samplesG = DP_measure(mMCMC)
