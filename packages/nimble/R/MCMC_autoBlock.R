@@ -113,7 +113,7 @@ autoBlockModel <- setRefClass(
             nInitialSamplers <- length(initialMCMCconf$samplerConfs)
             initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'slice',    print=FALSE)  ## add one slice sampler
             initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'RW',       print=FALSE)  ## add one RW sampler
-            initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'RW_block', print=FALSE)  ## add one RW_block sampler
+            initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'RW_block', print=FALSE, silent = TRUE)  ## add one RW_block sampler
             addCustomizedSamplersToInitialMCMCconf(runList)
             initialMCMCconf$addMonitors(monitorsVector, print=FALSE)
             RinitialMCMC <- buildMCMC(initialMCMCconf)
@@ -466,7 +466,7 @@ autoBlockClass <- setRefClass(
 
 addSamplerToConf <- function(Rmodel, conf, nodeGroup) {
     if(length(nodeGroup) > 1) {
-        conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
+        conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE, silent = TRUE); return()
     }
     if(!(nodeGroup %in% Rmodel$getNodeNames()) && !Rmodel$isDiscrete(nodeGroup)) {
         conf$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
@@ -489,7 +489,7 @@ addSamplerToConf <- function(Rmodel, conf, nodeGroup) {
         conf$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()
     }
     if(length(Rmodel$expandNodeNames(nodeGroup, returnScalarComponents = TRUE)) > 1) {
-        conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
+        conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE, silent = TRUE); return()
     }
     conf$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
 }

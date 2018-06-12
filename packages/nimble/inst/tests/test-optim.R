@@ -74,7 +74,7 @@ test_that("nimbleFunction with optim() runs", {
     )()
     temporarilyAssignInGlobalEnv(nimCallee)  # Work around scoping issues.
     par <- c(1.2, 3.4)
-    nimCaller$run(par)
+    expect_true(is(nimCaller$run(par), "OptimResultNimbleList"))
 })
 
 test_that("when an RCfunction optim()izes an RCfunction, the R and DSL behavior mostly agree", {

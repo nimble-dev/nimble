@@ -490,18 +490,20 @@ Either of the following forms,
 
 Truncation means the possible values of \cd{x} are limited a priori, hence the probability density of \cd{x} must be normalized\footnote{NIMBLE uses the CDF and inverse CDF (quantile) functions of a distribution to do this; in some cases if one uses truncation to include only the extreme tail of a distribution, numerical difficulties can arise.}.  In this example it would be the normal probability density divided by its integral from 0 to \cd{a}.  Like JAGS, NIMBLE also provides \cd{I} as a synonym for \cd{T} to accommodate older BUGS code, but \cd{T} is preferred because it disambiguates multiple usages of \cd{I} in BUGS.
 
-\subsubsection{Censoring} Censoring refers to the situation where one datum gives the lower or upper bound on an unobserved random variable.  This is common in survival analysis, when for an individual still surviving at the end of a study, the age of death is not known and hence is ``censored'' (right-censoring).  NIMBLE adopts JAGS syntax for censoring, as follows (using right-censoring as an example):
+\subsubsection{Censoring} Censoring refers to the situation where one datum gives the lower or upper bound on an unobserved random variable.  This is common in survival analysis, when for an individual still surviving at the end of a study, the age of death is not known and hence is ``censored'' (right-censoring).  NIMBLE adopts JAGS syntax for censoring, as follows:
  <<dinterval-example, eval=FALSE>>=
 censored[i] ~ dinterval(t[i], c[i])
 t[i] ~ dweib(r, mu[i])
 @
-where \cd{censored[i]} should be given as \cd{data} with a value of 1 if
+In the case of right-censoring, \cd{censored[i]} should be given as \cd{data} with a value of 1 if
 \cd{t[i]} is right-censored (\cd{t[i] $>$ c[i]}) and 0 if it is
 observed.  The data vector for \cd{t} should have \cd{NA} (indicating
 missing data) for any censored \cd{t[i]} entries. (As a result, these
 nodes will be sampled in an MCMC.)  The data vector for \cd{c} should
 give the censoring times corresponding to censored entries and a value
-below the observed times for uncensored entries (e.g., \cd{0}, assuming \cd{t[i] $>$ 0}). Left-censoring would be specified by setting \cd{censored[i]} to 0 and \cd{t[i]} to \cd{NA}. 
+above the observed times for uncensored entries (e.g., \cd{Inf}). 
+Left-censored observations would be specified by setting \cd{censored[i]} to 0 
+and \cd{t[i]} to \cd{NA}. 
   
 
 The \cd{dinterval} is not really a distribution but rather a trick: in the above example when \cd{censored[i] = 1} it gives a ``probability'' of 1 if \cd{t[i] $>$ c[i]} and 0 otherwise.  This means that \cd{t[i] $\le$ c[i]} is treated as impossible.  More generally than simple right- or left-censoring, \cd{censored[i] $\sim$ dinterval(t[i], c[i, ])} is defined such that for a vector of increasing cutpoints, \cd{c[i, ]}, \cd{t[i]} is enforced to fall within the \cd{censored[i]}-th cutpoint interval.  This is done by setting data \cd{censored[i]} as follows:

@@ -261,7 +261,12 @@ BUGSdeclClass$methods(
         
         targetExpr <<- code[[2]]
         valueExpr <<- code[[3]]
-        
+
+        if(type == 'stoch')
+            distributionName <<- as.character(valueExpr[[1]])
+        else
+            distributionName <<- NA
+
         transExpr <<- NULL
         indexExpr <<- NULL
         
@@ -326,11 +331,18 @@ BUGSdeclClass$methods(
         }
 )
 
-
+stripParentheses <- function(code) {
+    if(is.call(code)) {
+        if(code[[1]] == "(")
+            return(stripParentheses(code[[2]]))
+    }
+    code
+}
 
 ## move this to a util file when everything is working.  It is convenient here for now
 makeIndexNamePieces <- function(indexCode) {
-    if(nimbleOptions()$allowDynamicIndexing) {
+    indexCode <- stripParentheses(indexCode)
+    if(getNimbleOption('allowDynamicIndexing')) {
         if(length(indexCode) == 1)
             return(
                 if(is.numeric(indexCode))
@@ -354,7 +366,7 @@ makeIndexNamePieces <- function(indexCode) {
     if(as.character(indexCode[[1]] != ':'))
         stop(paste0("Error processing model: something is wrong with the index ",
                     deparse(indexCode),
-                    ". Note that any variables in index expressions must be provided as constants.  NIMBLE does not yet allow indices that are model nodes."),
+                    "."),
              call. = FALSE)
     p1 <- indexCode[[2]]
     p2 <- indexCode[[3]]

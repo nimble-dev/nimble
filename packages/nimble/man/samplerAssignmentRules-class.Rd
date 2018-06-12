@@ -37,7 +37,7 @@ position: Index of the position to add the new rule.  By default, new rules are 
 
 name: Optional character string name for the sampler to be added, which is used by subsequent print methods.  If 'name' is not provided, the 'sampler' argument is used to generate the name.  Note, if the 'sampler' argument is provided as an R expression making use of the addSampler method, then the 'name' argument will not be passed on to the MCMC configuration object, and instead any call(s) to addSampler can explicitly make use of its own 'name' argument.
 
-print: Logical argument (default = FALSE).  If TRUE, the newly-added sampler assignment rule is printed.}
+print: Logical argument specifying whether to print the newly-added sampler assignment rule (default FALSE).}
 
 \item{\code{initialize(empty = FALSE, print = FALSE)}}{Creates a new samplerAssignmentRules object, which is a container for an ordered set of rules for MCMC sampler assignments.  Objects of this class may be passed using the 'rules' argument to configureMCMC(), to customize the process of assigning samplers to stochastic model nodes.  By default, new samplerAssignmentRules objects are initialized having an exact copy of the default sampler assignment rules used by NIMBLE, and can thereafter be modified using the addRule() and reorder() methods.
 
@@ -45,7 +45,7 @@ Arguments:
 
 empty: Logical argument (default = FALSE).  If TRUE, then a new samplerAssignmentRules object is created containing no rules.  The default behaviour creates new objects containing an exact copy of the default sampler assignment rules used by NIMBLE.
 
-print: Logical argument (default = FALSE).  If TRUE, the ordered list of sampler assignment rules is printed.}
+print: Logical argument specifying whether to print the ordered list of sampler assignment rules (default FALSE).}
 
 \item{\code{printRules(ind)}}{Prints the ordered set of sampler assignment rules.
 
@@ -59,7 +59,7 @@ Arguments:
 
 ind: The indices of the current set of rules to keep.  Assuming there are 10 rules, reorder(1:5) will remove the final five rules, reorder(c(10,1:9)) will move the last (lowest priority) rule to the first position (highest priority), and reorder(8) deletes all rules except the eighth, making it the only (and hence first, highest priority) rule.
 
-print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list of sampler assignment rules is printed.}
+print: Logical argument specifying whether to print the resulting ordered list of sampler assignment rules (default FALSE).}
 }}
 \examples{
 \dontrun{
