@@ -186,7 +186,7 @@ exprAsListDrop2 <- function(expr) {
     if(is.null(ans)) as.list(expr[-c(1,2)]) else ans
 }
 
-getCallText <- function(code)      as.character(code[[1]])
+getCallText <- function(code)      deparse(code[[1]])
 
 parseTreeSubstitute <- function(pt, pattern, replacement) {
     if(identical(pt, pattern))    return(replacement)

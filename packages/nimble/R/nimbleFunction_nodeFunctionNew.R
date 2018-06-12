@@ -1,4 +1,4 @@
-nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeAndDims, logProbNodeExpr, type, setupOutputExprs, dynamicIndexInfo = NULL, evaluate = TRUE, where = globalenv()) {
+nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeAndDims, logProbNodeExpr, type, setupOutputExprs, dynamicIndexInfo = NULL, evaluate = TRUE, nodeDim = NULL, where = globalenv()) {
     if(!(type %in% c('stoch', 'determ')))       stop(paste0('invalid argument to nodeFunction(): type = ', type))
     setupOutputLabels <- nndf_makeNodeFunctionIndexLabels(setupOutputExprs) ## should perhaps move to the declInfo for preservation
     LHSrep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(LHS, setupOutputLabels)
@@ -38,7 +38,7 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, parentsSizeA
           ,
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
                  SETUPFUNCTION = nndf_createSetupFunction(),  ##nndf = new node function
-                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, parentsSizeAndDims, altParamsRep, boundsRep, logProbNodeExprRep, type, dynamicIndexLimitsExpr, RHS),
+                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, parentsSizeAndDims, altParamsRep, boundsRep, logProbNodeExprRep, type, dynamicIndexLimitsExpr, RHS, nodeDim),
                  CALCAD_LIST   = if(nimbleOptions('experimentalEnableDerivs')) list(getCalcADFunName()) else list(),
                  where         = where)
         )
@@ -127,7 +127,7 @@ indexedNodeInfoTableClass <- function(BUGSdecl) {
 }
 
 ## creates a list of the methods calculate, simulate, getParam, getBound, and getLogProb, corresponding to LHS, RHS, and type arguments
-nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bounds, logProbNodeExpr, type, dynamicIndexLimitsExpr, RHSnonReplaced) {
+nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bounds, logProbNodeExpr, type, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
     if(type == 'determ') {
         methodList <- eval(substitute(
             list(
@@ -138,7 +138,7 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
             ),
             list(LHS=LHS, # no longer used but kept for reference
                  RHS=RHS, # no longer used but kept for reference
-                 DETERMSIM = ndf_createDetermSimulate(LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced)
+                 DETERMSIM = ndf_createDetermSimulate(LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced, nodeDim = nodeDim)
                  )))
         if(nimbleOptions('experimentalEnableDerivs')){
           methodList[['CALCADFUNNAME']]  <- eval(substitute(
@@ -162,7 +162,7 @@ nndf_createMethodList <- function(LHS, RHS, parentsSizeAndDims, altParams, bound
             ),
             list(LHS       = LHS, # no longer used but kept for reference
                  LOGPROB   = logProbNodeExpr,
-                 STOCHSIM  = ndf_createStochSimulate(LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced),
+                 STOCHSIM  = ndf_createStochSimulate(LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced, nodeDim = nodeDim),
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced),
                  STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE, dynamicIndexLimitsExpr = dynamicIndexLimitsExpr, RHSnonReplaced = RHSnonReplaced))))
         if(nimbleOptions('experimentalEnableDerivs')){

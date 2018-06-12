@@ -1,3 +1,55 @@
+                            CHANGES IN VERSION 0.6-11 (June 2018)
+
+USER LEVEL CHANGES
+
+-- MCMC thinning intervals (thin and thin2) can now be modified at MCMC runtime.  These may be passed as arguments to either mcmc$run or to runMCMC.
+
+-- Both nimbleMCMC and runMCMC functions now drop burnin samples as "pre-thinning", if a thinning interval is specified.
+
+-- Increased functionality for the setSeed argument in nimbleMCMC and runMCMC functions.
+
+-- New functionality in MCMC, to specify the order in which sampler functions are executed.  This can allow for samplers being repeatedly executed, interleaved, or omitted.  This ordering is specified as part of the MCMC configuration.
+
+-- Invalid dynamic indexes are reported and now result in NaN values when calling calculate or simulate but no longer cause execution to error out. This allows MCMC sampling to continue when an invalid index is proposed and rejected.
+
+-- The model is fully (re-)initialized between MCMC runs in MCMCsuite(), so that every MCMC method will start from identical conditions.  This was usually but not always the case previously.
+
+-- Four new resampling methods are available for use in the auxiliary and bootstrap filters.  Resampling methods can be specified by the resamplingMethod control list argument to buildBootstrapFilter and buildAuxiliaryFilter.
+
+-- User-defined filtering algorithms can now be provided to the RW_PF and RW_PF_block samplers.
+
+BUG FIXES
+
+-- Slice, AFSS, and ESS samplers now have a maximum number of contractions to avoid infinite loops under unusual circumstances.
+
+-- Fixed error in generating getParam nodeFunctions with user-supplied distributions using integer types.
+
+-- In multivariate distribution arguments, general expressions continue to be disallowed, but expressions inside indexing brackets are now allowed. This allows, e.g., hidden Markov models implemented with a transition matrix and dcat to describe the time-dependence of latent states.
+
+-- Fixed bug involving getDependencies with downstream = TRUE.
+
+-- Fixed bug with using setSize in uncompiled nimbleFunction.
+
+-- Fixed bug in AF_slice sampler causing incorrect dependency updating that affected state-space type models with intermediate deterministic nodes.
+
+-- Fixed issues with setInits in complicated cases.
+
+DEVELOPER LEVEL CHANGES
+
+-- Updated some testing to function better with version 2.0.0 of testthat.
+
+-- Now allow "to" to be a CmodelValues in R version of nimCopy.
+
+-- Added better error trapping when an array is used with an index before it has been created in a nimbleFunction.
+
+-- Fixed infinite recursion issue.
+
+-- Better error message when invalid parameter name supplied to getParam.
+
+-- Added a check that there is a return statement when a returnType is provided.
+
+-- Improved error trapping for invalid indexing in BUGS models.
+
                            CHANGES IN VERSION 0.6-10 (March 2018)
 
 USER LEVEL CHANGES
