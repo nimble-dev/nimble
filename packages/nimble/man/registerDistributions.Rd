@@ -4,12 +4,15 @@
 \alias{registerDistributions}
 \title{Add user-supplied distributions for use in NIMBLE BUGS models}
 \usage{
-registerDistributions(distributionsInput, userEnv = parent.frame())
+registerDistributions(distributionsInput, userEnv = parent.frame(),
+  verbose = nimbleOptions("verbose"))
 }
 \arguments{
 \item{distributionsInput}{either a list or character vector specifying the user-supplied distributions. If a list, it should be a named list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}, and with the name of the list the same as that of the density function. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions.}
 
 \item{userEnv}{environment in which to look for the nimbleFunctions that provide the distribution; this will generally not need to be set by the user as it will default to the environment from which this function was called.}
+
+\item{verbose}{logical indicating whether to print additional logging information}
 }
 \description{
 Register distributional information so that NIMBLE can process
