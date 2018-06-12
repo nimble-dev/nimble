@@ -383,6 +383,8 @@ prepareDistributionInput <- function(dist) {
 #'
 #' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, it should be a named list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}, and with the name of the list the same as that of the density function. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions.
 #' @param userEnv environment in which to look for the nimbleFunctions that provide the distribution; this will generally not need to be set by the user as it will default to the environment from which this function was called.
+#' @param verbose logical indicating whether to print additional logging information
+#' 
 #' @author Christopher Paciorek
 #' @export
 #' @details
@@ -488,7 +490,7 @@ prepareDistributionInput <- function(dist) {
 #'         types = c('value = double(1)', 'alpha = double(1)')
 #'         )
 #'     ))
-registerDistributions <- function(distributionsInput, userEnv = parent.frame()) {
+registerDistributions <- function(distributionsInput, userEnv = parent.frame(), verbose = nimbleOptions('verbose')) {
     if(missing(distributionsInput)) {
         cat("No distribution information supplied.\n")
     } else {
@@ -500,7 +502,7 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame()) 
          } else {
             nms <- names(distributionsInput)
           }
-        if(nimbleOptions('verbose'))
+        if(verbose)
             cat("Registering the following user-provided distributions:", nms, ".\n")
         dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {

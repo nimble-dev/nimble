@@ -832,7 +832,7 @@ inits: A named list.  The names of list elements must correspond to model variab
                                   ##    nodeVector <- expandNodeNames(nodeVector)
                                   ##    nimble:::conjugacyRelationshipsObject$checkConjugacy(.self, nodeVector)
                                   ##},
-                                  checkConjugacy = function(nodeVector) {
+                                  checkConjugacy = function(nodeVector, restrictLink = NULL) {
                                       '
 Determines whether or not the input nodes appear in conjugate relationships
 
@@ -844,7 +844,7 @@ Details: The return value is a named list, with an element corresponding to each
 '
                                       if(missing(nodeVector)) nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
                                       nodeIDs <- expandNodeNames(nodeVector, returnType = 'ids')
-                                      nimble:::conjugacyRelationshipsObject$checkConjugacy(.self, nodeIDs)
+                                      nimble:::conjugacyRelationshipsObject$checkConjugacy(.self, nodeIDs, restrictLink = restrictLink)
                                   },
                                   checkBasics = function() {
                                       '

@@ -111,6 +111,8 @@ Collate:
     filtering_liuwest.R
     filtering_enkf.R
     filtering_bootstrap.R
+    BNP_distributions.R
+    BNP_samplers.R
     NF_utils.R
     miscFunctions.R
     makevars.R
