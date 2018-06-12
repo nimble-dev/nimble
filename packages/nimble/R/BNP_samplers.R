@@ -1,7 +1,43 @@
 ## samples from measure G after initial MCMC is run on a CRP-based model
 ## Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
+##-----------------------------------------
+##  Wrapper function for sampleDPmeasure
+##-----------------------------------------
+
+#' Get posterior samples for a Dirichlet process measure
+#'
+#' EXPERIMENTAL This function obtains samples from the estimated Dirichlet process measure for models specified using the \code{dCRP} distribution.
+#'
+#' @param MCMC an MCMC class object, either compiled or uncompiled.
+#' 
+#' @author Claudia Wehrhahn and Christopher Paciorek
+#' 
 #' @export
+#' @details
+#'  This function provides samples from a truncated approximation to the random measure associated with the mixing distribution of a Dirichlet process mixture model. The random measure is represented by a stick-breaking representation (Sethuraman, 1994). This sampler can only be used with models containing a \code{dCRP} distribution. 
+#'
+#' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compiled version. The MCMC should already have been run, as \code{getSamplesDPmeasure} uses the parameter samples to  generates samples for the random measure. Note that the monitors associated with that MCMC must include the cluster membership variable (which has the \code{dCRP} distribution), the cluster parameter variables, all variables directly determining the \code{dCRP} concentration parameter, and any stochastic parent variables of the cluster parameter variables. See \code{help(configureMCMC)} or \code{help(addMonitors)} for information on specifying monitors for an MCMC.
+#' 
+#' The truncation level of the random measure is determined based on a fixed error of approximation and by the posterior samples of the concentration parameter, if random. The error of approximation is the tail probability of the random measure (Section 4 in Ishwaran and Zarepour, 2000).
+#'  
+#' The returned object is a matrix containing samples from the truncated approximation of the random measure (one row per sample), with columns for the weights and the cluster variables. The stick-breaking weights are named \code{weights} and the atoms, or point masses, are named based on the cluster variables in the model.
+#' 
+#' @seealso \code{\link{buildMCMC}}, \code{\link{configureMCMC}}, 
+#' @references
+#'
+#' Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
+#'
+#' Ishwaran, H., and Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. \emph{Biometrika}, 87(2), 371-390.
+#' @examples
+#' \dontrun{
+#'   conf <- configureMCMC(model)
+#'   Rmcmc <- buildMCMC(conf)
+#'   Cmodel <- compileNimble(model)
+#'   Cmcmc <- compileNimble(Rmcmc, project = model)
+#'   runMCMC(Cmcmc, niter = 1000)
+#'   samplesG <- getSamplesDPmeasure(Cmcmc)
+#' }
 getSamplesDPmeasure <- function(MCMC) {
     if(exists('model', MCMC))
         compiled <- FALSE else compiled <- TRUE
@@ -64,10 +100,9 @@ sampleDPmeasure <- nimbleFunction(
             }
             stop('sampleDPmeasure: Currently only models with one node with a dCRP distribution are allowed.\n')
         }
-        if( sum(dcrpVar == mvSavedVars) == 0 ){
+        if(sum(dcrpVar == mvSavedVars) == 0)
             stop( 'sampleDPmeasure: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
-        }
-        
+      
         ## Find the cluster variables, named tildeVars
         targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
         tildeVars <- NULL
@@ -87,16 +122,13 @@ sampleDPmeasure <- nimbleFunction(
                 }
             }
         }
-        if( is.null(tildeVars) ) { ## probably unnecessary as checked in CRP sampler, but best to be safe
+        if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
             stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
-        }
         
         ## Check that cluster variables are monitored.
         counts <- tildeVars %in% mvSavedVars
-        if( sum(counts) != length(tildeVars) ) {
+        if( sum(counts) != length(tildeVars) ) 
             stop('sampleDPmeasure: The node(s) representing the cluster variables must be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
-        }
-        
         
         ## Check that tilde nodes are continuous and univariate variables (for avoiding long trials in simulating atoms for G in run code:
         if(any(model$isDiscrete(tildeVars)))
@@ -183,7 +215,7 @@ sampleDPmeasure <- nimbleFunction(
         ## the error is between errors that are considered very very small in the folowing papers
         ## Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
         ## Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
-        approxError <- 1e-10 
+        approxError <- 1e-15
         
         ## Storage object to be sized in run code based on MCMC output (Claudia note change to comment)
         samples <- matrix(0, nrow = 1, ncol = 1)    
@@ -310,6 +342,9 @@ sampleDPmeasure <- nimbleFunction(
 )
 
 ## Sampler for concentration parameter, conc, of the dCRP distribution.
+
+#' @rdname samplers
+#' @export
 sampler_CRP_concentration <- nimbleFunction(
   name = 'sampler_CRP_concentration',
   contains=sampler_BASE,
@@ -355,6 +390,10 @@ sampler_CRP_concentration <- nimbleFunction(
 )
 
 
+
+#-----------------------------------
+# Conjugate cases in Sampler CRP
+#-----------------------------------
 ## we need a base class because it is possible (perhaps unlikely) that
 ## a user model might have two uses of dCRP samplers that are different versions
 ## e.g., a nonconjugate and a dnorm_dnorm conjugate
@@ -366,7 +405,7 @@ CRP_helper <- nimbleFunctionVirtual(
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
     },
-    sample = function(i = integer()) {}
+    sample = function(i = integer(), j = integer()) {}
   )
 )
 
@@ -381,7 +420,7 @@ CRP_nonconjugate <- nimbleFunction(
       returnType(double())
       return(model$getLogProb(dataNodes[i]))
     },
-    sample = function(i = integer()) {} ## nothing needed for non-conjugate
+    sample = function(i = integer(), j = integer()) {} ## nothing needed for non-conjugate
   )
 )
 
@@ -404,7 +443,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       y <- values(model, dataNodes[i])[1]
       return(dnorm(y, priorMean, sqrt(priorVar + dataVar), log=TRUE))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       dataVar <- model$getParam(dataNodes[i], 'var')
       y <- values(model, dataNodes[i])[1]
       postVar <- 1 / (1 / dataVar + 1 / priorVar)
@@ -434,9 +473,9 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
       return(priorShape * log(priorRate) - (priorShape + y) * log(priorRate + 1) +
                lgamma(priorShape + y) - lgamma(priorShape) - lfactorial(y))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][i] <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
     }
   )
 )
@@ -462,10 +501,10 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
       return(-0.5*log(2*pi) + priorShape * log(priorRate) - lgamma(priorShape) -
                lgamma(priorShape + 0.5) - (priorShape + 0.5)*log(priorRate + (y-dataMean)^2/2))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       dataMean <- model$getParam(dataNodes[i], 'mean')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][i] <<- rgamma(1, shape = priorShape + 0.5, rate = priorRate + (y-dataMean)^2/2)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape = priorShape + 0.5, rate = priorRate + (y-dataMean)^2/2)
     }
   )
 )
@@ -490,9 +529,9 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
       y <- values(model, dataNodes[i])[1]
       return(lgamma(priorShape1+y) + lgamma(priorShape2+1-y) - lgamma(priorShape1) - lgamma(priorShape2) - log(priorShape1+priorShape2))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][i] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
+      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
     }
   )
 )
@@ -518,10 +557,10 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
                lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape1+dataSize) +
                lfactorial(dataSize) - lfactorial(y) - lfactorial(dataSize-y))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       dataSize <- model$getParam(dataNodes[i], 'size')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][i] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+dataSize-y)
+      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+dataSize-y)
     }
   )
 )
@@ -549,10 +588,10 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
                lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape1+dataSize+y) +
                lfactorial(y+dataSize-1) - lfactorial(y) - lfactorial(dataSize-1))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       dataSize <- model$getParam(dataNodes[i], 'size')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][i] <<- rbeta(1, shape1=priorShape1+dataSize, shape2=priorShape2+y)
+      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+dataSize, shape2=priorShape2+y)
     }
   )
 )
@@ -575,9 +614,9 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
       y <- values(model, dataNodes[i])[1]
       return(log(priorShape) + priorShape*log(priorRate) - (priorShape+1)*log(priorRate+y))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][i] <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
     }
   )
 )
@@ -603,10 +642,10 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
       return((datashape-1)*log(y) + priorShape*log(priorRate) + lgamma(datashape+priorShape) -
                lgamma(datashape) - lgamma(priorShape) -(datashape+priorShape)*log(priorRate+y))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       datashape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][i] <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
     }
   )
 )
@@ -632,10 +671,10 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
       return( log(dataShape) + (dataShape-1)*log(y) + priorShape*log(priorRate) +
                 lgamma(priorShape+1) - lgamma(priorShape) - (priorShape + 1)*log(priorRate + y^dataShape))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][i] <<- rgamma(1, shape=1+priorShape, rate=priorRate+y^dataShape)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape=1+priorShape, rate=priorRate+y^dataShape)
     }
   )
 )
@@ -661,10 +700,10 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
       return( -(dataShape+1)*log(y) + priorShape*log(priorRate) + lgamma(priorShape + dataShape) -
                 lgamma(dataShape) - lgamma(dataShape) - (dataShape + priorShape)*log(priorRate + 1/y))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][i] <<- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y)
     }
   )
 )
@@ -687,14 +726,17 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
       return(lfactorial(n) - sum(lfactorial(y)+lgamma(priorAlpha))+
                lgamma(sum(priorAlpha)) + sum(lgamma(priorAlpha+y)) - lgamma(sum(priorAlpha+y)))
     },
-    sample = function(i = integer()) {
+    sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])
-      model[[marginalizedVar]][i, ] <<- rdirch(alpha=priorAlpha+y)
+      model[[marginalizedVar]][j, ] <<- rdirch(alpha=priorAlpha+y)
     }
   )
 )
 
 ## general dCRP sampler covering nonconjugate and conjugate cases
+
+#' @rdname samplers
+#' @export
 sampler_CRP <- nimbleFunction(
   name = 'sampler_CRP',
   contains=sampler_BASE,
@@ -859,7 +901,7 @@ sampler_CRP <- nimbleFunction(
       if(index==i) { # creates a new component: one that is not used
           if(newind != xi[i]) {
               model[[target]][i] <<- newind
-              helperFunctions[[1]]$sample(newind)
+              helperFunctions[[1]]$sample(i, newind)
           }  ## when newind == xi[i], it means we tried to create a cluster beyond min_nTilde, so don't sample new cluster parameters
       } else{
         model[[target]][i] <<- model[[target]][index]
@@ -872,4 +914,6 @@ sampler_CRP <- nimbleFunction(
   },
   methods = list( reset = function () {})
 )
+
+
 

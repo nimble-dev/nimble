@@ -126,7 +126,7 @@ rCRP <- nimbleFunction(
 #' @author Claudia Wehrhahn
 #' @details
 #' The stick breaking function produces a vector of probabilities that add up to one,
-#' based on a series of individual probabilities in \code{z}, that define the breaking
+#' based on a series of individual probabilities in \code{z}, which define the breaking
 #' points relative to the remaining stick length. The first element of \code{z} determines
 #' the first probability based on breaking a proportion \code{z[1]} from a stick of length one.
 #' The second element of \code{z} determines the second probability based on breaking a
@@ -134,7 +134,7 @@ rCRP <- nimbleFunction(
 #' Each element of \code{z} should be in 
 #' \eqn{(0,1)}.
 #' The returned vector has length equal to the length of \code{z} plus 1. 
-#' If \code{z[k]} is equal to 1, then the returned vector has length smaller than \code{z}. 
+#' If \code{z[k]} is equal to 1 for any \code{k}, then the returned vector has length smaller than \code{z}. 
 #' If one of the components is smaller than 0 or greater than 1, \code{NaN}s are returned.
 #' @references Sethuraman, J. (1994). A constructive definition of Dirichlet priors.
 #'  \emph{Statistica Sinica}, 639-650.

@@ -6,34 +6,35 @@
 \alias{rCRP}
 \title{The Chinese Restaurant Process Distribution}
 \usage{
-rCRP(n, conc = 1, size)
-
 dCRP(x, conc = 1, size, log = 0)
+
+rCRP(n, conc = 1, size)
 }
 \arguments{
-\item{n}{number of observations (only n = 1 is handled currently).}
+\item{x}{vector of values.}
 
 \item{conc}{scalar concentration parameter.}
 
-\item{size}{integer-valued length of \code{x}.}
-
-\item{x}{vector of values.}
+\item{size}{integer-valued length of \code{x} (required).}
 
 \item{log}{logical; if TRUE, probability density is returned on the log scale.}
+
+\item{n}{number of observations (only n = 1 is handled currently).}
 }
 \value{
 \code{dCRP} gives the density, and \code{rCRP} gives random generation.
 }
 \description{
-Density and random generation for the Chinese
-  Restaurant Process distribution
+EXPERIMENTAL Density and random generation for the Chinese
+  Restaurant Process distribution.
 }
 \details{
 The Chinese restaurant process distribution is a distribution
 on the space of partitions of the positive integers. 
 The distribution with concentration parameter \eqn{=\alpha}{= conc} has 
 probability function 
-\deqn{f(x_i \mid x_1, \ldots, x_{i-1})=\frac{1}{i-1+\alpha}\sum_{j=1}^{i-1}\delta_{x_j}+
+\deqn{
+f(x_i \mid x_1, \ldots, x_{i-1})=\frac{1}{i-1+\alpha}\sum_{j=1}^{i-1}\delta_{x_j}+
 \frac{\alpha}{i-1+\alpha}\delta_{x^{new}},}
 where \eqn{x^{new}} is a new integer not in \eqn{x_1, \ldots, x_{i-1}}.
 
@@ -52,10 +53,10 @@ Blackwell, D., and MacQueen, J. B. (1973). Ferguson distributions via
 P\'{o}lya urn schemes. \emph{The Annals of Statistics}, 1: 353-355.
 
 Aldous, D. J. (1985). Exchangeability and related topics. In \emph{\'{E}cole d'\'{E}t\'{e} 
-de Probabilit\'{e}s de Saint-Flour XIII—1983} (pp. 1-198). Springer, Berlin, 
+de Probabilit\'{e}s de Saint-Flour XIII - 1983} (pp. 1-198). Springer, Berlin, 
 Heidelberg.
 
-Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{Lecture
-Notes-Monograph Series}, 245-267.
+Pitman, J. (1996). Some developments of the Blackwell-MacQueen urn scheme. \emph{IMS Lecture
+Notes-Monograph Series}, 30: 245-267.
 }
 

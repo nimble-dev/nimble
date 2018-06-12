@@ -81,45 +81,45 @@ nimbleOptions(MCMCprogressBar = FALSE)
 
 \Sexpr{knit_child('chapter_WelcomeToNimble.Rnw')}
 
-\Sexpr{knit_child('chapter_LightningIntroduction.Rnw')}
+%\Sexpr{knit_child('chapter_LightningIntroduction.Rnw')}
 
-\Sexpr{knit_child('chapter_MoreIntroduction.Rnw')}
+%\Sexpr{knit_child('chapter_MoreIntroduction.Rnw')}
 
-\Sexpr{knit_child('chapter_InstallingNimble.Rnw')}
+%\Sexpr{knit_child('chapter_InstallingNimble.Rnw')}
 
 \part{Models in NIMBLE}
 \label{part:models}
 
-\Sexpr{knit_child('chapter_WritingModels.Rnw')}
+%\Sexpr{knit_child('chapter_WritingModels.Rnw')}
 
-\Sexpr{knit_child('chapter_BuildingModels.Rnw')}
+%\Sexpr{knit_child('chapter_BuildingModels.Rnw')}
 
 \part{Algorithms in NIMBLE}
 \label{part:algorithms}
 
-\Sexpr{knit_child('chapter_MCMC.Rnw')}
+%\Sexpr{knit_child('chapter_MCMC.Rnw')}
 
-\Sexpr{knit_child('chapter_OtherAlgorithms.Rnw')}
+%\Sexpr{knit_child('chapter_OtherAlgorithms.Rnw')}
 
-\Sexpr{knit_child('chapter_Spatial.Rnw')}
+%\Sexpr{knit_child('chapter_Spatial.Rnw')}
 
 \Sexpr{knit_child('chapter_BNP.Rnw')}
 
 \part{Programming with NIMBLE}
 \label{part:programming}
 
-\Sexpr{knit_child('chapter_ProgrammingOverview.Rnw')}
+%\Sexpr{knit_child('chapter_ProgrammingOverview.Rnw')}
 
 
-\Sexpr{knit_child('chapter_RCfunctions.Rnw')}
+%\Sexpr{knit_child('chapter_RCfunctions.Rnw')}
 
-\Sexpr{knit_child('chapter_UserDefined.Rnw')}
+%\Sexpr{knit_child('chapter_UserDefined.Rnw')}
 
-\Sexpr{knit_child('chapter_UsingModels.Rnw')}
+%\Sexpr{knit_child('chapter_UsingModels.Rnw')}
 
-\Sexpr{knit_child('chapter_DataStructures.Rnw')}
+%\Sexpr{knit_child('chapter_DataStructures.Rnw')}
 
-\Sexpr{knit_child('chapter_WritingNimbleFunctions.Rnw')}
+%\Sexpr{knit_child('chapter_WritingNimbleFunctions.Rnw')}
 
 % When building individual chapters that have no refs, knitr
 % gets unhappy to see a bibliography command since there are no \citations
