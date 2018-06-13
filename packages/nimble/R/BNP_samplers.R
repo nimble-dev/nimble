@@ -448,7 +448,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       y <- values(model, dataNodes[i])[1]
       postVar <- 1 / (1 / dataVar + 1 / priorVar)
       postMean <- postVar * (y / dataVar + priorMean / priorVar)
-      model[[marginalizedVar]][i] <<- rnorm(1, postMean, sqrt(postVar)) 
+      model[[marginalizedVar]][j] <<- rnorm(1, postMean, sqrt(postVar)) 
     }
   )
 )
