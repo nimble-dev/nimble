@@ -779,20 +779,24 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         }
     }
 
+    ## keep this outside of test_that as use of missing within test_that triggers error with "'missing' can
+    ## only be used for arguments"
+    if(!missing(example)) {
+        ## classic-bugs example specified by name
+        dir <- getBUGSexampleDir(example)
+        if(missing(model)) model <- example
+    } else {
+        ## code, data and inits specified directly where 'model' contains the code
+        example = deparse(substitute(model))
+        if(missing(model)) stop("Neither BUGS example nor model code supplied.")
+        dir <- ""
+    }
+    returnVal <- NULL
+    
     cat("===== Starting Filter test for ", name, " using ", filterType, ". =====\n", sep = "")
 
     test_that(name, {
-        if(!missing(example)) {
-                                        # classic-bugs example specified by name
-            dir = getBUGSexampleDir(example)
-            if(missing(model)) model <- example
-            Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE, check = FALSE)
-        } else {
-                                        # code, data and inits specified directly where 'model' contains the code
-            example = deparse(substitute(model))
-            if(missing(model)) stop("Neither BUGS example nor model code supplied.")
-            Rmodel <- readBUGSmodel(model, dir = "", data = data, inits = inits, useInits = TRUE, check = FALSE)
-        }
+        Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE, check = FALSE)
         if(doCpp) {
             Cmodel <- compileNimble(Rmodel, dirName = dirName)
             if(verbose) cat('done compiling model\n')
@@ -981,15 +985,15 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         if(returnSamples) {
             if(exists('CmvSample'))
                 returnVal <- as.matrix(CmvSample)
-        } else returnVal <- NULL
+        } 
+        if(doCpp) {
+            if(.Platform$OS.type != 'windows') 
+                nimble:::clearCompiled(Rmodel)
+        }
 
     })
     cat("===== Finished ", filterType, " filter test for ", name, ". =====\n", sep = "")
     
-    if(doCpp) {
-        if(.Platform$OS.type != 'windows') 
-            nimble:::clearCompiled(Rmodel)
-    }
     return(returnVal)
 }
 
