@@ -16,6 +16,8 @@ USER LEVEL CHANGES
 
 -- Four new resampling methods are available for use in the auxiliary and bootstrap filters.  Resampling methods can be specified by the resamplingMethod control list argument to buildBootstrapFilter and buildAuxiliaryFilter.
 
+-- User-defined filtering algorithms can now be provided to the RW_PF and RW_PF_block samplers.
+
 BUG FIXES
 
 -- Slice, AFSS, and ESS samplers now have a maximum number of contractions to avoid infinite loops under unusual circumstances.
