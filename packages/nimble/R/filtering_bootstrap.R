@@ -118,7 +118,7 @@ bootFStep <- nimbleFunction(
     ## Determine whether to resample by weights or not.
     if(ess < threshNum){
       if(defaultResamplerFlag == TRUE){
-        rankSample(normWts, m, ids, silent)	 
+        rankSample(wts, m, ids, silent)	 
       }
       else{
         ids <- resamplerFunctionList[[1]]$run(wts)  
