@@ -103,6 +103,8 @@ nimbleOptions(MCMCprogressBar = FALSE)
 
 \Sexpr{knit_child('chapter_Spatial.Rnw')}
 
+\Sexpr{knit_child('chapter_BNP.Rnw')}
+
 \part{Programming with NIMBLE}
 \label{part:programming}
 
