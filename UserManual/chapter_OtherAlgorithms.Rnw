@@ -223,7 +223,7 @@ control list entry must satsify the following:
 \item \cd{control}, an \cd{R} \cd{list} object.  Note that the
   \cd{control} list can be used to pass in any additional information
   or arguments that the custom filter may require.
-\end{enumerate}
+\end{itemize}
 \item The \cd{nimbleFunction} must have a \cd{run} function that
   accepts a single integer arugment (the number of particles to use),
   and returns a scalar double (the log-likelihood estimate).
