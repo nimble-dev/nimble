@@ -2,6 +2,8 @@
 
 USER LEVEL CHANGES
 
+-- Bayesian nonparametric mixture models can now be used in BUGS code, in particular Chinese Restaurant process (using the 'dCRP' distribution) and stick-breaking (using the 'stick_breaking' function) representations of Dirichlet process models. This allows mixture models with an unknown number of components. NIMBLE's default MCMC configuration will assign specialized samplers to relevant nodes of the model. For this release, this is a beta (experimental) feature.
+
 -- Four new resampling methods are available for use in the auxiliary and bootstrap filters.  Resampling methods can be specified by the resamplingMethod control list argument to buildBootstrapFilter and buildAuxiliaryFilter.
 
 -- User-defined filtering algorithms can now be provided to the RW_PF and RW_PF_block samplers.
