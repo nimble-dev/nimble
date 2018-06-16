@@ -100,8 +100,8 @@ send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (
 reactivate Google Analyticator by clicking on 'activate' on Plugins -> Installed Plugins 
 *****************
 
-make sure to merge devel into master branch and create a branch for the new version
-before doing so add final test-results-v$VERSION to repo to provide baseline for future releases
+make sure to merge devel into master branch
+
 git checkout master
 git merge devel
 git commit -am'merged new version onto master'
