@@ -7,9 +7,6 @@ update LICENSE with current year
 check CRAN results page to see what issues CRAN testing has noted:
 https://cran.r-project.org/web/checks/check_results_nimble.html
 
-for version on nimble website, remove FLIBS from src/Makevars.in
-for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
-
 Make sure src/Makevars.win is present.
 
 # before running 'make man' (i.e., prep_pkg.R) make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
@@ -25,14 +22,7 @@ R CMD check --as-cran nimble_${VERSION}.tar.gz
 
 R CMD INSTALL nimble_${VERSION}.tar.gz
 
-run tests:
-(comments here superseded for the most part by the new goldfile system)
-in particular check exact results vs previous versions (ignore differences in compilation log info)
-doing this test by test because of DLL unloading issue
-types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists errors filtering getBound getDependencies getDistributionInfo getParam graphStructure math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList nimbleList_RCfun numericTypes setData size trunc types user"
-for type in $types; do
-Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
-done
+Run tests via ./run_tests.R
 
 Note that test-size results are simply showing warnings from model building that are labeled based on the test message - what is marked as a KNOWN PROBLEM is not _all_ of the tests that are KNOWN PROBLEMS, just those that happen to generate warnings. 
 
@@ -40,11 +30,13 @@ run tests on all OS ideally
 
 rebuild manual as further test of package
 
-download .tar.gz for reverse dependencies (currently 'bcgam') and run R CMD check on it (having trouble with tools::tools::check_packages_in_dir, but should figure that out and add a Make task for this)
+download .tar.gz for reverse dependencies (currently 'bcgam') and run R CMD check on it (having trouble with tools::tools::check_packages_in_dir, but should figure that out and add a Make task for this) (however note that currently the compilation in bcgam is failing upon testing)
 
 put new version of manual in inst/doc (perhaps - not sure if we want to add that much to the size of the tarball/package install)
 
 make sure no calls to compileNimble are in any examples that are not wrapped in a \dontrun; these calls will cause installation failure on Solaris and big headaches with CRAN
+
+Now in a separate branch: vX.Y-Z-cran, do this:
 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
 and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
@@ -66,9 +58,10 @@ submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
 Once CRAN package accepted:
 
-
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
+
+for version on nimble website, avoid the FLIBS/stan/Eigen changes above
 
 cp new .tar.gz there
 
@@ -117,6 +110,8 @@ probably best at this point also to merge master onto devel
 
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote
+
+update version number in DESC in devel
 
 ### updating Github README
 
