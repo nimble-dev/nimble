@@ -2,6 +2,12 @@
 
 USER LEVEL CHANGES
 
+-- Bayesian nonparametric mixture models can now be used in BUGS code, in particular Chinese Restaurant process (using the 'dCRP' distribution) and stick-breaking (using the 'stick_breaking' function) representations of Dirichlet process models. This allows mixture models with an unknown number of components. NIMBLE's default MCMC configuration will assign specialized samplers to relevant nodes of the model. For this release, this is a beta (experimental) feature.
+
+-- Four new resampling methods are available for use in the auxiliary and bootstrap filters.  Resampling methods can be specified by the resamplingMethod control list argument to buildBootstrapFilter and buildAuxiliaryFilter.
+
+-- User-defined filtering algorithms can now be provided to the RW_PF and RW_PF_block samplers.
+
 -- MCMC thinning intervals (thin and thin2) can now be modified at MCMC runtime.  These may be passed as arguments to either mcmc$run or to runMCMC.
 
 -- Both nimbleMCMC and runMCMC functions now drop burnin samples as "pre-thinning", if a thinning interval is specified.
@@ -13,10 +19,6 @@ USER LEVEL CHANGES
 -- Invalid dynamic indexes are reported and now result in NaN values when calling calculate or simulate but no longer cause execution to error out. This allows MCMC sampling to continue when an invalid index is proposed and rejected.
 
 -- The model is fully (re-)initialized between MCMC runs in MCMCsuite(), so that every MCMC method will start from identical conditions.  This was usually but not always the case previously.
-
--- Four new resampling methods are available for use in the auxiliary and bootstrap filters.  Resampling methods can be specified by the resamplingMethod control list argument to buildBootstrapFilter and buildAuxiliaryFilter.
-
--- User-defined filtering algorithms can now be provided to the RW_PF and RW_PF_block samplers.
 
 BUG FIXES
 
@@ -49,6 +51,7 @@ DEVELOPER LEVEL CHANGES
 -- Added a check that there is a return statement when a returnType is provided.
 
 -- Improved error trapping for invalid indexing in BUGS models.
+
 
                            CHANGES IN VERSION 0.6-10 (March 2018)
 
