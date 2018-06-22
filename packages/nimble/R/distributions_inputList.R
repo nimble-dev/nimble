@@ -107,12 +107,12 @@ distributionsInputList <- list(
     # calculation of shape/scale from mean/sd not obvious
     # (solution to cubic polynomial) so not using as alternative param
     dinvgamma  = list(BUGSdist = 'dinvgamma(shape, scale, rate)',
-                   Rdist    = c('dinvgamma(shape, rate = 1/scale)'),
-                   altParams= c('scale = 1/rate',
-                                'mean = 1 / (rate * (max(shape,1)-1))',
-                                'sd = 1 / (rate * (max(shape,1)-1) * sqrt(max(shape,2)-2))'), # max ensures Inf moment when appropriate
-                   range    = c(0, Inf),
-                   pqAvail = TRUE),
+                      Rdist    = c('dinvgamma(shape, rate = 1/scale)'),
+                      altParams= c('scale = 1/rate',
+                                   'mean = 1 / (rate * (max(shape,1)-1))',
+                                   'sd = 1 / (rate * (max(shape,1)-1) * sqrt(max(shape,2)-2))'), # max ensures Inf moment when appropriate
+                      range    = c(0, Inf),
+                      pqAvail = TRUE),
 
     # intended solely for use in dhalfflat conjugacy                           
     dsqrtinvgamma  = list(BUGSdist = 'dsqrtinvgamma(shape, scale, rate)',
