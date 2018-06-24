@@ -26,11 +26,11 @@ models, not their systems for generating MCMCs.
 
 NIMBLE extends BUGS by:
 
-  - allowing you to write new functions and
+  1. allowing you to write new functions and
 distributions and use them in BUGS models;
-  - allowing you to define multiple models in the same code using
+  1. allowing you to define multiple models in the same code using
   conditionals evaluated when the BUGS code is processed;
-  - supporting a variety of more flexible syntax such as R-like
+  1. supporting a variety of more flexible syntax such as R-like
   named parameters and more general algebraic expressions.
 
 By supporting new functions and distributions, NIMBLE makes BUGS an
@@ -48,18 +48,18 @@ NIMBLE.
 
 NIMBLE does several things with BUGS code:
 
-  - NIMBLE creates a *model definition* object that knows
+  1. NIMBLE creates a *model definition* object that knows
   everything about the variables and their relationships written in
   the BUGS code.  Usually you'll ignore the *model definition*
   and let NIMBLE's default options take you directly to the next step.
-  - NIMBLE creates a model object^[or multiple model
+  1. NIMBLE creates a model object^[or multiple model
     objects].  This can be used to
   manipulate variables and operate the model from R.  Operating the
   model includes calculating, simulating, or querying the log
   probability value of model nodes. These basic capabilities, along
   with the tools to query model structure, allow one to write
   programs that use the model and adapt to its structure.
-  - When you're ready, NIMBLE can generate customized C++ code
+  1. When you're ready, NIMBLE can generate customized C++ code
   representing the model, compile the C++, load it back into R, and
   provide a new model object that uses the compiled model
   internally.  We use the word 'compile' to refer to all of these
@@ -82,13 +82,13 @@ NIMBLE provides *nimbleFunction*s for writing functions that can
 BUGS models are:
 
 
-  - inspecting the structure of a model, such as determining the
+  1. inspecting the structure of a model, such as determining the
   dependencies between variables, in order to do the right
   calculations with each model;
-  - accessing values of the model's variables;
-  - controlling execution of the model's probability calculations
+  1. accessing values of the model's variables;
+  1. controlling execution of the model's probability calculations
   or corresponding simulations;
-  - managing *modelValues* data structures for multiple sets of
+  1. managing *modelValues* data structures for multiple sets of
   model values and probabilities.
 
 
@@ -101,14 +101,14 @@ Programming with nimbleFunctions involves a fundamental distinction
 between two stages of processing:
 
 
-  - A *setup* function within a nimbleFunction gives the steps
+  1. A *setup* function within a nimbleFunction gives the steps
   that need to happen only once for each new situation (e.g., for each
   new model).  Typically such steps include inspecting the model's
   variables and their relationships, such as determining which parts
   of a model will need to be calculated for a MCMC sampler. Setup
   functions are executed in R and never compiled.
 
-  - One or more *run* functions within a nimbleFunction give
+  1. One or more *run* functions within a nimbleFunction give
   steps that need to happen multiple times using the results of the
   setup function, such as the iterations of a MCMC sampler.
   Formally, run code is written in the NIMBLE language, which you
@@ -121,9 +121,9 @@ between two stages of processing:
 What NIMBLE does with a nimbleFunction is similar to what it does
 with a BUGS model:
 
-  - NIMBLE creates a working R version of the nimbleFunction.
+  1. NIMBLE creates a working R version of the nimbleFunction.
   This is most useful for debugging (Section \@ref(sec:debugging)).
-  - When you are ready, NIMBLE can generate C++ code, compile it,
+  1. When you are ready, NIMBLE can generate C++ code, compile it,
   load it back into R and give you new objects that use the compiled
   C++ internally.  Again, we refer to these steps all together as 'compilation.'  The behavior of compiled nimbleFunctions is
   usually very similar, but not identical, to their uncompiled
@@ -145,18 +145,18 @@ More about writing algorithms is in Chapter \@ref(cha:progr-with-models).
 In Version `r nimbleVersion`, the NIMBLE algorithm library includes:
 
 
-  - MCMC with samplers including conjugate (Gibbs), slice, adaptive
+  1. MCMC with samplers including conjugate (Gibbs), slice, adaptive
   random walk (with options for reflection or sampling on a log
   scale), adaptive block random walk, and elliptical slice, among others. You can
   modify sampler choices and configurations from R before compiling
   the MCMC.  You can also write new samplers as nimbleFunctions.
-  - WAIC calculation for model comparison after an MCMC algorithm has been run.
-  - A set of particle filter (sequential Monte Carlo) methods
+  1. WAIC calculation for model comparison after an MCMC algorithm has been run.
+  1. A set of particle filter (sequential Monte Carlo) methods
   including a basic bootstrap filter, auxiliary particle filter, and
   Liu-West filter.
-  - An ascent-based Monte Carlo Expectation Maximization (MCEM)
+  1. An ascent-based Monte Carlo Expectation Maximization (MCEM)
   algorithm.
-  - A variety of basic functions that can be used as programming
+  1. A variety of basic functions that can be used as programming
   tools for larger algorithms.  These include:
   
     - A likelihood function for arbitrary parts of any model.

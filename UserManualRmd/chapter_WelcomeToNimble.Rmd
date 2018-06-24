@@ -43,14 +43,14 @@ efficiently and work on many different models from R.
 You can think of NIMBLE as comprising four pieces:
 
 
-  - A system for writing statistical models flexibly, which is an
+  1. A system for writing statistical models flexibly, which is an
   extension of the BUGS language^[See Chapter
     \@ref(cha:writing-models) for information about NIMBLE's version of
     BUGS.].
-  - A library of algorithms such as MCMC.
-  - A language, called NIMBLE, embedded within and similar in style
+  1. A library of algorithms such as MCMC.
+  1. A language, called NIMBLE, embedded within and similar in style
   to R, for writing algorithms that operate on models written in BUGS.
-  -  A compiler that generates C++ for your models and algorithms,
+  1. A compiler that generates C++ for your models and algorithms,
   compiles that C++, and lets you use it seamlessly from R without
   knowing anything about C++.
 

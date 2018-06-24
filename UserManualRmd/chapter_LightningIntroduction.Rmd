@@ -23,15 +23,15 @@ how to enter it directly in R.
 In this 'lightning introduction' we will:
 
 
-  - Create the model for the pump example.
-  - Compile the model.
-  - Create a basic MCMC configuration for the pump model.
-  - Compile and run the MCMC
-  - Customize the MCMC configuration and compile and run that.
-  - Create, compile and run a Monte Carlo Expectation Maximization (MCEM)
+  1. Create the model for the pump example.
+  1. Compile the model.
+  1. Create a basic MCMC configuration for the pump model.
+  1. Compile and run the MCMC
+  1. Customize the MCMC configuration and compile and run that.
+  1. Create, compile and run a Monte Carlo Expectation Maximization (MCEM)
   algorithm, which illustrates some of the flexibility NIMBLE
   provides to combine R and NIMBLE.
-  - Write a short `nimbleFunction` to generate simulations from
+  1. Write a short `nimbleFunction` to generate simulations from
   designated nodes of any  model.
 
 
@@ -198,23 +198,23 @@ Here is our *nimbleFunction*:
 
 Here are a few things to notice about the nimbleFunction.
 
-  - The `setup` function is written in R.  It creates relevant
+  1. The `setup` function is written in R.  It creates relevant
   information specific to our model for use in the run-time code.  
-  - The `setup` code creates a *modelValues* object to hold multiple sets of
+  1. The `setup` code creates a *modelValues* object to hold multiple sets of
   values for variables  in the model provided.
-  - The `run` function is written in NIMBLE.  It carries out the
+  1. The `run` function is written in NIMBLE.  It carries out the
   calculations using the information determined once for each set of
   `model` and `nodes` arguments by the setup
   code. The run-time code is what will be compiled.
-  - The `run` code requires type information about the argument
+  1. The `run` code requires type information about the argument
   `n`.  In this case it is a scalar integer.  
-  - The for-loop looks just like R, but only sequential integer
+  1. The for-loop looks just like R, but only sequential integer
   iteration is allowed.
-  - The functions `calculate` and `simulate`, which were
+  1. The functions `calculate` and `simulate`, which were
   introduced above in R, can be used in NIMBLE.
-  - The special function `copy` is used here to record values
+  1. The special function `copy` is used here to record values
   from the model into the modelValues object.  
-  - Multiple instances, or 'specializations', can be made by
+  1. Multiple instances, or 'specializations', can be made by
   calling `simNodesMany` with different arguments.  Above, `simNodesTheta1to5` has
   been made by calling `simNodesMany` with the `pump` model and
   nodes `"theta[1:5]"` as inputs to

@@ -14,9 +14,11 @@
 #'
 library(stringr)
 
+## check html output
+
 ## hyperlink colors
 ## want comments as italidized?
-## bullet numbering rather than bullets
+## nested lists not working (see moreIntro)
 
 ## title page
 ## issue with densityTableLong entries
@@ -78,7 +80,7 @@ latex2Rmd <- function(input, save = TRUE) {
     text <- str_replace_all(string = text, pattern = '\\\\cd\\*?\\{([\\s\\S]*?)\\}', replacement = '`\\1`') 
     text <- str_replace_all(string = text, pattern = '\\\\begin\\{(.*?)\\}', replacement = '')
     text <- str_replace_all(string = text, pattern = '\\\\end\\{(.*?)\\}', replacement = '')
-    text <- str_replace_all(string = text, pattern = '\\\\item', replacement = '  -')
+    text <- str_replace_all(string = text, pattern = '\\\\item', replacement = '  1.')
 
     text <- str_replace_all(string = text, pattern = '\\\\verb\\|(.*?)\\|', replacement = '`\\1`')
 
