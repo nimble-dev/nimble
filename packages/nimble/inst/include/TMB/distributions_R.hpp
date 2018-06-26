@@ -17,7 +17,6 @@
     #include <TMB/lgamma.hpp>
   	#include <nimble/NimArr.h>
 
-
 /** \brief Distribution function of the normal distribution (following R argument convention).
     \ingroup R_style_distribution
 */
@@ -27,18 +26,17 @@
 #endif
 
 template<class Type>
-Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, double prec_param, int give_log, int overwrite_inputs) { 
+Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, NimArr<2, Type> &chol, Type prec_param, Type give_log, Type overwrite_inputs) { 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   int n = x.dimSize(0);
   int i;
   Type dens = Type(-n * M_LN_SQRT_2PI);
-  if(prec_param) {
-    for(i = 0; i < n*n; i += n + 1) 
-      dens += log(chol[i]);
-  } else {
-    for(i = 0; i < n*n; i += n + 1) 
-      dens -= log(chol[i]);
-  }
+  Type sumDens = Type(0);
+  for(i = 0; i < n*n; i += n + 1) 
+	  sumDens += log(chol[i]);
+
+  dens += CppAD::CondExpEq(prec_param, Type(1), sumDens, -sumDens);
+
   MatrixXt xCopy(n, 1);
   for(i = 0; i < n; i++)
     xCopy(i, 0) = x[i] - mean[i];
@@ -47,70 +45,64 @@ Type nimDerivs_nimArr_dmnorm_chol(NimArr<1, Type> &x, NimArr<1, Type> &mean, Nim
   xCopy = eigenChol*xCopy;
   xCopy = xCopy.array()*xCopy.array();
   dens += -Type(0.5)*xCopy.sum();
-
-  return give_log ? dens : exp(dens);
+  dens = CppAD::CondExpEq(give_log, Type(1), dens, exp(dens));
+  return(dens);
 }
 
-// template<class Type>
-// Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
-// 	 Type df, Type scale_param, Type give_log, Type overwrite_inputs){
-//   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
-//    Type p = xNimArr.dim()[0];
-//   Type i, j;
+template<class Type>
+Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
+	 Type df, Type scale_param, Type give_log, Type overwrite_inputs){
+  typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
+  int p = xNimArr.dim()[0];
+  int i, j;
 
-// //   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
-// //     return NA_REAL;
-// // #ifdef IEEE_754
-// //   if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
-// //     return R_NaN;
-// // #endif
+//   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+//     return NA_REAL;
+// #ifdef IEEE_754
+//   if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+//     return R_NaN;
+// #endif
 
-//   // also covers df < 0
-// //   if(df < (double) p) ML_ERR_return_NAN;
+  // also covers df < 0
+//   if(df < (double) p) ML_ERR_return_NAN;
 
-// //   if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+//   if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+  Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
+  for(i = 0; i < p; i++)
+    dens -= lgamma((df - Type(i)) / Type(2.0));
 
-//   Type dens = -(df*p/2 * Type(M_LN2) + p*(p-1)*M_LN_SQRT_PI/2);
-//   for(i = 0; i < p; i++)
-//     dens -= lgamma((df - i) / 2);
+  Type sumLogCholNimArr;
+  for(i = 0; i < p; i++){ 
+	sumLogCholNimArr += df * log(cholNimArr(i, i));
+  }
+  dens += CppAD::CondExpEq(scale_param, Type(1), -sumLogCholNimArr, sumLogCholNimArr);
 
-//   Type sumLogCholNimArr;
-//   for(i = 0; i < p; i++){ 
-// 	sumLogCholNimArr += df * log(cholNimArr(i, i));
-//   }
-//   dens += CppAD::CondExpEq(scale_param, Type(0), sumLogCholNimArr, -sumLogCholNimArr)
-// //   if(scale_param) {
-// //     for(i = 0; i < p; i++){ 
-// // 	  dens -= df * log(cholNimArr(i, i));
-// // 	}
-// //   } else {
-// //     for(i = 0; i < p; i++){ 
-// // 	  dens += df *  log(cholNimArr(i, i));
-// // 	}
-// //   }
+//   determinant of x using Cholesky:
+  Eigen::Map<MatrixXt > eigenX(xNimArr.getPtr(), p, p);
 
-//   // determinant of x using Cholesky:
-//   Eigen::Map<MatrixXt > eigenX(xNimArr.getPtr(), p, p);
+   Eigen::LLT<MatrixXt > llt(eigenX);
+   MatrixXt    eigenXChol = llt.matrixL();
+ 
+eigenXChol.template triangularView<Eigen::Upper>() =
+		eigenXChol.transpose().template triangularView<Eigen::Upper>();
 
+for(i = 0; i < p; i++){ 
+  	dens += (df - p - 1) *  log(eigenXChol(i, i));
+}
 
-// MatrixXt eigenXChol = eigenX.llt().matrixL();
-// for(i = 0; i < p; i++){ 
-//   	dens += (df - p - 1) *  log(eigenXChol(i, i));
-// }
-
-//  Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
-//   Type tmp_dens = 0.0;
-//   	MatrixXt eigenSolved = eigenChol.transpose().colPivHouseholderQr().solve(eigenX).transpose();
-// 	  MatrixXt cholMultX = eigenChol*eigenX;
-// 	for(j = 0; j < p; j++){ 
-// 		for(i = 0; i <= j; i++){ 
-// 			   CppAD::CondExpEq(scale_param, Type(1), eigenSolved(i,j)*eigenSolved(i,j), 
-// 			   cholMultX(i, j) * eigenChol(i, j));
-// 			}
-// 	}
-//   dens += -0.5 * tmp_dens;
-//   return give_log ? dens : exp(dens);
-// }
+ Eigen::Map<MatrixXt > eigenChol(cholNimArr.getPtr(), p, p); // may need to create new eigen matrix instead of mapping here
+ Type tmp_dens = 0.0;
+ MatrixXt eigenSolved = eigenChol.transpose().lu().solve(eigenXChol.transpose());
+ MatrixXt cholMultX = eigenChol*eigenX;
+	for(j = 0; j < p; j++){ 
+		for(i = 0; i <= j; i++){ 
+			 tmp_dens +=  CppAD::CondExpEq(scale_param, Type(1), eigenSolved(j,i)*eigenSolved(j,i), 
+			   cholMultX(i, j) * eigenChol(i, j));
+		}
+	}
+  dens += -0.5 * tmp_dens;
+  return CppAD::CondExpEq(give_log, Type(1.0), dens, exp(dens));
+}
 
 template<class Type>
 Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){
@@ -205,39 +197,45 @@ T nimDerivs_iprobit(T x){
 // 	\param give_log true if one wants the log-probability, false otherwise.
 // 	*/
 template<class Type> 
-Type nimDerivs_dexp_nimble(Type x, Type rate, int give_log=0)
+Type nimDerivs_dexp_nimble(Type x, Type rate, Type give_log)
 {
-	if(!give_log){
-		Type res = CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0));
-		return  CppAD::CondExpGe(rate, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	}
-	else{
-		Type res = CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY));
-		return  CppAD::CondExpGe(rate, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	}
+	Type res = CppAD::CondExpEq(give_log, Type(0), CppAD::CondExpGe(rate, Type(0), CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0)), Type(CppAD::numeric_limits<Type>::quiet_NaN())),
+					CppAD::CondExpGe(rate, Type(0), CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY)), Type(CppAD::numeric_limits<Type>::quiet_NaN())));
+	// if(!give_log){
+	// 	Type res = CppAD::CondExpGe(x,Type(0),rate*exp(-rate*x),Type(0));
+	// 	return  CppAD::CondExpGe(rate, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	// }
+	// else{
+	// 	Type res = CppAD::CondExpGe(x,Type(0),log(rate)-rate*x,Type(-INFINITY));
+	// 	return  CppAD::CondExpGe(rate, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	// }
+	return(res);
 }
 	
 template<class Type>
-Type nimDerivs_dexp(Type x, Type scale, int give_log=0)
+Type nimDerivs_dexp(Type x, Type scale, Type give_log)
 {
-	if(!give_log){
-		Type res = CppAD::CondExpGe(x,Type(0),exp(-x/scale)/scale,Type(0));
-		return  CppAD::CondExpGe(scale, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	}
-	else{
-		Type res = CppAD::CondExpGe(x,Type(0),-log(scale)-x/scale,Type(-INFINITY));
-		return CppAD::CondExpGe(scale, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	}
+	Type res = CppAD::CondExpEq(give_log, Type(0),  CppAD::CondExpGe(scale, Type(0),  CppAD::CondExpGe(x,Type(0),exp(-x/scale)/scale,Type(0)), Type(CppAD::numeric_limits<Type>::quiet_NaN())),
+					CppAD::CondExpGe(scale, Type(0),  CppAD::CondExpGe(x,Type(0),-log(scale)-x/scale,Type(-INFINITY)), Type(CppAD::numeric_limits<Type>::quiet_NaN())));
+	// if(!give_log){
+	// 	Type res = CppAD::CondExpGe(x,Type(0),exp(-x/scale)/scale,Type(0));
+	// 	return  CppAD::CondExpGe(scale, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	// }
+	// else{
+	// 	Type res = CppAD::CondExpGe(x,Type(0),-log(scale)-x/scale,Type(-INFINITY));
+	// 	return CppAD::CondExpGe(scale, Type(0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
+	// }
+	return(res);
 }
 
 	
 template<class Type> 
-Type nimDerivs_dunif(Type x, Type a, Type b, int give_log=0)
+Type nimDerivs_dunif(Type x, Type a, Type b, Type give_log)
 {   
 	Type res = CppAD::CondExpGt(b, a, Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN())); 
 	res += CppAD::CondExpGe(x, a, CppAD::CondExpLe(x, b, 1/(b-a), Type(0)), Type(0));
-	if(!give_log) return res;
-	else return(log(res));
+	res = CppAD::CondExpEq(give_log, Type(1), log(res), res);
+	return(res);
 }
 
 // Vectorize dexp
@@ -283,11 +281,11 @@ Type nimDerivs_dunif(Type x, Type a, Type b, int give_log=0)
 // 	\param give_log true if one wants the log-probability, false otherwise.
 // 	*/
 template<class Type> 
-Type nimDerivs_dweibull(Type x, Type shape, Type scale, int give_log=0)
+Type nimDerivs_dweibull(Type x, Type shape, Type scale, Type give_log)
 {
 	Type res = CppAD::CondExpGt(shape, Type(0), CppAD::CondExpGt(scale, Type(0), Type(0), Type(CppAD::numeric_limits<Type>::quiet_NaN())), Type(CppAD::numeric_limits<Type>::quiet_NaN()));
 	res += CppAD::CondExpGe(x, Type(0), shape/scale * pow(x/scale,shape-1) * exp(-pow(x/scale,shape)), Type(0));
-	res = CppAD::CondExpEq(Type(give_log), Type(0), res, log(res));
+	res = CppAD::CondExpEq(give_log, Type(0), res, log(res));
 	return(res);
 }
 
@@ -323,7 +321,7 @@ Type nimDerivs_dweibull(Type x, Type shape, Type scale, int give_log=0)
 
 
 template<class Type>
-Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log=0)
+Type nimDerivs_dbinom(Type k, Type size, Type prob, Type give_log)
 {
   Type disc_k = discrete_round(k);
   Type disc_size = discrete_round(size);
@@ -333,22 +331,20 @@ Type nimDerivs_dbinom(Type k, Type size, Type prob, int give_log=0)
   logres = CondExpGe(size, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
   logres = CondExpGe(prob, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
   logres = CondExpLe(prob, Type(1.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-  if (give_log) return logres; else return exp(logres);
+  logres = CondExpEq(give_log, Type(1), logres, exp(logres));
+  return(logres);
 }
 
 template<class Type>
-Type nimDerivs_dchisq(Type x, Type df, int give_log=0)
+Type nimDerivs_dchisq(Type x, Type df, Type give_log)
 {	
   Type logres = CondExpGt(x, Type(0.0), (df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - lgamma(df/Type(2.0)), 
 	  -Type( std::numeric_limits<double>::infinity()));	
   logres =  CondExpEq(x, Type(0.0), Type( std::numeric_limits<double>::infinity()), logres); // to match R: dchisq(0, df) is infinity in R.
   logres = CondExpGt(df, Type(0.0), logres, -Type( std::numeric_limits<double>::infinity()));	
   logres =  CondExpLt(df, Type(0.0), Type(CppAD::numeric_limits<Type>::quiet_NaN()), logres); 
-  if (give_log) return logres; 
-  else{
-	  logres = CondExpEq(df, Type(0.0), zero_NaNderiv(df), exp(logres));
-	  return(logres);
-  }
+  logres = CondExpEq(give_log, Type(0), CondExpEq(df, Type(0.0), zero_NaNderiv(df), exp(logres)), logres);
+  return(logres);
 }
 
 template<class Type> 
@@ -396,29 +392,42 @@ Type nimDerivs_factorial(Type x) {
 // 	\param give_log true if one wants the log-probability, false otherwise.
 // 	*/
 template <class Type>
-Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, int give_log)
+Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, Type give_log)
 {
-	Type res;
-	if(!give_log){
-		res = CondExpLe(x, Type(1.0), 
+	Type res = CondExpEq(give_log, Type(0), 
+							CondExpGe(x, Type(0.0), CondExpLe(x, Type(1.0), 
 							exp(lgamma(shape1+shape2) - lgamma(shape1) - 
 							lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1),
-							Type(0.0));
-		res = CondExpGe(x, Type(0.0), res, Type(0.0)) ;
-		res = CondExpGt(shape1, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
-		res = CondExpGt(shape2, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
-	}
-	if(give_log){
-		res = CondExpEq(x, Type(0.0), 
+							Type(0.0)), Type(0.0)),
+							CondExpLe(x, Type(1.0), CondExpGe(x, Type(0.0), CondExpEq(x, Type(0.0), 
 								log(exp(lgamma(shape1+shape2) - lgamma(shape1) - 
 								lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1)),
 								lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2) + 
-								(shape1-1)*log(x) + (shape2-1)*log(1-x));
-		res = CondExpGe(x, Type(0.0), res, -Type(std::numeric_limits<double>::infinity() ));
-		res = CondExpLe(x, Type(1.0), res, -Type(std::numeric_limits<double>::infinity() ));
+								(shape1-1)*log(x) + (shape2-1)*log(1-x)), -Type(std::numeric_limits<double>::infinity() )), -Type(std::numeric_limits<double>::infinity() )));
 		res = CondExpGt(shape1, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
 		res = CondExpGt(shape2, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
-	} 
+
+	// Type res;
+	// if(!give_log){
+	// 	res = CondExpLe(x, Type(1.0), 
+	// 						exp(lgamma(shape1+shape2) - lgamma(shape1) - 
+	// 						lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1),
+	// 						Type(0.0));
+	// 	res = CondExpGe(x, Type(0.0), res, Type(0.0)) ;
+	// 	res = CondExpGt(shape1, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+	// 	res = CondExpGt(shape2, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+	// }
+	// if(give_log){
+	// 	res = CondExpEq(x, Type(0.0), 
+	// 							log(exp(lgamma(shape1+shape2) - lgamma(shape1) - 
+	// 							lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1)),
+	// 							lgamma(shape1+shape2) - lgamma(shape1) - lgamma(shape2) + 
+	// 							(shape1-1)*log(x) + (shape2-1)*log(1-x));
+	// 	res = CondExpGe(x, Type(0.0), res, -Type(std::numeric_limits<double>::infinity() ));
+	// 	res = CondExpLe(x, Type(1.0), res, -Type(std::numeric_limits<double>::infinity() ));
+	// 	res = CondExpGt(shape1, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+	// 	res = CondExpGt(shape2, Type(0.0), res, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
+	// } 
 	return(res);
 }
 
@@ -449,12 +458,12 @@ Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, int give_log)
 // 	\param give_log true if one wants the log-probability, false otherwise.
 // 	*/
 template <class Type>
-Type nimDerivs_dlogis(Type x, Type location, Type scale, int give_log)
+Type nimDerivs_dlogis(Type x, Type location, Type scale, Type give_log)
 {
 	Type logres = -(x-location)/scale - log(scale) - 2*log(1+exp(-(x-location)/scale));
 	logres = CppAD::CondExpGt(scale, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	if(!give_log) return exp(logres);
-	else return logres;
+	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+	return(logres);
 }
 
 // Vectorize dlogis
@@ -483,47 +492,51 @@ Type nimDerivs_dlogis(Type x, Type location, Type scale, int give_log)
 // 	*/	
 
 template<class Type>
-Type nimDerivs_dnorm(Type x, Type mean, Type sd, int give_log=0)
+Type nimDerivs_dnorm(Type x, Type mean, Type sd, Type give_log)
 {
   Type logres;
   logres=-log(Type(sqrt(2*M_PI))*sd)-Type(.5)*pow((x-mean)/sd,2);
   logres = CppAD::CondExpGe(sd, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
   logres = CppAD::CondExpEq(sd, Type(0.0), -Type(std::numeric_limits<double>::infinity()) ,  logres);
-  if(give_log)return logres; else return exp(logres);
+  logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+  return(logres);
 }
 
 template<class Type>
-Type nimDerivs_dlnorm(Type x, Type mean, Type sd, int give_log=0)
+Type nimDerivs_dlnorm(Type x, Type mean, Type sd, Type give_log)
 {
   Type logres = CppAD::CondExpGe(x, Type(0.0), -log(x) - log(sd) - Type(0.5)*log(Type(2.0*M_PI)) - Type(.5)*pow((log(x)-mean)/sd, 2), -Type(std::numeric_limits<double>::infinity())); 
   logres = CppAD::CondExpGe(sd, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
   logres = CppAD::CondExpEq(sd, Type(0.0), -Type(std::numeric_limits<double>::infinity()) ,  logres);
-  if(give_log)return logres; else return exp(logres);
+  logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+  return(logres);
 }
 
 
 template <class Type>
-Type nimDerivs_dt(Type x, Type df, int give_log)
+Type nimDerivs_dt(Type x, Type df, Type give_log)
 {
   Type logres = lgamma((df+1)/2) - Type(1)/2*log(df*M_PI) -lgamma(df/2) - (df+1)/2*log(1+x*x/df);
   logres =  CondExpLt(df, Type(0.0), Type(CppAD::numeric_limits<Type>::quiet_NaN()), logres); 
-  if (give_log) return logres; else return(exp(logres));
+  logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+  return(logres);
 }
 
 
 
 template <class Type>
-Type nimDerivs_dt_nonstandard(Type x, Type df, Type mu, Type sigma, int give_log)
+Type nimDerivs_dt_nonstandard(Type x, Type df, Type mu, Type sigma, Type give_log)
 {
   Type logres = CondExpGe(sigma, Type(0), CondExpEq(sigma, Type(0), CondExpEq(x, mu, Type(std::numeric_limits<double>::infinity()), -Type(std::numeric_limits<double>::infinity())), Type(0)),
 	Type(CppAD::numeric_limits<Type>::quiet_NaN()));
   logres +=  nimDerivs_dt( (x - mu)/sigma, df, 1) - log(sigma);
   logres =  CondExpLt(df, Type(0.0), Type(CppAD::numeric_limits<Type>::quiet_NaN()), logres); 
-  if (give_log) return logres; else return(exp(logres));
+  logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+  return(logres);
 }
 
 template <class Type>
-Type nimDerivs_nimArr_ddirch(NimArr<1, Type> &x, NimArr<1, Type> &alpha, int give_log)
+Type nimDerivs_nimArr_ddirch(NimArr<1, Type> &x, NimArr<1, Type> &alpha, Type give_log)
 {
 
   Type K = alpha.size();
@@ -547,11 +560,12 @@ Type nimDerivs_nimArr_ddirch(NimArr<1, Type> &x, NimArr<1, Type> &alpha, int giv
 	CppAD::CondExpGe(sumX, Type(1.0 - 100.0*numeric_limits<Type>::epsilon()), Type(0), -Type(std::numeric_limits<double>::infinity())),
 	-Type(std::numeric_limits<double>::infinity()));
   logres += lgamma(sumAlpha);
-  return give_log ? logres : exp(logres);
+	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+	return(logres);
 }
 
 template <class Type>
-Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, int give_log, int overwrite_inputs) { 
+Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<2, Type> &chol, Type df, Type prec_param, Type give_log, Type overwrite_inputs) { 
   typedef Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> MatrixXt;
   typedef Eigen::Matrix<Type, Eigen::Dynamic, 1> VectorXt;
 
@@ -571,6 +585,9 @@ Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<
 	eigenXcopy(i,0) = x[i] - mu[i];
 
   Eigen::Map<MatrixXt > eigenChol(chol.getPtr(), n, n); 
+  MatrixXt eigenXcopyCov = eigenChol.template triangularView<Eigen::Upper>()*eigenXcopy;
+  MatrixXt eigenXcopyPrec = eigenChol.template triangularView<Eigen::Upper>().solve(eigenXcopy).transpose();
+
   if(Integer(prec_param) == 0){
 	eigenXcopy = eigenChol.template triangularView<Eigen::Upper>()*eigenXcopy;
   }
@@ -580,10 +597,11 @@ Type nimDerivs_nimArr_dmvt_chol(NimArr<1, Type> &x, NimArr<1, Type> &mu, NimArr<
   // sum of squares to calculate quadratic form
   Type tmp = Type(0.0);
   for(i = 0; i < n; i++)
-	tmp += eigenXcopy(i,0) * eigenXcopy(i,0);
+	tmp += CppAD::CondExpEq(prec_param, Type(0),  eigenXcopyCov(i,0) * eigenXcopyCov(i,0), eigenXcopyPrec(i,0) * eigenXcopyPrec(i,0));
 
   logres += Type(-0.5) * (df + n) * log(Type(1) + tmp / df);
-  return give_log ? logres : exp(logres);
+	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
+	return(logres);
 }
 
 

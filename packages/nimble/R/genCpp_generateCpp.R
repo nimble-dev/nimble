@@ -2,8 +2,7 @@
 ## Section for outputting C++ code from an exprClass object ##
 ##############################################################
 
-cppOutputCalls <- c(makeCallList(nimDerivsPrependOperators, 'cppOutputNimDerivsPrepend'),
-                    makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
+cppOutputCalls <- c(makeCallList(nimDerivsPrependTypeOperators, 'cppOutputNimDerivsPrependType'),
                     makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryMidLogicalOperators, 'cppOutputMidOperator'),
                     makeCallList(binaryOrUnaryOperators, 'cppOutputBinaryOrUnary'),
@@ -160,23 +159,15 @@ cppOutputEigBlank <- function(code, symTab) {
     paste0('(', nimGenerateCpp(code$args[[1]], symTab), ')')
 }
 
-cppOutputNimDerivsPrepend <- function(code, symTab){
-  if(identical(nimbleUserNamespace$cppADCode, TRUE)){
-      paste0('nimDerivs_', code$name, '(',
-             paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
-  }
-  else{
-    paste0(code$name, '(',
-           paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
-  }
-}
-
-
 cppOutputNimDerivsPrependType <- function(code, symTab){
   if(identical(nimbleUserNamespace$cppADCode, TRUE)){
-      paste0('nimDerivs_',code$name, '(', 
-             paste0('TYPE_(',unlist(lapply(code$args[-length(code$args)], nimGenerateCpp, symTab, asArg = TRUE) ),
-                    ')', collapse = ', '), ', ', nimGenerateCpp(code$args[length(code$args)][[1]], symTab, asArg = TRUE), ')')
+    paste0('nimDerivs_', code$name, '(',
+           paste0(unlist(lapply(code$args, function(x){
+             if(is.numeric(x) || is.logical(x)){
+               return(paste0('TYPE_(', nimGenerateCpp(x, symTab, asArg = TRUE), ')'))
+             }
+             return(nimGenerateCpp(x, symTab, asArg = TRUE))
+           })), collapse = ', '), ')')
   }
   else{
     paste0(code$name, '(',
@@ -242,6 +233,7 @@ cppOutputFor <- function(code, symTab) {
 }
 
 cppOutputIfWhile <- function(code, symTab) {
+  if(identical(nimbleUserNamespace$cppADCode, TRUE)) stop("Cannot use 'if' or 'while' statements in derivative-enabled nimbleFunctions.  Consider using `nimDerivs_conditional` statements instead.")
     part1 <- paste0(code$name,'(', nimGenerateCpp(code$args[[1]], symTab), ')')
     part2 <- nimGenerateCpp(code$args[[2]], symTab)
     if(is.list(part2)) {
