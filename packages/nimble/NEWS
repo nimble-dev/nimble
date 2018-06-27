@@ -1,3 +1,6 @@
+
+-- New option for printing MCMC samplers of particular type(s): conf$printSamplers(type = "conjugate"), for example.
+
                             CHANGES IN VERSION 0.6-11 (June 2018)
 
 USER LEVEL CHANGES

@@ -284,9 +284,60 @@ The hierarchy of precedence for control list elements for samplers is:
 
 Samplers added by \cd{addSampler} will be appended to the end of current sampler list.  Adding a sampler for a node will \emph{not} automatically remove any existing samplers on that node. 
 
-\subsubsection{Printing, re-ordering, modifying and removing samplers: \cd{printSamplers},\\\cd{getSamplerDefinition}, and \cd{removeSamplers}}
+\subsubsection{Printing, removing, and reordering samplers: \cd{printSamplers},\cd{removeSamplers}, \cd{setSamplers}, and \cd{getSamplerDefinition}}
 
-The current, ordered, list of all samplers in the MCMC configuration may be printed by calling the \cd{printSamplers} method. When you want to see only samplers acting on specific model nodes or variables, provide those names as an argument to \cd{printSamplers}.  The \cd{printSamplers} method accepts arguments controlling the level of detail displayed as discussed in its R help information.
+The current, ordered, list of all samplers in the MCMC configuration may be printed by calling the \cd{printSamplers} method. When you want to see only samplers acting on specific model nodes or variables, provide those names as an argument to \cd{printSamplers}.  The \cd{printSamplers} method accepts arguments controlling the level of detail displayed as discussed in its R help information.  A few usage examples are shown below:
+
+<<printSamplers, eval=FALSE>>=
+## Print all samplers
+mcmcConf$printSamplers()
+
+## Print all samplers operating on node "a[1]",
+## or any of the "beta[]" variables
+mcmcConf$printSamplers(c("a[1]", "beta"))
+
+## Print all conjugate and slice samplers
+mcmcConf$printSamplers(type = c("conjugate", "slice"))
+
+## Print all RW samplers operating on "x"
+mcmcConf$printSamplers("x", type = "RW")
+
+## Print the first 100 samplers
+mcmcConf$printSamplers(1:100)
+
+## Print all samplers in their order of execution
+mcmcConf$printSamplers(executionOrder = TRUE)
+@
+
+Samplers may be removed from the configuration object using \cd{removeSamplers}, which accepts a character vector of node or variable names, or a numeric vector of indices.
+
+<<removeSamplers, eval=FALSE>>=
+## Remove all samplers acting on "x" or any component of it
+mcmcConf$removeSamplers("x")
+
+## Remove all samplers acting on "alpha[1]" and "beta[1]"
+mcmcConf$removeSamplers(c("alpha[1]", "beta[1]"))
+
+## Remove the first five samplers
+mcmcConf$removeSamplers(1:5)
+
+## Providing no argument removes all samplers
+mcmcConf$removeSamplers()
+@
+
+Samplers to retain may be specified reordered using \cd{setSamplers}, which also accepts a character vector of node or variable names, or a numeric vector of indices.
+<<setSamplers2, eval=FALSE>>=
+## Set the list of samplers to those acting on any components of the
+## model variables "x", "y", or "z".
+mcmcConf$setSamplers(c("x", "y", "z"))
+
+## Set the list of samplers to only those acting on model nodes
+## "alpha[1]", "alpha[2]", ..., "alpha[10]"
+mcmcConf$setSamplers("alpha[1:10]")
+
+## Truncate the current list of samplers to the first 10 and the 100th
+mcmcConf$setSamplers(ind = c(1:10, 100))
+@
 
 The nimbleFunction definition underlying a particular sampler may be viewed using the \cd{getSamplerDefinition} method, using the sampler index as an argument.  A node name argument may also be supplied, in which case the definition of the first sampler acting on that node is returned.  In all cases, \cd{getSamplerDefinition} only returns the definition of the \emph{first} sampler specified either by index or node name.
 <<getSamplerDefinition, eval=FALSE>>=
@@ -298,51 +349,7 @@ mcmcConf$getSamplerDefinition(3)
 mcmcConf$getSamplerDefinition("x")
 @
 
-The existing samplers may be re-ordered using the \cd{setSamplers} method. The \cd{ind} argument is a vector of sampler indices, or a character vector of model node or variable names.  Here are a few examples. Each example assumes the \cd{MCMCconf} object initially contains 10 samplers, and each example is independent of the others.
-<<setSamplers2, eval=FALSE>>=
-## Truncate the current list of samplers to the first 5
-mcmcConf$setSamplers(ind = 1:5)
 
-## Retain only the third sampler, which will subsequently 
-## become the first sampler
-mcmcConf$setSamplers(ind = 3)
-
-## Reverse the ordering of the samplers
-mcmcConf$setSamplers(ind = 10:1)
-
-## The new set of samplers becomes the 
-## {first, first, first, second, third} from the current list.
-## Upon each iteration of the MCMC, the 'first' sampler will 
-## be executed 3 times, however each instance of the sampler 
-## will be independent in terms of scale, adaptation, etc.
-mcmcConf$setSamplers(ind = c(1, 1, 1, 2, 3))
-
-## Set the list of samplers to only those acting on model node "alpha"
-mcmcConf$setSamplers("alpha")
-
-## Set the list of samplers to those acting on any components of the
-## model variables "x", "y", or "z".
-mcmcConf$setSamplers(c("x", "y", "z"))
-@
-
-Samplers may be removed from the current sampler ordering with the \cd{removeSamplers} method.  The following examples again assume that \cd{mcmcConf} initially contains 10 samplers, and each example is independent of the others.  \cd{removeSamplers} accepts a vector of numeric indices of samplers to be removed or a character vector.  In the latter case, all samplers acting on the named target model nodes will be removed.
-<<removeSamplers, eval=FALSE>>=
-## Remove the first sampler
-mcmcConf$removeSamplers(ind = 1)
-
-## Remove the last five samplers
-mcmcConf$removeSamplers(ind = 6:10)
-
-## Remove all samplers,
-## resulting in an empty MCMC configuration, containing no samplers
-mcmcConf$removeSamplers(ind = 1:10)
-
-## Remove all samplers acting on "x" or any component of it
-mcmcConf$removeSamplers("x")
-
-## Default: providing no argument removes all samplers
-mcmcConf$removeSamplers()
-@
 
 
 \subsubsection{Customizing individual sampler configurations: \cd{getSamplers}, \cd{setSamplers}, \cd{setName}, \cd{setSamplerFunction}, \cd{setTarget}, and \cd{setControl}}
@@ -759,8 +766,8 @@ For state space models, a particle MCMC (PMCMC) sampler can be specified for top
 
 Here is a detailed example of specifying, building, compiling, and running two MCMC algorithms.  We use the \cd{litters} example from the BUGS examples.
 
-%%<<MCMC-litters, eval=FALSE>>=
-<<MCMC-litters>>=
+%%<<MCMC-litters>>=
+<<MCMC-litters, eval=FALSE>>=
 
 ###############################
 ##### model configuration #####
