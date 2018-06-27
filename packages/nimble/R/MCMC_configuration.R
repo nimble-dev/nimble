@@ -385,6 +385,13 @@ print: A logical argument specifying whether to print the current list of sample
             if(print) printSamplers()
             return(invisible(NULL))
         },
+
+        removeSampler = function(...){
+            '
+Alias for removeSamplers method
+'
+            removeSamplers(...)
+        },
         
         setSamplers = function(ind, print = FALSE) {
             '
@@ -417,13 +424,15 @@ print: A logical argument specifying whether to print the new list of samplers (
             return(invisible(NULL))
         },
         
-        printSamplers = function(ind, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE) {
+        printSamplers = function(ind, type, displayControlDefaults = FALSE, displayNonScalars = FALSE, displayConjugateDependencies = FALSE, executionOrder = FALSE) {
             '
 Prints details of the MCMC samplers.
 
 Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely or in part) in the model variable \'x\'.  If omitted, then all samplers are printed.
+
+type: a character vector containing sampler type names.  Only samplers with one of these specified types, as printed by this printSamplers method, will be displayed.  Standard regular expression mathing using is also applied.
 
 displayConjugateDependencies: A logical argument, specifying whether to display the dependency lists of conjugate samplers (default FALSE).
 
@@ -434,6 +443,12 @@ executionOrder: A logical argument, specifying whether to print the sampler func
             if(missing(ind))        ind <- seq_along(samplerConfs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
+            if(!missing(type)) {
+                if(!is.character(type)) stop('type argument must have type character')
+                ## find sampler indices with 'name' matching anything in 'type' argument:
+                typeInd <- unique(unname(unlist(lapply(type, grep, x = lapply(conf$samplerConfs, `[[`, 'name')))))
+                ind <- intersect(ind, typeInd)
+            }
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
             if(executionOrder)      ind <- samplerExecutionOrder[samplerExecutionOrder %in% ind]
             for(i in ind)
