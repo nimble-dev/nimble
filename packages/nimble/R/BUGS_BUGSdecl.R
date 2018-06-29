@@ -740,7 +740,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 ## block[i], so block is replaceable
                 if(!all(contentsReplaceable)) 
                     ## dynamic index on a constant
-                    stop('getSymbolicParentNodesRecurse: dynamic indexing of constants is not allowed in ', deparse(code))
+                    stop('getSymbolicParentNodesRecurse: dynamic indexing of constants is not allowed in ', deparse(code), '. Try adding the dynamically-indexed constant as data instead (using the data argument of nimbleModel).')
                 boolIndexingBlock <-
                     unlist(
                         lapply(code[-c(1,2)],
@@ -776,6 +776,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                                 ". This is now allowed as of version 0.6-6 (as an optional beta feature) and by default as of version 0.6-7. Please set 'nimbleOptions(allowDynamicIndexing = TRUE)' and report any issues to the NIMBLE users group.")
                         dynamicIndexParent <- code[[2]]
                     } else {
+                      if(nimbleOptions()$experimentalEnableDerivs){
+                        stop("Experimental derivatives cannot currently be enabled for models that include dynamic indexing.  Please set 'nimbleOptions(experimentalEnableDerivs = FALSE)' and rebuild the model.")
+                      }
                         if(any(
                             sapply(contentsCode,
                                    detectNonscalarIndex))

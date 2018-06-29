@@ -19,9 +19,6 @@
  * https://www.R-project.org/Licenses/
  */
 
- // prevent class redefinitions
-#ifndef _NIMBLE_AD
-#define _NIMBLE_AD
 // define this to include timing code
 // #define _TIME_AD
 // To see all timing components, use:
@@ -32,18 +29,16 @@
 // see the same timer objects.  The zeros in each indicate which timers
 // were not used by stuff in that DLL.
 
+#ifndef _NIMBLE_CPPAD
+#define _NIMBLE_CPPAD
+
 /* Definitions only to be included when a nimbleFunction needs CppAD */
 #include <cppad/cppad.hpp>
 #include <cppad/utility/nan.hpp>
-//#include <TMB/tmbDists.h>
 #include <nimble/EigenTypedefs.h>
 #include <nimble/accessorClasses.h>
 #include <nimble/nodeFun.h>
-//#include <nimble/RcppNimbleUtils.h>
 #include <nimble/predefinedNimbleLists.h>
-//#include <nimble/RcppNimbleUtils.h>
-//#include <nimble/NimArr.h>
-//#include <nimble/smartPtrs.h>
 #include <cstdio>
 #include <vector>
 
@@ -94,7 +89,6 @@ public:
   }
   void stop(bool verbose = false) {
     t2 = std::chrono::high_resolution_clock::now();
-    double oldtotaltime = totaltime;
     if(verbose) {
       std::cout<<name<<" increment "<<static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count())<<std::endl;
     }
@@ -142,12 +136,12 @@ class nimbleCppADinfoClass {
 class nimbleFunctionCppADbase {
 public:
   void                        getDerivs(nimbleCppADinfoClass &ADinfo,
-                                        NimArr<1, double> &derivOrders,
+                                        const NimArr<1, double> &derivOrders,
                                         const NimArr<1, double> &wrtVector,
                                         nimSmartPtr<NIMBLE_ADCLASS> &ansList);
   
    nimSmartPtr<NIMBLE_ADCLASS> getDerivs_wrapper(nimbleCppADinfoClass &ADinfo,
-                                        NimArr<1, double> &derivOrders,
+                                        const NimArr<1, double> &derivOrders,
                                         const NimArr<1, double> &wrtVector){
             nimSmartPtr<NIMBLE_ADCLASS> ansList = new NIMBLE_ADCLASS;
             getDerivs(ADinfo, derivOrders, wrtVector, ansList);
@@ -156,10 +150,15 @@ public:
 };
 
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
-    const NodeVectorClassNew_derivs &nodes, const NimArr<1, double> &derivOrders);
+    NodeVectorClassNew_derivs &nodes, const NimArr<1, double> &derivOrders);
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
-    const NodeVectorClassNew_derivs &nodes, const double derivOrders);
+    NodeVectorClassNew_derivs &nodes, const double derivOrders);
 nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
     NodeVectorClassNew_derivs &nodes, int iNodeFunction,
     NimArr<1, double> &derivOrders);
+
+NimArr<1, double> make_vector_if_necessary(int);
+NimArr<1, double> make_vector_if_necessary(double);
+NimArr<1, double> make_vector_if_necessary(NimArr<1, double>);
+
 #endif

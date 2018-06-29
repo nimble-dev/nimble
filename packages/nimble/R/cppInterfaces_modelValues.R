@@ -89,7 +89,7 @@ CmodelValues <- setRefClass(
             dll <<- dll
             initialized <<- initialized
             if(missing(buildCall) ) 
-                break("Cannot build object without buildCall!")
+                stop("Cannot build object without buildCall!")
             extptrCall <<- buildCall
             varNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, extptr))      
             componentExtptrs <<- vector(mode = 'list', length = length(varNames))

@@ -1,6 +1,9 @@
 // Copyright (C) 2013-2015 Kasper Kristensen
 // License: GPL-2
 
+// Copyright (C) 2018 the NIMBLE authors 
+// License: GPL (>=2)
+
 /**
    \brief Namespace with special functions and derivatives
 
@@ -684,5 +687,3 @@ Type nldmvnorm(vector<Type> x, matrix<Type> Sigma){
 }
 
 } /* End namespace atomic */
-
-#include "TMB/checkpoint_macro.hpp"

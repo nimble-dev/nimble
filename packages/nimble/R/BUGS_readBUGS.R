@@ -85,8 +85,9 @@ nimbleModel <- function(code,
     if(length(data) && sum(names(data) == ""))
         stop("BUGSmodel: 'data' must be a named list")
     if(any(!sapply(data, function(x) {
-        is.numeric(x) || is.logical(x) })))
-        stop("BUGSmodel: elements of 'data' must be numeric and cannot be data frames")
+        is.numeric(x) || is.logical(x) ||
+            (is.data.frame(x) && all(sapply(x, 'is.numeric'))) })))
+        stop("BUGSmodel: elements of 'data' must be numeric")
     ## constantLengths <- unlist(lapply(constants, length))
     ## if(any(constantLengths > 1)) {
     ##     iLong <- which(constantLengths > 1)

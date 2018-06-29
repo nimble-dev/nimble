@@ -1,5 +1,7 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
+nimbleOptions(allowDynamicIndexing = FALSE)
+
 context("Testing of derivatives for nimbleFunctions.")
 
 test_that('Derivatives of dnorm function correctly.',
@@ -35,19 +37,29 @@ test_that('Derivatives of dnorm function correctly.',
 
 test_that('Derivatives of x^2 function correctly.',
           {
+            listOfADLists <- nimbleList(list1 = ADNimbleList(),
+                                        list2 = ADNimbleList())
+            temporarilyAssignInGlobalEnv(listOfADLists)  
             ADfun2 <- nimbleFunction(
               setup = function(){},
               run = function(y = double(1, c(2))) {
-                outList <- derivs(testMethod(y, y))
-                returnType(ADNimbleList())
-                return(outList)
+                ADlistList <- listOfADLists$new()
+                ADlistList$list1 <- derivs(testMethod(y, y))
+                ADlistList$list2 <- derivs(testMethod2(y, y))
+                returnType(listOfADLists())
+                return(ADlistList)
               },
               methods = list(
                 testMethod = function(x = double(1, c(2)), y = double(1, c(2))) {
                   returnType(double(1, c(2)))
                   return(x[]^2)
+                },
+                testMethod2 = function(x = double(1, c(2)), y = double(1, c(2))) {
+                  returnType(double(0))
+                  return(2^x[1])
                 }
-              ), enableDerivs = list('testMethod')
+                
+              ), enableDerivs = list('testMethod', 'testMethod2')
             )
             ADfunInst <- ADfun2()
             x <- c(1, 1)
@@ -55,9 +67,12 @@ test_that('Derivatives of x^2 function correctly.',
             temporarilyAssignInGlobalEnv(ADfunInst)  
             cADfunInst <- compileNimble(ADfunInst)
             cderivs <- cADfunInst$run(x)
-            expect_equal(cderivs$value, Rderivs$value)
-            expect_equal(cderivs$jacobian, Rderivs$jacobian, tolerance = 0.01)
-            expect_equal(cderivs$hessian, Rderivs$hessian, tolerance = 0.01)
+            expect_equal(cderivs$list1$value, Rderivs$list1$value)
+            expect_equal(cderivs$list1$jacobian, Rderivs$list1$jacobian, tolerance = 0.01)
+            expect_equal(cderivs$list1$hessian, Rderivs$list1$hessian, tolerance = 0.01)
+            expect_equal(cderivs$list2$value, Rderivs$list2$value)
+            expect_equal(cderivs$list2$jacobian, Rderivs$list2$jacobian, tolerance = 0.01)
+            expect_equal(cderivs$list2$hessian, Rderivs$list2$hessian, tolerance = 0.01)
           }
 )
 
@@ -66,9 +81,9 @@ test_that('Derivatives of sum(log(x)) function correctly.',
             ADfun3 <- nimbleFunction(
               setup = function(){},
               run = function(x = double(1, c(2))) {
-                outList <- derivs(testMethod(x))
-                returnType(ADNimbleList())
-                return(outList)
+                outVals <- 2*derivs(testMethod(x))$jacobian
+                returnType(double(2))
+                return(outVals)
               },
               methods = list(
                 testMethod = function(x = double(1, c(2))) {
@@ -83,8 +98,100 @@ test_that('Derivatives of sum(log(x)) function correctly.',
             temporarilyAssignInGlobalEnv(ADfunInst)  
             cADfunInst <- compileNimble(ADfunInst)
             cderivs <- cADfunInst$run(x)
-            expect_equal(cderivs$value, Rderivs$value)
-            expect_equal(cderivs$jacobian, Rderivs$jacobian, tolerance = 0.01)
-            expect_equal(cderivs$hessian, Rderivs$hessian, tolerance = 0.01)
+            expect_equal(cderivs, Rderivs, tolerance = 0.01)
           }
 )
+
+
+test_that('Derivatives of model$calculate() work in expressions.',
+          {
+            testModelCode <- nimbleCode({
+              x[1:2] ~ dmnorm(zeroVec[1:2], diagMat[1:2, 1:2])
+            })
+            testModel <- nimbleModel(code = testModelCode,
+                                     inits = list(x = rep(0, 2)),
+                                     constants = list(zeroVec = rep(0, 2),
+                                                      diagMat = diag(2)))
+            ADfun4 <- nimbleFunction(
+              setup = function(model){},
+              run = function() {
+                outVals <- 2*sum(derivs(model$calculate('x'), 
+                                        wrt = 'x')$jacobian)
+                returnType(double())
+                return(outVals)
+              }
+            )
+            ADfunInst <- ADfun4(testModel)
+            Rderivs <- ADfunInst$run()
+            temporarilyAssignInGlobalEnv(testModel)  
+            temporarilyAssignInGlobalEnv(ADfunInst)  
+            compileNimble(testModel)
+            cADfunInst <- compileNimble(ADfunInst)
+            cderivs <- cADfunInst$run()
+            print(cderivs)
+            expect_equal(cderivs, Rderivs, tolerance = 0.01)
+          }
+)
+
+test_that('Derivatives of matrix multiplication function correctly.',
+          {
+            ADfun5 <- nimbleFunction(
+              setup = function(){},
+              run = function(x = double(2, c(2, 2)),
+                             y = double(2, c(2, 4))) {
+                outVals <- derivs(testMethod(x, y), wrt = 'x', order = 1)$jacobian
+                returnType(double(2))
+                return(outVals)
+              },
+              methods = list(
+                testMethod = function(x = double(2, c(2, 2)),
+                                      y = double(2, c(2, 4))) {
+                  returnType(double(2, c(2, 4)))
+                  return(x%*%y)
+                }
+              ), enableDerivs = list('testMethod')
+            )
+            ADfunInst <- ADfun5()
+            x <- diag(2)
+            set.seed(1)
+            y <- matrix(rnorm(8), ncol = 4, nrow = 2)
+            Rderivs <- ADfunInst$run(x, y)
+            temporarilyAssignInGlobalEnv(ADfunInst)  
+            cADfunInst <- compileNimble(ADfunInst, showCompilerOutput = TRUE)
+            cderivs <- cADfunInst$run(x, y)
+            expect_equal(cderivs, Rderivs, tolerance = 0.01)
+          }
+)
+
+
+
+test_that('Derivatives of matrix exponentiation function correctly.',
+          {
+            ADfun6 <- nimbleFunction(
+              setup = function(){},
+              run = function(x = double(2, c(2, 2))) {
+                outVals <- derivs(testMethod(x), wrt = 'x', order = 1)$jacobian
+                returnType(double(2))
+                return(outVals)
+              },
+              methods = list(
+                testMethod = function(x = double(2, c(2, 2))) {
+                  returnType(double(2, c(2, 2)))
+                  return(exp(x))
+                }
+              ), enableDerivs = list('testMethod')
+            )
+            ADfunInst <- ADfun5()
+            x <- diag(2)
+            y <- matrix(1, ncol = 4, nrow = 2)
+            Rderivs <- ADfunInst$run(x, y)
+            temporarilyAssignInGlobalEnv(ADfunInst)  
+            cADfunInst <- compileNimble(ADfunInst, showCompilerOutput = TRUE)
+            cderivs <- cADfunInst$run(x, y)
+            expect_equal(cderivs, Rderivs, tolerance = 0.01)
+          }
+)
+
+
+## one for exp(mat)
+## get order to owrk without c()!

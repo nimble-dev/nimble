@@ -1,3 +1,39 @@
+
+## proxy model for model_AD
+## This class needs just enough pieces to be used like a model
+## for purposes of nodeFunction compilation.
+## The model will contain an ADproxyModel
+## and then the nodeFunction setup code will extract it.
+## The model interface will population the proxy model's CobjectInterface
+ADproxyModelClass <- setRefClass(
+    'ADproxyModelClass',
+    fields = list(
+        CobjectInterface = 'ANY' ## needs .basePtr
+      , model = 'ANY'
+    ),
+    methods = list(
+        getVarInfo = function(...) {model$getVarInfo(...)},
+        initialize = function(Rmodel) {
+            model <<- Rmodel
+        }
+        ## symbolNimArrDoublePtr
+    )
+)
+
+## This is not a reference class (or other class)
+## definition because if it was, then when it is used
+## in a nodeFunction, R would check to see that variable
+## names exist as fields in the class, and that is
+## more trouble than it is worth.  A simple environment
+## will pass muster here.
+## ADproxyModelClass <- function(Rmodel) {
+##     ans <- new.env()
+##     model <- Rmodel ## for getVarInfo
+##     ans$getVarInfo <- function(...) model$getVarInfo(...)
+##     ans$CobjectInterface <- NULL
+##     ans
+## }
+
 ## Convert one symbol object for a C++ var into a symbol object for C++ templated CppAD code
 # See symbolTable2templateTypeSymbolTable
 cppVarSym2templateTypeCppVarSym <- function(oldSym, addRef = FALSE, clearRef = FALSE, replacementBaseType = 'TYPE_', replacementTemplateArgs = list()) {
@@ -51,7 +87,7 @@ makeTypeTemplateFunction = function(newName, .self) {
     localArgs <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
     newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs, 
-                                      generatorSymTab = .self$code$objectDefs, cppADCode = TRUE)
+                                      generatorSymTab = .self$code$objectDefs, cppADCode = 2L)
     newCppFunDef
 }
 
@@ -65,7 +101,7 @@ makeTypeTemplateFunction = function(newName, .self) {
 ## (which is in permanent C++, not generated from R)
 ## We do not assume that in the target function the arguments are independent variables and the
 ## returned value is the dependent variable.  Those are set by the independentVarNames and dependentVarNames
-makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, ADfunName, independentVarNames, dependentVarNames, isNode, allFunDefs) {
+makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, ADfunName, independentVarNames, dependentVarNames, isNode, allFunDefs, className = "className") {
     ## Make new function definition to call for taping (CFT)
     CFT <- RCfunctionDef$new(static = TRUE)
     CFT$returnType <- cppVarFull(baseType = "CppAD::ADFun", templateArgs = list('double'), ptr = 1, name = 'RETURN_TAPE_') ##cppVoid()
@@ -210,9 +246,11 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     ## line to finish taping
     finishTapingCall <- cppLiteral('RETURN_TAPE_->Dependent(ADindependentVars, ADresponseVars);')
 
-    ADoptimizeCalls <- list(cppLiteral("std::cout<<\"size before optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"),
-                            cppLiteral("RETURN_TAPE_->optimize();"),
-                            cppLiteral("std::cout<<\"size after optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"))
+    ADoptimizeCalls <- list(
+        # cppLiteral(paste0("std::cout<<\"about to optimize for ", className,"\"<<std::endl;")),
+        # cppLiteral("std::cout<<\"size before optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"),
+                            cppLiteral("RETURN_TAPE_->optimize();"))
+        #                     cppLiteral("std::cout<<\"size after optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"))
 
     returnCall <- cppLiteral("return(RETURN_TAPE_);")
     
@@ -366,7 +404,9 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
 ## Note this does some work similar to BUGScontextClass::embedCodeInForLoop
 makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, incrementIndex, isNode = FALSE) {
   indexNames <- names(indexList)
-  indexedBracketExpr <- do.call('call', c(list('[', as.name('TO_BE_REPLACED')), lapply(indexNames, as.name)), quote = TRUE)
+  indexedBracketExpr <- do.call('call', c(list('[', as.name('TO_BE_REPLACED')),
+                                          lapply(rev(indexNames), as.name)), ## use rev() to force column-major order for results
+                                quote = TRUE)
   if(indicesRHS) {
     if(isNode)   RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = cppLiteral(paste0('(**model_', deparse(RHSvar), ')')))), list(indexedBracketExpr = indexedBracketExpr)))
     else RHS <- eval(substitute(substitute(indexedBracketExpr, list(TO_BE_REPLACED = RHSvar)), list(indexedBracketExpr = indexedBracketExpr)))
@@ -377,7 +417,7 @@ makeCopyingCodeBlock <- function(LHSvar, RHSvar, indexList, indicesRHS = TRUE, i
   }
   innerCode <- substitute({LHS <- RHS; incrementIndex <- incrementIndex + 1;}, list(LHS = LHS, RHS = RHS, incrementIndex = incrementIndex))
   for(i in length(indexList):1) {
-    newForLoop <- substitute(for(NEWINDEX_ in NEWSTART_:NEWEND_) INNERCODE, list(NEWINDEX_ = as.name(indexNames[i]), NEWSTART_ = indexList[[i]][[1]], NEWEND_ = indexList[[i]][[2]], INNERCODE = innerCode))
+    newForLoop <- substitute(for(NEWINDEX_ in NEWSTART_:NEWEND_) INNERCODE, list(NEWINDEX_ = as.name(indexNames[i]), NEWSTART_ = rev(indexList)[[i]][[1]], NEWEND_ = rev(indexList)[[i]][[2]], INNERCODE = innerCode))
     innerCode <- newForLoop
   }
   innerCode

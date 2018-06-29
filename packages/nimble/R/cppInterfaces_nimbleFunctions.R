@@ -837,6 +837,13 @@ copyFromRobjectViaActiveBindings <- function(Robj, cppNames, cppCopyTypes, .self
 
 copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll,
                             useCompiledCopyMethod = FALSE) {
+    for(v in cppNames) {
+        copyType <- cppCopyTypes[[v]]
+        if(copyType == 'modelVarAccess')
+            processModelVarAccess(Robj, v)
+        if(copyType == 'modelValuesAccess')
+            processModelValuesAccess(Robj, v)
+    }
     if(useCompiledCopyMethod) {
         ## Copy some elements from C++ copyFromRobject method
         ## Currently this includes various numeric types as well as and nodeFxnVector
@@ -917,7 +924,11 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll,
             }
         },
         'modelVarAccess' = {
-            populateManyModelVarMapAccess(fxnPtr = basePtr, Robject = Robj, manyAccessName = v, dll = dll)
+            if(useCompiledCopyMethod) {
+                NULL
+            } else {
+                populateManyModelVarMapAccess(fxnPtr = basePtr, Robject = Robj, manyAccessName = v, dll = dll)
+            }
         },
         'modelValuesAccess' = {
             populateManyModelValuesMapAccess(fxnPtr = basePtr, Robject = Robj, manyAccessName = v, dll = dll)

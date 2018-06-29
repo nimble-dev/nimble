@@ -56,6 +56,15 @@ double calculate(NodeVectorClassNew &nodes) {
   return(ans);
 }
 
+CppAD::AD<double> calculate_ADproxyModel(NodeVectorClassNew_derivs &nodes) {
+  CppAD::AD<double> ans = 0;
+  const vector<NodeInstruction> &instructions = nodes.getInstructions();
+  vector<NodeInstruction>::const_iterator iNode(instructions.begin());
+  vector<NodeInstruction>::const_iterator iNodeEnd(instructions.end());
+  for(; iNode != iNodeEnd; iNode++)
+    ans += iNode->nodeFunPtr->calculateBlock_ADproxyModel(iNode->operand);
+  return(ans);
+}
 
 double calculate(NodeVectorClassNew &nodes, int iNodeFunction) {
   if(nodes.getInstructions().size() < static_cast<unsigned int>(iNodeFunction)) {
@@ -166,6 +175,48 @@ void ManyModelValuesMapAccessor::setRow(int i) {
 //  return(varAccessors);
 }
 
+void nimArr_2_SingleModelAccess_AD_AD(SingleVariableMapAccessBase* SMVAPtr,
+				      NimArrBase< CppAD::AD<double> > &nimArr,
+				      int nimBegin,
+				      int nimStride) {
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  if(SMVAPtr->getSingleton()) {
+    (*static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
+  } else {
+    dynamicMapCopyFlatToDim< CppAD::AD<double> , CppAD::AD<double> >(static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr),
+								     SMVAPtr->getOffset(),
+								     SMVAPtr->getStrides(),
+								     SMVAPtr->getSizes(),
+								     &nimArr,
+								     nimBegin,
+								     nimStride);
+  }
+}
+
+
+void nimArr_2_ManyModelAccess_AD_AD(ManyVariablesMapAccessor &MMVAPtr, NimArrBase< CppAD::AD<double> > &nimArr){
+  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int k = SMVA_Vec->size();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  for(int i = 0; i < k ; i++){
+    curSingleAccess = (*SMVA_Vec)[i];
+    nextNumVals = (*curSingleAccess).getLength();
+    if(nextNumVals + nimCurrent > nimEnd){
+      PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+      break;
+    }
+    nimArr_2_SingleModelAccess_AD_AD(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+    nimCurrent += nextNumVals;
+    nimCurrentOffset += nextNumVals * nimArrStride;
+  }
+  if(nimCurrent != nimEnd)
+    PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
 
 template<class T>
 void nimArr_2_ManyModelAccess(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
@@ -214,10 +265,51 @@ void nimArr_2_ManyModelAccessIndex(ManyVariablesMapAccessor &MMVAPtr, NimArrBase
 ///////////////
 // [accessors]_2_nimArr
 // nimArr is "to". SMVAPtr is "from"
+void SingleModelAccess_2_nimArr_AD_AD(SingleVariableMapAccessBase* SMVAPtr,
+				      NimArrBase< CppAD::AD<double> > &nimArr,
+				      int nimBegin,
+				      int nimStride) {
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  if(SMVAPtr->getSingleton()) {
+    (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr))[SMVAPtr->offset];
+  } else {
+    dynamicMapCopyDimToFlat< CppAD::AD<double>, CppAD::AD<double> >(&nimArr,
+								  nimBegin,
+								  nimStride,
+								  static_cast<NimArrBase< CppAD::AD<double> >* >(SMA_NimTypePtr),
+								  SMVAPtr->getOffset(),
+								  SMVAPtr->getStrides(),
+								  SMVAPtr->getSizes() );
+  }
+}
+
+void ManyModelAccess_2_nimArr_AD_AD(ManyVariablesMapAccessor &MMVAPtr, NimArrBase< CppAD::AD<double> > &nimArr){
+  const vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int k = SMVA_Vec->size();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  for(int i = 0; i < k ; i++){
+    curSingleAccess = (*SMVA_Vec)[i];
+    nextNumVals = (*curSingleAccess).getLength();
+    if(nextNumVals + nimCurrent > nimEnd){
+      PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+      break;
+    }
+    SingleModelAccess_2_nimArr_AD_AD(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+    nimCurrent += nextNumVals;
+    nimCurrentOffset += nextNumVals * nimArrStride;
+  }
+  if(nimCurrent != nimEnd)
+    PRINTF("Warning: after completing ManyModelAccess_2_nimArr, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
 
 template<class T>
 void ManyModelAccess_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
-  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  const vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
   int nimCurrent = 0;
   int nimEnd = nimArr.size();
   int nimArrStride = nimArr.strides()[0];
@@ -240,6 +332,7 @@ void ManyModelAccess_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &
     PRINTF("Warning: after completing ManyModelAccess_2_nimArr, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
 
+
 template<class T>
 void ManyModelAccessIndex_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr, int index) {
   vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
@@ -259,35 +352,39 @@ void ManyModelAccessIndex_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase
 
 //////////
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA){
-	nimArr_2_ManyModelAccess<double>(MVA, nimArr);
+  nimArr_2_ManyModelAccess<double>(MVA, nimArr);
 }
-
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA){
-	nimArr_2_ManyModelAccess<int>(MVA, nimArr);
+  nimArr_2_ManyModelAccess<int>(MVA, nimArr);
 }
-
+void setValues_AD_AD(NimArrBase< CppAD::AD<double> > &nimArr,  ManyVariablesMapAccessor &MVA){
+  nimArr_2_ManyModelAccess_AD_AD(MVA, nimArr);
+}
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   nimArr_2_ManyModelAccessIndex<double>(MVA, nimArr, index-1);
 }
-
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   nimArr_2_ManyModelAccessIndex<int>(MVA, nimArr, index-1);
 }
-
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA){
-	ManyModelAccess_2_nimArr<double>(MVA, nimArr);
+  ManyModelAccess_2_nimArr<double>(MVA, nimArr);
 }
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA){
-	ManyModelAccess_2_nimArr<int>(MVA, nimArr);
+  ManyModelAccess_2_nimArr<int>(MVA, nimArr);
+}
+void getValues_AD_AD(NimArr<1, CppAD::AD<double> > &nimArr, ManyVariablesMapAccessor &MVA){
+  ManyModelAccess_2_nimArr_AD_AD(MVA, nimArr);
 }
 
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   ManyModelAccessIndex_2_nimArr<double>(MVA, nimArr, index-1);
-  } 
+} 
 
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
   ManyModelAccessIndex_2_nimArr<int>(MVA, nimArr, index-1);
 }
+
+
 
 void nimCopy(const copierVectorClass &copiers) {
   vector<copierClass*>::const_iterator iCopy;
@@ -821,97 +918,12 @@ SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP S
   return(R_NilValue);
 }
 
-
-string _NIMBLE_WHITESPACE(" \t");
-string _NIMBLE_WHITESPACEBRACKET(" \t[");
-string _NIMBLE_NUMERICS("0123456789.");
-string _NIMBLE_SPACECOMMABRACKET(" ,]");
-
-// std::stoi not consistent across C++ and not worth the portability worries, so we made our own using istringstream
-int nimble_stoi(const string &input) {
-  istringstream converter;
-  std::size_t iStart(input.find_first_not_of(_NIMBLE_WHITESPACE));
-  std::size_t iEnd(input.find_first_not_of(_NIMBLE_NUMERICS, iStart));
-  if(iEnd != std::string::npos && iEnd > iStart) iEnd--;
-  converter.str(input.substr(iStart, iEnd - iStart + 1));
-  int ans;
-  converter >> ans;
-  return ans;
-}
-
-class varAndIndicesClass {
-public:
-  string varName;
-  vector< vector<int> > indices;
-};
-
 class mapInfoClass {
 public:
   int offset;
   vector<int> sizes;
   vector<int> strides;
 };
-
-void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string &varName, vector<vector<int> > &inds) {
-  output.indices.resize(0);
-  std::size_t iBracket = input.find_first_of('[');
-  //std::cout<<iBracket<<"\n";
-  if(iBracket == std::string::npos) { // no bracket
-    output.varName = input;
-    //    std::cout<<output.varName<<"\n";
-    return;
-  }
-  output.varName = input.substr(0, iBracket);
-  //  std::cout<<output.varName<<"\n";
-
-  string restOfInput = input.substr(iBracket+1);
-  //  std::cout<<restOfInput<<"\n";
-  bool done(false);
-
-  vector<int> oneAns;
-  std::size_t iColon, iComma;
-  int firstNum, secondNum;
-  std::size_t iNextStart, iNonBlank;
-  iBracket = restOfInput.find_first_of(']');
-  if(iBracket == std::string::npos) {
-    _nimble_global_output<<"problem in parseVarAndInds: there is no closing bracket\n";
-    nimble_print_to_R(_nimble_global_output);
-  }
-  while(!done) {
-    iColon   = restOfInput.find_first_of(':');
-    iComma   = restOfInput.find_first_of(',');
-    if((iColon < iBracket) & (iColon < iComma)) { // next is a colon expr like 2:5
-      firstNum = nimble_stoi(restOfInput);
-      iNextStart = iColon + 1;
-      restOfInput = restOfInput.substr(iNextStart);
-      iComma   = restOfInput.find_first_of(',');
-      iBracket = restOfInput.find_first_of(']');
-      secondNum   = nimble_stoi(restOfInput);
-      if(iComma < iBracket) iNextStart = iComma + 1; else {iNextStart = iBracket; done = true;}
-      restOfInput = restOfInput.substr(iNextStart);
-      oneAns.push_back(firstNum);
-      oneAns.push_back(secondNum);
-      output.indices.push_back(oneAns);
-      oneAns.clear();
-    } else {
-      if(iComma >= iBracket) {iComma = iBracket; done = true;} // now iComma is the ending index after here
-      iNonBlank = restOfInput.find_first_not_of(_NIMBLE_SPACECOMMABRACKET);
-      if(iNonBlank < iComma) { // there is a number
-	firstNum = nimble_stoi(restOfInput);
-	if(iComma < iBracket) iNextStart = iComma + 1; else iNextStart = iBracket;
-	restOfInput = restOfInput.substr(iNextStart);
-	oneAns.push_back(firstNum);
-	output.indices.push_back(oneAns);
-	oneAns.clear();
-      } else { // there is a blank
-	output.indices.push_back(oneAns);
-	if(iComma < iBracket) iNextStart = iComma + 1; else iNextStart = iBracket;
-	restOfInput = restOfInput.substr(iNextStart);
-      }
-    }
-    iBracket = restOfInput.find_first_of(']');
-  }
-}
 
 SEXP varAndIndices2Rlist(const varAndIndicesClass &input) {
   SEXP Soutput, Sindices;
@@ -1033,12 +1045,14 @@ SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim) {
 
 //#define _DEBUG_POPULATE_MAP_ACCESSORS
 
-// call both with a bunch of output generated...
-SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr ) {
+
+void populateValueMapAccessorsFromNodeNames_internal(ManyVariablesMapAccessorBase* valuesAccessor,
+						     SEXP SnodeNames,
+						     SEXP SsizesAndNdims,
+						     SEXP SModelOrModelValuesPtr) {
   vector<string> nodeNames;
   STRSEXP_2_vectorString(SnodeNames, nodeNames);
   NamedObjects *sourceNamedObject = static_cast<NamedObjects*>(R_ExternalPtrAddr(SModelOrModelValuesPtr));
-  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StargetPtr) );
   int numNames = nodeNames.size();
   valuesAccessor->resize(numNames);
   vector<SingleVariableMapAccessBase *> *singleAccessors = &(valuesAccessor->getMapAccessVector());
@@ -1048,7 +1062,7 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
   SEXP SoneSizesAndNdims;
   mapInfoClass mapInfo;
   int totalLength = 0;
-
+  
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
   _nimble_global_output<<"New: "<<numNames<<"\n";
   nimble_print_to_R(_nimble_global_output);
@@ -1102,6 +1116,28 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
   _nimble_global_output<<totalLength<<"\n";
   nimble_print_to_R(_nimble_global_output);
 #endif
+}
+
+void populateValueMapAccessorsFromNodeNames_copyFromRobject(void *VvaluesAccessor,
+							    SEXP Sargs) {
+  _nimble_global_output<<"In new copy system\n";
+  nimble_print_to_R(_nimble_global_output);
+  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(VvaluesAccessor);
+  SEXP SnodeNames, SsizesAndNdims, SModelOrModelValuesPtr;
+  PROTECT(SnodeNames = VECTOR_ELT(Sargs, 0));
+  PROTECT(SsizesAndNdims = VECTOR_ELT(Sargs, 1));
+  PROTECT(SModelOrModelValuesPtr = VECTOR_ELT(Sargs, 2));
+  populateValueMapAccessorsFromNodeNames_internal(valuesAccessor,
+						  SnodeNames,
+						  SsizesAndNdims,
+						  SModelOrModelValuesPtr);
+  UNPROTECT(3);
+}
+
+// call both with a bunch of output generated...
+SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr ) {
+  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StargetPtr) );
+  populateValueMapAccessorsFromNodeNames_internal(valuesAccessor, SnodeNames, SsizesAndNdims, SModelOrModelValuesPtr);
   return(R_NilValue);
 }
 

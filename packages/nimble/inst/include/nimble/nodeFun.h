@@ -23,6 +23,10 @@
 #define __NODEFUN
 #include "NimArr.h"
 #include "smartPtrs.h"
+#include "NamedObjects.h"
+#include <cppad/cppad.hpp>
+
+#define ADvector CppAD::vector
 
 class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
  public:
@@ -38,6 +42,83 @@ class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
   void resetFlags();
   void copyFromRobject(SEXP Robject);
   NIMBLE_ADCLASS();
+};
+
+class NodeVectorClassNew_derivs;
+
+class atomic_extraInputObject : public CppAD::atomic_base<double> {
+  public:
+ atomic_extraInputObject(const std::string& name,
+			 NodeVectorClassNew_derivs* NV);
+ private:
+  NodeVectorClassNew_derivs* NV_;//for access to model_extraInput_accessor;
+  
+  virtual bool forward(
+		       size_t                    p ,
+		       size_t                    q ,
+		       const ADvector<bool>&      vx ,
+		       ADvector<bool>&      vy ,
+		       const ADvector<double>&    tx ,
+		       ADvector<double>&    ty
+		       );
+  virtual
+    bool reverse(
+		 size_t                    q ,
+		 const ADvector<double>&    tx ,
+		 const ADvector<double>&    ty ,
+		 ADvector<double>&    px ,
+		 const ADvector<double>&    py
+		 );
+  virtual
+    bool for_sparse_jac(
+			size_t                     q ,
+			const ADvector<bool>&   rt ,
+			ADvector<bool>&         st ,
+			const ADvector<double>&      x );
+  virtual
+    bool rev_sparse_jac(
+			size_t                     q ,
+			const ADvector<bool>&   rt ,
+			ADvector<bool>&         st ,
+			const ADvector<double>&      x );
+};
+
+
+class atomic_extraOutputObject : public CppAD::atomic_base<double> {
+  public:
+ atomic_extraOutputObject(const std::string& name,
+			  NodeVectorClassNew_derivs* NV);
+ private:
+  NodeVectorClassNew_derivs* NV_;//for access to model_modelOutput_accessor;
+  
+  virtual bool forward(
+		       size_t                    p ,
+		       size_t                    q ,
+		       const ADvector<bool>&      vx ,
+		       ADvector<bool>&      vy ,
+		       const ADvector<double>&    tx ,
+		       ADvector<double>&    ty
+		       );
+  virtual
+    bool reverse(
+		 size_t                    q ,
+		 const ADvector<double>&    tx ,
+		 const ADvector<double>&    ty ,
+		 ADvector<double>&    px ,
+		 const ADvector<double>&    py
+		 );
+  virtual
+    bool for_sparse_jac(
+			size_t                     q ,
+			const ADvector<bool>&   r ,
+			ADvector<bool>&         s ,
+			const ADvector<double>&      x );
+  virtual
+    bool rev_sparse_jac(
+			size_t                     q ,
+			const ADvector<bool>&   rt ,
+			ADvector<bool>&         st ,
+			const ADvector<double>&      x );
 };
 
 
@@ -70,8 +151,15 @@ class nodeFun : public NamedObjects {
   }
 
   virtual double calculate(const indexedNodeInfo &iNI) const =0;
-  virtual void calculateWithArgs_deriv(const indexedNodeInfo &iNI, NimArr<1, double> & ARG2_nimDerivsOrders_, const NimArr<1, double> & ARG3_wrtVector_, nimSmartPtr<NIMBLE_ADCLASS> ansList) = 0;
+  virtual CppAD::AD<double> calculate_ADproxyModel(const indexedNodeInfo &iNI) const {
+    printf("Error in C++: Dummy calculate_ADproxyModel is being used\n.");
+    return(CppAD::AD<double>(0)); // need a default in case generating deriv functions is turned off.
+  };
+  CppAD::AD<double> calculateBlock_ADproxyModel(int operand) const { return calculate_ADproxyModel(indexedNodeInfoTable[operand]); }
+
+  virtual void calculateWithArgs_deriv(const indexedNodeInfo &iNI, const NimArr<1, double> & ARG2_nimDerivsOrders_, const NimArr<1, double> & ARG3_wrtVector_, nimSmartPtr<NIMBLE_ADCLASS> ansList) = 0;
   virtual double calculateDiff(const indexedNodeInfo &iNI) const =0;
+  // virtual CppAD::AD<double> calculateDiff_ADproxyModel(const indexedNodeInfo &iNI) const =0;
   virtual void simulate(const indexedNodeInfo &iNI) const =0;
   virtual double getLogProb(const indexedNodeInfo &iNI) const =0;
 
@@ -109,6 +197,28 @@ class nodeFun : public NamedObjects {
   NimArr<2, double> getBound_2D_double_block(int boundID, int operand) const {
     return(getBound_2D_double(boundID, indexedNodeInfoTable[operand]));
   }
+  // Next 3 functions are virtual to ensure the code in the model DLL
+  // will be used so that the correct CppAD globals / statics will be found.
+  void recordTape(NodeVectorClassNew_derivs &NV);
+  virtual void setTapeIndependent(std::vector< CppAD::AD<double> > &independentVars);
+  virtual void finishADFun(CppAD::ADFun< double > &ADtape,
+			   std::vector< CppAD::AD<double> > &independentVars,
+			   std::vector< CppAD::AD<double> > &dependentVars);
+  virtual void runTape(CppAD::ADFun< double > &ADtape,
+		       std::vector< double > &independentVars,
+		       std::vector< double > &dependentVars,
+		       const NimArr<1, double> &derivOrders,
+		       nimSmartPtr<NIMBLE_ADCLASS> &ansList);
+  virtual atomic_extraInputObject*
+    runExtraInputObject(NodeVectorClassNew_derivs &NV,
+			std::vector< CppAD::AD<double> > &extraInputDummyInput,
+			std::vector< CppAD::AD<double> > &extraInputResult);
+  virtual atomic_extraOutputObject*
+    runExtraOutputObject(NodeVectorClassNew_derivs &NV,
+			 //			 std::vector< CppAD::AD<double> > &extraOutputs,
+			 //std::vector< CppAD::AD<double> > &extraOutputDummyResult,
+			 CppAD::AD<double> &logProb);
+  virtual CppAD::AD<double> call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV);
 };
 
 #endif

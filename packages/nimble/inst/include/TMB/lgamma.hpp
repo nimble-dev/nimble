@@ -1,6 +1,9 @@
 // Copyright (C) 2013-2015 Kasper Kristensen
 // License: GPL-2
 
+// Copyright (C) 2018 the NIMBLE authors 
+// License: GPL (>=2)
+
 /** \file
     \brief Gamma function and gamma probability densities
 */
@@ -102,17 +105,26 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
 {
   Type n=size;
   Type p=prob;
-  Type roundx = discrete_round(x);
-
-  Type logres =  CondExpEq(x, roundx, lgamma(roundx+n)-lgamma(n)-lgamma(roundx+Type(1))+
-    n*log(p)+roundx*log(Type(1)-p), -Type(std::numeric_limits<double>::infinity()));
-  logres = CondExpGe(roundx, Type(0.0), logres, -Type(std::numeric_limits<double>::infinity()));
-  logres = CondExpGe(n, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-  logres = CondExpGe(prob, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-  logres = CondExpLe(prob, Type(1.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
-	return(logres);
+  Type res = lgamma(x+n)-lgamma(n)-lgamma(x+Type(1))+
+    n*log(p)+x*log(Type(1)-p);
+	res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+	return(res);
 }
+
+template<class Type>
+inline Type nimDerivs_dnbinom_logFixed(const Type &x, const Type &size, const Type &prob,
+		    int give_log)
+{
+  Type n=size;
+  Type p=prob;
+  Type res = lgamma(x+n)-lgamma(n)-lgamma(x+Type(1))+
+    n*log(p)+x*log(Type(1)-p);
+  if(!give_log){
+    res = exp(res);
+  }
+	return(res);
+}
+
 
 // VECTORIZE4_ttti(dnbinom)
 
@@ -161,14 +173,21 @@ inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
 template<class Type>
 inline Type nimDerivs_dpois(const Type &x, const Type &lambda, Type give_log)
 {
-  Type roundx = discrete_round(x);
-  Type logres = CondExpEq(x, roundx, -lambda + roundx*log(lambda) - lgamma(roundx+Type(1)), -Type(std::numeric_limits<double>::infinity()));
-  logres = CondExpGe(roundx, Type(0.0), logres, -Type(std::numeric_limits<double>::infinity()));
-  logres = CondExpEq(lambda, Type(0.0), CondExpEq(roundx, Type(0.0), zero_NaNderiv(lambda), -Type(std::numeric_limits<double>::infinity())), logres);
-  logres = CondExpGe(lambda, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN()));
-	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
-	return(logres);
+  Type res = -lambda + x*log(lambda) - lgamma(x+Type(1));
+	res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+	return(res);
 }
+
+template<class Type>
+inline Type nimDerivs_dpois_logFixed(const Type &x, const Type &lambda, int give_log)
+{
+  Type res = -lambda + x*log(lambda) - lgamma(x+Type(1));
+  if(!give_log){
+	  res = exp(res);
+  }
+	return(res);
+}
+
 // VECTORIZE3_tti(dpois)
 
 /** \brief Density of X where X~gamma distributed 
@@ -177,20 +196,40 @@ inline Type nimDerivs_dpois(const Type &x, const Type &lambda, Type give_log)
 template<class Type>
 Type nimDerivs_dgamma(Type y, Type shape, Type scale, Type give_log)
 {
-  Type logres = CondExpGt(y, Type(0.0), 
-   -lgamma(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale),
-   -Type( std::numeric_limits<double>::infinity() ));
-  logres = CondExpGt(shape, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
-  logres = CondExpGt(scale, Type(0.0), logres, Type(CppAD::numeric_limits<Type>::quiet_NaN())) ;
-	logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
-	return(logres);
+  Type res = -lgamma(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale);
+	res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+	return(res);
 }
 
 template<class Type>
-Type dinvgamma(Type x, Type shape, Type rate, Type give_log)
+Type nimDerivs_dgamma_logFixed(Type y, Type shape, Type scale, int give_log)
+{
+  Type res = -lgamma(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale);
+  if(!give_log){
+	  res = exp(res);
+  }
+	return(res);
+}
+
+template<class Type>
+Type nimDerivs_dinvgamma(Type x, Type shape, Type rate, Type give_log)
 {
   Type xinv = Type(1.0)/x;
   Type res = CppAD::CondExpEq(give_log, Type(1), nimDerivs_dgamma(xinv, shape, rate, give_log) - 2*log(x), nimDerivs_dgamma(xinv, shape, rate, give_log) * xinv * xinv);
+  return(res);
+}
+
+template<class Type>
+Type nimDerivs_dinvgamma_logFixed(Type x, Type shape, Type rate, int give_log)
+{
+  Type xinv = Type(1.0)/x;
+  Type res;
+  if(give_log){
+    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) - 2*log(x);
+  }
+  else{
+    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) * xinv * xinv;
+  }
   return(res);
 }
 

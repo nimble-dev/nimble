@@ -261,13 +261,10 @@ sampler_RW_block <- nimbleFunction(
         timesAccepted <- 0
         timesAdapted  <- 0
         d <- length(targetAsScalar)
-        scaleHistory  <- c(0, 0)   ## scaleHistory
-        acceptanceHistory  <- c(0, 0)   ## scaleHistory
-        if(d <= 10)
-            propCovHistory <- array(0, dim = c(2, d, d))    ## scaleHistory
-        if(nimbleOptions('saveMCMChistory')) {
-            saveMCMChistory <- TRUE
-        } else saveMCMChistory <- FALSE
+        scaleHistory  <- c(0, 0)                                                 ## scaleHistory
+        acceptanceHistory  <- c(0, 0)                                            ## scaleHistory
+        propCovHistory <- if(d<=10) array(0, c(2,d,d)) else array(0, c(2,2,2))   ## scaleHistory
+        saveMCMChistory <- if(nimbleOptions('saveMCMChistory')) TRUE else FALSE
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
@@ -303,9 +300,9 @@ sampler_RW_block <- nimbleFunction(
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
                 if(saveMCMChistory) {
-                    setSize(scaleHistory, timesAdapted)         ## scaleHistory
-                    scaleHistory[timesAdapted] <<- scale        ## scaleHistory
-                    setSize(acceptanceHistory, timesAdapted)         ## scaleHistory
+                    setSize(scaleHistory, timesAdapted)                 ## scaleHistory
+                    scaleHistory[timesAdapted] <<- scale                ## scaleHistory
+                    setSize(acceptanceHistory, timesAdapted)            ## scaleHistory
                     acceptanceHistory[timesAdapted] <<- acceptanceRate  ## scaleHistory
                     if(d <= 10) {
                         propCovTemp <- propCovHistory                                           ## scaleHistory
@@ -332,31 +329,19 @@ sampler_RW_block <- nimbleFunction(
             }
         },
         getScaleHistory = function() {  ## scaleHistory
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
             returnType(double(1))
-            if(saveMCMChistory) {
-                return(scaleHistory)
-            } else {
-                print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
-                return(numeric(1, 0))
-            }
+            return(scaleHistory)
         },          
         getAcceptanceHistory = function() {  ## scaleHistory
             returnType(double(1))
-            if(saveMCMChistory) {
-                return(acceptanceHistory)
-            } else {
-                print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
-                return(numeric(1, 0))
-            }
+            if(!saveMCMChistory)   print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC")
+            return(acceptanceHistory)
         },                  
         getPropCovHistory = function() { ## scaleHistory
+            if(!saveMCMChistory | d > 10)   print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
             returnType(double(3))
-            if(saveMCMChistory & d <= 10) {
-                return(propCovHistory)
-            } else {
-                print("Please set 'nimbleOptions(saveMCMChistory = TRUE)' before building the MCMC and note that to reduce memory use we only save the proposal covariance history for parameter vectors of length 10 or less")
-                return(nimArray(0, c(1,d,d)))
-            }
+            return(propCovHistory)
         },
         ##getScaleHistoryExpanded = function() {                                                              ## scaleHistory
         ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)                         ## scaleHistory

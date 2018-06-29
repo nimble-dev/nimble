@@ -169,8 +169,32 @@ cppOutputNimDerivsPrependType <- function(code, symTab){
              return(nimGenerateCpp(x, symTab, asArg = TRUE))
            })), collapse = ', '), ')')
   }
-  else{
-    paste0(code$name, '(',
+  else if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+    argList <- list()
+    logFixedString <- ''
+    for(i in seq_along(code$args)){
+      iArg <- code$args[[i]]
+      iName <- names(code$args)[i]
+      if(iName == 'log' && (is.numeric(iArg) | is.logical(iArg))){
+        logFixedString <- '_logFixed'
+        argList[[length(argList) + 1]] <- nimGenerateCpp(iArg, symTab,
+                                                         asArg = TRUE)
+      }
+      else if(is.numeric(iArg) || is.logical(iArg)){
+        argList[[length(argList) + 1]] <- paste0('CppAD::AD<double>(', 
+                                                 nimGenerateCpp(iArg, symTab,
+                                                                asArg = TRUE),
+                                                 ')')
+      }
+      else{
+        argList[[length(argList) + 1]] <- nimGenerateCpp(iArg, symTab,
+                                                         asArg = TRUE)
+      }
+    }
+    paste0('nimDerivs_', code$name, logFixedString, '(', 
+           paste0(unlist(argList), collapse = ', '), ')')
+  } else {
+     paste0(code$name, '(',
            paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')')
   }
 }
@@ -405,7 +429,12 @@ cppOutputMidOperator <- function(code, symTab) {
     }
 
     secondPart <- nimGenerateCpp(code$args[[2]], symTab)
-    if(useDoubleCast) secondPart <- paste0('static_cast<double>(', secondPart, ')')
+    if(useDoubleCast) {
+        static_cast <- 'static_cast<double>('
+        if(identical(nimbleUserNamespace$cppADCode, 2L))
+            static_cast <- 'CppAD::AD<double>('
+        secondPart <- paste0(static_cast, secondPart, ')')
+    }
     if(useParens)
         paste0( '(',nimGenerateCpp(code$args[[1]], symTab), cppMidOperators[[code$name]],secondPart,')' )
     else
@@ -446,10 +475,28 @@ cppOutputCall <- function(code, symTab) {
 
 cppOutputPow <- function(code, symTab) {
     useStaticCase <- if(identical(nimbleUserNamespace$cppADCode, TRUE)) FALSE else if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
-    if(useStaticCase)
-        paste0(exprName2Cpp(code, symTab), '( static_cast<double>(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
-    else
-        paste0(exprName2Cpp(code, symTab), '(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+    if(useStaticCase) {
+        static_cast <- '( static_cast<double>('
+        nimDerivs_text <- ''
+          if(identical(nimbleUserNamespace$cppADCode, 2L)){
+            static_cast <- '( CppAD::AD<double>('
+            nimDerivs_text <- 'nimDerivs_'
+        }
+        paste0(nimDerivs_text, exprName2Cpp(code, symTab), static_cast,
+               nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', 
+               nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+      } else{
+      if(identical(nimbleUserNamespace$cppADCode, 2L)){
+        paste0('nimDerivs_', exprName2Cpp(code, symTab), 
+               '(', nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',',
+               nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+      }
+      else{
+        paste0(exprName2Cpp(code, symTab), '(', 
+               nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',',
+               nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+      }
+    }
 }
 
 cppOutputCallAsIs <- function(code, symTab) {

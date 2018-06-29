@@ -129,12 +129,12 @@ buildDerivMethods <- function(methodsList, enableDerivs) {
         argTransferName <-  paste0(enableDerivs[[i]], '_ADargumentTransfer_')
         if(enableDerivs[i] == getCalcADFunName()) isNode <- TRUE else isNode <- FALSE
         if(!isNode){
-          newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1), wrtVector = constDouble(1)), list(FORMALLIST = formals(derivMethodsList[[i]]))))
+          newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = constDouble(1), wrtVector = constDouble(1)), list(FORMALLIST = formals(derivMethodsList[[i]]))))
           newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
           newFormalsList[[length(newFormalsList) - 2]] <- NULL
         }
         else{
-          newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = double(1), wrtVector = constDouble(1),  ansList = ADNimbleList()), list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
+          newFormalsList <- eval(substitute(alist(FORMALLIST, nimDerivsOrders = constDouble(1), wrtVector = constDouble(1),  ansList = ADNimbleList()), list(FORMALLIST = formals(derivMethodsList[[i]])[1])))
           newFormalsList <- c(unlist(newFormalsList[[1]]), newFormalsList)
           newFormalsList[[length(newFormalsList) - 3]] <- NULL
         }

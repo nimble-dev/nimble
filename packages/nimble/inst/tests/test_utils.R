@@ -1226,7 +1226,7 @@ testCompiledModelDerivsNimFxn <- nimbleFunction(
 ##   tolerance:     A numeric argument, the tolerance to use when comparing wrapperDerivs to chainRuleDerivs.
 ##   verbose:       A logical argument.  Currently serves no purpose.
 test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt = NULL, order = c(0,1,2), 
-                                  testR = FALSE, testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
+                                  testCompiled = TRUE, tolerance = .001,  verbose = TRUE){
   temporarilyAssignInGlobalEnv(model)  
 
   if(testCompiled){
@@ -1237,12 +1237,6 @@ test_ADModelCalculate <- function(model, name = NULL, calcNodeNames = NULL, wrt 
       test_that(paste('R derivs of calculate function work for model', name, ', for calcNodes ', i, 
                       'and wrt ', j), {
                         wrapperDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order)
-                        if(testR){
-                          chainRuleDerivs <- nimDerivs(model$calculate(calcNodeNames[[i]]), wrt = wrt[[j]], order = order, chainRuleDerivs = TRUE)
-                          if(0 %in% order) expect_equal(wrapperDerivs$value, chainRuleDerivs$value, tolerance = tolerance)
-                          if(1 %in% order) expect_equal(wrapperDerivs$jacobian, chainRuleDerivs$jacobian, tolerance = tolerance)
-                          if(2 %in% order) expect_equal(wrapperDerivs$hessian, chainRuleDerivs$hessian, tolerance = tolerance)
-                        }
                         if(testCompiled){
                           print(calcNodeNames[[i]])
                           print(wrt[[j]])
