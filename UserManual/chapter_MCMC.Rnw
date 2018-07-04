@@ -578,8 +578,6 @@ The \cd{run} method has an optional \cd{reset} argument.  When \cd{reset = TRUE}
 
 When \cd{mcmc\$run(niter, reset = FALSE)} is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.  
 
-The \cd{run} method takes an optional \cd{simulateAll} argument.  When \cd{simulateAll = TRUE}, the \cd{simulate} method of all stochastic nodes is called before running the MCMC.  This generates a new set of initial values.  It should be used with caution since values drawn from priors may be extreme or invalid in some models.
-
  
 \subsection{Measuring sampler computation times: \cd{getTimes}} \label{sec:sampler-time}
 
