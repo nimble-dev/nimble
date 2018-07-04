@@ -196,10 +196,12 @@ buildMCMC <- nimbleFunction(
                     samplerFunctions[[ind]]$run()
                 }
             }
-            if(iter %% thinToUseVec[1] == 0)
+            if(iter %% thinToUseVec[1] == 0) {
                 nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thinToUseVec[1], nodes = monitors)
-            if(iter %% thinToUseVec[2] == 0)
+            }
+            if(iter %% thinToUseVec[2] == 0) {
                 nimCopy(from = model, to = mvSamples2, row = mvSamples2_offset + iter/thinToUseVec[2], nodes = monitors2)
+            }
             if(progressBar & (iter == progressBarNextFloor)) {
                 cat('-')
                 progressBarNext <- progressBarNext + progressBarIncrement
