@@ -132,7 +132,7 @@ runMCMC <- function(mcmc,
             } else theseInits <- inits
             model$setInits(theseInits)
         }
-        model$calculate()
+        ##model$calculate()   # shouldn't be necessary, since mcmc$run() includes call to my_initializeModel$run()
         if(nburnin > 0) {
             mcmc$run(nburnin, progressBar = FALSE)   ##, samplerExecutionOrder = samplerExecutionOrderToUse)
             resize(mcmc$mvSamples,  0)
