@@ -126,13 +126,13 @@ buildMCMC <- nimbleFunction(
         ## WAIC setup:
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
-        sampledNodes <- model$getVarNames(FALSE, monitors)
-        sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(FALSE)]
+        sampledNodes <- model$getVarNames(includeLogProb = FALSE, nodes = monitors)
+        sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(includeLogProb = FALSE)]
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE, downstream = TRUE)
         enableWAIC <- enableWAICargument || conf$enableWAIC   ## enableWAIC comes from MCMC configuration, or from argument to buildMCMC
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
-            checkWAICmonitors(model, sampledNodes, dataNodes)
+            checkWAICmonitors(model = model, monitors = sampledNodes, dataNodes = dataNodes)
         }
     },
 
