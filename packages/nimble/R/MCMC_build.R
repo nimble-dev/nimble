@@ -165,10 +165,8 @@ buildMCMC <- nimbleFunction(
             mvSamples_copyRow  <- getsize(mvSamples)
             mvSamples2_copyRow <- getsize(mvSamples2)
         }
-        resize(mvSamples,  mvSamples_copyRow  + (niter-nburnin) / thinToUseVec[1])
-        resize(mvSamples2, mvSamples2_copyRow + (niter-nburnin) / thinToUseVec[2])
-        print('resized mvSamples to: ', mvSamples_copyRow  + (niter-nburnin) / thinToUseVec[1])    ### XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        copyRow_ORIG <- mvSamples_copyRow  ## XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        resize(mvSamples,  mvSamples_copyRow  + floor((niter-nburnin) / thinToUseVec[1]))
+        resize(mvSamples2, mvSamples2_copyRow + floor((niter-nburnin) / thinToUseVec[2]))
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
         ##if(dim(samplerExecutionOrder)[1] > 0 & samplerExecutionOrder[1] == -1) {   ## runtime argument samplerExecutionOrder was not provided
         ##    lengthSamplerExecutionOrderFromConf <- dim(samplerExecutionOrderFromConfPlusTwoZeros)[1] - 2
@@ -202,7 +200,6 @@ buildMCMC <- nimbleFunction(
                 if(sampleNumber %% thinToUseVec[1] == 0) {
                     mvSamples_copyRow  <- mvSamples_copyRow  + 1
                     nimCopy(from = model, to = mvSamples,  row = mvSamples_copyRow,  nodes = monitors)
-                    print('stored into mvSamples row number: ', mvSamples_copyRow)    ## XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                 }
                 if(sampleNumber %% thinToUseVec[2] == 0) {
                     mvSamples2_copyRow <- mvSamples2_copyRow + 1
@@ -216,7 +213,6 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
-        print('originally resized mvSamples to: ', copyRow_ORIG)    ### XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         returnType(void())
     },
     methods = list(
