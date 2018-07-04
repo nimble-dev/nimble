@@ -19,6 +19,8 @@
 #'
 #' \code{reset}: Boolean specifying whether to reset the internal MCMC sampling algorithms to their initial state (in terms of self-adapting tuning parameters), and begin recording posterior sample chains anew. Specifying \code{reset = FALSE} allows the MCMC algorithm to continue running from where it left off, appending additional posterior samples to the already existing sample chains. Generally, \code{reset = FALSE} should only be used when the MCMC has already been run (default = TRUE).
 #'
+#' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes (default = FALSE).
+#'
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
 #'
 #' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
@@ -139,6 +141,7 @@ buildMCMC <- nimbleFunction(
     run = function(
         niter                 = integer(),
         reset                 = logical(default = TRUE),
+        simulateAll           = logical(default = FALSE),
         time                  = logical(default = FALSE),
         progressBar           = logical(default = TRUE),
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
@@ -149,6 +152,7 @@ buildMCMC <- nimbleFunction(
         if(thin  != -1)   thinToUseVec[1] <<- thin
         if(thin2 != -1)   thinToUseVec[2] <<- thin2
         if(reset) {
+            if(simulateAll)   simulate(model)
             my_initializeModel$run()
             nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
             for(i in seq_along(samplerFunctions))
