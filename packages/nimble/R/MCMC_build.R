@@ -186,7 +186,6 @@ buildMCMC <- nimbleFunction(
         progressBarIncrement <- niter/(progressBarLength+3)
         progressBarNext <- progressBarIncrement
         progressBarNextFloor <- floor(progressBarNext)
-        returnType(void())
         if(niter < 1) return()
         for(iter in 1:niter) {
             checkInterrupt()
@@ -205,11 +204,14 @@ buildMCMC <- nimbleFunction(
                 nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thinToUseVec[1], nodes = monitors)
             if(iter %% thinToUseVec[2] == 0)
                 nimCopy(from = model, to = mvSamples2, row = mvSamples2_offset + iter/thinToUseVec[2], nodes = monitors2)
-            if(progressBar & (iter == progressBarNextFloor)) { cat('-')
-                                                               progressBarNext <- progressBarNext + progressBarIncrement
-                                                               progressBarNextFloor <- floor(progressBarNext) }
+            if(progressBar & (iter == progressBarNextFloor)) {
+                cat('-')
+                progressBarNext <- progressBarNext + progressBarIncrement
+                progressBarNextFloor <- floor(progressBarNext)
+            }
         }
         if(progressBar) print('|')
+        returnType(void())
     },
     methods = list(
         getTimes = function() {
