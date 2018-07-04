@@ -565,9 +565,9 @@ See \cd{help(runMCMC)} for further details.
 \section{Running the MCMC}
 \label{executing-the-mcmc-algorithm}
 
-The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method \cd{mcmc\$run} (see \cd{help(buildMCMC)} in R).  The \cd{run} method has one required argument, \cd{niter}, the number of iterations to be run.  %Calling \cd{mcmc\$run(niter)} causes the full list of samplers (as determined by the \cd{MCMCconf} object) to be executed \cd{niter} times, and the monitored variables to be stored into the internal \cd{mvSamples} and/or \cd{mvSamples2} objects as governed by the corresponding thinning intervals.
+The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method \cd{mcmc\$run} (see \cd{help(buildMCMC)} in R).  The \cd{run} method has one required argument, \cd{niter}, the number of iterations to be run.
 
-The \cd{run} method has optional arguments \cd{thin} and \cd{thin2}.  These can be used to specify thinning intervals for recording samples (corresponding to \cd{monitors} and \cd{monitors2}).  If either of these arguments are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
+The \cd{run} method has optional arguments \cd{nburnin}, \cd{thin} and \cd{thin2}.  These can be used to specify the number of pre-thinning burnin samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to \cd{monitors} and \cd{monitors2}).  If either \cd{thin} and \cd{thin2} are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
 
 The \cd{run} method has an optional \cd{reset} argument.  When \cd{reset = TRUE} (the default value), the following occurs prior to running the MCMC:
 \begin{itemize}
@@ -577,8 +577,6 @@ The \cd{run} method has an optional \cd{reset} argument.  When \cd{reset = TRUE}
 \end{itemize}
 
 When \cd{mcmc\$run(niter, reset = FALSE)} is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.  
-
-The \cd{run} method takes an optional \cd{simulateAll} argument.  When \cd{simulateAll = TRUE}, the \cd{simulate} method of all stochastic nodes is called before running the MCMC.  This generates a new set of initial values.  It should be used with caution since values drawn from priors may be extreme or invalid in some models.
 
  
 \subsection{Measuring sampler computation times: \cd{getTimes}} \label{sec:sampler-time}

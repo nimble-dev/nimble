@@ -19,7 +19,7 @@
 #'
 #' \code{reset}: Boolean specifying whether to reset the internal MCMC sampling algorithms to their initial state (in terms of self-adapting tuning parameters), and begin recording posterior sample chains anew. Specifying \code{reset = FALSE} allows the MCMC algorithm to continue running from where it left off, appending additional posterior samples to the already existing sample chains. Generally, \code{reset = FALSE} should only be used when the MCMC has already been run (default = TRUE).
 #'
-#' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes (default = FALSE).
+#' \code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
 #'
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
 #'
@@ -141,37 +141,34 @@ buildMCMC <- nimbleFunction(
     run = function(
         niter                 = integer(),
         reset                 = logical(default = TRUE),
-        simulateAll           = logical(default = FALSE),
         time                  = logical(default = FALSE),
         progressBar           = logical(default = TRUE),
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
         ##samplerExecutionOrder = integer(1, default = -1)
+        nburnin               = integer(default =  0),
         thin                  = integer(default = -1),
         thin2                 = integer(default = -1)) {
+        if(nburnin < 0)   stop('cannot specify nburnin < 0')
         thinToUseVec <<- thinFromConfVec
         if(thin  != -1)   thinToUseVec[1] <<- thin
         if(thin2 != -1)   thinToUseVec[2] <<- thin2
+        my_initializeModel$run()
+        nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(reset) {
-            if(simulateAll)   simulate(model)
-            my_initializeModel$run()
-            nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
-            for(i in seq_along(samplerFunctions))
-                samplerFunctions[[i]]$reset()
-            mvSamples_offset  <- 0
-            mvSamples2_offset <- 0
-            resize(mvSamples,  niter/thinToUseVec[1])
-            resize(mvSamples2, niter/thinToUseVec[2])
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
+            mvSamples_copyRow  <- 0
+            mvSamples2_copyRow <- 0
         } else {
-            my_initializeModel$run()                                       ## helps with restarting MCMC
-            nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)   ## in new R session
-            mvSamples_offset  <- getsize(mvSamples)
-            mvSamples2_offset <- getsize(mvSamples2)
-            resize(mvSamples,  mvSamples_offset  + niter/thinToUseVec[1])
-            resize(mvSamples2, mvSamples2_offset + niter/thinToUseVec[2])
-            if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)
-                samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
+            if(nburnin != 0)   stop('cannot specify nburnin when using reset = FALSE.')
+            if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
+            mvSamples_copyRow  <- getsize(mvSamples)
+            mvSamples2_copyRow <- getsize(mvSamples2)
         }
+        resize(mvSamples,  mvSamples_copyRow  + (niter-nburnin) / thinToUseVec[1])
+        resize(mvSamples2, mvSamples2_copyRow + (niter-nburnin) / thinToUseVec[2])
+        print('resized mvSamples to: ', mvSamples_copyRow  + (niter-nburnin) / thinToUseVec[1])    ### XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        copyRow_ORIG <- mvSamples_copyRow  ## XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
         ##if(dim(samplerExecutionOrder)[1] > 0 & samplerExecutionOrder[1] == -1) {   ## runtime argument samplerExecutionOrder was not provided
         ##    lengthSamplerExecutionOrderFromConf <- dim(samplerExecutionOrderFromConfPlusTwoZeros)[1] - 2
@@ -200,11 +197,17 @@ buildMCMC <- nimbleFunction(
                     samplerFunctions[[ind]]$run()
                 }
             }
-            if(iter %% thinToUseVec[1] == 0) {
-                nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thinToUseVec[1], nodes = monitors)
-            }
-            if(iter %% thinToUseVec[2] == 0) {
-                nimCopy(from = model, to = mvSamples2, row = mvSamples2_offset + iter/thinToUseVec[2], nodes = monitors2)
+            if(iter > nburnin) {
+                sampleNumber <- iter - nburnin
+                if(sampleNumber %% thinToUseVec[1] == 0) {
+                    mvSamples_copyRow  <- mvSamples_copyRow  + 1
+                    nimCopy(from = model, to = mvSamples,  row = mvSamples_copyRow,  nodes = monitors)
+                    print('stored into mvSamples row number: ', mvSamples_copyRow)    ## XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                }
+                if(sampleNumber %% thinToUseVec[2] == 0) {
+                    mvSamples2_copyRow <- mvSamples2_copyRow + 1
+                    nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
+                }
             }
             if(progressBar & (iter == progressBarNextFloor)) {
                 cat('-')
@@ -213,6 +216,7 @@ buildMCMC <- nimbleFunction(
             }
         }
         if(progressBar) print('|')
+        print('originally resized mvSamples to: ', copyRow_ORIG)    ### XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         returnType(void())
     },
     methods = list(
@@ -223,18 +227,18 @@ buildMCMC <- nimbleFunction(
         calculateWAIC = function(nburnin = integer(default = 0),
             burnIn = integer(default = 0)) {
             if(!enableWAIC) {
-                print('Error, must set enableWAIC = TRUE in buildMCMC. See help(buildMCMC) for additional information.')
+                print('Error: must set enableWAIC = TRUE in buildMCMC. See help(buildMCMC) for additional information.')
                 return(NaN)
             }
             if(burnIn != 0) {
-                print('Warning, \'burnIn\' argument is deprecated and will not be supported in future versions of NIMBLE. Please use the \'nburnin\' argument instead.')
+                print('Warning: \'burnIn\' argument is deprecated and will not be supported in future versions of NIMBLE. Please use the \'nburnin\' argument instead.')
                 ## If nburnin has not been changed, replace with burnIn value
                 if(nburnin == 0)   nburnin <- burnIn
             }
             nburninPostThinning <- ceiling(nburnin/thinToUseVec[1])
             numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
             if((numMCMCSamples) < 2) {
-                print('Error, need more than one post burn-in MCMC samples')
+                print('Error: need more than one post burn-in MCMC samples')
                 return(-Inf)
             }
             logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)

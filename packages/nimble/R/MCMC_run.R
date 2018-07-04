@@ -133,14 +133,7 @@ runMCMC <- function(mcmc,
             model$setInits(theseInits)
         }
         ##model$calculate()   # shouldn't be necessary, since mcmc$run() includes call to my_initializeModel$run()
-        if(nburnin > 0) {
-            mcmc$run(nburnin, progressBar = FALSE)   ##, samplerExecutionOrder = samplerExecutionOrderToUse)
-            resize(mcmc$mvSamples,  0)
-            resize(mcmc$mvSamples2, 0)
-            mcmc$run(niter-nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], reset = FALSE, progressBar = progressBar)  ##, samplerExecutionOrder = samplerExecutionOrderToUse)
-        } else {
-            mcmc$run(niter, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar)   ##, samplerExecutionOrder = samplerExecutionOrderToUse)
-        }
+        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar) #, samplerExecutionOrder = samplerExecutionOrderToUse)
         samplesList[[i]] <- as.matrix(mcmc$mvSamples)
         if(hasMonitors2)   samplesList2[[i]] <- as.matrix(mcmc$mvSamples2)
     }
