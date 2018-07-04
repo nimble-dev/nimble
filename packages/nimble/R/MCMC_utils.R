@@ -313,6 +313,22 @@ samplesSummary <- function(samples) {
 
 
 
+## weed out missing indices from the monitors
+mcmc_processMonitorNames <- function(model, nodes) {
+    isLogProbName <- grepl('logProb', nodes)
+    expandedNodeNames <- model$expandNodeNames(nodes[!isLogProbName])
+    origLogProbNames <- nodes[isLogProbName]
+    expandedLogProbNames <- character()
+    if(length(origLogProbNames) > 0) {
+        nodeName_fromLogProbName <- gsub('logProb_', '', origLogProbNames)
+        expandedLogProbNames <- model$modelDef$nodeName2LogProbName(nodeName_fromLogProbName)
+    }
+    return(c(expandedNodeNames, expandedLogProbNames))
+}
+
+
+
+
 mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
     monitoredDetermNodes <- model$expandNodeNames(monitors)[model$isDeterm(model$expandNodeNames(monitors))]
     if(length(monitoredDetermNodes) > 0) {

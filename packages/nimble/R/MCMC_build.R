@@ -112,8 +112,8 @@ buildMCMC <- nimbleFunction(
         for(i in seq_along(conf$samplerConfs))
             samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
-        monitors  <- processMonitorNames(model, conf$monitors)
-        monitors2 <- processMonitorNames(model, conf$monitors2)
+        monitors  <- mcmc_processMonitorNames(model, conf$monitors)
+        monitors2 <- mcmc_processMonitorNames(model, conf$monitors2)
         thinFromConfVec <- c(conf$thin, conf$thin2)  ## vector
         thinToUseVec <- c(0, 0)                      ## vector, needs to member data
         mvSamplesConf  <- conf$getMvSamplesConf(1)
@@ -257,18 +257,4 @@ buildMCMC <- nimbleFunction(
         }),
     where = getLoadingNamespace()
 )
-
-
-## This is a function that will weed out missing indices from the monitors
-processMonitorNames <- function(model, nodes){
-	isLogProbName <- grepl('logProb', nodes)
-	expandedNodeNames <- model$expandNodeNames(nodes[!isLogProbName])
-	origLogProbNames <- nodes[isLogProbName]
-	expandedLogProbNames <- character()
-	if(length(origLogProbNames) > 0){
-		nodeName_fromLogProbName <- gsub('logProb_', '', origLogProbNames)
-		expandedLogProbNames <- model$modelDef$nodeName2LogProbName(nodeName_fromLogProbName)
-	}
-	return( c(expandedNodeNames, expandedLogProbNames) )
-}
 
