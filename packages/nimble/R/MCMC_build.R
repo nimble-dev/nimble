@@ -19,7 +19,7 @@
 #'
 #' \code{reset}: Boolean specifying whether to reset the internal MCMC sampling algorithms to their initial state (in terms of self-adapting tuning parameters), and begin recording posterior sample chains anew. Specifying \code{reset = FALSE} allows the MCMC algorithm to continue running from where it left off, appending additional posterior samples to the already existing sample chains. Generally, \code{reset = FALSE} should only be used when the MCMC has already been run (default = TRUE).
 #'
-#' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes (default = FALSE).
+#' \code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
 #'
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
 #'
@@ -114,8 +114,8 @@ buildMCMC <- nimbleFunction(
         for(i in seq_along(conf$samplerConfs))
             samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
         samplerExecutionOrderFromConfPlusTwoZeros <- c(conf$samplerExecutionOrder, 0, 0)  ## establish as a vector
-        monitors  <- processMonitorNames(model, conf$monitors)
-        monitors2 <- processMonitorNames(model, conf$monitors2)
+        monitors  <- mcmc_processMonitorNames(model, conf$monitors)
+        monitors2 <- mcmc_processMonitorNames(model, conf$monitors2)
         thinFromConfVec <- c(conf$thin, conf$thin2)  ## vector
         thinToUseVec <- c(0, 0)                      ## vector, needs to member data
         mvSamplesConf  <- conf$getMvSamplesConf(1)
@@ -128,50 +128,45 @@ buildMCMC <- nimbleFunction(
         ## WAIC setup:
         dataNodes <- model$getNodeNames(dataOnly = TRUE)
         dataNodeLength <- length(dataNodes)
-        sampledNodes <- model$getVarNames(FALSE, monitors)
-        sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(FALSE)]
+        sampledNodes <- model$getVarNames(includeLogProb = FALSE, nodes = monitors)
+        sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(includeLogProb = FALSE)]
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE, downstream = TRUE)
         enableWAIC <- enableWAICargument || conf$enableWAIC   ## enableWAIC comes from MCMC configuration, or from argument to buildMCMC
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
-            checkWAICmonitors(model, sampledNodes, dataNodes)
+            mcmc_checkWAICmonitors(model = model, monitors = sampledNodes, dataNodes = dataNodes)
         }
     },
 
     run = function(
         niter                 = integer(),
         reset                 = logical(default = TRUE),
-        simulateAll           = logical(default = FALSE),
         time                  = logical(default = FALSE),
         progressBar           = logical(default = TRUE),
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
         ##samplerExecutionOrder = integer(1, default = -1)
+        nburnin               = integer(default =  0),
         thin                  = integer(default = -1),
         thin2                 = integer(default = -1)) {
+        if(nburnin < 0)   stop('cannot specify nburnin < 0')
         thinToUseVec <<- thinFromConfVec
         if(thin  != -1)   thinToUseVec[1] <<- thin
         if(thin2 != -1)   thinToUseVec[2] <<- thin2
+        my_initializeModel$run()
+        nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
         if(reset) {
-            if(simulateAll)   simulate(model)
-            my_initializeModel$run()
-            nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
-            for(i in seq_along(samplerFunctions))
-                samplerFunctions[[i]]$reset()
-            mvSamples_offset  <- 0
-            mvSamples2_offset <- 0
-            resize(mvSamples,  niter/thinToUseVec[1])
-            resize(mvSamples2, niter/thinToUseVec[2])
+            for(i in seq_along(samplerFunctions))   samplerFunctions[[i]]$reset()
             samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
+            mvSamples_copyRow  <- 0
+            mvSamples2_copyRow <- 0
         } else {
-            my_initializeModel$run()                                       ## helps with restarting MCMC
-            nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)   ## in new R session
-            mvSamples_offset  <- getsize(mvSamples)
-            mvSamples2_offset <- getsize(mvSamples2)
-            resize(mvSamples,  mvSamples_offset  + niter/thinToUseVec[1])
-            resize(mvSamples2, mvSamples2_offset + niter/thinToUseVec[2])
-            if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)
-                samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
+            if(nburnin != 0)   stop('cannot specify nburnin when using reset = FALSE.')
+            if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)   samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
+            mvSamples_copyRow  <- getsize(mvSamples)
+            mvSamples2_copyRow <- getsize(mvSamples2)
         }
+        resize(mvSamples,  mvSamples_copyRow  + floor((niter-nburnin) / thinToUseVec[1]))
+        resize(mvSamples2, mvSamples2_copyRow + floor((niter-nburnin) / thinToUseVec[2]))
         ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
         ##if(dim(samplerExecutionOrder)[1] > 0 & samplerExecutionOrder[1] == -1) {   ## runtime argument samplerExecutionOrder was not provided
         ##    lengthSamplerExecutionOrderFromConf <- dim(samplerExecutionOrderFromConfPlusTwoZeros)[1] - 2
@@ -186,7 +181,6 @@ buildMCMC <- nimbleFunction(
         progressBarIncrement <- niter/(progressBarLength+3)
         progressBarNext <- progressBarIncrement
         progressBarNextFloor <- floor(progressBarNext)
-        returnType(void())
         if(niter < 1) return()
         for(iter in 1:niter) {
             checkInterrupt()
@@ -201,15 +195,25 @@ buildMCMC <- nimbleFunction(
                     samplerFunctions[[ind]]$run()
                 }
             }
-            if(iter %% thinToUseVec[1] == 0)
-                nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thinToUseVec[1], nodes = monitors)
-            if(iter %% thinToUseVec[2] == 0)
-                nimCopy(from = model, to = mvSamples2, row = mvSamples2_offset + iter/thinToUseVec[2], nodes = monitors2)
-            if(progressBar & (iter == progressBarNextFloor)) { cat('-')
-                                                               progressBarNext <- progressBarNext + progressBarIncrement
-                                                               progressBarNextFloor <- floor(progressBarNext) }
+            if(iter > nburnin) {
+                sampleNumber <- iter - nburnin
+                if(sampleNumber %% thinToUseVec[1] == 0) {
+                    mvSamples_copyRow  <- mvSamples_copyRow  + 1
+                    nimCopy(from = model, to = mvSamples,  row = mvSamples_copyRow,  nodes = monitors)
+                }
+                if(sampleNumber %% thinToUseVec[2] == 0) {
+                    mvSamples2_copyRow <- mvSamples2_copyRow + 1
+                    nimCopy(from = model, to = mvSamples2, row = mvSamples2_copyRow, nodes = monitors2)
+                }
+            }
+            if(progressBar & (iter == progressBarNextFloor)) {
+                cat('-')
+                progressBarNext <- progressBarNext + progressBarIncrement
+                progressBarNextFloor <- floor(progressBarNext)
+            }
         }
         if(progressBar) print('|')
+        returnType(void())
     },
     methods = list(
         getTimes = function() {
@@ -219,18 +223,18 @@ buildMCMC <- nimbleFunction(
         calculateWAIC = function(nburnin = integer(default = 0),
             burnIn = integer(default = 0)) {
             if(!enableWAIC) {
-                print('Error, must set enableWAIC = TRUE in buildMCMC. See help(buildMCMC) for additional information.')
+                print('Error: must set enableWAIC = TRUE in buildMCMC. See help(buildMCMC) for additional information.')
                 return(NaN)
             }
             if(burnIn != 0) {
-                print('Warning, \'burnIn\' argument is deprecated and will not be supported in future versions of NIMBLE. Please use the \'nburnin\' argument instead.')
+                print('Warning: \'burnIn\' argument is deprecated and will not be supported in future versions of NIMBLE. Please use the \'nburnin\' argument instead.')
                 ## If nburnin has not been changed, replace with burnIn value
                 if(nburnin == 0)   nburnin <- burnIn
             }
             nburninPostThinning <- ceiling(nburnin/thinToUseVec[1])
             numMCMCSamples <- getsize(mvSamples) - nburninPostThinning
             if((numMCMCSamples) < 2) {
-                print('Error, need more than one post burn-in MCMC samples')
+                print('Error: need more than one post burn-in MCMC samples')
                 return(-Inf)
             }
             logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
@@ -260,55 +264,3 @@ buildMCMC <- nimbleFunction(
     where = getLoadingNamespace()
 )
 
-
-## This is a function that will weed out missing indices from the monitors
-processMonitorNames <- function(model, nodes){
-	isLogProbName <- grepl('logProb', nodes)
-	expandedNodeNames <- model$expandNodeNames(nodes[!isLogProbName])
-	origLogProbNames <- nodes[isLogProbName]
-	expandedLogProbNames <- character()
-	if(length(origLogProbNames) > 0){
-		nodeName_fromLogProbName <- gsub('logProb_', '', origLogProbNames)
-		expandedLogProbNames <- model$modelDef$nodeName2LogProbName(nodeName_fromLogProbName)
-	}
-	return( c(expandedNodeNames, expandedLogProbNames) )
-}
-
-
-checkWAICmonitors <- function(model, monitors, dataNodes){
-  monitoredDetermNodes <- model$expandNodeNames(monitors)[
-    model$isDeterm(model$expandNodeNames(monitors))]
-  if(length(monitoredDetermNodes) > 0){
-    monitors <- monitors[- which(monitors %in%
-                                   model$getVarNames(nodes = 
-                                                       monitoredDetermNodes))]
-  }
-  thisNodes <- model$getNodeNames(stochOnly = TRUE, topOnly = TRUE)
-  thisVars <- model$getVarNames(nodes = thisNodes)
-  thisVars <- thisVars[!(thisVars %in% monitors)]
-  while(length(thisVars) > 0){
-    nextNodes <- model$getDependencies(thisVars, stochOnly = TRUE,
-                                       omit = monitoredDetermNodes,
-                                       self = FALSE,
-                                       includeData = TRUE)
-
-    
-    if(any(nextNodes %in% dataNodes)){
-      badDataNodes <- dataNodes[dataNodes %in% nextNodes]
-      if(length(badDataNodes) > 10){
-        badDataNodes <- c(badDataNodes[1:10], "...")
-      }
-      stop(paste0("In order for a valid WAIC calculation, all parameters of",
-                  " data nodes in the model must be monitored, or be", 
-                  " downstream from monitored nodes.", 
-                  " See help(buildMCMC) for more information on valid sets of",
-                  " monitored nodes for WAIC calculations.", "\n",
-                  " Currently, the following data nodes have un-monitored",
-                  " upstream parameters:", "\n ", 
-                  paste0(badDataNodes, collapse = ", ")))
-    }
-    thisVars <- model$getVarNames(nodes = nextNodes)
-    thisVars <- thisVars[!(thisVars %in% monitors)]
-  }
-  message(paste0('Monitored nodes are valid for WAIC.'))
-}
