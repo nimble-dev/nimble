@@ -384,7 +384,7 @@ system("cat functionTableMatrixLong.md eigenSvdTableMatrixElements.md > tmp.md")
 ```{r, child = 'tmp.md'}
 ```
 ```{r echo=FALSE, include=FALSE}
-#system("rm -rf tmp.md")
+system("rm -rf tmp.md")
 ```
  
 <!---  [NOTE: JAGS source package has the Tex files for Martyn's manual, so we can copy the table formatting - s doc/manual/jags_user_manual.md] -->

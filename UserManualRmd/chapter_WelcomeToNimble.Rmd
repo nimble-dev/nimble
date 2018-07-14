@@ -2,7 +2,7 @@
 
 # (PART) Introduction {-}
 
-# Welcome to NIMBLE {#sec:welcome-nimble}
+# Welcome to NIMBLE {#cha:welcome-nimble}
 
 NIMBLE is a system for building and sharing analysis methods for
 statistical models from R, especially for hierarchical models and
