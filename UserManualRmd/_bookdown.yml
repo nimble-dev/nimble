@@ -5,5 +5,5 @@ language:
 delete_merged_file: true
 number_sections: true
 toc_depth: 3
-rmd_files: ["index.Rmd", "chapter_WelcomeToNimble.Rmd", "chapter_LightningIntroduction.Rmd", "chapter_MoreIntroduction.Rmd", "chapter_UsingModels.Rmd"]
+rmd_files: ["index.Rmd", "chapter_WelcomeToNimble.Rmd", "chapter_BuildingModels.Rmd", "chapter_UsingModels.Rmd", "chapter_WritingNimbleFunctions.Rmd"]
 

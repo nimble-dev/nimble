@@ -35,12 +35,6 @@ library(stringr)
 # need to insert this:
 # Table: (\#tab:densityAliases) Distributions with alternative names (aliases)
 
-# need to weed out a bunch of latex stuff around tables
-
-# (PART) Part I {-}
-                                        # (PART\*) Part I {-}
-
-
 if(FALSE) {
     files = list.files(pattern = ".Rnw")
     for(f in files) {
