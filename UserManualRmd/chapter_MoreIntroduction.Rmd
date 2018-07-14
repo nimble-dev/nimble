@@ -125,7 +125,8 @@ with a BUGS model:
   This is most useful for debugging (Section \@ref(sec:debugging)).
   1. When you are ready, NIMBLE can generate C++ code, compile it,
   load it back into R and give you new objects that use the compiled
-  C++ internally.  Again, we refer to these steps all together as 'compilation.'  The behavior of compiled nimbleFunctions is
+  C++ internally.  Again, we refer to these steps all together as 'compilation'.
+  The behavior of compiled nimbleFunctions is
   usually very similar, but not identical, to their uncompiled
   counterparts.
 
@@ -159,12 +160,9 @@ In Version `r nimbleVersion`, the NIMBLE algorithm library includes:
   1. A variety of basic functions that can be used as programming
   tools for larger algorithms.  These include:
   
-    - A likelihood function for arbitrary parts of any model.
-    - Functions to simulate one or many sets of values for arbitrary
-    parts of any model.
-    - Functions to calculate the summed log probability (density)
-    for one or many sets of values for arbitrary parts of any model
-    along with stochastic dependencies in the model structure.
+     a. A likelihood function for arbitrary parts of any model.
+     a. Functions to simulate one or many sets of values for arbitrary parts of any model.
+     a. Functions to calculate the summed log probability (density) for one or many sets of values for arbitrary parts of any model along with stochastic dependencies in the model structure.
   
 
 

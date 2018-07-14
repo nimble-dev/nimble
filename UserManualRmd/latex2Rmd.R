@@ -1,6 +1,6 @@
 #' Latex to R markdown converter
 #' 
-#' @description Does 7- percent of the job, the rest is manual edits.
+#' @description Does 90 percent of the job, the rest is manual edits.
 #' 
 #' @param input Character Filename of input file
 #' @param output character Filename of output file
@@ -14,11 +14,11 @@
 #'
 library(stringr)
 
+## how get \citet vs \citep
 ## check html output
 
 ## hyperlink colors
 ## want comments as italidized?
-## nested lists not working (see moreIntro)
 
 ## title page
 ## issue with densityTableLong entries
