@@ -220,6 +220,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
                         if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP');                next }
                         if(nodeDist == 'dwish')        { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
+                        if(nodeDist == 'dinvwish')     { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate inverse-Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
