@@ -955,6 +955,10 @@ print: Logical argument specifying whether to print the resulting ordered list o
             addRule(quote(model$getDistribution(node) == 'dwish'),
                     quote(stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.')))
             
+            ## inverse-Wishart
+            addRule(quote(model$getDistribution(node) == 'dinvwish'),
+                    quote(stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate inverse-Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.')))
+            
             ## multivariate & multivariateNodesAsScalars: univariate RW
             addRule(quote(isMultivariate && multivariateNodesAsScalars),
                     quote(for(scalarNode in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
