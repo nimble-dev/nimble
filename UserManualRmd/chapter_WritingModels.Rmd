@@ -440,6 +440,7 @@ Censoring refers to the situation where one datum gives the lower or upper bound
 censored[i] ~ dinterval(t[i], c[i])
 t[i] ~ dweib(r, mu[i])
 ```
+
 In the case of right-censoring, `censored[i]` should be given as `data` with a value of 1 if
 `t[i]` is right-censored (`t[i] $>$ c[i]`) and 0 if it is
 observed.  The data vector for `t` should have `NA` (indicating

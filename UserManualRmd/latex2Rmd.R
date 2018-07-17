@@ -20,8 +20,11 @@ library(stringr)
 ## hyperlink colors
 ## want comments as italidized?
 
-## title page
-## issue with densityTableLong entries
+## title page (ignoring toc:before:)
+
+## toc depth (not respecting _bookdown.yml entry)
+
+## issue with densityTableLong entries (I think ok now)
 
 ## check new version of eigen API and if tables for eigen are accurate
 

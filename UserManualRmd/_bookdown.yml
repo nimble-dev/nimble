@@ -1,9 +1,17 @@
-book_filename: "bookdown-demo"
+book_filename: "NimbleUserManual"
 language:
   ui:
     chapter_name: "Chapter "
 delete_merged_file: true
 number_sections: true
-toc_depth: 3
-rmd_files: ["index.Rmd", "chapter_WelcomeToNimble.Rmd", "chapter_BuildingModels.Rmd", "chapter_UsingModels.Rmd", "chapter_WritingNimbleFunctions.Rmd"]
-
+config:
+  toc_depth: 3
+  toc:
+    before: |
+      ```{r, logo}
+      knitr::include_graphics("nimble-icon.png", fig.cap = "", fig.width = 1)
+      ```
+      <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
+      <li><a href="https://github.com/nimble-dev/nimble-docs">https://github.com/nimble-dev/nimble-docs</a></li>
+      
+rmd_files: ["index.Rmd", "chapter_WelcomeToNimble.Rmd", "chapter_LightningIntroduction.Rmd", "chapter_MoreIntroduction.Rmd", "chapter_InstallingNimble.Rmd", "chapter_WritingModels.Rmd", "chapter_BuildingModels.Rmd", "chapter_MCMC.Rmd", "chapter_OtherAlgorithms.Rmd", "chapter_Spatial.Rmd", "chapter_BNP.Rmd", "chapter_ProgrammingOverview.Rmd", "chapter_RCfunctions.Rmd", "chapter_UserDefined.Rmd", "chapter_UsingModels.Rmd", "chapter_DataStructures.Rmd", "chapter_WritingNimbleFunctions.Rmd"]

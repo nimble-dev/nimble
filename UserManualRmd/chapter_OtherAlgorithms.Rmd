@@ -132,7 +132,7 @@ cENKF$run(parNum)
   
   Once each filter has been run, we can extract samples from the posterior distribution of our latent states as follows:
   
-  ```{r, particle_Filter_Samples, eval=FALSE}
+```{r, particle_Filter_Samples, eval=FALSE}
 ## Equally-weighted samples (available from all filters)
 bootEWSamp <- as.matrix(cBootF$mvEWSamples)
 auxEWSamp <- as.matrix(cAuxF$mvEWSamples)
@@ -170,8 +170,8 @@ proposal distribution, and can be used to sample scalar top-level
 parameters.  The `RW_PF_block` sampler uses a multivariate normal
 proposal distribution and can be used to jointly sample vectors of
 top-level parameters.  The PMCMC samplers can be specified with a call
-to `addSampler` with `type = "RW_PF"` or `type =
-  "RW_PF_block"`, a syntax similar to the other MCMC samplers listed
+to `addSampler` with `type = "RW_PF"` or `type = "RW_PF_block"`,
+a syntax similar to the other MCMC samplers listed
 in Section \@ref(sec:samplers-provided).
 
 The `RW_PF` sampler and `RW_PF_block` sampler can be

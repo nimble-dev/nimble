@@ -57,10 +57,10 @@ NIMBLE makes a distinction between data and constants:
   allows an algorithm to be applied to many data sets in the same
   model without re-creating the model each time.  It also allows
   simulation of data in a model.  
-<!---  TODO: I don't think this statement is true (i.e., setData()): -->
-  % Data must be provided when an
-<!--- instance of a model is created from the model definition, although -->
-  % they can also be provided earlier when a model is defined.
+<!---  TODO: I don't think this statement is true (i.e., setData()): 
+  % Data must be provided when an -->
+<!--- instance of a model is created from the model definition, although 
+  % they can also be provided earlier when a model is defined. -->
 
 
 WinBUGS, OpenBUGS and JAGS do not allow data values to be changed or

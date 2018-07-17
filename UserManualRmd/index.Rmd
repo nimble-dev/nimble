@@ -11,16 +11,7 @@ link-citations: yes
 github-repo: rstudio/bookdown-demo
 description: "This is a minimal example of using the bookdown package to write a book. The output format for this example is bookdown::gitbook."
 ---
-Problem is these next items appear after TOC
 
-[https://R-nimble.org](https://R-nimble.org)
-
-[https://github.com/nimble-dev/nimble-docs](https://github.com/nimble-dev/nimble-docs)
-
-<!---
-, 'chapter_MCMC.Rmd', 'chapter_OtherAlgorithms.Rmd', 'chapter_Spatial.Rmd', 'chapter_ProgrammingOverview.Rmd', 'chapter_RCfunctions.Rmd', 'chapter_UserDefined.Rmd', 'chapter_UsingModels.Rmd', 'chapter_DataStructures.Rmd', 'chapter_WritingNimbleFunctions.Rmd']
-# (PART) Theory of nonsence {-}
--->
 
 ```{r echo=FALSE, include=FALSE}
 library(knitr)
@@ -28,9 +19,12 @@ library(nimble)
 library(methods)
 opts_chunk$set(eval = TRUE, message = FALSE) ## turned off message() output
 nimbleOptions(MCMCprogressBar = FALSE)
-runMCEMs <- FALSE
+runMCEMs <- TRUE
 nimbleVersion="0.6-12"
 ```
+<!---
+rmd_files: ["index.Rmd", "chapter_WelcomeToNimble.Rmd", "chapter_LightningIntroduction.Rmd", "chapter_MoreIntroduction.Rmd", "chapter_InstallingNimble.Rmd", "chapter_WritingModels.Rmd", "chapter_BuildingModels.Rmd", "chapter_MCMC.Rmd", "chapter_OtherAlgorithms.Rmd", "chapter_Spatial.Rmd", "chapter_BNP.Rmd", "chapter_ProgrammingOverview.Rmd", "chapter_RCfunctions.Rmd", "chapter_UserDefined.Rmd", "chapter_UsingModels.Rmd", "chapter_DataStructures.Rmd", "chapter_WritingNimbleFunctions.Rmd"]
+-->
 
 ```{r echo=FALSE, include=FALSE, eval=FALSE}
 ## for creating combined tables for functions in Writing Models and NF programming

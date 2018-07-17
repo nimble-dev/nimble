@@ -79,16 +79,15 @@ written in the NIMBLE language.
 We suggest everyone start with the Lightning Introduction in Chapter \@ref(cha:intro).
 
 Then, if you want to jump into using NIMBLE's algorithms without learning
-about NIMBLE's programming system, go to Part \@ref(part:models) to
-learn how to build your model and Part \@ref(part:algorithms) to learn
+about NIMBLE's programming system, go to Part II to
+learn how to build your model and Part III to learn
 how to apply NIMBLE's built-in algorithms to your model.
 
-If you want to learn about NIMBLE programming (nimbleFunctions), go to Part
-\@ref(part:programming). This teaches how to program user-defined
+If you want to learn about NIMBLE programming (nimbleFunctions), go to Part IV. This teaches how to program user-defined
 function or distributions to use in BUGS code, compile your R code for
 faster operations, and write algorithms with NIMBLE. These algorithms
 could be specific algorithms for your particular model (such as a
 user-defined MCMC sampler for a parameter in your model) or general
 algorithms you can distribute to others. In fact the algorithms
-provided as part of NIMBLE and described in Part \@ref(part:algorithms)
+provided as part of NIMBLE and described in Part III
 are written as nimbleFunctions.

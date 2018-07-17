@@ -135,8 +135,8 @@ At this point we have initial values for all of the nodes in the model,
 and we have both the original and compiled versions of the model. As a first algorithm
 to try on our model, let's use NIMBLE's default MCMC. Note that conjugate relationships are detected for all nodes except for
 `alpha`, on which the default sampler is a random walk Metropolis sampler.
-<!--- ^[We haven't set up conjugate relationships for an -->
-%  exponential yet.]
+<!--- ^[We haven't set up conjugate relationships for an 
+%  exponential yet.] -->
 <!---  footnote is true but not relevant as there is not a conj relationship for alpha in a gamma-distributed dependency -->
 
 ```{r, mcmcPump, fig.height=2.5}
@@ -190,7 +190,7 @@ Some discrepancy is to be expected since it is a Monte Carlo algorithm.
 Now let's see an example of writing our own algorithm and using it on
 the model. We'll do something simple: simulating multiple values for a
 designated set of nodes and calculating every part of the model that
-depends on them. More details on programming in NIMBLE are in Part \@ref(part:programming).
+depends on them. More details on programming in NIMBLE are in Part IV.
 
 Here is our *nimbleFunction*:
 ```{r, nfPump}
