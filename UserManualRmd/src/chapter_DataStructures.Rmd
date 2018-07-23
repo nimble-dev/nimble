@@ -306,7 +306,7 @@ outerNimList$xList$someText <- "hello, world"
 Note that definitions for inner, or nested, nimbleLists must be created before the definition for an outer nimbleList.
 
 
-### Using `eigen` and `svd` in nimbleFunctions {#sec:eigen-nimFunctions}
+### Using *eigen* and *svd* in nimbleFunctions {#sec:eigen-nimFunctions}
 
 NIMBLE has two linear algebra functions that return nimbleLists.  The `eigen` function takes a symmetic matrix, `x`, as an argument and returns a nimbleList of type `eigenNimbleList`. nimbleLists of type `eigenNimbleList` have two elements: `values`, a vector with the eigenvalues of `x`, and `vectors`, a square matrix with the same dimension as `x` whose columns are the eigenvectors of `x`.  The `eigen` function has two additional arguments: `symmetric` and `only.values`.  The `symmetric` argument can be used to specify if `x` is a symmetric matrix or not.  If `symmetric = FALSE` (the default value), `x` will be checked for symmetry.  Eigendecompositions in NIMBLE for symmetric matrices are both faster and more accurate.  Additionally, eigendecompostions of non-symmetric matrices can have complex entries, which are not supported by NIMBLE.  If a complex entry is detected, NIMBLE will issue a warning and that entry will be set to `NaN`.  The `only.values` arument defaults to `FALSE`.  If `only.values = TRUE`, the `eigen` function will not calculate the eigenvectors of `x`, leaving the `vectors` nimbleList element empty.  This can reduce calculation time if only the eigenvalues of `x` are needed.
 

@@ -1,4 +1,5 @@
---- 
+---
+fontsize: 11pt
 url: 'https://r-nimble.org'
 cover-image: nimble-icon.png
 output: bookdown::gitbook
@@ -25,14 +26,6 @@ nimbleVersion="0.6-12"
 rmd_files: ["index.Rmd", "chapter_WelcomeToNimble.Rmd", "chapter_LightningIntroduction.Rmd", "chapter_MoreIntroduction.Rmd", "chapter_InstallingNimble.Rmd", "chapter_WritingModels.Rmd", "chapter_BuildingModels.Rmd", "chapter_MCMC.Rmd", "chapter_OtherAlgorithms.Rmd", "chapter_Spatial.Rmd", "chapter_BNP.Rmd", "chapter_ProgrammingOverview.Rmd", "chapter_RCfunctions.Rmd", "chapter_UserDefined.Rmd", "chapter_UsingModels.Rmd", "chapter_DataStructures.Rmd", "chapter_WritingNimbleFunctions.Rmd"]
 -->
 
-```{r echo=FALSE, include=FALSE, eval=FALSE}
-## for creating combined tables for functions in Writing Models and NF programming
-system("cat functionTableLong.md eigenSvdTableMatrixElements.md > tmp.md")
-```
-```{r, child = 'tmp.md', eval=FALSE}
-```
-```{r echo=FALSE, include=FALSE, eval=FALSE}
-system("rm -rf tmp.md")
-```
+
 
 

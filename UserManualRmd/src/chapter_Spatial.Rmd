@@ -18,7 +18,7 @@ as well as specialized MCMC samplers for these distributions.
 
  
 
-## Intrinsic Gaussian CAR model: `dcar_normal`
+## Intrinsic Gaussian CAR model: *dcar_normal*
 
 The intrinsic Gaussian conditional autoregressive (ICAR) model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the `dcar_normal`
 distribution. Additional details for using this distribution are available using `help('CAR-Normal')`.
@@ -110,14 +110,14 @@ See Chapter \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Sect
 
 
 
-## Proper Gaussian CAR model: `dcar_proper`
+## Proper Gaussian CAR model: *dcar_proper*
 
 The proper Gaussian conditional autoregressive model used to model dependence of block-level values (e.g., spatial areas or temporal blocks) is implemented in NIMBLE as the `dcar_proper`
 distribution.  Additional details of using this distribution are available using `help('CAR-Proper')`.
 
 Proper CAR models are proper priors for random fields (e.g., temporal or spatial processes).
 The prior is a joint prior across a collection of latent process values. For more technical
-details on proper CAR models please see [2], including considerations of why the improper CAR model may be preferred.
+details on proper CAR models please see @Banerjee_etal_2015, including considerations of why the improper CAR model may be preferred.
 
 In addition to our focus here on CAR modeling for spatial data, the proper CAR model can also be used in other contexts, such as for temporal data in a discrete time context. 
 

@@ -128,7 +128,6 @@ return samples, summary statistics, and WAIC values:
 See Section \@ref(sec:nimbleMCMC) or `help(nimbleMCMC)` for more
 details about using `nimbleMCMC`.
 
-
 ## Creating, compiling and running a basic MCMC configuration {#sec:creating-mcmc}
   
 At this point we have initial values for all of the nodes in the model,
@@ -228,7 +227,7 @@ Here are a few things to notice about the nimbleFunction.
 
 
 By the way, `simNodesMany` is very similar to a standard
-`nimbleFunction` provided with nimble, `simNodesMV`.
+`nimbleFunction` provided with NIMBLE, `simNodesMV`.
 
 Now let's execute this nimbleFunction in R, before compiling it.
 

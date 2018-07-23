@@ -211,7 +211,7 @@ control list entry must satsify the following:
   1. The `nimbleFunction` must have setup code that accepts the
   following (and only the following) arguments:
 
-      - `model`, the nimble model object that the MCMC algorithm is
+      - `model`, the NIMBLE model object that the MCMC algorithm is
   defined on.
       - `latents`, a character vector specifying the latent model
   nodes over which the particle filter will stochastically integrate
@@ -301,8 +301,8 @@ pumpMCEM <- buildMCEM(model = pump,
   maximized.  These
   nodes must be stochastic, not deterministic! `latentNodes` will
   be expanded as described in Section \@ref(sec:arbitr-coll-nodes). I.e.,
-  either `latentNodes = "x"` or `latentNodes = c("x[1]",
-    "x[2]")` will treat `x[1]` and `x[2]` as latent nodes if
+  either `latentNodes = "x"` or `latentNodes = c("x[1]", "x[2]")`
+  will treat `x[1]` and `x[2]` as latent nodes if
   `x` is a vector of two values. All other non-data nodes will be
   maximized over. Note that `latentNodes` can include discrete nodes,
   but the nodes to be maximized cannot.  

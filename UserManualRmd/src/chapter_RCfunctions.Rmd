@@ -78,9 +78,9 @@ example, help on NIMBLE's version of `numeric` can be found by `help(nimNumeric)
 ### Basic operations
 
 Basic R operations supported for NIMBLE compilation are listed in
-Table \@ref(table:functions-coreR).
+Table \@ref(tab:coreR).
 
-```{r, child = 'coreRtableLong.md'}
+```{r, child = 'tables/coreRtableLong.md'}
 ```
 
 
@@ -88,7 +88,7 @@ Other R functions with numeric arguments and return value can be called during c
 
 Next we cover some of these functions in more detail. 
 
-#### `numeric`, `integer`, `logical`, `matrix` and `array`
+#### *numeric*, *integer*, *logical*, *matrix* and *array*
 
 `numeric`, `integer`, or `logical` will create a 1-dimensional vector of
 floating-point (or 'double' [precision]), integer, or logical values, respectively.  The `length` argument specifies the vector 
@@ -117,7 +117,7 @@ nimbleFunction `identityMatrix` that does the same thing.
 Examples of these functions, and the related function $`setSize`$
 for changing the size of a numeric object, are given in Section \@ref(sec:chang-sizes-exist).
 
-#### `length` and `dim` {#sec:query-chang-sizes}
+#### *length* and *dim* {#sec:query-chang-sizes}
 
 `length` behaves like R's `length` function.  It
   returns the *entire* length of X.  That means if `X` is
@@ -128,7 +128,7 @@ for changing the size of a numeric object, are given in Section \@ref(sec:chang-
   whether the number of dimensions is 1 or more, it returns a vector
   of the sizes. 
 
-#### Deprecated creation of non-scalar objects using `declare`
+#### Deprecated creation of non-scalar objects using *declare*
 
 Previous versions of NIMBLE provided a function `declare` for
 declaring variables.  The more R-like functions `numeric`,
@@ -138,8 +138,12 @@ compatibility.  In a future version of NIMBLE, `declare` may be removed.
 
 ### Math and linear algebra {#sec:basic-math-linear}
 
-Numeric scalar and matrix mathematical operations are listed in Tables
-\@ref(table:functions-dsl) and \@ref(table:functions-matrix-dsl).  
+Numeric scalar and matrix mathematical operations are listed in Tables \@ref{cha:RCfunctions}.2-\@ref{cha:RCfunctions}.3.
+
+<!---
+would need to do some sed manipulation to be able to automate this cross-ref
+\@ref(tab:functions) and \@ref(tab:functionsMatrix).
+-->
 
 As in R, many scalar operations in NIMBLE will work component-wise on vectors or
 higher dimensional objects.  For example if B and C are vectors, `A
@@ -149,10 +153,10 @@ generally only work for vectors and matrices, not arrays with more
 than two dimensions.  The only exception is assignment: `A = B` will
 work up to NIMBLE's current limit of four dimensions.
 
-```{r, child = 'functionTableLong.md'}
+```{r, child = 'tables/functionTableLong.md'}
 ```
 ```{r echo=FALSE, include=FALSE}
-system("cat functionTableMatrixLong.md eigenSvdTableMatrixAsNimList.md > tmp.md")
+system("cat tables/functionTableMatrixLong.md tables/eigenSvdTableMatrixAsNimList.md > tmp.md")
 ```
 ```{r, child = 'tmp.md'}
 ```
@@ -192,7 +196,6 @@ For standard distributions, we rely on R's regular help pages
 (e.g., `dexp_nimble`, `ddirch`), we provide help pages.
 
 Supported distributions, listed by their 'd' function, include:
-{2}
 
   - `dbinom(x, size, prob, log)`
   - `dcat(x, prob, log)`
@@ -226,7 +229,7 @@ In the last three, `cholesky` stands for Cholesky decomposition of the relevant 
 `prec_param` is a logical indicating whether the Cholesky is of a
 precision matrix (TRUE) or covariance matrix (FALSE)^[For the multivariate t, these are more properly termed the 'inverse scale' and 'scale' matrices]; and `scale_param` is a logical indicating whether the Cholesky is of a scale matrix (TRUE) or an inverse scale matrix (FALSE).
 
-### Flow control: `if-then-else`, `for`,  `while`, and `stop` {#sec:basic-flow-control}
+### Flow control: *if-then-else*, *for*,  *while*, and *stop* {#sec:basic-flow-control}
 
 These basic flow-control structures use the same syntax as in R.
 However, `for`-loops are limited to sequential integer
@@ -242,14 +245,14 @@ now we've included just one additional useful feature:  `for(i in seq_along(NFL)
 control to R's error-handling system and can take a character
 argument that will be displayed in an error message.
 
-### `print` and `cat` {#sec:print}
+### *print* and *cat* {#sec:print}
 
 `print`, or equivalently
 `nimPrint`, prints an arbitrary set of outputs in order and adds a
 newline character at the end.  `cat` or `nimCat` is identical,
 except without a newline at the end.  
 
-### Checking for user interrupts: `checkInterrupt` {#sec:check-user-interr}
+### Checking for user interrupts: *checkInterrupt* {#sec:check-user-interr}
 
 When you write algorithms that will run for a long time in C++, you
 may want to explicitly check whether a user has tried to interrupt the
@@ -258,7 +261,7 @@ execution (i.e., by pressing Control-C).  Simply include
 be done.  If there has been an
 interrupt waiting to be handled, the process will stop and return control to R.
 
-### Optimization: `optim` and `nimOptim`
+### Optimization: *optim* and *nimOptim*
 
 NIMBLE provides a `nimOptim` function that partially implement's R's
 `optim` function with some minor differences.  `nimOptim` supports
@@ -331,7 +334,7 @@ vectors (one dimension) are supported for character.  Unlike R, NIMBLE supports 
 scalars, which have 0 dimensions.
 
 
-### `nimbleList data structures` {#sec:nimbleList-RCFuns}
+### nimbleList data structures {#sec:nimbleList-RCFuns}
 
 A `nimbleList` is a data structure that can contain arbitrary other NIMBLE objects, including other `nimbleList`s.
 Like other NIMBLE types, nimbleLists are strongly typed: each `nimbleList` is created from a configuration that
@@ -375,7 +378,7 @@ for(i in 1:10)
 
 
 
-#### Changing the sizes of existing objects: `setSize` {#sec:chang-sizes-exist}
+#### Changing the sizes of existing objects: *setSize* {#sec:chang-sizes-exist}
 
 `setSize` changes the size of an object, preserving its contents in
 column-major order.  
@@ -577,6 +580,6 @@ Now if `foo` modifies `x` internally, it is modifying the same
 
 If you have a function in your own compiled C or C++ code and an appropriate header file, you can generate a nimbleFunction that wraps access to that function, which can then be used in other nimbleFunctions.  See `help(nimbleExternalCall)` for an example.  This also contains an example of using an externally compiled function in the BUGS code of a model.
 
-## Calling uncompiled R functions from compiled `nimbleFunctions` {#sec:calling-R-code}
+## Calling uncompiled R functions from compiled nimbleFunctions {#sec:calling-R-code}
 
 Sometimes one may want to combine R functions with compiled nimbleFunctions.  Obviously a compiled nimbleFunction can be called from R.  An R function with numeric inputs and output can be called from compiled nimbleFunctions.  The call to the R function is wrapped in a nimbleFunction returned by `nimbleRcall`.  See `help(nimbleRcall)` for an example, including an example of using the resulting function in the BUGS code of a model.

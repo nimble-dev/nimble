@@ -119,13 +119,9 @@ You can specify a particular location in either of two ways:
 
   1. Set the environment variable `EIGEN_DIR` before installing the R package, for example: `export EIGEN_DIR=/usr/include/eigen3` in the bash shell.
   2. Use
-     ```{r, install1, engine='bash', eval=FALSE}
-     R CMD INSTALL --configure-args='--with-eigen=/path/to/eigen' nimble_VERSION.tar.gz
-     ```
+     `R CMD INSTALL --configure-args='--with-eigen=/path/to/eigen' nimble_VERSION.tar.gz`
      or
-     ```{r, install2, eval=FALSE}      
-     install.packages("nimble", configure.args = "--with-eigen=/path/to/eigen")
-     ```
+     `install.packages("nimble", configure.args = "--with-eigen=/path/to/eigen")`
     
 In these cases, the directory should be the full path to the directory that
 contains the Eigen directory, e.g., `/usr/include/eigen3`. It is not the full path to the Eigen

@@ -272,7 +272,7 @@ except that they return a value (described above) and they have no `includeData`
 
 
 
-### Pre-defined nimbleFunctions for operating on model nodes: `simNodes`, `calcNodes`, and `getLogProbNodes`` {#sec:cdsimn-cdcalcn-cdget}
+### Pre-defined nimbleFunctions for operating on model nodes: *simNodes*, *calcNodes*, and *getLogProbNodes* {#sec:cdsimn-cdcalcn-cdget}
 <!---  Chris would still like to revisit this -- clarify when a user might use these and where to put this text. Main question is that if these are intended as building blocks, their only use is seemingly in R. If you use in run code, you might as well just put calculate()/simulate()/etc. directly in the run code since it will call the compiled nodeFunctions anyway. -->
 
   `simNodes`, `calcNodes` and `getLogProbNodes` are basic nimbleFunctions that simulate, calculate, or get the log probabilities

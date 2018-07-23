@@ -67,7 +67,7 @@ involved^[The packages [Rcpp](http://www.rcpp.org/) and
   RcppEigen provide different ways of connecting C++, the Eigen
   library and R.  In those packages you program directly in C++, while
   in NIMBLE you program in R in a nimbleFunction and the NIMBLE compiler
-  turns it into C++.]
+  turns it into C++.].
 
 One of the beauties of R is that many of the high-level analysis
 functions are themselves written in R, so it is easy to see their code and modify

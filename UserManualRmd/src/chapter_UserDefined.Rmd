@@ -165,7 +165,7 @@ Here are more details on the requirements for distribution-related nimbleFunctio
   - Define the nimbleFunctions in R's global environment.  Don't expect R's standard scoping to work^[NIMBLE can't use R's standard scoping because it doesn't work for R reference classes, and nimbleFunctions are implemented as custom-generated reference classes.].
 
 
-### Using `registerDistributions` for alternative parameterizations and providing other information {#sec:registerDistributions}
+### Using *registerDistributions* for alternative parameterizations and providing other information {#sec:registerDistributions}
 
 Behind the scenes, NIMBLE uses the function
 `registerDistributions` to set up new distributions for use in BUGS

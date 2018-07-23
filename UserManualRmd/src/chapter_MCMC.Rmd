@@ -32,7 +32,7 @@ The lengthier and more customizable approach to invoking the MCMC engine on a pa
           i. Change the variables to monitor (record for output) and thinning intervals for MCMC samples.
   1. Use `buildMCMC` to build the MCMC object and its samplers either from the model (using default MCMC configuration) or from a customized MCMC configuration (Section \@ref(sec:build-compile-mcmc)).
   1. Compile the MCMC object (and the model), unless one is debugging and wishes to run the uncompiled MCMC.
-  1. Run the MCMC and extract the samples (Sections \@ref(sec:runMCMC), \@ref(executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples)).
+  1. Run the MCMC and extract the samples (Sections \@ref(sec:runMCMC), \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples)).
   1. Optionally, calculate the WAIC using the posterior samples (Section \@ref(sec:WAIC)).
 
 
@@ -58,7 +58,7 @@ End-to-end examples of MCMC in NIMBLE can be found in Sections \@ref(sec:creatin
 <!---   
 %   1. `Cmcmc$run(...)`
 %    1. `runMCMC(Cmcmc, ...)` -->
-<!---  Using `Cmcmc$run(...)` provides lower-level options including extending an MCMC run (collecting additional samples from where it last stopped), and also collecting timing information for the internal sampling algorithms.  After executing an MCMC in this manner, posterior samples are extracted from within the `Cmcmc` object using `as.matrix(Cmcmc$mvSamples)`.  See Sections \@ref(executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples). -->
+<!---  Using `Cmcmc$run(...)` provides lower-level options including extending an MCMC run (collecting additional samples from where it last stopped), and also collecting timing information for the internal sampling algorithms.  After executing an MCMC in this manner, posterior samples are extracted from within the `Cmcmc` object using `as.matrix(Cmcmc$mvSamples)`.  See Sections \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples). -->
 
 <!---  Using `runMCMC(Cmcmc, ...)` provides higher-level options such as running multiple chains, setting initial values, removing burn-in, and returning posterior samples in the form of a `coda` `mcmc` object.  Running an MCMC in this manner returns an array of samples, a list of sample arrays in the case of multiple chains, or optionally a `coda` object.  See Section \@ref(sec:runMCMC). -->
 
@@ -73,7 +73,7 @@ End-to-end examples of MCMC in NIMBLE can be found in Sections \@ref(sec:creatin
 <!---    1. Methods to automatically run WinBUGS, OpenBUGS, JAGS, Stan and/or multiple NIMBLE MCMCs on the same model (section \@ref(mcmc-suite-compare-mcmcs))  -->
 
 
-## One-line invocation of MCMC: `nimbleMCMC` {#sec:nimbleMCMC}
+## One-line invocation of MCMC: *nimbleMCMC* {#sec:nimbleMCMC}
 
 The most direct approach to executing an MCMC algorithm in NIMBLE is using `nimbleMCMC`.  This single function can be used to create an underlying model and associated MCMC algorithm, compile both of these, execute the MCMC, and return samples, summary statistics, and a WAIC value.  This approach circumvents the longer (and more flexible) approach using `nimbleModel`, `configureMCMC`, `buildMCMC`, `compileNimble`, and `runMCMC`, which is described subsequently.
 
@@ -253,7 +253,7 @@ mcmcConf <- configureMCMC(Rmodel, control = list(scale = 3, adaptive = FALSE))
 
 When adding samplers to a configuration using `addSampler`, the default control list can also be over-ridden.
 
-#### Adding samplers to the configuration: `addSampler`
+#### Adding samplers to the configuration: *addSampler*
 
 Samplers may be added to a configuration using the `addSampler` method of the `MCMCconf` object.  The first argument gives the node(s) to be sampled, called the `target`, as a character vector.   The second argument gives the type of sampler, which may be provided as a character string or a nimbleFunction object. Valid character strings are indicated in `help(samplers)` (do not include `"sampler_"`).  Added samplers can be labeled with a `name` argument, which is used in output of `printSamplers`.
 
@@ -269,94 +269,94 @@ The hierarchy of precedence for control list elements for samplers is:
 
 Samplers added by `addSampler` will be appended to the end of current sampler list.  Adding a sampler for a node will *not* automatically remove any existing samplers on that node. 
 
-#### Printing, re-ordering, modifying and removing samplers: `printSamplers`, `getSamplerDefinition`, and `removeSamplers`
+#### Printing, re-ordering, modifying and removing samplers: *printSamplers*, *getSamplerDefinition*, and *removeSamplers*
 
 The current, ordered, list of all samplers in the MCMC configuration may be printed by calling the `printSamplers` method. When you want to see only samplers acting on specific model nodes or variables, provide those names as an argument to `printSamplers`.  The `printSamplers` method accepts arguments controlling the level of detail displayed as discussed in its R help information.
 
 The nimbleFunction definition underlying a particular sampler may be viewed using the `getSamplerDefinition` method, using the sampler index as an argument.  A node name argument may also be supplied, in which case the definition of the first sampler acting on that node is returned.  In all cases, `getSamplerDefinition` only returns the definition of the *first* sampler specified either by index or node name.
 ```{r, getSamplerDefinition, eval=FALSE}
-## Return the definition of the third sampler in the mcmcConf object
+# Return the definition of the third sampler in the mcmcConf object
 mcmcConf$getSamplerDefinition(3)
 
-## Return the definition of the first sampler acting on node "x",
-## or the first of any indexed nodes comprising the variable "x"
+# Return the definition of the first sampler acting on node "x",
+# or the first of any indexed nodes comprising the variable "x"
 mcmcConf$getSamplerDefinition("x")
 ```
 
 The existing samplers may be re-ordered using the `setSamplers` method. The `ind` argument is a vector of sampler indices, or a character vector of model node or variable names.  Here are a few examples. Each example assumes the `MCMCconf` object initially contains 10 samplers, and each example is independent of the others.
 ```{r, setSamplers2, eval=FALSE}
-## Truncate the current list of samplers to the first 5
+# Truncate the current list of samplers to the first 5
 mcmcConf$setSamplers(ind = 1:5)
 
-## Retain only the third sampler, which will subsequently 
-## become the first sampler
+# Retain only the third sampler, which will subsequently 
+# become the first sampler
 mcmcConf$setSamplers(ind = 3)
 
-## Reverse the ordering of the samplers
+# Reverse the ordering of the samplers
 mcmcConf$setSamplers(ind = 10:1)
 
-## The new set of samplers becomes the 
-## {first, first, first, second, third} from the current list.
-## Upon each iteration of the MCMC, the 'first' sampler will 
-## be executed 3 times, however each instance of the sampler 
-## will be independent in terms of scale, adaptation, etc.
+# The new set of samplers becomes the 
+# {first, first, first, second, third} from the current list.
+# Upon each iteration of the MCMC, the 'first' sampler will 
+# be executed 3 times, however each instance of the sampler 
+# will be independent in terms of scale, adaptation, etc.
 mcmcConf$setSamplers(ind = c(1, 1, 1, 2, 3))
 
-## Set the list of samplers to only those acting on model node "alpha"
+# Set the list of samplers to only those acting on model node "alpha"
 mcmcConf$setSamplers("alpha")
 
-## Set the list of samplers to those acting on any components of the
-## model variables "x", "y", or "z".
+# Set the list of samplers to those acting on any components of the
+# model variables "x", "y", or "z".
 mcmcConf$setSamplers(c("x", "y", "z"))
 ```
 
 Samplers may be removed from the current sampler ordering with the `removeSamplers` method.  The following examples again assume that `mcmcConf` initially contains 10 samplers, and each example is independent of the others.  `removeSamplers` accepts a vector of numeric indices of samplers to be removed or a character vector.  In the latter case, all samplers acting on the named target model nodes will be removed.
 ```{r, removeSamplers, eval=FALSE}
-## Remove the first sampler
+# Remove the first sampler
 mcmcConf$removeSamplers(ind = 1)
 
-## Remove the last five samplers
+# Remove the last five samplers
 mcmcConf$removeSamplers(ind = 6:10)
 
-## Remove all samplers,
-## resulting in an empty MCMC configuration, containing no samplers
+# Remove all samplers,
+# resulting in an empty MCMC configuration, containing no samplers
 mcmcConf$removeSamplers(ind = 1:10)
 
-## Remove all samplers acting on "x" or any component of it
+# Remove all samplers acting on "x" or any component of it
 mcmcConf$removeSamplers("x")
 
-## Default: providing no argument removes all samplers
+# Default: providing no argument removes all samplers
 mcmcConf$removeSamplers()
 ```
 
 
-#### Customizing individual sampler configurations: `getSamplers, `setSamplers`, `setName`, `setSamplerFunction`, `setTarget`, and `setControl`
+#### Customizing individual sampler configurations: *getSamplers*, *setSamplers*, *setName*, *setSamplerFunction*, *setTarget*, and *setControl*
 
 Each sampler in an `MCMCconf` object is represented by a sampler configuration as a `samplerConf` object.  Each `samplerConf` is a reference class object containing the following (required) fields: `name` (a character string), `samplerFunction` (a valid nimbleFunction sampler), `target` (the model node to be sampled), and `control` (list of control arguments).  The `MCMCconf` method `getSamplers` allows access to the `samplerConf` objects.  These can be modified and then passed as an argument to `setSamplers` to over-write the current list of samplers in the MCMC configuration object.  However, no checking of the validity of this modified list is performed; if the list of samplerConf objects is corrupted to be invalid, incorrect behavior will result at the time of calling `buildMCMC`.  The fields of a `samplerConf` object can be modified using the access functions `setName(name)`, `setSamplerFunction(fun)`, `setTarget(target, model)`, and `setControl(control)`.
 
 Here are some examples:
 
 ```{r, getSetSamplers, eval=FALSE}
-## retrieve samplerConf list
+# retrieve samplerConf list
 samplerConfList <- mcmcConf$getSamplers()
 
-## change the name of the first sampler
+# change the name of the first sampler
 samplerConfList[[1]]$setName("newNameForThisSampler")
 
-## change the sampler function of the second sampler,
-## assuming existance of a nimbleFunction 'anotherSamplerNF',
-## which represents a valid nimbleFunction sampler.
+# change the sampler function of the second sampler,
+# assuming existance of a nimbleFunction 'anotherSamplerNF',
+# which represents a valid nimbleFunction sampler.
 samplerConfList[[2]]$setSamplerFunction(anotherSamplerNF)
 
-## change the 'adaptive' element of the control list of the third sampler
+# change the 'adaptive' element of the control list of the third sampler
 control <- samplerConfList[[3]]$control
 control$adaptive <- FALSE
 samplerConfList[[3]]$setControl(control)
 
-## change the target node of the fourth sampler
-samplerConfList[[4]]$setTarget("y", model)   ## model argument required
+# change the target node of the fourth sampler
+samplerConfList[[4]]$setTarget("y", model)   # model argument required
 
-## use this modified list of samplerConf objects in the MCMC configuration
+# use this modified list of samplerConf objects in the MCMC configuration
 mcmcConf$setSamplers(samplerConfList)
 ```
 
@@ -367,27 +367,27 @@ The ordering of sampler execution can be controlled as well.  This allows for sa
 The sampler execution order is set using the function `setSamplerExecutionOrder`, and the current ordering of execution is retrieved using `getSamplerExecutionOrder`.  For example, assuming the MCMC configuration object `mcmcConf` contains five samplers:
 
 ```{r, setSamplerExecutionOrder, eval=FALSE}
-## first sampler to execute twice, in succession:
+# first sampler to execute twice, in succession:
 mcmcConf$setSamplerExecutionOrder(c(1, 1, 2, 3, 4, 5))
 
-## first sampler to execute multiple times, interleaved:
+# first sampler to execute multiple times, interleaved:
 mcmcConf$setSamplerExecutionOrder(c(1, 2, 1, 3, 1, 4, 1, 5))
 
-## fourth sampler to execute 10 times, only
+# fourth sampler to execute 10 times, only
 mcmcConf$setSamplerExecutionOrder(rep(4, 10))
 
-## omitting the argument to setSamplerExecutionOrder()
-## resets the ordering to each sampler executing once, sequentially
+# omitting the argument to setSamplerExecutionOrder()
+# resets the ordering to each sampler executing once, sequentially
 mcmcConf$setSamplerExecutionOrder()
 
-## retrieve the current ordering of sampler execution
+# retrieve the current ordering of sampler execution
 ordering <- mcmcConf$getSamplerExecutionOrder()
 
-## print the sampler functions in the order of execution
+# print the sampler functions in the order of execution
 mcmcConf$printSamplers(executionOrder = TRUE)
 ```
 
-#### Monitors and thinning intervals: `printMonitors, `getMonitors`, `addMonitors`, `setThin`, and `resetMonitors`
+#### Monitors and thinning intervals: *printMonitors*, *getMonitors*, *addMonitors*, *setThin*, and *resetMonitors*
 
 An MCMC configuration object contains two independent sets of variables to monitor, each with their own thinning interval: `thin` corresponding to `monitors`, and `thin2` corresponding to `monitors2`.  Monitors operate at the *variable* level.  Only entire model variables may be monitored.  Specifying a monitor on a *node*, e.g., `x[1]`, will result in the entire variable `x` being monitored.
 
@@ -395,23 +395,23 @@ The variables specified in `monitors`  and `monitors2` will be recorded (with th
 
 Monitors may be added to the MCMC configuration either in the original call to `configureMCMC` or using the `addMonitors` method:
 ```{r, addMonitors, eval=FALSE}
-## Using an argument to configureMCMC
+# Using an argument to configureMCMC
 mcmcConf <- configureMCMC(Rmodel, monitors = c("alpha", "beta"), 
                           monitors2 = "x")
 
-## Calling a member method of the mcmcconf object
-## This results in the same monitors as above
+# Calling a member method of the mcmcconf object
+# This results in the same monitors as above
 mcmcConf$addMonitors("alpha", "beta")
 mcmcConf$addMonitors2("x")
 ```
 
 Similarly, either thinning interval may be set at either step:
 ```{r, thinning, eval=FALSE}
-## Using an argument to configureMCMC
+# Using an argument to configureMCMC
 mcmcConf <- configureMCMC(Rmodel, thin = 1, thin2 = 100)
 
-## Calling a member method of the mcmcConf object
-## This results in the same thinning intervals as above
+# Calling a member method of the mcmcConf object
+# This results in the same thinning intervals as above
 mcmcConf$setThin(1)
 mcmcConf$setThin2(100)
 ```
@@ -450,10 +450,10 @@ Note that if you would like to be able to calculate the WAIC of the model after 
 When no customization is needed, one can skip `configureMCMC` and simply provide a model object to `buildMCMC`. The following two MCMC functions will be identical:
 
 ```{r, overloadedBuildMCMC, eval=FALSE}
-mcmcConf <- configureMCMC(Rmodel)   ## default MCMC configuration
+mcmcConf <- configureMCMC(Rmodel)   # default MCMC configuration
 Rmcmc1 <- buildMCMC(mcmcConf)
 
-Rmcmc2 <- buildMCMC(Rmodel)   ## uses the default configuration for Rmodel
+Rmcmc2 <- buildMCMC(Rmodel)   # uses the default configuration for Rmodel
 ```
 
 For speed of execution, we usually want to compile the MCMC function to C++ (as is the case for other NIMBLE functions).  To do so, we use `compileNimble`.  If the model has already been compiled, it should be provided as the `project` argument so the MCMC will be part of the same compiled project.  A typical compilation call looks like:
@@ -476,7 +476,7 @@ Cmcmc$Rmcmc$run(niter = 1000)
 
 
 
-## User-friendly execution of MCMC algorithms: `runMCMC` {#sec:runMCMC}
+## User-friendly execution of MCMC algorithms: *runMCMC* {#sec:runMCMC}
 
 Once an MCMC algorithm has been created using `buildMCMC`, the function `runMCMC` can be used to run multiple chains and extract posterior samples, summary statistics and/or a WAIC value.  This is a simpler approach to executing an MCMC algorithm, than the process of executing and extracting samples as described in Sections \@ref(executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples).
 
@@ -505,26 +505,26 @@ Once an MCMC algorithm has been created using `buildMCMC`, the function `runMCMC
 The following examples demonstrate some uses of `runMCMC`, and assume the existence of `Cmcmc`, a compiled MCMC algorithm.
 
 ```{r, runMCMC, eval=FALSE}
-## run a single chain, and return a matrix of samples
+# run a single chain, and return a matrix of samples
 mcmc.out <- runMCMC(Cmcmc)
 
-## run three chains of 10000 samples, discard initial burnin of 1000,
-## record samples thereafter using a thinning interval of 10,
-## and return of list of sample matrices
+# run three chains of 10000 samples, discard initial burnin of 1000,
+# record samples thereafter using a thinning interval of 10,
+# and return of list of sample matrices
 mcmc.out <- runMCMC(Cmcmc, niter=10000, nburnin=1000, thin=10, nchains=3)
 
-## run three chains, returning posterior samples, summary statistics,
-## and the WAIC value for each chain
+# run three chains, returning posterior samples, summary statistics,
+# and the WAIC value for each chain
 mcmc.out <- runMCMC(Cmcmc, nchains = 3, summary = TRUE, WAIC = TRUE)
 
-## run two chains, and specify the initial values for each
+# run two chains, and specify the initial values for each
 initsList <- list(list(mu = 1, sigma = 1),
                   list(mu = 2, sigma = 10))
 mcmc.out <- runMCMC(Cmcmc, nchains = 2, inits = initsList)
 
-## run ten chains of 100,000 iterations each, using a function to 
-## generate initial values and a fixed random number seed for each chain.
-## only return summary statistics from each chain; not all the samples.
+# run ten chains of 100,000 iterations each, using a function to 
+# generate initial values and a fixed random number seed for each chain.
+# only return summary statistics from each chain; not all the samples.
 initsFunction <- function()
     list(mu = rnorm(1,0,1), sigma = runif(1,0,100))
 mcmc.out <- runMCMC(Cmcmc, niter = 100000, nchains = 10,
@@ -536,9 +536,12 @@ mcmc.out <- runMCMC(Cmcmc, niter = 100000, nchains = 10,
 See `help(runMCMC)` for further details.
 
 
-## Running the MCMC {#executing-the-mcmc-algorithm}
+## Running the MCMC {#sec:executing-the-mcmc-algorithm}
 
-The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method `mcmc$run` (see `help(buildMCMC)` in R).  The `run` method has one required argument, `niter`, the number of iterations to be run.  %Calling `mcmc$run(niter)` causes the full list of samplers (as determined by the `MCMCconf` object) to be executed `niter` times, and the monitored variables to be stored into the internal `mvSamples` and/or `mvSamples2` objects as governed by the corresponding thinning intervals.
+The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method `mcmc$run` (see `help(buildMCMC)` in R).  The `run` method has one required argument, `niter`, the number of iterations to be run.
+<!---
+%Calling `mcmc$run(niter)` causes the full list of samplers (as determined by the `MCMCconf` object) to be executed `niter` times, and the monitored variables to be stored into the internal `mvSamples` and/or `mvSamples2` objects as governed by the corresponding thinning intervals.
+-->
 
 The `run` method has optional arguments `thin` and `thin2`.  These can be used to specify thinning intervals for recording samples (corresponding to `monitors` and `monitors2`).  If either of these arguments are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
 
@@ -554,7 +557,7 @@ When `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it
 The `run` method takes an optional `simulateAll` argument.  When `simulateAll = TRUE`, the `simulate` method of all stochastic nodes is called before running the MCMC.  This generates a new set of initial values.  It should be used with caution since values drawn from priors may be extreme or invalid in some models.
 
  
-### Measuring sampler computation times: `getTimes` \label{sec:sampler-time}
+### Measuring sampler computation times: *getTimes* \label{sec:sampler-time}
 
 If you want to obtain the computation time spent in each sampler, you can set `time=TRUE` as a run-time argument and then use the method `getTimes()` obtain the times.  For example,
 
@@ -597,7 +600,7 @@ Obtaining samples as matrices is most common, but see Section \@ref(sec:modelVal
 
 ## Calculating WAIC {#sec:WAIC}
 
-Once an MCMC algorithm has been run, as described in \@ref(sec:executing-the-mcmc-algorithm), the WAIC [@Watanabe_2010] can be calculated from the posterior samples produced by the MCMC algorithm.  Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument `enableWAIC = TRUE` must have been supplied to `configureMCMC` or to `buildMCMC`, or the `enableWAIC` NIMBLE option must have been set to `TRUE`.
+Once an MCMC algorithm has been run, as described in Section \@ref(sec:executing-the-mcmc-algorithm), the WAIC [@Watanabe_2010] can be calculated from the posterior samples produced by the MCMC algorithm.  Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument `enableWAIC = TRUE` must have been supplied to `configureMCMC` or to `buildMCMC`, or the `enableWAIC` NIMBLE option must have been set to `TRUE`.
 
 The WAIC is calculated by calling the member method `mcmc$calculateWAIC` (see `help(buildMCMC)` in R for more details).  The `calculateWAIC` method has one required argument, `nburnin`, the number of initial samples to discard prior to WAIC calculation.  `nburnin` defaults to 0.
 
@@ -621,9 +624,9 @@ Most documentation of MCMC samplers provided with NIMBLE can be found by invokin
 
 By default, `configureMCMC()` and `buildMCMC()` will assign conjugate samplers to all nodes satisfying a conjugate relationship, unless the option `useConjugacy = FALSE` is specified.  
 
-The current release of NIMBLE supports conjugate sampling of the relationships listed in Table \@ref(table:conjugaciesSupported)^[NIMBLE's internal definitions of these relationships can be viewed with `nimble:::conjugacyRelationshipsInputList`.].
+The current release of NIMBLE supports conjugate sampling of the relationships listed in Table \@ref(tab:conjugacy)^[NIMBLE's internal definitions of these relationships can be viewed with `nimble:::conjugacyRelationshipsInputList`.].
 
-```{r, child = 'conjugacyTable.md'}
+```{r, child = 'tables/conjugacyTable.md'}
 ```
 
 Conjugate sampler functions may (optionally) dynamically check that their own posterior likelihood calculations are correct.  If incorrect, a warning is issued.  However, this functionality will roughly double the run-time required for conjugate sampling.  By default, this option is disabled in NIMBLE.  This option may be enabled with
@@ -680,7 +683,7 @@ If one wants information about conjugate node relationships for other purposes, 
 
 <!---  The requirement that all stochastic descendants of the `target` nodes must themselves have only conjugate descendants will be checked when the MCMC algorithm is built.  This sampler is useful when there is strong dependence across the levels of a model that causes problems with convergence or mixing. -->
 
-### Customized log-likelihood evaluations: `RW_llFunction sampler`
+### Customized log-likelihood evaluations: *RW_llFunction sampler*
  
 Sometimes it is useful to control the log-likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log-likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log-likelihood that comes from a stochastic approximation such as a particle filter (see below), allowing composition of a particle MCMC (PMCMC) algorithm [@Andrieu_Doucet_Holenstein_2010].  The `RW_llFunction` sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument (as does the example below), but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).
 
@@ -723,10 +726,10 @@ Rmcmc <- buildMCMC(mcmcConf)
 The `posterior_predictive` sampler functions by calling the `simulate` method of the relevant node, then updating model probabilities and deterministic dependent nodes.  The `posterior_predictive` sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.  The `posterior_predictive` sampler accepts no control list arguments. -->
 
 
-### Particle MCMC `PMCMC sampler`
+### Particle MCMC sampler
 For state space models, a particle MCMC (PMCMC) sampler can be specified for top-level parameters.  This sampler is described in Section \@ref(sec:particle-mcmc).
 
-## Detailed MCMC example: `litters` {#sec:mcmc-example-litters}
+## Detailed MCMC example: *litters* {#sec:mcmc-example-litters}
 
 Here is a detailed example of specifying, building, compiling, and running two MCMC algorithms.  We use the `litters` example from the BUGS examples.
 
@@ -736,7 +739,7 @@ Here is a detailed example of specifying, building, compiling, and running two M
 ##### model configuration #####
 ###############################
 
-## define our model using BUGS syntax
+# define our model using BUGS syntax
 litters_code <- nimbleCode({
     for (i in 1:G) {
         a[i] ~ dgamma(1, .001)
@@ -750,26 +753,26 @@ litters_code <- nimbleCode({
     }
 })
 
-## list of fixed constants
+# list of fixed constants
 constants <- list(G = 2,
                   N = 16,
                   n = matrix(c(13, 12, 12, 11, 9, 10, 9,  9, 8, 11, 8, 10, 13,
                       10, 12, 9, 10,  9, 10, 5,  9,  9, 13, 7, 5, 10, 7,  6, 
                       10, 10, 10, 7), nrow = 2))
 
-## list specifying model data
+# list specifying model data
 data <- list(r = matrix(c(13, 12, 12, 11, 9, 10,  9, 9, 8, 10, 8, 9, 12, 9,
                  11, 8, 9,  8,  9,  4, 8,  7, 11, 4, 4, 5 , 5, 3,  7, 3, 
                  7, 0), nrow = 2))
 
-## list specifying initial values
+# list specifying initial values
 inits <- list(a = c(1, 1),
               b = c(1, 1),
               p = matrix(0.5, nrow = 2, ncol = 16),
               mu    = c(.5, .5),
               theta = c(.5, .5))
 
-## build the R model object
+# build the R model object
 Rmodel <- nimbleModel(litters_code,
                       constants = constants,
                       data      = data,
@@ -780,35 +783,35 @@ Rmodel <- nimbleModel(litters_code,
 ##### MCMC configuration and building #####
 ###########################################
 
-## generate the default MCMC configuration;
-## only wish to monitor the derived quantity "mu"
+# generate the default MCMC configuration;
+# only wish to monitor the derived quantity "mu"
 mcmcConf <- configureMCMC(Rmodel, monitors = "mu")
 
-## check the samplers assigned by default MCMC configuration
+# check the samplers assigned by default MCMC configuration
 mcmcConf$printSamplers()
 
-## double-check our monitors, and thinning interval
+# double-check our monitors, and thinning interval
 mcmcConf$printMonitors()
 
-## build the executable R MCMC function
+# build the executable R MCMC function
 mcmc <- buildMCMC(mcmcConf)
 
-## let's try another MCMC, as well,
-## this time using the crossLevel sampler for top-level nodes
+# let's try another MCMC, as well,
+# this time using the crossLevel sampler for top-level nodes
 
-## generate an empty MCMC configuration
-## we need a new copy of the model to avoid compilation errors
+# generate an empty MCMC configuration
+# we need a new copy of the model to avoid compilation errors
 Rmodel2 <- Rmodel$newModel()
 mcmcConf_CL <- configureMCMC(Rmodel2, nodes = NULL, monitors = "mu")
 
-## add two crossLevel samplers
+# add two crossLevel samplers
 mcmcConf_CL$addSampler(target = c("a[1]", "b[1]"), type = "crossLevel")
 mcmcConf_CL$addSampler(target = c("a[2]", "b[2]"), type = "crossLevel")
 
-## let's check the samplers
+# let's check the samplers
 mcmcConf_CL$printSamplers()
 
-## build this second executable R MCMC function
+# build this second executable R MCMC function
 mcmc_CL <- buildMCMC(mcmcConf_CL)
 
 
@@ -816,25 +819,25 @@ mcmc_CL <- buildMCMC(mcmcConf_CL)
 ##### compile to C++, and run #####
 ###################################
 
-## compile the two copies of the model
+# compile the two copies of the model
 Cmodel <- compileNimble(Rmodel)
 Cmodel2 <- compileNimble(Rmodel2)
 
-## compile both MCMC algorithms, in the same
-## project as the R model object
-## NOTE: at this time, we recommend compiling ALL
-## executable MCMC functions together
+# compile both MCMC algorithms, in the same
+# project as the R model object
+# NOTE: at this time, we recommend compiling ALL
+# executable MCMC functions together
 Cmcmc <- compileNimble(mcmc, project = Rmodel)
 Cmcmc_CL <- compileNimble(mcmc_CL, project = Rmodel2)
 
-## run the default MCMC function,
-## and example the mean of mu[1]
+# run the default MCMC function,
+# and example the mean of mu[1]
 Cmcmc$run(1000)
 cSamplesMatrix <- as.matrix(Cmcmc$mvSamples)
 mean(cSamplesMatrix[, "mu[1]"])
 
-## run the crossLevel MCMC function,
-## and examine the mean of mu[1]
+# run the crossLevel MCMC function,
+# and examine the mean of mu[1]
 Cmcmc_CL$run(1000)
 cSamplesMatrix_CL <- as.matrix(Cmcmc_CL$mvSamples)
 mean(cSamplesMatrix_CL[, "mu[1]"])
@@ -844,19 +847,19 @@ mean(cSamplesMatrix_CL[, "mu[1]"])
 #### run multiple MCMC chains #####
 ###################################
 
-## run 3 chains of the crossLevel MCMC
+# run 3 chains of the crossLevel MCMC
 samplesList <- runMCMC(Cmcmc_CL, niter=1000, nchains=3)
 
 lapply(samplesList, dim)
 ```
 
-## Comparing different MCMCs with `MCMCsuite` and `compareMCMCs` {#mcmc-suite-compare-mcmcs}
+## Comparing different MCMCs with *MCMCsuite* and *compareMCMCs* {#mcmc-suite-compare-mcmcs}
 
 NIMBLE's `MCMCsuite` function automatically runs WinBUGS, OpenBUGS, JAGS, Stan, and/or multiple NIMBLE configurations on the same model.  Note that the BUGS code must be compatible with whichever BUGS packages are included, and separate Stan code must be provided.  NIMBLE's `compareMCMCs` manages calls to `MCMCsuite` for multiple sets of comparisons and organizes the output(s) for generating html pages summarizing results.  It also allows multiple results to be combined and allows some different options for how results are processed, such as how effective sample size is estimated.
 
 We first show how to use `MCMCsuite` for the same `litters` example used in Section \@ref(sec:mcmc-example-litters).  Subsequently, additional details of the `MCMCsuite` are given.  Since use of `compareMCMCs` is similar, we refer readers to `help(compareMCMCs)` and the functions listed under 'See also' on that R help page.
 
-### MCMC Suite example: `litters`
+### MCMC Suite example: *litters*
 
 The following code executes the following MCMC algorithms on the `litters` example:
 
@@ -972,7 +975,7 @@ MCMCdefs = list(
      myMCMC = quote({
           mcmcConf <- configureMCMC(Rmodel, ....)  
           mcmcConf$addSampler(.....)
-          mcmcConf     ## returns the MCMC configuration object  
+          mcmcConf     # returns the MCMC configuration object  
      })  
 )  
 ```

@@ -26,7 +26,7 @@ formats for models, variables, data, and initial values for MCMC.
 
 In addition one can create new model objects from existing model objects.
 
-### Using `nimbleModel to create a model`
+### Using *nimbleModel* to create a model
 
 `nimbleModel` processes BUGS code to determine all the nodes,
 variables, and their relationships in a model.  Any constants must be
@@ -174,7 +174,7 @@ Whereas the *constants* are a property of the *model definition*
 generated from the same *model definition*.   The `setData` and
 `setInits` described above can be used for each copy of the model.
 
-#### Providing dimensions via `nimbleModel` {#sec:prov-dimens-via}
+#### Providing dimensions via *nimbleModel* {#sec:provide-dimensions}
 
 `nimbleModel` can usually determine the dimensions of every
 variable from the declarations in the BUGS code.  However, it is
@@ -206,7 +206,8 @@ codeAlt <- nimbleCode({
 
 model <- nimbleModel(codeAlt, constants = list(n = 3, K = K, alpha0 = rep(0, K),
                                                R = diag(K)),
-                              dimensions = list(y = K, p = K, alpha = K), check = FALSE)
+                              dimensions = list(y = K, p = K, alpha = K),
+                              check = FALSE)
 ```
 
 In that example, since `alpha0` and `R` are provided as constants, we don't need to specify their dimensions.

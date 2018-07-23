@@ -189,7 +189,7 @@ anywhere in the setup code.
 
 In Chapter \@ref(cha:RCfunctions) we described the functionality of the NIMBLE language that could be used in run code without setup code (typically in cases where no models or modelValues are needed).   Next we explain the additional features that allow use of models and modelValues in the run code. 
 
-### Driving models: `calculate`, `calculateDiff`, `simulate`, `getLogProb` {#sec:driv-models:-calc}
+### Driving models: *calculate*, *calculateDiff*, *simulate*, *getLogProb* {#sec:driv-models:-calc}
 
 These four functions are the primary ways to operate a model.  Their
 syntax was explained in Section \@ref(sec:cdcalc-cdsim-cdgetl). Except
@@ -659,7 +659,7 @@ with NIMBLE code.
 We often resort to using `print` statements for debugging compiled code.
 Expert users fluent in C++ may also try setting `nimbleOptions(pauseAfterWritingFiles = TRUE)` and adding debugging code into the generated C++ files.
 
-## Timing nimbleFunctions with `run.time`
+## Timing nimbleFunctions with *run.time*
 
 If your nimbleFunctions are correct but slow to run, you can use benchmarking tools to look for bottlenecks and to compare different implementations.
 If your functions are very long-running (say 1ms or more), then standard R benchmarking tools may suffice, e.g. the `microbenchmark` package

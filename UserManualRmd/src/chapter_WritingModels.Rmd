@@ -222,11 +222,11 @@ square brackets, which is an incompatibility with JAGS.  Therefore a statement l
 `xbar <- mean(x[])` (if `x` is a vector) or `xbar <-
  mean(x[,])` (if `x` is a matrix) for NIMBLE^[In `nimbleFunctions`, as
   explained in later chapters, square brackets with blank indices are
-  not necessary for multivariate objects.]. Section \@ref(sec:prov-dimens-via) discusses how to provide NIMBLE with dimensions of `x` when needed.
+  not necessary for multivariate objects.]. Section \@ref(sec:provide-dimensions) discusses how to provide NIMBLE with dimensions of `x` when needed.
 
 Generally NIMBLE supports R-like linear algebra expressions and attempts to follow the same rules as R about
 dimensions (although in some cases this is not possible).  For
-example, `x[1:3] \%*\% y[1:3]` converts `x[1:3]` into a row
+example, `x[1:3] %*% y[1:3]` converts `x[1:3]` into a row
 vector and thus computes the inner product, which is returned as a $1
 \times 1$ matrix (use `inprod` to get it as a scalar, which it typically easier).  Like in R,
 a scalar index will result in dropping a dimension unless the argument
@@ -268,7 +268,7 @@ it will often make sense to declare them as a vector.
 #### Distributions {#subsec:distributions}
 
 NIMBLE supports most of the distributions allowed in BUGS and
-JAGS. Table \@ref(table:distributions) lists the distributions that are
+JAGS. Table \@ref(tab:distributions) lists the distributions that are
 currently supported, with their default parameterizations, which match
 those of BUGS^[Note that the same distributions are available
   for writing `nimbleFunction`s, but in that case the default
@@ -278,7 +278,7 @@ those of BUGS^[Note that the same distributions are available
 parameterizations for a variety of distributions as described next.
 See Section \@ref(sec:user-distributions) to learn how to write new distributions using nimbleFunctions.
 
-```{r, child = 'densityTableLong.md'}
+```{r, child = 'tables/densityTableLong.md'}
 ```
 
 ##### Improper distributions
@@ -294,7 +294,7 @@ prior or require proper (normalized) densities.
 
 NIMBLE allows one to specify distributions in model code using a
 variety of parameterizations, including the BUGS
-parameterizations. Available parameterizations are listed in Table \@ref(table:distributions-alternates).
+parameterizations. Available parameterizations are listed in Table \@ref(tab:parameterizations).
 To understand how NIMBLE handles alternative parameterizations, it is
 useful to distinguish three cases, using the `gamma` distribution
 as an example:
@@ -323,7 +323,7 @@ but it need not.  If names are given, they can be given in any
 order.  NIMBLE knows that rate is an alternative to scale and that
 (mean, sd) are an alternative to (shape, scale or rate). 
 
-```{r, child = 'parameterizationTableLong.md'}
+```{r, child = 'tables/parameterizationTableLong.md'}
 ```
 
 Note that for multivariate normal, multivariate t, Wishart, and Inverse Wishart, the canonical
@@ -337,9 +337,9 @@ Doesn't lifting of the cholesky computation take care of inefficiency?
 % What does "use that parameterization directly" mean, when there is
 no meaning of "indirect" use of a parameterization?   -->
 
-In addition, NIMBLE supports alternative distribution names, known as aliases, as in JAGS, as specified in Table \@ref(table:distributions-aliases). 
+In addition, NIMBLE supports alternative distribution names, known as aliases, as in JAGS, as specified in Table \@ref(tab:densityAliases). 
 
-```{r, child = 'densityAliasesTable.md'}
+```{r, child = 'tables/densityAliasesTable.md'}
 ```
 
 <!--- TODO: WHAT IS THE STATUS OF THE NEXT STATEMENT?: I've added inverse gamma in 0.6-4 and will do inverse wishart in 0.6-5. Hopefully will get to some others as well soon-ish - CJP. -->
@@ -351,7 +351,7 @@ We plan to, but do not currently, include the following distributions as part of
 
 ### Available BUGS language functions {#subsec:BUGS-lang-fxns}
 
-Tables \@ref(table:functions-bugs)-\@ref(table:functions-matrix-bugs) show the
+Tables \@ref(tab:functions)-\@ref(tab:functionsMatrix) show the
 available operators and functions. 
 <!---  These are also available for `nimbleFunction` programming (see Chapter \@ref(cha:progr-with-models)).  In fact, BUGS model nodes are implemented as `nimbleFunction`s that are custom-generated from BUGS declarations, so it would be more correct to say that functions and operators available for `nimbleFunction`s are also available for the model declarations. -->
 Support for more general R expressions
@@ -376,10 +376,10 @@ for use in calculations, namely the 'p', 'q', and 'd' functions.
 <!--- alternative parameterizations with named parameters to 
 %`nimbleFunctions`. -->
 
-```{r, child = 'functionTableLong.md'}
+```{r, child = 'tables/functionTableLong.md'}
 ```
 ```{r echo=FALSE, include=FALSE}
-system("cat functionTableMatrixLong.md eigenSvdTableMatrixElements.md > tmp.md")
+system("cat tables/functionTableMatrixLong.md tables/eigenSvdTableMatrixElements.md > tmp.md")
 ```
 ```{r, child = 'tmp.md'}
 ```
@@ -393,9 +393,9 @@ See Section \@ref(sec:user-functions) to learn how to use nimbleFunctions to wri
 
 ### Available link functions {#subsec:BUGS-link}
 
-NIMBLE allows the link functions listed in Table \@ref(table:links).
+NIMBLE allows the link functions listed in Table \@ref(tab:links).
 
-```{r, child = 'linksTable.md'}
+```{r, child = 'tables/linksTable.md'}
 ```
       
 Link functions are specified as functions applied to a node on the
@@ -410,7 +410,7 @@ does some processing that inserts an additional node into the model.
 For example, the declaration `logit(p[i]) ~ dnorm(mu[i],1)`, is equivalent
 to the following two declarations: 
 
-  - `logit_p[i] $\sim$ dnorm(mu[i], 1)`,
+  - `logit_p[i] ~ dnorm(mu[i], 1)`,
   - `p[i] <- expit(logit_p[i])`
 
 where `expit` is the inverse of `logit`.  
@@ -425,8 +425,10 @@ NIMBLE provides three ways to declare boundaries on the value of a variable, eac
 
 Either of the following forms, 
 
-  - `x ~ dnorm(0, sd = 10) T(0, a)`, or
-  - `x ~ T(dnorm(0, sd = 10), 0, a)`, 
+```
+x ~ dnorm(0, sd = 10) T(0, a)
+x ~ T(dnorm(0, sd = 10), 0, a)
+```
   
 declares that `x` follows a normal distribution between 0 and
   `a` (inclusive of 0 and `a`).  Either boundary may be omitted or may be another node, such as `a` in this example.  The first form is compatible with JAGS, but in NIMBLE it can only be used when reading code from a text file.  When writing model code in R, the second version must be used.  
@@ -436,13 +438,13 @@ Truncation means the possible values of `x` are limited a priori, hence the prob
 #### Censoring
 
 Censoring refers to the situation where one datum gives the lower or upper bound on an unobserved random variable.  This is common in survival analysis, when for an individual still surviving at the end of a study, the age of death is not known and hence is 'censored' (right-censoring).  NIMBLE adopts JAGS syntax for censoring, as follows:
- ```{r, dinterval-example, eval=FALSE}
+```{r, dinterval-example, eval=FALSE}
 censored[i] ~ dinterval(t[i], c[i])
 t[i] ~ dweib(r, mu[i])
 ```
 
 In the case of right-censoring, `censored[i]` should be given as `data` with a value of 1 if
-`t[i]` is right-censored (`t[i] $>$ c[i]`) and 0 if it is
+`t[i]` is right-censored (`t[i] > c[i]`) and 0 if it is
 observed.  The data vector for `t` should have `NA` (indicating
 missing data) for any censored `t[i]` entries. (As a result, these
 nodes will be sampled in an MCMC.)  The data vector for `c` should
@@ -452,11 +454,11 @@ Left-censored observations would be specified by setting `censored[i]` to 0
 and `t[i]` to `NA`. 
   
 
-The `dinterval` is not really a distribution but rather a trick: in the above example when `censored[i] = 1` it gives a 'probability' of 1 if `t[i] $>$ c[i]` and 0 otherwise.  This means that `t[i] $\le$ c[i]` is treated as impossible.  More generally than simple right- or left-censoring, `censored[i] ~ dinterval(t[i], c[i, ])` is defined such that for a vector of increasing cutpoints, `c[i, ]`, `t[i]` is enforced to fall within the `censored[i]`-th cutpoint interval.  This is done by setting data `censored[i]` as follows:
+The `dinterval` is not really a distribution but rather a trick: in the above example when `censored[i] = 1` it gives a 'probability' of 1 if `t[i] > c[i]` and 0 otherwise.  This means that `t[i] <= c[i]` is treated as impossible.  More generally than simple right- or left-censoring, `censored[i] ~ dinterval(t[i], c[i, ])` is defined such that for a vector of increasing cutpoints, `c[i, ]`, `t[i]` is enforced to fall within the `censored[i]`-th cutpoint interval.  This is done by setting data `censored[i]` as follows:
 
-`censored[i] = 0` if `t[i]` $\le$ `c[i, 1]`
+`censored[i] = 0` if `t[i]` <= `c[i, 1]`
 
-`censored[i] = m` if `c[i, m] < t[i]` $\le$ `c[i, m+1]` for $1 \leq m \leq M$
+`censored[i] = m` if `c[i, m] < t[i]` <= `c[i, m+1]` for $1 \leq m \leq M$
 
 `censored[i] = M` if `c[i, M] < t[i]`
 
