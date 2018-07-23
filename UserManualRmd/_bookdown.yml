@@ -1,9 +1,0 @@
-book_filename: "NimbleUserManual"
-output_dir: pdf
-language:
-  ui:
-    chapter_name: "Chapter "
-delete_merged_file: true
-      
-rmd_files: ["index.Rmd", "chapter_WelcomeToNimble.Rmd"]
-

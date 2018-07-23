@@ -5,6 +5,6 @@ bookdown-demo.html: *Rmd
 	Rscript -e "source('latex2Rmd.R'); latex2Rmd(\"$(basename $(@))\")"
 
 clean:
-	rm bookdown-demo.pdf
+	rm ../bookdown-demo.pdf
 
 
