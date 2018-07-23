@@ -90,7 +90,8 @@ bootFStep <- nimbleFunction(
         return(out)
       }
       if(prevSamp == 0){
-        llEst[i] <- wts[i] + mvWSamples['wts',i][prevInd]
+        wts[i] <- wts[i] + mvWSamples['wts',i][prevInd]
+        llEst[i] <- wts[i]
       }
       else{
           llEst[i] <- wts[i] - log(m)
@@ -163,10 +164,10 @@ bootFStep <- nimbleFunction(
 #'@description Create a bootstrap particle filter algorithm for a given NIMBLE state space model.  
 #'
 #' @param model A nimble model object, typically representing a state 
-#'  space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes 
+#'  space model or a hidden Markov model.
+#' @param nodes A string, or vector of strings, specifying the latent model nodes 
 #'  over which the particle filter will stochastically integrate over to
-#'  estimate the log-likelihood function
+#'  estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model. 
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 #' @author Daniel Turek and Nicholas Michaud
 #' @details 
@@ -198,7 +199,12 @@ bootFStep <- nimbleFunction(
 #'  returns the estimated log-likelihood value, and saves
 #'  unequally weighted samples from the posterior distribution of the latent
 #'  states in the \code{mvWSamples} modelValues object, with corresponding logged weights in \code{mvWSamples['wts',]}.
-#'  An equally weighted sample from the posterior can be found in the \code{mvEWsamp} \code{modelValues} object.
+#'  An equally weighted sample from the posterior can be found in the \code{mvEWSamples} \code{modelValues} object.
+#'  
+#'  Note that if the \code{thresh} argument is set to a value less than 1, resampling may not take place at every time point.  
+#'  At time points for which resampling did not take place, \code{mvEWSamples} will not contain equally weighted samples.
+#'  To ensure equally weighted samples in the case that \code{thresh < 1}, we recommend resampling from \code{mvWSamples} at each time point 
+#'  after the filter has been run, rather than using \code{mvEWSamples}.
 #'
 #' @section \code{returnESS()} Method:
 #'  Calling the \code{returnESS()} method of a bootstrap filter after that filter has been \code{run()} for a given model will return a vector of ESS (effective
@@ -211,7 +217,7 @@ bootFStep <- nimbleFunction(
 #' @examples
 #' \dontrun{
 #' model <- nimbleModel(code = ...)
-#' my_BootF <- buildBootstrapFilter(model, 'x[1:100]')
+#' my_BootF <- buildBootstrapFilter(model, 'x[1:100]', control = list(thresh  = 1))
 #' Cmodel <- compileNimble(model)
 #' Cmy_BootF <- compileNimble(my_BootF, project = model)
 #' logLike <- Cmy_BootF$run(m = 100000)
