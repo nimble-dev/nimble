@@ -1,7 +1,13 @@
 
+USER LEVEL CHANGES
+
 -- New option for printing MCMC samplers of particular type(s): conf$printSamplers(type = "conjugate"), for example.
 
 -- Burnin is now handled natively by mcmc$run method (rather than as a post-processing step in runMCMC).
+
+BUG FIXES
+
+-- configureMCMC no longer assigns a RW_block sampler to non-conjugate inverse-Wishart nodes.
 
                             CHANGES IN VERSION 0.6-11 (June 2018)
 
