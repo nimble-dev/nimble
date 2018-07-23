@@ -7,7 +7,7 @@ require(nimble)
 # MCMC {#cha:mcmc}
 
 ```{r, MCMCchunk0, echo = FALSE}
-## source the code
+# source the code
 if(!require(nimble, warn.conflicts = FALSE, quietly = TRUE)) {
 #source(file.path('..', '..', 'examples', 'demos', 'loadAllCode.R'))
 }
@@ -116,28 +116,28 @@ code <- nimbleCode({
 data <- list(x = c(2, 5, 3, 4, 1, 0, 1, 3, 5, 3))
 initsFunction <- function() list(mu = rnorm(1,0,1), sigma = runif(1,0,10))
 
-## execute one MCMC chain, monitoring the "mu" and "sigma" variables,
-## with thinning interval 10.  fix the random number seed for reproducible
-## results.  by default, only returns posterior samples.
+# execute one MCMC chain, monitoring the "mu" and "sigma" variables,
+# with thinning interval 10.  fix the random number seed for reproducible
+# results.  by default, only returns posterior samples.
 mcmc.out <- nimbleMCMC(code = code, data = data, inits = initsFunction,
                        monitors = c("mu", "sigma"), thin = 10,
                        niter = 20000, nchains = 1, setSeed = TRUE)
 
-## note that the inits argument to nimbleModel must be a list of
-## initial values, whereas nimbleMCMC can accept inits as a function
-## for generating new initial values for each chain.
+# note that the inits argument to nimbleModel must be a list of
+# initial values, whereas nimbleMCMC can accept inits as a function
+# for generating new initial values for each chain.
 initsList <- initsFunction()
 Rmodel <- nimbleModel(code, data = data, inits = initsList)
 
-## using the existing Rmodel object, execute three MCMC chains with 
-## specified burn-in.  return samples, summary statistics, and WAIC.
+# using the existing Rmodel object, execute three MCMC chains with 
+# specified burn-in.  return samples, summary statistics, and WAIC.
 mcmc.out <- nimbleMCMC(model = Rmodel,
                        niter = 20000, nchains = 3, nburnin = 2000,
                        summary = TRUE, WAIC = TRUE)
 
-## run ten chains, generating random initial values for each
-## chain using the inits function specified above.
-## only return summary statistics from each chain; not all the samples.
+# run ten chains, generating random initial values for each
+# chain using the inits function specified above.
+# only return summary statistics from each chain; not all the samples.
 mcmc.out <- nimbleMCMC(model = Rmodel, nchains = 10, inits = initsFunction,
                        samples = FALSE, summary = TRUE)
 

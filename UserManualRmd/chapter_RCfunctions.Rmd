@@ -348,7 +348,7 @@ evaluated.  NIMBLE's static types makes it stricter than R.
 When a variable is first created by assignment, its type is determined
 automatically by that assignment. For example, if `x` has not appeared before, then
 ```{r, eval=FALSE}
-x <- A %*% B ## assume A and B are double matrices or vectors
+x <- A %*% B # assume A and B are double matrices or vectors
 ``` 
 
 will create `x` to be a double matrix of the correct size
@@ -381,19 +381,19 @@ for(i in 1:10)
 column-major order.  
 
 ```{r, exampleNumeric, eval=FALSE}
-## Example of creating and resizing a floating-point vector
-## myNumericVector will be of length 10, with all elements initialized to 2 
+# Example of creating and resizing a floating-point vector
+# myNumericVector will be of length 10, with all elements initialized to 2 
 myNumericVector <- numeric(10, value = 2) 
-## resize this numeric vector to be length 20; last 10 elements will be 0
+# resize this numeric vector to be length 20; last 10 elements will be 0
 setSize(myNumericVector, 20)
 ```
 
 ```{r, exampleMatrix, eval=FALSE}
-## Example of creating a 1-by-10 matrix with values 1:10 and resizing it
+# Example of creating a 1-by-10 matrix with values 1:10 and resizing it
 myMatrix <- matrix(1:10, nrow = 1, ncol = 10) 
-## resize this matrix to be a 10-by-10 matrix
+# resize this matrix to be a 10-by-10 matrix
 setSize(myMatrix, c(10, 10))
-## The first column will have the 1:10
+# The first column will have the 1:10
 ```
 
 
@@ -405,12 +405,12 @@ can create confusions.  For example, consider the following code:
 
 ```{r, eval=FALSE}
 myfun <- nimbleFunction(
-    run = function(i = integer()) { ## i is an integer scalar
-        randomValues <- rnorm(10)   ## double vector
-        a <- randomValues[i]        ## double scalar
-        b <- randomValues[i:i]      ## double vector
-        d <- a + b                  ## double vector
-        f <- c(i)                   ## integer vector
+    run = function(i = integer()) { # i is an integer scalar
+        randomValues <- rnorm(10)   # double vector
+        a <- randomValues[i]        # double scalar
+        b <- randomValues[i:i]      # double vector
+        d <- a + b                  # double vector
+        f <- c(i)                   # integer vector
     })
 ``` 
 
@@ -431,10 +431,10 @@ myfun <- nimbleFunction(
     run = function() { 
         A <- matrix(value = rnorm(9), nrow = 3)
         B <- rnorm(3)
-        Cmatrix <- A %*% B                ## double matrix, one column
-        Cvector <- (A %*% B)[,1]          ## double vector
-        Cmatrix <- (A %*% B)[,1]          ## error, vector assigned to matrix
-        Cmatrix[,1] <- (A %*% B)[,1]      ## ok, if Cmatrix is large enough
+        Cmatrix <- A %*% B                # double matrix, one column
+        Cvector <- (A %*% B)[,1]          # double vector
+        Cmatrix <- (A %*% B)[,1]          # error, vector assigned to matrix
+        Cmatrix[,1] <- (A %*% B)[,1]      # ok, if Cmatrix is large enough
     })
 ``` 
 This creates a matrix `A`, a vector `B`, and matrix-multiplies

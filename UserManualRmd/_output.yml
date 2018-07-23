@@ -1,15 +1,22 @@
 bookdown::gitbook:
   css: style.css
   config:
+    toc_depth: 3
     toc:
       before: |
-        <li><a href="./">A Minimal Book Example</a></li>
-      after: |
-        <li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
-    edit: https://github.com/rstudio/bookdown-demo/edit/master/%s
+        ```{r, logo}
+        knitr::include_graphics("nimble-icon.png", fig.cap = "", fig.width = 1)
+        ```
+        <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
+        <li><a href="https://github.com/nimble-dev/nimble-docs">https://github.com/nimble-dev/nimble-docs</a></li>
     download: ["pdf", "epub"]
 bookdown::pdf_book:
   latex_engine: xelatex
   citation_package: natbib
   keep_tex: yes
+  toc_depth: 3
+  includes:
+    before_body: title.tex
 bookdown::epub_book: default
+
+

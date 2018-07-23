@@ -79,7 +79,7 @@ the setup argument for a nimbleFunction, which is then compiled.  Its
 compiled modelValues is then accessed with `$`.
 
 ```{r, resize_MV}
-## simple nimbleFunction that uses a modelValues object
+# simple nimbleFunction that uses a modelValues object
 resizeMV <- nimbleFunction(
   setup = function(mv){},
   run = function(k = integer() ){
@@ -89,7 +89,7 @@ rResize <- resizeMV(customMV)
 cResize <- compileNimble(rResize)
 cResize$run(5)
 cCustomMV <- cResize$mv
-## cCustomMV is a compiled modelValues object
+# cCustomMV is a compiled modelValues object
 cCustomMV[['a']]
 ```
 
@@ -107,22 +107,22 @@ The values in a modelValues object can be accessed in several ways
 from R, and in fewer ways from NIMBLE.
 
 ```{r, mv-access}
-## sets the first row of a to (0, 1).  R only.
+# sets the first row of a to (0, 1).  R only.
 customMV[['a']][[1]] <- c(0,1)   
 
-## sets the second row of a to (2, 3)
+# sets the second row of a to (2, 3)
 customMV['a', 2] <- c(2,3)       
 
-## can access subsets of each row
+# can access subsets of each row
 customMV['a', 2][2] <- 4
 
-## accesses all values of 'a'. Output is a list.  R only.
+# accesses all values of 'a'. Output is a list.  R only.
 customMV[['a']]                  
 
-## sets the first row of b to a matrix with values 1. R only.
+# sets the first row of b to a matrix with values 1. R only.
 customMV[['b']][[1]] <- matrix(1, nrow = 2, ncol = 2)  
 
-## sets the second row of b.  R only.
+# sets the second row of b.  R only.
 customMV[['b']][[2]] <- matrix(2, nrow = 2, ncol = 2)  
 
 # make sure the size of inputs is correct
@@ -247,7 +247,7 @@ The second method of creating a nimbleList definition is by providing an R list 
 nimbleListTypes <- list(nimbleType(name = 'x', type = 'integer', dim = 0),
                         nimbleType(name = 'Y', type = 'double', dim = 2))
 
- ## this nimbleList definition is identical to the one created above
+ # this nimbleList definition is identical to the one created above
  exampleNimListDef2 <- nimbleList(nimbleListTypes)
 ```
 Creating definitions using a list of `nimbleType`s can be useful, as it allows for programmatic generation of nimbleList elements.
@@ -277,7 +277,7 @@ mynf <- nimbleFunction(
     return(vals)
   })
  
-## pass exampleNimList as argument to mynf
+# pass exampleNimList as argument to mynf
 mynf(exampleNimList)
 
 ```
@@ -291,15 +291,15 @@ exampleNimList$Y
 In addition to storing basic data types, nimbleLists can also store other nimbleLists.  To achieve this, we must create a nimbleList definition that declares the types of nested nimbleLists a nimbleList will store.  Below, we create two types of nimbleLists: the first, named `innerNimList`, will be stored inside the second, named `outerNimList`:
 
 ```{r, exampleNestedNimList}
-## first, create definitions for both inner and outer nimbleLists
+# first, create definitions for both inner and outer nimbleLists
 innerNimListDef <- nimbleList(someText = character(0))
 outerNimListDef <- nimbleList(xList = innerNimListDef(),
                               z = double(0))
 
-## then, create outer nimbleList
+# then, create outer nimbleList
 outerNimList <- outerNimListDef$new(z = 3.14)
 
-## access element of inner nimbleList
+# access element of inner nimbleList
 outerNimList$xList$someText <- "hello, world"
 ```
 
@@ -325,7 +325,7 @@ eigenListFunctionGenerator <- nimbleFunction(
     eigenAndSvdList <- eigenAndSvdListDef$new()
   },
   run = function(){
-    ## we will take the eigendecomposition and svd of a symmetric matrix
+    # we will take the eigendecomposition and svd of a symmetric matrix
     eigenAndSvdList$demoEigenList <<- eigen(demoMatrix, symmetric = TRUE, 
                                             only.values = TRUE)
     eigenAndSvdList$demoSvdList <<- svd(demoMatrix, vectors = 'none')

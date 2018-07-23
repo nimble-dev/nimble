@@ -16,7 +16,7 @@ As of version 0.6-11, NIMBLE provides initial support for Bayesian nonparametric
 
 ## Bayesian nonparametric mixture models {#sec:bnpmixtures}
  
-NIMBLE provides support  for Bayesian nonparametric (BNP) mixture modeling.  The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures ([@ferguson_73], [@ferguson_74], [@lo_84], [@escobar_94], [@escobar_west_95]).   More specifically, a DP mixture model takes the form
+NIMBLE provides support  for Bayesian nonparametric (BNP) mixture modeling.  The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures [@ferguson_73;@ferguson_74;@lo_84;@escobar_94;@escobar_west_95].   More specifically, a DP mixture model takes the form
 
 $$y_i \mid G \overset{iid}{\sim} \int h(y_i \mid \theta) G(d\theta),$$
 $$G \mid \alpha, G_0 \sim  DP(\alpha, G_0),$$
@@ -188,7 +188,7 @@ The resulting model may be carried through to MCMC sampling. NIMBLE will assign 
 
 ## MCMC sampling of BNP models
 
-BNP models can be specified in different, yet equivalent, manners.  Examples \@ref(sec:excrp) and \@ref(sec:exsb) are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler [@neal_2000] is assigned.  Under this specification,  the random measure $G$ is integrated out from the model. When a stick-breaking representation is used, a blocked  Gibbs sampler is assigned, see  [@ishwaran_2001] and [@ishwaran_james_2002].
+BNP models can be specified in different, yet equivalent, manners.  Examples \@ref(sec:excrp) and \@ref(sec:exsb) are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler [@neal_2000] is assigned.  Under this specification,  the random measure $G$ is integrated out from the model. When a stick-breaking representation is used, a blocked  Gibbs sampler is assigned, see  @ishwaran_2001 and @ishwaran_james_2002.
 
 ### Sampling  CRP models\label{sec:mcmcdcrp}
 
@@ -199,7 +199,7 @@ NIMBLE's MCMC engine provides specialized samplers for the `dCRP` distribution, 
   1. A non-conjugate sampler in the case of the baseline distribution  not being conjugate for the mixture kernel.
 
 
-Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers.  Additionally, a specialized sampler is assigned to the `conc` hyper parameter when a gamma hyper prior is assigned, see section 6 in [@escobar_west_95] for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
+Note that both samplers are specialized versions that operate on a vector having a CRP distribution. Details of these assignments are strictly internal to the CRP samplers.  Additionally, a specialized sampler is assigned to the `conc` hyper parameter when a gamma hyper prior is assigned, see section 6 in @escobar_west_95 for more details. Otherwise, a random walk Metropolis-Hastings sampler is assigned.
 
 #### Initial values
 

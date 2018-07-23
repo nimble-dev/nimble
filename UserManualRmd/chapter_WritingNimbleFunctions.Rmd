@@ -246,12 +246,12 @@ cm <- compileNimble(m)
 
 nfGen <- nimbleFunction(
     setup = function(model) {
-    ## node1 and node2 would typically be setup arguments, so they could
-    ## have different values for different models.  We are assigning values
-    ## here so the example is clearer.
-        node1 <- 'sigma'            ## a scalar node 
-        node2 <- 'y[1:5]'           ## a vector node
-        notReallyANode <- 'y[2:4]'  ## y[2:4] allowed even though not a node!
+    # node1 and node2 would typically be setup arguments, so they could
+    # have different values for different models.  We are assigning values
+    # here so the example is clearer.
+        node1 <- 'sigma'            # a scalar node 
+        node2 <- 'y[1:5]'           # a vector node
+        notReallyANode <- 'y[2:4]'  # y[2:4] allowed even though not a node!
     },
     run = function(vals = double(1)) {
         tmp0 <- model[[node1]]           # 1. tmp0 will be a scalar
@@ -266,9 +266,9 @@ nfGen <- nimbleFunction(
         model[[node2]] <<- runif(length(model[[node2]]))
                  # 8. a vector can be assigned to the vector node2
         model[[node2]][1:3] <<- vals[1:3] 
-             ## elements of node2 can be indexed as needed
+             # elements of node2 can be indexed as needed
         returnType(double(1))
-        out <- model[[node2]] ## we can return a vector   
+        out <- model[[node2]] # we can return a vector   
         return(out)
     }
     )
@@ -292,9 +292,9 @@ collection of nodes in the model before calculating their log
 probabilities.  This can be done using `values`:
 
 ```{r, eval=FALSE}
-## get values from a set of model nodes into a vector
+# get values from a set of model nodes into a vector
 P <- values(model, nodes)
-## or put values from a vector into a set of model nodes
+# or put values from a vector into a set of model nodes
 values(model, nodes) <- P
 ``` 
 
@@ -319,13 +319,13 @@ can be achieved by wrapping a scalar in `c()` when necessary.
 For example:
 
 ```{r, eval=FALSE}
-## c(rnorm(1)) creates vector of length one:
+# c(rnorm(1)) creates vector of length one:
 values(model, nodes[1]) <- c(rnorm(1)) 
-## won't compile because rnorm(1) is a scalar
+# won't compile because rnorm(1) is a scalar
 # values(model, nodes[1]) <- rnorm(1)  
 
-out <- values(model, nodes[1]) ## out is a vector
-out2 <- values(model, nodes[1])[1] ## out2 is a scalar
+out <- values(model, nodes[1]) # out is a vector
+out2 <- values(model, nodes[1])[1] # out2 is a scalar
 ``` 
 
 
@@ -532,31 +532,31 @@ my_RW <- nimbleFunction(
     contains = sampler_BASE,
     
     setup = function(model, mvSaved, target, control) {
-        ## proposal standard deviation
+        # proposal standard deviation
         scale <- if(!is.null(control$scale)) control$scale else 1
         calcNodes <- model$getDependencies(target)
     },
     
     run = function() {
-        ## initial model logProb
+        # initial model logProb
         model_lp_initial <- getLogProb(model, calcNodes) 
-        ## generate proposal
+        # generate proposal
         proposal <- rnorm(1, model[[target]], scale)     
-        ## store proposal into model
+        # store proposal into model
         model[[target]] <<- proposal                    
-        ## proposal model logProb
+        # proposal model logProb
         model_lp_proposed <- calculate(model, calcNodes)
         
-        ## log-Metropolis-Hastings ratio
+        # log-Metropolis-Hastings ratio
         log_MH_ratio <- model_lp_proposed - model_lp_initial
         
-        ## Metropolis-Hastings step: determine whether or
-        ## not to accept the newly proposed value
+        # Metropolis-Hastings step: determine whether or
+        # not to accept the newly proposed value
         u <- runif(1, 0, 1)
         if(u < exp(log_MH_ratio)) jump <- TRUE
         else                      jump <- FALSE
 
-        ## keep the model and mvSaved objects consistent
+        # keep the model and mvSaved objects consistent
         if(jump) copy(from = model, to = mvSaved, row = 1, 
                          nodes = calcNodes, logProb = TRUE)
         else     copy(from = mvSaved, to = model, row = 1,

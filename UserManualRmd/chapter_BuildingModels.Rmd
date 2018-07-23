@@ -262,14 +262,14 @@ simpleCode <- nimbleCode({
     for(i in 1:N) x[i] ~ dnorm(0, 1)
 })
 
-## Return the model definition only, not a built model
+# Return the model definition only, not a built model
 simpleModelDefinition <- nimbleModel(simpleCode, constants = list(N = 10),
                                      returnDef = TRUE, check = FALSE)
-## Make one instance of the model
+# Make one instance of the model
 simpleModelCopy1 <- simpleModelDefinition$newModel(check = FALSE)
-## Make another instance from the same definition
+# Make another instance from the same definition
 simpleModelCopy2 <- simpleModelDefinition$newModel(check = FALSE)
-## Ask simpleModelCopy2 for another copy of itself
+# Ask simpleModelCopy2 for another copy of itself
 simpleModelCopy3 <- simpleModelCopy2$newModel(check = FALSE)
 ``` 
 

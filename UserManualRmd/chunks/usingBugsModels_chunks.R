@@ -86,7 +86,7 @@ model <- nimbleModel(mc, data = list(z = matrix(rnorm(15), nrow = 5)))
 model$a <- 1
 model$y
 model$simulate("y[1:3]")
-## simulate(model, "y[1:3]")
+# simulate(model, "y[1:3]")
 model$y
 model$simulate("y")
 model$y
@@ -99,9 +99,9 @@ model$z
 
 ## @knitr calcSimGLPdirect
 
-## y2lp <- model$nodes[["y[2]"]]$calculate()
-## y2lp
-## model$nodes[["y[2]"]]$getLogProb()
+# y2lp <- model$nodes[["y[2]"]]$calculate()
+# y2lp
+# model$nodes[["y[2]"]]$getLogProb()
 
 ## @knitr reinitPumpModel
 

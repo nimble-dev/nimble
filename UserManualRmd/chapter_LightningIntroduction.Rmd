@@ -4,7 +4,7 @@
 
 
 ```{r, chunk-LIinit, echo = FALSE}
-## source the code
+# source the code
 read_chunk(file.path('chunks', 'introExample_chunks.R'))  # one can put code chunks here if one wants
 ``` 
 
@@ -174,7 +174,7 @@ NIMBLE is a system for working with algorithms, not just an MCMC engine. So let'
 ``` 
 
 Both estimates are within 0.01 of the values reported by
-[@George_Makov_Smith_1993]^[Table 2 of the paper accidentally swapped the two estimates.]. 
+@George_Makov_Smith_1993^[Table 2 of the paper accidentally swapped the two estimates.]. 
 <!---
 [George, E.I., Makov, U.E. \& Smith,
 A.F.M. 1993. Conjugate likelihood

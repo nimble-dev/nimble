@@ -15,14 +15,14 @@ model <- nimbleModel(mc, data = list(y = rnorm(4)))
 library(igraph)
 
 layout <- matrix(ncol = 2, byrow = TRUE,
-   ## These seem to be rescaled to fit in the plot area,
-   ## so I'll just use 0-100 as the scale
+   # These seem to be rescaled to fit in the plot area,
+   # so I'll just use 0-100 as the scale
                  data = c(33, 100,
                           66, 100,
-                          50, 0, ## first three are parameters
-                          15, 50, 35, 50, 55, 50, 75, 50, ## x's
-                          20, 75, 40, 75, 60, 75, 80, 75, ## predicted.y's
-                          25, 25, 45, 25, 65, 25, 85, 25) ## y's
+                          50, 0, # first three are parameters
+                          15, 50, 35, 50, 55, 50, 75, 50, # x's
+                          20, 75, 40, 75, 60, 75, 80, 75, # predicted.y's
+                          25, 25, 45, 25, 65, 25, 85, 25) # y's
                  )
 
 sizes <- c(45, 30, 30,
@@ -31,11 +31,11 @@ sizes <- c(45, 30, 30,
            rep(20, 4))
 
 edge.color <- "black"
-    ## c(
-    ## rep("green", 8),
-    ## rep("red", 4),
-    ## rep("blue", 4),
-    ## rep("purple", 4))
+    # c(
+    # rep("green", 8),
+    # rep("red", 4),
+    # rep("blue", 4),
+    # rep("purple", 4))
 stoch.color <- "deepskyblue2"
 det.color <- "orchid3"
 rhs.color <- "gray73"

@@ -301,38 +301,38 @@ simpleModelCode <- nimbleCode({
 simpleModel <- nimbleModel(simpleModelCode, check = FALSE)
 cSimpleModel <- compileNimble(simpleModel)
 
-## simulates all the x's and y's
+# simulates all the x's and y's
 rSimXY <- simNodes(simpleModel, nodes = c('x', 'y') ) 
 
-## calls calculate on x and its dependents (y, but not z)
+# calls calculate on x and its dependents (y, but not z)
 rCalcXDep <- calcNodes(simpleModel, nodes = 'x')
 
-## calls getLogProb on x's and y's
+# calls getLogProb on x's and y's
 rGetLogProbXDep <- getLogProbNodes(simpleModel,
                   nodes = 'x')
 
-## compiling the functions
+# compiling the functions
 cSimXY <- compileNimble(rSimXY, project = simpleModel)
 cCalcXDep <- compileNimble(rCalcXDep, project = simpleModel)
 cGetLogProbXDep <- compileNimble(rGetLogProbXDep, project = simpleModel)
 
 cSimpleModel$x
 cSimpleModel$y
-## simulating x and y
+# simulating x and y
 cSimXY$run()
 cSimpleModel$x
 cSimpleModel$y
 
 cCalcXDep$run()
 
-## gives correct answer because logProbs
-## updated by 'calculate' after simulation
+# gives correct answer because logProbs
+# updated by 'calculate' after simulation
 cGetLogProbXDep$run()
 
 cSimXY$run()
 
-## gives old answer because logProbs
-## not updated after 'simulate'
+# gives old answer because logProbs
+# not updated after 'simulate'
 cGetLogProbXDep$run()
 cCalcXDep$run()
 ```

@@ -14,37 +14,11 @@
 #'
 library(stringr)
 
-## how get \citet vs \citep
-## check html output
-
-## hyperlink colors
-## want comments as italidized?
-
-## title page (ignoring toc:before:)
-
-## toc depth (not respecting _bookdown.yml entry)
-
-## issue with densityTableLong entries (I think ok now)
+## check html output; title page for html output
 
 ## check new version of eigen API and if tables for eigen are accurate
 
-## EigenAsNimList syntax
-## $$ with dcar_proper and dcar_normal
 ## % mcmc-litters chunk issue in chapter_MCMC
-
-#```{r, child = 'densityAliasesTable.md'}
-#```
-
-# need to insert this:
-# Table: (\#tab:densityAliases) Distributions with alternative names (aliases)
-
-if(FALSE) {
-    files = list.files(pattern = ".Rnw")
-    for(f in files) {
-        f = str_replace_all(f, "\\.Rnw", "")
-        latex2Rmd(f)
-    }
-}
 
 # for \n included with . could do regex("<<.*>>", dotall=TRUE)
 

@@ -37,22 +37,22 @@ pump$plotGraph()
 
 ## ---- manipPump
 
-## Show all dependencies of alpha and beta terminating in stochastic nodes
+# Show all dependencies of alpha and beta terminating in stochastic nodes
 pump$getDependencies(c("alpha", "beta"))
-## Now show only the deterministic dependencies
+# Now show only the deterministic dependencies
 pump$getDependencies(c("alpha", "beta"), determOnly = TRUE)
-## Check that the lifted node was initialized. 
-pump[["lifted_d1_over_beta"]] ## It was.
-## Now let's simulate new theta values
-set.seed(1) ## This makes the simulations here reproducible
+# Check that the lifted node was initialized. 
+pump[["lifted_d1_over_beta"]] # It was.
+# Now let's simulate new theta values
+set.seed(1) # This makes the simulations here reproducible
 pump$simulate("theta")
-pump$theta   ## the new theta values
-## lambda and logProb_x haven't been re-calculated yet
-pump$lambda ## these are the same values as above
+pump$theta   # the new theta values
+# lambda and logProb_x haven't been re-calculated yet
+pump$lambda # these are the same values as above
 pump$logProb_x
-pump$getLogProb("x") ## The sum of logProb_x
+pump$getLogProb("x") # The sum of logProb_x
 pump$calculate(pump$getDependencies(c("theta")))
-pump$lambda  ## Now they have.
+pump$lambda  # Now they have.
 pump$logProb_x
 
 ## ---- compilePump
@@ -91,8 +91,8 @@ plot(samples[ , "alpha"], samples[ , "beta"], xlab = expression(alpha),
 plot(samples[ , "theta[1]"], type = "l", xlab = "iteration",
      ylab = expression(theta[1]))
 
-acf(samples[, "alpha"]) ## plot autocorrelation of alpha sample
-acf(samples[, "beta"])  ## plot autocorrelation of beta  sample
+acf(samples[, "alpha"]) # plot autocorrelation of alpha sample
+acf(samples[, "beta"])  # plot autocorrelation of beta  sample
 
 ## ---- mcmcPump2
 pumpConf$addSampler(target = c("alpha", "beta"), type = "RW_block",
@@ -118,8 +118,8 @@ plot(samplesNew[ , "alpha"], samplesNew[ , "beta"], xlab = expression(alpha),
 plot(samplesNew[ , "theta[1]"], type = "l", xlab = "iteration",
      ylab = expression(theta[1]))
 
-acf(samplesNew[, "alpha"]) ## plot autocorrelation of alpha sample
-acf(samplesNew[, "beta"])  ## plot autocorrelation of beta  sample
+acf(samplesNew[, "alpha"]) # plot autocorrelation of alpha sample
+acf(samplesNew[, "beta"])  # plot autocorrelation of beta  sample
 
 ## ---- mcemPump
 pump2 <- pump$newModel()
@@ -160,10 +160,10 @@ simNodesTheta1to5 <- simNodesMany(pump, "theta[1:5]")
 simNodesTheta6to10 <- simNodesMany(pump, "theta[6:10]")
 
 ## ---- runPumpSimsR
-set.seed(1)  ## make the calculation repeatable
+set.seed(1)  # make the calculation repeatable
 pump$alpha <- pumpMLE[1]
 pump$beta <- pumpMLE[2]
-## make sure to update deterministic dependencies of the altered nodes
+# make sure to update deterministic dependencies of the altered nodes
 pump$calculate(pump$getDependencies(c("alpha","beta"), determOnly = TRUE))
 saveTheta <- pump$theta
 simNodesTheta1to5$run(10)
