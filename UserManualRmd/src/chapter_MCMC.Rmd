@@ -478,7 +478,7 @@ Cmcmc$Rmcmc$run(niter = 1000)
 
 ## User-friendly execution of MCMC algorithms: *runMCMC* {#sec:runMCMC}
 
-Once an MCMC algorithm has been created using `buildMCMC`, the function `runMCMC` can be used to run multiple chains and extract posterior samples, summary statistics and/or a WAIC value.  This is a simpler approach to executing an MCMC algorithm, than the process of executing and extracting samples as described in Sections \@ref(executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples).
+Once an MCMC algorithm has been created using `buildMCMC`, the function `runMCMC` can be used to run multiple chains and extract posterior samples, summary statistics and/or a WAIC value.  This is a simpler approach to executing an MCMC algorithm, than the process of executing and extracting samples as described in Sections \@ref(sec:executing-the-mcmc-algorithm) and \@ref(sec:extracting-samples).
 
 `runMCMC` also provides several user-friendly options such as burn-in, thinning, running multiple chains, and different initial values for each chain.  However, using `runMCMC` does not support several lower-level options, such as timing the individual samplers internal to the MCMC, continuing an exisiting MCMC run (picking up where it left off), or modifying the sampler execution ordering.
 
