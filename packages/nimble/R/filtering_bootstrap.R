@@ -165,7 +165,7 @@ bootFStep <- nimbleFunction(
 #'
 #' @param model A nimble model object, typically representing a state 
 #'  space model or a hidden Markov model.
-#' @param nodes A string, or vector of strings, specifying the latent model nodes 
+#' @param nodes A character vector specifying the latent model nodes 
 #'  over which the particle filter will stochastically integrate over to
 #'  estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model. 
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
