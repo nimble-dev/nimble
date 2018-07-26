@@ -1,3 +1,4 @@
+                            CHANGES IN VERSION 0.6-12 (July 2018)
 
 USER LEVEL CHANGES
 
@@ -7,7 +8,19 @@ USER LEVEL CHANGES
 
 BUG FIXES
 
+-- Corrected calculation of weights in bootstrap particle filter (calculation was omitting previous weights when particles were not resampled). Also clarified help information regarding equally-weighted samples when resampling not done in an iteration.
+
+-- Add return value to auto-generated 'r' function for user-defined distribution to avoid tripping error trap introduced in version 0.6-11.
+
+-- Avoid checking for ragged arrays when building models; this fixes an overly zealous check introduced by accident in version 0.6-11.
+
 -- configureMCMC no longer assigns a RW_block sampler to non-conjugate inverse-Wishart nodes.
+
+DEVELOPER LEVEL CHANGES
+
+-- Shifted to bookdown/Rmarkdown format for user manual.
+
+-- Updated configure.ac to use CXX11 not CXX1X and to avoid calling AC_PROG_CXX before CXX and related variables set based on R configuration, per CRAN request.
 
                             CHANGES IN VERSION 0.6-11 (June 2018)
 
