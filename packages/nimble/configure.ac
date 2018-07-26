@@ -11,6 +11,11 @@ dnl We should probably get the C++ compiler from R's configuration script to ens
 
 NEED_MAKEVARS_FILE=TRUE
 
+: ${R_HOME=`R RHOME`}
+if test -z "${R_HOME}"; then
+    AC_MSG_ERROR([Could not determine R_HOME.])   
+fi
+
 dnl # Define -fPIC rather than -fpic when possibly, to overcome -fpic's limit on
 dnl # the number of exported symbols.
 dnl CXXPICFLAGS="-fPIC"
