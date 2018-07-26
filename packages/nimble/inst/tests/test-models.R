@@ -527,6 +527,20 @@ test_that("test of using data frame as 'data' in model:", {
     expect_error(m$setData(list(y = data.frame(a = 1:3, b = c('a','b','c')))))
 })
 
+test_that("test of using ragged arrays in a model:", {
+    mc <- nimbleCode({
+        for(i in 1:2) {
+            Z[i, 1:n[i]] <- 2*X[i, 1:n[i]]
+        }
+    })
+    
+    n <- c(2, 3)
+    X <- matrix(1:6, nrow = 2)
+    constants <- list(n = n, X = X)
+    m <- nimbleModel(mc, constants = constants)
+})
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
