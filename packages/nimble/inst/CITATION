@@ -26,18 +26,18 @@ bibentry(
  year = year,
  version = meta$Version,
  note = note,
- textVersion = NULL
+ doi = "10.5281/zenodo.1322114",
 )
 
 bibentry(
- bibtype = "techreport",
+ bibtype = "misc",
  title = "NIMBLE User Manual",
  author = person(given = "NIMBLE Development Team"),
  url = "https://r-nimble.org",
  year = year,
  version = meta$Version,
  note = noteManual,
- institution = "University of California, Berkeley",
+ doi = "10.5281/zenodo.1322114",
  textVersion = NULL
 )
 
