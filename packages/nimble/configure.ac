@@ -8,7 +8,6 @@ dnl to the user's current directory or the directory in which the C++ code NIMBL
 AC_INIT(DESCRIPTION)
 
 dnl We should probably get the C++ compiler from R's configuration script to ensure compatability.
-AC_PROG_CXX
 
 NEED_MAKEVARS_FILE=TRUE
 
@@ -120,11 +119,15 @@ fi
 
 
 dnl Next 5 lines are from from https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Using-C_002b_002b11-code, but with CXX11 modified to CXX1X per output of R CMD config
-CXX11=`"${R_HOME}/bin/R" CMD config CXX1X`
-CXX11STD=`"${R_HOME}/bin/R" CMD config CXX1XSTD`
+dnl 2018-07-25: now modified to CXX11 as that seems to be standard on more recent R versions
+CXX11=`"${R_HOME}/bin/R" CMD config CXX11`
+CXX11STD=`"${R_HOME}/bin/R" CMD config CXX11STD`
 CXX="${CXX11} ${CXX11STD}"
-CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX1XFLAGS`
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
 AC_LANG(C++)
+dnl 2018-07-25: moved next line from early in this file because it seems to trigger various configure checks based on g++ even when R is configured to use clang; see issue 766
+dnl however note that having it here seems extraneous as it produces same configure file without it
+AC_PROG_CXX  
 
 dnl Next 3 lines are from old config.ac, prior to turning on C++11 and using above 5 lines
 dnl CXX=`"${R_HOME}/bin/R" CMD config CXX`
