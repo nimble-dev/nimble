@@ -222,8 +222,10 @@ return(0)
 #' 
 #' @description Create an auxiliary particle filter algorithm for a given NIMBLE state space model.  
 #'
-#' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function
+#' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model.
+#' @param nodes A character vector specifying the latent model nodes 
+#'  over which the particle filter will stochastically integrate over to
+#'  estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model. 
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 #' @author  Nicholas Michaud
 #' @details 
