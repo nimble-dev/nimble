@@ -8,11 +8,11 @@ buildBootstrapFilter(model, nodes, control = list())
 }
 \arguments{
 \item{model}{A nimble model object, typically representing a state 
-space model or a hidden Markov model}
+space model or a hidden Markov model.}
 
 \item{nodes}{A character vector specifying the latent model nodes 
 over which the particle filter will stochastically integrate over to
-estimate the log-likelihood function}
+estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model.}
 
 \item{control}{A list specifying different control options for the particle filter.  Options are described in the details section below.}
 }
@@ -47,7 +47,12 @@ Each of the \code{control()} list options are described in detail here:
  returns the estimated log-likelihood value, and saves
  unequally weighted samples from the posterior distribution of the latent
  states in the \code{mvWSamples} modelValues object, with corresponding logged weights in \code{mvWSamples['wts',]}.
- An equally weighted sample from the posterior can be found in the \code{mvEWsamp} \code{modelValues} object.
+ An equally weighted sample from the posterior can be found in the \code{mvEWSamples} \code{modelValues} object.
+ 
+ Note that if the \code{thresh} argument is set to a value less than 1, resampling may not take place at every time point.  
+ At time points for which resampling did not take place, \code{mvEWSamples} will not contain equally weighted samples.
+ To ensure equally weighted samples in the case that \code{thresh < 1}, we recommend resampling from \code{mvWSamples} at each time point 
+ after the filter has been run, rather than using \code{mvEWSamples}.
 }
 \section{\code{returnESS()} Method}{
 
@@ -57,7 +62,7 @@ Each of the \code{control()} list options are described in detail here:
 \examples{
 \dontrun{
 model <- nimbleModel(code = ...)
-my_BootF <- buildBootstrapFilter(model, 'x[1:100]')
+my_BootF <- buildBootstrapFilter(model, 'x[1:100]', control = list(thresh  = 1))
 Cmodel <- compileNimble(model)
 Cmy_BootF <- compileNimble(my_BootF, project = model)
 logLike <- Cmy_BootF$run(m = 100000)

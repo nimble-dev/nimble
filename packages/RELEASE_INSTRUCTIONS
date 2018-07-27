@@ -32,7 +32,7 @@ rebuild manual as further test of package
 
 download .tar.gz for reverse dependencies (currently 'bcgam') and run R CMD check on it (having trouble with tools::tools::check_packages_in_dir, but should figure that out and add a Make task for this) (however note that currently the compilation in bcgam is failing upon testing)
 
-put new version of manual in inst/doc (perhaps - not sure if we want to add that much to the size of the tarball/package install)
+we could put new version of manual in inst/doc, but not doing that because we don't want to add to the size of the tarball/package install)
 
 make sure no calls to compileNimble are in any examples that are not wrapped in a \dontrun; these calls will cause installation failure on Solaris and big headaches with CRAN
 
@@ -53,6 +53,8 @@ test cross-machine on Macs and on Windows
 can test using rhub (from within packages/nimble):
 
 Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> rhub.out
+
+create tarball and put tarball and manual in new version on zenodo; once this is published then R CMD check shouldn't complain about not finding DOI
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 

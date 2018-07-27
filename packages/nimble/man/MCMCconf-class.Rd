@@ -149,7 +149,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
 Details: See the initialize() function
             }
 
-\item{\code{printSamplers(ind, displayControlDefaults = FALSE,
+\item{\code{printSamplers(ind, type, displayControlDefaults = FALSE,
   displayNonScalars = FALSE, displayConjugateDependencies = FALSE,
   executionOrder = FALSE)}}{Prints details of the MCMC samplers.
 
@@ -157,11 +157,15 @@ Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers('x') will print all samplers whose target is model node 'x', or whose targets are contained (entirely or in part) in the model variable 'x'.  If omitted, then all samplers are printed.
 
+type: a character vector containing sampler type names.  Only samplers with one of these specified types, as printed by this printSamplers method, will be displayed.  Standard regular expression mathing using is also applied.
+
 displayConjugateDependencies: A logical argument, specifying whether to display the dependency lists of conjugate samplers (default FALSE).
 
 displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).
 
 executionOrder: A logical argument, specifying whether to print the sampler functions in the (possibly modified) order of execution (default FALSE).}
+
+\item{\code{removeSampler(...)}}{Alias for removeSamplers method}
 
 \item{\code{removeSamplers(ind, print = FALSE)}}{Removes one or more samplers from an MCMCconf object.
 
