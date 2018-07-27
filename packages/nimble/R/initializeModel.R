@@ -31,22 +31,31 @@
 initializeModel <- nimbleFunction(
     name = 'initializeModel',
     setup = function(model, silent = FALSE) {
+        determDepsOfRHSonly <- setdiff(
+            model$getDependencies(model$getMaps('nodeNamesRHSonly'), determOnly = TRUE),
+            model$getDependencies(model$getNodeNames(stochOnly = TRUE), determOnly = TRUE))
+        
         initFunctionList <- nimbleFunctionList(nodeInit_virtual)
-        iter <- 1
+        startInd <- 1
 
         RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
         if(length(RHSonlyNodes) > 0) {
-            initFunctionList[[iter]] <- checkRHSonlyInit(model = model, nodes = RHSonlyNodes)
-            iter <- iter + 1
+            initFunctionList[[startInd]] <- checkRHSonlyInit(model = model, nodes = RHSonlyNodes)
+            startInd <- startInd + 1
+        }
+
+        topDetermNodes <- model$getNodeNames(topOnly = TRUE, determOnly = TRUE)
+        for(i in seq_along(topDetermNodes)) {
+            initFunctionList[[startInd]] <- topDetermNodeInit(model = model, node = topDetermNodes[i])
+            startInd <- startInd + 1
         }
 
         stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-        for(i in seq_along(stochNonDataNodes))
-            initFunctionList[[iter + i - 1]] <- stochNodeInit(model, stochNonDataNodes[i], silent)
+        for(i in seq_along(stochNonDataNodes)) {
+            initFunctionList[[startInd]] <- stochNodeInit(model = model, node = stochNonDataNodes[i], silent = silent)
+            startInd <- startInd + 1
+        }
 
-        ##allDetermNodes <- model$getNodeNames(determOnly = TRUE)
-        ##determNodesNodeFxnVector <- nodeFunctionVector(model = model, nodeNames = allDetermNodes)
-        determDepsOfRHSonly <- model$getDependencies(model$getMaps('nodeNamesRHSonly'), determOnly = TRUE)
     },
     
     run = function() {
@@ -68,6 +77,18 @@ checkRHSonlyInit <- nimbleFunction(
     run = function() {
         vals <- values(model, nodes)
         if(is.na.vec(vals) | is.nan.vec(vals)) print('warning: value of right hand side only node not initialized')
+    },    where = getLoadingNamespace()
+)
+
+topDetermNodeInit <- nimbleFunction(
+    name = 'topDetermNodeInit',
+    contains = nodeInit_virtual,
+    setup = function(model, node) {},
+    run = function() {
+        theseVals <- values(model, node)
+        if(is.na.vec(theseVals) | is.nan.vec(theseVals)) calculate(model, node)
+        theseVals <- values(model, node)
+        if(is.na.vec(theseVals) | is.nan.vec(theseVals)) print('warning: value of top-level deterministic node ',node,': value is NA or NaN even after trying to calculate.')
     },    where = getLoadingNamespace()
 )
 
