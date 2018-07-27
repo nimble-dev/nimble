@@ -47,12 +47,13 @@ line 102 of packages/nimble/inst/include/Eigen/src/Core/arch/SSE/Complex.h
 lines 44,51 of  packages/nimble/inst/include/Eigen/src/Core/util/DisableStupidWarnings.h
 see also commit fedb31ee21fd892f782b97a4b2d71482b954a9fd
 
-
 test cross-machine on Macs and on Windows
 
 can test using rhub (from within packages/nimble):
 
 Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> rhub.out
+
+can test on Windows using win-builder
 
 create tarball and put tarball and manual in new version on zenodo; once this is published then R CMD check shouldn't complain about not finding DOI
 
