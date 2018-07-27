@@ -31,6 +31,7 @@
 initializeModel <- nimbleFunction(
     name = 'initializeModel',
     setup = function(model, silent = FALSE) {
+        
         determDepsOfRHSonly <- setdiff(
             model$getDependencies(model$getMaps('nodeNamesRHSonly'), determOnly = TRUE),
             model$getDependencies(model$getNodeNames(stochOnly = TRUE), determOnly = TRUE))
@@ -56,6 +57,9 @@ initializeModel <- nimbleFunction(
             startInd <- startInd + 1
         }
 
+        extraNodes <- setdiff(determDepsOfRHSonly, topDetermNodes)   ## XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        if(length(extraNodes) > 0) stop('found some extra nodes!')   ## XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        
     },
     
     run = function() {
