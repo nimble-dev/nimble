@@ -36,9 +36,17 @@ initializeModel <- nimbleFunction(
         startInd <- 1
 
         RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
-        if(length(RHSonlyNodes) > 0) {
-            initFunctionList[[startInd]] <- checkRHSonlyInit(model = model, nodes = RHSonlyNodes)
-            startInd <- startInd + 1
+        RHSonlyVarNames <- removeIndexing(RHSonlyNodes)
+        RHSonlyVarNamesUnique <- unique(RHSonlyVarNames)
+        RHSonlyNodesListByVariable <- lapply(RHSonlyVarNamesUnique, function(var) RHSonlyNodes[RHSonlyVarNames==var])
+        if(length(RHSonlyNodesListByVariable) > 0) {
+            lengths <- sapply(RHSonlyNodesListByVariable, length)
+            if(any(lengths == 0)) stop('something went wrong in RHS node model initialization')
+            if(sum(lengths) != length(RHSonlyNodes)) stop('something went wrong in RHS node model initialization')
+            for(i in seq_along(RHSonlyNodesListByVariable)) {
+                initFunctionList[[startInd]] <- checkRHSonlyInit(model = model, nodes = RHSonlyNodesListByVariable[[i]], variable = RHSonlyVarNamesUnique[i])
+                startInd <- startInd + 1
+            }
         }
 
         topDetermNodes <- model$getNodeNames(topOnly = TRUE, determOnly = TRUE)
@@ -75,10 +83,10 @@ nodeInit_virtual <- nimbleFunctionVirtual()
 checkRHSonlyInit <- nimbleFunction(
     name = 'checkRHSonlyInit',
     contains = nodeInit_virtual,
-    setup = function(model, nodes) {},
+    setup = function(model, nodes, variable) {},
     run = function() {
         vals <- values(model, nodes)
-        if(is.na.vec(vals) | is.nan.vec(vals)) print('warning: value of right hand side only node not initialized')
+        if(is.na.vec(vals) | is.nan.vec(vals)) print('warning: value in right-hand-side-only variable is NA or NaN, in variable: ', variable)
     },    where = getLoadingNamespace()
 )
 
