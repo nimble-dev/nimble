@@ -87,10 +87,10 @@ topDetermNodeInit <- nimbleFunction(
     contains = nodeInit_virtual,
     setup = function(model, node) {},
     run = function() {
-        theseVals <- values(model, node)
-        if(is.na.vec(theseVals) | is.nan.vec(theseVals)) calculate(model, node)
-        theseVals <- values(model, node)
-        if(is.na.vec(theseVals) | is.nan.vec(theseVals)) print('warning: value of top-level deterministic node ',node,': value is NA or NaN even after trying to calculate.')
+        nodeValue <- values(model, node)
+        if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) calculate(model, node)
+        nodeValue <- values(model, node)
+        if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of top-level deterministic node ',node,': value is NA or NaN even after trying to calculate.')
     },    where = getLoadingNamespace()
 )
 
@@ -98,11 +98,11 @@ stochDataNodeInit <- nimbleFunction(
     name = 'stochDataNodeInit',
     contains = nodeInit_virtual,
     setup = function(model, node, silent) {
-        thisDetermNodes <- model$getDependencies(node, determOnly=TRUE)
+        depDetermNodes <- model$getDependencies(node, determOnly=TRUE)
     },
     run = function() {
-        theseVals <- values(model, node)
-        if(is.na.vec(theseVals) | is.nan.vec(theseVals)) print('warning: value of data node ',node,': value is NA or NaN.')
+        nodeValue <- values(model, node)
+        if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of data node ',node,': value is NA or NaN.')
         lp <- calculate(model, node)
         if(is.na(lp) | is.nan(lp)) print('warning: logProb of data node ', node, ': logProb is NA or NaN.')
         if(!(is.na(lp) | is.nan(lp))) {
@@ -112,7 +112,9 @@ stochDataNodeInit <- nimbleFunction(
                 if(!silent) print('warning: logProb of data node ', node, ': logProb less than -1e12.')
             }
         }
-        model$calculate(thisDetermNodes)
+        model$calculate(depDetermNodes)
+        depDetermValues <- model$values(depDetermNodes)
+        if(is.na.vec(depDetermValues) | is.nan.vec(depDetermValues)) print('warning: deterministic dependents of node ',node,': value is NA or NaN.')
     },    where = getLoadingNamespace()
 )
 
@@ -120,13 +122,13 @@ stochNonDataNodeInit <- nimbleFunction(
     name = 'stochNonDataNodeInit',
     contains = nodeInit_virtual,
     setup = function(model, node, silent) {
-        thisDetermNodes <- model$getDependencies(node, determOnly=TRUE)
+        depDetermNodes <- model$getDependencies(node, determOnly=TRUE)
     },
     run = function() {
-        theseVals <- values(model, node)
-        if(is.na.vec(theseVals) | is.nan.vec(theseVals)) simulate(model, node)
-        theseVals <- values(model, node)
-        if(is.na.vec(theseVals) | is.nan.vec(theseVals)) print('warning: value of stochastic node ',node,': value is NA or NaN even after trying to simulate.')
+        nodeValue <- values(model, node)
+        if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) simulate(model, node)
+        nodeValue <- values(model, node)
+        if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of stochastic node ',node,': value is NA or NaN even after trying to simulate.')
         lp <- calculate(model, node)
         if(is.na(lp) | is.nan(lp)) print('warning: problem initializing stochastic node ', node, ': logProb is NA or NaN.')
         if(!(is.na(lp) | is.nan(lp))) {
@@ -136,7 +138,9 @@ stochNonDataNodeInit <- nimbleFunction(
                 if(!silent) print('warning: problem initializing stochastic node ', node, ': logProb less than -1e12.')
             }
         }
-        model$calculate(thisDetermNodes)
+        model$calculate(depDetermNodes)
+        depDetermValues <- model$values(depDetermNodes)
+        if(is.na.vec(depDetermValues) | is.nan.vec(depDetermValues)) print('warning: deterministic dependents of node ',node,': value is NA or NaN.')
     },    where = getLoadingNamespace()
 )
 
