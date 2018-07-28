@@ -47,9 +47,15 @@ initializeModel <- nimbleFunction(
             startInd <- startInd + 1
         }
 
-        stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-        for(i in seq_along(stochNonDataNodes)) {
-            initFunctionList[[startInd]] <- stochNodeInit(model = model, node = stochNonDataNodes[i], silent = silent)
+        stochNodes <- model$getNodeNames(stochOnly = TRUE)#, includeData = FALSE)
+        for(i in seq_along(stochNodes)) {
+            node <- stochNodes[i]
+            isData <- model$isData(node)
+            if(isData) {
+                initFunctionList[[startInd]] <- stochDataNodeInit(model = model, node = node, silent = silent)
+            } else {
+                initFunctionList[[startInd]] <- stochNonDataNodeInit(model = model, node = node, silent = silent)
+            }
             startInd <- startInd + 1
         }
 
@@ -88,8 +94,30 @@ topDetermNodeInit <- nimbleFunction(
     },    where = getLoadingNamespace()
 )
 
-stochNodeInit <- nimbleFunction(
-    name = 'stochNodeInit',
+stochDataNodeInit <- nimbleFunction(
+    name = 'stochDataNodeInit',
+    contains = nodeInit_virtual,
+    setup = function(model, node, silent) {
+        thisDetermNodes <- model$getDependencies(node, determOnly=TRUE)
+    },
+    run = function() {
+        theseVals <- values(model, node)
+        if(is.na.vec(theseVals) | is.nan.vec(theseVals)) print('warning: value of data node ',node,': value is NA or NaN.')
+        lp <- calculate(model, node)
+        if(is.na(lp) | is.nan(lp)) print('warning: logProb of data node ', node, ': logProb is NA or NaN.')
+        if(!(is.na(lp) | is.nan(lp))) {
+            if(lp == -Inf) {
+                if(!silent) print('warning: logProb of data node ', node, ': logProb is -Inf.')
+            } else if(lp < -1e12) {
+                if(!silent) print('warning: logProb of data node ', node, ': logProb less than -1e12.')
+            }
+        }
+        model$calculate(thisDetermNodes)
+    },    where = getLoadingNamespace()
+)
+
+stochNonDataNodeInit <- nimbleFunction(
+    name = 'stochNonDataNodeInit',
     contains = nodeInit_virtual,
     setup = function(model, node, silent) {
         thisDetermNodes <- model$getDependencies(node, determOnly=TRUE)
@@ -102,10 +130,13 @@ stochNodeInit <- nimbleFunction(
         lp <- calculate(model, node)
         if(is.na(lp) | is.nan(lp)) print('warning: problem initializing stochastic node ', node, ': logProb is NA or NaN.')
         if(!(is.na(lp) | is.nan(lp))) {
-            if(lp < -1e12) {
+            if(lp == -Inf) {
+                if(!silent) print('warning: problem initializing stochastic node ', node, ': logProb is -Inf.')
+            } else if(lp < -1e12) {
                 if(!silent) print('warning: problem initializing stochastic node ', node, ': logProb less than -1e12.')
             }
         }
         model$calculate(thisDetermNodes)
     },    where = getLoadingNamespace()
 )
+
