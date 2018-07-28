@@ -32,10 +32,6 @@ initializeModel <- nimbleFunction(
     name = 'initializeModel',
     setup = function(model, silent = FALSE) {
         
-        ##determDepsOfRHSonly <- setdiff(
-        ##    model$getDependencies(model$getMaps('nodeNamesRHSonly'), determOnly = TRUE),
-        ##    model$getDependencies(model$getNodeNames(stochOnly = TRUE), determOnly = TRUE))
-        
         initFunctionList <- nimbleFunctionList(nodeInit_virtual)
         startInd <- 1
 
@@ -60,7 +56,6 @@ initializeModel <- nimbleFunction(
     },
     
     run = function() {
-        ##model$calculate(determDepsOfRHSonly)
         for(i in seq_along(initFunctionList)) {
             initFunctionList[[i]]$run()
         }
