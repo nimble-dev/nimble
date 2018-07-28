@@ -113,7 +113,7 @@ stochDataNodeInit <- nimbleFunction(
             }
         }
         model$calculate(depDetermNodes)
-        depDetermValues <- model$values(depDetermNodes)
+        depDetermValues <- values(model, depDetermNodes)
         if(is.na.vec(depDetermValues) | is.nan.vec(depDetermValues)) print('warning: deterministic dependents of node ',node,': value is NA or NaN.')
     },    where = getLoadingNamespace()
 )
@@ -139,7 +139,7 @@ stochNonDataNodeInit <- nimbleFunction(
             }
         }
         model$calculate(depDetermNodes)
-        depDetermValues <- model$values(depDetermNodes)
+        depDetermValues <- values(model, depDetermNodes)
         if(is.na.vec(depDetermValues) | is.nan.vec(depDetermValues)) print('warning: deterministic dependents of node ',node,': value is NA or NaN.')
     },    where = getLoadingNamespace()
 )
