@@ -1586,7 +1586,7 @@ sampler_RW_wishart <- nimbleFunction(
     run = function() {
         currentValue <<- model[[target]]
         currentValue_chol <<- chol(currentValue)
-        ## update thetaVec:
+        ## calculate thetaVec
         for(i in 1:d)   thetaVec[i] <<- log(currentValue_chol[i,i])
         nextInd <- d + 1
         for(i in 1:(d-1)) {
@@ -1596,9 +1596,9 @@ sampler_RW_wishart <- nimbleFunction(
             }
         }
         if(nextInd != nTheta+1) stop('something went wrong')   ## precautionary
-        ## update thetaVec_prop on transformed scale:
+        ## generate thetaVec proposal on transformed scale
         thetaVec_prop <<- rmnorm_chol(1, thetaVec, chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
-        ## un-transform thetaVec_prop to get propValue_chol:
+        ## un-transform thetaVec_prop to get propValue_chol
         propValue_chol <<- propValue_chol * 0                  ## precautionary
         for(i in 1:d)   propValue_chol[i,i] <<- exp(thetaVec_prop[i])
         nextInd <- d + 1
@@ -1611,6 +1611,7 @@ sampler_RW_wishart <- nimbleFunction(
         if(nextInd != nTheta+1) stop('something went wrong')   ## precautionary
         ## matrix multiply to get proposal value (matrix)
         propValue <<- t(propValue_chol) %*% propValue_chol
+        ## decide and jump
         model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes)
         deltaDiag <- thetaVec_prop[1:d]-thetaVec[1:d]

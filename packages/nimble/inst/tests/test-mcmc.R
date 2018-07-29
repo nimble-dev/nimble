@@ -763,7 +763,7 @@ test_that('conjugate Wishart setup', {
     
 })
 
-test_that('testing non-conjugate Wishart sampler RW_wishart', {
+test_that('using RW_wishart sampler on non-conjugate Wishart node', {
     set.seed(0)
     trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
     covs <- c(3, 2, .5)
@@ -810,7 +810,7 @@ test_that('testing non-conjugate Wishart sampler RW_wishart', {
 })
 
 
-test_that('testing RW_wishart sampler on inverse-Wishart distributiont', {
+test_that('using RW_wishart sampler on inverse-Wishart distribution', {
     code <- nimbleCode( {
         for(i in 1:n) {
             Y[i, 1:M] ~ dmnorm(mu[1:M], cov = C[1:M,1:M])
