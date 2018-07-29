@@ -159,7 +159,7 @@ sampler_RW <- nimbleFunction(
         propLogScale <- 0
         if(logScale) { propLogScale <- rnorm(1, mean = 0, sd = scale)
                        propValue <- currentValue * exp(propLogScale)
-                   } else         propValue <- rnorm(1, mean = currentValue,  sd = scale)
+        } else         propValue <- rnorm(1, mean = currentValue,  sd = scale)
         if(reflective) {
             lower <- model$getBound(target, 'lower')
             upper <- model$getBound(target, 'upper')
@@ -556,7 +556,7 @@ sampler_ess <- nimbleFunction(
         ##target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
         ##target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
         ## checks
-        if(length(target) > 1)                              stop('elliptical slice sampler only applies to one target node')
+        if(length(target) > 1)                          stop('elliptical slice sampler only applies to one target node')
         if(model$getDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
     },
     run = function() {
@@ -1537,6 +1537,123 @@ sampler_RW_dirichlet <- nimbleFunction(
         }
     ), where = getLoadingNamespace()
 )
+
+
+#####################################################################################
+### RW_wishart sampler for non-conjugate Wishart distributions ######################
+#####################################################################################
+
+#' @rdname samplers
+#' @export
+sampler_RW_wishart <- nimbleFunction(
+    name = 'sampler_RW_wishart',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
+        scale          <- if(!is.null(control$scale))          control$scale          else 1
+        ## node list generation
+        target <- model$expandNodeNames(target)
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        ## numeric value generation
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        d <- sqrt(length(targetAsScalar))
+        nTheta <- d*(d+1)/2
+        propCov <- diag(nTheta)
+        propCovOriginal <- propCov
+        chol_propCov <- chol(propCov)
+        chol_propCov_scale <- scale * chol_propCov
+        empirSamp <- matrix(0, nrow=adaptInterval, ncol=nTheta)
+        thetaVec      <- numeric(nTheta)
+        thetaVec_prop <- numeric(nTheta)
+        currentValue      <- array(0, c(d,d))
+        currentValue_chol <- array(0, c(d,d))
+        propValue         <- array(0, c(d,d))
+        propValue_chol    <- array(0, c(d,d))
+        ## nested function and function list definitions
+        my_calcAdaptationFactor <- calcAdaptationFactor(nTheta)
+        ## checks
+        dist <- model$getDistribution(target)
+        if(length(target) > 1)                     stop('RW_wishart sampler only applies to one target node')
+        if(!(dist %in% c('dwish', 'dinvwish')))    stop('RW_wishart sampler only applies to Wishart or inverse-Wishart distributions')
+        if(d < 2)                                  stop('RW_wishart sampler requires Wishart dimension to be at least 2')
+    },
+    run = function() {
+        currentValue <<- model[[target]]
+        currentValue_chol <<- chol(currentValue)
+        ## update thetaVec:
+        for(i in 1:d)   thetaVec[i] <<- log(currentValue_chol[i,i])
+        nextInd <- d + 1
+        for(i in 1:(d-1)) {
+            for(j in (i+1):d) {
+                thetaVec[nextInd] <<- currentValue_chol[i,j]
+                nextInd <- nextInd + 1
+            }
+        }
+        if(nextInd != nTheta+1) stop('something went wrong')   ## precautionary
+        ## update thetaVec_prop on transformed scale:
+        thetaVec_prop <<- rmnorm_chol(1, thetaVec, chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
+        ## un-transform thetaVec_prop to get propValue_chol:
+        propValue_chol <<- propValue_chol * 0                  ## precautionary
+        for(i in 1:d)   propValue_chol[i,i] <<- exp(thetaVec_prop[i])
+        nextInd <- d + 1
+        for(i in 1:(d-1)) {
+            for(j in (i+1):d) {
+                propValue_chol[i,j] <<- thetaVec_prop[nextInd]
+                nextInd <- nextInd + 1
+            }
+        }
+        if(nextInd != nTheta+1) stop('something went wrong')   ## precautionary
+        ## matrix multiply to get proposal value (matrix)
+        propValue <<- t(propValue_chol) %*% propValue_chol
+        model[[target]] <<- propValue
+        logMHR <- calculateDiff(model, calcNodes)
+        deltaDiag <- thetaVec_prop[1:d]-thetaVec[1:d]
+        for(i in 1:d)   logMHR <- logMHR + (d+2-i)*deltaDiag[i]  ## took me quite a while to derive this
+        jump <- decide(logMHR)
+        if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        adaptiveProcedure(jump)
+    },
+    methods = list(
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(!jump)    empirSamp[timesRan, 1:nTheta] <<- thetaVec
+            if(jump)     empirSamp[timesRan, 1:nTheta] <<- thetaVec_prop
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
+                scale <<- scale * adaptFactor
+                ## calculate empirical covariance, and adapt proposal covariance
+                gamma1 <- my_calcAdaptationFactor$gamma1
+                for(i in 1:nTheta)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
+                empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
+                propCov <<- propCov + gamma1 * (empirCov - propCov)
+                chol_propCov <<- chol(propCov)
+                chol_propCov_scale <<- chol_propCov * scale
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        reset = function() {
+            scale   <<- scaleOriginal
+            propCov <<- propCovOriginal
+            chol_propCov <<- chol(propCov)
+            chol_propCov_scale <<- chol_propCov * scale
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            my_calcAdaptationFactor$reset()
+        }
+    ), where = getLoadingNamespace()
+)
+
 
 
 ####################################################################################################
