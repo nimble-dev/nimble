@@ -1581,7 +1581,7 @@ sampler_RW_wishart <- nimbleFunction(
         dist <- model$getDistribution(target)
         if(length(target) > 1)                     stop('RW_wishart sampler only applies to one target node')
         if(!(dist %in% c('dwish', 'dinvwish')))    stop('RW_wishart sampler only applies to Wishart or inverse-Wishart distributions')
-        if(d < 2)                                  stop('RW_wishart sampler requires Wishart dimension to be at least 2')
+        if(d < 2)                                  stop('RW_wishart sampler requires target node dimension to be at least 2x2')
     },
     run = function() {
         currentValue <<- model[[target]]
