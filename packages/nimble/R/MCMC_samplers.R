@@ -945,7 +945,7 @@ sampler_HMC <- nimbleFunction(
             logEpsilonBar <<- 0
             Hbar          <<- 0
         }
-    ), where = getLoadingNamespace()
+    )########  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX, where = getLoadingNamespace()
 )
 
 
