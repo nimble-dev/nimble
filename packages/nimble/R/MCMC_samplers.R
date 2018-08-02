@@ -758,9 +758,9 @@ sampler_langevin <- nimbleFunction(
         q[1:d, 1] <<- values(model, target)         ## current position variables
         for(i in 1:d)   p[i, 1] <<- rnorm(1, 0, 1)  ## randomly draw momentum variables
         currentH <- model$getLogProb(calcNodes) - sum(p^2)/2
-        p <<- p + epsilonVec * gradient(q) / 2      ## initial half step for p
+        p <<- p + epsilonVec * jacobian(q) / 2      ## initial half step for p
         q <<- q + epsilonVec * p                    ## full step for q
-        p <<- p + epsilonVec * gradient(q) / 2      ## final half step for p
+        p <<- p + epsilonVec * jacobian(q) / 2      ## final half step for p
         propH <- model$calculate(calcNodes) - sum(p^2)/2
         jump <- decide(propH - currentH)
         if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -768,10 +768,10 @@ sampler_langevin <- nimbleFunction(
         if(adaptive)     adaptiveProcedure()
     },
     methods = list(
-        gradient = function(q = double(2)) {
+        jacobian = function(q = double(2)) {
             values(model, target) <<- q[1:d, 1]
             derivsOutput <- nimDerivs(model$calculate(calcNodes), order = 1, wrt = target)
-            grad[1:d, 1] <<- derivsOutput$gradient[1, 1:d]
+            grad[1:d, 1] <<- derivsOutput$jacobian[1, 1:d]
             returnType(double(2))
             return(grad)
         },
@@ -829,7 +829,8 @@ sampler_HMC <- nimbleFunction(
         if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('HMC sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
     },
     run = function() {
-        ## implements No-U-Turm Sampler with Dual Averaging, as in Hoffman and Gelman (2014), Algorithm 6
+        ## implements No-U-Turm Sampler with Dual Averaging
+        ## Algorithm 6 from Hoffman and Gelman (2014)
         if(timesRan == 0)    initializeEpsilon()
         timesRan <<- timesRan + 1
         q <- values(model, target)
@@ -837,7 +838,7 @@ sampler_HMC <- nimbleFunction(
         for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
         logu <- logH(q, p) - rexp(1, 1)    ## logu <- lp - rexp(1, 1), generate (log)-auxiliary variable: exp(logu) ~ uniform(0, exp(lp))
         qL <- q;   qR <- q;   pL <- p;   pR <- p
-        j <- 0;     n <- 1;     s <- 1
+        j  <- 0;    n <- 1;    s <- 1
         qNew <- q
         while(s == 1) {
             v <- 2*rbinom(1, 1, 0.5) - 1    ## -1 or 1
@@ -855,7 +856,7 @@ sampler_HMC <- nimbleFunction(
                     qNew <- btNL$q3
             n <- n + btNL$n
             qDiff <- qR - qL
-            s <- btNL$s * step(inprod(qDiff, pL)) * step(inprod(qDiff, pR))
+            s <- btNL$s * nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))
             j <- j + 1
         }
         values(model, target) <<- qNew
@@ -870,26 +871,27 @@ sampler_HMC <- nimbleFunction(
         }
     },
     methods = list(
-        logH = function(q = double(1), p = double(1)) {
-            values(model, target) <<- q
-            lp <- model$calculate(calcNodes) - sum(p^2)/2
+        logH = function(qArg = double(1), pArg = double(1)) {
+            values(model, target) <<- qArg
+            lp <- model$calculate(calcNodes) - sum(pArg^2)/2
             returnType(double())
             return(lp)
         },
-        gradient = function(q = double(1)) {
-            values(model, target) <<- q
+        jacobian = function(qArg = double(1)) {
+            values(model, target) <<- qArg
             derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = target)
             grad <- numeric(d)
-            grad[1:d] <- derivsOutput$gradient[1, 1:d]   ## preserve 1D vector object
+            grad[1:d] <- derivsOutput$jacobian[1, 1:d]   ## preserve 1D vector object
             returnType(double(1))
             return(grad)
         },
-        leapfrog = function(q = double(1), p = double(1), eps = double()) {
-            p <- p + eps/2 * gradient(q)
-            q <- q + eps   * p
-            p <- p + eps/2 * gradient(q)
+        leapfrog = function(qArg = double(1), pArg = double(1), eps = double()) {
+            ## contained in Algorithm 1 from Hoffman and Gelman (2014)
+            p2 <- pArg + eps/2 * jacobian(qArg)
+            q2 <- qArg + eps   * p2
+            p3 <- p2   + eps/2 * jacobian(q2)
             returnType(qpNLDef())
-            return(qpNLDef$new(q = q, p = p))
+            return(qpNLDef$new(q = q2, p = p3))
         },
         initializeEpsilon = function() {
             ## Algorithm 4 from Hoffman and Gelman (2014)
@@ -898,25 +900,27 @@ sampler_HMC <- nimbleFunction(
             for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
             epsilon <<- 1
             qpNL <- leapfrog(q, p, epsilon)
-            a <- 2*step(exp(logH(qpNL$q, qpNL$p) - logH(q, p)) - 0.5) - 1
+            a <- 2*nimStep(exp(logH(qpNL$q, qpNL$p) - logH(q, p)) - 0.5) - 1
             while((exp(logH(qpNL$q, qpNL$p) - logH(q, p)))^a > 2^(-a)) {
                 epsilon <<- epsilon * 2^a
                 qpNL <- leapfrog(q, p, epsilon)
             }
             mu <<- log(10*epsilon)     ## mu gets set with epsilon
+            ##values(model, target) <<- q   ## precautionary; I don't believe necessary
         },
-        buildtree = function(q = double(1), p = double(1), logu = double(), v = double(), j = double(), eps = double(), q0 = double(1), p0 = double(1)) {
+        buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), q0 = double(1), p0 = double(1)) {
+            ## Algorithm 6 (second half) from Hoffman and Gelman (2014)
             returnType(btNLDef())
             if(j == 0) {    ## one leapfrog step in the direction of v
-                qpNL <- leapfrog(q, p, v*eps)
+                qpNL <- leapfrog(qArg, pArg, v*eps)
                 q <- qpNL$q
                 p <- qpNL$p
-                n <- step(logH(q, p) - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
-                s <- step(logH(q, p) - logu + 1000)   ## use delta_max = 1000
+                n <- nimStep(logH(q, p) - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
+                s <- nimStep(logH(q, p) - logu + 1000)   ## use delta_max = 1000
                 a <- min(1, exp(logH(q, p) - logH(q0, p0)))
                 return(btNLDef$new(q1 = q, p1 = p, q2 = q, p2 = p, q3 = q, n = n, s = s, a = a, na = 1))
             } else {        ## recursively build left and right subtrees
-                btNL1 <- buildtree(q, p, logu, v, j-1, eps, q0, p0)
+                btNL1 <- buildtree(qArg, pArg, logu, v, j-1, eps, q0, p0)
                 if(btNL1$s == 1) {
                     if(v == -1) {
                         btNL2 <- buildtree(btNL1$q1, btNL1$p1, logu, v, j-1, eps, q0, p0)
@@ -927,11 +931,11 @@ sampler_HMC <- nimbleFunction(
                         btNL1$q2 <- btNL2$q2
                         btNL1$p2 <- btNL2$p2
                     }
-                    if(btNL1$n + btNL2$n == 0) print('******* divide by 0 case came up! need to look into that ******')   ## XXXXXXXXXXXXXXXXXXXXXXXXXXX
-                    if(runif(1) < btNL2$n / (btNL1$n + btNL2$n))   btNL1$q3 <- btNL2$q3
+                    nSum <- btNL1$n + btNL2$n
+                    if(nSum > 0)   if(runif(1) < btNL2$n / nSum)   btNL1$q3 <- btNL2$q3
                     btNL1$n <- btNL1$n + btNL2$n
                     qDiff <- btNL1$q2-btNL1$q1
-                    btNL1$s <- btNL2$s * step(inprod(qDiff, btNL1$p1)) * step(inprod(qDiff, btNL1$p2))
+                    btNL1$s <- btNL2$s * nimStep(inprod(qDiff, btNL1$p1)) * nimStep(inprod(qDiff, btNL1$p2))
                     btNL1$a <- btNL1$a + btNL2$a
                     btNL1$na <- btNL1$na + btNL2$na
                 }
@@ -945,7 +949,7 @@ sampler_HMC <- nimbleFunction(
             logEpsilonBar <<- 0
             Hbar          <<- 0
         }
-    )########  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX, where = getLoadingNamespace()
+    ), where = getLoadingNamespace()
 )
 
 
