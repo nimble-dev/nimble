@@ -447,8 +447,6 @@ updateADproxyModelMethods <- function(.self) {
                                             replacementTemplateArgs = "double")
         classST$addSymbol(newSym, allowReplace = TRUE)
     }
-    
-    
     NULL
 }
 
@@ -472,7 +470,7 @@ makeSingleCopyCall <- function(varName, cppCopyType) {
            'nodeFxnVec' = {
                cppLiteral(paste0("COPY_NODE_FXN_VECTOR_FROM_R_OBJECT(\"", varName, "\");"))
            },
-           'nodeFxnVec_derivs' = {
+           'nodeFxnVec_nimDerivs' = {
                cppLiteral(paste0("COPY_NODE_FXN_VECTOR_DERIVS_FROM_R_OBJECT(\"", varName, "\");"))
            },
            'modelVarAccess' = {
@@ -494,11 +492,11 @@ makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj) {
     copyCalls <- list()
     varNames <- names(cppCopyTypes)
     for(i in seq_along(cppCopyTypes)) {
-      if(cppCopyTypes[[i]] == "nodeFxnVec"){
-        if(!is.null(Robj[[varNames[i]]]$nimDerivsInfo)){
-          cppCopyTypes[[i]] = "nodeFxnVec_derivs"
-        }
-      } 
+      ## if(cppCopyTypes[[i]] == "nodeFxnVec"){
+      ##   if(!is.null(Robj[[varNames[i]]]$nimDerivsInfo)){
+      ##     cppCopyTypes[[i]] = "nodeFxnVec_derivs"
+      ##   }
+      ## }
       copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]])
     }
 

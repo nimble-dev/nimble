@@ -56,32 +56,49 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
     indexingInfo <- Robject[[fxnVecName]]$indexingInfo
     declIDs <- indexingInfo$declIDs
     rowIndices <- indexingInfo$unrolledIndicesMatrixRows
-    if(is.null(Robject[[fxnVecName]]$model$CobjectInterface) || inherits(Robject[[fxnVecName]]$model$CobjectInterface, 'uninitializedField'))
-        stop("populateNodeFxnVecNew: error in accessing compiled model; perhaps you did not compile the model used by your nimbleFunction along with or before this compilation of the nimbleFunction?")
+    if(is.null(Robject[[fxnVecName]]$model$CobjectInterface) ||
+       inherits(Robject[[fxnVecName]]$model$CobjectInterface, 'uninitializedField'))
+        stop(paste0("populateNodeFxnVecNew could not access compiled model.\n",
+                    "Perhaps you did not compile the model used by your nimbleFunction\n",
+                    "along with or before this compilation of the nimbleFunction?"))
     numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byDeclID$.ptr
     
     ## This is not really the most efficient way to do things; eventually 
     ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
-    if(!is.null(Robject[[fxnVecName]]$nimDerivsInfo)){
-        derivsInfo <- Robject[[fxnVecName]]$nimDerivsInfo
-        eval(call('.Call',
-                  nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID_forDerivs,
-                  fxnVecPtr, 
-                  as.integer(declIDs), ##as.integer(derivsInfo$declIDs),
-                  numberedPtrs,
-                  as.integer(rowIndices), ##as.integer(derivsInfo$rowIndices),
-                  derivsInfo))
-    }
-    else{
-        eval(call('.Call',
-                  nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID,
-                  fxnVecPtr,
-                  as.integer(declIDs),
-                  numberedPtrs,
-                  as.integer(rowIndices)))
-    }
+    eval(call('.Call',
+              nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID,
+              fxnVecPtr,
+              as.integer(declIDs),
+              numberedPtrs,
+              as.integer(rowIndices)))
 }
+
+populateNodeFxnVecNew_nimDerivs <- function(fxnPtr, Robject, fxnVecName, dll){
+    fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName, dll = dll)
+    indexingInfo <- Robject[[fxnVecName]]$indexingInfo
+    declIDs <- indexingInfo$declIDs
+    rowIndices <- indexingInfo$unrolledIndicesMatrixRows
+    if(is.null(Robject[[fxnVecName]]$model$CobjectInterface) ||
+       inherits(Robject[[fxnVecName]]$model$CobjectInterface, 'uninitializedField'))
+        stop(paste0("populateNodeFxnVecNew could not access compiled model.\n",
+                    "Perhaps you did not compile the model used by your nimbleFunction\n",
+                    "along with or before this compilation of the nimbleFunction?"))
+    numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byDeclID$.ptr
+    
+    ## This is not really the most efficient way to do things; eventually 
+    ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
+    ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
+    derivsInfo <- Robject[[fxnVecName]]$nimDerivsInfo
+    eval(call('.Call',
+              nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID_forDerivs,
+              fxnVecPtr, 
+              as.integer(declIDs), ##as.integer(derivsInfo$declIDs),
+              numberedPtrs,
+              as.integer(rowIndices), ##as.integer(derivsInfo$rowIndices),
+              derivsInfo))
+}
+
 
 populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName, dll) {
     iNITptr <- getNamedObjected(fxnPtr, indexedNodeInfoTableName, dll = dll)
