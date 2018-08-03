@@ -401,6 +401,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   if(nimbleOptions('experimentalEnableDerivs') &&
                                                      length(environment(nfProc$nfGenerator)$enableDerivs) > 0) {
                                                       addADclassContent()
+                                                  }
+                                                  if('nodeFun' %in% .self$inheritance) {
                                                       updateADproxyModelMethods(.self)
                                                   }
                                                      
@@ -415,6 +417,10 @@ updateADproxyModelMethods <- function(.self) {
     ## Update return type and names of functions like dnorm -> nimDerivs_dnorm
     functionNames <- names(.self$functionDefs)
     ADproxyModel_functionNames <- functionNames[ grepl("_ADproxyModel", functionNames ) ]
+    if(length(ADproxyModel_functionNames) > 0) {
+        .self$Hincludes <- c(nimbleIncludeFile("nimbleCppAD.h"),
+                             "<TMB/distributions_R.hpp>", .self$Hincludes)
+    }
     for(fn in ADproxyModel_functionNames) {
         thisDef <- .self$functionDefs[[fn]]
         thisDef$returnType <- cppVarSym2templateTypeCppVarSym( thisDef$returnType,

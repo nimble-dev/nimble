@@ -804,13 +804,14 @@ nimDerivs_keywordInfo <- keywordInfoClass(
     if(deparse(fxnCall) == 'calculate'){
       code <- calculate_keywordInfo$processor(code, nfProc)
     } 
-    else if(length(fxnCall) == 3 && (deparse(fxnCall[[1]]) == '$'
-       && deparse(fxnCall[[3]]) == 'calculate')){
+    else if(length(fxnCall) == 3 &&
+            (deparse(fxnCall[[1]]) == '$' &&
+             deparse(fxnCall[[3]]) == 'calculate')){
       code[[2]] <- modelMemberFun_keywordInfo$processor(code[[2]], nfProc)
       code[[2]] <- matchKeywordCode(code[[2]], nfProc)
       code <- calculate_keywordInfo$processor(code, nfProc)
     }
-    if(!is.null(nfProc$origMethods[[deparse(fxnCall)]])){
+    if(!is.null(nfProc$origMethods[[deparse(fxnCall)]])) {
       derivMethod <- nfProc$origMethods[[deparse(fxnCall)]]
       derivMethodArgs <- derivMethod$getArgInfo()
       wrtArgIndices <- convertWrtArgToIndices(wrtArgs, derivMethodArgs, fxnName = deparse(fxnCall))
@@ -1049,7 +1050,7 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 #####	SETUPCODE TEMPLATES
 
 wrtVector_setupCodeTemplate <- setupCodeTemplateClass(
-  makeName = function(argList){Rname2CppName(paste0('wrtVec_', deparse(argList$fxn)))},
+  makeName = function(argList){Rname2CppName(paste0('wrtVec_', deparse(argList$fxn), '_'))},
   codeTemplate = quote(WRTVEC <- VECTOR),
   makeCodeSubList = function(resultName, argList){
     list(WRTVEC = as.name(resultName),

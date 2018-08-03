@@ -160,7 +160,7 @@ cppOutputEigBlank <- function(code, symTab) {
 }
 
 cppOutputNimDerivsPrependType <- function(code, symTab){
-  if(identical(nimbleUserNamespace$cppADCode, TRUE)){
+  if(isTRUE(nimbleUserNamespace$cppADCode)){
     paste0('nimDerivs_', code$name, '(',
            paste0(unlist(lapply(code$args, function(x){
              if(is.numeric(x) || is.logical(x)){
@@ -257,7 +257,8 @@ cppOutputFor <- function(code, symTab) {
 }
 
 cppOutputIfWhile <- function(code, symTab) {
-  if(identical(nimbleUserNamespace$cppADCode, TRUE)) stop("Cannot use 'if' or 'while' statements in derivative-enabled nimbleFunctions.  Consider using `nimDerivs_conditional` statements instead.")
+    if(isTRUE(nimbleUserNamespace$cppADCode))
+        stop("Cannot use 'if' or 'while' statements in derivative-enabled nimbleFunctions.  Consider using `nimDerivs_conditional` statements instead.")
     part1 <- paste0(code$name,'(', nimGenerateCpp(code$args[[1]], symTab), ')')
     part2 <- nimGenerateCpp(code$args[[2]], symTab)
     if(is.list(part2)) {
@@ -421,7 +422,7 @@ cppOutputMidOperator <- function(code, symTab) {
     }
 
     useDoubleCast <- FALSE
-    if(!identical(nimbleUserNamespace$cppADCode, TRUE)){
+    if(!isTRUE(nimbleUserNamespace$cppADCode)){
       if(code$name == '/') ## cast the denominator to double if it is any numeric or if it is an scalar integer expression
           if(is.numeric(code$args[[2]]) ) useDoubleCast <- TRUE
           else ## We have cases where a integer ends up with type type 'double' during compilation but should be cast to double for C++, so we shouldn't filter on 'integer' types here
@@ -474,8 +475,13 @@ cppOutputCall <- function(code, symTab) {
 }
 
 cppOutputPow <- function(code, symTab) {
-    useStaticCase <- if(identical(nimbleUserNamespace$cppADCode, TRUE)) FALSE else if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
-    if(useStaticCase) {
+    useStaticCast <-
+        if(isTRUE(nimbleUserNamespace$cppADCode))
+            FALSE
+        else if(is.numeric(code$args[[2]]) )
+            TRUE
+        else identical(code$args[[2]]$nDim, 0)
+    if(useStaticCast) {
         static_cast <- '( static_cast<double>('
         nimDerivs_text <- ''
           if(identical(nimbleUserNamespace$cppADCode, 2L)){

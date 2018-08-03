@@ -181,7 +181,7 @@ test_that('Derivatives of matrix exponentiation function correctly.',
                 }
               ), enableDerivs = list('testMethod')
             )
-            ADfunInst <- ADfun5()
+            ADfunInst <- ADfun6()
             x <- diag(2)
             y <- matrix(1, ncol = 4, nrow = 2)
             Rderivs <- ADfunInst$run(x, y)
