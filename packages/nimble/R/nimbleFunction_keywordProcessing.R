@@ -841,7 +841,7 @@ nimDerivs_keywordInfo <- keywordInfoClass(
         innerCode$wrt <- code$wrt
         newCode <- calculate_keywordInfo$processor(innerCode, nfProc)
         newCode[[1]] <- as.name('nimDerivs_calculate')
-        newCode$orderVec <- code$order
+        newCode$orderVector <- code$order
         return(newCode)
     }
     ## Not a calculate case:
