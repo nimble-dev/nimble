@@ -137,6 +137,7 @@ sampler_RW <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -169,10 +170,15 @@ sampler_RW <- nimbleFunction(
             }
         }
         model[[target]] <<- propValue
-        logMHR <- calculateDiff(model, calcNodes) + propLogScale
-        jump <- decide(logMHR)
-        if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        logMHR <- calculateDiff(model, target)
+        if(logMHR == -Inf) {
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+        } else {
+            logMHR <- logMHR + calculateDiff(model, calcNodesNoSelf) + propLogScale
+            jump <- decide(logMHR)
+            if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+            else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        }
         if(adaptive)     adaptiveProcedure(jump)
     },
     methods = list(
@@ -252,9 +258,11 @@ sampler_RW_block <- nimbleFunction(
         adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
         scale          <- if(!is.null(control$scale))          control$scale          else 1
         propCov        <- if(!is.null(control$propCov))        control$propCov        else 'identity'
+        tries          <- if(!is.null(control$propCov))        control$tries          else 1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -271,8 +279,9 @@ sampler_RW_block <- nimbleFunction(
         chol_propCov_scale <- scale * chol_propCov
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
         ## nested function and function list definitions
-        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+        ##        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
+        targetNodesAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+##        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d)
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
@@ -281,10 +290,22 @@ sampler_RW_block <- nimbleFunction(
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
     run = function() {
-        propValueVector <- generateProposalVector()
-        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
-        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
-        if(adaptive)     adaptiveProcedure(jump)
+        for(i in 1:tries) {
+            propValueVector <- generateProposalVector()
+            ##        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
+            values(model, targetNodesAsScalar) <<- propValueVector
+            lpD <- calculateDiff(model, target)
+            if(lpD == -Inf) {
+                nimCopy(from = mvSaved, to = model,   row = 1, nodes = target, logProb = TRUE)
+            } else {
+                ##        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
+                lpD <- lpD + calculateDiff(model, calcNodesNoSelf)
+                jump <- decide(lpD)
+                if(jump) { nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+                } else   { nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE) }
+            }
+            if(adaptive)     adaptiveProcedure(jump)
+        }
     },
     methods = list(
         generateProposalVector = function() {
