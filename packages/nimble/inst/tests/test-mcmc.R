@@ -1379,6 +1379,32 @@ test_that('MCMC with logProb variable being monitored builds and compiles.', {
   Cmcmc$run(10)
 })
 
+test_that('HMC sampler seems to work', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    code <- nimbleCode({
+        a[1] ~ dnorm(0, 1)
+        a[2] ~ dnorm(a[1]+1, 1)
+        a[3] ~ dnorm(a[2]+1, 1)
+        d ~ dnorm(a[3], sd=2)
+    })
+    constants <- list()
+    data <- list(d = 5)
+    inits <- list(a = rep(0, 3))
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('a', 'HMC')
+    Rmcmc <- buildMCMC(conf)
+    Cmodel <- compileNimble(Rmodel)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 10000)
+    expect_true(all(round(as.numeric(samples[1000:1005,]), 5) == c(1.04219, 0.78785, 0.61456, -0.54460, 0.92886, -0.14861, 2.46754, 1.39936, 2.38672, 2.36192, 3.23133, 1.26193, 2.67295, 3.29269, 3.61172, 3.99500, 3.72867, 3.80442)))
+    expect_true(all(round(as.numeric(apply(samples, 2, mean)), 7) == c(0.4503489, 1.8820432, 3.3086721)))
+    expect_true(all(round(as.numeric(apply(samples, 2, sd)), 7) == c(0.9148666, 1.2039168, 1.2923344 )))
+})
+
+
 
 sink(NULL)
 
