@@ -229,8 +229,12 @@ nodeFun::runExtraInputObject(NodeVectorClassNew_derivs &NV,
   (*localExtraInputObject)(extraInputDummyInput, extraInputResult);
   // Should be ok to copy.  No further uses after taping involve statics,
   // so there should be no further issue with which DLL we are in.
-  std::cout<<"NEED TO ADD CLEAR DESTRUCTION OF extraInputObject"<<std::endl;
   return localExtraInputObject;
+}
+
+void
+nodeFun::delete_extraInputObject(NodeVectorClassNew_derivs &NV) {
+  delete NV.extraInputObject;
 }
 
 atomic_extraOutputObject*
@@ -257,8 +261,12 @@ nodeFun::runExtraOutputObject(NodeVectorClassNew_derivs &NV,
   // Should be ok to copy.  No further uses after taping involve statics,
   // so there should be no further issue with which DLL we are in.
   logProb += extraOutputDummyResult[0];
-  std::cout<<"NEED TO ADD CLEAR DESTRUCTION OF extraOutputObject"<<std::endl;
   return localExtraOutputObject;
+}
+
+void
+nodeFun::delete_extraOutputObject(NodeVectorClassNew_derivs &NV) {
+  delete NV.extraOutputObject;
 }
 
 CppAD::AD<double> nodeFun::call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV) {

@@ -213,9 +213,13 @@ class nodeFun : public NamedObjects {
     runExtraInputObject(NodeVectorClassNew_derivs &NV,
 			std::vector< CppAD::AD<double> > &extraInputDummyInput,
 			std::vector< CppAD::AD<double> > &extraInputResult);
+  void
+    delete_extraInputObject(NodeVectorClassNew_derivs &NV);
   virtual atomic_extraOutputObject*
     runExtraOutputObject(NodeVectorClassNew_derivs &NV,
 			 CppAD::AD<double> &logProb);
+  void
+    delete_extraOutputObject(NodeVectorClassNew_derivs &NV);
   virtual CppAD::AD<double> call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV);
 };
 

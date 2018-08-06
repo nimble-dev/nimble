@@ -793,6 +793,12 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   atomic_extraOutputObject *extraOutputObject;
   bool tapeRecorded_;
  NodeVectorClassNew_derivs() : tapeRecorded_(false) {}
+  ~NodeVectorClassNew_derivs() {
+    if(instructions.size() == 0) return;
+    nodeFun* nodeFunInModelDLL = instructions[0].nodeFunPtr;
+    if(extraInputObject) nodeFunInModelDLL->delete_extraInputObject(*this);
+    if(extraOutputObject) nodeFunInModelDLL->delete_extraOutputObject(*this);
+  }
   bool tapeRecorded() {return(tapeRecorded_);}
   void recordTape() {
     if(instructions.size() == 0) {
