@@ -42,15 +42,13 @@ makeDerivCalcWrapperFunction <- function(calcNodeName, wrtName){
   return(calcWrapperFunction)
 }
 
-
-
-
-
 makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
   ## The code below matches the wrt arguemnts provided to the call to nimDerivs
   ## to the formal arguments taken by the nimbleFunction, and gets dimension and
-  ## indexing information about each of these wrt arguments. 
-  formalNames <- formalArgs(eval(nf[[1]], envir = fxnEnv)@.Data)
+    ## indexing information about each of these wrt arguments.
+    
+##    formalNames <- formalArgs(eval(nf[[1]], envir = fxnEnv)@.Data)
+    formalNames <- formalArgs(eval(nf[[1]], envir = fxnEnv))
   wrtNames <- strsplit(wrt, '\\[')
   wrtArgIndices <- c(sapply(wrtNames, function(x){
     return(which(x[1] == formalNames))}))
@@ -78,7 +76,7 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
   ## to nimDerivs.  The wrapped version takes a single vector argument x, as 
   ## required by the numDeriv package.  It then unpacks the elements of the 
   ## vector x, using them as arguments to the nimFxn as appropriate.
-  wrappedFun <- function(x) {
+    wrappedFun <- function(x) {
     args <- list()
     for(i in 1:(length(nf)-1)){
       if(i %in% wrtArgIndices){
@@ -118,7 +116,7 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
   ## The makeSingleArg function created below extracts the values of the 
   ## variables specified in the wrt arguemnt to nimDerivs and concatenates them
   ## into a single vector.
-  makeSingleArg <- function(){
+    makeSingleArg <- function(){
     singleArg <- c()
     for(i in seq_along(wrtNames)){
       if(length(wrtNames[[i]]) > 1){
@@ -298,7 +296,7 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA,
 
 convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   ## If a vector of wrt args, get individual args.
-  if(deparse(wrtArgs[[1]]) == 'nimC'){ 
+    if(deparse(wrtArgs[[1]]) == 'nimC'){ 
     wrtArgs <- sapply(wrtArgs[-1], function(x){as.character(x)})
   }
   if(all(is.na(wrtArgs))){
@@ -317,20 +315,21 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   argNameCheck <- wrtArgNames %in% nimFxnArgNames
   ## Compare wrt args to actual function args and make sure no erroneous args
   ## are present.
-  if(any(argNameCheck != TRUE)) stop('Incorrect names passed to wrt argument of
+  if(!all(argNameCheck)) stop('Incorrect names passed to wrt argument of
                                      nimDerivs: ', fxnName, 
-                                     ' does not have arguments named: ',
-                                     paste(wrtArgNames[!argNameCheck], 
-                                           collapse = ', ' ), '.')
-  ## Make sure all wrt args have type double.
-  nameCheck <- sapply(wrtMatchArgs, function(x){return(class(nimFxnArgs[[x]]))})
-  if(any(nameCheck == 'name')) stop('Derivatives of ', fxnName, ' being taken 
+                              ' does not have arguments named: ',
+                              paste(wrtArgNames[!argNameCheck], 
+                                    collapse = ', ' ), '.')
+  ## Make sure all wrt args are not simply names.
+    nameCheck <- sapply(wrtMatchArgs, function(x){return(class(nimFxnArgs[[x]]))})
+    if(any(nameCheck == 'name')) stop('Derivatives of ', fxnName, ' being taken 
                                     WRT an argument that does not have type 
                                     double().')
-  doubleCheck <- sapply(wrtMatchArgs, function(x){
+    ## Make sure all wrt args have type double.
+    doubleCheck <- sapply(wrtMatchArgs, function(x){
     return(deparse(nimFxnArgs[[x]][[1]]) == 'double')})
-  if(any(doubleCheck != TRUE)) stop('Derivatives of ', fxnName, 
-                                    ' being taken WRT an argument that does not
+    if(!all(doubleCheck)) stop('Derivatives of ', fxnName, 
+                               ' being taken WRT an argument that does not
                                     have type double().')
   ## Make sure that all wrt arg dims are < 2.
   fxnArgsDims <- sapply(wrtMatchArgs, function(x){

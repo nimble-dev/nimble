@@ -848,9 +848,12 @@ nimDerivs_keywordInfo <- keywordInfoClass(
     if(!is.null(nfProc$origMethods[[deparse(fxnCall)]])) {
       derivMethod <- nfProc$origMethods[[deparse(fxnCall)]]
       derivMethodArgs <- derivMethod$getArgInfo()
-      wrtArgIndices <- convertWrtArgToIndices(wrtArgs, derivMethodArgs, fxnName = deparse(fxnCall))
-      if(length(wrtArgIndices) == 1) wrtArgIndices <- c(wrtArgIndices, -1)
-      wrt_argList <- list(fxn = fxnCall, vector = wrtArgIndices)
+      ##wrtArgIndices <- convertWrtArgToIndices(wrtArgs, derivMethodArgs, fxnName = deparse(fxnCall))
+      #if(length(wrtArgIndices) == 1) wrtArgIndices <- c(wrtArgIndices, -1)
+      wrt_argList <- list(fxnCall = fxnCall,
+                          wrt = code$wrt,
+       #                   vector = wrtArgIndices
+                          derivMethodArgs = derivMethodArgs)
       accessName <- wrtVector_setupCodeTemplate$makeName(wrt_argList)
       addNecessarySetupCode(accessName, wrt_argList, wrtVector_setupCodeTemplate, nfProc)
       code[['wrt']] <- substitute(VECNAME,
@@ -1085,10 +1088,16 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 
 wrtVector_setupCodeTemplate <- setupCodeTemplateClass(
   makeName = function(argList){Rname2CppName(paste0('wrtVec_', deparse(argList$fxn), '_'))},
-  codeTemplate = quote(WRTVEC <- VECTOR),
+  codeTemplate = quote(WRTVEC <- nimble:::convertWrtArgToIndices(WRT, #code$wrt
+                                                                 DERIVMETHODARGS,
+                                                                 FXNNAME
+                                                                 )),
   makeCodeSubList = function(resultName, argList){
     list(WRTVEC = as.name(resultName),
-         VECTOR = argList$vector)
+         WRT = argList$wrt
+        ,DERIVMETHODARGS = argList$derivMethodArgs
+        ,FXNNAME = deparse(argList$fxnCall)
+         )##argList$vector)
   }
 )
 

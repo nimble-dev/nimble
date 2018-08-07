@@ -183,11 +183,10 @@ test_that('Derivatives of matrix exponentiation function correctly.',
             )
             ADfunInst <- ADfun6()
             x <- diag(2)
-            y <- matrix(1, ncol = 4, nrow = 2)
-            Rderivs <- ADfunInst$run(x, y)
+            Rderivs <- ADfunInst$run(x)
             temporarilyAssignInGlobalEnv(ADfunInst)  
             cADfunInst <- compileNimble(ADfunInst, showCompilerOutput = TRUE)
-            cderivs <- cADfunInst$run(x, y)
+            cderivs <- cADfunInst$run(x)
             expect_equal(cderivs, Rderivs, tolerance = 0.01)
           }
 )
