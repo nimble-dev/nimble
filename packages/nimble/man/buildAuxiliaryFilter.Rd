@@ -7,9 +7,11 @@
 buildAuxiliaryFilter(model, nodes, control = list())
 }
 \arguments{
-\item{model}{A NIMBLE model object, typically representing a state space model or a hidden Markov model}
+\item{model}{A NIMBLE model object, typically representing a state space model or a hidden Markov model.}
 
-\item{nodes}{A character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function}
+\item{nodes}{A character vector specifying the latent model nodes 
+over which the particle filter will stochastically integrate over to
+estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model.}
 
 \item{control}{A list specifying different control options for the particle filter.  Options are described in the details section below.}
 }

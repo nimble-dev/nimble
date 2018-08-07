@@ -9,7 +9,8 @@ buildEnsembleKF(model, nodes, control = list())
 \arguments{
 \item{model}{A NIMBLE model object, typically representing a state space model or a hidden Markov model}
 
-\item{nodes}{A character vector specifying the latent model nodes which the Ensemble Kalman filter will estimate.}
+\item{nodes}{A character vector specifying the latent model nodes 
+the Ensemble Kalman Filter will estimate.  All provided nodes must be stochastic, and must come from the same variable in the model.}
 
 \item{control}{A list specifying different control options for the particle filter.  Options are described in the details section below.}
 }

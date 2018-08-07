@@ -204,7 +204,8 @@ ENKFStep <- nimbleFunction(
 #' @description Create an Ensemble Kalman filter algorithm for a given NIMBLE state space model.  
 #'
 #' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes which the Ensemble Kalman filter will estimate.
+#' @param nodes A character vector specifying the latent model nodes 
+#'  the Ensemble Kalman Filter will estimate.  All provided nodes must be stochastic, and must come from the same variable in the model. 
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 #' @author Nicholas Michaud
 #' @family particle filtering methods

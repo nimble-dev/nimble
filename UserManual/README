@@ -1,0 +1,3 @@
+To create the PDF version of the manual, go to 'src' and run 'make'.
+
+TBD: instructions to create the HTML version of the manual.

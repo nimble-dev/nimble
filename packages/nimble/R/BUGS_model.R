@@ -1174,14 +1174,15 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                              parents <- BUGSdecl$allParentVarNames()
                                              selfWithNoInds <-  strsplit(deparse(LHS), '[', fixed = TRUE)[[1]][1]
                                              parents <- c(selfWithNoInds, parents)
-                                             parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix)
+                                             parentsSizeAndDims <- nimble:::makeSizeAndDimList(LHS, parents, BUGSdecl$unrolledIndicesMatrix, checkRagged = TRUE)
                                              parentsSizeAndDims <- nimble:::makeSizeAndDimList(RHS, parents, BUGSdecl$unrolledIndicesMatrix,
-                                                                                               allSizeAndDimList = parentsSizeAndDims)
+                                                                                               allSizeAndDimList = parentsSizeAndDims, checkRagged = TRUE)
                                            } else parentsSizeAndDims <- list()
 
-                                           if(nimbleOptions()$allowDynamicIndexing) {  ## need dim for node for generating NaN with invalid dynamic indexes
+                                           if(nimbleOptions()$allowDynamicIndexing && length(BUGSdecl$dynamicIndexInfo)) {  ## need dim for node for generating NaN with invalid dynamic indexes
                                                nodeSizeAndDims <- nimble:::makeSizeAndDimList(LHS, deparse(BUGSdecl$targetVarExpr),
-                                                                                              BUGSdecl$unrolledIndicesMatrix)
+                                                                                              BUGSdecl$unrolledIndicesMatrix,
+                                                                                              checkRagged = FALSE)
                                                nodeDim <- nodeSizeAndDims[[deparse(BUGSdecl$targetVarExpr)]][[1]]$lengths
                                                nodeDim <- nodeDim[nodeDim != 1] ## will be NULL if scalar
                                                if(!length(nodeDim)) nodeDim <- NULL

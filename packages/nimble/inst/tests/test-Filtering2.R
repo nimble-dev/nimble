@@ -221,6 +221,11 @@ test_that("user defined pf algo works in PMCMC", {
   ctestMCMC <- compileNimble(testMCMC, project = testModel)
   ctestMCMC$run(100)
 })
+
+
+
+
+
 ## Let's stop here to save testing time
 ## # test MCMC with longer runs and lower tolerance
 ## set.seed(0)

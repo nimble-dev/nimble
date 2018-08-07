@@ -9,7 +9,7 @@ conjugacyRelationshipsInputList <- list(
              dbin    = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
              dnegbin = list(param = 'prob', contribution_shape1 = 'size',  contribution_shape2 = 'value'       ),
              dcat    = list(param = 'prob', link = 'stick_breaking', contribution_shape1 = 'value == offset',
-                            contribution_shape2 = 'value > offset')),  ## offset is set to be where in the broken stick the target is
+                                                                     contribution_shape2 = 'value > offset')),  ## offset is set to be where in the broken stick the target is
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
 
@@ -25,7 +25,7 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dflat',
          link = 'linear',
          dependents = list(
-             dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',      contribution_tau = 'coeff^2 * tau'),
+             dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',         contribution_tau = 'coeff^2 * tau'),
              dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
          posterior = 'dnorm(mean = contribution_mean / contribution_tau,
                             sd   = contribution_tau^(-0.5))'),
@@ -34,13 +34,13 @@ conjugacyRelationshipsInputList <- list(
     ## list(prior = 'dhalfflat',
     ##      link = 'multiplicative',
     ##      dependents = list(
-    ##          dpois  = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
-    ##        dnorm  = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
-    ##          dlnorm = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
-    ##          dgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
-    ##          dinvgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_rate = 'coeff / value'                 ),
-    ##          dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
-    ##          dweib   = list(param = 'lambda',   contribution_shape = '1',     contribution_rate = 'coeff   * value^shape' )),
+    ##          dpois     = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
+    ##          dnorm     = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
+    ##          dlnorm    = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
+    ##          dgamma    = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
+    ##          dinvgamma = list(param = 'scale',  contribution_shape = 'shape', contribution_rate = 'coeff   / value'                 ),
+    ##          dexp      = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
+    ##          dweib     = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           )),
     ##          ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
     ##          ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
     ##      posterior = 'dgamma(shape = 1 + contribution_shape,
@@ -51,11 +51,11 @@ conjugacyRelationshipsInputList <- list(
     ## list(prior = 'dinvgamma',
     ##      link = 'multiplicative',
     ##      dependents = list(
-    ##          dnorm  = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'),
-    ##          dlnorm = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
-    ##          dgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_scale = 'value / coeff'                 ),
-    ##          dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'     ),
-    ##          dexp   = list(param = 'scale',   contribution_shape = '1',     contribution_scale = 'value / coeff'            )),
+    ##          dnorm     = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'      ),
+    ##          dlnorm    = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
+    ##          dgamma    = list(param = 'scale',  contribution_shape = 'shape', contribution_scale = 'value / coeff'                     ),
+    ##          dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'               ),
+    ##          dexp      = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'value / coeff'                     )),
     ##          ## add ddexp
     ##      posterior = 'dinvgamma(shape = -1 + contribution_shape,
     ##                          rate = 1 / contribution_scale)'),
@@ -69,7 +69,7 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dhalfflat',
          link = 'multiplicative',
          dependents = list(
-             dnorm  = list(param = 'sd',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff^2 * 2)'),
+             dnorm  = list(param = 'sd',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff^2 * 2)'        ),
              dlnorm = list(param = 'sdlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff^2 * 2)')),
          posterior = 'dsqrtinvgamma(shape = -1/2 + contribution_shape,
                              rate = 1 / contribution_scale)'),
@@ -78,13 +78,13 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dgamma',
          link = 'multiplicative',
          dependents = list(
-             dpois  = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
-             dnorm  = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
-             dlnorm = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
-             dgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
-             dinvgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_rate = 'coeff / value'                 ),
-             dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
-             dweib   = list(param = 'lambda',   contribution_shape = '1',     contribution_rate = 'coeff   * value^shape' )),
+             dpois     = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
+             dnorm     = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
+             dlnorm    = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
+             dgamma    = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
+             dinvgamma = list(param = 'scale',  contribution_shape = 'shape', contribution_rate = 'coeff   / value'                 ),
+             dexp      = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
+             dweib     = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           )),
              ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
              ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
          posterior = 'dgamma(shape = prior_shape + contribution_shape,
@@ -94,11 +94,11 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dinvgamma',
          link = 'multiplicative',
          dependents = list(
-             dnorm  = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'),
-             dlnorm = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
-             dgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_scale = 'value / coeff'                 ),
-             dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'     ),
-             dexp   = list(param = 'scale',   contribution_shape = '1',     contribution_scale = 'value / coeff'            )),
+             dnorm     = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'      ),
+             dlnorm    = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
+             dgamma    = list(param = 'scale',  contribution_shape = 'shape', contribution_scale = 'value / coeff'                     ),
+             dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'               ),
+             dexp      = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'value / coeff'                     )),
              ## add ddexp
          posterior = 'dinvgamma(shape = prior_shape + contribution_shape,
                              rate = 1 / (prior_scale + contribution_scale))'),
@@ -107,7 +107,7 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dnorm',
          link = 'linear',
          dependents = list(
-             dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',      contribution_tau = 'coeff^2 * tau'),
+             dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',         contribution_tau = 'coeff^2 * tau'   ),
              dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
          posterior = 'dnorm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
                             sd   = (prior_tau + contribution_tau)^(-0.5))'),
@@ -166,8 +166,8 @@ conjugacyRelationshipsInputList <- list(
          dependents = list(
              dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
-                                 df          = prior_df + contribution_df,
-                                 scale_param = 1)')
+                                    df          = prior_df + contribution_df,
+                                    scale_param = 1)')
 
 )
 

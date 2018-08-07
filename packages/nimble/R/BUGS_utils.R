@@ -45,7 +45,7 @@ determineNodeIndexSizes <- function(node) {
     return(sizes)
 }
 
-makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NULL, allSizeAndDimList = list()){
+makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NULL, allSizeAndDimList = list(), checkRagged = FALSE){
   if(is.call(code)){
     if(deparse(code[[1]]) == '[') {
       if(deparse(code[[2]]) %in% nodesToExtract){
@@ -67,7 +67,7 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
               codeEndInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[3]])]
             }
             thisCodeLength <- codeEndInds - codeStartInds + 1
-            if(!all(thisCodeLength == thisCodeLength[1])){
+            if(checkRagged && !all(thisCodeLength == thisCodeLength[1])){
               stop("Error: AD not currently supported for ragged arrays in model code", call. = FALSE)
             }
             codeLength <- c(codeLength, thisCodeLength[1])
