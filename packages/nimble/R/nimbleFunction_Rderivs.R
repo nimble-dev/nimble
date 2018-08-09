@@ -47,14 +47,13 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
   ## to the formal arguments taken by the nimbleFunction, and gets dimension and
     ## indexing information about each of these wrt arguments.
     
-##    formalNames <- formalArgs(eval(nf[[1]], envir = fxnEnv)@.Data)
-    formalNames <- formalArgs(eval(nf[[1]], envir = fxnEnv))
-  wrtNames <- strsplit(wrt, '\\[')
-  wrtArgIndices <- c(sapply(wrtNames, function(x){
-    return(which(x[1] == formalNames))}))
-  flatteningInfo <- list()
-  thisIndex <- 1
-  for(i in seq_along(wrt)){
+    fA <- formalArgs(eval(nf[[1]], envir = fxnEnv))
+    wrtNames <- strsplit(wrt, '\\[')
+    wrtArgIndices <- c(sapply(wrtNames, function(x){
+        return(which(x[1] == fA))}))
+    flatteningInfo <- list()
+    thisIndex <- 1
+    for(i in seq_along(wrt)){
     arg <- nf[[wrtArgIndices[i] + 1]]
     indText <- ''
     if(length(wrtNames[[i]]) > 1){
@@ -178,8 +177,9 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
 nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA,
                       wrt = NULL, silent = TRUE){
   fxnEnv <- parent.frame()
-  fxnCall <- match.call(function(nimFxn, order, dropArgs, wrt,
-                                 chainRuleDerivs){})
+  fxnCall <- match.call(function(nimFxn, order, dropArgs, wrt
+                                 ){})
+                                        #,chainRuleDerivs){})
   if(is.null(fxnCall[['order']])) fxnCall[['order']] <- order
   derivFxnCall <- fxnCall[['nimFxn']]
   wrtNames <- sapply(wrt, function(x){strsplit(x, '\\[')[[1]][1]})
@@ -229,18 +229,22 @@ nimDerivs <- function(nimFxn = NA, order = nimC(0,1,2), dropArgs = NA,
       }
     }
   }
-  if(!all(wrtNames %in% formalArgs(eval(derivFxnCall[[1]], envir
-                                        = fxnEnv)@.Data))){
+  fA <- formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv))
+  if(!all(wrtNames %in% fA)){
     stop('Error:  the wrt argument to nimDerivs() contains names that are not
          arguments to the nimFxn argument.')
   }
-  libError <- try(library('numDeriv'), silent = TRUE)
-  if(inherits(libError, 'try-error')){
-    stop("The 'numDeriv' package must be installed to use derivatives in
+  ## libError <- try(library('numDeriv'), silent = TRUE)
+  ## if(inherits(libError, 'try-error')){
+  ##   stop("The 'numDeriv' package must be installed to use derivatives in
+  ##        uncompiled nimbleFunctions.")
+  ## }
+  if(!require('numDeriv'))
+      stop("The 'numDeriv' package must be installed to use derivatives in
          uncompiled nimbleFunctions.")
-  }
+
   if(is.null(wrt)){
-    wrt <- formalArgs(eval(derivFxnCall[[1]], envir = fxnEnv)@.Data)
+    wrt <- fA
   }
   if(!is.na(dropArgs)){
     removeArgs <- which(wrt == dropArgs)
@@ -323,8 +327,7 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
   ## Make sure all wrt args are not simply names.
     nameCheck <- sapply(wrtMatchArgs, function(x){return(class(nimFxnArgs[[x]]))})
     if(any(nameCheck == 'name')) stop('Derivatives of ', fxnName, ' being taken 
-                                    WRT an argument that does not have type 
-                                    double().')
+                                    WRT an argument that does not have a valid type.')
     ## Make sure all wrt args have type double.
     doubleCheck <- sapply(wrtMatchArgs, function(x){
     return(deparse(nimFxnArgs[[x]][[1]]) == 'double')})

@@ -1088,16 +1088,21 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 
 wrtVector_setupCodeTemplate <- setupCodeTemplateClass(
   makeName = function(argList){Rname2CppName(paste0('wrtVec_', deparse(argList$fxn), '_'))},
-  codeTemplate = quote(WRTVEC <- nimble:::convertWrtArgToIndices(WRT, #code$wrt
-                                                                 DERIVMETHODARGS,
-                                                                 FXNNAME
-                                                                 )),
+  codeTemplate = quote(
+  {
+      WRTVEC <- nimble:::convertWrtArgToIndices(WRT, #code$wrt
+                                                 DERIVMETHODARGS,
+                                                 FXNNAME)
+      if(length(WRTVEC) == 1)
+          WRTVEC <- c(WRTVEC, -1)
+  }
+  ),
   makeCodeSubList = function(resultName, argList){
-    list(WRTVEC = as.name(resultName),
-         WRT = argList$wrt
-        ,DERIVMETHODARGS = argList$derivMethodArgs
-        ,FXNNAME = deparse(argList$fxnCall)
-         )##argList$vector)
+      list(WRTVEC = as.name(resultName),
+           WRT = argList$wrt
+          ,DERIVMETHODARGS = argList$derivMethodArgs
+          ,FXNNAME = deparse(argList$fxnCall)
+           )##argList$vector)
   }
 )
 

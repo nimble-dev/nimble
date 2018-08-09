@@ -157,7 +157,7 @@ test_that('Derivatives of matrix multiplication function correctly.',
             y <- matrix(rnorm(8), ncol = 4, nrow = 2)
             Rderivs <- ADfunInst$run(x, y)
             temporarilyAssignInGlobalEnv(ADfunInst)  
-            cADfunInst <- compileNimble(ADfunInst, showCompilerOutput = TRUE)
+            cADfunInst <- compileNimble(ADfunInst)
             cderivs <- cADfunInst$run(x, y)
             expect_equal(cderivs, Rderivs, tolerance = 0.01)
           }
@@ -185,7 +185,7 @@ test_that('Derivatives of matrix exponentiation function correctly.',
             x <- diag(2)
             Rderivs <- ADfunInst$run(x)
             temporarilyAssignInGlobalEnv(ADfunInst)  
-            cADfunInst <- compileNimble(ADfunInst, showCompilerOutput = TRUE)
+            cADfunInst <- compileNimble(ADfunInst)
             cderivs <- cADfunInst$run(x)
             expect_equal(cderivs, Rderivs, tolerance = 0.01)
           }
