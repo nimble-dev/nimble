@@ -810,249 +810,54 @@ sampler_HMC <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        maxAdaptIter <- if(!is.null(control$maxAdaptIter)) control$maxAdaptIter else 1000
-        ## node list generation
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
-        ## numeric value generation
-        d <- length(targetAsScalar)
-        timesRan <- 0
-        epsilon <- 0
-        mu <- 0
-        logEpsilonBar <- 0
-        Hbar <- 0
-        ## nested function and function list definitions
-        qpNLDef <- nimbleList(q = double(1), p = double(1))
-        btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
-        ## checks
-        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set nimbleOptions(experimentalEnableDerivs = TRUE)')
-        if(any(model$isDiscrete(targetAsScalar)))      stop(paste0('HMC sampler can only operate on continuous-valued nodes:', paste0(targetAsScalar[model$isDiscrete(targetAsScalar)], collapse=', ')))
-    },
-    run = function() {
-        ## implements No-U-Turm Sampler with Dual Averaging
-        ## Algorithm 6 from Hoffman and Gelman (2014)
-        if(timesRan == 0)    initializeEpsilon()
-        timesRan <<- timesRan + 1
-        q <- values(model, target)
-        p <- numeric(d)
-        for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
-        logu <- logH(q, p) - rexp(1, 1)    ## logu <- lp - rexp(1, 1), generate (log)-auxiliary variable: exp(logu) ~ uniform(0, exp(lp))
-        qL <- q;   qR <- q;   pL <- p;   pR <- p
-        j  <- 0;    n <- 1;    s <- 1
-        qNew <- q
-        while(s == 1) {
-            v <- 2*rbinom(1, 1, 0.5) - 1    ## -1 or 1
-            if(v == -1) {
-                btNL <- buildtree(qL, pL, logu, v, j, epsilon, q, p)
-                qL <- btNL$q1
-                pL <- btNL$p1
-            } else {
-                btNL <- buildtree(qR, pR, logu, v, j, epsilon, q, p)
-                qR <- btNL$q2
-                pR <- btNL$p2
-            }
-            if(btNL$s == 1)
-                if(runif(1) < btNL$n / n)
-                    qNew <- btNL$q3
-            n <- n + btNL$n
-            qDiff <- qR - qL
-            s <- btNL$s * nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))
-            j <- j + 1
-        }
-        values(model, target) <<- qNew
-        model$calculate(calcNodes)
-        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        if(timesRan <= maxAdaptIter) {
-            Hbar <<- (1 - 1/(timesRan+10)) * Hbar + 1/(timesRan+10) * (0.65 - btNL$a/btNL$na)
-            logEpsilon <- mu - sqrt(timesRan)/0.05 * Hbar
-            epsilon <<- exp(logEpsilon)
-            logEpsilonBar <<- timesRan^(-0.75) * logEpsilon + (1 - timesRan^(-0.75)) * logEpsilonBar
-            if(timesRan == maxAdaptIter)   epsilon <<- exp(logEpsilonBar)
-        }
-    },
-    methods = list(
-        logH = function(qArg = double(1), pArg = double(1)) {
-            values(model, target) <<- qArg
-            lp <- model$calculate(calcNodes) - sum(pArg^2)/2
-            returnType(double())
-            return(lp)
-        },
-        jacobian = function(qArg = double(1)) {
-            values(model, target) <<- qArg
-            derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = target)
-            grad <- numeric(d)
-            grad[1:d] <- derivsOutput$jacobian[1, 1:d]   ## preserve 1D vector object
-            returnType(double(1))
-            return(grad)
-        },
-        leapfrog = function(qArg = double(1), pArg = double(1), eps = double()) {
-            ## contained in Algorithm 1 from Hoffman and Gelman (2014)
-            p2 <- pArg + eps/2 * jacobian(qArg)
-            q2 <- qArg + eps   * p2
-            p3 <- p2   + eps/2 * jacobian(q2)
-            if(is.na.vec(q2) | is.nan.vec(q2) | is.na.vec(p3) | is.nan.vec(p3)) { ###  XXXXXXXXXXXXXXXXXX
-                print('caught a NaN in leapfrog')  ###  XXXXXXXXXXXXXXX
-                for(i in 1:d) {     ### XXXXXXXXXXXXXXX temporary ???
-                    q2[i] <- NaN    ### XXXXXXXXXXXXXXX temporary ???
-                    p3[i] <- NaN    ### XXXXXXXXXXXXXXX temporary ???
-                }                   ### XXXXXXXXXXXXXXX temporary ???
-            }                       ### XXXXXXXXXXXXXXX temporary ???
-            returnType(qpNLDef())
-            return(qpNLDef$new(q = q2, p = p3))
-        },
-        initializeEpsilon = function() {
-            ## Algorithm 4 from Hoffman and Gelman (2014)
-            q <- values(model, target)
-            p <- numeric(d)
-            for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
-            epsilon <<- 1
-            qpNL <- leapfrog(q, p, epsilon)
-            wentOutOfBounds <- 0                 ### XXXXXXXXXXXXXXX temporary ???
-            while(is.nan.vec(qpNL$q)) { ### XXXXXXXXXXXXXXX temporary ???
-                epsilon <<- epsilon / 2          ### XXXXXXXXXXXXXXX temporary ???
-                print('caught a NaN in initializeEpsilon().  now epsilon = ', epsilon)  ### XXXXXXXXXXXXXXX temporary ???
-                wentOutOfBounds <- 1             ### XXXXXXXXXXXXXXX temporary ???
-                qpNL <- leapfrog(q, p, epsilon)  ### XXXXXXXXXXXXXXX temporary ???
-            }                                    ### XXXXXXXXXXXXXXX temporary ???
-            a <- 2*nimStep(exp(logH(qpNL$q, qpNL$p) - logH(q, p)) - 0.5) - 1
-            if(is.na(a) | is.nan(a)) print('still caught an NA or NaN acceptance prob in initializeEpsilon()....')  ## XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            ##browser()    ## XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            if(wentOutOfBounds == 1) {           ### XXXXXXXXXXXXXXX temporary ???
-                print('previously went out of bounds, changing to decrement epsilon')  ### XXXXXXXXXXXXXXX temporary ???
-                lp <- exp(logH(qpNL$q, qpNL$p) - logH(q, p))   ## XXXXXXXXXXXXXXXXXX
-                print('lp is now = ', epsilon)                    ## XXXXXXXXXXXXXXXXXX
-                while(lp < 0.5 | lp > 2) {                        ## XXXXXXXXXXXXXXXXXX
-                    epsilon <<- epsilon / 2   ## XXXXXXXXXXXXXXXXXX
-                    print('halved epsilon, its now ', epsilon)   ## XXXXXXXXXXXXXXXXXX
-                    qpNL <- leapfrog(q, p, epsilon)
-                    lp <- exp(logH(qpNL$q, qpNL$p) - logH(q, p))   ## XXXXXXXXXXXXXXXXXX
-                    print('new lp is: ', lp)   ## XXXXXXXXXXXXXXXXXX
-                }   ## XXXXXXXXXXXXXXXXXX
-            } else {                                   ### XXXXXXXXXXXXXXX temporary ???
-                while((exp(logH(qpNL$q, qpNL$p) - logH(q, p)))^a > 2^(-a)) {
-                    epsilon <<- epsilon * 2^a
-                    qpNL <- leapfrog(q, p, epsilon)
-                    if(is.nan.vec(qpNL$q)) { print('caught qpNL$q is NaN in initEpsilon location AAAAAAAA.') }   ###### XXXXXXXXXXXXXXXXXXX
-                }
-            }
-            mu <<- log(10*epsilon)     ## mu gets set with epsilon
-            ##values(model, target) <<- q   ## precautionary; I don't believe necessary
-        },
-        buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), q0 = double(1), p0 = double(1)) {
-            ## Algorithm 6 (second half) from Hoffman and Gelman (2014)
-            returnType(btNLDef())
-            if(j == 0) {    ## one leapfrog step in the direction of v
-                qpNL <- leapfrog(qArg, pArg, v*eps)
-                q <- qpNL$q
-                p <- qpNL$p
-                n <- nimStep(logH(q, p) - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
-                s <- nimStep(logH(q, p) - logu + 1000)   ## use delta_max = 1000
-                a <- min(1, exp(logH(q, p) - logH(q0, p0)))
-                return(btNLDef$new(q1 = q, p1 = p, q2 = q, p2 = p, q3 = q, n = n, s = s, a = a, na = 1))
-            } else {        ## recursively build left and right subtrees
-                btNL1 <- buildtree(qArg, pArg, logu, v, j-1, eps, q0, p0)
-                if(btNL1$s == 1) {
-                    if(v == -1) {
-                        btNL2 <- buildtree(btNL1$q1, btNL1$p1, logu, v, j-1, eps, q0, p0)
-                        btNL1$q1 <- btNL2$q1
-                        btNL1$p1 <- btNL2$p1
-                    } else {
-                        btNL2 <- buildtree(btNL1$q2, btNL1$p2, logu, v, j-1, eps, q0, p0)
-                        btNL1$q2 <- btNL2$q2
-                        btNL1$p2 <- btNL2$p2
-                    }
-                    nSum <- btNL1$n + btNL2$n
-                    if(nSum > 0)   if(runif(1) < btNL2$n / nSum)   btNL1$q3 <- btNL2$q3
-                    qDiff <- btNL1$q2-btNL1$q1
-                    btNL1$a  <- btNL1$a  + btNL2$a
-                    btNL1$na <- btNL1$na + btNL2$na
-                    btNL1$s  <- btNL2$s * nimStep(inprod(qDiff, btNL1$p1)) * nimStep(inprod(qDiff, btNL1$p2))
-                    btNL1$n  <- nSum
-                }
-                return(btNL1)
-            }
-        },
-        reset = function() {
-            timesRan      <<- 0
-            epsilon       <<- 0
-            mu            <<- 0
-            logEpsilonBar <<- 0
-            Hbar          <<- 0
-        }
-    ), where = getLoadingNamespace()
-)  ## end sampler_HMC
-
-
-hmc_processTargetNodes <- function(model, target) {
-    targetAsNodes <- model$expandNodeNames(target)
-    originalTargetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    d <- 0        ## dimension of q, the space we sample on
-    dmodel <- 0   ## dimension of target nodes in the model
-    for(node in targetAsNodes) {
-        if(model$isDeterm(node))      stop(paste0('HMC sampler doesn\'t operate on deterministic nodes:', node))
-        if(model$isDiscrete(node))    stop(paste0('HMC sampler doesn\'t operate on discrete nodes:', node))
-        if(model$isMultivariate(node)) {
-            thisNodeAsScalars <- model$expandNodeNames(node, returnScalarComponents = TRUE)
-            newNodes <- setdiff(thisNodeAsScalars, originalTargetAsScalar)
-            if(length(newNodes) > 0) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', node, ', or none of it'))
-            dist <- model$getDistribution(node)
-            len <- length(thisNodeAsScalars)
-            if(dist %in% c('dmnorm', 'dmvt')) { d <- d + len
-                                                dmodel <- dmodel + len }
-            if(dist %in% c('dwish', 'dinvwish')) { d <- d + sqrt(len) * (sqrt(len)+1) / 2
-                                                   dmodel <- dmodel + len }
-            stop(paste0('HMC sampler doesn\'t handle ', dist, ' distributions.')   ## only Dirichlet ?
-        } else { d <- d + 1
-                 dmodel <- dmodel + 1 }
-    }
-    return(list(targetAsNodes = targetAsNodes, d = d, dmodel = dmodel))
-}
-
-hmc_determineTransformInfo <- function(model, targetAsNodes, indList, d, dmodel) {
-    maxInd <- max(unlist(indList))
-    transformInfo <- array(0, c(d, maxInd))
-    for(i in 1:d) {
-        node <- targetAsNodes[i]
-        bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
-        if(bounds[1] == -Inf & bounds[2] == Inf) {             ## identity transform
-            transformInfo[i, indList$IND_ID] <- 1
-        } else if(bounds[1] == 0 & bounds[2] == Inf) {         ## log transform
-            transformInfo[i, indList$IND_ID] <- 2
-        } else if(isValid(bounds[1]) & isValid(bounds[2])) {   ## logit transform
-            transformInfo[i, indList$IND_ID] <- 3
-            transformInfo[i, indList$IND_LB] <- bounds[1]
-            range <- bounds[2] - bounds[1]
-            if(range <= 0) stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node))
-            transformInfo[i, indList$IND_RNG]  <- range
-            transformInfo[i, indList$IND_LRNG] <- log(range)
-        } else stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node))
-    }
-    return(transformInfo)
-}
-
-sampler_HMCtransform <- nimbleFunction(
-    name = 'sampler_HMCtransform',
-    contains = sampler_BASE,
-    setup = function(model, mvSaved, target, control) {
-        ## control list extraction
-        messages     <- if(!is.null(control$messages))     control$messages     else TRUE
         warnings     <- if(!is.null(control$warnings))     control$warnings     else TRUE
         maxAdaptIter <- if(!is.null(control$maxAdaptIter)) control$maxAdaptIter else 1000
-        ## node list generation
-        nodeSets <- hmc_processTargetNodes(model, target)
-        targetAsNodes <- nodeSets$targetAsNodes
-        calcNodes <- model$getDependencies(targetAsNodes)
+        ## node list generation, and processing of bounds and transformations
+        targetNodes <- model$expandNodeNames(target)
+        if(length(targetNodes) <= 0) stop('HMC sampler must operate on one or more nodes')
+        calcNodes <- model$getDependencies(targetNodes)
+        originalTargetAsScalars <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
+        IND_ID   <- 1   ## transformation ID: 1=itentity, 2=log, 3=logit
+        IND_LB   <- 2   ## interval-bounded parameters: lower-bound
+        IND_RNG  <- 3   ## interval-bounded parameters: range
+        IND_LRNG <- 4   ## interval-bounded parameters: log(range)
+        maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))  ## max(unlist(indList))
+        d <- length(targetNodesAsScalars)
+        transformInfo <- array(0, c(d, maxInd))
+        for(i in 1:d) {
+            node <- targetNodesAsScalars[i]
+            if(model$isDeterm(node))      stop(paste0('HMC sampler doesn\'t operate on deterministic nodes: ', node))
+            if(model$isDiscrete(node))    stop(paste0('HMC sampler doesn\'t operate on discrete nodes: ', node))
+            dist <- model$getDistribution(node)
+            bounds <- c(model$getBound(node, 'lower'), model$getBound(node, 'upper'))
+            if(!model$isMultivariate(node)) {   ## univariate node
+                if(bounds[1] == -Inf & bounds[2] == Inf) {             ## 1 = identity, support = (-Inf, Inf)
+                    transformInfo[i, IND_ID] <- 1
+                } else if(bounds[1] == 0 & bounds[2] == Inf) {         ## 2 = log, support = (0, Inf)
+                    transformInfo[i, IND_ID] <- 2
+                } else if(isValid(bounds[1]) & isValid(bounds[2])) {   ## 3 = logit, support = (a, b)
+                    transformInfo[i, IND_ID] <- 3
+                    transformInfo[i, IND_LB] <- bounds[1]
+                    range <- bounds[2] - bounds[1]
+                    if(range <= 0) stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node))
+                    transformInfo[i, IND_RNG]  <- range
+                    transformInfo[i, IND_LRNG] <- log(range)
+                } else stop(paste0('HMC sampler doesn\'t have a transformation for the bounds of node: ', node, ', which are (', bounds[1], ', ', bounds[2], ')'))
+            } else {                            ## multivariate node
+                if(!(node %in% originalTargetAsScalars)) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', model$expandNodeNames(node), ', or none of it'))
+                if(dist %in% c('dmnorm', 'dmvt')) {
+                    transformInfo[i, IND_ID] <- 1                      ## dmnorm: identity
+                } else stop(paste0('HMC sampler yet doesn\'t handle \'', dist, '\' distributions.'))   ## Dirichlet, Wishart ?
+                ##if(dist %in% c('dwish', 'dinvwish')) {
+                ##    transformInfo[i, IND_ID] <- 5                    ## wishart: log-cholesky
+                ##    d <- d + sqrt(len) * (sqrt(len)+1) / 2
+                ##    dmodel <- dmodel + len
+                ##}
+            }
+        }
         ## numeric value generation
-        d <- nodeSets$d             ## dimension of q, the space we sample on
-        dmodel <- nodeSets$dmodel   ## dimension of target nodes in the model
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
-        ## transformations
-        indList <- list()
-        IND_ID   <- indList$IND_ID   <- 1   ## transformation ID: 1 = itentity, 2 = log, 3 = logit
-        IND_LB   <- indList$IND_LB   <- 2   ## lower-bound for interval-bounded parameters
-        IND_RNG  <- indList$IND_RNG  <- 3   ## range for interval-bounded parameters
-        IND_LRNG <- indList$IND_LRNG <- 4   ## log(range) for interval-bounded parameters
-        transformInfo <- hmc_determineTransformInfo(model, targetAsNodes, indList, d, dmodel)
         ## nested function and function list definitions
         qpNLDef <- nimbleList(q = double(1), p = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
@@ -1085,7 +890,7 @@ sampler_HMCtransform <- nimbleFunction(
             s <- btNL$s * nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))
             j <- j + 1
         }
-        values(model, target) <<- inverseTransformValues(qNew)
+        values(model, targetNodes) <<- inverseTransformValues(qNew)
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         if(timesRan <= maxAdaptIter) {
@@ -1098,7 +903,7 @@ sampler_HMCtransform <- nimbleFunction(
     },
     methods = list(
         transformedModelValues = function() {
-            q <- values(model, target)
+            q <- values(model, targetNodes)
             for(i in 1:d) {
                 x <- q[i];      id <- transformInfo[i, IND_ID]    ## 1 = itentity, 2 = log, 3 = logit
                 if(id == 2) q[i] <- log(x)
@@ -1116,19 +921,19 @@ sampler_HMCtransform <- nimbleFunction(
             returnType(double(1));   return(transformed)
         },
         logH = function(qArg = double(1), pArg = double(1)) {
-            values(model, target) <<- inverseTransformValues(qArg)
+            values(model, targetNodes) <<- inverseTransformValues(qArg)
             lp <- model$calculate(calcNodes) - sum(pArg^2)/2
             for(i in 1:d) {
                 x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = itentity, 2 = log, 3 = logit
                 if(id == 2) lp <- lp + x
                 if(id == 3) lp <- lp + transformInfo[i, IND_LRNG] - log(exp(x)+exp(-x)+2)   ## more stable?
-                                                               ## - 2*log(1+exp(-x)) - x    ## alternative (less stable?)
+                                                               ## - 2*log(1+exp(-x)) - x    ## alternate to above (less stable?)
             }
             returnType(double());   return(lp)
         },
         jacobian = function(qArg = double(1)) {
-            values(model, target) <<- inverseTransformValues(qArg)
-            derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = target)
+            values(model, targetNodes) <<- inverseTransformValues(qArg)
+            derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
             grad <- numeric(d)
             grad[1:d] <- derivsOutput$jacobian[1, 1:d]            ## preserve 1D vector object
             for(i in 1:d) {
@@ -1153,6 +958,12 @@ sampler_HMCtransform <- nimbleFunction(
             for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
             epsilon <<- 1
             qpNL <- leapfrog(q, p, epsilon)
+            ##while(is.na.vec(qpNL$q) | is.nan.vec(qpNL$q) | is.na.vec(qpNL$p) | is.nan.vec(qpNL$p)) {   ## XXXXXXXXXXXXXXXXXXXX
+            ##    print('found NaN in initializeEpsilon; recommend better initial values for model')     ## XXXXXXXXXXXXXXXXXXXX
+            ##    print('reducing initial epsilon guess by 1/1000')                                      ## XXXXXXXXXXXXXXXXXXXX
+            ##    epsilon <<- epsilon / 100                                                              ## XXXXXXXXXXXXXXXXXXXX
+            ##    qpNL <- leapfrog(q, p, epsilon)                                                        ## XXXXXXXXXXXXXXXXXXXX
+            ##}                                                                                          ## XXXXXXXXXXXXXXXXXXXX
             a <- 2*nimStep(exp(logH(qpNL$q, qpNL$p) - logH(q, p)) - 0.5) - 1
             if(warnings) if(is.na(a) | is.nan(a)) print('caught an NA or NaN acceptance prob in HMC initializeEpsilon routine')
             while((exp(logH(qpNL$q, qpNL$p) - logH(q, p)))^a > 2^(-a)) {
@@ -1199,8 +1010,9 @@ sampler_HMCtransform <- nimbleFunction(
             logEpsilonBar <<- 0
             Hbar          <<- 0
         }
-    )##  XXXXXXXXXXX, where = getLoadingNamespace()
-)   # end sampler_HMCtransform
+    ), where = getLoadingNamespace()
+)
+
 
 
 ####################################################################
