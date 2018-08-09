@@ -22,7 +22,13 @@ makeNFBindingFields <- function(symTab, cppNames) {
     for(vn in vNames) {
         thisSymbol <- symTab$getSymbolObject(vn)
         if(is.null(thisSymbol)) next
-        if(thisSymbol$type == 'model' || thisSymbol$type == 'symbolNodeFunctionVector' || thisSymbol$type == 'symbolModelVariableAccessorVector' ||thisSymbol$type == 'symbolModelValuesAccessorVector' || thisSymbol$type == 'symbolCopierVector' || thisSymbol$type == 'symbolIndexedNodeInfoTable') next ## skip models and NodeFunctionVectors and modelVariableAccessors      
+        if(thisSymbol$type == 'model' ||
+           thisSymbol$type == 'symbolNodeFunctionVector' ||
+           thisSymbol$type == 'symbolNodeFunctionVector_nimDerivs' ||
+           thisSymbol$type == 'symbolModelVariableAccessorVector' ||
+           thisSymbol$type == 'symbolModelValuesAccessorVector' ||
+           thisSymbol$type == 'symbolCopierVector' ||
+           thisSymbol$type == 'symbolIndexedNodeInfoTable') next ## skip models and NodeFunctionVectors and modelVariableAccessors      
         ptrName = paste0(".", vn, "_Ptr")
         fieldList[[ptrName]] <- "ANY" ## "ANY" 
         ## Model variables:
@@ -242,7 +248,13 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
     for(vn in vNames) {
         thisSymbol <- symTab$getSymbolObject(vn)
         if(is.null(thisSymbol)) next
-        if(thisSymbol$type == 'model' || thisSymbol$type == 'symbolNodeFunctionVector' || thisSymbol$type == 'symbolModelVariableAccessorVector' ||thisSymbol$type == 'symbolModelValuesAccessorVector' || thisSymbol$type == 'symbolCopierVector' || thisSymbol$type == 'symbolIndexedNodeInfoTable') next
+        if(thisSymbol$type == 'model' ||
+           thisSymbol$type == 'symbolNodeFunctionVector' ||
+           thisSymbol$type == 'symbolNodeFunctionVector_nimDerivs' ||
+           thisSymbol$type == 'symbolModelVariableAccessorVector' ||
+           thisSymbol$type == 'symbolModelValuesAccessorVector' ||
+           thisSymbol$type == 'symbolCopierVector' ||
+           thisSymbol$type == 'symbolIndexedNodeInfoTable') next
         ## if(inherits(thisSymbol,'symbolNimArrDoublePtr')) { ## copy type 'modelVar' ##NOT NEEDED
         ## if(inherits(thisSymbol, 'symbolVecNimArrPtr')){ ## copy type 'modelValuesPtr'##NOT NEEDED
         ##if(inherits(thisSymbol, 'symbolNimbleFunction')) { ##NOT NEEDED
@@ -577,6 +589,7 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
         if(inherits(thisSymbol, 'symbolIndexedNodeInfoTable')) {ans[[thisSymbol$name]] <- 'indexedNodeInfoTable'; next}
         if(inherits(thisSymbol, 'symbolNimArrDoublePtr')) {ans[[thisSymbol$name]] <- 'modelVar'; next}
         if(inherits(thisSymbol, 'symbolNodeFunctionVector'))  { ans[[thisSymbol$name]] <- 'nodeFxnVec'; next}
+        if(inherits(thisSymbol, 'symbolNodeFunctionVector_nimDerivs'))  { ans[[thisSymbol$name]] <- 'nodeFxnVec_nimDerivs'; next}
         if(inherits(thisSymbol, 'symbolModelVariableAccessorVector')) {ans[[thisSymbol$name]] <- 'modelVarAccess';next}
         if(inherits(thisSymbol, 'symbolModelValuesAccessorVector')) {ans[[thisSymbol$name]] <- 'modelValuesAccess';next}
         if(inherits(thisSymbol, 'symbolModelValues')) {ans[[thisSymbol$name]] <- 'modelValues'; next}
@@ -783,6 +796,10 @@ copyFromRobjectViaActiveBindings <- function(Robj, cppNames, cppCopyTypes, .self
             populateNodeFxnVecNew(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v, dll = dll) 
             next
         }
+        else if(cppCopyTypes[[v]] == 'nodeFxnVec_nimDerivs') {
+            populateNodeFxnVecNew_nimDerivs(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v, dll = dll) 
+            next
+        }
         else if(cppCopyTypes[[v]] == 'modelVarAccess'){
             populateManyModelVarMapAccess(fxnPtr = .self$.basePtr, Robject = Robj, manyAccessName = v, dll = dll)
             next
@@ -923,6 +940,14 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll,
                 populateNodeFxnVecNew(fxnPtr = basePtr, Robject = Robj, fxnVecName = v, dll = dll)
             }
         },
+        'nodeFxnVec_nimDerivs' = {
+            if(useCompiledCopyMethod) {
+                NULL
+            } else {
+                populateNodeFxnVecNew_nimDerivs(fxnPtr = basePtr, Robject = Robj, fxnVecName = v, dll = dll)
+            }
+        },
+
         'modelVarAccess' = {
             if(useCompiledCopyMethod) {
                 NULL
@@ -1305,6 +1330,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                            project = project, ...)
                                                  boolCopyOneByOne <- !(as.character(cppCopyTypes) %in% c('nimbleFunction',
                                                                                                          'nodeFxnVec',
+                                                                                                         'nodeFxnVec_nimDerivs',
                                                                                                          'numericVector',
                                                                                                          'doubleScalar',
                                                                                                          'integerScalar',

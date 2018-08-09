@@ -528,6 +528,9 @@ makeTypeObj_impl <- function(.self, name, instances, firstOnly) {
   if(inherits(instances[[1]][[name]], 'nodeFunctionVector')) { 
     return(symbolNodeFunctionVector(name = name))
   }
+  if(inherits(instances[[1]][[name]], 'nodeFunctionVector_nimDerivs')) { 
+      return(symbolNodeFunctionVector_nimDerivs(name = name))
+  }
   if(inherits(instances[[1]][[name]], 'modelVariableAccessorVector')){
     return(symbolModelVariableAccessorVector(name = name, lengthName = paste0(name, '_length')) )
   }

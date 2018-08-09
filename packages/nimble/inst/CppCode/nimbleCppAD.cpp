@@ -52,7 +52,7 @@ SEXP reset_AD_timers(SEXP SreportInterval) {
 #define _DERIVS_FULLTAPE
 #ifdef  _DERIVS_FULLTAPE
 
-nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
+nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
 						 NodeVectorClassNew_derivs &nodes,
 						 const NimArr<1, double> &derivOrders) {
   // std::cout<<"need to propagate const-ness"<<std::endl;
@@ -93,16 +93,16 @@ nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
 
 #endif
 
-nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
+nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
     NodeVectorClassNew_derivs &nodes, const double derivOrders) {
   NimArr<1, double> orders(1);
   orders[0] = derivOrders;
-  return (NIM_DERIVS_CALCULATE(nodes, orders));
+  return (nimDerivs_calculate(nodes, orders));
 }
 
 
 
-nimSmartPtr<NIMBLE_ADCLASS> NIM_DERIVS_CALCULATE(
+nimSmartPtr<NIMBLE_ADCLASS> nimDerivs_calculate(
     NodeVectorClassNew_derivs &nodes, int iNodeFunction,
     NimArr<1, double> &derivOrders) {
   nimSmartPtr<NIMBLE_ADCLASS> ADlist = new NIMBLE_ADCLASS;

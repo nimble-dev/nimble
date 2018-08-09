@@ -231,15 +231,13 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                                           cppADCode = 'ANY', generatorSymTab = 'ANY'),			#'logical'),
                             methods = list(
                                 generate = function(indent = '', ...) {
-                                    if(identical(cppADCode, TRUE)){
-                                        oldCppADCode <- nimbleUserNamespace$cppADCode
-                                        nimbleUserNamespace$cppADCode <- TRUE
-                                        on.exit(nimbleUserNamespace$cppADCode <- oldCppADCode)
-                                    }
-                                    ## if(!identical(nimbleUserNamespace$cppADCode, TRUE)){
+                                    ## TRUE was an original possible value.
+                                    ## It was deprecated for the new value, 2L.
+                                    ## This originally was version 2. Now it is the version.
+                                    ## if(isTRUE(cppADCode)){
+                                    ##     oldCppADCode <- nimbleUserNamespace$cppADCode
                                     ##     nimbleUserNamespace$cppADCode <- TRUE
-                                    ##     on.exit(nimbleUserNamespace$cppADCode <- FALSE)
-                                    ##   }
+                                    ##     on.exit(nimbleUserNamespace$cppADCode <- oldCppADCode)
                                     ## }
                                     if(identical(cppADCode, 2L)){
                                         oldCppADCode <- nimbleUserNamespace$cppADCode

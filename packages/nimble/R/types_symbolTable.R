@@ -456,6 +456,21 @@ symbolNodeFunctionVector <-
                     )
                 )
 
+symbolNodeFunctionVector_nimDerivs <- 
+    setRefClass(Class = 'symbolNodeFunctionVector_nimDerivs',
+                contains = 'symbolBase',
+                methods = list(
+                    initialize = function(...) {
+                        callSuper(...)
+                        type <<- 'symbolNodeFunctionVector_nimDerivs'  
+                    },
+                    show = function() writeLines(paste('symbolNodeFunctionVector_nimDerivs', name)),
+                    genCppVar = function(...) {
+                        return(cppNodeFunctionVector(name = name)) 
+                    }
+                    )
+                )
+
 symbolModel <- 
     setRefClass(Class = 'symbolModel',
                 contains = 'symbolBase',

@@ -157,7 +157,7 @@ class nodeFun : public NamedObjects {
   };
   CppAD::AD<double> calculateBlock_ADproxyModel(int operand) const { return calculate_ADproxyModel(indexedNodeInfoTable[operand]); }
 
-  virtual void calculateWithArgs_deriv(const indexedNodeInfo &iNI, const NimArr<1, double> & ARG2_nimDerivsOrders_, const NimArr<1, double> & ARG3_wrtVector_, nimSmartPtr<NIMBLE_ADCLASS> ansList) = 0;
+  //  virtual void calculateWithArgs_deriv(const indexedNodeInfo &iNI, const NimArr<1, double> & ARG2_nimDerivsOrders_, const NimArr<1, double> & ARG3_wrtVector_, nimSmartPtr<NIMBLE_ADCLASS> ansList) = 0;
   virtual double calculateDiff(const indexedNodeInfo &iNI) const =0;
   // virtual CppAD::AD<double> calculateDiff_ADproxyModel(const indexedNodeInfo &iNI) const =0;
   virtual void simulate(const indexedNodeInfo &iNI) const =0;
@@ -172,9 +172,9 @@ class nodeFun : public NamedObjects {
   virtual NimArr<2, double> getBound_2D_double(int boundID, const indexedNodeInfo &iNI) const {NimArr<2, double> ans; return(ans);}
 
   double calculateBlock(int operand) const { return calculate(indexedNodeInfoTable[operand]); }
-  void calculateWithArgs_derivBlock(int operand, NimArr<1, double> &derivOrders, const NimArr<1, double> &wrtVector, nimSmartPtr<NIMBLE_ADCLASS> ansList) {
-	  return(calculateWithArgs_deriv(indexedNodeInfoTable[operand], derivOrders, wrtVector, ansList));
-  }
+  /* void calculateWithArgs_derivBlock(int operand, NimArr<1, double> &derivOrders, const NimArr<1, double> &wrtVector, nimSmartPtr<NIMBLE_ADCLASS> ansList) { */
+  /* 	  return(calculateWithArgs_deriv(indexedNodeInfoTable[operand], derivOrders, wrtVector, ansList)); */
+  /* } */
   double calculateDiffBlock(int operand) const { return calculateDiff(indexedNodeInfoTable[operand]); }
   double getLogProbBlock(int operand) const { return getLogProb(indexedNodeInfoTable[operand]); }
   void simulateBlock(int operand) const { simulate(indexedNodeInfoTable[operand]); }
@@ -213,11 +213,13 @@ class nodeFun : public NamedObjects {
     runExtraInputObject(NodeVectorClassNew_derivs &NV,
 			std::vector< CppAD::AD<double> > &extraInputDummyInput,
 			std::vector< CppAD::AD<double> > &extraInputResult);
+  void
+    delete_extraInputObject(NodeVectorClassNew_derivs &NV);
   virtual atomic_extraOutputObject*
     runExtraOutputObject(NodeVectorClassNew_derivs &NV,
-			 //			 std::vector< CppAD::AD<double> > &extraOutputs,
-			 //std::vector< CppAD::AD<double> > &extraOutputDummyResult,
 			 CppAD::AD<double> &logProb);
+  void
+    delete_extraOutputObject(NodeVectorClassNew_derivs &NV);
   virtual CppAD::AD<double> call_calculate_ADproxyModel(NodeVectorClassNew_derivs &NV);
 };
 

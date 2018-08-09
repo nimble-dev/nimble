@@ -1,6 +1,6 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
-nimbleOptions(showCompilerOutput = TRUE)
+nimbleOptions(showCompilerOutput = FALSE)
 context("Testing of derivatives for distributions and dsl functions")
 
 
@@ -366,15 +366,17 @@ distributionArgsList[['dweibull']] <- list(
 # )
 
 lapply(distributionArgsList, function(x){
-  runFun <- gen_runFunCore(makeADDistributionTestList(x))
-  methodFun <- gen_runFunCore(makeADDistributionMethodTestList(x))
-  thisNf <- nimbleFunction(setup = function(){},
-                           run = runFun,
-                           methods = list(
-                             method1 = methodFun
-                           ),
-                           enableDerivs = list('method1'))
-  testADDistribution(thisNf, x$argsValues,
-                     x$distnName)
-
+    test_that(paste0('AD for distribution ', x$distnName),
+    {
+        runFun <- gen_runFunCore(makeADDistributionTestList(x))
+        methodFun <- gen_runFunCore(makeADDistributionMethodTestList(x))
+        thisNf <- nimbleFunction(setup = function(){},
+                                 run = runFun,
+                                 methods = list(
+                                     method1 = methodFun
+                                 ),
+                                 enableDerivs = list('method1'))
+        testADDistribution(thisNf, x$argsValues,
+                           x$distnName)
+    })
 })

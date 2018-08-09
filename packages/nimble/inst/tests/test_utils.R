@@ -1310,27 +1310,28 @@ testADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
       if(is.logical(debug) && debug == TRUE) browser()
       else if(is.numeric(debug) && debug == iArg) browser()
       if(0 %in% iOrdersToCheck)
-        expect_equal(RderivsList$value, CderivsList$value, tolerance = .01, 
+        expect_equal(RderivsList$value, CderivsList$value, tolerance = 1e-6, 
                      info = paste("Values of", name , "not equal for arguments: ",
                                   argValsText, '.'))
       else
         print(paste("Skipping check of R and C++ `value` equality for ",
                     name, " with arguments: ", argValsText ))
       if(1 %in% iOrdersToCheck)
-        expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = .1,
+        expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = 1e-6,
                      info = paste("Jacobians of", name , "not equal for arguments: ",
                                   argValsText, '.'))
       else
         print(paste("Skipping check of R and C++ `jacobian` equality for ",
                     name, " with arguments: ", argValsText ))
       if(2 %in% iOrdersToCheck)
-        expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = .1,
+        expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = 1e-6,
                      info = paste("Hessians of", name , "not equal for arguments: ",
                                   argValsText, '.'))
       else
         print(paste("Skipping check of R and C++ `hessian` equality for ",
                     name, " with arguments: ", argValsText ))
-  }
+    }
+    nimble:::clearCompiled(CADfun)
 }
 
 expandNames <- function(var, ...) {

@@ -401,6 +401,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   if(nimbleOptions('experimentalEnableDerivs') &&
                                                      length(environment(nfProc$nfGenerator)$enableDerivs) > 0) {
                                                       addADclassContent()
+                                                  }
+                                                  if('nodeFun' %in% .self$inheritance) {
                                                       updateADproxyModelMethods(.self)
                                                   }
                                                      
@@ -415,6 +417,10 @@ updateADproxyModelMethods <- function(.self) {
     ## Update return type and names of functions like dnorm -> nimDerivs_dnorm
     functionNames <- names(.self$functionDefs)
     ADproxyModel_functionNames <- functionNames[ grepl("_ADproxyModel", functionNames ) ]
+    if(length(ADproxyModel_functionNames) > 0) {
+        .self$Hincludes <- c(nimbleIncludeFile("nimbleCppAD.h"),
+                             "<TMB/distributions_R.hpp>", .self$Hincludes)
+    }
     for(fn in ADproxyModel_functionNames) {
         thisDef <- .self$functionDefs[[fn]]
         thisDef$returnType <- cppVarSym2templateTypeCppVarSym( thisDef$returnType,
@@ -441,8 +447,6 @@ updateADproxyModelMethods <- function(.self) {
                                             replacementTemplateArgs = "double")
         classST$addSymbol(newSym, allowReplace = TRUE)
     }
-    
-    
     NULL
 }
 
@@ -466,7 +470,7 @@ makeSingleCopyCall <- function(varName, cppCopyType) {
            'nodeFxnVec' = {
                cppLiteral(paste0("COPY_NODE_FXN_VECTOR_FROM_R_OBJECT(\"", varName, "\");"))
            },
-           'nodeFxnVec_derivs' = {
+           'nodeFxnVec_nimDerivs' = {
                cppLiteral(paste0("COPY_NODE_FXN_VECTOR_DERIVS_FROM_R_OBJECT(\"", varName, "\");"))
            },
            'modelVarAccess' = {
@@ -488,11 +492,11 @@ makeCopyFromRobjectDef <- function(className, cppCopyTypes, Robj) {
     copyCalls <- list()
     varNames <- names(cppCopyTypes)
     for(i in seq_along(cppCopyTypes)) {
-      if(cppCopyTypes[[i]] == "nodeFxnVec"){
-        if(!is.null(Robj[[varNames[i]]]$nimDerivsInfo)){
-          cppCopyTypes[[i]] = "nodeFxnVec_derivs"
-        }
-      } 
+      ## if(cppCopyTypes[[i]] == "nodeFxnVec"){
+      ##   if(!is.null(Robj[[varNames[i]]]$nimDerivsInfo)){
+      ##     cppCopyTypes[[i]] = "nodeFxnVec_derivs"
+      ##   }
+      ## }
       copyCalls[[varNames[i]]] <- makeSingleCopyCall(varNames[i], cppCopyTypes[[i]])
     }
 
