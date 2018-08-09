@@ -948,7 +948,8 @@ sampler_HMC <- nimbleFunction(
             p2 <- pArg + eps/2 * jacobian(qArg)
             q2 <- qArg + eps   * p2
             p3 <- p2   + eps/2 * jacobian(q2)
-            if(warnings) if(is.na.vec(q2) | is.nan.vec(q2) | is.na.vec(p3) | is.nan.vec(p3)) print('caught a NA or NaN value in HMC leapfrog routine')
+            if(warnings) if(is.nan.vec(q2) | is.nan.vec(p3)) { print('encountered a NaN value in HMC leapfrog routine')
+                                                               warnings <<- FALSE }
             returnType(qpNLDef());   return(qpNLDef$new(q = q2, p = p3))
         },
         initializeEpsilon = function() {
@@ -958,14 +959,15 @@ sampler_HMC <- nimbleFunction(
             for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
             epsilon <<- 1
             qpNL <- leapfrog(q, p, epsilon)
-            ##while(is.na.vec(qpNL$q) | is.nan.vec(qpNL$q) | is.na.vec(qpNL$p) | is.nan.vec(qpNL$p)) {   ## XXXXXXXXXXXXXXXXXXXX
-            ##    print('found NaN in initializeEpsilon; recommend better initial values for model')     ## XXXXXXXXXXXXXXXXXXXX
-            ##    print('reducing initial epsilon guess by 1/1000')                                      ## XXXXXXXXXXXXXXXXXXXX
-            ##    epsilon <<- epsilon / 100                                                              ## XXXXXXXXXXXXXXXXXXXX
-            ##    qpNL <- leapfrog(q, p, epsilon)                                                        ## XXXXXXXXXXXXXXXXXXXX
-            ##}                                                                                          ## XXXXXXXXXXXXXXXXXXXX
+            ##while(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) {                                ## XXXXXXXXXXXXXXXXXXXX
+            ##    print('found NaN in initializeEpsilon; recommend better initial values')    ## XXXXXXXXXXXXXXXXXXXX
+            ##    print('reducing initial epsilon guess by 1/1000')                           ## XXXXXXXXXXXXXXXXXXXX
+            ##    epsilon <<- epsilon / 1000                                                  ## XXXXXXXXXXXXXXXXXXXX
+            ##    qpNL <- leapfrog(q, p, epsilon)                                             ## XXXXXXXXXXXXXXXXXXXX
+            ##}                                                                               ## XXXXXXXXXXXXXXXXXXXX
             a <- 2*nimStep(exp(logH(qpNL$q, qpNL$p) - logH(q, p)) - 0.5) - 1
-            if(warnings) if(is.na(a) | is.nan(a)) print('caught an NA or NaN acceptance prob in HMC initializeEpsilon routine')
+            if(warnings) { if(is.nan(a)) print('caught a NaN acceptance prob in HMC initializeEpsilon routine')
+                           warnings <<- FALSE }
             while((exp(logH(qpNL$q, qpNL$p) - logH(q, p)))^a > 2^(-a)) {
                 epsilon <<- epsilon * 2^a
                 qpNL <- leapfrog(q, p, epsilon)   ## must be last model-changing call
@@ -2147,10 +2149,11 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @section HMC sampler:
 #'
-#' The Hamiltonian Monte Carlo sampler implements the No-U-Turn algorithm (NUTS; Hoffman and Gelman, 2014) for performing joint updates of multiple continuous-valued posterior dimensions.  This is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  In contrast to standard HMC (Neal, 2011), the NUTS algorithm removes the tuning parameters of the leapfrog step size and the number of leapfrog steps, thus providing a sampling algorithm that can be used without hand tuning or trial runs.
+#' The Hamiltonian Monte Carlo sampler implements the No-U-Turn algorithm (NUTS; Hoffman and Gelman, 2014) for performing joint updates of multiple continuous-valued posterior dimensions.  This is done by introducing auxiliary momentum variables, and using first-order derivatives to simulate Hamiltonian dynamics on this augmented paramter space.  Internally, any posterior dimensions with bounded support are transformed, so sampling takes place on an unconstrained space.  In contrast to standard HMC (Neal, 2011), the NUTS algorithm removes the tuning parameters of the leapfrog step size and the number of leapfrog steps, thus providing a sampling algorithm that can be used without hand tuning or trial runs.
 #
 #' The HMC sampler accepts the following control list elements:
 #' \itemize{
+#' \item warnings.  A logical argument, specifying whether to give a warning when NA or NaN values are encountered. (default = TRUE)
 #' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog stepsize. (default = 1000)
 #' }
 #'
