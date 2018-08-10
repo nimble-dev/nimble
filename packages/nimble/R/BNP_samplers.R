@@ -1032,7 +1032,7 @@ sampler_CRP_uniques <- nimbleFunction(
   
   
   run = function() {
-    BNP <- TRUE
+    isNonParam <- TRUE # indicates if the MCMC sampling is nonparametric or not. Is nonparametric when there are more cluster parameters than required clusters.
     conc <- model$getParam(target, 'conc')
     helperFunctions[[1]]$storeParams()
     
@@ -1056,7 +1056,6 @@ sampler_CRP_uniques <- nimbleFunction(
     xiUniques[k] <<- k #  if k is sampled, a new component in the mixture is opened
     xi <- model[[target]]   
     
-    # is this bunch of code necessary?
     for(i in 1:n) {
       if(type == 'indivCalcs') {
         if(nInterm >= 1) model$calculate(intermNodes[i])
@@ -1071,8 +1070,8 @@ sampler_CRP_uniques <- nimbleFunction(
       
       if((k-1) > min_nTilde) {
         nimCat('CRP_sampler: This MCMC is not fully nonparametric. More components than cluster parameters exist are required.\n')
-        k <- k - 1 # whats best to de here? k <- xi[i],k <- k-1, k <- n+1?
-        BNP <- FALSE
+        k <- k - 1 
+        isNonParam <- FALSE
       }
       
       xi <- model[[target]]
@@ -1098,9 +1097,9 @@ sampler_CRP_uniques <- nimbleFunction(
       model[[target]][i] <<- index # <<-
       xiCounts[index] <<- xiCounts[index] + 1
       if(index==k) { # if a new label is sampled we update the cluster parameter
-        if(BNP) { # used to be k != xi[i]
+        if(isNonParam) { # used to be k != xi[i]
           helperFunctions[[1]]$sample(i, index)
-        }  ## when BNP=FALSE (k == xi[i]), it means we tried to create a cluster beyond min_nTilde, so don't sample new cluster parameters
+        }  ## when isNonParam=FALSE (k == xi[i]), it means we tried to create a cluster beyond min_nTilde, so don't sample new cluster parameters
       }
       
       cond <- xiCounts[1:(k-1)] == 0
@@ -1133,7 +1132,6 @@ sampler_CRP_uniques <- nimbleFunction(
           xiUniques[k] <<- k #<<-
         }
       }
-      
     }
     
     model$calculate(calcNodes)
