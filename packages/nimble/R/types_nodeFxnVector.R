@@ -12,7 +12,6 @@ nodeFunctionVector <-
              sortUnique = TRUE,
              errorContext = "")
 {
-    ##        model <<- model
     if(!is.null(wrtNodes)){
         nimDerivsInfo <- nimDerivsInfoClass(wrtNodes = wrtNodes, calcNodes = nodeNames, thisModel = model,
                                             cInfo = TRUE)
@@ -53,10 +52,13 @@ nodeFunctionVector <-
     }
     ## Any modification to this list ordering needs to be updated in
     ## populateNodeFxnVectorNew_copyFromRobject in accessorClasses.cpp
+    classLabel <- if(is.null(nimDerivsInfo))
+                      "nodeFunctionVector"
+                  else
+                      "nodeFunctionVector_nimDerivs"
     structure(list(gids = gids,
                    indexingInfo = indexingInfo,
                    model = model,
                    nimDerivsInfo = nimDerivsInfo),
-              class = "nodeFunctionVector")
+              class = classLabel)
 }
-

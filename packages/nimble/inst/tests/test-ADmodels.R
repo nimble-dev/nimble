@@ -1,7 +1,7 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 nimbleOptions(experimentalEnableDerivs = TRUE)
 nimbleOptions(allowDynamicIndexing = FALSE)
-nimbleOptions(showCompilerOutput = TRUE)
+##nimbleOptions(showCompilerOutput = TRUE)
 context("Testing of derivatives for calculate() for nimbleModels")
   
 
