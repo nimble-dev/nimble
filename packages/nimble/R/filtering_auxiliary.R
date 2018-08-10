@@ -49,18 +49,19 @@ auxFStep <- nimbleFunction(
     name = 'auxFStep',
   contains = auxStepVirtual,
   setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names,
-                   saveAll, smoothing, lookahead, silent = TRUE) {
+                   saveAll, smoothing, lookahead, resamplingMethod,
+                   silent = TRUE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
     thisNode <- nodes[iNode]
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
     thisData   <- model$getDependencies(thisNode, dataOnly = TRUE) 
-    #current time point
+    ## t is the current time point.
     t <- iNode
-    # Get names of x and xs node for current and previous time point,
-    # will be different depending on whether we are saving all time points
-    # or only the most recent
+    ## Get names of x and xs node for current and previous time point,
+    ## will be different depending on whether we are saving all time points
+    ## or only the most recent.
     if(saveAll == 1){
       allPrevNodes <- model$expandNodeNames(nodes[1:(iNode-1)])
       prevXName <- prevNode    
@@ -93,24 +94,35 @@ auxFStep <- nimbleFunction(
         auxFuncList[[i]] <- auxSimFunc(model,  allLatentNodes)
     }
     ess <- 0
+    resamplerFunctionList <- nimbleFunctionList(resamplerVirtual)
+    defaultResamplerFlag <- FALSE
+    if(resamplingMethod == 'default'){
+      resamplerFunctionList[[1]] <- residualResampleFunction()
+      defaultResamplerFlag <- TRUE
+    }
+    if(resamplingMethod == 'residual')
+      resamplerFunctionList[[1]] <- residualResampleFunction()
+    if(resamplingMethod == 'multinomial')
+      resamplerFunctionList[[1]] <- multinomialResampleFunction()
+    if(resamplingMethod == 'stratified')
+      resamplerFunctionList[[1]] <- stratifiedResampleFunction()
+    if(resamplingMethod == 'systematic')
+      resamplerFunctionList[[1]] <- systematicResampleFunction()
   },
   run = function(m = integer()) {
     returnType(double())
-    ##declare(auxll, double(1,m))
     auxll <- numeric(m, init=FALSE)
-    ##declare(auxWts, double(1,m))
     auxWts <- numeric(m, init=FALSE)
-    ##declare(wts, double(1,m))
     wts <- numeric(m, init=FALSE)
     ids <- integer(m, 0)
-    ##declare(ll, double(1,m))
     ll <- numeric(m, init=FALSE)
     
-    ## This is the look-ahead step, not conducted for first time-point
+    ## This is the look-ahead step, not conducted for first time-point.
     if(notFirst){ 
       for(i in 1:m) {
         if(smoothing == 1){
-          copy(mvEWSamples, mvWSamples, nodes = allPrevNodes, nodesTo = allPrevNodes, row = i, rowTo=i)
+          copy(mvEWSamples, mvWSamples, nodes = allPrevNodes,
+               nodesTo = allPrevNodes, row = i, rowTo=i)
         }
         copy(mvWSamples, model, prevXName, prevNode, row=i)        
         calculate(model, prevDeterm)
@@ -120,54 +132,72 @@ auxFStep <- nimbleFunction(
         }
         else
           auxFuncList[[1]]$lookahead()
-        
+  
         calculate(model, thisDeterm)
-        auxll[i] <- calculate(model, thisData)  # get p(y_t+1 | x_t+1)
+        ## Get p(y_t+1 | x_t+1).
+        auxll[i] <- calculate(model, thisData)  
         if(is.nan(auxll[i])){
           return(-Inf)
         }
-        auxll[i] <- auxll[i]+calculate(model, thisNode) # multiply by p(x_t+1 | x_t)
-        auxWts[i] <- auxll[i] + mvWSamples['wts',i][prevInd] # multiply by weight from time t
+        ## Multiply by p(x_t+1 | x_t).
+        auxll[i] <- auxll[i]+calculate(model, thisNode) 
+        ## Multiply by weight from time t.
+        auxWts[i] <- auxll[i] + mvWSamples['wts',i][prevInd] 
       }
-      normAuxWts <- exp(auxWts)/sum(exp(auxWts))  # normalize weights and resample
-      rankSample(normAuxWts, m, ids, silent)
+      ## Normalize weights and resample.
+      normAuxWts <- exp(auxWts)/sum(exp(auxWts))  
+      if(defaultResamplerFlag == TRUE){
+        rankSample(normAuxWts, m, ids, silent)	 
+      }
+      else{
+        ids <- resamplerFunctionList[[1]]$run(normAuxWts)  
+      }
     }   
     for(i in 1:m) {
       if(notFirst) {
-        copy(mvWSamples, model, nodes = prevXName, nodesTo = prevNode, row = ids[i])
+        copy(mvWSamples, model, nodes = prevXName, nodesTo = prevNode,
+             row = ids[i])
         calculate(model, prevDeterm) 
       }
-      simulate(model, thisNode)  # simulate from x_t+1 | x_t
+      # Simulate from x_t+1 | x_t.
+      simulate(model, thisNode)  
       copy(model, mvWSamples, nodes = thisNode, nodesTo = thisXName, row=i)
       calculate(model, thisDeterm)
-      ll[i]  <- calculate(model, thisData)  # get p(y_t+1 | x_t+1)
+      ## Get p(y_t+1 | x_t+1).
+      ll[i]  <- calculate(model, thisData)  
       if(is.nan(ll[i])){
         return(-Inf)
       }
       if(notFirst){
-        wts[i] <- ll[i]-auxll[ids[i]]  # construct weight following step 4 of paper    
+        ## Construct weight following step 4 of paper.    
+        wts[i] <- ll[i]-auxll[ids[i]]  
       }
       else{
-        wts[i] <- ll[i]  # First step has no auxiliary weights
+        ## First step has no auxiliary weights.
+        wts[i] <- ll[i]  
       }
     }
-    
     normWts <- exp(wts)/sum(exp(wts))
     ess <<- 1/sum(normWts^2) 
-    
     for(i in 1:m){
-      ##  save weights for use in next timepoint's look-ahead step
+      ## Save weights for use in next timepoint's look-ahead step.
       mvWSamples['wts', i][currInd] <<- log(normWts[i])   
     }
-    rankSample(normWts, m, ids, silent)
+    if(defaultResamplerFlag == TRUE){
+      rankSample(normWts, m, ids, silent)	 
+    }
+    else{
+      ids <- resamplerFunctionList[[1]]$run(normWts)  
+    }
     for(i in 1:m){
       if(smoothing == 1){
-        copy(mvWSamples, mvEWSamples, nodes = allPrevNodes, nodesTo = allPrevNodes, row = ids[i], rowTo=i)
+        copy(mvWSamples, mvEWSamples, nodes = allPrevNodes, 
+             nodesTo = allPrevNodes, row = ids[i], rowTo=i)
       }
       copy(mvWSamples, mvEWSamples, thisXName, thisXName, ids[i], i)
     }
     
-    ##  Calculate likelihood p(y_t+1 | y_1:t) as in equation (3) of paper
+    ##  Calculate likelihood p(y_t+1 | y_1:t) as in equation (3) of paper.
     if(notFirst){
       outLL <- sum(exp(wts))/m
       outLL <- outLL*sum(exp(auxWts))
@@ -192,15 +222,18 @@ return(0)
 #' 
 #' @description Create an auxiliary particle filter algorithm for a given NIMBLE state space model.  
 #'
-#' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function
+#' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model.
+#' @param nodes A character vector specifying the latent model nodes 
+#'  over which the particle filter will stochastically integrate over to
+#'  estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model. 
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 #' @author  Nicholas Michaud
 #' @details 
-#' The \code{control} argument can be specified as follows.
+#' Each of the \code{control()} list options are described in detail here:
 #' \describe{
 #' \item{lookahead}{The lookahead function used to calculate auxiliary weights.  Can choose between \code{'mean'} and \code{'simulate'}.
 #'  Defaults to \code{'simulate'}.}
+#'  \item{resamplingMethod}{The type of resampling algorithm to be used within the particle filter.  Can choose between \code{'default'} (which uses NIMBLE's \code{rankSample()} function), \code{'systematic'}, \code{'stratified'}, \code{'residual'}, and \code{'multinomial'}.  Defaults to \code{'default'}. Resampling methods other than \code{'default'} are currently experimental.}
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (\code{TRUE}), or only for the most recent time point (\code{FALSE})}
 #'  \item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]) if \code{smoothing = TRUE}, or instead to save filtered samples from f(x[t]|y[1:t]) if \code{smoothing = FALSE}. \code{smoothing = TRUE} only works if \code{saveAll = TRUE}.}
 #'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time. This need only be set if the number of time points is less than or equal to the size of the latent state at each time point.}
@@ -251,28 +284,38 @@ buildAuxiliaryFilter <- nimbleFunction(
     
    
     
-    #control list extraction
+    ## Control list extraction.
     saveAll <- control[['saveAll']]
     smoothing <- control[['smoothing']]
     silent <- control[['silent']]
     timeIndex <- control[['timeIndex']]
     lookahead <- control[['lookahead']]
     initModel <- control[['initModel']]
+    resamplingMethod <- control[['resamplingMethod']]
     if(is.null(silent)) silent <- TRUE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
     if(is.null(lookahead)) lookahead <- 'simulate'
     if(is.null(initModel)) initModel <- TRUE
-    if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to work")
+    if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to 
+                                  work")
     if(lookahead == "mean"){
-      errors <- sapply(model$expandNodeNames(nodes), function(node){tryCatch(getParam(model, node, 'mean'), error=function(a){return("error")})})
-      if(any(errors == "error", na.rm=TRUE)) stop("cannot use 'mean' lookahead for this model, try 'simulate'")
+      errors <- sapply(model$expandNodeNames(nodes), function(node){
+        tryCatch(getParam(model, node, 'mean'), error=function(a){
+          return("error")})})
+      if(any(errors == "error", na.rm=TRUE)) 
+        stop("cannot use 'mean' lookahead for this model, try 'simulate'")
     } 
     else if(lookahead != "simulate"){
       stop("lookahead argument must be either 'simulate' or 'mean'")
     }
+    if(is.null(resamplingMethod)) resamplingMethod <- 'default'
+    if(!(resamplingMethod %in% c('default', 'multinomial', 'systematic', 'stratified',
+                                 'residual')))
+      stop('resamplingMethod must be one of: "default", "multinomial", "systematic",
+           "stratified", or "residual". ')
     
-    #latent state info
+    ## Latent state info.
     varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
     if(length(unique(varName))>1){
       stop("all latent nodes must come from same variable")
@@ -283,7 +326,8 @@ buildAuxiliaryFilter <- nimbleFunction(
     if(is.null(timeIndex)){
       timeIndex <- which.max(info$maxs)
       timeLength <- max(info$maxs)
-      if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
+      ## Check if multiple dimensions share the max index size.
+      if(sum(info$maxs==timeLength)>1) 
         stop("unable to determine which dimension indexes time. 
              Specify manually using the 'timeIndex' control list argument")
     } else{
@@ -292,8 +336,9 @@ buildAuxiliaryFilter <- nimbleFunction(
     nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
                    rep(",", info$nDim - timeIndex),"]", sep="")
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
-    if(length(unique(dims)) > 1) stop('sizes or dimensions of latent states varies')
-    vars <- model$getVarNames(nodes =  nodes)  # need var names too
+    if(length(unique(dims)) > 1) stop('sizes or dimensions of latent states
+                                      varies')
+    vars <- model$getVarNames(nodes =  nodes) 
     
     my_initializeModel <- initializeModel(model, silent = silent)
     
@@ -313,8 +358,9 @@ buildAuxiliaryFilter <- nimbleFunction(
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- length(dims)
+      ## Only need one weight per particle (at time T) if smoothing == TRUE.
       if(smoothing == T){
-        size$wts <- 1 ##  only need one weight per particle (at time T) if smoothing == TRUE
+        size$wts <- 1 
       }
       mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
@@ -342,8 +388,10 @@ buildAuxiliaryFilter <- nimbleFunction(
     names <- names[1]
     auxStepFunctions <- nimbleFunctionList(auxStepVirtual)
     for(iNode in seq_along(nodes))
-      auxStepFunctions[[iNode]] <- auxFStep(model, mvEWSamples, mvWSamples, nodes,
-                                            iNode, names, saveAll, smoothing, lookahead, silent)
+      auxStepFunctions[[iNode]] <- auxFStep(model, mvEWSamples, mvWSamples,
+                                            nodes, iNode, names, saveAll, 
+                                            smoothing, lookahead, 
+                                            resamplingMethod, silent)
     
     essVals <- rep(0, length(nodes))
   },
@@ -358,9 +406,9 @@ buildAuxiliaryFilter <- nimbleFunction(
       logL <- logL + auxStepFunctions[[iNode]]$run(m)
       essVals[iNode] <<- auxStepFunctions[[iNode]]$returnESS()
       
-      # when all particles have 0 weight, likelihood becomes NAN
-      # this happens if top-level params have bad values - possible
-      # during pmcmc for example
+      ## When all particles have 0 weight, likelihood becomes NAN
+      ## this happens if top-level params have bad values - possible
+      ## during pmcmc for example.
       if(is.nan(logL)) return(-Inf)
       if(logL == -Inf) return(logL) 
       if(logL == Inf) return(-Inf) 

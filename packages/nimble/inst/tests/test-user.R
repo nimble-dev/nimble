@@ -347,6 +347,52 @@ test_that("Test that deregistration of user-supplied distributions works", {
 ## try(test_that("Test of user-supplied distribution without r function: ",
 ##               expect_false(is(out, 'try-error'))))
 
+## Instead, test user-defined without r function, but with use of registerDistributions()
+
+test_that("Test that user-defined distributions without 'r' function doesn't cause problems", {
+    ## scalar density
+    dfoo = nimbleFunction(
+        run = function(x = double(0), log = integer(0, default = 0)) {
+            returnType(double(0))
+            return(0)
+        })
+    
+    temporarilyAssignInGlobalEnv(dfoo)
+
+    registerDistributions(list(
+        dfoo = list(
+            BUGSdist = "dfoo()")), userEnv = .GlobalEnv)
+    
+    code <- nimbleCode({
+        v ~ dfoo()
+    })
+    m <- nimbleModel(code)
+    cm <- compileNimble(m)
+
+    ## non-scalar density
+    dfoo2 = nimbleFunction(
+        run = function(x = double(1), log = integer(0, default = 0)) {
+            returnType(double(0))
+            return(0)
+        })
+    
+    temporarilyAssignInGlobalEnv(dfoo2)
+
+    registerDistributions(list(
+        dfoo2 = list(
+            BUGSdist = "dfoo2()",
+            types = c('value = double(1)'))), userEnv = .GlobalEnv)
+    
+    code <- nimbleCode({
+        v[1:3] ~ dfoo2()
+    })
+    m <- nimbleModel(code)
+    cm <- compileNimble(m)
+})
+
+
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {

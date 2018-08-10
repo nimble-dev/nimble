@@ -635,7 +635,6 @@ CPPAD_INC
 EGREP
 GREP
 CXXCPP
-GNUMAKEFILE_INCLUDE_MAKECONF
 OBJEXT
 EXEEXT
 ac_ct_CXX
@@ -643,6 +642,7 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+GNUMAKEFILE_INCLUDE_MAKECONF
 target_alias
 host_alias
 build_alias
@@ -2004,6 +2004,127 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+
+NEED_MAKEVARS_FILE=TRUE
+
+: ${R_HOME=`R RHOME`}
+if test -z "${R_HOME}"; then
+    as_fn_error $? "Could not determine R_HOME." "$LINENO" 5
+fi
+
+
+
+# Check whether --with-eigen was given.
+if test "${with_eigen+set}" = set; then :
+  withval=$with_eigen; EIGEN_DIR="${withval}"
+fi
+
+
+
+# Check whether --with-cppad was given.
+if test "${with_cppad+set}" = set; then :
+  withval=$with_cppad; CPPAD_DIR="${withval}"
+fi
+
+
+# Check whether --enable-dylib was given.
+if test "${enable_dylib+set}" = set; then :
+  enableval=$enable_dylib; ENABLE_LIB=${enableval}
+else
+  if ! test `uname` = "Linux" ; then
+   ENABLE_LIB=false
+else
+   ENABLE_LIB=true
+fi
+
+fi
+
+
+if test -n "${NO_LIBNIMBLE}" ; then
+  ENABLE_LIB=false
+  echo "Disabling libnimble."
+fi
+
+if test -n "${LIBNIMBLE}" ; then
+  ENABLE_LIB=true
+  echo "Enabling libnimble."
+fi
+
+# Check whether --enable-debugging was given.
+if test "${enable_debugging+set}" = set; then :
+  enableval=$enable_debugging; ENABLE_DEBUGGING=${enableval}
+else
+  ENABLE_DEBUGGING=no
+fi
+
+
+if test "${ENABLE_DEBUGGING}" = "yes"; then
+   echo "enabling R's default debugging information in libnimble"
+   GNUMAKEFILE_INCLUDE_MAKECONF="\$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
+else
+   GNUMAKEFILE_INCLUDE_MAKECONF="Makeconf"
+fi
+
+
+if test -n "$EIGEN_DIR" ; then
+  echo "Checking eigen directory $EIGEN_DIR"
+  if ! test -d "$EIGEN_DIR" ; then
+     echo "$EIGEN_DIR is not a directory"
+  fi
+
+  if ! test -d "$EIGEN_DIR/Eigen" ; then
+     echo "$EIGEN_DIR does not contain the directory Eigen"
+     exit 1;
+  fi
+
+  if ! test -f "$EIGEN_DIR/Eigen/Dense" ; then
+     echo "$EIGEN_DIR/Eigen does not contain the file Dense"
+     exit 1;
+  fi
+
+  if ! test "${EIGEN_DIR}" = "" ; then
+    EIGEN_INC="-I${EIGEN_DIR}"
+  fi
+fi
+
+if test -n "$CPPAD_DIR" ; then
+  echo "Checking cppad directory CPPAD_DIR"
+  if ! test -d "$CPPAD_DIR" ; then
+     echo "$CPPAD_DIR is not a directory"
+  fi
+
+  if ! test -d "$CPPAD_DIR/cppad" ; then
+     echo "$CPPAD_DIR does not contain the directory cppad"
+     exit 1;
+  fi
+
+  if ! test -f "$CPPAD_DIR/cppad/configure.hpp" ; then
+     echo "$CPPAD_DIR/cppad does not contain the file configure.hpp"
+     exit 1;
+  fi
+fi
+
+if test -n "CPPAD_DIR" && ! test "${CPPAD_DIR}" = "" ; then
+   echo "Setting CPPFLAGS to find CppAD"
+   export CPPFLAGS="-I${CPPAD_DIR}"
+fi
+
+if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
+   echo "Setting CPPFLAGS to find Eigen"
+   export CPPFLAGS="-I${EIGEN_DIR}"
+fi
+
+
+CXX11=`"${R_HOME}/bin/R" CMD config CXX11`
+CXX11STD=`"${R_HOME}/bin/R" CMD config CXX11STD`
+CXX="${CXX11} ${CXX11STD}"
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -2505,122 +2626,6 @@ else
     CXXFLAGS=
   fi
 fi
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
-NEED_MAKEVARS_FILE=TRUE
-
-
-
-# Check whether --with-eigen was given.
-if test "${with_eigen+set}" = set; then :
-  withval=$with_eigen; EIGEN_DIR="${withval}"
-fi
-
-
-
-# Check whether --with-cppad was given.
-if test "${with_cppad+set}" = set; then :
-  withval=$with_cppad; CPPAD_DIR="${withval}"
-fi
-
-
-# Check whether --enable-dylib was given.
-if test "${enable_dylib+set}" = set; then :
-  enableval=$enable_dylib; ENABLE_LIB=${enableval}
-else
-  if ! test `uname` = "Linux" ; then
-   ENABLE_LIB=false
-else
-   ENABLE_LIB=true
-fi
-
-fi
-
-
-if test -n "${NO_LIBNIMBLE}" ; then
-  ENABLE_LIB=false
-  echo "Disabling libnimble."
-fi
-
-if test -n "${LIBNIMBLE}" ; then
-  ENABLE_LIB=true
-  echo "Enabling libnimble."
-fi
-
-# Check whether --enable-debugging was given.
-if test "${enable_debugging+set}" = set; then :
-  enableval=$enable_debugging; ENABLE_DEBUGGING=${enableval}
-else
-  ENABLE_DEBUGGING=no
-fi
-
-
-if test "${ENABLE_DEBUGGING}" = "yes"; then
-   echo "enabling R's default debugging information in libnimble"
-   GNUMAKEFILE_INCLUDE_MAKECONF="\$(R_HOME)/etc/\$(R_ARCH)/Makeconf"
-else
-   GNUMAKEFILE_INCLUDE_MAKECONF="Makeconf"
-fi
-
-
-if test -n "$EIGEN_DIR" ; then
-  echo "Checking eigen directory $EIGEN_DIR"
-  if ! test -d "$EIGEN_DIR" ; then
-     echo "$EIGEN_DIR is not a directory"
-  fi
-
-  if ! test -d "$EIGEN_DIR/Eigen" ; then
-     echo "$EIGEN_DIR does not contain the directory Eigen"
-     exit 1;
-  fi
-
-  if ! test -f "$EIGEN_DIR/Eigen/Dense" ; then
-     echo "$EIGEN_DIR/Eigen does not contain the file Dense"
-     exit 1;
-  fi
-
-  if ! test "${EIGEN_DIR}" = "" ; then
-    EIGEN_INC="-I${EIGEN_DIR}"
-  fi
-fi
-
-if test -n "$CPPAD_DIR" ; then
-  echo "Checking cppad directory CPPAD_DIR"
-  if ! test -d "$CPPAD_DIR" ; then
-     echo "$CPPAD_DIR is not a directory"
-  fi
-
-  if ! test -d "$CPPAD_DIR/cppad" ; then
-     echo "$CPPAD_DIR does not contain the directory cppad"
-     exit 1;
-  fi
-
-  if ! test -f "$CPPAD_DIR/cppad/configure.hpp" ; then
-     echo "$CPPAD_DIR/cppad does not contain the file configure.hpp"
-     exit 1;
-  fi
-fi
-
-if test -n "CPPAD_DIR" && ! test "${CPPAD_DIR}" = "" ; then
-   echo "Setting CPPFLAGS to find CppAD"
-   export CPPFLAGS="-I${CPPAD_DIR}"
-fi
-
-if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
-   echo "Setting CPPFLAGS to find Eigen"
-   export CPPFLAGS="-I${EIGEN_DIR}"
-fi
-
-
-CXX11=`"${R_HOME}/bin/R" CMD config CXX1X`
-CXX11STD=`"${R_HOME}/bin/R" CMD config CXX1XSTD`
-CXX="${CXX11} ${CXX11STD}"
-CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX1XFLAGS`
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'

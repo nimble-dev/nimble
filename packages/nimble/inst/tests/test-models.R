@@ -294,7 +294,6 @@ for(i in seq_len(g))
     for(j in seq_len(m))
         y[j, i, ] <- rmulti(1, n, p[i, ])
 
-
 model <- function() {
     for(i in 1:g)
         for(j in 1:m)
@@ -367,7 +366,7 @@ test_that("test of preventing overwriting of data values by inits:", {
     })
     xVal <- c(3, NA)
     xInit <- c(4, 4)
-    expect_warning(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring values in inits for data nodes")
+    expect_warning(m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in inits for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test")
@@ -377,7 +376,7 @@ test_that("test of preventing overwriting of data values by inits:", {
         x[2] ~ dnorm(mu,1)
         mu ~ dnorm(0, 1)
     })
-    expect_warning(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring values in inits for data nodes")
+    expect_warning(m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit)), "Ignoring non-NA values in inits for data nodes")
     expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fifth test")
     expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fifth test")
     expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fifth test")
@@ -527,6 +526,20 @@ test_that("test of using data frame as 'data' in model:", {
     expect_identical(cm$y, y, info = "input data frame as data not handled correctly")
     expect_error(m$setData(list(y = data.frame(a = 1:3, b = c('a','b','c')))))
 })
+
+test_that("test of using ragged arrays in a model:", {
+    mc <- nimbleCode({
+        for(i in 1:2) {
+            Z[i, 1:n[i]] <- 2*X[i, 1:n[i]]
+        }
+    })
+    
+    n <- c(2, 3)
+    X <- matrix(1:6, nrow = 2)
+    constants <- list(n = n, X = X)
+    m <- nimbleModel(mc, constants = constants)
+})
+
 
 sink(NULL)
 

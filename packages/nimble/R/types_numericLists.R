@@ -10,6 +10,8 @@
 #' @author NIMBLE development team
 #' @export
 #' @details
+#' Note that assigning the result of \code{numeric}, \code{integer}, \code{logical}, \code{matrix}, or \code{array} is often as good or better than using \code{setSize}.  For example, `x <- matrix(nrow = 5, ncol = 5)` is equivalent to `setSize(x, 5, 5)` but the former allows more control over initialization.
+#' 
 #' This function is part of the NIMBLE language.  Its purpose is to explicitly resize a multivariate object (vector, matrix or array), currently up to 4 dimensions.  Explicit resizing is not needed when an entire object is assigned to.  For example, in \code{Y <- A \%*\% B}, where A and B are matrices, \code{Y} will be resized automatically.  Explicit resizing is necessary when assignment will be by indexed elements or blocks, if the object is not already an appropriate size for the assignment.  E.g. prior to \code{Y[5:10] <- A \%*\% B}, one can use setSize to ensure that \code{Y} has a size (length) of at least 10.
 #'
 #' This does work in uncompiled (R) and well as compiled execution, but in some cases it is only necessary for compiled execution. During uncompiled execution, it may not catch bugs due to resizing because some R objects will be dynamically resized during assignments anyway.
@@ -21,6 +23,10 @@ setSize <- function(numObj, ..., copy = TRUE, fillZeros = TRUE){ ## fillValues i
     if(length(thisCall) < 2) stop("No information provided to setSize")
     newDimsList <- list(...)
     if(is.numeric(numObj) | is.logical(numObj)) {
+        targetVar <- deparse(thisCall[[1]])
+        if(!exists(targetVar, envir = parent.frame()))
+            stop(paste0("Variable ", targetVar, " does not exist."))
+        targetIsLocal <- exists(targetVar, envir = parent.frame(), inherits = FALSE)
         oldClass <- class(numObj)
         oldDims <- nimDim(numObj)
         if(length(oldDims) != length(newDimsList)) {
@@ -32,7 +38,6 @@ setSize <- function(numObj, ..., copy = TRUE, fillZeros = TRUE){ ## fillValues i
             newDims <- unlist(newDimsList)
         }
         if(any(is.na(newDims))) warning("Not sure what to do with NA dims in setSize")
-
         if(length(newDims) != length(oldDims))
             if(length(newDims) < length(oldDims))
                 stop("Number of dimensions provided does not match object to change in setSize")
@@ -58,7 +63,10 @@ setSize <- function(numObj, ..., copy = TRUE, fillZeros = TRUE){ ## fillValues i
             }
         }
         assign("_SETSIZE_TEMP_VAL", newObj, parent.frame())
-        assignCall <- substitute(A <- B, list(A = thisCall[[1]], B = as.name("_SETSIZE_TEMP_VAL")))
+        if(targetIsLocal)
+            assignCall <- substitute(A <- B, list(A = thisCall[[1]], B = as.name("_SETSIZE_TEMP_VAL")))
+        else
+            assignCall <- substitute(A <<- B, list(A = thisCall[[1]], B = as.name("_SETSIZE_TEMP_VAL")))
         eval(assignCall, envir = parent.frame())
         rm("_SETSIZE_TEMP_VAL", envir = parent.frame())
         return(invisible(NULL))

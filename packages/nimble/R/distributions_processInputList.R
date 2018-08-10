@@ -199,7 +199,7 @@ distClass <- setRefClass(
         },
         
         init_types_makeArgList = function(typeArgCharVector) {
-            parsedArgList <- try(lapply(typeArgCharVector, function(x) parse(text=x)[[1]]))
+            parsedArgList <- try(lapply(typeArgCharVector, function(x) parse(text=x, keep.source = FALSE)[[1]]))
             if(is(parsedArgList, 'try-error'))
                 stop("init_types_makeArgList: problem with arguments ", paste(typeArgCharVector, collapse = ","), ". Perhaps you didn't define types for your user-defined distribution nimbleFunctions?")
             allNames <- unlist(lapply(parsedArgList, function(pa) as.character(pa[[2]])))
@@ -262,12 +262,16 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
                     " is not available. NIMBLE is generating a placeholder function that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.  If simulation is needed, provide a nimbleFunction (with no setup code) to do it.\n"))
         rargInfo <- environment(get(densityName, pos = userEnv))$nfMethodRCobject$argInfo
         returnType <- deparse(unlist(rargInfo[[1]]))
+        returnDim <- rargInfo[[1]][[2]]
         rargInfo <- rargInfo[-length(rargInfo)]  # remove 'log' argument
         rargInfo[[1]] <- quote(integer(0))
         names(rargInfo)[1] <- 'n'
         args <- paste(names(rargInfo), as.character(rargInfo), sep = "=", collapse = ', ')
+        if(returnDim == 0)
+            returnCreation <- "x <- 0" else if(returnDim == 1) returnCreation <- "x <- nimNumeric()" else
+                                                          returnCreation <- "x <- nimMatrix()"
         # build nf from text as unclear how to pairlist info in rargInfo with substitute
-        nfCode <- paste0("nimbleFunction(run = function(", args, ") { stop('user-defined distribution ", densityName, " provided without random generation function.')\nreturnType(", returnType, ")})")
+        nfCode <- paste0("nimbleFunction(run = function(", args, ") { stop('user-defined distribution ", densityName, " provided without random generation function.')\nreturnType(", returnType, ")\n", returnCreation, "\nreturn(x)})")
         assign(simulateName, eval(parse(text = nfCode)), envir = userEnv)
     }
 
@@ -383,6 +387,8 @@ prepareDistributionInput <- function(dist) {
 #'
 #' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, it should be a named list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}, and with the name of the list the same as that of the density function. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions.
 #' @param userEnv environment in which to look for the nimbleFunctions that provide the distribution; this will generally not need to be set by the user as it will default to the environment from which this function was called.
+#' @param verbose logical indicating whether to print additional logging information
+#' 
 #' @author Christopher Paciorek
 #' @export
 #' @details
@@ -488,7 +494,7 @@ prepareDistributionInput <- function(dist) {
 #'         types = c('value = double(1)', 'alpha = double(1)')
 #'         )
 #'     ))
-registerDistributions <- function(distributionsInput, userEnv = parent.frame()) {
+registerDistributions <- function(distributionsInput, userEnv = parent.frame(), verbose = nimbleOptions('verbose')) {
     if(missing(distributionsInput)) {
         cat("No distribution information supplied.\n")
     } else {
@@ -500,7 +506,7 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame()) 
          } else {
             nms <- names(distributionsInput)
           }
-        if(nimbleOptions('verbose'))
+        if(verbose)
             cat("Registering the following user-provided distributions:", nms, ".\n")
         dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {

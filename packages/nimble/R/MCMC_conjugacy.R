@@ -7,7 +7,9 @@ conjugacyRelationshipsInputList <- list(
          dependents = list(
              dbern   = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = '1 - value'   ),
              dbin    = list(param = 'prob', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
-             dnegbin = list(param = 'prob', contribution_shape1 = 'size',  contribution_shape2 = 'value'       )),
+             dnegbin = list(param = 'prob', contribution_shape1 = 'size',  contribution_shape2 = 'value'       ),
+             dcat    = list(param = 'prob', link = 'stick_breaking', contribution_shape1 = 'value == offset',
+                                                                     contribution_shape2 = 'value > offset')),  ## offset is set to be where in the broken stick the target is
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
 
@@ -23,7 +25,7 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dflat',
          link = 'linear',
          dependents = list(
-             dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',      contribution_tau = 'coeff^2 * tau'),
+             dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',         contribution_tau = 'coeff^2 * tau'),
              dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
          posterior = 'dnorm(mean = contribution_mean / contribution_tau,
                             sd   = contribution_tau^(-0.5))'),
@@ -32,13 +34,13 @@ conjugacyRelationshipsInputList <- list(
     ## list(prior = 'dhalfflat',
     ##      link = 'multiplicative',
     ##      dependents = list(
-    ##          dpois  = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
-    ##        dnorm  = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
-    ##          dlnorm = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
-    ##          dgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
-    ##          dinvgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_rate = 'coeff / value'                 ),
-    ##          dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
-    ##          dweib   = list(param = 'lambda',   contribution_shape = '1',     contribution_rate = 'coeff   * value^shape' )),
+    ##          dpois     = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
+    ##          dnorm     = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
+    ##          dlnorm    = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
+    ##          dgamma    = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
+    ##          dinvgamma = list(param = 'scale',  contribution_shape = 'shape', contribution_rate = 'coeff   / value'                 ),
+    ##          dexp      = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
+    ##          dweib     = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           )),
     ##          ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
     ##          ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
     ##      posterior = 'dgamma(shape = 1 + contribution_shape,
@@ -49,11 +51,11 @@ conjugacyRelationshipsInputList <- list(
     ## list(prior = 'dinvgamma',
     ##      link = 'multiplicative',
     ##      dependents = list(
-    ##          dnorm  = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'),
-    ##          dlnorm = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
-    ##          dgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_scale = 'value / coeff'                 ),
-    ##          dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'     ),
-    ##          dexp   = list(param = 'scale',   contribution_shape = '1',     contribution_scale = 'value / coeff'            )),
+    ##          dnorm     = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'      ),
+    ##          dlnorm    = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
+    ##          dgamma    = list(param = 'scale',  contribution_shape = 'shape', contribution_scale = 'value / coeff'                     ),
+    ##          dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'               ),
+    ##          dexp      = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'value / coeff'                     )),
     ##          ## add ddexp
     ##      posterior = 'dinvgamma(shape = -1 + contribution_shape,
     ##                          rate = 1 / contribution_scale)'),
@@ -67,7 +69,7 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dhalfflat',
          link = 'multiplicative',
          dependents = list(
-             dnorm  = list(param = 'sd',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff^2 * 2)'),
+             dnorm  = list(param = 'sd',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff^2 * 2)'        ),
              dlnorm = list(param = 'sdlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff^2 * 2)')),
          posterior = 'dsqrtinvgamma(shape = -1/2 + contribution_shape,
                              rate = 1 / contribution_scale)'),
@@ -76,13 +78,13 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dgamma',
          link = 'multiplicative',
          dependents = list(
-             dpois  = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
-             dnorm  = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
-             dlnorm = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
-             dgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
-             dinvgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_rate = 'coeff / value'                 ),
-             dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
-             dweib   = list(param = 'lambda',   contribution_shape = '1',     contribution_rate = 'coeff   * value^shape' )),
+             dpois     = list(param = 'lambda', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
+             dnorm     = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
+             dlnorm    = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
+             dgamma    = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
+             dinvgamma = list(param = 'scale',  contribution_shape = 'shape', contribution_rate = 'coeff   / value'                 ),
+             dexp      = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
+             dweib     = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           )),
              ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
              ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
          posterior = 'dgamma(shape = prior_shape + contribution_shape,
@@ -92,11 +94,11 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dinvgamma',
          link = 'multiplicative',
          dependents = list(
-             dnorm  = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'),
-             dlnorm = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
-             dgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_scale = 'value / coeff'                 ),
-             dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'     ),
-             dexp   = list(param = 'scale',   contribution_shape = '1',     contribution_scale = 'value / coeff'            )),
+             dnorm     = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'      ),
+             dlnorm    = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
+             dgamma    = list(param = 'scale',  contribution_shape = 'shape', contribution_scale = 'value / coeff'                     ),
+             dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'               ),
+             dexp      = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'value / coeff'                     )),
              ## add ddexp
          posterior = 'dinvgamma(shape = prior_shape + contribution_shape,
                              rate = 1 / (prior_scale + contribution_scale))'),
@@ -105,7 +107,7 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dnorm',
          link = 'linear',
          dependents = list(
-             dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',      contribution_tau = 'coeff^2 * tau'),
+             dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',         contribution_tau = 'coeff^2 * tau'   ),
              dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
          posterior = 'dnorm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
                             sd   = (prior_tau + contribution_tau)^(-0.5))'),
@@ -164,8 +166,8 @@ conjugacyRelationshipsInputList <- list(
          dependents = list(
              dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
-                                 df          = prior_df + contribution_df,
-                                 scale_param = 1)')
+                                    df          = prior_df + contribution_df,
+                                    scale_param = 1)')
 
 )
 
@@ -195,7 +197,7 @@ conjugacyRelationshipsClass <- setRefClass(
             }
             names(conjugacys) <<- unlist(lapply(conjugacys, function(cr) cr$prior))
         },
-        checkConjugacy = function(model, nodeIDs) {
+        checkConjugacy = function(model, nodeIDs, restrictLink = NULL) {
             maps <- model$modelDef$maps
             nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
             declID2nodeIDs <- split(nodeIDs, nodeDeclIDs) ## nodeIDs grouped by declarationID
@@ -205,17 +207,15 @@ conjugacyRelationshipsClass <- setRefClass(
                 firstNodeName <- maps$graphID_2_nodeName[nodeIDsFromOneDecl[1]]
                 if(model$isTruncated(firstNodeName)) next   ## we say non-conjugate if the targetNode is truncated
                 dist <- model$getDistribution(firstNodeName)
-
                 conjugacyObj <- conjugacys[[dist]]
                 if(is.null(conjugacyObj)) next
-                
                 # NO: insert logic here to check a single dependency and do next if can't be conjugate
                 #model$getDependencies('mu[1]',self=F,stochOnly=T)
                 #for( loop through deps )
                 #    conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
                 #    if(not conj) next
 
-                # now try to guess if finding paths will be more intensive than simply looking at target-dependent pairs, to avoid path finding when there is nested structure such as stick-breaking
+                # now try to guess if finding paths will be more intensive than simply looking at target-dependent pairs, to avoid path finding when there is nested structure such as stickbreaking
                 numPaths <- sapply(nodeIDsFromOneDecl, model$getDependencyPathCountOneNode)
                 deps <- lapply(nodeIDsFromOneDecl, function(x) model$getDependencies(x, stochOnly = TRUE, self = FALSE))
                 numDeps <- sapply(deps, length)
@@ -227,7 +227,7 @@ conjugacyRelationshipsClass <- setRefClass(
                         function(index) {
                             targetNode <- maps$graphID_2_nodeName[nodeIDsFromOneDecl[index]]
                             depEnds <- deps[[index]]
-                            depTypes <- sapply(depEnds, function(x) conjugacyObj$checkConjugacyOneDep(model, targetNode, x))
+                            depTypes <- sapply(depEnds, function(x) conjugacyObj$checkConjugacyOneDep(model, targetNode, x, restrictLink))
                             if(!length(depTypes)) return(NULL)
                             if(!any(sapply(depTypes, is.null))) {
                                 uniqueDepTypes <- unique(depTypes)
@@ -261,7 +261,7 @@ conjugacyRelationshipsClass <- setRefClass(
                         firstDepPath <- depPathsByNodeUnlisted[[ uniquePathsUnlistedIndices[[j]][1] ]]
                         targetNode <- maps$graphID_2_nodeName[firstDepPath[1,1]]
                         depNode <- maps$graphID_2_nodeName[firstDepPath[nrow(firstDepPath), 1]]
-                        oneDepType <- conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
+                        oneDepType <- conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode, restrictLink)
                         conjDepTypes[j] <- if(is.null(oneDepType)) "" else oneDepType
                     }
                     
@@ -319,7 +319,8 @@ conjugacyClass <- setRefClass(
         dependents =          'ANY',   ## (named) list of dependentClass objects, each contains conjugacy information specific to a particular sampling distribution (name is sampling distribution name)
         dependentDistNames =  'ANY',   ## character vector of the names of all allowable dependent sampling distributions.  same as: names(dependents)
         posteriorObject =     'ANY',   ## an object of posteriorClass
-        needsLinearityCheck = 'ANY',   ## logical specifying whether we need to do the linearity check; if the link is 'multiplicative' or 'linear'
+        ## needsLinearityCheck = 'ANY',   ## logical specifying whether we need to do the linearity check; if the link is 'multiplicative' or 'linear'
+        ## needsStickbreakingCheck = 'ANY',   ## logical specifying whether we need to do the stickbreaking check
         model                  = 'ANY',   ## these fields ONLY EXIST TO PREVENT A WARNING for '<<-',
         DEP_VALUES_VAR_INDEXED = 'ANY',   ## in the code for generating the conjugate sampler functions
         DEP_PARAM_VAR_INDEXED  = 'ANY',   ##
@@ -334,7 +335,9 @@ conjugacyClass <- setRefClass(
             prior <<- cr$prior
             link <<- cr$link
             initialize_addDependents(cr$dependents)
-            needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
+            ## removed because link info in specific conjugacy can now override default link
+            ## needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
+            ## needsStickbreakingCheck <<- link %in% c('stick_breaking')
             posteriorObject <<- posteriorClass(cr$posterior, prior)
             },
 
@@ -348,19 +351,28 @@ conjugacyClass <- setRefClass(
 
         ## used by new checkConjugacy() system
         ## see checkConjugacy for more explanation of each step
-        checkConjugacyOneDep = function(model, targetNode, depNode) {
+        checkConjugacyOneDep = function(model, targetNode, depNode, restrictLink = NULL) {
             if(model$getDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
             if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
             depNodeDist <- model$getDistribution(depNode)
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
             dependentObj <- dependents[[depNodeDist]]
-            linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
-            if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
-            if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
-            linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
-            if(!cc_linkCheck(linearityCheck, link))                           return(NULL)
-            if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
+            if(is.null(restrictLink)) {
+                if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
+            } else currentLink = restrictLink
+            if(currentLink != 'stick_breaking') {
+                linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
+                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
+                if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
+                if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
+                linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
+                if(!cc_linkCheck(linearityCheck, currentLink))                           return(NULL)
+                if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
+            } else {
+                stickbreakingCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
+                stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = targetNode)
+                if(is.null(cc_checkStickbreaking(stickbreakingCheckExpr, targetNode))) return(NULL)
+            }
             return(paste0('dep_', depNodeDist))
         },
 
@@ -400,7 +412,6 @@ conjugacyClass <- setRefClass(
             if(getDimension(prior) > 0) {
                 functionBody$addCode(d <- max(determineNodeIndexSizes(target)))
             }
-
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
                 functionBody$addCode({
@@ -447,11 +458,13 @@ conjugacyClass <- setRefClass(
             
             ## more new array() setup outputs, instead of declare() statements, for offset and coeff variables
             ## July 2017
-            if(needsLinearityCheck || (nimbleOptions()$allowDynamicIndexing && link == 'identity' && doDependentScreen)) {
-                targetNdim <- getDimension(prior)
-                targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
-                for(iDepCount in seq_along(dependentCounts)) {
-                    distName <- names(dependentCounts)[iDepCount]
+            
+            targetNdim <- getDimension(prior)
+            targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
+            for(iDepCount in seq_along(dependentCounts)) {
+                distName <- names(dependentCounts)[iDepCount]
+                if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link else currentLink <- link
+                if(currentLink %in% c('multiplicative', 'linear') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
                     functionBody$addCode({
                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
                         DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)                    ## assigning into member variable names using
@@ -462,8 +475,26 @@ conjugacyClass <- setRefClass(
                 }
             }
 
+            for(iDepCount in seq_along(dependentCounts)) {
+                distName <- names(dependentCounts)[iDepCount]
+                if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link else currentLink <- link
+                if(currentLink == 'stick_breaking') {       
+                    functionBody$addCode({
+                        DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
+                    }, list(DEP_OFFSET_VAR2     = as.name(paste0('dep_', distName, '_offset')),  ## local assignment '<-', so changed the names to "...2"
+                            DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), as.name(paste0('dep_', distName, '_nodeSizeMax')), 0))
+                    )
+                    functionBody$addCode({
+                        stickbreakingCheckExpr <- model$getValueExpr(calcNodesDeterm)
+                        stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = target)
+                    })
+                    functionBody$addCode(DEP_OFFSET_VAR2 <- rep(cc_checkStickbreaking(stickbreakingCheckExpr, target)$offset, DEP_OFFSET_SIZE), 
+                                         list(DEP_OFFSET_VAR2 = as.name(paste0('dep_', distName, '_offset')),
+                                              DEP_OFFSET_SIZE = as.name(paste0('N_dep_', distName))))
+                }
+            }
             ## adding declarations for the contribution terms, to remove Windows compiler warnings, DT August 2015
-            ## moved these numeric() and array() declarations for contributino terms to setup outputs, July 2017
+            ## moved these numeric() and array() declarations for contribution terms to setup outputs, July 2017
             for(contributionName in posteriorObject$neededContributionNames) {
                 contribNdim <- posteriorObject$neededContributionDims[[contributionName]]
                 functionBody$addCode(CONTRIB_NAME2 <- CONTRIB_INITIAL_DECLARATION,                   ## the 2's here are *only* to prevent warnings about
@@ -582,7 +613,14 @@ conjugacyClass <- setRefClass(
             }
 
             ## if we need to determine 'coeff' and/or 'offset'
-            if(needsLinearityCheck || (nimbleOptions()$allowDynamicIndexing && link == 'identity' && doDependentScreen)) {
+            ## with addition of possible multiple links for stick_breaking conjugacy, for simplicity calculate offset/coeff
+            ## for all dependencies, even only some need offset/coeff
+            links <- rep(link, length(dependentCounts))
+            for(iDepCount in seq_along(dependentCounts)) {
+                distName <- names(dependentCounts)[iDepCount]
+                if(!is.null(dependents[[distName]]$link)) links[iDepCount] <- dependents[[distName]]$link # clau: extra ) deleted.
+            }
+            if(any(links %in% c('multiplicative', 'linear')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
@@ -731,7 +769,7 @@ conjugacyClass <- setRefClass(
                        stop()
                        )
 
-            } # end if(needsLinearityCheck)
+            } # end if linearity check needed
 
             targetNdim <- getDimension(prior)
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
@@ -765,12 +803,12 @@ conjugacyClass <- setRefClass(
                 subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
                 
                 forLoopBody <- codeBlockClass()
-
+                
                 if(any(getDimension(distName, includeParams = TRUE) > 0)) {
                     if(targetNdim == 1) ## 1D
                         forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
-                    else ## 2D
+                    if(targetNdim == 2) ## 2D  ## formerly this was 'else', but for 'dcat' we have targetNdim=0 while max(getDimension(distName, includeParams = TRUE)) is 1 so need explicit check for 2D
                         forLoopBody$addCode(if(DEP_NODESIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
                 }
@@ -804,20 +842,23 @@ dependentClass <- setRefClass(
         param =                    'ANY',   ## the name of the sampling distribution parameter in which target must appear
         contributionExprs =        'ANY',   ## a (named) list of expressions, giving the (additive) contribution to any parameters of the posterior. names correspond to variables in the posterior expressions
         contributionNames =        'ANY',   ## names of the contributions to the parameters of the posterior distribution.  same as names(posteriorExprs)
-        neededParamsForPosterior = 'ANY'    ## names of all parameters appearing in the posteriorExprs
+        neededParamsForPosterior = 'ANY',    ## names of all parameters appearing in the posteriorExprs
+        link =                     'ANY'    ## optional specific link for a given conjugacy; currently only used for stick_breaking case
     ),
     methods = list(
         initialize = function(depInfoList, depDistName) {
         	contributionExprs <<- list()
-            distribution <<- depDistName
-            param <<- depInfoList$param
-            initialize_contributionExprs(depInfoList)
-            initialize_neededParamsForPosterior()
+                distribution <<- depDistName
+                param <<- depInfoList$param
+                link <<- depInfoList$link  ## will be NULL unless specific conjugacy overrides default link
+                initialize_contributionExprs(depInfoList)
+                initialize_neededParamsForPosterior()
         },
         initialize_contributionExprs = function(depInfoList) {
             depInfoList['param'] <- NULL
             depInfoList <- lapply(depInfoList, function(di) parse(text=di)[[1]])
             contributionExprs <<- depInfoList
+            contributionExprs[['link']] <<- NULL   ## so link not included in neededParamsForPosterior
             contributionNames <<- names(depInfoList)
         },
         initialize_neededParamsForPosterior = function() {
@@ -992,7 +1033,7 @@ cc_createStructureExpr <- function(model, exprText) {
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
-    if(!(link %in% c('identity', 'multiplicative', 'linear')))    stop(paste0('unknown link: \'', link, '\''))
+    if(!(link %in% c('identity', 'multiplicative', 'linear', 'stick_breaking')))    stop(paste0('unknown link: \'', link, '\''))
     if(is.null(linearityCheck))    return(FALSE)
     offset <- linearityCheck$offset
     scale  <- linearityCheck$scale
@@ -1021,6 +1062,8 @@ cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansions=FALSE
 cc_nodeInExpr <- function(node, expr) { return(node %in% cc_getNodesInExpr(expr)) }
 
 ## determines which nodes apppear in an expression
+## exporting as used in setup code of a nf called directly by user
+#' @export
 cc_getNodesInExpr <- function(expr) {
     if(is.numeric(expr)) return(character(0))   ## expr is numeric
     if(is.logical(expr)) return(character(0))   ## expr is logical
@@ -1163,6 +1206,16 @@ cc_combineExprsDivision <- function(expr1, expr2) {
     if((expr1 == 0)                ) return(0)
     if(is.numeric(expr1) && is.numeric(expr2)) return(expr1 / expr2)
     return(substitute(EXPR1 / EXPR2, list(EXPR1=expr1, EXPR2=expr2)))
+}
+
+cc_checkStickbreaking <- function(expr, targetNode) {
+    if(!is.call(expr) || expr[[1]] != 'stick_breaking' || !cc_nodeInExpr(targetNode, expr))
+        return(NULL)
+    expr <- expr[[2]]
+    if(!is.call(expr) || expr[[1]] != 'structureExpr')
+        return(NULL)
+    offset <- which(targetNode == cc_getNodesInExpr(expr))
+    if(length(offset) != 1) return(NULL) else return(list(offset = offset, scale = 1))
 }
 
 compareConjugacyLists <- function(C1, C2) {
