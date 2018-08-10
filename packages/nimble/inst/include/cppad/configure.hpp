@@ -179,7 +179,7 @@ header files.  If it is not yet defined,
 \def CPPAD_HAS_MKSTEMP
 It true, mkstemp works in C++ on this system.
 */
-# define CPPAD_HAS_MKSTEMP 0
+# define CPPAD_HAS_MKSTEMP 1
 
 /*!
 \def CPPAD_HAS_TMPNAM_S
