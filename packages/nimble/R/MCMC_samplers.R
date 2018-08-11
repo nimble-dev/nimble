@@ -805,8 +805,8 @@ sampler_langevin <- nimbleFunction(
 
 #' @rdname samplers
 #' @export
-sampler_HMCexp <- nimbleFunction(
-    name = 'sampler_HMCexp',
+sampler_HMC <- nimbleFunction(
+    name = 'sampler_HMC',
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -1050,7 +1050,7 @@ sampler_HMCexp <- nimbleFunction(
             logEpsilonBar <<- 0
             Hbar          <<- 0
         }
-    )#####, where = getLoadingNamespace()
+    ), where = getLoadingNamespace()
 )
 
 
