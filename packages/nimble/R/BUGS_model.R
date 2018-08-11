@@ -1263,15 +1263,17 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
                 callSuper(modelDef = inputList$modelDef, ...)
                 setupDefaultMV()
                 init_isDataEnv()
-                if(nimbleOptions('experimentalEnableDerivs')) {
-                    ADproxyModel <<- nimble:::ADproxyModelClass(.self)
-                }
+                ADPROXYLINE
                 # setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
                 # removed given new handling of lumped data and constants
             }
         ), where = where),
-                    list(FIELDS = allFields
-                         )))
+        list(FIELDS = allFields,
+             ADPROXYLINE = if(nimbleOptions('experimentalEnableDerivs'))
+                               quote(ADproxyModel <<- nimble:::ADproxyModelClass(.self))
+                           else
+                               NULL
+             )))
     ans <- function(name = character()) {
         newClass(inputList = inputList, name = name)
     }

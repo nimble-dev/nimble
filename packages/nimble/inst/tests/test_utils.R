@@ -1317,14 +1317,14 @@ testADDistribution <- function(ADfunGen, argsList, name, debug = FALSE){
         print(paste("Skipping check of R and C++ `value` equality for ",
                     name, " with arguments: ", argValsText ))
       if(1 %in% iOrdersToCheck)
-        expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = 1e-6,
+        expect_equal(RderivsList$jacobian, CderivsList$jacobian, tolerance = 1e-2,
                      info = paste("Jacobians of", name , "not equal for arguments: ",
                                   argValsText, '.'))
       else
         print(paste("Skipping check of R and C++ `jacobian` equality for ",
                     name, " with arguments: ", argValsText ))
       if(2 %in% iOrdersToCheck)
-        expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = 1e-6,
+        expect_equal(RderivsList$hessian, CderivsList$hessian, tolerance = 1e-2,
                      info = paste("Hessians of", name , "not equal for arguments: ",
                                   argValsText, '.'))
       else

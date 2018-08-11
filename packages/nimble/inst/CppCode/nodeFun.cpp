@@ -208,9 +208,9 @@ void nodeFun::runTape(CppAD::ADFun< double > &ADtape,
         x1[dx_ind] = 1;
         ADtape.Forward(1, x1);
         rev = ADtape.Reverse(2, w);
-	      for (size_t dx_ind2 = 0; dx_ind2 < jacSize; dx_ind2++) {
-	        ansList->hessian[jacSize * dx_ind + dx_ind2] =
-		        rev[dx_ind2 * 2 + 1];
+	for (size_t dx_ind2 = 0; dx_ind2 < jacSize; dx_ind2++) {
+	  ansList->hessian[jacSize * dx_ind + dx_ind2] =
+	    rev[dx_ind2 * 2 + 1];
         }
       }
     }

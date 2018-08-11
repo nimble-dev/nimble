@@ -127,12 +127,7 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
     }
   }
   int orderSize = derivOrders.size();
-  double array_derivOrders[orderSize];
-
-  
-
-  std::memcpy(array_derivOrders, derivOrders.getConstPtr(),
-	      orderSize * sizeof(double));
+  double const* array_derivOrders = derivOrders.getConstPtr();
 
   int maxOrder =
     *std::max_element(array_derivOrders, array_derivOrders + orderSize);
@@ -147,44 +142,38 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
   vector<double> value_ans;
 #ifdef _TIME_AD
   derivs_run_tape_timer_start();
-#ifdef _SHOW_NODE_BY_NODE 
-#endif
 #endif
   value_ans = ADinfo.ADtape->Forward(0, ADinfo.independentVars);
 #ifdef _TIME_AD
   derivs_run_tape_timer_stop();
 #endif
-  if (ordersFound[0] == true) {
+  if (ordersFound[0]) {
     ansList->value = vectorDouble_2_NimArr(value_ans);
   }
   if(maxOrder > 0){
     std::size_t q = value_ans.size();
-    vector<bool> infIndicators(q); 
+    vector<bool> infIndicators(q); // default values will be false 
     for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
       if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
           (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
 	 (isnan(value_ans[inf_ind]))){
 	infIndicators[inf_ind] = true;
       }
-      else{
-	infIndicators[inf_ind] = false;
-      }
     }
-    if (ordersFound[1] == true) {
+    if (ordersFound[1]) {
       ansList->jacobian.setSize(q, wrt_n, false, false); // setSize may be costly.  Possible to setSize outside of fxn, within chain rule algo, and only resize when necessary?
     }
-    if (ordersFound[2] == true) {
+    if (ordersFound[2]) {
       ansList->hessian.setSize(wrt_n, wrt_n, q, false, false);
     }
     vector<double> cppad_derivOut;
+    std::vector<double> w(q, 0);
     for (size_t dy_ind = 0; dy_ind < q; dy_ind++) {
-      std::vector<double> w(q, 0);
+      //      std::vector<double> w(q, 0);
       w[dy_ind] = 1;
       if (maxOrder == 1) {   
-	if(infIndicators[dy_ind] == false){
+	if(!infIndicators[dy_ind]){
 #ifdef _TIME_AD
-#ifdef _SHOW_NODE_BY_NODE 
-#endif
 	  derivs_run_tape_timer_start();
 #endif
 	  cppad_derivOut = ADinfo.ADtape->Reverse(1, w);
@@ -194,7 +183,7 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 	}
       } else {
 	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-	  if(infIndicators[dy_ind] == false){
+	  if(!infIndicators[dy_ind]){
 	    int dx1_ind = wrtVector[vec_ind] - 1;
 	    std::vector<double> x1(n, 0);  // vector specifying first derivatives.
 	    // first specify coeffs for first dim
@@ -211,7 +200,7 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 #endif
 	  }
 	  for (size_t vec_ind2 = 0; vec_ind2 < wrt_n; vec_ind2++) {
-	    if(infIndicators[dy_ind] == false){
+	    if(!infIndicators[dy_ind]){
 	      int dx2_ind = wrtVector[vec_ind2] - 1;
 	      ansList->hessian[wrt_n * wrt_n * dy_ind + wrt_n * vec_ind + vec_ind2] =
 		cppad_derivOut[dx2_ind * 2 + 1];
@@ -223,19 +212,35 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
 	  }
 	}
       }
-      if (ordersFound[1] == true) {
-	for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
-	  if(infIndicators[dy_ind] == false){
-	    int dx1_ind = wrtVector[vec_ind] - 1;
-	    ansList->jacobian[vec_ind * q + dy_ind] =
-	      cppad_derivOut[dx1_ind * maxOrder + 0];
+      if (ordersFound[1]) {
+	double *LHS = ansList->jacobian.getPtr() + dy_ind;
+	if(!infIndicators[dy_ind]){
+	  double const *wrtVector_p = wrtVector.getConstPtr();
+	  double const *wrtVector_p_end = wrtVector_p + wrt_n;
+	    for(; wrtVector_p != wrtVector_p_end; LHS += q ) {
+	      *LHS = cppad_derivOut[(static_cast<int>(*wrtVector_p++) - 1) * maxOrder];
+	    }
+	} else {
+	  for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+	    *LHS = CppAD::numeric_limits<double>::quiet_NaN();
+	    LHS += q;
 	  }
-	  else{
-	    ansList->jacobian[vec_ind * q + dy_ind] =
-	      CppAD::numeric_limits<double>::quiet_NaN();
-	  }     
 	}
+
+	// for (size_t vec_ind = 0; vec_ind < wrt_n; vec_ind++) {
+	//   if(!infIndicators[dy_ind]){
+	//     int dx1_ind = wrtVector[vec_ind] - 1;
+	//     ansList->jacobian[vec_ind * q + dy_ind] =
+	//       cppad_derivOut[dx1_ind * maxOrder + 0];
+	//   }
+	//   else{
+	//     ansList->jacobian[vec_ind * q + dy_ind] =
+	//       CppAD::numeric_limits<double>::quiet_NaN();
+	//   }     
+	// }
+	
       }
+      w[dy_ind] = 0;
     }
   }
 #ifdef _TIME_AD
