@@ -813,8 +813,8 @@ sampler_HMC <- nimbleFunction(
         warnings     <- if(!is.null(control$warnings))     control$warnings     else TRUE
         maxAdaptIter <- if(!is.null(control$maxAdaptIter)) control$maxAdaptIter else 1000
         printTimesRan <- if(!is.null(control$printTimesRan)) control$printTimesRan else FALSE
-        printJ        <- if(!is.null(control$printJ))        control$printJ        else FALSE
         printEpsilon  <- if(!is.null(control$printEpsilon))  control$printEpsilon  else FALSE
+        printJ        <- if(!is.null(control$printJ))        control$printJ        else FALSE
         ## node list generation, and processing of bounds and transformations
         targetNodes <- model$expandNodeNames(target)
         if(length(targetNodes) <= 0) stop('HMC sampler must operate on one or more nodes')
@@ -825,7 +825,7 @@ sampler_HMC <- nimbleFunction(
         IND_LB   <- 2   ## interval-bounded parameters: lower-bound
         IND_RNG  <- 3   ## interval-bounded parameters: range
         IND_LRNG <- 4   ## interval-bounded parameters: log(range)
-        maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))  ## max(unlist(indList))
+        maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))
         d <- length(targetNodesAsScalars)
         transformInfo <- array(0, c(d, maxInd))
         for(i in 1:d) {
@@ -850,9 +850,13 @@ sampler_HMC <- nimbleFunction(
             } else {                            ## multivariate node
                 if(!(node %in% originalTargetAsScalars)) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', model$expandNodeNames(node), ', or none of it'))
                 if(dist %in% c('dmnorm', 'dmvt')) {
+                    print('waiting for derivatives of dmnorm() to be implemented.')  ## waiting for dmnorm() derivatives
+                    print('otherwise, HMC sampler already works on dmnorm nodes.')      ## waiting for dmnorm() derivatives
+                    stop()                                                          ## waiting for dmnorm() derivatives
                     transformInfo[i, IND_ID] <- 1                      ## dmnorm: identity
                 } else stop(paste0('HMC sampler yet doesn\'t handle \'', dist, '\' distributions.'))   ## Dirichlet, Wishart ?
                 ##if(dist %in% c('dwish', 'dinvwish')) {
+                ##    NOTE: implementing for dwish() and dinvwish() will require a slightly deeper re-design
                 ##    transformInfo[i, IND_ID] <- 5                    ## wishart: log-cholesky
                 ##    d <- d + sqrt(len) * (sqrt(len)+1) / 2
                 ##    dmodel <- dmodel + len
@@ -871,8 +875,8 @@ sampler_HMC <- nimbleFunction(
         ## No-U-Turm Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
         if(timesRan == 0)    initializeEpsilon()
         timesRan <<- timesRan + 1
-        if(printTimesRan) print('================= times ran = ', timesRan)   ### XXXXXXXXXXXXXXXXXXXXXXX
-        if(printEpsilon)  print('epsilon = ', epsilon)      ### XXXXXXXXXXXXXXXXXXXXXXX
+        if(printTimesRan) print('============ times ran = ', timesRan)
+        if(printEpsilon)  print('epsilon = ', epsilon)
         q <- transformedModelValues()
         p <- numeric(d)
         for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
@@ -883,29 +887,25 @@ sampler_HMC <- nimbleFunction(
         while(s == 1) {
             v <- 2*rbinom(1, 1, 0.5) - 1    ## -1 or 1
             if(v == -1) { btNL <- buildtree(qL, pL, logu, v, j, epsilon, q, p)
-                          qL <- btNL$q1
-                          pL <- btNL$p1
-                      } else {
-                          btNL <- buildtree(qR, pR, logu, v, j, epsilon, q, p)
-                          qR <- btNL$q2
-                          pR <- btNL$p2 }
+                          qL <- btNL$q1;   pL <- btNL$p1
+                      } else { btNL <- buildtree(qR, pR, logu, v, j, epsilon, q, p)
+                               qR <- btNL$q2;   pR <- btNL$p2 }
             if(btNL$s == 1)   if(runif(1) < btNL$n / n)   qNew <- btNL$q3
             n <- n + btNL$n
             qDiff <- qR - qL
             ##s <- btNL$s * nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))                      ## this line replaced with the next,
             if(btNL$s == 0) s <- 0 else s <- nimStep(inprod(qDiff, pL)) * nimStep(inprod(qDiff, pR))     ## which acccounts for NaN's in btNL elements
-            if(printJ) { if(j == 0) cat('j = ', j) else cat(', ', j) }
+            if(printJ) {   if(j == 0) cat('j = ', j) else cat(', ', j);   if(s != 1) print(' ')   }
             j <- j + 1
             checkInterrupt()
         }
-        if(printJ) { print(' ') }
         values(model, targetNodes) <<- inverseTransformValues(qNew)
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         if(timesRan <= maxAdaptIter) {
-            print('===== adapting epsilon:')
-            print('btNL$a = ',  btNL$a)
-            print('btNL$na = ', btNL$na)
+            ##print('===== adapting epsilon:')    ### delete
+            ##print('btNL$a = ',  btNL$a)         ### delete
+            ##print('btNL$na = ', btNL$na)        ### delete
             Hbar <<- (1 - 1/(timesRan+10)) * Hbar + 1/(timesRan+10) * (0.65 - btNL$a/btNL$na)
             logEpsilon <- mu - sqrt(timesRan)/0.05 * Hbar
             epsilon <<- exp(logEpsilon)
@@ -945,41 +945,41 @@ sampler_HMC <- nimbleFunction(
             returnType(double());   return(lp)
         },
         jacobian = function(qArg = double(1)) {
-            ##values(model, targetNodes) <<- inverseTransformValues(qArg)    REVERT TO THIS
-            print('ENTERED JACOBIAN')
-            qTrans <- inverseTransformValues(qArg)   ## XXXXXXXXXXXXXXXXXX
-            print('qTrans = ', qTrans)   ## XXXXXXXXXXXXXXXXXX
-            values(model, targetNodes) <<- qTrans   ## XXXXXXXXXXXXXXXXXX
+            values(model, targetNodes) <<- inverseTransformValues(qArg)
+            ##print('ENTERED JACOBIAN')                ### delete
+            ##qTrans <- inverseTransformValues(qArg)   ### delete
+            ##print('qTrans = ', qTrans)               ### delete
+            ##values(model, targetNodes) <<- qTrans    ### delete
             derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
             grad <- numeric(d)
             grad[1:d] <- derivsOutput$jacobian[1, 1:d]            ## preserve 1D vector object
-            print('grad = ', grad)     ## XXXXXXXXXXXXXXXXXX
+            ##print('grad = ', grad)                   ### delete
             for(i in 1:d) {
                 x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = itentity, 2 = log, 3 = logit
                 if(id == 2) grad[i] <- grad[i]*exp(x) + 1
                 if(id == 3) grad[i] <- grad[i]*transformInfo[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
             }
-            print('TRANSFORMED grad = ', grad)
-            print('LEAVING JACOBIAN')
+            ##print('TRANSFORMED grad = ', grad)       ### delete
+            ##print('LEAVING JACOBIAN')                ### delete
             returnType(double(1));   return(grad)
         },
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double()) {
             ## Algorithm 1 from Hoffman and Gelman (2014)
-            ##p2 <- pArg + eps/2 * jacobian(qArg)    XXX REVERT TO THIS
-            ##q2 <- qArg + eps   * p2
-            ##p3 <- p2   + eps/2 * jacobian(q2)
-            print('ENTERED LEAPFROG')
-            jj <- jacobian(qArg)
-            print('FINISHED jj <- jacobian(qArg)')
-            print('jacobian(qArg) = ', jj)
             p2 <- pArg + eps/2 * jacobian(qArg)
-            print('p2 = ', p2)
             q2 <- qArg + eps   * p2
-            print('q2 = ', q2)
-            jj <- jacobian(q2)
-            print('jacobian(q2) = ', jj)
             p3 <- p2   + eps/2 * jacobian(q2)
-            print('p3 = ', p3)
+            ##print('ENTERED LEAPFROG')               ### delete
+            ##jj <- jacobian(qArg)                    ### delete
+            ##print('FINISHED jj <- jacobian(qArg)')  ### delete
+            ##print('jacobian(qArg) = ', jj)          ### delete
+            ##p2 <- pArg + eps/2 * jacobian(qArg)     ### delete
+            ##print('p2 = ', p2)                      ### delete
+            ##q2 <- qArg + eps   * p2                 ### delete
+            ##print('q2 = ', q2)                      ### delete
+            ##jj <- jacobian(q2)                      ### delete
+            ##print('jacobian(q2) = ', jj)            ### delete
+            ##p3 <- p2   + eps/2 * jacobian(q2)       ### delete
+            ##print('p3 = ', p3)                      ### delete
             if(warnings) if(is.nan.vec(q2) | is.nan.vec(p3)) { print('encountered a NaN value in HMC leapfrog routine, with timesRan = ', timesRan) }
             returnType(qpNLDef());   return(qpNLDef$new(q = q2, p = p3))
         },
@@ -988,28 +988,28 @@ sampler_HMC <- nimbleFunction(
             q <- transformedModelValues()
             p <- numeric(d)
             for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
-            print('IN INITIALIZE EPSILON')   ### XXXXXXXXXXXXXXXXXXXXXXX
-            print('q = ', q)                 ### XXXXXXXXXXXXXXXXXXXXXXX
-            print('p = ', p)                 ### XXXXXXXXXXXXXXXXXXXXXXX
+            ##print('IN INITIALIZE EPSILON')   ### XXXXXXXXXXXXXXXXXXXXXXX
+            ##print('q = ', q)                 ### XXXXXXXXXXXXXXXXXXXXXXX
+            ##print('p = ', p)                 ### XXXXXXXXXXXXXXXXXXXXXXX
             epsilon <<- 1
             qpNL <- leapfrog(q, p, epsilon)
-            qpNLq <- qpNL$q                  ### XXXXXXXXXXXXXXXXXXXXXXX
-            qpNLp <- qpNL$p                  ### XXXXXXXXXXXXXXXXXXXXXXX
-            print('qpNL$q = ', qpNLq)        ### XXXXXXXXXXXXXXXXXXXXXXX
-            print('qpNL$p = ', qpNLp)        ### XXXXXXXXXXXXXXXXXXXXXXX
-            while(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) {                                ## XXXXXXXXXXXXXXXXXXXX
-                print('HMC sampler encountered NaN which initializing step-size; recommend better initial values')    ## XXXXXXXXXXXXXXXXXXXX
-                print('reducing initial step-size guess')                           ## XXXXXXXXXXXXXXXXXXXX
-                epsilon <<- epsilon / 1000                                                  ## XXXXXXXXXXXXXXXXXXXX
-                qpNL <- leapfrog(q, p, epsilon)                                             ## XXXXXXXXXXXXXXXXXXXX
-            }                                                                               ## XXXXXXXXXXXXXXXXXXXX
+            ##qpNLq <- qpNL$q                  ### XXXXXXXXXXXXXXXXXXXXXXX
+            ##qpNLp <- qpNL$p                  ### XXXXXXXXXXXXXXXXXXXXXXX
+            ##print('qpNL$q = ', qpNLq)        ### XXXXXXXXXXXXXXXXXXXXXXX
+            ##print('qpNL$p = ', qpNLp)        ### XXXXXXXXXXXXXXXXXXXXXXX
+            while(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) {     ## my addition
+                print('HMC sampler encountered NaN while initializing step-size; recommend better initial values')
+                print('reducing initial step-size')              ## my addition
+                epsilon <<- epsilon / 1000                       ## my addition
+                qpNL <- leapfrog(q, p, epsilon)                  ## my addition
+            }                                                    ## my addition
             a <- 2*nimStep(exp(logH(qpNL$q, qpNL$p) - logH(q, p)) - 0.5) - 1
-            if(warnings) { if(is.nan(a)) print('caught a NaN acceptance prob in HMC initializeEpsilon routine, with timesRan = ', timesRan); warnings <<- FALSE }
+            if(warnings) { if(is.nan(a)) print('caught acceptance prob = NaN, in HMC initializeEpsilon routine'); warnings <<- FALSE }
             while((exp(logH(qpNL$q, qpNL$p) - logH(q, p)))^a > 2^(-a)) {
                 epsilon <<- epsilon * 2^a
                 qpNL <- leapfrog(q, p, epsilon)   ## must be last model-changing call
             }
-            mu <<- log(10*epsilon)     ## mu gets set with epsilon
+            mu <<- log(10*epsilon)
         },
         buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), q0 = double(1), p0 = double(1)) {
             ## Algorithm 6 (second half) from Hoffman and Gelman (2014)
@@ -1020,18 +1020,16 @@ sampler_HMC <- nimbleFunction(
                 n <- nimStep(logH(q, p) - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
                 s <- nimStep(logH(q, p) - logu + 1000)   ## use delta_max = 1000
                 a <- min(1, exp(logH(q, p) - logH(q0, p0)))
-                if(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) { n <- 0; s <- 0; a <- 0 }   ## XXXXXXXXXXXXXXXXXXXX
+                if(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) { n <- 0; s <- 0; a <- 0 }     ## my addition
                 return(btNLDef$new(q1 = q, p1 = p, q2 = q, p2 = p, q3 = q, n = n, s = s, a = a, na = 1))
             } else {        ## recursively build left and right subtrees
                 btNL1 <- buildtree(qArg, pArg, logu, v, j-1, eps, q0, p0)
                 if(btNL1$s == 1) {
                     if(v == -1) { btNL2 <- buildtree(btNL1$q1, btNL1$p1, logu, v, j-1, eps, q0, p0)
-                                  btNL1$q1 <- btNL2$q1
-                                  btNL1$p1 <- btNL2$p1
+                                  btNL1$q1 <- btNL2$q1;   btNL1$p1 <- btNL2$p1
                               } else {
                                   btNL2 <- buildtree(btNL1$q2, btNL1$p2, logu, v, j-1, eps, q0, p0)
-                                  btNL1$q2 <- btNL2$q2
-                                  btNL1$p2 <- btNL2$p2 }
+                                  btNL1$q2 <- btNL2$q2;   btNL1$p2 <- btNL2$p2 }
                     nSum <- btNL1$n + btNL2$n
                     if(nSum > 0)   if(runif(1) < btNL2$n / nSum)   btNL1$q3 <- btNL2$q3
                     qDiff <- btNL1$q2-btNL1$q1
