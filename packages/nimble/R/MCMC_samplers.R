@@ -810,11 +810,11 @@ sampler_HMC <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
-        warnings     <- if(!is.null(control$warnings))     control$warnings     else TRUE
-        maxAdaptIter <- if(!is.null(control$maxAdaptIter)) control$maxAdaptIter else 1000
         printTimesRan <- if(!is.null(control$printTimesRan)) control$printTimesRan else FALSE
         printEpsilon  <- if(!is.null(control$printEpsilon))  control$printEpsilon  else FALSE
         printJ        <- if(!is.null(control$printJ))        control$printJ        else FALSE
+        warnings      <- if(!is.null(control$warnings))      control$warnings      else 5
+        maxAdaptIter  <- if(!is.null(control$maxAdaptIter))  control$maxAdaptIter  else 1000
         ## node list generation, and processing of bounds and transformations
         targetNodes <- model$expandNodeNames(target)
         if(length(targetNodes) <= 0) stop('HMC sampler must operate on one or more nodes')
@@ -851,16 +851,16 @@ sampler_HMC <- nimbleFunction(
                 if(!(node %in% originalTargetAsScalars)) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', model$expandNodeNames(node), ', or none of it'))
                 if(dist %in% c('dmnorm', 'dmvt')) {
                     print('waiting for derivatives of dmnorm() to be implemented.')  ## waiting for dmnorm() derivatives
-                    print('otherwise, HMC sampler already works on dmnorm nodes.')      ## waiting for dmnorm() derivatives
-                    stop()                                                          ## waiting for dmnorm() derivatives
+                    print('otherwise, HMC sampler already works on dmnorm nodes.')   ## waiting for dmnorm() derivatives
+                    stop()                                                           ## waiting for dmnorm() derivatives
                     transformInfo[i, IND_ID] <- 1                      ## dmnorm: identity
-                } else stop(paste0('HMC sampler yet doesn\'t handle \'', dist, '\' distributions.'))   ## Dirichlet, Wishart ?
-                ##if(dist %in% c('dwish', 'dinvwish')) {
-                ##    NOTE: implementing for dwish() and dinvwish() will require a slightly deeper re-design
-                ##    transformInfo[i, IND_ID] <- 5                    ## wishart: log-cholesky
-                ##    d <- d + sqrt(len) * (sqrt(len)+1) / 2
-                ##    dmodel <- dmodel + len
-                ##}
+                } else if(dist %in% c('dwish', 'dinvwish')) {
+                    print('waiting for derivatives of dwish() to be implemented.')   ## waiting for dwish() derivatives
+                    transformInfo[i, IND_ID] <- 5                    ## wishart: log-cholesky
+                    ## NOTE: implementing for dwish() and dinvwish() will require a slightly deeper re-design
+                    ## d <- d + sqrt(len) * (sqrt(len)+1) / 2
+                    ## dmodel <- dmodel + len
+                } else stop(paste0('HMC sampler yet doesn\'t handle \'', dist, '\' distributions.'))   ## Dirichlet ?
             }
         }
         ## numeric value generation
@@ -869,7 +869,7 @@ sampler_HMC <- nimbleFunction(
         qpNLDef <- nimbleList(q = double(1), p = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
         ## checks
-        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, set nimbleOptions(experimentalEnableDerivs = TRUE)')
+        if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, use: nimbleOptions(experimentalEnableDerivs = TRUE)')
     },
     run = function() {
         ## No-U-Turm Sampler with Dual Averaging, Algorithm 6 from Hoffman and Gelman (2014)
@@ -912,7 +912,7 @@ sampler_HMC <- nimbleFunction(
             logEpsilonBar <<- timesRan^(-0.75) * logEpsilon + (1 - timesRan^(-0.75)) * logEpsilonBar
             if(timesRan == maxAdaptIter)   epsilon <<- exp(logEpsilonBar)
         }
-        if(warnings) if(is.nan(epsilon)) { print('value of epsilon is NaN in HMC sampler, with timesRan = ', timesRan); warnings <<- FALSE }
+        if(warnings > 0) if(is.nan(epsilon)) { print('value of epsilon is NaN in HMC sampler, with timesRan = ', timesRan); warnings <<- warnings - 1 }
     },
     methods = list(
         transformedModelValues = function() {
@@ -939,8 +939,7 @@ sampler_HMC <- nimbleFunction(
             for(i in 1:d) {
                 x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = itentity, 2 = log, 3 = logit
                 if(id == 2) lp <- lp + x
-                if(id == 3) lp <- lp + transformInfo[i, IND_LRNG] - log(exp(x)+exp(-x)+2)   ## more stable?
-                                                               ## - 2*log(1+exp(-x)) - x    ## alternate to above (less stable?)
+                if(id == 3) lp <- lp + transformInfo[i, IND_LRNG] - log(exp(x)+exp(-x)+2)   ## alternate: -2*log(1+exp(-x))-x
             }
             returnType(double());   return(lp)
         },
@@ -980,7 +979,7 @@ sampler_HMC <- nimbleFunction(
             ##print('jacobian(q2) = ', jj)            ### delete
             ##p3 <- p2   + eps/2 * jacobian(q2)       ### delete
             ##print('p3 = ', p3)                      ### delete
-            if(warnings) if(is.nan.vec(q2) | is.nan.vec(p3)) { print('encountered a NaN value in HMC leapfrog routine, with timesRan = ', timesRan) }
+            if(warnings > 0) if(is.nan.vec(c(q2, p3))) { print('encountered a NaN value in HMC leapfrog routine, with timesRan = ', timesRan); warnings <<- warnings - 1 }
             returnType(qpNLDef());   return(qpNLDef$new(q = q2, p = p3))
         },
         initializeEpsilon = function() {
@@ -988,26 +987,26 @@ sampler_HMC <- nimbleFunction(
             q <- transformedModelValues()
             p <- numeric(d)
             for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
-            ##print('IN INITIALIZE EPSILON')   ### XXXXXXXXXXXXXXXXXXXXXXX
-            ##print('q = ', q)                 ### XXXXXXXXXXXXXXXXXXXXXXX
-            ##print('p = ', p)                 ### XXXXXXXXXXXXXXXXXXXXXXX
+            ##print('IN INITIALIZE EPSILON')          ### delete
+            ##print('q = ', q)                        ### delete
+            ##print('p = ', p)                        ### delete
             epsilon <<- 1
             qpNL <- leapfrog(q, p, epsilon)
-            ##qpNLq <- qpNL$q                  ### XXXXXXXXXXXXXXXXXXXXXXX
-            ##qpNLp <- qpNL$p                  ### XXXXXXXXXXXXXXXXXXXXXXX
-            ##print('qpNL$q = ', qpNLq)        ### XXXXXXXXXXXXXXXXXXXXXXX
-            ##print('qpNL$p = ', qpNLp)        ### XXXXXXXXXXXXXXXXXXXXXXX
-            while(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) {     ## my addition
-                print('HMC sampler encountered NaN while initializing step-size; recommend better initial values')
-                print('reducing initial step-size')              ## my addition
-                epsilon <<- epsilon / 1000                       ## my addition
-                qpNL <- leapfrog(q, p, epsilon)                  ## my addition
-            }                                                    ## my addition
+            ##qpNLq <- qpNL$q                         ### delete
+            ##qpNLp <- qpNL$p                         ### delete
+            ##print('qpNL$q = ', qpNLq)               ### delete
+            ##print('qpNL$p = ', qpNLp)               ### delete
+            while(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) {              ## my addition
+                if(warnings > 0) { print('HMC sampler encountered NaN while initializing step-size; recommend better initial values')
+                                   print('reducing initial step-size'); warnings <<- warnings - 1 }
+                epsilon <<- epsilon / 1000                                ## my addition
+                qpNL <- leapfrog(q, p, epsilon)                           ## my addition
+            }                                                             ## my addition
             a <- 2*nimStep(exp(logH(qpNL$q, qpNL$p) - logH(q, p)) - 0.5) - 1
-            if(warnings) { if(is.nan(a)) print('caught acceptance prob = NaN, in HMC initializeEpsilon routine'); warnings <<- FALSE }
+            if(warnings > 0) { if(is.nan(a)) print('caught acceptance prob = NaN, in HMC initializeEpsilon routine'); warnings <<- warnings - 1 }
             while((exp(logH(qpNL$q, qpNL$p) - logH(q, p)))^a > 2^(-a)) {
                 epsilon <<- epsilon * 2^a
-                qpNL <- leapfrog(q, p, epsilon)   ## must be last model-changing call
+                qpNL <- leapfrog(q, p, epsilon)   ## must be final model-changing call
             }
             mu <<- log(10*epsilon)
         },
@@ -2190,7 +2189,7 @@ sampler_CAR_proper <- nimbleFunction(
 #
 #' The HMC sampler accepts the following control list elements:
 #' \itemize{
-#' \item warnings.  A logical argument, specifying whether to give a warning when NA or NaN values are encountered. (default = TRUE)
+#' \item warnings.  A numeric argument, specifying how many warnings messages to emit (for example, when NaN values are encountered). (default = 5)
 #' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog stepsize. (default = 1000)
 #' }
 #'
