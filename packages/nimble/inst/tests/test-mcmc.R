@@ -1327,59 +1327,6 @@ test_that('dcar_proper sampling', {
                  info = 'exact sample values for dcar_proper')
 })
 
-## testing correctness of HMC sampler (with various transformations)
-test_that('HMC sampler asymptotic correctness', {
-    nimbleOptions(experimentalEnableDerivs = TRUE)
-    code <- nimbleCode({
-        mu ~ dnorm(0, sd = 10)
-        tau ~ dgamma(0.01, 0.01)
-        sigma ~ dunif(0, 10)
-        p ~ dunif(0, 1)
-        mu4 <- mu * p
-        mean[1] <- mu
-        mean[2] <- mu4
-        mean[3] <- p
-        z[1:3] ~ dmnorm(mean[1:3], cov = C[1:3,1:3])
-        y1 ~ dnorm(mu, tau)
-        y2 ~ dnorm(mu, tau)
-        y3 ~ dnorm(mu, sd = sigma)
-        y4 ~ dnorm(mu4, tau)
-        y5 ~ dnorm(z[1], sd = 3)
-        y6 ~ dnorm(z[2], sd = sigma)
-        y7 ~ dnorm(z[3], sd = sigma)
-    })
-    A <- array(c(1,2,3,0,1,2,0,0,3), c(3,3))
-    C <- diag(3)
-    constants <- list(C = C)
-    data <- list(y1 = 10, y2 = 9, y3 = 9, y4 = 7, y5 = 6, y6 = 5, y7 = 1)
-    inits <- list(mu = 0, tau = 1, sigma = 1, p = 0.5, z = rep(0,3))
-    Rmodel <- nimbleModel(code, constants, data, inits)
-    values(Rmodel, c('mu','p','sigma','tau','z')) <- c(9.3431655, 0.5562529, 2.5712827, 1.5704631, 6.3846235, 4.6843885, 0.8661889)
-    Rmodel$calculate()
-    conf <- configureMCMC(Rmodel, multivariateNodesAsScalars = TRUE)
-    conf$addMonitors('z')
-    Rmcmc <- buildMCMC(conf)
-    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
-    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
-    set.seed(0)
-    samples <- runMCMC(Cmcmc, 100000, nburnin = 10000)
-    means <- apply(samples, 2, mean)
-    ##
-    Rmodel <- nimbleModel(code, constants, data, inits)
-    values(Rmodel, c('mu','p','sigma','tau','z')) <- c(9.3431655, 0.5562529, 2.5712827, 1.5704631, 6.3846235, 4.6843885, 0.8661889)
-    Rmodel$calculate()
-    conf <- configureMCMC(Rmodel, nodes = NULL)
-    conf$addSampler(c('mu','tau','sigma','p','z'), 'HMC')
-    conf$addMonitors('z')
-    Rmcmc <- buildMCMC(conf)
-    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
-    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
-    set.seed(0)
-    samples <- runMCMC(Cmcmc, 40000, nburnin=10000)
-    meansHMC <- apply(samples, 2, mean)
-    ##
-    expect_true(all(abs(means - meansHMC) < 0.05))
-})
 
 
 ## testing dmnorm-dnorm conjugacies we don't detect
@@ -1456,6 +1403,51 @@ test_that('HMC sampler seems to work', {
     expect_true(all(round(as.numeric(samples[1000:1005,]), 5) == c(1.04219, 0.78785, 0.61456, -0.54460, 0.92886, -0.14861, 2.46754, 1.39936, 2.38672, 2.36192, 3.23133, 1.26193, 2.67295, 3.29269, 3.61172, 3.99500, 3.72867, 3.80442)))
     expect_true(all(round(as.numeric(apply(samples, 2, mean)), 7) == c(0.4503489, 1.8820432, 3.3086721)))
     expect_true(all(round(as.numeric(apply(samples, 2, sd)), 7) == c(0.9148666, 1.2039168, 1.2923344 )))
+})
+
+
+## testing correctness of HMC sampler (with various transformations)
+test_that('HMC sampler asymptotic correctness', {
+    nimbleOptions(experimentalEnableDerivs = TRUE)
+    code <- nimbleCode({
+        mu ~ dnorm(0, sd = 10)
+        tau ~ dgamma(0.01, 0.01)
+        sigma ~ dunif(0, 10)
+        p ~ dunif(0, 1)
+        mu4 <- mu * p
+        y1 ~ dnorm(mu, tau)
+        y2 ~ dnorm(mu, tau)
+        y3 ~ dnorm(mu, sd = sigma)
+        y4 ~ dnorm(mu4, tau)
+    })
+    constants <- list()
+    data <- list(y1 = 10, y2 = 9, y3 = 9, y4 = 7)
+    inits <- list(mu = 0, tau = 1, sigma = 1, p = 0.5)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel)
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 100000, nburnin = 10000)
+    means <- apply(samples, 2, mean)
+    sds <- apply(samples, 2, sd)
+    ##
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler(c('mu','tau','sigma','p'), 'HMC')
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samplesHMC <- runMCMC(Cmcmc, 50000, nburnin=10000)
+    meansHMC <- apply(samplesHMC, 2, mean)
+    sdsHMC <- apply(samplesHMC, 2, sd)
+    ##
+    expect_true(all(abs(means - meansHMC) < 0.03))
+    expect_true(all(abs(sds   - sdsHMC)   < 0.03))
 })
 
 
