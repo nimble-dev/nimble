@@ -2,7 +2,7 @@
 
 
 
-# More introduction
+# More introduction {#cha:more-introduction}
 
 Now that we have shown a brief example, we will introduce more about
 the concepts and design of NIMBLE.  
@@ -73,7 +73,7 @@ objects that you can control from R, simulating new data is trivial.
 With previous BUGS-based packages, this isn't possible.
 
 More information about specifying and manipulating models is in
-Chapters \@ref(cha:building-models) and \@ref(cha:using-bugs-models).
+Chapters \@ref(cha:building-models) and \@ref(cha:using-models).
 
 ## nimbleFunctions for writing algorithms {#sec:nimble-lang-writ}
 

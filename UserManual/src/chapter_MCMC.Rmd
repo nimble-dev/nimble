@@ -557,7 +557,7 @@ The `run` method has an optional `reset` argument.  When `reset = TRUE` (the def
 
 When `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.  
 
-### Measuring sampler computation times: *getTimes* \label{sec:sampler-time}
+### Measuring sampler computation times: *getTimes* {#sec:sampler-time}
 
 If you want to obtain the computation time spent in each sampler, you can set `time=TRUE` as a run-time argument and then use the method `getTimes()` obtain the times.  For example,
 

@@ -9,7 +9,7 @@ read_chunk(file.path('chunks', 'usingBugsModels_chunks.R'))  # one can put code 
 ``` 
 
 
-# Working with NIMBLE models {#cha:using-bugs-models}
+# Working with NIMBLE models {#cha:using-models}
 
 Here we describe how one can get information about NIMBLE models and
 carry out operations on a model. While all of this functionality can
@@ -27,7 +27,7 @@ Section \@ref(sec:nodes-and-variables) defines what we mean by variables and nod
 ### Determining the nodes in a model {#sec:get-nodes}
 
 
-One can determine the variables in a model using `getVarNames` and the  nodes in a model using `getNodeNames`, with optional arguments allowing you to select only certain types of nodes. We illustrate here with the pump model from Chapter \@ref(cha:intro).
+One can determine the variables in a model using `getVarNames` and the  nodes in a model using `getNodeNames`, with optional arguments allowing you to select only certain types of nodes. We illustrate here with the pump model from Chapter \@ref(cha:lightning-intro).
 
 ```{r, getVarAndNodeNamesPump}
 ``` 

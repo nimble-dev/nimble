@@ -72,9 +72,16 @@ chmod go+w nimble_${VERSION}.tar.gz
 
 ./writePackages
 
-put new user manual in /web/R-nimble/wordpress/manuals
+put new user manual PDF in /web/R-nimble/wordpress/manuals
 and change symlink to point to newest pdf
 and change to g+w for NimbleUserManual_$VERSION.pdf
+
+put new user manual HTML in /web/R-nimble/wordpress/html_manual
+from nimble/UserManual:
+tar -cvzf tmp.tgz *html libs search_index.json nimble-icon.png NimbleUserManual_files
+copy to /web/R-nimble/wordpress/html_manual
+on nature.b.e:
+tar -xvzf tmp.tgz; rm -rf tmp.tgz
 
 go to website: R-nimble.org/login and login 
 

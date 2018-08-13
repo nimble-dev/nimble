@@ -1,14 +1,15 @@
 bookdown::gitbook:
   css: style.css
   config:
-    toc_depth: 3
     toc:
       before: |
-        ```{r, logo}
-        knitr::include_graphics("nimble-icon.png", fig.cap = "", fig.width = 1)
-        ```
+        <img src="./nimble-icon.png"
+             width=100>
+        <li><a href="./">NIMBLE User Manual, Version 0.6-12</a></li>
+        <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
         <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
-        <li><a href="https://github.com/nimble-dev/nimble-docs">https://github.com/nimble-dev/nimble-docs</a></li>
+      after: |
+    toc_depth: 3
     download: ["pdf", "epub"]
 bookdown::pdf_book:
   latex_engine: xelatex
