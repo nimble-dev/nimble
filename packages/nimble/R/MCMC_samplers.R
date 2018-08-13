@@ -906,9 +906,6 @@ sampler_HMC <- nimbleFunction(
         model$calculate(calcNodes)
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         if(timesRan <= maxAdaptIter) {
-            ##print('===== adapting epsilon:')    ### delete
-            ##print('btNL$a = ',  btNL$a)         ### delete
-            ##print('btNL$na = ', btNL$na)        ### delete
             Hbar <<- (1 - 1/(timesRan+10)) * Hbar + 1/(timesRan+10) * (0.65 - btNL$a/btNL$na)
             logEpsilon <- mu - sqrt(timesRan)/0.05 * Hbar
             epsilon <<- exp(logEpsilon)
@@ -948,21 +945,14 @@ sampler_HMC <- nimbleFunction(
         },
         jacobian = function(qArg = double(1)) {
             values(model, targetNodes) <<- inverseTransformValues(qArg)
-            ##print('ENTERED JACOBIAN')                ### delete
-            ##qTrans <- inverseTransformValues(qArg)   ### delete
-            ##print('qTrans = ', qTrans)               ### delete
-            ##values(model, targetNodes) <<- qTrans    ### delete
             derivsOutput <- derivs(model$calculate(calcNodes), order = 1, wrt = targetNodes)
             grad <- numeric(d)
             grad[1:d] <- derivsOutput$jacobian[1, 1:d]            ## preserve 1D vector object
-            ##print('grad = ', grad)                   ### delete
             for(i in 1:d) {
                 x <- qArg[i];   id <- transformInfo[i, IND_ID]    ## 1 = itentity, 2 = log, 3 = logit
                 if(id == 2) grad[i] <- grad[i]*exp(x) + 1
                 if(id == 3) grad[i] <- grad[i]*transformInfo[i, IND_RNG]*expit(x)^2*exp(-x) + 2/(1+exp(x)) - 1
             }
-            ##print('TRANSFORMED grad = ', grad)       ### delete
-            ##print('LEAVING JACOBIAN')                ### delete
             returnType(double(1));   return(grad)
         },
         leapfrog = function(qArg = double(1), pArg = double(1), eps = double()) {
@@ -970,18 +960,6 @@ sampler_HMC <- nimbleFunction(
             p2 <- pArg + eps/2 * jacobian(qArg)
             q2 <- qArg + eps   * p2
             p3 <- p2   + eps/2 * jacobian(q2)
-            ##print('ENTERED LEAPFROG')               ### delete
-            ##jj <- jacobian(qArg)                    ### delete
-            ##print('FINISHED jj <- jacobian(qArg)')  ### delete
-            ##print('jacobian(qArg) = ', jj)          ### delete
-            ##p2 <- pArg + eps/2 * jacobian(qArg)     ### delete
-            ##print('p2 = ', p2)                      ### delete
-            ##q2 <- qArg + eps   * p2                 ### delete
-            ##print('q2 = ', q2)                      ### delete
-            ##jj <- jacobian(q2)                      ### delete
-            ##print('jacobian(q2) = ', jj)            ### delete
-            ##p3 <- p2   + eps/2 * jacobian(q2)       ### delete
-            ##print('p3 = ', p3)                      ### delete
             if(warnings > 0) if(is.nan.vec(c(q2, p3))) { print('encountered a NaN value in HMC leapfrog routine, with timesRan = ', timesRan); warnings <<- warnings - 1 }
             returnType(qpNLDef());   return(qpNLDef$new(q = q2, p = p3))
         },
@@ -990,15 +968,8 @@ sampler_HMC <- nimbleFunction(
             q <- transformedModelValues()
             p <- numeric(d)
             for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
-            ##print('IN INITIALIZE EPSILON')          ### delete
-            ##print('q = ', q)                        ### delete
-            ##print('p = ', p)                        ### delete
             epsilon <<- 1
             qpNL <- leapfrog(q, p, epsilon)
-            ##qpNLq <- qpNL$q                         ### delete
-            ##qpNLp <- qpNL$p                         ### delete
-            ##print('qpNL$q = ', qpNLq)               ### delete
-            ##print('qpNL$p = ', qpNLp)               ### delete
             while(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) {              ## my addition
                 if(warnings > 0) { print('HMC sampler encountered NaN while initializing step-size; recommend better initial values')
                                    print('reducing initial step-size'); warnings <<- warnings - 1 }
@@ -2192,6 +2163,7 @@ sampler_CAR_proper <- nimbleFunction(
 #
 #' The HMC sampler accepts the following control list elements:
 #' \itemize{
+#' \item messages.  A logical argument, specifying whether to print informative messages (default = TRUE)
 #' \item warnings.  A numeric argument, specifying how many warnings messages to emit (for example, when NaN values are encountered). (default = 5)
 #' \item maxAdaptIter.  The number of sampling iterations to adapt the leapfrog stepsize. (default = 1000)
 #' }
