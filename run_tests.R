@@ -39,22 +39,23 @@ if (length(grep('^-', argv, invert = TRUE))) {
     allTests <- list.files('packages/nimble/inst/tests')
     allTests <- allTests[grepl('test-.*\\.R', allTests)]
 
-    # Avoid running these blacklisted tests, since they take too long.
-    blacklist <- c(
+    # Avoid running these doNotTest listed tests, since they take too long.
+    doNotTest <- c(
         'test-Math2.R',
         'test-Mcmc2.R',
         'test-Mcmc3.R',
         'test-Filtering2.R',
         'test-benchmark-building-steps.R')
     # Avoid running these tests since they test experimental features.
-    blacklist <- c(
-        blacklist,
+    doNotTest <- c(
+        doNotTest,
         'test-ADfunctions.R',
         'test-ADmodels.R',
+        'test-ADdsl.R',
         'test-tfize.R',   # at some point in 0.6-7 development this was fully passing on Chris' machine with sufficiently new tensorflow version (1.3.0?), but as of 0.6-7 release multiple errors of invalid GraphDef
         'test-benchmarks.R')  # some issue with version conflicts causing tensorflow to fail on Travis with errors such as 'nimble-tensorflow_11_20_18_17_45.so: undefined symbol: TF_DeleteImportGraphDefOptions'
-    cat('SKIPPING', blacklist, sep = '\n  ')
-    allTests <- setdiff(allTests, blacklist)
+    cat('SKIPPING', doNotTest, sep = '\n  ')
+    allTests <- setdiff(allTests, doNotTest)
 }
 
 # Sort tests by duration, running the shortest tests first.
