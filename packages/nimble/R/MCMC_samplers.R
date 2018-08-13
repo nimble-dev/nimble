@@ -262,7 +262,14 @@ sampler_RW_block <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
-        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
+        if(!is.integer(finalTargetIndex) |
+           length(finalTargetIndex) != 1 |
+           is.na(finalTargetIndex[1]))
+            stop('Problem with target node in sampler_RW_block')
+        calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
+        calcNodesDepStage <- calcNodes[-(1:finalTargetIndex)]
+#        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -294,12 +301,12 @@ sampler_RW_block <- nimbleFunction(
             propValueVector <- generateProposalVector()
             ##        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
             values(model, targetNodesAsScalar) <<- propValueVector
-            lpD <- calculateDiff(model, target)
+            lpD <- calculateDiff(model, calcNodesProposalStage)
             if(lpD == -Inf) {
-                nimCopy(from = mvSaved, to = model,   row = 1, nodes = target, logProb = TRUE)
+                nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
             } else {
                 ##        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
-                lpD <- lpD + calculateDiff(model, calcNodesNoSelf)
+                lpD <- lpD + calculateDiff(model, calcNodesDepStage)
                 jump <- decide(lpD)
                 if(jump) { nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
                 } else   { nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE) }
