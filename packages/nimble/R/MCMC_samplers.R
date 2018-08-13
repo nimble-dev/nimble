@@ -813,11 +813,12 @@ sampler_HMC <- nimbleFunction(
         printTimesRan <- if(!is.null(control$printTimesRan)) control$printTimesRan else FALSE
         printEpsilon  <- if(!is.null(control$printEpsilon))  control$printEpsilon  else FALSE
         printJ        <- if(!is.null(control$printJ))        control$printJ        else FALSE
+        messages      <- if(!is.null(control$messages))      control$messages      else TRUE
         warnings      <- if(!is.null(control$warnings))      control$warnings      else 5
         maxAdaptIter  <- if(!is.null(control$maxAdaptIter))  control$maxAdaptIter  else 1000
         ## node list generation, and processing of bounds and transformations
         targetNodes <- model$expandNodeNames(target)
-        if(length(targetNodes) <= 0) stop('HMC sampler must operate on one or more nodes')
+        if(length(targetNodes) <= 0) stop('HMC sampler must operate on at least one node')
         calcNodes <- model$getDependencies(targetNodes)
         originalTargetAsScalars <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         targetNodesAsScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
@@ -838,8 +839,10 @@ sampler_HMC <- nimbleFunction(
                 if(bounds[1] == -Inf & bounds[2] == Inf) {             ## 1 = identity, support = (-Inf, Inf)
                     transformInfo[i, IND_ID] <- 1
                 } else if(bounds[1] == 0 & bounds[2] == Inf) {         ## 2 = log, support = (0, Inf)
+                    if(messages) print('HMC sampler is using a log-transformation for sampling ', node)
                     transformInfo[i, IND_ID] <- 2
                 } else if(isValid(bounds[1]) & isValid(bounds[2])) {   ## 3 = logit, support = (a, b)
+                    if(messages) print('HMC sampler is using a logit-transformation for sampling ', node)
                     transformInfo[i, IND_ID] <- 3
                     transformInfo[i, IND_LB] <- bounds[1]
                     range <- bounds[2] - bounds[1]
