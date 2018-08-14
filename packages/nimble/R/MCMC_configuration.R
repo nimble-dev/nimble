@@ -97,7 +97,7 @@ MCMCconf <- setRefClass(
             multivariateNodesAsScalars = FALSE,
             enableWAIC = nimbleOptions('enableWAIC'),
             warnNoSamplerAssigned = TRUE,
-            print = FALSE) {
+            print = FALSE, ...) {
             '
 Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
@@ -139,6 +139,8 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
 print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
+
+...: Additional named arguments passed through ... will be used as additional control list elements.
 '
             if(is(model, 'RmodelBaseClass')) {
                 model <<- model
@@ -154,7 +156,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             enableWAIC <<- enableWAIC
             samplerConfs <<- list()
             samplerExecutionOrder <<- numeric()
-            controlDefaults <<- list()
+            controlDefaults <<- list(...)
             namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
             if(identical(nodes, character())) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
