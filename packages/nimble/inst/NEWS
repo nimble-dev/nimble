@@ -2,6 +2,8 @@ USER LEVEL CHANGES
 
 -- More sophisticated model initialization routine for correctly initializing complex state space models.
 
+-- addSampler method of MCMC configuration objects now accepts ... (dot dot dot) arguments, and uses them as control list elements for the sampling algorithm.
+
                             CHANGES IN VERSION 0.6-12 (July 2018)
 
 USER LEVEL CHANGES

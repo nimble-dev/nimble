@@ -288,7 +288,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE) {
+        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE, ...) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
 
@@ -305,6 +305,8 @@ print: Logical argument, specifying whether to print the details of the newly ad
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
+
+...: Additional named arguments passed through ... will be used as additional control list elements.
 
 Details: A single instance of the newly configured sampler is added to the end of the list of samplers for this MCMCconf object.
 
@@ -356,7 +358,8 @@ Invisibly returns a list of the current sampler configurations, which are sample
             ##libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only
             ##if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
             ##requiredControlNames <- controlNamesLibrary[[libraryTag]]
-            thisControlList <- mcmc_generateControlListArgument(control=control, controlDefaults=controlDefaults)  ## should name arguments
+            controlArgs <- c(control, list(...))
+            thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=target, control=thisControlList, model=model)
