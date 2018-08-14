@@ -173,6 +173,7 @@ sampler_RW <- nimbleFunction(
         logMHR <- calculateDiff(model, target)
         if(logMHR == -Inf) {
             nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+            jump <- FALSE
         } else {
             logMHR <- logMHR + calculateDiff(model, calcNodesNoSelf) + propLogScale
             jump <- decide(logMHR)
@@ -304,6 +305,7 @@ sampler_RW_block <- nimbleFunction(
             lpD <- calculateDiff(model, calcNodesProposalStage)
             if(lpD == -Inf) {
                 nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
+                jump <- FALSE
             } else {
                 ##        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
                 lpD <- lpD + calculateDiff(model, calcNodesDepStage)
