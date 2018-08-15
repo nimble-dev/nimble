@@ -318,7 +318,7 @@ sampler_RW_block <- nimbleFunction(
             ## to old behavior to see if tests that depend on particular
             ## sample sequences pass.  Rather than calling runif(1, 0, 1) here,
             ## we call decide() to ensure same behavior.
-            jump <- decide(logMHR)
+                jump <- decide(lpD)
             ## When new behavior is acceptable, we can remove the above line
             ## and uncomment the following:
             ##jump <- FALSE
