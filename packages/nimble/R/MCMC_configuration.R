@@ -140,7 +140,7 @@ warnNoSamplerAssigned: A logical argument specifying whether to issue a warning 
 
 print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
 
-...: Additional named arguments passed through ... will be used as additional control list elements.
+...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
 '
             if(is(model, 'RmodelBaseClass')) {
                 model <<- model
@@ -1056,7 +1056,7 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@param autoBlock A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.
 #'@param oldConf An optional MCMCconf object to modify rather than creating a new MCMCconf from scratch
-#'@param ... Additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}
+#'@param ... Additional named control list elements for default samplers, or additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}
 #'@author Daniel Turek
 #'@export 
 #'@details See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object
@@ -1090,7 +1090,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          multivariateNodesAsScalars = multivariateNodesAsScalars,
                          enableWAIC = enableWAIC,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
-                         print = print)
+                         print = print, ...)
     return(thisConf)	
 }
 
