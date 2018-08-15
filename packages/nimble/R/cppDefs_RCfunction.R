@@ -3,6 +3,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                              fields = list(
                                  SEXPinterfaceFun = 'ANY',
                                  SEXPinterfaceCname = 'ANY',	## character
+                                 ADtemplateFun = 'ANY',
                                  RCfunProc = 'ANY'              ## RCfunProcessing object
                                  ), 
                              methods = list(
@@ -27,7 +28,9 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                  },
                                  getDefs = function() {
                                      list(.self,
-                                          if(!inherits(SEXPinterfaceFun, 'uninitializedField')) SEXPinterfaceFun)
+                                          if(!inherits(SEXPinterfaceFun, 'uninitializedField')) SEXPinterfaceFun,
+                                          if(!inherits(ADtemplateFun, 'uninitializedField')) ADtemplateFun
+                                          )
                                  },
                                  getHincludes = function() {
                                      Hinc <- c(Hincludes,
@@ -91,6 +94,10 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      ## For external calls:
                                      CPPincludes <<- c(CPPincludes, RCfunProc$RCfun$externalCPPincludes)
                                      Hincludes <<- c(Hincludes, RCfunProc$RCfun$externalHincludes)
+
+                                     ## to be wrapped in conditional
+                                     ADtemplateFun <<- makeTypeTemplateFunction(name, .self)
+                                     
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
