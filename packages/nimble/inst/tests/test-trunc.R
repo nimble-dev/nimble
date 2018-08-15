@@ -131,7 +131,7 @@ test_that("Test that MCMC respects truncation bounds", {
     Cmcmc$run(5000)
     smp <- as.matrix(Cmcmc$mvSamples)
     expect_gt(min(smp), 0.2, label = "minimum in MCMC", expected.label = "lower bound")
-    expect_lt(min(smp), 2, label = "maximum in MCMC", expected.label = "upper bound")
+    expect_lt(max(smp), 2, label = "maximum in MCMC", expected.label = "upper bound")
 
     test_mcmc(model = code, data = c(data, constants), inits = inits,
               results = list(mean = list(mu = 1.5), sd = list(mu = .27 )),
