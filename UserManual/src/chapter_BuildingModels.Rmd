@@ -20,7 +20,7 @@ starting from BUGS code.
 
 NIMBLE provides two functions for creating model objects:
 `nimbleModel` and `readBUGSmodel`. The first, `nimbleModel`,
-is more general and was illustrated in Chapter \@ref(cha:intro). The
+is more general and was illustrated in Chapter \@ref(cha:lightning-intro). The
 second, `readBUGSmodel` provides compatibility with BUGS file
 formats for models, variables, data, and initial values for MCMC.  
 
@@ -52,7 +52,7 @@ NIMBLE makes a distinction between data and constants:
   - *Data* is a label for the role a node plays in the model.
   Nodes marked as data will by default be protected from any functions
   that would simulate over their values (see `simulate` in Chapter
-  \@ref(cha:using-bugs-models)), but it is possible to over-ride
+  \@ref(cha:using-models)), but it is possible to over-ride
   that default or to change their values by direct assignment.  This
   allows an algorithm to be applied to many data sets in the same
   model without re-creating the model each time.  It also allows
@@ -283,7 +283,7 @@ it helps define the model.
 
 NIMBLE models are objects that can be modified and manipulated from R.
 In this section we introduce some basic ways to use a model object.
-Chapter \@ref(cha:using-bugs-models) covers more topics for writing
+Chapter \@ref(cha:using-models) covers more topics for writing
 algorithms that use models.
 
 

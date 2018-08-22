@@ -1,3 +1,4 @@
-To create the PDF version of the manual, go to 'src' and run 'make'.
+To create the PDF version of the manual, go to 'src' and run 'make NimbleUserManual.pdf'.
 
-TBD: instructions to create the HTML version of the manual.
+To create the PDF version of the manual, go to 'src' and run 'make NimbleUserManual.html'.
+

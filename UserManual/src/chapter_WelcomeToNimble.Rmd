@@ -76,7 +76,7 @@ written in the NIMBLE language.
 
 ## How to use this manual
 
-We suggest everyone start with the Lightning Introduction in Chapter \@ref(cha:intro).
+We suggest everyone start with the Lightning Introduction in Chapter \@ref(cha:lightning-intro).
 
 Then, if you want to jump into using NIMBLE's algorithms without learning
 about NIMBLE's programming system, go to Part II to
