@@ -839,10 +839,10 @@ sampler_HMC <- nimbleFunction(
                 if(bounds[1] == -Inf & bounds[2] == Inf) {             ## 1 = identity, support = (-Inf, Inf)
                     transformInfo[i, IND_ID] <- 1
                 } else if(bounds[1] == 0 & bounds[2] == Inf) {         ## 2 = log, support = (0, Inf)
-                    if(messages) print(paste0('HMC sampler is using a log-transformation for sampling ', node))
+                    if(messages) message('HMC sampler is using a log-transformation for sampling ', node)
                     transformInfo[i, IND_ID] <- 2
                 } else if(isValid(bounds[1]) & isValid(bounds[2])) {   ## 3 = logit, support = (a, b)
-                    if(messages) print(paste0('HMC sampler is using a logit-transformation for sampling ', node))
+                    if(messages) message('HMC sampler is using a logit-transformation for sampling ', node)
                     transformInfo[i, IND_ID] <- 3
                     transformInfo[i, IND_LB] <- bounds[1]
                     range <- bounds[2] - bounds[1]
@@ -853,12 +853,12 @@ sampler_HMC <- nimbleFunction(
             } else {                            ## multivariate node
                 if(!(node %in% originalTargetAsScalars)) stop(paste0('HMC sampler only operates on complete multivariate nodes. Must specify full node: ', model$expandNodeNames(node), ', or none of it'))
                 if(dist %in% c('dmnorm', 'dmvt')) {
-                    print('waiting for derivatives of dmnorm() to be implemented.')  ## waiting for dmnorm() derivatives
-                    print('otherwise, HMC sampler already works on dmnorm nodes.')   ## waiting for dmnorm() derivatives
+                    message('waiting for derivatives of dmnorm() to be implemented.')  ## waiting for dmnorm() derivatives
+                    message('otherwise, HMC sampler already works on dmnorm nodes.')   ## waiting for dmnorm() derivatives
                     stop()                                                           ## waiting for dmnorm() derivatives
                     transformInfo[i, IND_ID] <- 1                      ## dmnorm: identity
                 } else if(dist %in% c('dwish', 'dinvwish')) {
-                    print('waiting for derivatives of dwish() to be implemented.')   ## waiting for dwish() derivatives
+                    message('waiting for derivatives of dwish() to be implemented.')   ## waiting for dwish() derivatives
                     stop()                                                           ## waiting for dwish() derivatives
                     transformInfo[i, IND_ID] <- 5                    ## wishart: log-cholesky
                     ## NOTE: implementing for dwish() and dinvwish() will require a slightly deeper re-design
