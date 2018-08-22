@@ -1553,6 +1553,7 @@ sampler_RW_wishart <- nimbleFunction(
         adaptive       <- if(!is.null(control$adaptive))       control$adaptive       else TRUE
         adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
         scale          <- if(!is.null(control$scale))          control$scale          else 1
+        propCov        <- if(!is.null(control$propCov))        control$propCov        else 'identity'
         ## node list generation
         target <- model$expandNodeNames(target)
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -1564,7 +1565,7 @@ sampler_RW_wishart <- nimbleFunction(
         timesAdapted  <- 0
         d <- sqrt(length(targetAsScalar))
         nTheta <- d*(d+1)/2
-        propCov <- diag(nTheta)
+        if(is.character(propCov) && propCov == 'identity')     propCov <- diag(nTheta)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
         chol_propCov_scale <- scale * chol_propCov
@@ -1579,9 +1580,11 @@ sampler_RW_wishart <- nimbleFunction(
         my_calcAdaptationFactor <- calcAdaptationFactor(nTheta)
         ## checks
         dist <- model$getDistribution(target)
-        if(length(target) > 1)                     stop('RW_wishart sampler only applies to one target node')
-        if(!(dist %in% c('dwish', 'dinvwish')))    stop('RW_wishart sampler only applies to Wishart or inverse-Wishart distributions')
-        if(d < 2)                                  stop('RW_wishart sampler requires target node dimension to be at least 2x2')
+        if(d < 2)                             stop('RW_wishart sampler requires target node dimension to be at least 2x2')
+        if(class(propCov) != 'matrix')        stop('propCov must be a matrix')
+        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric')
+        if(!all(dim(propCov) == nTheta))      stop('propCov matrix must have dimension ', d, 'x', d)
+        if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
     run = function() {
         currentValue <<- model[[target]]
@@ -1595,11 +1598,9 @@ sampler_RW_wishart <- nimbleFunction(
                 nextInd <- nextInd + 1
             }
         }
-        if(nextInd != nTheta+1) stop('something went wrong')   ## precautionary
         ## generate thetaVec proposal on transformed scale
         thetaVec_prop <<- rmnorm_chol(1, thetaVec, chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
         ## un-transform thetaVec_prop to get propValue_chol
-        propValue_chol <<- propValue_chol * 0                  ## precautionary
         for(i in 1:d)   propValue_chol[i,i] <<- exp(thetaVec_prop[i])
         nextInd <- d + 1
         for(i in 1:(d-1)) {
@@ -1608,11 +1609,9 @@ sampler_RW_wishart <- nimbleFunction(
                 nextInd <- nextInd + 1
             }
         }
-        if(nextInd != nTheta+1) stop('something went wrong')   ## precautionary
         ## matrix multiply to get proposal value (matrix)
-        propValue <<- t(propValue_chol) %*% propValue_chol
+        model[[target]] <<- t(propValue_chol) %*% propValue_chol
         ## decide and jump
-        model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes)
         deltaDiag <- thetaVec_prop[1:d]-thetaVec[1:d]
         for(i in 1:d)   logMHR <- logMHR + (d+2-i)*deltaDiag[i]  ## took me quite a while to derive this
