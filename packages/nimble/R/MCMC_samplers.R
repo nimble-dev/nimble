@@ -859,6 +859,7 @@ sampler_HMC <- nimbleFunction(
                     transformInfo[i, IND_ID] <- 1                      ## dmnorm: identity
                 } else if(dist %in% c('dwish', 'dinvwish')) {
                     print('waiting for derivatives of dwish() to be implemented.')   ## waiting for dwish() derivatives
+                    stop()                                                           ## waiting for dwish() derivatives
                     transformInfo[i, IND_ID] <- 5                    ## wishart: log-cholesky
                     ## NOTE: implementing for dwish() and dinvwish() will require a slightly deeper re-design
                     ## d <- d + sqrt(len) * (sqrt(len)+1) / 2
