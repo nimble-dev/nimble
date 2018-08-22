@@ -839,10 +839,10 @@ sampler_HMC <- nimbleFunction(
                 if(bounds[1] == -Inf & bounds[2] == Inf) {             ## 1 = identity, support = (-Inf, Inf)
                     transformInfo[i, IND_ID] <- 1
                 } else if(bounds[1] == 0 & bounds[2] == Inf) {         ## 2 = log, support = (0, Inf)
-                    if(messages) print('HMC sampler is using a log-transformation for sampling ', node)
+                    if(messages) print(paste0('HMC sampler is using a log-transformation for sampling ', node))
                     transformInfo[i, IND_ID] <- 2
                 } else if(isValid(bounds[1]) & isValid(bounds[2])) {   ## 3 = logit, support = (a, b)
-                    if(messages) print('HMC sampler is using a logit-transformation for sampling ', node)
+                    if(messages) print(paste0('HMC sampler is using a logit-transformation for sampling ', node))
                     transformInfo[i, IND_ID] <- 3
                     transformInfo[i, IND_LB] <- bounds[1]
                     range <- bounds[2] - bounds[1]
