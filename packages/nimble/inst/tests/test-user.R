@@ -391,6 +391,41 @@ test_that("Test that user-defined distributions without 'r' function doesn't cau
 })
 
 
+test_that("Test that non-scalar integer in user-defined distributions is trapped", {
+    dfoo = nimbleFunction(run = function(x = integer(1), log=logical(0)) {
+        returnType(double(0))
+        return(0)
+    })
+    temporarilyAssignInGlobalEnv(dfoo)
+    
+    code =nimbleCode({
+        y[1:3] ~ dfoo()
+    })
+    expect_error(m <- nimbleModel(code), "Non-scalar integer or logical found")
+    
+    dfoo2 = nimbleFunction(run = function(x = double(1), theta = integer(1), log=logical(0)) {
+        tmp <- sum(theta)
+        returnType(double(0))
+        return(0)
+    })
+    temporarilyAssignInGlobalEnv(dfoo2)
+
+    code =nimbleCode({
+        y[1:3] ~ dfoo2(theta[1:3])
+    })
+    expect_error(m <- nimbleModel(code), "Non-scalar integer or logical found")
+
+    dfoo3 = nimbleFunction(run = function(x = integer(0), theta = integer(0), log=logical(0)) {
+        returnType(double(0))
+        return(0)
+    })
+    temporarilyAssignInGlobalEnv(dfoo3)
+    
+    code =nimbleCode({
+        y  ~ dfoo3(theta)
+    })
+    m <- nimbleModel(code)
+})
 
 
 sink(NULL)

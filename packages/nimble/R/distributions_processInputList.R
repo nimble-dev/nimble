@@ -188,6 +188,8 @@ distClass <- setRefClass(
             for(typeName in allTypeNames) {
                 typeList <- if(typeName %in% names(typeArgList))     typeArgList[[typeName]]     else     list(type='double', nDim=0)   # default type
                 if(!(typeList$type %in% c('double', 'integer', 'logical')))     stop(paste0('unknown type specified in distribution: ', typeList$type))
+                if(typeList$nDim > 0 && typeList$type != 'double') 
+                    stop("Non-scalar integer or logical found in distribution function.\nPlease use type 'double' for all non-scalars in distribution functions.")
                 if(!(typeList$nDim %in% 0:1000))     stop(paste0('unknown nDim specified in distribution: ', typeList$nDim))  ## yes, specificying maximum dimension of 1000
                 types[[typeName]] <<- typeList
             }            
