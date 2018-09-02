@@ -1112,9 +1112,20 @@ declare <- function(name, def){
     assign(as.character(name), array(value, dim = dims), envir = parent.frame() )
 }
 
-
+#' Determine if any values in a vector are NA or NaN
+#'
+#' NIMBLE language functions that can be used in either compiled or uncompiled
+#' nimbleFunctions to detect if there are any NA or NaN values in a vector.
+#'
+#' @param x vector of values
+#'
+#' @aliases is.nan.vec
+#' @author NIMBLE Development Team
+#' @export
 is.na.vec <- function(x) any(is.na(x))
 
+#' @rdname is.na.vec
+#' @export
 is.nan.vec <- function(x) any(is.nan(x))
 
 #' @export
