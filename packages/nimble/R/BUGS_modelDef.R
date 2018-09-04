@@ -197,7 +197,9 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
         if(code[[1]] == 'if') {
             constantsEnv <- as.environment(constants)
             parent.env(constantsEnv) <- envir
-            evaluatedCondition <- eval(code[[2]], constantsEnv)
+            evaluatedCondition <- try(eval(code[[2]], constantsEnv))
+            if(inherits(evaluatedCondition, "try-error")) 
+                stop("Cannot evaluate condition of 'if' statement: ", deparse(code[[2]]), ".\nCondition must be able to be evaluated based on values in 'constants'.")
             if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], constants, envir))
             else {
                 if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], constants, envir))
