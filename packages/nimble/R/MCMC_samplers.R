@@ -869,8 +869,8 @@ sampler_HMC <- nimbleFunction(
                 } else stop(paste0('HMC sampler yet doesn\'t handle \'', dist, '\' distributions.'))   ## Dirichlet ?
             }
         }
-        if(messages && length(logTransformNodes)   > 0) message('HMC sampler is using a log-transformation for ',   paste0(logTransformNodes,   collapse = ', '))
-        if(messages && length(logitTransformNodes) > 0) message('HMC sampler is using a logit-transformation for ', paste0(logitTransformNodes, collapse = ', '))
+        if(messages && length(logTransformNodes)   > 0) message('HMC sampler is using a log-transformation for: ',   paste0(logTransformNodes,   collapse = ', '))
+        if(messages && length(logitTransformNodes) > 0) message('HMC sampler is using a logit-transformation for: ', paste0(logitTransformNodes, collapse = ', '))
         ## numeric value generation
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
         ## nested function and function list definitions
@@ -888,15 +888,14 @@ sampler_HMC <- nimbleFunction(
         q <- transformedModelValues()
         p <- numeric(d)
         for(i in 1:d)     p[i] <- rnorm(1, 0, 1)
-        logu <- logH(q, p) - rexp(1, 1)    ## logu <- lp - rexp(1, 1) => exp(logu) ~ uniform(0, exp(lp))
-        qL <- q;   qR <- q;   pL <- p;   pR <- p
-        j  <- 0;    n <- 1;    s <- 1
-        qNew <- q
+        qpLogH <- logH(q, p)
+        logu <- qpLogH - rexp(1, 1)    ## logu <- lp - rexp(1, 1) => exp(logu) ~ uniform(0, exp(lp))
+        qL <- q;   qR <- q;   pL <- p;   pR <- p;   j  <- 0;   n <- 1;   s <- 1;   qNew <- q
         while(s == 1) {
             v <- 2*rbinom(1, 1, 0.5) - 1    ## -1 or 1
-            if(v == -1) { btNL <- buildtree(qL, pL, logu, v, j, epsilon, q, p)
+            if(v == -1) { btNL <- buildtree(qL, pL, logu, v, j, epsilon, qpLogH)
                           qL <- btNL$q1;   pL <- btNL$p1
-                      } else { btNL <- buildtree(qR, pR, logu, v, j, epsilon, q, p)
+                      } else { btNL <- buildtree(qR, pR, logu, v, j, epsilon, qpLogH)
                                qR <- btNL$q2;   pR <- btNL$p2 }
             if(btNL$s == 1)   if(runif(1) < btNL$n / n)   qNew <- btNL$q3
             n <- n + btNL$n
@@ -989,24 +988,24 @@ sampler_HMC <- nimbleFunction(
             }
             mu <<- log(10*epsilon)
         },
-        buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), q0 = double(1), p0 = double(1)) {
+        buildtree = function(qArg = double(1), pArg = double(1), logu = double(), v = double(), j = double(), eps = double(), logH0 = double()) {
             ## Algorithm 6 (second half) from Hoffman and Gelman (2014)
             returnType(btNLDef())
             if(j == 0) {    ## one leapfrog step in the direction of v
                 qpNL <- leapfrog(qArg, pArg, v*eps)
-                q <- qpNL$q;   p <- qpNL$p
-                n <- nimStep(logH(q, p) - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
-                s <- nimStep(logH(q, p) - logu + 1000)   ## use delta_max = 1000
-                a <- min(1, exp(logH(q, p) - logH(q0, p0)))
-                if(is.nan.vec(qpNL$q) | is.nan.vec(qpNL$p)) { n <- 0; s <- 0; a <- 0 }     ## my addition
+                q <- qpNL$q;   p <- qpNL$p;   qpLogH <- logH(q, p)
+                n <- nimStep(qpLogH - logu)          ## step(x) = 1 iff x >= 0, and zero otherwise
+                s <- nimStep(qpLogH - logu + 1000)   ## use delta_max = 1000
+                a <- min(1, exp(qpLogH - logH0))
+                if(is.nan.vec(q) | is.nan.vec(p)) { n <- 0; s <- 0; a <- 0 }     ## my addition
                 return(btNLDef$new(q1 = q, p1 = p, q2 = q, p2 = p, q3 = q, n = n, s = s, a = a, na = 1))
             } else {        ## recursively build left and right subtrees
-                btNL1 <- buildtree(qArg, pArg, logu, v, j-1, eps, q0, p0)
+                btNL1 <- buildtree(qArg, pArg, logu, v, j-1, eps, logH0)
                 if(btNL1$s == 1) {
-                    if(v == -1) { btNL2 <- buildtree(btNL1$q1, btNL1$p1, logu, v, j-1, eps, q0, p0)
+                    if(v == -1) { btNL2 <- buildtree(btNL1$q1, btNL1$p1, logu, v, j-1, eps, logH0)
                                   btNL1$q1 <- btNL2$q1;   btNL1$p1 <- btNL2$p1
                               } else {
-                                  btNL2 <- buildtree(btNL1$q2, btNL1$p2, logu, v, j-1, eps, q0, p0)
+                                  btNL2 <- buildtree(btNL1$q2, btNL1$p2, logu, v, j-1, eps, logH0)
                                   btNL1$q2 <- btNL2$q2;   btNL1$p2 <- btNL2$p2 }
                     nSum <- btNL1$n + btNL2$n
                     if(nSum > 0)   if(runif(1) < btNL2$n / nSum)   btNL1$q3 <- btNL2$q3
