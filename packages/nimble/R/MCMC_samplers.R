@@ -829,6 +829,8 @@ sampler_HMC <- nimbleFunction(
         maxInd <- max(sapply(grep('^IND_', ls(), value = TRUE), function(x) eval(as.name(x))))
         d <- length(targetNodesAsScalars)
         transformInfo <- array(0, c(d, maxInd))
+        logTransformNodes   <- character()
+        logitTransformNodes <- character()
         for(i in 1:d) {
             node <- targetNodesAsScalars[i]
             if(model$isDeterm(node))      stop(paste0('HMC sampler doesn\'t operate on deterministic nodes: ', node))
@@ -839,10 +841,10 @@ sampler_HMC <- nimbleFunction(
                 if(bounds[1] == -Inf & bounds[2] == Inf) {             ## 1 = identity, support = (-Inf, Inf)
                     transformInfo[i, IND_ID] <- 1
                 } else if(bounds[1] == 0 & bounds[2] == Inf) {         ## 2 = log, support = (0, Inf)
-                    if(messages) message('HMC sampler is using a log-transformation for sampling ', node)
+                    logTransformNodes <- c(logTransformNodes, node)
                     transformInfo[i, IND_ID] <- 2
                 } else if(isValid(bounds[1]) & isValid(bounds[2])) {   ## 3 = logit, support = (a, b)
-                    if(messages) message('HMC sampler is using a logit-transformation for sampling ', node)
+                    logitTransformNodes <- c(logitTransformNodes, node)
                     transformInfo[i, IND_ID] <- 3
                     transformInfo[i, IND_LB] <- bounds[1]
                     range <- bounds[2] - bounds[1]
@@ -867,10 +869,12 @@ sampler_HMC <- nimbleFunction(
                 } else stop(paste0('HMC sampler yet doesn\'t handle \'', dist, '\' distributions.'))   ## Dirichlet ?
             }
         }
+        if(messages && length(logTransformNodes)   > 0) message('HMC sampler is using a log-transformation for ',   paste0(logTransformNodes,   collapse = ', '))
+        if(messages && length(logitTransformNodes) > 0) message('HMC sampler is using a logit-transformation for ', paste0(logitTransformNodes, collapse = ', '))
         ## numeric value generation
         timesRan <- 0;   epsilon <- 0;   mu <- 0;   logEpsilonBar <- 0;   Hbar <- 0
         ## nested function and function list definitions
-        qpNLDef <- nimbleList(q = double(1), p = double(1))
+        qpNLDef <- nimbleList(q  = double(1), p  = double(1))
         btNLDef <- nimbleList(q1 = double(1), p1 = double(1), q2 = double(1), p2 = double(1), q3 = double(1), n = double(), s = double(), a = double(), na = double())
         ## checks
         if(!nimbleOptions('experimentalEnableDerivs')) stop('must enable NIMBLE derivates, use: nimbleOptions(experimentalEnableDerivs = TRUE)')
