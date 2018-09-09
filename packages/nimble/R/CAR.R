@@ -108,7 +108,6 @@ CAR_normal_checkAdjWeightsNum <- function(adj, weights, num) {
     if(sum(num) == 0) stop('dcar_normal() distribution must specify some neighbors')
     if(sum(num) != length(adj)) stop('length of adj argument to dcar_normal() must be equal to total number of neighbors specified in num argument')
     if(length(adj) != length(weights)) stop('length of adj and weight arguments to dcar_normal() must be the same')
-    if(any(weights <= 0)) stop('weights argument to dcar_normal() should only contain positive values')
 }
 
 
