@@ -750,9 +750,9 @@ sampler_CRP <- nimbleFunction(
     n <- length(targetElements) 
     
     # first check that the sampler can be used: we need one observation per random index
-    nObs <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
-    if(n != nObs)
-        stop("sampler_CRP: The length of membership variable and observations has to be the same.\n")
+    #nObs <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
+    #if(n != nObs)
+    #    stop("sampler_CRP: The length of membership variable and observations has to be the same.\n")
     
     ## finding 'tilde' variables (the parameters that are being clustered):
     tildeVars <- NULL
@@ -803,8 +803,8 @@ sampler_CRP <- nimbleFunction(
       for(i in seq_len(n)) {
         stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE) 
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
-        if(length(stochDeps) != 1) 
-          stop("sampler_CRP: Nimble cannot currently assign a sampler to a dCRP node unless each membership element is associated with a single observation.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+        #if(length(stochDeps) != 1) 
+        #  stop("sampler_CRP: Nimble cannot currently assign a sampler to a dCRP node unless each membership element is associated with a single observation.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
         if(length(detDeps) != nInterm) {
           type <- 'allCalcs'  # give up again; should only occur in strange situations
         } else {
@@ -1278,7 +1278,7 @@ sampler_CRP_uniques2 <- nimbleFunction(
           k <- k + 1
         }
       }
-    #  xiCounted <<- TRUE
+      #xiCounted <<- TRUE
     #} 
     k <- k-1 # number of unique labels in xi
     
@@ -1341,11 +1341,11 @@ sampler_CRP_uniques2 <- nimbleFunction(
         model[[target]][i] <<- knew # <<- 
         if(xiCounts[positionXiInUniques] > 0) { # no old cluster is deleted
           xiUniques[index] <<- knew
-          xiCounts[index] <<- xiCounts[index] + 1
+          xiCounts[index] <<- 1 # xiCounts[index] + 1
           k <- k+1
         } else { # a singleton cluster is deleted and replaced by the new label
           xiUniques[positionXiInUniques] <<- knew
-          xiCounts[positionXiInUniques] <<- xiCounts[positionXiInUniques] + 1
+          xiCounts[positionXiInUniques] <<- 1 # xiCounts[positionXiInUniques] + 1
         }
         
         xi <- model[[target]]
@@ -1366,8 +1366,9 @@ sampler_CRP_uniques2 <- nimbleFunction(
           xiCounts[index] <<- xiCounts[index] + 1
         } else { # a singleton cluster is deleted. Need to re-arrange membership variable
           xiCounts[index] <<- xiCounts[index] + 1
-          indexDeletedUniqueCluster <- positionXiInUniques
-          indexes <- indexDeletedUniqueCluster:k
+          #indexDeletedUniqueCluster <- positionXiInUniques
+          #indexes <- indexDeletedUniqueCluster:k
+          indexes <- positionXiInUniques:k
           for(l in seq_along(indexes)) {
             xiUniques[indexes[l]] <<- xiUniques[indexes[l]+1]
             xiCounts[indexes[l]] <<- xiCounts[indexes[l]+1]
@@ -1391,11 +1392,11 @@ sampler_CRP_uniques2 <- nimbleFunction(
   # adding reset function restrating finding uniques and their counts
   methods = list( 
     reset = function () {
-     # xiUniques <<- numeric(n)
-     # xiCounts <<- numeric(n)
-     # xiCounted <<- FALSE
+      #xiUniques <<- numeric(n)
+      #xiCounts <<- numeric(n)
+      #xiCounted <<- FALSE
     }
-  )
+  )#, where = getLoadingNamespace()
 )
 
 
