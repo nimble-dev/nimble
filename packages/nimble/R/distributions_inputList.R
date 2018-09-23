@@ -239,4 +239,10 @@ distributionsInputList <- list(
 
 
         
+    ###############################################
+    #### multivariate (compound) distributions ####
+    ###############################################
 
+    dnorm_invgamma = list(BUGSdist = 'dnorm_invgamma(mean_location, mean_scale, var_shape, var_scale)',
+                   types    = c('value = double(1)'),
+                   mixedSizes = TRUE)

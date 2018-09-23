@@ -67,6 +67,8 @@ extern "C" {
   SEXP C_qinvgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_dsqrtinvgamma(SEXP, SEXP, SEXP, SEXP);
   SEXP C_rsqrtinvgamma(SEXP, SEXP, SEXP);
+  SEXP C_dnorm_invgamma(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_rnorm_invgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_dcar_normal(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_dcar_proper(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_rcar_proper(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -131,6 +133,9 @@ double qinvgamma(double, double, double, int, int);
 
 double rsqrtinvgamma(double, double);
 double dsqrtinvgamma(double, double, double, int);
+
+double rnorm_invgamma(double, double, double, double, double);
+double dnorm_invgamma(double, double, double, double, double, int);
 
 double rflat();
 double dflat(double, int);
