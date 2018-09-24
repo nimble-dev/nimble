@@ -2165,16 +2165,16 @@ double dnorm_invgamma(double* x, double mean_location, double mean_scale, double
     return NA_REAL;
 #ifdef IEEE_754
   if (R_isnancpp(x, 2) || R_isnancpp(mean_location) || R_isnancpp(mean_scale) ||
-      R_isnancpp(var_scale) || R_isnancpp(var_shape))
+      R_isnancpp(var_scale) || R_isnancpp(var_shape) )
     return R_NaN;
 #endif
-  if( !R_FINITE(mean_scale) || !R_FINITE(var_shape) || !R_FINITE(var_scale))
+  if( !R_FINITE(mean_scale) || !R_FINITE(var_shape) || !R_FINITE(var_scale) )
     return R_D__0;
-  if(mean_scale <= 0 || var_shape <= 0 || var_scale <= 0)
-    return ML_ERR_return_NAN;
+  if(mean_scale < 0 || var_shape <= 0 || var_scale <= 0)
+    ML_ERR_return_NAN;
 
   double ans1 = dnorm(x[0], mean_location, pow(x[1] / mean_scale, 0.5), give_log);
-  double ans2 = dinvgamma(x[1], var_shape, 1 / var_scale);
+  double ans2 = dinvgamma(x[1], var_shape, 1 / var_scale, give_log);
   if(give_log) return(ans1 + ans2);
   else return(ans1 * ans2);
 }
@@ -2185,7 +2185,7 @@ void rnorm_invgamma(double* ans, double mean_location, double mean_scale, double
 #ifdef IEEE_754
   if (R_isnancpp(mean_location) || R_isnancpp(mean_scale) ||
       R_isnancpp(var_scale) || R_isnancpp(var_shape))
-    for(j = 0; j < 2; j++)
+    for(int j = 0; j < 2; j++)
       ans[j] = R_NaN;
 #endif
   ans[1] = 1 / rgamma(var_shape, 1 / var_scale);

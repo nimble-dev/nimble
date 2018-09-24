@@ -871,14 +871,14 @@ NULL
 
 #' @rdname Normal-Inverse-Gamma
 #' @export
-dnorm_invgamma <- function(x, mean_location, mean_scale, var_shape, var_scale)
+dnorm_invgamma <- function(x, mean_location, mean_scale, var_shape, var_scale, log = FALSE) {
     .Call(C_dnorm_invgamma, as.double(x), as.double(mean_location), as.double(mean_scale),
           as.double(var_shape), as.double(var_scale), as.logical(log))
 }
 
 #' @rdname Normal-Inverse-Gamma
 #' @export
-rnorm_invgamma <- function(n = 1, mean_location, mean_scale, var_shape, var_scale)
+rnorm_invgamma <- function(n = 1, mean_location, mean_scale, var_shape, var_scale) {
     if(n != 1) warning('rnorm_invgamma only handles n = 1 at the moment')
     .Call(C_rnorm_invgamma, as.double(mean_location), as.double(mean_scale),
           as.double(var_shape), as.double(var_scale))

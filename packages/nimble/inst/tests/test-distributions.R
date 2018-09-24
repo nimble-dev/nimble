@@ -472,6 +472,40 @@ test_that("dflat and dhalfflat usage", {
     expect_equal(mean(csmp[ , 'sigma']^2), var(m$y), tol = 0.05, info = "posterior mean for sigma not correct")
 })
 
+## dnorm_invgamma
+
+if(FALSE) {
+out = rnorm_invgamma(1, 0, 0, 2, 20)
+rnorm(1, 0, Inf)
+dnorm_invgamma(out, 0, 0, 2, 20)  
+dnorm(NaN, 0, Inf)
+
+out = rnorm_invgamma(1, 0, Inf, 2, 20)
+rnorm(1, 0, 0)
+dnorm_invgamma(out, 0, Inf, 2, 20)  
+dnorm(1, 0, 0)
+
+out = rnorm_invgamma(1, 0, 1, 0, 1)
+rinvgamma(1, 0, 1)
+dnorm_invgamma(out, 0, 1, 0, 1)
+dinvgamma(Inf, 0, 1)
+
+# ok?
+out = rnorm_invgamma(1, 0, 1, 1, 0)
+rinvgamma(1, 1, 0)
+dnorm_invgamma(out, 0, 1, 1, 0)
+dinvgamma(Inf, 1, 0)
+
+# ok?
+out = rnorm_invgamma(1, 0, 1, 0, 0)
+rinvgamma(1, 0, 0)
+dnorm_invgamma(out, 0, 1, 0, 0)
+dinvgamma(Inf, 0, 0)
+
+## check Inf in alpha/beta
+## check Inf in mean
+}
+
    
 sink(NULL)
 
