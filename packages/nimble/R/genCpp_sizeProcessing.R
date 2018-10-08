@@ -6,6 +6,7 @@ assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
                               'nimArr_rcar_proper',
                               'nimArr_rmulti',
                               'nimArr_rdirch',
+                              'nimArr_rnorm_invgamma',
                               'getValues',
                               'getValuesIndexRange',
                               'initialize',
@@ -115,6 +116,7 @@ sizeCalls <- c(
                    'nimArr_dmulti',
                    'nimArr_dcat',
                    'nimArr_dinterval',
+                   'nimArr_dnorm_invgamma',
                    'nimArr_ddirch'), 'sizeScalarRecurseAllowMaps'),
     makeCallList(c('nimArr_rmnorm_chol',
                    'nimArr_rmvt_chol',
@@ -137,7 +139,8 @@ sizeCalls <- c(
                    'nfMethod',
                    'getPtr',
                    'startNimbleTimer'), 'sizeUndefined'), ##'nimFunListAccess'
-    passByMap = 'sizePassByMap'
+    passByMap = 'sizePassByMap',
+    nimArr_rnorm_invgamma = 'sizeNormInvGamma'
 )
 
 scalarOutputTypes <- list(decide = 'logical',
@@ -2061,6 +2064,28 @@ sizeScalarModelOp <- function(code, symTab, typeEnv) {
     asserts
 }
 
+sizeNormInvGamma <- function(code, symTab, typeEnv) {
+    asserts <- list()
+    code$nDim <- 1
+    code$type <- "double"
+    code$toEigenize <- "maybe"
+    code$sizeExprs <- list(2)
+
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            if(!code$args[[i]]$isName) {
+                asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+            }
+        }
+    }
+    if(!(code$caller$name %in% c('{','<-','<<-','='))) {
+        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    } else
+        typeEnv$.ensureNimbleBlocks <- TRUE ## for purposes of sizeAssign, which recurses on assignment target after RHS
+    return(asserts)
+
+}
+
 sizeSimulate <- function(code, symTab, typeEnv) {
     if(length(code$args) > 1) {
         asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
@@ -3232,7 +3257,9 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
 			     nimArr_rcar_proper = list(c(1, 1, 1, 1, 1, 0, 0, 1), 1, 'double'), ## mu, C, adj, num, M, tau, gamma, evs, answer size comes from mu
                              nimArr_rmulti = list(c(0, 1), ## size, probs
                                  2, 'double'), ## We treat integer rv's as doubles
-                             nimArr_rdirch = list(c(1), 1, 'double')) ## alpha
+                             nimArr_rnorm_invgamma = list(c(0, 0, 0, 0, 1), ## 4 real scalar args and fake 1D arg
+                                 5, 'double'), 
+                             nimArr_rdirch = list(c(1), 1, 'double')) 
 
 sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
