@@ -243,7 +243,7 @@ sampleDPmeasure <- nimbleFunction(
         truncG <- round(truncG)
                                         #approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
                                         # I think is good to send message indicating what the truncation level is for an approximation error smaller than to 10^(-10)
-        nimCat('sampleDPmeasure: Approximating the random measure by a finite stick-breaking representation with and error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
+        nimCat('sampleDPmeasure: Approximating the random measure by a finite stick-breaking representation with an error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
         
         ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
         ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
@@ -750,9 +750,9 @@ sampler_CRP <- nimbleFunction(
     n <- length(targetElements) 
     
     # first check that the sampler can be used: we need one observation per random index
-    #nObs <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
-    #if(n != nObs)
-    #    stop("sampler_CRP: The length of membership variable and observations has to be the same.\n")
+    nObs <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
+    if(n != nObs)
+        stop("sampler_CRP: The length of membership variable and observations has to be the same.\n")
     
     ## finding 'tilde' variables (the parameters that are being clustered):
     tildeVars <- NULL
@@ -783,7 +783,7 @@ sampler_CRP <- nimbleFunction(
     
     min_nTilde <- min(nTilde) ## we need a scalar for use in run code
     if(min_nTilde < n)
-      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if ever it proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
+      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
     ## Here we try to set up some data structures that allow us to do observation-specific
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
@@ -803,8 +803,8 @@ sampler_CRP <- nimbleFunction(
       for(i in seq_len(n)) {
         stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE) 
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
-        #if(length(stochDeps) != 1) 
-        #  stop("sampler_CRP: Nimble cannot currently assign a sampler to a dCRP node unless each membership element is associated with a single observation.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+        if(length(stochDeps) != 1) 
+          stop("sampler_CRP: Nimble cannot currently assign a sampler to a dCRP node unless each membership element is associated with a single observation.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
         if(length(detDeps) != nInterm) {
           type <- 'allCalcs'  # give up again; should only occur in strange situations
         } else {
@@ -964,7 +964,7 @@ sampler_CRP_uniques <- nimbleFunction(
     
     min_nTilde <- min(nTilde) ## we need a scalar for use in run code
     if(min_nTilde < n)
-      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if ever it proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
+      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
     ## Here we try to set up some data structures that allow us to do observation-specific
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
@@ -1192,7 +1192,7 @@ sampler_CRP_uniques2 <- nimbleFunction(
     
     min_nTilde <- min(nTilde) ## we need a scalar for use in run code
     if(min_nTilde < n)
-      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if ever it proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
+      warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
     ## Here we try to set up some data structures that allow us to do observation-specific
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
@@ -1253,71 +1253,51 @@ sampler_CRP_uniques2 <- nimbleFunction(
     ## single parameters
     helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
     
-    xiUniques <- numeric(n)
-    xiCounts <- numeric(n)
     curLogProb <- numeric(n)
-    #xiCounted <- FALSE
   },
   
   
   run = function() {
+    xiUniques <- numeric(n)
+    xiCounts <- numeric(n)
+    
     isNonParam <- TRUE # indicates if the MCMC sampling is nonparametric or not. Is nonparametric when there are more cluster parameters than required clusters.
     conc <- model$getParam(target, 'conc')
     helperFunctions[[1]]$storeParams()
     
     # finding unique values in model[[target]]. I'm not relabeling the unique values. k denotes the number of unique labels
     xi <- model[[target]]
-    #if(xiCounted == FALSE) { # for finding unique memebership variable only once in the MCMC
-      aux <- min(xi):max(xi) 
-      k <- 1
-      for(i in seq_along(aux)) { 
-        cond <- aux[i] == xi
-        if(sum(cond) > 0) {
-          xiCounts[k] <<- sum(cond) # <<-
-          xiUniques[k] <<- aux[i]  # <<-
-          k <- k + 1
-        }
+    aux <- min(xi):max(xi) 
+    k <- 1
+    for(i in seq_along(aux)) { 
+      cond <- aux[i] == xi
+      if(sum(cond) > 0) {
+        xiCounts[aux[i]] <- sum(cond)
+        xiUniques[k] <- aux[i]
+        k <- k + 1
       }
-      #xiCounted <<- TRUE
-    #} 
+    }
     k <- k-1 # number of unique labels in xi
     
-    knew <- 1 # knew represents the new label in xiUniques, which is in position (k+1) of xiUniques
-    mySum <- sum(xi == knew)
-    while(mySum > 0 & knew < n) { # need to make sure don't go beyond length of vector
-      knew <- knew+1
-      mySum <- sum(xi == knew)
+    kNew <- 1 # knew is the new label that can be sampled
+    mySum <- sum(xi == kNew)
+    while(mySum > 0 & kNew < n) { # need to make sure don't go beyond length of vector
+      kNew <- kNew+1
+      mySum <- sum(xi == kNew)
     }
-    
-    
     
     for(i in 1:n) { # updates one cluster membership at the time , i=1,...,n
       
-      if(knew > min_nTilde) {
+      if(kNew > min_nTilde) {
         nimCat('CRP_sampler: This MCMC is not fully nonparametric. More components than cluster parameters exist are required.\n')
-        knew <- xi[i]
+        kNew <- xi[i]
         isNonParam <- FALSE
       }
       
       xi <- model[[target]]
-      indexAux <- xi[i] == xiUniques
-      positionXiInUniques <- 0  # position of xi_i in xiUniques
-      l <- 1
-      while( positionXiInUniques == 0 & l <= k ) {
-        if(indexAux[l] == TRUE) {
-          positionXiInUniques <- l
-        }
-        l <- l + 1
-      }
-
-      xiCounts[positionXiInUniques] <<- xiCounts[positionXiInUniques] - 1 # updates counts based on xi[-i]
+      xiCounts[xi[i]] <- xiCounts[xi[i]] - 1 # updates counts based on xi[-i]
       
       # computing probability of sampling the k unique values
-      # this is just to make sure that positions (k+1):n in curLogProb are zero. Maybe not necessary.
-      indexes <- (k+1):n
-      for(l in seq_along(indexes)) {
-        curLogProb[indexes[l]] <<- 0
-      }
       for(j in 1:k) { # probability of sampling an existing label
         model[[target]][i] <<- xiUniques[j] # <<-
         if(type == 'indivCalcs') {
@@ -1326,59 +1306,52 @@ sampler_CRP_uniques2 <- nimbleFunction(
           if(nInterm >= 3) model$calculate(intermNodes3[i])
           model$calculate(dataNodes[i])
         } else model$calculate(calcNodes) 
-        curLogProb[j] <<- log(xiCounts[j]) + model$getLogProb(dataNodes[i]) # <<-
+        curLogProb[j] <<- log(xiCounts[xiUniques[j]]) + model$getLogProb(dataNodes[i]) # <<-
       }
-      # computing probability of sampling the new label: knew
+      #  probability of sampling the new label: kNew
       curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # <<- # probability of sampling a new label
       
-      
-      # sampling the index that represents the sampled label
+      # sampling the index that represents the updated label
       index <- rcat( n=1, exp(curLogProb-max(curLogProb))[1:(k+1)] )
-      
-      
-      # updating xi, xiUniques, xiCounts
+
+      # updating model[[target]][i], xiUniques, xiCounts, kNew
       if(index == (k+1)){ # a new membership variable is sampled
-        model[[target]][i] <<- knew # <<- 
-        if(xiCounts[positionXiInUniques] > 0) { # no old cluster is deleted
-          xiUniques[index] <<- knew
-          xiCounts[index] <<- 1 # xiCounts[index] + 1
-          k <- k+1
-        } else { # a singleton cluster is deleted and replaced by the new label
-          xiUniques[positionXiInUniques] <<- knew
-          xiCounts[positionXiInUniques] <<- 1 # xiCounts[positionXiInUniques] + 1
-        }
+        if( xiCounts[xi[i]] != 0 ) { # a new cluster is created
+          model[[target]][i] <<- kNew # <<- 
+          k <- k + 1 # a new cluster is created
+          xiUniques[k] <- kNew # label of new cluster
+          # xiCounts[ kNew ] <- 1 # only one observation in this  new cluster
+          # define new kNew: snice kNew is the first empty label we start checking kNew+1
+          kNew <- kNew + 1
+          mySum <- sum(xi == kNew) 
+          while(mySum > 0 & kNew < n) { # need to make sure don't go beyond length of vector
+            kNew <- kNew+1
+            mySum <- sum(xi == kNew)
+          }
+        }# else { # a cluster was deleted  (keep the same label): the number of clusters does not change, vector xiUniques and model[[target]][i] do not change, update xiCounts, kNew is the same 
+        #  xiCounts[xi[i]] <- 1
+        #}
+        xiCounts[model[[target]][i]] <- 1
         
-        xi <- model[[target]]
         if(isNonParam) { # updating the cluster parameters of the new cluster
-          helperFunctions[[1]]$sample(i, knew)
+          helperFunctions[[1]]$sample(i, kNew)
         }
-        knew <- 1 # finding a new membership variable that is not being used in xiUniques
-        mySum <- sum(xi == knew)
-        while(mySum > 0 & knew < n) { # need to make sure don't go beyond length of vector
-          knew <- knew+1
-          mySum <- sum(xi == knew)
-        }
-        
-      } else { # an existing membership variable is sampled
+      }else { # an existing membership variable is sampled
         model[[target]][i] <<- xiUniques[index]
-        xi <- model[[target]]
-        if(xiCounts[positionXiInUniques] > 0) {  # no old cluster is deleted
-          xiCounts[index] <<- xiCounts[index] + 1
-        } else { # a singleton cluster is deleted. Need to re-arrange membership variable
-          xiCounts[index] <<- xiCounts[index] + 1
-          #indexDeletedUniqueCluster <- positionXiInUniques
-          #indexes <- indexDeletedUniqueCluster:k
-          indexes <- positionXiInUniques:k
-          for(l in seq_along(indexes)) {
-            xiUniques[indexes[l]] <<- xiUniques[indexes[l]+1]
-            xiCounts[indexes[l]] <<- xiCounts[indexes[l]+1]
+        xiCounts[xiUniques[index]] <- xiCounts[xiUniques[index]] + 1
+        if(xiCounts[xi[i]] == 0 ) {# a cluster is deleted. If no cluster is deleted the two lines above are enough
+          # reorder unique labels because one was deleted
+           #positionXiInUniques <- which( xiUniques == xi[i] ) # 
+          positionXiInUniques <- 0
+          index <- 1
+          while( positionXiInUniques == 0 & index <= n ) {
+            if( xiUniques[index] == xi[i] ) {
+              positionXiInUniques <- index
+            } else {
+              index <- index + 1
+            }
           }
-          indexes <- (k+1):(n)
-          for(l in seq_along(indexes)) {
-            xiUniques[indexes[l]] <<- 0
-            xiCounts[indexes[l]] <<- 0
-          }
-          
+          xiUniques[positionXiInUniques:k] <- xiUniques[(positionXiInUniques+1):(k+1)]
           k <- k - 1
         }
       }
@@ -1389,14 +1362,13 @@ sampler_CRP_uniques2 <- nimbleFunction(
     
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
-  # adding reset function restrating finding uniques and their counts
+  # adding reset function restarting uniques and counts
   methods = list( 
     reset = function () {
-      #xiUniques <<- numeric(n)
-      #xiCounts <<- numeric(n)
-      #xiCounted <<- FALSE
+      xiUniques <- numeric(n)
+      xiCounts <- numeric(n)
     }
-  )#, where = getLoadingNamespace()
+  ), where = getLoadingNamespace()
 )
 
 
