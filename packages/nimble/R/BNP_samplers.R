@@ -1287,7 +1287,7 @@ sampler_CRP_uniques2 <- nimbleFunction(
         kNew <- 1 # kNew is the new label that can be sampled
         mySum <- sum(xi == kNew)
         while(mySum > 0 & kNew < n) { # need to make sure don't go beyond length of vector
-            kNew <- kNew+1
+            kNew <- kNew + 1
             mySum <- sum(xi == kNew)
         }
         firstIteration <- FALSE
@@ -1336,7 +1336,7 @@ sampler_CRP_uniques2 <- nimbleFunction(
           xiCounts[model[[target]][i]] <- 1
           
           if(isNonParam) { # updating the cluster parameters of the new cluster
-              helperFunctions[[1]]$sample(i, kNew)
+              helperFunctions[[1]]$sample(i, model[[target]][i])
           }
       } else { # an existing membership variable is sampled
           model[[target]][i] <<- xiUniques[index]
