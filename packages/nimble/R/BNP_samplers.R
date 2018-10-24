@@ -1271,7 +1271,6 @@ sampler_CRP_uniques2 <- nimbleFunction(
     ## Find unique values in model[[target]]. I'm not relabeling the unique values.
     ## k denotes the number of unique labels
     if(firstIteration) {
-        kNew <- 0
         aux <- min(xi):max(xi) 
         k <- 1
         for(i in seq_along(aux)) { 
