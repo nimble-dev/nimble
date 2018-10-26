@@ -1289,7 +1289,7 @@ sampler_CRP_uniques2 <- nimbleFunction(
             kNew <- kNew + 1
             mySum <- sum(xi == kNew)
         }
-        firstIteration <- FALSE
+        firstIteration <<- FALSE
     }
     
     for(i in 1:n) { # updates one cluster membership at the time , i=1,...,n
@@ -1359,7 +1359,7 @@ sampler_CRP_uniques2 <- nimbleFunction(
           ## need to retabulate cluster information
           xiUniques <- numeric(n)
           xiCounts <- numeric(n)
-          firstIteration <- TRUE
+          firstIteration <<- TRUE
       }
   ), where = getLoadingNamespace()
 )
