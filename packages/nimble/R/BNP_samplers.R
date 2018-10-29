@@ -1313,7 +1313,7 @@ sampler_CRP_uniques2 <- nimbleFunction(
       curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label
       
       # sampling the index that represents the updated label
-      index <- rcat( n=1, exp(curLogProb-max(curLogProb))[1:(k+1)] )
+      index <- rcat( n=1, exp(curLogProb[1:(k+1)]-max(curLogProb[1:(k+1)])) )
 
       # updating model[[target]][i], xiUniques, xiCounts, kNew
       if(index == (k+1)){ # a new membership variable is sampled
@@ -1341,6 +1341,7 @@ sampler_CRP_uniques2 <- nimbleFunction(
       } else { # an existing membership variable is sampled
           model[[target]][i] <<- xiUniques[index]
           xiCounts[xiUniques[index]] <<- xiCounts[xiUniques[index]] + 1
+
           if(xiCounts[xi[i]] == 0 ) {  # a cluster is deleted. If no cluster is deleted the two lines above are enough
               ## reorder unique labels because one was deleted
               positionXiInUniques <- which( xiUniques == xi[i] )[1] 
