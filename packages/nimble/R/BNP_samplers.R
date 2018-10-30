@@ -1142,8 +1142,6 @@ sampler_CRP_uniques <- nimbleFunction(
   methods = list( reset = function () {})
 )
 
-
-
 #' @rdname samplers
 #' @export
 sampler_CRP_uniques2 <- nimbleFunction(
@@ -1255,48 +1253,45 @@ sampler_CRP_uniques2 <- nimbleFunction(
 
     firstIteration <- TRUE
     curLogProb <- numeric(n)
-    xiUniques <- numeric(n)
-    xiCounts <- numeric(n)
   },
   
   
   run = function() {
+    
+      isNonParam <- TRUE # indicates if the MCMC sampling is nonparametric or not. Is nonparametric when there are more cluster parameters than required clusters.
+      conc <- model$getParam(target, 'conc')
+      helperFunctions[[1]]$storeParams()
+      
+      xi <- model[[target]]
+      
+      ## Find unique values in model[[target]]. I'm not relabeling the unique values.
+      ## k denotes the number of unique labels
+      
+      xiUniques <- numeric(n)
+      xiCounts <- numeric(n)
+      
+      aux <- min(xi):max(xi) 
+      k <- 1
+      for(i in seq_along(aux)) { 
+          nMembers <- sum(aux[i] == xi)
+          if(nMembers > 0) {
+              xiCounts[aux[i]] <- nMembers
+              xiUniques[k] <- aux[i]
+              k <- k + 1
+          }
+      }
+      k <- k-1 # number of unique labels in xi
+      
+      kNew <- 1 # kNew is the new label that can be sampled
+      while(xiCounts[kNew] > 0 & kNew < n) { # need to make sure don't go beyond length of vector
+          kNew <- kNew + 1
+      }
+      
 
-    
-    isNonParam <- TRUE # indicates if the MCMC sampling is nonparametric or not. Is nonparametric when there are more cluster parameters than required clusters.
-    conc <- model$getParam(target, 'conc')
-    helperFunctions[[1]]$storeParams()
-    
-    xi <- model[[target]]
-
-    ## Find unique values in model[[target]]. I'm not relabeling the unique values.
-    ## k denotes the number of unique labels
-    if(firstIteration) {
-        aux <- min(xi):max(xi) 
-        k <- 1
-        for(i in seq_along(aux)) { 
-            cond <- aux[i] == xi
-            if(sum(cond) > 0) {
-                xiCounts[aux[i]] <<- sum(cond)
-                xiUniques[k] <<- aux[i]
-                k <- k + 1
-            }
-        }
-        k <- k-1 # number of unique labels in xi
-    
-        kNew <- 1 # kNew is the new label that can be sampled
-        mySum <- sum(xi == kNew)
-        while(mySum > 0 & kNew < n) { # need to make sure don't go beyond length of vector
-            kNew <- kNew + 1
-            mySum <- sum(xi == kNew)
-        }
-        firstIteration <<- FALSE
-    }
-    
-    for(i in 1:n) { # updates one cluster membership at the time , i=1,...,n
+      for(i in 1:n) { # updates one cluster membership at the time , i=1,...,n
             
       xi <- model[[target]]
-      xiCounts[xi[i]] <<- xiCounts[xi[i]] - 1 # updates counts based on xi[-i]
+      xiCounts[xi[i]] <- xiCounts[xi[i]] - 1 # updates counts based on xi[-i]
       
       # computing probability of sampling the k unique values
       for(j in 1:k) { # probability of sampling an existing label
@@ -1319,13 +1314,14 @@ sampler_CRP_uniques2 <- nimbleFunction(
       if(index == (k+1)){ # a new membership variable is sampled
           if( xiCounts[xi[i]] != 0 ) { # a new cluster is created
               if(kNew > min_nTilde) {
+                  nimPrint(kNew)
                   nimCat('CRP_sampler: This MCMC is not fully nonparametric. The MCMC attempted to use more components than the number of cluster parameters.\n')
                   kNew <- xi[i]
                   isNonParam <- FALSE
               }
               model[[target]][i] <<- kNew 
               k <- k + 1 # a new cluster is created
-              xiUniques[k] <<- kNew # label of new cluster
+              xiUniques[k] <- kNew # label of new cluster
               kNew <- kNew + 1
               mySum <- sum(xi == kNew) 
               while(mySum > 0 & kNew < n) { # need to make sure don't go beyond length of vector
@@ -1333,19 +1329,19 @@ sampler_CRP_uniques2 <- nimbleFunction(
                   mySum <- sum(xi == kNew)
               }
           } # otherwise, a cluster was deleted so the 'new' label is the deleted label; k, xiUniques, kNew, and model[[target]][i] do not change, update xiCounts
-          xiCounts[model[[target]][i]] <<- 1
+          xiCounts[model[[target]][i]] <- 1
           
           if(isNonParam) { # updating the cluster parameters of the new cluster
               helperFunctions[[1]]$sample(i, model[[target]][i])
           }
       } else { # an existing membership variable is sampled
           model[[target]][i] <<- xiUniques[index]
-          xiCounts[xiUniques[index]] <<- xiCounts[xiUniques[index]] + 1
+          xiCounts[xiUniques[index]] <- xiCounts[xiUniques[index]] + 1
 
           if(xiCounts[xi[i]] == 0 ) {  # a cluster is deleted. If no cluster is deleted the two lines above are enough
               ## reorder unique labels because one was deleted
               positionXiInUniques <- which( xiUniques == xi[i] )[1] 
-              xiUniques[positionXiInUniques:k] <<- xiUniques[(positionXiInUniques+1):(k+1)]
+              xiUniques[positionXiInUniques:k] <- xiUniques[(positionXiInUniques+1):(k+1)]
               k <- k - 1
               if(xi[i] < kNew)  ## ensure new cluster is first empty label
                   kNew <- xi[i]
@@ -1358,12 +1354,9 @@ sampler_CRP_uniques2 <- nimbleFunction(
   },
   methods = list( 
       reset = function () {
-          ## need to retabulate cluster information
-          xiUniques <<- numeric(n)
-          xiCounts <<- numeric(n)
-          firstIteration <<- TRUE
       }
   ), where = getLoadingNamespace()
 )
+
 
 
