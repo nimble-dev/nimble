@@ -1,5 +1,8 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+library(mvtnorm)
+library(MCMCpack)
+
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 
@@ -10,6 +13,131 @@ nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
 context('Testing of BNP functionality')
+
+test_that("Test that new cluster parameters are correctly updated in CRP sampler", {
+  # starting values are extremely away fromt their true values. 
+  
+  # Data ~ Poisson(5)
+  set.seed(1)
+  code <- nimbleCode({
+    xi[1:n] ~ dCRP(alpha, n)
+    for(i in 1:n){
+      lambda[i] ~ dgamma(1, 0.01)
+      y[i] ~ dpois(lambda[xi[i]])
+    }
+    alpha ~ dgamma(1, 1)
+  })
+  n <- 300
+  Consts <- list(n = n)
+  Inits <- list(xi = rep(1, n), 
+                lambda = rep(200, n), 
+                alpha = 200)
+  Data <- list(y = rpois(n, 5))
+  
+  m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors = c('xi', 'alpha', 'lambda'), print=FALSE)  
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  
+  output <- runMCMC(cMCMC, niter=1000, nburn=0, thin=1 , inits=Inits, setSeed=FALSE)
+  
+  xiSam <- output[, 302:601]
+  lambdaSam <- output[, 2:301]
+  cond <- abs(unique(lambdaSam[1000, ][xiSam[1000, ]]) - 5)
+  
+  expect_equal(cond, 0, tol=0.2,
+               info = paste0("incorrect update of cluster parameters in Poisson data"))
+  
+  
+  # We start with only one active component and the data is a mixture of 3 normal ditributions
+  set.seed(1)
+  code <- nimbleCode({
+    xi[1:n] ~ dCRP(alpha, n)
+    for(i in 1:n){
+      mu[i] ~ dnorm(0, var = s2[i]/lambda)
+      s2[i] ~ dinvgamma(2, 1)
+      y[i] ~ dnorm(mu[xi[i]],  var = s2[xi[i]])
+    }
+    lambda ~ dgamma(1, 1)
+    alpha ~ dgamma(1, 1)
+  })
+  n <- 300
+  Consts <- list(n = n)
+  Inits <- list(xi = rep(1, n), 
+                mu = rep(-20, n), 
+                s2 = rep(0.1, n),
+                alpha = 200,
+                lambda = 1)
+  thetas <- c(rep(-5, 100), rep(5, 100), rep(0, 100))
+  Data <- list(y = rnorm(n, thetas, 1))
+  
+  m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'), print=FALSE)  
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  
+  output <- runMCMC(cMCMC, niter=1000, nburn=0, thin=1 , inits=Inits, setSeed=FALSE)
+  
+  samplesG <- getSamplesDPmeasure(cMCMC)
+  Tr <- 56
+  grid <- seq(-15, 15, len=100)
+  samF <- matrix(0, ncol=length(grid), nrow=1000)
+  for(i in 1:1000) {
+    samF[i, ] <- sapply(grid, function(x)sum(samplesG[i, 1:Tr] * dnorm(x, samplesG[i, (2*Tr+1):(3*Tr)], sqrt(samplesG[i, (Tr+1):(2*Tr)]))))
+  }
+  
+  fHat <- apply(samF, 2, mean)
+  f0 <- sapply(grid, function(x) 0.3*dnorm(x, -5, 1) + 0.3*dnorm(x, 0, 1) + 0.3*dnorm(x, 5, 1))
+  cond <- mean(abs(fHat - f0))
+  expect_equal(cond, 0, tol=0.02,
+               info = paste0("incorrect update of cluster parameters in mixture of normals data"))
+  
+})
+
+
+test_that("testing bivariate normal mixture models with CRP", {
+  
+  set.seed(1)
+  code <- nimbleCode({
+    xi[1:n] ~ dCRP(alpha, n)
+    for(i in 1:n){
+      mu[i, 1:2] ~ dmnorm(mu0[1:2], cov = S0[1:2, 1:2])
+      y[i, 1:2] ~ dmnorm(mu[xi[i], 1:2],  cov = Sigma0[1:2, 1:2])
+    }
+    alpha ~ dgamma(1, 1)
+  })
+  n <- 300
+  Consts <- list(n = n, Sigma0 = diag(1, 2), S0 = diag(100, 2), mu0=c(0,0))
+  Inits <- list(xi = sample(1:100, size=n, replace = TRUE), 
+                mu = matrix(-10, ncol=2, nrow=n), 
+                alpha = 1)
+  Data <- list(y = rmvnorm(n, c(10, 20), diag(1, 2)))
+  
+  m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 'alpha'), print=TRUE)  
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  
+  output <- runMCMC(cMCMC, niter=1000, nburn=0, thin=1 , inits=Inits, setSeed=FALSE)
+  
+  xiSam <- output[, 602:901]
+  muSam1 <- output[, 2:301]
+  muSam2 <- output[, 302:601]
+  
+  cond <- abs(unique(muSam1[1000, ][xiSam[1000, ]]) - 10)
+  expect_equal(cond, 0, tol=0.2,
+               info = paste0("incorrect update of firts component of cluster parameters in bivariate normal data"))
+  
+  cond <- abs(unique(muSam2[1000, ][xiSam[1000, ]]) - 20)
+  expect_equal(cond, 0, tol=0.2,
+               info = paste0("incorrect update of second component of cluster parameters in bivariate normal data"))
+  
+})
+
+
 
 test_that("Test that wrapper getSamplesDPmeasure works", {
     set.seed(1)
