@@ -424,7 +424,7 @@ CRP_nonconjugate <- nimbleFunction(
   )
 )
 
-CRP_conjugate_dnorm_dnorm <- nimbleFunction(
+CRP_conjugate_dnorm_invgamma <- nimbleFunction(
   name = "CRP_conjugate_dnorm_dnorm",
   contains = CRP_helper,
   setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
@@ -449,6 +449,40 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       postVar <- 1 / (1 / dataVar + 1 / priorVar)
       postMean <- postVar * (y / dataVar + priorMean / priorVar)
       model[[marginalizedVar]][j] <<- rnorm(1, postMean, sqrt(postVar)) 
+    }
+  )
+)
+
+CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
+  name = "CRP_conjugate_invgamma_dnorm",
+  contains = CRP_helper,
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+    ## this makes sure that we create objects to store persistent information used for all 'i'
+    priorMean <- nimNumeric(1)
+    # k0 <- ?
+    priorShape <- nimNumeric(1)
+    priorScale <- nimNumeric(1)
+  },
+  methods = list(
+    storeParams = function() {
+      priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
+      # k0 <<- ?
+      priorShape <<- model$getParam(marginalizedNodes[1], 'shape')
+      priorScale <<- model$getParam(marginalizedNodes[1], 'scale')
+    },
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      y <- values(model, dataNodes[i])[1]
+      c1 <- (priorScale^priorShape) * gamma(priorShape + 1/2) / gamma(priorShape)
+      c2 <- sqrt(k0 / (2*pi*(1 + k0)))
+      c3 <- (priorScale + k0*(y - priorMean)^2 / (2*(1+k0)))^(-(priorShape  + 1/2))
+      return(c1*c2*c3, log=TRUE))
+    },
+    sample = function(i = integer(), j = integer()) {
+      y <- values(model, dataNodes[i])[1]
+      model[[posterior_var]][j] <<- rinvgamma(priorShape + 1/2,
+                                      priorScale + k0*(y - priorMean)^2/(2*(a+k0)))
+      model[[posterior_mean]][j] <<- rnorm(1, (k0 * priorMean + y)/(1+k0), sqrt(model[[posterior_var]][j] / (1+k0))) 
     }
   )
 )
