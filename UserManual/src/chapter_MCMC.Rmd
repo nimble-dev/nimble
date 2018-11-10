@@ -606,7 +606,14 @@ The WAIC is calculated by calling the member method `mcmc$calculateWAIC` (see `h
 
 ```{r, eval=FALSE}
 Cmcmc$calculateWAIC(nburnin = 100)
-``` 
+```
+
+Note that there is not a unique value of WAIC for a model. WAIC is calculated from
+Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e. using \emph{p}WAIC2). In NIMBLE, the set
+of all stochastic nodes monitored by the MCMC object will be treated as
+$\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014].
+
+In many cases one would want $\theta$ to be the set of all stochastic nodes in the model, in which case the user *must* set the MCMC monitors to include all stochastic nodes; by default the MCMC monitors are only the top-level nodes of the model.
 
 ## k-fold cross-validation
 
