@@ -565,7 +565,7 @@ double ddirch(double* x, double* alpha, int K, int give_log)
   return give_log ? dens : exp(dens);
 }
 
-void rdirch(double *ans, double* alpha, int K) 
+void rdirch(double* ans, double* alpha, int K) 
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
   int i, j;
@@ -689,7 +689,7 @@ double dmulti(double* x, double size, double* prob, int K, int give_log) // Call
 
 
 
-void rmulti(int *ans, double size, double* prob, int K) // Calling functions need to copy first arg back and forth to double if needed
+void rmulti(int* ans, double size, double* prob, int K) // Calling functions need to copy first arg back and forth to double if needed
 // scalar function that can be called directly by NIMBLE with same name as in R
 // just call Rmath's rmultinom, which passes result by pointer
 // IMPORTANT: have ans and size as int when sent to rmultinom as Rmath rmultinom has these types
@@ -2156,6 +2156,89 @@ SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
   UNPROTECT(1);
   return ans;
 }
+
+
+double dnorm_invgamma(double* x, double mean_location, double mean_scale, double var_shape,
+                      double var_scale, int give_log)
+{
+  if (R_IsNA(x, 2))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, 2) || R_isnancpp(mean_location) || R_isnancpp(mean_scale) ||
+      R_isnancpp(var_scale) || R_isnancpp(var_shape) )
+    return R_NaN;
+#endif
+  if( !R_FINITE(mean_scale) || !R_FINITE(var_shape) || !R_FINITE(var_scale) )
+    return R_D__0;
+  if(mean_scale < 0 || var_shape <= 0 || var_scale <= 0)
+    ML_ERR_return_NAN;
+
+  double ans1 = dnorm(x[0], mean_location, pow(x[1] / mean_scale, 0.5), give_log);
+  double ans2 = dinvgamma(x[1], var_shape, 1 / var_scale, give_log);
+  if(give_log) return(ans1 + ans2);
+  else return(ans1 * ans2);
+}
+
+void rnorm_invgamma(double* ans, double mean_location, double mean_scale, double var_shape,
+                    double var_scale)
+{
+#ifdef IEEE_754
+  if (R_isnancpp(mean_location) || R_isnancpp(mean_scale) ||
+      R_isnancpp(var_scale) || R_isnancpp(var_shape))
+    for(int j = 0; j < 2; j++)
+      ans[j] = R_NaN;
+#endif
+  ans[1] = 1 / rgamma(var_shape, 1 / var_scale);
+  ans[0] = rnorm(mean_location, pow(ans[1] / mean_scale, 0.5));
+}
+
+SEXP C_dnorm_invgamma(SEXP x, SEXP mean_location, SEXP mean_scale, SEXP var_shape, SEXP var_scale, SEXP return_log) {
+  if(!Rf_isReal(x) || !Rf_isReal(mean_location) || !Rf_isReal(mean_scale) || !Rf_isReal(var_shape) ||
+     !Rf_isReal(var_scale) || !Rf_isLogical(return_log)) 
+    RBREAK("Error (C_dnorm_invgamma): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  if(n_x != 2)
+    RBREAK("Error (C_dnorm_invgamma): 'x' must have length 2.\n");
+
+  int give_log = (int) LOGICAL(return_log)[0];
+
+  double* c_x = REAL(x);
+  double c_mean_location = REAL(mean_location)[0];
+  double c_mean_scale = REAL(mean_scale)[0];
+  double c_var_shape = REAL(var_shape)[0];
+  double c_var_scale = REAL(var_scale)[0];
+
+  // not implementing recyling as x is bivariate so a hassle to deal with dimensionality
+
+  SEXP ans;
+  PROTECT(ans = Rf_allocVector(REALSXP, 1));  
+  REAL(ans)[0] = dnorm_invgamma(c_x, c_mean_location, c_mean_scale, c_var_shape, c_var_scale, give_log);
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_rnorm_invgamma(SEXP mean_location, SEXP mean_scale, SEXP var_shape, SEXP var_scale) {
+  if(!Rf_isReal(mean_location) || !Rf_isReal(mean_scale) || !Rf_isReal(var_shape) ||
+     !Rf_isReal(var_scale)) 
+    RBREAK("Error (C_rnorm_invgamma): invalid input type for one of the arguments.");
+
+  int n_values = 2;
+  SEXP ans;
+  PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
+
+  GetRNGstate(); 
+  double c_mean_location = REAL(mean_location)[0];
+  double c_mean_scale = REAL(mean_scale)[0];
+  double c_var_shape = REAL(var_shape)[0];
+  double c_var_scale = REAL(var_scale)[0];
+
+  rnorm_invgamma(REAL(ans), c_mean_location, c_mean_scale, c_var_shape, c_var_scale);
+  
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+
 
 SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP c, SEXP zero_mean, SEXP return_log) {
   if(!Rf_isReal(x) || !Rf_isReal(adj) || !Rf_isReal(weights) || !Rf_isReal(num) || !Rf_isReal(tau) || !Rf_isReal(c) || !Rf_isReal(zero_mean) || !Rf_isLogical(return_log))
