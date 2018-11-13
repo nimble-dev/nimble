@@ -848,8 +848,8 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
 #' \code{var_scale} \eqn{=\beta} has density
 #' \deqn{
 #'   f(\mu, \sigma^2)= \frac{\kappa_0^{1/2}}{(2\pi)^{1/2} (\sigma^2)^{\alpha+3/2}}
-#' \frac{\beta^\alpha}{Gamma(alpha)} e^{\frac{1}{\sigma^2}(2\beta + \frac{\kappa_0(\mu-\mu_0)^2})}
-#' for \eqn{sigma^2 > 0}, \eqn{\kappa_0 > 0}, \eqn{\alpha > 0} and \eqn{\beta > 0}.
+#' \frac{\beta^\alpha}{\Gamma(\alpha)} e^{-\frac{1}{\sigma^2}(\beta + \frac{\kappa_0(\mu-\mu_0)^2}{2})}}
+#' for \eqn{\sigma^2 > 0}, \eqn{\kappa_0 > 0}, \eqn{\alpha > 0} and \eqn{\beta > 0}.
 #' (Here \eqn{\Gamma(\alpha)}{Gamma(a)} is the function implemented by \R's
 #'  \code{\link{gamma}()} and defined in its help.
 #'
