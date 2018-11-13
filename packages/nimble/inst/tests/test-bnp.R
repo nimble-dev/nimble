@@ -49,6 +49,47 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   expect_equal(cond, 0, tol=0.2,
                info = paste0("incorrect update of cluster parameters in Poisson data"))
   
+  # test for updating new cluster parameters
+  code <- nimbleCode({
+    for(i in 1:n) {
+      y[i] ~ dnorm(mu[i], 1)
+      mu[i] <- muTilde[xi[i]]
+    }
+    
+    for(i in 1:n) {
+      muTilde[i] ~ dnorm(mu0, sd = sd0)
+    }
+    
+    xi[1:n] ~ dCRP(alpha, size = n)
+    sd0 ~ dhalfflat()
+    alpha ~ dgamma(1, 1)      
+    mu0 ~ dflat()
+  })
+  
+  n <- 30
+  constants <- list(n = n)
+  ## all data plausibly from first cluster except 50th data point
+  data <- list(y = c(rnorm(n-1, 0, 1), 50))
+  ## muTilde is good for all but last data point. muTilde[2] is bad for the last data point (so that we can see that it changes to a good value, which is what the conjugate sampler for xi should ensure)
+  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1, n),
+                muTilde = c(0, rep(-10, n-1)))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  
+  cmodel <- compileNimble(model)
+  conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
+  mcmc <- buildMCMC(conf)
+  cmcmc <- compileNimble(mcmc, project = model)
+  
+  ## now check that cmodel$muTilde[2] is near 50
+  output <- runMCMC(cmcmc, niter=1, nburn=0, thin=1 , inits=inits, setSeed=FALSE)
+  
+  xiSam <- output[, 34:63]
+  muTildeSam <- output[, 3:32]
+  cond <- abs(muTildeSam[2] - 50)
+  
+  expect_equal(cond, 0, tol=0.2,
+               info = paste0("incorrect update of cluster parameters in mixture of normals 1 data"))
+  
   
   # We start with only one active component and the data is a mixture of 3 normal ditributions
   set.seed(1)
@@ -79,9 +120,10 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   cMCMC <- compileNimble(mMCMC, project = m)
   
   output <- runMCMC(cMCMC, niter=1000, nburn=0, thin=1 , inits=Inits, setSeed=FALSE)
+  outputG <- getSamplesDPmeasure(cMCMC)
   
-  samplesG <- getSamplesDPmeasure(cMCMC)
-  Tr <- 56
+  Tr <- outputG$truncDPmeasure
+  samplesG <- outputG$samplesDPmeasure
   grid <- seq(-15, 15, len=100)
   samF <- matrix(0, ncol=length(grid), nrow=1000)
   for(i in 1:1000) {
@@ -138,7 +180,7 @@ test_that("testing bivariate normal mixture models with CRP", {
 })
 
 
-
+# update this with new list output
 test_that("Test that wrapper getSamplesDPmeasure works", {
     set.seed(1)
     ## model with clustering of random effects
