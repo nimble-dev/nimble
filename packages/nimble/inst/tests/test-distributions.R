@@ -482,10 +482,13 @@ test_that("dnorm_invgamma density calculations", {
           truth <- dnorm(out[1], sd = sqrt(out[2] / 1), log = TRUE) + dinvgamma(out[2], 1, 1, log = TRUE)
           expect_equivalent(dens, truth, info = "dnorm_invgamma density incorrect")
 
-          ## check use in model 
+          ## check use in model, including parameters are themselves model nodes
           code <- nimbleCode({
               y[1] ~ dnorm(0, 1)  ## ensures that use within subset of variable works
-              y[2:3] ~ dnorm_invgamma(2, 2, 3, 0.5)
+              y[2:3] ~ dnorm_invgamma(2, theta, gamma+lambda, 0.5)
+              theta ~ dunif(0,3)
+              gamma ~ dunif(0,3)
+              lambda ~ dunif(0,3)
           })
           m <- nimbleModel(code)
           set.seed(1)
@@ -499,7 +502,8 @@ test_that("dnorm_invgamma density calculations", {
           expect_equal(m$getLogProb('y'), cm$getLogProb('y'),
                        info = "dnorm_invgamma calculate doesn't match compiled/uncompiled")
           expect_equal(m$getLogProb('y[2:3]'),
-                       dnorm(m$y[2], 2, sd = sqrt(m$y[3] / 2), log = TRUE) + dinvgamma(m$y[3], 3, 0.5, log = TRUE),
+                       dnorm(m$y[2], 2, sd = sqrt(m$y[3] / m$theta), log = TRUE) +
+                       dinvgamma(m$y[3], m$gamma+m$lambda, 0.5, log = TRUE),
                        info = "dnorm_invgamma calculate doesn't match truth")
           
           ## check marginal densities
