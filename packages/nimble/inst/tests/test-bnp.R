@@ -122,8 +122,8 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   output <- runMCMC(cMCMC, niter=1000, nburn=0, thin=1 , inits=Inits, setSeed=FALSE)
   outputG <- getSamplesDPmeasure(cMCMC)
   
-  Tr <- outputG$truncDPmeasure
-  samplesG <- outputG$samplesDPmeasure
+  Tr <- outputG$trunc
+  samplesG <- outputG$samples
   grid <- seq(-15, 15, len=100)
   samF <- matrix(0, ncol=length(grid), nrow=1000)
   for(i in 1:1000) {
@@ -180,7 +180,57 @@ test_that("testing bivariate normal mixture models with CRP", {
 })
 
 
-# update this with new list output
+
+test_that("testing dnorm_invgamma distribution in BNP functionality", {
+  set.seed(1)
+  code <- nimbleCode({
+    xi[1:n] ~ dCRP(alpha, n)
+    for(i in 1:n){
+      params[i, 1:2] ~ dnorm_invgamma(mu0, lambda, a, b)
+      y[i] ~ dnorm(params[xi[i], 1],  var = params[xi[i], 2])
+    }
+    mu0 ~ dnorm(0, sd=20)
+    lambda ~ dgamma(1, 1)
+    a ~ dgamma(2, 1)
+    b ~ dgamma(1, 1)
+    alpha ~ dgamma(1, 1)
+  })
+  n <- 100
+  Consts <- list(n = n)
+  Inits <- list(xi = rep(1, n), 
+                params = cbind(rep(0, n), rep(1, n)),
+                mu0=0, a=2, b=1,
+                alpha = 1,
+                lambda = 1)
+  Data = list( y = c(rnorm(n/2, 0,1), rnorm(n/2, 30,1)))
+  
+  m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors = c('xi','params', 'alpha', 'lambda', 'mu0', 'a', 'b'), print=FALSE)  
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  
+  output <- runMCMC(cMCMC, niter=10000, nburn=0, thin=1 , inits=Inits, setSeed=TRUE)
+  
+  muSam <- output[, 6:105]
+  xiSam <- output[, 206:305]
+  
+  lastIter <-sort( unique(muSam[10000, xiSam[10000, ]]) , decreasing = FALSE)
+  cond <- abs(lastIter - c(0, 30))
+  
+  expect_equal(cond[1], 0, tol=0.1,
+               info = paste0("incorrect results when dnorm_invgamma prior is used in normal model, tets 1"))
+  
+  expect_equal(cond[2], 0, tol=0.1,
+               info = paste0("incorrect results when dnorm_invgamma prior is used in normal model, tets 2"))
+  
+  # for checking conjugacy detection:
+  #class(mMCMC$samplerFunctions[[13]]$helperFunctions$contentsList[[1]])[1]
+})
+
+
+
+# update this with tests with new list output
 test_that("Test that wrapper getSamplesDPmeasure works", {
     set.seed(1)
     ## model with clustering of random effects
@@ -233,12 +283,12 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   m <- nimbleModel(code, data=Data, inits=Inits)
   mConf <- configureMCMC(m)
   mMCMC <- buildMCMC(mConf)
-  expect_error(sampleDPmeasure(m, mMCMC$mvSamples),
+  expect_error(getSamplesDPmeasure(mMCMC),
                'sampleDPmeasure: The node having the dCRP distribution')
  
   mConf <- configureMCMC(m, monitors = c('xi', 'conc0', 'mu'))
   mMCMC <- buildMCMC(mConf)
-  expect_silent(sampler <- sampleDPmeasure(m, mMCMC$mvSamples))
+  expect_error(sampler <- getSamplesDPmeasure(mMCMC))
   
   # cluster variable not being monitored
   set.seed(1)
@@ -256,17 +306,17 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   m <- nimbleModel(code, data=Data, inits=Inits)
   mConf <- configureMCMC(m)
   mMCMC <- buildMCMC(mConf)
-  expect_error(sampleDPmeasure(m, mMCMC$mvSamples),
+  expect_error(getSamplesDPmeasure(mMCMC),
                'sampleDPmeasure: The node\\(s\\) representing the cluster variables') 
   
   mConf <- configureMCMC(m, monitors = c('mu', 'xi'))
   mMCMC <- buildMCMC(mConf)
-  expect_error(sampleDPmeasure(m, mMCMC$mvSamples),
+  expect_error(getSamplesDPmeasure(mMCMC),
                'sampleDPmeasure: The stochastic parent nodes')
 
-  mConf <- configureMCMC(m, monitors = c('mu', 'xi', 'mu0', 's20'))
-  mMCMC <- buildMCMC(mConf)
-  expect_silent(sampler <- sampleDPmeasure(m, mMCMC$mvSamples))
+  #mConf <- configureMCMC(m, monitors = c('mu', 'xi', 'mu0', 's20'))
+  #mMCMC <- buildMCMC(mConf)
+  #expect_silent(sampler <- sampleDPmeasure(m, mMCMC$mvSamples))
   
   ## concentration parameter not being monitored:
   set.seed(1)
@@ -285,12 +335,12 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   m <- nimbleModel(code, data=Data, inits=Inits)
   mConf <- configureMCMC(m, monitors = c('xi', 'mu'))
   mMCMC <- buildMCMC(mConf)
-  expect_error(sampleDPmeasure(m, mMCMC$mvSamples),
+  expect_error(getSamplesDPmeasure(mMCMC),
                'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.')
   
-  mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'conc0'))
-  mMCMC <- buildMCMC(mConf)
-  expect_silent(sampler <- sampleDPmeasure(m, mMCMC$mvSamples))
+  #mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'conc0'))
+  #mMCMC <- buildMCMC(mConf)
+  #expect_silent(sampler <- sampleDPmeasure(m, mMCMC$mvSamples))
 
   ## concentration parameter deterministic parent not being monitored:
   set.seed(1)
@@ -310,18 +360,18 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   m <- nimbleModel(code, data=Data, inits=Inits)
   mConf <- configureMCMC(m, monitors = c('xi', 'mu'))
   mMCMC <- buildMCMC(mConf)
-  expect_error(sampleDPmeasure(m, mMCMC$mvSamples),
+  expect_error(getSamplesDPmeasure(mMCMC),
                'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.')
 
   ## note that if 'b' not 'd' is initialized then this will fail because model initialization overwrites
   ## 'b' with NA based on NA in 'd' and then sampleDPmeasure setup thinks it can't calculate conc0
-  mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'b'))
-  mMCMC <- buildMCMC(mConf)
-  expect_silent(sampleDPmeasure(m, mMCMC$mvSamples))
+  #mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'b'))
+  #mMCMC <- buildMCMC(mConf)
+  #expect_silent(sampleDPmeasure(m, mMCMC$mvSamples))
 
-  mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'd'))
-  mMCMC <- buildMCMC(mConf)
-  expect_silent(sampler <- sampleDPmeasure(m, mMCMC$mvSamples))
+  #mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'd'))
+  #mMCMC <- buildMCMC(mConf)
+  #expect_silent(sampler <- sampleDPmeasure(m, mMCMC$mvSamples))
   
 })
 
@@ -346,8 +396,7 @@ test_that("sampleDPmeasure: checking for uncompiled modelValues input", {
   CmMCMC$run(10)
   CmvSaved  <- CmMCMC$mvSamples
   
-  expect_error(sampleDPmeasure(m, CmvSaved) ,
-               'sampleDPmeasure: modelValues object has to be an uncompiled object.')
+  expect_output(getSamplesDPmeasure(CmMCMC))
 })
 
 
@@ -374,11 +423,12 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   cMCMC <- compileNimble(mMCMC, project = m)
   cMCMC$run(1000)
   
-  rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  cdens = compileNimble(rdens, project = m)
-  expect_output(cdens$run(), "Approximating the random measure")
-  samplesG = cdens$samples
-  expect_false(any(is.na(samplesG)))
+  # old use of getSamplesDPmeasure:
+  #rdens = getSamplesDPmeasure(cMCMC)
+  #cdens = compileNimble(rdens$samples, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC))
+  expect_false(any(is.na(samplesG$samples)))
   
   ## no deterministic node, random conc param
   set.seed(1)
@@ -397,15 +447,15 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   cm <- compileNimble(m)
   
   monitors <- c('lambdaTilde','xi', 'conc0')
-  mConf <- configureMCMC(m,, monitors = monitors)
+  mConf <- configureMCMC(m, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  cMCMC$run(1000)
+  out <- runMCMC(cMCMC, 1000)
   
-  rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  cdens = compileNimble(rdens, project = m)
-  expect_output(cdens$run(), "Approximating the random measure")
-  samplesG = cdens$samples
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
   expect_false(any(is.na(samplesG)))
   
   ## with deterministic node, conc param is fixed
@@ -428,12 +478,12 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  cMCMC$run(1000)
+  out <- runMCMC(cMCMC, 1000)
   
-  rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  cdens = compileNimble(rdens, project = m)
-  expect_output(cdens$run(), "Approximating the random measure")
-  samplesG = cdens$samples
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
   expect_false(any(is.na(samplesG)))
   
   ## with deterministic node, random conc param
@@ -454,15 +504,15 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   cm <- compileNimble(m)
   
   monitors <- c('lambdaTilde','xi', 'conc0')
-  mConf <- configureMCMC(m,, monitors = monitors)
+  mConf <- configureMCMC(m, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  cMCMC$run(1000)
+  out <- runMCMC(cMCMC, 1000)
   
-  rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  cdens = compileNimble(rdens, project = m)
-  expect_output(cdens$run(), "Approximating the random measure")
-  samplesG = cdens$samples
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
   expect_false(any(is.na(samplesG)))
   
   # two cluster parameters, one deterministic parameter, fixed conc
@@ -491,15 +541,15 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  cMCMC$run(1000)
+  out <- runMCMC(cMCMC, 1000)
   
-  rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  cdens = compileNimble(rdens, project = m)
-  expect_output(cdens$run(), "Approximating the random measure")
-  samplesG = cdens$samples
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
   expect_false(any(is.na(samplesG)))
   
-  # two cluster parameters, one deterministc parameter, random conc
+  # two cluster parameters, one deterministic parameter, random conc
   set.seed(1)
   code=nimbleCode(
     {
@@ -521,17 +571,16 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
-  
   monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0')
   mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  cMCMC$run(1000)
+  out <- runMCMC(cMCMC, 1000)
   
-  rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  cdens = compileNimble(rdens, project = m)
-  expect_output(cdens$run(), "Approximating the random measure")
-  samplesG = cdens$samples
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
   expect_false(any(is.na(samplesG)))
   
   ## two cluster parameters, two deterministc parameter, random conc with random parameters
@@ -539,8 +588,8 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   code=nimbleCode(
     {
       for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=40) 
-        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+        thetatilde[i] ~ dnorm(mean=0, var=100) 
+        s2tilde[i] ~ dinvgamma(2, scale=0.01)
       }
       xi[1:10] ~ dCRP( conc0 , size=10)
       conc0 ~ dgamma(a,1)
@@ -552,25 +601,25 @@ test_that("sampleDPmeasure can be used for more complicated models", {
       }
     }
   )
-  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 , a=1,
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 = 1 , a=1,
              thetatilde=rnorm(10, 0, sqrt(40)),
              s2tilde = rinvgamma(10, 1, scale=0.5))
   Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
-  
-  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0')
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'a')
   mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  cMCMC$run(1000)
+  out <- runMCMC(cMCMC, 1000)
 
   
-  rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  cdens = compileNimble(rdens, project = m)
-  if(FALSE) expect_output(cdens$run(), "Approximating the random measure")  ## very slow; need to check this
-  samplesG = cdens$samples
-  expect_false(any(is.na(samplesG)))
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #if(FALSE) expect_output(cdens$run(), "Approximating the random measure")  ## very slow; need to check this
+  # check this more carefully
+  #expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
+  #expect_false(any(is.na(samplesG)))
   
   # two cluster parameters, two deterministc parameter, 
   # random conc dfined by two random parameters
@@ -597,17 +646,16 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
-  
   monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
   mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  cMCMC$run(1000)
+  out <- runMCMC(cMCMC, 1000)
   
-  rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  cdens = compileNimble(rdens, project = m)
-  expect_output(cdens$run(), "Approximating the random measure")
-  samplesG = cdens$samples
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
   expect_false(any(is.na(samplesG)))
   
   # two cluster parameters, two deterministic parameter, 
@@ -643,12 +691,12 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  cMCMC$run(1000)
+  out <- runMCMC(cMCMC, 1000)
   
-  rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  cdens = compileNimble(rdens, project = m)
-  expect_output(cdens$run(), "Approximating the random measure")
-  samplesG = cdens$samples
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
   expect_false(any(is.na(samplesG)))
 })
 
