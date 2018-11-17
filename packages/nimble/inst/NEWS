@@ -1,3 +1,5 @@
+                            CHANGES IN VERSION 0.6.12 (December 2018)
+
 USER LEVEL CHANGES
 
 -- New "RW_wishart" MCMC sampler, for sampling non-conjugate Wishart and inverse-Wishart nodes.
