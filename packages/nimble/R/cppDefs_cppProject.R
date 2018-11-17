@@ -211,9 +211,9 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
                                        isWindows = (.Platform$OS.type == "windows")
                                        if(isWindows)
-                                           status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)
+                                           status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = FALSE, show.output.on.console = showCompilerOutput)
                                        else
-                                           status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput)
+                                           status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = FALSE)
                                        if(status != 0) 
                                            stop(structure(simpleError("Failed to create the shared library"),
                                                           class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
@@ -316,9 +316,9 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(nimbleOptions('pauseAfterWritingFiles')) browser()
 
                                        if(isWindows)
-                                           status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)
+                                           status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, show.output.on.console = showCompilerOutput, ignore.stderr = FALSE)
                                        else
-                                           status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput)
+                                           status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = FALSE)
 				       if(status != 0)
                                            stop(structure(simpleError("Failed to create the shared library"),
                                                           class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
