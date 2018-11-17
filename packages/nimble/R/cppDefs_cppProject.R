@@ -211,11 +211,11 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
                                        isWindows = (.Platform$OS.type == "windows")
                                        if(isWindows)
-                                           status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = FALSE, show.output.on.console = showCompilerOutput)
+                                           status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)
                                        else
-                                           status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = FALSE)
+                                           status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput)
                                        if(status != 0) 
-                                           stop(structure(simpleError("Failed to create the shared library"),
+                                           stop(structure(simpleError("Failed to create the shared library. Please rerun 'compileNimble' with 'showCompilerOutput = TRUE' for more details."),
                                                           class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
                                        return(dyn.load(ssDllName, local = TRUE))
                                    },
@@ -316,11 +316,11 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(nimbleOptions('pauseAfterWritingFiles')) browser()
 
                                        if(isWindows)
-                                           status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, show.output.on.console = showCompilerOutput, ignore.stderr = FALSE)
+                                           status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)
                                        else
-                                           status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = FALSE)
+                                           status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput)
 				       if(status != 0)
-                                           stop(structure(simpleError("Failed to create the shared library"),
+                                           stop(structure(simpleError("Failed to create the shared library. Please rerun 'compileNimble' with 'showCompilerOutput = TRUE' for more details."),
                                                           class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
                                        if(isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) stop("safely stopping before linking", call.=FALSE)
 
