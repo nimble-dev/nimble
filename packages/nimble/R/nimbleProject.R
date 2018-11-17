@@ -1106,12 +1106,13 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
         else project <- nimbleProjectClass(dirName, name = projectName)
 
         ## Check for uncompiled models.
-        mcmcUnits <- which(sapply(units, class) == "MCMC")
-        if(any(sapply(mcmcUnits, function(idx) {
-            class(units[[idx]]$model$CobjectInterface) == "uninitializedField"
-        })))
-            stop("compileNimble: The model associated with an MCMC is not compiled. Please compile the model first.")
-        
+        if(!any(sapply(units, is, 'RmodelBaseClass'))) {
+            mcmcUnits <- which(sapply(units, class) == "MCMC")
+            if(any(sapply(mcmcUnits, function(idx) {
+                class(units[[idx]]$model$CobjectInterface) == "uninitializedField"
+            })))
+                stop("compileNimble: The model associated with an MCMC is not compiled. Please compile the model first.")
+        }
     } else {
         project <- getNimbleProject(project, TRUE)
         if(!inherits(project, 'nimbleProjectClass'))
