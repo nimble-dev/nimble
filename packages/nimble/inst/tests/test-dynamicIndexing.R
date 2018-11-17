@@ -442,6 +442,46 @@ test_that('basic mixture model without conjugacy', {
               avoidNestedTest=TRUE)
 })
 
+
+test_that('range checking with dynamic indexing', {
+    code <- nimbleCode({
+        for(i in 3:4) {
+            z[i-1] ~ dcat(alpha[z[i-2], 1:2])
+        }
+    }
+    )
+    
+    m <- nimbleModel(code, inits = list(alpha = matrix(c(0.9,.1,0.1,.9), 2),
+                                        z = c(1,2,1)), calculate = FALSE)
+    ## will give error if issue #790 is not fixed:
+    expect_silent(output <- m$calculate())
+
+    code <- nimbleCode({
+        for(i in 1:2) {
+            z[i+1] ~ dcat(alpha[z[i], 1:2])
+        }
+    }
+    )
+    
+    m <- nimbleModel(code, inits = list(alpha = matrix(c(0.9,.1,0.1,.9), 2),
+                                        z = c(1,2,1)), calculate = FALSE)
+    expect_silent(output <- m$calculate())
+    
+    code <- nimbleCode({
+        for(i in 2:3) {
+            z[i] ~ dcat(alpha[z[i-1], 1:2])
+        }
+    }
+    )
+    
+    
+    m <- nimbleModel(code, inits = list(alpha = matrix(c(0.9,.1,0.1,.9), 2),
+                                        z = c(1,2,1)), calculate = FALSE)
+    expect_silent(output <- m$calculate())
+    
+})
+
+
 if(FALSE) {
     ## Heisenbug here - running manually vs. via testthat causes different ordering of mixture components even though we are setting seed before each use of RNG; this test _does_ pass when run manually.
 test_that('basic multivariate mixture model with conjugacy', {

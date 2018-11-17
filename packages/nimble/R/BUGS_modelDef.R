@@ -1833,8 +1833,8 @@ modelDefClass$methods(findDynamicIndexParticipants = function() {
         for(iDI in seq_along(declInfo)) {
             if(declInfo[[iDI]]$type == "unknownIndex") next
             declInfo[[iDI]]$dynamicIndexInfo <<- list()
-            for(iSPN in seq_along(declInfo[[iDI]]$symbolicParentNodes)) {
-                symbolicParent <- declInfo[[iDI]]$symbolicParentNodes[[iSPN]]
+            for(iSPN in seq_along(declInfo[[iDI]]$symbolicParentNodesReplaced)) {
+                symbolicParent <- declInfo[[iDI]]$symbolicParentNodesReplaced[[iSPN]]
                 dynamicIndexes <- detectDynamicIndexes(symbolicParent)
                 ## We do not yet check bounds of inner indexes in nested indexing. To do so we need to
                 ## find dynamic indexing within a USED_IN_INDEX() and add to dynamicIndexInfo;
