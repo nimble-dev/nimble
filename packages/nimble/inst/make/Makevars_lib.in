@@ -25,7 +25,8 @@ ifndef RPATH
 RPATH=@RPATH@
 endif
 
-PKG_CPPFLAGS= -DR_NO_REMAP $(EIGEN_INC) $(CPPAD_INC) -DEIGEN_MPL2_ONLY=1 -I"$(NIMBLE_INC_DIR)" -Wno-misleading-indentation -Wno-ignored-attributes -Wno-deprecated-declarations -fopenmp
+PKG_CPPFLAGS= -DR_NO_REMAP $(EIGEN_INC) $(CPPAD_INC) -DEIGEN_MPL2_ONLY=1 -I"$(NIMBLE_INC_DIR)" -Wno-misleading-indentation -Wno-ignored-attributes -Wno-deprecated-declarations
+PKG_CXXFLAGS=$(SHLIB_OPENMP_CXXFLAGS)
 NIMBLE_LIB_DIR="$(NIMBLE_DIR)/CppCode"
-PKG_LIBS=-L"$(NIMBLE_LIB_DIR)"  -lnimble $(RPATH) $(LAPACK_LIBS) $(BLAS_LIBS) 
+PKG_LIBS=-L"$(NIMBLE_LIB_DIR)"  -lnimble $(RPATH) $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) 
 CXX_STD = CXX11
