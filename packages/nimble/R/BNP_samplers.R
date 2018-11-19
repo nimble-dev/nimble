@@ -880,6 +880,7 @@ sampler_CRP <- nimbleFunction(
                         conjugate_dgamma_dweib = 'CRP_conjugate_dgamma_dweib',
                         conjugate_dgamma_dinvgamma = 'CRP_conjugate_dgamma_dinvgamma',
                         conjugate_ddirch_dmulti = 'CRP_conjugate_ddirch_dmulti',
+                        conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
     ## we use [1] here because the 2nd/3rd args only used for conjugate cases and currently that is only setup for
     ## single parameters

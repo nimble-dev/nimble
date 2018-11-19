@@ -210,7 +210,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     if(nodeLength > 1) {
                         if(useConjugacy) {
                             conjugacyResult <- conjugacyResultsAll[[node]]
-                            if(!is.null(conjugacyResult)) {
+                            if(!is.null(conjugacyResult) && nodeDist != 'dnorm_invgamma') {
                                 addConjugateSampler(conjugacyResult = conjugacyResult,
                                                     dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed);     next }
                         }

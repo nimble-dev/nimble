@@ -167,8 +167,7 @@ conjugacyRelationshipsInputList <- list(
              dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
                                     df          = prior_df + contribution_df,
-                                    scale_param = 1)')
-    )
+                                    scale_param = 1)'),
 
 
     ## normal-inverse gamma
@@ -178,11 +177,12 @@ conjugacyRelationshipsInputList <- list(
     ## also, per Gelman section 3.3, we need empirical variance of 'value' values,
     ## which (in our current conjugacy system) can only be calculated incrementally
     ## based on summing squared 'value' values, which is not numerically robust.
-    ## Therefore, not including this conjugacy.
-    ## list(prior = 'dnorm_invgamma',
-    ##      link = 'identity',
-    ##      dependents = list(),
-    ##          dnorm  = list())
+    ## Therefore, including this conjugacy only for detection in BNP functionality not for general usage.
+    list(prior = 'dnorm_invgamma',
+         link = 'identity',
+         dependents = list(dnorm  = list(param = c('mean', 'var'))),
+         posterior = NULL)
+)
 
 
 ##############################################################################################
@@ -372,13 +372,34 @@ conjugacyClass <- setRefClass(
                 if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
             } else currentLink = restrictLink
             if(currentLink != 'stick_breaking') {
-                linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
-                if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
-                if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
-                linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
-                if(!cc_linkCheck(linearityCheck, currentLink))                           return(NULL)
-                if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
+                if(length(dependentObj$param) == 1) {
+                    linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
+                    linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
+                    if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
+                    if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
+                    linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
+                    if(!cc_linkCheck(linearityCheck, currentLink))                           return(NULL)
+                    if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
+                } else {
+                    ## This code deals with dnorm_invgamma conjugacy, which has two dependent parameters in
+                    ## the dnorm dependency. For now, this code is distinct from the block above to avoid
+                    ## monkeying with the code that handles all of our other conjugacies.
+                    if(prior != 'dnorm_invgamma')
+                        stop("checkConjugacyOneDep: code checking for dnorm_invgamma triggered for a different prior distribution.")
+                    linearityCheckExpr <- sapply(dependentObj$param, function(x)
+                        model$getParamExpr(depNode, x))   
+                    linearityCheckExpr <- sapply(linearityCheckExpr, function(x)
+                        cc_expandDetermNodesInExpr(model, x, targetNode = targetNode, useScalarComponents = TRUE))
+                    targetNodeElements <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
+                    if(length(targetNodeElements) != length(dependentObj$param)) return(NULL)   
+                    if(!all(sapply(seq_along(linearityCheckExpr), function(idx)
+                        cc_nodeInExpr(targetNodeElements[idx], linearityCheckExpr[[idx]])))) return(NULL)
+                    linearityCheck <- lapply(seq_along(linearityCheckExpr), function(idx)
+                        cc_checkLinearity(linearityCheckExpr[[idx]], targetNodeElements[idx]))
+                    if(!all(sapply(linearityCheck, function(x) cc_linkCheck(x, currentLink)))) return(NULL)
+                    if(!all(sapply(targetNodeElements, function(x)
+                        cc_otherParamsCheck(model, depNode, x, useScalarComponents = TRUE))))   return(NULL)  
+                }
             } else {
                 stickbreakingCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = targetNode)
@@ -900,20 +921,22 @@ posteriorClass <- setRefClass(
     ),
     methods = list(
         initialize = function(posteriorText, prior) {
-            parsedTotalPosterior <- parse(text = posteriorText)[[1]]
-            if(parsedTotalPosterior[[1]] != '{') parsedTotalPosterior <- substitute({POST}, list(POST = parsedTotalPosterior))
-            prePosteriorCodeBlock <<- parsedTotalPosterior[-length(parsedTotalPosterior)]
-            posteriorExpr <<- parsedTotalPosterior[[length(parsedTotalPosterior)]]
-            rDistribution <<- cc_makeRDistributionName(as.character(posteriorExpr[[1]]))
-            dDistribution <<- as.character(posteriorExpr[[1]])
-            argumentExprs <<- as.list(posteriorExpr)[-1]
-            argumentNames <<- names(argumentExprs)
-            rCallExpr <<- as.call(c(as.name(rDistribution), 1, argumentExprs))
-            dCallExpr <<- as.call(c(as.name(dDistribution), quote(VALUE), argumentExprs, log = 1))
-            posteriorVars <- all.vars(parsedTotalPosterior)
-            neededPriorParams <<- gsub('^prior_', '', posteriorVars[grepl('^prior_', posteriorVars)])
-            neededContributionNames <<- posteriorVars[grepl('^contribution_', posteriorVars)]
-            neededContributionDims <<- inferContributionTermDimensions(prior)
+            if(!is.null(posteriorText)) {
+                parsedTotalPosterior <- parse(text = posteriorText)[[1]]
+                if(parsedTotalPosterior[[1]] != '{') parsedTotalPosterior <- substitute({POST}, list(POST = parsedTotalPosterior))
+                prePosteriorCodeBlock <<- parsedTotalPosterior[-length(parsedTotalPosterior)]
+                posteriorExpr <<- parsedTotalPosterior[[length(parsedTotalPosterior)]]
+                rDistribution <<- cc_makeRDistributionName(as.character(posteriorExpr[[1]]))
+                dDistribution <<- as.character(posteriorExpr[[1]])
+                argumentExprs <<- as.list(posteriorExpr)[-1]
+                argumentNames <<- names(argumentExprs)
+                rCallExpr <<- as.call(c(as.name(rDistribution), 1, argumentExprs))
+                dCallExpr <<- as.call(c(as.name(dDistribution), quote(VALUE), argumentExprs, log = 1))
+                posteriorVars <- all.vars(parsedTotalPosterior)
+                neededPriorParams <<- gsub('^prior_', '', posteriorVars[grepl('^prior_', posteriorVars)])
+                neededContributionNames <<- posteriorVars[grepl('^contribution_', posteriorVars)]
+                neededContributionDims <<- inferContributionTermDimensions(prior)
+            }
         },
         inferContributionTermDimensions = function(prior) {
             distToLookup <- if(dDistribution %in% distributions$namesVector) dDistribution else if(prior %in% distributions$namesVector) prior else stop('cannot locate prior or posterior distribution in conjugacy processing')
@@ -957,7 +980,7 @@ cc_makeRDistributionName     <- function(distName)     return(paste0('r', substr
 
 
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
-cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansions=FALSE) {
+cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansions=FALSE, useScalarComponents = FALSE) {
     if(is.numeric(expr)) return(expr)     # return numeric
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) { # expr is a name, or an indexed name
         if(nimbleOptions()$allowDynamicIndexing) {
@@ -997,7 +1020,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             }
         }
         exprText <- deparse(expr)
-        expandedNodeNamesRaw <- model$expandNodeNames(exprText)
+        expandedNodeNamesRaw <- model$expandNodeNames(exprText, returnScalarComponents = useScalarComponents)
         ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
         expandedNodeNames <- if((exprText %in% expandedNodeNamesRaw) || skipExpansions) exprText else expandedNodeNamesRaw
         if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
@@ -1011,19 +1034,22 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
                 newExpr <- model$getValueExpr(exprText)
-                return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansions))
+                return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansions,
+                                                  useScalarComponents = useScalarComponents))
             }
             if(type == 'RHSonly') return(expr)
             stop('something went wrong with Daniel\'s understanding of newNimbleModel')
         }
         newExpr <- cc_createStructureExpr(model, exprText)
         for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
+            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions,
+                                                       useScalarComponents = useScalarComponents)
         return(newExpr)
     }
     if(is.call(expr)) {
         for(i in seq_along(expr)[-1])
-            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansions)
+            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansions,
+                                                    useScalarComponents = useScalarComponents)
         return(expr)
     }
     stop(paste0('something went wrong processing: ', deparse(expr)))
@@ -1056,11 +1082,12 @@ cc_linkCheck <- function(linearityCheck, link) {
 
 ## checks the parameter expressions in the stochastic distribution of depNode
 ## returns FALSE if we find 'targetNode' in ***more than one*** of these expressions
-cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansions=FALSE) {
+cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansions=FALSE, useScalarComponents = FALSE) {
     paramsList <- as.list(model$getValueExpr(depNode)[-1])       # extracts the list of all parameters, for the distribution of depNode
     timesFound <- 0   ## for success, we'll find targetNode in only *one* parameter expression
     for(i in seq_along(paramsList)) {
-        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansions)
+        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansions,
+                                           useScalarComponents = useScalarComponents)
         if(cc_vectorizedComponentCheck(targetNode, expr))   return(FALSE)
         if(cc_nodeInExpr(targetNode, expr))     { timesFound <- timesFound + 1 }    ## we found 'targetNode'
     }
