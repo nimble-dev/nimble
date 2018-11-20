@@ -867,8 +867,11 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
 
             nfCppDef <- getNimbleFunctionCppDef(generatorName = generatorName)
 
-            ans <- nfCppDef$buildCallable(nf, dll = dll, asTopLevel = asTopLevel)
-            ok <- !is.null(ans)
+            ok <- !is.null(nfCppDef)
+            if(ok) {
+                ans <- nfCppDef$buildCallable(nf, dll = dll, asTopLevel = asTopLevel)
+                ok <- !is.null(ans)
+            }
             ## ok <- TRUE
             ## if(asTopLevel) {
             ##     if(is.null(nfCppDef$Rgenerator)) ok <- FALSE
