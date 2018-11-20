@@ -240,7 +240,7 @@ buildMCMC <- nimbleFunction(
             logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
             logAvgProb <- 0
             pWAIC <- 0
-            currentVals <- values(model)
+            currentVals <- values(model, sampledNodes)
             for(i in 1:numMCMCSamples) {
                 copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburninPostThinning)
                 model$simulate(paramDeps)
@@ -256,8 +256,8 @@ buildMCMC <- nimbleFunction(
                 pWAIC <- pWAIC + pointLogPredVar
             }
             WAIC <- -2*(logAvgProb - pWAIC)
-            values(model) <<- currentVals
-            model$calculate()
+            values(model, sampledNodes) <<- currentVals
+            model$calculate(paramDeps)
             returnType(double())
             return(WAIC)
         }),
