@@ -108,7 +108,7 @@ CAR_normal_checkAdjWeightsNum <- function(adj, weights, num) {
     if(sum(num) == 0) stop('dcar_normal() distribution must specify some neighbors')
     if(sum(num) != length(adj)) stop('length of adj argument to dcar_normal() must be equal to total number of neighbors specified in num argument')
     if(length(adj) != length(weights)) stop('length of adj and weight arguments to dcar_normal() must be the same')
-    if(any(weights <= 0)) stop('weights argument to dcar_normal() should only contain positive values')
+    ## if(any(weights <= 0)) stop('weights argument to dcar_normal() should only contain positive values')  ## negative OK
 }
 
 
@@ -121,7 +121,7 @@ CAR_proper_checkAdjNumCM <- function(adj, num, C, M) {
     if(length(num) != length(M)) stop('length of num and M arguments to dcar_proper() must be the same')
     if(sum(num) != length(adj)) stop('length of adj argument to dcar_proper() must be equal to total number of neighbors specified in num argument')
     if(length(adj) != length(C)) stop('length of adj and C arguments to dcar_proper() must be the same')
-    if(any(C <= 0)) stop('C argument to dcar_proper() should only contain positive values')
+    ## if(any(C <= 0)) stop('C argument to dcar_proper() should only contain positive values')  ## negative OK
     ## if(any(C > 1)) stop('C argument to dcar_proper() values cannot exceed one')  ## don't enforce
     ## Mi = -1234 indicates M was auto-generated, and region i has 0 neighbors:
     if(any((M < 0) & (M != -1234))) stop('M argument to dcar_proper() should only contain positive values (conditional variances)')

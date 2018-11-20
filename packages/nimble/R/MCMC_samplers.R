@@ -159,7 +159,7 @@ sampler_RW <- nimbleFunction(
         propLogScale <- 0
         if(logScale) { propLogScale <- rnorm(1, mean = 0, sd = scale)
                        propValue <- currentValue * exp(propLogScale)
-                   } else         propValue <- rnorm(1, mean = currentValue,  sd = scale)
+        } else         propValue <- rnorm(1, mean = currentValue,  sd = scale)
         if(reflective) {
             lower <- model$getBound(target, 'lower')
             upper <- model$getBound(target, 'upper')
@@ -556,7 +556,7 @@ sampler_ess <- nimbleFunction(
         ##target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
         ##target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
         ## checks
-        if(length(target) > 1)                              stop('elliptical slice sampler only applies to one target node')
+        if(length(target) > 1)                          stop('elliptical slice sampler only applies to one target node')
         if(model$getDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
     },
     run = function() {
@@ -1539,6 +1539,124 @@ sampler_RW_dirichlet <- nimbleFunction(
 )
 
 
+######################################################################################
+### RW_wishart sampler for non-conjugate Wishart and inverse-Wishart distributions ###
+######################################################################################
+
+#' @rdname samplers
+#' @export
+sampler_RW_wishart <- nimbleFunction(
+    name = 'sampler_RW_wishart',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive       <- if(!is.null(control$adaptive))       control$adaptive       else TRUE
+        adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
+        scale          <- if(!is.null(control$scale))          control$scale          else 1
+        propCov        <- if(!is.null(control$propCov))        control$propCov        else 'identity'
+        ## node list generation
+        target <- model$expandNodeNames(target)
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        ## numeric value generation
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        d <- sqrt(length(targetAsScalar))
+        nTheta <- d*(d+1)/2
+        if(is.character(propCov) && propCov == 'identity')     propCov <- diag(nTheta)
+        propCovOriginal <- propCov
+        chol_propCov <- chol(propCov)
+        chol_propCov_scale <- scale * chol_propCov
+        empirSamp <- matrix(0, nrow=adaptInterval, ncol=nTheta)
+        thetaVec      <- numeric(nTheta)
+        thetaVec_prop <- numeric(nTheta)
+        currentValue      <- array(0, c(d,d))
+        currentValue_chol <- array(0, c(d,d))
+        propValue         <- array(0, c(d,d))
+        propValue_chol    <- array(0, c(d,d))
+        ## nested function and function list definitions
+        my_calcAdaptationFactor <- calcAdaptationFactor(nTheta)
+        ## checks
+        dist <- model$getDistribution(target)
+        if(d < 2)                             stop('RW_wishart sampler requires target node dimension to be at least 2x2')
+        if(class(propCov) != 'matrix')        stop('propCov must be a matrix')
+        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric')
+        if(!all(dim(propCov) == nTheta))      stop('propCov matrix must have dimension ', d, 'x', d)
+        if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
+    },
+    run = function() {
+        currentValue <<- model[[target]]
+        currentValue_chol <<- chol(currentValue)
+        ## calculate thetaVec
+        for(i in 1:d)   thetaVec[i] <<- log(currentValue_chol[i,i])
+        nextInd <- d + 1
+        for(i in 1:(d-1)) {
+            for(j in (i+1):d) {
+                thetaVec[nextInd] <<- currentValue_chol[i,j]
+                nextInd <- nextInd + 1
+            }
+        }
+        ## generate thetaVec proposal on transformed scale
+        thetaVec_prop <<- rmnorm_chol(1, thetaVec, chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
+        ## un-transform thetaVec_prop to get propValue_chol
+        for(i in 1:d)   propValue_chol[i,i] <<- exp(thetaVec_prop[i])
+        nextInd <- d + 1
+        for(i in 1:(d-1)) {
+            for(j in (i+1):d) {
+                propValue_chol[i,j] <<- thetaVec_prop[nextInd]
+                nextInd <- nextInd + 1
+            }
+        }
+        ## matrix multiply to get proposal value (matrix)
+        model[[target]] <<- t(propValue_chol) %*% propValue_chol
+        ## decide and jump
+        logMHR <- calculateDiff(model, calcNodes)
+        deltaDiag <- thetaVec_prop[1:d]-thetaVec[1:d]
+        for(i in 1:d)   logMHR <- logMHR + (d+2-i)*deltaDiag[i]  ## took me quite a while to derive this
+        jump <- decide(logMHR)
+        if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    methods = list(
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(!jump)    empirSamp[timesRan, 1:nTheta] <<- thetaVec
+            if(jump)     empirSamp[timesRan, 1:nTheta] <<- thetaVec_prop
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
+                scale <<- scale * adaptFactor
+                ## calculate empirical covariance, and adapt proposal covariance
+                gamma1 <- my_calcAdaptationFactor$gamma1
+                for(i in 1:nTheta)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
+                empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
+                propCov <<- propCov + gamma1 * (empirCov - propCov)
+                chol_propCov <<- chol(propCov)
+                chol_propCov_scale <<- chol_propCov * scale
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        reset = function() {
+            scale   <<- scaleOriginal
+            propCov <<- propCovOriginal
+            chol_propCov <<- chol(propCov)
+            chol_propCov_scale <<- chol_propCov * scale
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            my_calcAdaptationFactor$reset()
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+
 ####################################################################################################
 ### CAR_scalar_{postPred,conjugate,RW} component samplers for dcar_{normal,proper} distributions ###
 ####################################################################################################
@@ -1982,7 +2100,6 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item includesTarget. Logical variable indicating whether the return value of llFunction includes the log-likelihood associated with target.  This is a required element with no default.
 #' }
 #'
-#'
 #' @section RW_PF sampler:
 #'
 #' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF} sampler uses a Metropolis-Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap, auxiliary, or user defined particle filter can be used to integrate over latent states.
@@ -2045,6 +2162,16 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item scale. The initial value of the proposal standard deviation (on the log scale) for each component of the reparameterized Dirichlet distribution.  If adaptive = FALSE, the proposal standard deviations will never change. (default = 1)
 #' }
 #'
+#' @section RW_wishart sampler:
+#'
+#' This sampler is designed for sampling non-conjugate Wishart and inverse-Wishart distributions.  More generally, it can update any symmetric positive-definite matrix (for example, scaled covaraiance or precision matrices).  The sampler performs block Metropolis-Hastings updates following a transformation to an unconstrained scale (Cholesky factorization of the original matrix, then taking the log of the main diagonal elements.
+#'
+#' The \code{RW_wishart} sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale and proposal covariance for the multivariate normal Metropolis-Hasting proposals, to achieve a theoretically desirable acceptance rate for each. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
+#' \item scale. The initial value of the scalar multiplier for the multivariate normal Metropolis-Hastings proposal covariance.  If adaptive = FALSE, scale will never change. (default = 1)
+#' }
 #'
 #' @section CAR_normal sampler:
 #'
@@ -2070,16 +2197,13 @@ sampler_CAR_proper <- nimbleFunction(
 #' \item \code{scale}. The initial value of the normal proposal standard deviation for any component RW samplers.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
 #' }
 #'
-#'
 #' @section CRP sampler:
 #' 
 #' EXPERIMENTAL The CRP sampler is designed for fitting models involving Dirichlet process mixtures. It is exclusively assigned by NIMBLE's default MCMC configuration to nodes having the Chinese Restaurant Process distribution, \code{dCRP}. It executes sequential sampling of each component of the node (i.e., the cluster membership of each element being clustered). Internally, either of two samplers can be assigned, depending on conjugate or non-conjugate structures within the model. For conjugate and non-conjugate model structures, updates are based on Algorithm 2 and Algorithm 8 in Neal (2000), respectively.
 #'  
-#'  
 #' @section CRP_concentration sampler:
 #' 
 #' EXPERIMENTAL The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using theChinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and is and can only be used when the prior for the concentration is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
-#' 
 #' 
 #' @section posterior_predictive sampler:
 #'
@@ -2091,7 +2215,7 @@ sampler_CAR_proper <- nimbleFunction(
 #'
 #' @name samplers
 #'
-#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block CRP CRP_concentration DPmeasure
+#' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_dirichlet RW_wishart RW_llFunction slice AF_slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_dirichlet sampler_RW_wishart sampler_RW_llFunction sampler_slice sampler_AF_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block CRP CRP_concentration DPmeasure
 #'
 #' @examples
 #' ## y[1] ~ dbern() or dbinom():

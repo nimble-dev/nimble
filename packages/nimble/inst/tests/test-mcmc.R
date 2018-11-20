@@ -763,6 +763,111 @@ test_that('conjugate Wishart setup', {
     
 })
 
+test_that('using RW_wishart sampler on non-conjugate Wishart node', {
+    set.seed(0)
+    trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
+    covs <- c(3, 2, .5)
+    trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
+    Omega = solve(trueCov)
+    n = 20
+    R = diag(rep(1,3))
+    mu = 1:3
+    Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
+    M = 3
+    data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
+    code <- nimbleCode( {
+        for(i in 1:n) {
+            Y[i, 1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M])
+        }
+        Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 4)
+    })
+    newDf = 4 + n
+    newR = R + tcrossprod(Y- mu)
+    OmegaTrueMean = newDf * solve(newR)
+    wishRV <- array(0, c(M, M, 10000))
+    for(i in 1:10000) {
+        z <- t(chol(solve(newR))) %*% matrix(rnorm(3*newDf), ncol = newDf)
+        wishRV[ , , i] <- tcrossprod(z)
+    }
+    OmegaSimTrueSDs = apply(wishRV, c(1,2), sd)
+    allData <- data
+    constants <- list(n = allData$n, M = allData$M, mu = allData$mu, R = allData$R)
+    data <- list(Y = allData$Y)
+    inits <- list(Omega = OmegaTrueMean)
+
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('Omega', 'RW_wishart')
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 10000)
+    d1 <- as.numeric(apply(samples, 2, mean)) - as.numeric(OmegaTrueMean)
+    difference <- sum(round(d1,9) - c(0.024469145, -0.011872571, -0.045035297, -0.011872571, -0.003443918, 0.009363410, -0.045035297,  0.009363410,  0.049971420))
+    expect_true(difference == 0)
+})
+
+
+test_that('using RW_wishart sampler on inverse-Wishart distribution', {
+    code <- nimbleCode( {
+        for(i in 1:n) {
+            Y[i, 1:M] ~ dmnorm(mu[1:M], cov = C[1:M,1:M])
+        }
+        C[1:M,1:M] ~ dinvwish(R[1:M,1:M], 4)
+    })
+    
+    set.seed(0)
+    trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
+    covs <- c(3, 2, .5)
+    trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
+    n = 20
+    R = diag(rep(1,3))
+    mu = 1:3
+    Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
+    M = 3
+    data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
+
+    newDf = 4 + n
+    newR = R + tcrossprod(Y- mu)
+    CTrueMean <- newR / newDf
+    CTrueMeanVec <- as.numeric(CTrueMean)
+    allData <- data
+    constants <- list(n = allData$n, M = allData$M, mu = allData$mu, R = allData$R)
+    data <- list(Y = allData$Y)
+    inits <- list(C = CTrueMean)
+    niter <- 50000
+
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel)
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, niter)
+    conjMean <- as.numeric(apply(samples, 2, mean))
+    conjSD <- as.numeric(apply(samples, 2, sd))
+
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('C', 'RW_wishart')
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, niter)
+    RWMean <- as.numeric(apply(samples, 2, mean))
+    RWSD <- as.numeric(apply(samples, 2, sd))
+
+    expect_true(all(round(as.numeric(RWMean - conjMean), 9) == c(-0.001651758, -0.009675571, 0.004894809, -0.009675571, 0.015533882, -0.008256095, 0.004894809, -0.008256095, 0.002119615)))
+    expect_true(all(round(as.numeric(RWSD - conjSD), 9) == c(0.022803503, -0.010107015, 0.012342044, -0.010107015, 0.006191412, -0.000091101, 0.012342044, -0.000091101, 0.001340032)))
+})
+
+
+
 ## testing conjugate MVN updating with ragged dependencies;
 ## that is, dmnorm dependents of different lengths from the target node
 test_that('conjugate MVN with ragged dependencies', {

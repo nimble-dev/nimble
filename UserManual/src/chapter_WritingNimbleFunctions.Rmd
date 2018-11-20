@@ -211,7 +211,11 @@ myModel$calculate(nodes[2:i])
 myModel$calculate(nodes[ values(model, nodes) + 0.1 < x ])
 ``` 
 
-Note that one cannot create new vectors of nodes in run code.  They
+Note that in the last line of code, one must have that the length of `nodes` is
+equal to that of `values(model, nodes)`, which means that all the nodes in `nodes`
+must be scalar nodes.
+
+Also note that one cannot create new vectors of nodes in run code.  They
 can only be indexed within a call to `calculate`, `calculateDiff`,
 `simulate` or `getLogProb`.
 

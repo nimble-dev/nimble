@@ -97,7 +97,7 @@ MCMCconf <- setRefClass(
             multivariateNodesAsScalars = FALSE,
             enableWAIC = nimbleOptions('enableWAIC'),
             warnNoSamplerAssigned = TRUE,
-            print = FALSE) {
+            print = FALSE, ...) {
             '
 Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
@@ -139,6 +139,8 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
 print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
+
+...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
 '
             if(is(model, 'RmodelBaseClass')) {
                 model <<- model
@@ -154,7 +156,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             enableWAIC <<- enableWAIC
             samplerConfs <<- list()
             samplerExecutionOrder <<- numeric()
-            controlDefaults <<- list()
+            controlDefaults <<- list(...)
             namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
             if(identical(nodes, character())) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -216,11 +218,11 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         }
                         if(nodeDist == 'dmulti')       { addSampler(target = node, type = 'RW_multinomial');     next }
                         if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
+                        if(nodeDist == 'dwish')        { addSampler(target = node, type = 'RW_wishart');         next }
+                        if(nodeDist == 'dinvwish')     { addSampler(target = node, type = 'RW_wishart');         next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
                         if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP');                next }
-                        if(nodeDist == 'dwish')        { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
-                        if(nodeDist == 'dinvwish')     { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate inverse-Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
@@ -288,7 +290,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE) {
+        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE, ...) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
 
@@ -305,6 +307,8 @@ print: Logical argument, specifying whether to print the details of the newly ad
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
+
+...: Additional named arguments passed through ... will be used as additional control list elements.
 
 Details: A single instance of the newly configured sampler is added to the end of the list of samplers for this MCMCconf object.
 
@@ -356,7 +360,8 @@ Invisibly returns a list of the current sampler configurations, which are sample
             ##libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only
             ##if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
             ##requiredControlNames <- controlNamesLibrary[[libraryTag]]
-            thisControlList <- mcmc_generateControlListArgument(control=control, controlDefaults=controlDefaults)  ## should name arguments
+            controlArgs <- c(control, list(...))
+            thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=target, control=thisControlList, model=model)
@@ -947,18 +952,16 @@ print: Logical argument specifying whether to print the resulting ordered list o
 	    ## dirichlet
             addRule(quote(nodeDistribution == 'ddirch'), 'RW_dirichlet')
             
+	    ## wishart
+            addRule(quote(nodeDistribution == 'dwish'), 'RW_wishart')
+            
+            ## inverse-wishart
+            addRule(quote(nodeDistribution == 'dinvwish'), 'RW_wishart')
+            
             ## CAR models
             addRule(quote(model$getDistribution(node) == 'dcar_normal'), 'CAR_normal')
             addRule(quote(model$getDistribution(node) == 'dcar_proper'), 'CAR_proper')
 
-            ## Wishart
-            addRule(quote(model$getDistribution(node) == 'dwish'),
-                    quote(stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.')))
-            
-            ## inverse-Wishart
-            addRule(quote(model$getDistribution(node) == 'dinvwish'),
-                    quote(stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate inverse-Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.')))
-            
             ## multivariate & multivariateNodesAsScalars: univariate RW
             addRule(quote(isMultivariate && multivariateNodesAsScalars),
                     quote(for(scalarNode in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
@@ -1051,7 +1054,7 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@param autoBlock A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.
 #'@param oldConf An optional MCMCconf object to modify rather than creating a new MCMCconf from scratch
-#'@param ... Additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}
+#'@param ... Additional named control list elements for default samplers, or additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}
 #'@author Daniel Turek
 #'@export 
 #'@details See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object
@@ -1085,7 +1088,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          multivariateNodesAsScalars = multivariateNodesAsScalars,
                          enableWAIC = enableWAIC,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
-                         print = print)
+                         print = print, ...)
     return(thisConf)	
 }
 

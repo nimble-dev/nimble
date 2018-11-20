@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html >
+
+<head>
+
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title></title>
+  <meta name="description" content="This is the NIMBLE User Manual.">
+  <meta name="generator" content="bookdown 0.7 and GitBook 2.6.7">
+
+  <meta property="og:title" content="" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:image" content="nimble-icon.png" />
+  <meta property="og:description" content="This is the NIMBLE User Manual." />
+  <meta name="github-repo" content="nimble-dev/nimble" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="" />
+  
+  <meta name="twitter:description" content="This is the NIMBLE User Manual." />
+  <meta name="twitter:image" content="nimble-icon.png" />
+
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  
+  
+<link rel="prev" href="cha-writing-models.html">
+<link rel="next" href="cha-mcmc.html">
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<img src="./nimble-icon.png"
+     width=100>
+<li><a href="./">NIMBLE User Manual, Version 0.6-12</a></li>
+<li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
+<li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
+
+<li class="divider"></li>
+<li class="part"><span><b>I Introduction</b></span></li>
+<li class="chapter" data-level="1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html"><i class="fa fa-check"></i><b>1</b> Welcome to NIMBLE</a><ul>
+<li class="chapter" data-level="1.1" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#sec:what-is-nimble"><i class="fa fa-check"></i><b>1.1</b> What does NIMBLE do?</a></li>
+<li class="chapter" data-level="1.2" data-path="cha-welcome-nimble.html"><a href="cha-welcome-nimble.html#how-to-use-this-manual"><i class="fa fa-check"></i><b>1.2</b> How to use this manual</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html"><i class="fa fa-check"></i><b>2</b> Lightning introduction</a><ul>
+<li class="chapter" data-level="2.1" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:brief-example"><i class="fa fa-check"></i><b>2.1</b> A brief example</a></li>
+<li class="chapter" data-level="2.2" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-model"><i class="fa fa-check"></i><b>2.2</b> Creating a model</a></li>
+<li class="chapter" data-level="2.3" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:compiling-model"><i class="fa fa-check"></i><b>2.3</b> Compiling the model</a></li>
+<li class="chapter" data-level="2.4" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:intro-runMCMC"><i class="fa fa-check"></i><b>2.4</b> One-line invocation of MCMC</a></li>
+<li class="chapter" data-level="2.5" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-mcmc"><i class="fa fa-check"></i><b>2.5</b> Creating, compiling and running a basic MCMC configuration</a></li>
+<li class="chapter" data-level="2.6" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:customizing-mcmc"><i class="fa fa-check"></i><b>2.6</b> Customizing the MCMC</a></li>
+<li class="chapter" data-level="2.7" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:running-mcem"><i class="fa fa-check"></i><b>2.7</b> Running MCEM</a></li>
+<li class="chapter" data-level="2.8" data-path="cha-lightning-intro.html"><a href="cha-lightning-intro.html#sec:creating-your-own"><i class="fa fa-check"></i><b>2.8</b> Creating your own functions</a></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html"><i class="fa fa-check"></i><b>3</b> More introduction</a><ul>
+<li class="chapter" data-level="3.1" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#nimble-adopts-and-extends-the-bugs-language-for-specifying-models"><i class="fa fa-check"></i><b>3.1</b> NIMBLE adopts and extends the BUGS language for specifying models</a></li>
+<li class="chapter" data-level="3.2" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-lang-writ"><i class="fa fa-check"></i><b>3.2</b> nimbleFunctions for writing algorithms</a></li>
+<li class="chapter" data-level="3.3" data-path="cha-more-introduction.html"><a href="cha-more-introduction.html#sec:nimble-algor-libr"><i class="fa fa-check"></i><b>3.3</b> The NIMBLE algorithm library</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html"><i class="fa fa-check"></i><b>4</b> Installing NIMBLE</a><ul>
+<li class="chapter" data-level="4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:requ-run-nimble"><i class="fa fa-check"></i><b>4.1</b> Requirements to run NIMBLE</a></li>
+<li class="chapter" data-level="4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:compiler"><i class="fa fa-check"></i><b>4.2</b> Installing a C++ compiler for NIMBLE to use</a><ul>
+<li class="chapter" data-level="4.2.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#os-x"><i class="fa fa-check"></i><b>4.2.1</b> OS X</a></li>
+<li class="chapter" data-level="4.2.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#linux"><i class="fa fa-check"></i><b>4.2.2</b> Linux</a></li>
+<li class="chapter" data-level="4.2.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#windows"><i class="fa fa-check"></i><b>4.2.3</b> Windows</a></li>
+</ul></li>
+<li class="chapter" data-level="4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#installing-the-nimble-package"><i class="fa fa-check"></i><b>4.3</b> Installing the NIMBLE package</a><ul>
+<li class="chapter" data-level="4.3.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#problems-with-installation"><i class="fa fa-check"></i><b>4.3.1</b> Problems with installation</a></li>
+</ul></li>
+<li class="chapter" data-level="4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-your-installation"><i class="fa fa-check"></i><b>4.4</b> Customizing your installation</a><ul>
+<li class="chapter" data-level="4.4.1" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-your-own-copy-of-eigen"><i class="fa fa-check"></i><b>4.4.1</b> Using your own copy of Eigen</a></li>
+<li class="chapter" data-level="4.4.2" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#using-libnimble"><i class="fa fa-check"></i><b>4.4.2</b> Using libnimble</a></li>
+<li class="chapter" data-level="4.4.3" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#sec:blas"><i class="fa fa-check"></i><b>4.4.3</b> BLAS and LAPACK</a></li>
+<li class="chapter" data-level="4.4.4" data-path="cha-installing-nimble.html"><a href="cha-installing-nimble.html#customizing-compilation-of-the-nimble-generated-c"><i class="fa fa-check"></i><b>4.4.4</b> Customizing compilation of the NIMBLE-generated C++</a></li>
+</ul></li>
+</ul></li>
+<li class="part"><span><b>II Models in NIMBLE</b></span></li>
+<li class="chapter" data-level="5" data-path="cha-writing-models.html"><a href="cha-writing-models.html"><i class="fa fa-check"></i><b>5</b> Writing models in NIMBLE’s dialect of BUGS</a><ul>
+<li class="chapter" data-level="5.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:supp-feat-bugs"><i class="fa fa-check"></i><b>5.1</b> Comparison to BUGS dialects supported by WinBUGS, OpenBUGS and JAGS</a><ul>
+<li class="chapter" data-level="5.1.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#supported-features-of-bugs-and-jags"><i class="fa fa-check"></i><b>5.1.1</b> Supported features of BUGS and JAGS</a></li>
+<li class="chapter" data-level="5.1.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:extensions-bugs"><i class="fa fa-check"></i><b>5.1.2</b> NIMBLE’s Extensions to BUGS and JAGS</a></li>
+<li class="chapter" data-level="5.1.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:not-yet-supported"><i class="fa fa-check"></i><b>5.1.3</b> Not-yet-supported features of BUGS and JAGS</a></li>
+</ul></li>
+<li class="chapter" data-level="5.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#writing-models"><i class="fa fa-check"></i><b>5.2</b> Writing models</a><ul>
+<li class="chapter" data-level="5.2.1" data-path="cha-writing-models.html"><a href="cha-writing-models.html#declaring-stochastic-and-deterministic-nodes"><i class="fa fa-check"></i><b>5.2.1</b> Declaring stochastic and deterministic nodes</a></li>
+<li class="chapter" data-level="5.2.2" data-path="cha-writing-models.html"><a href="cha-writing-models.html#sec:more-kinds-bugs"><i class="fa fa-check"></i><b>5.2.2</b> More kinds of BUGS declarations</a></li>
+<li class="chapter" data-level="5.2.3" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:vectorized-versus-scalar-declarations"><i class="fa fa-check"></i><b>5.2.3</b> Vectorized versus scalar declarations</a></li>
+<li class="chapter" data-level="5.2.4" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:dists-and-functions"><i class="fa fa-check"></i><b>5.2.4</b> Available distributions</a></li>
+<li class="chapter" data-level="5.2.5" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-lang-fxns"><i class="fa fa-check"></i><b>5.2.5</b> Available BUGS language functions</a></li>
+<li class="chapter" data-level="5.2.6" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:BUGS-link"><i class="fa fa-check"></i><b>5.2.6</b> Available link functions</a></li>
+<li class="chapter" data-level="5.2.7" data-path="cha-writing-models.html"><a href="cha-writing-models.html#subsec:trunc"><i class="fa fa-check"></i><b>5.2.7</b> Truncation, censoring, and constraints</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="cha-building-models.html"><a href="cha-building-models.html"><i class="fa fa-check"></i><b>6</b> Building and using models</a><ul>
+<li class="chapter" data-level="6.1" data-path="cha-building-models.html"><a href="cha-building-models.html#creating-model-objects"><i class="fa fa-check"></i><b>6.1</b> Creating model objects</a><ul>
+<li class="chapter" data-level="6.1.1" data-path="cha-building-models.html"><a href="cha-building-models.html#using-nimblemodel-to-create-a-model"><i class="fa fa-check"></i><b>6.1.1</b> Using <em>nimbleModel</em> to create a model</a></li>
+<li class="chapter" data-level="6.1.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:readBUGSmodel"><i class="fa fa-check"></i><b>6.1.2</b> Creating a model from standard BUGS and JAGS input files</a></li>
+<li class="chapter" data-level="6.1.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sub:multiple-instances"><i class="fa fa-check"></i><b>6.1.3</b> Making multiple instances from the same model definition</a></li>
+</ul></li>
+<li class="chapter" data-level="6.2" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:nodes-and-variables"><i class="fa fa-check"></i><b>6.2</b> NIMBLE models are objects you can query and manipulate</a><ul>
+<li class="chapter" data-level="6.2.1" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:what-are-nodes-and-variables"><i class="fa fa-check"></i><b>6.2.1</b> What are variables and nodes?</a></li>
+<li class="chapter" data-level="6.2.2" data-path="cha-building-models.html"><a href="cha-building-models.html#determining-the-nodes-and-variables-in-a-model"><i class="fa fa-check"></i><b>6.2.2</b> Determining the nodes and variables in a model</a></li>
+<li class="chapter" data-level="6.2.3" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:accessing-nodes"><i class="fa fa-check"></i><b>6.2.3</b> Accessing nodes</a></li>
+<li class="chapter" data-level="6.2.4" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:how-nodes-are"><i class="fa fa-check"></i><b>6.2.4</b> How nodes are named</a></li>
+<li class="chapter" data-level="6.2.5" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:why-use-node"><i class="fa fa-check"></i><b>6.2.5</b> Why use node names?</a></li>
+<li class="chapter" data-level="6.2.6" data-path="cha-building-models.html"><a href="cha-building-models.html#sec:cdisdata"><i class="fa fa-check"></i><b>6.2.6</b> Checking if a node holds data</a></li>
+</ul></li>
+</ul></li>
+<li class="part"><span><b>III Algorithms in NIMBLE</b></span></li>
+<li class="chapter" data-level="7" data-path="cha-mcmc.html"><a href="cha-mcmc.html"><i class="fa fa-check"></i><b>7</b> MCMC</a><ul>
+<li class="chapter" data-level="7.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:nimbleMCMC"><i class="fa fa-check"></i><b>7.1</b> One-line invocation of MCMC: <em>nimbleMCMC</em></a></li>
+<li class="chapter" data-level="7.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-configuration"><i class="fa fa-check"></i><b>7.2</b> The MCMC configuration</a><ul>
+<li class="chapter" data-level="7.2.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:default-mcmc-conf"><i class="fa fa-check"></i><b>7.2.1</b> Default MCMC configuration</a></li>
+<li class="chapter" data-level="7.2.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:customizing-mcmc-conf"><i class="fa fa-check"></i><b>7.2.2</b> Customizing the MCMC configuration</a></li>
+</ul></li>
+<li class="chapter" data-level="7.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:build-compile-mcmc"><i class="fa fa-check"></i><b>7.3</b> Building and compiling the MCMC</a></li>
+<li class="chapter" data-level="7.4" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:runMCMC"><i class="fa fa-check"></i><b>7.4</b> User-friendly execution of MCMC algorithms: <em>runMCMC</em></a></li>
+<li class="chapter" data-level="7.5" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm"><i class="fa fa-check"></i><b>7.5</b> Running the MCMC</a><ul>
+<li class="chapter" data-level="7.5.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:sampler-time"><i class="fa fa-check"></i><b>7.5.1</b> Measuring sampler computation times: <em>getTimes</em></a></li>
+</ul></li>
+<li class="chapter" data-level="7.6" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:extracting-samples"><i class="fa fa-check"></i><b>7.6</b> Extracting MCMC samples</a></li>
+<li class="chapter" data-level="7.7" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:WAIC"><i class="fa fa-check"></i><b>7.7</b> Calculating WAIC</a></li>
+<li class="chapter" data-level="7.8" data-path="cha-mcmc.html"><a href="cha-mcmc.html#k-fold-cross-validation"><i class="fa fa-check"></i><b>7.8</b> k-fold cross-validation</a></li>
+<li class="chapter" data-level="7.9" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:samplers-provided"><i class="fa fa-check"></i><b>7.9</b> Samplers provided with NIMBLE</a><ul>
+<li class="chapter" data-level="7.9.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#conjugate-gibbs-samplers"><i class="fa fa-check"></i><b>7.9.1</b> Conjugate (‘Gibbs’) samplers</a></li>
+<li class="chapter" data-level="7.9.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customized-log-likelihood-evaluations-rw_llfunction-sampler"><i class="fa fa-check"></i><b>7.9.2</b> Customized log-likelihood evaluations: <em>RW_llFunction sampler</em></a></li>
+<li class="chapter" data-level="7.9.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#particle-mcmc-sampler"><i class="fa fa-check"></i><b>7.9.3</b> Particle MCMC sampler</a></li>
+</ul></li>
+<li class="chapter" data-level="7.10" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmc-example-litters"><i class="fa fa-check"></i><b>7.10</b> Detailed MCMC example: <em>litters</em></a></li>
+<li class="chapter" data-level="7.11" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-compare-mcmcs"><i class="fa fa-check"></i><b>7.11</b> Comparing different MCMCs with <em>MCMCsuite</em> and <em>compareMCMCs</em></a><ul>
+<li class="chapter" data-level="7.11.1" data-path="cha-mcmc.html"><a href="cha-mcmc.html#mcmc-suite-example-litters"><i class="fa fa-check"></i><b>7.11.1</b> MCMC Suite example: <em>litters</em></a></li>
+<li class="chapter" data-level="7.11.2" data-path="cha-mcmc.html"><a href="cha-mcmc.html#sec:mcmcsuite-outputs"><i class="fa fa-check"></i><b>7.11.2</b> MCMC Suite outputs</a></li>
+<li class="chapter" data-level="7.11.3" data-path="cha-mcmc.html"><a href="cha-mcmc.html#customizing-mcmc-suite"><i class="fa fa-check"></i><b>7.11.3</b> Customizing MCMC Suite</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html"><i class="fa fa-check"></i><b>8</b> Sequential Monte Carlo and MCEM</a><ul>
+<li class="chapter" data-level="8.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#particle-filters-sequential-monte-carlo"><i class="fa fa-check"></i><b>8.1</b> Particle Filters / Sequential Monte Carlo</a><ul>
+<li class="chapter" data-level="8.1.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#filtering-algorithms"><i class="fa fa-check"></i><b>8.1.1</b> Filtering Algorithms</a></li>
+<li class="chapter" data-level="8.1.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:particle-mcmc"><i class="fa fa-check"></i><b>8.1.2</b> Particle MCMC (PMCMC)</a></li>
+</ul></li>
+<li class="chapter" data-level="8.2" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#monte-carlo-expectation-maximization-mcem"><i class="fa fa-check"></i><b>8.2</b> Monte Carlo Expectation Maximization (MCEM)</a><ul>
+<li class="chapter" data-level="8.2.1" data-path="cha-algos-provided.html"><a href="cha-algos-provided.html#sec:estimate-mcem-cov"><i class="fa fa-check"></i><b>8.2.1</b> Estimating the Asymptotic Covariance From MCEM</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="cha-spatial.html"><a href="cha-spatial.html"><i class="fa fa-check"></i><b>9</b> Spatial models</a><ul>
+<li class="chapter" data-level="9.1" data-path="cha-spatial.html"><a href="cha-spatial.html#intrinsic-gaussian-car-model-dcar_normal"><i class="fa fa-check"></i><b>9.1</b> Intrinsic Gaussian CAR model: <em>dcar_normal</em></a><ul>
+<li class="chapter" data-level="9.1.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density"><i class="fa fa-check"></i><b>9.1.1</b> Specification and density</a></li>
+<li class="chapter" data-level="9.1.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example"><i class="fa fa-check"></i><b>9.1.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="9.2" data-path="cha-spatial.html"><a href="cha-spatial.html#proper-gaussian-car-model-dcar_proper"><i class="fa fa-check"></i><b>9.2</b> Proper Gaussian CAR model: <em>dcar_proper</em></a><ul>
+<li class="chapter" data-level="9.2.1" data-path="cha-spatial.html"><a href="cha-spatial.html#specification-and-density-1"><i class="fa fa-check"></i><b>9.2.1</b> Specification and density</a></li>
+<li class="chapter" data-level="9.2.2" data-path="cha-spatial.html"><a href="cha-spatial.html#example-1"><i class="fa fa-check"></i><b>9.2.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="9.3" data-path="cha-spatial.html"><a href="cha-spatial.html#sec:spatial-mcmc-sampling-car"><i class="fa fa-check"></i><b>9.3</b> MCMC Sampling of CAR models</a><ul>
+<li class="chapter" data-level="9.3.1" data-path="cha-spatial.html"><a href="cha-spatial.html#initial-values"><i class="fa fa-check"></i><b>9.3.1</b> Initial values</a></li>
+<li class="chapter" data-level="9.3.2" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-neighbor-regions"><i class="fa fa-check"></i><b>9.3.2</b> Zero-neighbor regions</a></li>
+<li class="chapter" data-level="9.3.3" data-path="cha-spatial.html"><a href="cha-spatial.html#zero-mean-constraint"><i class="fa fa-check"></i><b>9.3.3</b> Zero-mean constraint</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="cha-bnp.html"><a href="cha-bnp.html"><i class="fa fa-check"></i><b>10</b> Bayesian nonparametric models</a><ul>
+<li class="chapter" data-level="10.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:bnpmixtures"><i class="fa fa-check"></i><b>10.1</b> Bayesian nonparametric mixture models</a></li>
+<li class="chapter" data-level="10.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:crp"><i class="fa fa-check"></i><b>10.2</b> Chinese Restaurant Process model</a><ul>
+<li class="chapter" data-level="10.2.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-density-2"><i class="fa fa-check"></i><b>10.2.1</b> Specification and density</a></li>
+<li class="chapter" data-level="10.2.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:excrp"><i class="fa fa-check"></i><b>10.2.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="10.3" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:sb"><i class="fa fa-check"></i><b>10.3</b> Stick-breaking model</a><ul>
+<li class="chapter" data-level="10.3.1" data-path="cha-bnp.html"><a href="cha-bnp.html#specification-and-function"><i class="fa fa-check"></i><b>10.3.1</b> Specification and function</a></li>
+<li class="chapter" data-level="10.3.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:exsb"><i class="fa fa-check"></i><b>10.3.2</b> Example</a></li>
+</ul></li>
+<li class="chapter" data-level="10.4" data-path="cha-bnp.html"><a href="cha-bnp.html#mcmc-sampling-of-bnp-models"><i class="fa fa-check"></i><b>10.4</b> MCMC sampling of BNP models</a><ul>
+<li class="chapter" data-level="10.4.1" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcdcrp"><i class="fa fa-check"></i><b>10.4.1</b> Sampling CRP models</a></li>
+<li class="chapter" data-level="10.4.2" data-path="cha-bnp.html"><a href="cha-bnp.html#sec:mcmcsb"><i class="fa fa-check"></i><b>10.4.2</b> Sampling stick-breaking models</a></li>
+</ul></li>
+</ul></li>
+<li class="part"><span><b>IV Programming with NIMBLE</b></span></li>
+<li class="chapter" data-level="" data-path="overview.html"><a href="overview.html"><i class="fa fa-check"></i>Overview</a></li>
+<li class="chapter" data-level="11" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html"><i class="fa fa-check"></i><b>11</b> Writing simple nimbleFunctions</a><ul>
+<li class="chapter" data-level="11.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:RC-intro"><i class="fa fa-check"></i><b>11.1</b> Introduction to simple nimbleFunctions</a></li>
+<li class="chapter" data-level="11.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:r-fiunctions-implemented"><i class="fa fa-check"></i><b>11.2</b> R functions (or variants) implemented in NIMBLE</a><ul>
+<li class="chapter" data-level="11.2.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#finding-help-for-nimbles-versions-of-r-functions"><i class="fa fa-check"></i><b>11.2.1</b> Finding help for NIMBLE’s versions of R functions</a></li>
+<li class="chapter" data-level="11.2.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#basic-operations"><i class="fa fa-check"></i><b>11.2.2</b> Basic operations</a></li>
+<li class="chapter" data-level="11.2.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-math-linear"><i class="fa fa-check"></i><b>11.2.3</b> Math and linear algebra</a></li>
+<li class="chapter" data-level="11.2.4" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimble-dist-funs"><i class="fa fa-check"></i><b>11.2.4</b> Distribution functions</a></li>
+<li class="chapter" data-level="11.2.5" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:basic-flow-control"><i class="fa fa-check"></i><b>11.2.5</b> Flow control: <em>if-then-else</em>, <em>for</em>, <em>while</em>, and <em>stop</em></a></li>
+<li class="chapter" data-level="11.2.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:print"><i class="fa fa-check"></i><b>11.2.6</b> <em>print</em> and <em>cat</em></a></li>
+<li class="chapter" data-level="11.2.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:check-user-interr"><i class="fa fa-check"></i><b>11.2.7</b> Checking for user interrupts: <em>checkInterrupt</em></a></li>
+<li class="chapter" data-level="11.2.8" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#optimization-optim-and-nimoptim"><i class="fa fa-check"></i><b>11.2.8</b> Optimization: <em>optim</em> and <em>nimOptim</em></a></li>
+<li class="chapter" data-level="11.2.9" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:altern-keyw-some"><i class="fa fa-check"></i><b>11.2.9</b> ‘nim’ synonyms for some functions</a></li>
+</ul></li>
+<li class="chapter" data-level="11.3" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-nimble-handles"><i class="fa fa-check"></i><b>11.3</b> How NIMBLE handles types of variables</a><ul>
+<li class="chapter" data-level="11.3.1" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:nimbleList-RCFuns"><i class="fa fa-check"></i><b>11.3.1</b> nimbleList data structures</a></li>
+<li class="chapter" data-level="11.3.2" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:how-types-work"><i class="fa fa-check"></i><b>11.3.2</b> How numeric types work</a></li>
+</ul></li>
+<li class="chapter" data-level="11.4" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:decl-argum-return"><i class="fa fa-check"></i><b>11.4</b> Declaring argument and return types</a></li>
+<li class="chapter" data-level="11.5" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:comp-nimbl-pass"><i class="fa fa-check"></i><b>11.5</b> Compiled nimbleFunctions pass arguments by reference</a></li>
+<li class="chapter" data-level="11.6" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-external-code"><i class="fa fa-check"></i><b>11.6</b> Calling external compiled code</a></li>
+<li class="chapter" data-level="11.7" data-path="cha-RCfunctions.html"><a href="cha-RCfunctions.html#sec:calling-R-code"><i class="fa fa-check"></i><b>11.7</b> Calling uncompiled R functions from compiled nimbleFunctions</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="cha-user-defined.html"><a href="cha-user-defined.html"><i class="fa fa-check"></i><b>12</b> Creating user-defined BUGS distributions and functions</a><ul>
+<li class="chapter" data-level="12.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-functions"><i class="fa fa-check"></i><b>12.1</b> User-defined functions</a></li>
+<li class="chapter" data-level="12.2" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:user-distributions"><i class="fa fa-check"></i><b>12.2</b> User-defined distributions</a><ul>
+<li class="chapter" data-level="12.2.1" data-path="cha-user-defined.html"><a href="cha-user-defined.html#sec:registerDistributions"><i class="fa fa-check"></i><b>12.2.1</b> Using <em>registerDistributions</em> for alternative parameterizations and providing other information</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="cha-using-models.html"><a href="cha-using-models.html"><i class="fa fa-check"></i><b>13</b> Working with NIMBLE models</a><ul>
+<li class="chapter" data-level="13.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:accessing-variables"><i class="fa fa-check"></i><b>13.1</b> The variables and nodes in a NIMBLE model</a><ul>
+<li class="chapter" data-level="13.1.1" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:get-nodes"><i class="fa fa-check"></i><b>13.1.1</b> Determining the nodes in a model</a></li>
+<li class="chapter" data-level="13.1.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:introduced-nodes"><i class="fa fa-check"></i><b>13.1.2</b> Understanding lifted nodes</a></li>
+<li class="chapter" data-level="13.1.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdgetdependencies"><i class="fa fa-check"></i><b>13.1.3</b> Determining dependencies in a model</a></li>
+</ul></li>
+<li class="chapter" data-level="13.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:nodeInfo"><i class="fa fa-check"></i><b>13.2</b> Accessing information about nodes and variables</a><ul>
+<li class="chapter" data-level="13.2.1" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-distributional-information-about-a-node"><i class="fa fa-check"></i><b>13.2.1</b> Getting distributional information about a node</a></li>
+<li class="chapter" data-level="13.2.2" data-path="cha-using-models.html"><a href="cha-using-models.html#getting-information-about-a-distribution"><i class="fa fa-check"></i><b>13.2.2</b> Getting information about a distribution</a></li>
+<li class="chapter" data-level="13.2.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getParam"><i class="fa fa-check"></i><b>13.2.3</b> Getting distribution parameter values for a node</a></li>
+<li class="chapter" data-level="13.2.4" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:getBound"><i class="fa fa-check"></i><b>13.2.4</b> Getting distribution bounds for a node</a></li>
+</ul></li>
+<li class="chapter" data-level="13.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdcalc-cdsim-cdgetl"><i class="fa fa-check"></i><b>13.3</b> Carrying out model calculations</a><ul>
+<li class="chapter" data-level="13.3.1" data-path="cha-using-models.html"><a href="cha-using-models.html#core-model-operations-calculation-and-simulation"><i class="fa fa-check"></i><b>13.3.1</b> Core model operations: calculation and simulation</a></li>
+<li class="chapter" data-level="13.3.2" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:cdsimn-cdcalcn-cdget"><i class="fa fa-check"></i><b>13.3.2</b> Pre-defined nimbleFunctions for operating on model nodes: <em>simNodes</em>, <em>calcNodes</em>, and <em>getLogProbNodes</em></a></li>
+<li class="chapter" data-level="13.3.3" data-path="cha-using-models.html"><a href="cha-using-models.html#sec:access-log-prob"><i class="fa fa-check"></i><b>13.3.3</b> Accessing log probabilities via <em>logProb</em> variables</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="cha-data-structures.html"><a href="cha-data-structures.html"><i class="fa fa-check"></i><b>14</b> Data structures in NIMBLE</a><ul>
+<li class="chapter" data-level="14.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:modelValues-struct"><i class="fa fa-check"></i><b>14.1</b> The modelValues data structure</a><ul>
+<li class="chapter" data-level="14.1.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#creating-modelvalues-objects"><i class="fa fa-check"></i><b>14.1.1</b> Creating modelValues objects</a></li>
+<li class="chapter" data-level="14.1.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:access-cont-modelv"><i class="fa fa-check"></i><b>14.1.2</b> Accessing contents of modelValues</a></li>
+</ul></li>
+<li class="chapter" data-level="14.2" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:nimbleLists"><i class="fa fa-check"></i><b>14.2</b> The nimbleList data structure</a><ul>
+<li class="chapter" data-level="14.2.1" data-path="cha-data-structures.html"><a href="cha-data-structures.html#sec:eigen-nimFunctions"><i class="fa fa-check"></i><b>14.2.1</b> Using <em>eigen</em> and <em>svd</em> in nimbleFunctions</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html"><i class="fa fa-check"></i><b>15</b> Writing nimbleFunctions to interact with models</a><ul>
+<li class="chapter" data-level="15.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:writ-nimble-funct"><i class="fa fa-check"></i><b>15.1</b> Overview</a></li>
+<li class="chapter" data-level="15.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-comp-nimbl"><i class="fa fa-check"></i><b>15.2</b> Using and compiling nimbleFunctions</a></li>
+<li class="chapter" data-level="15.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#writing-setup-code"><i class="fa fa-check"></i><b>15.3</b> Writing setup code</a><ul>
+<li class="chapter" data-level="15.3.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#useful-tools-for-setup-functions"><i class="fa fa-check"></i><b>15.3.1</b> Useful tools for setup functions</a></li>
+<li class="chapter" data-level="15.3.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-modify-numer"><i class="fa fa-check"></i><b>15.3.2</b> Accessing and modifying numeric values from setup</a></li>
+<li class="chapter" data-level="15.3.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#determining-numeric-types-in-nimblefunctions"><i class="fa fa-check"></i><b>15.3.3</b> Determining numeric types in nimbleFunctions</a></li>
+<li class="chapter" data-level="15.3.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:determ-pers-texttts"><i class="fa fa-check"></i><b>15.3.4</b> Control of setup outputs</a></li>
+</ul></li>
+<li class="chapter" data-level="15.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:nimble-lang-comp"><i class="fa fa-check"></i><b>15.4</b> Writing run code</a><ul>
+<li class="chapter" data-level="15.4.1" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:driv-models:-calc"><i class="fa fa-check"></i><b>15.4.1</b> Driving models: <em>calculate</em>, <em>calculateDiff</em>, <em>simulate</em>, <em>getLogProb</em></a></li>
+<li class="chapter" data-level="15.4.2" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-and-setting-variable-and-node-values"><i class="fa fa-check"></i><b>15.4.2</b> Getting and setting variable and node values</a></li>
+<li class="chapter" data-level="15.4.3" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#getting-parameter-values-and-node-bounds"><i class="fa fa-check"></i><b>15.4.3</b> Getting parameter values and node bounds</a></li>
+<li class="chapter" data-level="15.4.4" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:access-model-modelv"><i class="fa fa-check"></i><b>15.4.4</b> Using modelValues objects</a></li>
+<li class="chapter" data-level="15.4.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-model-variable"><i class="fa fa-check"></i><b>15.4.5</b> Using model variables and modelValues in expressions</a></li>
+<li class="chapter" data-level="15.4.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:incl-other-meth"><i class="fa fa-check"></i><b>15.4.6</b> Including other methods in a nimbleFunction</a></li>
+<li class="chapter" data-level="15.4.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:using-other-nimbl"><i class="fa fa-check"></i><b>15.4.7</b> Using other nimbleFunctions</a></li>
+<li class="chapter" data-level="15.4.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:virt-nimbl-nimbl"><i class="fa fa-check"></i><b>15.4.8</b> Virtual nimbleFunctions and nimbleFunctionLists</a></li>
+<li class="chapter" data-level="15.4.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#character-objects"><i class="fa fa-check"></i><b>15.4.9</b> Character objects</a></li>
+<li class="chapter" data-level="15.4.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-defined-data"><i class="fa fa-check"></i><b>15.4.10</b> User-defined data structures</a></li>
+</ul></li>
+<li class="chapter" data-level="15.5" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:user-samplers"><i class="fa fa-check"></i><b>15.5</b> Example: writing user-defined samplers to extend NIMBLE’s MCMC engine</a></li>
+<li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
+<li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
+<li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
+<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.9</b> Reducing memory usage</a></li>
+</ul></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./"></a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="cha:building-models" class="section level1">
+<h1><span class="header-section-number">Chapter 6</span> Building and using models</h1>
+<p>This chapter explains how to build and manipulate model objects starting from BUGS code.</p>
+<div id="creating-model-objects" class="section level2">
+<h2><span class="header-section-number">6.1</span> Creating model objects</h2>
+<p>NIMBLE provides two functions for creating model objects: <code>nimbleModel</code> and <code>readBUGSmodel</code>. The first, <code>nimbleModel</code>, is more general and was illustrated in Chapter <a href="cha-lightning-intro.html#cha:lightning-intro">2</a>. The second, <code>readBUGSmodel</code> provides compatibility with BUGS file formats for models, variables, data, and initial values for MCMC.</p>
+<p>In addition one can create new model objects from existing model objects.</p>
+<div id="using-nimblemodel-to-create-a-model" class="section level3">
+<h3><span class="header-section-number">6.1.1</span> Using <em>nimbleModel</em> to create a model</h3>
+<p><code>nimbleModel</code> processes BUGS code to determine all the nodes, variables, and their relationships in a model. Any constants must be provided at this step. Data and initial values can optionally be provided. BUGS code passed to <code>nimbleModel</code> must go through <code>nimbleCode</code>.</p>
+<p>We look again at the pump example from the introduction:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({ 
+  for (i in <span class="dv">1</span>:N){
+      theta[i] ~<span class="st"> </span><span class="kw">dgamma</span>(alpha,beta);
+      lambda[i] &lt;-<span class="st"> </span>theta[i]*t[i];
+      x[i] ~<span class="st"> </span><span class="kw">dpois</span>(lambda[i])
+  }
+  alpha ~<span class="st"> </span><span class="kw">dexp</span>(<span class="fl">1.0</span>);
+  beta ~<span class="st"> </span><span class="kw">dgamma</span>(<span class="fl">0.1</span>,<span class="fl">1.0</span>);
+})
+
+pumpConsts &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>,
+               <span class="dt">t =</span> <span class="kw">c</span>(<span class="fl">94.3</span>, <span class="fl">15.7</span>, <span class="fl">62.9</span>, <span class="dv">126</span>, <span class="fl">5.24</span>,
+                 <span class="fl">31.4</span>, <span class="fl">1.05</span>, <span class="fl">1.05</span>, <span class="fl">2.1</span>, <span class="fl">10.5</span>))
+
+pumpData &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">14</span>, <span class="dv">3</span>, <span class="dv">19</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">4</span>, <span class="dv">22</span>))
+
+pumpInits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">alpha =</span> <span class="dv">1</span>, <span class="dt">beta =</span> <span class="dv">1</span>,
+              <span class="dt">theta =</span> <span class="kw">rep</span>(<span class="fl">0.1</span>, pumpConsts$N))
+
+pump &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(<span class="dt">code =</span> pumpCode, <span class="dt">name =</span> <span class="st">&quot;pump&quot;</span>, <span class="dt">constants =</span> pumpConsts,
+                    <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits)</code></pre></div>
+<div id="sec:data-constants" class="section level4">
+<h4><span class="header-section-number">6.1.1.1</span> Data and constants</h4>
+<p>NIMBLE makes a distinction between data and constants:</p>
+<ul>
+<li><em>Constants</em> can never be changed and must be provided when a model is defined. For example, a vector of known index values, such as for block indices, helps define the model graph itself and must be provided as constants. Variables used in the index ranges of for-loops must also be provided as constants.</li>
+<li><em>Data</em> is a label for the role a node plays in the model. Nodes marked as data will by default be protected from any functions that would simulate over their values (see <code>simulate</code> in Chapter <a href="cha-using-models.html#cha:using-models">13</a>), but it is possible to over-ride that default or to change their values by direct assignment. This allows an algorithm to be applied to many data sets in the same model without re-creating the model each time. It also allows simulation of data in a model.<br />
+<!---  TODO: I don't think this statement is true (i.e., setData()): 
+  % Data must be provided when an --> <!--- instance of a model is created from the model definition, although 
+  % they can also be provided earlier when a model is defined. --></li>
+</ul>
+<p>WinBUGS, OpenBUGS and JAGS do not allow data values to be changed or different nodes to be labeled as data without starting from the beginning again. Hence they do not distinguish between constants and data.</p>
+<p>For compatibility with BUGS and JAGS, NIMBLE allows both to be provided in the <code>constants</code> argument to <code>nimbleModel</code>, in which case NIMBLE handles values for stochastic nodes as data and everything else as constants.</p>
+<p>Values for nodes that appear only on the right-hand side of BUGS declarations (e.g., covariates/predictors) can be provided as constants or as data or initial values. There is no real difference between providing as data or initial values and the values can be added after building a model via <code>setInits</code> or <code>setData</code>.</p>
+</div>
+<div id="providing-data-and-initial-values-to-an-existing-model" class="section level4">
+<h4><span class="header-section-number">6.1.1.2</span> Providing data and initial values to an existing model</h4>
+<p>Whereas constants must be provided during the call to <code>nimbleModel</code>, data and initial values can be provided later via the model member functions <code>setData</code> and <code>setInits</code>. For example, if <code>pumpData</code> is a named list of data values (as above), then <code>pump$setData(pumpData)</code> sets the named variables to the values in the list.</p>
+<p><code>setData</code> does two things: it sets the values of the data nodes, and it flags those nodes as containing data. nimbleFunction programmers can then use that information to control whether an algorithm should over-write data or not. For example, NIMBLE’s <code>simulate</code> functions by default do not overwrite data values but can be told to do so. Values of data variables can be replaced, and the indication of which nodes should be treated as data can be reset by using the <code>resetData</code> method, e.g. <code>pump$resetData()</code>.</p>
+</div>
+<div id="missing-data-values" class="section level4">
+<h4><span class="header-section-number">6.1.1.3</span> Missing data values</h4>
+<p>Sometimes one needs a model variable to have a mix of data and non-data, often due to missing data values. In NIMBLE, when data values are provided, any nodes with <code>NA</code> values will <em>not</em> be labeled as data. A node following a multivariate distribution must be either entirely observed or entirely missing.</p>
+<p>Here’s an example of running an MCMC on the <em>pump</em> model, with two of the observations taken to be missing. Some of the steps in this example are documented more below. NIMBLE’s default MCMC configuration will treat the missing values as unknowns to be sampled, as can be seen in the MCMC output here.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMiss &lt;-<span class="st"> </span>pump$<span class="kw">newModel</span>()
+pumpMiss$<span class="kw">resetData</span>()
+pumpDataNew &lt;-<span class="st"> </span>pumpData
+pumpDataNew$x[<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)] &lt;-<span class="st"> </span><span class="ot">NA</span>
+pumpMiss$<span class="kw">setData</span>(pumpDataNew)
+
+pumpMissConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(pumpMiss)
+pumpMissConf$<span class="kw">addMonitors</span>(<span class="st">&#39;x&#39;</span>, <span class="st">&#39;alpha&#39;</span>, <span class="st">&#39;beta&#39;</span>, <span class="st">&#39;theta&#39;</span>)</code></pre></div>
+<pre><code>## thin = 1: alpha, beta, x, theta</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpMissMCMC &lt;-<span class="st"> </span><span class="kw">buildMCMC</span>(pumpMissConf)
+Cobj &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(pumpMiss, pumpMissMCMC)
+
+niter &lt;-<span class="st"> </span><span class="dv">10</span>
+<span class="kw">set.seed</span>(<span class="dv">0</span>)
+Cobj$pumpMissMCMC$<span class="kw">run</span>(niter)</code></pre></div>
+<pre><code>## NULL</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">samples &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(Cobj$pumpMissMCMC$mvSamples)
+
+samples[<span class="dv">1</span>:<span class="dv">5</span>, <span class="dv">13</span>:<span class="dv">17</span>]</code></pre></div>
+<pre><code>##      x[1] x[2] x[3] x[4] x[5]
+## [1,]   17    1    2   14    3
+## [2,]   11    1    4   14    3
+## [3,]   14    1    9   14    3
+## [4,]   11    1   24   14    3
+## [5,]    9    1   29   14    3</code></pre>
+<p>Missing values may also occur in explanatory/predictor variables. Values for such variables should be passed in via the <code>data</code> argument to <code>nimbleModel</code>, with <code>NA</code> for the missing values. In some contexts, one would want to specify distributions for such explanatory variables, for example so that an MCMC would impute the missing values.</p>
+</div>
+<div id="sec:defin-altern-models" class="section level4">
+<h4><span class="header-section-number">6.1.1.4</span> Defining alternative models with the same code</h4>
+<p>Avoiding code duplication is a basic principle of good programming. In NIMBLE, one can use definition-time if-then-else statements to create different models from the same code. As a simple example, say we have a linear regression model and want to consider including or omitting <code>x[2]</code> as an explanatory variable:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">regressionCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
+    intercept ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
+    slope1 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
+    if(includeX2) {
+        slope2 ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dt">sd =</span> <span class="dv">1000</span>)
+        for(i in <span class="dv">1</span>:N) 
+            predictedY[i] &lt;-<span class="st"> </span>intercept +<span class="st"> </span>slope1 *<span class="st"> </span>x1[i] +<span class="st"> </span>slope2 *<span class="st"> </span>x2[i]
+    } else {
+        for(i in <span class="dv">1</span>:N) predictedY[i] &lt;-<span class="st"> </span>intercept +<span class="st"> </span>slope1 *<span class="st"> </span>x1[i]
+    }
+    sigmaY ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)
+    for(i in <span class="dv">1</span>:N) Y[i] ~<span class="st"> </span><span class="kw">dnorm</span>(predictedY[i], sigmaY)
+})
+
+includeX2 &lt;-<span class="st"> </span><span class="ot">FALSE</span>
+modelWithoutX2 &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(regressionCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">30</span>), 
+                              <span class="dt">check=</span><span class="ot">FALSE</span>)
+modelWithoutX2$<span class="kw">getVarNames</span>()</code></pre></div>
+<pre><code>## [1] &quot;intercept&quot;                       &quot;slope1&quot;                         
+## [3] &quot;predictedY&quot;                      &quot;sigmaY&quot;                         
+## [5] &quot;lifted_d1_over_sqrt_oPsigmaY_cP&quot; &quot;Y&quot;                              
+## [7] &quot;x1&quot;</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">includeX2 &lt;-<span class="st"> </span><span class="ot">TRUE</span>
+modelWithX2 &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(regressionCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">30</span>), 
+                           <span class="dt">check =</span> <span class="ot">FALSE</span>)
+modelWithX2$<span class="kw">getVarNames</span>()</code></pre></div>
+<pre><code>## [1] &quot;intercept&quot;                       &quot;slope1&quot;                         
+## [3] &quot;slope2&quot;                          &quot;predictedY&quot;                     
+## [5] &quot;sigmaY&quot;                          &quot;lifted_d1_over_sqrt_oPsigmaY_cP&quot;
+## [7] &quot;Y&quot;                               &quot;x1&quot;                             
+## [9] &quot;x2&quot;</code></pre>
+<p>Whereas the <em>constants</em> are a property of the <em>model definition</em> – since they may help determine the model structure itself – <em>data</em> nodes can be different in different copies of the model generated from the same <em>model definition</em>. The <code>setData</code> and <code>setInits</code> described above can be used for each copy of the model.</p>
+</div>
+<div id="sec:provide-dimensions" class="section level4">
+<h4><span class="header-section-number">6.1.1.5</span> Providing dimensions via <em>nimbleModel</em></h4>
+<p><code>nimbleModel</code> can usually determine the dimensions of every variable from the declarations in the BUGS code. However, it is possible to use a multivariate object only with empty indices (e.g. <code>x[,]</code>), in which case the dimensions must be provided as an argument to <code>nimbleModel</code>.</p>
+<p>Here’s an example with multivariate nodes. The first provides indices, so no <code>dimensions</code> argument is needed, while the second omits the indices and provides a <code>dimensions</code> argument instead.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">code &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
+  y[<span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">dmulti</span>(p[<span class="dv">1</span>:K], n)
+  p[<span class="dv">1</span>:K] ~<span class="st"> </span><span class="kw">ddirch</span>(alpha[<span class="dv">1</span>:K])
+  <span class="kw">log</span>(alpha[<span class="dv">1</span>:K]) ~<span class="st"> </span><span class="kw">dmnorm</span>(alpha0[<span class="dv">1</span>:K], R[<span class="dv">1</span>:K, <span class="dv">1</span>:K])
+})
+
+K &lt;-<span class="st"> </span><span class="dv">5</span>
+model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> <span class="dv">3</span>, <span class="dt">K =</span> K,
+                          <span class="dt">alpha0 =</span> <span class="kw">rep</span>(<span class="dv">0</span>, K), <span class="dt">R =</span> <span class="kw">diag</span>(K)),
+                     <span class="dt">check =</span> <span class="ot">FALSE</span>)
+
+codeAlt &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
+  y[] ~<span class="st"> </span><span class="kw">dmulti</span>(p[], n)
+  p[] ~<span class="st"> </span><span class="kw">ddirch</span>(alpha[])
+  <span class="kw">log</span>(alpha[]) ~<span class="st"> </span><span class="kw">dmnorm</span>(alpha0[], R[ , ])
+})
+
+model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(codeAlt, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">n =</span> <span class="dv">3</span>, <span class="dt">K =</span> K, <span class="dt">alpha0 =</span> <span class="kw">rep</span>(<span class="dv">0</span>, K),
+                                               <span class="dt">R =</span> <span class="kw">diag</span>(K)),
+                              <span class="dt">dimensions =</span> <span class="kw">list</span>(<span class="dt">y =</span> K, <span class="dt">p =</span> K, <span class="dt">alpha =</span> K),
+                              <span class="dt">check =</span> <span class="ot">FALSE</span>)</code></pre></div>
+<p>In that example, since <code>alpha0</code> and <code>R</code> are provided as constants, we don’t need to specify their dimensions.</p>
+</div>
+</div>
+<div id="sec:readBUGSmodel" class="section level3">
+<h3><span class="header-section-number">6.1.2</span> Creating a model from standard BUGS and JAGS input files</h3>
+<p>Users with BUGS and JAGS experience may have files set up in standard formats for use in BUGS and JAGS. <code>readBUGSmodel</code> can read in the model, data/constant values and initial values in those formats. It can also take information directly from R objects somewhat more flexibly than <code>nimbleModel</code>, specifically allowing inputs set up similarly to those for BUGS and JAGS. In either case, after processing the inputs, it calls <code>nimbleModel</code>. Note that unlike BUGS and JAGS, only a single set of initial values can be specified in creating a model. Please see <code>help(readBUGSmodel)</code> for argument details.</p>
+<p>As an example of using <code>readBUGSmodel</code>, let’s create a model for the <em>pump</em> example from BUGS.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pumpDir &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&#39;classic-bugs&#39;</span>, <span class="st">&#39;vol1&#39;</span>, <span class="st">&#39;pump&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;nimble&#39;</span>)
+pumpModel &lt;-<span class="st"> </span><span class="kw">readBUGSmodel</span>(<span class="st">&#39;pump.bug&#39;</span>, <span class="dt">data =</span> <span class="st">&#39;pump-data.R&#39;</span>, 
+                           <span class="dt">inits =</span> <span class="st">&#39;pump-init.R&#39;</span>, <span class="dt">dir =</span> pumpDir)</code></pre></div>
+<pre><code>## Detected x as data within &#39;constants&#39;.</code></pre>
+<p>Note that <code>readBUGSmodel</code> allows one to include <code>var</code> and <code>data</code> blocks in the model file as in some of the BUGS examples (such as <code>inhaler</code>). The <code>data</code> block pre-computes constant and data values. Also note that if <code>data</code> and <code>inits</code> are provided as files, the files should contain R code that creates objects analogous to what would populate the list if a list were provided instead. Please see the JAGS manual examples or the <code>classic_bugs</code> directory in the NIMBLE package for example syntax. <!---  PdV - at some point I think there was discussion of code that would appear in a 'data' block being put in the model code directly, but I think this could lead to variable on the LHS twice with <- and ~, so I think I'm not understanding what we want to allow in code defining a model 
+% I have no recollection of that idea.  Doesn't sound safe. -Perry --> NIMBLE by and large does not need the information given in a <code>var</code> block but occasionally this is used to determine dimensionality, such as in the case of syntax like <code>xbar &lt;- mean(x[])</code> where <code>x</code> is a variable that appears only on the right-hand side of BUGS expressions.</p>
+<p>Note that NIMBLE does not handle formatting such as in some of the original BUGS examples in which data was indicated with syntax such as <code>data x in 'x.txt'</code>.</p>
+</div>
+<div id="sub:multiple-instances" class="section level3">
+<h3><span class="header-section-number">6.1.3</span> Making multiple instances from the same model definition</h3>
+<p>Sometimes it is useful to have more than one copy of the same model. For example, an algorithm (i.e., nimbleFunction) such as an MCMC will be bound to a particular model before it is run. A user could build multiple algorithms to use the same model instance, or they may want each algorithm to have its own instance of the model.</p>
+<p>There are two ways to create new instances of a model, shown in this example:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">simpleCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
+    for(i in <span class="dv">1</span>:N) x[i] ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="dv">1</span>)
+})
+
+<span class="co"># Return the model definition only, not a built model</span>
+simpleModelDefinition &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(simpleCode, <span class="dt">constants =</span> <span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">10</span>),
+                                     <span class="dt">returnDef =</span> <span class="ot">TRUE</span>, <span class="dt">check =</span> <span class="ot">FALSE</span>)
+<span class="co"># Make one instance of the model</span>
+simpleModelCopy1 &lt;-<span class="st"> </span>simpleModelDefinition$<span class="kw">newModel</span>(<span class="dt">check =</span> <span class="ot">FALSE</span>)
+<span class="co"># Make another instance from the same definition</span>
+simpleModelCopy2 &lt;-<span class="st"> </span>simpleModelDefinition$<span class="kw">newModel</span>(<span class="dt">check =</span> <span class="ot">FALSE</span>)
+<span class="co"># Ask simpleModelCopy2 for another copy of itself</span>
+simpleModelCopy3 &lt;-<span class="st"> </span>simpleModelCopy2$<span class="kw">newModel</span>(<span class="dt">check =</span> <span class="ot">FALSE</span>)</code></pre></div>
+<p>Each copy of the model can have different nodes flagged as data and different values in any nodes. They cannot have different values of <code>N</code> because that is a constant; it must be a constant because it helps define the model.</p>
+</div>
+</div>
+<div id="sec:nodes-and-variables" class="section level2">
+<h2><span class="header-section-number">6.2</span> NIMBLE models are objects you can query and manipulate</h2>
+<p>NIMBLE models are objects that can be modified and manipulated from R. In this section we introduce some basic ways to use a model object. Chapter <a href="cha-using-models.html#cha:using-models">13</a> covers more topics for writing algorithms that use models.</p>
+<div id="sec:what-are-nodes-and-variables" class="section level3">
+<h3><span class="header-section-number">6.2.1</span> What are variables and nodes?</h3>
+<p>This section discusses some basic concepts and terminology to be able to speak about NIMBLE models clearly.</p>
+<p>Suppose we have created a model from the following BUGS code. <!---  This chunk can be modified to jut remove the nimbleModel call. --></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mc &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
+    a ~<span class="st"> </span><span class="kw">dnorm</span>(<span class="dv">0</span>, <span class="fl">0.001</span>)
+    for(i in <span class="dv">1</span>:<span class="dv">5</span>) {
+        y[i] ~<span class="st"> </span><span class="kw">dnorm</span>(a, <span class="dt">sd =</span> <span class="fl">0.1</span>)
+        for(j in <span class="dv">1</span>:<span class="dv">3</span>)
+            z[i,j] ~<span class="st"> </span><span class="kw">dnorm</span>(y[i], tau)
+    }
+    tau ~<span class="st"> </span><span class="kw">dunif</span>(<span class="dv">0</span>, <span class="dv">20</span>)
+    y.squared[<span class="dv">1</span>:<span class="dv">5</span>] &lt;-<span class="st"> </span>y[<span class="dv">1</span>:<span class="dv">5</span>]^<span class="dv">2</span>
+})
+
+model &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(mc, <span class="dt">data =</span> <span class="kw">list</span>(<span class="dt">z =</span> <span class="kw">matrix</span>(<span class="kw">rnorm</span>(<span class="dv">15</span>), <span class="dt">nrow =</span> <span class="dv">5</span>)))</code></pre></div>
+<p>In NIMBLE terminology:</p>
+<ul>
+<li>The <em>variables</em> of this model are <code>a</code>, <code>y</code>, <code>z</code>, and <code>y.squared</code>.</li>
+<li>The <em>nodes</em> of this model are <code>a</code>, <code>y[1]</code> <span class="math inline">\(,\ldots,\)</span> <code>y[5]</code>, <code>z[1,1]</code> <span class="math inline">\(,\ldots,\)</span> <code>z[5, 3]</code>, and <code>y.squared[1:5]</code>. In graph terminology, nodes are vertices in the model graph.</li>
+<li>The <em>node functions</em> of this model are <code>a ~ dnorm(0, 0.001)</code>, <code>y[i] ~ dnorm(a, 0.1)</code>, <code>z[i,j] ~ dnorm(y[i], sd = 0.1)</code>, and <code>y.squared[1:5] &lt;- y[1:5]^2</code>. Each node’s calculations are handled by a node function. Sometimes the distinction between nodes and node functions is important, but when it is not important we may refer to both simply as <em>nodes</em>.<br />
+</li>
+<li>The <em>scalar elements</em> of this model include all the scalar nodes as well as the scalar elements <code>y.squared[1]</code> <span class="math inline">\(,\ldots,\)</span> <code>y.squared[5]</code> of the multivariate node <code>y.squared[1:5]</code>.</li>
+</ul>
+</div>
+<div id="determining-the-nodes-and-variables-in-a-model" class="section level3">
+<h3><span class="header-section-number">6.2.2</span> Determining the nodes and variables in a model</h3>
+<p>One can determine the variables in a model using <code>getVarNames</code> and the nodes in a model using <code>getNodeNames</code>. Optional arguments to <code>getNodeNames</code> allow you to select only certain types of nodes, as discussed in Section <a href="cha-using-models.html#sec:get-nodes">13.1.1</a> and in the R help for <code>getNodeNames</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model$<span class="kw">getVarNames</span>()</code></pre></div>
+<pre><code>## [1] &quot;a&quot;                            &quot;y&quot;                           
+## [3] &quot;lifted_d1_over_sqrt_oPtau_cP&quot; &quot;z&quot;                           
+## [5] &quot;tau&quot;                          &quot;y.squared&quot;</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model$<span class="kw">getNodeNames</span>()</code></pre></div>
+<pre><code>##  [1] &quot;a&quot;                            &quot;tau&quot;                         
+##  [3] &quot;y[1]&quot;                         &quot;y[2]&quot;                        
+##  [5] &quot;y[3]&quot;                         &quot;y[4]&quot;                        
+##  [7] &quot;y[5]&quot;                         &quot;lifted_d1_over_sqrt_oPtau_cP&quot;
+##  [9] &quot;y.squared[1:5]&quot;               &quot;z[1, 1]&quot;                     
+## [11] &quot;z[1, 2]&quot;                      &quot;z[1, 3]&quot;                     
+## [13] &quot;z[2, 1]&quot;                      &quot;z[2, 2]&quot;                     
+## [15] &quot;z[2, 3]&quot;                      &quot;z[3, 1]&quot;                     
+## [17] &quot;z[3, 2]&quot;                      &quot;z[3, 3]&quot;                     
+## [19] &quot;z[4, 1]&quot;                      &quot;z[4, 2]&quot;                     
+## [21] &quot;z[4, 3]&quot;                      &quot;z[5, 1]&quot;                     
+## [23] &quot;z[5, 2]&quot;                      &quot;z[5, 3]&quot;</code></pre>
+<p>Note that some of the nodes may be ‘lifted’ nodes introduced by NIMBLE (Section <a href="cha-using-models.html#sec:introduced-nodes">13.1.2</a>). In this case <code>lifted_d1_over_sqrt_oPtau_cP</code> (this is a node for the standard deviation of the <code>z</code> nodes using NIMBLE’s canonical parameterization of the normal distribution) is the only lifted node in the model.</p>
+<p>To determine the dependencies of one or more nodes in the model, you can use <code>getDependencies</code> as discussed in Section <a href="cha-using-models.html#sec:cdgetdependencies">13.1.3</a>.</p>
+</div>
+<div id="sec:accessing-nodes" class="section level3">
+<h3><span class="header-section-number">6.2.3</span> Accessing nodes</h3>
+<p>Model variables can be accessed and set just as in R using <code>$</code> and <code>[[ ]]</code>. For example</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model$a &lt;-<span class="st"> </span><span class="dv">5</span>
+model$a</code></pre></div>
+<pre><code>## [1] 5</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;a&quot;</span>]]</code></pre></div>
+<pre><code>## [1] 5</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model$y[<span class="dv">2</span>:<span class="dv">4</span>] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">3</span>)
+model$y</code></pre></div>
+<pre><code>## [1]         NA -0.9261095 -0.1771040  0.4020118         NA</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;y&quot;</span>]][<span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">5</span>)] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">2</span>)
+model$y</code></pre></div>
+<pre><code>## [1] -0.7317482 -0.9261095 -0.1771040  0.4020118  0.8303732</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model$z[<span class="dv">1</span>,]</code></pre></div>
+<pre><code>## [1] -0.3340008  1.2079084  0.5210227</code></pre>
+<p>While nodes that are part of a variable can be accessed as above, each node also has its own name that can be used to access it directly. For example, <code>y[2]</code> has the name ‘y[2]’ and can be accessed by that name as follows:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;y[2]&quot;</span>]]</code></pre></div>
+<pre><code>## [1] -0.9261095</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;y[2]&quot;</span>]] &lt;-<span class="st"> </span>-<span class="dv">5</span>
+model$y</code></pre></div>
+<pre><code>## [1] -0.7317482 -5.0000000 -0.1771040  0.4020118  0.8303732</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;z[2, 3]&quot;</span>]]</code></pre></div>
+<pre><code>## [1] -0.1587546</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model[[<span class="st">&quot;z[2:4, 1:2]&quot;</span>]][<span class="dv">1</span>, <span class="dv">2</span>]</code></pre></div>
+<pre><code>## [1] -1.231323</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model$z[<span class="dv">2</span>, <span class="dv">2</span>]</code></pre></div>
+<pre><code>## [1] -1.231323</code></pre>
+<p>Notice that node names can include index blocks, such as <code>model[[&quot;z[2:4, 1:2]&quot;]]</code>, and these are not strictly required to correspond to actual nodes. Such blocks can be subsequently sub-indexed in the regular R manner, such as <code>model[[&quot;z[2:4, 1:2]&quot;]][1, 2]</code>.</p>
+</div>
+<div id="sec:how-nodes-are" class="section level3">
+<h3><span class="header-section-number">6.2.4</span> How nodes are named</h3>
+<p>Every node has a name that is a character string including its indices, with a space after every comma. For example, <code>X[1, 2, 3]</code> has the name ‘X[1, 2, 3]’. Nodes following multivariate distributions have names that include their index blocks. For example, a multivariate node for <code>X[6:10, 3]</code> has the name ‘X[6:10, 3]’.</p>
+<p>The definitive source for node names in a model is <code>getNodeNames</code>, described previously.</p>
+<p>In the event you need to ensure that a name is formatted correctly, you can use the <code>expandNodeNames</code> method. For example, to get the spaces correctly inserted into ‘X[1,1:5]’:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">multiVarCode &lt;-<span class="st"> </span><span class="kw">nimbleCode</span>({
+    X[<span class="dv">1</span>, <span class="dv">1</span>:<span class="dv">5</span>] ~<span class="st"> </span><span class="kw">dmnorm</span>(mu[], cov[,])
+    X[<span class="dv">6</span>:<span class="dv">10</span>, <span class="dv">3</span>] ~<span class="st"> </span><span class="kw">dmnorm</span>(mu[], cov[,])
+})
+
+multiVarModel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(multiVarCode, <span class="dt">dimensions =</span>
+                   <span class="kw">list</span>(<span class="dt">mu =</span> <span class="dv">5</span>, <span class="dt">cov =</span> <span class="kw">c</span>(<span class="dv">5</span>,<span class="dv">5</span>)), <span class="dt">calculate =</span> <span class="ot">FALSE</span>)
+
+multiVarModel$<span class="kw">expandNodeNames</span>(<span class="st">&quot;X[1,1:5]&quot;</span>)</code></pre></div>
+<pre><code>## [1] &quot;X[1, 1:5]&quot;</code></pre>
+<p>Alternatively, for those inclined to R’s less commonly used features, a nice trick is to use its <code>parse</code> and <code>deparse</code> functions.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">deparse</span>(<span class="kw">parse</span>(<span class="dt">text =</span> <span class="st">&quot;X[1,1:5]&quot;</span>, <span class="dt">keep.source =</span> <span class="ot">FALSE</span>)[[<span class="dv">1</span>]])</code></pre></div>
+<pre><code>## [1] &quot;X[1, 1:5]&quot;</code></pre>
+<p>The <code>keep.source = FALSE</code> makes <code>parse</code> more efficient.</p>
+</div>
+<div id="sec:why-use-node" class="section level3">
+<h3><span class="header-section-number">6.2.5</span> Why use node names?</h3>
+<p>Syntax like <code>model[[&quot;z[2, 3]&quot;]]</code> may seem strange at first, because the natural habit of an R user would be <code>model[[&quot;z&quot;]][2,3]</code>. To see its utility, consider the example of writing the nimbleFunction given in Section <a href="cha-lightning-intro.html#sec:creating-your-own">2.8</a>. By giving every scalar node a name, even if it is part of a multivariate variable, one can write functions in R or NIMBLE that access any single node by a name, regardless of the dimensionality of the variable in which it is embedded. This is particularly useful for NIMBLE, which resolves how to access a particular node during the compilation process.</p>
+</div>
+<div id="sec:cdisdata" class="section level3">
+<h3><span class="header-section-number">6.2.6</span> Checking if a node holds data</h3>
+<p>Finally, you can query whether a node is flagged as data using the <code>isData</code> method applied to one or more nodes or nodes within variables:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model$<span class="kw">isData</span>(<span class="st">&#39;z[1]&#39;</span>)</code></pre></div>
+<pre><code>## [1] TRUE</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model$<span class="kw">isData</span>(<span class="kw">c</span>(<span class="st">&#39;z[1]&#39;</span>, <span class="st">&#39;z[2]&#39;</span>, <span class="st">&#39;a&#39;</span>))</code></pre></div>
+<pre><code>## [1]  TRUE  TRUE FALSE</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model$<span class="kw">isData</span>(<span class="st">&#39;z&#39;</span>)</code></pre></div>
+<pre><code>##  [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+## [15] TRUE</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model$<span class="kw">isData</span>(<span class="st">&#39;z[1:3, 1]&#39;</span>)</code></pre></div>
+<pre><code>## [1] TRUE TRUE TRUE</code></pre>
+
+</div>
+</div>
+</div>
+
+
+
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="cha-writing-models.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="cha-mcmc.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"google": false,
+"linkedin": false,
+"weibo": false,
+"instapper": false,
+"vk": false,
+"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": null,
+"text": null
+},
+"download": ["NimbleUserManual.pdf", "NimbleUserManual.epub"],
+"toc": {
+"collapse": "subsection"
+},
+"toc_depth": 3
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "";
+    if (src === "" || src === "true") src = "https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:" && /^https?:/.test(src))
+      src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>
