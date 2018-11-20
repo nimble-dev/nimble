@@ -14,7 +14,7 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
         ## error gracefully if dynamic index too small or large; we don't catch non-integers within the bounds though
         if(is.null(nodeDim)) {
             nanExpr <- NaN
-        } else nanExpr <- substitute(nimArray(NaN, LENGTH),
+        } else nanExpr <- substitute(rep(NaN, LENGTH),
                                      list(LENGTH = prod(nodeDim)))
         code <- substitute(if(CONDITION) LHS <<- RHS
                            else {

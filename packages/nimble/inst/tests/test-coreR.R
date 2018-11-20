@@ -795,6 +795,22 @@ logicalTestsResults <- test_coreRfeature_batch(logicalTests, 'logicalTests') ## 
 returnTestResults <- test_coreRfeature_batch(returnTests, 'returnTests') ## lapply(returnTests, test_coreRfeature)
 
 
+## basic seq_along test
+
+test_that('seq_along works in nimbleFunctions', {
+    nf <- nimbleFunction(
+        run = function(x = double(1)) {
+            for(i in seq_along(x))
+                x[i] <- x[i]+1
+            returnType(double(1))
+            return(x)
+        })
+    cnf <- compileNimble(nf)
+    x <- rnorm(5)
+    expect_identical(nf(x), x+1, 'problem with uncompiled seq_along')
+    expect_identical(nf(x), cnf(x), 'problem with compiled seq_along')
+})
+
 ## Some tests of using coreR features in BUGS models
 
 test_that('c(a, 1.1) in BUGS works', {
