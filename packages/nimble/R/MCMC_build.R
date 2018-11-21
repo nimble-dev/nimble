@@ -261,7 +261,7 @@ buildMCMC <- nimbleFunction(
             ##model$calculate(paramDeps)
             model$calculate()
             returnType(double())
-            someVals <- values(model)    ## NEW
+            someVals <- model$values()    ## now using model$values() syntax
             return(WAIC)
         }),
     where = getLoadingNamespace()
