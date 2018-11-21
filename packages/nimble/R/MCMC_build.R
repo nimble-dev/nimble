@@ -241,7 +241,7 @@ buildMCMC <- nimbleFunction(
             logAvgProb <- 0
             pWAIC <- 0
             currentVals2 <- values(model, sampledNodes)
-            currentVals <- values(model)
+            ##currentVals <- values(model)
             for(i in 1:numMCMCSamples) {
                 copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburninPostThinning)
                 model$simulate(paramDeps)
