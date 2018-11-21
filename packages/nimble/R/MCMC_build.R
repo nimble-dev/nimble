@@ -257,7 +257,8 @@ buildMCMC <- nimbleFunction(
             }
             WAIC <- -2*(logAvgProb - pWAIC)
             values(model, sampledNodes) <<- currentVals
-            model$calculate(paramDeps)
+            ##model$calculate(paramDeps)
+            model$calculate()
             returnType(double())
             return(WAIC)
         }),
