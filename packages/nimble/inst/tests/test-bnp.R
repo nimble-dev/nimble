@@ -1,10 +1,15 @@
+rm(list=ls())
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 library(mvtnorm)
-library(MCMCpack)
+#library(MCMCpack)
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
+
+#options(warn = RwarnLevel)
+#nimbleOptions(verbose = nimbleVerboseSetting)
+#nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
 
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
@@ -85,9 +90,9 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   
   xiSam <- output[, 34:63]
   muTildeSam <- output[, 3:32]
-  cond <- abs(muTildeSam[2] - 50)
+  cond <- as.numeric(abs(muTildeSam[2] - 50))
   
-  expect_equal(cond, 0, tol=0.2,
+  expect_equal(cond, 0, tolerance=9,
                info = paste0("incorrect update of cluster parameters in mixture of normals 1 data"))
   
   
@@ -159,7 +164,7 @@ test_that("testing bivariate normal mixture models with CRP", {
   
   m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
   cm <- compileNimble(m)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 'alpha'), print=TRUE)  
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 'alpha'), print=FALSE)  
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   
@@ -176,6 +181,53 @@ test_that("testing bivariate normal mixture models with CRP", {
   cond <- abs(unique(muSam2[1000, ][xiSam[1000, ]]) - 20)
   expect_equal(cond, 0, tol=0.2,
                info = paste0("incorrect update of second component of cluster parameters in bivariate normal data"))
+  
+  set.seed(1)
+  code <- nimbleCode({
+    xi[1:n] ~ dCRP(alpha, n)
+    for(i in 1:n){
+      mu[i, 1:2] ~ dmnorm(mu0[1:2], cov = S0[1:2, 1:2])
+      Sigma[1:2, 1:2, i] ~ dinvwish(S = R0[1:2, 1:2], df = 4)
+      SigmaAux[1:2, 1:2, i] <- Sigma[1:2, 1:2, xi[i]] / lambda  
+      y[i, 1:2] ~ dmnorm(mu[xi[i], 1:2],  cov = SigmaAux[1:2, 1:2, i] )
+    }
+    alpha ~ dgamma(1, 1)
+    lambda ~ dgamma(1, 1)
+  })
+  n <- 100
+  Consts <- list(n = n, S0 = diag(1, 2), mu0=c(0,0), R0 = diag(1, 2))
+  Sigma <- array(0, c(2,2,n))
+  for(i in 1:n)
+    Sigma[, , i] <- matrix(c(1, 0, 0, 1), 2, 2)
+  Inits <- list(xi = sample(1:n, size=n, replace = TRUE), 
+                mu = matrix(-10, ncol=2, nrow=n),
+                Sigma=Sigma,
+                alpha = 1,
+                lambda = 1)
+  Data <- list(y = rmvnorm(n, c(10, 20), diag(1, 2)))
+  
+  m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
+  cm <- compileNimble(m, showCompilerOutput = TRUE)
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 'Sigma', 'alpha', 'lambda'), print=TRUE)  #, 'lambda'
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  
+  output <- runMCMC(cMCMC, niter=4000, nburn=0, thin=1 , inits=Inits, setSeed=FALSE)
+  
+  xiSam <- output[, 603:702]
+  muSam1 <- output[, 403:502]
+  muSam2 <- output[, 503:602]
+  lamSam <- output[, 402]
+  
+  cond <- abs(unique(muSam1[1000, ][xiSam[1000, ]]) - 10)
+  #expect_equal(cond, 0, tol=0.2,
+  #             info = paste0("incorrect update of firts component of cluster parameters in bivariate normal data"))
+  
+  cond <- abs(unique(muSam2[1000, ][xiSam[1000, ]]) - 20)
+  #expect_equal(cond, 0, tol=0.2,
+  #             info = paste0("incorrect update of second component of cluster parameters in bivariate normal data"))
+  
+  
   
 })
 
@@ -400,305 +452,6 @@ test_that("sampleDPmeasure: checking for uncompiled modelValues input", {
 })
 
 
-test_that("sampleDPmeasure can be used for more complicated models", {
-  
-  ## no deterministic node, conc param is fixed
-  set.seed(1)
-  code <- nimbleCode({
-    for(i in 1:10){
-      lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
-      y[i] ~ dpois(lambdaTilde[xi[i]])
-    }
-    xi[1:10] ~ dCRP(conc = 1, size=10)
-  })
-  Inits <- list( xi = 1:10, 
-                 lambdaTilde = rgamma(10, shape=1, rate=0.01))
-  Data <- list(y = c(rpois(2, 10), rpois(2, 10), rpois(6, 40)))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  
-  monitors <- c('lambdaTilde','xi')
-  mConf <- configureMCMC(m,, monitors = monitors)
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m)
-  cMCMC$run(1000)
-  
-  # old use of getSamplesDPmeasure:
-  #rdens = getSamplesDPmeasure(cMCMC)
-  #cdens = compileNimble(rdens$samples, project = m)
-  #expect_output(cdens$run(), "Approximating the random measure")
-  expect_output(samplesG <- getSamplesDPmeasure(cMCMC))
-  expect_false(any(is.na(samplesG$samples)))
-  
-  ## no deterministic node, random conc param
-  set.seed(1)
-  code <- nimbleCode({
-    for(i in 1:10){
-      lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
-      y[i] ~ dpois(lambdaTilde[xi[i]])
-    }
-    xi[1:10] ~ dCRP(conc0, size=10)
-    conc0 ~ dgamma(1,1)
-  })
-  Inits <- list( xi = 1:10, conc0=1,
-                 lambdaTilde = rgamma(10, shape=1, rate=0.01))
-  Data <- list(y = c(rpois(2, 10), rpois(2, 10), rpois(6, 40)))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  
-  monitors <- c('lambdaTilde','xi', 'conc0')
-  mConf <- configureMCMC(m, monitors = monitors)
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
-  
-  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  #cdens = compileNimble(rdens, project = m)
-  #expect_output(cdens$run(), "Approximating the random measure")
-  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
-  expect_false(any(is.na(samplesG)))
-  
-  ## with deterministic node, conc param is fixed
-  set.seed(1)
-  code <- nimbleCode({
-    for(i in 1:10){
-      lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
-      lambda[i] <- lambdaTilde[xi[i]]
-      y[i] ~ dpois(lambda[i])
-    }
-    xi[1:10] ~ dCRP(conc = 1, size=10)
-  })
-  Inits <- list( xi = 1:10, 
-                 lambdaTilde = rgamma(10, shape=1, rate=0.01))
-  Data <- list(y = c(rpois(2, 10), rpois(2, 10), rpois(6, 40)))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  
-  monitors <- c('lambdaTilde','xi')
-  mConf <- configureMCMC(m,, monitors = monitors)
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
-  
-  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  #cdens = compileNimble(rdens, project = m)
-  #expect_output(cdens$run(), "Approximating the random measure")
-  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
-  expect_false(any(is.na(samplesG)))
-  
-  ## with deterministic node, random conc param
-  set.seed(1)
-  code <- nimbleCode({
-    for(i in 1:10){
-      lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
-      lambda[i] <- lambdaTilde[xi[i]]
-      y[i] ~ dpois(lambda[i])
-    }
-    xi[1:10] ~ dCRP(conc0, size=10)
-    conc0 ~ dgamma(1,1)
-  })
-  Inits <- list( xi = 1:10, conc0=1,
-                 lambdaTilde = rgamma(10, shape=1, rate=0.01))
-  Data <- list(y = c(rpois(2, 10), rpois(2, 10), rpois(6, 40)))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  
-  monitors <- c('lambdaTilde','xi', 'conc0')
-  mConf <- configureMCMC(m, monitors = monitors)
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
-  
-  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  #cdens = compileNimble(rdens, project = m)
-  #expect_output(cdens$run(), "Approximating the random measure")
-  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
-  expect_false(any(is.na(samplesG)))
-  
-  # two cluster parameters, one deterministic parameter, fixed conc
-  set.seed(1)
-  code=nimbleCode(
-    {
-      for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=40) 
-        s2tilde[i] ~ dinvgamma(1, scale=0.5)
-      }
-      xi[1:10] ~ dCRP( 1 , size=10)
-      for(i in 1:10){
-        theta[i] <- thetatilde[xi[i]]
-        y[i] ~ dnorm(theta[i], var=s2tilde[xi[i]])
-      }
-    }
-  )
-  Inits=list(xi=sample(1:10, size=10, replace=TRUE), 
-             thetatilde=rnorm(10, 0, sqrt(40)),
-             s2tilde = rinvgamma(10, 1, scale=0.5))
-  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  
-  monitors <- c('thetatilde', 's2tilde', 'xi')
-  mConf <- configureMCMC(m,, monitors = monitors)
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
-  
-  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  #cdens = compileNimble(rdens, project = m)
-  #expect_output(cdens$run(), "Approximating the random measure")
-  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
-  expect_false(any(is.na(samplesG)))
-  
-  # two cluster parameters, one deterministic parameter, random conc
-  set.seed(1)
-  code=nimbleCode(
-    {
-      for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=40) 
-        s2tilde[i] ~ dinvgamma(1, scale=0.5)
-      }
-      xi[1:10] ~ dCRP( conc0 , size=10)
-      conc0 ~ dgamma(1, 1)
-      for(i in 1:10){
-        theta[i] <- thetatilde[xi[i]]
-        y[i] ~ dnorm(theta[i], var=s2tilde[xi[i]])
-      }
-    }
-  )
-  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 ,
-             thetatilde=rnorm(10, 0, sqrt(40)),
-             s2tilde = rinvgamma(10, 1, scale=0.5))
-  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0')
-  mConf <- configureMCMC(m,, monitors = monitors)
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
-  
-  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  #cdens = compileNimble(rdens, project = m)
-  #expect_output(cdens$run(), "Approximating the random measure")
-  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
-  expect_false(any(is.na(samplesG)))
-  
-  ## two cluster parameters, two deterministc parameter, random conc with random parameters
-  set.seed(1)
-  code=nimbleCode(
-    {
-      for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=100) 
-        s2tilde[i] ~ dinvgamma(2, scale=0.01)
-      }
-      xi[1:10] ~ dCRP( conc0 , size=10)
-      conc0 ~ dgamma(a,1)
-      a ~ dgamma(1, 1)
-      for(i in 1:10){
-        theta[i] <- thetatilde[xi[i]]
-        s2[i] <- s2tilde[xi[i]]
-        y[i] ~ dnorm(theta[i], var=s2[i])
-      }
-    }
-  )
-  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 = 1 , a=1,
-             thetatilde=rnorm(10, 0, sqrt(40)),
-             s2tilde = rinvgamma(10, 1, scale=0.5))
-  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'a')
-  mConf <- configureMCMC(m,, monitors = monitors)
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
-
-  
-  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  #cdens = compileNimble(rdens, project = m)
-  #if(FALSE) expect_output(cdens$run(), "Approximating the random measure")  ## very slow; need to check this
-  # check this more carefully
-  #expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
-  #expect_false(any(is.na(samplesG)))
-  
-  # two cluster parameters, two deterministc parameter, 
-  # random conc dfined by two random parameters
-  set.seed(1)
-  code=nimbleCode(
-    {
-      for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=40) 
-        s2tilde[i] ~ dinvgamma(1, scale=0.5)
-      }
-      xi[1:10] ~ dCRP( conc0 + conc1 , size=10)
-      conc0 ~ dgamma(1,1)
-      conc1 ~ dgamma(1,1)
-      for(i in 1:10){
-        theta[i] <- thetatilde[xi[i]]
-        s2[i] <- s2tilde[xi[i]]
-        y[i] ~ dnorm(theta[i], var=s2[i])
-      }
-    }
-  )
-  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 , conc1=1,
-             thetatilde=rnorm(10, 0, sqrt(40)),
-             s2tilde = rinvgamma(10, 1, scale=0.5))
-  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
-  mConf <- configureMCMC(m,, monitors = monitors)
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
-  
-  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  #cdens = compileNimble(rdens, project = m)
-  #expect_output(cdens$run(), "Approximating the random measure")
-  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
-  expect_false(any(is.na(samplesG)))
-  
-  # two cluster parameters, two deterministic parameter, 
-  # random conc defined by two random parameters
-  set.seed(1)
-  code=nimbleCode(
-    {
-      for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=40) 
-        s2tilde[i] ~ dinvgamma(1, scale=0.5)
-      }
-      xi[1:10] ~ dCRP( conc0 + conc1 , size=10)
-      conc1 ~ dgamma(1,1)
-      conc0 ~ dgamma(a,b)
-      b ~ dgamma(1,1)
-      a ~ dgamma(1,1)
-      for(i in 1:10){
-        theta[i] <- thetatilde[xi[i]]
-        s2[i] <- s2tilde[xi[i]]
-        y[i] ~ dnorm(theta[i], var=s2[i])
-      }
-    }
-  )
-  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 , conc1=1,
-             a = 1, b = 1,
-             thetatilde=rnorm(10, 0, sqrt(40)),
-             s2tilde = rinvgamma(10, 1, scale=0.5))
-  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  
-  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
-  mConf <- configureMCMC(m,, monitors = monitors)
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
-  
-  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
-  #cdens = compileNimble(rdens, project = m)
-  #expect_output(cdens$run(), "Approximating the random measure")
-  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
-  expect_false(any(is.na(samplesG)))
-})
 
 
 test_that("stick_breaking nimble function calculation and use is correct", {
@@ -784,131 +537,6 @@ test_that("Stick breaking model calculation is correct", {
 })
 
 
-##-- test: random sampling from a compiled model adding one more level:
-test_that("random sampling from model works fine", {
-  set.seed(0)
-  x <- rbeta(5, 1, 1)
-  truth <- c(x[1], x[2:5]*cumprod(1-x[1:4]), prod(1-x[1:5]))
-  
-  SB_code2 <- nimbleCode({
-    for(i in 1:5) 
-      z[i] ~ dbeta(1, 1)
-    w[1:6] <- stick_breaking(z[1:5])
-    for(i in 1:10){
-      xi[i] ~ dcat(w[1:6])
-    }
-  })
-  
-  set.seed(1)
-  Inits <- list(z = rbeta(5, 1, 1))
-  data <- list(xi = rep(1,10))
-  SB_model2 <- nimbleModel(SB_code2, data=data, inits=Inits)
-  
-  c_SB_model2 <- compileNimble(SB_model2)
-  
-  c_SB_model2$z <- x
-  c_SB_model2$calculate()
-  
-  expect_equal(c_SB_model2$w, truth,
-               info = paste0("incorrect stick breaking weights in SB_model2"))
-  
-  #-- sampling via simulate:
-  set.seed(0)
-  simul_samp <- function(model) {
-    model$simulate()
-    return(model$w)
-  }
-  simul_samps <- t(replicate(10000, simul_samp(c_SB_model2)))
-  
-  trueE <- c(0.5^(1:5) )
-  
-  #-- checking the mean of the components of a vector that has a generalized dirichelt distribution
-  #-- if z_i ~ beta then weights, w, defined by a SB representation have a generalized dirichlet distribution
-  #-- and the expectation of w_j=0.5^j (in this case a=b=1).
-  
-  expect_equal(apply(simul_samps, 2, mean)[1:5], trueE, tol=0.01,
-               info = paste0("incorrect weights (w) sampling  in SB_model2"))
-  
-  
-  # wrong specification of stick variables
-  SB_code3 <- nimbleCode({
-    for(i in 1:5) 
-      z[i] ~ dgamma(10, 10)
-    w[1:6] <- stick_breaking(z[1:5])
-    for(i in 1:10){
-      xi[i] ~ dcat(w[1:6])
-    }
-  })
-  
-  # wrong prior and starting values for stick variables: how to recognize this wrong specification?
-  set.seed(1)
-  Inits <- list(z = rgamma(5, 10, 10))
-  data <- list(xi = 1:10)
-  expect_output(nimbleModel(SB_code3, data=data, inits=Inits)) # message is sent because z >1.
-  
-  # good stating values for stick variables
-  set.seed(1)
-  Inits <- list(z = rbeta(5, 1, 1))
-  data <- list(xi = rep(1,10))
-  SB_model3 <- nimbleModel(SB_code3, data=data, inits=Inits)
-  expect_output(SB_model3$simulate(), "values in 'z' have to be in") # message is sent because z >1.
-  
-  # wrong specification of length in stick variables, should be 5
-  SB_code4 <- nimbleCode({
-    for(i in 1:4) 
-      z[i] ~ dbeta(1,1)
-    w[1:6] <- stick_breaking(z[1:4])
-    for(i in 1:10){
-      xi[i] ~ dcat(w[1:6])
-    }
-  })
-  
-  # wrong length for stick variables, a warning is sent in the nimbleModel function
-  # how to recognize this wrong specification in the test?
-  set.seed(1)
-  Inits <- list(z = rbeta(4, 10, 10))
-  data <- list(xi = rep(1,10))
-  expect_warning(nimbleModel(SB_code4, data=data, inits=Inits), message = "number of items to replace")
-  
-  
-  # wrong specification of length in stick variables, should be 5
-  # no warning in nimbleModel function
-  SB_code5 <- nimbleCode({
-    for(i in 1:2) 
-      z[i] ~ dbeta(1,1)
-    w[1:6] <- stick_breaking(z[1:2])
-    for(i in 1:10){
-      xi[i] ~ dcat(w[1:6])
-    }
-  })
-  
-  set.seed(1)
-  Inits <- list(z = rbeta(2, 10, 10))
-  data <- list(xi = rep(1,10))
-  SB_model5 <- nimbleModel(SB_code5, data=data, inits=Inits)
-  cSB_model5 <- compileNimble(SB_model5)
-  expect_output(cSB_model5$calculate('w'), "Error in mapCopy")
-  
-  
-  
-  # longer vector of stick variables
-  SB_code6 <- nimbleCode({
-    for(i in 1:10) 
-      z[i] ~ dbeta(1,1)
-    w[1:6] <- stick_breaking(z[1:10])
-    for(i in 1:10){
-      xi[i] ~ dcat(w[1:6])
-    }
-  })
-  
-  # wrong length for stick variables, a warning is sent in the nimbleModel function
-  set.seed(1)
-  Inits <- list(z = rbeta(10, 10, 10))
-  data <- list(xi = rep(1,10))
-  expect_warning(SB_model6 <- nimbleModel(SB_code6, data=data, inits=Inits), "number of items to replace")
-  cSB_model6 <- compileNimble(SB_model6)
-  expect_output(cSB_model6$calculate('w'), "Error in mapCopy")
-})
 
 ## test simple models
 
@@ -993,6 +621,8 @@ Data=list(y=rnorm(10))
 testBUGSmodel(example = 'test4', dir = "",
               model = model, data = Data, inits = Inits,
               useInits = TRUE)
+
+
 
 test_that("Testing conjugacy detection with bnp stick breaking models", { 
   code=nimbleCode(
@@ -1761,6 +1391,310 @@ testBUGSmodel(example = 'test11', dir = "",
               useInits = TRUE)
 
 
+test_that("sampleDPmeasure can be used for more complicated models", {
+  
+  ## no deterministic node, conc param is fixed
+  set.seed(1)
+  code <- nimbleCode({
+    for(i in 1:10){
+      lambdaTilde[i] ~ dgamma(shape=1, rate=0.1)
+      y[i] ~ dpois(lambdaTilde[xi[i]])
+    }
+    xi[1:10] ~ dCRP(conc = 1, size=10)
+  })
+  Inits <- list( xi = 1:10, 
+                 lambdaTilde = rgamma(10, shape=1, rate=0.1))
+  Data <- list(y = c(rpois(10, 8)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('lambdaTilde','xi')
+  mConf <- configureMCMC(m, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
+  output <- runMCMC(cMCMC, niter = 1000)
+  
+  # old use of getSamplesDPmeasure:
+  #rdens = getSamplesDPmeasure(cMCMC)
+  #cdens = compileNimble(rdens$samples, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC))
+  expect_false(any(is.na(samplesG$samples)))
+  
+  ## no deterministic node, random conc param
+  set.seed(1)
+  code <- nimbleCode({
+    for(i in 1:10){
+      lambdaTilde[i] ~ dgamma(shape=1, rate=a0)
+      y[i] ~ dpois(lambdaTilde[xi[i]])
+    }
+    xi[1:10] ~ dCRP(conc0, size=10)
+    conc0 ~ dgamma(1,1)
+    a0 ~ dgamma(1, 1)
+  })
+  Inits <- list( xi = 1:10, conc0=1,
+                 lambdaTilde = rgamma(10, shape=1, rate=0.1), a0=1)
+  Data <- list(y = c(rpois(10, 8)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('lambdaTilde','xi', 'conc0')
+  mConf <- configureMCMC(m, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  out <- runMCMC(cMCMC, 1000)
+  
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
+  expect_false(any(is.na(samplesG)))
+  
+  ## with deterministic node, conc param is fixed
+  set.seed(1)
+  code <- nimbleCode({
+    for(i in 1:10){
+      lambdaTilde[i] ~ dgamma(shape=1, rate=a0)
+      lambda[i] <- lambdaTilde[xi[i]]
+      y[i] ~ dpois(lambda[i])
+    }
+    xi[1:10] ~ dCRP(conc = 1, size=10)
+    a0 ~ dgamma(1, 1)
+  })
+  Inits <- list( xi = 1:10, 
+                 lambdaTilde = rgamma(10, shape=1, rate=0.1), a0=1)
+  Data <- list(y = c(rpois(10, 8)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('lambdaTilde','xi', 'a0')
+  mConf <- configureMCMC(m, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  out <- runMCMC(cMCMC, 1000)
+  
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
+  expect_false(any(is.na(samplesG)))
+  
+  ## with deterministic node, random conc param
+  set.seed(1)
+  code <- nimbleCode({
+    for(i in 1:10){
+      lambdaTilde[i] ~ dgamma(shape=1, rate=a0)
+      lambda[i] <- lambdaTilde[xi[i]]
+      y[i] ~ dpois(lambda[i])
+    }
+    xi[1:10] ~ dCRP(conc0, size=10)
+    conc0 ~ dgamma(1,1)
+    a0 ~ dgamma(1, 1)
+  })
+  Inits <- list( xi = 1:10, conc0=1,
+                 lambdaTilde = rgamma(10, shape=1, rate=0.1), a0=1)
+  Data <- list(y = c(rpois(10, 8)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('lambdaTilde','xi', 'conc0', 'a0')
+  mConf <- configureMCMC(m, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  out <- runMCMC(cMCMC, 1000)
+  
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
+  expect_false(any(is.na(samplesG)))
+  
+  # two cluster parameters, one deterministic parameter, fixed conc
+  set.seed(1)
+  code=nimbleCode(
+    {
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+      }
+      xi[1:10] ~ dCRP( 1 , size=10)
+      for(i in 1:10){
+        theta[i] <- thetatilde[xi[i]]
+        y[i] ~ dnorm(theta[i], var=s2tilde[xi[i]])
+      }
+    }
+  )
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), 
+             thetatilde=rnorm(10, 0, sqrt(40)),
+             s2tilde = rinvgamma(10, 1, scale=0.5))
+  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('thetatilde', 's2tilde', 'xi')
+  mConf <- configureMCMC(m,, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  out <- runMCMC(cMCMC, 1000)
+  
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
+  expect_false(any(is.na(samplesG)))
+  
+  # two cluster parameters, one deterministic parameter, random conc
+  set.seed(1)
+  code=nimbleCode(
+    {
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+      }
+      xi[1:10] ~ dCRP( conc0 , size=10)
+      conc0 ~ dgamma(1, 1)
+      for(i in 1:10){
+        theta[i] <- thetatilde[xi[i]]
+        y[i] ~ dnorm(theta[i], var=s2tilde[xi[i]])
+      }
+    }
+  )
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 ,
+             thetatilde=rnorm(10, 0, sqrt(40)),
+             s2tilde = rinvgamma(10, 1, scale=0.5))
+  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0')
+  mConf <- configureMCMC(m,, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  out <- runMCMC(cMCMC, 1000)
+  
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
+  expect_false(any(is.na(samplesG)))
+  
+  ## two cluster parameters, two deterministc parameter, random conc with random parameters
+  set.seed(1)
+  code=nimbleCode(
+    {
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=s2tilde[i]/lambda) 
+        s2tilde[i] ~ dinvgamma(2, scale=0.01)
+      }
+      xi[1:10] ~ dCRP( conc0 , size=10)
+      conc0 ~ dgamma(a,1)
+      a ~ dgamma(1, 1)
+      lambda ~ dgamma(1, 1)
+      for(i in 1:10){
+        theta[i] <- thetatilde[xi[i]]
+        s2[i] <- s2tilde[xi[i]]
+        y[i] ~ dnorm(theta[i], var=s2[i])
+      }
+    }
+  )
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 = 1 , a=1,
+             thetatilde=rnorm(10, 0, sqrt(40)),
+             s2tilde = rinvgamma(10, 1, scale=0.01), 
+             lambda=1)
+  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'a', 'lambda')
+  mConf <- configureMCMC(m,, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  out <- runMCMC(cMCMC, 1000)
+  
+  
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #if(FALSE) expect_output(cdens$run(), "Approximating the random measure")  ## very slow; need to check this
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
+  expect_false(any(is.na(samplesG)))
+  
+  # two cluster parameters, two deterministc parameter, 
+  # random conc dfined by two random parameters
+  set.seed(1)
+  code=nimbleCode(
+    {
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+      }
+      xi[1:10] ~ dCRP( conc0 + conc1 , size=10)
+      conc0 ~ dgamma(1,1)
+      conc1 ~ dgamma(1,1)
+      for(i in 1:10){
+        theta[i] <- thetatilde[xi[i]]
+        s2[i] <- s2tilde[xi[i]]
+        y[i] ~ dnorm(theta[i], var=s2[i])
+      }
+    }
+  )
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 , conc1=1,
+             thetatilde=rnorm(10, 0, sqrt(40)),
+             s2tilde = rinvgamma(10, 1, scale=0.5))
+  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
+  mConf <- configureMCMC(m,, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  out <- runMCMC(cMCMC, 1000)
+  
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
+  expect_false(any(is.na(samplesG)))
+  
+  # two cluster parameters, two deterministic parameter, 
+  # random conc defined by two random parameters
+  set.seed(1)
+  code=nimbleCode(
+    {
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+      }
+      xi[1:10] ~ dCRP( conc0 + conc1 , size=10)
+      conc1 ~ dgamma(1,1)
+      conc0 ~ dgamma(a,b)
+      b ~ dgamma(1,1)
+      a ~ dgamma(1,1)
+      for(i in 1:10){
+        theta[i] <- thetatilde[xi[i]]
+        s2[i] <- s2tilde[xi[i]]
+        y[i] ~ dnorm(theta[i], var=s2[i])
+      }
+    }
+  )
+  Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 , conc1=1,
+             a = 1, b = 1,
+             thetatilde=rnorm(10, 0, sqrt(40)),
+             s2tilde = rinvgamma(10, 1, scale=0.5))
+  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
+  mConf <- configureMCMC(m,, monitors = monitors)
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  out <- runMCMC(cMCMC, 1000)
+  
+  #rdens = sampleDPmeasure(m, mMCMC$mvSamples)
+  #cdens = compileNimble(rdens, project = m)
+  #expect_output(cdens$run(), "Approximating the random measure")
+  expect_output(samplesG <- getSamplesDPmeasure(cMCMC)$samples)
+  expect_false(any(is.na(samplesG)))
+})
+
 
 ## testing sampler assigment for conc parameter
 
@@ -2199,173 +2133,306 @@ test_that("Testing BNP model based on CRP", {
   
 })
 
-test_that("Testing more BNP models based on CRP", { 
-    ## Avandia meta-analysis
-    codeBNP <- nimbleCode({
-        for(i in 1:nStudies) {
-            y[i] ~ dbin(size = nStudies, prob = q[i])
-            x[i] ~ dbin(size = nStudies, prob = p[i])
-            q[i] <- expit(theta + gamma[i])
-            p[i] <- expit(gamma[i])
-            gamma[i] ~ dnorm(mu[i], var = tau[i])
-            mu[i] <- muTilde[xi[i]]
-            tau[i] <- tauTilde[xi[i]]
-        }
-        for(i in 1:nStudies) {
-            muTilde[i] ~ dnorm(mu0, sd = sd0)
-            tauTilde[i] ~ dinvgamma(a0, b0)
-        }
-        xi[1:nStudies] ~ dCRP(conc, size = nStudies)
-        conc ~ dgamma(1, 1)
-        mu0 ~ dflat()
-        sd0 ~ dunif(0, 100)
-        a0 ~ dunif(0, 100)
-        b0 ~ dunif(0, 100)
-        theta ~ dflat()
-    })
-    
-    Consts=list(nStudies=10)
-    set.seed(1)
-    Inits=list(gamma=rep(1,10),
-               muTilde=rep(1,10),
-               tauTilde=rep(1,10),
-               xi=rep(1,10),
-               conc =1,
-               mu0 = 0,
-               sd0 = 1,
-               a0 = 1,
-               b0 = 1,
-               theta = 0)
-    
-    Data=list(y=rbinom(10, 10, 0.5), x=rbinom(10, 10, 0.5))
-    
-    model<-nimbleModel(codeBNP, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
-    cmodel<-compileNimble(model)
-    
-    mConf <- configureMCMC(model)
-    mMCMC <- buildMCMC(mConf)
-    
-    expect_equal(mConf$getSamplers()[[1]]$name, "CRP_concentration")
-    expect_equal(mConf$getSamplers()[[7]]$name, "CRP")
-    expect_equal(class(mMCMC$samplerFunctions[[7]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
-    
-    ## Using testBUGSmodel
-    model <- function() {
-        for(i in 1:10) {
-            y[i] ~ dbin(size = 10, prob = q[i])
-            x[i] ~ dbin(size = 10, prob = p[i])
-            q[i] <- expit(theta + gamma[i])
-            p[i] <- expit(gamma[i])
-            gamma[i] ~ dnorm(mu[i], var = tau[i])
-            mu[i] <- muTilde[xi[i]]
-            tau[i] <- tauTilde[xi[i]]
-        }
-        for(i in 1:10) {
-            muTilde[i] ~ dnorm(mu0, sd = sd0)
-            tauTilde[i] ~ dinvgamma(a0, b0)
-        }
-        xi[1:10] ~ dCRP(conc, size = 10)
-        conc ~ dgamma(1, 1)
-        mu0 ~ dflat()
-        sd0 ~ dunif(0, 100)
-        a0 ~ dunif(0, 100)
-        b0 ~ dunif(0, 100)
-        theta ~ dflat()
-    }
-    testBUGSmodel(example = 'test8', dir = "",
-                  model = model, data = Data, inits = Inits,
-                  useInits = TRUE)
-    
-    
-    ## myeloma semiparametric AFT model
-    ## data from 'myeloma' in the 'emplik' package
-    ## library(emplik)
-    ## data(myeloma)
-    time <- c(1.25,1.25,2,2,2,3,5,5,6,6,6,6,7,7,7,9,11,11,11,11,11,13,14,15,16,16,17,17,18,19,19,24,25,26,32,35,37,41,41,51,52,54,58,66,67,88,89,92,4,4,7,7,8,12,11,12,13,16,19,19,28,41,53,57,77)
-    vstatus <- c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) # 0 = alive (i.e., censored)
-    logBUN <- c(2.2175,1.9395,1.5185,1.7482,1.301,1.5441,2.2355,1.6812,1.3617,2.1139,1.1139,1.415,1.9777,1.0414,1.1761,1.7243,1.1139,1.2304,1.301,1.5682,1.0792,0.7782,1.3979,1.6021,1.3424,1.3222,1.2304,1.5911,1.4472,1.0792,1.2553,1.301,1,1.2304,1.3222,1.1139,1.6021,1,1.1461,1.5682,1,1.2553,1.2041,1.4472,1.3222,1.1761,1.3222,1.4314,1.9542,1.9243,1.1139,1.5315,1.0792,1.1461,1.6128,1.3979,1.6628,1.1461,1.3222,1.3222,1.2304,1.7559,1.1139,1.2553,1.0792)
-    HGB <- c(9.4,12,9.8,11.3,5.1,6.7,10.1,6.5,9,10.2,9.7,10.4,9.5,5.1,11.4,8.2,14,12,13.2,7.5,9.6,5.5,14.6,10.6,9,8.8,10,11.2,7.5,14.4,7.5,14.6,12.4,11.2,10.6,7,11,10.2,5,7.7,10.1,9,12.1,6.6,12.8,10.6,14,11,10.2,10,12.4,10.2,9.9,11.6,14,8.8,4.9,13,13,10.8,7.3,12.8,12,12.5,14)
 
-    n <- length(time)
-    alive <- vstatus == 0
-    cens_time <- rep(NA, n)
-    cens_time[alive] <- time[alive]
-    cens_time[!alive] <- Inf
-    time[alive] <- NA
-    
-    logBUN <- (logBUN - mean(logBUN)) / sd(logBUN)
-    HGB <- (HGB - mean(HGB)) / sd(HGB)
-    
-    ## accelerated failure time model per https://www4.stat.ncsu.edu/~ghosal/papers/PMR.pdf for Bayesian semiparametric AFT models
-    codeAFT <- nimbleCode({
-        for(i in 1:n) {
-            x[i] ~ dweib(alpha, exp(lambda[i]))   # 'data' nodes
-            is_cens[i] ~ dinterval(x[i], c[i])
-            lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
-            eta[i] <- etaTilde[xi[i]]
-        }
-        xi[1:n] ~ dCRP(conc, size = n)
-        conc ~ dgamma(1, 1)
-        for(i in 1:n){
-            etaTilde[i] ~ dunif(b0, B0)
-        }
-        alpha ~ dunif(a0, A0)
-        for(j in 1:p){
-            delta[j] ~ dflat() 
-        }
-    })
-    
-    constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
-                     = cens_time, Z = cbind(logBUN, HGB))
-    data = list(is_cens = as.numeric(alive), x = time)
-    xInit <- rep(NA, n)
-    xInit[alive] <- cens_time[alive] + 10
-    inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
-                 etaTilde = runif(n,constants$b0, constants$B0),
-                 xi = sample(1:3, n, replace = TRUE), x = xInit)
-    
-    model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
-    conf = configureMCMC(model)
-    mcmc = buildMCMC(conf)
-    
-    expect_equal(conf$getSamplers()[[1]]$name, "CRP_concentration")
-    expect_equal(conf$getSamplers()[[70]]$name, "CRP")
-    expect_equal(class(mcmc$samplerFunctions[[70]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
-    
-    ## Using testBUGSmodel
-    model <- function() {
-        for(i in 1:n) {
-            x[i] ~ dweib(alpha, 1+exp(lambda[i]))   # 'data' nodes
-            is_cens[i] ~ dinterval(x[i], c[i])
-            lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
-            eta[i] <- etaTilde[xi[i]]
-        }
-        xi[1:n] ~ dCRP(conc, size = n)
-        conc ~ dgamma(1, 1)
-        for(i in 1:n){
-            etaTilde[i] ~ dunif(b0, B0)
-        }
-        alpha ~ dunif(a0, A0)
-        for(j in 1:p){
-            delta[j] ~ dflat() 
-        }
+
+
+
+
+
+test_that("Testing more BNP models based on CRP", { 
+  ## Avandia meta-analysis
+  codeBNP <- nimbleCode({
+    for(i in 1:nStudies) {
+      y[i] ~ dbin(size = nStudies, prob = q[i])
+      x[i] ~ dbin(size = nStudies, prob = p[i])
+      q[i] <- expit(theta + gamma[i])
+      p[i] <- expit(gamma[i])
+      gamma[i] ~ dnorm(mu[i], var = tau[i])
+      mu[i] <- muTilde[xi[i]]
+      tau[i] <- tauTilde[xi[i]]
     }
-    
-    Data = list(is_cens = as.numeric(alive), x = time, 
-                b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n,
-                c = cens_time, Z = cbind(logBUN, HGB))
-    xInit <- rep(NA, n)
-    xInit[alive] <- cens_time[alive] + 10
-    Inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
-                 etaTilde = runif(n,Data$b0, Data$B0),
-                 xi = sample(1:3, n, replace = TRUE), x = xInit)
-    
-    testBUGSmodel(example = 'test9', dir = "",
-                  model = model, data = Data, inits = Inits, 
-                  useInits = TRUE)
+    for(i in 1:nStudies) {
+      muTilde[i] ~ dnorm(mu0, sd = sd0)
+      tauTilde[i] ~ dinvgamma(a0, b0)
+    }
+    xi[1:nStudies] ~ dCRP(conc, size = nStudies)
+    conc ~ dgamma(1, 1)
+    mu0 ~ dflat()
+    sd0 ~ dunif(0, 100)
+    a0 ~ dunif(0, 100)
+    b0 ~ dunif(0, 100)
+    theta ~ dflat()
+  })
+  
+  Consts=list(nStudies=10)
+  set.seed(1)
+  Inits=list(gamma=rep(1,10),
+             muTilde=rep(1,10),
+             tauTilde=rep(1,10),
+             xi=rep(1,10),
+             conc =1,
+             mu0 = 0,
+             sd0 = 1,
+             a0 = 1,
+             b0 = 1,
+             theta = 0)
+  
+  Data=list(y=rbinom(10, 10, 0.5), x=rbinom(10, 10, 0.5))
+  
+  model<-nimbleModel(codeBNP, data=Data, inits=Inits, constants=Consts,  calculate=TRUE)
+  cmodel<-compileNimble(model)
+  
+  mConf <- configureMCMC(model)
+  mMCMC <- buildMCMC(mConf)
+  
+  expect_equal(mConf$getSamplers()[[1]]$name, "CRP_concentration")
+  expect_equal(mConf$getSamplers()[[7]]$name, "CRP")
+  expect_equal(class(mMCMC$samplerFunctions[[7]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  
+  ## Using testBUGSmodel
+  model <- function() {
+    for(i in 1:10) {
+      y[i] ~ dbin(size = 10, prob = q[i])
+      x[i] ~ dbin(size = 10, prob = p[i])
+      q[i] <- expit(theta + gamma[i])
+      p[i] <- expit(gamma[i])
+      gamma[i] ~ dnorm(mu[i], var = tau[i])
+      mu[i] <- muTilde[xi[i]]
+      tau[i] <- tauTilde[xi[i]]
+    }
+    for(i in 1:10) {
+      muTilde[i] ~ dnorm(mu0, sd = sd0)
+      tauTilde[i] ~ dinvgamma(a0, b0)
+    }
+    xi[1:10] ~ dCRP(conc, size = 10)
+    conc ~ dgamma(1, 1)
+    mu0 ~ dflat()
+    sd0 ~ dunif(0, 100)
+    a0 ~ dunif(0, 100)
+    b0 ~ dunif(0, 100)
+    theta ~ dflat()
+  }
+  testBUGSmodel(example = 'test8', dir = "",
+                model = model, data = Data, inits = Inits,
+                useInits = TRUE)
+  
+  
+  ## myeloma semiparametric AFT model
+  ## data from 'myeloma' in the 'emplik' package
+  ## library(emplik)
+  ## data(myeloma)
+  time <- c(1.25,1.25,2,2,2,3,5,5,6,6,6,6,7,7,7,9,11,11,11,11,11,13,14,15,16,16,17,17,18,19,19,24,25,26,32,35,37,41,41,51,52,54,58,66,67,88,89,92,4,4,7,7,8,12,11,12,13,16,19,19,28,41,53,57,77)
+  vstatus <- c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) # 0 = alive (i.e., censored)
+  logBUN <- c(2.2175,1.9395,1.5185,1.7482,1.301,1.5441,2.2355,1.6812,1.3617,2.1139,1.1139,1.415,1.9777,1.0414,1.1761,1.7243,1.1139,1.2304,1.301,1.5682,1.0792,0.7782,1.3979,1.6021,1.3424,1.3222,1.2304,1.5911,1.4472,1.0792,1.2553,1.301,1,1.2304,1.3222,1.1139,1.6021,1,1.1461,1.5682,1,1.2553,1.2041,1.4472,1.3222,1.1761,1.3222,1.4314,1.9542,1.9243,1.1139,1.5315,1.0792,1.1461,1.6128,1.3979,1.6628,1.1461,1.3222,1.3222,1.2304,1.7559,1.1139,1.2553,1.0792)
+  HGB <- c(9.4,12,9.8,11.3,5.1,6.7,10.1,6.5,9,10.2,9.7,10.4,9.5,5.1,11.4,8.2,14,12,13.2,7.5,9.6,5.5,14.6,10.6,9,8.8,10,11.2,7.5,14.4,7.5,14.6,12.4,11.2,10.6,7,11,10.2,5,7.7,10.1,9,12.1,6.6,12.8,10.6,14,11,10.2,10,12.4,10.2,9.9,11.6,14,8.8,4.9,13,13,10.8,7.3,12.8,12,12.5,14)
+  
+  n <- length(time)
+  alive <- vstatus == 0
+  cens_time <- rep(NA, n)
+  cens_time[alive] <- time[alive]
+  cens_time[!alive] <- Inf
+  time[alive] <- NA
+  
+  logBUN <- (logBUN - mean(logBUN)) / sd(logBUN)
+  HGB <- (HGB - mean(HGB)) / sd(HGB)
+  
+  ## accelerated failure time model per https://www4.stat.ncsu.edu/~ghosal/papers/PMR.pdf for Bayesian semiparametric AFT models
+  codeAFT <- nimbleCode({
+    for(i in 1:n) {
+      x[i] ~ dweib(alpha, exp(lambda[i]))   # 'data' nodes
+      is_cens[i] ~ dinterval(x[i], c[i])
+      lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
+      eta[i] <- etaTilde[xi[i]]
+    }
+    xi[1:n] ~ dCRP(conc, size = n)
+    conc ~ dgamma(1, 1)
+    for(i in 1:n){
+      etaTilde[i] ~ dunif(b0, B0)
+    }
+    alpha ~ dunif(a0, A0)
+    for(j in 1:p){
+      delta[j] ~ dflat() 
+    }
+  })
+  
+  constants = list(b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n, c
+                   = cens_time, Z = cbind(logBUN, HGB))
+  data = list(is_cens = as.numeric(alive), x = time)
+  xInit <- rep(NA, n)
+  xInit[alive] <- cens_time[alive] + 10
+  inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
+               etaTilde = runif(n,constants$b0, constants$B0),
+               xi = sample(1:3, n, replace = TRUE), x = xInit)
+  
+  model <- nimbleModel(codeAFT, constants = constants, data = data, inits = inits)
+  conf = configureMCMC(model)
+  mcmc = buildMCMC(conf)
+  
+  expect_equal(conf$getSamplers()[[1]]$name, "CRP_concentration")
+  expect_equal(conf$getSamplers()[[70]]$name, "CRP")
+  expect_equal(class(mcmc$samplerFunctions[[70]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  
+  ## Using testBUGSmodel
+  model <- function() {
+    for(i in 1:n) {
+      x[i] ~ dweib(alpha, 1+exp(lambda[i]))   # 'data' nodes
+      is_cens[i] ~ dinterval(x[i], c[i])
+      lambda[i] <-  inprod(Z[i, 1:p], delta[1:p]) + eta[i] 
+      eta[i] <- etaTilde[xi[i]]
+    }
+    xi[1:n] ~ dCRP(conc, size = n)
+    conc ~ dgamma(1, 1)
+    for(i in 1:n){
+      etaTilde[i] ~ dunif(b0, B0)
+    }
+    alpha ~ dunif(a0, A0)
+    for(j in 1:p){
+      delta[j] ~ dflat() 
+    }
+  }
+  
+  Data = list(is_cens = as.numeric(alive), x = time, 
+              b0 = -10, B0 = 10, a0 = 0.1, A0 = 10, p = 2, n = n,
+              c = cens_time, Z = cbind(logBUN, HGB))
+  xInit <- rep(NA, n)
+  xInit[alive] <- cens_time[alive] + 10
+  Inits = list(alpha = 1, delta = c(0, 0), conc = 1, 
+               etaTilde = runif(n,Data$b0, Data$B0),
+               xi = sample(1:3, n, replace = TRUE), x = xInit)
+  
+  testBUGSmodel(example = 'test9', dir = "",
+                model = model, data = Data, inits = Inits, 
+                useInits = TRUE)
 })
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
-    
+
+##-- test: random sampling from a compiled model adding one more level:
+test_that("random sampling from model works fine", {
+  set.seed(0)
+  x <- rbeta(5, 1, 1)
+  truth <- c(x[1], x[2:5]*cumprod(1-x[1:4]), prod(1-x[1:5]))
+  
+  SB_code2 <- nimbleCode({
+    for(i in 1:5) 
+      z[i] ~ dbeta(1, 1)
+    w[1:6] <- stick_breaking(z[1:5])
+    for(i in 1:10){
+      xi[i] ~ dcat(w[1:6])
+    }
+  })
+  
+  set.seed(1)
+  Inits <- list(z = rbeta(5, 1, 1))
+  data <- list(xi = rep(1,10))
+  SB_model2 <- nimbleModel(SB_code2, data=data, inits=Inits)
+  
+  c_SB_model2 <- compileNimble(SB_model2)
+  
+  c_SB_model2$z <- x
+  c_SB_model2$calculate()
+  
+  expect_equal(c_SB_model2$w, truth,
+               info = paste0("incorrect stick breaking weights in SB_model2"))
+  
+  #-- sampling via simulate:
+  set.seed(0)
+  simul_samp <- function(model) {
+    model$simulate()
+    return(model$w)
+  }
+  simul_samps <- t(replicate(10000, simul_samp(c_SB_model2)))
+  
+  trueE <- c(0.5^(1:5) )
+  
+  #-- checking the mean of the components of a vector that has a generalized dirichelt distribution
+  #-- if z_i ~ beta then weights, w, defined by a SB representation have a generalized dirichlet distribution
+  #-- and the expectation of w_j=0.5^j (in this case a=b=1).
+  
+  expect_equal(apply(simul_samps, 2, mean)[1:5], trueE, tol=0.01,
+               info = paste0("incorrect weights (w) sampling  in SB_model2"))
+  
+  
+  # wrong specification of stick variables
+  SB_code3 <- nimbleCode({
+    for(i in 1:5) 
+      z[i] ~ dgamma(10, 10)
+    w[1:6] <- stick_breaking(z[1:5])
+    for(i in 1:10){
+      xi[i] ~ dcat(w[1:6])
+    }
+  })
+  
+  # wrong prior and starting values for stick variables: how to recognize this wrong specification?
+  set.seed(1)
+  Inits <- list(z = rgamma(5, 10, 10))
+  data <- list(xi = 1:10)
+  expect_output(nimbleModel(SB_code3, data=data, inits=Inits)) # message is sent because z >1.
+  
+  # good stating values for stick variables
+  set.seed(1)
+  Inits <- list(z = rbeta(5, 1, 1))
+  data <- list(xi = rep(1,10))
+  SB_model3 <- nimbleModel(SB_code3, data=data, inits=Inits)
+  expect_output(SB_model3$simulate(), "values in 'z' have to be in") # message is sent because z >1.
+  
+  # wrong specification of length in stick variables, should be 5
+  SB_code4 <- nimbleCode({
+    for(i in 1:4) 
+      z[i] ~ dbeta(1,1)
+    w[1:6] <- stick_breaking(z[1:4])
+    for(i in 1:10){
+      xi[i] ~ dcat(w[1:6])
+    }
+  })
+  
+  # wrong length for stick variables, a warning is sent in the nimbleModel function
+  # how to recognize this wrong specification in the test?
+  set.seed(1)
+  Inits <- list(z = rbeta(4, 10, 10))
+  data <- list(xi = rep(1,10))
+  expect_warning(nimbleModel(SB_code4, data=data, inits=Inits), message = "number of items to replace")
+  
+  
+  # wrong specification of length in stick variables, should be 5
+  # no warning in nimbleModel function
+  SB_code5 <- nimbleCode({
+    for(i in 1:2) 
+      z[i] ~ dbeta(1,1)
+    w[1:6] <- stick_breaking(z[1:2])
+    for(i in 1:10){
+      xi[i] ~ dcat(w[1:6])
+    }
+  })
+  
+  set.seed(1)
+  Inits <- list(z = rbeta(2, 10, 10))
+  data <- list(xi = rep(1,10))
+  SB_model5 <- nimbleModel(SB_code5, data=data, inits=Inits)
+  cSB_model5 <- compileNimble(SB_model5)
+  expect_output(cSB_model5$calculate('w'), "Error in mapCopy")
+  
+  
+  
+  # longer vector of stick variables
+  SB_code6 <- nimbleCode({
+    for(i in 1:10) 
+      z[i] ~ dbeta(1,1)
+    w[1:6] <- stick_breaking(z[1:10])
+    for(i in 1:10){
+      xi[i] ~ dcat(w[1:6])
+    }
+  })
+  
+  # wrong length for stick variables, a warning is sent in the nimbleModel function
+  set.seed(1)
+  Inits <- list(z = rbeta(10, 10, 10))
+  data <- list(xi = rep(1,10))
+  expect_warning(SB_model6 <- nimbleModel(SB_code6, data=data, inits=Inits), "number of items to replace")
+  cSB_model6 <- compileNimble(SB_model6)
+  expect_output(cSB_model6$calculate('w'), "Error in mapCopy")
+})
+
+
