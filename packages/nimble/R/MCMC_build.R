@@ -131,6 +131,7 @@ buildMCMC <- nimbleFunction(
         sampledNodes <- model$getVarNames(includeLogProb = FALSE, nodes = monitors)
         sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(includeLogProb = FALSE)]
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE, downstream = TRUE)
+        allVarsIncludingLogProbs <- model$getVarNames(includeLogProb = TRUE)
         enableWAIC <- enableWAICargument || conf$enableWAIC   ## enableWAIC comes from MCMC configuration, or from argument to buildMCMC
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
@@ -240,7 +241,7 @@ buildMCMC <- nimbleFunction(
             logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
             logAvgProb <- 0
             pWAIC <- 0
-            currentVals2 <- values(model, sampledNodes)
+            currentVals <- values(model, allVarsIncludingLogProbs)
             
             for(i in 1:numMCMCSamples) {
                 copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburninPostThinning)
@@ -257,11 +258,9 @@ buildMCMC <- nimbleFunction(
                 pWAIC <- pWAIC + pointLogPredVar
             }
             WAIC <- -2*(logAvgProb - pWAIC)
-            values(model, sampledNodes) <<- currentVals2
-            ##model$calculate(paramDeps)
-            model$calculate()
+            values(model, allVarsIncludingLogProbs) <<- currentVals
+            if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
             returnType(double())
-            someVals <- values(model)    ## won't work
             return(WAIC)
         }),
     where = getLoadingNamespace()
