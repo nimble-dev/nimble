@@ -261,7 +261,7 @@ buildMCMC <- nimbleFunction(
             ##model$calculate(paramDeps)
             model$calculate()
             returnType(double())
-            someVals <- values(model, sampledNodes)    ## back to safety?
+            someVals <- values(model)    ## won't work
             return(WAIC)
         }),
     where = getLoadingNamespace()
