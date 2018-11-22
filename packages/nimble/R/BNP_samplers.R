@@ -61,13 +61,56 @@ getSamplesDPmeasure <- function(MCMC) {
       rsampler$run()
       samplesMeasure <- rsampler$samples
     }
+    
     namesVars <- rsampler$tildeVars
     p <- length(namesVars)
-    truncG <- ncol(samplesMeasure) / (p+1)
-    namesW <- sapply(seq_len(truncG), function(i) paste0("weight[", i, "]"))
-    namesAtoms <- unlist(sapply(seq_len(p), function(j) 
-      sapply(seq_len(truncG), function(i) paste0(namesVars[j], "[", i, "]"))))
     
+    dataNodes <- model$getNodeNames(dataOnly = TRUE) #dataNodes <- rsampler$dataNodes
+    dimData <-  model$getDimension(dataNodes[1]) #dimDatas <- rsampler$dimData
+    lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
+    
+    dimTilde <- c() # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
+    for(i in 1:p) {
+      elementsTildeVars <- model$expandNodeNames(namesVars[i], returnScalarComponents = TRUE)
+      dimTilde[i] <- model$getDimension(elementsTildeVars[i]) #rsampler$dimTildeAux
+    }
+    
+    dimTildeAux <- (lengthData)^(dimTilde)
+    truncG <- ncol(samplesMeasure) / (sum(dimTildeAux)+1) 
+    namesW <- sapply(seq_len(truncG), function(i) paste0("weight[", i, "]"))
+    
+    if(dimData == 0) { # nimble dimensions
+      namesAtoms <- unlist(sapply(seq_len(p), function(j) 
+        sapply(seq_len(truncG), function(i) paste0(namesVars[j], "[", i, "]"))))
+    }
+    if(dimData == 1) { # nimble dimensions
+      namesAtoms <- list()
+      inames <- 1
+      for(j in 1:p){
+        if(dimTilde[j] == 1) { # nimble dimensions
+          for(k in 1:(dimData+1)){
+            for(l in 1:truncG) {
+              namesAtoms[[inames]] <- paste0(namesVars[j], "[", l, ",", k, "]")
+              inames <- inames + 1
+            }
+          }
+        }
+        if(dimTilde[j] == 2) { # nimble dimensions
+          for(l in 1:truncG){
+            for(k in 1:(dimData+1)) {
+              for(k1 in 1:(dimData+1)) {
+                namesAtoms[[inames]] <- paste0(namesVars[j], "[", k1, ",", k, ",", l, "]")
+                inames <- inames + 1
+              }
+            }
+          }
+        }
+      }
+      namesAtoms <- unlist(namesAtoms)
+    }
+    # add other cases when dimData == {2, 3}
+    
+     
     colnames(samplesMeasure) <- c(namesW, namesAtoms)
     output <- list(samples = samplesMeasure, trunc = truncG)
     return(output)
@@ -107,6 +150,7 @@ sampleDPmeasure <- nimbleFunction(
       stop( 'sampleDPmeasure: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
     
     ## Find the cluster variables, named tildeVars
+    dimData <-  model$getDimension(dataNodes[1]) # nimble dimension
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
     tildeVars <- NULL
     itildeVar <- 1
@@ -116,8 +160,22 @@ sampleDPmeasure <- nimbleFunction(
       for(j in seq_along(expr)) {
         ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
         tmpexpr <- parse(text = expr[j])[[1]]
-        if(length(tmpexpr) >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') {   
-          foundTarget <- all.vars(tmpexpr[[3]]) == dcrpVar   
+        ltmpexpr <- length(tmpexpr)
+        if(ltmpexpr >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') { 
+          #  Find the cluster variables, named tildeVars, in presence of multivariate cluster parameters:
+          if(dimData >= 1) { # maybe can be the same for univariate !?
+            k <- 1
+            foundTarget <- FALSE
+            while(k <= ltmpexpr && foundTarget == FALSE) {
+              foundTarget <- all.vars(tmpexpr[[k]]) == dcrpVar
+              if(sum(foundTarget) == 0) {  # to avoid having foundTarget equal to logical(0). what other type could foundTarget be?
+                foundTarget <- FALSE
+              }
+              k <- k + 1
+            }
+          } else { #  Find the cluster variables, named tildeVars, in presence of univariate cluster parameters:
+            foundTarget <- all.vars(tmpexpr[[3]]) == dcrpVar     
+          }
           if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
             tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
             itildeVar <- itildeVar+1 
@@ -125,6 +183,7 @@ sampleDPmeasure <- nimbleFunction(
         }
       }
     }
+    
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
     
@@ -134,16 +193,17 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The node(s) representing the cluster variables must be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
     
     ## Check that tilde nodes are continuous and univariate variables (for avoiding long trials in simulating atoms for G in run code:
-    if(any(model$isDiscrete(tildeVars)))
-      stop('sampleDPmeasure: cluster variables should be continuous random variables.\n')
+    #if(any(model$isDiscrete(tildeVars)))
+    #  stop('sampleDPmeasure: cluster variables should be continuous random variables.\n')
     
-    if(any(model$isMultivariate(tildeVars)))
-      stop( 'sampleDPmeasure: only univariate cluster variables are allowed.\n' )
+    #if(any(model$isMultivariate(tildeVars)))
+    #  stop( 'sampleDPmeasure: only univariate cluster variables are allowed.\n' )
     
     ## Getting all stochastic parent nodes of cluster variables (needed for simulating new tildeVar values):
     parentNodesTildeVars <- NULL
     tildeVarsElements <- list()
     for(i in seq_along(tildeVars) ) {
+      # add sanity check that atom are iid sampled
       tildeVarsElements[[i]] <- model$expandNodeNames(tildeVars[i])
     }        
     candidateParentNodes <- model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
@@ -212,7 +272,20 @@ sampleDPmeasure <- nimbleFunction(
     
     N <- length(dataNodes)
     p <- length(tildeVars)
-    nTilde <- length(values(model, tildeVars)) / p 
+    lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
+    nTilde <- c()
+    dimTilde <- c() # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
+    for(i in 1:p) {
+      elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
+      dimTilde[i] <- model$getDimension(elementsTildeVars[i])
+      nTilde[i] <- length(values(model, tildeVars[i])) / (dimData + 1)^dimTilde[i]
+    }
+    if(any(nTilde != nTilde[1])){
+      stop('sampleDPmeasure: All cluster parameters must have the same number of observations.\n')
+    }
+    dimTilde <- (lengthData)^(dimTilde) # dimension to be used in run code
+    
+    
     ## The error of approximation G is given by (conc / (conc +1))^{truncG-1}. 
     ## we are going to define an error of aproximation and based on the posterior values of the conc parameter define the truncation level of G
     ## the error is between errors that are considered very very small in the folowing papers
@@ -253,13 +326,13 @@ sampleDPmeasure <- nimbleFunction(
     ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
     ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
     ## (p+1) denoted the number of parameters, each of length truncG, to be stored: p is the number of cluster components (length(tildeVars)) and 1 is for the weights.
-    samples <<- matrix(0, nrow = niter, ncol = truncG*(p+1)) 
+    samples <<- matrix(0, nrow = niter, ncol = truncG*(1 + sum(dimTilde))) 
     
     for(iiter in 1:niter){
       ## getting the sampled unique values (tilde variables) and their probabilities of being sampled,
       ## need for computing density later.
       probs <- nimNumeric(N)
-      uniqueValues <- matrix(0, nrow = N, ncol = p)  
+      uniqueValues <- matrix(0, nrow = N, ncol = sum(dimTilde))  
       xiiter <- mvSaved[dcrpVar, iiter]
       range <- min(xiiter):max(xiiter) 
       index <- 1
@@ -269,8 +342,12 @@ sampleDPmeasure <- nimbleFunction(
           probs[index] <- cond
           ## slight workaround because can't compile mvSaved[tildeVars[j], iiter]  
           nimCopy(mvSaved, model, tildeVars, row = iiter)
+          jcol <- 1
           for(j in 1:p){
-            uniqueValues[index, j] <- values(model, tildeVars[j])[range[i]]
+            for(m in 1:dimTilde[j]) {
+              uniqueValues[index, jcol] <- values(model, tildeVars[j])[(range[i]-1)*dimTilde[j] + m]
+              jcol <- jcol + 1
+            }
           }
           index <- index+1
         }
@@ -299,12 +376,22 @@ sampleDPmeasure <- nimbleFunction(
         index <- rcat(prob = probs[1:newValueIndex])
         if(index == newValueIndex){   # sample from G_0
           model$simulate(parentNodesTildeVarsDeps)
+          sumDim <- 0
           for(j in 1:p){ 
-            samples[iiter, j*truncG + l] <<- values(model, tildeVars)[(j-1)*nTilde + 1]
+            for(m in 1:dimTilde[j]) {
+              samples[iiter,  truncG + sumDim  + (l-1)*dimTilde[j] + m] <<- values(model, tildeVars[j])[m]
+            }
+            sumDim <- sumDim + truncG*dimTilde[j]
           }
         } else {   # sample one of the existing values
+          jcol <- 1
+          sumDim <- 0
           for(j in 1:p){
-            samples[iiter, j*truncG + l] <<- uniqueValues[index, j] 
+            for(m in 1:dimTilde[j]) {
+              samples[iiter,  truncG + sumDim  + (l-1)*dimTilde[j] + m] <<- uniqueValues[index, jcol] 
+              jcol <- jcol + 1
+            }
+            sumDim <- sumDim + truncG*dimTilde[j]
           }
         }
       }
