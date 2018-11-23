@@ -66,48 +66,54 @@ getSamplesDPmeasure <- function(MCMC) {
     p <- length(namesVars)
     
     dataNodes <- model$getNodeNames(dataOnly = TRUE) #dataNodes <- rsampler$dataNodes
-    dimData <-  model$getDimension(dataNodes[1]) #dimDatas <- rsampler$dimData
+    #dimData <-  model$getDimension(dataNodes[1]) #dimDatas <- rsampler$dimData
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
     
     dimTilde <- c() # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(namesVars[i], returnScalarComponents = TRUE)
-      dimTilde[i] <- model$getDimension(elementsTildeVars[i]) #rsampler$dimTildeAux
+      dimTilde[i] <- model$getDimension(elementsTildeVars[i]) 
     }
     
     dimTildeAux <- (lengthData)^(dimTilde)
     truncG <- ncol(samplesMeasure) / (sum(dimTildeAux)+1) 
     namesW <- sapply(seq_len(truncG), function(i) paste0("weight[", i, "]"))
     
-    if(dimData == 0) { # nimble dimensions
-      namesAtoms <- unlist(sapply(seq_len(p), function(j) 
-        sapply(seq_len(truncG), function(i) paste0(namesVars[j], "[", i, "]"))))
-    }
-    if(dimData == 1) { # nimble dimensions
-      namesAtoms <- list()
+    #if() { # nimble dimensions
+    #  namesAtoms <- unlist(sapply(seq_len(p), function(j) 
+    #    sapply(seq_len(truncG), function(i) paste0(namesVars[j], "[", i, "]"))))
+    #}
+    #if(dimData == 1) { # nimble dimensions
+      namesAtoms <- c()
       inames <- 1
       for(j in 1:p){
-        if(dimTilde[j] == 1) { # nimble dimensions
-          for(k in 1:(dimData+1)){
+        if(dimTilde[j] == 0) { # scalar cluster parameter
+          for(l in 1:truncG) {
+            namesAtoms[inames] <- paste0(namesVars[j], "[", l, "]")
+            inames <- inames + 1
+          }
+        }
+        if(dimTilde[j] == 1) { # vector cluster parameter
+          for(k in 1:lengthData){
             for(l in 1:truncG) {
-              namesAtoms[[inames]] <- paste0(namesVars[j], "[", l, ",", k, "]")
+              namesAtoms[inames] <- paste0(namesVars[j], "[", l, ",", k, "]")
               inames <- inames + 1
             }
           }
         }
-        if(dimTilde[j] == 2) { # nimble dimensions
+        if(dimTilde[j] == 2) { # matrix cluster parameter
           for(l in 1:truncG){
-            for(k in 1:(dimData+1)) {
-              for(k1 in 1:(dimData+1)) {
-                namesAtoms[[inames]] <- paste0(namesVars[j], "[", k1, ",", k, ",", l, "]")
+            for(k in 1:lengthData) {
+              for(k1 in 1:lengthData) {
+                namesAtoms[inames] <- paste0(namesVars[j], "[", k1, ",", k, ",", l, "]")
                 inames <- inames + 1
               }
             }
           }
         }
       }
-      namesAtoms <- unlist(namesAtoms)
-    }
+    #  namesAtoms <- unlist(namesAtoms)
+    #}
     # add other cases when dimData == {2, 3}
     
      
@@ -150,7 +156,6 @@ sampleDPmeasure <- nimbleFunction(
       stop( 'sampleDPmeasure: The node having the dCRP distribution has to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
     
     ## Find the cluster variables, named tildeVars
-    dimData <-  model$getDimension(dataNodes[1]) # nimble dimension
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
     tildeVars <- NULL
     itildeVar <- 1
@@ -162,8 +167,8 @@ sampleDPmeasure <- nimbleFunction(
         tmpexpr <- parse(text = expr[j])[[1]]
         ltmpexpr <- length(tmpexpr)
         if(ltmpexpr >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') { 
-          #  Find the cluster variables, named tildeVars, in presence of multivariate cluster parameters:
-          if(dimData >= 1) { # maybe can be the same for univariate !?
+          #  Find the cluster variables, named tildeVars, in presence of univariate and multivariate cluster parameters:
+          #if(dimData >= 1) { # maybe can be the same for univariate !?
             k <- 1
             foundTarget <- FALSE
             while(k <= ltmpexpr && foundTarget == FALSE) {
@@ -173,9 +178,9 @@ sampleDPmeasure <- nimbleFunction(
               }
               k <- k + 1
             }
-          } else { #  Find the cluster variables, named tildeVars, in presence of univariate cluster parameters:
-            foundTarget <- all.vars(tmpexpr[[3]]) == dcrpVar     
-          }
+          #} else { #  Find the cluster variables, named tildeVars, in presence of univariate cluster parameters:
+          #  foundTarget <- all.vars(tmpexpr[[3]]) == dcrpVar     
+          #}
           if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
             tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
             itildeVar <- itildeVar+1 
@@ -278,7 +283,7 @@ sampleDPmeasure <- nimbleFunction(
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
       dimTilde[i] <- model$getDimension(elementsTildeVars[i])
-      nTilde[i] <- length(values(model, tildeVars[i])) / (dimData + 1)^dimTilde[i]
+      nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTilde[i]
     }
     if(any(nTilde != nTilde[1])){
       stop('sampleDPmeasure: All cluster parameters must have the same number of observations.\n')
