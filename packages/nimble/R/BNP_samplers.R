@@ -47,9 +47,13 @@ getSamplesDPmeasure <- function(MCMC) {
       if(!exists('Robject', MCMC) || !exists('model', MCMC$Robject))
         stop("getSamplesDPmeasure: problem with finding model object in compiled MCMC")
       model <- MCMC$Robject$model
+      dataNodes <- model$getNodeNames(dataOnly = TRUE) 
+      lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
       mvSamples <- MCMC$Robject$mvSamples
     } else {
       model <- MCMC$model
+      dataNodes <- model$getNodeNames(dataOnly = TRUE) 
+      lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
       mvSamples <- MCMC$mvSamples
     }
     rsampler <- sampleDPmeasure(model, mvSamples)
@@ -64,30 +68,22 @@ getSamplesDPmeasure <- function(MCMC) {
     
     namesVars <- rsampler$tildeVars
     p <- length(namesVars)
-    
-    dataNodes <- model$getNodeNames(dataOnly = TRUE) #dataNodes <- rsampler$dataNodes
-    lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
-    
-    dimTilde <- c() # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
-    for(i in 1:p) {
-      elementsTildeVars <- model$expandNodeNames(namesVars[i], returnScalarComponents = TRUE)
-      dimTilde[i] <- model$getDimension(elementsTildeVars[i]) 
-    }
-    
-    dimTildeAux <- (lengthData)^(dimTilde)
-    truncG <- ncol(samplesMeasure) / (sum(dimTildeAux)+1) 
+
+    dimTilde <- rsampler$dimTilde
+    dimTildeNim <- rsampler$dimTildeNim
+    truncG <- ncol(samplesMeasure) / (sum(dimTilde)+1) 
     namesW <- sapply(seq_len(truncG), function(i) paste0("weight[", i, "]"))
     
     namesAtoms <- c()
     inames <- 1
     for(j in 1:p){
-      if(dimTilde[j] == 0) { # scalar cluster parameter
+      if(dimTildeNim[j] == 0) { # scalar cluster parameter
         for(l in 1:truncG) {
           namesAtoms[inames] <- paste0(namesVars[j], "[", l, "]")
           inames <- inames + 1
         }
       }
-      if(dimTilde[j] == 1) { # vector cluster parameter
+      if(dimTildeNim[j] == 1) { # vector cluster parameter
         for(k in 1:lengthData){
           for(l in 1:truncG) {
             namesAtoms[inames] <- paste0(namesVars[j], "[", l, ",", k, "]")
@@ -95,7 +91,7 @@ getSamplesDPmeasure <- function(MCMC) {
           }
         }
       }
-      if(dimTilde[j] == 2) { # matrix cluster parameter
+      if(dimTildeNim[j] == 2) { # matrix cluster parameter
         for(l in 1:truncG){
           for(k in 1:lengthData) {
             for(k1 in 1:lengthData) {
@@ -265,16 +261,18 @@ sampleDPmeasure <- nimbleFunction(
     p <- length(tildeVars)
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
     nTilde <- c()
-    dimTilde <- c() # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
+    dimTildeNim <- c() # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
+    dimTilde <- c() # dimension to be used in run code
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
-      dimTilde[i] <- model$getDimension(elementsTildeVars[i])
-      nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTilde[i]
+      dimTildeNim[i] <- model$getDimension(elementsTildeVars[i])[[1]]
+      dimTilde[i] <- lengthData^(model$getDimension(elementsTildeVars[i])[[1]]) 
+      nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTildeNim[i]
     }
     if(any(nTilde != nTilde[1])){
       stop('sampleDPmeasure: All cluster parameters must have the same number of observations.\n')
     }
-    dimTilde <- (lengthData)^(dimTilde) # dimension to be used in run code
+    
     
     
     ## The error of approximation G is given by (conc / (conc +1))^{truncG-1}. 
@@ -293,6 +291,9 @@ sampleDPmeasure <- nimbleFunction(
   run=function(){
     
     niter <- getsize(mvSaved) # number of iterations in the MCMC
+    for(i in 1:p) { # so dimTildeNim can be obtained in the wrapper function
+      dimTildeNim[i] <<- dimTildeNim[i]
+    }
     
     # defining the truncation level of the random measure's representation:
     if( fixedConc ) {
