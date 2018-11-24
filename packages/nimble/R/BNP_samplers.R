@@ -264,7 +264,7 @@ sampleDPmeasure <- nimbleFunction(
     nTilde <- numeric(p)
     dimTildeNim <- numeric(p) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
     dimTilde <- numeric(p) # dimension to be used in run code
-    dimTildeNimAux <- numeric(p) #
+    #dimTildeNimAux <- numeric(p) #
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
       dimTildeNim[i] <- model$getDimension(elementsTildeVars[i])
@@ -294,7 +294,7 @@ sampleDPmeasure <- nimbleFunction(
     
     niter <- getsize(mvSaved) # number of iterations in the MCMC
     for(i in 1:p) { # so dimTildeNim can be obtained in the wrapper function
-      dimTildeNimAux[i] <<- dimTildeNim[i]
+      dimTildeNim[i] <<- dimTildeNim[i]
     }
     
     # defining the truncation level of the random measure's representation:
