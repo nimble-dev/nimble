@@ -102,8 +102,9 @@ getSamplesDPmeasure <- function(MCMC) {
         }
       }
     }  
-     
+    
     colnames(samplesMeasure) <- c(namesW, namesAtoms)
+    
     output <- list(samples = samplesMeasure, trunc = truncG)
     return(output)
 }
@@ -260,13 +261,13 @@ sampleDPmeasure <- nimbleFunction(
     N <- length(dataNodes)
     p <- length(tildeVars)
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
-    nTilde <- c()
-    dimTildeNim <- c() # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
-    dimTilde <- c() # dimension to be used in run code
+    nTilde <- numeric(p)
+    dimTildeNim <- numeric(p) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
+    dimTilde <- numeric(p) # dimension to be used in run code
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
-      dimTildeNim[i] <- model$getDimension(elementsTildeVars[i])[[1]]
-      dimTilde[i] <- lengthData^(model$getDimension(elementsTildeVars[i])[[1]]) 
+      dimTildeNim[i] <- model$getDimension(elementsTildeVars[i])
+      dimTilde[i] <- lengthData^(model$getDimension(elementsTildeVars[i])) 
       nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTildeNim[i]
     }
     if(any(nTilde != nTilde[1])){
