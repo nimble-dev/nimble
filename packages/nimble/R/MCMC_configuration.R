@@ -738,6 +738,8 @@ checkCRPconjugacy <- function(model, target) {
         itildeVar <- itildeVar+1 
       }
     }
+    ## Note that models with thetatilde[n-xi[i]+1] won't have xi[i] detected above and so no conjugacy will be found
+    ## which is what we want because conjugate samplers assume xi[i] is the thetatilde element being used
           
     ## determination of conjugacy for one tilde node that has 1 or 0 determnistic nodes
     ## does not find conjugacy when we have random mean and variance defined by deterministic nodes
