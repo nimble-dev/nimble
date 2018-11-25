@@ -377,7 +377,7 @@ LWparFunc <- nimbleFunction(
 buildLiuWestFilter <- nimbleFunction(
     name = 'buildLiuWestFilter',
   setup = function(model, nodes, params = NULL, control = list()){
-    
+    warning("The Liu-West filter ofen performs poorly and is provided primarily for didactic purposes.")
     #control list extraction
     saveAll <- control[['saveAll']]
     silent <- control[['silent']]
