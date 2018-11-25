@@ -391,7 +391,7 @@ buildLiuWestFilter <- nimbleFunction(
     #get latent state info
     varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
     if(length(unique(varName))>1){
-      stop("all latent nodes must come from same variable")
+      stop("All latent nodes must come from same variable.")
     }
     varName <- varName[1]
     info <- model$getVarInfo(varName)
@@ -400,8 +400,8 @@ buildLiuWestFilter <- nimbleFunction(
       timeIndex <- which.max(info$maxs)
       timeLength <- max(info$maxs)
       if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
-        stop("unable to determine which dimension indexes time. 
-             Specify manually using the 'timeIndex' control list argument")
+        stop("Unable to determine which dimension indexes time. 
+             Specify manually using the 'timeIndex' control list argument.")
     } else{
       timeLength <- info$maxs[timeIndex]
     }
@@ -419,20 +419,19 @@ buildLiuWestFilter <- nimbleFunction(
     }
     params <- model$expandNodeNames(params, sort = TRUE)
     if(identical(params, character(0)))
-      stop('must be at least one higher level parameter for Liu and West filter to work')
+      stop('There must be at least one higher level parameter for Liu and West filter to work.')
     if(any(params %in% nodes))
-      stop('parameters cannot be latent states')
+      stop('Parameters cannot be latent states.')
     if(!all(params%in%model$getNodeNames(stochOnly=TRUE)))
-      stop('parameters must be stochastic nodes')
+      stop('Parameters must be stochastic nodes.')
     paramVars <-  model$getVarNames(nodes =  params)  # need var names too
     pardimcheck <- sapply(paramVars, function(n){
       if(length(nimDim(model[[n]]))>1)
-        stop("Liu and West filter doesn't work for matrix valued top level parameters")
+        stop("Liu and West filter doesn't work for matrix valued top level parameters.")
     })
     
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
-    if(length(unique(dims)) > 1) stop('sizes or dimension of latent 
-                                      states varies')
+    if(length(unique(dims)) > 1) stop('Sizes or dimensions of latent states varies.')
     paramDims <-   sapply(params, function(n) nimDim(model[[n]]))
     
     my_initializeModel <- initializeModel(model, silent = silent)
