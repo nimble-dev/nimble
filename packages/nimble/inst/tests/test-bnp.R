@@ -1229,6 +1229,23 @@ test_that("Testing conjugacy detection with models using CRP", {
   conf <- configureMCMC(m)
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+
+  ## non-exchangeable prior for tilde nodes
+  code = nimbleCode({
+    for(i in 1:4){
+        mu[i] <- muTilde[xi[i]]
+        y[i] ~ dnorm(mu[i], sd = 1)
+        muTilde[i] ~ dnorm(mu0[i], sd = s0)
+        mu0[i] ~ dnorm(0,1)
+    }
+    xi[1:4] ~ dCRP(1, 4)
+    s0 ~ dhalfflat()
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   
 })

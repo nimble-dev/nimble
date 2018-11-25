@@ -763,6 +763,13 @@ checkCRPconjugacy <- function(model, target) {
             }
         }
     }
+
+    ## check that prior for tilde nodes are truly exchangeable
+    valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
+    names(valueExprs) <- NULL
+    if(length(unique(valueExprs)) != 1)
+        conjugate <- FALSE
+    
     if(conjugate) return(conjugacyType) else return(NULL)
 }
 
