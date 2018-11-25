@@ -749,6 +749,8 @@ checkCRPconjugacy <- function(model, target) {
     ## then make sure all tilde nodes and all of their dependent nodes are exchangeable
     if(length(tildevarNames) == 1){  ## for now avoid case of mixing over multiple parameters
         clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+        # avoid non-nodes from truncated clustering, e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs
+        clusterNodes <- clusterNodes[clusterNodes %in% model$getNodeNames(stochOnly = TRUE, includeData = FALSE)]
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
         if(length(conjugacy)) {
             if(length(unique(model$getDeclID(clusterNodes))) == 1) { ## make sure all tilde nodes from same declaration (i.e., exchangeable)

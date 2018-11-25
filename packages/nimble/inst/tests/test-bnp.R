@@ -935,6 +935,20 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
+  ## dnorm_dnorm with truncation
+  code = nimbleCode({
+    for(i in 1:4) 
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    for(i in 1:2)
+        mu[i] ~ dnorm(0,1)
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[3]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
+
   ## dnorm_dnorm one more level of hierarchy
   code = nimbleCode({
     for(i in 1:4) {
@@ -951,7 +965,7 @@ test_that("Testing conjugacy detection with models using CRP", {
   expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   
-  ## dnorm_dnorm and determinictic nodes
+  ## dnorm_dnorm and deterministic nodes
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dnorm(0,1)
@@ -966,8 +980,24 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
+  ## dnorm_dnorm and deterministic nodes and truncation
+  code = nimbleCode({
+    for(i in 1:4) {
+      mui[i] <- mu[xi[i]]
+      y[i] ~ dnorm(mui[i], sd = 1)
+    }
+    for(i in 1:2)
+        mu[i] ~ dnorm(0,1)
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[3]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
-  ## dnorm_dnorm
+  
+  ## dnorm_dpois
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dpois(10)
