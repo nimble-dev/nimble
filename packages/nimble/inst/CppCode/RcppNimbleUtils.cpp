@@ -875,26 +875,69 @@ void rankSample(NimArr<1, double> &weights, int n, NimArr<1, int> &output, bool 
 
 
 void row2NimArr(SEXP matrix, NimArrBase<double>* nimPtr, int startPoint, int len, int nRows){
+  Rprintf("In row2NimArr for double\n");
 	for(int i = 0; i < len; i++)
 		(*nimPtr)[i] = REAL(matrix)[startPoint + i * nRows];
 }
 
 void row2NimArr(SEXP matrix, NimArrBase<int>* nimPtr, int startPoint, int len, int nRows){
-	for(int i = 0; i < len; i++)
+  Rprintf("In row2NimArr for int\n");
+  for(int i = 0; i < len; i++)
 		(*nimPtr)[i] = INTEGER(matrix)[startPoint + i * nRows];	
 }
-
-
 
 SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd){
 	int cRowStart = INTEGER(rowStart)[0] - 1;
 	int cRowEnd = INTEGER(rowEnd)[0] - 1;
 	NimVecType* vecTypePtr = static_cast<NimVecType*>(R_ExternalPtrAddr(RvecNimPtr) );
+
+	// Look at dimensions of input matrix...
+	SEXP RmatrixDim;
+	PROTECT(RmatrixDim = Rf_getAttrib(matrix, R_DimSymbol));
+	// ... and of the NimArr
 	vector<int> rowDims = vecTypePtr->getRowDims(0);
-	int len = 0;
+	int len = 1;
 	for(unsigned int i = 0; i < rowDims.size(); i++)
-		len = len + rowDims[i];		
-	int nRows = LENGTH(matrix) / len;
+	  len = len * rowDims[i];
+	// len is the product of the dimensions of the NimArr
+	int nRows;
+	if(RmatrixDim == R_NilValue) {
+	  // If matrix is a vector, then use the NimArr to determine the dimensions.
+	  double dnRows = ((double) Rf_length(matrix)) / ((double) len);
+	  if(dnRows != floor(dnRows)) {
+	    NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues variable.\n");
+	  }
+	  nRows = Rf_length(matrix) / len;	
+	} else if(Rf_length(RmatrixDim) == 1) {
+	  // If matrix is not a vector, then if it is a 1D array, handle it like a vector
+	  double dnRows = ((double) Rf_length(matrix)) / ((double) len);
+	  if(dnRows != floor(dnRows)) {
+	    NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues variable.\n");
+	  }
+	  nRows = LENGTH(matrix) / len;
+	} else {
+	  // If matrix has dimension >= 2, then check that the dimensions are congruent with those of the NimArr.
+	  // Assume that the first index goes over "rows", so the remaining indices should match
+	  // either individually, or should match the product of the NimArr dims.
+	  if(Rf_length(RmatrixDim) == 2) {
+	    // It is two-dimensional, then the second dimension should match the flattened size
+	    // (i.e. product of dimensions) of the NimArr
+	    if( INTEGER(RmatrixDim)[1] != len ) {
+	      NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues.  Second dimension should match the size of the modelValues variable.\n");
+	    }
+	    nRows = INTEGER(RmatrixDim)[0];
+	  } else {
+	    if(Rf_length(RmatrixDim) != rowDims.size()-1) {
+	      NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues.  If matrix is > 2 dimensions, the number of dimenions of the matrix should be one greater than the number of dimensions of the modelValues variable.\n");
+	    }
+	    for(int iii = 1; iii < Rf_length(RmatrixDim); iii++) {
+	      if(INTEGER(RmatrixDim)[iii] != rowDims[iii-1]) {
+		NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues.  If matrix is > 2 dimensions, dimensions past the first should match those of the modelValues variable.\n");
+	      }
+	    }
+	  }
+	}
+
 	nimType varType = vecTypePtr->getNimType();
 	if(varType == DOUBLE){
 		VecNimArrBase<double>* vecPtr = static_cast<VecNimArrBase<double>*>(vecTypePtr);
