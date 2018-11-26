@@ -57,8 +57,8 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   expect_equal(mean(cond), 5, tol=2*sd(cond), scale=1,
                info = paste0("incorrect update of cluster parameters in Poisson data"))
   
-  
-  # test for updating new cluster parameters
+  # test for updating new cluster parameters, with conjugacy
+
   code <- nimbleCode({
     for(i in 1:n) {
       y[i] ~ dnorm(mu[i], 1)
@@ -99,7 +99,58 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   expect_equal(cond, 50, tolerance=2*1, scale=1, 
                info = paste0("incorrect update of cluster parameters in mixture of normals 1 data"))
   
+  # test for updating new cluster parameters, without conjugacy
+  code <- nimbleCode({
+    for(i in 1:n) {
+      y[i] ~ dnorm(mu[i], 1)
+      mu[i] <- muTilde[xi[i]]
+    }
+    
+    for(i in 1:n) {  
+      muTilde[i] ~ dt(mu0, df = 40, sigma = sd0) # force non-conjugate
+    }
+    
+    xi[1:n] ~ dCRP(alpha, size = n)
+    sd0 ~ dhalfflat()
+    alpha ~ dgamma(1, 1)      
+    mu0 ~ dflat()
+  })
   
+  n <- 30
+  constants <- list(n = n)
+  ## all data plausibly from first cluster except 50th data point
+  data <- list(y = c(rnorm(n-1, 0, 1), 50))
+  ## muTilde is good for all but last data point. muTilde[2] is bad for the last data point (so that we can see that it changes to a good value, which is what the conjugate sampler for xi should ensure)
+  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1, n),
+                muTilde = c(0, rep(-10, n-1)))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  
+  cmodel <- compileNimble(model)
+  conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
+  mcmc <- buildMCMC(conf)
+  cmcmc <- compileNimble(mcmc, project = model)
+  
+  ## now check that 50th obs remains in initial bad cluster because muTilde[2] is even worse
+  output <- runMCMC(cmcmc, niter=1, nburn=0, thin=1 , inits=inits, setSeed=FALSE)
+
+  clusterID <- output[1, paste0('xi[', n, ']')]
+  attributes(clusterID) <- NULL
+  expect_identical(clusterID, 1,
+                   info = 'non-conjugate incorrectly chose bad new cluster')
+
+  ## check that 50th obs moves to better cluster now that muTilde[2] is decent
+  cmodel$muTilde[2] <- 40
+  cmodel$calculate()
+  output <- runMCMC(cmcmc, niter=1, nburn=0, thin=1, setSeed=FALSE)
+  clusterID <- output[1, paste0('xi[', n, ']')]
+  attributes(clusterID) <- NULL
+  expect_identical(clusterID, 2,
+                   info = 'non-conjugate incorrectly did not choose good new cluster')
+  value <- output[1, "muTilde[2]"]
+  attributes(value) <- NULL
+  expect_equal(value, 40, tolerance=3,
+               info = 'non-conjugate has strange cluster parameter for new cluster')
+   
   # We start with only one active component and the data is a mixture of 3 normal ditributions
   set.seed(1)
   code <- nimbleCode({
@@ -923,6 +974,20 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
+  ## dnorm_dnorm with truncation
+  code = nimbleCode({
+    for(i in 1:4) 
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    for(i in 1:2)
+        mu[i] ~ dnorm(0,1)
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[3]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
+
   ## dnorm_dnorm one more level of hierarchy
   code = nimbleCode({
     for(i in 1:4) {
@@ -939,7 +1004,7 @@ test_that("Testing conjugacy detection with models using CRP", {
   expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   
-  ## dnorm_dnorm and determinictic nodes
+  ## dnorm_dnorm and deterministic nodes
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dnorm(0,1)
@@ -954,8 +1019,24 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
+  ## dnorm_dnorm and deterministic nodes and truncation
+  code = nimbleCode({
+    for(i in 1:4) {
+      mui[i] <- mu[xi[i]]
+      y[i] ~ dnorm(mui[i], sd = 1)
+    }
+    for(i in 1:2)
+        mu[i] ~ dnorm(0,1)
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[3]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
-  ## dnorm_dnorm
+  
+  ## dnorm_dpois
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dpois(10)
@@ -1184,6 +1265,23 @@ test_that("Testing conjugacy detection with models using CRP", {
   })
   m = nimbleModel(code, data = list(y = rexp(4, 4)),
                   inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+
+  ## non-exchangeable prior for tilde nodes
+  code = nimbleCode({
+    for(i in 1:4){
+        mu[i] <- muTilde[xi[i]]
+        y[i] ~ dnorm(mu[i], sd = 1)
+        muTilde[i] ~ dnorm(mu0[i], sd = s0)
+        mu0[i] ~ dnorm(0,1)
+    }
+    xi[1:4] ~ dCRP(1, 4)
+    s0 ~ dhalfflat()
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4)))
   conf <- configureMCMC(m)
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")

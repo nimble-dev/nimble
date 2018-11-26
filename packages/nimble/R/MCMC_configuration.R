@@ -738,6 +738,8 @@ checkCRPconjugacy <- function(model, target) {
         itildeVar <- itildeVar+1 
       }
     }
+    ## Note that models with thetatilde[n-xi[i]+1] won't have xi[i] detected above and so no conjugacy will be found
+    ## which is what we want because conjugate samplers assume xi[i] is the thetatilde element being used
           
     ## determination of conjugacy for one tilde node that has 1 or 0 determnistic nodes
     ## does not find conjugacy when we have random mean and variance defined by deterministic nodes
@@ -749,6 +751,8 @@ checkCRPconjugacy <- function(model, target) {
     ## then make sure all tilde nodes and all of their dependent nodes are exchangeable
     if(length(tildevarNames) == 1){  ## for now avoid case of mixing over multiple parameters
         clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+        # avoid non-nodes from truncated clustering, e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs
+        clusterNodes <- clusterNodes[clusterNodes %in% model$getNodeNames(stochOnly = TRUE, includeData = FALSE)]
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
         if(length(conjugacy)) {
             if(length(unique(model$getDeclID(clusterNodes))) == 1) { ## make sure all tilde nodes from same declaration (i.e., exchangeable)
@@ -760,7 +764,13 @@ checkCRPconjugacy <- function(model, target) {
                 }
             }
         }
+        ## check that prior for tilde nodes are truly exchangeable
+        valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
+        names(valueExprs) <- NULL
+        if(length(unique(valueExprs)) != 1)
+            conjugate <- FALSE
     }
+    
     if(conjugate) return(conjugacyType) else return(NULL)
 }
 
