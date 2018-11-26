@@ -1,4 +1,5 @@
 rm(list=ls())
+library(nimble)
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 library(mvtnorm)
@@ -20,10 +21,10 @@ nimbleOptions(MCMCprogressBar = FALSE)
 context('Testing of BNP functionality')
 
 test_that("Test that new cluster parameters are correctly updated in CRP sampler", {
-  # starting values are extremely away fromt their true values. 
   
-  # Data ~ Poisson(5)
   set.seed(1)
+  
+  # Data ~ Poisson(5). Starting values are extremely away fromt their true values. 
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -47,12 +48,15 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   
   output <- runMCMC(cMCMC, niter=1000, nburn=0, thin=1 , inits=Inits, setSeed=FALSE)
   
-  xiSam <- output[, 302:601]
-  lambdaSam <- output[, 2:301]
-  cond <- abs(unique(lambdaSam[1000, ][xiSam[1000, ]]) - 5)
+  xiSam <- output[500:1000, 302:601]
+  lambdaSam <- output[500:1000, 2:301]
+  weights <- apply(xiSam, 1, function(x) as.numeric(table(x)/sum(table(x)) ))
+  lambdaUnique <- sapply(1:500, function(i) unique(lambdaSam[i, xiSam[i, ]]) )
+  cond <- sapply(1:500, function(i) sum(weights[[i]]*lambdaUnique[[i]]))
   
-  expect_equal(cond, 0, tol=0.2,
+  expect_equal(mean(cond), 5, tol=2*sd(cond), scale=1,
                info = paste0("incorrect update of cluster parameters in Poisson data"))
+  
   
   # test for updating new cluster parameters
   code <- nimbleCode({
@@ -86,13 +90,13 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   cmcmc <- compileNimble(mcmc, project = model)
   
   ## now check that cmodel$muTilde[2] is near 50
-  output <- runMCMC(cmcmc, niter=1, nburn=0, thin=1 , inits=inits, setSeed=FALSE)
+  output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
   
   xiSam <- output[, 34:63]
   muTildeSam <- output[, 3:32]
-  cond <- as.numeric(abs(muTildeSam[2] - 50))
+  cond <- as.numeric(muTildeSam[2])
   
-  expect_equal(cond, 0, tolerance=9,
+  expect_equal(cond, 50, tolerance=2*1, scale=1, 
                info = paste0("incorrect update of cluster parameters in mixture of normals 1 data"))
   
   
@@ -124,29 +128,31 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   
-  output <- runMCMC(cMCMC, niter=1000, nburn=0, thin=1 , inits=Inits, setSeed=FALSE)
-  outputG <- getSamplesDPmeasure(cMCMC)
+  output <- runMCMC(cMCMC, niter=7000, nburn=2000, thin=10 , inits=Inits, setSeed=FALSE)
+  expect_output(outputG <- getSamplesDPmeasure(cMCMC))
   
   Tr <- outputG$trunc
   samplesG <- outputG$samples
   grid <- seq(-15, 15, len=100)
-  samF <- matrix(0, ncol=length(grid), nrow=1000)
-  for(i in 1:1000) {
+  samF <- matrix(0, ncol=length(grid), nrow=500)
+  for(i in 1:500) {
     samF[i, ] <- sapply(grid, function(x)sum(samplesG[i, 1:Tr] * dnorm(x, samplesG[i, (2*Tr+1):(3*Tr)], sqrt(samplesG[i, (Tr+1):(2*Tr)]))))
   }
   
-  fHat <- apply(samF, 2, mean)
+  # distance between the estimation and truth at each point of the grid 
   f0 <- sapply(grid, function(x) 0.3*dnorm(x, -5, 1) + 0.3*dnorm(x, 0, 1) + 0.3*dnorm(x, 5, 1))
-  cond <- mean(abs(fHat - f0))
-  expect_equal(cond, 0, tol=0.02,
-               info = paste0("incorrect update of cluster parameters in mixture of normals data"))
-  
+  for(i in 1:100) {
+    expect_equal(mean(samF[,i]), f0[i], tol=2*sd(samF[,i]), scale=1,
+                 info = paste0("incorrect update of cluster parameters in mixture of normals data. Grid_i = ", i))
+  }
 })
 
 
 test_that("testing bivariate normal mixture models with CRP", {
   
   set.seed(1)
+  
+  # bivariate normal kernel with unknown mean
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -155,7 +161,7 @@ test_that("testing bivariate normal mixture models with CRP", {
     }
     alpha ~ dgamma(1, 1)
   })
-  n <- 300
+  n <- 100
   Consts <- list(n = n, Sigma0 = diag(1, 2), S0 = diag(100, 2), mu0=c(0,0))
   Inits <- list(xi = sample(1:100, size=n, replace = TRUE), 
                 mu = matrix(-10, ncol=2, nrow=n), 
@@ -168,21 +174,27 @@ test_that("testing bivariate normal mixture models with CRP", {
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   
-  output <- runMCMC(cMCMC, niter=1000, nburn=0, thin=1 , inits=Inits, setSeed=FALSE)
+  output <- runMCMC(cMCMC, niter=100, nburnin=50, thin=1 , inits=Inits,setSeed=FALSE, progressBar=TRUE)
+  outputG <- getSamplesDPmeasure(cMCMC)
   
-  xiSam <- output[, 602:901]
-  muSam1 <- output[, 2:301]
-  muSam2 <- output[, 302:601]
+  xiSam <- output[, 202:301]
+  muSam1 <- output[, 2:101]
+  muSam2 <- output[, 102:201]
+
+  weights <- apply(xiSam, 1, function(x) as.numeric(table(x)/sum(table(x)) ))
+  muSam1Unique <- sapply(1:nrow(xiSam), function(i) unique(muSam1[i, xiSam[i, ]]) )
+  muSam2Unique <- sapply(1:nrow(xiSam), function(i) unique(muSam2[i, xiSam[i, ]]) )
   
-  cond <- abs(unique(muSam1[1000, ][xiSam[1000, ]]) - 10)
-  expect_equal(cond, 0, tol=0.2,
-               info = paste0("incorrect update of firts component of cluster parameters in bivariate normal data"))
+  cond <- sapply(1:nrow(xiSam), function(i) sum(weights[[i]]*muSam1Unique[[i]]))
+  expect_equal(mean(cond), 10, tol=2*sd(cond), scale=1,
+               info = paste0("incorrect update of cluster parameters in bivariate normal data with unknown mean. First component"))
   
-  cond <- abs(unique(muSam2[1000, ][xiSam[1000, ]]) - 20)
-  expect_equal(cond, 0, tol=0.2,
-               info = paste0("incorrect update of second component of cluster parameters in bivariate normal data"))
+  cond <- sapply(1:nrow(xiSam), function(i) sum(weights[[i]]*muSam2Unique[[i]]))
+  expect_equal(mean(cond), 20, tol=2*sd(cond), scale=1,
+               info = paste0("incorrect update of cluster parameters in bivariate normal data with unknown mean. Second component"))
   
-  set.seed(1)
+  
+  # bivariate normal kernel with unknown mean and unknown variance
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -199,7 +211,7 @@ test_that("testing bivariate normal mixture models with CRP", {
   Sigma <- array(0, c(2,2,n))
   for(i in 1:n)
     Sigma[, , i] <- matrix(c(1, 0, 0, 1), 2, 2)
-  Inits <- list(xi = sample(1:n, size=n, replace = TRUE), 
+  Inits <- list(xi = sample(1:n, size=n, replace = FALSE), 
                 mu = matrix(-10, ncol=2, nrow=n),
                 Sigma=Sigma,
                 alpha = 1,
@@ -207,26 +219,38 @@ test_that("testing bivariate normal mixture models with CRP", {
   Data <- list(y = rmvnorm(n, c(10, 20), diag(1, 2)))
   
   m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
-  cm <- compileNimble(m, showCompilerOutput = TRUE)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 'Sigma', 'alpha', 'lambda'), print=TRUE)  #, 'lambda'
+  cm <- compileNimble(m, showCompilerOutput = FALSE)
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 'Sigma', 'alpha', 'lambda'), print=FALSE)  #, 'lambda'
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   
-  output <- runMCMC(cMCMC, niter=4000, nburn=0, thin=1 , inits=Inits, setSeed=FALSE)
+  #output <- runMCMC(cMCMC, niter=5000, nburn=3000, thin=2 ,
+  #                  inits=Inits, setSeed=FALSE)
+  output <- runMCMC(cMCMC, niter=10, nburnin=1, thin=1 ,inits=Inits, setSeed=FALSE)
+  
+  outputG <- getSamplesDPmeasure(cMCMC)
   
   xiSam <- output[, 603:702]
+  sigma11Sam <- output[, seq(1, 400, by=4)]
   muSam1 <- output[, 403:502]
   muSam2 <- output[, 503:602]
-  lamSam <- output[, 402]
   
-  cond <- abs(unique(muSam1[1000, ][xiSam[1000, ]]) - 10)
-  #expect_equal(cond, 0, tol=0.2,
-  #             info = paste0("incorrect update of firts component of cluster parameters in bivariate normal data"))
+  weights <- apply(xiSam, 1, function(x) as.numeric(table(x)/sum(table(x)) ))
+  muSam1Unique <- sapply(1:nrow(xiSam), function(i) unique(muSam1[i, xiSam[i, ]]) )
+  muSam2Unique <- sapply(1:nrow(xiSam), function(i) unique(muSam2[i, xiSam[i, ]]) )
+  sigma11Unique <- sapply(1:nrow(xiSam), function(i) unique(sigma11Sam[i, xiSam[i, ]]) )
   
-  cond <- abs(unique(muSam2[1000, ][xiSam[1000, ]]) - 20)
-  #expect_equal(cond, 0, tol=0.2,
-  #             info = paste0("incorrect update of second component of cluster parameters in bivariate normal data"))
+  cond <- sapply(1:nrow(xiSam), function(i) sum(weights[[i]]*muSam1Unique[[i]]))
+  expect_equal(mean(cond), 10, tol=2*sd(cond), scale=1,
+               info = paste0("incorrect update of mean parameters in bivariate normal data with unknown mean and variance. First component"))
   
+  cond <- sapply(1:nrow(xiSam), function(i) sum(weights[[i]]*muSam2Unique[[i]]))
+  expect_equal(mean(cond), 20, tol=2*sd(cond), scale=1,
+               info = paste0("incorrect update of mean parameters in bivariate normal data with unknown mean and variance. Second component"))
+  
+  cond <- sapply(1:nrow(xiSam), function(i) sum(weights[[i]]*sigma11Unique[[i]]))
+  expect_equal(mean(cond), 1, tol=2*sd(cond), scale=1,
+               info = paste0("incorrect update of covariance matrix parameters in bivariate normal data with unknown mean and variance. [1, 1] component"))
   
   
 })
@@ -262,66 +286,28 @@ test_that("testing dnorm_invgamma distribution in BNP functionality", {
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   
-  output <- runMCMC(cMCMC, niter=10000, nburn=0, thin=1 , inits=Inits, setSeed=TRUE)
+  output <- runMCMC(cMCMC, niter=10000, nburn=5000, thin=5 , inits=Inits, setSeed=TRUE)
   
   muSam <- output[, 6:105]
   xiSam <- output[, 206:305]
   
-  lastIter <-sort( unique(muSam[10000, xiSam[10000, ]]) , decreasing = FALSE)
-  cond <- abs(lastIter - c(0, 30))
-  
-  expect_equal(cond[1], 0, tol=0.1,
-               info = paste0("incorrect results when dnorm_invgamma prior is used in normal model, tets 1"))
-  
-  expect_equal(cond[2], 0, tol=0.1,
-               info = paste0("incorrect results when dnorm_invgamma prior is used in normal model, tets 2"))
+  weights <- apply(xiSam, 1, function(x) as.numeric(table(x)/sum(table(x)) ))
+  muSamUnique <- sapply(1:nrow(xiSam), function(i) unique(muSam[i, xiSam[i, ]]) )
+
+  cond <- sapply(1:nrow(xiSam), function(i) sum(weights[[i]]*muSamUnique[[i]]))
+
+  expect_equal(mean(cond), 0.5*0 + 0.5*30, tol=2*sd(cond), scale=1,
+               info = paste0("incorrect results when dnorm_invgamma prior is used in normal model"))
   
   # for checking conjugacy detection:
   #class(mMCMC$samplerFunctions[[13]]$helperFunctions$contentsList[[1]])[1]
 })
 
-
-
-# update this with tests with new list output
-test_that("Test that wrapper getSamplesDPmeasure works", {
-    set.seed(1)
-    ## model with clustering of random effects
-    code <- nimbleCode({
-        xi[1:n] ~ dCRP(conc0, n)
-        conc0 ~ dgamma(1, 1)
-        for(i in 1:n){
-            mu[i] ~ dnorm(mu0, sd = s0)
-            theta[i] ~ dnorm(mu[xi[i]], sd = tau)
-            y[i] ~ dnorm(theta[i], sd = sigma)
-        }
-        mu0 ~ dflat()
-        s0 ~ dhalfflat()
-        sigma ~ dhalfflat()
-        tau ~ dhalfflat()
-    })
-    n <- 100
-    Consts <- list(n = n)
-    Inits <- list(xi = sample(1:3, n, replace = TRUE), conc0 = 1, theta = rnorm(n),
-                  mu = rnorm(n, 0, 1), tau = 2, sigma = 1, s0 = 1, mu0 = 0)
-    thetas <- c(rnorm(n/2, 0, 1), rnorm(n/2, 5, 1))
-    Data <- list(y = rnorm(n, thetas, 0.3))
-    m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
-    cm <- compileNimble(m)
-    mConf <- configureMCMC(m, monitors = c('xi','mu','conc0','mu0','s0'))
-    mMCMC <- buildMCMC(mConf)
-    cMCMC <- compileNimble(mMCMC, project = m)
-    cMCMC$run(1000)
-    ## note: inference for this model doesn't seem good - but if sigma and tau fixed
-    ## at correct values, looks reasonable - so model seems to have difficulty determining
-    ## variance components
-    expect_output(out <- getSamplesDPmeasure(cMCMC), "Approximating the random measure")
-    expect_false(any(is.na(out)))
-})
     
 test_that("sampleDPmeasure: testing that required variables in MCMC modelValues are monitored", {
+  set.seed(1)
   
   ## membership variable not being monitored
-  set.seed(1)
   code <- nimbleCode({
     xi[1:6] ~ dCRP(conc0, 6)
     conc0 ~ dgamma(1, 1)
@@ -340,7 +326,8 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
  
   mConf <- configureMCMC(m, monitors = c('xi', 'conc0', 'mu'))
   mMCMC <- buildMCMC(mConf)
-  expect_error(sampler <- getSamplesDPmeasure(mMCMC))
+  expect_message(output <- runMCMC(mMCMC, niter=1))
+  expect_output(output <- getSamplesDPmeasure(mMCMC))
   
   # cluster variable not being monitored
   set.seed(1)
@@ -366,9 +353,10 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   expect_error(getSamplesDPmeasure(mMCMC),
                'sampleDPmeasure: The stochastic parent nodes')
 
-  #mConf <- configureMCMC(m, monitors = c('mu', 'xi', 'mu0', 's20'))
-  #mMCMC <- buildMCMC(mConf)
-  #expect_silent(sampler <- sampleDPmeasure(m, mMCMC$mvSamples))
+  mConf <- configureMCMC(m, monitors = c('mu', 'xi', 'mu0', 's20'))
+  mMCMC <- buildMCMC(mConf)
+  expect_message(output <- runMCMC(mMCMC, niter=1))
+  expect_output(output <- getSamplesDPmeasure(mMCMC))
   
   ## concentration parameter not being monitored:
   set.seed(1)
@@ -390,9 +378,10 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   expect_error(getSamplesDPmeasure(mMCMC),
                'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.')
   
-  #mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'conc0'))
-  #mMCMC <- buildMCMC(mConf)
-  #expect_silent(sampler <- sampleDPmeasure(m, mMCMC$mvSamples))
+  mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'conc0'))
+  mMCMC <- buildMCMC(mConf)
+  expect_message(output <- runMCMC(mMCMC, niter=1))
+  expect_output(outputG <- getSamplesDPmeasure(mMCMC))
 
   ## concentration parameter deterministic parent not being monitored:
   set.seed(1)
@@ -417,18 +406,19 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
 
   ## note that if 'b' not 'd' is initialized then this will fail because model initialization overwrites
   ## 'b' with NA based on NA in 'd' and then sampleDPmeasure setup thinks it can't calculate conc0
-  #mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'b'))
-  #mMCMC <- buildMCMC(mConf)
-  #expect_silent(sampleDPmeasure(m, mMCMC$mvSamples))
+  mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'b'))
+  mMCMC <- buildMCMC(mConf)
+  expect_message(output <- runMCMC(mMCMC, niter=1))
+  expect_output(outputG <- getSamplesDPmeasure(mMCMC))
 
-  #mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'd'))
-  #mMCMC <- buildMCMC(mConf)
-  #expect_silent(sampler <- sampleDPmeasure(m, mMCMC$mvSamples))
-  
+  mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'd'))
+  mMCMC <- buildMCMC(mConf)
+  expect_message(output <- runMCMC(mMCMC, niter=1))
+  expect_output(outputG <- getSamplesDPmeasure(mMCMC))  
 })
 
 test_that("sampleDPmeasure: checking for uncompiled modelValues input", {
-  
+  library(nimble)
   set.seed(1)
   code <- nimbleCode({
     xi[1:6] ~ dCRP(1, 6)
@@ -441,13 +431,11 @@ test_that("sampleDPmeasure: checking for uncompiled modelValues input", {
   Data <- list( y =  rnorm(6))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m) 
-  mConf <- configureMCMC(m)
+  mConf <- configureMCMC(m, monitors = c('xi', 'mu'))
   mMCMC <- buildMCMC(mConf)
-  CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE)
-  
-  CmMCMC$run(10)
-  CmvSaved  <- CmMCMC$mvSamples
-  
+  CmMCMC <- compileNimble(mMCMC, project=m)
+  output <- runMCMC(CmMCMC, 10)
+  getSamplesDPmeasure(CmMCMC)
   expect_output(getSamplesDPmeasure(CmMCMC))
 })
 
@@ -1397,18 +1385,19 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   set.seed(1)
   code <- nimbleCode({
     for(i in 1:10){
-      lambdaTilde[i] ~ dgamma(shape=1, rate=0.1)
+      lambdaTilde[i] ~ dgamma(shape=1, rate=a0)
       y[i] ~ dpois(lambdaTilde[xi[i]])
     }
     xi[1:10] ~ dCRP(conc = 1, size=10)
+    a0 ~ dgamma(1, 1)
   })
   Inits <- list( xi = 1:10, 
-                 lambdaTilde = rgamma(10, shape=1, rate=0.1))
+                 lambdaTilde = rgamma(10, shape=1, rate=0.1), a0=1)
   Data <- list(y = c(rpois(10, 8)))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
   
-  monitors <- c('lambdaTilde','xi')
+  monitors <- c('lambdaTilde','xi', 'a0')
   mConf <- configureMCMC(m, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
@@ -1548,7 +1537,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   code=nimbleCode(
     {
       for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        thetatilde[i] ~ dnorm(mean=0, var=s2tilde[i]/lambda) 
         s2tilde[i] ~ dinvgamma(1, scale=0.5)
       }
       xi[1:10] ~ dCRP( conc0 , size=10)
@@ -1557,15 +1546,17 @@ test_that("sampleDPmeasure can be used for more complicated models", {
         theta[i] <- thetatilde[xi[i]]
         y[i] ~ dnorm(theta[i], var=s2tilde[xi[i]])
       }
+    lambda ~ dgamma(1, 1)
     }
   )
   Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 ,
              thetatilde=rnorm(10, 0, sqrt(40)),
-             s2tilde = rinvgamma(10, 1, scale=0.5))
+             s2tilde = rinvgamma(10, 1, scale=0.5),
+             lambda=1)
   Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
-  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0')
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'lambda')
   mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
@@ -1622,7 +1613,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   code=nimbleCode(
     {
       for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        thetatilde[i] ~ dnorm(mean=0, var = s2tilde[i]/lambda) 
         s2tilde[i] ~ dinvgamma(1, scale=0.5)
       }
       xi[1:10] ~ dCRP( conc0 + conc1 , size=10)
@@ -1633,15 +1624,17 @@ test_that("sampleDPmeasure can be used for more complicated models", {
         s2[i] <- s2tilde[xi[i]]
         y[i] ~ dnorm(theta[i], var=s2[i])
       }
+      lambda ~ dgamma(1, 1)
     }
   )
   Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 , conc1=1,
              thetatilde=rnorm(10, 0, sqrt(40)),
-             s2tilde = rinvgamma(10, 1, scale=0.5))
+             s2tilde = rinvgamma(10, 1, scale=0.5),
+             lambda = 1)
   Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
-  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1', 'lambda')
   mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
@@ -1659,7 +1652,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   code=nimbleCode(
     {
       for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=40) 
+        thetatilde[i] ~ dnorm(mean=0, var = s2tilde[i]/lambda) 
         s2tilde[i] ~ dinvgamma(1, scale=0.5)
       }
       xi[1:10] ~ dCRP( conc0 + conc1 , size=10)
@@ -1672,17 +1665,19 @@ test_that("sampleDPmeasure can be used for more complicated models", {
         s2[i] <- s2tilde[xi[i]]
         y[i] ~ dnorm(theta[i], var=s2[i])
       }
+      lambda ~ dgamma(1, 1)
     }
   )
   Inits=list(xi=sample(1:10, size=10, replace=TRUE), conc0 =1 , conc1=1,
              a = 1, b = 1,
              thetatilde=rnorm(10, 0, sqrt(40)),
-             s2tilde = rinvgamma(10, 1, scale=0.5))
+             s2tilde = rinvgamma(10, 1, scale=0.5),
+             lambda = 1 )
   Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
   
-  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1')
+  monitors <- c('thetatilde', 's2tilde', 'xi', 'conc0', 'conc1', 'lambda')
   mConf <- configureMCMC(m,, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
