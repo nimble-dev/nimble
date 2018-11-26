@@ -262,8 +262,8 @@ sampleDPmeasure <- nimbleFunction(
     p <- length(tildeVars)
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
     nTilde <- numeric(p)
-    dimTildeNim <- numeric(p) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
-    dimTilde <- numeric(p) # dimension to be used in run code
+    dimTildeNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
+    dimTilde <- numeric(p+1) # dimension to be used in run code
     #dimTildeNimAux <- numeric(p) #
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
@@ -288,14 +288,13 @@ sampleDPmeasure <- nimbleFunction(
     samples <- matrix(0, nrow = 1, ncol = 1)   
     ## Tuncation level of the random measure 
     truncG <- 0 
+    
+    setupOutputs(dimTildeNim)
   },
   
   run=function(){
     
     niter <- getsize(mvSaved) # number of iterations in the MCMC
-    for(i in 1:p) { # so dimTildeNim can be obtained in the wrapper function
-      dimTildeNim[i] <<- dimTildeNim[i]
-    }
     
     # defining the truncation level of the random measure's representation:
     if( fixedConc ) {
@@ -1265,6 +1264,13 @@ sampler_CRP <- nimbleFunction(
         } else model$calculate(calcNodes) 
         curLogProb[j] <<- log(xiCounts[xiUniques[j]]) + model$getLogProb(dataNodes[i]) 
       }
+      model[[target]][i] <<- kNew 
+      if(type == 'indivCalcs') {
+        if(nInterm >= 1) model$calculate(intermNodes[i])
+        if(nInterm >= 2) model$calculate(intermNodes2[i])
+        if(nInterm >= 3) model$calculate(intermNodes3[i])
+        model$calculate(dataNodes[i])
+      } else model$calculate(calcNodes) 
       #  probability of sampling the new label: kNew
       curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label
       
