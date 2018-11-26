@@ -259,7 +259,7 @@ test_that("testing bivariate normal mixture models with CRP", {
   
   m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
   cm <- compileNimble(m, showCompilerOutput = TRUE)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 'Sigma', 'alpha', 'lambda'), print=TRUE)  #, 'lambda'
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 'Sigma', 'alpha', 'lambda'), print=FALSE)  #, 'lambda'
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   
