@@ -10,7 +10,10 @@
 #' @author Daniel Turek
 #' @export
 decide <- function(logMetropolisRatio) {
-  if(is.na(logMetropolisRatio))	return(FALSE)
+    if(is.na(logMetropolisRatio))	{
+        junk <- runif(1, 0, 1) ## purely for debugging of calcPriorFirst. To be removed later.
+        return(FALSE)
+    }
   if(logMetropolisRatio > 0) return(TRUE)
   if(runif(1,0,1) < exp(logMetropolisRatio)) return(TRUE)
   return(FALSE)
