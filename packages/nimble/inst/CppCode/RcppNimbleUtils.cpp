@@ -875,13 +875,11 @@ void rankSample(NimArr<1, double> &weights, int n, NimArr<1, int> &output, bool 
 
 
 void row2NimArr(SEXP matrix, NimArrBase<double>* nimPtr, int startPoint, int len, int nRows){
-  Rprintf("In row2NimArr for double\n");
 	for(int i = 0; i < len; i++)
 		(*nimPtr)[i] = REAL(matrix)[startPoint + i * nRows];
 }
 
 void row2NimArr(SEXP matrix, NimArrBase<int>* nimPtr, int startPoint, int len, int nRows){
-  Rprintf("In row2NimArr for int\n");
   for(int i = 0; i < len; i++)
 		(*nimPtr)[i] = INTEGER(matrix)[startPoint + i * nRows];	
 }
@@ -901,20 +899,25 @@ SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd){
 	  len = len * rowDims[i];
 	// len is the product of the dimensions of the NimArr
 	int nRows;
+	// A variety of cases were written below, but actually only
+	// the matrix case is supported.  This provides an inverse to as.matrix(mv).
+	// copying of individual variables can be done as cmv['v'] <- v
 	if(RmatrixDim == R_NilValue) {
-	  // If matrix is a vector, then use the NimArr to determine the dimensions.
-	  double dnRows = ((double) Rf_length(matrix)) / ((double) len);
-	  if(dnRows != floor(dnRows)) {
-	    NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues variable.\n");
-	  }
-	  nRows = Rf_length(matrix) / len;	
+	  NIMERROR("In matrix2VecNimArr: matrix argument must be a matrix, but a vector was provided\n");
+	  // // If matrix is a vector, then use the NimArr to determine the dimensions.
+	  // double dnRows = ((double) Rf_length(matrix)) / ((double) len);
+	  // if(dnRows != floor(dnRows)) {
+	  //   NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues variable.\n");
+	  // }
+	  // nRows = Rf_length(matrix) / len;	
 	} else if(Rf_length(RmatrixDim) == 1) {
-	  // If matrix is not a vector, then if it is a 1D array, handle it like a vector
-	  double dnRows = ((double) Rf_length(matrix)) / ((double) len);
-	  if(dnRows != floor(dnRows)) {
-	    NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues variable.\n");
-	  }
-	  nRows = LENGTH(matrix) / len;
+	  NIMERROR("In matrix2VecNimArr: matrix argument must be a matrix, but a one-dimensional array was provided\n");
+	  // // If matrix is not a vector, then if it is a 1D array, handle it like a vector
+	  // double dnRows = ((double) Rf_length(matrix)) / ((double) len);
+	  // if(dnRows != floor(dnRows)) {
+	  //   NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues variable.\n");
+	  // }
+	  // nRows = LENGTH(matrix) / len;
 	} else {
 	  // If matrix has dimension >= 2, then check that the dimensions are congruent with those of the NimArr.
 	  // Assume that the first index goes over "rows", so the remaining indices should match
@@ -927,14 +930,15 @@ SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd){
 	    }
 	    nRows = INTEGER(RmatrixDim)[0];
 	  } else {
-	    if(Rf_length(RmatrixDim) != rowDims.size()-1) {
-	      NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues.  If matrix is > 2 dimensions, the number of dimenions of the matrix should be one greater than the number of dimensions of the modelValues variable.\n");
-	    }
-	    for(int iii = 1; iii < Rf_length(RmatrixDim); iii++) {
-	      if(INTEGER(RmatrixDim)[iii] != rowDims[iii-1]) {
-		NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues.  If matrix is > 2 dimensions, dimensions past the first should match those of the modelValues variable.\n");
-	      }
-	    }
+	    // if(Rf_length(RmatrixDim) != rowDims.size()-1) {
+	    //   NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues.  If matrix is > 2 dimensions, the number of dimenions of the matrix should be one greater than the number of dimensions of the modelValues variable.\n");
+	    // }
+	    // for(int iii = 1; iii < Rf_length(RmatrixDim); iii++) {
+	    //   if(INTEGER(RmatrixDim)[iii] != rowDims[iii-1]) {
+	    // 	NIMERROR("In matrix2VecNimArr: Length of matrix is not congruent with dimensions of modelValues.  If matrix is > 2 dimensions, dimensions past the first should match those of the modelValues variable.\n");
+	    //   }
+	    // }
+	    NIMERROR("In matrix2VecNimArr: matrix argument must be a matrix, but an array with >2 dimensions^ was provided\n");
 	  }
 	}
 
@@ -949,6 +953,7 @@ SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd){
 		for(int i = cRowStart; i <= cRowEnd; i++)
 			row2NimArr(matrix, static_cast<NimArrBase<int>*>(vecPtr->getRowTypePtr(i) ), cRowStart + i , len, nRows);
 	}
+	UNPROTECT(1);
 	return(R_NilValue);
 }
 
