@@ -41,7 +41,7 @@
 #'   truncation <- output$trunc
 #' }
 getSamplesDPmeasure <- function(MCMC) {
-  if(exists('model', MCMC))
+  if(exists('model',MCMC, inherits = FALSE))
     compiled <- FALSE else compiled <- TRUE
     if(compiled) {
       if(!exists('Robject', MCMC) || !exists('model', MCMC$Robject))
@@ -314,7 +314,7 @@ sampleDPmeasure <- nimbleFunction(
     truncG <<- round(truncG)
     #approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
     # I think is good to send message indicating what the truncation level is for an approximation error smaller than to 10^(-10)
-    nimCat('sampleDPmeasure: Approximating the random measure by a finite stick-breaking representation with an error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
+    # nimCat('sampleDPmeasure: Approximating the random measure by a finite stick-breaking representation with an error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
     
     ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
     ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
