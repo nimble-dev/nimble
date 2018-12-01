@@ -699,14 +699,14 @@ project and unload the shared library produced by your C++ compiler.
 To do so, you can use `nimble:::clearCompiled(obj)` where `obj` is a
 compiled object such as a compiled model or nimbleFunction (e.g., a
 compiled MCMC algorithm).  This will clear *all* compiled objects
-associated with your nimble project.  For example, if `cModel` is a
+associated with your NIMBLE project.  For example, if `cModel` is a
 compiled model, `nimble:::clearCompiled(cModel)` will clear both the
 model and all associated nimbleFunctions such as compiled MCMCs that
 use that model.  Be careful, use of `nimble:::clearCompiled` can be
 dangerous.  There is some risk that if you have copies of the R
 objects that interfaced to compiled C++ objects that have been
 removed, and you attempt to use those R objects after clearing their
-compiled counterparts, you will crash your system.  We have tried to
+compiled counterparts, you will crash R.  We have tried to
 minimize that risk, but we can't guarantee safe behavior.
 
 ## Reducing memory usage
