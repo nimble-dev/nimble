@@ -155,7 +155,7 @@ sampleDPmeasure <- nimbleFunction(
         ltmpexpr <- length(tmpexpr)
         if(ltmpexpr >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') { 
           #  Find the cluster variables, named tildeVars, in presence of univariate and multivariate cluster parameters:
-          k <- 1
+          k <- 3
           foundTarget <- FALSE
           while(k <= ltmpexpr && foundTarget == FALSE) {
             foundTarget <- all.vars(tmpexpr[[k]]) == dcrpVar
@@ -1129,15 +1129,25 @@ sampler_CRP <- nimbleFunction(
     for(i in seq_along(dep)) { 
       expr <- cc_getNodesInExpr(model$getValueExpr(dep[i])) 
       for(j in seq_along(expr)) {
-        ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
-        tmpexpr <- parse(text = expr[j])[[1]]
-        if(length(tmpexpr) >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') {   
-          foundTarget <- all.vars(tmpexpr[[3]]) == targetVar   
-          if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
-            tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
-            itildeVar <- itildeVar+1 
+          ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
+          tmpexpr <- parse(text = expr[j])[[1]]
+          ltmpexpr <- length(tmpexpr)
+          if(ltmpexpr >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') { 
+              ##  Find the cluster variables, named tildeVars, in presence of univariate and multivariate cluster parameters:
+              idx <- 3
+              foundTarget <- FALSE
+              while(idx <= ltmpexpr && foundTarget == FALSE) {
+                  foundTarget <- all.vars(tmpexpr[[idx]]) == targetVar
+                  if(sum(foundTarget) == 0) {  # to avoid having foundTarget equal to logical(0). what other type could foundTarget be?
+                      foundTarget <- FALSE
+                  }
+                  idx <- idx + 1
+              }  
+              if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
+                  tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
+                  itildeVar <- itildeVar+1 
+              }
           }
-        }
       }
     }
     if(is.null(tildeVars))

@@ -718,40 +718,51 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
 
 checkCRPconjugacy <- function(model, target) {
     ## Checks if can use conjugacy in drawing new components for dCRP node updating.
+    ## Should find conjugacy if there are no deterministic nodes between the "observations" and
+    ## the cluster parameters or one intermediate node.
+    ## For now, no conjugacy when multiple parameters in the observation distribution are
+    ## being clustered.
     
     conjugate <- FALSE 
     
     targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
-    VarNames <- model$getVarNames()
     
-    # finding tilde variables:
-    tildevarNames=c()
-    itildeVar <- 1
+    ## Find the cluster variables ("tilde" variables)
     
-    Dep <- model$getDependencies(targetElementExample, self=FALSE)
-    for(i in 1:length(Dep)){ 
-      Depi <- Dep[i]
-      expr <- cc_getNodesInExpr(model$getValueExpr(Depi))
+    tildeVars <- NULL
+    idx <- 1
+    ## Check that cluster ID appears in dependency expression and that
+    ## potential tilde variable is a vector simply indexed by the cluster ID.
+    ## For now we do not detect conjugacy for cases like mu[xi[i], 2],
+    ## as these are not handled by our CRP conjugate samplers.
+    deps <- model$getDependencies(targetElementExample, self=FALSE)
+    for(i in seq_along(deps)) {
+      expr <- cc_getNodesInExpr(model$getValueExpr(deps[i]))
       expr <- parse(text = expr)[[1]]
-      if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElementExample){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
-        itildeVar <- itildeVar+1 
+      if(is.call(expr) && length(expr) == 3 && expr[[1]] == '[' &&
+         expr[[3]] == targetElementExample) {
+          tildeVars[idx] <- deparse(expr[[2]])
+          idx <- idx + 1
+      }
+      ## Allow for exact model structure where conjugate sampler works for ddirch/multi.:
+      ## p[xi[i], 1:k]
+      if(is.call(expr) && length(expr) == 4 && expr[[1]] == '[' &&
+         length(expr[[4]]) == 3 && expr[[4]][[2]] == 1 && 
+         expr[[3]] == targetElementExample) {
+          tildeVars[idx] <- deparse(expr[[2]])
+          idx <- idx + 1
       }
     }
-    ## Note that models with thetatilde[n-xi[i]+1] won't have xi[i] detected above and so no conjugacy will be found
-    ## which is what we want because conjugate samplers assume xi[i] is the thetatilde element being used
-          
-    ## determination of conjugacy for one tilde node that has 1 or 0 determnistic nodes
-    ## does not find conjugacy when we have random mean and variance defined by deterministic nodes
-    ## does find conjugacy when we have random mean  defined or not by deterministic nodes
-    ## dont know what does when y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]]). here nInterm=1
-    ## dont know what does when y[i] ~ dnorm(0, var=s2tilde[xi[i]]). here nInterm=1
-    
-    ## new checking for conjugacy using tilde variables: check conjugacy for one tilde node and
+    ## Note that models with thetaTilde[n-xi[i]+1] or thetaTilde[xi[i]+1]
+    ## won't have xi[i] detected above and so no conjugacy will be found,
+    ## which is what we want because conjugate samplers assume xi[i] is the thetaTilde element being used.
+
+    ## New checking for conjugacy using tilde variables: check conjugacy for one tilde node and
     ## then make sure all tilde nodes and all of their dependent nodes are exchangeable
-    if(length(tildevarNames) == 1){  ## for now avoid case of mixing over multiple parameters
-        clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
-        # avoid non-nodes from truncated clustering, e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs
+    if(length(tildeVars) == 1){  ## for now avoid case of mixing over multiple parameters
+        clusterNodes <- model$expandNodeNames(tildeVars[1])  # e.g., 'thetatilde[1]',...,
+        ## Avoid non-nodes from truncated clustering,
+        ## e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs.
         clusterNodes <- clusterNodes[clusterNodes %in% model$getNodeNames(stochOnly = TRUE, includeData = FALSE)]
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
         if(length(conjugacy)) {
@@ -759,12 +770,12 @@ checkCRPconjugacy <- function(model, target) {
                 depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
                 if(length(unique(model$getDeclID(depNodes))) == 1) { ## make sure all dependent nodes from same declaration (i.e., exchangeable)
 
-                    conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) # clau: change 'types' by 'conjugacy[[1]]$type'. 
+                    conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) 
                     conjugate <- TRUE
                 }
             }
         }
-        ## check that prior for tilde nodes are truly exchangeable
+        ## Check that prior for tilde nodes are truly exchangeable.
         valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
         names(valueExprs) <- NULL
         if(length(unique(valueExprs)) != 1)
