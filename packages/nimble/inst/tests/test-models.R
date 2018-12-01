@@ -540,6 +540,43 @@ test_that("test of using ragged arrays in a model:", {
     m <- nimbleModel(mc, constants = constants)
 })
 
+test_that("warnings for multiply-defined model nodes:", {
+    code <- nimbleCode({
+        tmp ~ dnorm(0,1)
+        for(i in 1:3) {
+            y[i] ~ dnorm(0,1)
+            mu ~ dnorm(mu0[i],1)
+        }
+    })
+    expect_warning(m <- nimbleModel(code), "'i' on the left-hand side of 'mu ~ ", fixed = TRUE)
+    code <- nimbleCode({
+        tmp ~ dnorm(0,1)
+        for(i in 1:3) {
+            y[i] ~ dnorm(0,1)
+            mu ~ dnorm(0,1)
+        }
+    })
+    expect_warning(m <- nimbleModel(code), "'i' on the left-hand side of 'mu ~ ", fixed = TRUE)
+    code <- nimbleCode({
+        tmp ~ dnorm(0,1)
+        for(i in 1:3) {
+            for(j in 1:3)
+                mu[i+2,1] ~ dnorm(0,1)
+        }
+    })
+    expect_warning(m <- nimbleModel(code), "'j' on the left-hand side of 'mu[i + 2, 1] ~ ", fixed = TRUE)
+    code <- nimbleCode({
+        tmp ~ dnorm(0,1)
+        for(i in 1:3) {
+            for(j in 1:3)
+                for(k in 1:3)
+                mu[i+2,1,1] ~ dnorm(0,1)
+        }
+    })
+    expect_warning(m <- nimbleModel(code), "'j,k' on the left-hand side of 'mu[i + 2, 1, 1] ~ ", fixed = TRUE)
+})
+
+
 
 sink(NULL)
 

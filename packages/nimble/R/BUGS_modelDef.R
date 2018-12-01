@@ -1942,6 +1942,13 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(BUGSdecl$numUnrolledNodes == 0) next
         lhsVar <- BUGSdecl$targetVarName
         nDim <- varInfo[[lhsVar]]$nDim
+        ## Check that LHS has all expected indexes based on context.
+        usedIndexes <- contexts[[BUGSdecl$contextID]]$indexVarNames %in%
+            unlist(all.vars(BUGSdecl$targetExpr))
+        if(!all(usedIndexes)) 
+            warning(paste0("Multiple definitions for the same node. Did you forget indexing with '",
+                          paste(contexts[[BUGSdecl$contextID]]$indexVarNames[!usedIndexes], collapse = ','),  
+                           "' on the left-hand side of '", deparse(BUGSdecl$code), "'?"))
         if(nDim > 0) {  ## pieces is a list of index text to construct node names, e.g. list("1", c("1:2", "1:3", "1:4"), c("3", "4", "5"))
             pieces <- vector('list', nDim)
             for(i in 1:nDim) {
