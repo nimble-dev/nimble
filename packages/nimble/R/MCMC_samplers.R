@@ -2057,7 +2057,7 @@ sampler_CAR_proper <- nimbleFunction(
 #' 
 #' @section AF_slice sampler:
 #' 
-#' The automated factor slice sampler conducts a slice sampling algorithm on one or more model nodes.  The sampler uses the eigenvectors of the posterior covariance between these nodes as an orthogonal basis on which to perform its 'stepping Out' procedure.  The sampler is adaptive in updating both the width of the slices and the values of the eigenvectors.  The sampler can be applied to ay be applied to any set of continuous or discrete-valued model nodes, to any single continuous or discrete-valued multivariate model node, or to any combination thereof. 
+#' The automated factor slice sampler conducts a slice sampling algorithm on one or more model nodes.  The sampler uses the eigenvectors of the posterior covariance between these nodes as an orthogonal basis on which to perform its 'stepping Out' procedure.  The sampler is adaptive in updating both the width of the slices and the values of the eigenvectors.  The sampler can be applied to any set of continuous or discrete-valued model nodes, to any single continuous or discrete-valued multivariate model node, or to any combination thereof. 
 #
 #' The automated factor slice sampler accepts the following control list elements:
 #' \itemize{
