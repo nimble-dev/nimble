@@ -215,7 +215,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        else
                                            status = system(ssdSHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput)
                                        if(status != 0) 
-                                           stop(structure(simpleError("Failed to create the shared library. Please rerun 'compileNimble' with 'showCompilerOutput = TRUE' for more details."),
+                                           stop(structure(simpleError("Failed to create the shared library."),
                                                           class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
                                        return(dyn.load(ssDllName, local = TRUE))
                                    },
@@ -307,23 +307,31 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            SHLIBcmd <- paste0(SHLIBcmd, "; ", origSHLIBcmd)
                                        }
                                        
-                                       if(!showCompilerOutput) { 
+                                       ## if(!showCompilerOutput) { 
                                            logFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
-                                           SHLIBcmd <- paste(SHLIBcmd, ">", logFile)
+                                           errorFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".err")
+                                           SHLIBcmd <- paste(SHLIBcmd, ">", logFile, "2>", errorFile)
                                            ## See Rstudio comment above
-                                       }
+                                       ## }
 
                                        if(nimbleOptions('pauseAfterWritingFiles')) browser()
-
+                                       ## We formerly used ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput
+                                       ## but when ignore.stdout and ignore.stderr are TRUE nothing gets printed to stdout and stderr so
+                                       ## .log and .err files are empty.
                                        if(isWindows)
-                                           status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)
+                                           status = system(SHLIBcmd, show.output.on.console = showCompilerOutput) # , ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)
                                        else
-                                           status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput)
-				       if(status != 0)
-                                           stop(structure(simpleError("Failed to create the shared library. Please rerun 'compileNimble' with 'showCompilerOutput = TRUE' for more details."),
+                                           status = system(SHLIBcmd) #, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput)
+                                       if(status == 0 && showCompilerOutput) {
+                                           output <- c(readLines(logFile), readLines(errorFile))
+                                           cat(output, sep = '\n')
+                                       }
+                                       if(status != 0) {
+                                           errors <- readLines(errorFile)
+                                           stop(structure(simpleError(paste0("Failed to create the shared library:\n\n", paste0(errors, collapse = '\n'))),
                                                           class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
+                                       }
                                        if(isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) stop("safely stopping before linking", call.=FALSE)
-
                                    },
                                    loadSO = function(name) {
                                        dll <<- dyn.load(getSOName(name, dirName), local = TRUE)
