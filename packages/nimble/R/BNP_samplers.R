@@ -178,11 +178,11 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The node(s) representing the cluster variables must be monitored in the MCMC (and therefore stored in the modelValues object).\n')  
     
     ## Check that tilde nodes are continuous and univariate variables (for avoiding long trials in simulating atoms for G in run code:
-    if(any(model$isDiscrete(tildeVars)))
-      stop('sampleDPmeasure: cluster variables should be continuous random variables.\n')
+    #if(any(model$isDiscrete(tildeVars)))
+    #  stop('sampleDPmeasure: cluster variables should be continuous random variables.\n')
     
-    if(any(model$isMultivariate(tildeVars)))
-      stop( 'sampleDPmeasure: only univariate cluster variables are allowed.\n' )
+    #if(any(model$isMultivariate(tildeVars)))
+    #  stop( 'sampleDPmeasure: only univariate cluster variables are allowed.\n' )
     
     ## Getting all stochastic parent nodes of cluster variables (needed for simulating new tildeVar values):
     parentNodesTildeVars <- NULL
@@ -284,7 +284,7 @@ sampleDPmeasure <- nimbleFunction(
     ## Tuncation level of the random measure 
     truncG <- 0 
     
-    setupOutputs(dimTildeNim, dimTilde, lengthData)
+    setupOutputs(dimTildeNim, lengthData)
   },
   
   run=function(){
@@ -314,7 +314,7 @@ sampleDPmeasure <- nimbleFunction(
     ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
     ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
     ## (p+1) denoted the number of parameters, each of length truncG, to be stored: p is the number of cluster components (length(tildeVars)) and 1 is for the weights.
-    samples <<- matrix(0, nrow = niter, ncol = truncG*(p+1)) 
+    samples <<- matrix(0, nrow = niter, ncol = truncG*(sum(dimTilde)+1)) 
     
     for(iiter in 1:niter){
       ## getting the sampled unique values (tilde variables) and their probabilities of being sampled,
@@ -353,7 +353,7 @@ sampleDPmeasure <- nimbleFunction(
       if(index == newValueIndex){   # sample from G_0
         model$simulate(parentNodesTildeVarsDeps)
         for(j in 1:p){ 
-          samples[iiter, j*truncG + Taux] <<- values(model, tildeVars)[(j-1)*nTilde[1] + 1]
+          samples[iiter, j*truncG + Taux] <<- values(model, tildeVars[j])[1]
         }
       } else {   # sample one of the existing values
         for(j in 1:p){
@@ -369,7 +369,7 @@ sampleDPmeasure <- nimbleFunction(
         if(index == newValueIndex){  # sample from G_0
           model$simulate(parentNodesTildeVarsDeps)
           for(j in 1:p){ 
-            paramAux[j] <- values(model, tildeVars)[(j-1)*nTilde[1] + 1]
+            paramAux[j] <- values(model, tildeVars[j])[1]
           }
         } else{  # sample one of the existing values
           for(j in 1:p){
