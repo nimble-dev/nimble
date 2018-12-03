@@ -114,10 +114,10 @@ sampleDPmeasure <- nimbleFunction(
   setup=function(model, mvSaved){
     
     ## Check if the mvSaved is compiled or not.
-    mvIsCompiled <- exists('dll', envir = mvSaved)
-    if( mvIsCompiled ) {
-      stop("sampleDPmeasure: modelValues object has to be an uncompiled object.\n")
-    }
+    # mvIsCompiled <- exists('dll', envir = mvSaved)
+    # if( mvIsCompiled ) {
+    #  stop("sampleDPmeasure: modelValues object has to be an uncompiled object.\n")
+    #}
     
     ## Determine variables in the mv object and nodes/variables in the model.
     mvSavedVars <- mvSaved$varNames
@@ -150,8 +150,18 @@ sampleDPmeasure <- nimbleFunction(
       for(j in seq_along(expr)) {
         ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
         tmpexpr <- parse(text = expr[j])[[1]]
-        if(length(tmpexpr) >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') {   
-          foundTarget <- all.vars(tmpexpr[[3]]) == dcrpVar   
+        ltmpexpr <- length(tmpexpr)
+        if(ltmpexpr >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') { 
+          #  Find the cluster variables, named tildeVars, in presence of univariate and multivariate cluster parameters:
+          k <- 3
+          foundTarget <- FALSE
+          while(k <= ltmpexpr && foundTarget == FALSE) {
+            foundTarget <- all.vars(tmpexpr[[k]]) == dcrpVar
+            if(sum(foundTarget) == 0) {  # to avoid having foundTarget equal to logical(0). what other type could foundTarget be?
+              foundTarget <- FALSE
+            }
+            k <- k + 1
+          }  
           if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
             tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
             itildeVar <- itildeVar+1 
@@ -389,13 +399,6 @@ sampleDPmeasure <- nimbleFunction(
           Taux <- Taux + 1
         }
       }
-      
-      ## complete the vector of probabilities and atoms: w_Trunc and atom_Trunc
-      #samples[iiter, truncG] <<- 1 - sum(samples[iiter, 1:(truncG-1)])
-      #model$simulate(parentNodesTildeVarsDeps)
-      #for(j in 1:p){ 
-      #  samples[iiter, (j+1)*truncG] <<- values(model, tildeVars)[(j-1)*nTilde[1] + 1]
-      #}
     }
   },
   methods = list( reset = function () {} )
@@ -861,15 +864,25 @@ sampler_CRP <- nimbleFunction(
     for(i in seq_along(dep)) { 
       expr <- cc_getNodesInExpr(model$getValueExpr(dep[i])) 
       for(j in seq_along(expr)) {
-        ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
-        tmpexpr <- parse(text = expr[j])[[1]]
-        if(length(tmpexpr) >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') {   
-          foundTarget <- all.vars(tmpexpr[[3]]) == targetVar   
-          if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
-            tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
-            itildeVar <- itildeVar+1 
+          ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
+          tmpexpr <- parse(text = expr[j])[[1]]
+          ltmpexpr <- length(tmpexpr)
+          if(ltmpexpr >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') { 
+              ##  Find the cluster variables, named tildeVars, in presence of univariate and multivariate cluster parameters:
+              idx <- 3
+              foundTarget <- FALSE
+              while(idx <= ltmpexpr && foundTarget == FALSE) {
+                  foundTarget <- all.vars(tmpexpr[[idx]]) == targetVar
+                  if(sum(foundTarget) == 0) {  # to avoid having foundTarget equal to logical(0). what other type could foundTarget be?
+                      foundTarget <- FALSE
+                  }
+                  idx <- idx + 1
+              }  
+              if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
+                  tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
+                  itildeVar <- itildeVar+1 
+              }
           }
-        }
       }
     }
     if(is.null(tildeVars))
