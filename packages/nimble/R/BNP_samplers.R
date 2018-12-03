@@ -888,7 +888,20 @@ sampler_CRP <- nimbleFunction(
     if(is.null(tildeVars))
       stop('sampler_CRP:  The model should have at least one cluster variable.\n')
     
-    nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
+    # check that the number of cluster parameters (if more than one) are the same  (multivariate case considered)
+    dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE) 
+    lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE)) # for vector data gives its length 
+    p <- length(tildeVars)
+    nTilde <- numeric(p)
+    for(i in 1:p) {
+      elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
+      dimTildeNim <- model$getDimension(elementsTildeVars[i])
+      nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTildeNim
+    }
+    # in the univariate case: nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
+    if(any(nTilde != nTilde[1])){
+      stop('sampleDPmeasure: All cluster parameters must have the same number of observations.\n')
+    }
     
     if(length(unique(nTilde)) != 1)
       stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
