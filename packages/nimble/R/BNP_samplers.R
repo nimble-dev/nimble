@@ -81,9 +81,9 @@ getSamplesDPmeasure <- function(MCMC) {
         }
       }
       if(dimTildeNim[j] == 1) { # vector cluster parameter
-        for(k in 1:lengthData){
-          for(l in 1:truncG) {
-            namesAtoms[inames] <- paste0(namesVars[j], "[", l, ",", k, "]")
+        for(l in 1:truncG) {
+          for(k in 1:lengthData){
+            namesAtoms[inames] <- paste0(namesVars[j], "[", k, ",", l, "]")
             inames <- inames + 1
           }
         }
@@ -123,7 +123,6 @@ sampleDPmeasure <- nimbleFunction(
     mvSavedVars <- mvSaved$varNames
     
     stochNodes <- model$getNodeNames(stochOnly = TRUE)
-    dataNodes <- model$getNodeNames(dataOnly = TRUE) 
     distributions <- model$getDistribution(stochNodes) 
     
     ## Determine if there is a dCRP-distributed node and that it is monitored.
@@ -209,6 +208,9 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
     if(is.null(parentNodesTildeVars)) parentNodesTildeVars <- tildeVars  ## to avoid NULL which causes compilation issues
     
+    # checks for iid assumption of cluster parameters in the definition of random measure G
+    # i) check that all parentNodesTildeVarsDeps have same distribution  and parameters
+    
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
     ## Get all parents of xi (membership) variable (i.e., nodes involved in concentration parameter), potentially
@@ -254,7 +256,8 @@ sampleDPmeasure <- nimbleFunction(
       parentNodesXi <- dcrpNode # also used in run code
     }  
     
-    N <- length(dataNodes)
+    dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE)
+    N <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
     p <- length(tildeVars)
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
     nTilde <- numeric(p)
@@ -264,8 +267,8 @@ sampleDPmeasure <- nimbleFunction(
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
       dimTildeNim[i] <- model$getDimension(elementsTildeVars[i])
-      dimTilde[i] <- lengthData^(model$getDimension(elementsTildeVars[i])) 
-      nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTildeNim[i]
+      dimTilde[i] <- lengthData^(dimTildeNim[i]) 
+      nTilde[i] <- length(values(model, tildeVars[i])) / dimTilde[i]
     }
     if(any(nTilde != nTilde[1])){
       stop('sampleDPmeasure: All cluster parameters must have the same number of observations.\n')
@@ -284,7 +287,7 @@ sampleDPmeasure <- nimbleFunction(
     ## Tuncation level of the random measure 
     truncG <- 0 
     
-    setupOutputs(dimTildeNim, lengthData)
+    setupOutputs(lengthData)
   },
   
   run=function(){
@@ -320,7 +323,7 @@ sampleDPmeasure <- nimbleFunction(
       ## getting the sampled unique values (tilde variables) and their probabilities of being sampled,
       ## need for computing density later.
       probs <- nimNumeric(N)
-      uniqueValues <- matrix(0, nrow = N, ncol = p)  
+      uniqueValues <- matrix(0, nrow = N, ncol = sum(dimTilde))  
       xiiter <- mvSaved[dcrpVar, iiter]
       range <- min(xiiter):max(xiiter) 
       index <- 1
@@ -330,8 +333,20 @@ sampleDPmeasure <- nimbleFunction(
           probs[index] <- cond
           ## slight workaround because can't compile mvSaved[tildeVars[j], iiter]  
           nimCopy(mvSaved, model, tildeVars, row = iiter)
+          jcol <- 1
           for(j in 1:p){
-            uniqueValues[index, j] <- values(model, tildeVars[j])[range[i]]
+            for(l in 1:dimTilde[j]) {
+              if(dimTildeNim[j] == 0) { # scalars
+                uniqueValues[index, jcol] <- values(model, tildeVars[j])[dimTilde[j]*(range[i] - 1) + l]  #   
+              }
+              if(dimTildeNim[j] == 2) { #  matrices
+                uniqueValues[index, jcol] <- values(model, tildeVars[j])[dimTilde[j]*(range[i] - 1) + l]  #   
+              }
+              if(dimTildeNim[j] == 1) { # vectors
+                uniqueValues[index, jcol] <- values(model, tildeVars[j])[range[i] + (l-1)*nTilde[j]]  #   
+              }
+              jcol <- jcol + 1
+            }
           }
           index <- index+1
         }
@@ -343,7 +358,7 @@ sampleDPmeasure <- nimbleFunction(
       vaux <- rbeta(1, 1, concSamples[iiter] + N)
       v1prod <- 1
       Taux <- 1
-      paramAux <- numeric(p)
+      paramAux <- numeric(sum(dimTilde))
       
       ## copy tilde parents into model for use in simulation below when simulate from G_0  
       nimCopy(mvSaved, model, parentNodesTildeVars, row = iiter)
@@ -352,12 +367,31 @@ sampleDPmeasure <- nimbleFunction(
       index <- rcat(prob = probs[1:newValueIndex])
       if(index == newValueIndex){   # sample from G_0
         model$simulate(parentNodesTildeVarsDeps)
-        for(j in 1:p){ 
-          samples[iiter, j*truncG + Taux] <<- values(model, tildeVars[j])[1]
+        sumCol <- truncG
+        for(j in 1:p){
+          for(l in 1:dimTilde[j]) {
+            if(dimTildeNim[j] == 0) {
+              samples[iiter, sumCol + dimTilde[j]*(Taux - 1) +l] <<- values(model, tildeVars[j])[l]  #   
+            }
+            if(dimTildeNim[j] == 2) {
+              samples[iiter, sumCol + dimTilde[j]*(Taux - 1) +l] <<- values(model, tildeVars[j])[l]  #   
+            }
+            if(dimTildeNim[j] == 1) {
+              samples[iiter, sumCol + dimTilde[j]*(Taux - 1) +l] <<- values(model, tildeVars[j])[(l-1)*nTilde[j] + 1]  # 
+            }
+            
+          }
+          sumCol <- sumCol + dimTilde[j]*truncG 
         }
       } else {   # sample one of the existing values
+        sumCol <- truncG
+        jcol <- 1
         for(j in 1:p){
-          samples[iiter, j*truncG + Taux] <<- uniqueValues[index, j] 
+          for(l in 1:dimTilde[j]) {
+            samples[iiter, sumCol + dimTilde[j]*(Taux - 1) +l] <<- uniqueValues[index, jcol]   # 
+            jcol <- jcol + 1
+          }
+          sumCol <- sumCol + dimTilde[j]*truncG 
         }
       }
       samples[iiter, Taux] <<- vaux 
@@ -368,15 +402,31 @@ sampleDPmeasure <- nimbleFunction(
         index <- rcat(prob = probs[1:newValueIndex])
         if(index == newValueIndex){  # sample from G_0
           model$simulate(parentNodesTildeVarsDeps)
-          for(j in 1:p){ 
-            paramAux[j] <- values(model, tildeVars[j])[1]
+          jcol <- 1
+          for(j in 1:p){
+            for(l in 1:dimTilde[j]) {
+              if(dimTildeNim[j] == 0 ) {
+                paramAux[jcol] <- values(model, tildeVars[j])[l]   #   
+              }
+              if(dimTildeNim[j] == 2 ) {
+                paramAux[jcol] <- values(model, tildeVars[j])[l]   #   
+              }
+              if(dimTildeNim[j] == 1) {
+                paramAux[jcol] <- values(model, tildeVars[j])[(l-1)*nTilde[j] +1] 
+              }
+              jcol <- jcol + 1
+            }
           }
         } else{  # sample one of the existing values
+          jcol <- 1
           for(j in 1:p){
-            paramAux[j] <- uniqueValues[index, j] 
+            for(l in 1:dimTilde[j]) {
+              paramAux[jcol] <- uniqueValues[index, jcol]   # 
+              jcol <- jcol + 1
+            }
           }
         }
-        condaux <- samples[iiter, truncG + 1:(Taux-1)] == paramAux[1]  # check if we sample a new atom or an atom that is in G already
+        condaux <- samples[iiter, truncG + seq(1, dimTilde[1]*(Taux - 1), by=dimTilde[1]) ] == paramAux[1]  # 1:(dimTilde[1]*(Taux - 1)) check if we sample a new atom or an atom that is in G already
         if(sum(condaux) > 0) { # the atom already exists and we have to update the weights and not include a new value of the params 
           repindex = 1
           while(!condaux[repindex]){
@@ -386,8 +436,14 @@ sampleDPmeasure <- nimbleFunction(
           vaux <- rbeta(1, 1, concSamples[iiter]+N)
           samples[iiter, repindex] <<- samples[iiter, repindex] + vaux * v1prod
         } else { # augment the truncation and keep the same parameters
+          sumCol <- truncG
+          jcol <- 1
           for(j in 1:p){
-            samples[iiter, j*truncG + Taux] <<- paramAux[j]
+            for(l in 1:dimTilde[j]) {
+              samples[iiter, sumCol + dimTilde[j]*(Taux - 1) +l] <<- paramAux[jcol]   # 
+              jcol <- jcol + 1
+            }
+            sumCol <- sumCol + dimTilde[j]*truncG 
           }
           v1prod <- v1prod * (1-vaux)
           vaux <- rbeta(1, 1, concSamples[iiter]+N)
@@ -888,7 +944,7 @@ sampler_CRP <- nimbleFunction(
     if(is.null(tildeVars))
       stop('sampler_CRP:  The model should have at least one cluster variable.\n')
     
-    # check that the number of cluster parameters (if more than one) are the same  (multivariate case considered)
+    # check that the number of parameters in cluster parameters (if more than one) are the same  (multivariate case considered)
     dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE) 
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE)) # for vector data gives its length 
     p <- length(tildeVars)
