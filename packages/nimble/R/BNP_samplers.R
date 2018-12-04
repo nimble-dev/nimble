@@ -210,6 +210,17 @@ sampleDPmeasure <- nimbleFunction(
     
     # checks for iid assumption of cluster parameters in the definition of random measure G
     # i) check that all parentNodesTildeVarsDeps have same distribution  and parameters
+    for(i in seq_along(tildeVars) ) {
+      tildeVarsElements <- model$expandNodeNames(tildeVars[i])
+      # check that cluster parameters have same distribution 
+      dist1 <- model$getDistribution(tildeVarsElements[1])
+      for(j in seq_along(tildeVarsElements)) {
+        if(model$getDistribution(tildeVarsElements[j]) != dist1) {
+          stop('sampleDPmeasure: cluster parameters have to have the same distribution. \n')
+        }
+      }
+      # check that cluster parameters have distributions with same parameters...
+    }
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
