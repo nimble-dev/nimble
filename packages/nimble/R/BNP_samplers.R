@@ -7,7 +7,7 @@
 
 #' Get posterior samples for a Dirichlet process measure
 #'
-#' EXPERIMENTAL This function obtains samples from the estimated Dirichlet process measure for models specified using the \code{dCRP} distribution.
+#' EXPERIMENTAL This function obtains posterior samples from a Dirichlet process distributed random measure of a model specified using the \code{dCRP} distribution.
 #'
 #' @param MCMC an MCMC class object, either compiled or uncompiled.
 #' 
@@ -15,13 +15,13 @@
 #' 
 #' @export
 #' @details
-#'  This function provides samples from a truncated approximation to the random measure associated with the mixing distribution of a Dirichlet process mixture model. The random measure is represented by a stick-breaking representation (Sethuraman, 1994). This sampler can only be used with models containing a \code{dCRP} distribution. 
+#' This function provides samples from a random measure having a Dirichlet process prior. Realizations are almost surely discrete and represented by a (finite) stick-breaking representation (Sethuraman, 1994), whose atoms (or point masses) are independent and identically distributed. This sampler can only be used with models containing a \code{dCRP} distribution . 
 #'
 #' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compiled version. The MCMC should already have been run, as \code{getSamplesDPmeasure} uses the parameter samples to  generates samples for the random measure. Note that the monitors associated with that MCMC must include the cluster membership variable (which has the \code{dCRP} distribution), the cluster parameter variables, all variables directly determining the \code{dCRP} concentration parameter, and any stochastic parent variables of the cluster parameter variables. See \code{help(configureMCMC)} or \code{help(addMonitors)} for information on specifying monitors for an MCMC.
 #' 
 #' The truncation level of the random measure is determined based on a fixed error of approximation and by the posterior samples of the concentration parameter, if random. The error of approximation is the tail probability of the random measure (Section 4 in Ishwaran and Zarepour, 2000).
 #'  
-#' The returned object is a matrix containing samples from the truncated approximation of the random measure (one row per sample), with columns for the weights and the cluster variables. The stick-breaking weights are named \code{weights} and the atoms, or point masses, are named based on the cluster variables in the model.
+#' The returned list contains a matrix with samples from the random measure (one sample per row) and the truncation level. The stick-breaking weights are named \code{weights} and the atoms, or point masses, are named based on the cluster variables in the model.
 #' 
 #' @seealso \code{\link{buildMCMC}}, \code{\link{configureMCMC}}, 
 #' @references
@@ -32,11 +32,11 @@
 #' @examples
 #' \dontrun{
 #'   conf <- configureMCMC(model)
-#'   Rmcmc <- buildMCMC(conf)
-#'   Cmodel <- compileNimble(model)
-#'   Cmcmc <- compileNimble(Rmcmc, project = model)
-#'   runMCMC(Cmcmc, niter = 1000)
-#'   outputG <- getSamplesDPmeasure(Cmcmc)
+#'   mcmc <- buildMCMC(conf)
+#'   cmodel <- compileNimble(model)
+#'   cmcmc <- compileNimble(mcmc, project = model)
+#'   runMCMC(cmcmc, niter = 1000)
+#'   outputG <- getSamplesDPmeasure(cmcmc)
 #'   samples <- outputG$samples
 #'   truncation <- output$trunc
 #' }
