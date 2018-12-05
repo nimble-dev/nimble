@@ -282,7 +282,7 @@ sampleDPmeasure <- nimbleFunction(
       nTilde[i] <- length(values(model, tildeVars[i])) / dimTilde[i]
     }
     if(any(nTilde != nTilde[1])){
-      stop('sampleDPmeasure: All cluster parameters must have the same number of observations.\n')
+      stop('sampleDPmeasure: All cluster parameters must have the same number of parameters.\n')
     }
     
     
@@ -323,7 +323,7 @@ sampleDPmeasure <- nimbleFunction(
     truncG <<- round(truncG)
     #approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
     # I think is good to send message indicating what the truncation level is for an approximation error smaller than to 10^(-10)
-    nimCat('sampleDPmeasure: Approximating the random measure by a finite stick-breaking representation with an error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
+    # nimCat('sampleDPmeasure: Approximating the random measure by a finite stick-breaking representation with an error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
     
     ## Storage object: matrix with nrow = number of MCMC iterations, and ncol = (1 + p)*truncG, where
     ## truncG the truncation level of the random measure G (an integer given by the values of conc parameter)
@@ -1109,7 +1109,6 @@ sampler_CRP <- nimbleFunction(
       } else {
         curLogProb[k+1] <<- log(0) 
       }
-      
       
       # sampling the index that represents the updated label
       index <- rcat( n=1, exp(curLogProb[1:(k+1)]-max(curLogProb[1:(k+1)])) )
