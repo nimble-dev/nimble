@@ -1117,11 +1117,6 @@ sampler_CRP <- nimbleFunction(
       # updating model[[target]][i], xiUniques, xiCounts, kNew
       if(index == (k+1)){ # a new membership variable is sampled
         if( xiCounts[xi[i]] != 0 ) { # a new cluster is created
-          if(kNew > min_nTilde) {
-            nimCat('CRP_sampler: This MCMC is not fully nonparametric. The MCMC attempted to use more components than the number of cluster parameters.\n')
-            kNew <- xi[i]
-            isNonParam <- FALSE
-          }
           model[[target]][i] <<- kNew 
           k <- k + 1 # a new cluster is created
           xiUniques[k] <- kNew # label of new cluster
@@ -1130,6 +1125,11 @@ sampler_CRP <- nimbleFunction(
           while(mySum > 0 & kNew < n) { # need to make sure don't go beyond length of vector
             kNew <- kNew+1
             mySum <- sum(xi == kNew)
+          }
+          if(kNew > min_nTilde) {
+            nimCat('CRP_sampler: This MCMC is not fully nonparametric. The MCMC attempted to use more components than the number of cluster parameters.\n')
+            kNew <- xiUniques[k]
+            isNonParam <- FALSE
           }
         } # otherwise, a cluster was deleted so the 'new' label is the deleted label; k, xiUniques, kNew, and model[[target]][i] do not change, update xiCounts
         xiCounts[model[[target]][i]] <- 1
