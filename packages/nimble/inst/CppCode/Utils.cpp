@@ -53,7 +53,7 @@ int rFunLength(bool Arg) {
 
 bool decide(double lMHr) { // simple function accept or reject based on log Metropolis-Hastings ratio
   if(ISNAN(lMHr)) {
-    double junk = runif(0,1); // purely for debugging to ensure
+    // double junk = runif(0,1); // purely for debugging to ensure
     // same sequence of RNG uses for comparison purposes.
     return(false);
   }

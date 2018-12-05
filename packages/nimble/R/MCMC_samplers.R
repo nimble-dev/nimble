@@ -178,10 +178,10 @@ sampler_RW <- nimbleFunction(
             ## to old behavior to see if tests that depend on particular
             ## sample sequences pass.  Rather than calling runif(1, 0, 1) here,
             ## we call decide() to ensure same behavior.
-            jump <- decide(logMHR)
+            ## jump <- decide(logMHR)
             ## When new behavior is acceptable, we can remove the above line
             ## and uncomment the following:
-            ##jump <- FALSE
+            jump <- FALSE
         } else {
             logMHR <- logMHR + calculateDiff(model, calcNodesNoSelf) + propLogScale
             jump <- decide(logMHR)
@@ -267,7 +267,7 @@ sampler_RW_block <- nimbleFunction(
         adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
         scale          <- if(!is.null(control$scale))          control$scale          else 1
         propCov        <- if(!is.null(control$propCov))        control$propCov        else 'identity'
-        tries          <- if(!is.null(control$propCov))        control$tries          else 1
+        tries          <- if(!is.null(control$tries))          control$tries          else 1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
@@ -318,10 +318,10 @@ sampler_RW_block <- nimbleFunction(
             ## to old behavior to see if tests that depend on particular
             ## sample sequences pass.  Rather than calling runif(1, 0, 1) here,
             ## we call decide() to ensure same behavior.
-                jump <- decide(lpD)
+            ## jump <- decide(lpD)
             ## When new behavior is acceptable, we can remove the above line
             ## and uncomment the following:
-            ##jump <- FALSE
+            jump <- FALSE
             } else {
                 ##        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
                 lpD <- lpD + calculateDiff(model, calcNodesDepStage)
@@ -763,12 +763,6 @@ sampler_AF_slice <- nimbleFunction(
             lp <- model$calculate(calcNodesProposalStage)
             if(lp == -Inf) return(lp)
             lp <- lp + model$calculate(calcNodesDepStage)
-            ## lp <- model$calculate(calcNodes)
-            ## ## Following lines were intended to prevent bugs in dynamic index cases,
-            ## ## but in other cases they violate topological ordering.
-            ## ##            lp <- calculate(model, target)
-            ## ##            if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
-            ## ##            lp <- lp + calculate(model, calcNodesNoSelf)
             returnType(double())
             return(lp)
         },
