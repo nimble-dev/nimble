@@ -141,33 +141,7 @@ sampleDPmeasure <- nimbleFunction(
     
     ## Find the cluster variables, named tildeVars
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
-    tildeVars <- NULL
-    itildeVar <- 1
-    dep <- model$getDependencies(targetElements[1], self = FALSE)
-    for(i in seq_along(dep)) { 
-      expr <- cc_getNodesInExpr(model$getValueExpr(dep[i])) 
-      for(j in seq_along(expr)) {
-        ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
-        tmpexpr <- parse(text = expr[j])[[1]]
-        ltmpexpr <- length(tmpexpr)
-        if(ltmpexpr >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') { 
-          #  Find the cluster variables, named tildeVars, in presence of univariate and multivariate cluster parameters:
-          k <- 3
-          foundTarget <- FALSE
-          while(k <= ltmpexpr && foundTarget == FALSE) {
-            foundTarget <- all.vars(tmpexpr[[k]]) == dcrpVar
-            if(sum(foundTarget) == 0) {  # to avoid having foundTarget equal to logical(0). what other type could foundTarget be?
-              foundTarget <- FALSE
-            }
-            k <- k + 1
-          }  
-          if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
-            tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
-            itildeVar <- itildeVar+1 
-          }
-        }
-      }
-    }
+    tildeVars <- findClusterVars(model, targetElements[1]) 
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
     
@@ -920,36 +894,8 @@ sampler_CRP <- nimbleFunction(
     nObs <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
     if(n != nObs)
       stop("sampler_CRP: The length of membership variable and observations has to be the same.\n")
-    
-    ## finding 'tilde' variables (the parameters that are being clustered):
-    tildeVars <- NULL
-    itildeVar <- 1
-    
-    dep <- model$getDependencies(targetElements[1], self = FALSE)
-    for(i in seq_along(dep)) { 
-      expr <- cc_getNodesInExpr(model$getValueExpr(dep[i])) 
-      for(j in seq_along(expr)) {
-          ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
-          tmpexpr <- parse(text = expr[j])[[1]]
-          ltmpexpr <- length(tmpexpr)
-          if(ltmpexpr >= 3 && is.call(tmpexpr) && tmpexpr[[1]] == '[') { 
-              ##  Find the cluster variables, named tildeVars, in presence of univariate and multivariate cluster parameters:
-              idx <- 3
-              foundTarget <- FALSE
-              while(idx <= ltmpexpr && foundTarget == FALSE) {
-                  foundTarget <- all.vars(tmpexpr[[idx]]) == targetVar
-                  if(sum(foundTarget) == 0) {  # to avoid having foundTarget equal to logical(0). what other type could foundTarget be?
-                      foundTarget <- FALSE
-                  }
-                  idx <- idx + 1
-              }  
-              if( length(foundTarget) > 0 && sum(foundTarget) > 0 ) {
-                  tildeVars[itildeVar] <- deparse(tmpexpr[[2]])
-                  itildeVar <- itildeVar+1 
-              }
-          }
-      }
-    }
+
+    tildeVars <- findClusterVars(model, targetElements[1])
     if(is.null(tildeVars))
       stop('sampler_CRP:  The model should have at least one cluster variable.\n')
     
@@ -1342,4 +1288,32 @@ sampler_CRP_old <- nimbleFunction(
 )
 
 
-
+findClusterVars <- function(model, target) {
+    targetVar <- model$getVarNames(nodes = target)
+    clusterVars <- NULL
+    idx <- 1
+    deps <- model$getDependencies(target, self = FALSE)
+    for(dep in deps) { 
+        expr <- cc_getNodesInExpr(model$getValueExpr(dep)) 
+        for(j in seq_along(expr)) {
+            ## look for cases like thetatilde[xi[i]] to identify 'xi' and extract 'thetaTilde'
+            subExpr <- parse(text = expr[j])[[1]]
+            len <- length(subExpr)
+            if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[') { 
+                ##  Find the cluster variables, named clusterVars, in presence of univariate and multivariate cluster parameters:
+                k <- 3
+                foundTarget <- FALSE
+                while(k <= len && !foundTarget) {
+                    if(sum(all.vars(subExpr[[k]]) == targetVar))
+                        foundTarget <- TRUE else k <- k + 1
+                }  
+                if(foundTarget) {
+                    clusterVars[idx] <- deparse(subExpr[[2]])
+                    idx <- idx+1 
+                }
+            }
+        }
+    }
+    return(clusterVars)
+}
+    
