@@ -141,7 +141,7 @@ sampleDPmeasure <- nimbleFunction(
     
     ## Find the cluster variables, named tildeVars
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
-    tildeVars <- findClusterVars(model, targetElements[1]) {
+    tildeVars <- findClusterVars(model, targetElements[1]) 
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
     
