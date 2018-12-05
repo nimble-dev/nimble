@@ -1071,6 +1071,11 @@ sampler_CRP <- nimbleFunction(
     while(xiCounts[kNew] > 0 & kNew < n) { # need to make sure don't go beyond length of vector
       kNew <- kNew + 1
     }
+    if(kNew > min_nTilde) {
+      nimCat('CRP_sampler: This MCMC is not fully nonparametric. The MCMC attempted to use more components than the number of cluster parameters.\n')
+      kNew <- xiUniques[k] #xi[i]
+      isNonParam <- FALSE
+    }
     
     
     for(i in 1:n) { # updates one cluster membership at the time , i=1,...,n
@@ -1089,15 +1094,22 @@ sampler_CRP <- nimbleFunction(
         } else model$calculate(calcNodes) 
         curLogProb[j] <<- log(xiCounts[xiUniques[j]]) + model$getLogProb(dataNodes[i]) 
       }
-      model[[target]][i] <<- kNew 
-      if(type == 'indivCalcs') {
-        if(nInterm >= 1) model$calculate(intermNodes[i])
-        if(nInterm >= 2) model$calculate(intermNodes2[i])
-        if(nInterm >= 3) model$calculate(intermNodes3[i])
-        model$calculate(dataNodes[i])
-      } else model$calculate(calcNodes) 
-      #  probability of sampling the new label: kNew
-      curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label
+      if(isNonParam) {
+        if(sampler == 'CRP_nonconjugate'){
+          model[[target]][i] <<- kNew 
+          if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+          } else model$calculate(calcNodes) 
+        }
+        #  probability of sampling the new label: kNew
+        curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label
+      } else {
+        curLogProb[k+1] <<- log(0) 
+      }
+      
       
       # sampling the index that represents the updated label
       index <- rcat( n=1, exp(curLogProb[1:(k+1)]-max(curLogProb[1:(k+1)])) )
