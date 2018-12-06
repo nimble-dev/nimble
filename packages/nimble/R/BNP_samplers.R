@@ -1288,9 +1288,17 @@ sampler_CRP_old <- nimbleFunction(
 )
 
 
-findClusterVars <- function(model, target) {
+findClusterVars <- function(model, target, returnIndexInfo = FALSE) {
     targetVar <- model$getVarNames(nodes = target)
     clusterVars <- NULL
+    if(returnIndexInfo) {
+        ## This information is useful in checkCRPconjugacy in determining if we can handle conjugacy
+        ## under various complicated indexing situations, such as 'p[2:4, xi[i]]'.
+        numIndexes <- NULL
+        indexPosition <- NULL
+        indexExpr <- list()
+        targetInFunction <- NULL
+    }
     idx <- 1
     deps <- model$getDependencies(target, self = FALSE)
     for(dep in deps) { 
@@ -1309,11 +1317,23 @@ findClusterVars <- function(model, target) {
                 }  
                 if(foundTarget) {
                     clusterVars[idx] <- deparse(subExpr[[2]])
+                    if(returnIndexInfo) {
+                        indexPosition[idx] <- k-2
+                        numIndexes[idx] <- len - 2
+                        indexExpr[[idx]] <- subExpr
+                        targetInFunction[idx] <- length(subExpr[[k]]) >= 3 &&
+                            (length(subExpr[[k]]) > 3 || subExpr[[k]][[1]] != '[' ||
+                             subExpr[[k]][[2]] != targetVar)
+                    }
                     idx <- idx+1 
                 }
             }
         }
     }
-    return(clusterVars)
+    if(returnIndexInfo) {
+        return(list(clusterVars = clusterVars, numIndexes = numIndexes,
+                    indexPosition = indexPosition, indexExpr = indexExpr,
+                    targetInFunction = targetInFunction))
+        } else return(clusterVars)
 }
     

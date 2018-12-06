@@ -726,65 +726,65 @@ checkCRPconjugacy <- function(model, target) {
     conjugate <- FALSE 
     
     targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
-    
-    ## Find the cluster variables ("tilde" variables)
-    
-    tildeVars <- NULL
-    idx <- 1
-    ## Check that cluster ID appears in dependency expression and that
-    ## potential tilde variable is a vector simply indexed by the cluster ID.
-    ## For now we do not detect conjugacy for cases like mu[xi[i], 2],
-    ## as these are not handled by our CRP conjugate samplers.
-    deps <- model$getDependencies(targetElementExample, self=FALSE)
-    for(i in seq_along(deps)) {
-      expr <- cc_getNodesInExpr(model$getValueExpr(deps[i]))
-      expr <- parse(text = expr)[[1]]
-      if(is.call(expr) && length(expr) == 3 && expr[[1]] == '[' &&
-         expr[[3]] == targetElementExample) {
-          tildeVars[idx] <- deparse(expr[[2]])
-          idx <- idx + 1
-      }
-      ## Allow for exact model structure where conjugate sampler works for ddirch/multi.:
-      ## p[xi[i], 1:k]
-      if(is.call(expr) && length(expr) == 4 && expr[[1]] == '[' &&
-         length(expr[[4]]) == 3 && expr[[4]][[2]] == 1 && 
-         expr[[3]] == targetElementExample) {
-          tildeVars[idx] <- deparse(expr[[2]])
-          idx <- idx + 1
-      }
-    }
-    ## Note that models with thetaTilde[n-xi[i]+1] or thetaTilde[xi[i]+1]
-    ## won't have xi[i] detected above and so no conjugacy will be found,
-    ## which is what we want because conjugate samplers assume xi[i] is the thetaTilde element being used.
 
+    clusterVarInfo <- findClusterVars(model, targetElementExample, returnIndexInfo = TRUE)
+ 
     ## New checking for conjugacy using tilde variables: check conjugacy for one tilde node and
     ## then make sure all tilde nodes and all of their dependent nodes are exchangeable
-    if(length(tildeVars) == 1){  ## for now avoid case of mixing over multiple parameters
-        clusterNodes <- model$expandNodeNames(tildeVars[1])  # e.g., 'thetatilde[1]',...,
+    if(length(clusterVarInfo$clusterVars) == 1 | length(unique(clusterVarInfo$clusterVars)) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma
+        clusterNodes <- model$expandNodeNames(clusterVarInfo$clusterVars[1])  # e.g., 'thetatilde[1]',...,
         ## Avoid non-nodes from truncated clustering,
         ## e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs.
         clusterNodes <- clusterNodes[clusterNodes %in% model$getNodeNames(stochOnly = TRUE, includeData = FALSE)]
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
         if(length(conjugacy)) {
-            if(length(unique(model$getDeclID(clusterNodes))) == 1) { ## make sure all tilde nodes from same declaration (i.e., exchangeable)
-                depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
-                if(length(unique(model$getDeclID(depNodes))) == 1) { ## make sure all dependent nodes from same declaration (i.e., exchangeable)
+            conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) 
+            conjugate <- TRUE
 
-                    conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) 
-                    conjugate <- TRUE
-                }
+            depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
+            if(length(unique(model$getDeclID(depNodes))) != 1) { ## make sure all dependent nodes from same declaration (i.e., exchangeable)
+                conjugacy <- FALSE
             }
+
+            ## Check that cluster nodes are IID
+            valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
+            names(valueExprs) <- NULL
+            if(length(unique(valueExprs)) != 1)
+                conjugate <- FALSE
+
+            ## Temporary conditions to make sure that 'xi[i]' is in correct index
+            ## and without any complications given what conjugate sampler is expecting.
+            clusterPrior <- model$getDistribution(clusterNodes[1])
+            if(clusterPrior %in% c('ddirch', 'dnorm_invgamma')) {
+                if(clusterPrior == 'ddirch' &&     # require p[xi[i], 1:k]
+                   (length(clusterVarInfo$clusterVars) != 1 ||
+                    clusterVarInfo$indexPosition != 1 || clusterVarInfo$numIndexes != 2 ||
+                    length(clusterVarInfo$indexExpr[[1]]) != 4 ||
+                   length(clusterVarInfo$indexExpr[[1]][[4]]) != 3 ||
+                   clusterVarInfo$indexExpr[[1]][[4]][[1]] != ':' ||
+                   clusterVarInfo$indexExpr[[1]][[4]][[2]] != 1))
+                    conjugate <- FALSE
+                ## For now not using norm-invg conjugacy given difficulties in conj detection.
+                if(clusterPrior == 'dnorm_invgamma') conjugate <- FALSE
+                ## if(clusterPrior == 'dnorm_invgamma' &&  # require params[xi[i],1], params[xi[i],2]
+                ##    (length(clusterVarInfo$clusterVars) != 2 ||
+                ##     any(clusterVarInfo$indexPosition != 1) ||
+                ##     any(clusterVarInfo$numIndexes != 2) ||
+                ##     any(sort(c(clusterVarInfo$indexExpr[[1]][[4]],
+                ##          clusterVarInfo$indexExpr[[2]][[4]])) != c(1,2))))
+                ##     conjugate <- FALSE
+            } else {  ## univariate mixtures
+                if(length(clusterVarInfo$clusterVars) != 1 ||
+                   clusterVarInfo$numIndexes != 1)
+                    conjugate <- FALSE
+            }
+            if(any(clusterVarInfo$targetInFunction))
+                conjugate <- FALSE
         }
-        ## Check that prior for tilde nodes are truly exchangeable.
-        valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
-        names(valueExprs) <- NULL
-        if(length(unique(valueExprs)) != 1)
-            conjugate <- FALSE
     }
     
     if(conjugate) return(conjugacyType) else return(NULL)
 }
-
 
 rule <- setRefClass(
     Class = 'rule',
