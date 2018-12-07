@@ -307,12 +307,10 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            SHLIBcmd <- paste0(SHLIBcmd, "; ", origSHLIBcmd)
                                        }
                                        
-                                       ## if(!showCompilerOutput) { 
-                                           logFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
-                                           errorFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".err")
-                                           SHLIBcmd <- paste(SHLIBcmd, ">", logFile, "2>", errorFile)
-                                           ## See Rstudio comment above
-                                       ## }
+                                       logFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
+                                       errorFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".err")
+                                       SHLIBcmd <- paste(SHLIBcmd, ">", logFile, "2>", errorFile)
+                                       ## See Rstudio comment above
 
                                        if(nimbleOptions('pauseAfterWritingFiles')) browser()
                                        ## We formerly used ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput
@@ -327,9 +325,16 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            cat(output, sep = '\n')
                                        }
                                        if(status != 0) {
-                                           errors <- readLines(errorFile)
-                                           stop(structure(simpleError(paste0("Failed to create the shared library:\n\n", paste0(errors, collapse = '\n'))),
-                                                          class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
+                                           if(showCompilerOutput) {
+                                               output <- c(readLines(logFile), readLines(errorFile))
+                                               stop(structure(simpleError(paste0("Failed to create the shared library.\n", paste0(output, collapse = "\n"))),
+                                                              class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
+
+                                           } else {
+                                               nimbleUserNamespace$errorFile <- file.path(dirName, errorFile)
+                                               stop(structure(simpleError(paste0("Failed to create the shared library. Run 'printErrors()' to see the compilation errors.\n")),
+                                                              class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
+                                           }
                                        }
                                        if(isTRUE(nimbleOptions()$stopCompilationBeforeLinking)) stop("safely stopping before linking", call.=FALSE)
                                    },

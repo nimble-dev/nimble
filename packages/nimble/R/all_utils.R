@@ -181,3 +181,20 @@ createNamedObjectsFromList <- function(lst, writeToFile = NULL, envir = parent.f
     }
 }
 
+#' Print error messages after failed compilation
+#' 
+#' Retrieves the error file from R's tempdir and prints to the screen.
+#'
+#' @param printErrors logical indicating whether compiler warnings should be printed; generally such warnings can be ignored.
+#'
+#' @author Christopher Paciorek
+#' 
+#' @export
+printErrors <- function(excludeWarnings = TRUE) {
+    if(exists('errorFile', nimbleUserNamespace)) {
+        errors <- readLines(nimbleUserNamespace$errorFile)
+        if(excludeWarnings)
+            errors <- grep("^[Ww]arning", errors, value = TRUE, invert = TRUE)
+        cat(errors, sep = "\n")
+    } else cat("No error file found.")
+}
