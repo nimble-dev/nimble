@@ -44,7 +44,7 @@ getSamplesDPmeasure <- function(MCMC) {
   if(exists('model',MCMC, inherits = FALSE))
     compiled <- FALSE else compiled <- TRUE
     if(compiled) {
-      if(!exists('Robject', MCMC) || !exists('model', MCMC$Robject))
+      if(!exists('Robject', MCMC, inherits = FALSE) || !exists('model', MCMC$Robject, inherits = FALSE))
         stop("getSamplesDPmeasure: problem with finding model object in compiled MCMC")
       model <- MCMC$Robject$model
       mvSamples <- MCMC$Robject$mvSamples
