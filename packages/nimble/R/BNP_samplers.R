@@ -243,7 +243,7 @@ sampleDPmeasure <- nimbleFunction(
     N <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
     p <- length(tildeVars)
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
-    nTilde <- numeric(p)
+    nTilde <- numeric(p+1)
     dimTildeNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
     dimTilde <- numeric(p+1) # dimension to be used in run code
     #dimTildeNimAux <- numeric(p) #
@@ -253,7 +253,7 @@ sampleDPmeasure <- nimbleFunction(
       dimTilde[i] <- lengthData^(dimTildeNim[i]) 
       nTilde[i] <- length(values(model, tildeVars[i])) / dimTilde[i]
     }
-    if(any(nTilde != nTilde[1])){
+    if(any(nTilde[1:p] != nTilde[1])){
       stop('sampleDPmeasure: All cluster parameters must have the same number of parameters.\n')
     }
     
