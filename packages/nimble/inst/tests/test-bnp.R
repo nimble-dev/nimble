@@ -387,7 +387,7 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   mConf <- configureMCMC(m, monitors = c('xi', 'mu'))
   mMCMC <- buildMCMC(mConf)
   expect_error(getSamplesDPmeasure(mMCMC),
-               'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.')
+               'sampleDPmeasure: The stochastic parent nodes of the membership')
   
   mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'conc0'))
   mMCMC <- buildMCMC(mConf)
@@ -413,11 +413,11 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   mConf <- configureMCMC(m, monitors = c('xi', 'mu'))
   mMCMC <- buildMCMC(mConf)
   expect_error(getSamplesDPmeasure(mMCMC),
-               'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.')
+               'sampleDPmeasure: The stochastic parent nodes of the membership')
 
   ## note that if 'b' not 'd' is initialized then this will fail because model initialization overwrites
   ## 'b' with NA based on NA in 'd' and then sampleDPmeasure setup thinks it can't calculate conc0
-  mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'b'))
+  mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'b', 'd'))
   mMCMC <- buildMCMC(mConf)
   expect_message(output <- runMCMC(mMCMC, niter=1))
   outputG <- getSamplesDPmeasure(mMCMC)
@@ -1538,7 +1538,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
-  output <- runMCMC(cMCMC,  1000)
+  output <- runMCMC(cMCMC,  niter=1000, nburnin = 0, thin=1)
   
   samplesG <- getSamplesDPmeasure(cMCMC)
   expect_false(any(is.na(samplesG$samples)))
@@ -1555,7 +1555,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
     a0 ~ dgamma(1, 1)
   })
   Inits <- list( xi = 1:10, conc0=1,
-                 lambdaTilde = rgamma(10, shape=1, rate=0.1), a0=1)
+                 lambdaTilde = rgamma(10, shape=1, rate=1), a0=1)
   Data <- list(y = c(rpois(10, 8)))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
@@ -1563,7 +1563,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m, monitors = c('lambdaTilde','xi', 'conc0', 'a0'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
+  out <- runMCMC(cMCMC, niter=1000, nburnin = 0, thin=1)
   
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
@@ -1580,7 +1580,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
     a0 ~ dgamma(1, 1)
   })
   Inits <- list( xi = 1:10, 
-                 lambdaTilde = rgamma(10, shape=1, rate=0.1), a0=1)
+                 lambdaTilde = rgamma(10, shape=1, rate=1), a0=1)
   Data <- list(y = c(rpois(10, 8)))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
@@ -1588,7 +1588,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m, monitors =  c('lambdaTilde','xi', 'a0'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
+  out <- runMCMC(cMCMC, niter = 1000, nburnin = 0, thin=1)
   
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
@@ -1597,24 +1597,23 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   set.seed(1)
   code <- nimbleCode({
     for(i in 1:10){
-      lambdaTilde[i] ~ dgamma(shape=1, rate=a0)
+      lambdaTilde[i] ~ dgamma(shape=1, rate=0.01)
       lambda[i] <- lambdaTilde[xi[i]]
       y[i] ~ dpois(lambda[i])
     }
     xi[1:10] ~ dCRP(conc0, size=10)
     conc0 ~ dgamma(1,1)
-    a0 ~ dgamma(1, 1)
   })
   Inits <- list( xi = 1:10, conc0=1,
-                 lambdaTilde = rgamma(10, shape=1, rate=1), a0=1)
+                 lambdaTilde = rgamma(10, shape=1, rate=0.01))
   Data <- list(y = c(rpois(10, 8)))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
   
-  mConf <- configureMCMC(m, monitors = c('lambdaTilde','xi', 'conc0', 'a0'))
+  mConf <- configureMCMC(m, monitors = c('lambdaTilde','xi', 'conc0'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
+  out <- runMCMC(cMCMC, niter=1000, nburnin = 0, thin=1)
   
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
@@ -1624,8 +1623,8 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   code=nimbleCode(
     {
       for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=40) 
-        s2tilde[i] ~ dinvgamma(1, scale=0.5)
+        thetatilde[i] ~ dnorm(mean=0, var=1) 
+        s2tilde[i] ~ dinvgamma(2, scale=1)
       }
       xi[1:10] ~ dCRP( 1 , size=10)
       for(i in 1:10){
@@ -1635,16 +1634,16 @@ test_that("sampleDPmeasure can be used for more complicated models", {
     }
   )
   Inits=list(xi=sample(1:10, size=10, replace=TRUE), 
-             thetatilde=rnorm(10, 0, sqrt(40)),
-             s2tilde = rinvgamma(10, 1, scale=0.5))
-  Data=list(y=c(rnorm(5,-5,sqrt(5)), rnorm(5,5,sqrt(4))))
+             thetatilde=rnorm(10, 0, 1),
+             s2tilde = rinvgamma(10, 2, scale=1))
+  Data=list(y=c(rnorm(5,-5, sqrt(5)), rnorm(5,5,sqrt(4))))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
   
   mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, 1000)
+  out <- runMCMC(cMCMC, niter=1000, nburnin = 0, thin=1)
   
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
@@ -2041,43 +2040,19 @@ test_that("Testing BNP model based on CRP", {
   mMCMC <- buildMCMC(mConf)
   expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
   
-  CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE)
+  CmMCMC <- compileNimble(mMCMC, project=m)
+  samples <- runMCMC(CmMCMC, niter=600, nburnin=500)
   
-  nburn <- 500
-  nsave <- 100
-  ntotal <- nburn + nsave
-  itersave <- nburn + (1:nsave)
-  set.seed(1)
-  CmMCMC$run(ntotal)
+  samplesG <- getSamplesDPmeasure(CmMCMC)
+  trunc <- samplesG$trunc
+  samplesG <- samplesG$samples
   
-  ## results:
-  n <- Consts$n
-  samples <- as.matrix(CmMCMC$mvSamples)
-  lamSam <- samples[itersave, 1:n]
-  xiSam <- samples[itersave, (n+1):(2*n)]
-  kSam <- apply(xiSam, 1, function(x)length(unique(x)))
-  
-  ygrid <- 0:100
-  fSam <- matrix(0, ncol = length(ygrid), nrow = nsave)
-  
-  lamPost <- c()
-  Trunc <- 25
-  vj=c(rbeta(Trunc-1, 1, Consts$conc0+Consts$n), 1)
-  wj=c(vj[1], vj[2:(Trunc-1)]*cumprod(1-vj[1:(Trunc-2)]), cumprod(1-vj[1:(Trunc-1)])[Trunc-1])
-  probs=c(rep(1/(Consts$conc0+Consts$n), Consts$n), Consts$conc0/(Consts$conc0+Consts$n))
-  for(i in 1:nsave){
-    for(j in 1:Trunc){
-      index=sample(1:(Consts$n+1), size=1, prob=probs)
-      if(index==(Consts$n+1)){
-        lamPost[j] <- rgamma(1,shape=1, rate=0.01)
-      }else{
-        lamPost[j]=lamSam[i, xiSam[i,index]]
-      }
-    }
-    fSam[i, ]=sapply(ygrid, function(x)sum(wj*dpois(x, lamPost)))
+  ygrid <- seq(0, 100, by=1)
+  fSam <- matrix(0, ncol=length(ygrid), nrow=nrow(samplesG))
+  for(i in 1:nrow(samplesG)){
+    fSam[i, ] <- sapply(ygrid, function(x)sum(samplesG[i, 1:trunc]*dpois(x, samplesG[i, (trunc+1):(2*trunc)])))
   }
-  fHat=apply(fSam, 2, mean)
-  
+  fHat <- apply(fSam, 2, mean)
   f0 <- function(x) 0.2*dpois(x, 10) + 0.2*dpois(x, 5) + 0.6*dpois(x, 50)
   f0grid <- sapply(ygrid, f0)
   
@@ -2108,58 +2083,34 @@ test_that("Testing BNP model based on CRP", {
   expect_equal(mConf$getSamplers()[[101]]$name, "CRP_concentration")
   expect_equal(class(mMCMC$samplerFunctions[[102]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
   
-  CmMCMC <- compileNimble(mMCMC, project=m, resetFunctions=TRUE)
+  CmMCMC <- compileNimble(mMCMC, project=m)
+  samples <- runMCMC(CmMCMC, niter=600, nburnin=500)
   
-  nburn <- 500
-  nsave <- 100
-  ntotal <- nburn + nsave
-  itersave <- nburn + (1:nsave)
-  set.seed(1)
-  CmMCMC$run(ntotal)
+  samplesG <- getSamplesDPmeasure(CmMCMC)
+  trunc <- samplesG$trunc
+  samplesG <- samplesG$samples
   
-  #-- results:
-  n <- Consts$n
-  samples <- as.matrix(CmMCMC$mvSamples)
-  concSam <- samples[itersave, 1]
-  lamSam <- samples[itersave, 2:(n+1)]
-  xiSam <- samples[itersave, (n+2):ncol(samples)]
-  kSam <- apply(xiSam, 1, function(x)length(unique(x)))
-  
-  ygrid <- 0:100
-  fSam <- matrix(0, ncol = length(ygrid), nrow = nsave)
-  
-  lamPost <- c()
-  aproxError <- 10^(-10)
-  Trunc <- ceiling(log(aproxError)/log(mean(concSam)/(mean(concSam)+1))+1)
-  for(i in 1:nsave){
-    vj=c(rbeta(Trunc-1, 1, concSam[i]+Consts$n), 1)
-    wj=c(vj[1], vj[2:(Trunc-1)]*cumprod(1-vj[1:(Trunc-2)]), cumprod(1-vj[1:(Trunc-1)])[Trunc-1])
-    probs=c(rep(1/(concSam[i]+Consts$n), Consts$n), concSam[i]/(concSam[i]+Consts$n))
-    
-    for(j in 1:Trunc){
-      index=sample(1:(Consts$n+1), size=1, prob=probs)
-      if(index==(Consts$n+1)){
-        lamPost[j] <- rgamma(1,shape=1, rate=0.01)
-      }else{
-        lamPost[j]=lamSam[i, xiSam[i,index]]
-      }
-    }
-    fSam[i, ]=sapply(ygrid, function(x)sum(wj*dpois(x, lamPost)))
+  ygrid <- seq(0, 100, by=1)
+  fSam <- matrix(0, ncol=length(ygrid), nrow=nrow(samplesG))
+  for(i in 1:nrow(samplesG)){
+    fSam[i, ] <- sapply(ygrid, function(x)sum(samplesG[i, 1:trunc]*dpois(x, samplesG[i, (trunc+1):(2*trunc)])))
   }
-  fHat=apply(fSam, 2, mean)
-  f0grid <- sapply(ygrid, function(x)0.2*dpois(x, 10) + 0.2*dpois(x, 5) + 0.6*dpois(x, 50))
+  fHat <- apply(fSam, 2, mean)
+  f0 <- function(x) 0.2*dpois(x, 10) + 0.2*dpois(x, 5) + 0.6*dpois(x, 50)
+  f0grid <- sapply(ygrid, f0)
+  
   L1dist <- mean(abs(f0grid - fHat))
   
   expect_equal(L1dist, 0.01, tol=0.01,
-               info = "wrong estimation of density in DPM of Poisson distrbutions")
+               info = "wrong estimation of density in DPM of Poisson distrbutions with random concentration param")
   
-  
+
   ## DPM of normal densities with random means and variances
   Code=nimbleCode(
     {
       for(i in 1:50){
-        thetatilde[i] ~ dnorm(mean=0, var=100) 
-        s2tilde[i] ~ dinvgamma(shape=1, scale=0.01) 
+        thetatilde[i] ~ dnorm(mean=0, var=1) 
+        s2tilde[i] ~ dinvgamma(shape=2, scale=1) 
       }
       for(i in 1:100){
         y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])
@@ -2171,8 +2122,8 @@ test_that("Testing BNP model based on CRP", {
   set.seed(1)
   aux <- sample(1:10, size=100, replace=TRUE)
   Inits <- list(xi = aux,
-                thetatilde = rnorm(50, 0, sqrt(100)),
-                s2tilde = rinvgamma(50, shape=1, scale=0.01))
+                thetatilde = rnorm(50, 0, 1),
+                s2tilde = rinvgamma(50, shape=2, scale=1))
   Data <- list(y = c(rnorm(50, 5,sqrt(4)), rnorm(50, -5, sqrt(2))))
   
   m <- nimbleModel(Code, data=Data, inits=Inits, calculate=TRUE)
@@ -2182,49 +2133,27 @@ test_that("Testing BNP model based on CRP", {
   expect_warning(mMCMC <- buildMCMC(mConf))
   expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
-  CmMCMC=compileNimble(mMCMC, project=m, resetFunctions=TRUE)
+  CmMCMC=compileNimble(mMCMC, project=m)
+  samples <- runMCMC(CmMCMC, niter=600, nburnin=500)
   
-  nburn <- 500
-  nsave <- 100
-  ntotal <- nburn + nsave
-  itersave <- nburn + (1:nsave)
-  set.seed(1)
-  CmMCMC$run(ntotal)
+  samplesG <- getSamplesDPmeasure(CmMCMC)
+  trunc <- samplesG$trunc
+  samplesG <- samplesG$samples
   
-  N <- 100
-  samples <- as.matrix(CmMCMC$mvSamples)
-  xisamples <- samples[, (100+1):(2*N)]
-  s2samples <- samples[, 1:50]
-  thetasamples <- samples[, (50+1):(100)]
-  
-  conc <- 1
-  sec=seq(-20,20,len=100)
-  Trunc=35
-  thetaNew=matrix(0, ncol=2, nrow=Trunc)
-  vj=c(rbeta(Trunc-1, 1, N+conc), 1)
-  wj=c(vj[1], vj[2:(Trunc-1)]*cumprod(1-vj[1:(Trunc-2)]), cumprod(1-vj[1:(Trunc-1)])[Trunc-1])
-  probs=c(rep(1/(N+conc), N), conc/(N+conc))
-  fsam=matrix(0,ncol=length(sec), nrow=nsave)
-  for(i in 1:nsave){
-    for(j in 1:Trunc){
-      index=sample(1:(N+1), size=1, prob=probs)
-      if(index==(N+1)){
-        thetaNew[j,1] <- rnorm(1, 0, sqrt(100))
-        thetaNew[j,2] <- rinvgamma(1, 1, 0.01)
-      }else{
-        thetaNew[j,]=c(thetasamples[i, xisamples[i,index]],s2samples[i, xisamples[i,index]])
-      }
-    }
-    fsam[i, ]=sapply(sec, function(x)sum(wj*dnorm(x,thetaNew[,1],sqrt(thetaNew[,2]))))
+  ygrid <- seq(0, 100, by=1)
+  fSam <- matrix(0, ncol=length(ygrid), nrow=nrow(samplesG))
+  for(i in 1:nrow(samplesG)){
+    fSam[i, ] <- sapply(ygrid, function(x)sum(samplesG[i, 1:trunc]*
+                    dnorm(x,samplesG[(2*trunc+1):(3*trunc)],sqrt(samplesG[(trunc+1):(2*trunc)]))))
   }
-  fHat=apply(fsam, 2, mean)
+  fHat <- apply(fSam, 2, mean)
+  f0 <- function(x) 0.2*dpois(x, 10) + 0.2*dpois(x, 5) + 0.6*dpois(x, 50)
+  f0grid <- sapply(ygrid, f0)
   
-  f0sec <- sapply(sec, function(x) 0.5*dnorm(x, 5, sqrt(4)) + 0.5*dnorm(x, -5, sqrt(4)))
-  L1dist <- mean(abs(f0sec - fHat))
+  L1dist <- mean(abs(f0grid - fHat))
   
   expect_equal(L1dist, 0.01, tol=0.01,
-               info = "wrong estimation of density in DPM of Poisson distrbutions")
-  
+               info = "wrong estimation of density in DPM of normal distrbutions")
 })
 
 
