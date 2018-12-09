@@ -198,46 +198,72 @@ sampleDPmeasure <- nimbleFunction(
     
     ## Get all parents of xi (membership) variable (i.e., nodes involved in concentration parameter), potentially
     ## needed to determine concentration parameter for each iteration of MCMC
-    parentNodesXi <- NULL
-    candidateParentNodes <- model$getNodeNames(includeData = FALSE)
-    candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
-    for(i in seq_along(candidateParentNodes)){
-      aux <- model$getDependencies(candidateParentNodes[i], self = FALSE) 
-      if(sum(aux == dcrpNode)) 
-        parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
-    }
+    #parentNodesXi <- NULL
+    #candidateParentNodes <- model$getNodeNames(includeData = FALSE)
+    #candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
+    #for(i in seq_along(candidateParentNodes)){
+    #  aux <- model$getDependencies(candidateParentNodes[i], self = FALSE) 
+    #  if(sum(aux == dcrpNode)) 
+    #    parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
+    #}
     
-    if(length(parentNodesXi)) { # concentration parameter is random (or at least a function of other quantities)
-      ## Check that values stored in mvSaved are sufficient to calculate dcrp concentration.
-      ## Do this by creating a model containing all NAs and then copying in variables that are saved 
-      ## and then checking getParam gives a non-NA.
-      fixedConc <- FALSE
+    #if(length(parentNodesXi)) { # concentration parameter is random (or at least a function of other quantities)
+    #  ## Check that values stored in mvSaved are sufficient to calculate dcrp concentration.
+    #  ## Do this by creating a model containing all NAs and then copying in variables that are saved 
+    #  ## and then checking getParam gives a non-NA.
+    #  fixedConc <- FALSE
       
-      ## Which parent nodes are saved.
-      parentNodesXi <- parentNodesXi[parentNodesXi %in% mvSavedVars]  
+    #  ## Which parent nodes are saved.
+    #  parentNodesXi <- parentNodesXi[parentNodesXi %in% mvSavedVars]  
       
-      ## Create model with NA values
-      verbosity <- nimbleOptions('verbose')
-      nimbleOptions(verbose = FALSE)
-      modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
-      nimbleOptions(verbose = verbosity)
+    #  ## Create model with NA values
+    #  verbosity <- nimbleOptions('verbose')
+    #  nimbleOptions(verbose = FALSE)
+    #  modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
+    #  nimbleOptions(verbose = verbosity)
       
       ## Note that this check could fail if current state of model has NAs that result in NA in conc parameter,
       ## but we don't want to use mvSaved as MCMC may not have been run at this point.
       ## Need to think more about this.
-      nimCopy(from = model, to = modelWithNAs, nodes = parentNodesXi) 
-      if(length(parentNodesXi)) {
-        ## These nodes need to be calculated to determine conc param in run code
-        parentNodesXiDeps <- model$getDependencies(parentNodesXi, self = FALSE, determOnly = TRUE)  ## excludes dcrpNode
-        modelWithNAs$calculate(parentNodesXiDeps)
-        dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
-        if(is.na(dcrpParam)) 
-          stop('sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
-      } else stop( 'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
-    } else { ## placeholder since parentNodesXi must only have nodes in the mvSaved for correct compilation
+    #  nimCopy(from = model, to = modelWithNAs, nodes = parentNodesXi) 
+    #  if(length(parentNodesXi)) {
+    #    ## These nodes need to be calculated to determine conc param in run code
+    #    parentNodesXiDeps <- model$getDependencies(parentNodesXi, self = FALSE, determOnly = TRUE)  ## excludes dcrpNode
+    ##    modelWithNAs$calculate(parentNodesXiDeps)
+    #    dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
+    #    if(is.na(dcrpParam)) 
+    #      stop('sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
+    #  } else stop( 'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
+    #} else { ## placeholder since parentNodesXi must only have nodes in the mvSaved for correct compilation
+    #  parentNodesXiDeps <- dcrpNode
+    #  parentNodesXi <- dcrpNode # also used in run code
+    #}  
+    
+    
+    # test this version of doing things....
+    parentNodesXi <- NULL
+    candidateParentNodes <- model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
+    candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
+    for(i in seq_along(candidateParentNodes)) {
+      aux <- model$getDependencies(candidateParentNodes[i], self = FALSE)
+      if(sum(aux == dcrpNode)) {
+        parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
+      }
+    }
+    
+    if(length(parentNodesXi)) {
+      parentNodesXiDeps <- model$getDependencies(parentNodesXi, self = FALSE)
+      parentNodesXiDeps <- parentNodesXiDeps[!parentNodesXiDeps == dcrpNode]
+    } else {
       parentNodesXiDeps <- dcrpNode
-      parentNodesXi <- dcrpNode # also used in run code
-    }  
+    }
+    
+    if(!all(model$getVarNames(nodes = parentNodesXi) %in% mvSavedVars))
+      stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
+    if(is.null(parentNodesXi)) parentNodesXi <- dcrpNode  ## to avoid NULL which causes compilation issues
+    
+    
+    
     
     dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE)
     N <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
@@ -249,7 +275,7 @@ sampleDPmeasure <- nimbleFunction(
     #dimTildeNimAux <- numeric(p) #
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
-      dimTildeNim[i] <- model$getDimension(elementsTildeVars[i])
+      dimTildeNim[i] <- model$getDimension(elementsTildeVars[1]) # if the node is deterministic returns NA. I should get the dimension of the parent node?
       dimTilde[i] <- lengthData^(dimTildeNim[i]) 
       nTilde[i] <- length(values(model, tildeVars[i])) / dimTilde[i]
     }
@@ -981,7 +1007,7 @@ sampler_CRP <- nimbleFunction(
     ## single parameters
     helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
     
-    curLogProb <- numeric(n)
+    curLogProb <- numeric(n+1)
   },
   
   
@@ -1012,7 +1038,7 @@ sampler_CRP <- nimbleFunction(
     k <- k-1 # number of unique labels in xi
     
     kNew <- 1 # kNew is the new label that can be sampled
-    while(xiCounts[kNew] > 0 & kNew < n) { # need to make sure don't go beyond length of vector
+    while(xiCounts[kNew] > 0 & kNew < (n+1)) { # need to make sure don't go beyond length of vector
       kNew <- kNew + 1
     }
     if(kNew > min_nTilde) {
