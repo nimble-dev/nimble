@@ -184,76 +184,103 @@ sampleDPmeasure <- nimbleFunction(
     
     # checks for iid assumption of cluster parameters in the definition of random measure G
     # i) check that all parentNodesTildeVarsDeps have same distribution  and parameters
-    for(i in seq_along(tildeVars) ) {
-      clusterNodes <- model$expandNodeNames(tildeVars[i])
-      valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
-      names(valueExprs) <- NULL
-      if(length(unique(valueExprs)) != 1) {
-        stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
-      }
-    }
+    #for(i in seq_along(tildeVars) ) {
+    #  clusterNodes <- model$expandNodeNames(tildeVars[i])
+    #  valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
+    #  names(valueExprs) <- NULL
+    #  if(length(unique(valueExprs)) != 1) {
+    #    stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
+    #  }
+    #}
 
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
     ## Get all parents of xi (membership) variable (i.e., nodes involved in concentration parameter), potentially
     ## needed to determine concentration parameter for each iteration of MCMC
-    parentNodesXi <- NULL
-    candidateParentNodes <- model$getNodeNames(includeData = FALSE)
-    candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
-    for(i in seq_along(candidateParentNodes)){
-      aux <- model$getDependencies(candidateParentNodes[i], self = FALSE) 
-      if(sum(aux == dcrpNode)) 
-        parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
-    }
+    #parentNodesXi <- NULL
+    #candidateParentNodes <- model$getNodeNames(includeData = FALSE)
+    #candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
+    #for(i in seq_along(candidateParentNodes)){
+    #  aux <- model$getDependencies(candidateParentNodes[i], self = FALSE) 
+    #  if(sum(aux == dcrpNode)) 
+    #    parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
+    #}
     
-    if(length(parentNodesXi)) { # concentration parameter is random (or at least a function of other quantities)
-      ## Check that values stored in mvSaved are sufficient to calculate dcrp concentration.
-      ## Do this by creating a model containing all NAs and then copying in variables that are saved 
-      ## and then checking getParam gives a non-NA.
-      fixedConc <- FALSE
+    #if(length(parentNodesXi)) { # concentration parameter is random (or at least a function of other quantities)
+    #  ## Check that values stored in mvSaved are sufficient to calculate dcrp concentration.
+    #  ## Do this by creating a model containing all NAs and then copying in variables that are saved 
+    #  ## and then checking getParam gives a non-NA.
+    #  fixedConc <- FALSE
       
-      ## Which parent nodes are saved.
-      parentNodesXi <- parentNodesXi[parentNodesXi %in% mvSavedVars]  
+    #  ## Which parent nodes are saved.
+    #  parentNodesXi <- parentNodesXi[parentNodesXi %in% mvSavedVars]  
       
-      ## Create model with NA values
-      verbosity <- nimbleOptions('verbose')
-      nimbleOptions(verbose = FALSE)
-      modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
-      nimbleOptions(verbose = verbosity)
+    #  ## Create model with NA values
+    #  verbosity <- nimbleOptions('verbose')
+    #  nimbleOptions(verbose = FALSE)
+    #  modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
+    #  nimbleOptions(verbose = verbosity)
       
       ## Note that this check could fail if current state of model has NAs that result in NA in conc parameter,
       ## but we don't want to use mvSaved as MCMC may not have been run at this point.
       ## Need to think more about this.
-      nimCopy(from = model, to = modelWithNAs, nodes = parentNodesXi) 
-      if(length(parentNodesXi)) {
-        ## These nodes need to be calculated to determine conc param in run code
-        parentNodesXiDeps <- model$getDependencies(parentNodesXi, self = FALSE, determOnly = TRUE)  ## excludes dcrpNode
-        modelWithNAs$calculate(parentNodesXiDeps)
-        dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
-        if(is.na(dcrpParam)) 
-          stop('sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
-      } else stop( 'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
-    } else { ## placeholder since parentNodesXi must only have nodes in the mvSaved for correct compilation
+    #  nimCopy(from = model, to = modelWithNAs, nodes = parentNodesXi) 
+    #  if(length(parentNodesXi)) {
+    #    ## These nodes need to be calculated to determine conc param in run code
+    #    parentNodesXiDeps <- model$getDependencies(parentNodesXi, self = FALSE, determOnly = TRUE)  ## excludes dcrpNode
+    ##    modelWithNAs$calculate(parentNodesXiDeps)
+    #    dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
+    #    if(is.na(dcrpParam)) 
+    #      stop('sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
+    #  } else stop( 'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
+    #} else { ## placeholder since parentNodesXi must only have nodes in the mvSaved for correct compilation
+    #  parentNodesXiDeps <- dcrpNode
+    #  parentNodesXi <- dcrpNode # also used in run code
+    #}  
+    
+    
+    # test this version of doing things....
+    parentNodesXi <- NULL
+    candidateParentNodes <- model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
+    candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
+    for(i in seq_along(candidateParentNodes)) {
+      aux <- model$getDependencies(candidateParentNodes[i], self = FALSE)
+      if(sum(aux == dcrpNode)) {
+        parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
+      }
+    }
+    
+    if(length(parentNodesXi)) {
+      fixedConc <- FALSE
+      parentNodesXiDeps <- model$getDependencies(parentNodesXi, self = FALSE)
+      parentNodesXiDeps <- parentNodesXiDeps[!parentNodesXiDeps == dcrpNode]
+    } else {
       parentNodesXiDeps <- dcrpNode
-      parentNodesXi <- dcrpNode # also used in run code
-    }  
+    }
+    
+    if(!all(model$getVarNames(nodes = parentNodesXi) %in% mvSavedVars))
+      stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
+    if(is.null(parentNodesXi)) parentNodesXi <- dcrpNode  ## to avoid NULL which causes compilation issues
+    
+    
+    
     
     dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE)
     N <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
     p <- length(tildeVars)
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
-    nTilde <- numeric(p)
+    nTilde <- numeric(p+1)
     dimTildeNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
     dimTilde <- numeric(p+1) # dimension to be used in run code
     #dimTildeNimAux <- numeric(p) #
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
-      dimTildeNim[i] <- model$getDimension(elementsTildeVars[i])
+      dimTildeNim[i] <- model$getDimension(elementsTildeVars[1]) # if the node is deterministic returns NA. I should get the dimension of the parent node?
       dimTilde[i] <- lengthData^(dimTildeNim[i]) 
       nTilde[i] <- length(values(model, tildeVars[i])) / dimTilde[i]
     }
-    if(any(nTilde != nTilde[1])){
+    if(any(nTilde[1:p] != nTilde[1])){
       stop('sampleDPmeasure: All cluster parameters must have the same number of parameters.\n')
     }
     
@@ -921,6 +948,26 @@ sampler_CRP <- nimbleFunction(
     if(min_nTilde < n)
       warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
+    
+    # determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function):
+    fixedConc <- TRUE
+    stochNodes <- model$getNodeNames(stochOnly = TRUE)
+    distributions <- model$getDistribution(stochNodes) 
+    dcrpIndex <- which(distributions == 'dCRP')
+    dcrpNode <- stochNodes[dcrpIndex] 
+    
+    parentNodesXi <- NULL
+    candidateParentNodes <- model$getNodeNames(includeData = FALSE)
+    candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
+    for(i in seq_along(candidateParentNodes)){
+      tmp <- model$getDependencies(candidateParentNodes[i], self = FALSE) 
+      if(sum(tmp == dcrpNode)) 
+        parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
+    }
+    if(length(parentNodesXi)) {
+      fixedConc <- FALSE
+    }
+    
     ## Here we try to set up some data structures that allow us to do observation-specific
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
     ## At the moment, this is the only way we can easily handle dependencies for multiple node elements in a
@@ -981,7 +1028,7 @@ sampler_CRP <- nimbleFunction(
     ## single parameters
     helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
     
-    curLogProb <- numeric(n)
+    curLogProb <- numeric(n+1)
   },
   
   
@@ -1012,11 +1059,15 @@ sampler_CRP <- nimbleFunction(
     k <- k-1 # number of unique labels in xi
     
     kNew <- 1 # kNew is the new label that can be sampled
-    while(xiCounts[kNew] > 0 & kNew < n) { # need to make sure don't go beyond length of vector
+    while(xiCounts[kNew] > 0 & kNew < (n+1)) { # need to make sure don't go beyond length of vector
       kNew <- kNew + 1
     }
     if(kNew > min_nTilde) {
-      nimCat('CRP_sampler: This MCMC is not fully nonparametric. The MCMC attempted to use more components than the number of cluster parameters.\n')
+      if(fixedConc) {
+        nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
+      } else {
+        nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
+      }
       kNew <- xiUniques[k] #xi[i]
       isNonParam <- FALSE
     }
@@ -1070,8 +1121,12 @@ sampler_CRP <- nimbleFunction(
             mySum <- sum(xi == kNew)
           }
           if(kNew > min_nTilde) {
-            nimCat('CRP_sampler: This MCMC is not fully nonparametric. The MCMC attempted to use more components than the number of cluster parameters.\n')
-            kNew <- xiUniques[k]
+            if(fixedConc) {
+              nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
+            } else {
+              nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
+            }
+            kNew <- xiUniques[k] #xi[i]
             isNonParam <- FALSE
           }
         } # otherwise, a cluster was deleted so the 'new' label is the deleted label; k, xiUniques, kNew, and model[[target]][i] do not change, update xiCounts
