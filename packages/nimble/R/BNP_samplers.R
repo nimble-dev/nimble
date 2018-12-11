@@ -960,8 +960,8 @@ sampler_CRP <- nimbleFunction(
     candidateParentNodes <- model$getNodeNames(includeData = FALSE)
     candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
     for(i in seq_along(candidateParentNodes)){
-      aux <- model$getDependencies(candidateParentNodes[i], self = FALSE) 
-      if(sum(aux == dcrpNode)) 
+      tmp <- model$getDependencies(candidateParentNodes[i], self = FALSE) 
+      if(sum(tmp == dcrpNode)) 
         parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
     }
     if(length(parentNodesXi)) {
