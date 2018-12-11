@@ -1064,7 +1064,7 @@ sampler_CRP <- nimbleFunction(
     }
     if(kNew > min_nTilde) {
       if(fixedConc) {
-        nimCat('CRP_sampler: This MCMC is parametric. The MCMC attempted to use more components than the number of cluster parameters. To have a nonparametric sampler increase the number of cluster parameters.\n')
+        nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
       } else {
         nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
       }
@@ -1122,7 +1122,7 @@ sampler_CRP <- nimbleFunction(
           }
           if(kNew > min_nTilde) {
             if(fixedConc) {
-              nimCat('CRP_sampler: This MCMC is parametric. The MCMC attempted to use more components than the number of cluster parameters. To have a nonparametric sampler increase the number of cluster parameters.\n')
+              nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
             } else {
               nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
             }
