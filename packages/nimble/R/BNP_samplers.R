@@ -184,14 +184,14 @@ sampleDPmeasure <- nimbleFunction(
     
     # checks for iid assumption of cluster parameters in the definition of random measure G
     # i) check that all parentNodesTildeVarsDeps have same distribution  and parameters
-    for(i in seq_along(tildeVars) ) {
-      clusterNodes <- model$expandNodeNames(tildeVars[i])
-      valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
-      names(valueExprs) <- NULL
-      if(length(unique(valueExprs)) != 1) {
-        stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
-      }
-    }
+    #for(i in seq_along(tildeVars) ) {
+    #  clusterNodes <- model$expandNodeNames(tildeVars[i])
+    #  valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
+    #  names(valueExprs) <- NULL
+    #  if(length(unique(valueExprs)) != 1) {
+    #    stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
+    #  }
+    #}
 
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
@@ -252,6 +252,7 @@ sampleDPmeasure <- nimbleFunction(
     }
     
     if(length(parentNodesXi)) {
+      fixedConc <- FALSE
       parentNodesXiDeps <- model$getDependencies(parentNodesXi, self = FALSE)
       parentNodesXiDeps <- parentNodesXiDeps[!parentNodesXiDeps == dcrpNode]
     } else {
@@ -947,6 +948,26 @@ sampler_CRP <- nimbleFunction(
     if(min_nTilde < n)
       warning('sampler_CRP: The number of cluster parameters is less than the number of potential clusters. The MCMC is not strictly valid if it ever proposes more components than cluster parameters exist; NIMBLE will warn you if this occurs.\n')
     
+    
+    # determine if concentration parameter is fixed or random (code similar to the one in sampleDPmeasure function):
+    fixedConc <- TRUE
+    stochNodes <- model$getNodeNames(stochOnly = TRUE)
+    distributions <- model$getDistribution(stochNodes) 
+    dcrpIndex <- which(distributions == 'dCRP')
+    dcrpNode <- stochNodes[dcrpIndex] 
+    
+    parentNodesXi <- NULL
+    candidateParentNodes <- model$getNodeNames(includeData = FALSE)
+    candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
+    for(i in seq_along(candidateParentNodes)){
+      aux <- model$getDependencies(candidateParentNodes[i], self = FALSE) 
+      if(sum(aux == dcrpNode)) 
+        parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
+    }
+    if(length(parentNodesXi)) {
+      fixedConc <- FALSE
+    }
+    
     ## Here we try to set up some data structures that allow us to do observation-specific
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
     ## At the moment, this is the only way we can easily handle dependencies for multiple node elements in a
@@ -1042,7 +1063,11 @@ sampler_CRP <- nimbleFunction(
       kNew <- kNew + 1
     }
     if(kNew > min_nTilde) {
-      nimCat('CRP_sampler: This MCMC is not fully nonparametric. The MCMC attempted to use more components than the number of cluster parameters.\n')
+      if(fixedConc) {
+        nimCat('CRP_sampler: This MCMC is parametric. The MCMC attempted to use more components than the number of cluster parameters. To have a nonparametric sampler increase the number of cluster parameters.\n')
+      } else {
+        nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
+      }
       kNew <- xiUniques[k] #xi[i]
       isNonParam <- FALSE
     }
@@ -1096,8 +1121,12 @@ sampler_CRP <- nimbleFunction(
             mySum <- sum(xi == kNew)
           }
           if(kNew > min_nTilde) {
-            nimCat('CRP_sampler: This MCMC is not fully nonparametric. The MCMC attempted to use more components than the number of cluster parameters.\n')
-            kNew <- xiUniques[k]
+            if(fixedConc) {
+              nimCat('CRP_sampler: This MCMC is parametric. The MCMC attempted to use more components than the number of cluster parameters. To have a nonparametric sampler increase the number of cluster parameters.\n')
+            } else {
+              nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
+            }
+            kNew <- xiUniques[k] #xi[i]
             isNonParam <- FALSE
           }
         } # otherwise, a cluster was deleted so the 'new' label is the deleted label; k, xiUniques, kNew, and model[[target]][i] do not change, update xiCounts
