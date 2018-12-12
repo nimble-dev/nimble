@@ -181,18 +181,71 @@ sampleDPmeasure <- nimbleFunction(
     if(!all(model$getVarNames(nodes = parentNodesTildeVars) %in% mvSavedVars))
       stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
     if(is.null(parentNodesTildeVars)) parentNodesTildeVars <- tildeVars  ## to avoid NULL which causes compilation issues
-    
+
+      ## CLAUDIA: here is my suggestion - we first check fully IID for each tilde var and then
+      ## we check the normal-invgamma special case. 
+      
     # checks for iid assumption of cluster parameters in the definition of random measure G
     # i) check that all parentNodesTildeVarsDeps have same distribution  and parameters
-    #for(i in seq_along(tildeVars) ) {
-    #  clusterNodes <- model$expandNodeNames(tildeVars[i])
-    #  valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
-    #  names(valueExprs) <- NULL
-    #  if(length(unique(valueExprs)) != 1) {
-    #    stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
-    #  }
-    #}
+      for(i in seq_along(tildeVars) ) {
+          clusterNodes <- model$expandNodeNames(tildeVars[i])
+          valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
+          names(valueExprs) <- NULL
+          if(length(unique(valueExprs)) != 1) {
+              nonIID <- TRUE
+          }
+      }
+      if(nonIID && length(tildeVars) == 2) {  ## check for normal-invgamma conjugacy
+          stochNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+          clusterNodes1 <- model$expandNodeNames(tildeVars[1])
+          clusterNodes2 <- model$expandNodeNames(tildeVars[2])
+          ## Avoid non-nodes from truncated clustering,
+          ## e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs.
+          clusterNodes1 <- clusterNodes1[clusterNodes1 %in% stochNodes]
+          clusterNodes2 <- clusterNodes2[clusterNodes2 %in% stochNodes]
+          exampleNodes <- c(clusterNodes1[1], clusterNodes2[1])
+          dists <- c(model$getDistribution(clusterNodes1[1]), model$getDistribution(clusterNodes2[1]))
+          if(dists[1] == "dinvgamma" && dists[2] ==  "dnorm") {  ## put in order so dnorm node is first
+              exampleNodes <- c(clusterNodes2[1], clusterNodes1[1])
+              dists <- c("dnorm", "dinvgamma")
+              tmp <- clusterNodes1; clusterNodes1 <- clusterNodes2; clusterNodes2 <- tmp
+          }
+          if(dists[1] == "dnorm" && dists[2] == "dinvgamma") {
+              ## Check for conjugacy so we know we are in dnorm_invgamma case
+              conjugacy_dnorm <- model$checkConjugacy(exampleNodes[1], restrictLink = 'identity')
+              conjugacy_dinvgamma <- model$checkConjugacy(exampleNodes[2])
+              if(length(conjugacy_dnorm) && length(conjugacy_dinvgamma) &&
+                 sum(conjugacy_dinvgamma[[1]]$control$dep_dnorm == exampleNodes[1])) {
+                  conjugate <- TRUE
+              }
+              
+              ## Check that mean for cluster mean nodes are same
+              meanExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'mean'))
+              names(meanExprs) <- NULL
+              if(length(unique(meanExprs)) != 1)
+                  conjugate <- FALSE
+              ## Check that variance for cluster mean nodes are same except for dependence on variance
+              varExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'var'))
+              names(varExprs) <- NULL
+              for(i in seq_along(varExprs)) {
+                  varText <- deparse(varExprs[[i]])
+                  if(!length(grep(clusterNodes2[i], varText, fixed = TRUE))) {
+                      varExprs[[i]] <- NULL
+                  } else varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "a", varText, fixed = TRUE))[[1]]
+              }
+              if(length(unique(varExprs)) != 1)
+                  conjugate <- FALSE
+              
+              ## Check that cluster variance nodes are IID
+              valueExprs <- sapply(clusterNodes2, function(x) model$getValueExpr(x))
+              names(valueExprs) <- NULL
+              if(length(unique(valueExprs)) != 1)
+                  conjugate <- FALSE
+          }
+          if(conjugate) nonIID <- FALSE
+      }
 
+    if(nonIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
     
