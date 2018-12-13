@@ -1945,7 +1945,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         ## Check that LHS has all expected indexes based on context.
         usedIndexes <- contexts[[BUGSdecl$contextID]]$indexVarNames %in%
             unlist(all.vars(BUGSdecl$targetExpr))
-        if(BUGSdecl$type != "unknownIndex" && !all(usedIndexes))
+        if(BUGSdecl$type != "unknownIndex" && !all(usedIndexes) && !length(grep("^lifted", BUGSdecl$targetExpr)))
             warning(paste0("Multiple definitions for the same node. Did you forget indexing with '",
                           paste(contexts[[BUGSdecl$contextID]]$indexVarNames[!usedIndexes], collapse = ','),  
                            "' on the left-hand side of '", deparse(BUGSdecl$code), "'?"))
