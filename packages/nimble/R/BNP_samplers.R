@@ -1151,10 +1151,10 @@ sampler_CRP <- nimbleFunction(
       # computing sampling probabilities and sampling an index:
       if( xiCounts[xi[i]] == 0 ) { # cluster is a singleton. First compute probability of sampling an existing label.
         # Second compute probability of sampling a new cluster, here, new cluster is the current cluster!
-        reorderXiUniques <- numeric(min_nTilde) # here we save reorder version of xiUniques, use latter for updating xiUniques if a component is deleted
+        reorderXiUniques <- numeric(min_nTilde) # here we save reordered version of xiUniques, use latter for updating xiUniques if a component is deleted
         iprob <- 1
         for(j in 1:k) {
-          if( xiCounts[xiUniques[j]] >= 1 ) {
+          if( xiCounts[xiUniques[j]] >= 1 ) { 
             model[[target]][i] <<- xiUniques[j] 
             if(type == 'indivCalcs') {
               if(nInterm >= 1) model$calculate(intermNodes[i])
@@ -1218,7 +1218,7 @@ sampler_CRP <- nimbleFunction(
           curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label
         }
         
-        # sample and index from 1 to (k+1)
+        # sample an index from 1 to (k+1)
         index <- rcat( n=1, exp(curLogProb[1:(k+1)]-max(curLogProb[1:(k+1)])) )
         if(index == (k+1)) {
           newLab <- kNew
