@@ -141,7 +141,7 @@ sampleDPmeasure <- nimbleFunction(
     
     ## Find the cluster variables, named tildeVars
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
-    tildeVars <- findClusterVars(model, targetElements[1]) 
+    tildeVars <- nimble:::findClusterVars(model, targetElements[1]) 
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
     
@@ -607,8 +607,20 @@ CRP_nonconjugate <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {}, ## nothing needed for non-conjugate
     sampleBaseMeasure = function(j = integer()) {
-      model$simulate(marginalizedNodes[j])
-      model[[marginalizedVar]][j] <<- values(model, marginalizedNodes[j])[1]
+      p <- length(marginalizedVar)
+      nTildeVars <- length(marginalizedNodes) / p
+      if(p == 1) {
+        i <- 1
+        model$simulate(marginalizedNodes[(i-1)*nTildeVars + j])
+        model[[marginalizedVar]][j] <<- values(model, marginalizedNodes[(i-1)*nTildeVars + j])[1]
+      } else {
+        for(i in seq_along(marginalizedVar)) {
+          model$simulate(marginalizedNodes[(i-1)*nTildeVars + j])
+          #marginalizedVarTmp <- marginalizedVar[i]
+          #model[[marginalizedVarTmp]][j] <<- ....
+          model[[marginalizedVar]][j] <<- values(model, marginalizedNodes[(i-1)*nTildeVars + j])[1]
+        }
+      }
     }
   )
 )
@@ -1096,7 +1108,8 @@ sampler_CRP <- nimbleFunction(
                         'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
     ## we use [1] here because the 2nd/3rd args only used for conjugate cases and currently that is only setup for
     ## single parameters
-    helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
+    # helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
+    helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars, model$expandNodeNames(tildeVars), dataNodes)
     
     curLogProb <- numeric(n)
   },
