@@ -589,8 +589,7 @@ CRP_helper <- nimbleFunctionVirtual(
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
     },
-    sample = function(i = integer(), j = integer()) {},
-    sampleBaseMeasure = function(j = integer()) {}
+    sample = function(i = integer(), j = integer()) {}
   )
 )
 
@@ -605,21 +604,11 @@ CRP_nonconjugate <- nimbleFunction(
       returnType(double())
       return(model$getLogProb(dataNodes[i]))
     },
-    sample = function(i = integer(), j = integer()) {}, ## nothing needed for non-conjugate
-    sampleBaseMeasure = function(j = integer()) {
+    sample = function(i = integer(), j = integer() ) { ## sample from the base measure of the DP
       p <- length(marginalizedVar)
       nTildeVars <- length(marginalizedNodes) / p
-      if(p == 1) {
-        i <- 1
-        model$simulate(marginalizedNodes[(i-1)*nTildeVars + j])
-        model[[marginalizedVar]][j] <<- values(model, marginalizedNodes[(i-1)*nTildeVars + j])[1]
-      } else {
-        for(i in seq_along(marginalizedVar)) {
-          model$simulate(marginalizedNodes[(i-1)*nTildeVars + j])
-          #marginalizedVarTmp <- marginalizedVar[i]
-          #model[[marginalizedVarTmp]][j] <<- not working
-          model[[marginalizedVar]][j] <<- values(model, marginalizedNodes[(i-1)*nTildeVars + j])[1]
-        }
+      for(l in seq_along(marginalizedVar)) {
+        model$simulate(marginalizedNodes[(l-1)*nTildeVars + j])
       }
     }
   )
@@ -650,8 +639,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       postVar <- 1 / (1 / dataVar + 1 / priorVar)
       postMean <- postVar * (y / dataVar + priorMean / priorVar)
       model[[marginalizedVar]][j] <<- rnorm(1, postMean, sqrt(postVar)) 
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -687,8 +675,7 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
                                       scale = priorScale + kappa0 * (y - priorMean)^2 / (2*(1+kappa0)) )
       model[[marginalizedVar]][1] <<- rnorm(1, (kappa0 * priorMean + y)/(1 + kappa0), 
                                             sd = sqrt(model[[marginalizedVar]][2] / (1+kappa0))) 
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -715,8 +702,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
       model[[marginalizedVar]][j] <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -745,8 +731,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
       dataMean <- model$getParam(dataNodes[i], 'mean')
       y <- values(model, dataNodes[i])[1]
       model[[marginalizedVar]][j] <<- rgamma(1, shape = priorShape + 0.5, rate = priorRate + (y-dataMean)^2/2)
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -773,8 +758,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
       model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -803,8 +787,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
       dataSize <- model$getParam(dataNodes[i], 'size')
       y <- values(model, dataNodes[i])[1]
       model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+dataSize-y)
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -835,8 +818,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
       dataSize <- model$getParam(dataNodes[i], 'size')
       y <- values(model, dataNodes[i])[1]
       model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+dataSize, shape2=priorShape2+y)
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -861,8 +843,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
       model[[marginalizedVar]][j] <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -891,8 +872,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
       datashape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
       model[[marginalizedVar]][j] <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -921,8 +901,7 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
       model[[marginalizedVar]][j] <<- rgamma(1, shape=1+priorShape, rate=priorRate+y^dataShape)
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -951,8 +930,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
       model[[marginalizedVar]][j] <<- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y)
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -977,8 +955,7 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])
       model[[marginalizedVar]][j, ] <<- rdirch(alpha=priorAlpha+y)
-    },
-    sampleBaseMeasure = function(j = integer()) {}
+    }
   )
 )
 
@@ -1007,7 +984,9 @@ sampler_CRP <- nimbleFunction(
     tildeVars <- nimble:::findClusterVars(model, targetElements[1])
     if(is.null(tildeVars))
       stop('sampler_CRP:  The model should have at least one cluster variable.\n')
-    
+
+    calcNodes <- unique(c(calcNodes, model$getDependencies(tildeVars)))
+
     # check that the number of parameters in cluster parameters (if more than one) are the same  (multivariate case considered)
     dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE) 
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE)) # for vector data gives its length 
@@ -1151,7 +1130,7 @@ sampler_CRP <- nimbleFunction(
       } else {
         nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
       }
-      kNew <- 0 #xi[i]
+      kNew <- 0 
       isNonParam <- FALSE
     }
     
@@ -1162,9 +1141,9 @@ sampler_CRP <- nimbleFunction(
       xiCounts[xi[i]] <- xiCounts[xi[i]] - 1
       
       # computing sampling probabilities and sampling an index:
-      if( xiCounts[xi[i]] == 0 ) { # cluster is a singleton. First compute probability of sampling an existing label.
-        # Second compute probability of sampling a new cluster, here, new cluster is the current cluster!
-        reorderXiUniques <- numeric(min_nTilde) # here we save reordered version of xiUniques, use latter for updating xiUniques if a component is deleted
+      if( xiCounts[xi[i]] == 0 ) { # cluster is a singleton. First, compute probability of sampling an existing label.
+        # Second, compute probability of sampling a new cluster, here, new cluster is the current cluster!
+        reorderXiUniques <- numeric(min_nTilde) # here we save reordered version of xiUniques when there is a singleton. This is used latter for updating xiUniques if a component is deleted
         iprob <- 1
         for(j in 1:k) {
           if( xiCounts[xiUniques[j]] >= 1 ) { 
@@ -1183,7 +1162,7 @@ sampler_CRP <- nimbleFunction(
         
         model[[target]][i] <<- xi[i] # label of new component
         if(sampler == 'CRP_nonconjugate'){ # simulate tildeVars[xi[i]] # do this everytime there is a singleton so we ensure this comes always from the prior
-          helperFunctions[[1]]$sampleBaseMeasure(model[[target]][i])
+          helperFunctions[[1]]$sample(i, model[[target]][i])
           if(type == 'indivCalcs') {
             if(nInterm >= 1) model$calculate(intermNodes[i])
             if(nInterm >= 2) model$calculate(intermNodes2[i])
@@ -1203,8 +1182,8 @@ sampler_CRP <- nimbleFunction(
           newLabCond <- FALSE
         }
         
-      } else { # cluster is not a singleton. First compute probability of sampling an existing label.
-        # Second compute probability of sampling a new cluster dependening on the value of kNew
+      } else { # cluster is not a singleton. First, compute probability of sampling an existing label.
+        # Second, compute probability of sampling a new cluster dependening on the value of kNew
         for(j in 1:k) { # probability of sampling an existing label
           model[[target]][i] <<- xiUniques[j] 
           if(type == 'indivCalcs') {
@@ -1246,8 +1225,7 @@ sampler_CRP <- nimbleFunction(
       model[[target]][i] <<- newLab
       
       if( newLabCond ) { # a component is created. It can really create a new component or keep the current label if xi_i is a singleton
-        #xiCounts[model[[target]][i]] <- 1
-        if(isNonParam) { # updating the cluster parameters of the new cluster
+        if(isNonParam & sampler != 'CRP_nonconjugate') { # updating the cluster parameters of the new cluster
           helperFunctions[[1]]$sample(i, model[[target]][i])
         }
         if( xiCounts[xi[i]] != 0) { # a component is really created
@@ -1272,10 +1250,9 @@ sampler_CRP <- nimbleFunction(
         }
         xiCounts[model[[target]][i]] <- 1
       } else { # an existing label is sampled
-        #xiCounts[model[[target]][i]] <- xiCounts[model[[target]][i]] + 1
         if( xiCounts[xi[i]] == 0 ) { # xi_i is a singleton, a component was deleted
           k <- k - 1
-          xiUniques <- reorderXiUniques # reordered xiUniques because one as deleted
+          xiUniques <- reorderXiUniques
           if( kNew == 0 ) { # the sampler was not nonparametric 
             kNew <- xi[i] # 
             isNonParam <- TRUE # now the sampler is nonparametric
@@ -1289,59 +1266,6 @@ sampler_CRP <- nimbleFunction(
       }
     }
     model$calculate(calcNodes)
-      
-      # same to update objects as before but written differently. Don;t want to delete it before  tests!
-      #if( xiCounts[xi[i]] == 0 ) { #  the same number of clusters are available or a cluster was deleted
-      #  model[[target]][i] <<- newLab
-      #  if( newLabCond ) { # a "new" label is created. Here the created label is xi_i and xi ends up being the same as before updating  
-      #    xiCounts[model[[target]][i]] <- 1
-      #    if(isNonParam) { # updating the cluster parameters of the new cluster
-      #      helperFunctions[[1]]$sample(i, model[[target]][i])
-      #    }
-      #  } else { # a singleton cluster is deleted
-      #    xiCounts[model[[target]][i]] <- xiCounts[model[[target]][i]] + 1
-      #    k <- k - 1
-      #    xiUniques <- reorderXiUniques # reorder xiUniques because one as deleted
-      #    if( kNew == 0 ) { # the sampler is nonparametric now
-      #      kNew <- model[[target]][i] # xi[i]
-      #      isNonParam <- TRUE
-      #    } else { # the sampler was and remains nonparametric.
-      #      if( kNew > model[[target]][i] ) {
-      #        kNew <- model[[target]][i]
-      #      }
-      #    }
-      #  }
-      #} else { # a cluster was created or the same number of clusters are available
-      #  model[[target]][i] <<- newLab
-      #  if( newLabCond ) { # a new label was created
-      #    xiCounts[model[[target]][i]] <- 1
-      #    if(isNonParam) { # updating the cluster parameters of the new cluster
-      #      helperFunctions[[1]]$sample(i, model[[target]][i])
-      #    }          
-      #    k <- k + 1
-      #    xiUniques[k] <- newLab 
-      #    # updating kNew:
-      #    kNew <- kNew + 1
-      #    mySum <- sum(xi == kNew) 
-      #    while(mySum > 0 & kNew < n) { # need to make sure don't go beyond length of vector
-      #      kNew <- kNew+1
-      #      mySum <- sum(xi == kNew)
-      #    }
-      #    if(kNew > min_nTilde) {
-      #      if(fixedConc) {
-      #        nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
-      #      } else {
-      #        nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
-      #      }
-      #      kNew <- 0
-      #      isNonParam <- FALSE
-      #    }
-      #  } else {
-      #    xiCounts[model[[target]][i]] <- xiCounts[model[[target]][i]] + 1
-      #  } 
-      #}
-      
-    
     
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
