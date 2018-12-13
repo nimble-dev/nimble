@@ -608,7 +608,7 @@ CRP_nonconjugate <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {}, ## nothing needed for non-conjugate
     sampleBaseMeasure = function(j = integer()) {
       model$simulate(marginalizedNodes[j])
-      model[[marginalizedVar]][j] <<- values(model, marginalizedNodes[j])
+      model[[marginalizedVar]][j] <<- values(model, marginalizedNodes[j])[1]
     }
   )
 )
@@ -1233,7 +1233,7 @@ sampler_CRP <- nimbleFunction(
       model[[target]][i] <<- newLab
       
       if( newLabCond ) { # a component is created. It can really create a new component or keep the current label if xi_i is a singleton
-        xiCounts[model[[target]][i]] <- 1
+        #xiCounts[model[[target]][i]] <- 1
         if(isNonParam) { # updating the cluster parameters of the new cluster
           helperFunctions[[1]]$sample(i, model[[target]][i])
         }
@@ -1257,8 +1257,9 @@ sampler_CRP <- nimbleFunction(
             isNonParam <- FALSE
           }
         }
+        xiCounts[model[[target]][i]] <- 1
       } else { # an existing label is sampled
-        xiCounts[model[[target]][i]] <- xiCounts[model[[target]][i]] + 1
+        #xiCounts[model[[target]][i]] <- xiCounts[model[[target]][i]] + 1
         if( xiCounts[xi[i]] == 0 ) { # xi_i is a singleton, a component was deleted
           k <- k - 1
           xiUniques <- reorderXiUniques # reordered xiUniques because one as deleted
@@ -1271,6 +1272,7 @@ sampler_CRP <- nimbleFunction(
             }
           }
         }
+        xiCounts[model[[target]][i]] <- xiCounts[model[[target]][i]] + 1
       }
     }
     model$calculate(calcNodes)
