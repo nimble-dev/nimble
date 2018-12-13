@@ -617,7 +617,7 @@ CRP_nonconjugate <- nimbleFunction(
         for(i in seq_along(marginalizedVar)) {
           model$simulate(marginalizedNodes[(i-1)*nTildeVars + j])
           #marginalizedVarTmp <- marginalizedVar[i]
-          #model[[marginalizedVarTmp]][j] <<- ....
+          #model[[marginalizedVarTmp]][j] <<- not working
           model[[marginalizedVar]][j] <<- values(model, marginalizedNodes[(i-1)*nTildeVars + j])[1]
         }
       }
