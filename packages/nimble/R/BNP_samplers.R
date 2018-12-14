@@ -992,8 +992,8 @@ sampler_CRP <- nimbleFunction(
     tildeVars <- clusterVarInfo$clusterVars
     if(is.null(tildeVars))
         stop('sampler_CRP:  The model should have at least one cluster variable.\n')
+    
     ## Check for indexing that would cause errors in using sample() with 'j' as the index of the set of cluster nodes, e.g., mu[xi[i]+2] or mu[some_function(xi[i])]
-    ## CLAUDIA:  
     if(any(clusterVarInfo$targetInFunction))
         stop("sampler_CRP: At the moment, NIMBLE's CRP MCMC sampling requires simple indexing and cannot work with indexing such as 'mu[xi[i]+2]'.")
 
@@ -1104,7 +1104,7 @@ sampler_CRP <- nimbleFunction(
     tildeNodes <- model$expandNodeNames(tildeVars, sort = TRUE)
     ## check that tildeVars are grouped together by variable because sample() assumes this.
     ## E.g., c('sigma','sigma','mu','mu') for n=2,p=2 is ok but c('sigma','mu','sigma','mu') is not.
-    ## CLAUDIA:  
+    ## CLAUDIA 
     if(p > 1) {  
         tmp <- matrix(tildeNodes, ncol = p)
         if(any(sapply(tmp, function(x) length(unique(x)) > 1)))
@@ -1115,6 +1115,8 @@ sampler_CRP <- nimbleFunction(
     helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars, tildeNodes, dataNodes, p, nTildeVars)
     
     curLogProb <- numeric(n)
+    
+    printMessage <- TRUE
   },
   
   
@@ -1152,13 +1154,16 @@ sampler_CRP <- nimbleFunction(
       kNew <- 0
     }
     if(kNew > min_nTilde & min_nTilde != n) {
-      if(fixedConc) {
-        nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
-      } else {
-        nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
+      if( printMessage ) {
+        if(fixedConc) {
+          nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
+        } else {
+          nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
+        }
       }
       kNew <- 0 
       isNonParam <- FALSE
+      printMessage <<- FALSE
     }
     
     
@@ -1266,13 +1271,16 @@ sampler_CRP <- nimbleFunction(
             mySum <- sum(xi == kNew)
           }
           if(kNew > min_nTilde) {
-            if(fixedConc) {
-              nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
-            } else {
-              nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
+            if( printMessage ) {
+              if(fixedConc) {
+                nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
+              } else {
+                nimCat('CRP_sampler: This MCMC is not for a proper model. The MCMC attempted to use more components than the number of cluster parameters. Please increase the number of cluster parameters.\n')
+              }
             }
             kNew <- 0
             isNonParam <- FALSE
+            printMessage <<- FALSE
           }
         }
         xiCounts[model[[target]][i]] <- 1
@@ -1299,6 +1307,7 @@ sampler_CRP <- nimbleFunction(
   },
   methods = list( 
     reset = function () {
+      printMessage <<- TRUE
     }
   ), where = getLoadingNamespace()
 )
