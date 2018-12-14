@@ -384,6 +384,8 @@ sampleDPmeasure <- nimbleFunction(
     samples <<- matrix(0, nrow = niter, ncol = truncG*(sum(dimTilde)+1)) 
     
     for(iiter in 1:niter){
+      checkInterrupt()
+      
       ## getting the sampled unique values (tilde variables) and their probabilities of being sampled,
       ## need for computing density later.
       probs <- nimNumeric(N)
@@ -1070,15 +1072,6 @@ sampler_CRP <- nimbleFunction(
       }
     }
 
-    tildeNodes <- model$expandNodeNames(tildeVars, sort = TRUE)
-    ## CLAUDIA:  
-    ## check that tildeVars are grouped because sample() assumes this.
-    ## E.g., c('sigma','sigma','mu','mu') for n=2,p=2 is ok but c('sigma','mu','sigma','mu') is not.
-    if(p > 1) {  
-        tmp <- matrix(tildeNodes, ncol = p)
-        if(any(sapply(tmp, function(x) length(unique(x)) > 1)))
-            stop("sampler_CRP: Current MCMC CRP sampling cannot handle the structure of the multiple cluster variables.")
-    }
     
     helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
     
@@ -1103,7 +1096,17 @@ sampler_CRP <- nimbleFunction(
                         'CRP_nonconjugate')  ## default if we don't have sampler set up for a conjugacy
     ## we use [1] here because the 2nd/3rd args only used for conjugate cases and currently that is only setup for
     ## single parameters
-    # helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
+
+    tildeNodes <- model$expandNodeNames(tildeVars, sort = TRUE)
+    ## check that tildeVars are grouped together by variable because sample() assumes this.
+    ## E.g., c('sigma','sigma','mu','mu') for n=2,p=2 is ok but c('sigma','mu','sigma','mu') is not.
+    ## CLAUDIA:  
+    if(p > 1) {  
+        tmp <- matrix(tildeNodes, ncol = p)
+        if(any(sapply(tmp, function(x) length(unique(x)) > 1)))
+            stop("sampler_CRP: Current MCMC CRP sampling cannot handle the structure of the multiple cluster variables.")
+    }
+      
     helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars, tildeNodes, dataNodes)
     
     curLogProb <- numeric(n)
