@@ -383,6 +383,8 @@ sampleDPmeasure <- nimbleFunction(
     samples <<- matrix(0, nrow = niter, ncol = truncG*(sum(dimTilde)+1)) 
     
     for(iiter in 1:niter){
+      checkInterrupt()
+      
       ## getting the sampled unique values (tilde variables) and their probabilities of being sampled,
       ## need for computing density later.
       probs <- nimNumeric(N)
@@ -1088,6 +1090,7 @@ sampler_CRP <- nimbleFunction(
     ## we use [1] here because the 2nd/3rd args only used for conjugate cases and currently that is only setup for
     ## single parameters
     # helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
+    # model$topologicallySortNodes(model$expandNodeNames(tildeVars)))
     helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars, model$expandNodeNames(tildeVars), dataNodes)
     
     curLogProb <- numeric(n)
