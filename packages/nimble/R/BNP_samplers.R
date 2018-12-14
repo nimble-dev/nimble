@@ -641,7 +641,8 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       y <- values(model, dataNodes[i])[1]
       postVar <- 1 / (1 / dataVar + 1 / priorVar)
       postMean <- postVar * (y / dataVar + priorMean / priorVar)
-      model[[marginalizedVar]][j] <<- rnorm(1, postMean, sqrt(postVar)) 
+      #model[[marginalizedVar]][j] <<- rnorm(1, postMean, sqrt(postVar)) 
+      values(model, marginalizedNodes[j]) <<- rnorm(1, postMean, sqrt(postVar)) 
     }
   )
 )
@@ -704,7 +705,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
+      values(model, marginalizedNodes[j]) <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
     }
   )
 )
@@ -733,7 +734,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataMean <- model$getParam(dataNodes[i], 'mean')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape = priorShape + 0.5, rate = priorRate + (y-dataMean)^2/2)
+      values(model, marginalizedNodes[j]) <<- rgamma(1, shape = priorShape + 0.5, rate = priorRate + (y-dataMean)^2/2)
     }
   )
 )
@@ -760,7 +761,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
+      values(model, marginalizedNodes[j]) <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
     }
   )
 )
@@ -789,7 +790,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataSize <- model$getParam(dataNodes[i], 'size')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+dataSize-y)
+      values(model, marginalizedNodes[j]) <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+dataSize-y)
     }
   )
 )
@@ -820,7 +821,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataSize <- model$getParam(dataNodes[i], 'size')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+dataSize, shape2=priorShape2+y)
+      values(model, marginalizedNodes[j]) <<- rbeta(1, shape1=priorShape1+dataSize, shape2=priorShape2+y)
     }
   )
 )
@@ -845,7 +846,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
+      values(model, marginalizedNodes[j]) <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
     }
   )
 )
@@ -874,7 +875,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       datashape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
+      values(model, marginalizedNodes[j]) <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
     }
   )
 )
@@ -903,7 +904,7 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape=1+priorShape, rate=priorRate+y^dataShape)
+      values(model, marginalizedNodes[j]) <<- rgamma(1, shape=1+priorShape, rate=priorRate+y^dataShape)
     }
   )
 )
@@ -932,7 +933,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y)
+      values(model, marginalizedNodes[j]) <<- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y)
     }
   )
 )
@@ -1140,10 +1141,13 @@ sampler_CRP <- nimbleFunction(
     k <- k-1 # number of unique labels in xi
     
     kNew <- 1 # kNew is the new label that can be sampled
-    while(xiCounts[kNew] > 0 & kNew < (n+1)) { # need to make sure don't go beyond n+1
+    while(xiCounts[kNew] > 0 & kNew < n) { # need to make sure don't go beyond n
       kNew <- kNew + 1
     }
-    if(kNew > min_nTilde) {
+    if( kNew == n & xiCounts[kNew] > 0 ) { # case  xi=1:n
+      kNew <- 0
+    }
+    if(kNew > min_nTilde & min_nTilde != n) {
       if(fixedConc) {
         nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
       } else {
@@ -1272,9 +1276,9 @@ sampler_CRP <- nimbleFunction(
         if( xiCounts[xi[i]] == 0 ) { # xi_i is a singleton, a component was deleted
           k <- k - 1
           xiUniques <- reorderXiUniques
-          if( kNew == 0 ) { # the sampler was not nonparametric 
+          if( kNew == 0 ) { # the sampler was not nonparametric or xi=1:n
             kNew <- xi[i] # 
-            isNonParam <- TRUE # now the sampler is nonparametric
+            isNonParam <- TRUE # now the sampler is nonparametric if it was not
           } else { # the sampler was and remains nonparametric.
             if( kNew > xi[i] ) {
               kNew <- xi[i]
