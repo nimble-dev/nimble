@@ -187,6 +187,7 @@ sampleDPmeasure <- nimbleFunction(
       
     # checks for iid assumption of cluster parameters in the definition of random measure G
     # i) check that all parentNodesTildeVarsDeps have same distribution  and parameters
+      nonIID <- FALSE
       for(i in seq_along(tildeVars) ) {
           clusterNodes <- model$expandNodeNames(tildeVars[i])
           valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
@@ -981,9 +982,14 @@ sampler_CRP <- nimbleFunction(
     if(n != nObs)
       stop("sampler_CRP: The length of membership variable and observations has to be the same.\n")
 
-    tildeVars <- nimble:::findClusterVars(model, targetElements[1])
+    clusterVarInfo <- findClusterVars(model, targetElements[1], returnIndexInfo = TRUE)
+    tildeVars <- clusterVarInfo$clusterVars
     if(is.null(tildeVars))
-      stop('sampler_CRP:  The model should have at least one cluster variable.\n')
+        stop('sampler_CRP:  The model should have at least one cluster variable.\n')
+    ## Check for indexing that would cause errors in using sample() with 'j' as the index of the set of cluster nodes, e.g., mu[xi[i]+2] or mu[some_function(xi[i])]
+    ## CLAUDIA:  
+    if(any(clusterVarInfo$targetInFunction))
+        stop("sampler_CRP: At the moment, NIMBLE's CRP MCMC sampling requires simple indexing and cannot work with indexing such as 'mu[xi[i]+2]'.")
 
     calcNodes <- unique(c(calcNodes, model$getDependencies(tildeVars)))
 
@@ -1063,6 +1069,16 @@ sampler_CRP <- nimbleFunction(
         }
       }
     }
+
+    tildeNodes <- model$expandNodeNames(tildeVars, sort = TRUE)
+    ## CLAUDIA:  
+    ## check that tildeVars are grouped because sample() assumes this.
+    ## E.g., c('sigma','sigma','mu','mu') for n=2,p=2 is ok but c('sigma','mu','sigma','mu') is not.
+    if(p > 1) {  
+        tmp <- matrix(tildeNodes, ncol = p)
+        if(any(sapply(tmp, function(x) length(unique(x)) > 1)))
+            stop("sampler_CRP: Current MCMC CRP sampling cannot handle the structure of the multiple cluster variables.")
+    }
     
     helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
     
@@ -1088,7 +1104,7 @@ sampler_CRP <- nimbleFunction(
     ## we use [1] here because the 2nd/3rd args only used for conjugate cases and currently that is only setup for
     ## single parameters
     # helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars[1], model$expandNodeNames(tildeVars[1]), dataNodes)
-    helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars, model$expandNodeNames(tildeVars), dataNodes)
+    helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars, tildeNodes, dataNodes)
     
     curLogProb <- numeric(n)
   },
@@ -1265,8 +1281,9 @@ sampler_CRP <- nimbleFunction(
         xiCounts[model[[target]][i]] <- xiCounts[model[[target]][i]] + 1
       }
     }
+
+    ## We have updated cluster variables but not all logProb values are up-to-date.  
     model$calculate(calcNodes)
-    
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
   methods = list( 
