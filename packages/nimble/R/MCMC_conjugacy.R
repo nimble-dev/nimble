@@ -198,7 +198,6 @@ conjugacyRelationshipsClass <- setRefClass(
             names(conjugacys) <<- unlist(lapply(conjugacys, function(cr) cr$prior))
         },
         checkConjugacy = function(model, nodeIDs, restrictLink = NULL) {
-            browser()
             maps <- model$modelDef$maps
             nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
             declID2nodeIDs <- split(nodeIDs, nodeDeclIDs) ## nodeIDs grouped by declarationID
