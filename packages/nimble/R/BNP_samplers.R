@@ -599,7 +599,7 @@ CRP_helper <- nimbleFunctionVirtual(
 CRP_nonconjugate <- nimbleFunction(
   name = "CRP_nonconjugate",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
@@ -608,10 +608,12 @@ CRP_nonconjugate <- nimbleFunction(
       return(model$getLogProb(dataNodes[i]))
     },
     sample = function(i = integer(), j = integer() ) { ## sample from the base measure of the DP
-      p <- length(marginalizedVar)
-      nTildeVars <- length(marginalizedNodes) / p
-      for(l in seq_along(marginalizedVar)) {
-        model$simulate(marginalizedNodes[(l-1)*nTildeVars + j])
+      if( p == 1 ) {
+        model$simulate(marginalizedNodes[j])
+      } else {
+        for(l in seq_along(marginalizedVar)) {
+          model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+        }
       }
     }
   )
@@ -620,7 +622,7 @@ CRP_nonconjugate <- nimbleFunction(
 CRP_conjugate_dnorm_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dnorm_dnorm",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorMean <- nimNumeric(1)
     priorVar <- nimNumeric(1)
@@ -641,8 +643,8 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       y <- values(model, dataNodes[i])[1]
       postVar <- 1 / (1 / dataVar + 1 / priorVar)
       postMean <- postVar * (y / dataVar + priorMean / priorVar)
-      #model[[marginalizedVar]][j] <<- rnorm(1, postMean, sqrt(postVar)) 
-      values(model, marginalizedNodes[j]) <<- rnorm(1, postMean, sqrt(postVar)) 
+      model[[marginalizedVar]][j] <<- rnorm(1, postMean, sqrt(postVar)) 
+      #values(model, marginalizedNodes[j]) <<- rnorm(1, postMean, sqrt(postVar)) 
     }
   )
 )
@@ -651,7 +653,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
 CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dnorm_invgamma_dnorm",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorMean <- nimNumeric(1)
     kappa0 <- nimNumeric(1)
@@ -687,7 +689,7 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
 CRP_conjugate_dgamma_dpois <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dpois",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -705,7 +707,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      values(model, marginalizedNodes[j]) <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
     }
   )
 )
@@ -714,7 +716,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
 CRP_conjugate_dgamma_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dnorm",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -734,7 +736,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataMean <- model$getParam(dataNodes[i], 'mean')
       y <- values(model, dataNodes[i])[1]
-      values(model, marginalizedNodes[j]) <<- rgamma(1, shape = priorShape + 0.5, rate = priorRate + (y-dataMean)^2/2)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape = priorShape + 0.5, rate = priorRate + (y-dataMean)^2/2)
     }
   )
 )
@@ -744,7 +746,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
 CRP_conjugate_dbeta_dbern <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dbern",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
@@ -761,7 +763,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      values(model, marginalizedNodes[j]) <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
+      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
     }
   )
 )
@@ -769,7 +771,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
 CRP_conjugate_dbeta_dbin <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dbin",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
@@ -790,7 +792,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataSize <- model$getParam(dataNodes[i], 'size')
       y <- values(model, dataNodes[i])[1]
-      values(model, marginalizedNodes[j]) <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+dataSize-y)
+      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+dataSize-y)
     }
   )
 )
@@ -800,7 +802,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
 CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dnegbin",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
@@ -821,7 +823,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataSize <- model$getParam(dataNodes[i], 'size')
       y <- values(model, dataNodes[i])[1]
-      values(model, marginalizedNodes[j]) <<- rbeta(1, shape1=priorShape1+dataSize, shape2=priorShape2+y)
+      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+dataSize, shape2=priorShape2+y)
     }
   )
 )
@@ -829,7 +831,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
 CRP_conjugate_dgamma_dexp <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dexp",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -846,7 +848,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      values(model, marginalizedNodes[j]) <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
     }
   )
 )
@@ -855,7 +857,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
 CRP_conjugate_dgamma_dgamma <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dgamma",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -875,7 +877,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       datashape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      values(model, marginalizedNodes[j]) <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
     }
   )
 )
@@ -884,7 +886,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
 CRP_conjugate_dgamma_dweib <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dweib",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -904,7 +906,7 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      values(model, marginalizedNodes[j]) <<- rgamma(1, shape=1+priorShape, rate=priorRate+y^dataShape)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape=1+priorShape, rate=priorRate+y^dataShape)
     }
   )
 )
@@ -913,7 +915,7 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
 CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dinvgamma",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -933,7 +935,8 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      values(model, marginalizedNodes[j]) <<- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y)
+      model[[marginalizedVar]][j] <<- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y)
+      #values(model, marginalizedNodes[j]) <<- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y)
     }
   )
 )
@@ -942,7 +945,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
 CRP_conjugate_ddirch_dmulti <- nimbleFunction(
   name = "CRP_conjugate_ddirch_dmulti",
   contains = CRP_helper,
-  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes) {
+  setup = function(model, marginalizedVar, marginalizedNodes, dataNodes, p, nTilde) {
     d <- length(model[[marginalizedNodes[1]]])
     priorAlpha <- nimNumeric(d)
   },
@@ -1108,7 +1111,8 @@ sampler_CRP <- nimbleFunction(
             stop("sampler_CRP: Current MCMC CRP sampling cannot handle the structure of the multiple cluster variables.")
     }
       
-    helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars, tildeNodes, dataNodes)
+    nTildeVars <- length(model$expandNodeNames(tildeVars[1]))
+    helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeVars, tildeNodes, dataNodes, p, nTildeVars)
     
     curLogProb <- numeric(n)
   },
