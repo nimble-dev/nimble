@@ -755,15 +755,15 @@ checkCRPconjugacy <- function(model, target) {
             ## Temporary conditions to make sure that 'xi[i]' is in correct index
             ## and without any complications given what conjugate sampler is expecting.
             clusterPrior <- model$getDistribution(clusterNodes[1])
-            if(clusterPrior == 'ddirch' &&     # require p[xi[i], 1:k]
-               (length(clusterVarInfo$clusterVars) != 1 ||
-                clusterVarInfo$indexPosition != 1 || clusterVarInfo$numIndexes != 2 ||
-                length(clusterVarInfo$indexExpr[[1]]) != 4 ||
-                length(clusterVarInfo$indexExpr[[1]][[4]]) != 3 ||
-                clusterVarInfo$indexExpr[[1]][[4]][[1]] != ':' ||
-                clusterVarInfo$indexExpr[[1]][[4]][[2]] != 1))
-                conjugate <- FALSE
-            else {  ## univariate mixtures
+            if(clusterPrior == 'ddirch') {     # require p[xi[i], 1:k]
+                if(length(clusterVarInfo$clusterVars) != 1 ||
+                   clusterVarInfo$indexPosition != 1 || clusterVarInfo$numIndexes != 2 ||
+                   length(clusterVarInfo$indexExpr[[1]]) != 4 ||
+                   length(clusterVarInfo$indexExpr[[1]][[4]]) != 3 ||
+                   clusterVarInfo$indexExpr[[1]][[4]][[1]] != ':' ||
+                   clusterVarInfo$indexExpr[[1]][[4]][[2]] != 1)
+                    conjugate <- FALSE
+            } else {  ## univariate mixtures
                 if(length(clusterVarInfo$clusterVars) != 1 ||
                    clusterVarInfo$numIndexes != 1)
                     conjugate <- FALSE
