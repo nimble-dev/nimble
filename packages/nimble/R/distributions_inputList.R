@@ -234,14 +234,7 @@ distributionsInputList <- list(
                       altParams= c('R = calc_dwishAltParams(cholesky, scale_param, 0)',
                                     'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
                       alias    = 'dinvwishart',
-                      types    = c('value = double(2)', 'S = double(2)', 'R = double(2)', 'cholesky = double(2)')),
+                      types    = c('value = double(2)', 'S = double(2)', 'R = double(2)', 'cholesky = double(2)'))
+)
 
         
-    ###############################################
-    #### multivariate (compound) distributions ####
-    ###############################################
-
-    dnorm_invgamma = list(BUGSdist = 'dnorm_invgamma(mean_location, mean_scale, var_shape, var_scale)',
-                   types    = c('value = double(1)'),
-                   mixedSizes = TRUE)
-)

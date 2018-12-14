@@ -71,7 +71,7 @@ getSamplesDPmeasure <- function(MCMC) {
     truncG <- ncol(samplesMeasure) / (sum(dimTilde)+1) 
     namesW <- sapply(seq_len(truncG), function(i) paste0("weight[", i, "]"))
     
-    namesAtoms <- c()
+    namesAtoms <- NULL
     inames <- 1
     for(j in 1:p){
       if(dimTildeNim[j] == 0) { # scalar cluster parameter
@@ -112,13 +112,6 @@ sampleDPmeasure <- nimbleFunction(
   contains=sampler_BASE,
   
   setup=function(model, mvSaved){
-    
-    ## Check if the mvSaved is compiled or not.
-    # mvIsCompiled <- exists('dll', envir = mvSaved)
-    # if( mvIsCompiled ) {
-    #  stop("sampleDPmeasure: modelValues object has to be an uncompiled object.\n")
-    #}
-    
     ## Determine variables in the mv object and nodes/variables in the model.
     mvSavedVars <- mvSaved$varNames
     
@@ -157,7 +150,9 @@ sampleDPmeasure <- nimbleFunction(
     #if(any(model$isMultivariate(tildeVars)))
     #  stop( 'sampleDPmeasure: only univariate cluster variables are allowed.\n' )
     
-    ## Getting all stochastic parent nodes of cluster variables (needed for simulating new tildeVar values):
+    ## Check that all stochastic parent nodes of cluster variables are monitored
+    ## (needed for simulating new tildeVar values).
+      
     parentNodesTildeVars <- NULL
     tildeVarsElements <- list()
     for(i in seq_along(tildeVars) ) {
@@ -182,118 +177,25 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The stochastic parent nodes of the cluster variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
     if(is.null(parentNodesTildeVars)) parentNodesTildeVars <- tildeVars  ## to avoid NULL which causes compilation issues
 
-      ## CLAUDIA: here is my suggestion - we first check fully IID for each tilde var and then
-      ## we check the normal-invgamma special case. 
-      
-    # checks for iid assumption of cluster parameters in the definition of random measure G
-    # i) check that all parentNodesTildeVarsDeps have same distribution  and parameters
-      for(i in seq_along(tildeVars) ) {
-          clusterNodes <- model$expandNodeNames(tildeVars[i])
-          valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
-          names(valueExprs) <- NULL
-          if(length(unique(valueExprs)) != 1) {
-              nonIID <- TRUE
-          }
-      }
-      if(nonIID && length(tildeVars) == 2) {  ## check for normal-invgamma conjugacy
-          stochNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-          clusterNodes1 <- model$expandNodeNames(tildeVars[1])
-          clusterNodes2 <- model$expandNodeNames(tildeVars[2])
-          ## Avoid non-nodes from truncated clustering,
-          ## e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs.
-          clusterNodes1 <- clusterNodes1[clusterNodes1 %in% stochNodes]
-          clusterNodes2 <- clusterNodes2[clusterNodes2 %in% stochNodes]
-          exampleNodes <- c(clusterNodes1[1], clusterNodes2[1])
-          dists <- c(model$getDistribution(clusterNodes1[1]), model$getDistribution(clusterNodes2[1]))
-          if(dists[1] == "dinvgamma" && dists[2] ==  "dnorm") {  ## put in order so dnorm node is first
-              exampleNodes <- c(clusterNodes2[1], clusterNodes1[1])
-              dists <- c("dnorm", "dinvgamma")
-              tmp <- clusterNodes1; clusterNodes1 <- clusterNodes2; clusterNodes2 <- tmp
-          }
-          if(dists[1] == "dnorm" && dists[2] == "dinvgamma") {
-              ## Check for conjugacy so we know we are in dnorm_invgamma case
-              conjugacy_dnorm <- model$checkConjugacy(exampleNodes[1], restrictLink = 'identity')
-              conjugacy_dinvgamma <- model$checkConjugacy(exampleNodes[2])
-              if(length(conjugacy_dnorm) && length(conjugacy_dinvgamma) &&
-                 sum(conjugacy_dinvgamma[[1]]$control$dep_dnorm == exampleNodes[1])) {
-                  conjugate <- TRUE
-              }
-              
-              ## Check that mean for cluster mean nodes are same
-              meanExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'mean'))
-              names(meanExprs) <- NULL
-              if(length(unique(meanExprs)) != 1)
-                  conjugate <- FALSE
-              ## Check that variance for cluster mean nodes are same except for dependence on variance
-              varExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'var'))
-              names(varExprs) <- NULL
-              for(i in seq_along(varExprs)) {
-                  varText <- deparse(varExprs[[i]])
-                  if(!length(grep(clusterNodes2[i], varText, fixed = TRUE))) {
-                      varExprs[[i]] <- NULL
-                  } else varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "a", varText, fixed = TRUE))[[1]]
-              }
-              if(length(unique(varExprs)) != 1)
-                  conjugate <- FALSE
-              
-              ## Check that cluster variance nodes are IID
-              valueExprs <- sapply(clusterNodes2, function(x) model$getValueExpr(x))
-              names(valueExprs) <- NULL
-              if(length(unique(valueExprs)) != 1)
-                  conjugate <- FALSE
-          }
-          if(conjugate) nonIID <- FALSE
-      }
-
+    ## Check that cluster parameters are IID, as required for random measure G
+    nonIID <- FALSE
+    for(i in seq_along(tildeVars) ) {
+        clusterNodes <- model$expandNodeNames(tildeVars[i])
+        valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
+        names(valueExprs) <- NULL
+        if(length(unique(valueExprs)) != 1) {
+            nonIID <- TRUE
+        }
+    }
+    if(nonIID && length(tildeVars) == 2) {  
+        conjugate <- checkNormalInvGammaConjugacy(model, tildeVars)
+        if(conjugate) nonIID <- FALSE
+    }
     if(nonIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
-    
-    ## Get all parents of xi (membership) variable (i.e., nodes involved in concentration parameter), potentially
-    ## needed to determine concentration parameter for each iteration of MCMC
-    #parentNodesXi <- NULL
-    #candidateParentNodes <- model$getNodeNames(includeData = FALSE)
-    #candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
-    #for(i in seq_along(candidateParentNodes)){
-    #  aux <- model$getDependencies(candidateParentNodes[i], self = FALSE) 
-    #  if(sum(aux == dcrpNode)) 
-    #    parentNodesXi <- c(parentNodesXi, candidateParentNodes[i])
-    #}
-    
-    #if(length(parentNodesXi)) { # concentration parameter is random (or at least a function of other quantities)
-    #  ## Check that values stored in mvSaved are sufficient to calculate dcrp concentration.
-    #  ## Do this by creating a model containing all NAs and then copying in variables that are saved 
-    #  ## and then checking getParam gives a non-NA.
-    #  fixedConc <- FALSE
-      
-    #  ## Which parent nodes are saved.
-    #  parentNodesXi <- parentNodesXi[parentNodesXi %in% mvSavedVars]  
-      
-    #  ## Create model with NA values
-    #  verbosity <- nimbleOptions('verbose')
-    #  nimbleOptions(verbose = FALSE)
-    #  modelWithNAs <- model$modelDef$newModel(check = FALSE, calculate = FALSE)
-    #  nimbleOptions(verbose = verbosity)
-      
-      ## Note that this check could fail if current state of model has NAs that result in NA in conc parameter,
-      ## but we don't want to use mvSaved as MCMC may not have been run at this point.
-      ## Need to think more about this.
-    #  nimCopy(from = model, to = modelWithNAs, nodes = parentNodesXi) 
-    #  if(length(parentNodesXi)) {
-    #    ## These nodes need to be calculated to determine conc param in run code
-    #    parentNodesXiDeps <- model$getDependencies(parentNodesXi, self = FALSE, determOnly = TRUE)  ## excludes dcrpNode
-    ##    modelWithNAs$calculate(parentNodesXiDeps)
-    #    dcrpParam <- modelWithNAs$getParam(dcrpNode, 'conc')
-    #    if(is.na(dcrpParam)) 
-    #      stop('sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
-    #  } else stop( 'sampleDPmeasure: Any variable involved in the definition of the concentration parameter must be monitored in the MCMC.\n') 
-    #} else { ## placeholder since parentNodesXi must only have nodes in the mvSaved for correct compilation
-    #  parentNodesXiDeps <- dcrpNode
-    #  parentNodesXi <- dcrpNode # also used in run code
-    #}  
-    
-    
-    # test this version of doing things....
+
+    ## Check that parent nodes of cluster IDs are monitored.   
     parentNodesXi <- NULL
     candidateParentNodes <- model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
     candidateParentNodes <- candidateParentNodes[!candidateParentNodes == dcrpNode]
@@ -316,9 +218,6 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: The stochastic parent nodes of the membership variables have to be monitored in the MCMC (and therefore stored in the modelValues object).\n')
     if(is.null(parentNodesXi)) parentNodesXi <- dcrpNode  ## to avoid NULL which causes compilation issues
     
-    
-    
-    
     dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE)
     N <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
     p <- length(tildeVars)
@@ -326,7 +225,6 @@ sampleDPmeasure <- nimbleFunction(
     nTilde <- numeric(p+1)
     dimTildeNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
     dimTilde <- numeric(p+1) # dimension to be used in run code
-    #dimTildeNimAux <- numeric(p) #
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
       dimTildeNim[i] <- model$getDimension(elementsTildeVars[1]) # if the node is deterministic returns NA. I should get the dimension of the parent node?
@@ -339,15 +237,15 @@ sampleDPmeasure <- nimbleFunction(
     
     
     ## The error of approximation G is given by (conc / (conc +1))^{truncG-1}. 
-    ## we are going to define an error of aproximation and based on the posterior values of the conc parameter define the truncation level of G
+    ## we are going to define an error of approximation and based on the posterior values of the conc parameter define the truncation level of G
     ## the error is between errors that are considered very very small in the folowing papers
     ## Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
     ## Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
     approxError <- 1e-15
     
-    ## Storage object to be sized in run code based on MCMC output (Claudia note change to comment)
+    ## Storage object to be sized in run code based on MCMC output.
     samples <- matrix(0, nrow = 1, ncol = 1)   
-    ## Tuncation level of the random measure 
+    ## Truncation level of the random measure 
     truncG <- 0 
     
     setupOutputs(lengthData)
@@ -373,7 +271,7 @@ sampleDPmeasure <- nimbleFunction(
     
     truncG <<- log(approxError) / log(dcrpAux / (dcrpAux+1)) + 1
     truncG <<- round(truncG)
-    #approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
+    # approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
     # I think is good to send message indicating what the truncation level is for an approximation error smaller than to 10^(-10)
     # nimCat('sampleDPmeasure: Approximating the random measure by a finite stick-breaking representation with an error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
     
@@ -523,8 +421,6 @@ sampleDPmeasure <- nimbleFunction(
   methods = list( reset = function () {} )
 )
 
-
-
 ## Sampler for concentration parameter, conc, of the dCRP distribution.
 
 #' @rdname samplers
@@ -637,7 +533,9 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
   )
 )
 
-
+## This is a sketch that will be revised to handle case where
+## user specifies normal-invgamma as two declarations - one for
+## mean and one for variance.
 CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dnorm_invgamma_dnorm",
   contains = CRP_helper,
@@ -1444,4 +1342,57 @@ findClusterVars <- function(model, target, returnIndexInfo = FALSE) {
                     targetInFunction = targetInFunction))
         } else return(clusterVars)
 }
-    
+
+
+checkNormalInvGammaConjugacy <- function(model, clusterVars) {
+    if(length(clusterVars) != 2)
+        stop("checkNormalInvGammaConjugacy: requires two cluster variables.")
+    conjugate <- FALSE
+    stochNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+    clusterNodes1 <- model$expandNodeNames(clusterVars[1])
+    clusterNodes2 <- model$expandNodeNames(clusterVars[2])
+    ## Avoid non-nodes from truncated clustering,
+    ## e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs.
+    clusterNodes1 <- clusterNodes1[clusterNodes1 %in% stochNodes]
+    clusterNodes2 <- clusterNodes2[clusterNodes2 %in% stochNodes]
+    exampleNodes <- c(clusterNodes1[1], clusterNodes2[1])
+    dists <- c(model$getDistribution(clusterNodes1[1]), model$getDistribution(clusterNodes2[1]))
+    if(dists[1] == "dinvgamma" && dists[2] ==  "dnorm") {  ## put in order so dnorm node is first
+        exampleNodes <- c(clusterNodes2[1], clusterNodes1[1])
+        dists <- c("dnorm", "dinvgamma")
+        tmp <- clusterNodes1; clusterNodes1 <- clusterNodes2; clusterNodes2 <- tmp
+    }
+    if(dists[1] == "dnorm" && dists[2] == "dinvgamma") {
+        ## Check for conjugacy so we know we are in dnorm_invgamma case
+        conjugacy_dnorm <- model$checkConjugacy(exampleNodes[1], restrictLink = 'identity')
+        conjugacy_dinvgamma <- model$checkConjugacy(exampleNodes[2])
+        if(length(conjugacy_dnorm) && length(conjugacy_dinvgamma) &&
+           sum(conjugacy_dinvgamma[[1]]$control$dep_dnorm == exampleNodes[1])) {
+            conjugate <- TRUE
+        }
+        
+        ## Check that mean for cluster mean nodes are same
+        meanExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'mean'))
+        names(meanExprs) <- NULL
+        if(length(unique(meanExprs)) != 1)
+            conjugate <- FALSE
+        ## Check that variance for cluster mean nodes are same except for dependence on variance
+        varExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'var'))
+        names(varExprs) <- NULL
+        for(i in seq_along(varExprs)) {
+            varText <- deparse(varExprs[[i]])
+            if(!length(grep(clusterNodes2[i], varText, fixed = TRUE))) {
+                varExprs[[i]] <- NULL
+            } else varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "a", varText, fixed = TRUE))[[1]]
+        }
+        if(length(unique(varExprs)) != 1)
+            conjugate <- FALSE
+        
+        ## Check that cluster variance nodes are IID
+        valueExprs <- sapply(clusterNodes2, function(x) model$getValueExpr(x))
+        names(valueExprs) <- NULL
+        if(length(unique(valueExprs)) != 1)
+            conjugate <- FALSE
+    }
+    return(conjugate)
+}

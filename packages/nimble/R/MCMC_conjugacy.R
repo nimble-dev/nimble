@@ -171,20 +171,6 @@ conjugacyRelationshipsInputList <- list(
     )
 
 
-    ## normal-inverse gamma
-    ## note that this requires a normal dependent with first element as mean, second as var
-    ## this would require modifying conjugacy system to allow for the dependent involving
-    ## both elements of the random vector
-    ## also, per Gelman section 3.3, we need empirical variance of 'value' values,
-    ## which (in our current conjugacy system) can only be calculated incrementally
-    ## based on summing squared 'value' values, which is not numerically robust.
-    ## Therefore, not including this conjugacy.
-    ## list(prior = 'dnorm_invgamma',
-    ##      link = 'identity',
-    ##      dependents = list(),
-    ##          dnorm  = list())
-
-
 ##############################################################################################
 ##############################################################################################
 ## reference class definitions:

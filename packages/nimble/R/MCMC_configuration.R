@@ -755,24 +755,14 @@ checkCRPconjugacy <- function(model, target) {
             ## Temporary conditions to make sure that 'xi[i]' is in correct index
             ## and without any complications given what conjugate sampler is expecting.
             clusterPrior <- model$getDistribution(clusterNodes[1])
-            if(clusterPrior %in% c('ddirch', 'dnorm_invgamma')) {
-                if(clusterPrior == 'ddirch' &&     # require p[xi[i], 1:k]
-                   (length(clusterVarInfo$clusterVars) != 1 ||
-                    clusterVarInfo$indexPosition != 1 || clusterVarInfo$numIndexes != 2 ||
-                    length(clusterVarInfo$indexExpr[[1]]) != 4 ||
+            if(clusterPrior == 'ddirch') {     # require p[xi[i], 1:k]
+                if(length(clusterVarInfo$clusterVars) != 1 ||
+                   clusterVarInfo$indexPosition != 1 || clusterVarInfo$numIndexes != 2 ||
+                   length(clusterVarInfo$indexExpr[[1]]) != 4 ||
                    length(clusterVarInfo$indexExpr[[1]][[4]]) != 3 ||
                    clusterVarInfo$indexExpr[[1]][[4]][[1]] != ':' ||
-                   clusterVarInfo$indexExpr[[1]][[4]][[2]] != 1))
+                   clusterVarInfo$indexExpr[[1]][[4]][[2]] != 1)
                     conjugate <- FALSE
-                ## For now not using norm-invg conjugacy given difficulties in conj detection.
-                if(clusterPrior == 'dnorm_invgamma') conjugate <- FALSE
-                ## if(clusterPrior == 'dnorm_invgamma' &&  # require params[xi[i],1], params[xi[i],2]
-                ##    (length(clusterVarInfo$clusterVars) != 2 ||
-                ##     any(clusterVarInfo$indexPosition != 1) ||
-                ##     any(clusterVarInfo$numIndexes != 2) ||
-                ##     any(sort(c(clusterVarInfo$indexExpr[[1]][[4]],
-                ##          clusterVarInfo$indexExpr[[2]][[4]])) != c(1,2))))
-                ##     conjugate <- FALSE
             } else {  ## univariate mixtures
                 if(length(clusterVarInfo$clusterVars) != 1 ||
                    clusterVarInfo$numIndexes != 1)

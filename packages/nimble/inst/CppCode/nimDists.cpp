@@ -530,21 +530,3 @@ void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1,
   // }
 }
 
-
-double nimArr_dnorm_invgamma(NimArr<1, double> &x, double mean_location, double mean_scale,
-                           double var_shape, double var_scale, int give_log) {
-  double* xptr;
-  NimArr<1, double> xCopy;
-  xptr = nimArrCopyIfNeeded<1, double>(x, xCopy).getPtr();
-  double ans = dnorm_invgamma(xptr, mean_location, mean_scale, var_shape, var_scale, give_log);
-  return(ans);
-}
-
-void nimArr_rnorm_invgamma(NimArr<1, double> &ans, double mean_location, double mean_scale,
-                           double var_shape, double var_scale) {
-  double* ansPtr;
-  NimArr<1, double> ansCopy;
-  ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
-  rnorm_invgamma(ansPtr, mean_location, mean_scale, var_shape, var_scale);
-  if(ansPtr != ans.getPtr()) {ans = ansCopy;} 
-}

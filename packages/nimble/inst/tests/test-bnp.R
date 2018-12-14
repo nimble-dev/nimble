@@ -1,16 +1,7 @@
-rm(list=ls())
-library(nimble)
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-
-#library(mvtnorm)
-#library(MCMCpack)
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
-
-#options(warn = RwarnLevel)
-#nimbleOptions(verbose = nimbleVerboseSetting)
-#nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
 
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
@@ -19,13 +10,6 @@ nimbleProgressBarSetting <- nimbleOptions('MCMCprogressBar')
 nimbleOptions(MCMCprogressBar = FALSE)
 
 context('Testing of BNP functionality')
-
-
-
-
-
-#-- measureDPsample
-
 
 test_that("sampleDPmeasure can be used for more complicated models", {
   
