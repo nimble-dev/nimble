@@ -822,69 +822,6 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
     .Call(C_rsqrtinvgamma, as.integer(n), as.double(shape), as.double(rate))
 }
 
-#' The Joint Normal Inverse Gamma Distribution
-#'
-#'   Density, distribution function, quantile function and random
-#'   generation for the normal-inverse gamma distribution
-#' 
-#' @name Normal-Inverse-Gamma
-#' 
-#' @param x vector of two values, the representing mean and variance of another random variable.
-#' @param n number of observations (only \code{n=1} is handled currently).
-#' @param mean_location location parameter for first element of the random vector.
-#' @param mean_scale scale of the first element of the random vector, must be positive.
-#' @param var_shape shape of second element of random vector, must be positive.
-#' @param var_scale scale of second element of random vector, must be positive.
-#' @param log logical; if TRUE, probability density is returned on the log scale.
-#'
-#' @author Christopher Paciorek
-#' @details The normal-inverse gamma distribution generally arises in the context of the conjugate
-#' prior distribution for the two-parameter univariate normal sampling model.
-#' The distribution can be seen as an inverse gamma marginal distribution for the second
-#' element of the bivariate random vector (i.e., the 'variance' element) and (conditionally)
-#' a normal distribution for the first element of the random vector (i.e., the 'mean' element).
-#' The distribution with parameters \code{mean_location} \eqn{=\mu_0},
-#' \code{mean_scale} \eqn{=\kappa_0}, \code{var_shape} \eqn{=\alpha},
-#' \code{var_scale} \eqn{=\beta} has density
-#' \deqn{
-#'   f(\mu, \sigma^2)= \frac{\kappa_0^{1/2}}{(2\pi)^{1/2} (\sigma^2)^{\alpha+3/2}}
-#' \frac{\beta^\alpha}{\Gamma(\alpha)} e^{-\frac{1}{\sigma^2}(\beta + \frac{\kappa_0(\mu-\mu_0)^2}{2})}}
-#' for \eqn{\sigma^2 > 0}, \eqn{\kappa_0 > 0}, \eqn{\alpha > 0} and \eqn{\beta > 0}.
-#' (Here \eqn{\Gamma(\alpha)}{Gamma(a)} is the function implemented by \R's
-#'  \code{\link{gamma}()} and defined in its help.
-#'
-#' The distribution is the same as a normal-scaled inverse chi-square with degrees
-#' of freedom equal to \eqn{2\alpha} and scale equal to \eqn{\beta / \alpha}.
-#' 
-#' See Gelman et al., Section 3.3.
-#' @return \code{dnorm_invgamma} gives the density and \code{rnorm_invgamma}
-#' generates random deviates.
-#' @references Gelman, A., Carlin, J.B., Stern, H.S., Dunson, D.B., Vehtari, A., and
-#' Rubin, D.B. (2013) \emph{Bayesian Data Analysis}, 3rd ed. Chapman and Hall/CRC.
-#' @seealso \link{Distributions} for other standard distributions
-#' 
-#' @examples
-#' x <- rnorm_invgamma(1, mean_location = 0, mean_scale = 3, var_shape = 1, var_scale = 1)
-#' dnorm_invgamma(x, mean_location = 0, mean_scale = 3, var_shape = 1, var_scale = 1)
-NULL
-
-
-#' @rdname Normal-Inverse-Gamma
-#' @export
-dnorm_invgamma <- function(x, mean_location, mean_scale, var_shape, var_scale, log = FALSE) {
-    .Call(C_dnorm_invgamma, as.double(x), as.double(mean_location), as.double(mean_scale),
-          as.double(var_shape), as.double(var_scale), as.logical(log))
-}
-
-#' @rdname Normal-Inverse-Gamma
-#' @export
-rnorm_invgamma <- function(n = 1, mean_location, mean_scale, var_shape, var_scale) {
-    if(n != 1) warning('rnorm_invgamma only handles n = 1 at the moment')
-    .Call(C_rnorm_invgamma, as.double(mean_location), as.double(mean_scale),
-          as.double(var_shape), as.double(var_scale))
-}
-
-
 #' The CAR-Normal Distribution
 #'
 #'   Density function and random generation for the improper (intrinsic)

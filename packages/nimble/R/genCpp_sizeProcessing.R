@@ -6,7 +6,6 @@ assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol',
                               'nimArr_rcar_proper',
                               'nimArr_rmulti',
                               'nimArr_rdirch',
-                              'nimArr_rnorm_invgamma',
                               'getValues',
                               'getValuesIndexRange',
                               'initialize',
@@ -116,7 +115,6 @@ sizeCalls <- c(
                    'nimArr_dmulti',
                    'nimArr_dcat',
                    'nimArr_dinterval',
-                   'nimArr_dnorm_invgamma',
                    'nimArr_ddirch'), 'sizeScalarRecurseAllowMaps'),
     makeCallList(c('nimArr_rmnorm_chol',
                    'nimArr_rmvt_chol',
@@ -139,9 +137,7 @@ sizeCalls <- c(
                    'nfMethod',
                    'getPtr',
                    'startNimbleTimer'), 'sizeUndefined'), ##'nimFunListAccess'
-    passByMap = 'sizePassByMap',
-    nimArr_rnorm_invgamma = 'sizeNormInvGamma'
-)
+    passByMap = 'sizePassByMap')
 
 scalarOutputTypes <- list(decide = 'logical',
                           size = 'integer',
@@ -3271,8 +3267,6 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
 			     nimArr_rcar_proper = list(c(1, 1, 1, 1, 1, 0, 0, 1), 1, 'double'), ## mu, C, adj, num, M, tau, gamma, evs, answer size comes from mu
                              nimArr_rmulti = list(c(0, 1), ## size, probs
                                  2, 'double'), ## We treat integer rv's as doubles
-                             nimArr_rnorm_invgamma = list(c(0, 0, 0, 0), 
-                                 4, 'double'), 
                              nimArr_rdirch = list(c(1), 1, 'double')) 
 
 sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {

@@ -2,9 +2,6 @@ rm(list=ls())
 library(nimble)
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-#library(mvtnorm)
-#library(MCMCpack)
-
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
 
