@@ -2593,6 +2593,10 @@ beta[10]   -3.2342140  -3.2778479 -3.2033487       1
 beta[11]   -1.5206015  -1.5316884 -1.5055535       1
 ===== Finished MCMC test for icear.bug. =====
 ===== Starting MCMC test for beetles. =====
+warning: value of deterministic node llike.sat[8]: value is NA or NaN even after trying to calculate.
+warning: value of deterministic node D: value is NA or NaN even after trying to calculate.
+warning: value of deterministic node llike.sat[8]: value is NA or NaN even after trying to calculate.
+warning: value of deterministic node D: value is NA or NaN even after trying to calculate.
       alpha.star      beta
 mean   0.7655989 34.817075
 sd     0.1509127  3.148661
@@ -2795,16 +2799,16 @@ sd    0.06201258
 97.5% 0.34105267
 ===== Finished MCMC test for check of beta-binom conjugacy. =====
 ===== Starting MCMC test for check various conjugacies. =====
-               a         a2         b       b2            c      jNorm[1]
-mean  -0.2696309  0.0821446  7.162000 1.468000 0.0332369593 6.924006e-310
-sd     1.3774025  0.8071084  7.283258 1.786437 0.0442702984  0.000000e+00
-2.5%  -2.7877917 -1.6209669  0.000000 0.000000 0.0001384284 6.924006e-310
-97.5%  3.1058576  1.8959631 26.000000 6.000000 0.1641237378 6.924006e-310
-        jNorm[2]   jNorm[3]   kLogNorm[1]  kLogNorm[2]  kLogNorm[3]         x
-mean  -1.9151143 -2.9167958 6.924006e-310 4.410446e-05 8.092161e-08 1.4309348
-sd     1.0129447  1.0130531  0.000000e+00 2.827583e-04 4.134156e-07 1.3507640
-2.5%  -3.8534313 -4.8527621 6.924006e-310 2.155498e-07 6.357858e-10 0.1105842
-97.5%  0.2188795 -0.8877351 6.924006e-310 1.346811e-04 3.505232e-07 5.0629371
+               a         a2         b       b2            c jNorm[1]   jNorm[2]
+mean  -0.2696309  0.0821446  7.162000 1.468000 0.0332369593        0 -1.9151143
+sd     1.3774025  0.8071084  7.283258 1.786437 0.0442702984        0  1.0129447
+2.5%  -2.7877917 -1.6209669  0.000000 0.000000 0.0001384284        0 -3.8534313
+97.5%  3.1058576  1.8959631 26.000000 6.000000 0.1641237378        0  0.2188795
+        jNorm[3] kLogNorm[1]  kLogNorm[2]  kLogNorm[3]         x
+mean  -2.9167958           0 4.410446e-05 8.092161e-08 1.4309348
+sd     1.0130531           0 2.827583e-04 4.134156e-07 1.3507640
+2.5%  -4.8527621           0 2.155498e-07 6.357858e-10 0.1105842
+97.5% -0.8877351           0 1.346811e-04 3.505232e-07 5.0629371
 ===== Finished MCMC test for check various conjugacies. =====
 ===== Starting MCMC test for Dirichlet-multinomial example. =====
          alpha[1]    alpha[2]    alpha[3]   alpha[4]    alpha[5]       p[1]
@@ -2977,5 +2981,11 @@ sd      0.6607385   0.5216073    1.807713
 ===== Finished MCMC test for conjugate Wishart. =====
 ===== Starting MCMC test for conjugate MVN with ragged dependencies. ========== Starting MCMC test for binary sampler. ========== Starting MCMC test for binary sampler handles out of bounds. ========== Starting MCMC test for RW_multinomial sampler. ========== Starting MCMC test RW_multinomial sampler on distribution of size 2. ========== Starting MCMC test if RW_dirichlet sampler consistent with conjugate multinomial sampler. ========== Starting MCMC test RW_dirichlet sampler more complicated. =====thin = 1: alpha, theta, p1, p2
 ===== Starting MCMC test dcar_normal sampling. ========== Starting test dcar_proper density evaluations. ========== Starting MCMC test dcar_proper sampling. =====thin = 1: tau, gamma, x
-===== Starting MCMC test of logProb variable monitoring =====
-
+===== Starting MCMC test of logProb variable monitoring =====Error in envRefInferField(x, what, getClass(class(x)), selfEnv) : 
+  ‘log’ is not a valid field or method name for reference class “beetles-logit_modelClass_UID_793_UID_794”
+Error in envRefInferField(x, what, getClass(class(x)), selfEnv) : 
+  ‘n’ is not a valid field or method name for reference class “beetles-logit_modelClass_UID_793_UID_794”
+Error: object 'n' not found
+Error: object 'n' not found
+Error: object 'n' not found
+Error in Q() : could not find function "Q"
