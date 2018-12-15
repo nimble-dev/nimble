@@ -221,21 +221,26 @@ sampleDPmeasure <- nimbleFunction(
               }
               
               ## Check that mean for cluster mean nodes are same
-              meanExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'mean'))
-              names(meanExprs) <- NULL
-              if(length(unique(meanExprs)) != 1)
+              if(any(sapply(clusterNodes1, function(x) model$getDistribution(x)) != "dnorm")) {
+                conjugate <- FALSE
+              } else {
+                meanExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'mean'))
+                names(meanExprs) <- NULL
+                if(length(unique(meanExprs)) != 1)
                   conjugate <- FALSE
-              ## Check that variance for cluster mean nodes are same except for dependence on variance
-              varExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'var'))
-              names(varExprs) <- NULL
-              for(i in seq_along(varExprs)) {
+                ## Check that variance for cluster mean nodes are same except for dependence on variance
+                varExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'var'))
+                names(varExprs) <- NULL
+                for(i in seq_along(varExprs)) {
                   varText <- deparse(varExprs[[i]])
                   if(!length(grep(clusterNodes2[i], varText, fixed = TRUE))) {
-                      varExprs[[i]] <- NULL
+                    varExprs[[i]] <- NULL
                   } else varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "a", varText, fixed = TRUE))[[1]]
-              }
-              if(length(unique(varExprs)) != 1)
+                }
+                if(length(unique(varExprs)) != 1)
                   conjugate <- FALSE
+                meanExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'mean'))
+              }
               
               ## Check that cluster variance nodes are IID
               valueExprs <- sapply(clusterNodes2, function(x) model$getValueExpr(x))
@@ -643,8 +648,8 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       y <- values(model, dataNodes[i])[1]
       postVar <- 1 / (1 / dataVar + 1 / priorVar)
       postMean <- postVar * (y / dataVar + priorMean / priorVar)
-      model[[marginalizedVar]][j] <<- rnorm(1, postMean, sqrt(postVar)) 
-      #values(model, marginalizedNodes[j]) <<- rnorm(1, postMean, sqrt(postVar)) 
+      #model[[marginalizedVar]][j] <<- rnorm(1, postMean, sqrt(postVar)) 
+      values(model, marginalizedNodes[j]) <<- c(rnorm(1, postMean, sqrt(postVar)))
     }
   )
 )
@@ -707,7 +712,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape = priorShape + y, rate = priorRate + 1)
+      values(model, marginalizedNodes[j]) <<- c(rgamma(1, shape = priorShape + y, rate = priorRate + 1))
     }
   )
 )
@@ -736,7 +741,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataMean <- model$getParam(dataNodes[i], 'mean')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape = priorShape + 0.5, rate = priorRate + (y-dataMean)^2/2)
+      values(model, marginalizedNodes[j]) <<- c(rgamma(1, shape = priorShape + 0.5, rate = priorRate + (y-dataMean)^2/2))
     }
   )
 )
@@ -763,7 +768,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y)
+      values(model, marginalizedNodes[j]) <<- c(rbeta(1, shape1=priorShape1+y, shape2=priorShape2+1-y))
     }
   )
 )
@@ -792,7 +797,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataSize <- model$getParam(dataNodes[i], 'size')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+y, shape2=priorShape2+dataSize-y)
+      values(model, marginalizedNodes[j]) <<- c(rbeta(1, shape1=priorShape1+y, shape2=priorShape2+dataSize-y))
     }
   )
 )
@@ -823,7 +828,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataSize <- model$getParam(dataNodes[i], 'size')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rbeta(1, shape1=priorShape1+dataSize, shape2=priorShape2+y)
+      values(model, marginalizedNodes[j]) <<- c(rbeta(1, shape1=priorShape1+dataSize, shape2=priorShape2+y))
     }
   )
 )
@@ -848,7 +853,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape=priorShape+1, rate=priorRate+y)
+      values(model, marginalizedNodes[j]) <<- c(rgamma(1, shape=priorShape+1, rate=priorRate+y))
     }
   )
 )
@@ -877,7 +882,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       datashape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape=datashape+priorShape, rate=priorRate+y)
+      values(model, marginalizedNodes[j]) <<- c(rgamma(1, shape=datashape+priorShape, rate=priorRate+y))
     }
   )
 )
@@ -906,7 +911,7 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape=1+priorShape, rate=priorRate+y^dataShape)
+      values(model, marginalizedNodes[j]) <<- c(rgamma(1, shape=1+priorShape, rate=priorRate+y^dataShape))
     }
   )
 )
@@ -935,8 +940,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      model[[marginalizedVar]][j] <<- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y)
-      #values(model, marginalizedNodes[j]) <<- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y)
+      values(model, marginalizedNodes[j]) <<- c(rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/y))
     }
   )
 )
@@ -961,7 +965,7 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])
-      model[[marginalizedVar]][j, ] <<- rdirch(alpha=priorAlpha+y)
+      values(model, marginalizedNodes[j, ]) <<- rdirch(alpha=priorAlpha+y)
     }
   )
 )
@@ -988,7 +992,7 @@ sampler_CRP <- nimbleFunction(
     if(n != nObs)
       stop("sampler_CRP: The length of membership variable and observations has to be the same.\n")
 
-    clusterVarInfo <- findClusterVars(model, targetElements[1], returnIndexInfo = TRUE)
+    clusterVarInfo <- nimble:::findClusterVars(model, targetElements[1], returnIndexInfo = TRUE)
     tildeVars <- clusterVarInfo$clusterVars
     if(is.null(tildeVars))
         stop('sampler_CRP:  The model should have at least one cluster variable.\n')
@@ -1107,7 +1111,7 @@ sampler_CRP <- nimbleFunction(
     ## CLAUDIA 
     if(p > 1) {  
         tmp <- matrix(tildeNodes, ncol = p)
-        if(any(sapply(tmp, function(x) length(unique(x)) > 1)))
+        if(any(apply(tmp, 2, function(x) length(unique(gsub("\\[.*", "", x)))) > 1))
             stop("sampler_CRP: Current MCMC CRP sampling cannot handle the structure of the multiple cluster variables.")
     }
       
