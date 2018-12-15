@@ -118,6 +118,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   expect_false(any(is.na(samplesG)))
   
   # two cluster parameters, one deterministic parameter, fixed conc
+  # not working 2 tilde vars and noncanojugacy detected yet
   rm(list=ls())
   code=nimbleCode(
     {
@@ -345,7 +346,7 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   
   mConf <- configureMCMC(m, monitors = c('xi', 'conc0', 'mu'))
   mMCMC <- buildMCMC(mConf)
-  output <- runMCMC(mMCMC, niter=1)#)
+  expect_message(output <- runMCMC(mMCMC, niter=1))
   output <- getSamplesDPmeasure(mMCMC)
   
   # cluster variable not being monitored
@@ -375,7 +376,7 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   
   mConf <- configureMCMC(m, monitors = c('mu', 'xi', 'mu0', 's20'))
   mMCMC <- buildMCMC(mConf)
-  output <- runMCMC(mMCMC, niter=1)#)
+  expect_message(output <- runMCMC(mMCMC, niter=1))
   output <- getSamplesDPmeasure(mMCMC)
   
   ## concentration parameter not being monitored:
@@ -401,7 +402,7 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   
   mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'conc0'))
   mMCMC <- buildMCMC(mConf)
-  output <- runMCMC(mMCMC, niter=1)#)
+  expect_message(output <- runMCMC(mMCMC, niter=1))
   outputG <- getSamplesDPmeasure(mMCMC)
   
   ## concentration parameter deterministic parent not being monitored:
@@ -440,7 +441,7 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   ## 'b' with NA based on NA in 'd' and then sampleDPmeasure setup thinks it can't calculate conc0
   mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'b', 'd'))
   mMCMC <- buildMCMC(mConf)
-  output <- runMCMC(mMCMC, niter=1)#)
+  expect_message(output <- runMCMC(mMCMC, niter=1))
   outputG <- getSamplesDPmeasure(mMCMC)
   
   mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'd'))
@@ -474,7 +475,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m, monitors = monitors)
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
-  output <- runMCMC(cMCMC,  niter=1000, nburnin = 0, thin=1)
+  output <- runMCMC(cMCMC,  niter=1000, nburnin = 900, thin=1)
   
   samplesG <- getSamplesDPmeasure(cMCMC)
   expect_false(any(is.na(samplesG$samples)))
@@ -500,7 +501,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m, monitors = c('lambdaTilde','xi', 'conc0', 'a0'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, niter=1000, nburnin = 0, thin=1)
+  out <- runMCMC(cMCMC, niter=1000, nburnin = 900, thin=1)
   
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
@@ -526,7 +527,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m, monitors =  c('lambdaTilde','xi', 'a0'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, niter = 1000, nburnin = 0, thin=1)
+  out <- runMCMC(cMCMC, niter = 1000, nburnin = 900, thin=1)
   
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
@@ -552,12 +553,13 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m, monitors = c('lambdaTilde','xi', 'conc0'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, niter=1000, nburnin = 0, thin=1)
+  out <- runMCMC(cMCMC, niter=1000, nburnin = 900, thin=1)
   
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
   
   # two cluster parameters, one deterministic parameter, fixed conc
+  # couldn't run it because has 2 cluster params
   rm(list=ls())
   code=nimbleCode(
     {
@@ -582,7 +584,7 @@ test_that("sampleDPmeasure can be used for more complicated models", {
   mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, niter=1000, nburnin = 0, thin=1)
+  out <- runMCMC(cMCMC, niter=1000, nburnin = 900, thin=1)
   
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
@@ -784,13 +786,12 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
     }
     alpha ~ dgamma(1, 1)
   })
-  n <- 300
+  n <- 30
   Consts <- list(n = n)
   Inits <- list(xi = rep(1, n), 
                 lambda = rep(200, n), 
                 alpha = 200)
   Data <- list(y = rpois(n, 5))
-  
   m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
   cm <- compileNimble(m)
   mConf <- configureMCMC(m, monitors = c('xi', 'alpha', 'lambda'), print=FALSE)  
@@ -799,8 +800,8 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   
   output <- runMCMC(cMCMC, niter=1000, nburn=900, thin=1 , inits=Inits, setSeed=FALSE)
   
-  xiSam <- output[, 302:601]
-  lambdaSam <- output[, 2:301]
+  xiSam <- output[, grep('xi', colnames(output))]
+  lambdaSam <- output[, grep('lambda', colnames(output))]
   weights <- apply(xiSam, 1, function(x) as.numeric(table(x)/sum(table(x)) ))
   lambdaUnique <- sapply(1:nrow(output), function(i) unique(lambdaSam[i, xiSam[i, ]]) )
   cond <- sapply(1:nrow(output), function(i) sum(weights[[i]]*lambdaUnique[[i]]))
@@ -832,7 +833,6 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1, n),
                 muTilde = c(0, rep(-10, n-1)))
   model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-  
   cmodel <- compileNimble(model)
   conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
   mcmc <- buildMCMC(conf)
@@ -840,9 +840,8 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   
   ## now check that cmodel$muTilde[2] is near 50
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
-  
-  xiSam <- output[, 34:63]
-  muTildeSam <- output[, 3:32]
+  xiSam <- output[, grep('xi', colnames(output))]
+  muTildeSam <- output[, grep('muTilde', colnames(output))]
   cond <- as.numeric(muTildeSam[2])
   
   expect_equal(cond, 50, tolerance=2*1, scale=1, 
@@ -872,7 +871,6 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1, n),
                 muTilde = c(0, rep(-10, n-1)))
   model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-  
   cmodel <- compileNimble(model)
   conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
   mcmc <- buildMCMC(conf)
@@ -900,6 +898,7 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
                info = 'non-conjugate has strange cluster parameter for new cluster')
   
   # We start with only one active component and the data is a mixture of 3 normal ditributions
+  # can not be used has two cluster params
   rm(list=ls())
   set.seed(1)
   code <- nimbleCode({
@@ -913,7 +912,7 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
     s20 ~ dgamma(1, 1)
     alpha ~ dgamma(1, 1)
   })
-  n <- 300
+  n <- 30
   Consts <- list(n = n)
   Inits <- list(xi = rep(1, n), 
                 mu = rep(-20, n), 
@@ -921,16 +920,15 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
                 alpha = 200,
                 lambda = 1,
                 s20 = 1)
-  thetas <- c(rep(-5, 100), rep(5, 100), rep(0, 100))
+  thetas <- c(rep(-5, 10), rep(5, 10), rep(0, 10))
   Data <- list(y = rnorm(n, thetas, 1))
-  
   m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
   cm <- compileNimble(m)
   mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda', 's20'), print=FALSE)  
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   
-  output <- runMCMC(cMCMC, niter=7000, nburnin=2000, thin=10 , inits=Inits, setSeed=FALSE)
+  output <- runMCMC(cMCMC, niter=4000, nburnin=2000, thin=10 , inits=Inits, setSeed=FALSE)
   outputG <- getSamplesDPmeasure(cMCMC)
   
   Tr <- outputG$trunc
@@ -953,6 +951,103 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
 
 test_that("Test that not nonparametric MCMC message in CRP sampler is correctly sended", {
   set.seed(1)
+  
+  # xi=1:n, concentration param is fixed
+  rm(list=ls())
+  code=nimbleCode(
+    {
+      xi[1:10] ~ dCRP(1 , size=10)
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=10) 
+        y[i] ~ dnorm(thetatilde[xi[i]], var=1)
+      }
+    }
+  )
+  Inits=list(xi=1:10, 
+             thetatilde=rep(0,10))
+  Data=list(y=c(rnorm(3,-5, 1), rnorm(4, 0, 1), rnorm(3,5,1)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m) 
+  expect_output(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
+        'CRP_sampler: This MCMC is for a parametric model.')
+  
+  # xi=1:n, concentration param is random
+  rm(list=ls())
+  code=nimbleCode(
+    {
+      xi[1:10] ~ dCRP(conc0 , size=10)
+      conc0 ~ dgamma(1, 1)
+      for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=10) 
+        y[i] ~ dnorm(thetatilde[xi[i]], var=1)
+      }
+    }
+  )
+  Inits=list(xi=1:10, 
+             thetatilde=rep(0,10), conc0 = 1)
+  Data=list(y=c(rnorm(3,-5, 1), rnorm(4, 0, 1), rnorm(3,5,1)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi', 'conc0'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m) 
+  expect_output(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
+                'CRP_sampler: This MCMC is not for a proper model.')
+  
+  
+  # less cluster parameters than onservation, concentration param is fixed
+  rm(list=ls())
+  code=nimbleCode(
+    {
+      xi[1:10] ~ dCRP(1 , size=10)
+      for(i in 1:5)
+        thetatilde[i] ~ dnorm(mean=0, var=10)
+      for(i in 1:10){
+        y[i] ~ dnorm(thetatilde[xi[i]], var=1)
+      }
+    }
+  )
+  Inits=list(xi=rep(1:5, 2), 
+             thetatilde=rep(0,5))
+  Data=list(y=c(rnorm(3,-5, 1), rnorm(4, 0, 1), rnorm(3,5,1)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi'))
+  expect_warning(mMCMC <- buildMCMC(mConf))
+  cMCMC <- compileNimble(mMCMC, project = m) 
+  expect_output(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
+                'CRP_sampler: This MCMC is for a parametric model.')
+  
+  # less cluster parameters than onservation, concentration param is random
+  rm(list=ls())
+  code=nimbleCode(
+    {
+      xi[1:10] ~ dCRP(conc0 , size=10)
+      conc0 ~ dgamma(1, 1)
+      for(i in 1:5)
+        thetatilde[i] ~ dnorm(mean=0, var=10)
+      for(i in 1:10){
+        y[i] ~ dnorm(thetatilde[xi[i]], var=1)
+      }
+    }
+  )
+  Inits=list(xi=rep(1:5, 2), 
+             thetatilde=rep(0,5), conc0 = 1)
+  Data=list(y=c(rnorm(3,-5, 1), rnorm(4, 0, 1), rnorm(3,5,1)))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi', 'conc0'))
+  expect_warning(mMCMC <- buildMCMC(mConf))
+  cMCMC <- compileNimble(mMCMC, project = m) 
+  expect_output(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
+                'CRP_sampler: This MCMC is not for a proper model.')
+  
+  
+  
+  
   rm(list=ls())
   code=nimbleCode(
     {
@@ -1012,6 +1107,57 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is correctly 
 
 
 
+test_that("Test that values from the base measure prior are correctly simulated", {
+
+  # xi=1:n, concentration param is fixed, deterministic dependency of tilde vars
+  rm(list=ls())
+  library(nimble)
+  code=nimbleCode(
+    {
+      xi[1:3] ~ dCRP(1 , size=3)
+      for(i in 1:3){
+        thetatilde[i] ~ dnorm(mu0, 1)#dt(mu=mu0, tau=1, df=1) # implies non conjugate CRP sampler 
+        y[i] ~ dnorm(thetatilde[xi[i]], var=1)
+      }
+      mu0 <- 50
+      #mu0 <- 2*mu1
+      #mu1 ~ dnorm(50, 1)
+    }
+  )
+  Inits=list(xi=1:3, thetatilde=rep(0,3))#, mu1=50
+  Data=list(y=rnorm(3,50, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi'))#, 'mu1', 'mu0'
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m) 
+  expect_output(out <- runMCMC(cMCMC, niter=10, nburnin = 0, thin=1),
+                'CRP_sampler: This MCMC is for a parametric model.')
+  
+  
+  rm(list=ls())
+  code=nimbleCode(
+    {
+      xi[1:3] ~ dCRP(1 , size=3)
+      for(i in 1:3){
+        thetatilde[i] ~ dnorm(0 , s2tilde[i]/lambda)
+        s2tilde[i] ~ dinvgamma(2, 1)
+        y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])
+      }
+      lambda ~ dgamma(1, 1)
+    }
+  )
+  Inits=list(xi=1:3, thetatilde=rep(0,3), s2tilde=rep(1,3), lambda=1)#, mu1=50
+  Data=list(y=rnorm(3,50, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi', 'lambda'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = TRUE) 
+  expect_output(out <- runMCMC(cMCMC, niter=10, nburnin = 0, thin=1),
+                'CRP_sampler: This MCMC is for a parametric model.')
+  
+})
 
 
 
