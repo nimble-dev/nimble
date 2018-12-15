@@ -1372,7 +1372,7 @@ stripTestPlacementWarning <- function(lines) {
 
 compareFilesByLine <- function(trialResults, correctResults, main = "") {
     trialResults <- stripTestPlacementWarning(trialResults)
-    trialResults <- stripTestPlacementWarning(correctResults)
+    correctResults <- stripTestPlacementWarning(correctResults)
     test_that(paste0(main, ': same number of output lines'),
           expect_equal(length(trialResults), length(correctResults)))
     
