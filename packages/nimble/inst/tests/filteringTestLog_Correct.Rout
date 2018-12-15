@@ -5,6 +5,7 @@ sd     0.81422064  0.9458056  0.9960634
 2.5%  -1.57686702 -1.3849864 -0.7204657
 97.5%  1.61527486  2.3575143  3.1798802
 ===== Finished bootstrap filter test for basic bootstrap, always resamp. =====
+NULL
 ===== Starting Filter test for basic auxiliary using auxiliary. =====
              x[1]       x[2]       x[3]
 mean   0.02625837  0.4819173  1.2134764
@@ -12,6 +13,7 @@ sd     0.81422064  0.9678505  0.9774409
 2.5%  -1.57686702 -1.3920861 -0.6835369
 97.5%  1.61527486  2.4263665  3.1279726
 ===== Finished auxiliary filter test for basic auxiliary. =====
+NULL
 ===== Starting Filter test for basic auxiliary w/ mean lookahead using auxiliary. =====
              x[1]       x[2]       x[3]
 mean   0.02625837  0.4422192  1.1805595
@@ -19,6 +21,7 @@ sd     0.81422064  0.9590931  1.0027343
 2.5%  -1.57686702 -1.4068535 -0.7431711
 97.5%  1.61527486  2.3541441  3.1721206
 ===== Finished auxiliary filter test for basic auxiliary w/ mean lookahead. =====
+NULL
 ===== Starting Filter test for basic ensembleKF using ensembleKF. =====
               x[1]       x[2]       x[3]
 mean   0.004817278  0.4654197  1.2173899
@@ -26,6 +29,7 @@ sd     0.816197687  0.9642304  0.9944248
 2.5%  -1.602260203 -1.4589036 -0.7504125
 97.5%  1.602954827  2.3213503  3.1464371
 ===== Finished ensembleKF filter test for basic ensembleKF. =====
+NULL
 ===== Starting Filter test for multivariate bootstrap, always resamp using bootstrap. =====
          x[1, 1]    x[2, 1]   x[3, 1]    x[1, 2]    x[2, 2]   x[3, 2]
 mean   0.3219980  0.8205222 1.6794925  0.6825467  0.9286509  1.182995
@@ -38,6 +42,7 @@ sd     1.1253605  1.4873218  1.750032
 2.5%  -1.6594215 -1.9775964 -1.839599
 97.5%  2.7585060  3.8372356  5.035827
 ===== Finished bootstrap filter test for multivariate bootstrap, always resamp. =====
+NULL
 ===== Starting Filter test for multivariate auxiliary using auxiliary. =====
          x[1, 1]    x[2, 1]   x[3, 1]    x[1, 2]    x[2, 2]   x[3, 2]
 mean   0.3219980  0.5744718 1.6773793  0.6825467  0.1811593  0.923409
@@ -50,6 +55,7 @@ sd     1.1253605  1.569715  1.538758
 2.5%  -1.6594215 -1.728842 -1.000195
 97.5%  2.7585060  3.399407  5.011510
 ===== Finished auxiliary filter test for multivariate auxiliary. =====
+NULL
 ===== Starting Filter test for multivariate auxiliary mean lookahead using auxiliary. =====
          x[1, 1]    x[2, 1]   x[3, 1]    x[1, 2]    x[2, 2]   x[3, 2]
 mean   0.3219980  0.8085162 1.7111350  0.6825467  0.9653112  1.322196
@@ -62,6 +68,7 @@ sd     1.1253605  1.4539676  1.786932
 2.5%  -1.6594215 -1.9381822 -2.059722
 97.5%  2.7585060  3.7792415  5.212447
 ===== Finished auxiliary filter test for multivariate auxiliary mean lookahead. =====
+NULL
 ===== Starting Filter test for multivariate ensembleKF using ensembleKF. =====
            x[1]      x[2]      x[3]
 mean  1.6772304  1.306020  1.519570
@@ -69,6 +76,7 @@ sd    0.6088283  1.659464  1.722874
 2.5%  0.4634925 -1.969895 -1.832840
 97.5% 2.8788677  4.588400  4.951206
 ===== Finished ensembleKF filter test for multivariate ensembleKF. =====
+NULL
 ===== Starting Filter test for scalar lwf using LiuWest. =====
       sigma_x[1] sigma_y[1]      x[1]      x[2]      x[3]     x[4]      x[5]
 mean   0.9773112  0.5178525 1.5671443 2.6323816 2.4073446 2.218518 2.2822645
@@ -76,6 +84,7 @@ sd     0.3494247  0.2161070 0.6228014 0.4325777 0.4156712 0.357436 0.4760495
 2.5%   0.4869661  0.2689896 0.2248718 1.6278845 1.4913641 1.520610 1.2839160
 97.5%  1.6708747  1.0643471 2.7074076 3.3565962 3.2048605 2.965964 3.2446241
 ===== Finished LiuWest filter test for scalar lwf. =====
+NULL
 ===== Starting MCMC test for scalar pmcmc. =====
 Setting samplers to:
 [[1]]
@@ -83,18 +92,18 @@ RW_PF sampler: sigma_x,  latents: x,  m: 1000,  resample: FALSE
 [[2]]
 RW_PF sampler: sigma_y,  latents: x,  m: 1000,  resample: FALSE
         sigma_x     sigma_y      x[1]      x[2]      x[3]      x[4]      x[5]
-mean  1.0708291 0.315678896 1.2208208 2.5857314 2.7625942 2.1023435 2.2556854
-sd    0.3243451 0.223491605 0.3109253 0.3420444 0.3537091 0.3087612 0.3741273
-2.5%  0.6188310 0.004691938 0.5109526 1.7136130 1.9523001 1.5502011 1.1087097
-97.5% 1.8092381 0.793996228 1.8097821 3.1875908 3.4382329 2.8834988 2.8904848
+mean  1.0175051 0.290362394 1.2217282 2.5871739 2.7522003 2.1159484 2.2805495
+sd    0.2661122 0.240954057 0.2576929 0.3642905 0.3314082 0.3317011 0.3319414
+2.5%  0.5844447 0.009397631 0.4997190 1.4312201 1.8512423 1.5699377 1.6014386
+97.5% 1.6324881 0.926208011 1.7126758 3.1318167 3.2479716 2.8667594 2.9293934
 ===== Finished MCMC test for scalar pmcmc. =====
 ===== Starting MCMC test for block pmcmc. =====
 Setting samplers to:
 [[1]]
 RW_PF_block sampler: sigma_x, sigma_y,  latents: x,  m: 1000,  resample: FALSE
-        sigma_x    sigma_y      x[1]     x[2]      x[3]      x[4]      x[5]
-mean  1.2181676 0.38638597 1.2208248 2.528929 2.7298253 2.1355394 2.2704592
-sd    0.3392395 0.30357350 0.4002706 0.428931 0.4428429 0.4550863 0.4021341
-2.5%  0.6964519 0.02091358 0.2150672 1.326255 1.5341362 1.1304727 1.2902126
-97.5% 1.9547446 1.12178421 1.9867918 3.247717 3.5054830 3.2626303 3.0173788
+        sigma_x     sigma_y      x[1]      x[2]      x[3]      x[4]      x[5]
+mean  1.0748760 0.283241369 1.2483415 2.6116596 2.7763993 2.1015391 2.3188164
+sd    0.2611773 0.248528683 0.2995668 0.3387693 0.3333205 0.3103522 0.3662519
+2.5%  0.6670515 0.003591207 0.6022247 1.8481076 1.8934463 1.4500097 1.4916266
+97.5% 1.7865719 1.048503339 1.9688815 3.2230874 3.4812492 2.9196129 3.0290851
 ===== Finished MCMC test for block pmcmc. =====
