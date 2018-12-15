@@ -470,6 +470,7 @@ sampleDPmeasure <- nimbleFunction(
       
       # the rest of the values: w_l and atom_l, l=1, ..truncG-1
       while(Taux <= truncG){
+        
         index <- rcat(prob = probs[1:newValueIndex])
         if(index == newValueIndex){  # sample from G_0
           model$simulate(parentNodesTildeVarsDeps)
@@ -965,7 +966,8 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])
-      values(model, marginalizedNodes[j, ]) <<- rdirch(alpha=priorAlpha+y)
+      values(model, marginalizedNodes[j]) <<- rdirch(alpha=priorAlpha+y)
+      #model[[marginalizedVar]][j] <<- rdirch(alpha=priorAlpha+y)
     }
   )
 )
@@ -988,7 +990,8 @@ sampler_CRP <- nimbleFunction(
     n <- length(targetElements) 
     
     # first check that the sampler can be used: we need one observation per random index
-    nObs <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
+    stochDepsXi <- model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE) # only data
+    nObs <- length(stochDepsXi)
     if(n != nObs)
       stop("sampler_CRP: The length of membership variable and observations has to be the same.\n")
 
@@ -999,9 +1002,15 @@ sampler_CRP <- nimbleFunction(
     
     ## Check for indexing that would cause errors in using sample() with 'j' as the index of the set of cluster nodes, e.g., mu[xi[i]+2] or mu[some_function(xi[i])]
     if(any(clusterVarInfo$targetInFunction))
-        stop("sampler_CRP: At the moment, NIMBLE's CRP MCMC sampling requires simple indexing and cannot work with indexing such as 'mu[xi[i]+2]'.")
+        stop("sampler_CRP: At the moment, NIMBLE's CRP MCMC sampling requires simple indexing and cannot work with indexing such as 'mu[xi[i]+2]'.\n")
 
-    calcNodes <- unique(c(calcNodes, model$getDependencies(tildeVars)))
+    ## Check that only data nodes depend on cluster variables. No other unrelated variable con depend on cluster variables
+    stochDepsTildeVars <- model$getDependencies(tildeVars, self=FALSE, stochOnly = TRUE)
+    if(all(stochDepsTildeVars %in% stochDepsXi)) {
+      calcNodes <- unique(c(calcNodes, model$getDependencies(tildeVars)))  
+    } else {
+      stop("sampler_CRP: Only observations can depend on cluster variables.\n")
+    }
 
     # check that the number of parameters in cluster parameters (if more than one) are the same  (multivariate case considered)
     dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE) 
