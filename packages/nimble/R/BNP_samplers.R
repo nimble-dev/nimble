@@ -961,13 +961,12 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])
-      return(lfactorial(n) - sum(lfactorial(y)+lgamma(priorAlpha))+
+      return(lfactorial(d) - sum(lfactorial(y) + lgamma(priorAlpha)) +
                lgamma(sum(priorAlpha)) + sum(lgamma(priorAlpha+y)) - lgamma(sum(priorAlpha+y)))
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])
-      values(model, marginalizedNodes[j]) <<- rdirch(alpha=priorAlpha+y)
-      #model[[marginalizedVar]][j] <<- rdirch(alpha=priorAlpha+y)
+      values(model, marginalizedNodes[j]) <<- rdirch(1, alpha = priorAlpha+y)
     }
   )
 )
