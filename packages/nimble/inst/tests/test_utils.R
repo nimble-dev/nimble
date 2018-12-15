@@ -1363,7 +1363,7 @@ stripTestPlacementWarning <- function(lines) {
     ## deal with Placing tests in `inst/tests/` is deprecated warning
     ## as it doesn't seem entirely predictable when/where it appears 
     coreLines <- grep("^Placing tests in", lines)
-    addedLines <- lines[coreLines-1] == "Warning message:"
+    addedLines <- lines[coreLines-1] == "In addition: Warning message:"
     totalLines <- c(coreLines-addedLines, coreLines)
     if(length(totalLines))
         return(lines[-totalLines]) else return(lines)
