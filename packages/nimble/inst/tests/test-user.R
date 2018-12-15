@@ -24,7 +24,7 @@ test_that("User-supplied functions", {
         }
     )
     temporarilyAssignInGlobalEnv(dbl)
-                                        # not working at moment as enclosing env of fun is getting messed up
+    ## not working at moment as enclosing env of fun is getting messed up
 
 
     ## two arguments to the nimbleFunction
@@ -101,7 +101,7 @@ test_that("User-supplied functions", {
     expect_identical(cm$out, (8),
                      info = "incorrect arg matching by name in C model")
 })
-
+}
 
 ## User-supplied distributions
 
@@ -349,7 +349,7 @@ test_that("Test that deregistration of user-supplied distributions works", {
 ##               expect_false(is(out, 'try-error'))))
 
 ## Instead, test user-defined without r function, but with use of registerDistributions()
-}
+
 test_that("Test that user-defined distributions without 'r' function doesn't cause problems", {
     ## scalar density
     dfoo = nimbleFunction(
