@@ -1136,6 +1136,7 @@ sampler_CRP <- nimbleFunction(
         } else { # a new cluster can be created
           model[[target]][i] <<- kNew
           if(sampler == 'CRP_nonconjugate'){
+            helperFunctions[[1]]$sample(i, model[[target]][i])
             if(type == 'indivCalcs') {
               if(nInterm >= 1) model$calculate(intermNodes[i])
               if(nInterm >= 2) model$calculate(intermNodes2[i])
