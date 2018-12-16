@@ -950,56 +950,57 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
 
 
 test_that("Test that not nonparametric MCMC message in CRP sampler is correctly sended", {
+  rm(list=ls())
   set.seed(1)
   
-  # xi=1:n, concentration param is fixed
-  rm(list=ls())
+  # 2 mean cluster parameters, data is mixture of 3 normals, concentration param is fixed
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(1 , size=10)
+      for(i in 1:2)
+        thetatilde[i] ~ dnorm(mean=0, var=10)
       for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=10) 
         y[i] ~ dnorm(thetatilde[xi[i]], var=1)
       }
     }
   )
-  Inits=list(xi=1:10, 
-             thetatilde=rep(0,10))
+  Inits=list(xi=rep(1, 10), 
+             thetatilde=c(0,0))
   Data=list(y=c(rnorm(3,-5, 1), rnorm(4, 0, 1), rnorm(3,5,1)))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
   mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi'))
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m) 
-  expect_output(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
-        'CRP_sampler: This MCMC is for a parametric model.')
+  expect_warning(mMCMC <- buildMCMC(mConf))
+  cMCMC <- compileNimble(mMCMC, project = m)
+  expect_output(out <- runMCMC(mcmc=cMCMC, niter=1, nburnin = 0, thin=1),
+                info = 'CRP_sampler: This MCMC is for a parametric model.')
   
-  # xi=1:n, concentration param is random
-  rm(list=ls())
+  
+  # 2 mean cluster parameters, data is mixture of 3 normals, concentration param is random
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(conc0 , size=10)
       conc0 ~ dgamma(1, 1)
+      for(i in 1:2)
+        thetatilde[i] ~ dnorm(mean=0, var=10)
       for(i in 1:10){
-        thetatilde[i] ~ dnorm(mean=0, var=10) 
         y[i] ~ dnorm(thetatilde[xi[i]], var=1)
       }
     }
   )
-  Inits=list(xi=1:10, 
-             thetatilde=rep(0,10), conc0 = 1)
+  Inits=list(xi=rep(1, 10), 
+             thetatilde=c(0,0), conc0=1)
   Data=list(y=c(rnorm(3,-5, 1), rnorm(4, 0, 1), rnorm(3,5,1)))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
-  mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi', 'conc0'))
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m) 
-  expect_output(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
-                'CRP_sampler: This MCMC is not for a proper model.')
+  mConf <- configureMCMC(m)
+  expect_warning(mMCMC <- buildMCMC(mConf))
+  cMCMC <- compileNimble(mMCMC, project = m)
+  expect_output(out <- runMCMC(mcmc=cMCMC, niter=1, nburnin = 0, thin=1),
+                info = 'CRP_sampler: This MCMC is not for a proper model.')
   
-  
+
   # less cluster parameters than onservation, concentration param is fixed
-  rm(list=ls())
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(1 , size=10)
@@ -1021,88 +1022,58 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is correctly 
   expect_output(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
                 'CRP_sampler: This MCMC is for a parametric model.')
   
-  # less cluster parameters than onservation, concentration param is random
-  rm(list=ls())
+   
+  # no message is sent when xi=1:n
   code=nimbleCode(
     {
-      xi[1:10] ~ dCRP(conc0 , size=10)
-      conc0 ~ dgamma(1, 1)
-      for(i in 1:5)
-        thetatilde[i] ~ dnorm(mean=0, var=10)
+      xi[1:10] ~ dCRP(1 , size=10)
       for(i in 1:10){
+        thetatilde[i] ~ dnorm(mean=0, var=10)
         y[i] ~ dnorm(thetatilde[xi[i]], var=1)
       }
     }
   )
-  Inits=list(xi=rep(1:5, 2), 
-             thetatilde=rep(0,5), conc0 = 1)
+  Inits=list(xi=1:10, 
+             thetatilde=rep(0,10))
   Data=list(y=c(rnorm(3,-5, 1), rnorm(4, 0, 1), rnorm(3,5,1)))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
-  mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi', 'conc0'))
-  expect_warning(mMCMC <- buildMCMC(mConf))
-  cMCMC <- compileNimble(mMCMC, project = m) 
-  expect_output(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1),
-                'CRP_sampler: This MCMC is not for a proper model.')
+  mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi'))
+  mMCMC <- buildMCMC(mConf)
+  cMCMC <- compileNimble(mMCMC, project = m)
+  out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1)
   
   
   
-  
-  rm(list=ls())
+  # dirichlet-multinomial model: message is sent I think the MCMC really wants to create more
+  # components than observations.
   code=nimbleCode(
     {
-      for(i in 1:2){
-        thetatilde[i] ~ dnorm(mean=0, var=s2tilde[i]/lambda) 
-        s2tilde[i] ~ dinvgamma(2, scale=1)
+      for(i in 1:4){
+        p[i,1:3] ~ ddirch(alpha=alpha0[1:3])
+        y[i,1:3] ~ dmulti(prob=p[xi[i],1:3], size=3)
       }
-      xi[1:10] ~ dCRP(1 , size=10)
-      lambda ~ dgamma(1, 1)
-      for(i in 1:10){
-        y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])
-      }
+      xi[1:4] ~ dCRP(conc=1, size=4)
     }
   )
-  Inits=list(xi=sample(1:2, size=10, replace=TRUE), 
-             thetatilde=rep(0,2),
-             s2tilde = rep(1,2), lambda=1)
-  Data=list(y=c(rnorm(3,-5, sqrt(5)), rnorm(4, 0, 1), rnorm(3,5,sqrt(4))))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
+  p0 <- matrix(0, ncol=3, nrow=4)
+  y0 <- matrix(0, ncol=3, nrow=4)
+  for(i in 1:4){
+    p0[i,]=rdirch(1, c(1, 1, 1))
+    y0[i,] = rmulti(1, prob=c(0.3,0.3,0.4), size=3)
+  }
+  m = nimbleModel(code, 
+                  data = list(y = y0),
+                  inits = list(xi = 1:4, p=p0), 
+                  constants=list(alpha0 = c(1,1,1)))
+  conf <- configureMCMC(m, monitors=c('p', 'xi'))
+  mcmc <- buildMCMC(conf)
+  cm = compileNimble(m)
+  cmcmc=compileNimble(mcmc,project=m)
+  cmcmc$run(1)
+  #cmcmc$mvSamples[['xi']]
   
-  mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi',  'lambda'))
-  expect_warning(mMCMC <- buildMCMC(mConf))
-  cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1)#,
-                  #'CRP_sampler: This MCMC is parametric.')
-                  
-  rm(list=ls())
-  code=nimbleCode(
-    {
-      for(i in 1:2){
-        thetatilde[i] ~ dnorm(mean=0, var=s2tilde[i]/lambda) 
-        s2tilde[i] ~ dinvgamma(2, scale=1)
-      }
-      xi[1:10] ~ dCRP(conc0 , size=10)
-      conc0 ~ dgamma(1, 1)
-      lambda ~ dgamma(1, 1)
-      for(i in 1:10){
-        y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])
-      }
-    }
-  )
-  Inits=list(xi=sample(1:2, size=10, replace=TRUE), 
-             thetatilde=rep(0,2),
-             s2tilde = rep(1,2), lambda=1, conc0=1)
-  Data=list(y=c(rnorm(3,-5, sqrt(5)), rnorm(4, 0, 1), rnorm(3,5,sqrt(4))))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  
-  mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi',  'lambda', 'conc0'))
-  expect_warning(mMCMC <- buildMCMC(mConf))
-  cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1)#,
-                 #'CRP_sampler: This MCMC is not for a proper model.')
-  
+
 })
 
 
