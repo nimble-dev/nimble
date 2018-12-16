@@ -1057,7 +1057,7 @@ sampler_CRP <- nimbleFunction(
     if( kNew == n & xiCounts[kNew] > 0 ) { # case  xi=1:n
       kNew <- 0
     }
-    if(kNew > min_nTilde & min_nTilde != n) {
+    if(kNew > min_nTilde & min_nTilde < n) {
       if( printMessage ) {
         if(fixedConc) {
           nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
@@ -1174,7 +1174,7 @@ sampler_CRP <- nimbleFunction(
             kNew <- kNew+1
             mySum <- sum(xi == kNew)
           }
-          if(kNew > min_nTilde) {
+          if(kNew > min_nTilde & min_nTilde < n) {
             if( printMessage ) {
               if(fixedConc) {
                 nimCat('CRP_sampler: This MCMC is for a parametric model. The MCMC attempted to use more components than the number of cluster parameters. To have a sampler for a nonparametric model increase the number of cluster parameters.\n')
