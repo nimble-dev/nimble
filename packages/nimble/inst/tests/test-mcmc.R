@@ -111,7 +111,6 @@ test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
           data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
                                         # getting warning; deterministic model node is NA or NaN in model initialization
                                         # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
-})
 
 test_that('leuk example setup', {
     writeLines(c("var","Y[N,T],","dN[N,T];"), con = file.path(tempdir(), "leuk.bug")) ## echo doesn't seem to work on Windows
