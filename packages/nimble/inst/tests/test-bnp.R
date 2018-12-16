@@ -1250,7 +1250,7 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is correctly 
   mcmc <- buildMCMC(conf)
   cm = compileNimble(m)
   cmcmc=compileNimble(mcmc,project=m)
-  cmcmc$run(1) # no message is sent
+  cmcmc$run(100) # no message is sent
   #cmcmc$mvSamples[['xi']]
   
 })
