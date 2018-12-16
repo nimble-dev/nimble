@@ -2981,11 +2981,4 @@ sd      0.6607385   0.5216073    1.807713
 ===== Finished MCMC test for conjugate Wishart. =====
 ===== Starting MCMC test for conjugate MVN with ragged dependencies. ========== Starting MCMC test for binary sampler. ========== Starting MCMC test for binary sampler handles out of bounds. ========== Starting MCMC test for RW_multinomial sampler. ========== Starting MCMC test RW_multinomial sampler on distribution of size 2. ========== Starting MCMC test if RW_dirichlet sampler consistent with conjugate multinomial sampler. ========== Starting MCMC test RW_dirichlet sampler more complicated. =====thin = 1: alpha, theta, p1, p2
 ===== Starting MCMC test dcar_normal sampling. ========== Starting test dcar_proper density evaluations. ========== Starting MCMC test dcar_proper sampling. =====thin = 1: tau, gamma, x
-===== Starting MCMC test of logProb variable monitoring =====Error in envRefInferField(x, what, getClass(class(x)), selfEnv) : 
-  ‘log’ is not a valid field or method name for reference class “beetles-logit_modelClass_UID_793_UID_794”
-Error in envRefInferField(x, what, getClass(class(x)), selfEnv) : 
-  ‘n’ is not a valid field or method name for reference class “beetles-logit_modelClass_UID_793_UID_794”
-Error: object 'n' not found
-Error: object 'n' not found
-Error: object 'n' not found
-Error in Q() : could not find function "Q"
+===== Starting MCMC test of logProb variable monitoring =====
