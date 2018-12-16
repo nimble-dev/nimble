@@ -105,12 +105,13 @@ test_that('ice example reworked', {
     system.in.dir(paste("sed 's/tau\\*1.0E-6/1.0E-6/g' icear.bug > ", file.path(tempdir(), "icear.bug")), dir = system.file('classic-bugs','vol2','ice', package = 'nimble'))
     test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
                                         # looks fine, but alpha and beta values shifted a bit (systematically) relative to JAGS results - on further inspection this is because mixing for this model is poor in both NIMBLE and JAGS - with longer runs they seem to agree (as best as one can tell given the mixing without doing a super long run)
+})
     
-    test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
-              data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
+test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
+          data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
                                         # getting warning; deterministic model node is NA or NaN in model initialization
                                         # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
-    })
+})
 
 test_that('leuk example setup', {
     writeLines(c("var","Y[N,T],","dN[N,T];"), con = file.path(tempdir(), "leuk.bug")) ## echo doesn't seem to work on Windows
