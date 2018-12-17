@@ -24,7 +24,7 @@ nimbleOptions(MCMCprogressBar = FALSE)
 models <- c('kidney', 'litters', 'mice')
 
 ### test basic model building
-sapply(models, testBUGSmodel, useInits = TRUE)
+out <- sapply(models, testBUGSmodel, useInits = TRUE)
 
 # we haven't updated conjugacy to deal with truncation
 # so litters is reporting conj post density as wrong since
@@ -42,7 +42,7 @@ testBUGSmodel('lsat', dir = "", model = file.path(tempdir(), "lsat.bug"), data =
 
 
 ### test MCMC
-sapply(models, test_mcmc, numItsC = 1000)
+out <- sapply(models, test_mcmc, numItsC = 1000)
 
 # this takes forever because of MCMC - rewrite to not do basic
 if(FALSE) {

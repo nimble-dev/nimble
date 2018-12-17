@@ -306,8 +306,8 @@ test_that("MCMC with invalid indexes produce warning, but runs", {
 models <- c('hearts')
 
 ### test BUGS examples - models and MCMC
-sapply(models, testBUGSmodel, useInits = TRUE)
-sapply(models, test_mcmc, numItsC = 1000)
+out <- sapply(models, testBUGSmodel, useInits = TRUE)
+out <- sapply(models, test_mcmc, numItsC = 1000)
 
 ## beta0C is beta0 in inits file
 system.in.dir(paste("sed 's/beta0/beta0C/g' cervix-inits.R > ", file.path(tempdir(), "cervix-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
