@@ -545,15 +545,7 @@ sink(NULL)
 if(!generatingGoldFile) {
     trialResults <- readLines(tempFileName)
     correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
-
-    print("AAA")
-    cat(trialResults, sep = '\n')
-    print("BBB")
-    cat(correctResults, sep = '\n')
-    print("CCC")
-    print(length(trialResults))
-    print(length(correctResults))
-    # compareFilesByLine(trialResults, correctResults)
+    compareFilesByLine(trialResults, correctResults)
 }
 
 options(warn = RwarnLevel)
