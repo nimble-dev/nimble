@@ -547,15 +547,12 @@ if(!generatingGoldFile) {
     correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
 
     print("AAA")
-    cat(trialResults[1:10], sep = '\n')
+    cat(trialResults, sep = '\n')
     print("BBB")
-    cat(correctResults[1:10], sep = '\n')
+    cat(correctResults, sep = '\n')
     print("CCC")
     print(length(trialResults))
     print(length(correctResults))
-    cat(tail(trialResults, n = 100), sep = '\n')
-    print("DDD")
-    cat(tail(correctResults, n = 100), sep = '\n')
     # compareFilesByLine(trialResults, correctResults)
 }
 
