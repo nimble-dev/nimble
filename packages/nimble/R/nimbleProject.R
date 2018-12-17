@@ -867,8 +867,11 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
 
             nfCppDef <- getNimbleFunctionCppDef(generatorName = generatorName)
 
-            ans <- nfCppDef$buildCallable(nf, dll = dll, asTopLevel = asTopLevel)
-            ok <- !is.null(ans)
+            ok <- !is.null(nfCppDef)
+            if(ok) {
+                ans <- nfCppDef$buildCallable(nf, dll = dll, asTopLevel = asTopLevel)
+                ok <- !is.null(ans)
+            }
             ## ok <- TRUE
             ## if(asTopLevel) {
             ##     if(is.null(nfCppDef$Rgenerator)) ok <- FALSE
@@ -1098,12 +1101,21 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     if(length(grep('unknown', unitTypes)) > 0) stop(paste0('Some items provided for compilation do not have types that can be compiled: ', paste0(names(units), collapse = ' '), '.  The types provided were: ', paste0(unitTypes, collapse = ' '), '. Be sure only specialized nimbleFunctions are provided, not nimbleFunction generators.'), call. = FALSE)
     if(is.null(names(units))) names(units) <- rep('', length(units))
     if(length(units) == 0) stop('No objects for compilation provided')
-    
+
     ## 2. Get project or make new project
     if(missing(project)) {
         if(reset) warning("reset = TRUE but no project was provided.  If you are trying to re-compiled something into the same project, give it as the project argument as well as a compilation item. For example, 'compileNimble(myFunction, project = myFunction, reset = TRUE)'")
         if(!is.null(nimbleOptions()$nimbleProject)) project <- nimbleOptions()$nimbleProject
         else project <- nimbleProjectClass(dirName, name = projectName)
+
+        ## Check for uncompiled models.
+        if(!any(sapply(units, is, 'RmodelBaseClass'))) {
+            mcmcUnits <- which(sapply(units, class) == "MCMC")
+            if(any(sapply(mcmcUnits, function(idx) {
+                class(units[[idx]]$model$CobjectInterface) == "uninitializedField"
+            })))
+                stop("compileNimble: The model associated with an MCMC is not compiled. Please compile the model first.")
+        }
     } else {
         project <- getNimbleProject(project, TRUE)
         if(!inherits(project, 'nimbleProjectClass'))
@@ -1117,7 +1129,7 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     
 
     ## Units should be either Rmodel, nimbleFunction, or RCfunction (now coming from nimbleFunction with no setup)
-    if(nimbleOptions('verbose') && !showCompilerOutput) message("compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.")
+    if(nimbleOptions('verbose') && !showCompilerOutput) message("compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compilation details.")
     if(nimbleOptions('verbose') && showCompilerOutput) message("compiling... this may take a minute. On some systems there may be some compiler warnings that can be safely ignored.")
 
     ## Compile models first

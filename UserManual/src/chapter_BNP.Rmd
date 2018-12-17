@@ -78,7 +78,7 @@ $$p(z_i  = m \mid z_{-i}, \alpha) = \frac{1}{n-1+\alpha} \sum_{j \neq i}1_{\{z_j
 
 Note that the probability of creating a new cluster is proportional to $\alpha$: the larger the concentration parameter, the more clusters are created.
 
-### Example\label{sec:excrp}
+### Example {#sec:excrp}
 
 The following example illustrates how to use NIMBLE to perform single density estimation for real-valued data, under a BNP approach, using the `dCRP` distribution. (Note that the BNP approach is also often used to perform density estimation on random effects.) The model is given by  
 
@@ -113,7 +113,7 @@ The resulting model may be fitted through  MCMC sampling. NIMBLE will assign a s
 One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, $N^{\star}$, has to be fixed. One safe option is to set this number to $N$, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that $N^{\star} < N$. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large $M$. In an effort to mitigate these inefficiencies, we allow the user to set $N^{\star} = M$, with $M<N$, as seen in the example above.  However, if this number is too small and is exceeded in any iteration a warning is issued.
 
 
-## Stick-breaking model\label{sec:sb}
+## Stick-breaking model {#sec:sb}
 
 In NIMBLE, weights defined by sequentially breaking a stick, as in the stick-breaking process, are implemented as the `stick_breaking` link function. More details for using this function are available using `help(stick_breaking)`.
 
@@ -144,7 +144,7 @@ In order to complete the definition of the weights in the stick-breaking represe
 
 
 
-### Example\label{sec:exsb}
+### Example {#sec:exsb}
 
 Here we illustrate how to use NIMBLE for the example described in section \@ref(sec:excrp), but considering a stick-breaking representation for $G$. The model  is given by
 
@@ -190,7 +190,7 @@ The resulting model may be carried through to MCMC sampling. NIMBLE will assign 
 
 BNP models can be specified in different, yet equivalent, manners.  Examples \@ref(sec:excrp) and \@ref(sec:exsb) are examples of density estimation for real-valued data, and are specified through the CRP and the stick-breaking process, respectively. Different specifications lead NIMBLE to assign different sampling algorithms for the model. When the model is specified through a CRP, a collapsed sampler [@neal_2000] is assigned.  Under this specification,  the random measure $G$ is integrated out from the model. When a stick-breaking representation is used, a blocked  Gibbs sampler is assigned, see  @ishwaran_2001 and @ishwaran_james_2002.
 
-### Sampling  CRP models\label{sec:mcmcdcrp}
+### Sampling  CRP models {#sec:mcmcdcrp}
 
 NIMBLE's MCMC engine provides specialized samplers for the `dCRP` distribution, updating each component of the membership vector sequentially. Internally, the sampler is assigned based on inspection of the model structure, evaluating conjugacy between the mixture kernel and the baseline distribution, as follows: 
 

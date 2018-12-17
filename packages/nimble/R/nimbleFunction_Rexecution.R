@@ -3,7 +3,7 @@
 
 #' NIMBLE language functions for R-like vector construction
 #'
-#' The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{length}, and \code{diag} can be used in nimbleFunctions and compiled using \code{compileNimble}.
+#' The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{length}, \code{diag}, and \code{seq_along} can be used in nimbleFunctions and compiled using \code{compileNimble}.
 #' 
 #' @name nimble-R-functions
 #' 
@@ -13,11 +13,12 @@
 #' @param to end value of sequence.
 #' @param by increment of the sequence.
 #' @param length.out desired length of the sequence.
+#' @param along.width take the length from the length of this argument.
 #'
-#' @aliases nimC nimRep nimSeq c rep seq which length diag
+#' @aliases nimC nimRep nimSeq c rep seq which length diag seq_along
 #'
 #' @details
-#' For \code{c}, \code{rep}, \code{seq}, these functions are NIMBLE's version of similar R functions, e.g., \code{nimRep} for \code{rep}.   In a \code{nimbleFunction}, either the R name (e.g., \code{rep}) or the NIMBLE name (e.g., \code{nimRep}) can be used.  If the R name is used, it will be converted to the NIMBLE name. For \code{which}, \code{length}, \code{diag}, simply use the standard name without \code{"nim"}. These functions largely mimic (see exceptions below) the behavior of their R counterparts, but they can be compiled in a \code{nimbleFunction} using \code{compileNimble}.
+#' For \code{c}, \code{rep}, \code{seq}, these functions are NIMBLE's version of similar R functions, e.g., \code{nimRep} for \code{rep}.   In a \code{nimbleFunction}, either the R name (e.g., \code{rep}) or the NIMBLE name (e.g., \code{nimRep}) can be used.  If the R name is used, it will be converted to the NIMBLE name. For \code{which}, \code{length}, \code{diag}, \code{seq_along} simply use the standard name without \code{"nim"}. These functions largely mimic (see exceptions below) the behavior of their R counterparts, but they can be compiled in a \code{nimbleFunction} using \code{compileNimble}.
 #' 
 #' \code{nimC} is NIMBLE's version of \code{c} and behaves identically.
 #'
@@ -30,6 +31,8 @@
 #' \code{diag} behaves like the R version but without support for the \code{nrow} and \code{ncol} arguments.
 #'
 #' \code{length} behaves like the R version.
+#' 
+#' \code{seq_along} behaves like the R version.
 NULL
 
 #' @rdname nimble-R-functions
@@ -1112,9 +1115,20 @@ declare <- function(name, def){
     assign(as.character(name), array(value, dim = dims), envir = parent.frame() )
 }
 
-
+#' Determine if any values in a vector are NA or NaN
+#'
+#' NIMBLE language functions that can be used in either compiled or uncompiled
+#' nimbleFunctions to detect if there are any NA or NaN values in a vector.
+#'
+#' @param x vector of values
+#'
+#' @aliases is.nan.vec
+#' @author NIMBLE Development Team
+#' @export
 is.na.vec <- function(x) any(is.na(x))
 
+#' @rdname is.na.vec
+#' @export
 is.nan.vec <- function(x) any(is.nan(x))
 
 #' @export

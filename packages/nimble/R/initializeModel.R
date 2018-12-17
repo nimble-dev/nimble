@@ -48,21 +48,20 @@ initializeModel <- nimbleFunction(
                 startInd <- startInd + 1
             }
         }
-
-        topDetermNodes <- model$getNodeNames(topOnly = TRUE, determOnly = TRUE)
-        for(i in seq_along(topDetermNodes)) {
-            initFunctionList[[startInd]] <- topDetermNodeInit(model = model, node = topDetermNodes[i])
-            startInd <- startInd + 1
-        }
-
-        stochNodes <- model$getNodeNames(stochOnly = TRUE)#, includeData = FALSE)
-        for(i in seq_along(stochNodes)) {
-            node <- stochNodes[i]
+        
+        LHSnodes <- model$getNodeNames()
+        for(i in seq_along(LHSnodes)) {
+            node <- LHSnodes[i]
+            isDeterm <- model$isDeterm(node)
             isData <- model$isData(node)
-            if(isData) {
-                initFunctionList[[startInd]] <- stochDataNodeInit(model = model, node = node, silent = silent)
+            if(isDeterm) {    ## deterministic nodes
+                initFunctionList[[startInd]] <- determNodeInit(model = model, node = node, silent = silent)
             } else {
-                initFunctionList[[startInd]] <- stochNonDataNodeInit(model = model, node = node, silent = silent)
+                if(isData) {  ## stochastic data nodes
+                    initFunctionList[[startInd]] <- stochDataNodeInit(model = model, node = node, silent = silent)
+                } else {      ## stochastic non-data nodes
+                    initFunctionList[[startInd]] <- stochNonDataNodeInit(model = model, node = node, silent = silent)
+                }
             }
             startInd <- startInd + 1
         }
@@ -90,10 +89,10 @@ checkRHSonlyInit <- nimbleFunction(
     },    where = getLoadingNamespace()
 )
 
-topDetermNodeInit <- nimbleFunction(
-    name = 'topDetermNodeInit',
+determNodeInit <- nimbleFunction(
+    name = 'determNodeInit',
     contains = nodeInit_virtual,
-    setup = function(model, node) {},
+    setup = function(model, node, silent) {},
     run = function() {
         nodeValue <- values(model, node)
         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) calculate(model, node)
@@ -105,9 +104,7 @@ topDetermNodeInit <- nimbleFunction(
 stochDataNodeInit <- nimbleFunction(
     name = 'stochDataNodeInit',
     contains = nodeInit_virtual,
-    setup = function(model, node, silent) {
-        depDetermNodes <- model$getDependencies(node, determOnly=TRUE)
-    },
+    setup = function(model, node, silent) {},
     run = function() {
         nodeValue <- values(model, node)
         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of data node ',node,': value is NA or NaN.')
@@ -120,18 +117,13 @@ stochDataNodeInit <- nimbleFunction(
                 if(!silent) print('warning: logProb of data node ', node, ': logProb less than -1e12.')
             }
         }
-        model$calculate(depDetermNodes)
-        depDetermValues <- values(model, depDetermNodes)
-        if(is.na.vec(depDetermValues) | is.nan.vec(depDetermValues)) print('warning: deterministic dependents of node ',node,': value is NA or NaN.')
     },    where = getLoadingNamespace()
 )
 
 stochNonDataNodeInit <- nimbleFunction(
     name = 'stochNonDataNodeInit',
     contains = nodeInit_virtual,
-    setup = function(model, node, silent) {
-        depDetermNodes <- model$getDependencies(node, determOnly=TRUE)
-    },
+    setup = function(model, node, silent) {},
     run = function() {
         nodeValue <- values(model, node)
         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) simulate(model, node)
@@ -146,9 +138,6 @@ stochNonDataNodeInit <- nimbleFunction(
                 if(!silent) print('warning: problem initializing stochastic node ', node, ': logProb less than -1e12.')
             }
         }
-        model$calculate(depDetermNodes)
-        depDetermValues <- values(model, depDetermNodes)
-        if(is.na.vec(depDetermValues) | is.nan.vec(depDetermValues)) print('warning: deterministic dependents of node ',node,': value is NA or NaN.')
     },    where = getLoadingNamespace()
 )
 

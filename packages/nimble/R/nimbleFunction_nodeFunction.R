@@ -14,7 +14,7 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
         ## error gracefully if dynamic index too small or large; we don't catch non-integers within the bounds though
         if(is.null(nodeDim)) {
             nanExpr <- NaN
-        } else nanExpr <- substitute(nimArray(NaN, LENGTH),
+        } else nanExpr <- substitute(rep(NaN, LENGTH),
                                      list(LENGTH = prod(nodeDim)))
         code <- substitute(if(CONDITION) LHS <<- RHS
                            else {
@@ -394,7 +394,7 @@ ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {
         }
     } else {
         # this deals with user-provided distributions
-        if(exists('distributions', nimbleUserNamespace)) {
+        if(exists('distributions', nimbleUserNamespace, inherits = FALSE)) {
             for(distName in getAllDistributionsInfo('namesVector', userOnly = TRUE))
                 defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistributionInfo(distName)$types)
         } else stop("ndf_createVirtualNodeFunctionDefinitionsList: no 'distributions' list in nimbleUserNamespace.")

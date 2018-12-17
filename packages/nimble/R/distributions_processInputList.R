@@ -188,6 +188,8 @@ distClass <- setRefClass(
             for(typeName in allTypeNames) {
                 typeList <- if(typeName %in% names(typeArgList))     typeArgList[[typeName]]     else     list(type='double', nDim=0)   # default type
                 if(!(typeList$type %in% c('double', 'integer', 'logical')))     stop(paste0('unknown type specified in distribution: ', typeList$type))
+                if(typeList$nDim > 0 && typeList$type != 'double') 
+                    stop("Non-scalar integer or logical found in distribution function.\nPlease use type 'double' for all non-scalars in distribution functions.")
                 if(!(typeList$nDim %in% 0:1000))     stop(paste0('unknown nDim specified in distribution: ', typeList$nDim))  ## yes, specificying maximum dimension of 1000
                 types[[typeName]] <<- typeList
             }            
@@ -233,13 +235,13 @@ checkDistributionInput <- function(distributionInput) {
     if(sum(!names(distributionInput) %in% allowedFields)) 
         stop(paste0(names(distributionInput), " has unknown field."))
     if(!sum(is.character(distributionInput$BUGSdist))) stop(paste0(distributionInput$BUGSdist, ": field 'BUGSdist' is not of type character."))
-    if(exists("Rdist", distributionInput) && !sum(is.character(distributionInput$Rdist))) stop(paste0(distributionInput$BUGSdist, ": field 'Rdist' is not type of character."))
-    if(exists("discrete", distributionInput) && !sum(is.logical(distributionInput$discrete))) stop(paste0(distributionInput$BUGSdist, ": field 'discrete' is not type logical."))
-    if(exists("pqAvail", distributionInput) && !sum(is.logical(distributionInput$pqAvail))) stop(paste0(distributionInput$BUGSdist, ": field 'pqAvail' is not of type logical."))
-    if(exists("range", distributionInput) && (!is.numeric(distributionInput$range) || length(distributionInput$range) != 2)) stop(paste0(distributionInput$BUGSdist, ": field 'range' is not a vector of two numeric values."))
-    if(exists("types", distributionInput) && !sum(is.character(distributionInput$types))) stop(paste0(distributionInput$BUGSdist, ": field 'types' is not of type character."))
-    if(exists("altParams", distributionInput) && !sum(is.character(distributionInput$altParams))) stop(paste0(distributionInput$BUGSdist, ": field 'altParams' is not of type character."))
-    if(length(distributionInput$BUGSdist) > 1 || (exists('discrete', distributionInput) && length(distributionInput$discrete) > 1) || (exists('pqAvail', distributionInput) && length(distributionInput$pqAvail) > 1))
+    if(exists("Rdist", distributionInput, inherits = FALSE) && !sum(is.character(distributionInput$Rdist))) stop(paste0(distributionInput$BUGSdist, ": field 'Rdist' is not type of character."))
+    if(exists("discrete", distributionInput, inherits = FALSE) && !sum(is.logical(distributionInput$discrete))) stop(paste0(distributionInput$BUGSdist, ": field 'discrete' is not type logical."))
+    if(exists("pqAvail", distributionInput, inherits = FALSE) && !sum(is.logical(distributionInput$pqAvail))) stop(paste0(distributionInput$BUGSdist, ": field 'pqAvail' is not of type logical."))
+    if(exists("range", distributionInput, inherits = FALSE) && (!is.numeric(distributionInput$range) || length(distributionInput$range) != 2)) stop(paste0(distributionInput$BUGSdist, ": field 'range' is not a vector of two numeric values."))
+    if(exists("types", distributionInput, inherits = FALSE) && !sum(is.character(distributionInput$types))) stop(paste0(distributionInput$BUGSdist, ": field 'types' is not of type character."))
+    if(exists("altParams", distributionInput, inherits = FALSE) && !sum(is.character(distributionInput$altParams))) stop(paste0(distributionInput$BUGSdist, ": field 'altParams' is not of type character."))
+    if(length(distributionInput$BUGSdist) > 1 || (exists('discrete', distributionInput, inherits = FALSE) && length(distributionInput$discrete) > 1) || (exists('pqAvail', distributionInput, inherits = FALSE) && length(distributionInput$pqAvail) > 1))
         stop(paste0(names(distributionInput), " field 'BUGSdist', 'discrete', 'altParams', or 'pqAvail' is not of length one."))
     invisible(NULL)
 }
@@ -248,7 +250,7 @@ checkDistributionInput <- function(distributionInput) {
 # check for log last in d, n as first in r, lower.tail, log.p in p,q
 checkDistributionFunctions <- function(distributionInput, userEnv) {
     if(is.list(distributionInput)) {
-        if(exists('Rdist', distributionInput))
+        if(exists('Rdist', distributionInput, inherits = FALSE))
             inputString <- distributionInput$Rdist else inputString <- distributionInput$BUGSdist
         densityName <- as.character(parse(text = inputString)[[1]][[1]])
     } else densityName <- distributionInput
@@ -290,7 +292,8 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
     
     if(!identical(dargs, rargs))
         warning(paste0("checkDistributionFunctions: parameter arguments not the same amongst density and simulation functions for ", densityName, ". Continuing anyway based on arguments to the density function; algorithms using the simulation function are unlikely to function properly."))
-    if(!is.null(distributionInput) && is.list(distributionInput) && exists("pqAvail", distributionInput) && distributionInput$pqAvail) {
+    if(!is.null(distributionInput) && is.list(distributionInput) && exists("pqAvail", distributionInput, inherits = FALSE) &&
+       distributionInput$pqAvail) {
         cdfName <- sub('^d', 'p', densityName)
         quantileName <- sub('^d', 'q', densityName)
         if(!is.rcf(get(cdfName, pos = userEnv)) || !is.rcf(get(quantileName, pos = userEnv)))
@@ -522,7 +525,7 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
           names(distributionsInput) <- nms
         }
            
-        if(exists('distributions', nimbleUserNamespace)) {
+        if(exists('distributions', nimbleUserNamespace, inherits = FALSE)) {
             nimbleUserNamespace$distributions$add(distributionsInput)
         } else 
             nimbleUserNamespace$distributions <- distributionsClass(distributionsInput)
@@ -545,7 +548,7 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
 #' @author Christopher Paciorek
 #' @export
 deregisterDistributions <- function(distributionsNames) {
-    if(!exists('distributions', nimbleUserNamespace)) 
+    if(!exists('distributions', nimbleUserNamespace, inherits = FALSE)) 
         cat("No user-supplied distributions are registered.\n")
     matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
     if(sum(matched)) 
@@ -577,7 +580,7 @@ getDistributionList <- function(dists) {
     if(all(boolNative)) return(distributions[dists])
     missingDists <- dists[!boolNative]
     allFound <- FALSE
-    if(exists('distributions', nimbleUserNamespace)) {
+    if(exists('distributions', nimbleUserNamespace, inherits = FALSE)) {
         if(all(missingDists %in% nimbleUserNamespace$distributions$namesVector))
             allFound <- TRUE
     }
@@ -666,7 +669,7 @@ getDistributionInfo <- function(dist) {
     ##    if(dist %in% distributions$namesVector) return(distributions[[dist]])
     ans <- nimbleUserNamespace$distributions[[dist]]
     if(!is.null(ans)) return(ans)
-    ##if(exists('distributions', nimbleUserNamespace) && dist %in% nimbleUserNamespace$distributions$namesVector)
+    ##if(exists('distributions', nimbleUserNamespace, inherits = FALSE) && dist %in% nimbleUserNamespace$distributions$namesVector)
     ##    return(nimbleUserNamespace$distributions[[dist]])
     stop(paste0("getDistributionInfo: ", dist, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
@@ -674,14 +677,14 @@ getDistributionInfo <- function(dist) {
 getAllDistributionsInfo <- function(kind, nimbleOnly = FALSE, userOnly = FALSE) {
     if(kind %in% c('namesVector', 'namesExprList', 'translations')) {
         if(userOnly) out <- NULL else out <- get(kind, distributions)
-        if(!nimbleOnly && exists('distributions', nimbleUserNamespace))
+        if(!nimbleOnly && exists('distributions', nimbleUserNamespace, inherits = FALSE))
             out <- c(out, get(kind, nimbleUserNamespace$distributions))
         return(out)
     }
 
 if(kind %in% c('pqAvail', 'discrete')) {
         if(userOnly) out <- NULL else out <- sapply(distributions$distObjects, '[[', kind)
-        if(!nimbleOnly && exists('distributions', nimbleUserNamespace))
+        if(!nimbleOnly && exists('distributions', nimbleUserNamespace, inherits = FALSE))
             out <- c(out, sapply(nimbleUserNamespace$distributions$distObjects, '[[', kind))
         return(out)
     }
@@ -692,7 +695,7 @@ evalInDistsMatchCallEnv <- function(expr) {
     dist <- as.character(expr[[1]])
     if(dist %in% distributions$namesVector)
         return(eval(expr, distributions$matchCallEnv))
-    if(exists('distributions', nimbleUserNamespace) &&
+    if(exists('distributions', nimbleUserNamespace, inherits = FALSE) &&
        dist %in% nimbleUserNamespace$distributions$namesVector)
         return(eval(expr, nimbleUserNamespace$distributions$matchCallEnv))
     stop(paste0("evalInDistsMatchCallEnv: ", dist, " is not a distribution provided by NIMBLE or supplied by the user."))
@@ -723,7 +726,8 @@ isUserDefined <- function(dist) {
     if(is.na(dist)) return(dist)
     if(length(dist) > 1 || class(dist) != 'character')
         stop("isUserDistribution: 'dist' should be a character vector of length 1")
-    if(exists('distributions', nimbleUserNamespace) && dist %in% getAllDistributionsInfo('namesVector', userOnly = TRUE))
+    if(exists('distributions', nimbleUserNamespace, inherits = FALSE) &&
+       dist %in% getAllDistributionsInfo('namesVector', userOnly = TRUE))
       return(TRUE) else return(FALSE)
 }
 

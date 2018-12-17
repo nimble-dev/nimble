@@ -52,15 +52,17 @@
 #' 
 #' The \code{calculateWAIC} method calculates the WAIC of the model that the
 #' MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from
-#' Equations 5, 12, and 13 in Gelman (2014) (i.e. using \emph{p}WAIC2).  The set
+#' Equations 5, 12, and 13 in Gelman et al. (2014) (i.e. using \emph{p}WAIC2).  The set
 #' of all stochastic nodes monitored by the MCMC object will be treated as
-#' \eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014). 
+#' \eqn{theta} for the purposes of Equation 5 from Gelman et al. (2014). 
 #' All non-monitored nodes downstream of the monitored nodes that are necessary
 #' to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of 
 #' \eqn{theta}.  This allows customization of exactly what predictive 
 #' distribution \eqn{p(y|theta)} to use for calculations.  For more detail
-#' on the use of different predictive distributions, see Section 2.5 from Gelman
-#' (2014).  
+#' on the use of different predictive distributions, see Section 2.5 from Gelman et al.
+#' (2014). Note that by default only top-level stochastic nodes are monitored, but
+#' in many situations one would want to set monitors on all stochastic nodes so that
+#' all stochastic nodes are treated as \eqn{theta} for the WAIC calculation.
 #' 
 #' Note that there exist sets of monitored parameters that do not lead to valid
 #' WAIC calculations.  Specifically, for a valid WAIC calculation, every 
@@ -131,6 +133,7 @@ buildMCMC <- nimbleFunction(
         sampledNodes <- model$getVarNames(includeLogProb = FALSE, nodes = monitors)
         sampledNodes <- sampledNodes[sampledNodes %in% model$getVarNames(includeLogProb = FALSE)]
         paramDeps <- model$getDependencies(sampledNodes, self = FALSE, downstream = TRUE)
+        allVarsIncludingLogProbs <- model$getVarNames(includeLogProb = TRUE)
         enableWAIC <- enableWAICargument || conf$enableWAIC   ## enableWAIC comes from MCMC configuration, or from argument to buildMCMC
         if(enableWAIC) {
             if(dataNodeLength == 0)   stop('WAIC cannot be calculated, as no data nodes were detected in the model.')
@@ -240,7 +243,8 @@ buildMCMC <- nimbleFunction(
             logPredProbs <- matrix(nrow = numMCMCSamples, ncol = dataNodeLength)
             logAvgProb <- 0
             pWAIC <- 0
-            currentVals <- values(model, sampledNodes)
+            currentVals <- values(model, allVarsIncludingLogProbs)
+            
             for(i in 1:numMCMCSamples) {
                 copy(mvSamples, model, nodesTo = sampledNodes, row = i + nburninPostThinning)
                 model$simulate(paramDeps)
@@ -256,8 +260,8 @@ buildMCMC <- nimbleFunction(
                 pWAIC <- pWAIC + pointLogPredVar
             }
             WAIC <- -2*(logAvgProb - pWAIC)
-            values(model, sampledNodes) <<- currentVals
-            model$calculate(paramDeps)
+            values(model, allVarsIncludingLogProbs) <<- currentVals
+            if(is.nan(WAIC)) print('WAIC was calculated as NaN.  You may need to add monitors to model latent states, in order for a valid WAIC calculation.')
             returnType(double())
             return(WAIC)
         }),

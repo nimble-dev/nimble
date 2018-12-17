@@ -197,7 +197,9 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
         if(code[[1]] == 'if') {
             constantsEnv <- as.environment(constants)
             parent.env(constantsEnv) <- envir
-            evaluatedCondition <- eval(code[[2]], constantsEnv)
+            evaluatedCondition <- try(eval(code[[2]], constantsEnv))
+            if(inherits(evaluatedCondition, "try-error")) 
+                stop("Cannot evaluate condition of 'if' statement: ", deparse(code[[2]]), ".\nCondition must be able to be evaluated based on values in 'constants'.")
             if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], constants, envir))
             else {
                 if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], constants, envir))
@@ -483,7 +485,7 @@ checkUserDefinedDistribution <- function(code, userEnv) {
     if(dist %in% c("T", "I")) 
         dist <- as.character(code[[3]][[2]][[1]])
     if(!dist %in% distributions$namesVector)
-        if(!exists('distributions', nimbleUserNamespace) || !dist %in% nimbleUserNamespace$distributions$namesVector) {
+        if(!exists('distributions', nimbleUserNamespace, inherits = FALSE) || !dist %in% nimbleUserNamespace$distributions$namesVector) {
             registerDistributions(dist, userEnv)
             cat("NIMBLE has registered ", dist, " as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.\n", sep = "") 
         }
@@ -507,7 +509,7 @@ replaceDistributionAliases <- function(code) {
 checkForDeterministicDorR <- function(code) {
     if(is.call(code[[3]])) {
         drFuns <- c(distribution_dFuns, distribution_rFuns)
-        if(exists("distributions", nimbleUserNamespace)) {
+        if(exists("distributions", nimbleUserNamespace, inherits = FALSE)) {
             dFunsUser <- get('namesVector', nimbleUserNamespace$distributions)
             drFuns <- c(drFuns, dFunsUser, paste0("r", stripPrefix(dFunsUser)))
         }
@@ -1831,8 +1833,8 @@ modelDefClass$methods(findDynamicIndexParticipants = function() {
         for(iDI in seq_along(declInfo)) {
             if(declInfo[[iDI]]$type == "unknownIndex") next
             declInfo[[iDI]]$dynamicIndexInfo <<- list()
-            for(iSPN in seq_along(declInfo[[iDI]]$symbolicParentNodes)) {
-                symbolicParent <- declInfo[[iDI]]$symbolicParentNodes[[iSPN]]
+            for(iSPN in seq_along(declInfo[[iDI]]$symbolicParentNodesReplaced)) {
+                symbolicParent <- declInfo[[iDI]]$symbolicParentNodesReplaced[[iSPN]]
                 dynamicIndexes <- detectDynamicIndexes(symbolicParent)
                 ## We do not yet check bounds of inner indexes in nested indexing. To do so we need to
                 ## find dynamic indexing within a USED_IN_INDEX() and add to dynamicIndexInfo;
@@ -1940,6 +1942,13 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(BUGSdecl$numUnrolledNodes == 0) next
         lhsVar <- BUGSdecl$targetVarName
         nDim <- varInfo[[lhsVar]]$nDim
+        ## Check that LHS has all expected indexes based on context.
+        usedIndexes <- contexts[[BUGSdecl$contextID]]$indexVarNames %in%
+            unlist(all.vars(BUGSdecl$targetExpr))
+        if(BUGSdecl$type != "unknownIndex" && !all(usedIndexes) && !length(grep("^lifted", BUGSdecl$targetExpr)))
+            warning(paste0("Multiple definitions for the same node. Did you forget indexing with '",
+                          paste(contexts[[BUGSdecl$contextID]]$indexVarNames[!usedIndexes], collapse = ','),  
+                           "' on the left-hand side of '", deparse(BUGSdecl$code), "'?"))
         if(nDim > 0) {  ## pieces is a list of index text to construct node names, e.g. list("1", c("1:2", "1:3", "1:4"), c("3", "4", "5"))
             pieces <- vector('list', nDim)
             for(i in 1:nDim) {

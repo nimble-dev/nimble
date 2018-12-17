@@ -62,10 +62,10 @@ conjugacyRelationshipsInputList <- list(
 
     ## halfflat - third possible conjugacy - we use this because it corresponds to the
     ## Gelman (2006) recommended uniform on sd scale prior for variance components
-    ## and current NIMBLE conjugacy system only allows one possible form of conjugacy
-    ## note that sd ~ U(0,Inf) equivalent to var ~ IG(-1/2, 0)
-    ## also note that if conj system could detect 'squared' dependency, then
-    ## we could allow dnorm with param = 'var'                                     
+    ## and current NIMBLE conjugacy system only allows one possible form of conjugacy.
+    ## Note that sd ~ U(0,Inf) equivalent to var ~ IG(-1/2, 0).
+    ## Also note that if conj system could detect 'squared' dependency, then
+    ## we could allow dnorm with param = 'var'.                                     
     list(prior = 'dhalfflat',
          link = 'multiplicative',
          dependents = list(
