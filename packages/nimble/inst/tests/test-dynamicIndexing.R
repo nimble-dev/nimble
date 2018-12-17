@@ -551,7 +551,7 @@ if(!generatingGoldFile) {
     print("========================================")
     cat(correctResults[1:100], sep = '\n')
     
-    compareFilesByLine(trialResults, correctResults)
+    # compareFilesByLine(trialResults, correctResults)
 }
 
 options(warn = RwarnLevel)
