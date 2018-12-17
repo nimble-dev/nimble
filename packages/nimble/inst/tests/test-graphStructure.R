@@ -7,13 +7,12 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-correctOutputFilename <- 'graphStructureTestResults_Correct.Rout'
-## Use this to regenerate results in the test directory:
-## library(testthat)
-## library(nimble)
-## run code below, then:
-##writeOutput(cases, correctOutputFilename)
-testOutputFilename <- 'graphStructureTestResults.Rout'
+goldFileName <- 'graphStructureTestLog_Correct.Rout'
+tempFileName <- 'graphStructureTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForGraphStructureTesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForGraphStructureTesting'), goldFileName) else tempFileName
+
+sink(outputFile)
 
 cases <- list()
 caseName <- 'graph structure tests case 1'
@@ -190,13 +189,11 @@ cases[[caseName]] <- list(
     nimble:::makeVertexNamesFromIndexArray2(indArr2, 1, 'x')
 )
 
-
-writeOutput(cases, testOutputFilename)
-trialResults <- readLines(testOutputFilename)
-##correctResults <- trialResults
-correctResults <- readLines(system.file(file.path('tests', correctOutputFilename), package = 'nimble'))
-
-compareFilesByLine(trialResults, correctResults)
+if(!generatingGoldFile) {
+    trialResults <- readLines(tempFileName)
+    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    compareFilesByLine(trialResults, correctResults)
+}
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
