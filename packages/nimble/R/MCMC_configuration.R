@@ -731,7 +731,7 @@ checkCRPconjugacy <- function(model, target) {
  
     ## New checking for conjugacy using tilde variables: check conjugacy for one tilde node and
     ## then make sure all tilde nodes and all of their dependent nodes are exchangeable
-    if(length(clusterVarInfo$clusterVars) == 1 | length(unique(clusterVarInfo$clusterVars)) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma
+    if(length(clusterVarInfo$clusterVars) == 1 | length(unique(clusterVarInfo$clusterVars)) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
         clusterNodes <- model$expandNodeNames(clusterVarInfo$clusterVars[1])  # e.g., 'thetatilde[1]',...,
         ## Avoid non-nodes from truncated clustering,
         ## e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs.
@@ -742,9 +742,8 @@ checkCRPconjugacy <- function(model, target) {
             conjugate <- TRUE
 
             depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
-            if(length(unique(model$getDeclID(depNodes))) != 1) { ## make sure all dependent nodes from same declaration (i.e., exchangeable)
-                conjugacy <- FALSE
-            }
+            if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
+                conjugate <- FALSE
 
             ## Check that cluster nodes are IID
             valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
@@ -752,27 +751,17 @@ checkCRPconjugacy <- function(model, target) {
             if(length(unique(valueExprs)) != 1)
                 conjugate <- FALSE
 
-            ## Temporary conditions to make sure that 'xi[i]' is in correct index
-            ## and without any complications given what conjugate sampler is expecting.
-            clusterPrior <- model$getDistribution(clusterNodes[1])
-            if(clusterPrior == 'ddirch') {     # require p[xi[i], 1:k]
-                if(length(clusterVarInfo$clusterVars) != 1 ||
-                   clusterVarInfo$indexPosition != 1 || clusterVarInfo$numIndexes != 2 ||
-                   length(clusterVarInfo$indexExpr[[1]]) != 4 ||
-                   length(clusterVarInfo$indexExpr[[1]][[4]]) != 3 ||
-                   clusterVarInfo$indexExpr[[1]][[4]][[1]] != ':' ||
-                   clusterVarInfo$indexExpr[[1]][[4]][[2]] != 1)
-                    conjugate <- FALSE
-            } else {  ## univariate mixtures
-                if(length(clusterVarInfo$clusterVars) != 1 ||
-                   clusterVarInfo$numIndexes != 1)
-                    conjugate <- FALSE
-            }
+            ## We should be able to handle this once Chris works through identifying clusterNodes based on values of xi
             if(any(clusterVarInfo$targetInFunction))
                 conjugate <- FALSE
         }
     }
-    
+    ## check for dnorm_dinvgamma conjugacy
+    if(length(clusterVarInfo$clusterVars) == 2 &&
+       checkNormalInvGammaConjugacy(model, clusterVarInfo$clusterVars)) {
+        conjugate <- TRUE
+        conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
+    }
     if(conjugate) return(conjugacyType) else return(NULL)
 }
 

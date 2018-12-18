@@ -178,20 +178,18 @@ sampleDPmeasure <- nimbleFunction(
     if(is.null(parentNodesTildeVars)) parentNodesTildeVars <- tildeVars  ## to avoid NULL which causes compilation issues
 
     ## Check that cluster parameters are IID, as required for random measure G
-    nonIID <- FALSE
+    isIID <- TRUE
     for(i in seq_along(tildeVars) ) {
         clusterNodes <- model$expandNodeNames(tildeVars[i])
         valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
         names(valueExprs) <- NULL
         if(length(unique(valueExprs)) != 1) {
-            nonIID <- TRUE
+            isIID <- FALSE
         }
     }
-    if(nonIID && length(tildeVars) == 2) {  
-        conjugate <- checkNormalInvGammaConjugacy(model, tildeVars)
-        if(conjugate) nonIID <- FALSE
-    }
-    if(nonIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, tildeVars))
+        isIID <- TRUE
+    if(!isIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
     
     fixedConc <- TRUE # assume that conc parameter is fixed. This will change in the if statement if necessary
 
@@ -1453,7 +1451,7 @@ findClusterVars <- function(model, target, returnIndexInfo = FALSE) {
 
 checkNormalInvGammaConjugacy <- function(model, clusterVars) {
     if(length(clusterVars) != 2)
-        stop("checkNormalInvGammaConjugacy: requires two cluster variables.")
+        stop("checkNormalInvGammaIID: requires two cluster variables.")
     conjugate <- FALSE
     stochNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
     clusterNodes1 <- model$expandNodeNames(clusterVars[1])
@@ -1462,22 +1460,20 @@ checkNormalInvGammaConjugacy <- function(model, clusterVars) {
     ## e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs.
     clusterNodes1 <- clusterNodes1[clusterNodes1 %in% stochNodes]
     clusterNodes2 <- clusterNodes2[clusterNodes2 %in% stochNodes]
-    exampleNodes <- c(clusterNodes1[1], clusterNodes2[1])
     dists <- c(model$getDistribution(clusterNodes1[1]), model$getDistribution(clusterNodes2[1]))
     if(dists[1] == "dinvgamma" && dists[2] ==  "dnorm") {  ## put in order so dnorm node is first
-        exampleNodes <- c(clusterNodes2[1], clusterNodes1[1])
         dists <- c("dnorm", "dinvgamma")
         tmp <- clusterNodes1; clusterNodes1 <- clusterNodes2; clusterNodes2 <- tmp
     }
+    exampleNodes <- c(clusterNodes1[1], clusterNodes2[1])
     if(dists[1] == "dnorm" && dists[2] == "dinvgamma") {
-        ## Check for conjugacy so we know we are in dnorm_invgamma case
         conjugacy_dnorm <- model$checkConjugacy(exampleNodes[1], restrictLink = 'identity')
         conjugacy_dinvgamma <- model$checkConjugacy(exampleNodes[2])
         if(length(conjugacy_dnorm) && length(conjugacy_dinvgamma) &&
-           sum(conjugacy_dinvgamma[[1]]$control$dep_dnorm == exampleNodes[1])) {
+           sum(conjugacy_dinvgamma[[1]]$control$dep_dnorm == exampleNodes[1])) 
             conjugate <- TRUE
-        }
-        
+    }
+    if(conjugate) {
         ## Check that distribution for cluster mean nodes are same
         if(any(sapply(clusterNodes1, function(x) model$getDistribution(x)) != "dnorm"))
             conjugate <- FALSE
