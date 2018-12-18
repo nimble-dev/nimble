@@ -2593,10 +2593,10 @@ beta[10]   -3.7005526  -3.7482157 -3.6561257       1
 beta[11]   -2.1497740  -2.1630919 -2.1250555       1
 ===== Finished MCMC test for icear.bug. =====
 ===== Starting MCMC test for beetles. =====
-warning: value of top-level deterministic node llike.sat[8]: value is NA or NaN even after trying to calculate.
-warning: value of top-level deterministic node D: value is NA or NaN even after trying to calculate.
-warning: value of top-level deterministic node llike.sat[8]: value is NA or NaN even after trying to calculate.
-warning: value of top-level deterministic node D: value is NA or NaN even after trying to calculate.
+warning: value of deterministic node llike.sat[8]: value is NA or NaN even after trying to calculate.
+warning: value of deterministic node D: value is NA or NaN even after trying to calculate.
+warning: value of deterministic node llike.sat[8]: value is NA or NaN even after trying to calculate.
+warning: value of deterministic node D: value is NA or NaN even after trying to calculate.
       alpha.star      beta
 mean   0.7655989 34.817075
 sd     0.1509127  3.148661
@@ -2981,6 +2981,4 @@ sd      0.6607385   0.5216073    1.807713
 ===== Finished MCMC test for conjugate Wishart. =====
 ===== Starting MCMC test for conjugate MVN with ragged dependencies. ========== Starting MCMC test for binary sampler. ========== Starting MCMC test for binary sampler handles out of bounds. ========== Starting MCMC test for RW_multinomial sampler. ========== Starting MCMC test RW_multinomial sampler on distribution of size 2. ========== Starting MCMC test if RW_dirichlet sampler consistent with conjugate multinomial sampler. ========== Starting MCMC test RW_dirichlet sampler more complicated. =====thin = 1: alpha, theta, p1, p2
 ===== Starting MCMC test dcar_normal sampling. ========== Starting test dcar_proper density evaluations. ========== Starting MCMC test dcar_proper sampling. =====thin = 1: tau, gamma, x
-===== Starting MCMC test of logProb variable monitoring =====Error: testthat unit tests failed
-In addition: Warning message:
-Placing tests in `inst/tests` is deprecated. Please use `tests/testthat` instead 
+===== Starting MCMC test of logProb variable monitoring =====

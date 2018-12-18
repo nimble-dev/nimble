@@ -97,7 +97,7 @@ determNodeInit <- nimbleFunction(
         nodeValue <- values(model, node)
         if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) calculate(model, node)
         nodeValue <- values(model, node)
-        if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of top-level deterministic node ',node,': value is NA or NaN even after trying to calculate.')
+        if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) print('warning: value of deterministic node ',node,': value is NA or NaN even after trying to calculate.')
     },    where = getLoadingNamespace()
 )
 
