@@ -265,7 +265,7 @@ test_that("Test that MCMC respects interval censoring", {
 
     test_mcmc(model = code, data = c(data, constants), inits = inits,
               results = list(mean = list(mu = 44.77, 'y[12]' = 56.3), sd = list(mu = 2.8, 'y[12]' = 5.3)),
-              resultsTolerance = list(mean = list(mu = 0.5, 'y[12]' = 1.5), sd = list(mu = .05, 'y[12]' = .4)), name = 'test of interval censoring')
+              resultsTolerance = list(mean = list(mu = 0.5, 'y[12]' = 0.5), sd = list(mu = .5, 'y[12]' = .5)), name = 'test of interval censoring')
 })
 
                                         # test of dconstraint
