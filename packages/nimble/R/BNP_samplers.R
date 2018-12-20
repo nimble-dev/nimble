@@ -10,6 +10,7 @@
 #' EXPERIMENTAL This function obtains posterior samples from a Dirichlet process distributed random measure of a model specified using the \code{dCRP} distribution.
 #'
 #' @param MCMC an MCMC class object, either compiled or uncompiled.
+#' @param control named list that controls the level of the truncated representation of the random measure.
 #' 
 #' @author Claudia Wehrhahn and Christopher Paciorek
 #' 
@@ -19,7 +20,7 @@
 #'
 #' The \code{MCMC} argument is an object of class MCMC provided by \code{buildMCMC}, or its compiled version. The MCMC should already have been run, as \code{getSamplesDPmeasure} uses the parameter samples to  generates samples for the random measure. Note that the monitors associated with that MCMC must include the cluster membership variable (which has the \code{dCRP} distribution), the cluster parameter variables, all variables directly determining the \code{dCRP} concentration parameter, and any stochastic parent variables of the cluster parameter variables. See \code{help(configureMCMC)} or \code{help(addMonitors)} for information on specifying monitors for an MCMC.
 #' 
-#' The truncation level of the random measure is determined based on a fixed error of approximation and by the posterior samples of the concentration parameter, if random. The error of approximation is the tail probability of the random measure (Section 4 in Ishwaran and Zarepour, 2000).
+#' The getSamplesDPmeasure sampler accepts a control list with the element \code{epsilon} used to determine the truncation level of the random measure. \code{epsilon} is the tail probability of the random measure, which together with posterior samples of the concentration parameter, determines the truncation level (see Section 3 in Gelfand, A.E. and Kottas, A. 2002).
 #'  
 #' The returned list contains a matrix with samples from the random measure (one sample per row) and the truncation level. The stick-breaking weights are named \code{weights} and the atoms, or point masses, are named based on the cluster variables in the model.
 #' 
@@ -28,7 +29,7 @@
 #'
 #' Sethuraman, J. (1994). A constructive definition of Dirichlet priors. \emph{Statistica Sinica}, 639-650.
 #'
-#' Ishwaran, H., and Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. \emph{Biometrika}, 87(2), 371-390.
+#' Gelfand, A.E. and Kottas, A. (2002). A computational approach for full nonparametric Bayesian inference under Dirichlet process mixture models. \emph{ournal of Computational and Graphical Statistics}, 11(2), 289-305.
 #' @examples
 #' \dontrun{
 #'   conf <- configureMCMC(model)
@@ -40,7 +41,7 @@
 #'   samples <- outputG$samples
 #'   truncation <- output$trunc
 #' }
-getSamplesDPmeasure <- function(MCMC) {
+getSamplesDPmeasure <- function(MCMC, control) {
   if(exists('model',MCMC, inherits = FALSE))
     compiled <- FALSE else compiled <- TRUE
     if(compiled) {
@@ -52,7 +53,7 @@ getSamplesDPmeasure <- function(MCMC) {
       model <- MCMC$model
       mvSamples <- MCMC$mvSamples
     }
-    rsampler <- sampleDPmeasure(model, mvSamples)
+    rsampler <- sampleDPmeasure(model, mvSamples, control)
     if(compiled) {
       csampler <- compileNimble(rsampler, project = model)
       csampler$run()
@@ -111,7 +112,7 @@ sampleDPmeasure <- nimbleFunction(
   name = 'sampleDPmeasure',
   contains=sampler_BASE,
   
-  setup=function(model, mvSaved){
+  setup=function(model, mvSaved, control){
     ## Determine variables in the mv object and nodes/variables in the model.
     mvSavedVars <- mvSaved$varNames
     
@@ -235,18 +236,19 @@ sampleDPmeasure <- nimbleFunction(
       stop('sampleDPmeasure: All cluster parameters must have the same number of parameters.\n')
     }
     
+    ## Storage object to be sized in run code based on MCMC output.
+    samples <- matrix(0, nrow = 1, ncol = 1)   
+    ## Truncation level of the random measure 
+    truncG <- 0 
     
+    ## control list extraction
     ## The error of approximation G is given by (conc / (conc +1))^{truncG-1}. 
     ## we are going to define an error of approximation and based on the posterior values of the conc parameter define the truncation level of G
     ## the error is between errors that are considered very very small in the folowing papers
     ## Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
     ## Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
-    approxError <- 1e-4
-    
-    ## Storage object to be sized in run code based on MCMC output.
-    samples <- matrix(0, nrow = 1, ncol = 1)   
-    ## Truncation level of the random measure 
-    truncG <- 0 
+    # approxError <- 1e-4
+    approxError <- if(!is.null(control$epsilon)) control$epsilon else 1e-4
     
     setupOutputs(lengthData)
   },
