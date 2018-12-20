@@ -1401,7 +1401,7 @@ class NimArr<5, T> : public NimArrBase<T> {
   }
 
   void initialize(T value, bool init, bool fillZeros, bool recycle, int is1,
-                  int is2, int is3, int is4, is5) {
+                  int is2, int is3, int is4, int is5) {
     setSize(is1, is2, is3, is4, is5, false, false);
     if (init) {
       NimArrBase<T>::fillAllValues(value, fillZeros, recycle);
