@@ -1389,7 +1389,7 @@ class NimArr<5, T> : public NimArrBase<T> {
     NimArrBase<T>::NAlength = size1 * size2 * size3 * size4 * size5;
   }
 
-  NimArr<4, T>(int is1, int is2, int is3, int is4, int is5) : NimArrBase<T>() {
+  NimArr<5, T>(int is1, int is2, int is3, int is4, int is5) : NimArrBase<T>() {
     setSize(is1, is2, is3, is4, is5);
   }
 
