@@ -574,6 +574,35 @@ test_that("warnings for multiply-defined model nodes:", {
 })
 
 
+
+
+test_that("use of 5-dimensional array in model code", {
+    code <- nimbleCode({
+        a[1,1,1,1,1] <- 1
+        for(i in 1:5) {
+            b[i,i,i,i,i] ~ dnorm(0, 1)
+        }
+    })
+
+    Rmodel <- nimbleModel(code)
+    Cmodel <- compileNimble(Rmodel)
+
+    expect_true(identical(Rmodel$a, array(1, c(1,1,1,1,1))))
+    expect_true(identical(Cmodel$a, array(1, c(1,1,1,1,1))))
+
+    expect_true(identical(Rmodel$b, array(as.numeric(NA), c(5,5,5,5,5))))
+    expect_true(identical(Cmodel$b, array(as.numeric(NA), c(5,5,5,5,5))))
+
+    for(i in 1:5) {
+        Rmodel$b[i,i,i,i,i] <- i
+        Cmodel$b[i,i,i,i,i] <- i
+    }
+
+    expect_equal(Rmodel$calculate(), -32.09469, tol = 0.0000001)
+    expect_equal(Cmodel$calculate(), -32.09469, tol = 0.0000001)
+})
+
+
 sink(NULL)
 
 if(FALSE){  ## no warnings being generated in goldFile anymore (perhaps a change in testthat versions?)
