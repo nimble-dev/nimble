@@ -78,9 +78,10 @@ distributionsInputList <- list(
                    pqAvail  = TRUE,
                    alias    = 'dchisqr'),
 
-    ddexp   = list(BUGSdist = 'ddexp(mu, scale, rate)',
-                   Rdist    = 'ddexp(mu, scale = 1/rate)',
-                   altParams= 'rate = 1/scale',
+    ddexp   = list(BUGSdist = 'ddexp(location, rate, scale, var)',
+                   Rdist    = 'ddexp(location, scale = 1/rate)',
+                   altParams= c('rate = 1/scale',
+                                'var = 2*scale^2'),
                    pqAvail  = TRUE,
                    alias    = 'dlaplace'),  
     

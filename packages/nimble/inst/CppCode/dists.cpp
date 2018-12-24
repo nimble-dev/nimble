@@ -1816,83 +1816,83 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
   return ans;
 }
 
-double ddexp(double x, double mu, double scale, int give_log)
+double ddexp(double x, double location, double scale, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
 #ifdef IEEE_754
-  if (ISNAN(x) || ISNAN(mu) || ISNAN(scale))
-    return x + mu + scale;
+  if (ISNAN(x) || ISNAN(location) || ISNAN(scale))
+    return x + location + scale;
 #endif
   if(!R_FINITE(scale)) return R_D__0;
   if(scale <= 0.0) {
     if(scale < 0.0) ML_ERR_return_NAN;
-    return (x == mu) ? ML_POSINF : R_D__0;
+    return (x == location) ? ML_POSINF : R_D__0;
   }         
-  if(give_log) return dexp( std::abs(x - mu), scale, give_log) - log(2);
-  else return 0.5 * dexp( std::abs(x - mu), scale, give_log);
+  if(give_log) return dexp( std::abs(x - location), scale, give_log) - log(2);
+  else return 0.5 * dexp( std::abs(x - location), scale, give_log);
 }
 
-double rdexp(double mu, double scale)
+double rdexp(double location, double scale)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
 #ifdef IEEE_754
-  if (ISNAN(mu) || ISNAN(scale))
+  if (ISNAN(location) || ISNAN(scale))
     ML_ERR_return_NAN;
 #endif
   if (!R_FINITE(scale) || scale < 0.0) ML_ERR_return_NAN;
-  if(runif(0, 1) > 0.5) return mu + rexp(scale);
-  else return mu - rexp(scale);
+  if(runif(0, 1) > 0.5) return location + rexp(scale);
+  else return location - rexp(scale);
 }
 
-double pdexp(double q, double mu, double scale, int lower_tail, int log_p)
+double pdexp(double q, double location, double scale, int lower_tail, int log_p)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
 #ifdef IEEE_754
-    if(ISNAN(q) || ISNAN(mu) || ISNAN(scale))
-        return q + mu + scale;
+    if(ISNAN(q) || ISNAN(location) || ISNAN(scale))
+        return q + location + scale;
 #endif
 
-  if(!R_FINITE(q) && mu == q) return ML_NAN; /* q-mu is NaN */
+  if(!R_FINITE(q) && location == q) return ML_NAN; /* q-location is NaN */
   if(scale <= 0.0) {
     if(scale < 0.0) ML_ERR_return_NAN;
-    return (q < mu) ? R_DT_0 : R_DT_1;
+    return (q < location) ? R_DT_0 : R_DT_1;
   }
   double add_term = 0.0;
-  if(q < mu) {
+  if(q < location) {
     if(!lower_tail) add_term = 0.5;
     lower_tail = 1 - lower_tail;
-    q = 2*mu - q;
+    q = 2*location - q;
   } else 
     if(lower_tail) add_term = 0.5;
-  double result = add_term + pexp( q-mu, scale, lower_tail, 0) / 2.0;
+  double result = add_term + pexp( q-location, scale, lower_tail, 0) / 2.0;
   return log_p ? log(result) : result;
 
 }
 
-double qdexp(double p, double mu, double scale, int lower_tail, int log_p)
+double qdexp(double p, double location, double scale, int lower_tail, int log_p)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
 #ifdef IEEE_754
-  if (ISNAN(p) || ISNAN(mu) || ISNAN(scale))
-    return p + mu + scale;
+  if (ISNAN(p) || ISNAN(location) || ISNAN(scale))
+    return p + location + scale;
 #endif
 
   if(scale < 0.0) ML_ERR_return_NAN;
-  if(scale == 0.0) return mu;
+  if(scale == 0.0) return location;
   double left_half = 1.0;
   if(log_p) p = exp(p);  // no clear way to stay on log scale for all cases and still use qexp()
   if((p < 0.5 && lower_tail) || (p > 0.5 && !lower_tail))
-    left_half = -1;  // quantile is below mu
+    left_half = -1;  // quantile is below location
   if(p >= 0.5) p = 1-p; 
-  return(mu + left_half * qexp(2*p, scale, 0, 0));
+  return(location + left_half * qexp(2*p, scale, 0, 0));
 }
 
 
-SEXP C_ddexp(SEXP x, SEXP mu, SEXP scale, SEXP return_log) {
-  if(!Rf_isReal(x) || !Rf_isReal(mu) || !Rf_isReal(scale) || !Rf_isLogical(return_log)) 
+SEXP C_ddexp(SEXP x, SEXP location, SEXP scale, SEXP return_log) {
+  if(!Rf_isReal(x) || !Rf_isReal(location) || !Rf_isReal(scale) || !Rf_isLogical(return_log)) 
     RBREAK("Error (C_ddexp): invalid input type for one of the arguments.");
   int n_x = LENGTH(x);
-  int n_mu = LENGTH(mu);
+  int n_location = LENGTH(location);
   int n_scale = LENGTH(scale);
   int give_log = (int) LOGICAL(return_log)[0];
   SEXP ans;
@@ -1903,21 +1903,21 @@ SEXP C_ddexp(SEXP x, SEXP mu, SEXP scale, SEXP return_log) {
     
   PROTECT(ans = Rf_allocVector(REALSXP, n_x));  
   double* c_x = REAL(x);
-  double* c_mu = REAL(mu);
+  double* c_location = REAL(location);
   double* c_scale = REAL(scale);
 
   // FIXME: abstract the recycling as a function
-  if(n_mu == 1 && n_scale == 1) {
+  if(n_location == 1 && n_scale == 1) {
     // if no parameter vectors, more efficient not to deal with multiple indices
     for(int i = 0; i < n_x; i++) 
-      REAL(ans)[i] = ddexp(c_x[i], *c_mu, *c_scale, give_log);
+      REAL(ans)[i] = ddexp(c_x[i], *c_location, *c_scale, give_log);
   } else {
-    int i_mu = 0;
+    int i_location = 0;
     int i_scale = 0;
     for(int i = 0; i < n_x; i++) {
-      REAL(ans)[i] = ddexp(c_x[i], c_mu[i_mu++], c_scale[i_scale++], give_log);
+      REAL(ans)[i] = ddexp(c_x[i], c_location[i_location++], c_scale[i_scale++], give_log);
       // implement recycling:
-      if(i_mu == n_mu) i_mu = 0;
+      if(i_location == n_location) i_location = 0;
       if(i_scale == n_scale) i_scale = 0;
     }
   }
@@ -1926,11 +1926,10 @@ SEXP C_ddexp(SEXP x, SEXP mu, SEXP scale, SEXP return_log) {
   return ans;
 }
   
-SEXP C_rdexp(SEXP n, SEXP mu, SEXP scale) {
-  // this will call R's rt() for computation on scalars
-  if(!Rf_isInteger(n) || !Rf_isReal(mu) || !Rf_isReal(scale))
+SEXP C_rdexp(SEXP n, SEXP location, SEXP scale) {
+  if(!Rf_isInteger(n) || !Rf_isReal(location) || !Rf_isReal(scale))
     RBREAK("Error (C_rdexp): invalid input type for one of the arguments.");
-  int n_mu = LENGTH(mu);
+  int n_location = LENGTH(location);
   int n_scale = LENGTH(scale);
   int n_values = INTEGER(n)[0];
   SEXP ans;
@@ -1947,19 +1946,19 @@ SEXP C_rdexp(SEXP n, SEXP mu, SEXP scale) {
   GetRNGstate(); 
     
   PROTECT(ans = Rf_allocVector(REALSXP, n_values));  
-  double* c_mu = REAL(mu);
+  double* c_location = REAL(location);
   double* c_scale = REAL(scale);
-  if(n_mu == 1 && n_scale == 1) {
+  if(n_location == 1 && n_scale == 1) {
     // if no parameter vectors, more efficient not to deal with multiple indices
     for(int i = 0; i < n_values; i++) 
-      REAL(ans)[i] = rdexp(*c_mu, *c_scale);
+      REAL(ans)[i] = rdexp(*c_location, *c_scale);
   } else {
-    int i_mu = 0;
+    int i_location = 0;
     int i_scale = 0;
     for(int i = 0; i < n_values; i++) {
-      REAL(ans)[i] = rdexp(c_mu[i_mu++], c_scale[i_scale++]);
+      REAL(ans)[i] = rdexp(c_location[i_location++], c_scale[i_scale++]);
       // implement recycling:
-      if(i_mu == n_mu) i_mu = 0;
+      if(i_location == n_location) i_location = 0;
       if(i_scale == n_scale) i_scale = 0;
     }
   }
@@ -1969,11 +1968,11 @@ SEXP C_rdexp(SEXP n, SEXP mu, SEXP scale) {
   return ans;
 }
   
-SEXP C_pdexp(SEXP q, SEXP mu, SEXP scale, SEXP lower_tail, SEXP log_p) {
-  if(!Rf_isReal(q) || !Rf_isReal(mu) || !Rf_isReal(scale) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
+SEXP C_pdexp(SEXP q, SEXP location, SEXP scale, SEXP lower_tail, SEXP log_p) {
+  if(!Rf_isReal(q) || !Rf_isReal(location) || !Rf_isReal(scale) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
     RBREAK("Error (C_pdexp): invalid input type for one of the arguments.");
   int n_q = LENGTH(q);
-  int n_mu = LENGTH(mu);
+  int n_location = LENGTH(location);
   int n_scale = LENGTH(scale);
   int c_lower_tail = (int) LOGICAL(lower_tail)[0];
   int c_log_p = (int) LOGICAL(log_p)[0];
@@ -1985,21 +1984,21 @@ SEXP C_pdexp(SEXP q, SEXP mu, SEXP scale, SEXP lower_tail, SEXP log_p) {
     
   PROTECT(ans = Rf_allocVector(REALSXP, n_q));  
   double* c_q = REAL(q);
-  double* c_mu = REAL(mu);
+  double* c_location = REAL(location);
   double* c_scale = REAL(scale);
 
   // FIXME: abstract the recycling as a function
-  if(n_mu == 1 && n_scale == 1) {
+  if(n_location == 1 && n_scale == 1) {
     // if no parameter vectors, more efficient not to deal with multiple indices
     for(int i = 0; i < n_q; i++) 
-      REAL(ans)[i] = pdexp(c_q[i], *c_mu, *c_scale, c_lower_tail, c_log_p);
+      REAL(ans)[i] = pdexp(c_q[i], *c_location, *c_scale, c_lower_tail, c_log_p);
   } else {
-    int i_mu = 0;
+    int i_location = 0;
     int i_scale = 0;
     for(int i = 0; i < n_q; i++) {
-      REAL(ans)[i] = pdexp(c_q[i], c_mu[i_mu++], c_scale[i_scale++], c_lower_tail, c_log_p);
+      REAL(ans)[i] = pdexp(c_q[i], c_location[i_location++], c_scale[i_scale++], c_lower_tail, c_log_p);
       // implement recycling:
-      if(i_mu == n_mu) i_mu = 0;
+      if(i_location == n_location) i_location = 0;
       if(i_scale == n_scale) i_scale = 0;
     }
   }
@@ -2008,11 +2007,11 @@ SEXP C_pdexp(SEXP q, SEXP mu, SEXP scale, SEXP lower_tail, SEXP log_p) {
   return ans;
 }
  
-SEXP C_qdexp(SEXP p, SEXP mu, SEXP scale, SEXP lower_tail, SEXP log_p) {
-  if(!Rf_isReal(p) || !Rf_isReal(mu) || !Rf_isReal(scale) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
+SEXP C_qdexp(SEXP p, SEXP location, SEXP scale, SEXP lower_tail, SEXP log_p) {
+  if(!Rf_isReal(p) || !Rf_isReal(location) || !Rf_isReal(scale) || !Rf_isLogical(lower_tail) || !Rf_isLogical(log_p))
     RBREAK("Error (C_qdexp): invalid input type for one of the arguments.");
   int n_p = LENGTH(p);
-  int n_mu = LENGTH(mu);
+  int n_location = LENGTH(location);
   int n_scale = LENGTH(scale);
   int c_lower_tail = (int) LOGICAL(lower_tail)[0];
   int c_log_p = (int) LOGICAL(log_p)[0];
@@ -2024,21 +2023,21 @@ SEXP C_qdexp(SEXP p, SEXP mu, SEXP scale, SEXP lower_tail, SEXP log_p) {
     
   PROTECT(ans = Rf_allocVector(REALSXP, n_p));  
   double* c_p = REAL(p);
-  double* c_mu = REAL(mu);
+  double* c_location = REAL(location);
   double* c_scale = REAL(scale);
 
   // FIXME: abstract the recycling as a function
-  if(n_mu == 1 && n_scale == 1) {
+  if(n_location == 1 && n_scale == 1) {
     // if no parameter vectors, more efficient not to deal with multiple indices
     for(int i = 0; i < n_p; i++) 
-      REAL(ans)[i] = qdexp(c_p[i], *c_mu, *c_scale, c_lower_tail, c_log_p);
+      REAL(ans)[i] = qdexp(c_p[i], *c_location, *c_scale, c_lower_tail, c_log_p);
   } else {
-    int i_mu = 0;
+    int i_location = 0;
     int i_scale = 0;
     for(int i = 0; i < n_p; i++) {
-      REAL(ans)[i] = qdexp(c_p[i], c_mu[i_mu++], c_scale[i_scale++], c_lower_tail, c_log_p);
+      REAL(ans)[i] = qdexp(c_p[i], c_location[i_location++], c_scale[i_scale++], c_lower_tail, c_log_p);
       // implement recycling:
-      if(i_mu == n_mu) i_mu = 0;
+      if(i_location == n_location) i_location = 0;
       if(i_scale == n_scale) i_scale = 0;
     }
   }

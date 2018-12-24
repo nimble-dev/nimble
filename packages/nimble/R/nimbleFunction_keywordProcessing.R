@@ -855,10 +855,10 @@ matchFunctions[['rexp_nimble']] <- function(n, rate, scale = 1){}
 matchFunctions[['qexp_nimble']] <- function(p, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pexp_nimble']] <- function(q, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
 
-matchFunctions[['ddexp']] <- function(x, mu, scale = 1, rate, log = FALSE){}
-matchFunctions[['rdexp']] <- function(n, mu, scale = 1, rate){}
-matchFunctions[['qdexp']] <- function(p, mu, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
-matchFunctions[['pdexp']] <- function(q, mu, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['ddexp']] <- function(x, location, scale = 1, rate, log = FALSE){}
+matchFunctions[['rdexp']] <- function(n, location, scale = 1, rate){}
+matchFunctions[['qdexp']] <- function(p, location, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['pdexp']] <- function(q, location, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
 
 matchModelMemberFunctions <- new.env()
 matchModelMemberFunctions[['calculate']] <- function(nodes) {}

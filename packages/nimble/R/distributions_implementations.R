@@ -445,7 +445,7 @@ qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.
 #' Density, distribution function, quantile function and random generation
 #' for the double exponential distribution,
 #' allowing non-zero location, \code{mu},
-#' and non-unit scale, \code{scale}, or non-unit rate, \code{rate} 
+#' and non-unit scale, \code{sigma}, or non-unit rate, \code{tau} 
 #'
 #' @name Double-Exponential 
 #' 
@@ -453,9 +453,9 @@ qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.
 #' @param n number of observations.
 #' @param p vector of probabilities.
 #' @param q vector of quantiles.
-#' @param mu vector of location values.
+#' @param location vector of location values.
 #' @param scale vector of scale values.
-#' @param rate vector of rate values.
+#' @param rate vector of inverse scale values.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
 #' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
@@ -468,52 +468,52 @@ qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.
 #' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples
-#' x <- rdexp(50, mu = 2, scale = 1)
+#' x <- rdexp(50, location = 2, scale = 1)
 #' ddexp(x, 2, 1)
 NULL
 
 #' @rdname Double-Exponential
 #' @export
-ddexp <- function(x, mu = 0, scale = 1, rate = 1/scale, log = FALSE) {
-  if (!missing(rate) && !missing(scale)) {
-      if (abs(rate * scale - 1) < 1e-15) 
+ddexp <- function(x, location = 0, scale = 1, rate = 1/scale, log = FALSE) {
+  if (!missing(scale) && !missing(rate)) {
+      if (abs(scale * rate - 1) < 1e-15) 
           warning("specify 'scale' or 'rate' but not both")
       else stop("specify 'scale' or 'rate' but not both")
   }
-  .Call(C_ddexp, as.double(x), as.double(mu), as.double(scale), as.logical(log))
+  .Call(C_ddexp, as.double(x), as.double(location), as.double(scale), as.logical(log))
 }
 
 #' @rdname Double-Exponential
 #' @export
-rdexp <- function(n, mu = 0, scale = 1, rate = 1/scale) {
-  if (!missing(rate) && !missing(scale)) {
-      if (abs(rate * scale - 1) < 1e-15) 
+rdexp <- function(n, location = 0, scale = 1, rate = 1/scale) {
+  if (!missing(scale) && !missing(rate)) {
+      if (abs(scale * rate - 1) < 1e-15) 
           warning("specify 'scale' or 'rate' but not both")
       else stop("specify 'scale' or 'rate' but not both")
   }
-  .Call(C_rdexp, as.integer(n), as.double(mu), as.double(scale))
+  .Call(C_rdexp, as.integer(n), as.double(location), as.double(scale))
 }
 
 #' @rdname Double-Exponential
 #' @export
-pdexp <- function(q, mu = 0, scale = 1, rate = 1/scale, lower.tail = TRUE, log.p = FALSE) {
-  if (!missing(rate) && !missing(scale)) {
-      if (abs(rate * scale - 1) < 1e-15) 
+pdexp <- function(q, location = 0, scale = 1, rate = 1/scale, lower.tail = TRUE, log.p = FALSE) {
+  if (!missing(scale) && !missing(rate)) {
+      if (abs(scale * rate - 1) < 1e-15) 
           warning("specify 'scale' or 'rate' but not both")
       else stop("specify 'scale' or 'rate' but not both")
   }
-  .Call(C_pdexp, as.double(q), as.double(mu), as.double(scale), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_pdexp, as.double(q), as.double(location), as.double(scale), as.logical(lower.tail), as.logical(log.p))
 }
 
 #' @rdname Double-Exponential
 #' @export
-qdexp <- function(p, mu = 0, scale = 1, rate = 1/scale, lower.tail = TRUE, log.p = FALSE) {
-  if (!missing(rate) && !missing(scale)) {
-      if (abs(rate * scale - 1) < 1e-15) 
+qdexp <- function(p, location = 0, scale = 1, rate = 1/scale, lower.tail = TRUE, log.p = FALSE) {
+  if (!missing(scale) && !missing(rate)) {
+      if (abs(scale * rate - 1) < 1e-15) 
           warning("specify 'scale' or 'rate' but not both")
       else stop("specify 'scale' or 'rate' but not both")
   }
-  .Call(C_qdexp, as.double(p), as.double(mu), as.double(scale), as.logical(lower.tail), as.logical(log.p))
+  .Call(C_qdexp, as.double(p), as.double(location), as.double(scale), as.logical(lower.tail), as.logical(log.p))
 }
 
 
