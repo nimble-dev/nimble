@@ -1484,7 +1484,7 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[3]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
-  ## dnorm_dnorm and indexing we can't handle
+  ## dnorm_dnorm and non-standard indexing
   code = nimbleCode({
     for(i in 1:4) {
       mu[i, 2] ~ dnorm(0,1)
@@ -1496,9 +1496,9 @@ test_that("Testing conjugacy detection with models using CRP", {
                   inits = list(xi = rep(1,4), mu=cbind(rnorm(4),rnorm(4))))
   conf <- configureMCMC(m)
   mcmc=buildMCMC(conf)
-  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
-  ## dnorm_dnorm and indexing we can't handle
+  ## dnorm_dnorm and non-standard indexing
   code = nimbleCode({
     for(i in 1:4) {
       mu[2, i] ~ dnorm(0,1)
@@ -1510,7 +1510,7 @@ test_that("Testing conjugacy detection with models using CRP", {
                   inits = list(xi = rep(1,4), mu=t(cbind(rnorm(4),rnorm(4)))))
   conf <- configureMCMC(m)
   mcmc=buildMCMC(conf)
-  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  expect_equal(class(mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   ## dnorm_dpois
   code = nimbleCode({
@@ -1683,7 +1683,7 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc <- buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_ddirch_dmulti")
   
-  ## ordering/indexing of ddirch-dmulti we can't handle
+  ## non-standard ordering/indexing of ddirch-dmulti
   code=nimbleCode(
     {
       for(i in 1:4){
@@ -1706,7 +1706,7 @@ test_that("Testing conjugacy detection with models using CRP", {
                   constants=list(alpha0 = c(1,1,1)))
   conf <- configureMCMC(m)
   mcmc <- buildMCMC(conf)
-  expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_ddirch_dmulti")
   
   code=nimbleCode(
     {
@@ -1731,9 +1731,9 @@ test_that("Testing conjugacy detection with models using CRP", {
                   constants=list(alpha0 = c(1,1,1)))
   conf <- configureMCMC(m)
   mcmc <- buildMCMC(conf)
-  expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_ddirch_dmulti")
   
-  ## dnorm_dnorm_dinvgamma
+  ## dnorm, dinvgamma, not conjugate
   code = nimbleCode({
     for(i in 1:4) {
       s2[i] ~ dinvgamma(1, 1)
@@ -1747,6 +1747,25 @@ test_that("Testing conjugacy detection with models using CRP", {
   conf <- configureMCMC(m)
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[9]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  
+  ## dnorm_invgamma, conjugate; we detect conjugacy, but do not yet build conjugate sampler
+  code = nimbleCode({
+    for(i in 1:4) {
+      s2[i] ~ dinvgamma(a,b)
+      mu[i] ~ dnorm(0, var = s2[i]/kappa)
+      y[i] ~ dnorm(mu[xi[i]], var = s2[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+    kappa ~ dgamma(1, 1)
+    a ~ dgamma(1, 1)
+    b ~ dgamma(1, 1)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu=rnorm(4), s2=rinvgamma(4, 1,1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(nimble:::checkCRPconjugacy(m, 'xi[1:4]'), "conjugate_dnorm_invgamma_dnorm")
+  expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   ## dgamma_dexp and deterministic nodes
   code = nimbleCode({
