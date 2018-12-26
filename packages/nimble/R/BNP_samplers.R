@@ -41,7 +41,7 @@
 #'   samples <- outputG$samples
 #'   truncation <- output$trunc
 #' }
-getSamplesDPmeasure <- function(MCMC, control) {
+getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4) {
   if(exists('model',MCMC, inherits = FALSE))
     compiled <- FALSE else compiled <- TRUE
     if(compiled) {
@@ -53,7 +53,7 @@ getSamplesDPmeasure <- function(MCMC, control) {
       model <- MCMC$model
       mvSamples <- MCMC$mvSamples
     }
-    rsampler <- sampleDPmeasure(model, mvSamples, control)
+    rsampler <- nimble:::sampleDPmeasure(model, mvSamples, epsilon)
     if(compiled) {
       csampler <- compileNimble(rsampler, project = model)
       csampler$run()
@@ -112,7 +112,7 @@ sampleDPmeasure <- nimbleFunction(
   name = 'sampleDPmeasure',
   contains=sampler_BASE,
   
-  setup=function(model, mvSaved, control){
+  setup=function(model, mvSaved, epsilon){
     ## Determine variables in the mv object and nodes/variables in the model.
     mvSavedVars <- mvSaved$varNames
     
@@ -245,9 +245,8 @@ sampleDPmeasure <- nimbleFunction(
     ## the error is between errors that are considered very very small in the folowing papers
     ## Ishwaran, H., & James, L. F. (2001). Gibbs sampling methods for stick-breaking priors. Journal of the American Statistical Association, 96(453), 161-173.
     ## Ishwaran, H., & Zarepour, M. (2000). Markov chain Monte Carlo in approximate Dirichlet and beta two-parameter process hierarchical models. Biometrika, 87(2), 371-390.
-    # approxError <- 1e-4
-    approxError <- if(!is.null(control$epsilon)) control$epsilon else 1e-4
-    
+    # epsilon <- 1e-4
+
     setupOutputs(lengthData)
   },
   
@@ -269,9 +268,9 @@ sampleDPmeasure <- nimbleFunction(
       dcrpAux <- mean(concSamples) + N
     }
     
-    truncG <<- log(approxError) / log(dcrpAux / (dcrpAux+1)) + 1
+    truncG <<- log(epsilon) / log(dcrpAux / (dcrpAux+1)) + 1
     truncG <<- round(truncG)
-    # approxError <- (dcrpAux / (dcrpAux +1))^(truncG-1)
+    # epsilon <- (dcrpAux / (dcrpAux +1))^(truncG-1)
     # I think is good to send message indicating what the truncation level is for an approximation error smaller than to 10^(-10)
     # nimCat('sampleDPmeasure: Approximating the random measure by a finite stick-breaking representation with an error smaller than 1e-10, leads to a truncation level of ', truncG, '.\n')
     
