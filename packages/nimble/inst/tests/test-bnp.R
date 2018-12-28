@@ -516,6 +516,50 @@ test_that("check iid assumption in sampleDPmeasure", {
 
 
 
+test_that("check use of epsilon parameters in getSamplesDPmeasure", {
+  rm(list=ls())
+  set.seed(1)
+  
+  code <- nimbleCode({
+    for(i in 1:n) {
+      y[i] ~ dnorm(mu[i], 1)
+      mu[i] <- muTilde[xi[i]]
+    }
+    for(i in 1:n) {
+      muTilde[i] ~ dnorm(mu0, sd = sd0)
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+    sd0 ~ dgamma(1, 1)
+    alpha ~ dgamma(1, 1)      
+    mu0 ~ dnorm(0, var=10)
+  })
+  
+  n <- 30
+  constants <- list(n = n)
+  data <- list(y = rnorm(n, 0, 1))
+  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1, n),
+                muTilde = rep(0,n))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cmodel <- compileNimble(model)
+  conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
+  mcmc <- buildMCMC(conf)
+  cmcmc <- compileNimble(mcmc, project = model)
+  
+  output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
+  outputG <- getSamplesDPmeasure(cmcmc)
+  tr1 <- outputG$trunc
+  
+  outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.1)
+  tr2 <- outputG$trunc
+  
+  outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.00001)
+  tr3 <- outputG$trunc
+  
+  expect_true(tr1 > tr2, info='getSamplesDPmeasure: truncation level for larger epsilon incorrectly computed')
+  expect_true(tr1 < tr3, info='getSamplesDPmeasure: truncation level for smaller epsilon incorrectly computed')
+})
+
+
 
 #-- CRP sampler
 
