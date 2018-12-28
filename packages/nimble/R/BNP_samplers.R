@@ -824,14 +824,8 @@ sampler_CRP <- nimbleFunction(
     targetVar <- model$getVarNames(nodes = target)  
     n <- length(targetElements) 
     
-    # first check that the sampler can be used: we need one observation per random index
-    stochDepsXi <- model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE) # only data
-    nObs <- length(stochDepsXi)
-    if(n != nObs)
-      stop("sampler_CRP: The length of membership variable and observations has to be the same.\n")
-
     clusterVarInfo <- nimble:::findClusterVars(model, targetElements[1], returnIndexInfo = TRUE)
-    tildeVars <- clusterVarInfo$clusterVars
+    tildeVars <- unique(clusterVarInfo$clusterVars)
     if(is.null(tildeVars))
         stop('sampler_CRP:  The model should have at least one cluster variable.\n')
     
@@ -839,14 +833,33 @@ sampler_CRP <- nimbleFunction(
     if(any(clusterVarInfo$targetInFunction))
         stop("sampler_CRP: At the moment, NIMBLE's CRP MCMC sampling requires simple indexing and cannot work with indexing such as 'mu[xi[i]+2]'.\n")
 
-    ## Check that only data nodes depend on cluster variables. No other unrelated variable con depend on cluster variables
+    
+    stochDepsXi <- model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE) # only data
     stochDepsTildeVars <- model$getDependencies(tildeVars, self=FALSE, stochOnly = TRUE)
-    if(all(stochDepsTildeVars %in% stochDepsXi)) {
-      calcNodes <- unique(c(calcNodes, model$getDependencies(tildeVars)))  
-    } else {
-      stop("sampler_CRP: Only observations can depend on cluster variables.\n")
+    ## Check that membership variable is independent of cluster variables
+    varsInStochDepsTildeVars <- sapply(1:length(stochDepsTildeVars), function(i)model$getVarNames(nodes = stochDepsTildeVars[i]))
+    if(any(varsInStochDepsTildeVars == targetVar)) 
+      stop("sampler_CRP: membership variable has to be independent of cluster variables. \n")
+    
+    ## Check that cluster variables are independent of membership variables
+    varsInstochDepsXi <- sapply(1:length(stochDepsXi), function(i)model$getVarNames(nodes = stochDepsXi[i]))
+    for(i in seq_along(tildeVars)) {
+      if(any(varsInstochDepsXi == tildeVars[i])) 
+        stop("sampler_CRP: cluster variables have to be independent of membership variable. \n")  
     }
+    
+    ## Update calcNodes when more variables depend on cluster variables.
+    if(all(stochDepsXi %in% stochDepsTildeVars) & length(stochDepsXi) != length(stochDepsTildeVars)) {
+      calcNodes <- unique(c(calcNodes, model$getDependencies(tildeVars)))  
+    } 
 
+    ## Check that only 'data nodes' depend on cluster variables. No other unrelated variable can depend on cluster variables
+    ## This would also be checking that one "observation" is related to  per random index
+    nObs <- length(stochDepsXi)
+    if(n != nObs)
+      stop("sampler_CRP: The length of membership variable and the variable that is to be clustered have to be the same. Maybe one variable other than the one to be clustered depends on the membership variable in the model structure. \n")
+    
+    
     # check that the number of parameters in cluster parameters (if more than one) are the same  (multivariate case considered)
     dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE) 
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE)) # for vector data gives its length 
@@ -858,8 +871,9 @@ sampler_CRP <- nimbleFunction(
       nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTildeNim
     }
     # in the univariate case: nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
+    ## CHRIS: This check is the same as the one in lines 879-880?
     if(any(nTilde != nTilde[1])){
-      stop('sampleDPmeasure: All cluster parameters must have the same number of observations.\n')
+      stop('sampleDPmeasure: All cluster parameters must have the same length.\n')
     }
     
     if(length(unique(nTilde)) != 1)
@@ -908,7 +922,7 @@ sampler_CRP <- nimbleFunction(
         stochDeps <- model$getDependencies(targetElements[i], stochOnly = TRUE, self = FALSE) 
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
         if(length(stochDeps) != 1) 
-          stop("sampler_CRP: NIMBLE cannot currently assign a sampler to a dCRP node unless each membership element is associated with a single observation.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
+          stop("sampler_CRP: NIMBLE cannot currently assign a sampler to a dCRP node unless each membership element is associated with a single component of the variable to be clustered.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
         if(length(detDeps) != nInterm) {
           type <- 'allCalcs'  # give up again; should only occur in strange situations
         } else {
