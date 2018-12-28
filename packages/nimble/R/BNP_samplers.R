@@ -871,10 +871,6 @@ sampler_CRP <- nimbleFunction(
       nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTildeNim
     }
     # in the univariate case: nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
-    ## CHRIS: This check is the same as the one in lines 879-880?
-    if(any(nTilde != nTilde[1])){
-      stop('sampleDPmeasure: All cluster parameters must have the same length.\n')
-    }
     
     if(length(unique(nTilde)) != 1)
       stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
