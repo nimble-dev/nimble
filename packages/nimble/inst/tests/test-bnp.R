@@ -1040,7 +1040,7 @@ test_that("Test only data depends on cluster  variable in CRP sampler", {
   expect_error(mMCMC <- buildMCMC(mConf), info='sampler_CRP: The length of membership variable and')
   
   
-  # not only data depends on  mu
+  # not only data depends on  mu: check this!
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
