@@ -966,7 +966,6 @@ sampler_CRP <- nimbleFunction(
     tildeNodes <- model$expandNodeNames(tildeVars, sort = TRUE)
     ## check that tildeVars are grouped together by variable because sample() assumes this.
     ## E.g., c('sigma','sigma','mu','mu') for n=2,p=2 is ok but c('sigma','mu','sigma','mu') is not.
-    ## CLAUDIA 
     if(p > 1) {  
         tmp <- matrix(tildeNodes, ncol = p)
         if(any(apply(tmp, 2, function(x) length(unique(gsub("\\[.*", "", x)))) > 1))
