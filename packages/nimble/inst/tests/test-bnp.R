@@ -889,6 +889,125 @@ test_that("Test reset frunction in CRP sampler ", {
 })
 
 
+test_that("Test that cluster parameters have the correct order for sampling then in CRP sampler ", {
+  rm(list=ls())
+  set.seed(1)
+  
+  # this model should not be acceptable because muTilde[1, i] is part of the tildeNodes
+  # used for sampling the cluster params when only muTilde[2, i] should be considered.
+  # This check is not ready yet.
+  code=nimbleCode({
+    for(i in 1:10) {
+      muTilde[1, i] ~ dnorm(0,1)  # this gets in the way even though not used in BNP model
+      muTilde[2, i] ~ dnorm(0, 1)
+      mu[i] <- muTilde[2, xi[i]]
+      y[i] ~ dnorm(mu[i], 1)
+    }
+    xi[1:10] ~ dCRP(1 , size=10)
+  })
+  Inits=list(xi=rep(1, 10), muTilde=rbind(rep(0,10),rep(0,10)))
+  Data=list(y=rnorm(10,0, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m)
+  #mcmc <- buildMCMC(mConf)
+  #cmcmc <- compileNimble(mcmc, project = m) 
+  #expect_output(cmcmc$run(1), info='CRP_sampler: ')
+})
+
+
+test_that("Test that cluster parameters and membership variable are independent in CRP sampler ", {
+  rm(list=ls())
+  set.seed(1)
+
+  # membership variable depends on cluster params
+  code=nimbleCode({
+    for(i in 1:10) {
+      muTilde[i] ~ dnorm(0, 1)  
+      mu[i] <- muTilde[xi[i]]
+      y[i] ~ dnorm(mu[i], 1)
+    }
+    xi[1:10] ~ dCRP(exp(muTilde[1]) , size=10)
+  })
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
+  Data=list(y=rnorm(10,0, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m)
+  expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: membership variable has to be independent of cluster variables \n')
+  
+  
+  # cluster params depend on membership variable
+  code=nimbleCode({
+    for(i in 1:10) {
+      muTilde[i] ~ dnorm(log(xi[1]), 1)  
+      mu[i] <- muTilde[xi[i]]
+      y[i] ~ dnorm(mu[i], 1)
+    }
+    xi[1:10] ~ dCRP(1 , size=10)
+  })
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
+  Data=list(y=rnorm(10,0, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m)
+  expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: cluster variables have to be independent of membership variable \n')
+  
+  
+  # one more node depends on membership variable
+  code=nimbleCode({
+    mu0 ~ dnorm(xi[1], 1) 
+    for(i in 1:10) {
+      muTilde[i] ~ dnorm(0, 1)  
+      mu[i] <- muTilde[xi[i]]
+      y[i] ~ dnorm(mu[i], 1)
+    }
+    xi[1:10] ~ dCRP(1 , size=10)
+  })
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10), mu0=0)
+  Data=list(y=rnorm(10,0, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m)
+  expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: The length of membership variable and the variable that is to be  \n')
+  
+    
+  # non related variable depends on cluster variable and membership variable
+  code=nimbleCode({
+    for(i in 1:10) {
+      muTilde[i] ~ dnorm(0, 1)  
+      mu[i] <- muTilde[xi[i]]
+      y[i] ~ dnorm(mu[i], 1)
+    }
+    xi[1:10] ~ dCRP(1 , size=10)
+    tau ~ dnorm(muTilde[xi[1]], 1)
+  })
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10), tau=1)
+  Data=list(y=rnorm(10,0, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m)
+  expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: The length of membership variable and the variable that\n')
+  
+  #  related variable depends on variable to be clustered
+  code=nimbleCode({
+    for(i in 1:10) {
+      muTilde[i] ~ dnorm(0, 1)  
+      mu[i] <- muTilde[xi[i]]
+      y[i] ~ dnorm(mu[i], 1)
+      x[i] ~ dnorm(y[i] + muTilde[xi[i]], 1)
+    }
+    xi[1:10] ~ dCRP(1 , size=10)
+  })
+  Inits=list(xi=rep(1, 10), muTilde=rep(0,10), x = rep(0,10))
+  Data=list(y=rnorm(10,0, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m)
+  expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: The length of membership variable and the variable that \n')
+  
+})
+
 test_that("Test only data depends on cluster  variable in CRP sampler", {
   rm(list=ls())
   set.seed(1)
