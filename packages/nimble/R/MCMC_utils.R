@@ -234,12 +234,12 @@ mcmc_generateControlListArgument <- function(control, controlDefaults) {
     return(thisControlList)
 }
 
-
-
 mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonScalars=FALSE, displayConjugateDependencies=FALSE) {
     ##if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
     if(!displayConjugateDependencies)
         if(grepl('^conjugate_d', names(ls)[1])) ls <- ls[1]    ## for conjugate samplers, remove all 'dep_dnorm', etc, control elements (don't print them!)
+    if(grepl('^CRP_cluster_wrapper', names(ls)[1]))
+        ls$control <- ls$samplerFunction <- NULL  ## don't print control info for the wrapper because there may be many 'dep_dnorm', etc, control elements
     ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
     ## to make displayControlDefaults argument work again, would need to code process
