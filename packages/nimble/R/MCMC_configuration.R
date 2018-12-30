@@ -196,7 +196,8 @@ print: A logical argument specifying whether to print the ordered list of defaul
                 ## use old (static) system for assigning default samplers
                 isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
-                
+
+                clusterNodeInfo <- NULL
                 for(i in seq_along(nodes)) {
                     node <- nodes[i]
                     discrete <- model$isDiscrete(node)
@@ -207,7 +208,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     
                     ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
                     if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
-                    
+
                     ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                     if(nodeLength > 1) {
                         if(useConjugacy) {
@@ -222,7 +223,13 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dinvwish')     { addSampler(target = node, type = 'RW_wishart');         next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
-                        if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP');                next }
+                        if(nodeDist == 'dCRP')         {
+                            addSampler(target = node, type = 'CRP')
+                                        #clusterNodeInfo <- findClusterNodes(model, node)
+                            clusterNodeInfo <- list(clusterVars = 'muTilde', clusterNodes = list( paste0('muTilde[', 1:50, ']')))
+                            dcrpNode <- node
+                            next
+                        }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
@@ -262,12 +269,36 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     ## default: 'RW' sampler
                     addSampler(target = node, type = 'RW');     next
                 }
+                ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
+                if(!is.null(clusterNodeInfo)) {
+                    for(clusterNodes in clusterNodeInfo$clusterNodes) {
+                        samplers <- getSamplers(clusterNodes)
+                        removeSamplers(clusterNodes)
+                        for(i in seq_along(samplers)) {
+                            node <- samplers[[i]]$target
+                            conjugate <- FALSE
+                            if(useConjugacy) { 
+                                conjugacyResult <- conjugacyResultsAll[[node]]
+                                if(!is.null(conjugacyResult)) {
+                                    addConjugateSampler(conjugacyResult = conjugacyResult,
+                                                        dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed,
+                                                        wrapped = TRUE, dcrpNode = dcrpNode, clusterID = i)
+                                    conjugate <- TRUE
+                                }
+                            }
+                            if(!conjugate) 
+                                addSampler(target = node, type = 'CRP_cluster_wrapper',
+                                           control = list(wrapped_type = samplers[[i]]$name, dcrpNode = dcrpNode, clusterID = i, 
+                                                          control = samplers[[i]]$control))
+                        }
+                    }
+                }
             }
             
             if(print)   printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, print = FALSE) {
+        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, wrapped = FALSE, dcrpNode = NULL, clusterID = NULL, print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
@@ -287,7 +318,11 @@ print: A logical argument specifying whether to print the ordered list of defaul
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
             nameToPrint <- gsub('^sampler_', '', conjSamplerName)
-            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
+            if(wrapped) {
+                addSampler(target = conjugacyResult$target, type = 'CRP_cluster_wrapper',
+                           control = list(wrapped_type = nameToPrint, dcrpNode = dcrpNode, clusterID = clusterID, 
+                                     control = conjugacyResult$control, samplerFunction = conjSamplerFunction), print = print)
+            } else addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
         addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE, ...) {
@@ -314,7 +349,6 @@ Details: A single instance of the newly configured sampler is added to the end o
 
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.
 '
-
             nameProvided <- !missing(name)
             if(is.character(type)) {
                 if(type == 'conjugate') {
