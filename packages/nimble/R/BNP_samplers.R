@@ -135,7 +135,7 @@ sampleDPmeasure <- nimbleFunction(
     
     ## Find the cluster variables, named tildeVars
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
-    tildeVars <- nimble:::findClusterVars(model, targetElements[1]) 
+    tildeVars <- nimble:::findClusterNodes(model, target) #nimble:::findClusterVars(model, targetElements[1]) 
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
     
@@ -824,14 +824,14 @@ sampler_CRP <- nimbleFunction(
     targetVar <- model$getVarNames(nodes = target)  
     n <- length(targetElements) 
     
-    clusterVarInfo <- nimble:::findClusterVars(model, targetElements[1], returnIndexInfo = TRUE)
+    clusterVarInfo <- nimble:::findClusterNodes(model, target)
     tildeVars <- unique(clusterVarInfo$clusterVars)
     if(is.null(tildeVars))
         stop('sampler_CRP:  The model should have at least one cluster variable.\n')
     
     ## Check for indexing that would cause errors in using sample() with 'j' as the index of the set of cluster nodes, e.g., mu[xi[i]+2] or mu[some_function(xi[i])]
-    if(any(clusterVarInfo$targetInFunction))
-        stop("sampler_CRP: At the moment, NIMBLE's CRP MCMC sampling requires simple indexing and cannot work with indexing such as 'mu[xi[i]+2]'.\n")
+    #if(any(clusterVarInfo$targetInFunction))
+    #    stop("sampler_CRP: At the moment, NIMBLE's CRP MCMC sampling requires simple indexing and cannot work with indexing such as 'mu[xi[i]+2]'.\n")
 
     
     stochDepsXi <- model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE) # only data
@@ -864,12 +864,13 @@ sampler_CRP <- nimbleFunction(
     dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE) 
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE)) # for vector data gives its length 
     p <- length(tildeVars)
-    nTilde <- numeric(p)
+    #nTilde <- numeric(p)
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
       dimTildeNim <- model$getDimension(elementsTildeVars[i])
-      nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTildeNim
+      #nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTildeNim
     }
+    nTilde <- clusterVarInfo$nTilde
     # in the univariate case: nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
     
     if(length(unique(nTilde)) != 1)
@@ -959,7 +960,8 @@ sampler_CRP <- nimbleFunction(
     ## we use [1] here because the 2nd/3rd args only used for conjugate cases and currently that is only setup for
     ## single parameters
 
-    tildeNodes <- model$expandNodeNames(tildeVars, sort = TRUE)
+    # tildeNodes <- model$expandNodeNames(tildeVars, sort = TRUE)
+    tildeNodes <- unlist(clusterVarInfo$clusterNodes)
     ## check that tildeVars are grouped together by variable because sample() assumes this.
     ## E.g., c('sigma','sigma','mu','mu') for n=2,p=2 is ok but c('sigma','mu','sigma','mu') is not.
     if(p > 1) {  
@@ -975,7 +977,8 @@ sampler_CRP <- nimbleFunction(
       tilde2Nodes <- tildeNodes
     }
       
-    nTildeVars <- length(model$expandNodeNames(tildeVars[1]))
+    #nTildeVars <- length(model$expandNodeNames(tildeVars[1]))
+    nTildeVars <- nTilde[1]
     helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeNodes, dataNodes, p, nTildeVars, tilde1Nodes, tilde2Nodes)
     
     curLogProb <- numeric(n)
@@ -1359,6 +1362,103 @@ sampler_CRP_old <- nimbleFunction(
   },
   methods = list( reset = function () {})
 )
+
+
+findClusterNodes <- function(model, target) {
+  targetVar <- model$getVarNames(nodes = target)
+  targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+  deps <- model$getDependencies(target, self = FALSE)
+  declIDs <- sapply(deps, function(x) model$getDeclID(x))
+  uniqueIDs <- unique(declIDs)
+  depsByDecl <- lapply(uniqueIDs, function(x) deps[which(x == declIDs)])
+  ## Find one example dependency per BUGS declaration for more efficient processing
+  exampleDeps <- sapply(depsByDecl, `[`, 1)
+  
+  e <- list()
+  ## set up (xi[1],...,xi[n]) = (1,2,...,n)
+  ## e[[targetVar]] <- seq_along(targetElements)
+  ## Note: the above statement wouldn't handle xi[3:10] ~ dCRP(), but next construction does.
+  idxExpr <- model$getDeclInfo(target)[[1]]$indexExpr[[1]]
+  eval(substitute(`<-`(`[`(e$VAR, IDX), seq_along(targetElements)), list(VAR = targetVar, IDX = idxExpr)))
+  
+  clusterNodes <- indexExpr <- list()
+  clusterVars <- indexPosition <- numIndexes <- simpleIndex <- NULL
+  varIdx <- 0
+  
+  for(idx in seq_along(exampleDeps)) {
+    ## Pull out expressions, either as RHS of deterministic or parameters of stochastic
+    expr <- cc_getNodesInExpr(model$getValueExpr(exampleDeps[idx]))
+    for(j in seq_along(expr)) {
+      subExpr <- parse(text = expr[j])[[1]]
+      len <- length(subExpr)
+      ## Look for target variable within expression
+      if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' && sum(all.vars(subExpr) == targetVar)) {
+        varIdx <- varIdx + 1
+        clusterVars <- c(clusterVars, deparse(subExpr[[2]]))
+        
+        ## Determine which index the target variable occurs in.
+        k <- 3
+        foundTarget <- FALSE
+        while(k <= len && !foundTarget) {
+          if(sum(all.vars(subExpr[[k]]) == targetVar))
+            foundTarget <- TRUE else k <- k + 1
+        }
+        if(k == len+1) stop("findClusterNodes: conflicting information about presence of ID variable in expression.")
+        
+        ## Determine how target variable enters into cluster node definition.
+        indexPosition[varIdx] <- k-2
+        numIndexes[varIdx] <- len - 2
+        indexExpr[[varIdx]] <- subExpr
+        simpleIndex[varIdx] <- length(subExpr[[k]]) == 3 &&
+          subExpr[[k]][[1]] == '[' &&
+          subExpr[[k]][[2]] == targetVar
+        
+        ## Determine all sets of index values so they can be evaluated in context of possible values of target element values.
+        declInfo <-  model$getDeclInfo(exampleDeps[idx])[[1]]
+        unrolledIndices <- declInfo$unrolledIndicesMatrix
+        n <- nrow(unrolledIndices)
+        clusterNodes[[varIdx]] <- rep(NA, n)
+        
+        ## Determine unevaluated expression, e.g., muTilde[xi[i],j] not muTilde[xi[1],2]
+        expr <- declInfo$valueExprReplaced
+        expr <- parse(text = cc_getNodesInExpr(expr)[[j]])[[1]]
+        templateExpr <- expr   
+        
+        ## Now evaluate index values for all possible target element values, e.g.,
+        ## xi[i] for all 'i' values with xi taking values 1,...,n
+        for(i in seq_len(n)) { 
+          for(k in 3:len) # this will deal with muTilde[xi[i], j] type cases
+            templateExpr[[k]] <- as.numeric(eval(substitute(EXPR, list(EXPR = expr[[k]])),
+                                                 c(as.list(unrolledIndices[i,]), e)))  # as.numeric avoids 1L, 2L, etc.
+          clusterNodes[[varIdx]][i] <- deparse(templateExpr)  # convert to node names
+        }
+      } 
+    }
+  }
+  
+  ## Find number of cluster nodes for each cluster variable. 
+  nTilde <- sapply(clusterNodes, length)
+  modelNodes <- model$getNodeNames()
+  for(varIdx in seq_along(clusterVars)) {
+    if(any(is.na(clusterNodes[[varIdx]])))
+      stop("findClusterNodes: expecting one observation per cluster ID.")
+    if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
+      cnt <- nTilde[varIdx]
+      while(cnt > 1) {
+        # Try to find first nTilde nodes such that are all actual model nodes.
+        if(all(clusterNodes[[varIdx]][seq_len(cnt)] %in% modelNodes)) {
+          nTilde[varIdx] <- cnt
+          break
+        }            
+        cnt <- cnt - 1
+      }
+    }
+  }
+  return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
+              simpleIndex = simpleIndex, indexPosition = indexPosition, indexExpr = indexExpr,
+              numIndexes = numIndexes))
+}
+
 
 
 findClusterVars <- function(model, target, returnIndexInfo = FALSE) {
