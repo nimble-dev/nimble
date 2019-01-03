@@ -797,7 +797,7 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   cm <- compileNimble(m)
   mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi', 'lambda'))
   mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = TRUE) 
+  cMCMC <- compileNimble(mMCMC, project = m) 
   out <- runMCMC(cMCMC, niter=100, nburnin = 90, thin=1)
   means <- sapply(1:10, function(i) mean(out[i, 6:9][out[i, 10:13]]) )
   expect_equal(mean(means), 5, tolerance=2*1, info = 'wrong results from normal - normal - invgamma conjugate CRP')
@@ -989,7 +989,8 @@ test_that("Test that cluster parameters and membership variable are independent 
   mConf <- configureMCMC(m)
   expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: The length of membership variable and the variable that\n')
   
-  #  related variable depends on variable to be clustered
+  
+  #  related variable depends on variable to be clustered and membership variable
   code=nimbleCode({
     for(i in 1:10) {
       muTilde[i] ~ dnorm(0, 1)  
