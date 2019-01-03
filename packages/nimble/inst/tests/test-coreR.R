@@ -156,8 +156,9 @@ blockTests <- list(
     list(name = "3x3x1 chained to 2x2 block", expr = quote(out <- arg1[2:4, 2:5, 2][2:3, 3:4] + 2), args = list(arg1 = quote(double(3))),
          setArgVals = quote(arg1 <- array(as.numeric(1:120), dim = c(4, 5, 6))), outputType = quote(double(2))),
     list(name = "3x3x1 chained to 2x2 block non-arg", expr = quote({temp <- arg1; out <- temp[2:4, 2:5, 2][2:3, 3:4] + 2}), args = list(arg1 = quote(double(3))),
-         setArgVals = quote(arg1 <- array(as.numeric(1:120), dim = c(4, 5, 6))), outputType = quote(double(2)))
-
+         setArgVals = quote(arg1 <- array(as.numeric(1:120), dim = c(4, 5, 6))), outputType = quote(double(2))),
+    list(name = "5d nimArray map copy", expr = quote({temp <- arg1; out <- temp[2:4, 3:6, 2, 4, 1:3]}), args = list(arg1 = quote(double(5))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(5^5)), dim = c(5, 5, 5, 5, 5))), outputType = quote(double(3)))
     ## tests to add:
     ## integer and logical types
     ## input passed non-trivially as map
