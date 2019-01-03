@@ -137,6 +137,7 @@ sampler_RW <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -169,10 +170,24 @@ sampler_RW <- nimbleFunction(
             }
         }
         model[[target]] <<- propValue
-        logMHR <- calculateDiff(model, calcNodes) + propLogScale
-        jump <- decide(logMHR)
-        if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        logMHR <- calculateDiff(model, target)
+        if(logMHR == -Inf) {
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = target, logProb = TRUE)
+            ## Drawing a random number is needed during first testing
+            ## of this step in order to keep the random numbers identical
+            ## to old behavior to see if tests that depend on particular
+            ## sample sequences pass.  Rather than calling runif(1, 0, 1) here,
+            ## we call decide() to ensure same behavior.
+            ## jump <- decide(logMHR)
+            ## When new behavior is acceptable, we can remove the above line
+            ## and uncomment the following:
+            jump <- FALSE
+        } else {
+            logMHR <- logMHR + calculateDiff(model, calcNodesNoSelf) + propLogScale
+            jump <- decide(logMHR)
+            if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+            else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        }
         if(adaptive)     adaptiveProcedure(jump)
     },
     methods = list(
@@ -252,9 +267,18 @@ sampler_RW_block <- nimbleFunction(
         adaptInterval  <- if(!is.null(control$adaptInterval))  control$adaptInterval  else 200
         scale          <- if(!is.null(control$scale))          control$scale          else 1
         propCov        <- if(!is.null(control$propCov))        control$propCov        else 'identity'
+        tries          <- if(!is.null(control$tries))          control$tries          else 1
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
+        if(!is.integer(finalTargetIndex) |
+           length(finalTargetIndex) != 1 |
+           is.na(finalTargetIndex[1]))
+            stop('Problem with target node in sampler_RW_block')
+        calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
+        calcNodesDepStage <- calcNodes[-(1:finalTargetIndex)]
+#        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         scaleOriginal <- scale
         timesRan      <- 0
@@ -271,8 +295,9 @@ sampler_RW_block <- nimbleFunction(
         chol_propCov_scale <- scale * chol_propCov
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
         ## nested function and function list definitions
-        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+        ##        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
+        targetNodesAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+##        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d)
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
@@ -281,10 +306,31 @@ sampler_RW_block <- nimbleFunction(
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
     run = function() {
-        propValueVector <- generateProposalVector()
-        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
-        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
-        if(adaptive)     adaptiveProcedure(jump)
+        for(i in 1:tries) {
+            propValueVector <- generateProposalVector()
+            ##        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
+            values(model, targetNodesAsScalar) <<- propValueVector
+            lpD <- calculateDiff(model, calcNodesProposalStage)
+            if(lpD == -Inf) {
+                nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodesProposalStage, logProb = TRUE)
+            ## Drawing a random number is needed during first testing
+            ## of this step in order to keep the random numbers identical
+            ## to old behavior to see if tests that depend on particular
+            ## sample sequences pass.  Rather than calling runif(1, 0, 1) here,
+            ## we call decide() to ensure same behavior.
+            ## jump <- decide(lpD)
+            ## When new behavior is acceptable, we can remove the above line
+            ## and uncomment the following:
+            jump <- FALSE
+            } else {
+                ##        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
+                lpD <- lpD + calculateDiff(model, calcNodesDepStage)
+                jump <- decide(lpD)
+                if(jump) { nimCopy(from = model,   to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+                } else   { nimCopy(from = mvSaved, to = model,   row = 1, nodes = calcNodes, logProb = TRUE) }
+            }
+            if(adaptive)     adaptiveProcedure(jump)
+        }
     },
     methods = list(
         generateProposalVector = function() {
@@ -619,7 +665,14 @@ sampler_AF_slice <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes      <- model$getDependencies(target)
-        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
+        finalTargetIndex <- max(match(model$expandNodeNames(target), calcNodes))
+        if(!is.integer(finalTargetIndex) |
+           length(finalTargetIndex) != 1 |
+           is.na(finalTargetIndex[1]))
+            stop('Problem with target node in sampler_AF_slice')
+        calcNodesProposalStage <- calcNodes[1:finalTargetIndex]
+        calcNodesDepStage <- calcNodes[-(1:finalTargetIndex)]
+##        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         d                  <- length(targetAsScalar)
         discrete           <- sapply(targetAsScalar, function(x) model$isDiscrete(x))
@@ -707,12 +760,9 @@ sampler_AF_slice <- nimbleFunction(
                 for(i in 1:d)
                     if(discrete[i] == 1)   targetValues[i] <- floor(targetValues[i])            
             values(model, target) <<- targetValues
-            lp <- model$calculate(calcNodes)
-            ## Following lines were intended to prevent bugs in dynamic index cases,
-            ## but in other cases they violate topological ordering.
-            ##            lp <- calculate(model, target)
-            ##            if(lp == -Inf) return(-Inf) # deals with dynamic index out of bounds
-            ##            lp <- lp + calculate(model, calcNodesNoSelf)
+            lp <- model$calculate(calcNodesProposalStage)
+            if(lp == -Inf) return(lp)
+            lp <- lp + model$calculate(calcNodesDepStage)
             returnType(double())
             return(lp)
         },

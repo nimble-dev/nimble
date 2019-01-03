@@ -352,8 +352,8 @@ test_that('basic mixture model with conjugacy', {
     d <- 4
     set.seed(2)
     mns <- c(-.9, .2, 1.6, -1.1)
-    p <- c(.45, .14, .05, .36)
-    sds <- c(.3, .5, .3, .1)
+    p <- c(.4, .14, .1, .36)
+    sds <- c(.2, .4, .2, .1)
     k <- sample(1:d, n, replace = TRUE, prob = p)
     y <- rnorm(n, mns[k], sds[k])
     code <- nimbleCode({
@@ -386,13 +386,13 @@ test_that('basic mixture model with conjugacy', {
                                          "p[2]" = p[3],
                                          "p[3]" = p[1],
                                          "p[4]" = p[2])),
-              resultsTolerance = list(mean = list("mu[1]" = .1,
-                                                  "mu[2]" = .5,
-                                                  "mu[3]" = .1,
-                                                  "mu[4]" = .3,
-                                                  "p[1]" = .02,
-                                                  "p[2]" = .07,
-                                                  "p[3]" = .05,
+              resultsTolerance = list(mean = list("mu[1]" = .05,
+                                                  "mu[2]" = .02,
+                                                  "mu[3]" = .05,
+                                                  "mu[4]" = .05,
+                                                  "p[1]" = .05,
+                                                  "p[2]" = .02,
+                                                  "p[3]" = .1,
                                                   "p[4]" = .02)),
               avoidNestedTest = TRUE)
 

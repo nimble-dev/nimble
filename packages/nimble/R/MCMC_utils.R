@@ -10,7 +10,7 @@
 #' @author Daniel Turek
 #' @export
 decide <- function(logMetropolisRatio) {
-  if(is.na(logMetropolisRatio))	return(FALSE)
+    if(is.na(logMetropolisRatio)) return(FALSE)
   if(logMetropolisRatio > 0) return(TRUE)
   if(runif(1,0,1) < exp(logMetropolisRatio)) return(TRUE)
   return(FALSE)
