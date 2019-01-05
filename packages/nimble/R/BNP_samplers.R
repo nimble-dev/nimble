@@ -504,10 +504,10 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
   },
   methods = list(
     storeParams = function() {
-      priorMean <<- model$getParam(tilde1Nodes[1], 'mean')
-      kappa <<- values(model, tilde2Nodes[1])[1]/model$getParam(tilde1Nodes[1], 'var') # construct kappa as sigma2/(sigma2/kappa)
-      priorShape <<- model$getParam(tilde2Nodes[1], 'shape')
-      priorScale <<- model$getParam(tilde2Nodes[1], 'scale')
+      priorMean <<- model$getParam(marginalizedNodes1[1], 'mean')
+      kappa <<- values(model, marginalizedNodes2[1])[1]/model$getParam(marginalizedNodes1[1], 'var') # construct kappa as sigma2/(sigma2/kappa)
+      priorShape <<- model$getParam(marginalizedNodes2[1], 'shape')
+      priorScale <<- model$getParam(marginalizedNodes2[1], 'scale')
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
@@ -519,10 +519,10 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer()) {
       y <- values(model, dataNodes[i])[1]
-      values(model, tilde2Nodes[j]) <<- c(rinvgamma(1, shape = priorShape + 1/2,
+      values(model, marginalizedNodes2[j]) <<- c(rinvgamma(1, shape = priorShape + 1/2,
                                                   scale = priorScale + kappa * (y - priorMean)^2 / (2*(1+kappa)) ))
-      values(model, tilde1Nodes[j]) <<- c(rnorm(1, mean = (kappa * priorMean + y)/(1 + kappa), 
-                                              sd = sqrt(values(model, tilde2Nodes[j])[1] / (1+kappa))) )
+      values(model, marginalizedNodes1[j]) <<- c(rnorm(1, mean = (kappa * priorMean + y)/(1 + kappa), 
+                                              sd = sqrt(values(model, marginalizedNodes2[j])[1] / (1+kappa))) )
     }
   )
 )
