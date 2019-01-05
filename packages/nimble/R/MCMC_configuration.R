@@ -748,11 +748,12 @@ checkCRPconjugacy <- function(model, target) {
             if(length(unique(valueExprs)) != 1)
                 conjugate <- FALSE
 
-            ## Check that dependent nodes ('observations') are IID
+            ## Check that dependent nodes ('observations') from same declaration.
+            ## This should ensure they have same distribution and parameters are being
+            ## clustered in same way, but also allows other parameters to vary, e.g.,
+            ## y[i] ~ dnorm(mu[xi[i]], s2[i])
             depNodes <- model$getDependencies(clusterNodes, stochOnly = TRUE, self = FALSE)
-            valueExprs <- sapply(depNodes, function(x) model$getValueExpr(x))
-            names(valueExprs) <- NULL
-            if(length(unique(valueExprs)) != 1)
+            if(length(unique(sapply(depNodes, function(x) model$getDeclID(x)))) != 1)
                 conjugate <- FALSE
         }
     }

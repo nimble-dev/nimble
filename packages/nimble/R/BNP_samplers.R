@@ -464,7 +464,7 @@ CRP_nonconjugate <- nimbleFunction(
 CRP_conjugate_dnorm_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dnorm_dnorm",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorMean <- nimNumeric(1)
     priorVar <- nimNumeric(1)
@@ -852,6 +852,7 @@ sampler_CRP <- nimbleFunction(
     if(!all(allTildeNodes %in% model$getNodeNames())) {
         missingNodes <- allTildeNodes[which(!allTildeNodes %in% model$getNodeNames())]
         stop("sampler_CRP: These cluster parameters are not nodes in the model: ", paste(missingNodes, collapse = ','))
+    }
     
     ## Check that no other non-data nodes depend on cluster variables. 
     if(!identical(sort(dataNodes), sort(stochDepsTildeNodes)))
@@ -1008,7 +1009,12 @@ sampler_CRP <- nimbleFunction(
       marginalizedNodes2 <- target
     }
       
-    helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeNodes, dataNodes, p, min_nTilde, marginalizedNodes1, marginalizedNodes2)
+    if(sampler == 'CRP_conjugate_dnorm_dnorm') {
+        helperFunctions[[1]] <-eval(as.name(sampler))(model, tildeNodes, dataNodes, p, min_nTilde)
+    } else {
+        helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeNodes, dataNodes, p, min_nTilde, marginalizedNodes1, marginalizedNodes2)
+    }
+   # helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeNodes, dataNodes, p, min_nTilde, marginalizedNodes1, marginalizedNodes2)
     
     curLogProb <- numeric(n)
     
@@ -1454,7 +1460,7 @@ findClusterNodes <- function(model, target) {
         targetIndexedByFunction[varIdx] <- any(sapply(declInfo$symbolicParentNodes,
                                                     function(x) 
                                                         length(x) >= 3 && x[[1]] == '[' &&
-                                                        x[[2]] == targetVar && length(x[[3]] > 1)))
+                                                        x[[2]] == targetVar && length(x[[3]]) > 1))
         
         ## Determine all sets of index values so they can be evaluated in context of possible values of target element values.
         unrolledIndices <- declInfo$unrolledIndicesMatrix
@@ -1498,7 +1504,7 @@ findClusterNodes <- function(model, target) {
   }
   return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
               targetIsIndex = targetIsIndex, indexPosition = indexPosition, indexExpr = indexExpr,
-              numIndexes = numIndexes))
+              numIndexes = numIndexes, targetIndexedByFunction = targetIndexedByFunction))
 }
 
 checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
@@ -1546,6 +1552,14 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         names(valueExprs) <- NULL
         if(length(unique(valueExprs)) != 1)
             conjugate <- FALSE
+
+        ## Check that dependent nodes ('observations') from same declaration.
+        ## This should ensure they have same distribution and parameters are being
+        ## clustered in same way.
+        depNodes <- model$getDependencies(clusterNodes1, stochOnly = TRUE, self = FALSE)
+        if(length(unique(sapply(depNodes, function(x) model$getDeclID(x)))) != 1)
+            conjugate <- FALSE
+
     }
     return(conjugate)
 }
