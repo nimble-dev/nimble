@@ -135,7 +135,8 @@ sampleDPmeasure <- nimbleFunction(
     
     ## Find the cluster variables, named tildeVars
     targetElements <- model$expandNodeNames(dcrpNode, returnScalarComponents = TRUE)
-    tildeVars <- nimble:::findClusterNodes(model, target) #nimble:::findClusterVars(model, targetElements[1]) 
+    clusterVarInfo <- nimble:::findClusterNodes(model, dcrpVar) #nimble:::findClusterVars(model, targetElements[1]) 
+    tildeVars <- clusterVarInfo$clusterVars
     if( is.null(tildeVars) )  ## probably unnecessary as checked in CRP sampler, but best to be safe
       stop('sampleDPmeasure: The model should have at least one cluster variable.\n')
     
@@ -157,7 +158,7 @@ sampleDPmeasure <- nimbleFunction(
     parentNodesTildeVars <- NULL
     tildeVarsElements <- list()
     for(i in seq_along(tildeVars) ) {
-      tildeVarsElements[[i]] <- model$expandNodeNames(tildeVars[i])
+      tildeVarsElements[[i]] <- clusterVarInfo$clusterNodes[[i]]
     }        
     candidateParentNodes <- model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
     candidateParentNodes <- candidateParentNodes[!candidateParentNodes %in% unlist(tildeVarsElements)]
@@ -221,16 +222,15 @@ sampleDPmeasure <- nimbleFunction(
     N <- length(model$getDependencies(targetElements, stochOnly = TRUE, self = FALSE))
     p <- length(tildeVars)
     lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE))
-    nTilde <- numeric(p+1)
     dimTildeNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
     dimTilde <- numeric(p+1) # dimension to be used in run code
     for(i in 1:p) {
       elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
       dimTildeNim[i] <- model$getDimension(elementsTildeVars[1]) # if the node is deterministic returns NA. I should get the dimension of the parent node?
       dimTilde[i] <- lengthData^(dimTildeNim[i]) 
-      nTilde[i] <- length(values(model, tildeVars[i])) / dimTilde[i]
     }
-    if(any(nTilde[1:p] != nTilde[1])){
+    nTilde <- clusterVarInfo$nTilde
+    if(any(nTilde != nTilde[1])){
       stop('sampleDPmeasure: All cluster parameters must have the same number of parameters.\n')
     }
     
@@ -848,9 +848,9 @@ sampler_CRP <- nimbleFunction(
         stop("sampler_CRP: cluster variables have to be independent of membership variable. \n")  
     }
     
-    ## Update calcNodes when more variables depend on cluster variables.
-    if(all(stochDepsXi %in% stochDepsTildeVars) & length(stochDepsXi) != length(stochDepsTildeVars)) {
-      calcNodes <- unique(c(calcNodes, model$getDependencies(tildeVars)))  
+    ## Check that no other variable depends on cluster variables. 
+    if(length(stochDepsXi) != length(stochDepsTildeVars)) {
+      stop("sampler_CRP: only the variable to be clustered can depend on the cluster variables. \n")  
     } 
 
     ## Check that only 'data nodes' depend on cluster variables. No other unrelated variable can depend on cluster variables
@@ -861,15 +861,15 @@ sampler_CRP <- nimbleFunction(
     
     
     # check that the number of parameters in cluster parameters (if more than one) are the same  (multivariate case considered)
-    dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE) 
-    lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE)) # for vector data gives its length 
-    p <- length(tildeVars)
+    #dataNodes <- model$getDependencies(targetElements[1], stochOnly = TRUE, self = FALSE) 
+    #lengthData <- length(model$expandNodeNames(dataNodes[1], returnScalarComponents = TRUE)) # for vector data gives its length 
+    #p <- length(tildeVars)
     #nTilde <- numeric(p)
-    for(i in 1:p) {
-      elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
-      dimTildeNim <- model$getDimension(elementsTildeVars[i])
-      #nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTildeNim
-    }
+    #for(i in 1:p) {
+    #  elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
+    #  dimTildeNim <- model$getDimension(elementsTildeVars[i])
+    #  #nTilde[i] <- length(values(model, tildeVars[i])) / (lengthData)^dimTildeNim
+    #}
     nTilde <- clusterVarInfo$nTilde
     # in the univariate case: nTilde <- sapply(tildeVars, function(x) length(model[[x]]))
     
@@ -962,24 +962,31 @@ sampler_CRP <- nimbleFunction(
 
     # tildeNodes <- model$expandNodeNames(tildeVars, sort = TRUE)
     tildeNodes <- unlist(clusterVarInfo$clusterNodes)
+    p <- length(tildeVars)
     ## check that tildeVars are grouped together by variable because sample() assumes this.
     ## E.g., c('sigma','sigma','mu','mu') for n=2,p=2 is ok but c('sigma','mu','sigma','mu') is not.
-    if(p > 1) {  
-        tmp <- matrix(tildeNodes, ncol = p)
-        if(any(apply(tmp, 2, function(x) length(unique(gsub("\\[.*", "", x)))) > 1))
-            stop("sampler_CRP: Current MCMC CRP sampling cannot handle the structure of the multiple cluster variables.")
-    }
-    if( sampler == "CRP_conjugate_dnorm_invgamma_dnorm") {
-      tilde1Nodes <- tildeNodes[model$getDistribution(tildeNodes) == 'dnorm']
-      tilde2Nodes <- tildeNodes[model$getDistribution(tildeNodes) == 'dinvgamma']
+    #if(p > 1) {  
+    #    tmp <- matrix(tildeNodes, ncol = p)
+    #    if(any(apply(tmp, 2, function(x) length(unique(gsub("\\[.*", "", x)))) > 1))
+    #        stop("sampler_CRP: Current MCMC CRP sampling cannot handle the structure of the multiple cluster variables.")
+    #}
+    if(p == 2 & sampler == "CRP_conjugate_dnorm_invgamma_dnorm") {
+      for(i in seq_along(tildeVars)) {
+        if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dnorm') {
+          marginalizedNodes1 <- clusterVarInfo$clusterNodes[[i]]
+        } 
+        if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dinvgamma') {
+          marginalizedNodes2 <- clusterVarInfo$clusterNodes[[i]]
+        }
+      }
     } else {
-      tilde1Nodes <- tildeNodes # needed?
-      tilde2Nodes <- tildeNodes
+      marginalizedNodes1 <- tildeNodes # needed?
+      marginalizedNodes2 <- tildeNodes
     }
       
     #nTildeVars <- length(model$expandNodeNames(tildeVars[1]))
     nTildeVars <- nTilde[1]
-    helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeNodes, dataNodes, p, nTildeVars, tilde1Nodes, tilde2Nodes)
+    helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeNodes, dataNodes, p, nTildeVars, marginalizedNodes1, marginalizedNodes2)
     
     curLogProb <- numeric(n)
     
