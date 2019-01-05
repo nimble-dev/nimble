@@ -441,7 +441,7 @@ CRP_helper <- nimbleFunctionVirtual(
 CRP_nonconjugate <- nimbleFunction(
   name = "CRP_nonconjugate",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
@@ -495,7 +495,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
 CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dnorm_invgamma_dnorm",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes1, marginalizedNodes2, dataNodes) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorMean <- nimNumeric(1)
     kappa <- nimNumeric(1)
@@ -531,7 +531,7 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
 CRP_conjugate_dgamma_dpois <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dpois",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -558,7 +558,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
 CRP_conjugate_dgamma_dnorm <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dnorm",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -588,7 +588,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
 CRP_conjugate_dbeta_dbern <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dbern",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
@@ -613,7 +613,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
 CRP_conjugate_dbeta_dbin <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dbin",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
@@ -644,7 +644,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
 CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
   name = "CRP_conjugate_dbeta_dnegbin",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape1 <- nimNumeric(1)
     priorShape2 <- nimNumeric(1)
@@ -673,7 +673,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
 CRP_conjugate_dgamma_dexp <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dexp",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -699,7 +699,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
 CRP_conjugate_dgamma_dgamma <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dgamma",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -728,7 +728,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
 CRP_conjugate_dgamma_dweib <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dweib",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -757,7 +757,7 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
 CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
   name = "CRP_conjugate_dgamma_dinvgamma",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     ## this makes sure that we create objects to store persistent information used for all 'i'
     priorShape <- nimNumeric(1)
     priorRate <- nimNumeric(1)
@@ -786,7 +786,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
 CRP_conjugate_ddirch_dmulti <- nimbleFunction(
   name = "CRP_conjugate_ddirch_dmulti",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, p, nTilde, tilde1Nodes, tilde2Nodes) {
+  setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
     d <- length(model[[marginalizedNodes[1]]])
     priorAlpha <- nimNumeric(d)
   },
@@ -1003,19 +1003,11 @@ sampler_CRP <- nimbleFunction(
           marginalizedNodes2 <- clusterVarInfo$clusterNodes[[i]]
         }
       }
+      helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes1, marginalizedNodes2, dataNodes)
     } else {
-      ## Placeholder. 
-      marginalizedNodes1 <- target
-      marginalizedNodes2 <- target
+      helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeNodes, dataNodes, p, min_nTilde)
     }
       
-    if(sampler == 'CRP_conjugate_dnorm_dnorm') {
-        helperFunctions[[1]] <-eval(as.name(sampler))(model, tildeNodes, dataNodes, p, min_nTilde)
-    } else {
-        helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeNodes, dataNodes, p, min_nTilde, marginalizedNodes1, marginalizedNodes2)
-    }
-   # helperFunctions[[1]] <- eval(as.name(sampler))(model, tildeNodes, dataNodes, p, min_nTilde, marginalizedNodes1, marginalizedNodes2)
-    
     curLogProb <- numeric(n)
     
     printMessage <- TRUE
