@@ -727,15 +727,12 @@ checkCRPconjugacy <- function(model, target) {
     
     targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
 
-    clusterVarInfo <- findClusterVars(model, targetElementExample, returnIndexInfo = TRUE)
+    clusterVarInfo <- findClusterNodes(model, target)
  
     ## New checking for conjugacy using tilde variables: check conjugacy for one tilde node and
     ## then make sure all tilde nodes and all of their dependent nodes are exchangeable
     if(length(clusterVarInfo$clusterVars) == 1 | length(unique(clusterVarInfo$clusterVars)) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
-        clusterNodes <- model$expandNodeNames(clusterVarInfo$clusterVars[1])  # e.g., 'thetatilde[1]',...,
-        ## Avoid non-nodes from truncated clustering,
-        ## e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs.
-        clusterNodes <- clusterNodes[clusterNodes %in% model$getNodeNames(stochOnly = TRUE, includeData = FALSE)]
+        clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
         if(length(conjugacy)) {
             conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) 
@@ -751,14 +748,17 @@ checkCRPconjugacy <- function(model, target) {
             if(length(unique(valueExprs)) != 1)
                 conjugate <- FALSE
 
-            ## We should be able to handle this once Chris works through identifying clusterNodes based on values of xi
-            if(any(clusterVarInfo$targetInFunction))
+            ## Check that dependent nodes ('observations') are IID
+            depNodes <- model$getDependencies(clusterNodes, stochOnly = TRUE, self = FALSE)
+            valueExprs <- sapply(depNodes, function(x) model$getValueExpr(x))
+            names(valueExprs) <- NULL
+            if(length(unique(valueExprs)) != 1)
                 conjugate <- FALSE
         }
     }
     ## check for dnorm_dinvgamma conjugacy
     if(length(clusterVarInfo$clusterVars) == 2 &&
-       checkNormalInvGammaConjugacy(model, clusterVarInfo$clusterVars)) {
+       checkNormalInvGammaConjugacy(model, clusterVarInfo)) {
         conjugate <- TRUE
         conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
     }
