@@ -986,6 +986,9 @@ sampler_CRP <- nimbleFunction(
     ## single parameters
 
     tildeNodes <- unlist(clusterVarInfo$clusterNodes)
+    ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
+    ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
+    
     p <- length(tildeVars)
     ## check that tildeVars are grouped together by variable because sample() assumes this.
     ## E.g., c('sigma','sigma','mu','mu') for n=2,p=2 is ok but c('sigma','mu','sigma','mu') is not.
@@ -1416,8 +1419,9 @@ findClusterNodes <- function(model, target) {
     for(j in seq_along(expr)) {
       subExpr <- parse(text = expr[j])[[1]]
       len <- length(subExpr)
-      ## Look for target variable within expression
-      if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' && sum(all.vars(subExpr) == targetVar)) {
+      ## Look for target variable within expression, but only when used within index
+      if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' &&
+         sum(all.vars(subExpr) == targetVar) && subExpr[[2]] != targetVar) {
         varIdx <- varIdx + 1
         clusterVars <- c(clusterVars, deparse(subExpr[[2]]))
         
@@ -1484,7 +1488,7 @@ findClusterNodes <- function(model, target) {
       stop("findClusterNodes: fewer cluster IDs in ", target, " than elements being clustered.")
     if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
       cnt <- nTilde[varIdx]
-      while(cnt > 1) {
+      while(cnt > 0) {
         # Try to find first nTilde nodes such that are all actual model nodes.
         if(all(clusterNodes[[varIdx]][seq_len(cnt)] %in% modelNodes)) {
             nTilde[varIdx] <- cnt
@@ -1493,7 +1497,12 @@ findClusterNodes <- function(model, target) {
         }            
         cnt <- cnt - 1
       }
-      if(cnt == 0) clusterNodes[[varIdx]] <- NULL
+      if(cnt == 0) {
+          warning("findClusterNodes: missing cluster parameter ", clusterNodes[[varIdx]][1], ".")
+          clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][clusterNodes[[varIdx]] %in% modelNodes]
+          if(!length(clusterNodes[[varIdx]]))
+              stop("findClusterNodes: no cluster parameters for variable ", clusterVars[varIdx], ".")
+      }
     }
   }
   return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
