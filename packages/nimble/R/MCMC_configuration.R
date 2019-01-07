@@ -208,7 +208,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     
                     ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
                     if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
-
+                    
                     ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                     if(nodeLength > 1) {
                         if(useConjugacy) {
@@ -225,7 +225,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
                         if(nodeDist == 'dCRP')         {
                             addSampler(target = node, type = 'CRP')
-                                        #clusterNodeInfo <- findClusterNodes(model, node)
+                            ##clusterNodeInfo <- findClusterNodes(model, node)
                             clusterNodeInfo <- list(clusterVars = 'muTilde', clusterNodes = list( paste0('muTilde[', 1:50, ']')))
                             dcrpNode <- node
                             next
@@ -257,13 +257,11 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     if(discrete) { addSampler(target = node, type = 'slice');     next }
                     
                     ## if node distribution is dgamma and its dependency is dCRP, assign 'augmented_BetaGamma' sampler
-                    if(nodeDist == 'dgamma'){
-                      depNode <- model$getDependencies(node, self=FALSE)
-                      depNodeDist <- model$getDistribution(depNode)
-                      if(length(depNodeDist) == 1 && depNodeDist == 'dCRP'){
-                        addSampler(target = node, type = 'CRP_concentration')
-                        next
-                      }
+                    if(nodeDist == 'dgamma') {
+                        depNode <- model$getDependencies(node, self = FALSE)
+                        depNodeDist <- model$getDistribution(depNode)
+                        if(length(depNodeDist) == 1 && depNodeDist == 'dCRP') {
+                            addSampler(target = node, type = 'CRP_concentration');                next }
                     }
                     
                     ## default: 'RW' sampler
