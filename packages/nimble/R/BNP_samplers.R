@@ -1480,18 +1480,20 @@ findClusterNodes <- function(model, target) {
   nTilde <- sapply(clusterNodes, length)
   modelNodes <- model$getNodeNames()
   for(varIdx in seq_along(clusterVars)) {
-    if(any(is.na(clusterNodes[[varIdx]])))
-      stop("findClusterNodes: expecting one observation per cluster ID.")
+    if(any(is.na(clusterNodes[[varIdx]])))  ## Chris is forgetting when this would occur.
+      stop("findClusterNodes: fewer cluster IDs in ", target, " than elements being clustered.")
     if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
       cnt <- nTilde[varIdx]
       while(cnt > 1) {
         # Try to find first nTilde nodes such that are all actual model nodes.
         if(all(clusterNodes[[varIdx]][seq_len(cnt)] %in% modelNodes)) {
-          nTilde[varIdx] <- cnt
-          break
+            nTilde[varIdx] <- cnt
+            clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][seq_len(cnt)]
+            break
         }            
         cnt <- cnt - 1
       }
+      if(cnt == 0) clusterNodes[[varIdx]] <- NULL
     }
   }
   return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
