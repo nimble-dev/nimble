@@ -181,9 +181,8 @@ sampleDPmeasure <- nimbleFunction(
 
     ## Check that cluster parameters are IID, as required for random measure G
     isIID <- TRUE
-    for(i in seq_along(tildeVars) ) {
-        clusterNodes <- model$expandNodeNames(tildeVars[i])
-        valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
+    for(i in seq_along(clusterVarInfo$clusterNodes)) {
+        valueExprs <- sapply(clusterVarInfo$clusterNodes[[i]], function(x) model$getValueExpr(x))
         names(valueExprs) <- NULL
         if(length(unique(valueExprs)) != 1) {
             isIID <- FALSE

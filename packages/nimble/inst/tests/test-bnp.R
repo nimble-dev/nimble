@@ -438,7 +438,7 @@ test_that("check iid assumption in sampleDPmeasure", {
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
   output <- runMCMC(cMCMC,  niter=1, nburnin = 0, thin=1)
-  expect_error(samplesG <- getSamplesDPmeasure(cMCMC), info='sampleDPmeasure: cluster parameters have to be independent')
+  expect_error(samplesG <- getSamplesDPmeasure(cMCMC), info='sampleDPmeasure: cluster parameters have to be independent and identically')
   
   # one cluster param not with same distribution
   code=nimbleCode(
@@ -559,16 +559,11 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
   expect_true(tr1 < tr3, info='getSamplesDPmeasure: truncation level for smaller epsilon incorrectly computed')
 })
 
-
-
-#-- CRP sampler
-
-
 test_that("Test that new cluster parameters are correctly updated in CRP sampler", {
   rm(list=ls())
   set.seed(1)
   
-  # Data ~ Poisson(5). Starting values are extremely away fromt their true values. 
+  # Data ~ Poisson(5). Starting values are extremely away from their true values. 
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -600,92 +595,7 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   expect_equal(mean(cond), 5, tol=2*1, scale=1,
                info = paste0("incorrect update of cluster parameters in Poisson data"))
   
-  # test for updating new cluster parameters, with conjugacy
-  code <- nimbleCode({
-    for(i in 1:n) {
-      y[i] ~ dnorm(mu[i], 1)
-      mu[i] <- muTilde[xi[i]]
-    }
-    for(i in 1:n) {
-      muTilde[i] ~ dnorm(mu0, sd = sd0)
-    }
-    xi[1:n] ~ dCRP(alpha, size = n)
-    sd0 ~ dhalfflat()
-    alpha ~ dgamma(1, 1)      
-    mu0 ~ dflat()
-  })
-  
-  n <- 30
-  constants <- list(n = n)
-  ## all data plausibly from first cluster except 50th data point
-  data <- list(y = c(rnorm(n-1, 0, 1), 50))
-  ## muTilde is good for all but last data point. muTilde[2] is bad for the last data point (so that we can see that it changes to a good value, which is what the conjugate sampler for xi should ensure)
-  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1, n),
-                muTilde = c(0, rep(-10, n-1)))
-  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-  cmodel <- compileNimble(model)
-  conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
-  mcmc <- buildMCMC(conf)
-  cmcmc <- compileNimble(mcmc, project = model)
-  
-  ## now check that cmodel$muTilde[2] is near 50
-  output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
-  xiSam <- output[, grep('xi', colnames(output))]
-  muTildeSam <- output[, grep('muTilde', colnames(output))]
-  cond <- as.numeric(muTildeSam[2])
-  
-  expect_equal(cond, 50, tolerance=2*1, scale=1, 
-               info = paste0("incorrect update of cluster parameters in mixture of normals 1 data"))
-  
-  # test for updating new cluster parameters, without conjugacy
-  code <- nimbleCode({
-    for(i in 1:n) {
-      y[i] ~ dnorm(mu[i], 1)
-      mu[i] <- muTilde[xi[i]]
-    }
-    for(i in 1:n) {  
-      muTilde[i] ~ dt(mu0, df = 40, sigma = sd0) # force non-conjugate
-    }
-    xi[1:n] ~ dCRP(alpha, size = n)
-    sd0 ~ dhalfflat()
-    alpha ~ dgamma(1, 1)      
-    mu0 ~ dflat()
-  })
-  
-  n <- 30
-  constants <- list(n = n)
-  ## all data plausibly from first cluster except 50th data point
-  data <- list(y = c(rnorm(n-1, 0, 1), 50))
-  ## muTilde is good for all but last data point. muTilde[2] is bad for the last data point (so that we can see that it changes to a good value, which is what the conjugate sampler for xi should ensure)
-  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1, n),
-                muTilde = c(0, rep(-10, n-1)))
-  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
-  cmodel <- compileNimble(model)
-  conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
-  mcmc <- buildMCMC(conf)
-  cmcmc <- compileNimble(mcmc, project = model)
-  
-  ## now check that 50th obs remains in initial bad cluster because muTilde[2] is even worse
-  output <- runMCMC(cmcmc, niter=1, nburn=0, thin=1 , inits=inits, setSeed=FALSE)
-  
-  clusterID <- output[1, paste0('xi[', n, ']')]
-  attributes(clusterID) <- NULL
-  expect_identical(clusterID, 1,
-                   info = 'non-conjugate incorrectly chose bad new cluster')
-  
-  ## check that 50th obs moves to better cluster now that muTilde[2] is decent
-  cmodel$muTilde[2] <- 40
-  cmodel$calculate()
-  output <- runMCMC(cmcmc, niter=1, nburn=0, thin=1, setSeed=FALSE)
-  clusterID <- output[1, paste0('xi[', n, ']')]
-  attributes(clusterID) <- NULL
-  expect_identical(clusterID, 2,
-                   info = 'non-conjugate incorrectly did not choose good new cluster')
-  value <- output[1, "muTilde[2]"]
-  attributes(value) <- NULL
-  expect_equal(value, 40, tolerance=3,
-               info = 'non-conjugate has strange cluster parameter for new cluster')
-  
+ 
   # normal - independent normal - inv gamma
   # We start with only one active component and the data is a mixture of 3 normal ditributions
   code <- nimbleCode({
@@ -860,7 +770,172 @@ test_that("Test that the nonconjugate CRP sampler works fine ", {
   
 })
 
+test_that("Test opening of new clusters in CRP sampler ", {
 
+  # test for updating new cluster parameters, with conjugacy
+  code <- nimbleCode({
+    for(i in 1:n) {
+      y[i] ~ dnorm(mu[i], 1)
+      mu[i] <- muTilde[xi[i]]
+    }
+    for(i in 1:n) {
+      muTilde[i] ~ dnorm(mu0, sd = sd0)
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+  })
+  
+  n <- 20
+  constants <- list(n = n)
+  ## all data plausibly from first cluster except 1st data point
+  data <- list(y = c(50, rep(0, n-1)))
+  ## muTilde is good for all but first data point. 
+  inits <- list(alpha = 1, mu0 = 0, sd0 = 5, xi = rep(1, n),
+                muTilde = c(0, -50, rep(0, n-2)))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cmodel <- compileNimble(model)
+  conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
+  conf$removeSamplers('muTilde')
+  mcmc <- buildMCMC(conf)
+  cmcmc <- compileNimble(mcmc, project = model)
+  
+  ## now check that cmodel$muTilde[2] is near 50 and first obs has moved to 2nd cluster
+  set.seed(1)
+  output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
+  expect_equal(output[1, 'muTilde[2]'], 50, tolerance = 2, info = 'incorrect update of parameter for second cluster',
+               check.attributes = FALSE)
+  expect_identical(output[1, 'xi[1]'], c('xi[1]'=2), 'incorrect cluster for first obs')
+  expect_identical(output[1, 'muTilde[1]'], c('muTilde[1]'=0), 'incorrect update of parameter for first cluster')
+
+  ## test for updating new cluster parameters, without conjugacy
+  code <- nimbleCode({
+    for(i in 1:n) {
+      y[i] ~ T(dnorm(mu[i], 1), -500, 500) # force non-conjugacy
+      mu[i] <- muTilde[xi[i]]
+    }
+    for(i in 1:n) {
+      muTilde[i] ~ dnorm(mu0, sd = sd0)
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+  })
+  
+  n <- 20
+  constants <- list(n = n)
+  ## all data plausibly from first cluster except 1st data point
+  data <- list(y = c(50, rep(0, n-1)))
+  ## muTilde is good for all but first data point. prior generates better value for first data point so new cluster should be opened.
+  inits <- list(alpha = 1, mu0 = 50, sd0 = 5, xi = rep(1, n),
+                muTilde = c(0, -50, rep(0, n-2)))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cmodel <- compileNimble(model)
+  conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
+  conf$removeSamplers('muTilde')
+  mcmc <- buildMCMC(conf)
+  cmcmc <- compileNimble(mcmc, project = model)
+
+  ## now check that cmodel$muTilde[2] has changed and first obs has moved to 2nd cluster
+  set.seed(1)
+  output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
+  expect_true(output[1, 'muTilde[2]'] != -50, 'incorrect update of parameter for second cluster')
+  expect_identical(output[1, 'xi[1]'], c('xi[1]'=2), 'incorrect cluster for first obs')
+
+  ## test for updating new cluster parameters, without conjugacy, no movement expected
+  code <- nimbleCode({
+    for(i in 1:n) {
+      y[i] ~ T(dnorm(mu[i], 1), -500, 500) # force non-conjugacy
+      mu[i] <- muTilde[xi[i]]
+    }
+    for(i in 1:n) {
+      muTilde[i] ~ dnorm(mu0, sd = sd0)
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+  })
+  
+  n <- 20
+  constants <- list(n = n)
+  ## all data plausibly from first cluster except 1st data point
+  data <- list(y = c(50, rep(0, n-1)))
+  ## muTilde is good for all but first data point. prior generates even worse value for new cluster in terms of first obs, so no movement expected.
+  inits <- list(alpha = 1, mu0 = -50, sd0 = 5, xi = rep(1, n),
+                muTilde = c(0, 50, rep(0, n-2)))
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cmodel <- compileNimble(model)
+  conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
+  conf$removeSamplers('muTilde')
+  mcmc <- buildMCMC(conf)
+  cmcmc <- compileNimble(mcmc, project = model)
+
+  ## now check that cmodel$muTilde[2] has changed but first obs has stayed
+  set.seed(1)
+  output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
+  expect_true(output[1, 'muTilde[2]'] != 50, 'incorrect update of parameter for second cluster')
+  expect_identical(output[1, 'xi[1]'], c('xi[1]'=1), 'incorrect cluster for first obs')
+  
+  ## test for updating new cluster parameters, without conjugacy, movement to existing cluster expected
+  code <- nimbleCode({
+    for(i in 1:n) {
+      y[i] ~ T(dnorm(mu[i], 1), -500, 500) # force non-conjugacy
+      mu[i] <- muTilde[xi[i]]
+    }
+    for(i in 1:n) {
+      muTilde[i] ~ dnorm(mu0, sd = sd0)
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+  })
+  
+  n <- 20
+  constants <- list(n = n)
+  ## all data plausibly from first cluster except 1st data point
+  data <- list(y = c(50, rep(0, n-1)))
+  ## muTilde is good for all but first data point. prior generates even worse value for new cluster in terms of first obs, so no movement expected.
+  inits <- list(alpha = 1, mu0 = -50, sd0 = 5, xi = rep(1, n),
+                muTilde = c(0, -50, rep(0, n-2)))
+  inits$xi[1] <- 2
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cmodel <- compileNimble(model)
+  conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
+  conf$removeSamplers('muTilde')
+  mcmc <- buildMCMC(conf)
+  cmcmc <- compileNimble(mcmc, project = model)
+
+  ## now check that cmodel$muTilde[2] has changed and first obs has moved to first cluster
+  set.seed(1)
+  output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
+  expect_true(output[1, 'muTilde[2]'] != -50, 'incorrect update of parameter for second cluster')
+  expect_identical(output[1, 'xi[1]'], c('xi[1]'=1), 'incorrect cluster for first obs')
+
+  ## test for updating new cluster parameters, without conjugacy, singleton with movement to new cluster, same label, expected
+  code <- nimbleCode({
+    for(i in 1:n) {
+      y[i] ~ T(dnorm(mu[i], 1), -500, 500) # force non-conjugacy
+      mu[i] <- muTilde[xi[i]]
+    }
+    for(i in 1:n) {
+      muTilde[i] ~ dnorm(mu0, sd = sd0)
+    }
+    xi[1:n] ~ dCRP(alpha, size = n)
+  })
+  
+  n <- 20
+  constants <- list(n = n)
+  ## all data plausibly from first cluster except 1st data point
+  data <- list(y = c(50, rep(0, n-1)))
+  ## muTilde is good for all but first data point. prior generates better value for new cluster in terms of first obs, so no movement expected.
+  inits <- list(alpha = 1, mu0 = 50, sd0 = 5, xi = rep(1, n),
+                muTilde = c(0, -50, rep(0, n-2)))
+  inits$xi[1] <- 2
+  model <- nimbleModel(code, data = data, constants = constants, inits = inits)
+  cmodel <- compileNimble(model)
+  conf <- configureMCMC(model, monitors = c('xi', 'muTilde', 'sd0', 'alpha', 'mu0'))
+  conf$removeSamplers('muTilde')
+  mcmc <- buildMCMC(conf)
+  cmcmc <- compileNimble(mcmc, project = model)
+
+  ## now check that cmodel$muTilde[2] has changed and first obs has moved to 2nd cluster
+  set.seed(1)
+  output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
+  expect_true(output[1, 'muTilde[2]'] != -50, 'incorrect update of parameter for second cluster')
+  expect_identical(output[1, 'xi[1]'], c('xi[1]'=2), 'incorrect cluster for first obs')
+})
 
 test_that("Test reset frunction in CRP sampler ", {
   rm(list=ls())
