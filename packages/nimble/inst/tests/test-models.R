@@ -574,6 +574,7 @@ test_that("warnings for multiply-defined model nodes:", {
 })
 
 
+
 sink(NULL)
 
 if(FALSE){  ## no warnings being generated in goldFile anymore (perhaps a change in testthat versions?)
