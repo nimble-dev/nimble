@@ -2115,7 +2115,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     expect_equal(1, clusterNodeInfo$indexPosition)
     expect_equal(n-2, clusterNodeInfo$nTilde)
 
-    ## indirect indexing; we don't have a good way to handle this, so error out with not-good error message
+    ## indirect indexing; we don't have a good way to handle this.
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2129,9 +2129,9 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     })
     m <- nimbleModel(code, data = data, constants = const, inits = inits)
     conf <- configureMCMC(m)
-    expect_error(mcmc <- buildMCMC(conf), "model should have at least one cluster variable")
+    expect_error(mcmc <- buildMCMC(conf), "Detected that the CRP variable is used in some way not as an index")
 
-    ## clusterID as second index
+    ## cluster ID as second index
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2280,7 +2280,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
     expect_equal(n, clusterNodeInfo$nTilde)
 
-    ## Extra nodes.
+    ## Extra nodes
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2303,6 +2303,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
     expect_equal(n, clusterNodeInfo$nTilde)
 
+    ## missing first cluster node
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2323,8 +2324,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
     expect_equal(n, clusterNodeInfo$nTilde)
 
-    ## CHRIS STILL NEEDS TO FINALIZE THE REMAINING TESTS IN THIS test_that() CALL.
-
+    ## cluster node indexing shifted
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2334,19 +2334,19 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
         for(i in 2:(n-2))
             muTilde[i] ~ dnorm(0,1)
     })
-    expect_warning(mcmc <- buildMCMC(conf), "foo")
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_warning(mcmc <- buildMCMC(conf), "less than the number of potential clusters")
+    expect_equal(class(mcmc$samplerFunctions[[18]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
     clusterNodeInfo <- nimble:::findClusterNodes(m, target)
     expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 2:(n-2), "]"))
     expect_equal(1, clusterNodeInfo$numIndexes)
     expect_equal(1, clusterNodeInfo$indexPosition)
     expect_equal(FALSE, clusterNodeInfo$targetIsIndex)
     expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
-    expect_equal(n, clusterNodeInfo$nTilde)
+    expect_equal(n-3, clusterNodeInfo$nTilde)
 
-    ## multiple obs
-
-                                        # not ok
+    ## extra dependency on cluster nodes
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2354,11 +2354,14 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
             mu[i] <- muTilde[xi[i]]
         }
         for(i in 1:n)
-            muTilde[i] ~ dnorm(0,1)
-        z ~ dnorm(muTilde[1])
+            muTilde[i] ~ dnorm(0, 1)
+        z ~ dnorm(muTilde[1], 1)
     })
-    expect_error(mcmc <- buildMCMC(conf), "foo")
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "Only the variables being clustered")
 
+    ## multiple observations per cluster membership; not yet handled
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(j in 1:2) {
@@ -2370,9 +2373,11 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
         for(i in 1:n)
             muTilde[i] ~ dnorm(0,1)
     })
-    expect_error(mcmc <- buildMCMC(conf), "foo")
+    m <- nimbleModel(code, data = list(y = matrix(rnorm(2*n),n)), constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "when there is one variable being clustered")
 
-                                        # ok
+    ## Extraneous node that is ok.
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2381,21 +2386,39 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
         }
         for(i in 1:n)
             muTilde[i] ~ dnorm(0,1)
-        z ~ dnorm(muTilde[n+1])
+        z ~ dnorm(muTilde[n+1], 1)
     })
+    inits2$muTilde <- rnorm(n+1)
+    m <- nimbleModel(code, data = data, constants = const, inits = inits2)
+    conf <- configureMCMC(m)
+    expect_silent(mcmc <- buildMCMC(conf))
     expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
     clusterNodeInfo <- nimble:::findClusterNodes(m, target)
     expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
-    expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
-    expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
     expect_equal(1, clusterNodeInfo$numIndexes)
     expect_equal(1, clusterNodeInfo$indexPosition)
+    expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
+    expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
     expect_equal(n, clusterNodeInfo$nTilde)
+    
+    ## Awkward trapping of observations with different distributions.
+    ## We should trap this when checking conjugacy instead and simply assign non-conjugate sampler.
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc, n)
+        for(i in 1:n) 
+            y[i] ~ dnorm(mu[i], var = 1)
+        for(i in 1:(n-1))
+            mu[i] <- muTilde[xi[i]]
+        mu[n] <- exp(muTilde[xi[n]])
+        for(i in 1:n)
+            muTilde[i] ~ dnorm(0, 1)
+    })
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "Cluster membership variable used in multiple declarations")
 
-
-    ## non IID obs
-
-                                        # conjugate
+    
+    ## conjugate but observations not IID  
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2406,7 +2429,10 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
         for(i in 1:n)
             muTilde[i] ~ dnorm(0,1)
     })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_silent(mcmc <- buildMCMC(conf))
+    expect_equal(class(mcmc$samplerFunctions[[41]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
     clusterNodeInfo <- nimble:::findClusterNodes(m, target)
     expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
     expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
@@ -2415,7 +2441,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     expect_equal(1, clusterNodeInfo$indexPosition)
     expect_equal(n, clusterNodeInfo$nTilde)
 
-                                        # nonconjugate sampler
+    ## conjugacy not detected because observations have multiple declarations
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:(n/2)) {
@@ -2428,6 +2454,9 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
         for(i in 1:n)
             muTilde[i] ~ dnorm(0,1)
     })
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_silent(mcmc <- buildMCMC(conf))
     expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
     clusterNodeInfo <- nimble:::findClusterNodes(m, target)
     expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
@@ -2437,41 +2466,39 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     expect_equal(1, clusterNodeInfo$indexPosition)
     expect_equal(n, clusterNodeInfo$nTilde)
 
-                                        # not independent
+    ## observations not independent
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
+        y[1] ~ dnorm(mu[1], var = s2[1])
+        for(i in 2:n)
+            y[i] ~ dnorm(mu[i]+y[i-1], var = s2[i])
         for(i in 1:n) {
-            y[i] ~ dnorm(mu[i]+y[n-i+1], var = s2[i])
             mu[i] <- muTilde[xi[i]]
             s2[i] ~ dgamma(1,1)
         }
         for(i in 1:n)
             muTilde[i] ~ dnorm(0,1)
     })
-    expect_error(mcmc <- buildMCMC(conf), "foo")
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "Variables being clustered must be conditionally independent.")
 
-    ## non IID tildes
-
-                                        # should be nonconjugate
+    ## cluster nodes not independent
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
             y[i] ~ dnorm(mu[i], var = 1)
             mu[i] <- muTilde[xi[i]]
         }
-        for(i in 1:n)
-            muTilde[i] ~ dnorm(mu0[i],1)
+        muTilde[1] ~ dnorm(0, 1)
+        for(i in 2:n)
+            muTilde[i] ~ dnorm(muTilde[i-1],1)
     })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
-    clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
-    expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
-    expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
-    expect_equal(1, clusterNodeInfo$numIndexes)
-    expect_equal(1, clusterNodeInfo$indexPosition)
-    expect_equal(n, clusterNodeInfo$nTilde)
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "Cluster parameters must be conditionally independent.")
 
-                                        # nonconjugate
+    ## cluster nodes not exchangeable so non-conjugate
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2480,9 +2507,12 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
         }
         for(i in 1:(n-1) )
             muTilde[i] ~ dnorm(mu0[i],1)
-        muTilde[n] ~ dpois(1)
+        muTilde[n] ~ dgamma(1,1)
     })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_silent(mcmc <- buildMCMC(conf))
+    expect_equal(class(mcmc$samplerFunctions[[2]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
     clusterNodeInfo <- nimble:::findClusterNodes(m, target)
     expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
     expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
@@ -2491,22 +2521,9 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     expect_equal(1, clusterNodeInfo$indexPosition)
     expect_equal(n, clusterNodeInfo$nTilde)
 
-    ## not independent
+    ## cluster membership variables not independent of cluster parameters
     code <- nimbleCode({
-        xi[1:n] ~ dCRP(conc, n)
-        for(i in 1:n) {
-            y[i] ~ dnorm(mu[i], var = 1)
-            mu[i] <- muTilde[xi[i]]
-        }
-        for(i in 1:(n))
-            muTilde[i] ~ dnorm(muTilde[n-i+1],1)
-    })
-    expect_error(mcmc <- buildMCMC(conf), "foo")
-
-    ## non-indep of xi,tildes
-
-    code <- nimbleCode({
-        xi[1:n] ~ dCRP(muTilde[1], 1)
+        xi[1:n] ~ dCRP(conc + muTilde[1], n)
         for(i in 1:n) {
             y[i] ~ dnorm(mu[i], var = 1)
             mu[i] <- muTilde[xi[i]]
@@ -2515,8 +2532,11 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
             muTilde[i] ~ dnorm(0,1)
         
     })
-    expect_error(mcmc <- buildMCMC(conf), "foo")
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "Only the variables being clustered can depend")
 
+    ## cluster membership variables not independent of cluster parameters
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2527,10 +2547,13 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
             muTilde[i] ~ dnorm(xi[i],1)
         
     })
-    expect_error(mcmc <- buildMCMC(conf), "foo")
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "Only the variables being clustered can depend")
 
-
-                                        # conj norm-ig
+    inits$s2Tilde <- rep(1, n)
+    
+    ## Conjugate normal-invgamma
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2538,13 +2561,16 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
             mu[i] <- muTilde[xi[i]]
         }
         for(i in 1:n) {
-            muTilde[i] ~ dnorm(0,var = s2Tilde[i])
+            muTilde[i] ~ dnorm(0, var = s2Tilde[i])
             s2Tilde[i] ~ dinvgamma(1,1)
         }
     })
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_silent(mcmc <- buildMCMC(conf))
     expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
     clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
+    expect_equal(clusterNodeInfo$clusterNodes[[2]], paste0("muTilde[", 1:n, "]"))
     expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("s2Tilde[", 1:n, "]"))
     expect_equal(c(1,1), clusterNodeInfo$numIndexes)
     expect_equal(c(1,1), clusterNodeInfo$indexPosition)
@@ -2552,6 +2578,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     expect_equal(rep(FALSE, 2), clusterNodeInfo$targetIndexedByFunction)
     expect_equal(rep(n,2), clusterNodeInfo$nTilde)
 
+    ## nTilde < n for one of the cluster parameters. Note confusing error message.
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2560,67 +2587,41 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
         }
         kappa ~ dgamma(1,1)
         for(i in 1:n) 
-            muTilde[i] ~ dnorm(0,var = s2Tilde[i]/kappa)
+            muTilde[i] ~ dnorm(0, var = s2Tilde[i]/kappa)
         for(i in 1:(n-1))
             s2Tilde[i] ~ dinvgamma(1,1)
     })
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "Cluster parameters must be conditionally independent")
+
+    ## nTilde < n 
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc, n)
+        for(i in 1:n) {
+            y[i] ~ dnorm(mu[i], var = s2Tilde[xi[i]])
+            mu[i] <- muTilde[xi[i]]
+        }
+        kappa ~ dgamma(1,1)
+        for(i in 1:(n-1)) {
+            muTilde[i] ~ dnorm(0,var = s2Tilde[i]/kappa)
+            s2Tilde[i] ~ dinvgamma(1,1)
+        }
+    })
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_warning(mcmc <- buildMCMC(conf), "less than the number of potential clusters")
     expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
     clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
+    expect_equal(clusterNodeInfo$clusterNodes[[2]], paste0("muTilde[", 1:(n-1), "]"))
     expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("s2Tilde[", 1:(n-1), "]"))
     expect_equal(c(1,1), clusterNodeInfo$numIndexes)
     expect_equal(c(1,1), clusterNodeInfo$indexPosition)
     expect_equal(rep(TRUE, 2), clusterNodeInfo$targetIsIndex)
     expect_equal(rep(FALSE, 2), clusterNodeInfo$targetIndexedByFunction)
-    expect_equal(c(n, n-1), clusterNodeInfo$nTilde)
+    expect_equal(c(n-1, n-1), clusterNodeInfo$nTilde)
 
-    ## conj norm-ig
-    code <- nimbleCode({
-        xi[1:n] ~ dCRP(conc, n)
-        for(i in 1:n) {
-            y[i] ~ dnorm(mu[i], var = s2Tilde[b[i]])
-            mu[i] <- muTilde[xi[i]]
-            b[i] <- xi[i]
-        }
-        for(i in 1:n) {
-            muTilde[i] ~ dnorm(0,var = s2Tilde[i]/3)
-            s2Tilde[i] ~ dinvgamma(1,1)
-        }
-    })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
-    clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("s2Tilde[", 1:n, "]"))
-    expect_equal(c(1,1), clusterNodeInfo$numIndexes)
-    expect_equal(c(1,1), clusterNodeInfo$indexPosition)
-    expect_equal(rep(TRUE, 2), clusterNodeInfo$targetIsIndex)
-    expect_equal(rep(FALSE, 2), clusterNodeInfo$targetIndexedByFunction)
-    expect_equal(rep(n,2), clusterNodeInfo$nTilde)
-
-    code <- nimbleCode({
-        xi[1:n] ~ dCRP(conc, n)
-        for(i in 1:n) {
-            y[i] ~ dnorm(mu[i], var = s2Tilde[b[i]])
-            mu[i] <- muTilde[xi[i]]
-            b[i] <- xi[i]+5
-        }
-        for(i in 1:(n+3)) {
-            muTilde[i] ~ dnorm(0,var=s2Tilde[i]/3)
-            s2Tilde[i] ~ dinvgamma(1,1)
-        }
-    })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
-    clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("s2Tilde[", 6:(n+3), "]"))
-    expect_equal(c(1,1), clusterNodeInfo$numIndexes)
-    expect_equal(c(1,1), clusterNodeInfo$indexPosition)
-    expect_equal(rep(TRUE, 2), clusterNodeInfo$targetIsIndex)
-    expect_equal(rep(FALSE, 2), clusterNodeInfo$targetIndexedByFunction)
-    expect_equal(c(n, n-2), clusterNodeInfo$nTilde)
-
-    ## xi[i] used in weird ways
-
+    ## CRP variable used in multiple indices; disallowing this.
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2633,65 +2634,39 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
             s2Tilde[i] ~ dinvgamma(1,1)
         }
     })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
-    clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, ", ", 1:n, "]"))
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("s2Tilde[", 1:n, "]"))
-    expect_equal(c(1,1), clusterNodeInfo$numIndexes)
-    ## what will this be?
-    expect_equal(c(1,1), clusterNodeInfo$indexPosition)
-    expect_equal(rep(TRUE, 2), clusterNodeInfo$targetIsIndex)
-    expect_equal(rep(FALSE, 2), clusterNodeInfo$targetIndexedByFunction)
-    expect_equal(rep(n,2), clusterNodeInfo$nTilde)
+    inits2 <- inits
+    inits2$muTilde <- matrix(rnorm(n^2),n)
+    m <- nimbleModel(code, data = data, constants = const, inits = inits2)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "CRP variable used multiple times")
 
-    ## what will happen here? I think this is ok for conj
+    ## weird ordering of muTilde/s2Tilde but should be ok
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
-            y[i] ~ dnorm(mu[i], var = s2Tilde[xi[i]])
-            mu[i] <- muTilde[xi[i],xi[i]+1]
+            y[i] ~ dnorm(mu[i], var = s2Tilde[n-xi[i]+1])
+            mu[i] <- muTilde[xi[i]]
         }
-        for(i in 1:(n+2)) {
-            for(j in 1:(n+2))
-                muTilde[i,j] ~ dnorm(0,var = s2Tilde[i]/3)
+        for(i in 1:n) {
+            muTilde[i] ~ dnorm(0,var=s2Tilde[n-i+1]/3)
             s2Tilde[i] ~ dinvgamma(1,1)
         }
     })
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_silent(mcmc <- buildMCMC(conf))
     expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
     clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, ", ", 2:(n+1), "]"))
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("s2Tilde[", 1:n, "]"))
+    expect_equal(clusterNodeInfo$clusterNodes[[2]], paste0("muTilde[", 1:n, "]"))
+    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("s2Tilde[", n:1, "]"))
     expect_equal(c(1,1), clusterNodeInfo$numIndexes)
-    ## what will this be?
     expect_equal(c(1,1), clusterNodeInfo$indexPosition)
-    expect_equal(rep(TRUE, 2), clusterNodeInfo$targetIsIndex)
+    expect_equal(c(FALSE, TRUE), clusterNodeInfo$targetIsIndex)
     expect_equal(rep(FALSE, 2), clusterNodeInfo$targetIndexedByFunction)
     expect_equal(rep(n,2), clusterNodeInfo$nTilde)
 
-    ## what will happen here? I think this is not ok for conj
-    code <- nimbleCode({
-        xi[1:n] ~ dCRP(conc, n)
-        for(i in 1:n) {
-            y[i] ~ dnorm(mu[i], var = s2Tilde[xi[i]])
-            mu[i] <- muTilde[xi[i],xi[i]+1]
-        }
-        for(i in 1:(n+2)) {
-            for(j in 1:(n+2))
-                muTilde[i,j] ~ dnorm(0,var = s2Tilde[j]/3)
-            s2Tilde[i] ~ dinvgamma(1,1)
-        }
-    })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
-    clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, ", ", 2:(n+1), "]"))
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("s2Tilde[", 1:n, "]"))
-    expect_equal(c(1,1), clusterNodeInfo$numIndexes)
-    ## what will this be?
-    expect_equal(c(1,1), clusterNodeInfo$indexPosition)
-    expect_equal(rep(TRUE, 2), clusterNodeInfo$targetIsIndex)
-    expect_equal(rep(FALSE, 2), clusterNodeInfo$targetIndexedByFunction)
-    expect_equal(rep(n,2), clusterNodeInfo$nTilde)
-
+    ## s2Tildes in different order than muTildes so not conjugate.
+    ## CRP_sampler is INCORRECT for this because can't sample from distr of an s2Tilde given the muTilde that depends on it.
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2703,19 +2678,14 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
             s2Tilde[i] ~ dinvgamma(1,1)
         }
     })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
-    clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("s2Tilde[", n:1, "]"))
-    expect_equal(c(1,1), clusterNodeInfo$numIndexes)
-    ## what will this be?
-    expect_equal(c(1,1), clusterNodeInfo$indexPosition)
-    expect_equal(rep(TRUE, 2), clusterNodeInfo$targetIsIndex)
-    expect_equal(rep(FALSE, 2), clusterNodeInfo$targetIndexedByFunction)
-    expect_equal(rep(n,2), clusterNodeInfo$nTilde)
-
-
-                                        # should be ok
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "Cluster parameters must be conditionally independent")
+    
+    ## Model is valid, but in trying to catch weird uses of CRP variable we don't allow this. should be ok
+    inits2 <- inits
+    inits2$muTilde <- cbind(rnorm(n), rgamma(n, 1, 1))
+    inits2$s2Tilde <- NULL
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2726,46 +2696,28 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
             muTilde[i,2] ~ dinvgamma(1,1)
         }
     })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
-    clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, ", 1]"))
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, ", 2]"))
-    expect_equal(c(2,2), clusterNodeInfo$numIndexes)
-    expect_equal(c(1,1), clusterNodeInfo$indexPosition)
-    expect_equal(rep(TRUE, 2), clusterNodeInfo$targetIsIndex)
-    expect_equal(rep(FALSE, 2), clusterNodeInfo$targetIndexedByFunction)
-    expect_equal(rep(n,2), clusterNodeInfo$nTilde)
+    m <- nimbleModel(code, data = data, constants = const, inits = inits2)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "Cluster membership variable used in multiple declarations")
 
+    ## Non-conjugate, bivariate
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
-            y[i] ~ dnorm(muTilde[xi[i]], var = exp(muTilde[xi[i]]))
+            y[i] ~ dnorm(muTilde[xi[i]], var = exp(s2Tilde[xi[i]]))
         }
-        for(i in 1:n) 
-            muTilde[i] ~ dnorm(0,1)
-    })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
-    clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
-    expect_equal(c(1,1), clusterNodeInfo$numIndexes)
-    expect_equal(c(1,1), clusterNodeInfo$indexPosition)
-    expect_equal(rep(TRUE, 2), clusterNodeInfo$targetIsIndex)
-    expect_equal(rep(FALSE, 2), clusterNodeInfo$targetIndexedByFunction)
-    expect_equal(rep(n,2), clusterNodeInfo$nTilde)
-
-    code <- nimbleCode({
-        xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
-            y[i] ~ dnorm(muTilde[xi[i]], var = exp(muTilde[n-xi[i]+1]))
-        }
-        for(i in 1:n) 
             muTilde[i] ~ dnorm(0,1)
+            s2Tilde[i] ~ dgamma(1,1)
+        }
     })
-    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_silent(mcmc <- buildMCMC(conf))
+    expect_equal(class(mcmc$samplerFunctions[[41]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
     clusterNodeInfo <- nimble:::findClusterNodes(m, target)
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
-    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", n:1, "]"))
+    expect_equal(clusterNodeInfo$clusterNodes[[2]], paste0("muTilde[", 1:n, "]"))
+    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("s2Tilde[", 1:n, "]"))
     expect_equal(c(1,1), clusterNodeInfo$numIndexes)
     expect_equal(c(1,1), clusterNodeInfo$indexPosition)
     expect_equal(rep(TRUE, 2), clusterNodeInfo$targetIsIndex)
@@ -2774,6 +2726,8 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
 
     ## cross clustering
 
+    data$y <- matrix(rnorm(n^2), n)
+    
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2785,8 +2739,11 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
             s2Tilde[i] ~ dinvgamma(1,1)
         }
     })
-    expect_error(mcmc <- buildMCMC(conf), "foo")
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "NIMBLE can only sample when there is one variable being clustered")
 
+    inits$muTilde <- matrix(rnorm(n^2), n)
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
@@ -2799,9 +2756,9 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
             s2Tilde[i] ~ dinvgamma(1,1)
         }
     })
-    expect_error(mcmc <- buildMCMC(conf), "foo")
-
-
+    m <- nimbleModel(code, data = data, constants = const, inits = inits)
+    conf <- configureMCMC(m)
+    expect_error(mcmc <- buildMCMC(conf), "CRP variable used multiple times in")
 
 })
 

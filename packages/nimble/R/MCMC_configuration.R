@@ -730,8 +730,8 @@ checkCRPconjugacy <- function(model, target) {
     clusterVarInfo <- findClusterNodes(model, target)
  
     ## New checking for conjugacy using tilde variables: check conjugacy for one tilde node and
-    ## then make sure all tilde nodes and all of their dependent nodes are exchangeable
-    if(length(clusterVarInfo$clusterVars) == 1 | length(unique(clusterVarInfo$clusterVars)) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
+    ## then make sure all tilde nodes are IID and dependent nodes have same distribution
+    if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
         clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
         if(length(conjugacy)) {

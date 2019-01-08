@@ -826,13 +826,17 @@ sampler_CRP <- nimbleFunction(
     tildeVars <- clusterVarInfo$clusterVars
 
     ####  Various checks that model structure is consistent with our CRP sampler. ####
+    if(!is.null(clusterVarInfo$targetNonIndex))
+        stop("sampler_CRP: Detected that the CRP variable is used in some way not as an index: ", clusterVarInfo$targetNonIndex, ". NIMBLE's CRP sampling not set up to handle this case.")
 
+    
     if(is.null(tildeVars))
         stop('sampler_CRP: The model should have at least one cluster variable.\n')
 
     ## Avoid case like y[i] ~ dnorm(mu[xi[i]], exp(mu[xi[i]])) as it would complicate p>1 case below.
-    if(length(tildeVars) != length(unique(tildeVars)))
-        stop("sampler_CRP: Cluster variables should not be used for multiple parameters.")
+    ## Also catches cases like:  mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]]) that break conjugacy.
+   if(length(tildeVars) != length(unique(tildeVars)))
+        stop("sampler_CRP: Cluster membership variable used in multiple declarations. NIMBLE's CRP MCMC sampling not designed for this case.")
     
     ## Cases like 'muTilde[xi[n-i+1]]'. sampler_CRP may be ok with this, but when we wrap the cluster node sampling
     ## to avoid sampling empty clusters, this kind of indexing will cause incorrect behavior.
@@ -856,30 +860,39 @@ sampler_CRP <- nimbleFunction(
     
     ## Check that no other non-data nodes depend on cluster variables. 
     if(!identical(sort(dataNodes), sort(stochDepsTildeNodes)))
-      stop("sampler_CRP: only the variables being clustered can depend on the cluster variables.")  
+      stop("sampler_CRP: Only the variables being clustered can depend on the cluster parameters.")  
 
     ## Check that membership variable is independent of cluster nodes.
+    ## (Should be redundant with check that no other non-data nodes depend on cluster variables.
     if(target %in% stochDepsTildeNodes)
-      stop("sampler_CRP: Membership variable has to be independent of cluster variables.")
+      stop("sampler_CRP: Cluster membership variable has to be independent of cluster parameters.")
     
-    ## Check that cluster nodes are independent of membership variable.
+    ## Check that cluster nodes are independent of membership variable (dataNodes are dependents of membership var).
+    ## (Should be redundant with check that no other non-data nodes depend on cluster variables.
     if(length(intersect(dataNodes, allTildeNodes)))
-        stop("sampler_CRP: Cluster variables have to be independent of membership variable.")
+        stop("sampler_CRP: Cluster parameters have to be independent of cluster membership variable.")
 
-    ## Check that nodes within each cluster variable are independent of each other.
-    sapply(clusterVarInfo$clusterNodes, function(x) {
-        if(any(x %in% model$getDependencies(x, self = FALSE, stochOnly = TRUE)))
-            stop("sampler_CRP: Cluster parameters must be conditionally independent.")
-    })
+    conjugacyResult <- nimble:::checkCRPconjugacy(model, target)
+
+    if(is.null(conjugacyResult) || conjugacyResult != "conjugate_dnorm_invgamma_dnorm") {
+        ## Check that all cluster parameters are independent as it it tricky to make sure we
+        ## are correctly simulating from the prior otherwise. 
+        tmp <- sapply(allTildeNodes, function(x) {
+            if(any(allTildeNodes %in% model$getDependencies(x, self = FALSE, stochOnly = TRUE)))
+                stop("sampler_CRP: Cluster parameters must be conditionally independent except for conjugate settings.")
+        })
+    }
     
     ## Check that observations are independent of each other.
-    if(length(intersect(dataNodes, model$getDependencies(dataNodes, self = FALSE, stochOnly = TRUE))))
-        stop("sampler_CRP: Variables being cluster must be conditionally independent.")
+    sapply(dataNodes, function(x) {
+        if(any(dataNodes %in% model$getDependencies(x, self = FALSE, stochOnly = TRUE)))
+            stop("sampler_CRP: Variables being clustered must be conditionally independent.")
+    })
 
     ## Check for one "observation" per random index. We will relax this to handle the 'Quinn' model.
     ## Note that cases like mu[xi[i],xi[j]] are being trapped in findClusterNodes().
     if(n != length(dataNodes))
-      stop("sampler_CRP: The length of the membership variable and the variable that is to be clustered have to be the same. Maybe one variable other than the one to be clustered depends on the membership variable in the model structure.")
+      stop("sampler_CRP: At the moment, NIMBLE can only sample when there is one variable being clustered for each cluster membershipID.")
     
     
     # check that the number of parameters in cluster parameters (if more than one) are the same  (multivariate case considered)
@@ -964,7 +977,6 @@ sampler_CRP <- nimbleFunction(
     helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
     
     ## use conjugacy to determine which helper functions to use
-    conjugacyResult <- nimble:::checkCRPconjugacy(model, target)
     if(is.null(conjugacyResult)) {
       sampler <- 'CRP_nonconjugate'
     } else 
@@ -1412,6 +1424,8 @@ findClusterNodes <- function(model, target) {
   clusterNodes <- indexExpr <- list()
   clusterVars <- indexPosition <- numIndexes <- targetIsIndex <- targetIndexedByFunction <- NULL
   varIdx <- 0
+
+  targetNonIndex <- NULL
   
   for(idx in seq_along(exampleDeps)) {
     ## Pull out expressions, either as RHS of deterministic or parameters of stochastic
@@ -1476,7 +1490,9 @@ findClusterNodes <- function(model, target) {
                                                  c(as.list(unrolledIndices[i,]), e)))  # as.numeric avoids 1L, 2L, etc.
           clusterNodes[[varIdx]][i] <- deparse(templateExpr)  # convert to node names
         }
-      } 
+      }
+      if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' && subExpr[[2]] == targetVar)
+          targetNonIndex <- deparse(model$getDeclInfo(exampleDeps[idx])[[1]]$code)
     }
   }
   
@@ -1507,7 +1523,8 @@ findClusterNodes <- function(model, target) {
   }
   return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
               targetIsIndex = targetIsIndex, indexPosition = indexPosition, indexExpr = indexExpr,
-              numIndexes = numIndexes, targetIndexedByFunction = targetIndexedByFunction))
+              numIndexes = numIndexes, targetIndexedByFunction = targetIndexedByFunction,
+              targetNonIndex = targetNonIndex))
 }
 
 checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
