@@ -885,7 +885,7 @@ class NimArr<4, T> : public NimArrBase<T> {
     return *this;
   }
 
-  NimArr<4, T> &operator=(const NimArr<3, T> &other) {
+  NimArr<4, T> &operator=(const NimArr<4, T> &other) {
     if (NimArrBase<T>::isMap()) {
       return mapCopy(other);
     }
@@ -1019,7 +1019,7 @@ class NimArr<4, T> : public NimArrBase<T> {
     NimArrBase<T>::NAdims[2] = size3 = is[2];
     NimArrBase<T>::NAdims[3] = size4 = is[3];
 
-    NimArrBase<T>::NAlength = size1 * size2;
+    NimArrBase<T>::NAlength = size1 * size2 * size3 * size4;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str[0];
     NimArrBase<T>::NAstrides[1] = stride2 = str[1];
     NimArrBase<T>::NAstrides[2] = stride3 = str[2];
@@ -1414,7 +1414,7 @@ class NimArr<5, T> : public NimArrBase<T> {
     NimArrBase<T>::NAdims[1] = size2 = is2;
     NimArrBase<T>::NAdims[2] = size3 = is3;
     NimArrBase<T>::NAdims[3] = size4 = is4;
-    NimArrBase<T>::NAdims[3] = size5 = is5;
+    NimArrBase<T>::NAdims[4] = size5 = is5;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
     NimArrBase<T>::NAstrides[1] = stride2 = is1;
     NimArrBase<T>::NAstrides[2] = stride3 = is1 * is2;
