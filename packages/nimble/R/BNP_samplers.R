@@ -828,6 +828,11 @@ sampler_CRP <- nimbleFunction(
     if(!is.null(clusterVarInfo$targetNonIndex))
         stop("sampler_CRP: Detected that the CRP variable is used in some way not as an index: ", clusterVarInfo$targetNonIndex, ". NIMBLE's CRP sampling not set up to handle this case.")
 
+    if(any(clusterVarInfo$nTilde == 0)) {
+        var <- which(clusterVarInfo$nTilde == 0)
+        stop("sampler_CRP: Detected unusual indexing in ", deparse(clusterVarInfo$indexExpr[[var[1]]]),
+             " . NIMBLE's CRP MCMC sampling is not designed for this case.")
+    }
     
     if(is.null(tildeVars))
         stop('sampler_CRP: The model should have at least one cluster variable.\n')
@@ -1439,7 +1444,7 @@ findClusterNodes <- function(model, target) {
         clusterVars <- c(clusterVars, deparse(subExpr[[2]]))
         
         ## Determine which index the target variable occurs in.
-        k <- 3
+        k <- whichIndex <- 3
         foundTarget <- FALSE
         while(k <= len) {
             if(sum(all.vars(subExpr[[k]]) == targetVar)) {
@@ -1448,23 +1453,23 @@ findClusterNodes <- function(model, target) {
                          ". NIMBLE's CRP MCMC sampling not designed for this situation.")
                 } else {
                     foundTarget <- TRUE
+                    whichIndex <- k
                 }
             }
             k <- k+1
         }
         if(!foundTarget) stop("findClusterNodes: conflicting information about presence of CRP variable in expression.")
-        k <- k-1
 
         declInfo <-  model$getDeclInfo(exampleDeps[idx])[[1]]
         
         ## Determine how target variable enters into cluster node definition
-        indexPosition[varIdx] <- k-2
+        indexPosition[varIdx] <- whichIndex-2
         numIndexes[varIdx] <- len - 2
         indexExpr[[varIdx]] <- subExpr
         ## Is target used directly as index, e.g., "mu[xi[.]]" as opposed to something like "mu[1+xi[.]]".
-        targetIsIndex[varIdx] <- length(subExpr[[k]]) == 3 &&
-          subExpr[[k]][[1]] == '[' &&
-          subExpr[[k]][[2]] == targetVar
+        targetIsIndex[varIdx] <- length(subExpr[[whichIndex]]) == 3 &&
+          subExpr[[whichIndex]][[1]] == '[' &&
+          subExpr[[whichIndex]][[2]] == targetVar
         ## Is indexing of target a simple index, e.g. xi[i], as opposed to something like "xi[n-i+1]".
         targetIndexedByFunction[varIdx] <- any(sapply(declInfo$symbolicParentNodes,
                                                     function(x) 
@@ -1474,24 +1479,27 @@ findClusterNodes <- function(model, target) {
         ## Determine all sets of index values so they can be evaluated in context of possible values of target element values.
         unrolledIndices <- declInfo$unrolledIndicesMatrix
         n <- nrow(unrolledIndices)
-        clusterNodes[[varIdx]] <- rep(NA, n)
-        
-        ## Determine unevaluated expression, e.g., muTilde[xi[i],j] not muTilde[xi[1],2]
-        expr <- declInfo$valueExprReplaced
-        expr <- parse(text = cc_getNodesInExpr(expr)[[j]])[[1]]
-        templateExpr <- expr   
-        
-        ## Now evaluate index values for all possible target element values, e.g.,
-        ## xi[i] for all 'i' values with xi taking values 1,...,n
-        for(i in seq_len(n)) { 
-          for(k in 3:len) # this will deal with muTilde[xi[i], j] type cases
-            templateExpr[[k]] <- as.numeric(eval(substitute(EXPR, list(EXPR = expr[[k]])),
-                                                 c(as.list(unrolledIndices[i,]), e)))  # as.numeric avoids 1L, 2L, etc.
-          clusterNodes[[varIdx]][i] <- deparse(templateExpr)  # convert to node names
-        }
-      }
+        if(n > 0) {  # catch cases like use of xi[2] rather than xi[1]
+            clusterNodes[[varIdx]] <- rep(NA, n)
+            
+            ## Determine unevaluated expression, e.g., muTilde[xi[i],j] not muTilde[xi[1],2]
+            expr <- declInfo$valueExprReplaced
+            expr <- parse(text = cc_getNodesInExpr(expr)[[j]])[[1]]
+            templateExpr <- expr   
+            
+            ## Now evaluate index values for all possible target element values, e.g.,
+            ## xi[i] for all 'i' values with xi taking values 1,...,n
+            for(i in seq_len(n)) { 
+                for(k in 3:len) # this will deal with muTilde[xi[i], j] type cases
+                    if(length(all.vars(expr[[k]])))  # prevents eval of things like 1:3, which the as.numeric would change to c(1,3)
+                        templateExpr[[k]] <- as.numeric(eval(substitute(EXPR, list(EXPR = expr[[k]])),
+                                                             c(as.list(unrolledIndices[i,]), e)))  # as.numeric avoids 1L, 2L, etc.
+                clusterNodes[[varIdx]][i] <- deparse(templateExpr)  # convert to node names
+            }
+        } else clusterNodes[[varIdx]] <- character(0)
+      } 
       if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' && subExpr[[2]] == targetVar)
-          targetNonIndex <- deparse(model$getDeclInfo(exampleDeps[idx])[[1]]$code)
+          targetNonIndex <- deparse(model$getDeclInfo(exampleDeps[idx])[[1]]$codeReplaced)
     }
   }
   
@@ -1499,25 +1507,27 @@ findClusterNodes <- function(model, target) {
   nTilde <- sapply(clusterNodes, length)
   modelNodes <- model$getNodeNames()
   for(varIdx in seq_along(clusterVars)) {
-    if(any(is.na(clusterNodes[[varIdx]])))  ## Chris is forgetting when this would occur.
-      stop("findClusterNodes: fewer cluster IDs in ", target, " than elements being clustered.")
-    if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
-      cnt <- nTilde[varIdx]
-      while(cnt > 0) {
-        # Try to find first nTilde nodes such that are all actual model nodes.
-        if(all(clusterNodes[[varIdx]][seq_len(cnt)] %in% modelNodes)) {
-            nTilde[varIdx] <- cnt
-            clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][seq_len(cnt)]
-            break
-        }            
-        cnt <- cnt - 1
-      }
-      if(cnt == 0) {
-          warning("findClusterNodes: missing cluster parameter ", clusterNodes[[varIdx]][1], ".")
-          clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][clusterNodes[[varIdx]] %in% modelNodes]
-          if(!length(clusterNodes[[varIdx]]))
-              stop("findClusterNodes: no cluster parameters for variable ", clusterVars[varIdx], ".")
-      }
+    if(nTilde[[varIdx]]) {
+        if(any(is.na(clusterNodes[[varIdx]])))  ## Chris is forgetting when this would occur.
+            stop("findClusterNodes: fewer cluster IDs in ", target, " than elements being clustered.")
+        if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
+            cnt <- nTilde[varIdx]
+            while(cnt > 0) {
+                                        # Try to find first nTilde nodes such that are all actual model nodes.
+                if(all(clusterNodes[[varIdx]][seq_len(cnt)] %in% modelNodes)) {
+                    nTilde[varIdx] <- cnt
+                    clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][seq_len(cnt)]
+                    break
+                }            
+                cnt <- cnt - 1
+            }
+            if(cnt == 0) {
+                warning("findClusterNodes: missing cluster parameter ", clusterNodes[[varIdx]][1], ".")
+                clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][clusterNodes[[varIdx]] %in% modelNodes]
+                if(!length(clusterNodes[[varIdx]]))
+                    stop("findClusterNodes: no cluster parameters for variable ", clusterVars[varIdx], ".")
+            }
+        }
     }
   }
   return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,

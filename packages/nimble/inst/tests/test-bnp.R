@@ -12,7 +12,6 @@ nimbleOptions(MCMCprogressBar = FALSE)
 context('Testing of BNP functionality')
 
 test_that("Test that sampleDPmeasure can be used for more complicated models", {
-  rm(list=ls())
   set.seed(1)
   
   ## no deterministic node, conc param is fixed
@@ -293,7 +292,6 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
 
 
 test_that("sampleDPmeasure: testing that required variables in MCMC modelValues are monitored", {
-  rm(list=ls())
   set.seed(1)
   
   ## membership variable not being monitored
@@ -418,7 +416,6 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
 
 
 test_that("check iid assumption in sampleDPmeasure", {
-  rm(list=ls())
   set.seed(1)
   
   # univariate cluster parameters are not iid
@@ -439,6 +436,31 @@ test_that("check iid assumption in sampleDPmeasure", {
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
   output <- runMCMC(cMCMC,  niter=1, nburnin = 0, thin=1)
   expect_error(samplesG <- getSamplesDPmeasure(cMCMC), info='sampleDPmeasure: cluster parameters have to be independent and identically')
+
+  # also not IID
+    code=nimbleCode({
+        xi[1:3] ~ dCRP(1, size = 3)
+        thetatilde[1] ~ dnorm(0, 1)
+        thetatilde[2] ~ dt(0, 1, 1)
+        thetatilde[3] ~ dt(0, 1, 1)
+        s2tilde[1] ~ dinvgamma(2, 1)
+        s2tilde[2] ~ dgamma(1, 1)
+        s2tilde[3] ~ dgamma(1, 1)
+        for(i in 1:3){
+            y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])
+        }
+    }
+    )
+    Inits <- list(xi = rep(1, 3), thetatilde=rep(0,3), s2tilde=rep(1,3))
+    Data <- list(y = rnorm(3,-5, 1))
+    m <- nimbleModel(code, data=Data, inits=Inits)
+    cm <- compileNimble(m)
+    mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi'))
+    expect_silent(mMCMC <- buildMCMC(mConf))
+    cMCMC <- compileNimble(mMCMC, project = m) 
+    output <- cMCMC$run(1)
+    expect_error(getSamplesDPmeasure(cMCMC), info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
+
   
   # one cluster param not with same distribution
   code=nimbleCode(
@@ -517,7 +539,6 @@ test_that("check iid assumption in sampleDPmeasure", {
 
 
 test_that("check use of epsilon parameters in getSamplesDPmeasure", {
-  rm(list=ls())
   set.seed(1)
   
   code <- nimbleCode({
@@ -560,7 +581,6 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
 })
 
 test_that("Test that new cluster parameters are correctly updated in CRP sampler", {
-  rm(list=ls())
   set.seed(1)
   
   # Data ~ Poisson(5). Starting values are extremely away from their true values. 
@@ -718,11 +738,9 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
 
 
 test_that("Test that the nonconjugate CRP sampler works fine ", {
-  rm(list=ls())
   set.seed(1)
   
   # xi=1:n, the sampler requires samples from G_0
-  rm(list=ls())
   code=nimbleCode(
     {
       xi[1:3] ~ dCRP(1 , size=3)
@@ -938,7 +956,6 @@ test_that("Test opening of new clusters in CRP sampler ", {
 })
 
 test_that("Test reset frunction in CRP sampler ", {
-  rm(list=ls())
   set.seed(1)
   
   # the data set has more clusters than cluster parameters are available
@@ -965,7 +982,6 @@ test_that("Test reset frunction in CRP sampler ", {
 
 
 test_that("Test that cluster parameters have the correct order for sampling then in CRP sampler ", {
-  rm(list=ls())
   set.seed(1)
   
   # this model should not be acceptable because muTilde[1, i] is part of the tildeNodes
@@ -992,7 +1008,6 @@ test_that("Test that cluster parameters have the correct order for sampling then
 
 
 test_that("Test that cluster parameters and membership variable are independent in CRP sampler ", {
-  rm(list=ls())
   set.seed(1)
 
   # membership variable depends on cluster params
@@ -1084,8 +1099,7 @@ test_that("Test that cluster parameters and membership variable are independent 
   
 })
 
-test_that("Test only data depends on cluster  variable in CRP sampler", {
-  rm(list=ls())
+test_that("Test only data depends on cluster variable in CRP sampler", {
   set.seed(1)
   
   # not only data depends on xi and mu: case is safe because length of data and xi is different
@@ -1146,68 +1160,8 @@ test_that("Test only data depends on cluster  variable in CRP sampler", {
 })
 
 
-#test_that("Test correct order of two cluster parameters in CRP sampler ", {
-# # not sure what kind of model would produce (mu[1], s2[1], mu[2], s2[2]) 
-#
-#  rm(list=ls())
-#  #  this is actually a non iid exmaple for getSamplesDPmeasure
-#  code=nimbleCode(
-#    {
-#      xi[1:10] ~ dCRP(1 , size=10)
-#      thetatilde[1] ~ dnorm(0, 1)
-#      thetatilde[2] ~ dt(0, 1, 1)
-#      thetatilde[3] ~ dt(0, 1, 1)
-#      s2tilde[1] ~ dinvgamma(2, 1)
-#      s2tilde[2] ~ dgamma(1, 1)
-#      s2tilde[3] ~ dgamma(1, 1)
-#      for(i in 1:10){
-#        y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])
-#      }
-#    }
-#  )
-#  Inits=list(xi=rep(1, 10), thetatilde=rep(0,3), s2tilde=rep(1,3))#
-#  Data=list(y=c(rnorm(3,-5, 1), rnorm(3,5, 1), rnorm(4, 0,1)))
-#  m <- nimbleModel(code, data=Data, inits=Inits)
-#  cm <- compileNimble(m)
-#  mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi'))
-#  expect_warning(mMCMC <- buildMCMC(mConf))
-#  cMCMC <- compileNimble(mMCMC, project = m) 
-#  expect_output(cMCMC$run(1), 'CRP_sampler: This MCMC is for a parametric model.')
-#  cMCMC$run(1, reset=FALSE)
-#  
-#  expect_error(getSamplesDPmeasure(cMCMC), info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
-#  
-#  
-#  
-#  
-#})
-
-
-
-test_that("Test use of simple indexing in CRP sampler ", {
-  
-  rm(list=ls())
-  code=nimbleCode(
-    {
-      xi[1:3] ~ dCRP(1 , size=3)
-      for(i in 1:3){
-        thetatilde[i] ~ dt(0, 1, 1)# implies non conjugate CRP sampler 
-        y[i] ~ dnorm(thetatilde[xi[i] + 2], var=1)
-      }
-    }
-  )
-  Inits=list(xi=1:3, thetatilde=rep(0,3))#
-  Data=list(y=rnorm(3,0, 1))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi'))
-  expect_error(mMCMC <- buildMCMC(mConf), info = 'sampler_CRP: At the moment, NIMBLE')
-  
-})
-
 
 test_that("testing multivariate normal mixture models with CRP", {
-  rm(list=ls())
   set.seed(1)
   
   # bivariate normal kernel with unknown mean
@@ -1389,8 +1343,7 @@ test_that("testing multivariate normal mixture models with CRP", {
 
 
 
-test_that("Test that not nonparametric MCMC message in CRP sampler is correctly sended", {
-  rm(list=ls())
+test_that("Test that not nonparametric MCMC message in CRP sampler is printed", {
   set.seed(1)
   
   # 2 mean cluster parameters, data is mixture of 3 normals, concentration param is fixed
@@ -1440,7 +1393,7 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is correctly 
                 info = 'CRP_sampler: This MCMC is not for a proper model.')
   
 
-  # less cluster parameters than onservation, concentration param is fixed, conjugate case
+  # less cluster parameters than observation, concentration param is fixed, conjugate case
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(1 , size=10)
@@ -1546,7 +1499,8 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is correctly 
 ## Testing CRP distribution
 
 test_that("Check error given when model has no cluster variables", {
-  
+    ## Originally this tested whether there are no tildeVars but with new check for 'xi' appearing
+    ## in non-index role, the error is caught differently.
   set.seed(1)
   code <- nimbleCode({
     xi[1:6] ~ dCRP(conc0, 6)
@@ -1561,7 +1515,7 @@ test_that("Check error given when model has no cluster variables", {
   mConf <- configureMCMC(m)
   
   expect_error(buildMCMC(mConf) ,
-               'sampler_CRP:  The model should have at least one cluster variable.')
+               'sampler_CRP: Detected that the CRP variable is used in some way not as an index')
   
 })
 
@@ -2169,6 +2123,30 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     expect_equal(1, clusterNodeInfo$indexPosition)
     expect_equal(n, clusterNodeInfo$nTilde)
 
+    ## more complicated indexing to check results of findClusterNodes()
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc, n)
+        for(i in 1:n) {
+            y[i] ~ dnorm(mu[i], var = 1)
+            mu[i] <- muTilde[xi[i], 2]
+        }
+        for(i in 1:n)
+            muTilde[i, 2] ~ dnorm(0,1)
+    })
+    inits2 <- inits
+    inits2$muTilde <- matrix(rnorm(n*2), n)
+    m <- nimbleModel(code, data = data, constants = const, inits = inits2)
+    conf <- configureMCMC(m)
+    expect_silent(mcmc <- buildMCMC(conf))
+    expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
+    clusterNodeInfo <- nimble:::findClusterNodes(m, target)
+    expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, ", 2]"))
+    expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
+    expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
+    expect_equal(2, clusterNodeInfo$numIndexes)
+    expect_equal(1, clusterNodeInfo$indexPosition)
+    expect_equal(n, clusterNodeInfo$nTilde)
+
     ## fewer tildeNodes than observations
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
@@ -2490,7 +2468,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     })
     m <- nimbleModel(code, data = data, constants = const, inits = inits)
     conf <- configureMCMC(m)
-    expect_error(mcmc <- buildMCMC(conf), "Cluster membership variable used in multiple declarations")
+    expect_error(mcmc <- buildMCMC(conf), "Detected unusual indexing in")
 
     
     ## conjugate but observations not IID  
@@ -2612,14 +2590,16 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     expect_error(mcmc <- buildMCMC(conf), "Only the variables being clustered can depend")
 
     ## cluster membership variables not independent of cluster parameters
+    ## This is not detected by the check for independence but by use of 'xi' as non-index
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc, n)
         for(i in 1:n) {
             y[i] ~ dnorm(mu[i], var = 1)
             mu[i] <- muTilde[xi[i]]
+            tmp[i] ~ dnorm(0,1)
         }
         for(i in 1:n)
-            muTilde[i] ~ dnorm(xi[i],1)
+            muTilde[i] ~ dnorm(tmp[xi[i]],1)
         
     })
     m <- nimbleModel(code, data = data, constants = const, inits = inits)
@@ -3093,7 +3073,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50)))
   conf <- configureMCMC(m)
-  expect_warning(buildMCMC(conf))
+  expect_warning(buildMCMC(conf), "The number of cluster parameters is less than the number of potential clusters")
   
   
   
@@ -3111,7 +3091,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50), s2=rinvgamma(50,1,1)))
   conf <- configureMCMC(m)
-  expect_warning(buildMCMC(conf))
+  expect_warning(buildMCMC(conf), "The number of cluster parameters is less than the number of potential clusters")
   
   
   ## multiple tilde parameters, one is common for every observation
@@ -3128,7 +3108,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50), s2=rinvgamma(1,1,1)))
   conf <- configureMCMC(m)
-  expect_message(buildMCMC(conf))
+  expect_error(buildMCMC(conf), "Detected unusual indexing in")
   
   ## more than one label used for each observation
   code = nimbleCode({
@@ -3144,7 +3124,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50)))
   conf <- configureMCMC(m)
-  expect_warning(expect_error(buildMCMC(conf)))
+  expect_error(buildMCMC(conf), "Detected unusual indexing in")
   
   ## test that a message is sent when more tilde variables than defined are needed
   code = nimbleCode({
