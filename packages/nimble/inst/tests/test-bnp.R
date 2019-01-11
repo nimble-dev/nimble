@@ -3242,7 +3242,7 @@ test_that("Testing BNP model based on CRP", {
   Code=nimbleCode(
     {
       for(i in 1:50){
-        thetatilde[i] ~ dnorm(mean=0, var=1) 
+        thetatilde[i] ~ dnorm(mean=0, var=100) 
         s2tilde[i] ~ dinvgamma(shape=2, scale=1) 
       }
       for(i in 1:100){
@@ -3262,25 +3262,25 @@ test_that("Testing BNP model based on CRP", {
   m <- nimbleModel(Code, data=Data, inits=Inits, calculate=TRUE)
   cmodel <- compileNimble(m)
   
-  mConf <- configureMCMC(m)
+  mConf <- configureMCMC(m, monitors = c('xi', 'thetatilde', 's2tilde'))
   expect_warning(mMCMC <- buildMCMC(mConf))
   expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   CmMCMC=compileNimble(mMCMC, project=m)
-  samples <- runMCMC(CmMCMC, niter=600, nburnin=500)
+  samples <- runMCMC(CmMCMC, niter=2000, nburnin=1900)
   
   samplesG <- getSamplesDPmeasure(CmMCMC)
   trunc <- samplesG$trunc
   samplesG <- samplesG$samples
   
-  ygrid <- seq(0, 100, by=1)
+  ygrid <- seq(-10, 10, len=100)
   fSam <- matrix(0, ncol=length(ygrid), nrow=nrow(samplesG))
   for(i in 1:nrow(samplesG)){
     fSam[i, ] <- sapply(ygrid, function(x)sum(samplesG[i, 1:trunc]*
-                                                dnorm(x,samplesG[(2*trunc+1):(3*trunc)],sqrt(samplesG[(trunc+1):(2*trunc)]))))
+                                                dnorm(x,samplesG[i, (2*trunc+1):(3*trunc)],sqrt(samplesG[i, (trunc+1):(2*trunc)]))))
   }
   fHat <- apply(fSam, 2, mean)
-  f0 <- function(x) 0.2*dpois(x, 10) + 0.2*dpois(x, 5) + 0.6*dpois(x, 50)
+  f0 <- function(x) 0.5*dnorm(x, 5,sqrt(4)) + 0.5*dnorm(x, -5,sqrt(2))
   f0grid <- sapply(ygrid, f0)
   
   L1dist <- mean(abs(f0grid - fHat))
