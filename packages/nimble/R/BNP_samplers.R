@@ -228,8 +228,9 @@ sampleDPmeasure <- nimbleFunction(
       dimTildeNim[i] <- model$getDimension(elementsTildeVars[1]) # if the node is deterministic returns NA. I should get the dimension of the parent node?
       dimTilde[i] <- lengthData^(dimTildeNim[i]) 
     }
-    nTilde <- clusterVarInfo$nTilde
-    if(any(nTilde != nTilde[1])){
+    nTilde <- numeric(p+1)
+    nTilde[1:p] <- clusterVarInfo$nTilde
+    if(any(nTilde[1:p] != nTilde[1])){
       stop('sampleDPmeasure: All cluster parameters must have the same number of parameters.\n')
     }
     
