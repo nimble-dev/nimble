@@ -80,9 +80,9 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           newCodeLine <- cppLiteral(c(paste0('ptrToSmartPtr = static_cast<nimSmartPtr<',name,'>* >(R_ExternalPtrAddr(input));'),
                                                                       'ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase*>(ptrToSmartPtr);',
                                                                       'ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();',
-                                                                      'PROTECT(SptrToSmartPtrBase = R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));',
-                                                                      'PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));'))
-                                          allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = Rf_allocVector(VECSXP,', 2, '));'))
+                                                                      'SptrToSmartPtrBase = PROTECT(R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));',
+                                                                      'SptrToPtr = PROTECT(R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));'))
+                                          allocVectorLine <- cppLiteral(paste0('Sans = PROTECT(Rf_allocVector(VECSXP,', 2, '));'))
                                           
                                           packListLines <- cppLiteral(c('SET_VECTOR_ELT(Sans,0,SptrToSmartPtrBase);',
                                                                         'SET_VECTOR_ELT(Sans,1,SptrToPtr);'
@@ -136,7 +136,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           newCodeLine <- cppLiteral(c(paste('newObj = new ',name,';'),
                                                                       paste0('ptrToSmartPtr = new nimSmartPtr<',name,'>;'),
                                                                       'ptrToSmartPtr->setPtrFromT(newObj);',
-                                                                      'PROTECT(SptrToSmartPtr = R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));'))
+                                                                      'SptrToSmartPtr = PROTECT(R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));'))
                                                                       
                                           codeLines <- substitute({
                                               ## Finalizer registration now happens through nimble's finalizer mapping system.
@@ -192,10 +192,10 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         listElementTable$addSymbol(cppSEXP(name = "S_newNimList"))
                                         listElementTable$addSymbol(cppSEXP(name = "S_listName"))
                                       
-                                        newListLine[[1]] <- substitute({PROTECT(S_listName <- Rf_allocVector(STRSXP, 1));
+                                        newListLine[[1]] <- substitute({S_listName <- PROTECT(Rf_allocVector(STRSXP, 1));
                                           SET_STRING_ELT(S_listName, 0, Rf_mkChar(LISTNAME));}, 
                                           list(LISTNAME = nimCompProc$nimbleListObj$className))
-                                        newListLine[[2]] <- substitute(PROTECT(S_newNimList <- makeNewNimbleList(S_listName)),
+                                        newListLine[[2]] <- substitute(S_newNimList <- PROTECT(makeNewNimbleList(S_listName)),
                                                                            list())
                                         newListLine[[3]] <- quote(cppLiteral('RObjectPointer = S_newNimList;'))
                                         newListLine[[4]] <-   substitute(UNPROTECT(2), list())
@@ -224,7 +224,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         conditionalClauseEnd <- list(quote(cppLiteral('}')))
                                         environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
-                                        envLine <- substitute({PROTECT(ENVNAME <- Rf_allocVector(STRSXP, 1));
+                                        envLine <- substitute({ENVNAME <- PROTECT(Rf_allocVector(STRSXP, 1));
                                           SET_STRING_ELT(ENVNAME, 0, Rf_mkChar(".xData"));}, 
                                           list(ENVNAME = as.name(environmentCPPName)))
                                         
@@ -272,14 +272,14 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
 
                                         environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
-                                        envLine <- substitute({PROTECT(ENVNAME <- Rf_allocVector(STRSXP, 1));
+                                        envLine <- substitute({ENVNAME <- PROTECT(Rf_allocVector(STRSXP, 1));
                                           SET_STRING_ELT(ENVNAME, 0, Rf_mkChar(".xData"));}, 
                                           list(ENVNAME = as.name(environmentCPPName)))
 
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
-                                            copyFromListLines[[i]] <- substitute(PROTECT(SVAR <- Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, XDATA)), Rf_install(ARGNAME))),
+                                            copyFromListLines[[i]] <- substitute(SVAR <- PROTECT(Rf_findVarInFrame(PROTECT(GET_SLOT(S_nimList_, XDATA)), Rf_install(ARGNAME))),
                                                                                list(ARGNAME = argNames[i], 
                                                                                     SVAR = as.name(Snames[i]),
                                                                                     XDATA = as.name(environmentCPPName)))
