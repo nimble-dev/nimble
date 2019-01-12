@@ -882,13 +882,18 @@ distribution_qFuns <- gsub("^d", "q", pqDists)
 distributionFuns <- c(distribution_dFuns, distribution_rFuns, distribution_pFuns, distribution_qFuns)
 
 ## following sections are added for use in genCpp_operatorLists and other places.  Slightly different need is to have separate list of scalar distributions and to use Rdist names
-scalar_distribution_bool <- unlist(lapply(getAllDistributionsInfo('namesVector'), function(x) all(unlist(lapply(getDistributionInfo(x)$types, function(y) y$nDim == 0 )))))
-scalar_distribution_dFuns <- BUGSdistToRdist(getAllDistributionsInfo('namesVector')[scalar_distribution_bool], dIncluded = TRUE)
+
+## dCRP is causing warnings in 'make man' though doesn't seem to cause errors in build package, but filter out dCRP to avoid the warnings.
+nms <- getAllDistributionsInfo('namesVector')
+nms <- nms[nms != 'dCRP']
+
+scalar_distribution_bool <- unlist(lapply(nms, function(x) all(unlist(lapply(getDistributionInfo(x)$types, function(y) y$nDim == 0 )))))
+scalar_distribution_dFuns <- BUGSdistToRdist(nms[scalar_distribution_bool], dIncluded = TRUE)
 scalar_distribution_rFuns <- gsub("^d", "r", scalar_distribution_dFuns)
 
-scalar_pqAvail_bool <- nimble:::getAllDistributionsInfo('pqAvail') & scalar_distribution_bool
-scalar_pqAvail_dFuns <- BUGSdistToRdist(getAllDistributionsInfo('namesVector')[scalar_pqAvail_bool], dIncluded = TRUE)
+scalar_pqAvail_bool <- nimble:::getAllDistributionsInfo('pqAvail')[nms] & scalar_distribution_bool
+scalar_pqAvail_dFuns <- BUGSdistToRdist(nms[scalar_pqAvail_bool], dIncluded = TRUE)
 scalar_distribution_pFuns <- gsub("^d", "p", scalar_pqAvail_dFuns)
 scalar_distribution_qFuns <- gsub("^d", "q", scalar_pqAvail_dFuns)
 
-rm(scalar_distribution_bool, scalar_pqAvail_bool, scalar_pqAvail_dFuns)
+rm(nms, scalar_distribution_bool, scalar_pqAvail_bool, scalar_pqAvail_dFuns)

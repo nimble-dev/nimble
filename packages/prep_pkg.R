@@ -13,7 +13,7 @@ library(methods)
 if(!file.exists(file.path('nimble','R','config.R')))
     stop("You need a nimble/R/config.R file, but it must NOT be in the repository; you can probably do the following to create config.R from nimble/packages: 'make configure; cd nimble; ./configure'.")
 
-file.remove(file.path('nimble', 'NAMESPACE'))  ## roxygen2 doesn't want to overwrite if file not created by roxygen2
+out <- file.remove(file.path('nimble', 'NAMESPACE'))  ## roxygen2 doesn't want to overwrite if file not created by roxygen2; assignment to out prevents printing of TRUE/FALSE
 roxygenize('nimble', c('namespace','rd'))
 
 
