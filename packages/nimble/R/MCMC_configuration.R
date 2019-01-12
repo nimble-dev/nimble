@@ -718,10 +718,8 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
 
 checkCRPconjugacy <- function(model, target) {
     ## Checks if can use conjugacy in drawing new components for dCRP node updating.
-    ## Should find conjugacy if there are no deterministic nodes between the "observations" and
-    ## the cluster parameters or one intermediate node.
-    ## For now, no conjugacy when multiple parameters in the observation distribution are
-    ## being clustered.
+    ## Should detect various univariate cases and normal-invgamma case.
+    ## We don't yet handle conjugacies with non-identity relationships.
     
     conjugate <- FALSE 
     
@@ -729,8 +727,10 @@ checkCRPconjugacy <- function(model, target) {
 
     clusterVarInfo <- findClusterNodes(model, target)
  
-    ## New checking for conjugacy using tilde variables: check conjugacy for one tilde node and
-    ## then make sure all tilde nodes are IID and dependent nodes have same distribution
+    ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all
+    ## cluster nodes are IID and dependent nodes are from same declaration so conjugacy check for one should hold for all.
+    ## Note that cases where intermediate deterministic nodes are not from same declaration should be caught in sampler_CRP
+    ## because we don't allow cluster ID to appear in multiple declarations, so can't have mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]])
     if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
         clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
@@ -738,6 +738,10 @@ checkCRPconjugacy <- function(model, target) {
             conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) 
             conjugate <- TRUE
 
+            ## Check that dependent nodes ('observations') from same declaration.
+            ## This should ensure they have same distribution and parameters are being
+            ## clustered in same way, but also allows other parameters to vary, e.g.,
+            ## y[i] ~ dnorm(mu[xi[i]], s2[i])
             depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
             if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
                 conjugate <- FALSE
@@ -746,14 +750,6 @@ checkCRPconjugacy <- function(model, target) {
             valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
             names(valueExprs) <- NULL
             if(length(unique(valueExprs)) != 1)
-                conjugate <- FALSE
-
-            ## Check that dependent nodes ('observations') from same declaration.
-            ## This should ensure they have same distribution and parameters are being
-            ## clustered in same way, but also allows other parameters to vary, e.g.,
-            ## y[i] ~ dnorm(mu[xi[i]], s2[i])
-            depNodes <- model$getDependencies(clusterNodes, stochOnly = TRUE, self = FALSE)
-            if(length(unique(sapply(depNodes, function(x) model$getDeclID(x)))) != 1)
                 conjugate <- FALSE
         }
     }

@@ -1419,10 +1419,11 @@ findClusterNodes <- function(model, target) {
   ## Find one example dependency per BUGS declaration for more efficient processing
   exampleDeps <- sapply(depsByDecl, `[`, 1)
   
+
+  ## Set up an evaluation environment in which (xi[1],...,xi[n]) = (1,2,...,n)
+  ## first try was: e[[targetVar]] <- seq_along(targetElements)
+  ## However in first try, that wouldn't handle xi[3:10] ~ dCRP(), but next construction does.
   e <- list()
-  ## set up (xi[1],...,xi[n]) = (1,2,...,n)
-  ## e[[targetVar]] <- seq_along(targetElements)
-  ## Note: the above statement wouldn't handle xi[3:10] ~ dCRP(), but next construction does.
   idxExpr <- model$getDeclInfo(target)[[1]]$indexExpr[[1]]
   eval(substitute(`<-`(`[`(e$VAR, IDX), seq_along(targetElements)), list(VAR = targetVar, IDX = idxExpr)))
   
@@ -1436,7 +1437,7 @@ findClusterNodes <- function(model, target) {
     ## Pull out expressions, either as RHS of deterministic or parameters of stochastic
     expr <- cc_getNodesInExpr(model$getValueExpr(exampleDeps[idx]))
     for(j in seq_along(expr)) {
-      subExpr <- parse(text = expr[j])[[1]]
+      subExpr <- parse(text = expr[j])[[1]]  # individual parameter of stochastic or RHS of deterministic
       len <- length(subExpr)
       ## Look for target variable within expression, but only when used within index
       if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' &&
@@ -1480,7 +1481,7 @@ findClusterNodes <- function(model, target) {
         ## Determine all sets of index values so they can be evaluated in context of possible values of target element values.
         unrolledIndices <- declInfo$unrolledIndicesMatrix
         n <- nrow(unrolledIndices)
-        if(n > 0) {  # catch cases like use of xi[2] rather than xi[1]
+        if(n > 0) {  # catch cases like use of xi[2] rather than xi[i]
             clusterNodes[[varIdx]] <- rep(NA, n)
             
             ## Determine unevaluated expression, e.g., muTilde[xi[i],j] not muTilde[xi[1],2]
@@ -1504,17 +1505,20 @@ findClusterNodes <- function(model, target) {
     }
   }
   
-  ## Find number of cluster nodes for each cluster variable. 
+  ## Find the potential cluster nodes that are actually model nodes,
+  ## making sure that what we decide are real cluster nodes are the full potential set
+  ## or a truncated set that starts with the first cluster node, e.g., muTilde[1], ..., muTilde[3] is ok;
+  ## muTilde[2], ..., muTilde[4] is not (unless the model nodes are muTilde[2], ...., muTilde[4]).
   nTilde <- sapply(clusterNodes, length)
   modelNodes <- model$getNodeNames()
   for(varIdx in seq_along(clusterVars)) {
     if(nTilde[[varIdx]]) {
-        if(any(is.na(clusterNodes[[varIdx]])))  ## Chris is forgetting when this would occur.
+        if(any(is.na(clusterNodes[[varIdx]])))  
             stop("findClusterNodes: fewer cluster IDs in ", target, " than elements being clustered.")
         if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
             cnt <- nTilde[varIdx]
             while(cnt > 0) {
-                                        # Try to find first nTilde nodes such that are all actual model nodes.
+                ## Try to find first nTilde nodes such that are all actual model nodes.
                 if(all(clusterNodes[[varIdx]][seq_len(cnt)] %in% modelNodes)) {
                     nTilde[varIdx] <- cnt
                     clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][seq_len(cnt)]
@@ -1541,6 +1545,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
     if(length(clusterVarInfo$clusterVars) != 2)
         stop("checkNormalInvGammaConjugacy: requires two cluster variables.")
     conjugate <- FALSE
+    
     clusterNodes1 <- clusterVarInfo$clusterNodes[[1]]
     clusterNodes2 <- clusterVarInfo$clusterNodes[[2]]
     dists <- c(model$getDistribution(clusterNodes1[1]), model$getDistribution(clusterNodes2[1]))
@@ -1548,6 +1553,8 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         dists <- c("dnorm", "dinvgamma")
         tmp <- clusterNodes1; clusterNodes1 <- clusterNodes2; clusterNodes2 <- tmp
     }
+
+    ## Check conjugacy for example nodes.
     exampleNodes <- c(clusterNodes1[1], clusterNodes2[1])
     if(dists[1] == "dnorm" && dists[2] == "dinvgamma") {
         conjugacy_dnorm <- model$checkConjugacy(exampleNodes[1], restrictLink = 'identity')
@@ -1556,9 +1563,9 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
            sum(conjugacy_dinvgamma[[1]]$control$dep_dnorm == exampleNodes[1])) 
             conjugate <- TRUE
     }
-    if(conjugate) {
+    if(conjugate) {  ## Now check that conjugacy holds for all cluster nodes.
         ## Check that distribution for cluster mean nodes are same
-        if(any(sapply(clusterNodes1, function(x) model$getDistribution(x)) != "dnorm"))
+        if(any(model$getDistribution(clusterNodes1) != "dnorm"))
             conjugate <- FALSE
         ## Check that mean for cluster mean nodes are same
         meanExprs <- sapply(clusterNodes1, function(x) model$getParamExpr(x, 'mean'))
@@ -1570,9 +1577,8 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         names(varExprs) <- NULL
         for(i in seq_along(varExprs)) {
             varText <- deparse(varExprs[[i]])
-            if(!length(grep(clusterNodes2[i], varText, fixed = TRUE))) {
-                varExprs[[i]] <- NULL
-            } else varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "a", varText, fixed = TRUE))[[1]]
+            if(length(grep(clusterNodes2[i], varText, fixed = TRUE)))  ## remove clusterNodes2[i] from expression so var expressions will be the same
+                varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "", varText, fixed = TRUE))[[1]]
         }
         if(length(unique(varExprs)) != 1)
             conjugate <- FALSE
@@ -1587,7 +1593,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         ## This should ensure they have same distribution and parameters are being
         ## clustered in same way.
         depNodes <- model$getDependencies(clusterNodes1, stochOnly = TRUE, self = FALSE)
-        if(length(unique(sapply(depNodes, function(x) model$getDeclID(x)))) != 1)
+        if(length(unique(model$getDeclID(depNodes))) != 1)
             conjugate <- FALSE
 
     }
