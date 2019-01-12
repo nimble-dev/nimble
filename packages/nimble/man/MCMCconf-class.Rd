@@ -51,7 +51,7 @@ Details: See the initialize() function
             }
 
 \item{\code{addSampler(target, type = "RW", control = list(), print = FALSE, name,
-  silent = FALSE)}}{Adds a sampler to the list of samplers contained in the MCMCconf object.
+  silent = FALSE, ...)}}{Adds a sampler to the list of samplers contained in the MCMCconf object.
 
 Arguments:
 
@@ -66,6 +66,8 @@ print: Logical argument, specifying whether to print the details of the newly ad
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If 'name' is not provided, the 'type' argument is used to generate the sampler name.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
+
+...: Additional named arguments passed through ... will be used as additional control list elements.
 
 Details: A single instance of the newly configured sampler is added to the end of the list of samplers for this MCMCconf object.
 
@@ -103,7 +105,7 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
   monitors2 = character(), thin2 = 1, useConjugacy = TRUE,
   onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
   enableWAIC = nimbleOptions("enableWAIC"), warnNoSamplerAssigned = TRUE,
-  print = FALSE)}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
+  print = FALSE, ...)}}{Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
 Arguments:
 
@@ -142,7 +144,9 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
-print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.}
+print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
+
+...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.}
 
 \item{\code{printMonitors()}}{Prints all current monitors and monitors2
 

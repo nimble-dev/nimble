@@ -1,4 +1,4 @@
-As of version 0.6 you can install from CRAN in the usual way.
+You can install NIMBLE as an R package from CRAN in the usual way.
 
 You can install from the source file using
    R CMD INSTALL nimble_0.6.13.tar.gz
