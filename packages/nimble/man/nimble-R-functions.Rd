@@ -32,8 +32,6 @@ nimSeq(from, to, by, length.out)
 \item{by}{increment of the sequence.}
 
 \item{length.out}{desired length of the sequence.}
-
-\item{along.width}{take the length from the length of this argument.}
 }
 \description{
 The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{length}, \code{diag}, and \code{seq_along} can be used in nimbleFunctions and compiled using \code{compileNimble}.
