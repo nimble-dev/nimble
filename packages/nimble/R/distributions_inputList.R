@@ -79,7 +79,8 @@ distributionsInputList <- list(
                    alias    = 'dchisqr'),
 
     ddexp   = list(BUGSdist = 'ddexp(location, rate, scale, var)',
-                   Rdist    = 'ddexp(location, scale = 1/rate)',
+                   Rdist    = c('ddexp(location, scale = 1/rate)',
+                                'ddexp(location, scale = sqrt(var/2))'),
                    altParams= c('rate = 1/scale',
                                 'var = 2*scale^2'),
                    pqAvail  = TRUE,
