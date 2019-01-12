@@ -13,7 +13,6 @@
 #' @param to end value of sequence.
 #' @param by increment of the sequence.
 #' @param length.out desired length of the sequence.
-#' @param along.width take the length from the length of this argument.
 #'
 #' @aliases nimC nimRep nimSeq c rep seq which length diag seq_along
 #'

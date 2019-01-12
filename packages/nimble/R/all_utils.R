@@ -185,7 +185,7 @@ createNamedObjectsFromList <- function(lst, writeToFile = NULL, envir = parent.f
 #' 
 #' Retrieves the error file from R's tempdir and prints to the screen.
 #'
-#' @param printErrors logical indicating whether compiler warnings should be printed; generally such warnings can be ignored.
+#' @param excludeWarnings logical indicating whether compiler warnings should be printed; generally such warnings can be ignored.
 #'
 #' @author Christopher Paciorek
 #' 
