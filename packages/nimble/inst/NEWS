@@ -1,8 +1,10 @@
-                            CHANGES IN VERSION 0.6.13 (December 2018)
+                            CHANGES IN VERSION 0.6.13 (January 2019)
 
 USER LEVEL CHANGES
 
 -- Various changes to greatly improve efficiency of sampling for Bayesian nonparametric (BNP) mixture models using the dCRP distribution.
+
+-- Changes to samplers that could yield more efficienct execution in cases where prior or latent-state distributions have boundaries of valid values.
 
 -- Added double exponential (Laplace) distribution.
 
@@ -18,7 +20,7 @@ USER LEVEL CHANGES
 
 -- Added warning when a node is defined multiple times in model code.
 
--- Revamped handling of showCompilerOutput option to compileNimble so that it is more clear to users to look at the output.
+-- Revamped handling of showCompilerOutput option in compileNimble so that it is more clear to users to look at the output.
 
 -- Updated documentation of WAIC to make more clear that calculation depends on what is monitored.
 
@@ -38,7 +40,7 @@ BUG FIXES
 
 -- Fixed bug that was obviating comparison with gold files in testing system.
 
--- More sophisticated model initialization routine for correctly initializing complex state space models.
+-- More sophisticated model initialization routine for correctly initializing complex state-space models.
 
 -- Fixed a problem with dimension handling in matrix2VecNimArr.
 
@@ -48,7 +50,7 @@ DEVELOPER LEVEL CHANGES
 
 -- Various additional tests for Bayesian nonparametric mixture models.
 
--- Improved MCMC efficiency in RW and RW_block samplers by first checking log prior and rejecting without further computation if log prior is -Inf or NA/NaN.
+-- Improved MCMC efficiency in RW and RW_block samplers by first checking prior and rejecting without further computation if log prior is -Inf or NA/NaN.
 
 -- Modify use of exists() to avoid looking outside local context in some places.
 
