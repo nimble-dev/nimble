@@ -899,7 +899,7 @@ SEXP makeParsedVarList(SEXP Sx) {
     parseVarAndInds(x[i], varAndInds);
     SETCAR(t, makeAsNumeric_LANGSXP(PROTECT(varAndIndices_2_LANGSXP(varAndInds)))); t = CDR(t);
   }
-  UNPROTECT(2);
+  UNPROTECT(1 + x.size());
   return Sans;
 }
 
