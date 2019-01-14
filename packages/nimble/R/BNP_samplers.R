@@ -572,7 +572,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
       returnType(double())
       dataMean <- model$getParam(dataNodes[i], 'mean')
       y <- values(model, dataNodes[i])[1]
-      return(-0.5*log(2*pi) + priorShape * log(priorRate) - lgamma(priorShape) -
+      return(-0.5*log(2*pi) + priorShape * log(priorRate) - lgamma(priorShape) +
                lgamma(priorShape + 0.5) - (priorShape + 0.5)*log(priorRate + (y-dataMean)^2/2))
     },
     sample = function(i = integer(), j = integer()) {
@@ -627,8 +627,8 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
       returnType(double())
       y <- values(model, dataNodes[i])[1]
       dataSize <- model$getParam(dataNodes[i], 'size')
-      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+y) + lgamma(priorShape1+dataSize-y) -
-               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape1+dataSize) +
+      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+y) + lgamma(priorShape2+dataSize-y) -
+               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape2+dataSize) +
                lfactorial(dataSize) - lfactorial(y) - lfactorial(dataSize-y))
     },
     sample = function(i = integer(), j = integer()) {
@@ -658,8 +658,8 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
       returnType(double())
       y <- values(model, dataNodes[i])[1]
       dataSize <- model$getParam(dataNodes[i], 'size')
-      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+dataSize) + lgamma(priorShape1+y) -
-               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape1+dataSize+y) +
+      return(lgamma(priorShape1+priorShape2) + lgamma(priorShape1+dataSize) + lgamma(priorShape2+y) -
+               lgamma(priorShape1) - lgamma(priorShape2) - lgamma(priorShape1+priorShape2+dataSize+y) +
                lfactorial(y+dataSize-1) - lfactorial(y) - lfactorial(dataSize-1))
     },
     sample = function(i = integer(), j = integer()) {
@@ -711,15 +711,15 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
-      datashape <- model$getParam(dataNodes[i], 'shape')
+      dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      return((datashape-1)*log(y) + priorShape*log(priorRate) + lgamma(datashape+priorShape) -
-               lgamma(datashape) - lgamma(priorShape) -(datashape+priorShape)*log(priorRate+y))
+      return((dataShape-1)*log(y) + priorShape*log(priorRate) + lgamma(dataShape+priorShape) -
+               lgamma(dataShape) - lgamma(priorShape) -(dataShape+priorShape)*log(priorRate+y))
     },
     sample = function(i = integer(), j = integer()) {
-      datashape <- model$getParam(dataNodes[i], 'shape')
+      dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
-      values(model, marginalizedNodes[j]) <<- c(rgamma(1, shape=datashape+priorShape, rate=priorRate+y))
+      values(model, marginalizedNodes[j]) <<- c(rgamma(1, shape=dataShape+priorShape, rate=priorRate+y))
     }
   )
 )
@@ -772,7 +772,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
       return( -(dataShape+1)*log(y) + priorShape*log(priorRate) + lgamma(priorShape + dataShape) -
-                lgamma(dataShape) - lgamma(dataShape) - (dataShape + priorShape)*log(priorRate + 1/y))
+                lgamma(dataShape) - lgamma(priorShape) - (dataShape + priorShape)*log(priorRate + 1/y))
     },
     sample = function(i = integer(), j = integer()) {
       dataShape <- model$getParam(dataNodes[i], 'shape')
