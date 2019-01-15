@@ -101,8 +101,8 @@ code <- nimbleCode({
 set.seed(1)
 constants <- list(N = 100, M = 50)
 data <- list(y = c(rnorm(50, -5, sqrt(3)), rnorm(50, 5, sqrt(4))))
-inits <- list(thetatilde = rnorm(constants$N, 0, 10), 
-              s2tilde = rinvgamma(constants$N, 1, 1), 
+inits <- list(thetatilde = rnorm(constants$M, 0, 10), 
+              s2tilde = rinvgamma(constants$M, 1, 1), 
               z = sample(1:10, size = constants$N, replace = TRUE),
               alpha  = 1)
 Rmodel <- nimbleModel(code, constants, data, inits)
@@ -110,7 +110,7 @@ Rmodel <- nimbleModel(code, constants, data, inits)
 
 The resulting model may be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP. 
 
-One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, $N^{\star}$, has to be fixed. One safe option is to set this number to $N$, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that $N^{\star} < N$. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large $M$. In an effort to mitigate these inefficiencies, we allow the user to set $N^{\star} = M$, with $M<N$, as seen in the example above.  However, if this number is too small and is exceeded in any iteration a warning is issued.
+One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, $N^{\star}$, has to be fixed. One safe option is to set this number to $N$, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that $N^{\star} < N$. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large $N$. In an effort to mitigate these inefficiencies, we allow the user to set $N^{\star} = M$, with $M<N$, as seen in the example above.  However, if this number is too small and is exceeded in any iteration a warning is issued.
 
 
 ## Stick-breaking model {#sec:sb}
