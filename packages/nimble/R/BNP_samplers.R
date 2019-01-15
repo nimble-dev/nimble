@@ -1578,7 +1578,7 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
         for(i in seq_along(varExprs)) {
             varText <- deparse(varExprs[[i]])
             if(length(grep(clusterNodes2[i], varText, fixed = TRUE)))  ## remove clusterNodes2[i] from expression so var expressions will be the same
-                varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "", varText, fixed = TRUE))[[1]]
+                varExprs[[i]] <- parse(text = gsub(clusterNodes2[i], "a", varText, fixed = TRUE))[[1]]
         }
         if(length(unique(varExprs)) != 1)
             conjugate <- FALSE
