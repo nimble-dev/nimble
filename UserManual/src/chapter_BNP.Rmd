@@ -209,14 +209,14 @@ Valid initial values should be provided for all elements of the process specifie
 
 In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$.  NIMBLE provides a sampler, `getSamplesDPmeasure`, for this random measure when a CRP structure is involved in the model. 
 
-The argument of the `getsamplesDPmeasure` function is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the `monitors` argument when configuring the MCMC to ensure these variables are monitored in the MCMC. 
+The argument of the `getSamplesDPmeasure` function is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the `monitors` argument when configuring the MCMC to ensure these variables are monitored in the MCMC. 
 
 The sampler is used only after the MCMC for the model has been run; more details are available from `help(getsamplesDPmeasure)`.
 
 The following code exemplifies how to generate samples from $G$ after defining the model as in Section \@ref(sec:excrp).
 
 ```{r, get_DP_measure_samples_Chunk, results = "hide", eval = FALSE, message = FALSE}
-cRmodel <- compileNimble(Rmodel)
+Cmodel <- compileNimble(Rmodel)
 
 monitors <- c('z', 'thetatilde', 's2tilde' , 'alpha')
 RmodelConf <- configureMCMC(Rmodel, monitors = monitors)
