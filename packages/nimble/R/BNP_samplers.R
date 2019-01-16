@@ -215,8 +215,7 @@ sampleDPmeasure <- nimbleFunction(
     dimTildeNim <- numeric(p+1) # nimble dimension (0 is scalar, 1 is 2D array, 2 is 3D array)
     dimTilde <- numeric(p+1) # dimension to be used in run code
     for(i in 1:p) {
-      elementsTildeVars <- model$expandNodeNames(tildeVars[i], returnScalarComponents = TRUE)
-      dimTildeNim[i] <- model$getDimension(elementsTildeVars[1]) 
+      dimTildeNim[i] <- model$getDimension(clusterVarInfo$clusterNodes[[i]][1])
       dimTilde[i] <- lengthData^(dimTildeNim[i]) 
     }
     nTilde <- numeric(p+1)
