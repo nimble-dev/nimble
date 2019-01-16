@@ -890,6 +890,13 @@ sampler_CRP <- nimbleFunction(
     if(length(unique(nTilde)) != 1)
       stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
 
+    ## Check the length of each tildeVars in model is the same as the length of each tildeVars initialized.  
+    p <- length(tildeVars)
+    nTildeInits <- sapply(1:p, function(i) length(model$expandNodeNames(tildeVars[i])))
+    if(any(nTildeInits != nTilde)) {
+      warning('sampler_CRP: the number of cluster parameters in the model is different from the number of initilized cluster parameters. This could produce fatal errors. \n')
+    }
+    
     #### End of checks of model structure. ####
 
     min_nTilde <- min(nTilde) ## we need a scalar for use in run code, but note that given check above, all nTilde values are the same...
