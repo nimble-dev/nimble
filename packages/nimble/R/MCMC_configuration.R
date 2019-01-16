@@ -222,7 +222,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dinvwish')     { addSampler(target = node, type = 'RW_wishart');         next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
-                        if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP');                next }
+                        if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy));                next }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')

@@ -150,7 +150,8 @@ sampleDPmeasure <- nimbleFunction(
             isIID <- FALSE
         }
     }
-    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo))
+      if(!isIID && length(tildeVars) == 2 && control$useConjugacy &&
+         checkNormalInvGammaConjugacy(model, clusterVarInfo))
         isIID <- TRUE
     if(!isIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
 
@@ -1271,7 +1272,9 @@ sampler_CRP_old <- nimbleFunction(
     helperFunctions <- nimbleFunctionList(CRP_helper)
     
     ## use conjugacy to determine which helper functions to use
-    conjugacyResult <- checkCRPconjugacy(model, target)
+    if(control$useConjugacy)
+        conjugacyResult <- checkCRPconjugacy(model, target) else conjugacyResult <- NULL
+    
     if(is.null(conjugacyResult)) {
       sampler <- 'CRP_nonconjugate'
     } else 
