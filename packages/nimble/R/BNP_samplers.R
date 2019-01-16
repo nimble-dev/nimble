@@ -504,9 +504,9 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
-      c1 <- priorShape * log(priorScale) + lgamma(priorShape + 1/2) + log(kappa) -
-       lgamma(priorShape) - log(2) - log(pi) - log(1 + kappa)
-      c2 <- - (priorShape  + 1/2) * (priorScale + kappa * (y - priorMean)^2 / (2*(1+kappa)) )
+      c1 <- priorShape * log(priorScale) + lgamma(priorShape + 1/2) + 0.5*log(kappa) -
+       lgamma(priorShape) - 0.5*log(2) - 0.5*log(pi) - 0.5*log(1 + kappa)
+      c2 <- - (priorShape  + 1/2) * log( (priorScale + kappa * (y - priorMean)^2 / (2*(1+kappa)) ) )
       return(c1 + c2)
     },
     sample = function(i = integer(), j = integer()) {
