@@ -97,8 +97,6 @@ distClass <- setRefClass(
     methods = list(
         initialize = function(distInputList, BUGSdistName) {
             RdistExprList <<- list()
-            alts <<- list()
-            exprs <<- list()
             altParams <<- list()
             types <<- list()
             BUGSdistName <<- BUGSdistName
@@ -106,8 +104,8 @@ distClass <- setRefClass(
             if(BUGSdistExpr[[1]] != BUGSdistName)   stop(paste0('inconsistent BUGS distribution names for distribution: ', BUGSdistName))
             RdistTextVector <- if(is.null(distInputList$Rdist)) character() else distInputList$Rdist
             RdistExprList <<- lapply(RdistTextVector, function(t) parse(text=t)[[1]])
-            numAlts <<- length(RdistExprList)
             init_altsExprsReqdArgs()
+            numAlts <<- length(alts)
             simulateName <<- sub('^d', 'r', densityName)
             init_altParams(distInputList)
             discrete <<- if(is.null(distInputList$discrete))    FALSE    else    distInputList$discrete
@@ -121,7 +119,7 @@ distClass <- setRefClass(
         init_altsExprsReqdArgs = function() {
             alts <<- list()
             exprs <<- list()
-            if(numAlts == 0) {
+            if(length(RdistExprList) == 0) {
                 params <- as.list(BUGSdistExpr[-1])   # removes the distribution name
                 paramsText <- lapply(params, deparse)
                 reqdArgs <<- sapply(paramsText, function(pt) init_getReqdArgs(pt))
@@ -131,14 +129,14 @@ distClass <- setRefClass(
                 paramsText <- lapply(params, function(x) lapply(x, deparse))
                 reqdArgsList <- lapply(paramsText, function(pt) init_getReqdArgs(pt))
                 densityNamesList <- lapply(RdistExprList, function(expr) as.character(expr[[1]]))
-                if(length(unique(reqdArgsList)) > 1)
+                if(length(unique(lapply(reqdArgsList, sort))) > 1)
                     stop('R/NIMBLE parameter names and order not consistent across alternative parameterizations')
                 if(length(unique(densityNamesList)) > 1)
                     stop('R/NIMBLE density names not consistent across alternative parameterizations')
                 reqdArgs <<- reqdArgsList[[1]]
                 densityName <<- densityNamesList[[1]]
                 for(i in seq_along(params)) {
-                    boolNoDefault <- if (is.null(names(paramsText[[i]]))) seq_along(paramsText[[i]]) else names(paramsText[[i]]) == ''
+                    boolNoDefault <- if (is.null(names(paramsText[[i]]))) rep(TRUE, length(paramsText[[i]])) else names(paramsText[[i]]) == ''
                     if(sum(!boolNoDefault)) {
                         exprs[[i]] <<- lapply(params[[i]][!boolNoDefault], function(x) {names(x) <- NULL; x})
                         BUGSargs <- unique(unlist(c(lapply(exprs[[i]], all.vars), paramsText[[i]][boolNoDefault])))
