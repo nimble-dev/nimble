@@ -142,6 +142,8 @@ distClass <- setRefClass(
                         BUGSargs <- unique(unlist(c(lapply(exprs[[i]], all.vars), paramsText[[i]][boolNoDefault])))
                         names(BUGSargs) <- NULL
                         if(!identical(sort(BUGSargs), sort(reqdArgs))) alts[[i]] <<- BUGSargs
+                    } else {
+                        if(!identical(sort(unlist(paramsText[[i]])), sort(reqdArgs)))   stop(paste0('reparametization number ', i, ' for ', BUGSdistName, ' with no default argument values must exactly match arguments of canonical parameterization'))
                     }
                 }
             }
