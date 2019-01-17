@@ -562,8 +562,8 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
       returnType(double())
       dataMean <- model$getParam(dataNodes[i], 'mean')
       y <- values(model, dataNodes[i])[1]
-      return(-0.5*log(2*pi) + priorShape * log(priorRate) - lgamma(priorShape) -
-               lgamma(priorShape + 0.5) - (priorShape + 0.5)*log(priorRate + (y-dataMean)^2/2))
+      return(-0.5*log(2*pi) + priorShape * log(priorRate) - lgamma(priorShape) +
+               lgamma(priorShape + 0.5) - (priorShape + 0.5)*log(priorRate + 0.5*(y-dataMean)^2))
     },
     sample = function(i = integer(), j = integer()) {
       dataMean <- model$getParam(dataNodes[i], 'mean')
