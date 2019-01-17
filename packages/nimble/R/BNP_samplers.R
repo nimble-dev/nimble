@@ -755,7 +755,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
       dataShape <- model$getParam(dataNodes[i], 'shape')
       y <- values(model, dataNodes[i])[1]
       return( -(dataShape+1)*log(y) + priorShape*log(priorRate) + lgamma(priorShape + dataShape) -
-                lgamma(dataShape) - lgamma(dataShape) - (dataShape + priorShape)*log(priorRate + 1/y))
+                lgamma(dataShape) - lgamma(priorShape) - (dataShape + priorShape)*log(priorRate + 1/y))
     },
     sample = function(i = integer(), j = integer()) {
       dataShape <- model$getParam(dataNodes[i], 'shape')
