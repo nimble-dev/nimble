@@ -1645,6 +1645,451 @@ test_that("random sampling from CRP in model with additional levels", {
 })
 
 
+
+test_that("Testing posterior sampling and prior predictive computation with conjugate models using CRP", { 
+  
+  
+  
+  # dnorm_dnorm
+  code = nimbleCode({
+    xi[1:4] ~ dCRP(conc=1, size=4)
+    for(i in 1:4) {
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = 1)
+    }
+    
+  })
+  data = list(y = rnorm(4))
+  inits = list(xi = rep(1,4), mu=rnorm(4))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('mu[1]')
+  
+  dataVar <- m$getParam('y[1]', 'var') 
+  priorVar <- m$getParam('mu[1]', 'var')
+  priorMean <- m$getParam('mu[1]', 'mean')
+  postVar <- 1 / (1 / dataVar + 1 / priorVar) # from conjugate sampler
+  postMean <- postVar * (data$y[1] / dataVar + priorMean / priorVar) # from conjugate sampler
+  pTgivenY <- dnorm(m$mu[1] , postMean, sqrt(postVar), log = TRUE) # from conjugate sampler
+  
+  mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rnorm(1 , postMean, sqrt(postVar))
+  expect_identical(smp, m$mu[1])
+  
+  
+  
+  # dnorm_invgamma_dnorm
+  code = nimbleCode({
+    xi[1:4] ~ dCRP(conc=1, size=4)
+    for(i in 1:4) {
+      mu[i] ~ dnorm(0, var = s2[i]/2)
+      s2[i] ~ dinvgamma(shape=2, scale=1)
+      y[i] ~ dnorm(mu[xi[i]], var=s2[xi[i]])
+    }
+  })
+  data = list(y = rnorm(4))
+  inits = list(xi = rep(1,4), mu=rnorm(4), s2=rinvgamma(4, 2, 1))
+  m = nimbleModel(code, data=data, inits=inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT1 <- m$getLogProb('mu[1]')
+  pT2 <- m$getLogProb('s2[1]')
+  
+  priorMean <- m$getParam('mu[1]', 'mean')
+  kappa <- values(m, 's2[1]')[1]/m$getParam('mu[1]', 'var')
+  priorShape <- m$getParam('s2[1]', 'shape')
+  priorScale <- m$getParam('s2[1]',  'scale')
+  pTgivenY2 <- dinvgamma(m$s2[1], shape = priorShape + 1/2,
+                         scale = priorScale + kappa * (data$y[1] - priorMean)^2 / (2*(1+kappa)),
+                         log=TRUE)
+  pTgivenY1 <- dnorm(m$mu[1], mean = (kappa * priorMean + data$y[1])/(1 + kappa), 
+                     sd = sqrt(m$s2[1] / (1+kappa)),
+                     log=TRUE) 
+  
+  mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT1 + pT2 + pYgivenT - pTgivenY1 - pTgivenY2)
+  
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp1 <- rinvgamma(1, shape = priorShape + 1/2,
+                    scale = priorScale + kappa * (data$y[1] - priorMean)^2 / (2*(1+kappa)) )
+  smp2 <- rnorm(1, mean = (kappa * priorMean + data$y[1])/(1 + kappa), 
+                sd = sqrt(smp1 / (1+kappa))) 
+  expect_identical(smp1, m$s2[1])
+  expect_identical(smp2, m$mu[1])
+  
+  
+  # dgamma_dpois
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      y[i] ~ dpois(mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  data = list(y = rpois(4, 4))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('mu[1]')
+  
+  priorShape <- m$getParam('mu[1]', 'shape')
+  priorRate <- m$getParam('mu[1]', 'rate')
+  pTgivenY <- dgamma(m$mu[1], shape = priorShape + data$y[1], rate = priorRate + 1, log=TRUE)
+  
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rgamma(1 , shape = priorShape + data$y[1], rate = priorRate + 1)
+  expect_identical(smp, m$mu[1])
+  
+  
+  
+  # dbeta_dbern
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dbeta(1,1)
+      y[i] ~ dbern(mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  data = list(y = rbinom(4, size=1, prob=0.5))
+  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('mu[1]')
+  
+  priorShape1 <- m$getParam('mu[1]', 'shape1')
+  priorShape2 <- m$getParam('mu[1]', 'shape2')
+  pTgivenY <- dbeta(m$mu[1], shape1=priorShape1+data$y[1], shape2=priorShape2+1-data$y[1], log=TRUE)
+  
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rbeta(1 , shape1=priorShape1+data$y[1], shape2=priorShape2+1-data$y[1])
+  expect_identical(smp, m$mu[1])
+  
+  
+  # dbeta_dbin
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dbeta(1,1)
+      y[i] ~ dbinom(size=10, prob=mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  data = list(y = rbinom(4, size=10, prob=0.5))
+  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('mu[1]')
+  
+  priorShape1 <- m$getParam('mu[1]', 'shape1')
+  priorShape2 <- m$getParam('mu[1]', 'shape2')
+  dataSize <- m$getParam('y[1]', 'size')
+  pTgivenY <- dbeta(m$mu[1], shape1=priorShape1+data$y[1], shape2=priorShape2+dataSize-data$y[1], log=TRUE)
+  
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rbeta(1 , shape1=priorShape1+data$y[1], shape2=priorShape2+dataSize-data$y[1])
+  expect_identical(smp, m$mu[1])
+  
+  
+  # dbeta_dnegbin
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dbeta(1,1)
+      y[i] ~ dnegbin(size=10, prob=mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  data = list(y = rnbinom(4, size=10, prob=0.5))
+  inits = list(xi = rep(1,4), mu=rbeta(4, 1, 1))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('mu[1]')
+  
+  priorShape1 <- m$getParam('mu[1]', 'shape1')
+  priorShape2 <- m$getParam('mu[1]', 'shape2')
+  dataSize <- m$getParam('y[1]', 'size')
+  pTgivenY <- dbeta(m$mu[1], shape1=priorShape1+dataSize, shape2=priorShape2+data$y[1], log=TRUE)
+  
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rbeta(1 , shape1=priorShape1+dataSize, shape2=priorShape2+data$y[1])
+  expect_identical(smp, m$mu[1])
+  
+  
+  # dgamma_dexp:
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      y[i] ~ dexp(mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  data = list(y = rexp(4, 4))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('mu[1]')
+  
+  priorShape <- m$getParam('mu[1]', 'shape')
+  priorRate <- m$getParam('mu[1]', 'rate')
+  pTgivenY <- dgamma(m$mu[1], shape=priorShape+1, rate=priorRate+data$y[1], log=TRUE)
+  
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rgamma(1, shape=priorShape+1, rate=priorRate+data$y[1])
+  expect_identical(smp, m$mu[1])
+  
+  
+  
+  # dgamma_dgamma:
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      y[i] ~ dgamma(4, mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  data = list(y = rgamma(4, 4, 4))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('mu[1]')
+  
+  priorShape <- m$getParam('mu[1]', 'shape')
+  priorRate <- m$getParam('mu[1]', 'rate')
+  dataShape <- m$getParam('y[1]', 'shape')
+  pTgivenY <- dgamma(m$mu[1], shape=dataShape+priorShape, rate=priorRate+data$y[1], log=TRUE)
+  
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rgamma(1, shape=dataShape+priorShape, rate=priorRate+data$y[1])
+  expect_identical(smp, m$mu[1])
+  
+  
+  # dgamma_dweib:
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      y[i] ~ dweib(shape=4, lambda = mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  data = list(y = rweibull(4, 4, 4))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('mu[1]')
+  
+  priorShape <- m$getParam('mu[1]', 'shape')
+  priorRate <- m$getParam('mu[1]', 'rate')
+  dataShape <- m$getParam('y[1]', 'shape')
+  pTgivenY <- dgamma(m$mu[1], shape=1+priorShape, rate=priorRate+data$y[1]^dataShape, log=TRUE)
+  
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rgamma(1, shape=1+priorShape, rate=priorRate+data$y[1]^dataShape)
+  expect_identical(smp, m$mu[1])
+  
+  
+  # ddirch_dmulti
+  code=nimbleCode(
+    {
+      for(i in 1:4){
+        p[i,1:3] ~ ddirch(alpha=alpha0[1:3])
+        y[i,1:3] ~ dmulti(prob=p[xi[i],1:3], size=3)
+      }
+      xi[1:4] ~ dCRP(conc=1, size=4)
+    }
+  )
+  set.seed(1)
+  p0 <- matrix(0, ncol=3, nrow=4)
+  y0 <- matrix(0, ncol=3, nrow=4)
+  for(i in 1:4){
+    p0[i,]=rdirch(1, c(1, 1, 1))
+    y0[i,] = rmulti(1, prob=c(0.3,0.3,0.4), size=3)
+  }
+  data = list(y = y0)
+  inits = list(xi = rep(1,4), p=p0)
+  m = nimbleModel(code, data=data, inits=inits,
+                  constants=list(alpha0 = c(1,1,1)))
+  conf <- configureMCMC(m)
+  mcmc <- buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('p[1,1:3]')
+  
+  priorAlpha <- m$getParam('p[1, 1:3]', 'alpha')
+  pTgivenY <- ddirch(m$p[1,1:3], alpha = priorAlpha+data$y[1, 1:3], log=TRUE)
+  
+  mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rdirch(1, alpha = priorAlpha+data$y[1, 1:3])
+  expect_identical(smp, m$p[1, 1:3])
+  
+  
+  # dgamma_dinvgamma:
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1, rate=1)
+      y[i] ~ dinvgamma(shape=4, scale = mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  data = list(y = rinvgamma(4, 4, 4))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]')
+  pT <- m$getLogProb('mu[1]')
+  
+  priorShape <- m$getParam('mu[1]', 'shape')
+  priorRate <- m$getParam('mu[1]', 'rate')
+  dataShape <- m$getParam('y[1]', 'shape')
+  pTgivenY <- dgamma(m$mu[1], shape=dataShape+priorShape, rate=priorRate+1/data$y[1], log=TRUE)
+  
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rgamma(1, shape=dataShape+priorShape, rate=priorRate+1/data$y[1])
+  expect_identical(smp, m$mu[1])
+  
+  
+  
+  
+  # dgamma_dnorm:
+  code = nimbleCode({
+    for(i in 1:4) {
+      mu[i] ~ dgamma(1,1)
+      y[i] ~ dnorm(0, tau = mu[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  data = list(y = rnorm(4, 0, 4))
+  inits = list(xi = rep(1,4), mu=rgamma(4, 1, 1))
+  m = nimbleModel(code, data=data, inits= inits)
+  conf = configureMCMC(m)
+  mcmc = buildMCMC(conf)
+  
+  pYgivenT <- m$getLogProb('y[1]') ; dnorm(data$y[1], 0, sqrt(1/m$mu[1]), log=TRUE)
+  pT <- m$getLogProb('mu[1]') ; dgamma(m$mu[1], 1, 1,log=TRUE)
+  
+  dataMean <- m$getParam('y[1]', 'mean')
+  priorShape <- m$getParam('mu[1]', 'shape')
+  priorRate <- m$getParam('mu[1]', 'rate')
+  pTgivenY <- dgamma(m$mu[1], shape = priorShape + 0.5, rate = (priorRate + 0.5*(data$y[1]-dataMean)^2), log=TRUE)
+  
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  
+  expect_equal(pY, pT + pYgivenT - pTgivenY)
+  
+  set.seed(1)
+  mcmc$samplerFunctions[[5]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  set.seed(1)
+  smp <- rgamma(1 , shape = priorShape + 0.5, rate = priorRate + (data$y[1]-dataMean)^2/2)
+  expect_identical(smp, m$mu[1])
+  
+  
+  
+  
+  
+})
+
+
 test_that("Testing conjugacy detection with models using CRP", { 
   
   ## dnorm_dnorm
