@@ -434,7 +434,7 @@ test_that("check iid assumption in sampleDPmeasure", {
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
   output <- runMCMC(cMCMC,  niter=1, nburnin = 0, thin=1)
   expect_error(samplesG <- getSamplesDPmeasure(cMCMC),
-               info='sampleDPmeasure: cluster parameters have to be independent and identically')
+               'sampleDPmeasure: cluster parameters have to be independent and identically')
 
   ## also not IID
   code=nimbleCode({
@@ -459,7 +459,7 @@ test_that("check iid assumption in sampleDPmeasure", {
   cMCMC <- compileNimble(mMCMC, project = m) 
   output <- cMCMC$run(1)
   expect_error(getSamplesDPmeasure(cMCMC),
-               info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
+               'sampleDPmeasure: cluster parameters have to be independent and identically')
 
   
   ## one cluster param not with same distribution
@@ -483,7 +483,7 @@ test_that("check iid assumption in sampleDPmeasure", {
   cMCMC <- compileNimble(mMCMC, project = m) 
   cMCMC$run(1)
   expect_error(getSamplesDPmeasure(cMCMC),
-               info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
+               'sampleDPmeasure: cluster parameters have to be independent and identically')
   
   
   ## bivariate cluster parameters are not iid
@@ -502,7 +502,7 @@ test_that("check iid assumption in sampleDPmeasure", {
   m <- nimbleModel(code, data=Data, inits=Inits)
   mConf <- configureMCMC(m, monitors = c('mutilde','s2tilde', 'lambda', 'xi'))
   expect_error(mMCMC <- buildMCMC(mConf),
-               info = "sampler_CRP: Cluster parameters must be conditionally independent")  
+               "sampler_CRP: Cluster parameters must be conditionally independent")  
   
   code=nimbleCode(
     {
@@ -528,7 +528,7 @@ test_that("check iid assumption in sampleDPmeasure", {
   cMCMC$run(1)
   cMCMC$run(1, reset=FALSE)  # Claudia, why do we call $run twice?
   expect_error(getSamplesDPmeasure(cMCMC),
-               info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
+               'sampleDPmeasure: cluster parameters have to be independent and identically')
   
 })
 
@@ -580,6 +580,10 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
 })
 
 test_that("Test that new cluster parameters are correctly updated in CRP sampler", {
+    ## Note: CP thinks these checks are not all that helpful - because of the small sample
+    ## size, the estimates and truth are rather different so we need a high tolerance,
+    ## so it's feasible that even an incorrectly-coded algorithm could pass the tests.
+    
   set.seed(1)
   
   ## Data ~ Poisson(5). Starting values are extremely away from their true values. 
@@ -724,7 +728,7 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
       lambda ~ dgamma(1, 1)
     }
   )
-  Inits=list(xi=c(1,1,1,1), thetatilde=c(0, -10, -10,-10), s2tilde=c(1,10,10,10), lambda=1)#, mu1=50
+  Inits=list(xi=c(1,1,1,1), thetatilde=c(0, -10, -10,-10), s2tilde=c(1,10,10,10), lambda=1)
   Data=list(y=c(0, 0, 10,10))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
@@ -733,7 +737,8 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   cMCMC <- compileNimble(mMCMC, project = m) 
   out <- runMCMC(cMCMC, niter=100, nburnin = 90, thin=1)
   means <- sapply(1:10, function(i) mean(out[i, 6:9][out[i, 10:13]]) )
-  expect_equal(mean(means), 5, tolerance=2*1, info = 'wrong results from normal - normal - invgamma conjugate CRP')
+  expect_equal(mean(means), 5, tolerance=2*1,
+               info = 'wrong results from normal - normal - invgamma conjugate CRP')
   
 })
 
@@ -741,6 +746,8 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
 
 
 test_that("Test that the nonconjugate CRP sampler works fine ", {
+  ## CP:  these are short runs and small sample sizes; we should consider more robust tests.
+    
   set.seed(1)
   
   ## xi=1:n, the sampler requires samples from G_0
@@ -753,7 +760,7 @@ test_that("Test that the nonconjugate CRP sampler works fine ", {
       }
     }
   )
-  Inits=list(xi=1:3, thetatilde=rep(-10,3))#
+  Inits=list(xi=1:3, thetatilde=rep(-10,3))
   Data=list(y=rnorm(3,0, 1))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
@@ -763,21 +770,20 @@ test_that("Test that the nonconjugate CRP sampler works fine ", {
   out <- runMCMC(cMCMC, niter=10, nburnin = 0, thin=1)
   means <- sapply(1:10, function(i) mean(out[i, 1:3][out[i, 4:6]]) )
   expect_equal(mean(means), 0, tolerance=2*1, info = 'wrong results from non conjugate CRP 1')
-  
-  
-  # xi=1:n, the sampler requires samples from G_0, tildeVars have dependencies
+    
+  ## xi=1:n, the sampler requires samples from G_0, tildeVars have dependencies
   code=nimbleCode(
     {
       xi[1:3] ~ dCRP(1 , size=3)
       for(i in 1:3){
-        thetatilde[i] ~ dt(mu0, 1, 1)# implies non conjugate CRP sampler 
+        thetatilde[i] ~ dt(mu0, 1, 1)   # implies non conjugate CRP sampler 
         y[i] ~ dnorm(thetatilde[xi[i]] + beta, var=1)
       }
       beta ~ dnorm(0, 1)
       mu0 ~ dnorm(0,var=10)
     }
   )
-  Inits=list(xi=1:3, thetatilde=rep(0,3), beta=0, mu0=0)#
+  Inits=list(xi=1:3, thetatilde=rep(0,3), beta=0, mu0=0)
   Data=list(y=rnorm(3,10, 1))
   m <- nimbleModel(code, data=Data, inits=Inits)
   cm <- compileNimble(m)
@@ -787,13 +793,11 @@ test_that("Test that the nonconjugate CRP sampler works fine ", {
   out <- runMCMC(cMCMC, niter=10, nburnin = 0, thin=1)
   means <- sapply(1:10, function(i) mean(out[i, 3:5][out[i, 6:8]] + out[i, 1]) )
   expect_equal(mean(means), 10, tolerance=2*1, info = 'wrong results from non conjugate CRP 2')
-  
-  
 })
 
 test_that("Test opening of new clusters in CRP sampler ", {
 
-  # test for updating new cluster parameters, with conjugacy
+  ## test for updating new cluster parameters, with conjugacy
   code <- nimbleCode({
     for(i in 1:n) {
       y[i] ~ dnorm(mu[i], 1)
@@ -907,7 +911,7 @@ test_that("Test opening of new clusters in CRP sampler ", {
   constants <- list(n = n)
   ## all data plausibly from first cluster except 1st data point
   data <- list(y = c(50, rep(0, n-1)))
-  ## muTilde is good for all but first data point. prior generates even worse value for new cluster in terms of first obs, so no movement expected.
+  ## muTilde is good for all but first data point. Prior generates even worse value for new cluster in terms of first obs, so no movement expected.
   inits <- list(alpha = 1, mu0 = -50, sd0 = 5, xi = rep(1, n),
                 muTilde = c(0, -50, rep(0, n-2)))
   inits$xi[1] <- 2
@@ -918,7 +922,7 @@ test_that("Test opening of new clusters in CRP sampler ", {
   mcmc <- buildMCMC(conf)
   cmcmc <- compileNimble(mcmc, project = model)
 
-  ## now check that cmodel$muTilde[2] has changed and first obs has moved to first cluster
+  ## now check that cmodel$muTilde[2] has changed and first obs stays in first cluster
   set.seed(1)
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
   expect_true(output[1, 'muTilde[2]'] != -50, 'incorrect update of parameter for second cluster')
@@ -940,7 +944,7 @@ test_that("Test opening of new clusters in CRP sampler ", {
   constants <- list(n = n)
   ## all data plausibly from first cluster except 1st data point
   data <- list(y = c(50, rep(0, n-1)))
-  ## muTilde is good for all but first data point. prior generates better value for new cluster in terms of first obs, so no movement expected.
+  ## muTilde is good for all but first data point. prior generates better value for new cluster in terms of first obs, so movement expected, but singleton, so new cluster should be same ID as old cluster.
   inits <- list(alpha = 1, mu0 = 50, sd0 = 5, xi = rep(1, n),
                 muTilde = c(0, -50, rep(0, n-2)))
   inits$xi[1] <- 2
@@ -951,17 +955,19 @@ test_that("Test opening of new clusters in CRP sampler ", {
   mcmc <- buildMCMC(conf)
   cmcmc <- compileNimble(mcmc, project = model)
 
-  ## now check that cmodel$muTilde[2] has changed and first obs has moved to 2nd cluster
+  ## now check that cmodel$muTilde[2] has changed and first obs has 'stayed' in 2nd cluster
   set.seed(1)
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
-  expect_true(output[1, 'muTilde[2]'] != -50, 'incorrect update of parameter for second cluster')
+  expect_equal(output[1, 'muTilde[2]'], 50, tolerance = 5,
+               info = 'incorrect update of parameter for second cluster',
+               check.attributes = FALSE)
   expect_identical(output[1, 'xi[1]'], c('xi[1]'=2), 'incorrect cluster for first obs')
 })
 
 test_that("Test reset frunction in CRP sampler ", {
   set.seed(1)
   
-  # the data set has more clusters than cluster parameters are available
+  ## the data set has more clusters than cluster parameters are available
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(1 , size=10)
@@ -984,36 +990,9 @@ test_that("Test reset frunction in CRP sampler ", {
 })
 
 
-test_that("Test that cluster parameters have the correct order for sampling then in CRP sampler ", {
-  set.seed(1)
-  
-  # this model should not be acceptable because muTilde[1, i] is part of the tildeNodes
-  # used for sampling the cluster params when only muTilde[2, i] should be considered.
-  # This check is not ready yet.
-  code=nimbleCode({
-    for(i in 1:10) {
-      muTilde[1, i] ~ dnorm(0,1)  # this gets in the way even though not used in BNP model
-      muTilde[2, i] ~ dnorm(0, 1)
-      mu[i] <- muTilde[2, xi[i]]
-      y[i] ~ dnorm(mu[i], 1)
-    }
-    xi[1:10] ~ dCRP(1 , size=10)
-  })
-  Inits=list(xi=rep(1, 10), muTilde=rbind(rep(0,10),rep(0,10)))
-  Data=list(y=rnorm(10,0, 1))
-  m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
-  mConf <- configureMCMC(m)
-  #mcmc <- buildMCMC(mConf)
-  #cmcmc <- compileNimble(mcmc, project = m) 
-  #expect_output(cmcmc$run(1), info='CRP_sampler: ')
-})
-
-
 test_that("Test that cluster parameters and membership variable are independent in CRP sampler ", {
-  set.seed(1)
 
-  # membership variable depends on cluster params
+  ## membership variable depends on cluster params
   code=nimbleCode({
     for(i in 1:10) {
       muTilde[i] ~ dnorm(0, 1)  
@@ -1025,12 +1004,12 @@ test_that("Test that cluster parameters and membership variable are independent 
   Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
   Data=list(y=rnorm(10,0, 1))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
   mConf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: membership variable has to be independent of cluster variables \n')
+  expect_error(mcmc <- buildMCMC(mConf),
+               'sampler_CRP: Only the variables being clustered can depend on the cluster parameters')
   
   
-  # cluster params depend on membership variable
+  ## cluster params depend on membership variable
   code=nimbleCode({
     for(i in 1:10) {
       muTilde[i] ~ dnorm(log(xi[1]), 1)  
@@ -1042,12 +1021,12 @@ test_that("Test that cluster parameters and membership variable are independent 
   Inits=list(xi=rep(1, 10), muTilde=rep(0,10))
   Data=list(y=rnorm(10,0, 1))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
   mConf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: cluster variables have to be independent of membership variable \n')
+  expect_error(mcmc <- buildMCMC(mConf),
+               'sampler_CRP: Detected that the CRP variable is used in some way not as an index')
   
   
-  # one more node depends on membership variable
+  ## one more node depends on membership variable
   code=nimbleCode({
     mu0 ~ dnorm(xi[1], 1) 
     for(i in 1:10) {
@@ -1060,12 +1039,11 @@ test_that("Test that cluster parameters and membership variable are independent 
   Inits=list(xi=rep(1, 10), muTilde=rep(0,10), mu0=0)
   Data=list(y=rnorm(10,0, 1))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
   mConf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: The length of membership variable and the variable that is to be  \n')
-  
+  expect_error(mcmc <- buildMCMC(mConf),
+               'sampler_CRP: Detected that the CRP variable is used in some way not as an index')
     
-  # non related variable depends on cluster variable and membership variable
+  ## non related variable depends on cluster variable and membership variable
   code=nimbleCode({
     for(i in 1:10) {
       muTilde[i] ~ dnorm(0, 1)  
@@ -1078,12 +1056,11 @@ test_that("Test that cluster parameters and membership variable are independent 
   Inits=list(xi=rep(1, 10), muTilde=rep(0,10), tau=1)
   Data=list(y=rnorm(10,0, 1))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
   mConf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: The length of membership variable and the variable that\n')
-  
-  
-  #  related variable depends on variable to be clustered and membership variable
+  expect_error(mcmc <- buildMCMC(mConf),
+               'sampler_CRP: Detected unusual indexing')
+    
+  ## another variable depends on variable to be clustered and membership variable
   code=nimbleCode({
     for(i in 1:10) {
       muTilde[i] ~ dnorm(0, 1)  
@@ -1096,16 +1073,15 @@ test_that("Test that cluster parameters and membership variable are independent 
   Inits=list(xi=rep(1, 10), muTilde=rep(0,10), x = rep(0,10))
   Data=list(y=rnorm(10,0, 1))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
   mConf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(mConf), info = 'sampler_CRP: The length of membership variable and the variable that \n')
+  expect_error(mcmc <- buildMCMC(mConf),
+               'sampler_CRP: Cluster membership variable used in multiple declarations')
   
 })
 
 test_that("Test only data depends on cluster variable in CRP sampler", {
-  set.seed(1)
-  
-  # not only data depends on xi and mu: case is safe because length of data and xi is different
+
+  ## not only data depends on xi and mu: case is safe because length of data and xi is different
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -1128,12 +1104,11 @@ test_that("Test only data depends on cluster variable in CRP sampler", {
   thetas <- c(rep(-5, 10), rep(5, 10), rep(0, 10))
   Data <- list(y = rnorm(n, thetas, 1))
   m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
-  cm <- compileNimble(m)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'), print=FALSE)  
-  expect_error(mMCMC <- buildMCMC(mConf), info='sampler_CRP: The length of membership variable and')
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'))  
+  expect_error(mMCMC <- buildMCMC(mConf),
+               'sampler_CRP: Cluster membership variable used in multiple declarations')
   
-  
-  # not only data depends on  mu: check this!
+  ## additional node depends on cluster parameters
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -1156,9 +1131,9 @@ test_that("Test only data depends on cluster variable in CRP sampler", {
   thetas <- c(rep(-5, 10), rep(5, 10), rep(0, 10))
   Data <- list(y = rnorm(n, thetas, 1))
   m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
-  cm <- compileNimble(m)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'), print=FALSE)  
-  expect_error(mMCMC <- buildMCMC(mConf), info='sampler_CRP: Only observations can depend on cluster variables.')
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'))  
+  expect_error(mMCMC <- buildMCMC(mConf),
+               'sampler_CRP: Only the variables being clustered can depend on the cluster parameters')
   
 })
 
@@ -1167,7 +1142,7 @@ test_that("Test only data depends on cluster variable in CRP sampler", {
 test_that("testing multivariate normal mixture models with CRP", {
   set.seed(1)
   
-  # bivariate normal kernel with unknown mean
+  ## bivariate normal kernel with unknown mean
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -1192,7 +1167,7 @@ test_that("testing multivariate normal mixture models with CRP", {
   mConf <- configureMCMC(m, monitors = c('xi','mu', 'alpha'), print=FALSE)  
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  output <- runMCMC(cMCMC, niter=2000, nburnin=1900, thin=1 , inits=Inits,setSeed=FALSE, progressBar=TRUE)
+  output <- runMCMC(cMCMC, niter=2000, nburnin=1900, thin=1 , inits=Inits, setSeed=FALSE)
   outputG <- getSamplesDPmeasure(cMCMC)
   expect_false(any(is.na(outputG$samples)))
   
@@ -1213,7 +1188,7 @@ test_that("testing multivariate normal mixture models with CRP", {
                info = paste0("incorrect update of cluster parameters in bivariate normal data with unknown mean. Second component"))
   
   
-  # bivariate normal kernel with unknown mean and unknown variance
+  ## bivariate normal kernel with unknown mean and unknown variance
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -1238,7 +1213,7 @@ test_that("testing multivariate normal mixture models with CRP", {
   
   m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
   cm <- compileNimble(m, showCompilerOutput = FALSE)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 'Sigma', 'alpha', 'lambda'), print=FALSE)  #, 'lambda'
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 'Sigma', 'alpha', 'lambda'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   output <- runMCMC(cMCMC, niter=2000, nburn=1900, thin=1, inits=Inits, setSeed=FALSE)
@@ -1268,7 +1243,7 @@ test_that("testing multivariate normal mixture models with CRP", {
                info = paste0("incorrect update of covariance matrix parameters in bivariate normal data with unknown mean and variance. [1, 1] component"))
   
   
-  # 4-dimensional normal kernel with unknown mean and unknown variance
+  ## 4-dimensional normal kernel with unknown mean and unknown variance
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -1298,7 +1273,7 @@ test_that("testing multivariate normal mixture models with CRP", {
   Data <- list(y = x)
   m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
   cm <- compileNimble(m, showCompilerOutput = FALSE)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 'Sigma', 'alpha', 'lambda'), print=FALSE)  #, 'lambda'
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 'Sigma', 'alpha', 'lambda'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   output <- runMCMC(cMCMC, niter=50, nburn=30, thin=1, inits=Inits, setSeed=FALSE)
@@ -1340,16 +1315,13 @@ test_that("testing multivariate normal mixture models with CRP", {
   expect_equal(mean(cond), 2, tol=2*1, scale=1,
                info = paste0("incorrect update of covariance matrix parameters in bivariate normal data with unknown mean and variance. [1, 1] component"))
   
-  
 })
-
-
 
 
 test_that("Test that not nonparametric MCMC message in CRP sampler is printed", {
   set.seed(1)
   
-  # 2 mean cluster parameters, data is mixture of 3 normals, concentration param is fixed
+  ## 2 mean cluster parameters, data is mixture of 3 normals, concentration param is fixed
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(1 , size=10)
@@ -1369,10 +1341,10 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
   expect_warning(mMCMC <- buildMCMC(mConf))
   cMCMC <- compileNimble(mMCMC, project = m)
   expect_output(out <- runMCMC(mcmc=cMCMC, niter=1, nburnin = 0, thin=1),
-                info = 'CRP_sampler: This MCMC is for a parametric model.')
+                'CRP_sampler: This MCMC is for a parametric model.')
   
   
-  # 2 mean cluster parameters, data is mixture of 3 normals, concentration param is random
+  ## 2 mean cluster parameters, data is mixture of 3 normals, concentration param is random
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(conc0 , size=10)
@@ -1393,10 +1365,10 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
   expect_warning(mMCMC <- buildMCMC(mConf))
   cMCMC <- compileNimble(mMCMC, project = m)
   expect_output(out <- runMCMC(mcmc=cMCMC, niter=1, nburnin = 0, thin=1),
-                info = 'CRP_sampler: This MCMC is not for a proper model.')
+                'CRP_sampler: This MCMC is not for a proper model.')
   
 
-  # less cluster parameters than observation, concentration param is fixed, conjugate case
+  ## fewer cluster parameters than observations, concentration param is fixed, conjugate case
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(1 , size=10)
@@ -1419,7 +1391,7 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
                 'CRP_sampler: This MCMC is for a parametric model.')
   
   
-  # less cluster parameters than onservation, concentration param is fixed, non conjugate case
+  ## fewer cluster parameters than onservation, concentration param is fixed, non conjugate case
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(1 , size=10)
@@ -1443,7 +1415,7 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
   
   
    
-  # no message is sent when xi=1:n
+  ## no message is sent when xi=1:n
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(1 , size=10)
@@ -1461,12 +1433,10 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
   mConf <- configureMCMC(m, monitors =  c('thetatilde',  'xi'))
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
-  out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1) # no message is sent
+  expect_silent(out <- runMCMC(cMCMC, niter=1, nburnin = 0, thin=1))  
   
   
-  
-  # dirichlet-multinomial model: message is sent I think the MCMC really wants to create more
-  # components than observations.
+  ## dirichlet-multinomial model, no message is sent when xi = 1:n
   code=nimbleCode(
     {
       for(i in 1:4){
@@ -1490,16 +1460,9 @@ test_that("Test that not nonparametric MCMC message in CRP sampler is printed", 
   mcmc <- buildMCMC(conf)
   cm = compileNimble(m)
   cmcmc=compileNimble(mcmc,project=m)
-  cmcmc$run(100) # no message is sent
-  #cmcmc$mvSamples[['xi']]
+  expect_silent(cmcmc$run(100))
   
 })
-
-
-
-
-
-## Testing CRP distribution
 
 test_that("Check error given when model has no cluster variables", {
     ## Originally this tested whether there are no tildeVars but with new check for 'xi' appearing
@@ -1586,7 +1549,7 @@ test_that("CRP model calculation and dimensions are correct:", {
                info = paste0("incorrect likelihood value for compiled dCRP"))
   
   
-  # different length of x and size:
+  ## different length of x and size:
   CRP_code2 <- nimbleCode({
     x[1:6] ~ dCRP(1, size=10)
   })
@@ -1595,7 +1558,7 @@ test_that("CRP model calculation and dimensions are correct:", {
   CRP_model2 <- nimbleModel(CRP_code2, data=Inits)
   expect_error(CRP_model2$calculate(), "length of 'x' has to be equal to 'size'")
   
-  # different length of x and size:
+  ## different length of x and size:
   CRP_code3 <- nimbleCode({
     x[1:6] ~ dCRP(1, size=3)
   })
@@ -1603,8 +1566,7 @@ test_that("CRP model calculation and dimensions are correct:", {
   Inits <- list(x = c(1,1,2,1,1,2))
   CRP_model3 <- nimbleModel(CRP_code3, data=Inits)
   expect_error(CRP_model3$calculate(), "length of 'x' has to be equal to 'size'")
-  
-  
+    
 })
 
 
@@ -1614,14 +1576,14 @@ test_that("random sampling from CRP in model with additional levels", {
   set.seed(0)
   size <- 6
   r_samps <- t(replicate(10000, rCRP(n = 1, conc, size = size)))
-  # K is the number of unique components in x of length 6
+  ## K is the number of unique components in x of length 6
   true_EK <- sum(conc/(conc+1:size-1))
   
   expect_equal(mean(apply(r_samps, 1, function(x)length(unique(x)))), true_EK, 
                tol = 0.01,
                info = "Difference in expected mean of K exceeds tolerance")
   
-  # sampling from the model:
+  ## sampling from the model:
   set.seed(1)
   CRP_code <- nimbleCode({
     x[1:6] ~ dCRP(conc=1, size=6)
@@ -1651,9 +1613,7 @@ test_that("random sampling from CRP in model with additional levels", {
 
 test_that("Testing posterior sampling and prior predictive computation with conjugate models using CRP", { 
   
-  
-  
-  # dnorm_dnorm
+  ## dnorm_dnorm
   code = nimbleCode({
     xi[1:4] ~ dCRP(conc=1, size=4)
     for(i in 1:4) {
@@ -1691,7 +1651,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   
   
   
-  # dnorm_invgamma_dnorm
+  ## dnorm_invgamma_dnorm
   code = nimbleCode({
     xi[1:4] ~ dCRP(conc=1, size=4)
     for(i in 1:4) {
@@ -1738,7 +1698,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   expect_identical(smp2, m$mu[1])
   
   
-  # dgamma_dpois
+  ## dgamma_dpois
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dgamma(1,1)
@@ -1772,7 +1732,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   
   
   
-  # dbeta_dbern
+  ## dbeta_dbern
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dbeta(1,1)
@@ -1805,7 +1765,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   expect_identical(smp, m$mu[1])
   
   
-  # dbeta_dbin
+  ## dbeta_dbin
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dbeta(1,1)
@@ -1839,7 +1799,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   expect_identical(smp, m$mu[1])
   
   
-  # dbeta_dnegbin
+  ## dbeta_dnegbin
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dbeta(1,1)
@@ -1873,7 +1833,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   expect_identical(smp, m$mu[1])
   
   
-  # dgamma_dexp:
+  ## dgamma_dexp:
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dgamma(1,1)
@@ -1907,7 +1867,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   
   
   
-  # dgamma_dgamma:
+  ## dgamma_dgamma:
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dgamma(1,1)
@@ -1941,7 +1901,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   expect_identical(smp, m$mu[1])
   
   
-  # dgamma_dweib:
+  ## dgamma_dweib:
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dgamma(1,1)
@@ -1975,7 +1935,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   expect_identical(smp, m$mu[1])
   
   
-  # ddirch_dmulti
+  ## ddirch_dmulti
   code=nimbleCode(
     {
       for(i in 1:4){
@@ -2017,7 +1977,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   expect_identical(smp, m$p[1, 1:3])
   
   
-  # dgamma_dinvgamma:
+  ## dgamma_dinvgamma:
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dgamma(1, rate=1)
@@ -2051,9 +2011,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   expect_identical(smp, m$mu[1])
   
   
-  
-  
-  # dgamma_dnorm:
+  ## dgamma_dnorm:
   code = nimbleCode({
     for(i in 1:4) {
       mu[i] ~ dgamma(1,1)
@@ -2086,10 +2044,6 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   smp <- rgamma(1 , shape = priorShape + 0.5, rate = priorRate + (data$y[1]-dataMean)^2/2)
   expect_identical(smp, m$mu[1])
   
-  
-  
-  
-  
 })
 
 
@@ -2120,7 +2074,7 @@ test_that("Testing conjugacy detection with models using CRP", {
   m = nimbleModel(code, data = list(y = rnorm(4)),
                   inits = list(xi = rep(1,4), mu=rnorm(4)))
   conf <- configureMCMC(m)
-  mcmc=buildMCMC(conf)
+  expect_warning(mcmc <- buildMCMC(conf), "sampler_CRP: The number of cluster parameters is less")
   expect_equal(class(mcmc$samplerFunctions[[3]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   
   ## dnorm_dnorm one more level of hierarchy
@@ -2453,7 +2407,7 @@ test_that("Testing conjugacy detection with models using CRP", {
   expect_equal(nimble:::checkCRPconjugacy(m, 'xi[1:4]'), "conjugate_dnorm_invgamma_dnorm")
   expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_invgamma_dnorm")
   
-  # model with deterministic nodes
+  ## model with deterministic nodes
   code = nimbleCode({
     for(i in 1:4) {
       s2Tilde[i] ~ dinvgamma(a,b)
@@ -3474,7 +3428,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m = nimbleModel(code, data = list(y = rnorm(4)),
                   inits = list(xi = rep(1,10), mu=rnorm(4)))
   conf <- configureMCMC(m)
-  expect_error(buildMCMC(conf))
+  expect_error(buildMCMC(conf), "NIMBLE can only sample when there is one variable")
   
   
   ## more observations than labels 
@@ -3486,7 +3440,8 @@ test_that("Testing of misspecification of dimension when using CRP", {
     xi[1:4] ~ dCRP(conc=1, size=4)
   })
   expect_error(nimbleModel(code, data = list(y = rnorm(10)),
-                           inits = list(xi = rep(1,4), mu=rnorm(10))))
+                           inits = list(xi = rep(1,4), mu=rnorm(10))),
+               "dimensions specified are smaller")
   
   
   ## different obervations with same label
@@ -3500,7 +3455,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m <- nimbleModel(code, data = list(y = rnorm(2)),
                    inits = list(xi = rep(1,2), mu=rnorm(2)))
   conf <- configureMCMC(m)
-  expect_error(buildMCMC(conf))
+  expect_error(buildMCMC(conf), "sampler_CRP: Detected unusual indexing")
   
   
   ## same obervation with different label
@@ -3512,7 +3467,8 @@ test_that("Testing of misspecification of dimension when using CRP", {
     xi[1:2] ~ dCRP(conc=1, size=2)
   })
   expect_error(nimbleModel(code, data = list(y = rnorm(2)),
-                           inits = list(xi = rep(1,2), mu=rnorm(2))))
+                           inits = list(xi = rep(1,2), mu=rnorm(2))),
+               "There are multiple definitions")
   
   ## less tilde variables than observations
   code = nimbleCode({
@@ -3527,7 +3483,8 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50)))
   conf <- configureMCMC(m)
-  expect_warning(buildMCMC(conf), "The number of cluster parameters is less than the number of potential clusters")
+  expect_warning(buildMCMC(conf),
+                 "The number of cluster parameters is less than the number of potential clusters")
   
   
   
@@ -3545,7 +3502,8 @@ test_that("Testing of misspecification of dimension when using CRP", {
   m <- nimbleModel(code, data = list(y = rnorm(100)),
                    inits = list(xi = rep(1,100), mu=rnorm(50), s2=rinvgamma(50,1,1)))
   conf <- configureMCMC(m)
-  expect_warning(buildMCMC(conf), "The number of cluster parameters is less than the number of potential clusters")
+  expect_warning(buildMCMC(conf),
+                 "The number of cluster parameters is less than the number of potential clusters")
   
   
   ## multiple tilde parameters, one is common for every observation
@@ -3580,7 +3538,7 @@ test_that("Testing of misspecification of dimension when using CRP", {
   conf <- configureMCMC(m)
   expect_error(buildMCMC(conf), "Detected unusual indexing in")
   
-  ## test that a message is sent when more tilde variables than defined are needed
+  ## test that a message is sent when truncation is hit
   code = nimbleCode({
     for(i in 1:3){
       mu[i] ~ dnorm(0,1)  
@@ -3742,11 +3700,6 @@ test_that("Testing BNP model based on CRP", {
   expect_equal(L1dist, 0.01, tol=0.01,
                info = "wrong estimation of density in DPM of normal distrbutions")
 })
-
-
-
-
-
 
 
 test_that("Testing more BNP models based on CRP", { 
@@ -3914,23 +3867,6 @@ test_that("Testing more BNP models based on CRP", {
                 model = model, data = Data, inits = Inits, 
                 useInits = TRUE)
 })
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-#-- SB sampler
-
 
 test_that("stick_breaking nimble function calculation and use is correct", {
   set.seed(0)
@@ -4228,7 +4164,7 @@ test_that("Testing BNP model using stick breaking representation", {
   ngrid = 302
   grid = seq(-10, 25,len=ngrid)
   
-  # posterior samples of the density
+  ## posterior samples of the density
   nsave = 100
   predSB = matrix(0, ncol=ngrid, nrow=nsave)
   for(i in 1:nsave) {
@@ -4297,7 +4233,7 @@ test_that("random sampling from model works fine", {
                info = paste0("incorrect weights (w) sampling  in SB_model2"))
   
   
-  # wrong specification of stick variables
+  ## wrong specification of stick variables
   SB_code3 <- nimbleCode({
     for(i in 1:5) 
       z[i] ~ dgamma(10, 10)
@@ -4307,20 +4243,21 @@ test_that("random sampling from model works fine", {
     }
   })
   
-  # wrong prior and starting values for stick variables: how to recognize this wrong specification?
+  ## wrong prior and starting values for stick variables
   set.seed(1)
   Inits <- list(z = rgamma(5, 10, 10))
   data <- list(xi = 1:10)
-  expect_output(nimbleModel(SB_code3, data=data, inits=Inits)) # message is sent because z >1.
+  expect_output(m <- nimbleModel(SB_code3, data=data, inits=Inits),
+                "values in 'z' have to be in \\(0,1\\)")
   
-  # good stating values for stick variables
+  ## good starting values for stick variables
   set.seed(1)
   Inits <- list(z = rbeta(5, 1, 1))
   data <- list(xi = rep(1,10))
   SB_model3 <- nimbleModel(SB_code3, data=data, inits=Inits)
-  expect_output(SB_model3$simulate(), "values in 'z' have to be in") # message is sent because z >1.
+  expect_output(m <- SB_model3$simulate(), "values in 'z' have to be in \\(0,1\\)")
   
-  # wrong specification of length in stick variables, should be 5
+  ## wrong specification of length in stick variables, should be 5
   SB_code4 <- nimbleCode({
     for(i in 1:4) 
       z[i] ~ dbeta(1,1)
@@ -4330,16 +4267,17 @@ test_that("random sampling from model works fine", {
     }
   })
   
-  # wrong length for stick variables, a warning is sent in the nimbleModel function
-  # how to recognize this wrong specification in the test?
+  ## wrong length for stick variables
   set.seed(1)
   Inits <- list(z = rbeta(4, 10, 10))
   data <- list(xi = rep(1,10))
-  expect_warning(nimbleModel(SB_code4, data=data, inits=Inits), message = "number of items to replace")
+  expect_warning(m <- nimbleModel(SB_code4, data=data, inits=Inits),
+                 "number of items to replace")
   
   
-  # wrong specification of length in stick variables, should be 5
-  # no warning in nimbleModel function
+  ## wrong specification of length in stick variables, should be 5
+  ## no warning in nimbleModel function
+  ## This is a shortcoming in NIMBLE processing of sizes in models.
   SB_code5 <- nimbleCode({
     for(i in 1:2) 
       z[i] ~ dbeta(1,1)
@@ -4352,13 +4290,11 @@ test_that("random sampling from model works fine", {
   set.seed(1)
   Inits <- list(z = rbeta(2, 10, 10))
   data <- list(xi = rep(1,10))
-  SB_model5 <- nimbleModel(SB_code5, data=data, inits=Inits)
+  expect_failure(expect_error(SB_model5 <- nimbleModel(SB_code5, data=data, inits=Inits)))
   cSB_model5 <- compileNimble(SB_model5)
   expect_output(cSB_model5$calculate('w'), "Error in mapCopy")
   
-  
-  
-  # longer vector of stick variables
+  ## longer vector of stick variables
   SB_code6 <- nimbleCode({
     for(i in 1:10) 
       z[i] ~ dbeta(1,1)
@@ -4368,17 +4304,15 @@ test_that("random sampling from model works fine", {
     }
   })
   
-  # wrong length for stick variables, a warning is sent in the nimbleModel function
+  ## wrong length for stick variables, a warning is sent in the nimbleModel function
   set.seed(1)
   Inits <- list(z = rbeta(10, 10, 10))
   data <- list(xi = rep(1,10))
-  expect_warning(SB_model6 <- nimbleModel(SB_code6, data=data, inits=Inits), "number of items to replace")
+  expect_warning(SB_model6 <- nimbleModel(SB_code6, data=data, inits=Inits),
+                 "number of items to replace")
   cSB_model6 <- compileNimble(SB_model6)
   expect_output(cSB_model6$calculate('w'), "Error in mapCopy")
 })
-
-
-
 
 
 ## testing sampler assigment for conc parameter
@@ -4396,7 +4330,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   m = nimbleModel(code, data = list(y = rnorm(4)),
                   inits = list(xi = rep(1,4), mu = rnorm(4), alpha = 1))
   conf <- configureMCMC(m)
-  expect_equal(conf$getSamplers()[[5]]$name, "CRP_concentration")
+  expect_equal(conf$getSamplers('alpha')[[1]]$name, "CRP_concentration")
   
   
   code = nimbleCode({
@@ -4410,7 +4344,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   m = nimbleModel(code, data = list(y = rnorm(4)),
                   inits = list(xi = rep(1,4), mu = rnorm(4), alpha = 1))
   conf <- configureMCMC(m)
-  expect_equal(conf$getSamplers()[[5]]$name, "RW")
+  expect_equal(conf$getSamplers('alpha')[[1]]$name, "RW")
   
   
   code = nimbleCode({
@@ -4424,7 +4358,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   m = nimbleModel(code, data = list(y = rnorm(4)),
                   inits = list(xi = rep(1,4), mu = rnorm(4), alpha = 1))
   conf <- configureMCMC(m)
-  expect_equal(conf$getSamplers()[[5]]$name, "RW")
+  expect_equal(conf$getSamplers('alpha')[[1]]$name, "RW")
   
   
   code = nimbleCode({
