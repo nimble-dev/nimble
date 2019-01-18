@@ -4,7 +4,7 @@ USER LEVEL CHANGES
 
 -- Various changes to greatly improve efficiency of sampling for Bayesian nonparametric (BNP) mixture models using the dCRP distribution.
 
--- Changes to samplers that could yield more efficienct execution in cases where prior or latent-state distributions have boundaries of valid values.
+-- Changes to samplers that could yield more efficient execution in cases where prior or latent-state distributions have bounded domains (i.e., boundaries that define valid values).
 
 -- Added double exponential (Laplace) distribution.
 
@@ -12,7 +12,9 @@ USER LEVEL CHANGES
 
 -- Added normal-inverse gamma conjugacy for BNP mixture models using the dCRP distribution.
 
--- sampleDPmeasure now works with multivariate cluster parameters and multiple cluster parameters.
+-- getSamplesDPmeasure now works with multivariate cluster parameters and multiple cluster parameters.
+
+-- getSamplesDPmeasure now takes an optional argument for the error level that determines the truncation level of the random measure and now returns a list containing the samples and truncation level.
 
 -- addSampler method of MCMC configuration objects now accepts ... (dot dot dot) arguments, and uses them as control list elements for the sampling algorithm.
 
@@ -33,6 +35,8 @@ USER LEVEL CHANGES
 BUG FIXES
 
 -- Fixed bug that produced incorrect WAIC calculations when using multiple chains for models with at least one non-scalar monitored variable. Also improved robustness of WAIC calculation.
+
+-- Fixed bugs in conjugate samplers for CRP distribution: CRP_conjugate_dgamma_dnorm, CRP_conjugate_dbeta_dbin, CRP_conjugate_dbeta_dnegbin, CRP_conjugate_dgamma_dinvgamma, CRP_conjugate_ddirch_dmulti.
 
 -- Improved handling and error-trapping of less common model structures (in particular less common styles of indexing) for models using the dCRP distribution.
 
