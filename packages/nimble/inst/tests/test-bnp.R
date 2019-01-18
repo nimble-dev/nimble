@@ -35,6 +35,9 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   output <- runMCMC(cMCMC,  niter=1000, nburnin = 900, thin=1)
   samplesG <- getSamplesDPmeasure(cMCMC)
   expect_false(any(is.na(samplesG$samples)))
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   
   ## no deterministic node, random conc param
@@ -58,6 +61,9 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   out <- runMCMC(cMCMC, niter=1000, nburnin = 900, thin=1)
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   ## with deterministic node, conc param is fixed
   code <- nimbleCode({
@@ -80,6 +86,9 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   out <- runMCMC(cMCMC, niter = 1000, nburnin = 900, thin=1)
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   ## with deterministic node, random conc param
   code <- nimbleCode({
@@ -102,6 +111,9 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   out <- runMCMC(cMCMC, niter=1000, nburnin = 900, thin=1)
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   ## two cluster parameters, one deterministic parameter, fixed conc
   code=nimbleCode(
@@ -129,6 +141,9 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   out <- runMCMC(cMCMC, niter=1000, nburnin = 900, thin=1)
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   
   ## two cluster parameters, one deterministic parameter, random conc
@@ -158,6 +173,9 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   out <- runMCMC(cMCMC, niter=1000, nburnin = 900, thin=1)
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   
   ## two cluster parameters, two deterministc parameter, random conc with random parameters
@@ -189,6 +207,9 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   out <- runMCMC(cMCMC, niter=1000, nburnin = 900, thin=1)
   samplesG <- getSamplesDPmeasure(cMCMC)
   expect_false(any(is.na(samplesG$samples)))
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   
   
@@ -223,6 +244,9 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   out <- runMCMC(cMCMC, niter=1000, nburnin = 900, thin=1)
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   
   ## two cluster parameters, one deterministic parameter, random conc defined by two random parameters
@@ -256,6 +280,9 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   out <- runMCMC(cMCMC, niter=1000, nburnin = 0, thin=1)
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   ## two cluster parameters, one deterministic parameter, random conc defined by two random parameters, normal inverse gamma prior
   code=nimbleCode(
@@ -287,6 +314,9 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   out <- runMCMC(cMCMC, niter=1000, nburnin = 900, thin=1)
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
 })
 
@@ -435,6 +465,9 @@ test_that("check iid assumption in sampleDPmeasure", {
   output <- runMCMC(cMCMC,  niter=1, nburnin = 0, thin=1)
   expect_error(samplesG <- getSamplesDPmeasure(cMCMC),
                'sampleDPmeasure: cluster parameters have to be independent and identically')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
 
   ## also not IID
   code=nimbleCode({
@@ -460,6 +493,9 @@ test_that("check iid assumption in sampleDPmeasure", {
   output <- cMCMC$run(1)
   expect_error(getSamplesDPmeasure(cMCMC),
                'sampleDPmeasure: cluster parameters have to be independent and identically')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
 
   
   ## one cluster param not with same distribution
@@ -484,6 +520,9 @@ test_that("check iid assumption in sampleDPmeasure", {
   cMCMC$run(1)
   expect_error(getSamplesDPmeasure(cMCMC),
                'sampleDPmeasure: cluster parameters have to be independent and identically')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   
   ## bivariate cluster parameters are not iid
@@ -529,6 +568,9 @@ test_that("check iid assumption in sampleDPmeasure", {
   cMCMC$run(1, reset=FALSE)  # Claudia, why do we call $run twice?
   expect_error(getSamplesDPmeasure(cMCMC),
                'sampleDPmeasure: cluster parameters have to be independent and identically')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
 })
 
@@ -577,6 +619,9 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
               info='getSamplesDPmeasure: truncation level for larger epsilon incorrectly computed')
   expect_true(tr1 < tr3,
               info='getSamplesDPmeasure: truncation level for smaller epsilon incorrectly computed')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(model)
+  }
 })
 
 test_that("Test that new cluster parameters are correctly updated in CRP sampler", {
@@ -617,6 +662,10 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   
   expect_equal(mean(cond), 5, tol=2*1, scale=1,
                info = paste0("incorrect update of cluster parameters in Poisson data"))
+
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
  
   ## normal - independent normal - inv gamma
@@ -667,6 +716,9 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
     expect_equal(mean(samF[,i]), f0[i], tolerance=2*0.1, scale=1,
                  info = paste("incorrect update of cluster parameters in mixture of normals data. Grid_i = ", i))
   }
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   
   ## normal - normal inverse gamma
@@ -715,6 +767,9 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
     expect_equal(mean(samF[,i]), f0[i], tolerance=2*0.1, scale=1,
                  info = paste("incorrect update of cluster parameters in mixture of normals data and conjugate normal - N-IG. Grid_i = ", i))
   }
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
   ## conjugate normal - normal-inverse gamma 
   code=nimbleCode(
@@ -739,6 +794,9 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   means <- sapply(1:10, function(i) mean(out[i, 6:9][out[i, 10:13]]) )
   expect_equal(mean(means), 5, tolerance=2*1,
                info = 'wrong results from normal - normal - invgamma conjugate CRP')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
   
 })
 
@@ -770,6 +828,9 @@ test_that("Test that the nonconjugate CRP sampler works fine ", {
   out <- runMCMC(cMCMC, niter=10, nburnin = 0, thin=1)
   means <- sapply(1:10, function(i) mean(out[i, 1:3][out[i, 4:6]]) )
   expect_equal(mean(means), 0, tolerance=2*1, info = 'wrong results from non conjugate CRP 1')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
     
   ## xi=1:n, the sampler requires samples from G_0, tildeVars have dependencies
   code=nimbleCode(
@@ -793,6 +854,9 @@ test_that("Test that the nonconjugate CRP sampler works fine ", {
   out <- runMCMC(cMCMC, niter=10, nburnin = 0, thin=1)
   means <- sapply(1:10, function(i) mean(out[i, 3:5][out[i, 6:8]] + out[i, 1]) )
   expect_equal(mean(means), 10, tolerance=2*1, info = 'wrong results from non conjugate CRP 2')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
 })
 
 test_that("Test opening of new clusters in CRP sampler ", {
@@ -830,6 +894,9 @@ test_that("Test opening of new clusters in CRP sampler ", {
                check.attributes = FALSE)
   expect_identical(output[1, 'xi[1]'], c('xi[1]'=2), 'incorrect cluster for first obs')
   expect_identical(output[1, 'muTilde[1]'], c('muTilde[1]'=0), 'incorrect update of parameter for first cluster')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(model)
+  }
 
   ## test for updating new cluster parameters, without conjugacy
   code <- nimbleCode({
@@ -862,6 +929,9 @@ test_that("Test opening of new clusters in CRP sampler ", {
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
   expect_true(output[1, 'muTilde[2]'] != -50, 'incorrect update of parameter for second cluster')
   expect_identical(output[1, 'xi[1]'], c('xi[1]'=2), 'incorrect cluster for first obs')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(model)
+  }
 
   ## test for updating new cluster parameters, without conjugacy, no movement expected
   code <- nimbleCode({
@@ -894,6 +964,9 @@ test_that("Test opening of new clusters in CRP sampler ", {
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
   expect_true(output[1, 'muTilde[2]'] != 50, 'incorrect update of parameter for second cluster')
   expect_identical(output[1, 'xi[1]'], c('xi[1]'=1), 'incorrect cluster for first obs')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(model)
+  }
   
   ## test for updating new cluster parameters, without conjugacy, movement to existing cluster expected
   code <- nimbleCode({
@@ -927,6 +1000,9 @@ test_that("Test opening of new clusters in CRP sampler ", {
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
   expect_true(output[1, 'muTilde[2]'] != -50, 'incorrect update of parameter for second cluster')
   expect_identical(output[1, 'xi[1]'], c('xi[1]'=1), 'incorrect cluster for first obs')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(model)
+  }
 
   ## test for updating new cluster parameters, without conjugacy, singleton with movement to new cluster, same label, expected
   code <- nimbleCode({
@@ -962,6 +1038,9 @@ test_that("Test opening of new clusters in CRP sampler ", {
                info = 'incorrect update of parameter for second cluster',
                check.attributes = FALSE)
   expect_identical(output[1, 'xi[1]'], c('xi[1]'=2), 'incorrect cluster for first obs')
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(model)
+  }
 })
 
 test_that("Test reset frunction in CRP sampler ", {
@@ -987,6 +1066,9 @@ test_that("Test reset frunction in CRP sampler ", {
   cMCMC <- compileNimble(mMCMC, project = m) 
   expect_output(cMCMC$run(1), info='CRP_sampler: This MCMC is for a parametric model')
   cMCMC$run(1, reset=FALSE)
+  if(.Platform$OS.type != "windows") {
+      nimble:::clearCompiled(m)
+  }
 })
 
 
@@ -1316,6 +1398,7 @@ test_that("testing multivariate normal mixture models with CRP", {
                info = paste0("incorrect update of covariance matrix parameters in bivariate normal data with unknown mean and variance. [1, 1] component"))
   
 })
+
 
 
 test_that("Test that not nonparametric MCMC message in CRP sampler is printed", {
