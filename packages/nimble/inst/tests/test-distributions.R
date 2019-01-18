@@ -548,7 +548,7 @@ test_that("ddexp usage", {
     expect_identical(smp[1], cm$mu, "incorrect compiled simulate for ddexp")
 })
     
-    
+   
 sink(NULL)
 
 if(!generatingGoldFile) {
