@@ -103,7 +103,7 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
   
-  # two cluster parameters, one deterministic parameter, fixed conc
+  ## two cluster parameters, one deterministic parameter, fixed conc
   code=nimbleCode(
     {
       for(i in 1:10){
@@ -131,7 +131,7 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   expect_false(any(is.na(samplesG)))
   
   
-  # two cluster parameters, one deterministic parameter, random conc
+  ## two cluster parameters, one deterministic parameter, random conc
   code=nimbleCode(
     {
       for(i in 1:10){
@@ -160,7 +160,7 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   expect_false(any(is.na(samplesG)))
   
   
-  # two cluster parameters, two deterministc parameter, random conc with random parameters
+  ## two cluster parameters, two deterministc parameter, random conc with random parameters
   code=nimbleCode(
     {
       for(i in 1:10){
@@ -192,7 +192,7 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   
   
   
-  # two cluster parameters, one deterministc parameter, random conc defined by two random parameters
+  ## two cluster parameters, one deterministc parameter, random conc defined by two random parameters
   code=nimbleCode(
     {
       for(i in 1:10){
@@ -225,7 +225,7 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   expect_false(any(is.na(samplesG)))
   
   
-  # two cluster parameters, one deterministic parameter, random conc defined by two random parameters
+  ## two cluster parameters, one deterministic parameter, random conc defined by two random parameters
   code=nimbleCode(
     {
       for(i in 1:10){
@@ -257,7 +257,7 @@ test_that("Test that sampleDPmeasure can be used for more complicated models", {
   samplesG <- getSamplesDPmeasure(cMCMC)$samples
   expect_false(any(is.na(samplesG)))
   
-  # two cluster parameters, one deterministic parameter, random conc defined by two random parameters, normal inverse gamma prior
+  ## two cluster parameters, one deterministic parameter, random conc defined by two random parameters, normal inverse gamma prior
   code=nimbleCode(
     {
       for(i in 1:10){
@@ -314,9 +314,9 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   mConf <- configureMCMC(m, monitors = c('xi', 'conc0', 'mu'))
   mMCMC <- buildMCMC(mConf)
   expect_message(output <- runMCMC(mMCMC, niter=1))
-  output <- getSamplesDPmeasure(mMCMC)
+  expect_silent(output <- getSamplesDPmeasure(mMCMC))
   
-  # cluster variable not being monitored
+  ## cluster variable not being monitored
   code <- nimbleCode({
     xi[1:6] ~ dCRP(1, 6)
     mu0 ~ dnorm(0, 1)
@@ -342,7 +342,7 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   mConf <- configureMCMC(m, monitors = c('mu', 'xi', 'mu0', 's20'))
   mMCMC <- buildMCMC(mConf)
   expect_message(output <- runMCMC(mMCMC, niter=1))
-  output <- getSamplesDPmeasure(mMCMC)
+  expect_silent(output <- getSamplesDPmeasure(mMCMC))
   
   ## concentration parameter not being monitored:
   code <- nimbleCode({
@@ -398,17 +398,15 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
   expect_error(getSamplesDPmeasure(mMCMC),
                'sampleDPmeasure: The stochastic parent nodes of the membership')
   
-  ## note that if 'b' not 'd' is initialized then this will fail because model initialization overwrites
-  ## 'b' with NA based on NA in 'd' and then sampleDPmeasure setup thinks it can't calculate conc0
   mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'b', 'd'))
   mMCMC <- buildMCMC(mConf)
   expect_message(output <- runMCMC(mMCMC, niter=1))
-  outputG <- getSamplesDPmeasure(mMCMC)
+  expect_silent(outputG <- getSamplesDPmeasure(mMCMC))
   
   mConf <- configureMCMC(m, monitors = c('xi', 'mu', 'a', 'd'))
   mMCMC <- buildMCMC(mConf)
-  output <- runMCMC(mMCMC, niter=1)#)
-  outputG <- getSamplesDPmeasure(mMCMC) 
+  expect_message(output <- runMCMC(mMCMC, niter=1))
+  expect_silent(outputG <- getSamplesDPmeasure(mMCMC))
 })
 
 
@@ -418,7 +416,7 @@ test_that("sampleDPmeasure: testing that required variables in MCMC modelValues 
 test_that("check iid assumption in sampleDPmeasure", {
   set.seed(1)
   
-  # univariate cluster parameters are not iid
+  ## univariate cluster parameters are not iid
   code <- nimbleCode({
     for(i in 1:10){
       muTilde[i] ~ dnorm(i, 1)
@@ -435,34 +433,36 @@ test_that("check iid assumption in sampleDPmeasure", {
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
   output <- runMCMC(cMCMC,  niter=1, nburnin = 0, thin=1)
-  expect_error(samplesG <- getSamplesDPmeasure(cMCMC), info='sampleDPmeasure: cluster parameters have to be independent and identically')
+  expect_error(samplesG <- getSamplesDPmeasure(cMCMC),
+               info='sampleDPmeasure: cluster parameters have to be independent and identically')
 
-  # also not IID
-    code=nimbleCode({
-        xi[1:3] ~ dCRP(1, size = 3)
-        thetatilde[1] ~ dnorm(0, 1)
-        thetatilde[2] ~ dt(0, 1, 1)
-        thetatilde[3] ~ dt(0, 1, 1)
-        s2tilde[1] ~ dinvgamma(2, 1)
-        s2tilde[2] ~ dgamma(1, 1)
-        s2tilde[3] ~ dgamma(1, 1)
-        for(i in 1:3){
-            y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])
-        }
-    }
-    )
-    Inits <- list(xi = rep(1, 3), thetatilde=rep(0,3), s2tilde=rep(1,3))
-    Data <- list(y = rnorm(3,-5, 1))
-    m <- nimbleModel(code, data=Data, inits=Inits)
-    cm <- compileNimble(m)
-    mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi'))
-    expect_silent(mMCMC <- buildMCMC(mConf))
-    cMCMC <- compileNimble(mMCMC, project = m) 
-    output <- cMCMC$run(1)
-    expect_error(getSamplesDPmeasure(cMCMC), info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
+  ## also not IID
+  code=nimbleCode({
+      xi[1:3] ~ dCRP(1, size = 3)
+      thetatilde[1] ~ dnorm(0, 1)
+      thetatilde[2] ~ dt(0, 1, 1)
+      thetatilde[3] ~ dt(0, 1, 1)
+      s2tilde[1] ~ dinvgamma(2, 1)
+      s2tilde[2] ~ dgamma(1, 1)
+      s2tilde[3] ~ dgamma(1, 1)
+      for(i in 1:3){
+          y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]])
+      }
+  }
+  )
+  Inits <- list(xi = rep(1, 3), thetatilde=rep(0,3), s2tilde=rep(1,3))
+  Data <- list(y = rnorm(3,-5, 1))
+  m <- nimbleModel(code, data=Data, inits=Inits)
+  cm <- compileNimble(m)
+  mConf <- configureMCMC(m, monitors =  c('thetatilde', 's2tilde', 'xi'))
+  expect_silent(mMCMC <- buildMCMC(mConf))
+  cMCMC <- compileNimble(mMCMC, project = m) 
+  output <- cMCMC$run(1)
+  expect_error(getSamplesDPmeasure(cMCMC),
+               info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
 
   
-  # one cluster param not with same distribution
+  ## one cluster param not with same distribution
   code=nimbleCode(
     {
       xi[1:10] ~ dCRP(1 , size=10)
@@ -482,10 +482,11 @@ test_that("check iid assumption in sampleDPmeasure", {
   expect_warning(mMCMC <- buildMCMC(mConf))
   cMCMC <- compileNimble(mMCMC, project = m) 
   cMCMC$run(1)
-  expect_error(getSamplesDPmeasure(cMCMC), info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
+  expect_error(getSamplesDPmeasure(cMCMC),
+               info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
   
   
-  # bivariate cluster parameters are not iid
+  ## bivariate cluster parameters are not iid
   code <- nimbleCode({
     for(i in 1:10){
       mutilde[i] ~ dnorm(i, s2tilde[i]/lambda)
@@ -499,13 +500,9 @@ test_that("check iid assumption in sampleDPmeasure", {
                  mutilde = rep(1, 10), s2tilde=rep(1, 10), lambda=1)
   Data <- list(y = c(rnorm(10, 0,1)))
   m <- nimbleModel(code, data=Data, inits=Inits)
-  cm <- compileNimble(m)
   mConf <- configureMCMC(m, monitors = c('mutilde','s2tilde', 'lambda', 'xi'))
-  mMCMC <- buildMCMC(mConf)
-  cMCMC <- compileNimble(mMCMC, project = m, showCompilerOutput = FALSE)
-  output <- runMCMC(cMCMC,  niter=1, nburnin = 0, thin=1)
-  expect_error(samplesG <- getSamplesDPmeasure(cMCMC), info='sampleDPmeasure: cluster parameters have to be independent')
-  
+  expect_error(mMCMC <- buildMCMC(mConf),
+               info = "sampler_CRP: Cluster parameters must be conditionally independent")  
   
   code=nimbleCode(
     {
@@ -529,9 +526,9 @@ test_that("check iid assumption in sampleDPmeasure", {
   expect_warning(mMCMC <- buildMCMC(mConf))
   cMCMC <- compileNimble(mMCMC, project = m) 
   cMCMC$run(1)
-  cMCMC$run(1, reset=FALSE)
-  expect_error(getSamplesDPmeasure(cMCMC), info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
-  
+  cMCMC$run(1, reset=FALSE)  # Claudia, why do we call $run twice?
+  expect_error(getSamplesDPmeasure(cMCMC),
+               info = 'sampleDPmeasure: cluster parameters have to be independent and identically')
   
 })
 
@@ -576,14 +573,16 @@ test_that("check use of epsilon parameters in getSamplesDPmeasure", {
   outputG <- getSamplesDPmeasure(cmcmc, epsilon = 0.00001)
   tr3 <- outputG$trunc
   
-  expect_true(tr1 > tr2, info='getSamplesDPmeasure: truncation level for larger epsilon incorrectly computed')
-  expect_true(tr1 < tr3, info='getSamplesDPmeasure: truncation level for smaller epsilon incorrectly computed')
+  expect_true(tr1 > tr2,
+              info='getSamplesDPmeasure: truncation level for larger epsilon incorrectly computed')
+  expect_true(tr1 < tr3,
+              info='getSamplesDPmeasure: truncation level for smaller epsilon incorrectly computed')
 })
 
 test_that("Test that new cluster parameters are correctly updated in CRP sampler", {
   set.seed(1)
   
-  # Data ~ Poisson(5). Starting values are extremely away from their true values. 
+  ## Data ~ Poisson(5). Starting values are extremely away from their true values. 
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -616,8 +615,8 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
                info = paste0("incorrect update of cluster parameters in Poisson data"))
   
  
-  # normal - independent normal - inv gamma
-  # We start with only one active component and the data is a mixture of 3 normal ditributions
+  ## normal - independent normal - inv gamma
+  ## We start with only one active component and the data is a mixture of 3 normal ditributions
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -653,19 +652,21 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   grid <- seq(-15, 15, len=100)
   samF <- matrix(0, ncol=length(grid), nrow=nrow(samplesG))
   for(i in 1:nrow(samplesG)) {
-    samF[i, ] <- sapply(grid, function(x)sum(samplesG[i, 1:Tr] * dnorm(x, samplesG[i, (2*Tr+1):(3*Tr)], sqrt(samplesG[i, (Tr+1):(2*Tr)]))))
+      samF[i, ] <- sapply(grid, function(x)
+          sum(samplesG[i, 1:Tr] * dnorm(x, samplesG[i, (2*Tr+1):(3*Tr)],
+                                        sqrt(samplesG[i, (Tr+1):(2*Tr)]))))
   }
   
-  # distance between the estimation and truth at each point of the grid 
-  f0 <- sapply(grid, function(x) 0.3*dnorm(x, -5, 1) + 0.3*dnorm(x, 0, 1) + 0.3*dnorm(x, 5, 1))
+  ## distance between the estimation and truth at each point of the grid 
+  f0 <- sapply(grid, function(x) dnorm(x, -5, 1)/3 + dnorm(x, 0, 1)/3 + dnorm(x, 5, 1)/3)
   for(i in 1:length(grid)) {
     expect_equal(mean(samF[,i]), f0[i], tolerance=2*0.1, scale=1,
                  info = paste("incorrect update of cluster parameters in mixture of normals data. Grid_i = ", i))
   }
   
   
-  # normal - normal inverser gamma
-  # We start with only one active component and the data is a mixture of 3 normal ditributions
+  ## normal - normal inverse gamma
+  ## We start with only one active component and the data is a mixture of 3 normal ditributions
   code <- nimbleCode({
     xi[1:n] ~ dCRP(alpha, n)
     for(i in 1:n){
@@ -687,7 +688,7 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   Data <- list(y = rnorm(n, thetas, 1))
   m <- nimbleModel(code, data=Data, inits=Inits, constants = Consts)
   cm <- compileNimble(m)
-  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'), print=FALSE)  
+  mConf <- configureMCMC(m, monitors = c('xi','mu', 's2', 'alpha', 'lambda'))  
   mMCMC <- buildMCMC(mConf)
   cMCMC <- compileNimble(mMCMC, project = m)
   
@@ -699,17 +700,19 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
   grid <- seq(-15, 15, len=100)
   samF <- matrix(0, ncol=length(grid), nrow=nrow(samplesG))
   for(i in 1:nrow(samplesG)) {
-    samF[i, ] <- sapply(grid, function(x)sum(samplesG[i, 1:Tr] * dnorm(x, samplesG[i, (2*Tr+1):(3*Tr)], sqrt(samplesG[i, (Tr+1):(2*Tr)]))))
+      samF[i, ] <- sapply(grid, function(x)
+          sum(samplesG[i, 1:Tr] * dnorm(x, samplesG[i, (2*Tr+1):(3*Tr)],
+                                        sqrt(samplesG[i, (Tr+1):(2*Tr)]))))
   }
   
-  # distance between the estimation and truth at each point of the grid 
-  f0 <- sapply(grid, function(x) 0.3*dnorm(x, -5, 1) + 0.3*dnorm(x, 0, 1) + 0.3*dnorm(x, 5, 1))
+  ## distance between the estimation and truth at each point of the grid 
+  f0 <- sapply(grid, function(x) dnorm(x, -5, 1)/3 + dnorm(x, 0, 1)/3 + dnorm(x, 5, 1)/3)
   for(i in 1:length(grid)) {
     expect_equal(mean(samF[,i]), f0[i], tolerance=2*0.1, scale=1,
                  info = paste("incorrect update of cluster parameters in mixture of normals data and conjugate normal - N-IG. Grid_i = ", i))
   }
   
-  # conjugate normal - normal-inverse gamma 
+  ## conjugate normal - normal-inverse gamma 
   code=nimbleCode(
     {
       xi[1:4] ~ dCRP(1 , size=4)
@@ -740,12 +743,12 @@ test_that("Test that new cluster parameters are correctly updated in CRP sampler
 test_that("Test that the nonconjugate CRP sampler works fine ", {
   set.seed(1)
   
-  # xi=1:n, the sampler requires samples from G_0
+  ## xi=1:n, the sampler requires samples from G_0
   code=nimbleCode(
     {
       xi[1:3] ~ dCRP(1 , size=3)
       for(i in 1:3){
-        thetatilde[i] ~ dt(0, 1, 1)# implies non conjugate CRP sampler 
+        thetatilde[i] ~ dt(0, 1, 1) # implies non conjugate CRP sampler 
         y[i] ~ dnorm(thetatilde[xi[i]], var=1)
       }
     }

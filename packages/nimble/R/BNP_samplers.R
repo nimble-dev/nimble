@@ -150,9 +150,11 @@ sampleDPmeasure <- nimbleFunction(
             isIID <- FALSE
         }
     }
-      if(!isIID && length(tildeVars) == 2 && control$useConjugacy &&
-         checkNormalInvGammaConjugacy(model, clusterVarInfo))
+    
+    if(!isIID && length(tildeVars) == 2 && checkNormalInvGammaConjugacy(model, clusterVarInfo))
         isIID <- TRUE
+      ## Tricky as MCMC might not be using conjugacy, but presumably ok to proceed regardless of how
+      ## MCMC was done, since conjugacy existing would guarantee IID.
     if(!isIID) stop('sampleDPmeasure: cluster parameters have to be independent and identically distributed. \n')
 
     ## Check that necessary variables are being monitored.
