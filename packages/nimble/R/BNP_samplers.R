@@ -7,7 +7,7 @@
 
 #' Get posterior samples for a Dirichlet process measure
 #'
-#' EXPERIMENTAL This function obtains posterior samples from a Dirichlet process distributed random measure of a model specified using the \code{dCRP} distribution.
+#' This function obtains posterior samples from a Dirichlet process distributed random measure of a model specified using the \code{dCRP} distribution.
 #'
 #' @param MCMC an MCMC class object, either compiled or uncompiled.
 #' @param epsilon  used for determining the truncation level of the representation of the random measure.

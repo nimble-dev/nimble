@@ -11,8 +11,7 @@ require(nimble)
 
 # Bayesian nonparametric models {#cha:bnp}
 
-As of version 0.6-11, NIMBLE provides initial support for Bayesian nonparametric (BNP) mixture modeling. These features are currently considered EXPERIMENTAL -- please let us know (via the NIMBLE user mailing list or by emailing us) if you have any problems or have suggestions about functionality you would like NIMBLE to support or the NIMBLE interface for using BNP.
-
+As of version 0.6-11, NIMBLE provides initial support for Bayesian nonparametric (BNP) mixture modeling, with improved efficiency of MCMC sampling as of version 0.6.13.
 
 ## Bayesian nonparametric mixture models {#sec:bnpmixtures}
  

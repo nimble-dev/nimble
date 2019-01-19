@@ -4,14 +4,14 @@ Description: A system for writing hierarchical statistical models largely compat
 Version: 0.6.13
 Date: 2019-01-16
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
-Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Nick Michaud, Fritz Obermeyer, Duncan Temple Lang, and see AUTHORS file for additional contributors.
+Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Nick Michaud, Fritz Obermeyer, Claudia Wehrhahn Cortes, Abel Rodriguez, Duncan Temple Lang, and see AUTHORS file for additional contributors.
 Depends:
     R (>= 3.1.2)
 Imports:
     methods,igraph,coda,R6
 Suggests:
     testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2,tensorflow,reticulate
-URL: http://r-nimble.org
+URL: https://r-nimble.org
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE | GPL (>= 2)
 Copyright: See COPYRIGHTS file.
