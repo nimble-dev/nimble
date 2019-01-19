@@ -546,7 +546,7 @@ See `help(runMCMC)` for further details.
 
 The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method `mcmc$run` (see `help(buildMCMC)` in R).  The `run` method has one required argument, `niter`, the number of iterations to be run.
 
-The `run} method has optional arguments `nburnin`, `thin` and `thin2`.  These can be used to specify the number of pre-thinning burnin samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to `monitors` and `monitors2`).  If either `thin` and `thin2` are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
+The `run` method has optional arguments `nburnin`, `thin` and `thin2`.  These can be used to specify the number of pre-thinning burnin samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to `monitors` and `monitors2`).  If either `thin` and `thin2` are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
 
 The `run` method has an optional `reset` argument.  When `reset = TRUE` (the default value), the following occurs prior to running the MCMC:
 

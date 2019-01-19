@@ -101,8 +101,8 @@ code <- nimbleCode({
 set.seed(1)
 constants <- list(N = 100, M = 50)
 data <- list(y = c(rnorm(50, -5, sqrt(3)), rnorm(50, 5, sqrt(4))))
-inits <- list(thetatilde = rnorm(constants$N, 0, 10), 
-              s2tilde = rinvgamma(constants$N, 1, 1), 
+inits <- list(thetatilde = rnorm(constants$M, 0, 10), 
+              s2tilde = rinvgamma(constants$M, 1, 1), 
               z = sample(1:10, size = constants$N, replace = TRUE),
               alpha  = 1)
 Rmodel <- nimbleModel(code, constants, data, inits)
@@ -110,7 +110,7 @@ Rmodel <- nimbleModel(code, constants, data, inits)
 
 The resulting model may be fitted through  MCMC sampling. NIMBLE will assign a specialized sampler to update `z` and `alpha`. See Chapter  \@ref(cha:mcmc) for information about NIMBLE's MCMC engine, and Section \@ref(sec:mcmcdcrp) for details on  MCMC sampling of the CRP. 
 
-One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, $N^{\star}$, has to be fixed. One safe option is to set this number to $N$, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that $N^{\star} < N$. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large $M$. In an effort to mitigate these inefficiencies, we allow the user to set $N^{\star} = M$, with $M<N$, as seen in the example above.  However, if this number is too small and is exceeded in any iteration a warning is issued.
+One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, $N^{\star}$, has to be fixed. One safe option is to set this number to $N$, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that $N^{\star} < N$. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large $N$. In an effort to mitigate these inefficiencies, we allow the user to set $N^{\star} = M$, with $M<N$, as seen in the example above.  However, if this number is too small and is exceeded in any iteration a warning is issued.
 
 
 ## Stick-breaking model {#sec:sb}
@@ -209,14 +209,14 @@ Valid initial values should be provided for all elements of the process specifie
 
 In  BNP models, it is oftenly of interest to make inference about the unknown measure $G$.  NIMBLE provides a sampler, `getSamplesDPmeasure`, for this random measure when a CRP structure is involved in the model. 
 
-The argument of the `getsamplesDPmeasure` function is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the `monitors` argument when configuring the MCMC to ensure these variables are monitored in the MCMC. 
+The argument of the `getSamplesDPmeasure` function is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the `monitors` argument when configuring the MCMC to ensure these variables are monitored in the MCMC. 
 
 The sampler is used only after the MCMC for the model has been run; more details are available from `help(getsamplesDPmeasure)`.
 
 The following code exemplifies how to generate samples from $G$ after defining the model as in Section \@ref(sec:excrp).
 
 ```{r, get_DP_measure_samples_Chunk, results = "hide", eval = FALSE, message = FALSE}
-cRmodel <- compileNimble(Rmodel)
+Cmodel <- compileNimble(Rmodel)
 
 monitors <- c('z', 'thetatilde', 's2tilde' , 'alpha')
 RmodelConf <- configureMCMC(Rmodel, monitors = monitors)

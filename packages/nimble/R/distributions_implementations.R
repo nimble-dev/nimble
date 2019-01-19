@@ -899,7 +899,6 @@ rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
     .Call(C_rsqrtinvgamma, as.integer(n), as.double(shape), as.double(rate))
 }
 
-
 #' The CAR-Normal Distribution
 #'
 #'   Density function and random generation for the improper (intrinsic)

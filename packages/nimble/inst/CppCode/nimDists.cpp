@@ -530,4 +530,3 @@ void nimArr_rcar_proper(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<1,
   // }
 }
 
-

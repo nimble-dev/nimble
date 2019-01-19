@@ -168,10 +168,7 @@ conjugacyRelationshipsInputList <- list(
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
                                     df          = prior_df + contribution_df,
                                     scale_param = 1)')
-
-)
-
-
+    )
 
 
 ##############################################################################################

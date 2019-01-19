@@ -565,7 +565,7 @@ double ddirch(double* x, double* alpha, int K, int give_log)
   return give_log ? dens : exp(dens);
 }
 
-void rdirch(double *ans, double* alpha, int K) 
+void rdirch(double* ans, double* alpha, int K) 
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
   int i, j;
@@ -689,7 +689,7 @@ double dmulti(double* x, double size, double* prob, int K, int give_log) // Call
 
 
 
-void rmulti(int *ans, double size, double* prob, int K) // Calling functions need to copy first arg back and forth to double if needed
+void rmulti(int* ans, double size, double* prob, int K) // Calling functions need to copy first arg back and forth to double if needed
 // scalar function that can be called directly by NIMBLE with same name as in R
 // just call Rmath's rmultinom, which passes result by pointer
 // IMPORTANT: have ans and size as int when sent to rmultinom as Rmath rmultinom has these types
@@ -2386,6 +2386,8 @@ SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
   UNPROTECT(1);
   return ans;
 }
+
+
 
 SEXP C_dcar_normal(SEXP x, SEXP adj, SEXP weights, SEXP num, SEXP tau, SEXP c, SEXP zero_mean, SEXP return_log) {
   if(!Rf_isReal(x) || !Rf_isReal(adj) || !Rf_isReal(weights) || !Rf_isReal(num) || !Rf_isReal(tau) || !Rf_isReal(c) || !Rf_isReal(zero_mean) || !Rf_isLogical(return_log))
