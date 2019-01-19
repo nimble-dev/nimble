@@ -54,7 +54,7 @@ getSamplesDPmeasure <- function(MCMC, epsilon = 1e-4) {
     }
 
     ## Create and run the DPmeasure sampler.
-    rsampler <- nimble:::sampleDPmeasure(model, mvSamples, epsilon)
+    rsampler <- sampleDPmeasure(model, mvSamples, epsilon)
     if(compiled) {
       csampler <- compileNimble(rsampler, project = model)
       csampler$run()
@@ -865,7 +865,7 @@ sampler_CRP <- nimbleFunction(
     if(length(intersect(dataNodes, allTildeNodes)))
         stop("sampler_CRP: Cluster parameters have to be independent of cluster membership variable.")
 
-    conjugacyResult <- nimble:::checkCRPconjugacy(model, target)
+    conjugacyResult <- checkCRPconjugacy(model, target)
 
     if(is.null(conjugacyResult) || conjugacyResult != "conjugate_dnorm_invgamma_dnorm") {
         ## Check that all cluster parameters are independent as it it tricky to make sure we
@@ -947,7 +947,7 @@ sampler_CRP <- nimbleFunction(
       }
     }
    
-    helperFunctions <- nimble:::nimbleFunctionList(CRP_helper)
+    helperFunctions <- nimbleFunctionList(CRP_helper)
     
     ## use conjugacy to determine which helper functions to use
     if(is.null(conjugacyResult)) {
