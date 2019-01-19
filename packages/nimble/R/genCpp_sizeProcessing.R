@@ -2060,42 +2060,6 @@ sizeScalarModelOp <- function(code, symTab, typeEnv) {
     asserts
 }
 
-sizeNormInvGamma <- function(code, symTab, typeEnv) {
-    asserts <- recurseSetSizes(code, symTab, typeEnv)
-
-    notOK <- FALSE
-    checkList <- mvFirstArgCheckLists[[code$name]]
-    if(!is.null(checkList)) {
-        if(length(code$args) < length(checkList[[1]])) stop(exprClassProcessingErrorMsg(code, 'Not enough arguments provided.'), call. = FALSE)
-        for(i in seq_along(checkList[[1]])) {
-            notOK <- if(inherits(code$args[[i]], 'exprClass')) code$args[[i]]$nDim != checkList[[1]][i] else notOK            
-        }
-    }
-
-    if(notOK) {
-        stop(exprClassProcessingErrorMsg(code, 'Some argument(s) have the wrong dimension.'), call. = FALSE) 
-    }
-
-    code$nDim <- 1
-    code$type <- "double"
-    code$toEigenize <- "maybe"
-    code$sizeExprs <- list(2)
-
-    for(i in seq_along(code$args)) {
-        if(inherits(code$args[[i]], 'exprClass')) {
-            if(!code$args[[i]]$isName) {
-                asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
-            }
-        }
-    }
-    if(!(code$caller$name %in% c('{','<-','<<-','='))) {
-        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-    } else
-        typeEnv$.ensureNimbleBlocks <- TRUE ## for purposes of sizeAssign, which recurses on assignment target after RHS
-    return(asserts)
-
-}
-
 sizeSimulate <- function(code, symTab, typeEnv) {
     if(length(code$args) > 1) {
         asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
