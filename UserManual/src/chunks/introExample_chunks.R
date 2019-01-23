@@ -65,7 +65,9 @@ Cpump$theta
 mcmc.out <- nimbleMCMC(code = pumpCode, constants = pumpConsts,
                        data = pumpData, inits = pumpInits,
                        nchains = 2, niter = 10000,
-                       summary = TRUE, WAIC = TRUE, monitors = c('alpha','beta','theta'))
+                       summary = TRUE, WAIC = TRUE,
+                       monitors = c('alpha','beta','theta'))
+
 names(mcmc.out)
 mcmc.out$summary
 mcmc.out$WAIC  

@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.6-12</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.6.13</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -322,7 +322,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
 <li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
 <li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
-<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.9</b> Reducing memory usage</a></li>
+<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
+<li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
 </ul>
 
@@ -469,27 +470,58 @@ Cpump$theta</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mcmc.out &lt;-<span class="st"> </span><span class="kw">nimbleMCMC</span>(<span class="dt">code =</span> pumpCode, <span class="dt">constants =</span> pumpConsts,
                        <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits,
                        <span class="dt">nchains =</span> <span class="dv">2</span>, <span class="dt">niter =</span> <span class="dv">10000</span>,
-                       <span class="dt">summary =</span> <span class="ot">TRUE</span>, <span class="dt">WAIC =</span> <span class="ot">TRUE</span>)
+                       <span class="dt">summary =</span> <span class="ot">TRUE</span>, <span class="dt">WAIC =</span> <span class="ot">TRUE</span>, <span class="dt">monitors =</span> <span class="kw">c</span>(<span class="st">&#39;alpha&#39;</span>,<span class="st">&#39;beta&#39;</span>,<span class="st">&#39;theta&#39;</span>))
 <span class="kw">names</span>(mcmc.out)</code></pre></div>
 <pre><code>## [1] &quot;samples&quot; &quot;summary&quot; &quot;WAIC&quot;</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mcmc.out$summary</code></pre></div>
 <pre><code>## $chain1
-##            Mean    Median   St.Dev. 95%CI_low 95%CI_upp
-## alpha 0.6980435 0.6583506 0.2703768 0.2878982  1.314046
-## beta  0.9286260 0.8215685 0.5496913 0.1836991  2.287270
+##                 Mean     Median    St.Dev.   95%CI_low 95%CI_upp
+## alpha     0.69804352 0.65835063 0.27037676 0.287898244 1.3140461
+## beta      0.92862598 0.82156847 0.54969128 0.183699137 2.2872696
+## theta[1]  0.06019274 0.05676327 0.02544956 0.021069950 0.1199230
+## theta[2]  0.10157737 0.08203988 0.07905076 0.008066869 0.3034085
+## theta[3]  0.08874755 0.08396502 0.03760562 0.031186960 0.1769982
+## theta[4]  0.11567784 0.11301465 0.03012598 0.064170937 0.1824525
+## theta[5]  0.60382223 0.54935089 0.31219612 0.159731108 1.3640771
+## theta[6]  0.61204831 0.60085518 0.13803302 0.372712375 0.9135269
+## theta[7]  0.90263434 0.70803389 0.73960182 0.074122175 2.7598261
+## theta[8]  0.89021051 0.70774794 0.72668155 0.072571029 2.8189252
+## theta[9]  1.57678136 1.44390008 0.76825189 0.455195149 3.4297368
+## theta[10] 1.98954127 1.96171250 0.42409802 1.241383787 2.9012192
 ## 
 ## $chain2
-##            Mean    Median   St.Dev. 95%CI_low 95%CI_upp
-## alpha 0.6910196 0.6580365 0.2654838 0.2771956  1.285815
-## beta  0.9162727 0.8143443 0.5375082 0.1857723  2.270243
+##                 Mean     Median    St.Dev.   95%CI_low 95%CI_upp
+## alpha     0.69101961 0.65803654 0.26548378 0.277195564 1.2858148
+## beta      0.91627273 0.81434426 0.53750825 0.185772263 2.2702428
+## theta[1]  0.05937364 0.05611283 0.02461866 0.020956151 0.1161870
+## theta[2]  0.10017726 0.08116259 0.07855024 0.008266343 0.3010355
+## theta[3]  0.08908126 0.08390782 0.03704170 0.031330829 0.1736876
+## theta[4]  0.11592652 0.11356920 0.03064645 0.063595333 0.1829574
+## theta[5]  0.59755632 0.54329373 0.31871551 0.149286703 1.3748728
+## theta[6]  0.61080189 0.59946693 0.13804343 0.371373877 0.9097319
+## theta[7]  0.89902759 0.70901502 0.72930369 0.076243503 2.7441445
+## theta[8]  0.89954594 0.70727079 0.73345905 0.071250926 2.8054633
+## theta[9]  1.57530029 1.45005738 0.75242164 0.469959364 3.3502795
+## theta[10] 1.98911473 1.96227061 0.42298189 1.246910723 2.9102326
 ## 
 ## $all.chains
-##            Mean    Median   St.Dev. 95%CI_low 95%CI_upp
-## alpha 0.6945316 0.6580365 0.2679578 0.2832985  1.299932
-## beta  0.9224494 0.8182816 0.5436554 0.1854908  2.278544</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mcmc.out$waic</code></pre></div>
-<pre><code>## NULL</code></pre>
+##                 Mean     Median    St.Dev.  95%CI_low 95%CI_upp
+## alpha     0.69453156 0.65803654 0.26795776 0.28329854 1.2999319
+## beta      0.92244935 0.81828160 0.54365539 0.18549077 2.2785444
+## theta[1]  0.05978319 0.05646474 0.02504028 0.02102807 0.1183433
+## theta[2]  0.10087731 0.08162361 0.07880204 0.00811108 0.3017967
+## theta[3]  0.08891440 0.08394667 0.03732417 0.03123228 0.1749967
+## theta[4]  0.11580218 0.11326039 0.03038683 0.06385253 0.1827382
+## theta[5]  0.60068928 0.54668011 0.31548032 0.15363752 1.3686801
+## theta[6]  0.61142510 0.60015416 0.13803618 0.37203765 0.9122467
+## theta[7]  0.90083096 0.70852800 0.73445465 0.07550465 2.7534885
+## theta[8]  0.89487822 0.70761105 0.73007484 0.07211191 2.8067373
+## theta[9]  1.57604083 1.44719278 0.76035931 0.46374515 3.3866706
+## theta[10] 1.98932800 1.96195345 0.42352979 1.24334249 2.9068229</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mcmc.out$WAIC  </code></pre></div>
+<pre><code>## [1] 48.69896</code></pre>
 <p>See Section <a href="cha-mcmc.html#sec:nimbleMCMC">7.1</a> or <code>help(nimbleMCMC)</code> for more details about using <code>nimbleMCMC</code>.</p>
+<p>Note that the WAIC value varies depending on what quantities are treated as parameters; see Section <a href="cha-mcmc.html#sec:WAIC">7.7</a> for more details.</p>
 </div>
 <div id="sec:creating-mcmc" class="section level2">
 <h2><span class="header-section-number">2.5</span> Creating, compiling and running a basic MCMC configuration</h2>

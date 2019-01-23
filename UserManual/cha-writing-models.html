@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.6-12</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.6.13</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -322,7 +322,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
 <li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
 <li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
-<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.9</b> Reducing memory usage</a></li>
+<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
+<li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
 </ul>
 
@@ -660,6 +661,20 @@ Figure 5.1: Graph of a linear regression model
 <td align="left"></td>
 </tr>
 <tr class="even">
+<td align="left">Double</td>
+<td align="left"><code>ddexp(location =</code> <span class="math inline">\(\mu\)</span><code>, rate =</code></td>
+<td align="left"><span class="math inline">\(\frac{\tau}{2} \exp(-\tau |x - \mu|)\)</span></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">exponential</td>
+<td align="left"><span class="math inline">\(\tau\)</span><code>)</code>, <span class="math inline">\(\tau &gt; 0\)</span></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr class="even">
 <td align="left">Dirichlet</td>
 <td align="left"><code>ddirch(alpha =</code> <span class="math inline">\(\alpha\)</span><code>)</code></td>
 <td align="left"><span class="math inline">\(\Gamma(\sum_j \alpha_j) \prod_j \frac{ x_j^{\alpha_j - 1}}{ \Gamma(\alpha_j)}\)</span></td>
@@ -959,202 +974,214 @@ Figure 5.1: Graph of a linear regression model
 <td align="left">canonical</td>
 </tr>
 <tr class="even">
+<td align="left"><code>ddexp(location, scale)</code></td>
+<td align="left">canonical</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>ddexp(location, rate)</code></td>
+<td align="left"><code>ddexp(location, scale = 1 / rate)</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>ddexp(location, var)</code></td>
+<td align="left"><code>ddexp(location, scale = sqrt(var / 2))</code></td>
+</tr>
+<tr class="odd">
 <td align="left"><code>ddirch(alpha)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dexp(rate)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dexp(scale)</code></td>
 <td align="left"><code>dexp(rate = 1/scale)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dgamma(shape, scale)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dgamma(shape, rate)</code></td>
 <td align="left"><code>dgamma(shape, scale = 1 / rate)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dgamma(mean, sd)</code></td>
 <td align="left"><code>dgamma(shape = mean^2/sd^2, scale = sd^2/mean)</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dinvgamma(shape, rate)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dinvgamma(shape, scale)</code></td>
 <td align="left"><code>dgamma(shape, rate = 1 / scale)</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dlogis(location, scale)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dlogis(location, rate)</code></td>
 <td align="left"><code>dlogis(location, scale = 1 / rate</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dlnorm(meanlog, sdlog)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dlnorm(meanlog, taulog)</code></td>
 <td align="left"><code>dlnorm(meanlog, sdlog = 1 / sqrt(taulog)</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dlnorm(meanlog, varlog)</code></td>
 <td align="left"><code>dlnorm(meanlog, sdlog = sqrt(varlog)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dmulti(prob, size)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dmnorm(mean, cholesky,</code></td>
 <td align="left">canonical (precision)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>...prec_param=1)</code></td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dmnorm(mean, cholesky,</code></td>
 <td align="left">canonical (covariance)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>...prec_param=0)</code></td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dmnorm(mean, prec)</code></td>
 <td align="left"><code>dmnorm(mean, cholesky = chol(prec), prec_param=1)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dmnorm(mean, cov)</code></td>
 <td align="left"><code>dmnorm(mean, cholesky = chol(cov), prec_param=0)</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dmvt(mu, cholesky, df,</code></td>
 <td align="left">canonical (precision/inverse scale)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>...prec_param=1)</code></td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dmvt(mu, cholesky, df,</code></td>
 <td align="left">canonical (scale)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>...prec_param=0)</code></td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dmvt(mu, prec, df)</code></td>
 <td align="left"><code>dmvt(mu, cholesky = chol(prec), df, prec_param=1)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dmvt(mu, scale, df)</code></td>
 <td align="left"><code>dmvt(mu, cholesky = chol(scale), df, prec_param=0)</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dnegbin(prob, size)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dnorm(mean, sd)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dnorm(mean, tau)</code></td>
 <td align="left"><code>dnorm(mean, sd = 1 / sqrt(var))</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dnorm(mean, var)</code></td>
 <td align="left"><code>dnorm(mean, sd = sqrt(var))</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dpois(lambda)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dt(mu, sigma, df)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dt(mu, tau, df)</code></td>
 <td align="left"><code>dt(mu, sigma = 1 / sqrt(tau), df)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dt(mu, sigma2, df)</code></td>
 <td align="left"><code>dt(mu, sigma = sqrt(sigma2), df)</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dunif(min, max)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dweib(shape, scale)</code></td>
 <td align="left">canonical</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dweib(shape, rate)</code></td>
 <td align="left"><code>dweib(shape, scale = 1 / rate)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dweib(shape, lambda)</code></td>
 <td align="left"><code>dweib(shape, scale = lambda^(- 1 / shape)</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dwish(cholesky, df,</code></td>
 <td align="left">canonical (scale)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>...scale_param=1)</code></td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dwish(cholesky, df,</code></td>
 <td align="left">canonical (inverse scale)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>...scale_param=0)</code></td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dwish(R, df)</code></td>
 <td align="left"><code>dwish(cholesky = chol(R), df, scale_param = 0)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dwish(S, df)</code></td>
 <td align="left"><code>dwish(cholesky = chol(S), df, scale_param = 1)</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dinvwish(cholesky, df,</code></td>
 <td align="left">canonical (scale)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>...scale_param=1)</code></td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dinvwish(cholesky, df,</code></td>
 <td align="left">canonical (inverse scale)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>...scale_param=0)</code></td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>dinvwish(R, df)</code></td>
 <td align="left"><code>dinvwish(cholesky = chol(R), df, scale_param = 0)</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>dinvwish(S, df)</code></td>
 <td align="left"><code>dinvwish(cholesky = chol(S), df, scale_param = 1)</code></td>
 </tr>
@@ -1187,26 +1214,31 @@ no meaning of "indirect" use of a parameterization?   --></p>
 <td align="left">dchisqr</td>
 </tr>
 <tr class="odd">
+<td align="left">Double exponential</td>
+<td align="left">ddexp</td>
+<td align="left">dlaplace</td>
+</tr>
+<tr class="even">
 <td align="left">Dirichlet</td>
 <td align="left">ddirch</td>
 <td align="left">ddirich</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Multinomial</td>
 <td align="left">dmulti</td>
 <td align="left">dmultinom</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">Negative binomial</td>
 <td align="left">dnegbin</td>
 <td align="left">dnbinom</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Weibull</td>
 <td align="left">dweib</td>
 <td align="left">dweibull</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">Wishart</td>
 <td align="left">dwish</td>
 <td align="left">dwishart</td>

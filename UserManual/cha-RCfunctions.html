@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.6-12</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.6.13</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -322,7 +322,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
 <li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
 <li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
-<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.9</b> Reducing memory usage</a></li>
+<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
+<li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
 </ul>
 
@@ -1118,7 +1119,15 @@ would need to do some sed manipulation to be able to automate this cross-ref
 <h4><span class="header-section-number">11.3.2.1</span> When NIMBLE can automatically set a numeric type</h4>
 <p>When a variable is first created by assignment, its type is determined automatically by that assignment. For example, if <code>x</code> has not appeared before, then</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span>A %*%<span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span></code></pre></div>
-<p>will create <code>x</code> to be a double matrix of the correct size (determined during execution). If <code>x</code> is used subsequently, it can only be used as a double matrix. This is true even if it is assigned a new value, which will again set its size automatically but cannot change its type.</p>
+<p>will create <code>x</code> to be a double matrix of the correct size (determined during execution).</p>
+<div id="avoid-changing-types-of-a-variable-within-a-nimblefunction" class="section level5">
+<h5><span class="header-section-number">11.3.2.1.1</span> Avoid changing types of a variable within a nimbleFunction</h5>
+<p>Because NIMBLE is statically typed, you cannot use the same variable name for two objects of different types (including objects of different dimensions).</p>
+<p>Suppose we have (implicitly) created <code>x</code> as a double matrix. If <code>x</code> is used subsequently, it can only be used as a double matrix. This is true even if it is assigned a new value, which will again set its size automatically but cannot change its type.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span>A %*%<span class="st"> </span>B <span class="co"># assume A and B are double matrices or vectors</span>
+x &lt;-<span class="st"> </span><span class="kw">nimMatrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="dv">5</span>, <span class="dt">ncol =</span> <span class="dv">2</span>)  <span class="co"># OK: &#39;x&#39; is still a double matrix</span>
+x &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>)  <span class="co"># NOT OK: &#39;x&#39; is a double vector</span></code></pre></div>
+</div>
 </div>
 <div id="sec:when-numeric-object" class="section level4">
 <h4><span class="header-section-number">11.3.2.2</span> When a numeric object needs to be created before being used</h4>
@@ -1193,7 +1202,7 @@ myMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span clas
 </div>
 <div id="sec:size-warn-potent" class="section level4">
 <h4><span class="header-section-number">11.3.2.7</span> Size warnings and the potential for crashes</h4>
-<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because sizes are not known until run time. Therefore, it is possible for you to write code that will crash your R session. In Version 0.6.12, NIMBLE attempts to issue a warning if sizes are not compatible, but it does not halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication, NIMBLE will output a warning that the number of rows of <code>M1</code> does not match the number of columns of <code>M2</code>. After that warning the statement will be executed and may result in a crash. Another easy way to write code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to prevent crashes, but in Version 0.6.12 we limit ourselves to trying to provide useful information.</p>
+<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because sizes are not known until run time. Therefore, it is possible for you to write code that will crash your R session. In Version 0.6.13, NIMBLE attempts to issue a warning if sizes are not compatible, but it does not halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication, NIMBLE will output a warning that the number of rows of <code>M1</code> does not match the number of columns of <code>M2</code>. After that warning the statement will be executed and may result in a crash. Another easy way to write code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to prevent crashes, but in Version 0.6.13 we limit ourselves to trying to provide useful information.</p>
 </div>
 </div>
 </div>

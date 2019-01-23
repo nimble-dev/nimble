@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.6-12</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.6.13</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -322,7 +322,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
 <li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
 <li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
-<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.9</b> Reducing memory usage</a></li>
+<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
+<li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
 </ul>
 
@@ -343,7 +344,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
             <section class="normal" id="section-">
 <div id="cha:bnp" class="section level1">
 <h1><span class="header-section-number">Chapter 10</span> Bayesian nonparametric models</h1>
-<p>As of version 0.6-11, NIMBLE provides initial support for Bayesian nonparametric (BNP) mixture modeling. These features are currently considered EXPERIMENTAL – please let us know (via the NIMBLE user mailing list or by emailing us) if you have any problems or have suggestions about functionality you would like NIMBLE to support or the NIMBLE interface for using BNP.</p>
+<p>As of version 0.6-11, NIMBLE provides initial support for Bayesian nonparametric (BNP) mixture modeling, with improved efficiency of MCMC sampling as of version 0.6.13.</p>
 <div id="sec:bnpmixtures" class="section level2">
 <h2><span class="header-section-number">10.1</span> Bayesian nonparametric mixture models</h2>
 <p>NIMBLE provides support for Bayesian nonparametric (BNP) mixture modeling. The current implementation provides support for hierarchical specifications involving Dirichlet process (DP) mixtures <span class="citation">(Ferguson <a href="#ref-ferguson_73">1973</a>; Ferguson <a href="#ref-ferguson_74">1974</a>; Lo <a href="#ref-lo_84">1984</a>; Escobar <a href="#ref-escobar_94">1994</a>; Escobar and West <a href="#ref-escobar_west_95">1995</a>)</span>. More specifically, a DP mixture model takes the form</p>
@@ -400,13 +401,13 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <span class="kw">set.seed</span>(<span class="dv">1</span>)
 constants &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">N =</span> <span class="dv">100</span>, <span class="dt">M =</span> <span class="dv">50</span>)
 data &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">y =</span> <span class="kw">c</span>(<span class="kw">rnorm</span>(<span class="dv">50</span>, -<span class="dv">5</span>, <span class="kw">sqrt</span>(<span class="dv">3</span>)), <span class="kw">rnorm</span>(<span class="dv">50</span>, <span class="dv">5</span>, <span class="kw">sqrt</span>(<span class="dv">4</span>))))
-inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetatilde =</span> <span class="kw">rnorm</span>(constants$N, <span class="dv">0</span>, <span class="dv">10</span>), 
-              <span class="dt">s2tilde =</span> <span class="kw">rinvgamma</span>(constants$N, <span class="dv">1</span>, <span class="dv">1</span>), 
+inits &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">thetatilde =</span> <span class="kw">rnorm</span>(constants$M, <span class="dv">0</span>, <span class="dv">10</span>), 
+              <span class="dt">s2tilde =</span> <span class="kw">rinvgamma</span>(constants$M, <span class="dv">1</span>, <span class="dv">1</span>), 
               <span class="dt">z =</span> <span class="kw">sample</span>(<span class="dv">1</span>:<span class="dv">10</span>, <span class="dt">size =</span> constants$N, <span class="dt">replace =</span> <span class="ot">TRUE</span>),
               <span class="dt">alpha  =</span> <span class="dv">1</span>)
 Rmodel &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code, constants, data, inits)</code></pre></div>
 <p>The resulting model may be fitted through MCMC sampling. NIMBLE will assign a specialized sampler to update <code>z</code> and <code>alpha</code>. See Chapter <a href="cha-mcmc.html#cha:mcmc">7</a> for information about NIMBLE’s MCMC engine, and Section <a href="cha-bnp.html#sec:mcmcdcrp">10.4.1</a> for details on MCMC sampling of the CRP.</p>
-<p>One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, <span class="math inline">\(N^{\star}\)</span>, has to be fixed. One safe option is to set this number to <span class="math inline">\(N\)</span>, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that <span class="math inline">\(N^{\star} &lt; N\)</span>. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large <span class="math inline">\(M\)</span>. In an effort to mitigate these inefficiencies, we allow the user to set <span class="math inline">\(N^{\star} = M\)</span>, with <span class="math inline">\(M&lt;N\)</span>, as seen in the example above. However, if this number is too small and is exceeded in any iteration a warning is issued.</p>
+<p>One of the advantages of BNP mixture models is that the number of clusters is treated as random. Therefore, in MCMC sampling, the number of cluster parameters varies with the iteration. Since NIMBLE does not currently allow dynamic length allocation, the number of unique cluster parameters, <span class="math inline">\(N^{\star}\)</span>, has to be fixed. One safe option is to set this number to <span class="math inline">\(N\)</span>, but this is inefficient, both in terms of computation and in terms of storage, because in practice it is often that <span class="math inline">\(N^{\star} &lt; N\)</span>. In addition, configuring and building the MCMC can be slow (and use a lot of memory) for large <span class="math inline">\(N\)</span>. In an effort to mitigate these inefficiencies, we allow the user to set <span class="math inline">\(N^{\star} = M\)</span>, with <span class="math inline">\(M&lt;N\)</span>, as seen in the example above. However, if this number is too small and is exceeded in any iteration a warning is issued.</p>
 </div>
 </div>
 <div id="sec:sb" class="section level2">
@@ -480,10 +481,10 @@ RmodelSB &lt;-<span class="st"> </span><span class="kw">nimbleModel</span>(code,
 <div id="sampling-the-random-measure" class="section level4">
 <h4><span class="header-section-number">10.4.1.2</span> Sampling the random measure</h4>
 <p>In BNP models, it is oftenly of interest to make inference about the unknown measure <span class="math inline">\(G\)</span>. NIMBLE provides a sampler, <code>getSamplesDPmeasure</code>, for this random measure when a CRP structure is involved in the model.</p>
-<p>The argument of the <code>getsamplesDPmeasure</code> function is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the <code>monitors</code> argument when configuring the MCMC to ensure these variables are monitored in the MCMC.</p>
+<p>The argument of the <code>getSamplesDPmeasure</code> function is a compiled or uncompiled MCMC object. The MCMC object should monitor the membership (clustering) variable, the cluster parameters, all stochastic nodes of the cluster parameters, and the concentration parameter, if it is random. Use the <code>monitors</code> argument when configuring the MCMC to ensure these variables are monitored in the MCMC.</p>
 <p>The sampler is used only after the MCMC for the model has been run; more details are available from <code>help(getsamplesDPmeasure)</code>.</p>
 <p>The following code exemplifies how to generate samples from <span class="math inline">\(G\)</span> after defining the model as in Section <a href="cha-bnp.html#sec:excrp">10.2.2</a>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cRmodel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(Rmodel)
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cmodel &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(Rmodel)
 
 monitors &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&#39;z&#39;</span>, <span class="st">&#39;thetatilde&#39;</span>, <span class="st">&#39;s2tilde&#39;</span> , <span class="st">&#39;alpha&#39;</span>)
 RmodelConf &lt;-<span class="st"> </span><span class="kw">configureMCMC</span>(Rmodel, <span class="dt">monitors =</span> monitors)

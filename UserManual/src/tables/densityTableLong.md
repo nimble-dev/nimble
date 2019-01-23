@@ -16,8 +16,8 @@ is denoted by $x$.
   Categorical   `dcat(prob = p)`                            $\frac{p_x}{\sum_i p_i}$                                                                                                                                     $1$   $N$ 
                 $p \in (\mathbb{R}^+)^N$
   Chi-square    `dchisq(df = k)`, $k > 0$                   $\frac{x^{\frac{k}{2}-1} \exp(-x/2)}{2^{\frac{k}{2}} \Gamma(\frac{k}{2})}$                                                                                   $0$ 
-  Double        `ddexp(location = ` $\mu$`, rate =`         $\frac{\tau}{2} \exp(-\tau |x - \mu|)$
-   exponential  $\tau$`)`, $\tau > 0$
+  Double        `ddexp(location = ` $\mu$`, rate =$\tau$)`  $\frac{\tau}{2} \exp(-\tau |x - \mu|)$
+   exponential  $\tau > 0$
   Dirichlet     `ddirch(alpha = ` $\alpha$`)`               $\Gamma(\sum_j \alpha_j) \prod_j \frac{ x_j^{\alpha_j - 1}}{ \Gamma(\alpha_j)}$                                                                              $0$
                 $\alpha_j \geq 0$
   Exponential   `dexp(rate = ` $\lambda$`)`, $\lambda > 0$  $\lambda \exp(-\lambda x)$                                                                                                                                   $0$

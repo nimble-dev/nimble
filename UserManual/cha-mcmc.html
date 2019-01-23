@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.6-12</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.6.13</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -322,7 +322,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
 <li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
 <li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
-<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.9</b> Reducing memory usage</a></li>
+<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
+<li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
 </ul>
 
@@ -743,7 +744,7 @@ mcmc.out &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc, <s
 <div id="sec:executing-the-mcmc-algorithm" class="section level2">
 <h2><span class="header-section-number">7.5</span> Running the MCMC</h2>
 <p>The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method <code>mcmc$run</code> (see <code>help(buildMCMC)</code> in R). The <code>run</code> method has one required argument, <code>niter</code>, the number of iterations to be run.</p>
-<p>The <code>run} method has optional arguments</code>nburnin<code>,</code>thin<code>and</code>thin2<code>.  These can be used to specify the number of pre-thinning burnin samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to</code>monitors<code>and</code>monitors2<code>).  If either</code>thin<code>and</code>thin2` are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.</p>
+<p>The <code>run</code> method has optional arguments <code>nburnin</code>, <code>thin</code> and <code>thin2</code>. These can be used to specify the number of pre-thinning burnin samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to <code>monitors</code> and <code>monitors2</code>). If either <code>thin</code> and <code>thin2</code> are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.</p>
 <p>The <code>run</code> method has an optional <code>reset</code> argument. When <code>reset = TRUE</code> (the default value), the following occurs prior to running the MCMC:</p>
 <ol style="list-style-type: decimal">
 <li>All model nodes are checked and filled or updated as needed, in valid (topological) order. If a stochastic node is missing a value, it is populated using a call to <code>simulate</code> and its log probability value is calculated. The values of deterministic nodes are calculated from their parent nodes. If any right-hand-side-only nodes (e.g., explanatory variables) are missing a value, an error results.</li>
@@ -782,6 +783,8 @@ samplesMatrix2 &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(m
 <p>Once an MCMC algorithm has been run, as described in Section <a href="cha-mcmc.html#sec:executing-the-mcmc-algorithm">7.5</a>, the WAIC <span class="citation">(Watanabe <a href="#ref-Watanabe_2010">2010</a>)</span> can be calculated from the posterior samples produced by the MCMC algorithm. Note that in order to calculate the WAIC value after running an MCMC algorithm, the argument <code>enableWAIC = TRUE</code> must have been supplied to <code>configureMCMC</code> or to <code>buildMCMC</code>, or the <code>enableWAIC</code> NIMBLE option must have been set to <code>TRUE</code>.</p>
 <p>The WAIC is calculated by calling the member method <code>mcmc$calculateWAIC</code> (see <code>help(buildMCMC)</code> in R for more details). The <code>calculateWAIC</code> method has one required argument, <code>nburnin</code>, the number of initial samples to discard prior to WAIC calculation. <code>nburnin</code> defaults to 0.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Cmcmc$<span class="kw">calculateWAIC</span>(<span class="dt">nburnin =</span> <span class="dv">100</span>)</code></pre></div>
+<p>Note that there is not a unique value of WAIC for a model. WAIC is calculated from Equations 5, 12, and 13 in <span class="citation">(Gelman, Hwang, and Vehtari <a href="#ref-Gelman_etal_2014">2014</a>)</span> (i.e. using WAIC2). In NIMBLE, the set of all stochastic nodes monitored by the MCMC object will be treated as <span class="math inline">\(\theta\)</span> for the purposes of Equation 5 from <span class="citation">(Gelman, Hwang, and Vehtari <a href="#ref-Gelman_etal_2014">2014</a>)</span>.</p>
+<p>In many cases one would want <span class="math inline">\(\theta\)</span> to be the set of all stochastic nodes in the model, in which case the user <em>must</em> set the MCMC monitors to include all stochastic nodes; by default the MCMC monitors are only the top-level nodes of the model.</p>
 </div>
 <div id="k-fold-cross-validation" class="section level2">
 <h2><span class="header-section-number">7.8</span> k-fold cross-validation</h2>
@@ -871,42 +874,52 @@ samplesMatrix2 &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(m
 </tr>
 <tr class="even">
 <td align="left"></td>
-<td align="left">Weibull</td>
-<td align="left"><code>lambda</code></td>
-</tr>
-<tr class="odd">
-<td align="left">Halfflat</td>
-<td align="left">Normal</td>
-<td align="left"><code>sd</code></td>
-</tr>
-<tr class="even">
-<td align="left"></td>
-<td align="left">Lognormal</td>
-<td align="left"><code>sdlog</code></td>
-</tr>
-<tr class="odd">
-<td align="left">Inverse Gamma</td>
-<td align="left">Normal</td>
-<td align="left"><code>var</code></td>
-</tr>
-<tr class="even">
-<td align="left"></td>
-<td align="left">Lognormal</td>
-<td align="left"><code>varlog</code></td>
-</tr>
-<tr class="odd">
-<td align="left"></td>
-<td align="left">Gamma</td>
-<td align="left"><code>scale</code></td>
-</tr>
-<tr class="even">
-<td align="left"></td>
-<td align="left">Inverse Gamma</td>
+<td align="left">Double Exponential</td>
 <td align="left"><code>rate</code></td>
 </tr>
 <tr class="odd">
 <td align="left"></td>
+<td align="left">Weibull</td>
+<td align="left"><code>lambda</code></td>
+</tr>
+<tr class="even">
+<td align="left">Halfflat</td>
+<td align="left">Normal</td>
+<td align="left"><code>sd</code></td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">Lognormal</td>
+<td align="left"><code>sdlog</code></td>
+</tr>
+<tr class="even">
+<td align="left">Inverse Gamma</td>
+<td align="left">Normal</td>
+<td align="left"><code>var</code></td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">Lognormal</td>
+<td align="left"><code>varlog</code></td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">Gamma</td>
+<td align="left"><code>scale</code></td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">Inverse Gamma</td>
+<td align="left"><code>rate</code></td>
+</tr>
+<tr class="even">
+<td align="left"></td>
 <td align="left">Exponential</td>
+<td align="left"><code>scale</code></td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">Double Exponential</td>
 <td align="left"><code>scale</code></td>
 </tr>
 <tr class="even">
@@ -1267,6 +1280,9 @@ samplesList &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(Cmcmc_
 </div>
 <div id="ref-Watanabe_2010">
 <p>Watanabe, Sumio. 2010. “Asymptotic Equivalence of Bayes Cross Validation and Widely Applicable Information Criterion in Singular Learning Theory.” <em>Journal of Machine Learning Research</em> 11 (Dec): 3571–94.</p>
+</div>
+<div id="ref-Gelman_etal_2014">
+<p>Gelman, A., J. Hwang, and A. Vehtari. 2014. “Understanding Predictive Information Criteria for Bayesian Model.” <em>Statistics and Computing</em> 24 (6): 997–1016.</p>
 </div>
 <div id="ref-Andrieu_Doucet_Holenstein_2010">
 <p>Andrieu, Christophe, Arnaud Doucet, and Roman Holenstein. 2010. “Particle Markov Chain Monte Carlo Methods.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 72 (3): 269–342. doi:<a href="https://doi.org/10.1111/j.1467-9868.2009.00736.x">10.1111/j.1467-9868.2009.00736.x</a>.</p>
