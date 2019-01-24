@@ -51,7 +51,7 @@ test cross-machine on Macs and on Windows
 
 can test using rhub (from within packages/nimble):
 
-Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> rhub.out
+Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> /tmp/rhub.out
 
 can test on Windows using win-builder
 
