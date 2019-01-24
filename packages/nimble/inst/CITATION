@@ -26,7 +26,7 @@ bibentry(
  year = year,
  version = meta$Version,
  note = note,
- doi = "10.5281/zenodo.1322114",
+ doi = "10.5281/zenodo.2548101",
 )
 
 bibentry(
@@ -37,7 +37,7 @@ bibentry(
  year = year,
  version = meta$Version,
  note = noteManual,
- doi = "10.5281/zenodo.1322114",
+ doi = "10.5281/zenodo.2548101",
  textVersion = NULL
 )
 

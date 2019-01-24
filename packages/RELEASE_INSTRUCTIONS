@@ -55,7 +55,10 @@ Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-
 
 can test on Windows using win-builder
 
-create tarball and put tarball and manual in new version on zenodo; once this is published then R CMD check shouldn't complain about not finding DOI
+start new version in Zenodo. You can see new DOI before upload file,
+so put that DOI in inst/CITATION in vXYX-cran and devel
+
+create tarball and put tarball and manual in new version on zenodo
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
