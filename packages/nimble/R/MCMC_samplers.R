@@ -53,6 +53,7 @@ sampler_binary <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use binary sampler on more than one target node')
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
@@ -60,7 +61,12 @@ sampler_binary <- nimbleFunction(
     run = function() {
         currentLogProb <- getLogProb(model, calcNodes)
         model[[target]] <<- 1 - model[[target]]
-        otherLogProb <- calculate(model, calcNodes)
+        otherLogProbPrior <- calculate(model, target)
+        if(otherLogProbPrior == -Inf) {
+            otherLogProb <- otherLogProbPrior
+        } else {
+            otherLogProb <- otherLogProbPrior + calculate(model, calcNodesNoSelf)
+        }
         acceptanceProb <- 1/(exp(currentLogProb - otherLogProb) + 1)
         if(!is.nan(acceptanceProb) & runif(1,0,1) < acceptanceProb)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -87,6 +93,7 @@ sampler_categorical <- nimbleFunction(
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes  <- model$getDependencies(target)
+        calcNodesNoSelf <- model$getDependencies(target, self = FALSE)
         ## numeric value generation
         k <- length(model$getParam(target, 'prob'))
         probs <- numeric(k)
@@ -100,8 +107,17 @@ sampler_categorical <- nimbleFunction(
         for(i in 1:k) {
             if(i != currentValue) {
                 model[[target]] <<- i
-                probs[i] <<- exp(calculate(model, calcNodes))
-                if(is.nan(probs[i])) probs[i] <<- 0
+                logProbPrior <- calculate(model, target)
+                if(logProbPrior == -Inf) {
+                    probs[i] <<- 0
+                } else {
+                    if(is.nan(logProbPrior)) {
+                        probs[i] <<- 0
+                    } else {
+                        probs[i] <<- exp(logProbPrior + calculate(model, calcNodesNoSelf))
+                        if(is.nan(probs[i])) probs[i] <<- 0
+                    }
+                }
             }
         }
         newValue <- rcat(1, probs)
