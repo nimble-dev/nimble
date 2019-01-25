@@ -1426,6 +1426,49 @@ test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
          info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dnorm dependents of dmnorm target")
 })
 
+## dnorm prior in vectorized regression mean (inprod, matrix multiplication)
+
+test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
+    ## do unit testing of cc_checkLinearity too
+    
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + inprod(beta[1:p], X[i, 1:p]), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    m <- nimbleModel(code, data = list(y = rnorm(constants$n), X = matrix(rnorm(constants$n * constants$p), constants$n)),
+                     constants = constants)
+    conf <- configureMCMC(m)
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + inprod(exp(beta[1:p]), X[i, 1:p]), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    m <- nimbleModel(code, data = list(y = rnorm(constants$n), X = matrix(rnorm(constants$n * constants$p), constants$n)),
+                     constants = constants)
+    conf <- configureMCMC(m)
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + (X[i, 1:p] %*% beta[1:p])[1,1], 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    m <- nimbleModel(code, data = list(y = rnorm(constants$n), X = matrix(rnorm(constants$n * constants$p), constants$n)),
+                     constants = constants)
+    conf <- configureMCMC(m)
+
+})
+
 
 test_that('MCMC with logProb variable being monitored builds and compiles.', {
   cat('===== Starting MCMC test of logProb variable monitoring =====')
