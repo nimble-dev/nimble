@@ -97,30 +97,33 @@ sampler_categorical <- nimbleFunction(
         ## numeric value generation
         k <- length(model$getParam(target, 'prob'))
         probs <- numeric(k)
+        logProbs <- numeric(k)
         ## checks
         if(length(targetAsScalar) > 1)  stop('cannot use categorical sampler on more than one target node')
         if(model$getDistribution(target) != 'dcat') stop('can only use categorical sampler on node with dcat distribution')
     },
     run = function() {
         currentValue <- model[[target]]
-        probs[currentValue] <<- exp(getLogProb(model, calcNodes))
+        logProbs[currentValue] <<- getLogProb(model, calcNodes)
         for(i in 1:k) {
             if(i != currentValue) {
                 model[[target]] <<- i
                 logProbPrior <- calculate(model, target)
                 if(logProbPrior == -Inf) {
-                    probs[i] <<- 0
+                    logProbs[i] <<- -Inf
                 } else {
                     if(is.nan(logProbPrior)) {
-                        probs[i] <<- 0
+                        logProbs[i] <<- -Inf
                     } else {
-                        probs[i] <<- exp(logProbPrior + calculate(model, calcNodesNoSelf))
-                        if(is.nan(probs[i])) probs[i] <<- 0
+                        logProbs[i] <<- logProbPrior + calculate(model, calcNodesNoSelf)
+                        if(is.nan(logProbs[i])) logProbs[i] <<- -Inf
                     }
                 }
             }
         }
-        newValue <- rcat(1, probs)
+        logProbs <<- logProbs - max(logProbs)
+        probs <<- exp(logProbs)
+        newValue <- rcat(1, probs) #rcat normalizes the probs internally
         if(newValue != currentValue) {
             model[[target]] <<- newValue
             calculate(model, calcNodes)
