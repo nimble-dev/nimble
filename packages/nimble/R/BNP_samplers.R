@@ -479,8 +479,73 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataVar <- model$getParam(dataNodes[i], 'var')
       y <- values(model, dataNodes[i])[1]
-      postVar <- 1 / (1 / dataVar + 1 / priorVar)
+      postVar <- 1 / (coeff^2 / dataVar + 1 / priorVar)
       postMean <- postVar * (y / dataVar + priorMean / priorVar)
+      values(model, marginalizedNodes[j]) <<- c(rnorm(1, postMean, sqrt(postVar)))
+    }
+  )
+)
+
+CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
+  name = "CRP_conjugate_dnorm_dnorm",
+  contains = CRP_helper,
+  setup = function(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, p, nTilde) {
+    priorMean <- nimNumeric(1)
+    priorVar <- nimNumeric(1)
+    if(FALSE) {
+        mvTemp <- modelValues(model)
+  },
+  methods = list(
+    storeParams = function() {
+      priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
+      priorVar <<- model$getParam(marginalizedNodes[1], 'var')
+    },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {
+        if(FALSE) {
+            nimCopy(from = model, to = mvTemp, row = 1, nodes = dataNodes[i], logProb = TRUE)
+            if(nInterm >= 1) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes[i])
+            if(nInterm >= 2) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes2[i])
+            if(nInterm >= 3) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes3[i])
+        }
+        currentValue <- values(marginalizedNodes[j])  
+        values(model, marginalizedNodes[j]) <- c(0)
+        if(nInterm >= 1) model$calculate(intermNodes[i])
+        if(nInterm >= 2) model$calculate(intermNodes2[i])
+        if(nInterm >= 3) model$calculate(intermNodes3[i])
+        model$calculate(dataNodes[i])
+        offset <<- model$getParam(dataNodes[i], 'mean')
+        values(model, marginalizedNodes[j]) <- c(1)
+        if(nInterm >= 1) model$calculate(intermNodes[i])
+        if(nInterm >= 2) model$calculate(intermNodes2[i])
+        if(nInterm >= 3) model$calculate(intermNodes3[i])
+        model$calculate(dataNodes[i])
+        coeff <<- model$getParam(dataNodes[i], 'mean') - offset
+        ## reset to original; more efficient alternative would be to
+        ## use a modelValues object to save original state and copy back in,
+        values(model, marginalizedNodes[j]) <- currentValue
+        if(FALSE) {
+            nimCopy(from = mvTemp, to = model, row = 1, nodes = dataNodes[i], logProb = TRUE)
+            if(nInterm >= 1) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes[i])
+            if(nInterm >= 2) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes2[i])
+            if(nInterm >= 3) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes3[i])
+        } else {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+        }
+    },
+    calculate_prior_predictive = function(i = integer()) {
+      returnType(double())
+      dataVar <- model$getParam(dataNodes[i], 'var')
+      y <- values(model, dataNodes[i])[1]
+      return(dnorm(y, offset + coeff*priorMean, sqrt(priorVar + dataVar), log=TRUE))
+    },
+    sample = function(i = integer(), j = integer()) {
+      dataVar <- model$getParam(dataNodes[i], 'var')
+      y <- values(model, dataNodes[i])[1]
+      postVar <- 1 / (coeff^2 / dataVar + 1 / priorVar)
+      postMean <- postVar * (coeff*(y-offset) / dataVar + priorMean / priorVar)
       values(model, marginalizedNodes[j]) <<- c(rnorm(1, postMean, sqrt(postVar)))
     }
   )
@@ -955,6 +1020,7 @@ sampler_CRP <- nimbleFunction(
     } else 
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
+                        conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm_nonidentity',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
                         conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin',
@@ -970,6 +1036,7 @@ sampler_CRP <- nimbleFunction(
 
     p <- length(tildeVars)
 
+    identityLink <- TRUE
     if(p == 2 && sampler == "CRP_conjugate_dnorm_invgamma_dnorm") {
       for(i in seq_along(tildeVars)) {
         if(model$getDistribution(clusterVarInfo$clusterNodes[[i]][1]) == 'dnorm') {
@@ -984,7 +1051,10 @@ sampler_CRP <- nimbleFunction(
         ## p and nTilde only needed for non-conjugate currently.
         ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
         ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
-      helperFunctions[[1]] <- eval(as.name(sampler))(model, unlist(clusterVarInfo$clusterNodes), dataNodes, p, min_nTilde)
+        if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
+            identityLink <- FALSE
+            helperFunctions[[1]] <- eval(as.name(sampler))(model, unlist(clusterVarInfo$clusterNodes), dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, p, min_nTilde)
+        } else helperFunctions[[1]] <- eval(as.name(sampler))(model, unlist(clusterVarInfo$clusterNodes), dataNodes, p, min_nTilde)
     }
       
     curLogProb <- numeric(n)
@@ -1076,6 +1146,8 @@ sampler_CRP <- nimbleFunction(
             model$calculate(dataNodes[i])
           } else model$calculate(calcNodes) 
         }
+        if(!identityLink)
+            helperFunctions[[1]]$calculate_offset_coeff(i, model[[target]][i])
         curLogProb[k] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label, only k components because xi_i is a singleton
 
         ## Sample new cluster.
@@ -1114,6 +1186,8 @@ sampler_CRP <- nimbleFunction(
               model$calculate(dataNodes[i])
             } else model$calculate(calcNodes) 
           }
+          if(!identityLink)
+            helperFunctions[[1]]$calculate_offset_coeff(i, model[[target]][i])
           curLogProb[k+1] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label
         }
         
