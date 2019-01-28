@@ -422,6 +422,7 @@ sampler_CRP_concentration <- nimbleFunction(
 CRP_helper <- nimbleFunctionVirtual(
   methods = list(
     storeParams = function() { },   ## parameters of base measure, which for conjugate cases should be the same for all clusters
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {  ## calculate prior predictive for new cluster for conjugate cases
       returnType(double())
     },
@@ -441,6 +442,7 @@ CRP_nonconjugate <- nimbleFunction(
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       return(model$getLogProb(dataNodes[i]))
@@ -470,6 +472,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
       priorMean <<- model$getParam(marginalizedNodes[1], 'mean')
       priorVar <<- model$getParam(marginalizedNodes[1], 'var')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataVar <- model$getParam(dataNodes[i], 'var')
@@ -479,7 +482,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
     sample = function(i = integer(), j = integer()) {
       dataVar <- model$getParam(dataNodes[i], 'var')
       y <- values(model, dataNodes[i])[1]
-      postVar <- 1 / (coeff^2 / dataVar + 1 / priorVar)
+      postVar <- 1 / (1 / dataVar + 1 / priorVar)
       postMean <- postVar * (y / dataVar + priorMean / priorVar)
       values(model, marginalizedNodes[j]) <<- c(rnorm(1, postMean, sqrt(postVar)))
     }
@@ -487,13 +490,14 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
 )
 
 CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
-  name = "CRP_conjugate_dnorm_dnorm",
+  name = "CRP_conjugate_dnorm_dnorm_nonidentity",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, p, nTilde) {
     priorMean <- nimNumeric(1)
     priorVar <- nimNumeric(1)
-    if(FALSE) {
-        mvTemp <- modelValues(model)
+    offset <- nimNumeric(1)
+    coeff <- nimNumeric(1)
+    ##    mvTemp <- modelValues(model)
   },
   methods = list(
     storeParams = function() {
@@ -501,20 +505,23 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
       priorVar <<- model$getParam(marginalizedNodes[1], 'var')
     },
     calculate_offset_coeff = function(i = integer(), j = integer()) {
-        if(FALSE) {
-            nimCopy(from = model, to = mvTemp, row = 1, nodes = dataNodes[i], logProb = TRUE)
-            if(nInterm >= 1) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes[i])
-            if(nInterm >= 2) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes2[i])
-            if(nInterm >= 3) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes3[i])
-        }
-        currentValue <- values(marginalizedNodes[j])  
-        values(model, marginalizedNodes[j]) <- c(0)
+        ## if(FALSE) {
+        ##   # Something about missing intermNodes being xi[1]?
+        ##   # Error in eval(accessorVector[[2]], envir = accessorVector[[4]]) : 
+        ##   #             object 'i' not found
+        ##     nimCopy(from = model, to = mvTemp, row = 1, nodes = dataNodes[i], logProb = TRUE)
+        ##     if(nInterm >= 1) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes[i])
+        ##     if(nInterm >= 2) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes2[i])
+        ##     if(nInterm >= 3) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes3[i])
+        ## }
+        currentValue <- values(model, marginalizedNodes[j])  
+        values(model, marginalizedNodes[j]) <<- c(0)
         if(nInterm >= 1) model$calculate(intermNodes[i])
         if(nInterm >= 2) model$calculate(intermNodes2[i])
         if(nInterm >= 3) model$calculate(intermNodes3[i])
         model$calculate(dataNodes[i])
         offset <<- model$getParam(dataNodes[i], 'mean')
-        values(model, marginalizedNodes[j]) <- c(1)
+        values(model, marginalizedNodes[j]) <<- c(1)
         if(nInterm >= 1) model$calculate(intermNodes[i])
         if(nInterm >= 2) model$calculate(intermNodes2[i])
         if(nInterm >= 3) model$calculate(intermNodes3[i])
@@ -522,24 +529,24 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
         coeff <<- model$getParam(dataNodes[i], 'mean') - offset
         ## reset to original; more efficient alternative would be to
         ## use a modelValues object to save original state and copy back in,
-        values(model, marginalizedNodes[j]) <- currentValue
-        if(FALSE) {
-            nimCopy(from = mvTemp, to = model, row = 1, nodes = dataNodes[i], logProb = TRUE)
-            if(nInterm >= 1) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes[i])
-            if(nInterm >= 2) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes2[i])
-            if(nInterm >= 3) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes3[i])
-        } else {
+        values(model, marginalizedNodes[j]) <<- currentValue
+        ## if(FALSE) {
+        ##     nimCopy(from = mvTemp, to = model, row = 1, nodes = dataNodes[i], logProb = TRUE)
+        ##     if(nInterm >= 1) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes[i])
+        ##     if(nInterm >= 2) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes2[i])
+        ##     if(nInterm >= 3) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes3[i])
+        ## } else {
             if(nInterm >= 1) model$calculate(intermNodes[i])
             if(nInterm >= 2) model$calculate(intermNodes2[i])
             if(nInterm >= 3) model$calculate(intermNodes3[i])
             model$calculate(dataNodes[i])
-        }
+        ## }
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataVar <- model$getParam(dataNodes[i], 'var')
       y <- values(model, dataNodes[i])[1]
-      return(dnorm(y, offset + coeff*priorMean, sqrt(priorVar + dataVar), log=TRUE))
+      return(dnorm(y, offset + coeff*priorMean, sqrt(coeff^2 * priorVar + dataVar), log=TRUE))
     },
     sample = function(i = integer(), j = integer()) {
       dataVar <- model$getParam(dataNodes[i], 'var')
@@ -568,6 +575,7 @@ CRP_conjugate_dnorm_invgamma_dnorm <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes2[1], 'shape')
       priorScale <<- model$getParam(marginalizedNodes2[1], 'scale')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -599,6 +607,7 @@ CRP_conjugate_dgamma_dpois <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -625,6 +634,7 @@ CRP_conjugate_dgamma_dnorm <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataMean <- model$getParam(dataNodes[i], 'mean')
@@ -654,6 +664,7 @@ CRP_conjugate_dbeta_dbern <- nimbleFunction(
       priorShape1 <<- model$getParam(marginalizedNodes[1], 'shape1') 
       priorShape2 <<- model$getParam(marginalizedNodes[1], 'shape2')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -678,6 +689,7 @@ CRP_conjugate_dbeta_dbin <- nimbleFunction(
       priorShape1 <<- model$getParam(marginalizedNodes[1], 'shape1') 
       priorShape2 <<- model$getParam(marginalizedNodes[1], 'shape2')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -708,6 +720,7 @@ CRP_conjugate_dbeta_dnegbin <- nimbleFunction(
       priorShape1 <<- model$getParam(marginalizedNodes[1], 'shape1') 
       priorShape2 <<- model$getParam(marginalizedNodes[1], 'shape2')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -736,6 +749,7 @@ CRP_conjugate_dgamma_dexp <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate') 
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])[1]
@@ -761,6 +775,7 @@ CRP_conjugate_dgamma_dgamma <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate')  
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       datashape <- model$getParam(dataNodes[i], 'shape')
@@ -789,6 +804,7 @@ CRP_conjugate_dgamma_dweib <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate')  
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataShape <- model$getParam(dataNodes[i], 'shape')
@@ -817,6 +833,7 @@ CRP_conjugate_dgamma_dinvgamma <- nimbleFunction(
       priorShape <<- model$getParam(marginalizedNodes[1], 'shape') 
       priorRate <<- model$getParam(marginalizedNodes[1], 'rate')  
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       dataShape <- model$getParam(dataNodes[i], 'shape')
@@ -844,6 +861,7 @@ CRP_conjugate_ddirch_dmulti <- nimbleFunction(
     storeParams = function() {
       priorAlpha <<- model$getParam(marginalizedNodes[1], 'alpha')
     },
+    calculate_offset_coeff = function(i = integer(), j = integer()) {},
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
       y <- values(model, dataNodes[i])
@@ -1020,7 +1038,7 @@ sampler_CRP <- nimbleFunction(
     } else 
       sampler <- switch(conjugacyResult,
                         conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm',
-                        conjugate_dnorm_dnorm = 'CRP_conjugate_dnorm_dnorm_nonidentity',
+                        conjugate_dnorm_dnorm_nonidentity = 'CRP_conjugate_dnorm_dnorm_nonidentity',
                         conjugate_dnorm_invgamma_dnorm = 'CRP_conjugate_dnorm_invgamma_dnorm',
                         conjugate_dbeta_dbern  = 'CRP_conjugate_dbeta_dbern',
                         conjugate_dbeta_dbin = 'CRP_conjugate_dbeta_dbin',
@@ -1146,7 +1164,7 @@ sampler_CRP <- nimbleFunction(
             model$calculate(dataNodes[i])
           } else model$calculate(calcNodes) 
         }
-        if(!identityLink)
+        if(!identityLink) 
             helperFunctions[[1]]$calculate_offset_coeff(i, model[[target]][i])
         curLogProb[k] <<- log(conc) + helperFunctions[[1]]$calculate_prior_predictive(i) # probability of sampling a new label, only k components because xi_i is a singleton
 
