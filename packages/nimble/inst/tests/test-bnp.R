@@ -4518,42 +4518,45 @@ set.seed(1)
   smp <- rnorm(1 , postMean, sqrt(postVar))
   expect_identical(smp, m$mu[1])
 
+set.seed(1)
+n <- 1000
+data <- list(y = rnorm(n))
+constants <- list(n = n)
+inits <- list(xi = rep(1, n), mu = rep(4, n), beta =1)
 
   set.seed(1)
   code = nimbleCode({
-    for(i in 1:4) {
+    for(i in 1:n) {
       mu[i] ~ dnorm(beta,1)
       y[i] ~ dnorm(b0 + b1*mu[xi[i]], sd = 1)
     }
-    xi[1:4] ~ dCRP(conc=1, size=4)
+    xi[1:n] ~ dCRP(conc=1, size=n)
     beta ~ dnorm(0,1)
   })
-  data <- list(y = rnorm(4))
-  m = nimbleModel(code, data = data, 
-                  inits = list(xi = rep(1,4), mu = rep(4, 4), beta =1, b0 = 0, b1 = 1))
+  m = nimbleModel(code, data = data, constants = constants,
+                  inits = c(inits, list(b0 = 0, b1 = 1)))
   conf <- configureMCMC(m)
-  mcmc=buildMCMC(conf)
+  mcmc <- buildMCMC(conf)
 cm <- compileNimble(m)
 cmcmc <- compileNimble(mcmc, project = m)
-smp1 <- runMCMC(cmcmc, 50, setSeed = 1)
+smp1 <- runMCMC(cmcmc, 1000, setSeed = 1)
 
   set.seed(1)
   code = nimbleCode({
-    for(i in 1:4) {
+    for(i in 1:n) {
       mu[i] ~ dnorm(beta,1)
       y[i] ~ dnorm(mu[xi[i]], sd = 1)
     }
-    xi[1:4] ~ dCRP(conc=1, size=4)
+    xi[1:n] ~ dCRP(conc=1, size=n)
     beta ~ dnorm(0,1)
   })
-  data <- list(y = rnorm(4))
-  m = nimbleModel(code, data = data, 
-                  inits = list(xi = rep(1,4), mu = rep(4, 4), beta =1))
+  m = nimbleModel(code, data = data, constants = constants,
+                  inits = inits)
   conf <- configureMCMC(m)
-  mcmc=buildMCMC(conf)
+  mcmc<-buildMCMC(conf)
 cm <- compileNimble(m)
 cmcmc <- compileNimble(mcmc, project = m)
-smp2 <- runMCMC(cmcmc, 50, setSeed = 1)
+smp2 <- runMCMC(cmcmc, 1000, setSeed = 1)
 expect_identical(smp1, smp2)
 
 

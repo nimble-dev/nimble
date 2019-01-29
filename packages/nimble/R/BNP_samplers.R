@@ -525,7 +525,7 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
         if(nInterm >= 1) model$calculate(intermNodes[i])
         if(nInterm >= 2) model$calculate(intermNodes2[i])
         if(nInterm >= 3) model$calculate(intermNodes3[i])
-        model$calculate(dataNodes[i])
+        model$calculate(dataNodes[i])        
         coeff <<- model$getParam(dataNodes[i], 'mean') - offset
         ## reset to original; more efficient alternative would be to
         ## use a modelValues object to save original state and copy back in,
@@ -536,10 +536,12 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
         ##     if(nInterm >= 2) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes2[i])
         ##     if(nInterm >= 3) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes3[i])
         ## } else {
-            if(nInterm >= 1) model$calculate(intermNodes[i])
-            if(nInterm >= 2) model$calculate(intermNodes2[i])
-            if(nInterm >= 3) model$calculate(intermNodes3[i])
-            model$calculate(dataNodes[i])
+        ## Careful here - we are not updating the intermediate nodes or dataNodes logProb but
+        ## that's also the case for the identityLink conjugacy.
+        ## if(nInterm >= 1) model$calculate(intermNodes[i])
+        ##    if(nInterm >= 2) model$calculate(intermNodes2[i])
+        ##    if(nInterm >= 3) model$calculate(intermNodes3[i])
+        ##    model$calculate(dataNodes[i])
         ## }
     },
     calculate_prior_predictive = function(i = integer()) {
