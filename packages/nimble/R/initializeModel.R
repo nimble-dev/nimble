@@ -34,7 +34,17 @@ initializeModel <- nimbleFunction(
         initFunctionList <- nimbleFunctionList(nodeInit_virtual)
         startInd <- 1
 
-        RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
+        allNodes <- model$modelDef$maps$graphID_2_nodeName
+        graphIDs <- seq_along(allNodes)
+        allTypes <- model$modelDef$maps$types
+        bool <- allTypes == 'RHSonly' | allTypes == 'stoch' | allTypes == 'determ'
+        allNodes <- allNodes[bool]
+        allTypes <- allTypes[bool]
+        graphIDs <- graphIDs[bool]
+        bool <- allTypes == 'RHSonly'
+        RHSonlyNodes <- allNodes[bool]
+        
+#        RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
         RHSonlyVarNames <- removeIndexing(RHSonlyNodes)
         RHSonlyVarNamesUnique <- unique(RHSonlyVarNames)
         RHSonlyNodesListByVariable <- lapply(RHSonlyVarNamesUnique, function(var) RHSonlyNodes[RHSonlyVarNames==var])
@@ -47,14 +57,21 @@ initializeModel <- nimbleFunction(
                 startInd <- startInd + 1
             }
         }
-        
-        LHSnodes <- model$getNodeNames()
-        nodeTypes <- model$getNodeType(LHSnodes)
+
+        LHSnodes <- allNodes[!bool]
+        nodeTypes <- allTypes[!bool]
+        graphIDs <- graphIDs[!bool]
+        rm(allNodes)
+        rm(allTypes)
+#        LHSnodes <- model$getNodeNames()
+#        nodeTypes <- model$getNodeType(LHSnodes)
+        bool <- nodeTypes == "stoch"
         typeCode <- ifelse(nodeTypes == "determ", 1,
-                    ifelse(nodeTypes == "stoch", 2,
+                    ifelse(bool, 2,
                            3)) ## Neither "stoch" nor "determ"
         if(any(typeCode == 3)) message(paste0("found typeCode == 3 for "), paste(LHSnodes[typeCode==3], sep=", "))
-        isData <- model$isData(LHSnodes)
+        isData <- model$isDataFromGraphID(graphIDs)
+        ## equivalent to:        isData <- model$isData(LHSnodes)
     },
     
     run = function() {
