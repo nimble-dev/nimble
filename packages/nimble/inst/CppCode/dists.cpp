@@ -1828,7 +1828,7 @@ double ddexp(double x, double location, double scale, int give_log)
     if(scale < 0.0) ML_ERR_return_NAN;
     return (x == location) ? ML_POSINF : R_D__0;
   }         
-  if(give_log) return dexp( std::abs(x - location), scale, give_log) - log(2);
+  if(give_log) return dexp( std::abs(x - location), scale, give_log) - M_LN2;
   else return 0.5 * dexp( std::abs(x - location), scale, give_log);
 }
 
