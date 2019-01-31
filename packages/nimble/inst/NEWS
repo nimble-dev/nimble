@@ -1,4 +1,14 @@
-                            CHANGES IN VERSION 0.6.13 (January 2019)
+                            CHANGES IN VERSION 0.7.0 (January 2019)
+
+USER LEVEL CHANGES
+
+-- Greatly reduced time for setting up model initialization in buildMCMC, fixing some computational slowdowns introduced in version 0.6.13's fix of a shortcoming in model initialization.
+
+DEVELOPER LEVEL CHANGES
+
+-- Fixed some uses of PROTECT in C++ code, flagged by R's rchk.
+
+                           CHANGES IN VERSION 0.6.13 (January 2019)
 
 USER LEVEL CHANGES
 

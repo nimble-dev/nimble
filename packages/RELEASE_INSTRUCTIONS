@@ -14,6 +14,8 @@ Make sure src/Makevars.win is present.
 run 'make man' (formerly ./prep_pkg.R)
 # this creates man pages and updates NAMESPACE
 
+git add any new .Rd files
+
 ## note that an error: "section title spans multiple lines" will occur in roxygenization if any "@section" line does not have a ":" at the end of the line
 
 R CMD build nimble
