@@ -21,8 +21,10 @@ SEXP new_EIGEN_EIGENCLASS() {
   ptrToSmartPtr->setPtrFromT(newObj);
   SptrToSmartPtr =
     PROTECT(R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
-  UNPROTECT(1);
-  return (EIGEN_EIGENCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  SEXP Sans;
+  Sans = PROTECT(EIGEN_EIGENCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  UNPROTECT(2);
+  return Sans;
 }
 
 SEXP EIGEN_EIGENCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
@@ -62,8 +64,10 @@ SEXP new_EIGEN_SVDCLASS() {
   ptrToSmartPtr->setPtrFromT(newObj);
   SptrToSmartPtr =
 	  PROTECT(R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
-  UNPROTECT(1);
-  return (EIGEN_SVDCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  SEXP Sans;
+  Sans = PROTECT(EIGEN_SVDCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  UNPROTECT(2);
+  return Sans;
 }
 
 SEXP EIGEN_SVDCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
@@ -205,9 +209,10 @@ SEXP new_OptimResultNimbleList() {
   ptrToSmartPtr->setPtrFromT(newObj);
   SptrToSmartPtr =
     PROTECT(R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
-  UNPROTECT(1);
-  return (
-      OptimResultNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  SEXP Sans;
+  Sans = PROTECT(OptimResultNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  UNPROTECT(2);
+  return Sans;
 }
 
 SEXP OptimResultNimbleList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
@@ -467,9 +472,10 @@ SEXP new_OptimControlNimbleList() {
   ptrToSmartPtr->setPtrFromT(newObj);
   SptrToSmartPtr =
     PROTECT(R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
-  UNPROTECT(1);
-  return (
-      OptimControlNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  SEXP Sans;
+  Sans = PROTECT(OptimControlNimbleList_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  UNPROTECT(2);
+  return Sans;
 }
 
 SEXP OptimControlNimbleList_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
@@ -591,8 +597,10 @@ SEXP new_NIMBLE_ADCLASS() {
   ptrToSmartPtr->setPtrFromT(newObj);
   SptrToSmartPtr =
     PROTECT(R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));
-  UNPROTECT(1);
-  return (NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  SEXP Sans;
+  Sans = PROTECT(NIMBLE_ADCLASS_castDerivedPtrPtrToPairOfPtrsSEXP(SptrToSmartPtr));
+  UNPROTECT(2);
+  return Sans;
 }
 
 SEXP NIMBLE_ADCLASS_castPtrPtrToNamedObjectsPtrSEXP(SEXP input) {
