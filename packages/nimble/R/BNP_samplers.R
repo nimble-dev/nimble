@@ -497,7 +497,6 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
     priorVar <- nimNumeric(1)
     offset <- nimNumeric(1)
     coeff <- nimNumeric(1)
-    ##    mvTemp <- modelValues(model)
   },
   methods = list(
     storeParams = function() {
@@ -505,15 +504,7 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
       priorVar <<- model$getParam(marginalizedNodes[1], 'var')
     },
     calculate_offset_coeff = function(i = integer(), j = integer()) {
-        ## if(FALSE) {
-        ##   # Something about missing intermNodes being xi[1]?
-        ##   # Error in eval(accessorVector[[2]], envir = accessorVector[[4]]) : 
-        ##   #             object 'i' not found
-        ##     nimCopy(from = model, to = mvTemp, row = 1, nodes = dataNodes[i], logProb = TRUE)
-        ##     if(nInterm >= 1) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes[i])
-        ##     if(nInterm >= 2) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes2[i])
-        ##     if(nInterm >= 3) nimCopy(from = model, to = mvTemp, row = 1, nodes = intermNodes3[i])
-        ## }
+        ## In mean of observation, determine a,b in 'a + b*mu[xi[i]]'.
         currentValue <- values(model, marginalizedNodes[j])  
         values(model, marginalizedNodes[j]) <<- c(0)
         if(nInterm >= 1) model$calculate(intermNodes[i])
@@ -527,22 +518,14 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
         if(nInterm >= 3) model$calculate(intermNodes3[i])
         model$calculate(dataNodes[i])        
         coeff <<- model$getParam(dataNodes[i], 'mean') - offset
-        ## reset to original; more efficient alternative would be to
-        ## use a modelValues object to save original state and copy back in,
         values(model, marginalizedNodes[j]) <<- currentValue
-        ## if(FALSE) {
-        ##     nimCopy(from = mvTemp, to = model, row = 1, nodes = dataNodes[i], logProb = TRUE)
-        ##     if(nInterm >= 1) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes[i])
-        ##     if(nInterm >= 2) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes2[i])
-        ##     if(nInterm >= 3) nimCopy(from = mvTemp, to = model, row = 1, nodes = intermNodes3[i])
-        ## } else {
-        ## Careful here - we are not updating the intermediate nodes or dataNodes logProb but
-        ## that's also the case for the identityLink conjugacy.
+        ## Note we are not updating the intermediate nodes or dataNodes logProb as
+        ## ordering of calculations in sampler_CRP does not require it because of
+        ## 1:1 mapping of cluster IDs to observations.
         ## if(nInterm >= 1) model$calculate(intermNodes[i])
-        ##    if(nInterm >= 2) model$calculate(intermNodes2[i])
-        ##    if(nInterm >= 3) model$calculate(intermNodes3[i])
-        ##    model$calculate(dataNodes[i])
-        ## }
+        ## if(nInterm >= 2) model$calculate(intermNodes2[i])
+        ## if(nInterm >= 3) model$calculate(intermNodes3[i])
+        ##  model$calculate(dataNodes[i])
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
@@ -1224,11 +1207,17 @@ sampler_CRP <- nimbleFunction(
       
       ## Update metadata about clustering.
       model[[target]][i] <<- newLab
+
+      ## Note that we do not update intermNodes nor dataNodes (i.e., data logProbs) at this point
+      ## because of the 1:1 mapping of cluster IDs to observations, so sampling of other
+      ## cluster IDs in the main 'i' loop doesn't depend on having these updated. Instead update
+      ## at end of function.
       
       if( newLabCond ) { # a component is created. It can really create a new component or keep the current label if xi_i is a singleton
         if(sampler != 'CRP_nonconjugate') { # updating the cluster parameters of the new cluster
           helperFunctions[[1]]$sample(i, model[[target]][i])
         }
+
         if( xiCounts[xi[i]] != 0) { # a component is really created
           k <- k + 1
           xiUniques[k] <- newLab 
@@ -1267,7 +1256,7 @@ sampler_CRP <- nimbleFunction(
       }
     }
 
-    ## We have updated cluster variables but not all logProb values are up-to-date.  
+    ## We have updated cluster variables but not all intermediate nodes or logProb values are up-to-date.  
     model$calculate(calcNodes)
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
