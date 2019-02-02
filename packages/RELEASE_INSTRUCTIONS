@@ -131,9 +131,9 @@ update version number in DESC in devel
 
 ### updating Github README
 
-Update version number in README.md and create a new release on Github (see 'releases' tab) based on the new version tag
-This will autogenerate a zenodo page and DOI
-update the DOI tag at top of README and the DOI url in the citations in README
+Update version number in README.md.
+
+NOT DONE ANYMORE: create a new release on Github (see 'releases' tab) based on the new version tag, this  autogenerates a zenodo page and DOI; update the DOI tag at top of README and the DOI url in the citations in README
 
 Unfortunately in v0.6-10 zenodo integration was somehow turned off and in the process of trying to add it manually, Chris got an entirely different zenodo instnace.
 
