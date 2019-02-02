@@ -4511,6 +4511,7 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting", {
     postMean <- postVar * (m$b1*(data$y[1]-m$b0) / dataVar + priorMean / priorVar) # from conjugate sampler
     pTgivenY <- dnorm(m$mu[1] , postMean, sqrt(postVar), log = TRUE) # from conjugate sampler
     mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$storeParams()
+    mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_offset_coeff(1, 1)
     pY <- mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)  
     expect_equal(pY, pT + pYgivenT - pTgivenY, info = "problem with predictive distribution for dnorm_dnorm_nonidentity")
     
