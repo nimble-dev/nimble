@@ -195,7 +195,6 @@ print: A logical argument specifying whether to print the ordered list of defaul
             } else {
                 ## use old (static) system for assigning default samplers
                 isEndNode <- model$isEndNode(nodes)
-                if(exists("AAA")) browser()
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
                 
                 for(i in seq_along(nodes)) {

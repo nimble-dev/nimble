@@ -349,6 +349,7 @@ conjugacyClass <- setRefClass(
         ## used by new checkConjugacy() system
         ## see checkConjugacy for more explanation of each step
         checkConjugacyOneDep = function(model, targetNode, depNode, restrictLink = NULL) {
+            if(exists('paciorek')) browser()
             if(model$getDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
             if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
             depNodeDist <- model$getDistribution(depNode)
@@ -1107,14 +1108,12 @@ cc_checkLinearity <- function(expr, targetNode) {
     if(expr[[1]] == '[')
         return(cc_checkLinearity(expr[[2]], targetNode))
 
-    ## process the individual nodes within a vectorized usage
-    ## note this doesn't check if structureExpr() has single argument but not sure that would ever occur
-    ## if it does, this will incorrectly report an offset, but that should just result in more calculations
-    ## downstream in conjugate sampler, not in incorrect behavior
+    ## Look for individual nodes in vectorized use or other strange cases.
     if(expr[[1]] == 'structureExpr') {
-        checkLinearityInside <- cc_checkLinearity(expr[[2]], targetNode)
-        if(is.null(checkLinearityInside)) return(NULL)
-        return(list(offset = expr, scale = 1))
+        if(sum(targetNode == sapply(expr[2:length(expr)], deparse)) == 1 &&
+           sum(sapply(expr[2:length(expr)], function(x)
+                      cc_nodeInExpr(targetNode, x))) == 1)
+            return(list(offset = expr, scale = 1)) else return(NULL)
     }
 
     ## we'll just have to skip over asRow() and asCol(), so they don't mess up the linearity check
