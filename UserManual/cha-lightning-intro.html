@@ -470,7 +470,9 @@ Cpump$theta</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mcmc.out &lt;-<span class="st"> </span><span class="kw">nimbleMCMC</span>(<span class="dt">code =</span> pumpCode, <span class="dt">constants =</span> pumpConsts,
                        <span class="dt">data =</span> pumpData, <span class="dt">inits =</span> pumpInits,
                        <span class="dt">nchains =</span> <span class="dv">2</span>, <span class="dt">niter =</span> <span class="dv">10000</span>,
-                       <span class="dt">summary =</span> <span class="ot">TRUE</span>, <span class="dt">WAIC =</span> <span class="ot">TRUE</span>, <span class="dt">monitors =</span> <span class="kw">c</span>(<span class="st">&#39;alpha&#39;</span>,<span class="st">&#39;beta&#39;</span>,<span class="st">&#39;theta&#39;</span>))
+                       <span class="dt">summary =</span> <span class="ot">TRUE</span>, <span class="dt">WAIC =</span> <span class="ot">TRUE</span>,
+                       <span class="dt">monitors =</span> <span class="kw">c</span>(<span class="st">&#39;alpha&#39;</span>,<span class="st">&#39;beta&#39;</span>,<span class="st">&#39;theta&#39;</span>))
+
 <span class="kw">names</span>(mcmc.out)</code></pre></div>
 <pre><code>## [1] &quot;samples&quot; &quot;summary&quot; &quot;WAIC&quot;</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mcmc.out$summary</code></pre></div>

@@ -905,7 +905,7 @@ would need to do some sed manipulation to be able to automate this cross-ref
 <td align="left">yes</td>
 </tr>
 <tr class="even">
-<td align="left"><code>solve(x)</code></td>
+<td align="left"><code>solve(x,y)</code></td>
 <td align="left">solve system of equations</td>
 <td align="left"><span class="math inline">\(x^{-1} y\)</span>; <span class="math inline">\(y\)</span> matrix or vector</td>
 <td align="left">yes</td>
@@ -1042,6 +1042,9 @@ would need to do some sed manipulation to be able to automate this cross-ref
 <li><code>dpois(x, lambda, log)</code></li>
 <li><code>dbeta(x, shape1, shape2, log)</code></li>
 <li><code>dchisq(x, df, log)</code></li>
+<li><code>ddexp(x, location, rate, log)</code></li>
+<li><code>ddexp(x, location, scale, log)</code><br />
+</li>
 <li><code>dexp(x, rate, log)</code></li>
 <li><code>dexp_nimble(x, rate, log)</code></li>
 <li><code>dexp_nimble(x, scale, log)</code></li>
@@ -1202,7 +1205,7 @@ myMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span clas
 </div>
 <div id="sec:size-warn-potent" class="section level4">
 <h4><span class="header-section-number">11.3.2.7</span> Size warnings and the potential for crashes</h4>
-<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because sizes are not known until run time. Therefore, it is possible for you to write code that will crash your R session. In Version 0.6.13, NIMBLE attempts to issue a warning if sizes are not compatible, but it does not halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication, NIMBLE will output a warning that the number of rows of <code>M1</code> does not match the number of columns of <code>M2</code>. After that warning the statement will be executed and may result in a crash. Another easy way to write code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to prevent crashes, but in Version 0.6.13 we limit ourselves to trying to provide useful information.</p>
+<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because sizes are not known until run time. Therefore, it is possible for you to write code that will crash your R session. In Version 0.7.0, NIMBLE attempts to issue a warning if sizes are not compatible, but it does not halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication, NIMBLE will output a warning that the number of rows of <code>M1</code> does not match the number of columns of <code>M2</code>. After that warning the statement will be executed and may result in a crash. Another easy way to write code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to prevent crashes, but in Version 0.7.0 we limit ourselves to trying to provide useful information.</p>
 </div>
 </div>
 </div>
