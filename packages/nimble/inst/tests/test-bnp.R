@@ -4482,8 +4482,8 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting", {
     ## Conjugacy detection and calculation of offset/coeff
     code = nimbleCode({
         for(i in 1:4) {
-            mu[i] ~ dnorm(beta,1)
-            y[i] ~ dnorm(b0 + b1*mu[xi[i]], sd = 1)
+            mu[i] ~ dnorm(beta, 0.25)
+            y[i] ~ dnorm(b0 + b1*mu[xi[i]], sd = 0.7)
         }
         xi[1:4] ~ dCRP(conc=1, size=4)
         beta ~ dnorm(0,1)
@@ -4492,7 +4492,7 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting", {
     })
     data <- list(y = rnorm(4))
     m = nimbleModel(code, data = data, 
-                    inits = list(xi = rep(1,4), mu = rep(4, 4), beta =1, b0 = 3, b1 = 2))
+                    inits = list(xi = rep(1,4), mu = rnorm(4), beta =1.5, b0 = 3, b1 = 2))
     conf <- configureMCMC(m)
     mcmc=buildMCMC(conf)
     expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_nonidentity", info = 'dnorm_dnorm_nonidentity conjugacy not detected')
@@ -4501,6 +4501,7 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting", {
     expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$coeff, m$b1, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
 
     ## Correct predictive distribution
+    tmp <- m$calculate()  ## since calculate_offset_coeff doesn't recalculate
     pYgivenT <- m$getLogProb('y[1]')
     pT <- m$getLogProb('mu[1]')
     

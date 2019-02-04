@@ -492,7 +492,7 @@ CRP_conjugate_dnorm_dnorm <- nimbleFunction(
 CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
   name = "CRP_conjugate_dnorm_dnorm_nonidentity",
   contains = CRP_helper,
-  setup = function(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, p, nTilde) {
+  setup = function(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, nTilde) {
     priorMean <- nimNumeric(1)
     priorVar <- nimNumeric(1)
     offset <- nimNumeric(1)
@@ -507,25 +507,33 @@ CRP_conjugate_dnorm_dnorm_nonidentity <- nimbleFunction(
         ## In mean of observation, determine a,b in 'a + b*mu[xi[i]]'.
         currentValue <- values(model, marginalizedNodes[j])  
         values(model, marginalizedNodes[j]) <<- c(0)
-        if(nInterm >= 1) model$calculate(intermNodes[i])
-        if(nInterm >= 2) model$calculate(intermNodes2[i])
-        if(nInterm >= 3) model$calculate(intermNodes3[i])
-        model$calculate(dataNodes[i])
+        if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+        } else model$calculate(calcNodes) 
         offset <<- model$getParam(dataNodes[i], 'mean')
         values(model, marginalizedNodes[j]) <<- c(1)
-        if(nInterm >= 1) model$calculate(intermNodes[i])
-        if(nInterm >= 2) model$calculate(intermNodes2[i])
-        if(nInterm >= 3) model$calculate(intermNodes3[i])
-        model$calculate(dataNodes[i])        
+        if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+        } else model$calculate(calcNodes)             
         coeff <<- model$getParam(dataNodes[i], 'mean') - offset
         values(model, marginalizedNodes[j]) <<- currentValue
-        ## Note we are not updating the intermediate nodes or dataNodes logProb as
+        ## Note as this is currently used, we do not need to update
+        ## the intermediate nodes or dataNodes logProb as
         ## ordering of calculations in sampler_CRP does not require it because of
         ## 1:1 mapping of cluster IDs to observations.
-        ## if(nInterm >= 1) model$calculate(intermNodes[i])
-        ## if(nInterm >= 2) model$calculate(intermNodes2[i])
-        ## if(nInterm >= 3) model$calculate(intermNodes3[i])
-        ##  model$calculate(dataNodes[i])
+        ## However, to reduce change of future bugs, we are updating here.
+        if(type == 'indivCalcs') {
+            if(nInterm >= 1) model$calculate(intermNodes[i])
+            if(nInterm >= 2) model$calculate(intermNodes2[i])
+            if(nInterm >= 3) model$calculate(intermNodes3[i])
+            model$calculate(dataNodes[i])
+        } else model$calculate(calcNodes) 
     },
     calculate_prior_predictive = function(i = integer()) {
       returnType(double())
@@ -1056,7 +1064,7 @@ sampler_CRP <- nimbleFunction(
         ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
         if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
             identityLink <- FALSE
-            helperFunctions[[1]] <- eval(as.name(sampler))(model, unlist(clusterVarInfo$clusterNodes), dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, p, min_nTilde)
+            helperFunctions[[1]] <- eval(as.name(sampler))(model, unlist(clusterVarInfo$clusterNodes), dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, min_nTilde)
         } else helperFunctions[[1]] <- eval(as.name(sampler))(model, unlist(clusterVarInfo$clusterNodes), dataNodes, p, min_nTilde)
     }
       
