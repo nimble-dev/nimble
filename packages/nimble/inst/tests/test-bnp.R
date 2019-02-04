@@ -4492,7 +4492,7 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting", {
     })
     data <- list(y = rnorm(4))
     m = nimbleModel(code, data = data, 
-                    inits = list(xi = rep(1,4), mu = rnorm(4), beta =1.5, b0 = 3, b1 = 2))
+                    inits = list(xi = rep(1,4), mu = rnorm(4), beta = rnorm(1), b0 = 3, b1 = 2))
     conf <- configureMCMC(m)
     mcmc=buildMCMC(conf)
     expect_equal(class(mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm_nonidentity", info = 'dnorm_dnorm_nonidentity conjugacy not detected')
