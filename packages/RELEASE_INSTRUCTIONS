@@ -104,6 +104,7 @@ add info on new release to release notes page
 update version numbering on license and citation page
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers)
+(best to point with a hyperlink to the info on versions/news on webpage not to NEWS)
 
 for link to NEWS have:
 
