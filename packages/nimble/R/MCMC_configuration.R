@@ -197,7 +197,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                 isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
 
-                clusterNodeInfo <- NULL
+                clusterNodeInfo <- NULL; dcrpNode <- NULL; numCRPnodes <- 0
                 for(i in seq_along(nodes)) {
                     node <- nodes[i]
                     discrete <- model$isDiscrete(node)
@@ -225,9 +225,9 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
                         if(nodeDist == 'dCRP')         {
                             addSampler(target = node, type = 'CRP')
-                            ##clusterNodeInfo <- findClusterNodes(model, node)
-                            clusterNodeInfo <- list(clusterVars = 'muTilde', clusterNodes = list( paste0('muTilde[', 1:50, ']')))
-                            dcrpNode <- node
+                            numCRPnodes <- numCRPnodes + 1
+                            clusterNodeInfo[numCRPnodes] <- findClusterNodes(model, node)
+                            dcrpNode[numCRPnodes] <- node
                             next
                         }
                         if(multivariateNodesAsScalars) {
@@ -269,25 +269,28 @@ print: A logical argument specifying whether to print the ordered list of defaul
                 }
                 ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
                 if(!is.null(clusterNodeInfo)) {
-                    for(clusterNodes in clusterNodeInfo$clusterNodes) {
-                        samplers <- getSamplers(clusterNodes)
-                        removeSamplers(clusterNodes)
-                        for(i in seq_along(samplers)) {
-                            node <- samplers[[i]]$target
-                            conjugate <- FALSE
-                            if(useConjugacy) { 
-                                conjugacyResult <- conjugacyResultsAll[[node]]
-                                if(!is.null(conjugacyResult)) {
-                                    addConjugateSampler(conjugacyResult = conjugacyResult,
-                                                        dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed,
-                                                        wrapped = TRUE, dcrpNode = dcrpNode, clusterID = i)
-                                    conjugate <- TRUE
+                    if(exists('paciorek')) browser()
+                    for(k in seq_along(clusterNodeInfo)) {
+                        for(clusterNodes in clusterNodeInfo[[k]]$clusterNodes) {
+                            samplers <- getSamplers(clusterNodes)
+                            removeSamplers(clusterNodes)
+                            for(i in seq_along(samplers)) {
+                                node <- samplers[[i]]$target
+                                conjugate <- FALSE
+                                if(useConjugacy) { 
+                                    conjugacyResult <- conjugacyResultsAll[[node]]
+                                    if(!is.null(conjugacyResult)) {
+                                        addConjugateSampler(conjugacyResult = conjugacyResult,
+                                                            dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed,
+                                                            wrapped = TRUE, dcrpNode = dcrpNode[[k]], clusterID = i)
+                                        conjugate <- TRUE
+                                    }
                                 }
+                                if(!conjugate) 
+                                    addSampler(target = node, type = 'CRP_cluster_wrapper',
+                                               control = list(wrapped_type = samplers[[i]]$name, dcrpNode = dcrpNode[[k]], clusterID = i, 
+                                                              control = samplers[[i]]$control))
                             }
-                            if(!conjugate) 
-                                addSampler(target = node, type = 'CRP_cluster_wrapper',
-                                           control = list(wrapped_type = samplers[[i]]$name, dcrpNode = dcrpNode, clusterID = i, 
-                                                          control = samplers[[i]]$control))
                         }
                     }
                 }
