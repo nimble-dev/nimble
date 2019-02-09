@@ -302,7 +302,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             if(print)   printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, print = FALSE) {
+        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, wrapped = FALSE, dcrpNode = NULL, clusterID = NULL, , print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
@@ -322,7 +322,11 @@ print: A logical argument specifying whether to print the ordered list of defaul
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
             nameToPrint <- gsub('^sampler_', '', conjSamplerName)
-            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
+            if(wrapped) {
+                addSampler(target = conjugacyResult$target, type = 'CRP_cluster_wrapper',
+                           control = list(wrapped_type = nameToPrint, dcrpNode = dcrpNode, clusterID = clusterID, 
+                                     control = conjugacyResult$control, samplerFunction = conjSamplerFunction), print = print)
+            } else addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
         addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE, ...) {
