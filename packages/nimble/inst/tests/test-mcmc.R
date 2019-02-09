@@ -1322,12 +1322,10 @@ test_that('dcar_proper sampling', {
         tau ~ dgamma(0.001, 0.001)
         gamma ~ dunif(-1, 1)
         x[1:N] ~ dcar_proper(mu[1:N], adj=adj[1:L], num=num[1:N], tau=tau, gamma=gamma)
-        for(i in 1:N) {
-            y[1] ~ dnorm(x[1], 1)
-            y[2] ~ dnorm(3*x[2] + 5, 10)
-            y[3] ~ dnorm(x[3]^2, 1)
-            y[4] ~ dnorm(x[4]^2, 10)
-        }
+        y[1] ~ dnorm(x[1], 1)
+        y[2] ~ dnorm(3*x[2] + 5, 10)
+        y[3] ~ dnorm(x[3]^2, 1)
+        y[4] ~ dnorm(x[4]^2, 10)
     })
 
     mu <- 1:4
