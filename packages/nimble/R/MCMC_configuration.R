@@ -226,7 +226,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dCRP')         {
                             addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy))
                             numCRPnodes <- numCRPnodes + 1
-                            clusterNodeInfo[numCRPnodes] <- findClusterNodes(model, node)
+                            clusterNodeInfo[[numCRPnodes]] <- findClusterNodes(model, node)
                             dcrpNode[numCRPnodes] <- node
                             next
                         }
