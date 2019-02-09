@@ -269,6 +269,34 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     ## default: 'RW' sampler
                     addSampler(target = node, type = 'RW');     next
                 }
+                                ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
+                if(!is.null(clusterNodeInfo)) {
+                    if(exists('paciorek')) browser()
+                    for(k in seq_along(clusterNodeInfo)) {
+                        for(clusterNodes in clusterNodeInfo[[k]]$clusterNodes) {
+                            samplers <- getSamplers(clusterNodes)
+                            removeSamplers(clusterNodes)
+                            for(i in seq_along(samplers)) {
+                                node <- samplers[[i]]$target
+                                conjugate <- FALSE
+                                if(useConjugacy) { 
+                                    conjugacyResult <- conjugacyResultsAll[[node]]
+                                    if(!is.null(conjugacyResult)) {
+                                        addConjugateSampler(conjugacyResult = conjugacyResult,
+                                                            dynamicallyIndexed = model$modelDef$varInfo[[model$getVarNames(nodes=node)]]$anyDynamicallyIndexed,
+                                                            wrapped = TRUE, dcrpNode = dcrpNode[[k]], clusterID = i)
+                                        conjugate <- TRUE
+                                    }
+                                }
+                                if(!conjugate) 
+                                    addSampler(target = node, type = 'CRP_cluster_wrapper',
+                                               control = list(wrapped_type = samplers[[i]]$name, dcrpNode = dcrpNode[[k]], clusterID = i, 
+                                                              control = samplers[[i]]$control))
+                            }
+                        }
+                    }
+                }
+
             }
             
             if(print)   printSamplers()
