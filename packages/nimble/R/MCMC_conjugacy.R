@@ -62,10 +62,10 @@ conjugacyRelationshipsInputList <- list(
 
     ## halfflat - third possible conjugacy - we use this because it corresponds to the
     ## Gelman (2006) recommended uniform on sd scale prior for variance components
-    ## and current NIMBLE conjugacy system only allows one possible form of conjugacy
-    ## note that sd ~ U(0,Inf) equivalent to var ~ IG(-1/2, 0)
-    ## also note that if conj system could detect 'squared' dependency, then
-    ## we could allow dnorm with param = 'var'                                     
+    ## and current NIMBLE conjugacy system only allows one possible form of conjugacy.
+    ## Note that sd ~ U(0,Inf) equivalent to var ~ IG(-1/2, 0).
+    ## Also note that if conj system could detect 'squared' dependency, then
+    ## we could allow dnorm with param = 'var'.                                     
     list(prior = 'dhalfflat',
          link = 'multiplicative',
          dependents = list(
@@ -84,8 +84,8 @@ conjugacyRelationshipsInputList <- list(
              dgamma    = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
              dinvgamma = list(param = 'scale',  contribution_shape = 'shape', contribution_rate = 'coeff   / value'                 ),
              dexp      = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
-             dweib     = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           )),
-             ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
+             dweib     = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           ),
+             ddexp     = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )),
              ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
          posterior = 'dgamma(shape = prior_shape + contribution_shape,
                              scale = 1 / (prior_rate + contribution_rate))'),
@@ -98,8 +98,8 @@ conjugacyRelationshipsInputList <- list(
              dlnorm    = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
              dgamma    = list(param = 'scale',  contribution_shape = 'shape', contribution_scale = 'value / coeff'                     ),
              dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'               ),
-             dexp      = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'value / coeff'                     )),
-             ## add ddexp
+             dexp      = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'value / coeff'                     ),
+             ddexp     = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'abs(value-location) / coeff'       )),
          posterior = 'dinvgamma(shape = prior_shape + contribution_shape,
                              rate = 1 / (prior_scale + contribution_scale))'),
     

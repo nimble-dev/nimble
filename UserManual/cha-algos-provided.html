@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.6-12</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.6.13</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -322,7 +322,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
 <li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
 <li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
-<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.9</b> Reducing memory usage</a></li>
+<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
+<li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
 </ul>
 
@@ -423,8 +424,11 @@ LWTimeModel &lt;-<span class="st"> </span>rTimeModel$<span class="kw">newModel</
 <span class="co"># Build Liu-West filter, also </span>
 <span class="co"># specifying which top level parameters to estimate</span>
 rLWF &lt;-<span class="st"> </span><span class="kw">buildLiuWestFilter</span>(LWTimeModel, <span class="st">&quot;x&quot;</span>, <span class="dt">params =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>),
-                           <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">saveAll =</span> <span class="ot">FALSE</span>))     
-<span class="co"># Compile filter   </span>
+                           <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">saveAll =</span> <span class="ot">FALSE</span>))     </code></pre></div>
+<pre><code>## Warning in buildLiuWestFilter(LWTimeModel, &quot;x&quot;, params = c(&quot;a&quot;, &quot;b&quot;,
+## &quot;c&quot;), : The Liu-West filter ofen performs poorly and is provided primarily
+## for didactic purposes.</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Compile filter   </span>
 cLWF &lt;-<span class="st"> </span><span class="kw">compileNimble</span>(rLWF,<span class="dt">project =</span> LWTimeModel)
 <span class="co"># Run Liu-West filter</span>
 cLWF$<span class="kw">run</span>(parNum)</code></pre></div>

@@ -14,6 +14,8 @@ Make sure src/Makevars.win is present.
 run 'make man' (formerly ./prep_pkg.R)
 # this creates man pages and updates NAMESPACE
 
+git add any new .Rd files
+
 ## note that an error: "section title spans multiple lines" will occur in roxygenization if any "@section" line does not have a ":" at the end of the line
 
 R CMD build nimble
@@ -51,15 +53,16 @@ test cross-machine on Macs and on Windows
 
 can test using rhub (from within packages/nimble):
 
-Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> rhub.out
+Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> /tmp/rhub.out
 
 can test on Windows using win-builder
-
-create tarball and put tarball and manual in new version on zenodo; once this is published then R CMD check shouldn't complain about not finding DOI
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
 Once CRAN package accepted:
+
+create new version with tarball and manual in Zenodo. Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
+However we might revisit this as that means that users will cite the version independent DOI at the same time they refer to a specific NIMBLE version. Probably ok and means we don't have to mint the DOI just as we are about to submit to CRAN and then shunt aside the new Zenodo version if there is a CRAN problem.
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
@@ -101,6 +104,7 @@ add info on new release to release notes page
 update version numbering on license and citation page
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers)
+(best to point with a hyperlink to the info on versions/news on webpage not to NEWS)
 
 for link to NEWS have:
 
@@ -128,9 +132,9 @@ update version number in DESC in devel
 
 ### updating Github README
 
-Update version number in README.md and create a new release on Github (see 'releases' tab) based on the new version tag
-This will autogenerate a zenodo page and DOI
-update the DOI tag at top of README and the DOI url in the citations in README
+Update version number in README.md.
+
+NOT DONE ANYMORE: create a new release on Github (see 'releases' tab) based on the new version tag, this  autogenerates a zenodo page and DOI; update the DOI tag at top of README and the DOI url in the citations in README
 
 Unfortunately in v0.6-10 zenodo integration was somehow turned off and in the process of trying to add it manually, Chris got an entirely different zenodo instnace.
 

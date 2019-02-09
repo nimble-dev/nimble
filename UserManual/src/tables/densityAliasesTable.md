@@ -4,6 +4,7 @@ Table: (\#tab:densityAliases) Distributions with alternative names (aliases)
   ------------------- ---------------- -----------
   Binomial            dbin             dbinom
   Chi-square          dchisq           dchisqr
+  Double exponential  ddexp            dlaplace
   Dirichlet           ddirch           ddirich
   Multinomial         dmulti           dmultinom
   Negative binomial   dnegbin          dnbinom

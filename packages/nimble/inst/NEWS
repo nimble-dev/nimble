@@ -1,10 +1,77 @@
+                            CHANGES IN VERSION 0.7.0 (January 2019)
+
 USER LEVEL CHANGES
+
+-- Greatly reduced time for setting up model initialization in buildMCMC, fixing some computational slowdowns introduced in version 0.6.13's fix of a shortcoming in model initialization.
+
+DEVELOPER LEVEL CHANGES
+
+-- Fixed some uses of PROTECT in C++ code, flagged by R's rchk.
+
+                           CHANGES IN VERSION 0.6.13 (January 2019)
+
+USER LEVEL CHANGES
+
+-- Various changes to greatly improve efficiency of sampling for Bayesian nonparametric (BNP) mixture models using the dCRP distribution.
+
+-- Changes to samplers RW, RW_block and categorical that could yield more efficient execution in cases where prior or latent-state distributions have bounded domains (i.e., boundaries that define valid values).
+
+-- Added double exponential (Laplace) distribution.
 
 -- New "RW_wishart" MCMC sampler, for sampling non-conjugate Wishart and inverse-Wishart nodes.
 
--- More sophisticated model initialization routine for correctly initializing complex state space models.
+-- Added normal-inverse gamma conjugacy for BNP mixture models using the dCRP distribution.
+
+-- getSamplesDPmeasure now works with multivariate cluster parameters and multiple cluster parameters.
+
+-- getSamplesDPmeasure now takes an optional argument for the error level that determines the truncation level of the random measure and now returns a list containing the samples and truncation level.
 
 -- addSampler method of MCMC configuration objects now accepts ... (dot dot dot) arguments, and uses them as control list elements for the sampling algorithm.
+
+-- 5-dimensional arrays now allowed in models.
+
+-- Added warning when a node is defined multiple times in model code.
+
+-- Revamped handling of showCompilerOutput option in compileNimble so that it is more clear to users to look at the output.
+
+-- Updated documentation of WAIC to make more clear that calculation depends on what is monitored.
+
+-- Added warning message that Liu-West filter often doesn't work well.
+
+-- We now provide an HTML version of the manual at r-nimble.org.
+
+-- Allow negative weights in dcar_normal and negative values in C argument to dcar_proper.
+
+BUG FIXES
+
+-- Fixed bug that produced incorrect WAIC calculations when using multiple chains for models with at least one non-scalar monitored variable. Also improved robustness of WAIC calculation.
+
+-- Fixed bugs in conjugate samplers for CRP distribution: CRP_conjugate_dgamma_dnorm, CRP_conjugate_dbeta_dbin, CRP_conjugate_dbeta_dnegbin, CRP_conjugate_dgamma_dinvgamma, CRP_conjugate_ddirch_dmulti.
+
+-- Fixed bug in categorical sampler that causes value of 1 to be sampled every time when all log probabilities underflow upon exponentiation.
+
+-- Improved handling and error-trapping of less common model structures (in particular less common styles of indexing) for models using the dCRP distribution.
+
+-- Fixed error in computing truncation level of G in getSamplesDPmeasure function
+
+-- Fixed bug that was obviating comparison with gold files in testing system.
+
+-- More sophisticated model initialization routine for correctly initializing complex state-space models.
+
+-- Fixed a problem with dimension handling in matrix2VecNimArr.
+
+-- Fixed issue with checking for valid dynamic index values.
+
+DEVELOPER LEVEL CHANGES
+
+-- Various additional tests for Bayesian nonparametric mixture models.
+
+-- Improved MCMC efficiency in RW and RW_block samplers by first checking prior and rejecting without further computation if log prior is -Inf or NA/NaN.
+
+-- Modify use of exists() to avoid looking outside local context in some places.
+
+-- Improved various error messages and error trapping cases.
+
 
                             CHANGES IN VERSION 0.6-12 (July 2018)
 
@@ -29,6 +96,7 @@ DEVELOPER LEVEL CHANGES
 -- Shifted to bookdown/Rmarkdown format for user manual.
 
 -- Updated configure.ac to use CXX11 not CXX1X and to avoid calling AC_PROG_CXX before CXX and related variables set based on R configuration, per CRAN request.
+
 
                             CHANGES IN VERSION 0.6-11 (June 2018)
 

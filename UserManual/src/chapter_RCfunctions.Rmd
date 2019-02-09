@@ -204,6 +204,8 @@ Supported distributions, listed by their 'd' function, include:
   - `dpois(x, lambda, log)`
   - `dbeta(x, shape1, shape2, log)`
   - `dchisq(x, df, log)`
+  - `ddexp(x, location, rate, log)`
+  - `ddexp(x, location, scale, log)`  
   - `dexp(x, rate, log)`
   - `dexp_nimble(x, rate, log)`
   - `dexp_nimble(x, scale, log)`

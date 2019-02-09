@@ -57,7 +57,7 @@ The default value is an empty character vector, i.e. no values will be recorded.
 
 \item{warnNoSamplerAssigned}{A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.}
 
-\item{...}{Additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}}
+\item{...}{Additional named control list elements for default samplers, or additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}}
 }
 \description{
 Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \code{\link{buildMCMC}}. The assignment of sampling algorithms may be controlled using the \code{rules} argument, if provided.

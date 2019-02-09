@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.6-12</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.6.13</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -322,7 +322,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li class="chapter" data-level="15.6" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#copying-nimblefunctions-and-nimble-models"><i class="fa fa-check"></i><b>15.6</b> Copying nimbleFunctions (and NIMBLE models)</a></li>
 <li class="chapter" data-level="15.7" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#sec:debugging"><i class="fa fa-check"></i><b>15.7</b> Debugging nimbleFunctions</a></li>
 <li class="chapter" data-level="15.8" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#timing-nimblefunctions-with-run.time"><i class="fa fa-check"></i><b>15.8</b> Timing nimbleFunctions with <em>run.time</em></a></li>
-<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.9</b> Reducing memory usage</a></li>
+<li class="chapter" data-level="15.9" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#clearing-and-unloading-compiled-objects"><i class="fa fa-check"></i><b>15.9</b> Clearing and unloading compiled objects</a></li>
+<li class="chapter" data-level="15.10" data-path="cha-progr-with-models.html"><a href="cha-progr-with-models.html#reducing-memory-usage"><i class="fa fa-check"></i><b>15.10</b> Reducing memory usage</a></li>
 </ul></li>
 </ul>
 
@@ -464,7 +465,8 @@ myModel$<span class="kw">calculate</span>(nodes[<span class="dv">1</span>:<span 
 myModel$<span class="kw">calculate</span>(nodes[<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">3</span>)])
 myModel$<span class="kw">calculate</span>(nodes[<span class="dv">2</span>:i])
 myModel$<span class="kw">calculate</span>(nodes[ <span class="kw">values</span>(model, nodes) +<span class="st"> </span><span class="fl">0.1</span> &lt;<span class="st"> </span>x ])</code></pre></div>
-<p>Note that one cannot create new vectors of nodes in run code. They can only be indexed within a call to <code>calculate</code>, <code>calculateDiff</code>, <code>simulate</code> or <code>getLogProb</code>.</p>
+<p>Note that in the last line of code, one must have that the length of <code>nodes</code> is equal to that of <code>values(model, nodes)</code>, which means that all the nodes in <code>nodes</code> must be scalar nodes.</p>
+<p>Also note that one cannot create new vectors of nodes in run code. They can only be indexed within a call to <code>calculate</code>, <code>calculateDiff</code>, <code>simulate</code> or <code>getLogProb</code>.</p>
 </div>
 <div id="getting-and-setting-variable-and-node-values" class="section level3">
 <h3><span class="header-section-number">15.4.2</span> Getting and setting variable and node values</h3>
@@ -779,7 +781,7 @@ CusePreviousDemo1$<span class="kw">run</span>(<span class="dv">1</span>:<span cl
 <div id="sec:virt-nimbl-nimbl" class="section level3">
 <h3><span class="header-section-number">15.4.8</span> Virtual nimbleFunctions and nimbleFunctionLists</h3>
 <p>Often it is useful for one nimbleFunction to have a list of other nimbleFunctions, all of whose methods have the same arguments and return types. For example, NIMBLE’s MCMC engine contains a list of samplers that are each nimbleFunctions.</p>
-<p>To make such a list, NIMBLE provides a way to declare the arguments and return types of methods: virtual nimbleFunctions created by <code>nimbleFunctionVirtual</code>. Other nimbleFunctions can inherit from virtual nimbleFunctions, which in R is called ‘containing’ them. Readers familiar with object oriented programming will recognize this as a simple class inheritance system. In Version 0.6.12 it is limited to simple, single-level inheritance.</p>
+<p>To make such a list, NIMBLE provides a way to declare the arguments and return types of methods: virtual nimbleFunctions created by <code>nimbleFunctionVirtual</code>. Other nimbleFunctions can inherit from virtual nimbleFunctions, which in R is called ‘containing’ them. Readers familiar with object oriented programming will recognize this as a simple class inheritance system. In Version 0.7.0 it is limited to simple, single-level inheritance.</p>
 <p>Here is how it works:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">baseClass &lt;-<span class="st"> </span><span class="kw">nimbleFunctionVirtual</span>(
     <span class="dt">run =</span> function(<span class="dt">x =</span> <span class="kw">double</span>(<span class="dv">1</span>)) {<span class="kw">returnType</span>(<span class="kw">double</span>())},
@@ -1005,10 +1007,14 @@ MCMC algorithm, is <code>my_RW</code>. Thus, this sampler can be added to an exi
     }))
 <span class="kw">print</span>(<span class="kw">myMicroBenchmark</span>(<span class="dv">100000</span>))</code></pre></div>
 </div>
+<div id="clearing-and-unloading-compiled-objects" class="section level2">
+<h2><span class="header-section-number">15.9</span> Clearing and unloading compiled objects</h2>
+<p>Sometimes it is useful to clear all the compiled objects from a project and unload the shared library produced by your C++ compiler. To do so, you can use <code>nimble:::clearCompiled(obj)</code> where <code>obj</code> is a compiled object such as a compiled model or nimbleFunction (e.g., a compiled MCMC algorithm). This will clear <em>all</em> compiled objects associated with your NIMBLE project. For example, if <code>cModel</code> is a compiled model, <code>nimble:::clearCompiled(cModel)</code> will clear both the model and all associated nimbleFunctions such as compiled MCMCs that use that model. Be careful, use of <code>nimble:::clearCompiled</code> can be dangerous. There is some risk that if you have copies of the R objects that interfaced to compiled C++ objects that have been removed, and you attempt to use those R objects after clearing their compiled counterparts, you will crash R. We have tried to minimize that risk, but we can’t guarantee safe behavior.</p>
+</div>
 <div id="reducing-memory-usage" class="section level2">
-<h2><span class="header-section-number">15.9</span> Reducing memory usage</h2>
+<h2><span class="header-section-number">15.10</span> Reducing memory usage</h2>
 <p>NIMBLE can create a lot of objects in its processing, and some of them use R features such as reference classes that are heavy in memory usage. We have noticed that building large models can use lots of memory. To help alleviate this, we provide two options, which can be controlled via <code>nimbleOptions</code>.</p>
-<p>As noted above, the option <code>buildInterfacesForCompiledNestedNimbleFunctions</code> defaults to FALSE, which means NIMBLE will not build full interfaces to compiled nimbleFunctions that ony appear within other nimbleFunctions. If you want access to all such nimbleFunctions, use the option <code>buildInterfacesForCompiledNestedNimbleFunctions = TRUE</code>.</p>
+<p>As noted above, the option <code>buildInterfacesForCompiledNestedNimbleFunctions</code> defaults to FALSE, which means NIMBLE will not build full interfaces to compiled nimbleFunctions that ony appear within other nimbleFunctions. If you want access to all such nimbleFunctions, use the option <code>buildInterfacesForCompiledNestedNimbleFunctions = TRUE</code>. This will use more memory but can be useful for debugging.</p>
 <p>The option <code>clearNimbleFunctionsAfterCompiling</code> is more drastic, and it is experimental, so ‘buyer beware’. This will clear much of the contents of an uncompiled nimbleFunction object after it has been compiled in an effort to free some memory. We expect to be able to keep making NIMBLE more efficient – faster execution and lower memory use – in the future. <!--- % ### rankSample 
 %% \label{sec:ranksample} --></p>
 
@@ -1033,6 +1039,9 @@ MCMC algorithm, is <code>my_RW</code>. Thus, this sampler can be added to an exi
 </div>
 <div>
 <p>———. 1974. “Prior Distribution on the Spaces of Probability Measures.” <em>Annals of Statistics</em> 2: 615–29.</p>
+</div>
+<div>
+<p>Gelman, A., J. Hwang, and A. Vehtari. 2014. “Understanding Predictive Information Criteria for Bayesian Model.” <em>Statistics and Computing</em> 24 (6): 997–1016.</p>
 </div>
 <div>
 <p>George, E.I., U.E. Makov, and A.F.M. Smith. 1993. “Conjugate Likelihood Distributions.” <em>Scandinavian Journal of Statistics</em> 20 (2): 147–56.</p>

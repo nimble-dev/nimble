@@ -78,8 +78,13 @@ distributionsInputList <- list(
                    pqAvail  = TRUE,
                    alias    = 'dchisqr'),
 
-    ## ddexp   = list('ddexp(location, scale, rate)'),   ## 'ddexp' function not implemented yet?  -DT
-    ## provide 'laplace' as alias
+    ddexp   = list(BUGSdist = 'ddexp(location, rate, scale, var)',
+                   Rdist    = c('ddexp(location, scale = 1/rate)',
+                                'ddexp(location, scale = sqrt(var/2))'),
+                   altParams= c('rate = 1/scale',
+                                'var = 2*scale^2'),
+                   pqAvail  = TRUE,
+                   alias    = 'dlaplace'),  
     
     dexp    = list(BUGSdist = 'dexp(rate, scale)',
                    Rdist    = 'dexp_nimble(rate = 1/scale)',

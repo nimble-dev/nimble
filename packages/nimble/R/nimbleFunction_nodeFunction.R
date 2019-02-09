@@ -394,7 +394,7 @@ ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {
         }
     } else {
         # this deals with user-provided distributions
-        if(exists('distributions', nimbleUserNamespace)) {
+        if(exists('distributions', nimbleUserNamespace, inherits = FALSE)) {
             for(distName in getAllDistributionsInfo('namesVector', userOnly = TRUE))
                 defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistributionInfo(distName)$types)
         } else stop("ndf_createVirtualNodeFunctionDefinitionsList: no 'distributions' list in nimbleUserNamespace.")

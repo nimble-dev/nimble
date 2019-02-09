@@ -223,6 +223,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dinvwish')     { addSampler(target = node, type = 'RW_wishart');         next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
+<<<<<<< HEAD
                         if(nodeDist == 'dCRP')         {
                             addSampler(target = node, type = 'CRP')
                             numCRPnodes <- numCRPnodes + 1
@@ -230,6 +231,9 @@ print: A logical argument specifying whether to print the ordered list of defaul
                             dcrpNode[numCRPnodes] <- node
                             next
                         }
+=======
+                        if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy));                next }
+>>>>>>> devel
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
@@ -753,15 +757,21 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
 
 checkCRPconjugacy <- function(model, target) {
     ## Checks if can use conjugacy in drawing new components for dCRP node updating.
+<<<<<<< HEAD
     ## Should find conjugacy if there are no deterministic nodes between the "observations" and
     ## the cluster parameters or one intermediate node.
     ## For now, no conjugacy when multiple parameters in the observation distribution are
     ## being clustered.
+=======
+    ## Should detect various univariate cases and normal-invgamma case.
+    ## We don't yet handle conjugacies with non-identity relationships.
+>>>>>>> devel
     
     conjugate <- FALSE 
     
     targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
 
+<<<<<<< HEAD
     clusterVarInfo <- findClusterVars(model, targetElementExample, returnIndexInfo = TRUE)
  
     ## New checking for conjugacy using tilde variables: check conjugacy for one tilde node and
@@ -771,11 +781,28 @@ checkCRPconjugacy <- function(model, target) {
         ## Avoid non-nodes from truncated clustering,
         ## e.g., avoid 'thetaTilde[3:10]' if only have 2 thetaTilde nodes but 10 obs.
         clusterNodes <- clusterNodes[clusterNodes %in% model$getNodeNames(stochOnly = TRUE, includeData = FALSE)]
+=======
+    clusterVarInfo <- findClusterNodes(model, target)
+ 
+    ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all
+    ## cluster nodes are IID and dependent nodes are from same declaration so conjugacy check for one should hold for all.
+    ## Note that cases where intermediate deterministic nodes are not from same declaration should be caught in sampler_CRP
+    ## because we don't allow cluster ID to appear in multiple declarations, so can't have mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]])
+    if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
+        clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
+>>>>>>> devel
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
         if(length(conjugacy)) {
             conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) 
             conjugate <- TRUE
 
+<<<<<<< HEAD
+=======
+            ## Check that dependent nodes ('observations') from same declaration.
+            ## This should ensure they have same distribution and parameters are being
+            ## clustered in same way, but also allows other parameters to vary, e.g.,
+            ## y[i] ~ dnorm(mu[xi[i]], s2[i])
+>>>>>>> devel
             depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
             if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
                 conjugate <- FALSE
@@ -785,15 +812,22 @@ checkCRPconjugacy <- function(model, target) {
             names(valueExprs) <- NULL
             if(length(unique(valueExprs)) != 1)
                 conjugate <- FALSE
+<<<<<<< HEAD
 
             ## We should be able to handle this once Chris works through identifying clusterNodes based on values of xi
             if(any(clusterVarInfo$targetInFunction))
                 conjugate <- FALSE
+=======
+>>>>>>> devel
         }
     }
     ## check for dnorm_dinvgamma conjugacy
     if(length(clusterVarInfo$clusterVars) == 2 &&
+<<<<<<< HEAD
        checkNormalInvGammaConjugacy(model, clusterVarInfo$clusterVars)) {
+=======
+       checkNormalInvGammaConjugacy(model, clusterVarInfo)) {
+>>>>>>> devel
         conjugate <- TRUE
         conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
     }

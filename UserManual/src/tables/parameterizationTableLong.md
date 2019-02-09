@@ -13,6 +13,9 @@ relationship to the *canonical* parameterization used in NIMBLE.
   `dbin(prob, size)`        canonical
   `dcat(prob)`              canonical
   `dchisq(df)`              canonical
+  `ddexp(location, scale)`  canonical
+  `ddexp(location, rate)`   `ddexp(location, scale = 1 / rate)`
+  `ddexp(location, var)`    `ddexp(location, scale = sqrt(var / 2))`
   `ddirch(alpha)`           canonical
   `dexp(rate)`              canonical
   `dexp(scale)`             `dexp(rate = 1/scale)`

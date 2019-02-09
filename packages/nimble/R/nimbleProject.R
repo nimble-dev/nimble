@@ -1129,7 +1129,7 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     
 
     ## Units should be either Rmodel, nimbleFunction, or RCfunction (now coming from nimbleFunction with no setup)
-    if(nimbleOptions('verbose') && !showCompilerOutput) message("compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.")
+    if(nimbleOptions('verbose') && !showCompilerOutput) message("compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compilation details.")
     if(nimbleOptions('verbose') && showCompilerOutput) message("compiling... this may take a minute. On some systems there may be some compiler warnings that can be safely ignored.")
 
     ## Compile models first

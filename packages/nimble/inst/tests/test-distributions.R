@@ -472,6 +472,86 @@ test_that("dflat and dhalfflat usage", {
     expect_equal(mean(csmp[ , 'sigma']^2), var(m$y), tol = 0.05, info = "posterior mean for sigma not correct")
 })
 
+<<<<<<< HEAD
+=======
+test_that("ddexp usage", {
+    n <- 100000
+    mean <- 1
+    scale <- 3
+    p_exp <- 0.8
+    value <- mean + qexp(p_exp, 1/scale)
+    symm_value <- 2*mean - value
+    p <- 1-(1-p_exp)/2
+    dens <- 0.5 * dexp(value-mean, 1/scale) 
+    expect_identical(ddexp(value, mean, scale), dens, "basic use of ddexp")
+    expect_equal(ddexp(value, mean, scale, log = TRUE), log(dens), info = "basic use of ddexp, log scale")
+    expect_identical(ddexp(symm_value, mean, scale), dens, "basic use of ddexp, left half")
+    expect_equal(ddexp(symm_value, mean, scale, log = TRUE), log(dens), info = "basic use of ddexp, left half, log scale")
+
+    set.seed(1)
+    smp <- rdexp(n, mean, scale)
+    expect_equal(mean(smp), mean, tolerance = 0.02, info = "mean of random sample")
+    expect_equal(mean(smp > value), 1-p, tolerance = 0.01, info = "upper quantile of random sample")
+    expect_equal(mean(smp < symm_value), 1-p, tolerance = 0.01, info = "lower quantile of random sample")
+
+    expect_identical(pdexp(value, mean, scale), p, "basic use of pdexp")
+    expect_identical(pdexp(value, mean, scale, log.p = TRUE), log(p), "basic use of pdexp, log scale")
+    expect_equal(pdexp(value, mean, scale, lower.tail = FALSE), 1-p, tolerance = 0.001, info = "basic use of pdexp, upper tail")
+    expect_identical(pdexp(value, mean, scale, lower.tail = FALSE, log.p = TRUE), log(1-p), "basic use of pdexp, upper tail, log scale")
+
+    expect_equal(pdexp(symm_value, mean, scale), 1-p, tolerance = 0.001, info = "basic use of pdexp, left half")
+    expect_equal(pdexp(symm_value, mean, scale, log.p = TRUE), log(1-p), tolerance = 0.001, info = "basic use of pdexp, left half, log scale")
+    expect_identical(pdexp(symm_value, mean, scale, lower.tail = FALSE), p, "basic use of pdexp, left half, upper tail")
+    expect_identical(pdexp(symm_value, mean, scale, lower.tail = FALSE, log.p = TRUE), log(p),
+                 "basic use of pdexp, left half, upper tail, log scale")
+
+    expect_identical(qdexp(p, mean, scale), value, "basic use of qdexp")
+    expect_identical(qdexp(log(p), mean, scale, log.p = TRUE), value, "basic use of qdexp, log scale")
+    expect_identical(qdexp(p, mean, scale, lower.tail = FALSE), symm_value, "basic use of qdexp, upper tail")
+    expect_identical(qdexp(log(p), mean, scale, lower.tail = FALSE, log.p = TRUE), symm_value, "basic use of qdexp, upper tail, log scale")
+    
+    expect_identical(qdexp(1-p, mean, scale), symm_value, "basic use of qdexp, left half")
+    expect_identical(qdexp(log(1-p), mean, scale, log.p = TRUE), symm_value, "basic use of qdexp, left half, log scale")
+    expect_identical(qdexp(1-p, mean, scale, lower.tail = FALSE), value, "basic use of qdexp, left half, upper tail")
+    expect_identical(qdexp(log(1-p), mean, scale, lower.tail = FALSE, log.p = TRUE), value, "basic use of qdexp, left half, upper tail, log scale")
+
+    a <- nimbleFunction(
+        run = function(x = double(0), p = double(0), mu = double(0), scale = double(0)) {
+            returnType(double(1))
+            dens <- ddexp(x, mu, scale, log = FALSE)
+            smp <- rdexp(10, mu, scale)
+            prob <- pdexp(x, mu, scale)
+            quantile <- qdexp(p, mu, scale)
+            return(c(dens, smp, prob, quantile))
+        })
+    ca <- compileNimble(a)
+    set.seed(1)
+    output <- a(value, p, mean, scale)
+    set.seed(1)
+    coutput <- ca(value, p, mean, scale)
+    expect_identical(output, coutput, "compiled and uncompiled use of ddexp don't match")
+    expect_identical(output, c(dens, smp[1:10], p, value), "use of ddexp in nimbleFunction does not match correct values") 
+    
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(mu, 1)
+        mu ~ ddexp(mu0, scale = sigma)
+    })
+    
+    n <- 10
+    inits <- list(mu0 = mean, sigma = scale)
+    m <- nimbleModel(code, constants = list(n = n), data = list(y = rnorm(n)), inits = inits)
+    cm <- compileNimble(m)
+    m$mu <- cm$mu <- value
+    expect_equal(m$calculate('mu'), log(dens), info = "incorrect R calculate for ddexp")
+    expect_identical(m$calculate('mu'), cm$calculate('mu'), "incorrect compiled calculate for ddexp")
+    set.seed(1)
+    cm$simulate('mu')
+    expect_identical(smp[1], cm$mu, "incorrect compiled simulate for ddexp")
+})
+    
+   
+>>>>>>> devel
 sink(NULL)
 
 if(!generatingGoldFile) {

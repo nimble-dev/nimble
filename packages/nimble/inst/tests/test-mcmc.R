@@ -95,7 +95,8 @@ test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
 # incorrectly in resampleData - this affected values further downstream
 
 test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
-              data = 'ice-data.R', numItsC = 1000, resampleData = TRUE)
+          data = 'ice-data.R', numItsC = 1000, resampleData = TRUE,
+          knownFailures = list('coverage' = 'KNOWN ISSUE: coverage is low'))
 # resampleData gives very large magnitude betas because beta[1],beta[2] are not
 # actually topNodes because of (weak) dependence on tau, and
 # are simulated from their priors to have large magnitude values
@@ -105,12 +106,12 @@ test_that('ice example reworked', {
     system.in.dir(paste("sed 's/tau\\*1.0E-6/1.0E-6/g' icear.bug > ", file.path(tempdir(), "icear.bug")), dir = system.file('classic-bugs','vol2','ice', package = 'nimble'))
     test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
                                         # looks fine, but alpha and beta values shifted a bit (systematically) relative to JAGS results - on further inspection this is because mixing for this model is poor in both NIMBLE and JAGS - with longer runs they seem to agree (as best as one can tell given the mixing without doing a super long run)
-    
-    test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
-              data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
+})
+
+test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
+          data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
                                         # getting warning; deterministic model node is NA or NaN in model initialization
                                         # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
-    })
 
 test_that('leuk example setup', {
     writeLines(c("var","Y[N,T],","dN[N,T];"), con = file.path(tempdir(), "leuk.bug")) ## echo doesn't seem to work on Windows
@@ -363,9 +364,9 @@ test_that('various conjugacies setup', {
         jNorm[1] <- 0
         kLogNorm[1] <- 0
     })
-    
-    sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),
-                      c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
+
+    sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.371834934033851, 2.036442813764752, 2.247416118159410, 2.537131924778210, 2.382184991769738, 2.653737836857812, 2.934255734970981, 3.007873553270551),
+                      c = c(0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.003846483017887228, 0.006269117826484087, 0.009183580181658716, 0.009183580181658716, 0.006361841408434201, 0.006361841408434201))
     
     test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), avoidNestedTest = TRUE)
     ## with fixing of jNorm[1] and kLogNorm[1] we no longer have: knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
@@ -1321,12 +1322,10 @@ test_that('dcar_proper sampling', {
         tau ~ dgamma(0.001, 0.001)
         gamma ~ dunif(-1, 1)
         x[1:N] ~ dcar_proper(mu[1:N], adj=adj[1:L], num=num[1:N], tau=tau, gamma=gamma)
-        for(i in 1:N) {
-            y[1] ~ dnorm(x[1], 1)
-            y[2] ~ dnorm(3*x[2] + 5, 10)
-            y[3] ~ dnorm(x[3]^2, 1)
-            y[4] ~ dnorm(x[4]^2, 10)
-        }
+        y[1] ~ dnorm(x[1], 1)
+        y[2] ~ dnorm(3*x[2] + 5, 10)
+        y[3] ~ dnorm(x[3]^2, 1)
+        y[4] ~ dnorm(x[4]^2, 10)
     })
 
     mu <- 1:4
