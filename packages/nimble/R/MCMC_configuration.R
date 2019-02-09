@@ -197,6 +197,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                 isEndNode <- model$isEndNode(nodes)
                 if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
                 
+                clusterNodeInfo <- NULL; dcrpNode <- NULL; numCRPnodes <- 0
                 for(i in seq_along(nodes)) {
                     node <- nodes[i]
                     discrete <- model$isDiscrete(node)
@@ -222,7 +223,13 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         if(nodeDist == 'dinvwish')     { addSampler(target = node, type = 'RW_wishart');         next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
-                        if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy));                next }
+                        if(nodeDist == 'dCRP')         {
+                            addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy))
+                            numCRPnodes <- numCRPnodes + 1
+                            clusterNodeInfo[numCRPnodes] <- findClusterNodes(model, node)
+                            dcrpNode[numCRPnodes] <- node
+                            next
+                        }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')

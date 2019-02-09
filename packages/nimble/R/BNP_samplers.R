@@ -1558,3 +1558,20 @@ checkNormalInvGammaConjugacy <- function(model, clusterVarInfo) {
     }
     return(conjugate)
 }
+
+sampler_CRP_cluster_wrapper <- nimbleFunction(
+    name = "CRP_cluster_wrapper", 
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        if(!exists('samplerFunction', control))
+            control$samplerFunction <- eval(as.name(paste0("sampler_", control$wrapped_type)))
+        regular_sampler <- eval(control$samplerFunction)(model, mvSaved, target, control$control)
+        dcrpNode <- control$dcrpNode
+        clusterID <- control$clusterID
+    },
+    run = function() {
+        if(any(model[[dcrpNode]] == clusterID)) regular_sampler$run()
+    },
+    methods = list(
+        reset = function() {regular_sampler$reset()}
+    ))
