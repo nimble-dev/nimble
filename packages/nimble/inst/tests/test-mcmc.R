@@ -1447,11 +1447,51 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
                                    info = "conjugacy with inprod not detected")
 
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + sum(beta[1:p]*X[i, 1:p]), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                                   info = "conjugacy with inprod not detected")
+
+
     ## compare to conjugate sampler using summed contributions
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)
     smp1 <- runMCMC(cmcmc, 50, setSeed = 1)
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + sum(beta[1:p]*X[i, 1:p]), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                                   info = "conjugacy with sum not detected")
+
+
+    ## compare to conjugate sampler using summed contributions
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    smp2 <- runMCMC(cmcmc, 50, setSeed = 1)
 
     code <- nimbleCode({
         for(i in 1:n) 
@@ -1465,8 +1505,9 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)
-    smp2 <- runMCMC(cmcmc, 50, setSeed = 1)
-    expect_equal(smp1, smp2, info = 'conjugate sampler with inprod does not match summation')
+    smp3 <- runMCMC(cmcmc, 50, setSeed = 1)
+    expect_equal(smp1, smp3, info = 'conjugate sampler with inprod does not match summation')
+    expect_equal(smp2, smp3, info = 'conjugate sampler with sum does not match summation')
     
     code <- nimbleCode({
         for(i in 1:n) 
@@ -1483,6 +1524,32 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
 
     code <- nimbleCode({
         for(i in 1:n) 
+            y[i] ~ dnorm(b0 + exp(inprod(beta[1:p], X[i, 1:p])), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'RW',
+                                   info = "conjugacy with inprod improperly detected")
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + sum(exp(beta[1:p])*X[i, 1:p]), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'RW',
+                                   info = "conjugacy with sum improperly detected")
+
+    code <- nimbleCode({
+        for(i in 1:n) 
             y[i] ~ dnorm(b0 + (X[i, 1:p] %*% beta[1:p])[1,1], 1)
         for(i in 1:p) 
             beta[i] ~ dnorm(0, 1)
@@ -1492,7 +1559,7 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
-                                   info = "conjugacy with inprod not detected")
+                                   info = "conjugacy with matrix multiplication not detected")
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
     cmcmc <- compileNimble(mcmc, project = m)

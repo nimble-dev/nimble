@@ -349,7 +349,6 @@ conjugacyClass <- setRefClass(
         ## used by new checkConjugacy() system
         ## see checkConjugacy for more explanation of each step
         checkConjugacyOneDep = function(model, targetNode, depNode, restrictLink = NULL) {
-            if(exists('paciorek')) browser()
             if(model$getDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
             if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
             depNodeDist <- model$getDistribution(depNode)
@@ -1147,11 +1146,18 @@ cc_checkLinearity <- function(expr, targetNode) {
                     scale  = cc_combineExprsAddition(checkLinearityLHS$scale,  checkLinearityRHS$scale)))
     }
 
-    if(expr[[1]] == '*' || expr[[1]] == '%*%' || expr[[1]] == 'inprod') {
+    if(expr[[1]] == '*' || expr[[1]] == '%*%' || expr[[1]] == 'inprod' || expr[[1]] == 'sum') {
         ## X[,] %*% beta[] where beta[i] are nodes is not standard matrix multiplication, so there is offset and scale
-        isMatrixMult <- ifelse(expr[[1]] == '%*%' && expr[[2]][[1]] != 'structureExpr' &&
-                               expr[[3]][[1]] != 'structureExpr',
-                             TRUE, FALSE)
+        isMatrixMult <- ifelse(expr[[1]] == '%*%' &&
+                               len(expr[[2]]) > 1 && expr[[2]][[1]] != 'structureExpr' &&
+                               len(expr[[3]]) > 1 && expr[[3]][[1]] != 'structureExpr',
+                               TRUE, FALSE)
+        if(expr[[1]] == 'sum' && length(expr[[2]]) == 3 && expr[[2]][[1]] == '*') {
+            tmpExpr <- quote(inprod(a, b))
+            tmpExpr[[2]] <- expr[[2]][[2]]
+            tmpExpr[[3]] <- expr[[2]][[3]]
+            expr <- tmpExpr
+        }
         if(cc_nodeInExpr(targetNode, expr[[2]]) && cc_nodeInExpr(targetNode, expr[[3]])) return(NULL)
         checkLinearityLHS <- cc_checkLinearity(expr[[2]], targetNode)
         checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)
