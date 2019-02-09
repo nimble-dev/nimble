@@ -269,9 +269,9 @@ print: A logical argument specifying whether to print the ordered list of defaul
                     ## default: 'RW' sampler
                     addSampler(target = node, type = 'RW');     next
                 }
-                                ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
+
+                ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
                 if(!is.null(clusterNodeInfo)) {
-                    if(exists('paciorek')) browser()
                     for(k in seq_along(clusterNodeInfo)) {
                         for(clusterNodes in clusterNodeInfo[[k]]$clusterNodes) {
                             samplers <- getSamplers(clusterNodes)

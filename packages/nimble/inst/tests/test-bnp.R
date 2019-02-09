@@ -4477,6 +4477,97 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   
 })
 
+test_that("Testing wrapper sampler that avoids sampling empty clusters", {
+    
+    code = nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            mu[i] ~ dnorm(0,1)
+            y[i] ~ dnorm(mu[xi[i]], sd = 1)
+        }
+        
+    })
+    n <- 15
+    data <- list(y = rnorm(n))
+    inits <- list(xi = rep(1,n), mu=rnorm(n))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m)
+    samplers <- conf$getSamplers()
+    expect_identical(samplers[[2]]$name, 'CRP_cluster_wrapper',
+                     info = "cluster wrapper sampler not set")
+    expect_identical(samplers[[2]]$control$wrapped_type, 'conjugate_dnorm_dnorm_dynamicDeps',
+                     info = "cluster wrapper sampler conjugate")
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project=m)
+    set.seed(1)
+    out <- runMCMC(cmcmc, 500)
+    expect_identical(1L, length(unique(out[ , paste0('mu[', n, ']')])), info = "last cluster is sampled")
+    clusters <- apply(out[ , (n+1):(2*n)], 1, function(x) max(as.numeric(names(table(x)))))
+    firstOcc <- which(clusters == 8)[1]
+    ## Only when we first open 8th cluster, should we see mu[8] change in conjugate case.
+    expect_identical(length(unique(out[1:(firstOcc-1), 'mu[8]'])), 1L)
+    expect_identical(length(unique(out[1:firstOcc, 'mu[8]'])), 2L)
+
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            mu[i] ~ dgamma(1,1)
+            y[i] ~ dnorm(mu[xi[i]], sd = 1)
+        }
+        
+    })
+    n <- 15
+    data <- list(y = rnorm(n))
+    inits <- list(xi = rep(1,n), mu=rgamma(n,1,1))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m)
+    samplers <- conf$getSamplers()
+    expect_identical(samplers[[2]]$name, 'CRP_cluster_wrapper',
+                     info = "cluster wrapper sampler not set")
+    expect_identical(samplers[[2]]$control$wrapped_type, 'RW',
+                     info = "cluster wrapper sampler conjugate")
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project=m)
+    set.seed(1)
+    out <- runMCMC(cmcmc, 500)
+    expect_identical(1, length(unique(out[ , paste0('mu[', n, ']')])), info = "last cluster is sampled")
+    clusters <- apply(out[ , (n+1):(2*n)], 1, function(x) length(names(table(x))))
+    firstOcc <- which(clusters == 8)[1]
+    ## When 8th cluster opened, should start to see sampling of mu[9] in non-conjugate case,
+    ## but only because we are not reverting the sampled values when a new cluster is proposed
+    ## but not opened.
+    expect_identical(length(unique(out[1:(firstOcc-1), 'mu[9]'])), 1L)
+    expect_identical(length(unique(out[1:firstOcc, 'mu[9]'])), 2L)
+
+    ## ensure that two different kinds of wrapped samplers compile and run
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            mu[i] ~ dgamma(1,1)
+            y[i] ~ dnorm(mu[xi[i]], sd = 1)
+        }
+        xi2[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            mu2[i] ~ dnorm(0,1)
+            y2[i] ~ dnorm(mu2[xi2[i]], sd = 1)
+        }
+        
+    })
+    n <- 15
+    data <- list(y = rnorm(n), y2 = rnorm(n))
+    inits <- list(xi = rep(1,n), mu=rgamma(n,1,1), xi2 = rep(1,n), mu2 = rnorm(n))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    expect_success(cmcmc <- compileNimble(mcmc,project=m),
+                   info = 'multiple wrapped samplers do not compile')
+    out <- runMCMC(cmcmc, 10)
+    
+    
+})
 
 
 options(warn = RwarnLevel)
