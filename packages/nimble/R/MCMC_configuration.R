@@ -302,7 +302,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             if(print)   printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, wrapped = FALSE, dcrpNode = NULL, clusterID = NULL, , print = FALSE) {
+        addConjugateSampler = function(conjugacyResult, dynamicallyIndexed = FALSE, wrapped = FALSE, dcrpNode = NULL, clusterID = NULL, print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
