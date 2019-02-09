@@ -4501,7 +4501,7 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting", {
     expect_identical(mcmc$samplerFunctions[[1]]$helperFunctions[[1]]$coeff, m$b1, info = 'calculation of offset in dnorm_dnorm_nonidentity incorrect')
 
     ## Correct predictive distribution
-    tmp <- m$calculate()  ## since calculate_offset_coeff doesn't recalculate
+    tmp <- m$calculate()  ## in case we go back to having calculate_offset_coeff not recalculate after set to 0 and 1
     pYgivenT <- m$getLogProb('y[1]')
     pT <- m$getLogProb('mu[1]')
     

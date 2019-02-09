@@ -1058,10 +1058,10 @@ sampler_CRP <- nimbleFunction(
         }
       }
       helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes1, marginalizedNodes2, dataNodes)
-    } else {
-        ## p and nTilde only needed for non-conjugate currently.
-        ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
-        ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
+    } else {     ## p and nTilde only needed for non-conjugate currently.
+        ## Note that the elements of tildeNodes will be in order such that the
+        ## first element corresponds to the cluster obtained when xi[i] = 1,
+        ## the second when xi[i] = 2, etc.
         if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
             identityLink <- FALSE
             helperFunctions[[1]] <- eval(as.name(sampler))(model, unlist(clusterVarInfo$clusterNodes), dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, min_nTilde)
