@@ -1149,8 +1149,8 @@ cc_checkLinearity <- function(expr, targetNode) {
     if(expr[[1]] == '*' || expr[[1]] == '%*%' || expr[[1]] == 'inprod' || expr[[1]] == 'sum') {
         ## X[,] %*% beta[] where beta[i] are nodes is not standard matrix multiplication, so there is offset and scale
         isMatrixMult <- ifelse(expr[[1]] == '%*%' &&
-                               len(expr[[2]]) > 1 && expr[[2]][[1]] != 'structureExpr' &&
-                               len(expr[[3]]) > 1 && expr[[3]][[1]] != 'structureExpr',
+                               length(expr[[2]]) > 1 && expr[[2]][[1]] != 'structureExpr' &&
+                               length(expr[[3]]) > 1 && expr[[3]][[1]] != 'structureExpr',
                                TRUE, FALSE)
         if(expr[[1]] == 'sum' && length(expr[[2]]) == 3 && expr[[2]][[1]] == '*') {
             tmpExpr <- quote(inprod(a, b))
