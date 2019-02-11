@@ -1457,7 +1457,6 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
     constants <- list(n = 5, p = 3)
     data <- list(y = rnorm(constants$n),
                  X = matrix(rnorm(constants$n * constants$p), constants$n))
-    inits <- list(b0 = 1, beta = rnorm(constants$p))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
@@ -1477,10 +1476,6 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
             beta[i] ~ dnorm(0, 1)
         b0 ~ dnorm(0, 1)
     })
-    constants <- list(n = 5, p = 3)
-    data <- list(y = rnorm(constants$n),
-                 X = matrix(rnorm(constants$n * constants$p), constants$n))
-    inits <- list(b0 = 1, beta = rnorm(constants$p))
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
@@ -1516,7 +1511,6 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
             beta[i] ~ dnorm(0, 1)
         b0 ~ dnorm(0, 1)
     })
-    constants <- list(n = 5, p = 3)
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'RW',
@@ -1529,7 +1523,6 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
             beta[i] ~ dnorm(0, 1)
         b0 ~ dnorm(0, 1)
     })
-    constants <- list(n = 5, p = 3)
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'RW',
@@ -1542,7 +1535,6 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
             beta[i] ~ dnorm(0, 1)
         b0 ~ dnorm(0, 1)
     })
-    constants <- list(n = 5, p = 3)
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'RW',
@@ -1555,7 +1547,6 @@ test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
             beta[i] ~ dnorm(0, 1)
         b0 ~ dnorm(0, 1)
     })
-    constants <- list(n = 5, p = 3)
     m <- nimbleModel(code, data = data, constants = constants)
     conf <- configureMCMC(m)
     expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
