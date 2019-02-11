@@ -532,6 +532,12 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
         virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
         createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
 
+        if(exists('conjugacy', distributionsInput, inherits = FALSE)) {
+            if(exists('conjugacyRelationshipsObject', nimbleUserNamespace, inherits = FALSE)) {
+                nimbleUserNamespace$conjugacyRelationshipsObject$add(distributionsInput$conjugacy)
+            } else 
+                nimbleUserNamespace$conjugacyRelationshipsObject <- conjugacyRelationshipsClass(list(distributionInput$conjugacy))  ## input is expected to be a list of conjugacies
+        }
     # note don't use rFunHandler as rUserDist nimbleFunction needs n as first arg so it works on R side, therefore we have n in the C version of the nimbleFunction and don't want to strip it out in Cpp generation
       }
     invisible(NULL)

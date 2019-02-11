@@ -95,6 +95,7 @@ Collate:
     nimbleProject.R
     initializeModel.R
     CAR.R
+    MLG_distributions.R
     MCMC_utils.R
     MCMC_configuration.R
     MCMC_build.R

@@ -240,6 +240,8 @@ distributionsInputList <- list(
                                     'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
                       alias    = 'dinvwishart',
                       types    = c('value = double(2)', 'S = double(2)', 'R = double(2)', 'cholesky = double(2)'))
+
+
 )
 
         

@@ -167,8 +167,19 @@ conjugacyRelationshipsInputList <- list(
              dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
                                     df          = prior_df + contribution_df,
-                                    scale_param = 1)')
-    )
+                                    scale_param = 1)'),
+
+
+    ## Bradley et al. multivariate-log-gamma
+    list(prior = 'dMLG',
+         link = 'linear_exp',
+         dependents = list(
+             ## offset and coeff are actually exp(offset) and exp(offset+coeff) so need to back out
+             ## on log scale.
+             dvpois = list(param = 'lambda', contribution_value = 'value',
+                           contribution_offset = 'log(offset)', contribution_coeff = 'log(coeff) - log(offset)')),
+         posterior = 'dcMLG(contribution_value, contribution_offset, contribution_coeff, prior_cholesky, prior_sigma, prior_shape, prior_rate)')    
+)
 
 
 ##############################################################################################
@@ -194,6 +205,12 @@ conjugacyRelationshipsClass <- setRefClass(
             }
             names(conjugacys) <<- unlist(lapply(conjugacys, function(cr) cr$prior))
         },
+        add = function(cr) {
+            ## used to add user-defined conjugacies within the conjRel object living in nimbleUserNamespace
+            n <- length(conjugacys)
+            conjugacys[[n+1]] <<- conjugacyClass(cr)
+            names(conjugacys)[[n+1]] <- cr$prior
+        },            
         checkConjugacy = function(model, nodeIDs, restrictLink = NULL) {
             maps <- model$modelDef$maps
             nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
@@ -205,6 +222,10 @@ conjugacyRelationshipsClass <- setRefClass(
                 if(model$isTruncated(firstNodeName)) next   ## we say non-conjugate if the targetNode is truncated
                 dist <- model$getDistribution(firstNodeName)
                 conjugacyObj <- conjugacys[[dist]]
+                ## This is a bit of a hack in that it reaches outside the class to a 'sister'
+                ## conjugacyRelationshipsObject object.
+                if(is.null(conjugacyObj) && exists('conjugacyRelationshipsObject', nimbleUserNamespace))
+                    conjugacyObj <- nimbleUserNamespace$conjugacyRelationshipsObject$conjugacys[[dist]]
                 if(is.null(conjugacyObj)) next
                 # NO: insert logic here to check a single dependency and do next if can't be conjugate
                 #model$getDependencies('mu[1]',self=F,stochOnly=T)
@@ -295,8 +316,18 @@ conjugacyRelationshipsClass <- setRefClass(
         },
         generateDynamicConjugateSamplerDefinition = function(prior, dependentCounts, doDependentScreen = FALSE) {
             ## conjugateSamplerDefinitions[[paste0('sampler_conjugate_', conjugacyResult$prior)]]  ## using original (non-dynamic) conjugate sampler functions
-            conjugacys[[prior]]$generateConjugateSamplerDef(dynamic = TRUE, dependentCounts = dependentCounts,
-                                                            doDependentScreen = doDependentScreen)
+            if(prior %in% names(conjugacys)) {
+                conjugacys[[prior]]$generateConjugateSamplerDef(dynamic = TRUE, dependentCounts = dependentCounts,
+                                                                doDependentScreen = doDependentScreen)
+            } else {
+                ## This is a bit of a hack in that it reaches outside the class to a 'sister'
+                ## conjugacyRelationshipsObject object.
+                if(exists('conjugacyRelationshipsObject', nimbleUserNamespace)) {
+                    nimbleUserNamespace$conjugacyRelationshipsObject$conjugacys[[prior]]$generateConjugateSamplerDef(dynamic = TRUE,
+                                                                dependentCounts = dependentCounts,
+                                                                doDependentScreen = doDependentScreen)
+                } else stop("generateDynamicConjugateSamplerDefinition: conjugacy for ", prior, " not found.") 
+            }
         }
     )
 )
@@ -461,7 +492,7 @@ conjugacyClass <- setRefClass(
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
                 if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link else currentLink <- link
-                if(currentLink %in% c('multiplicative', 'linear') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
+                if(currentLink %in% c('multiplicative', 'linear', 'linear_exp') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
                     functionBody$addCode({
                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
                         DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)                    ## assigning into member variable names using
@@ -617,7 +648,7 @@ conjugacyClass <- setRefClass(
                 distName <- names(dependentCounts)[iDepCount]
                 if(!is.null(dependents[[distName]]$link)) links[iDepCount] <- dependents[[distName]]$link # clau: extra ) deleted.
             }
-            if(any(links %in% c('multiplicative', 'linear')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
+            if(any(links %in% c('multiplicative', 'linear', 'linear_exp')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
@@ -1030,13 +1061,15 @@ cc_createStructureExpr <- function(model, exprText) {
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
-    if(!(link %in% c('identity', 'multiplicative', 'linear', 'stick_breaking')))    stop(paste0('unknown link: \'', link, '\''))
+    if(!(link %in% c('identity', 'multiplicative', 'linear', 'linear_exp', 'stick_breaking')))    stop(paste0('unknown link: \'', link, '\''))
     if(is.null(linearityCheck))    return(FALSE)
     offset <- linearityCheck$offset
     scale  <- linearityCheck$scale
-    if(link == 'identity'       && offset == 0 && scale == 1)     return(TRUE)
-    if(link == 'multiplicative' && offset == 0)                   return(TRUE)
-    if(link == 'linear')                                          return(TRUE)
+    expon  <- linearityCheck$expon
+    if(link == 'identity'       && offset == 0 && scale == 1 && !expon)   return(TRUE)
+    if(link == 'multiplicative' && offset == 0 && !expon)                 return(TRUE)
+    if(link == 'linear'         && !expon)                                return(TRUE)
+    if(link == 'linear_exp'     && expon)                                 return(TRUE)
     return(FALSE)
 }
 
@@ -1085,17 +1118,16 @@ cc_vectorizedComponentCheck <- function(targetNode, expr) {
 ##############################################################################################
 ##############################################################################################
 
-cc_checkLinearity <- function(expr, targetNode) {
-
+cc_checkLinearity <- function(expr, targetNode, expon = FALSE) {
     ## targetNode doesn't appear in expr
     if(!cc_nodeInExpr(targetNode, expr)) {
         if(is.call(expr) && expr[[1]] == '(') return(cc_checkLinearity(expr[[2]], targetNode))
-        return(list(offset = expr, scale = 0))
+        return(list(offset = expr, scale = 0, expon = expon))
     }
 
     ## expr is exactly the targetNode
     if(identical(targetNode, deparse(expr)))
-        return(list(offset = 0, scale = 1))
+        return(list(offset = 0, scale = 1, expon = expon))
 
     if(!is.call(expr))   stop('expression is not a call object')
 
@@ -1108,20 +1140,27 @@ cc_checkLinearity <- function(expr, targetNode) {
         return(cc_checkLinearity(expr[[2]], targetNode))
     }
 
+    if(expr[[1]] == 'exp')
+        return(cc_checkLinearity(expr[[2]], targetNode, expon = TRUE))
+
     ## minus sign: change to a plus sign, and invert the sign of the RHS
     if(expr[[1]] == '-') {
         if(length(expr) == 3) {
             checkLinearityLHS <- cc_checkLinearity(expr[[2]], targetNode)
             checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)
             if(is.null(checkLinearityLHS) || is.null(checkLinearityRHS)) return(NULL)
+            if(checkLinearityLHS$expon || checkLinearityRHS$expon) return(NULL)
             return(list(offset = cc_combineExprsSubtraction(checkLinearityLHS$offset, checkLinearityRHS$offset),
-                        scale  = cc_combineExprsSubtraction(checkLinearityLHS$scale,  checkLinearityRHS$scale)))
+                        scale  = cc_combineExprsSubtraction(checkLinearityLHS$scale,  checkLinearityRHS$scale)),
+                        expon  = expon)
         }
         if(length(expr) == 2) {
             checkLin <- cc_checkLinearity(expr[[2]], targetNode)
             if(is.null(checkLin)) return(NULL)
+            if(checkLin$expon) return(NULL)
             return(list(offset = cc_negateExpr(checkLin$offset),
-                        scale  = cc_negateExpr(checkLin$scale)))
+                        scale  = cc_negateExpr(checkLin$scale),
+                        expon = expon))
         }
         stop('problem with negation expression')
     }
@@ -1130,8 +1169,10 @@ cc_checkLinearity <- function(expr, targetNode) {
         checkLinearityLHS <- cc_checkLinearity(expr[[2]], targetNode)
         checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)
         if(is.null(checkLinearityLHS) || is.null(checkLinearityRHS)) return(NULL)
+        if(checkLinearityLHS$expon || checkLinearityRHS$expon) return(NULL)
         return(list(offset = cc_combineExprsAddition(checkLinearityLHS$offset, checkLinearityRHS$offset),
-                    scale  = cc_combineExprsAddition(checkLinearityLHS$scale,  checkLinearityRHS$scale)))
+                    scale  = cc_combineExprsAddition(checkLinearityLHS$scale,  checkLinearityRHS$scale),
+                    expon  = expon))
     }
 
     if(expr[[1]] == '*' || expr[[1]] == '%*%') {
@@ -1140,13 +1181,16 @@ cc_checkLinearity <- function(expr, targetNode) {
         checkLinearityLHS <- cc_checkLinearity(expr[[2]], targetNode)
         checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)
         if(is.null(checkLinearityLHS) || is.null(checkLinearityRHS)) return(NULL)
+        if(checkLinearityLHS$expon || checkLinearityRHS$expon) return(NULL)
         if((checkLinearityLHS$scale != 0) && (checkLinearityRHS$scale != 0)) stop('incompatible scales in * operation')
         if(checkLinearityLHS$scale != 0) {
             return(list(offset = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$offset, isMatrixMult),
-                        scale  = cc_combineExprsMultiplication(checkLinearityLHS$scale,  checkLinearityRHS$offset, isMatrixMult))) }
+                        scale  = cc_combineExprsMultiplication(checkLinearityLHS$scale,  checkLinearityRHS$offset, isMatrixMult),
+                        expon  = expon)) }
         if(checkLinearityRHS$scale != 0) {
             return(list(offset = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$offset, isMatrixMult),
-                        scale  = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$scale , isMatrixMult))) }
+                        scale  = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$scale , isMatrixMult),
+                        expon  = expon)) }
         stop('something went wrong')
     }
 
@@ -1155,10 +1199,12 @@ cc_checkLinearity <- function(expr, targetNode) {
         checkLinearityLHS <- cc_checkLinearity(expr[[2]], targetNode)
         checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)
         if(is.null(checkLinearityLHS) || is.null(checkLinearityRHS)) return(NULL)
+        if(checkLinearityLHS$expon || checkLinearityRHS$expon) return(NULL)
         if(checkLinearityLHS$scale == 0) stop('left hand side scale == 0')
         if(checkLinearityRHS$scale != 0) stop('right hand side scale is non-zero')
         return(list(offset = cc_combineExprsDivision(checkLinearityLHS$offset, checkLinearityRHS$offset),
-                    scale  = cc_combineExprsDivision(checkLinearityLHS$scale,  checkLinearityRHS$offset)))
+                    scale  = cc_combineExprsDivision(checkLinearityLHS$scale,  checkLinearityRHS$offset),
+                    expon  = expon))
     }
 
     ## returns not conjugate (NULL) if we don't recognize the call (expr[[1]])
