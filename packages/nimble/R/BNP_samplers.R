@@ -438,6 +438,8 @@ CRP_nonconjugate <- nimbleFunction(
   name = "CRP_nonconjugate",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
+      mv <- modelValues(model)
+      lastIndex <- nimNumeric(1)
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
@@ -446,14 +448,26 @@ CRP_nonconjugate <- nimbleFunction(
       return(model$getLogProb(dataNodes[i]))
     },
     sample = function(i = integer(), j = integer() ) {
-      ## sample from prior
-      if( p == 1 ) {
-        model$simulate(marginalizedNodes[j])
-      } else {
-        for(l in 1:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
-          model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+        if(j == 0) {  ## reset to stored values (for case of new cluster not opened)
+            if(p == 1) {
+                nimCopy(mv, model, nodes = marginalizedNodes[lastIndex])
+            } else {
+                for(l in 1:p) 
+                    nimCopy(mv, model, nodes = marginalizedNodes[(l-1)*nTilde + lastIndex])
+            }
+        } else {
+            ## sample from prior
+            lastIndex <<- j
+            if( p == 1 ) {
+                nimCopy(model, mv, nodes = marginalizedNodes[j])
+                model$simulate(marginalizedNodes[j])
+            } else {
+                for(l in 1:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
+                    nimCopy(model, mv, nodes = marginalizedNodes[(l-1)*nTilde + j])
+                    model$simulate(marginalizedNodes[(l-1)*nTilde + j])
+                }
+            }
         }
-      }
     }
   )
 )
@@ -1158,6 +1172,8 @@ sampler_CRP <- nimbleFunction(
         }
         xiCounts[model[[target]][i]] <- 1
       } else { # an existing label is sampled
+        if(sampler == 'CRP_nonconjugate')   # reset to previous marginalized node value
+            helperFunctions[[1]]$sample(i, 0)
         if( xiCounts[xi[i]] == 0 ) { # xi_i is a singleton, a component was deleted
           k <- k - 1
           xiUniques <- reorderXiUniques

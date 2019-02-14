@@ -2639,8 +2639,9 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   expect_silent(mcmc <- buildMCMC(conf))
-  expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
   expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
@@ -3702,8 +3703,9 @@ test_that("Testing BNP model based on CRP", {
   cm <- compileNimble(m) 
   
   mConf <- configureMCMC(m)
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mMCMC <- buildMCMC(mConf)
-  expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
+  expect_equal(class(mMCMC$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
   
   CmMCMC <- compileNimble(mMCMC, project=m)
   samples <- runMCMC(CmMCMC, niter=600, nburnin=500)
@@ -4516,7 +4518,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
 })
 
 test_that("Testing wrapper sampler that avoids sampling empty clusters", {
-    
+    set.seed(1)
     code = nimbleCode({
         xi[1:n] ~ dCRP(conc=1, size=n)
         for(i in 1:n) {
@@ -4538,7 +4540,6 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     cm <- compileNimble(m)
     mcmc <- buildMCMC(conf)
     cmcmc <- compileNimble(mcmc, project=m)
-    set.seed(1)
     out <- runMCMC(cmcmc, 500)
     expect_identical(1L, length(unique(out[ , paste0('mu[', n, ']')])), info = "last cluster is sampled")
     clusters <- apply(out[ , (n+1):(2*n)], 1, function(x) max(as.numeric(names(table(x)))))
@@ -4547,6 +4548,7 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     expect_identical(length(unique(out[1:(firstOcc-1), 'mu[8]'])), 1L)
     expect_identical(length(unique(out[1:firstOcc, 'mu[8]'])), 2L)
 
+    set.seed(1)
     code <- nimbleCode({
         xi[1:n] ~ dCRP(conc=1, size=n)
         for(i in 1:n) {
@@ -4568,16 +4570,15 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     cm <- compileNimble(m)
     mcmc <- buildMCMC(conf)
     cmcmc <- compileNimble(mcmc, project=m)
-    set.seed(1)
     out <- runMCMC(cmcmc, 500)
     expect_identical(1L, length(unique(out[ , paste0('mu[', n, ']')])), info = "last cluster is sampled")
     clusters <- apply(out[ , (n+1):(2*n)], 1, function(x) length(names(table(x))))
-    firstOcc <- which(clusters == 8)[1]
-    ## When 8th cluster opened, should start to see sampling of mu[9] in non-conjugate case,
+    firstOcc <- which(clusters == 7)[1]
+    ## When 7th cluster opened, should start to see sampling of mu[8] in non-conjugate case,
     ## but only because we are not reverting the sampled values when a new cluster is proposed
     ## but not opened.
-    expect_identical(length(unique(out[1:(firstOcc-1), 'mu[9]'])), 1L)
-    expect_identical(length(unique(out[1:firstOcc, 'mu[9]'])), 2L)
+    expect_identical(length(unique(out[1:(firstOcc-1), 'mu[8]'])), 1L)
+    expect_identical(length(unique(out[1:firstOcc, 'mu[8]'])), 2L)
 
     ## ensure that two different kinds of wrapped samplers compile and run
     code <- nimbleCode({
