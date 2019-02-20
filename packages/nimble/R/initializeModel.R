@@ -99,8 +99,7 @@ initializeModel <- nimbleFunction(
             model$calculate(LHSnodes[i])
             nodeValue <- values(model, LHSnodes[i])
             if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) {
-                if(is.na.vec(nodeValue) | is.nan.vec(nodeValue))
-                    print('warning: value of deterministic node ',LHSnodes[i],': value is NA or NaN even after trying to calculate.')
+                print('warning: value of deterministic node ',LHSnodes[i],': value is NA or NaN even after trying to calculate.')
             }
         },
         initialize_stoch_data_node = function(i = integer()) {
