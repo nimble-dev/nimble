@@ -91,14 +91,14 @@ initializeModel <- nimbleFunction(
                 }
             }
         }
-        model$calculate(LHSnodes)
+        ## removed trailing full model$calculate() -DT Feb. 2019
+        ##model$calculate(LHSnodes)
     },
     methods = list(
         initialize_deterministic = function(i = integer()) {
+            model$calculate(LHSnodes[i])
             nodeValue <- values(model, LHSnodes[i])
             if(is.na.vec(nodeValue) | is.nan.vec(nodeValue)) {
-                model$calculate(LHSnodes[i])
-                nodeValue <- values(model, LHSnodes[i])
                 if(is.na.vec(nodeValue) | is.nan.vec(nodeValue))
                     print('warning: value of deterministic node ',LHSnodes[i],': value is NA or NaN even after trying to calculate.')
             }
