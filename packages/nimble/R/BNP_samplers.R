@@ -438,8 +438,7 @@ CRP_nonconjugate <- nimbleFunction(
   name = "CRP_nonconjugate",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
-      mv <- modelValues(model)
-      lastIndex <- nimNumeric(1)
+      mv <- modelValues(model, m = 1)
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
@@ -449,21 +448,14 @@ CRP_nonconjugate <- nimbleFunction(
     },
     sample = function(i = integer(), j = integer() ) {
         if(j == 0) {  ## reset to stored values (for case of new cluster not opened)
-            if(p == 1) {
-                nimCopy(mv, model, nodes = marginalizedNodes[lastIndex])
-            } else {
-                for(l in 1:p) 
-                    nimCopy(mv, model, nodes = marginalizedNodes[(l-1)*nTilde + lastIndex])
-            }
+            nimCopy(mv, model, nodes = marginalizedNodes, row = 1)
         } else {
-            ## sample from prior
-            lastIndex <<- j
+           ## sample from prior
+            nimCopy(model, mv, nodes = marginalizedNodes, row = 1)
             if( p == 1 ) {
-                nimCopy(model, mv, nodes = marginalizedNodes[j])
                 model$simulate(marginalizedNodes[j])
             } else {
                 for(l in 1:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
-                    nimCopy(model, mv, nodes = marginalizedNodes[(l-1)*nTilde + j])
                     model$simulate(marginalizedNodes[(l-1)*nTilde + j])
                 }
             }

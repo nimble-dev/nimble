@@ -4543,10 +4543,11 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     out <- runMCMC(cmcmc, 500)
     expect_identical(1L, length(unique(out[ , paste0('mu[', n, ']')])), info = "last cluster is sampled")
     clusters <- apply(out[ , (n+1):(2*n)], 1, function(x) max(as.numeric(names(table(x)))))
-    firstOcc <- which(clusters == 8)[1]
-    ## Only when we first open 8th cluster, should we see mu[8] change in conjugate case.
-    expect_identical(length(unique(out[1:(firstOcc-1), 'mu[8]'])), 1L)
-    expect_identical(length(unique(out[1:firstOcc, 'mu[8]'])), 2L)
+    focalCluster <- max(clusters)
+    firstOcc <- which(clusters == focalCluster)[1]
+    ## Only when we first open the 'last' cluster, should we see mu[idx] change in conjugate case.
+    expect_identical(length(unique(out[1:(firstOcc-1), paste0('mu[', focalCluster, ']')])), 1L)
+    expect_identical(length(unique(out[1:firstOcc, paste0('mu[', focalCluster, ']')])), 2L)
 
     set.seed(1)
     code <- nimbleCode({
@@ -4573,12 +4574,13 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     out <- runMCMC(cmcmc, 500)
     expect_identical(1L, length(unique(out[ , paste0('mu[', n, ']')])), info = "last cluster is sampled")
     clusters <- apply(out[ , (n+1):(2*n)], 1, function(x) length(names(table(x))))
-    firstOcc <- which(clusters == 7)[1]
-    ## When 7th cluster opened, should start to see sampling of mu[8] in non-conjugate case,
+    focalCluster <- max(clusters)
+    firstOcc <- which(clusters == focalCluster)[1]
+    ## When 7th cluster opened, should start to see sampling of mu[idx] in non-conjugate case,
     ## but only because we are not reverting the sampled values when a new cluster is proposed
     ## but not opened.
-    expect_identical(length(unique(out[1:(firstOcc-1), 'mu[8]'])), 1L)
-    expect_identical(length(unique(out[1:firstOcc, 'mu[8]'])), 2L)
+    expect_identical(length(unique(out[1:(firstOcc-1), paste0('mu[', focalCluster, ']')])), 1L)
+    expect_identical(length(unique(out[1:firstOcc, paste0('mu[', focalCluster, ']')])), 2L)
 
     ## ensure that two different kinds of wrapped samplers compile and run
     code <- nimbleCode({
