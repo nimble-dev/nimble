@@ -802,7 +802,6 @@ sampler_CRP <- nimbleFunction(
   contains=sampler_BASE,
   
   setup=function(model, mvSaved, target, control){
-    calcNodes <- model$getDependencies(target)
     targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
     targetVar <- model$getVarNames(nodes = target)  
     n <- length(targetElements) 
@@ -980,11 +979,14 @@ sampler_CRP <- nimbleFunction(
         }
       }
       helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes1, marginalizedNodes2, dataNodes)
+      calcNodes <- model$getDependencies(c(target, marginalizedNodes1, marginalizedNodes2))
     } else {
         ## p and nTilde only needed for non-conjugate currently.
         ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
         ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
-      helperFunctions[[1]] <- eval(as.name(sampler))(model, unlist(clusterVarInfo$clusterNodes), dataNodes, p, min_nTilde)
+      marginalizedNodes <- unlist(clusterVarInfo$clusterNodes)
+      helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde)
+      calcNodes <- model$getDependencies(c(target, marginalizedNodes))
     }
       
     curLogProb <- numeric(n)
@@ -1173,7 +1175,7 @@ sampler_CRP <- nimbleFunction(
       }
     }
 
-    ## We have updated cluster variables but not all logProb values are up-to-date.  
+      ## We have updated cluster variables but not all logProb values are up-to-date.
     model$calculate(calcNodes)
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
