@@ -447,6 +447,10 @@ CRP_nonconjugate <- nimbleFunction(
       return(model$getLogProb(dataNodes[i]))
     },
     sample = function(i = integer(), j = integer() ) {
+        ## Copying is inefficient because use entire vector, but no clear way
+        ## to use indexing on marginalizedNodes and copying into non-modelValues
+        ## data structure would involve having to deal with knowing
+        ## length/dimensionality.
         if(j == 0) {  ## reset to stored values (for case of new cluster not opened)
             nimCopy(mv, model, nodes = marginalizedNodes, row = 1)
         } else {
