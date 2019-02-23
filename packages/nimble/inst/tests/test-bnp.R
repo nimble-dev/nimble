@@ -4477,7 +4477,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   
 })
 
-test_that("Testing that cluster parameters are appropriate updated and mvSaved in good state", {
+test_that("Testing that cluster parameters are appropriately updated and mvSaved in good state", {
     ## Should always reject new clusters
     set.seed(1)
     code <- nimbleCode({
@@ -4594,7 +4594,43 @@ test_that("Testing that cluster parameters are appropriate updated and mvSaved i
     expect_identical(cmcmc$mvSaved[['logProb_xi']], cm$logProb_xi)
     expect_identical(sum(cm$logProb_xi), cm$calculate('xi'))
     expect_equal(sum(cmcmc$mvSaved[['logProb_mu']]) + sum(cmcmc$mvSaved[['logProb_xi']]) + sum(cmcmc$mvSaved[['logProb_y']]), cm$calculate())
-    
+
+    set.seed(1)
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            muTilde[i] ~ T(dnorm(0, 1), -200, 200)
+            sigmaTilde[i] ~ dinvgamma(a,b)
+            mu[i] <- muTilde[xi[i]]
+            y[i] ~ dnorm(mu[i], sd = sigmaTilde[xi[i]])
+        }
+        a ~ dgamma(1,1)
+        b ~ dgamma(1,1)
+        
+    })
+    n <- 15
+    data <- list(y = rnorm(n))
+    inits <- list(xi = rep(1,n), muTilde = rnorm(n), sigmaTilde = rinvgamma(n, 1, 1))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m, nodes = 'xi')
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project=m)
+    cmcmc$run(10)
+    expect_identical(cmcmc$mvSaved[['muTilde']], cm$muTilde)
+    expect_identical(cmcmc$mvSaved[['logProb_muTilde']], cm$logProb_muTilde)
+    expect_identical(cmcmc$mvSaved[['sigmaTilde']], cm$sigmaTilde)
+    expect_identical(cmcmc$mvSaved[['logProb_sigmaTilde']], cm$logProb_sigmaTilde)
+    expect_identical(cmcmc$mvSaved[['mu']], cm$mu)
+    expect_identical(cmcmc$mvSaved[['xi']], cm$xi)
+    expect_identical(cmcmc$mvSaved[['logProb_xi']], cm$logProb_xi)
+    expect_identical(cmcmc$mvSaved[['y']], cm$y)
+    expect_identical(cmcmc$mvSaved[['logProb_y']], cm$logProb_y)
+    expect_identical(cmcmc$mvSaved[['a']], cm$a)
+    expect_identical(cmcmc$mvSaved[['logProb_a']], cm$logProb_a)
+    expect_identical(cmcmc$mvSaved[['b']], cm$b)
+    expect_identical(cmcmc$mvSaved[['logProb_b']], cm$logProb_b)
+  
 })
   
 
