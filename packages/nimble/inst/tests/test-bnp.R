@@ -4692,7 +4692,7 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     expect_identical(samplers[[2]]$name, 'CRP_cluster_wrapper',
                      info = "cluster wrapper sampler not set")
     expect_identical(samplers[[2]]$control$wrapped_type, 'conjugate_dnorm_dnorm_dynamicDeps',
-                     info = "cluster wrapper sampler conjugate")
+                     info = "cluster wrapper sampler not conjugate")
     cm <- compileNimble(m)
     mcmc <- buildMCMC(conf)
     cmcmc <- compileNimble(mcmc, project=m)
@@ -4702,7 +4702,7 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     focalClusterName <- paste0('mu[', focalCluster, ']')
     focalClusterPresent <- apply(out[ , (n+1):(2*n)], 1, function(x) focalCluster %in% x)
     focalClusterNew <- which(diff(focalClusterPresent) == 1)+1
-    focalClusterAbsent <- which(!focalClusterPresent[-1] & diff(focalClusterPresent) == 0)+1
+    focalClusterAbsent <- which(!focalClusterPresent[-1])+1
     smp <- out[ , focalClusterName]
     expect_false(any(smp[focalClusterNew]- smp[focalClusterNew - 1] == 0),
                  info = 'no new cluster parameter value when new cluster opened')
@@ -4737,11 +4737,10 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     focalClusterName <- paste0('mu[', focalCluster, ']')
     focalClusterPresent <- apply(out[ , (n+1):(2*n)], 1, function(x) focalCluster %in% x)
     focalClusterNew <- which(diff(focalClusterPresent) == 1)+1
-    focalClusterAbsent <- which(!focalClusterPresent[-1] & diff(focalClusterPresent) == 0)+1
+    focalClusterAbsent <- which(!focalClusterPresent[-1])+1
     smp <- out[ , focalClusterName]
     expect_false(any(smp[focalClusterNew]- smp[focalClusterNew - 1] == 0),
                  info = 'no new cluster parameter value when new cluster opened')
-
     expect_true(all(smp[focalClusterAbsent] - smp[focalClusterAbsent - 1] == 0),
                 info = 'new cluster parameter value despite cluster being closed')
 
@@ -4772,7 +4771,7 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     focalClusterName <- paste0('mu[', focalCluster, ']')
     focalClusterPresent <- apply(out[ , (n+1):(2*n)], 1, function(x) focalCluster %in% x)
     focalClusterNew <- which(diff(focalClusterPresent) == 1)+1
-    focalClusterAbsent <- which(!focalClusterPresent[-1] & diff(focalClusterPresent) == 0)+1
+    focalClusterAbsent <- which(!focalClusterPresent[-1])+1
     smp <- out[ , focalClusterName]
     expect_false(any(smp[focalClusterNew]- smp[focalClusterNew - 1] == 0),
                  info = 'no new cluster parameter value when new cluster opened')
@@ -4803,7 +4802,87 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     focalClusterName <- paste0('mu[', focalCluster, ']')
     focalClusterPresent <- apply(out[ , (n+1):(2*n)], 1, function(x) focalCluster %in% x)
     focalClusterNew <- which(diff(focalClusterPresent) == 1)+1
-    focalClusterAbsent <- which(!focalClusterPresent[-1] & diff(focalClusterPresent) == 0)+1
+    focalClusterAbsent <- which(!focalClusterPresent[-1])+1
+    smp <- out[ , focalClusterName]
+    expect_false(any(smp[focalClusterNew]- smp[focalClusterNew - 1] == 0),
+                 info = 'no new cluster parameter value when new cluster opened')
+    expect_true(all(smp[focalClusterAbsent] - smp[focalClusterAbsent - 1] == 0),
+                info = 'new cluster parameter value despite cluster being closed')
+
+    ## p=2 non-conjugate case
+    set.seed(1)
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            mu[i] ~ dnorm(0,1)
+            sigma[i] ~ dinvgamma(1,1)
+            y[i] ~ dnorm(mu[xi[i]], var = sigma[xi[i]])
+        }
+    })
+    n <- 15
+    data <- list(y = rnorm(n))
+    inits <- list(xi = rep(1,n), mu = rnorm(n), sigma = rinvgamma(n, 1, 1))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m)
+    samplers <- conf$getSamplers()
+    expect_identical(samplers[[2]]$name, 'CRP_cluster_wrapper',
+                     info = "cluster wrapper sampler not set")
+    expect_identical(samplers[[17]]$name, 'CRP_cluster_wrapper',
+                     info = "cluster wrapper sampler not set")
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project=m)
+    out <- runMCMC(cmcmc, 500)
+    expect_identical(1L, length(unique(out[ , paste0('mu[', n, ']')])), info = "last cluster is sampled")
+    focalCluster <- max(out[ , (2*n+1):(3*n)])-1  # 2nd to last so have a few transitions
+    focalClusterPresent <- apply(out[ , (2*n+1):(3*n)], 1, function(x) focalCluster %in% x)
+    focalClusterNew <- which(diff(focalClusterPresent) == 1)+1
+    focalClusterAbsent <- which(!focalClusterPresent[-1])+1
+    
+    focalClusterName <- paste0('mu[', focalCluster, ']')
+    smp <- out[ , focalClusterName]
+    expect_false(any(smp[focalClusterNew]- smp[focalClusterNew - 1] == 0),
+                 info = 'no new cluster parameter value when new cluster opened')
+    expect_true(all(smp[focalClusterAbsent] - smp[focalClusterAbsent - 1] == 0),
+                info = 'new cluster parameter value despite cluster being closed')
+    focalClusterName <- paste0('sigma[', focalCluster, ']')
+    smp <- out[ , focalClusterName]
+    expect_false(any(smp[focalClusterNew]- smp[focalClusterNew - 1] == 0),
+                 info = 'no new cluster parameter value when new cluster opened')
+    expect_true(all(smp[focalClusterAbsent] - smp[focalClusterAbsent - 1] == 0),
+                info = 'new cluster parameter value despite cluster being closed')
+
+    ## ensure resetting cluster param values works for mv cluster parameter
+    set.seed(1)
+    code = nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            mu[i, 1:3] ~ dmnorm(z[1:3], pr[1:3,1:3])
+            tmp[i, 1:3] <- exp(mu[xi[i],1:3])
+            y[i,1:3] ~ dmnorm(tmp[i,1:3], pr[1:3,1:3])
+        }
+        
+    })
+    n <- 15
+    data <- list(y = matrix(rnorm(n*3, 1, 1),n))
+    inits <- list(xi = rep(1,n), mu = matrix(rnorm(n*3), n), pr = diag(3), z = rep(0,3))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m)
+    samplers <- conf$getSamplers()
+    expect_identical(samplers[[2]]$name, 'CRP_cluster_wrapper',
+                     info = "cluster wrapper sampler not set")
+    expect_identical(samplers[[2]]$control$wrapped_type, 'RW_block',
+                     info = "cluster wrapper sampler conjugate")
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project=m)
+    out <- runMCMC(cmcmc, 500)
+    expect_identical(1L, length(unique(out[ , paste0('mu[', n, ', 3]')])), info = "last cluster is sampled")
+    focalCluster <- max(out[ , (3*n+1):(4*n)])-1  # 2nd to last so have a few transitions
+    focalClusterName <- paste0('mu[', focalCluster, ', 3]')
+    focalClusterPresent <- apply(out[ , (3*n+1):(4*n)], 1, function(x) focalCluster %in% x)
+    focalClusterNew <- which(diff(focalClusterPresent) == 1)+1
+    focalClusterAbsent <- which(!focalClusterPresent[-1])+1
     smp <- out[ , focalClusterName]
     expect_false(any(smp[focalClusterNew]- smp[focalClusterNew - 1] == 0),
                  info = 'no new cluster parameter value when new cluster opened')
@@ -4831,7 +4910,7 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     conf <- configureMCMC(m)
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
-    expect_success(cmcmc <- compileNimble(mcmc,project=m),
+    expect_message(cmcmc <- compileNimble(mcmc,project=m),
                    info = 'multiple wrapped samplers do not compile')
     out <- runMCMC(cmcmc, 10)
     

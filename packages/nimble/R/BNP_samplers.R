@@ -438,7 +438,10 @@ CRP_nonconjugate <- nimbleFunction(
   name = "CRP_nonconjugate",
   contains = CRP_helper,
   setup = function(model, marginalizedNodes, dataNodes, p, nTilde) {
-      mv <- modelValues(model, m = 1)
+      savedIdx <- 1
+      saved <- nimNumeric(2) # treated as scalar if length 1
+      saved2 <- saved
+      saved3 <- saved
   },
   methods = list(
     storeParams = function() {},  ## nothing needed for non-conjugate
@@ -447,19 +450,22 @@ CRP_nonconjugate <- nimbleFunction(
       return(model$getLogProb(dataNodes[i]))
     },
     sample = function(i = integer(), j = integer() ) {
-        ## Copying is inefficient because use entire vector, but no clear way
-        ## to use indexing on marginalizedNodes and copying into non-modelValues
-        ## data structure would involve having to deal with knowing
-        ## length/dimensionality.
-        if(j == 0) {  ## reset to stored values (for case of new cluster not opened)
-            nimCopy(mv, model, nodes = marginalizedNodes, row = 1)
+      if(j == 0) {  ## reset to stored values (for case of new cluster not opened)
+            values(model, marginalizedNodes[savedIdx]) <<- saved
+            if(p > 1) {
+                values(model, marginalizedNodes[nTilde + savedIdx]) <<- saved2
+                if(p > 2)
+                    values(model, marginalizedNodes[2*nTilde + savedIdx]) <<- saved3
+            }
         } else {
-           ## sample from prior
-            nimCopy(model, mv, nodes = marginalizedNodes, row = 1)
-            if( p == 1 ) {
-                model$simulate(marginalizedNodes[j])
-            } else {
-                for(l in 1:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
+            savedIdx <<- j
+            saved <<- values(model, marginalizedNodes[j])
+            model$simulate(marginalizedNodes[j])
+            if(p > 1) {
+                saved2 <<- values(model, marginalizedNodes[nTilde + j])
+                if(p > 2)
+                    saved3 <<- values(model, marginalizedNodes[2*nTilde + j])
+                for(l in 2:p) {  ## marginalized nodes should be in correct order based on findClusterNodes.
                     model$simulate(marginalizedNodes[(l-1)*nTilde + j])
                 }
             }
@@ -994,6 +1000,8 @@ sampler_CRP <- nimbleFunction(
         ## p and nTilde only needed for non-conjugate currently.
         ## Note that the elements of tildeNodes will be in order such that the first element corresponds to the cluster
         ## obtained when xi[i] = 1, the second when xi[i] = 2, etc.
+      if(sampler == 'CRP_nonconjugate' && p > 3)
+          stop("sampler_CRP: CRP_nonconjugate sampler not yet set up to handle clustering of more than three variables.")  ## This is because of how we put old values back into model when proposing a new cluster that is not accepted.
       marginalizedNodes <- unlist(clusterVarInfo$clusterNodes)
       helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde)
       calcNodes <- model$getDependencies(c(target, marginalizedNodes))
@@ -1187,7 +1195,7 @@ sampler_CRP <- nimbleFunction(
       }
     }
 
-      ## We have updated cluster variables but not all logProb values are up-to-date.
+    ## Need to update logProb values and make sure cluster IDs and parameters in mvSaved up-to-date.
     model$calculate(calcNodes)
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
