@@ -2471,6 +2471,21 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[9]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
+  ## dnorm, dinvgamma, not conjugate
+  code = nimbleCode({
+    for(i in 1:4) {
+      sigma[i] ~ dinvgamma(1, 1)
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = sigma[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu = rnorm(4), sigma = rinvgamma(4, 1,1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[9]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  
   ## dnorm_invgamma, conjugate; we detect conjugacy
   code = nimbleCode({
     for(i in 1:4) {
