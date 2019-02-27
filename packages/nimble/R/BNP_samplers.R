@@ -1586,9 +1586,7 @@ sampler_CRP_cluster_wrapper <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         regular_sampler <- nimbleFunctionList(sampler_BASE)
-        if(!exists('samplerFunction', control))
-            control$samplerFunction <- eval(as.name(paste0("sampler_", control$wrapped_type)))
-        regular_sampler[[1]] <- eval(control$samplerFunction)(model, mvSaved, target, control$control)
+        regular_sampler[[1]] <- control$wrapped_conf$buildSampler(model, mvSaved)
         dcrpNode <- control$dcrpNode
         clusterID <- control$clusterID
     },
