@@ -933,7 +933,7 @@ test_that("Test opening of new clusters in CRP sampler ", {
       nimble:::clearCompiled(model)
   }
 
-  ## test for updating new cluster parameters, without conjugacy, no movement expected
+  ## test for (not) updating new cluster parameters, without conjugacy, no movement expected
   code <- nimbleCode({
     for(i in 1:n) {
       y[i] ~ T(dnorm(mu[i], 1), -500, 500) # force non-conjugacy
@@ -959,10 +959,10 @@ test_that("Test opening of new clusters in CRP sampler ", {
   mcmc <- buildMCMC(conf)
   cmcmc <- compileNimble(mcmc, project = model)
 
-  ## now check that cmodel$muTilde[2] has changed but first obs has stayed
+  ## now check that cmodel$muTilde[2] is unchanged and first obs has stayed in only cluster
   set.seed(1)
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
-  expect_true(output[1, 'muTilde[2]'] != 50, 'incorrect update of parameter for second cluster')
+  expect_true(output[1, 'muTilde[2]'] == 50, 'incorrect update of parameter for second cluster')
   expect_identical(output[1, 'xi[1]'], c('xi[1]'=1), 'incorrect cluster for first obs')
   if(.Platform$OS.type != "windows") {
       nimble:::clearCompiled(model)
@@ -995,10 +995,10 @@ test_that("Test opening of new clusters in CRP sampler ", {
   mcmc <- buildMCMC(conf)
   cmcmc <- compileNimble(mcmc, project = model)
 
-  ## now check that cmodel$muTilde[2] has changed and first obs stays in first cluster
+  ## now check that cmodel$muTilde[2] has remained and first obs has moved to first cluster
   set.seed(1)
   output <- runMCMC(cmcmc, niter=1, nburnin=0, thin=1 , inits=inits, setSeed=FALSE)
-  expect_true(output[1, 'muTilde[2]'] != -50, 'incorrect update of parameter for second cluster')
+  expect_true(output[1, 'muTilde[2]'] == -50, 'incorrect update of parameter for second cluster')
   expect_identical(output[1, 'xi[1]'], c('xi[1]'=1), 'incorrect cluster for first obs')
   if(.Platform$OS.type != "windows") {
       nimble:::clearCompiled(model)
@@ -2663,8 +2663,9 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   inits2$muTilde <- matrix(rnorm(n*2), n)
   m <- nimbleModel(code, data = data, constants = const, inits = inits2)
   conf <- configureMCMC(m)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   expect_silent(mcmc <- buildMCMC(conf))
-  expect_equal(class(mcmc$samplerFunctions[[21]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, ", 2]"))
   expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
@@ -3746,9 +3747,11 @@ test_that("Testing BNP model based on CRP", {
   cm <- compileNimble(m) 
   
   mConf <- configureMCMC(m, monitors = c('xi', 'lambda', 'alpha'))
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mMCMC <- buildMCMC(mConf)
-  expect_equal(mConf$getSamplers()[[101]]$name, "CRP_concentration")
-  expect_equal(class(mMCMC$samplerFunctions[[102]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
+  concIndex <- which(sapply(mConf$getSamplers(), function(x) x[['target']]) == 'alpha')
+  expect_equal(mConf$getSamplers()[[concIndex]]$name, "CRP_concentration")
+  expect_equal(class(mMCMC$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dgamma_dpois")
   
   CmMCMC <- compileNimble(mMCMC, project=m)
   samples <- runMCMC(CmMCMC, niter=600, nburnin=500)
@@ -4910,8 +4913,9 @@ test_that("Testing wrapper sampler that avoids sampling empty clusters", {
     conf <- configureMCMC(m)
     mcmc <- buildMCMC(conf)
     cm <- compileNimble(m)
-    expect_message(cmcmc <- compileNimble(mcmc,project=m),
-                   info = 'multiple wrapped samplers do not compile')
+    ## It's hard to get testthat checking of logging to work right, so just
+    ## running so that testthat catches if code errors out.
+    cmcmc <- compileNimble(mcmc,project=m)
     out <- runMCMC(cmcmc, 10)
     
     
