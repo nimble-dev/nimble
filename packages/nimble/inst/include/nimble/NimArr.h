@@ -1366,7 +1366,7 @@ class NimArr<5, T> : public NimArrBase<T> {
     }
     NimArr<5, T> mapTo;
     mapTo.setMap(*this, offset, str, is);
-    NimArr<4, Tfrom> mapFrom;
+    NimArr<5, Tfrom> mapFrom;
     mapFrom.setMap(*from, fromOffset, fromStr, fromIs);
     mapTo.mapCopy(mapFrom);
   }
@@ -1378,13 +1378,13 @@ class NimArr<5, T> : public NimArrBase<T> {
     NimArrBase<T>::NAdims[1] = size2 = is2;
     NimArrBase<T>::NAdims[2] = size3 = is3;
     NimArrBase<T>::NAdims[3] = size4 = is4;
-    NimArrBase<T>::NAdims[3] = size5 = is5;
+    NimArrBase<T>::NAdims[4] = size5 = is5;
 
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
     NimArrBase<T>::NAstrides[1] = stride2 = str2;
     NimArrBase<T>::NAstrides[2] = stride3 = str3;
     NimArrBase<T>::NAstrides[3] = stride4 = str4;
-    NimArrBase<T>::NAstrides[3] = stride5 = str5;
+    NimArrBase<T>::NAstrides[4] = stride5 = str5;
 
     NimArrBase<T>::NAlength = size1 * size2 * size3 * size4 * size5;
   }
