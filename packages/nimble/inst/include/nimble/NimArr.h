@@ -1455,6 +1455,384 @@ class NimArr<5, T> : public NimArrBase<T> {
 
 
 
+
+// Here is the specialization for 6 dimensions.
+
+template <class T>
+class NimArr<6, T> : public NimArrBase<T> {
+ public:
+  int size1, size2, size3, size4, size5, size6, stride2, stride3, stride4, stride5, stride6;
+  int calculateIndex(int i, int j, int k, int l, int m, int n) const {
+    return NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j +
+           stride3 * k + stride4 * l + stride5 * m + stride6 * n;
+  }
+  int calculateIndex(vector<int> &i) const {
+    return calculateIndex(i[0], i[1], i[2], i[3], i[4], i[5]);
+  }
+  T &operator()(int i, int j, int k, int l, int m, int n) const {
+    // could add asserts here
+    return (*NimArrBase<T>::vPtr)[calculateIndex(i, j, k, l, m, n)];
+  }
+
+  T &operator[](int i) const {
+    std::div_t divRes1 = std::div(i, size1);
+    std::div_t divRes2 = std::div(divRes1.quot, size2);
+    std::div_t divRes3 = std::div(divRes2.quot, size3);
+    std::div_t divRes4 = std::div(divRes3.quot, size4);
+    std::div_t divRes5 = std::div(divRes4.quot, size5);
+    return (*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem,
+                                                 divRes3.rem, divRes4.rem,
+						 divRes5.rem, divRes5.quot)];
+  }
+
+  ~NimArr<6, T>() {}
+
+  template <class Tother>
+  NimArr<6, T> &mapCopy(const NimArr<6, Tother> &other) {
+    if (size1 != other.size1) {
+      PRINTF("Error in mapCopy.  Sizes 1 don't match: %i != %i \n", size1,
+             other.size1);
+    }
+    if (size2 != other.size2) {
+      PRINTF("Error in mapCopy.  Sizes 2 don't match: %i != %i \n", size2,
+             other.size2);
+    }
+    if (size3 != other.size3) {
+      PRINTF("Error in mapCopy.  Sizes 3 don't match: %i != %i \n", size3,
+             other.size3);
+    }
+    if (size4 != other.size4) {
+      PRINTF("Error in mapCopy.  Sizes 4 don't match: %i != %i \n", size4,
+             other.size4);
+    }
+    if (size5 != other.size5) {
+      PRINTF("Error in mapCopy.  Sizes 5 don't match: %i != %i \n", size5,
+             other.size5);
+    }
+    if (size6 != other.size6) {
+      PRINTF("Error in mapCopy.  Sizes 6 don't match: %i != %i \n", size6,
+             other.size6);
+    }
+    T *to(*NimArrBase<T>::vPtr + NimArrBase<T>::offset);
+    Tother *from(*other.vPtr + other.offset);
+
+    int otherStride1 = other.stride1;
+    int otherStride2 = other.stride2;
+    int otherStride3 = other.stride3;
+    int otherStride4 = other.stride4;
+    int otherStride5 = other.stride5;
+    int otherStride6 = other.stride6;
+    for (int i6th = 0; i6th < size6; i6th++) {
+      for (int i5th = 0; i5th < size5; i5th++) {
+        for (int i4th = 0; i4th < size4; i4th++) {
+          for (int i3rd = 0; i3rd < size3; i3rd++) {
+            for (int iCol = 0; iCol < size2; iCol++) {
+              for (int iRow = 0; iRow < size1; iRow++) {
+                *to = *from;
+                to += NimArrBase<T>::stride1;
+                from += otherStride1;
+              }
+              from += (-size1 * otherStride1) + otherStride2;
+              to += (-size1 * NimArrBase<T>::stride1) + stride2;
+            }
+            from += (-size2 * otherStride2) + otherStride3;
+            to += (-size2 * stride2 + stride3);
+          }
+          from += (-size3 * otherStride3) + otherStride4;
+          to += (-size3 * stride3 + stride4);
+        }
+        from += (-size4 * otherStride4) + otherStride5;
+        to += (-size4 * stride4 + stride5);
+      }
+      from += (-size5 * otherStride5) + otherStride6;
+      to += (-size5 * stride5 + stride6);
+    }
+    return *this;
+  }
+
+  NimArr<6, T> &operator=(const NimArr<6, T> &other) {
+    if (NimArrBase<T>::isMap()) {
+      return mapCopy(other);
+    }
+
+    std::memcpy(NimArrBase<T>::NAdims, other.dim(), 6 * sizeof(int));
+    size1 = NimArrBase<T>::NAdims[0];
+    size2 = NimArrBase<T>::NAdims[1];
+    size3 = NimArrBase<T>::NAdims[2];
+    size4 = NimArrBase<T>::NAdims[3];
+    size5 = NimArrBase<T>::NAdims[4];
+    size6 = NimArrBase<T>::NAdims[5];
+
+    NimArrBase<T>::NAlength = other.size();
+    NimArrBase<T>::myType = other.getNimType();
+
+    NimArrBase<T>::boolMap = false;
+    NimArrBase<T>::offset = 0;
+
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
+    NimArrBase<T>::NAstrides[1] = stride2 = size1;
+    NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;
+    NimArrBase<T>::NAstrides[3] = stride4 = size1 * size2 * size3;
+    NimArrBase<T>::NAstrides[4] = stride5 = size1 * size2 * size3 * size4;
+    NimArrBase<T>::NAstrides[5] = stride6 = size1 * size2 * size3 * size4 * size5;
+    if (other.boolMap) {
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
+      NimArrBase<T>::own_v = true;
+
+      T *to(NimArrBase<T>::v);
+      T *from(*other.vPtr + other.offset);
+
+      int otherStride1 = other.stride1;
+      int otherStride2 = other.stride2;
+      int otherStride3 = other.stride3;
+      int otherStride4 = other.stride4;
+      int otherStride5 = other.stride5;
+      int otherStride6 = other.stride6;
+      for (int i6th = 0; i6th < size6; i6th++) {
+        for (int i5th = 0; i5th < size5; i5th++) {
+          for (int i4th = 0; i4th < size4; i4th++) {
+            for (int i3rd = 0; i3rd < size3; i3rd++) {
+              for (int iCol = 0; iCol < size2; iCol++) {
+                for (int iRow = 0; iRow < size1; iRow++) {
+                  *to = *from;
+                  to++;
+                  from += otherStride1;
+                }
+                from += (-size1 * otherStride1) + otherStride2;
+              }
+              from += (-size2 * otherStride2) + otherStride3;
+            }
+            from += (-size3 * otherStride3) + otherStride4;
+          }
+          from += (-size4 * otherStride4) + otherStride5;
+        }
+        from += (-size5 * otherStride5) + otherStride6;
+      }
+    } else {
+      if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
+      NimArrBase<T>::own_v = true;
+      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+    }
+    NimArrBase<T>::setVptr();
+    return *this;
+  }
+
+  NimArr<6, T>(const NimArr<6, T> &other) : NimArrBase<T>(other) {
+    std::memcpy(NimArrBase<T>::NAdims, other.dim(), 6 * sizeof(int));
+    size1 = NimArrBase<T>::NAdims[0];
+    size2 = NimArrBase<T>::NAdims[1];
+    size3 = NimArrBase<T>::NAdims[2];
+    size4 = NimArrBase<T>::NAdims[3];
+    size5 = NimArrBase<T>::NAdims[4];
+    size6 = NimArrBase<T>::NAdims[5];
+
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
+    NimArrBase<T>::NAstrides[1] = stride2 = size1;
+    NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;
+    NimArrBase<T>::NAstrides[3] = stride4 = size1 * size2 * size3;
+    NimArrBase<T>::NAstrides[4] = stride5 = size1 * size2 * size3 * size4;
+    NimArrBase<T>::NAstrides[5] = stride6 = size1 * size2 * size3 * size4 * size5;
+    if (other.boolMap) {
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
+      NimArrBase<T>::own_v = true;
+
+      T *to(NimArrBase<T>::v);
+      T *from(*other.vPtr + other.offset);
+      int otherStride1 = other.stride1;
+      int otherStride2 = other.stride2;
+      int otherStride3 = other.stride3;
+      int otherStride4 = other.stride4;
+      int otherStride5 = other.stride5;
+      int otherStride6 = other.stride6;
+      for (int i6th = 0; i6th < size6; i6th++) {
+        for (int i5th = 0; i5th < size5; i5th++) {
+          for (int i4th = 0; i4th < size4; i4th++) {
+            for (int i3rd = 0; i3rd < size3; i3rd++) {
+              for (int iCol = 0; iCol < size2; iCol++) {
+                for (int iRow = 0; iRow < size1; iRow++) {
+                  *to = *from;
+                  to++;
+                  from += otherStride1;
+                }
+                from += (-size1 * otherStride1) + otherStride2;
+              }
+              from += (-size2 * otherStride2) + otherStride3;
+            }
+            from += (-size3 * otherStride3) + otherStride4;
+          }
+          from += (-size4 * otherStride4) + otherStride5;
+        }
+        from += (-size5 * otherStride5) + otherStride6;
+      }
+
+    } else {
+      NimArrBase<T>::v = nimble_malloc<T>(NimArrBase<T>::NAlength);
+      NimArrBase<T>::own_v = true;
+      std::copy(other.v, other.v + NimArrBase<T>::NAlength, NimArrBase<T>::v);
+    }
+    NimArrBase<T>::setVptr();
+  }
+
+  NimArr<6, T>() : NimArrBase<T>() { setSize(0, 0, 0, 0, 0, 0); }
+
+  void setMap(NimArrBase<T> &source, int off,
+	      int str1, int str2, int str3, int str4, int str5, int str6,
+	      int is1, int is2, int is3, int is4, int is5, int si6) {
+    if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+    NimArrBase<T>::boolMap = true;
+    NimArrBase<T>::offset = off;
+    NimArrBase<T>::vPtr = source.getVptr();
+    NimArrBase<T>::own_v = false;
+    NimArrBase<T>::NAdims[0] = size1 = is1;
+    NimArrBase<T>::NAdims[1] = size2 = is2;
+    NimArrBase<T>::NAdims[2] = size3 = is3;
+    NimArrBase<T>::NAdims[3] = size4 = is4;
+    NimArrBase<T>::NAdims[4] = size5 = is5;
+    NimArrBase<T>::NAdims[5] = size6 = is6;
+
+    NimArrBase<T>::NAlength = size1 * size2 * size3 * size4 * size5 * size6;
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
+    NimArrBase<T>::NAstrides[1] = stride2 = str2;
+    NimArrBase<T>::NAstrides[2] = stride3 = str3;
+    NimArrBase<T>::NAstrides[3] = stride4 = str4;
+    NimArrBase<T>::NAstrides[4] = stride5 = str5;
+    NimArrBase<T>::NAstrides[5] = stride6 = str6;
+  }
+
+  void setMap(NimArrBase<T> &source, int off, vector<int> &str,
+              vector<int> &is) {
+    if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
+    NimArrBase<T>::boolMap = true;
+    NimArrBase<T>::offset = off;
+    NimArrBase<T>::vPtr = source.getVptr();
+    NimArrBase<T>::own_v = false;
+    NimArrBase<T>::NAdims[0] = size1 = is[0];
+    NimArrBase<T>::NAdims[1] = size2 = is[1];
+    NimArrBase<T>::NAdims[2] = size3 = is[2];
+    NimArrBase<T>::NAdims[3] = size4 = is[3];
+    NimArrBase<T>::NAdims[4] = size5 = is[4];
+    NimArrBase<T>::NAdims[5] = size6 = is[5];
+
+    NimArrBase<T>::NAlength = size1 * size2 * size3 * size4 * size5 * size6;
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str[0];
+    NimArrBase<T>::NAstrides[1] = stride2 = str[1];
+    NimArrBase<T>::NAstrides[2] = stride3 = str[2];
+    NimArrBase<T>::NAstrides[3] = stride4 = str[3];
+    NimArrBase<T>::NAstrides[4] = stride5 = str[4];
+    NimArrBase<T>::NAstrides[5] = stride6 = str[5];
+  }
+
+  template <class Tfrom>
+  void dynamicMapCopy(int offset, vector<int> &str, vector<int> &is,
+                      NimArrBase<Tfrom> *from, int fromOffset,
+                      vector<int> &fromStr, vector<int> &fromIs) {
+    if (NimArrBase<T>::isMap() || from->isMap()) {
+      PRINTF("Error, dynamicMapCopy is not set up for nested maps\n");
+    }
+    NimArr<6, T> mapTo;
+    mapTo.setMap(*this, offset, str, is);
+    NimArr<6, Tfrom> mapFrom;
+    mapFrom.setMap(*from, fromOffset, fromStr, fromIs);
+    mapTo.mapCopy(mapFrom);
+  }
+
+  NimArr<6, T>(vector<T> &vm, int off,
+	       int str1, int str2, int str3, int str4, int str5, int str6,
+               int is1, int is2, int is3, int is4, int is5, int is6)
+      : NimArrBase<T>(vm, off) {
+    NimArrBase<T>::NAdims[0] = size1 = is1;
+    NimArrBase<T>::NAdims[1] = size2 = is2;
+    NimArrBase<T>::NAdims[2] = size3 = is3;
+    NimArrBase<T>::NAdims[3] = size4 = is4;
+    NimArrBase<T>::NAdims[4] = size5 = is5;
+    NimArrBase<T>::NAdims[5] = size6 = is6;
+
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
+    NimArrBase<T>::NAstrides[1] = stride2 = str2;
+    NimArrBase<T>::NAstrides[2] = stride3 = str3;
+    NimArrBase<T>::NAstrides[3] = stride4 = str4;
+    NimArrBase<T>::NAstrides[4] = stride5 = str5;
+    NimArrBase<T>::NAstrides[5] = stride6 = str6;
+
+    NimArrBase<T>::NAlength = size1 * size2 * size3 * size4 * size5 * size6;
+  }
+
+  NimArr<6, T>(int is1, int is2, int is3, int is4, int is5, int is6) : NimArrBase<T>() {
+    setSize(is1, is2, is3, is4, is5, is6);
+  }
+
+  void initialize(T value, bool init, int is1, int is2, int is3, int is4, int is5, int is6) {
+    setSize(is1, is2, is3, is4, is5, is6, false, false);
+    if (init) {
+      NimArrBase<T>::fillAllValues(value);
+    }
+  }
+
+  void initialize(T value, bool init, bool fillZeros, bool recycle, int is1,
+                  int is2, int is3, int is4, int is5, int is6) {
+    setSize(is1, is2, is3, is4, is5, is6, false, false);
+    if (init) {
+      NimArrBase<T>::fillAllValues(value, fillZeros, recycle);
+    }
+  }
+
+  void setSize(int is1, int is2, int is3, int is4, int is5, int is6,
+	       bool copyValues = true, bool fillZeros = true) {
+    NimArrBase<T>::NAdims[0] = size1 = is1;
+    NimArrBase<T>::NAdims[1] = size2 = is2;
+    NimArrBase<T>::NAdims[2] = size3 = is3;
+    NimArrBase<T>::NAdims[3] = size4 = is4;
+    NimArrBase<T>::NAdims[4] = size5 = is5;
+    NimArrBase<T>::NAdims[5] = size6 = is6;
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
+    NimArrBase<T>::NAstrides[1] = stride2 = is1;
+    NimArrBase<T>::NAstrides[2] = stride3 = is1 * is2;
+    NimArrBase<T>::NAstrides[3] = stride4 = is1 * is2 * is3;
+    NimArrBase<T>::NAstrides[4] = stride5 = is1 * is2 * is3 * is4;
+    NimArrBase<T>::NAstrides[5] = stride6 = is1 * is2 * is3 * is4 * is5;
+    NimArrBase<T>::setLength(stride6 * size6, copyValues, fillZeros);
+  }
+
+  virtual void setSize(vector<int> sizeVec, bool copyValues = true,
+                       bool fillZeros = true) {
+    setSize(sizeVec[0], sizeVec[1], sizeVec[2], sizeVec[3], sizeVec[4], sizeVec[5],
+	    copyValues, fillZeros);
+  }
+  virtual int numDims() const { return 6; }
+  virtual int dimSize(int i) const {
+    switch (i) {
+      case 0:
+        return size1;
+        break;
+      case 1:
+        return size2;
+        break;
+      case 2:
+        return size3;
+        break;
+      case 3:
+        return size4;
+        break;
+      case 4:
+        return size5;
+        break;
+      case 5:
+        return size6;
+        break;
+      default:
+        PRINTF("Error, incorrect dimension given to dimSize\n");
+        return 0;
+    }
+  }
+};
+
+
+
+
+
+
 ////////////////////////////////////
 // VecNimArr
 ///////////////////////////////////
