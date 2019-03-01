@@ -1679,7 +1679,7 @@ class NimArr<6, T> : public NimArrBase<T> {
 
   void setMap(NimArrBase<T> &source, int off,
 	      int str1, int str2, int str3, int str4, int str5, int str6,
-	      int is1, int is2, int is3, int is4, int is5, int si6) {
+	      int is1, int is2, int is3, int is4, int is5, int is6) {
     if (NimArrBase<T>::own_v) nimble_free(NimArrBase<T>::v);
     NimArrBase<T>::boolMap = true;
     NimArrBase<T>::offset = off;
