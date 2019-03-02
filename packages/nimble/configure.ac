@@ -205,17 +205,17 @@ R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[[a-z]]" "[[A-Z]]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 AC_SUBST(R_ENABLE_LIB)
 
-if ! test `uname` = "Darwin" ; then
-RPATH="-Wl,-rpath=${NIMBLE_DIR}/CppCode"
-fi
-AC_SUBST(RPATH)
+## if ! test `uname` = "Darwin" ; then
+## RPATH="-Wl,-rpath=${NIMBLE_DIR}/CppCode"
+## fi
+## AC_SUBST(RPATH)
 
-if test "${ENABLE_LIB}" != "false" ; then
-  #XX
-  PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
-#  PKG_LIBS="-L. -lnimble $RPATH"
-fi
-AC_SUBST(PKG_LIBS)
+## if test "${ENABLE_LIB}" != "false" ; then
+##  #XX
+##  PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
+## #  PKG_LIBS="-L. -lnimble $RPATH"
+## fi
+## AC_SUBST(PKG_LIBS)
 
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 AC_SUBST(USE_REGISTRATION)
@@ -227,17 +227,17 @@ if test "${ENABLE_DEBUGGING}" != "yes"; then
   (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
 fi
 
+cp inst/CppCode/dists.cpp src
+cp inst/CppCode/RcppUtils.cpp src
+cp inst/CppCode/nimbleGraph.cpp src
+cp inst/CppCode/eigenUsingClasses.cpp src
+
 if test "${ENABLE_LIB}" != "false" ; then
- echo "Building libnimble"
-(cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile)
+  echo "Building libnimble"
+  (cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile)
 
 else
   echo "Building libnimble.a"
-  cp inst/CppCode/dists.cpp src
-  cp inst/CppCode/RcppUtils.cpp src
-  cp inst/CppCode/nimbleGraph.cpp src
-  cp inst/CppCode/eigenUsingClasses.cpp src
-
   (cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile libnimble.a)
 fi
 
