@@ -2686,8 +2686,9 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   expect_warning(mcmc <- buildMCMC(conf), "less than the number of potential clusters")
-  expect_equal(class(mcmc$samplerFunctions[[19]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_conjugate_dnorm_dnorm")
   clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
   expect_equal(FALSE, clusterNodeInfo$targetIndexedByFunction)
@@ -3800,8 +3801,9 @@ test_that("Testing BNP model based on CRP", {
   cmodel <- compileNimble(m)
   
   mConf <- configureMCMC(m, monitors = c('xi', 'thetatilde', 's2tilde'))
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
   expect_warning(mMCMC <- buildMCMC(mConf))
-  expect_equal(class(mMCMC$samplerFunctions[[101]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  expect_equal(class(mMCMC$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   CmMCMC=compileNimble(mMCMC, project=m)
   samples <- runMCMC(CmMCMC, niter=2000, nburnin=1900)
