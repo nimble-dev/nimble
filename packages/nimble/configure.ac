@@ -206,7 +206,7 @@ echo "ENABLE_LIB=${ENABLE_LIB}"
 AC_SUBST(R_ENABLE_LIB)
 
 if ! test `uname` = "Darwin" ; then
-RPATH="-Wl,-rpath=${NIMBLE_DIR}/CppCode"
+RPATH="-Wl,-rpath=../CppCode"
 fi
 AC_SUBST(RPATH)
 
