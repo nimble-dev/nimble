@@ -1709,6 +1709,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   inits = list(xi = rep(1,4), mu=rnorm(4))
   m = nimbleModel(code, data=data, inits= inits)
   conf = configureMCMC(m)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc = buildMCMC(conf)
   
   pYgivenT <- m$getLogProb('y[1]')
@@ -1721,13 +1722,13 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   postMean <- postVar * (data$y[1] / dataVar + priorMean / priorVar) # from conjugate sampler
   pTgivenY <- dnorm(m$mu[1] , postMean, sqrt(postVar), log = TRUE) # from conjugate sampler
   
-  mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$storeParams()
-  pY <- mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
   expect_equal(pY, pT + pYgivenT - pTgivenY)
   
   set.seed(1)
-  mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$sample(1, 1)
   set.seed(1)
   smp <- rnorm(1 , postMean, sqrt(postVar))
   expect_identical(smp, m$mu[1])
@@ -1747,6 +1748,7 @@ test_that("Testing posterior sampling and prior predictive computation with conj
   inits = list(xi = rep(1,4), mu=rnorm(4), s2=rinvgamma(4, 2, 1))
   m = nimbleModel(code, data=data, inits=inits)
   conf = configureMCMC(m)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mcmc = buildMCMC(conf)
   
   pYgivenT <- m$getLogProb('y[1]')
@@ -1764,14 +1766,14 @@ test_that("Testing posterior sampling and prior predictive computation with conj
                      sd = sqrt(m$s2[1] / (1+kappa)),
                      log=TRUE) 
   
-  mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$storeParams()
-  pY <- mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$storeParams()
+  pY <- mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$calculate_prior_predictive(1)
   
   expect_equal(pY, pT1 + pT2 + pYgivenT - pTgivenY1 - pTgivenY2)
   
   
   set.seed(1)
-  mcmc$samplerFunctions[[1]]$helperFunctions$contentsList[[1]]$sample(1, 1)
+  mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]]$sample(1, 1)
   set.seed(1)
   smp1 <- rinvgamma(1, shape = priorShape + 1/2,
                     scale = priorScale + kappa * (data$y[1] - priorMean)^2 / (2*(1+kappa)) )
@@ -3103,8 +3105,9 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   conf <- configureMCMC(m)
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
   expect_silent(mcmc <- buildMCMC(conf))
-  expect_equal(class(mcmc$samplerFunctions[[2]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   clusterNodeInfo <- nimble:::findClusterNodes(m, target)
   expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 1:n, "]"))
   expect_equal(TRUE, clusterNodeInfo$targetIsIndex)
@@ -3888,11 +3891,11 @@ test_that("Testing more BNP models based on CRP", {
   cmodel<-compileNimble(model)
   
   mConf <- configureMCMC(model)
+  crpIndex <- which(sapply(mConf$getSamplers(), function(x) x[['name']]) == 'CRP')
   mMCMC <- buildMCMC(mConf)
   
   expect_equal(mConf$getSamplers()[[1]]$name, "CRP_concentration")
-  expect_equal(mConf$getSamplers()[[7]]$name, "CRP")
-  expect_equal(class(mMCMC$samplerFunctions[[7]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  expect_equal(class(mMCMC$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   ## Using testBUGSmodel
   model <- function() {
