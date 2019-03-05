@@ -3236,8 +3236,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   inits2 <- inits
   inits2$muTilde <- matrix(rnorm(n^2),n)
   m <- nimbleModel(code, data = data, constants = const, inits = inits2)
-  conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "CRP variable used multiple times")
+  expect_error(conf <- configureMCMC(m), "CRP variable used multiple times")
   
   ## weird ordering of muTilde/s2Tilde but should be ok
   code <- nimbleCode({
