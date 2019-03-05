@@ -1138,7 +1138,7 @@ modelDefClass$methods(genReplacementsAndCodeReplaced = function() {
 
 modelDefClass$methods(genReplacedTargetValueAndParentInfo = function() {
     
-    nimFunNames <- distributions$namesExprList
+    nimFunNames <- getAllDistributionsInfo('namesExprList')
     
     for(i in seq_along(declInfo)) {
         declInfo[[i]]$genReplacedTargetValueAndParentInfo(constantsNamesList, contexts[[declInfo[[i]]$contextID]],
