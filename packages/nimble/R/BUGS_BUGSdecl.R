@@ -866,7 +866,6 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             isRonly <- isRfunction &
                 (!checkNimbleOrRfunctionNames(funName))
             ## if it can be called only in R but not all contents are replaceable, generate error:
-            browser()
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName))
                     stop("R function '", funName,"' does not exist.")

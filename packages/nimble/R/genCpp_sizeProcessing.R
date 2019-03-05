@@ -1846,7 +1846,6 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## generate setSize(LHS, ...) where ... are dimension expressions
         if(length(RHSnDim) == 0) {
             message("confused about trying to eigenize something with nDim = 0")
-            browser()
         }
         if(RHSnDim > 0) {
             if(!(RHS$name %in% setSizeNotNeededOperators)) {
