@@ -231,9 +231,9 @@ distClass <- setRefClass(
 #####################################################################################################
 
 checkDistributionInput <- function(distributionInput) {
-    allowedFields <- unique(unlist(sapply(distributionsInputList, names)))
+    allowedFields <- c(unique(unlist(sapply(distributionsInputList, names))), 'conjugacy')
     if(sum(!names(distributionInput) %in% allowedFields)) 
-        stop(paste0(names(distributionInput), " has unknown field."))
+        stop(paste0(distributionInput$BUGSdist, " has unknown field."))
     if(!sum(is.character(distributionInput$BUGSdist))) stop(paste0(distributionInput$BUGSdist, ": field 'BUGSdist' is not of type character."))
     if(exists("Rdist", distributionInput, inherits = FALSE) && !sum(is.character(distributionInput$Rdist))) stop(paste0(distributionInput$BUGSdist, ": field 'Rdist' is not type of character."))
     if(exists("discrete", distributionInput, inherits = FALSE) && !sum(is.logical(distributionInput$discrete))) stop(paste0(distributionInput$BUGSdist, ": field 'discrete' is not type logical."))
@@ -243,6 +243,19 @@ checkDistributionInput <- function(distributionInput) {
     if(exists("altParams", distributionInput, inherits = FALSE) && !sum(is.character(distributionInput$altParams))) stop(paste0(distributionInput$BUGSdist, ": field 'altParams' is not of type character."))
     if(length(distributionInput$BUGSdist) > 1 || (exists('discrete', distributionInput, inherits = FALSE) && length(distributionInput$discrete) > 1) || (exists('pqAvail', distributionInput, inherits = FALSE) && length(distributionInput$pqAvail) > 1))
         stop(paste0(names(distributionInput), " field 'BUGSdist', 'discrete', 'altParams', or 'pqAvail' is not of length one."))
+    if(exists("conjugacy", distributionInput, inherits = FALSE)) {
+        conj <- distributionInput$conjugacy
+        if(!is.list(conj)) stop(paste0(distributionInput$BUGSdist, ": conjugacy should be a list."))
+        if(!'prior' %in% names(conj) || !is.character(conj$prior))
+            stop(paste0(distributionInput$BUGSdist, ": conjugacy does not contain 'prior' of type character."))
+        if(!'link' %in% names(conj) || !is.character(conj$link))
+            stop(paste0(distributionInput$BUGSdist, ": conjugacy does not contain 'link' of type character."))
+        if(!'dependents' %in% names(conj) || !is.list(conj$dependents) ||
+           length(conj$dependents) != sum(sapply(conj$dependents, function(x) 'param' %in% names(x))))
+            stop(paste0(distributionInput$BUGSdist, ": conjugacy does not contain 'dependents' list."))
+        if(!'posterior' %in% names(conj) || !is.character(conj$posterior))
+            stop(paste0(distributionInput$BUGSdist, ": conjugacy does not contain 'posterior' of type character."))
+    }
     invisible(NULL)
 }
 
@@ -531,12 +544,17 @@ registerDistributions <- function(distributionsInput, userEnv = parent.frame(), 
             nimbleUserNamespace$distributions <- distributionsClass(distributionsInput)
         virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
         createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
-
-        if(exists('conjugacy', distributionsInput, inherits = FALSE)) {
+        if(sum(sapply(distributionsInput, function(x) exists('conjugacy', x, inherits = FALSE)))) {
             if(exists('conjugacyRelationshipsObject', nimbleUserNamespace, inherits = FALSE)) {
-                nimbleUserNamespace$conjugacyRelationshipsObject$add(distributionsInput$conjugacy)
-            } else 
-                nimbleUserNamespace$conjugacyRelationshipsObject <- conjugacyRelationshipsClass(list(distributionInput$conjugacy))  ## input is expected to be a list of conjugacies
+                for(i in seq_along(distributionsInput))
+                    if(exists('conjugacy', distributionsInput[[i]], inherits = FALSE))
+                        nimbleUserNamespace$conjugacyRelationshipsObject$add(distributionsInput[[i]]$conjugacy)
+            } else {
+                conjugacyRelationshipsInputList <- lapply(distributionsInput, '[[', 'conjugacy')
+                nonNull <- !sapply(conjugacyRelationshipsInputList, is.null)
+                if(sum(nonNull))
+                    nimbleUserNamespace$conjugacyRelationshipsObject <- conjugacyRelationshipsClass(conjugacyRelationshipsInputList[nonNull])
+            }
         }
     # note don't use rFunHandler as rUserDist nimbleFunction needs n as first arg so it works on R side, therefore we have n in the C version of the nimbleFunction and don't want to strip it out in Cpp generation
       }
@@ -571,6 +589,13 @@ deregisterDistributions <- function(distributionsNames) {
               rm(distributions, envir = nimbleUserNamespace)
         }
     }
+
+    if(exists('conjugacyRelationshipsObject', nimbleUserNamespace, inherits = FALSE)) {
+        nimbleUserNamespace$conjugacyRelationshipsObject$remove(distributionsNames)
+        if(!length(nimbleUserNamespace$conjugacyRelationshipsObject$conjugacys))
+            rm(conjugacyRelationshipsObject, envir = nimbleUserNamespace)
+    }
+
     invisible(NULL)
 }
     

@@ -95,7 +95,6 @@ Collate:
     nimbleProject.R
     initializeModel.R
     CAR.R
-    MLG_distributions.R
     MCMC_utils.R
     MCMC_configuration.R
     MCMC_build.R
@@ -112,6 +111,7 @@ Collate:
     filtering_liuwest.R
     filtering_enkf.R
     filtering_bootstrap.R
+    MLG_distributions.R     
     BNP_distributions.R
     BNP_samplers.R
     NF_utils.R

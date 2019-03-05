@@ -167,18 +167,7 @@ conjugacyRelationshipsInputList <- list(
              dmnorm = list(param = 'cov', contribution_S = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
                                     df          = prior_df + contribution_df,
-                                    scale_param = 1)'),
-
-
-    ## Bradley et al. multivariate-log-gamma
-    list(prior = 'dMLG',
-         link = 'linear_exp',
-         dependents = list(
-             ## offset and coeff are actually exp(offset) and exp(offset+coeff) so need to back out
-             ## on log scale.
-             dvpois = list(param = 'lambda', contribution_value = 'value',
-                           contribution_offset = 'log(offset)', contribution_coeff = 'log(coeff) - log(offset)')),
-         posterior = 'dcMLG(contribution_value, contribution_offset, contribution_coeff, prior_cholesky, prior_sigma, prior_shape, prior_rate)')    
+                                    scale_param = 1)')
 )
 
 
@@ -209,8 +198,12 @@ conjugacyRelationshipsClass <- setRefClass(
             ## used to add user-defined conjugacies within the conjRel object living in nimbleUserNamespace
             n <- length(conjugacys)
             conjugacys[[n+1]] <<- conjugacyClass(cr)
-            names(conjugacys)[[n+1]] <- cr$prior
-        },            
+            names(conjugacys)[[n+1]] <<- cr$prior
+        },
+        remove = function(priors) {
+            indexes <- which(names(conjugacys) %in% priors)
+            conjugacys[indexes] <<- NULL
+        },
         checkConjugacy = function(model, nodeIDs, restrictLink = NULL) {
             maps <- model$modelDef$maps
             nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
@@ -933,7 +926,8 @@ posteriorClass <- setRefClass(
             neededContributionDims <<- inferContributionTermDimensions(prior)
         },
         inferContributionTermDimensions = function(prior) {
-            distToLookup <- if(dDistribution %in% distributions$namesVector) dDistribution else if(prior %in% distributions$namesVector) prior else stop('cannot locate prior or posterior distribution in conjugacy processing')
+            nms <- getAllDistributionsInfo('namesVector')
+            distToLookup <- if(dDistribution %in% nms) dDistribution else if(prior %in% nms) prior else stop('cannot locate prior or posterior distribution in conjugacy processing')
             targetNdim <- getDimension(distToLookup)
             ## if posterior distribution is univariate, assume all contributions are scalar
             if(targetNdim == 0) {
