@@ -427,6 +427,9 @@ copierClassBuilderCase< blockCopierClass<double, double, 3>, blockCopierClass<do
 
 copierClassBuilderCase< blockCopierClass<double, double, 4>, blockCopierClass<double, int, 4>, blockCopierClass<int, int, 4>, blockCopierClass<int, double, 4> > globalCopierClassBuilderBlock4;
 
+copierClassBuilderCase< blockCopierClass<double, double, 5>, blockCopierClass<double, int, 5>, blockCopierClass<int, int, 5>, blockCopierClass<int, double, 5> > globalCopierClassBuilderBlock5;
+
+copierClassBuilderCase< blockCopierClass<double, double, 6>, blockCopierClass<double, int, 6>, blockCopierClass<int, int, 6>, blockCopierClass<int, double, 6> > globalCopierClassBuilderBlock6;
 
 copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV, int isToMV) { // like nimCopyOne but it returns an appropriate derived copierClass object
   copierClassBuilderClass *copierClassBuilder;
@@ -487,6 +490,12 @@ copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableM
     break;
   case 4:
     copierClassBuilder = &globalCopierClassBuilderBlock4;
+    break;
+  case 5:
+    copierClassBuilder = &globalCopierClassBuilderBlock5;
+    break;
+  case 6:
+    copierClassBuilder = &globalCopierClassBuilderBlock6;
     break;
   default:
     NIMERROR("problem in makeOneCopyClass");
