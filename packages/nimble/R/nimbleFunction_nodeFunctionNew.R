@@ -8,6 +8,7 @@ nodeFunctionNew <- function(LHS,
                             type,
                             setupOutputExprs,
                             dynamicIndexInfo = NULL,
+                            unrolledIndicesMatrix = NULL,
                             evaluate = TRUE,
                             nodeDim = NULL,
                             where = globalenv()) {
@@ -27,7 +28,10 @@ nodeFunctionNew <- function(LHS,
         } else dynamicIndexLimitsExpr <- NULL
     } else dynamicIndexLimitsExpr <- NULL
     if(nimbleOptions('experimentalEnableDerivs')){
-      parents <- names(parentsSizeAndDims)
+        parents <- names(parentsSizeAndDims)
+        ADconstantsInfo <- makeSizeAndDimListForIndexedInfo(LHSrep, parents, unrolledIndicesMatrix)
+        ADconstantsInfo <- makeSizeAndDimListForIndexedInfo(RHSrep, parents, unrolledIndicesMatrix,
+                                                            allSizeAndDimList = ADconstantsInfo)
       parentIndexInfoList <- nndf_extractNodeIndices(LHSrep, parents)
       parentIndexInfoList <- nndf_extractNodeIndices(RHSrep, parents, indexExprList = parentIndexInfoList)
       for(i in seq_along(parentIndexInfoList)){

@@ -1220,6 +1220,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                                                                    type=type,
                                                                                    setupOutputExprs=setupOutputExprs,
                                                                                    dynamicIndexInfo = dynamicIndexInfo,
+                                                                                   unrolledIndicesMatrix = BUGSdecl$unrolledIndicesMatrix,
                                                                                    nodeDim = nodeDim,
                                                                                    evaluate=TRUE,
                                                                                    where = where)
