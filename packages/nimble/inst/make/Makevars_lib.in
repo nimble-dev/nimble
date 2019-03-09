@@ -21,6 +21,7 @@ ifndef NIMBLE_DIR
 NIMBLE_DIR="@NIMBLE_DIR@"
 endif
 
+# Note that because of staged install as of 2019-03-01, @RPATH@ is now replaced via createMakevars at run-time, not by configure.
 ifndef RPATH
 RPATH=@RPATH@
 endif

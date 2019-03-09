@@ -37,7 +37,11 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
      if(!file.exists(.copyFrom))
          stop("No default Makevars file")
 
-     file.copy(.copyFrom, target)  # file.link won't work across file systems.
+     ## file.copy(.copyFrom, target)  # file.link won't work across file systems.
+     contents <- readLines(.copyFrom)
+     RPATH <- sprintf("-Wl,-rpath %s", system.file("CppCode", package = "nimble"))
+     contents <- gsub("@RPATH@", RPATH, contents)
+     cat(contents, file = target, sep = "\n")
      return(target)
   }
 
