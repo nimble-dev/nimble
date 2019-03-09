@@ -173,7 +173,7 @@ AC_SUBST(NEED_MAKEVARS_FILE)
 AC_SUBST(R_PACKAGE_DIR)
 
 if test "${ENABLE_LIB}" != "false" ; then
- NIMBLE_DIR=${R_PACKAGE_DIR}
+ # NIMBLE_DIR=${R_PACKAGE_DIR}   # No longer used with staged installation.
  echo "NIMBLE_DIR = ${NIMBLE_DIR}"
 else
  NIMBLE_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
