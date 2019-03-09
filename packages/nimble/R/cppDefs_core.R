@@ -173,14 +173,14 @@ cppClassDef <- setRefClass('cppClassDef',
                                                         Sderived = cppSEXP(name = 'Sderived_EXTPTR'))
                                    CBobjectDefs <- c(CBobjectDefs, baseClassPtrObjectDefs)
                                    newCodeLine <- cppLiteral(c(paste0('newObj = new ', name,';'),
-                                                               'PROTECT(Sderived_EXTPTR = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));'))
+                                                               'Sderived_EXTPTR = PROTECT(R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));'))
                                    baseClassCastLines <- mapply(
                                        function(baseClassName, Sname)
                                            paste0('PROTECT(',Sname,'= R_MakeExternalPtr(dynamic_cast<',baseClassName,'*>(newObj), R_NilValue, R_NilValue));'),
                                        baseClassName = allinheritance,
                                        Sname = SallinheritanceNames)
                                    baseClassCastLines <- cppLiteral(baseClassCastLines)
-                                   allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = Rf_allocVector(VECSXP,',numBaseClasses + 1, '));'))
+                                   allocVectorLine <- cppLiteral(paste0('Sans = PROTECT(Rf_allocVector(VECSXP,',numBaseClasses + 1, '));'))
 
                                    packListLines <- mapply(function(Sname, i) paste0('SET_VECTOR_ELT(Sans,',i,',',Sname,');'),
                                                            Sname = c('Sderived_EXTPTR', SallinheritanceNames),

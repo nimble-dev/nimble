@@ -1,6 +1,5 @@
 ---
 fontsize: 11pt
-url: 'https://r-nimble.org'
 cover-image: nimble-icon.png
 output: bookdown::gitbook
 documentclass: book
@@ -20,9 +19,10 @@ library(methods)
 opts_chunk$set(eval = TRUE, message = FALSE) ## turned off message() output
 nimbleOptions(MCMCprogressBar = FALSE)
 runMCEMs <- TRUE
-nimbleVersion="0.6-12"
+nimbleVersion <- packageVersion('nimble')
 ```
-<!---
+
+<!--- done in _bookdown.yml
 rmd_files: ["index.Rmd", "chapter_WelcomeToNimble.Rmd", "chapter_LightningIntroduction.Rmd", "chapter_MoreIntroduction.Rmd", "chapter_InstallingNimble.Rmd", "chapter_WritingModels.Rmd", "chapter_BuildingModels.Rmd", "chapter_MCMC.Rmd", "chapter_OtherAlgorithms.Rmd", "chapter_Spatial.Rmd", "chapter_BNP.Rmd", "chapter_ProgrammingOverview.Rmd", "chapter_RCfunctions.Rmd", "chapter_UserDefined.Rmd", "chapter_UsingModels.Rmd", "chapter_DataStructures.Rmd", "chapter_WritingNimbleFunctions.Rmd"]
 -->
 

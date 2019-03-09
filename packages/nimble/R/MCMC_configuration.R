@@ -97,7 +97,7 @@ MCMCconf <- setRefClass(
             multivariateNodesAsScalars = FALSE,
             enableWAIC = nimbleOptions('enableWAIC'),
             warnNoSamplerAssigned = TRUE,
-            print = FALSE) {
+            print = FALSE, ...) {
             '
 Creates a MCMC configuration for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
@@ -139,6 +139,8 @@ enableWAIC: A logical argument, specifying whether to enable WAIC calculations f
 warnNoSamplerAssigned: A logical argument specifying whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule. Default is TRUE.
 
 print: A logical argument specifying whether to print the ordered list of default samplers.  Default is FALSE.
+
+...: Additional named control list elements for default samplers, or additional arguments to be passed to the autoBlock function when autoBlock = TRUE.
 '
             if(is(model, 'RmodelBaseClass')) {
                 model <<- model
@@ -154,7 +156,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             enableWAIC <<- enableWAIC
             samplerConfs <<- list()
             samplerExecutionOrder <<- numeric()
-            controlDefaults <<- list()
+            controlDefaults <<- list(...)
             namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
             if(identical(nodes, character())) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -216,11 +218,11 @@ print: A logical argument specifying whether to print the ordered list of defaul
                         }
                         if(nodeDist == 'dmulti')       { addSampler(target = node, type = 'RW_multinomial');     next }
                         if(nodeDist == 'ddirch')       { addSampler(target = node, type = 'RW_dirichlet');       next }
+                        if(nodeDist == 'dwish')        { addSampler(target = node, type = 'RW_wishart');         next }
+                        if(nodeDist == 'dinvwish')     { addSampler(target = node, type = 'RW_wishart');         next }
                         if(nodeDist == 'dcar_normal')  { addSampler(target = node, type = 'CAR_normal');         next }
                         if(nodeDist == 'dcar_proper')  { addSampler(target = node, type = 'CAR_proper');         next }
-                        if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP');                next }
-                        if(nodeDist == 'dwish')        { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
-                        if(nodeDist == 'dinvwish')     { stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate inverse-Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.') }
+                        if(nodeDist == 'dCRP')         { addSampler(target = node, type = 'CRP', control = list(useConjugacy = useConjugacy));                next }
                         if(multivariateNodesAsScalars) {
                             for(scalarNode in nodeScalarComponents) {
                                 if(onlySlice) addSampler(target = scalarNode, type = 'slice')
@@ -288,7 +290,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE) {
+        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name, silent = FALSE, ...) {
             '
 Adds a sampler to the list of samplers contained in the MCMCconf object.
 
@@ -305,6 +307,8 @@ print: Logical argument, specifying whether to print the details of the newly ad
 name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
 
 silent: Logical argument, specifying whether to print warning messages when assigning samplers.
+
+...: Additional named arguments passed through ... will be used as additional control list elements.
 
 Details: A single instance of the newly configured sampler is added to the end of the list of samplers for this MCMCconf object.
 
@@ -356,7 +360,8 @@ Invisibly returns a list of the current sampler configurations, which are sample
             ##libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only
             ##if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
             ##requiredControlNames <- controlNamesLibrary[[libraryTag]]
-            thisControlList <- mcmc_generateControlListArgument(control=control, controlDefaults=controlDefaults)  ## should name arguments
+            controlArgs <- c(control, list(...))
+            thisControlList <- mcmc_generateControlListArgument(control=controlArgs, controlDefaults=controlDefaults)  ## should name arguments
             
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=target, control=thisControlList, model=model)
@@ -713,52 +718,49 @@ waic: A logical argument, indicating whether to enable WAIC calculations in the 
 
 checkCRPconjugacy <- function(model, target) {
     ## Checks if can use conjugacy in drawing new components for dCRP node updating.
+    ## Should detect various univariate cases and normal-invgamma case.
+    ## We don't yet handle conjugacies with non-identity relationships.
     
     conjugate <- FALSE 
     
     targetElementExample <- model$expandNodeNames(target, returnScalarComponents=TRUE)[1]
-    VarNames <- model$getVarNames()
-    
-    # finding tilde variables:
-    tildevarNames=c()
-    itildeVar <- 1
-    
-    Dep <- model$getDependencies(targetElementExample, self=FALSE)
-    for(i in 1:length(Dep)){ 
-      Depi <- Dep[i]
-      expr <- cc_getNodesInExpr(model$getValueExpr(Depi))
-      expr <- parse(text = expr)[[1]]
-      if(is.call(expr) && expr[[1]] == '[' && expr[[3]] == targetElementExample){
-        tildevarNames[itildeVar] <- VarNames[which(VarNames==expr[[2]])]
-        itildeVar <- itildeVar+1 
-      }
-    }
-          
-    ## determination of conjugacy for one tilde node that has 1 or 0 determnistic nodes
-    ## does not find conjugacy when we have random mean and variance defined by deterministic nodes
-    ## does find conjugacy when we have random mean  defined or not by deterministic nodes
-    ## dont know what does when y[i] ~ dnorm(thetatilde[xi[i]], var=s2tilde[xi[i]]). here nInterm=1
-    ## dont know what does when y[i] ~ dnorm(0, var=s2tilde[xi[i]]). here nInterm=1
-    
-    ## new checking for conjugacy using tilde variables: check conjugacy for one tilde node and
-    ## then make sure all tilde nodes and all of their dependent nodes are exchangeable
-    if(length(tildevarNames) == 1){  ## for now avoid case of mixing over multiple parameters
-        clusterNodes <- model$expandNodeNames(tildevarNames[1])  # e.g., 'thetatilde[1]',...,
+
+    clusterVarInfo <- findClusterNodes(model, target)
+ 
+    ## Check conjugacy for one cluster node (for efficiency reasons) and then make sure all
+    ## cluster nodes are IID and dependent nodes are from same declaration so conjugacy check for one should hold for all.
+    ## Note that cases where intermediate deterministic nodes are not from same declaration should be caught in sampler_CRP
+    ## because we don't allow cluster ID to appear in multiple declarations, so can't have mu[1] <- muTilde[xi[1]]; mu[2] <- exp(muTilde[xi[2]])
+    if(length(clusterVarInfo$clusterVars) == 1) {  ## for now avoid case of mixing over multiple parameters, but allow dnorm_dinvgamma below
+        clusterNodes <- clusterVarInfo$clusterNodes[[1]]  # e.g., 'thetatilde[1]',...,
         conjugacy <- model$checkConjugacy(clusterNodes[1], restrictLink = 'identity')
         if(length(conjugacy)) {
-            if(length(unique(model$getDeclID(clusterNodes))) == 1) { ## make sure all tilde nodes from same declaration (i.e., exchangeable)
-                depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
-                if(length(unique(model$getDeclID(depNodes))) == 1) { ## make sure all dependent nodes from same declaration (i.e., exchangeable)
+            conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) 
+            conjugate <- TRUE
 
-                    conjugacyType <- paste0(conjugacy[[1]]$type, '_', sub('dep_', '', names(conjugacy[[1]]$control))) # clau: change 'types' by 'conjugacy[[1]]$type'. 
-                    conjugate <- TRUE
-                }
-            }
+            ## Check that dependent nodes ('observations') from same declaration.
+            ## This should ensure they have same distribution and parameters are being
+            ## clustered in same way, but also allows other parameters to vary, e.g.,
+            ## y[i] ~ dnorm(mu[xi[i]], s2[i])
+            depNodes <- model$getDependencies(clusterNodes[1], stochOnly = TRUE, self=FALSE)
+            if(length(unique(model$getDeclID(depNodes))) != 1)  ## make sure all dependent nodes from same declaration (i.e., exchangeable)
+                conjugate <- FALSE
+
+            ## Check that cluster nodes are IID
+            valueExprs <- sapply(clusterNodes, function(x) model$getValueExpr(x))
+            names(valueExprs) <- NULL
+            if(length(unique(valueExprs)) != 1)
+                conjugate <- FALSE
         }
+    }
+    ## check for dnorm_dinvgamma conjugacy
+    if(length(clusterVarInfo$clusterVars) == 2 &&
+       checkNormalInvGammaConjugacy(model, clusterVarInfo)) {
+        conjugate <- TRUE
+        conjugacyType <- "conjugate_dnorm_invgamma_dnorm"
     }
     if(conjugate) return(conjugacyType) else return(NULL)
 }
-
 
 rule <- setRefClass(
     Class = 'rule',
@@ -947,18 +949,16 @@ print: Logical argument specifying whether to print the resulting ordered list o
 	    ## dirichlet
             addRule(quote(nodeDistribution == 'ddirch'), 'RW_dirichlet')
             
+	    ## wishart
+            addRule(quote(nodeDistribution == 'dwish'), 'RW_wishart')
+            
+            ## inverse-wishart
+            addRule(quote(nodeDistribution == 'dinvwish'), 'RW_wishart')
+            
             ## CAR models
             addRule(quote(model$getDistribution(node) == 'dcar_normal'), 'CAR_normal')
             addRule(quote(model$getDistribution(node) == 'dcar_proper'), 'CAR_proper')
 
-            ## Wishart
-            addRule(quote(model$getDistribution(node) == 'dwish'),
-                    quote(stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.')))
-            
-            ## inverse-Wishart
-            addRule(quote(model$getDistribution(node) == 'dinvwish'),
-                    quote(stop('At present, the NIMBLE MCMC does not provide a sampler for non-conjugate inverse-Wishart nodes. Users can implement an appropriate sampling algorithm as a nimbleFunction, for use in the MCMC.')))
-            
             ## multivariate & multivariateNodesAsScalars: univariate RW
             addRule(quote(isMultivariate && multivariateNodesAsScalars),
                     quote(for(scalarNode in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
@@ -1051,7 +1051,7 @@ nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@param autoBlock A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.
 #'@param oldConf An optional MCMCconf object to modify rather than creating a new MCMCconf from scratch
-#'@param ... Additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}
+#'@param ... Additional named control list elements for default samplers, or additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}
 #'@author Daniel Turek
 #'@export 
 #'@details See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object
@@ -1085,7 +1085,7 @@ configureMCMC <- function(model, nodes, control = list(),
                          multivariateNodesAsScalars = multivariateNodesAsScalars,
                          enableWAIC = enableWAIC,
                          warnNoSamplerAssigned = warnNoSamplerAssigned,
-                         print = print)
+                         print = print, ...)
     return(thisConf)	
 }
 

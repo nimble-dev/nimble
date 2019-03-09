@@ -46,6 +46,7 @@ nimbleOrRfunctionNames <- c('[',
                             'loggam',
                             'log1p',
                             'lfactorial',
+                            'besselK',
                             'ceiling',
                             'floor',
                             'round',
@@ -366,7 +367,7 @@ makeIndexNamePieces <- function(indexCode) {
     if(as.character(indexCode[[1]] != ':'))
         stop(paste0("Error processing model: something is wrong with the index ",
                     deparse(indexCode),
-                    "."),
+                    ".\nIndexing in model code requires this syntax: '(start expression):(end expression)'."),
              call. = FALSE)
     p1 <- indexCode[[2]]
     p2 <- indexCode[[3]]

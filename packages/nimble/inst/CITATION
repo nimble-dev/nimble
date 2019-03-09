@@ -1,4 +1,4 @@
-citHeader("In published work that uses or mentions NIMBLE, please cite the Journal of Computational and Graphical Statistics article. To cite a specific version of the package or to cite material from the manual, please cite the package itself or the manual.")
+citHeader("In published work that uses or mentions NIMBLE, please cite the Journal of Computational and Graphical Statistics article. To cite a specific version of the package or to cite material from the manual, please cite the package itself or the manual. To help us track usage to justify funding support for NIMBLE please include the DOI in the citation. When citing the package or manual, please ask your publisher to make sure that the author is given as NIMBLE Development Team.")
 
 year <- sub("-.*", "", meta$Date)
 note <- sprintf("{R} package version %s", meta$Version)
@@ -13,7 +13,12 @@ bibentry(
  issue = "2",
  pages = "403-413",
  year = "2017",
- author = "de Valpine, P., D. Turek, C.J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik",
+ author = c(person("P.", "de Valpine"),
+            person("D.", "Turek"),
+            person("C.J.", "Paciorek"),
+            person("C.", "Anderson-Bergman"),
+            person("D.", "Temple Lang"),
+            person("R.", "Bodik")),
  doi = "10.1080/10618600.2016.1172487",
  textVersion = "de Valpine, P., D. Turek, C.J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik. 2017. Programming with models: writing statistical algorithms for general model structures with NIMBLE. Journal of Computational and Graphical Statistics 26: 403-413. <DOI:10.1080/10618600.2016.1172487>."
 )
@@ -26,7 +31,7 @@ bibentry(
  year = year,
  version = meta$Version,
  note = note,
- doi = "10.5281/zenodo.1322114",
+ doi = "10.5281/zenodo.1211190"
 )
 
 bibentry(
@@ -37,7 +42,7 @@ bibentry(
  year = year,
  version = meta$Version,
  note = noteManual,
- doi = "10.5281/zenodo.1322114",
+ doi = "10.5281/zenodo.1211190",
  textVersion = NULL
 )
 

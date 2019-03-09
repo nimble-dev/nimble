@@ -204,6 +204,8 @@ Supported distributions, listed by their 'd' function, include:
   - `dpois(x, lambda, log)`
   - `dbeta(x, shape1, shape2, log)`
   - `dchisq(x, df, log)`
+  - `ddexp(x, location, rate, log)`
+  - `ddexp(x, location, scale, log)`  
   - `dexp(x, rate, log)`
   - `dexp_nimble(x, rate, log)`
   - `dexp_nimble(x, scale, log)`
@@ -355,10 +357,24 @@ x <- A %*% B # assume A and B are double matrices or vectors
 ``` 
 
 will create `x` to be a double matrix of the correct size
-(determined during execution).  If `x` is used subsequently, it can
+(determined during execution).
+
+##### Avoid changing types of a variable within a nimbleFunction
+
+Because NIMBLE is statically typed, you cannot use the same variable name for two objects of different types (including objects of different dimensions).
+
+Suppose we have (implicitly) created `x` as a double matrix. 
+If `x` is used subsequently, it can
 only be used as a double matrix. This is true even if it is assigned a
 new value, which will again set its size automatically but cannot
 change its type.
+
+```{r, eval=FALSE}
+x <- A %*% B # assume A and B are double matrices or vectors
+x <- nimMatrix(0, nrow = 5, ncol = 2)  # OK: 'x' is still a double matrix
+x <- rnorm(10)  # NOT OK: 'x' is a double vector
+``` 
+
 
 #### When a numeric object needs to be created before being used {#sec:when-numeric-object}
 

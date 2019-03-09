@@ -886,6 +886,10 @@ keywordList[['dinvgamma']] <- d_gamma_keywordInfo
 keywordList[['pinvgamma']] <- pq_gamma_keywordInfo
 keywordList[['qinvgamma']] <- pq_gamma_keywordInfo
 keywordList[['rinvgamma']] <- rgamma_keywordInfo
+keywordList[['ddexp']] <- d_gamma_keywordInfo
+keywordList[['pdexp']] <- pq_gamma_keywordInfo
+keywordList[['qdexp']] <- pq_gamma_keywordInfo
+keywordList[['rdexp']] <- rgamma_keywordInfo
 # can be handled the same as gamma, so include although we have dexp_nimble too
 keywordList[['dexp']] <- d_gamma_keywordInfo
 keywordList[['pexp']] <- pq_gamma_keywordInfo
@@ -952,6 +956,11 @@ matchFunctions[['dexp_nimble']] <- function(x, rate, scale = 1, log = FALSE){}
 matchFunctions[['rexp_nimble']] <- function(n, rate, scale = 1){}
 matchFunctions[['qexp_nimble']] <- function(p, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pexp_nimble']] <- function(q, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
+
+matchFunctions[['ddexp']] <- function(x, location, scale = 1, rate, log = FALSE){}
+matchFunctions[['rdexp']] <- function(n, location, scale = 1, rate){}
+matchFunctions[['qdexp']] <- function(p, location, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['pdexp']] <- function(q, location, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
 
 matchModelMemberFunctions <- new.env()
 matchModelMemberFunctions[['calculate']] <- function(nodes) {}
@@ -1746,10 +1755,10 @@ makeSingleIndexAccessCodeNames <- function(baseName) {
 }
 
 handleScaleAndRateForGamma <- function(code){
-    ## also handles core R dexp and dinvgamma
+    ## also handles core R dexp, as well as ddexp, and dinvgamma
     scaleArg <- code$scale
     rateArg <- code$rate
-    if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma, invgamma, or dexp')
+    if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma, invgamma, dexp, or ddexp')
     codeName <- deparse(code[[1]])
     dist <- substring(codeName, 2, nchar(codeName))
     if(dist == 'invgamma') {

@@ -546,7 +546,7 @@ See `help(runMCMC)` for further details.
 
 The MCMC algorithm (either the compiled or uncompiled version) can be executed using the member method `mcmc$run` (see `help(buildMCMC)` in R).  The `run` method has one required argument, `niter`, the number of iterations to be run.
 
-The `run} method has optional arguments `nburnin`, `thin` and `thin2`.  These can be used to specify the number of pre-thinning burnin samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to `monitors` and `monitors2`).  If either `thin` and `thin2` are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
+The `run` method has optional arguments `nburnin`, `thin` and `thin2`.  These can be used to specify the number of pre-thinning burnin samples to discard, and the post-burnin thinning intervals for recording samples (corresponding to `monitors` and `monitors2`).  If either `thin` and `thin2` are provided, they will override the thinning intervals that were specified in the original MCMC configuration object.
 
 The `run` method has an optional `reset` argument.  When `reset = TRUE` (the default value), the following occurs prior to running the MCMC:
 
@@ -557,7 +557,7 @@ The `run` method has an optional `reset` argument.  When `reset = TRUE` (the def
 
 When `mcmc$run(niter, reset = FALSE)` is called, the MCMC picks up from where it left off, continuing the previous chain and expanding the output as needed.  No values in the model are checked or altered, and sampler functions are not reset to their initial states.  
 
-### Measuring sampler computation times: *getTimes* \label{sec:sampler-time}
+### Measuring sampler computation times: *getTimes* {#sec:sampler-time}
 
 If you want to obtain the computation time spent in each sampler, you can set `time=TRUE` as a run-time argument and then use the method `getTimes()` obtain the times.  For example,
 
@@ -606,7 +606,14 @@ The WAIC is calculated by calling the member method `mcmc$calculateWAIC` (see `h
 
 ```{r, eval=FALSE}
 Cmcmc$calculateWAIC(nburnin = 100)
-``` 
+```
+
+Note that there is not a unique value of WAIC for a model. WAIC is calculated from
+Equations 5, 12, and 13 in [@Gelman_etal_2014] (i.e. using \emph{p}WAIC2). In NIMBLE, the set
+of all stochastic nodes monitored by the MCMC object will be treated as
+$\theta$ for the purposes of Equation 5 from [@Gelman_etal_2014].
+
+In many cases one would want $\theta$ to be the set of all stochastic nodes in the model, in which case the user *must* set the MCMC monitors to include all stochastic nodes; by default the MCMC monitors are only the top-level nodes of the model.
 
 ## k-fold cross-validation
 

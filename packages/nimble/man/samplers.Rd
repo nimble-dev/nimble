@@ -9,9 +9,11 @@
 \alias{RW_PF}
 \alias{RW_PF_block}
 \alias{RW_block}
+\alias{RW_dirichlet}
 \alias{RW_llFunction}
 \alias{RW_llFunction_block}
 \alias{RW_multinomial}
+\alias{RW_wishart}
 \alias{crossLevel}
 \alias{posterior_predictive}
 \alias{sampler}
@@ -21,6 +23,7 @@
 \alias{sampler_CAR_proper}
 \alias{sampler_CRP}
 \alias{sampler_CRP_concentration}
+\alias{sampler_CRP_old}
 \alias{sampler_RW}
 \alias{sampler_RW_PF}
 \alias{sampler_RW_PF_block}
@@ -29,6 +32,7 @@
 \alias{sampler_RW_llFunction}
 \alias{sampler_RW_llFunction_block}
 \alias{sampler_RW_multinomial}
+\alias{sampler_RW_wishart}
 \alias{sampler_binary}
 \alias{sampler_categorical}
 \alias{sampler_crossLevel}
@@ -71,6 +75,8 @@ sampler_RW_multinomial(model, mvSaved, target, control)
 
 sampler_RW_dirichlet(model, mvSaved, target, control)
 
+sampler_RW_wishart(model, mvSaved, target, control)
+
 sampler_CAR_normal(model, mvSaved, target, control)
 
 sampler_CAR_proper(model, mvSaved, target, control)
@@ -78,6 +84,8 @@ sampler_CAR_proper(model, mvSaved, target, control)
 sampler_CRP_concentration(model, mvSaved, target, control)
 
 sampler_CRP(model, mvSaved, target, control)
+
+sampler_CRP_old(model, mvSaved, target, control)
 }
 \arguments{
 \item{model}{(uncompiled) model on which the MCMC is to be run}
@@ -183,7 +191,7 @@ The ess sampler accepts the following control list arguments.
 \section{AF_slice sampler}{
 
 
-The automated factor slice sampler conducts a slice sampling algorithm on one or more model nodes.  The sampler uses the eigenvectors of the posterior covariance between these nodes as an orthogonal basis on which to perform its 'stepping Out' procedure.  The sampler is adaptive in updating both the width of the slices and the values of the eigenvectors.  The sampler can be applied to ay be applied to any set of continuous or discrete-valued model nodes, to any single continuous or discrete-valued multivariate model node, or to any combination thereof. 
+The automated factor slice sampler conducts a slice sampling algorithm on one or more model nodes.  The sampler uses the eigenvectors of the posterior covariance between these nodes as an orthogonal basis on which to perform its 'stepping Out' procedure.  The sampler is adaptive in updating both the width of the slices and the values of the eigenvectors.  The sampler can be applied to any set of continuous or discrete-valued model nodes, to any single continuous or discrete-valued multivariate model node, or to any combination thereof. 
 The automated factor slice sampler accepts the following control list elements:
 \itemize{
 \item sliceWidths.  A numeric vector of initial slice widths.  The length of the vector must be equal to the sum of the lengths of all nodes being used by the automated factor slice sampler.  Defaults to a vector of 1's.
@@ -299,6 +307,19 @@ The \code{RW_dirichlet} sampler accepts the following control list elements:
 }
 }
 
+\section{RW_wishart sampler}{
+
+
+This sampler is designed for sampling non-conjugate Wishart and inverse-Wishart distributions.  More generally, it can update any symmetric positive-definite matrix (for example, scaled covaraiance or precision matrices).  The sampler performs block Metropolis-Hastings updates following a transformation to an unconstrained scale (Cholesky factorization of the original matrix, then taking the log of the main diagonal elements.
+
+The \code{RW_wishart} sampler accepts the following control list elements:
+\itemize{
+\item adaptive. A logical argument, specifying whether the sampler should adapt the scale and proposal covariance for the multivariate normal Metropolis-Hasting proposals, to achieve a theoretically desirable acceptance rate for each. (default = TRUE)
+\item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
+\item scale. The initial value of the scalar multiplier for the multivariate normal Metropolis-Hastings proposal covariance.  If adaptive = FALSE, scale will never change. (default = 1)
+}
+}
+
 \section{CAR_normal sampler}{
 
 
@@ -330,13 +351,13 @@ The CAR_proper sampler accepts the following control list elements:
 \section{CRP sampler}{
 
 
-EXPERIMENTAL The CRP sampler is designed for fitting models involving Dirichlet process mixtures. It is exclusively assigned by NIMBLE's default MCMC configuration to nodes having the Chinese Restaurant Process distribution, \code{dCRP}. It executes sequential sampling of each component of the node (i.e., the cluster membership of each element being clustered). Internally, either of two samplers can be assigned, depending on conjugate or non-conjugate structures within the model. For conjugate and non-conjugate model structures, updates are based on Algorithm 2 and Algorithm 8 in Neal (2000), respectively.
+The CRP sampler is designed for fitting models involving Dirichlet process mixtures. It is exclusively assigned by NIMBLE's default MCMC configuration to nodes having the Chinese Restaurant Process distribution, \code{dCRP}. It executes sequential sampling of each component of the node (i.e., the cluster membership of each element being clustered). Internally, either of two samplers can be assigned, depending on conjugate or non-conjugate structures within the model. For conjugate and non-conjugate model structures, updates are based on Algorithm 2 and Algorithm 8 in Neal (2000), respectively.
 }
 
 \section{CRP_concentration sampler}{
 
 
-EXPERIMENTAL The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using theChinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and is and can only be used when the prior for the concentration is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
+The CRP_concentration sampler is designed for Bayesian nonparametric mixture modeling. It is exclusively assigned to the concentration parameter of the Dirichlet process when the model is specified using theChinese Restaurant Process distribution, \code{dCRP}. This sampler is assigned by default by NIMBLE's default MCMC configuration and is and can only be used when the prior for the concentration is a gamma distribution. The assigned sampler is an augmented beta-gamma sampler as discussed in Section 6 in Escobar and West (1995).
 }
 
 \section{posterior_predictive sampler}{

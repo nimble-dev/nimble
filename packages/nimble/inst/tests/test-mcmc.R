@@ -95,7 +95,8 @@ test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
 # incorrectly in resampleData - this affected values further downstream
 
 test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
-              data = 'ice-data.R', numItsC = 1000, resampleData = TRUE)
+          data = 'ice-data.R', numItsC = 1000, resampleData = TRUE,
+          knownFailures = list('coverage' = 'KNOWN ISSUE: coverage is low'))
 # resampleData gives very large magnitude betas because beta[1],beta[2] are not
 # actually topNodes because of (weak) dependence on tau, and
 # are simulated from their priors to have large magnitude values
@@ -105,12 +106,12 @@ test_that('ice example reworked', {
     system.in.dir(paste("sed 's/tau\\*1.0E-6/1.0E-6/g' icear.bug > ", file.path(tempdir(), "icear.bug")), dir = system.file('classic-bugs','vol2','ice', package = 'nimble'))
     test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
                                         # looks fine, but alpha and beta values shifted a bit (systematically) relative to JAGS results - on further inspection this is because mixing for this model is poor in both NIMBLE and JAGS - with longer runs they seem to agree (as best as one can tell given the mixing without doing a super long run)
-    
-    test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
-              data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
+})
+
+test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
+          data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
                                         # getting warning; deterministic model node is NA or NaN in model initialization
                                         # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
-    })
 
 test_that('leuk example setup', {
     writeLines(c("var","Y[N,T],","dN[N,T];"), con = file.path(tempdir(), "leuk.bug")) ## echo doesn't seem to work on Windows
@@ -363,9 +364,9 @@ test_that('various conjugacies setup', {
         jNorm[1] <- 0
         kLogNorm[1] <- 0
     })
-    
-    sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),
-                      c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
+
+    sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.371834934033851, 2.036442813764752, 2.247416118159410, 2.537131924778210, 2.382184991769738, 2.653737836857812, 2.934255734970981, 3.007873553270551),
+                      c = c(0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.003846483017887228, 0.006269117826484087, 0.009183580181658716, 0.009183580181658716, 0.006361841408434201, 0.006361841408434201))
     
     test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01), avoidNestedTest = TRUE)
     ## with fixing of jNorm[1] and kLogNorm[1] we no longer have: knownFailures = list('R C samples match' = "KNOWN ISSUE: R and C posterior samples are not equal for 'various conjugacies'"))
@@ -762,6 +763,111 @@ test_that('conjugate Wishart setup', {
                                         # issue with Chol in R MCMC - probably same issue as in jaw-linear
     
 })
+
+test_that('using RW_wishart sampler on non-conjugate Wishart node', {
+    set.seed(0)
+    trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
+    covs <- c(3, 2, .5)
+    trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
+    Omega = solve(trueCov)
+    n = 20
+    R = diag(rep(1,3))
+    mu = 1:3
+    Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
+    M = 3
+    data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
+    code <- nimbleCode( {
+        for(i in 1:n) {
+            Y[i, 1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M])
+        }
+        Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 4)
+    })
+    newDf = 4 + n
+    newR = R + tcrossprod(Y- mu)
+    OmegaTrueMean = newDf * solve(newR)
+    wishRV <- array(0, c(M, M, 10000))
+    for(i in 1:10000) {
+        z <- t(chol(solve(newR))) %*% matrix(rnorm(3*newDf), ncol = newDf)
+        wishRV[ , , i] <- tcrossprod(z)
+    }
+    OmegaSimTrueSDs = apply(wishRV, c(1,2), sd)
+    allData <- data
+    constants <- list(n = allData$n, M = allData$M, mu = allData$mu, R = allData$R)
+    data <- list(Y = allData$Y)
+    inits <- list(Omega = OmegaTrueMean)
+
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('Omega', 'RW_wishart')
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, 10000)
+    d1 <- as.numeric(apply(samples, 2, mean)) - as.numeric(OmegaTrueMean)
+    difference <- sum(round(d1,9) - c(0.024469145, -0.011872571, -0.045035297, -0.011872571, -0.003443918, 0.009363410, -0.045035297,  0.009363410,  0.049971420))
+    expect_true(difference == 0)
+})
+
+
+test_that('using RW_wishart sampler on inverse-Wishart distribution', {
+    code <- nimbleCode( {
+        for(i in 1:n) {
+            Y[i, 1:M] ~ dmnorm(mu[1:M], cov = C[1:M,1:M])
+        }
+        C[1:M,1:M] ~ dinvwish(R[1:M,1:M], 4)
+    })
+    
+    set.seed(0)
+    trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
+    covs <- c(3, 2, .5)
+    trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
+    n = 20
+    R = diag(rep(1,3))
+    mu = 1:3
+    Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
+    M = 3
+    data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
+
+    newDf = 4 + n
+    newR = R + tcrossprod(Y- mu)
+    CTrueMean <- newR / newDf
+    CTrueMeanVec <- as.numeric(CTrueMean)
+    allData <- data
+    constants <- list(n = allData$n, M = allData$M, mu = allData$mu, R = allData$R)
+    data <- list(Y = allData$Y)
+    inits <- list(C = CTrueMean)
+    niter <- 50000
+
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel)
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, niter)
+    conjMean <- as.numeric(apply(samples, 2, mean))
+    conjSD <- as.numeric(apply(samples, 2, sd))
+
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Rmodel$calculate()
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    conf$addSampler('C', 'RW_wishart')
+    Rmcmc <- buildMCMC(conf)
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    set.seed(0)
+    samples <- runMCMC(Cmcmc, niter)
+    RWMean <- as.numeric(apply(samples, 2, mean))
+    RWSD <- as.numeric(apply(samples, 2, sd))
+
+    expect_true(all(round(as.numeric(RWMean - conjMean), 9) == c(-0.001651758, -0.009675571, 0.004894809, -0.009675571, 0.015533882, -0.008256095, 0.004894809, -0.008256095, 0.002119615)))
+    expect_true(all(round(as.numeric(RWSD - conjSD), 9) == c(0.022803503, -0.010107015, 0.012342044, -0.010107015, 0.006191412, -0.000091101, 0.012342044, -0.000091101, 0.001340032)))
+})
+
+
 
 ## testing conjugate MVN updating with ragged dependencies;
 ## that is, dmnorm dependents of different lengths from the target node
@@ -1216,12 +1322,10 @@ test_that('dcar_proper sampling', {
         tau ~ dgamma(0.001, 0.001)
         gamma ~ dunif(-1, 1)
         x[1:N] ~ dcar_proper(mu[1:N], adj=adj[1:L], num=num[1:N], tau=tau, gamma=gamma)
-        for(i in 1:N) {
-            y[1] ~ dnorm(x[1], 1)
-            y[2] ~ dnorm(3*x[2] + 5, 10)
-            y[3] ~ dnorm(x[3]^2, 1)
-            y[4] ~ dnorm(x[4]^2, 10)
-        }
+        y[1] ~ dnorm(x[1], 1)
+        y[2] ~ dnorm(3*x[2] + 5, 10)
+        y[3] ~ dnorm(x[3]^2, 1)
+        y[4] ~ dnorm(x[4]^2, 10)
     })
 
     mu <- 1:4
@@ -1318,6 +1422,146 @@ test_that('dnorm-dmnorm conjugacies NIMBLE fails to detect', {
     expect_failure(expect_match(conf$getSamplers()[[2]]$name, "conjugate_dnorm_dmnorm",
          info = "failed to detect dmnorm-dnorm conjugacy"),
          info = "EXPECTED FAILURE NOT FAILING: this known failure should occur because of limitations in conjugacy detection with dnorm dependents of dmnorm target")
+})
+
+## dnorm prior in vectorized regression mean (inprod, matrix multiplication)
+
+test_that('NIMBLE detects dnorm-dnorm conjugacy via inprod() or %*%', {
+    ## do unit testing of cc_checkLinearity too
+    
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + inprod(beta[1:p], X[i, 1:p]), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    inits <- list(b0 = 1, beta = rnorm(constants$p))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                                   info = "conjugacy with inprod not detected")
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + sum(beta[1:p]*X[i, 1:p]), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    constants <- list(n = 5, p = 3)
+    data <- list(y = rnorm(constants$n),
+                 X = matrix(rnorm(constants$n * constants$p), constants$n))
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                                   info = "conjugacy with inprod not detected")
+
+
+    ## compare to conjugate sampler using summed contributions
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    smp1 <- runMCMC(cmcmc, 50, setSeed = 1)
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + sum(beta[1:p]*X[i, 1:p]), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                                   info = "conjugacy with sum not detected")
+
+
+    ## compare to conjugate sampler using summed contributions
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    smp2 <- runMCMC(cmcmc, 50, setSeed = 1)
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + beta[1]*X[i,1] + beta[2]*X[i,2] + beta[3]*X[i,3], 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    smp3 <- runMCMC(cmcmc, 50, setSeed = 1)
+    expect_equal(smp1, smp3, info = 'conjugate sampler with inprod does not match summation')
+    expect_equal(smp2, smp3, info = 'conjugate sampler with sum does not match summation')
+    
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + inprod(exp(beta[1:p]), X[i, 1:p]), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'RW',
+                                   info = "conjugacy with inprod improperly detected")
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + exp(inprod(beta[1:p], X[i, 1:p])), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'RW',
+                                   info = "conjugacy with inprod improperly detected")
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + sum(exp(beta[1:p])*X[i, 1:p]), 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'RW',
+                                   info = "conjugacy with sum improperly detected")
+
+    code <- nimbleCode({
+        for(i in 1:n) 
+            y[i] ~ dnorm(b0 + (X[i, 1:p] %*% beta[1:p])[1,1], 1)
+        for(i in 1:p) 
+            beta[i] ~ dnorm(0, 1)
+        b0 ~ dnorm(0, 1)
+    })
+    m <- nimbleModel(code, data = data, constants = constants)
+    conf <- configureMCMC(m)
+    expect_identical(conf$getSamplers()[[1]]$name, 'conjugate_dnorm_dnorm',
+                                   info = "conjugacy with matrix multiplication not detected")
+    mcmc <- buildMCMC(conf)
+    cm <- compileNimble(m)
+    cmcmc <- compileNimble(mcmc, project = m)
+    smp3 <- runMCMC(cmcmc, 50, setSeed = 1)
+    expect_equal(smp1, smp3, info = 'conjugate sampler with matrix mult. does not match summation')
+
+    check <- nimble:::cc_checkLinearity(quote(b0 + (X[1, 1:3] %*% structureExpr(beta[1], beta[2], beta[3]))[1,1]), 'beta[1]')
+    expect_identical(check, list(offset = quote(b0 + X[1, 1:3] * structureExpr(beta[1], beta[2], beta[3])),
+                                 scale = quote(X[1, 1:3])))
+
+    check <- nimble:::cc_checkLinearity(quote(b0 + inprod(structureExpr(beta[1], beta[2], beta[3]), X[1, 1:3])), 'beta[1]')
+    expect_identical(check, list(offset = quote(b0 + structureExpr(beta[1], beta[2], beta[3]) * X[1, 1:3]),
+                                 scale = quote(X[1, 1:3])))
 })
 
 

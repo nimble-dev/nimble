@@ -138,8 +138,7 @@ sizeCalls <- c(
                    'nfMethod',
                    'getPtr',
                    'startNimbleTimer'), 'sizeUndefined'), ##'nimFunListAccess'
-    passByMap = 'sizePassByMap'
-)
+    passByMap = 'sizePassByMap')
 
 scalarOutputTypes <- list(decide = 'logical',
                           size = 'integer',
@@ -3276,7 +3275,7 @@ mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensiona
 			     nimArr_rcar_proper = list(c(1, 1, 1, 1, 1, 0, 0, 1), 1, 'double'), ## mu, C, adj, num, M, tau, gamma, evs, answer size comes from mu
                              nimArr_rmulti = list(c(0, 1), ## size, probs
                                  2, 'double'), ## We treat integer rv's as doubles
-                             nimArr_rdirch = list(c(1), 1, 'double')) ## alpha
+                             nimArr_rdirch = list(c(1), 1, 'double')) 
 
 sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)

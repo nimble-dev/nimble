@@ -23,7 +23,7 @@ test_that("User-supplied functions", {
         }
     )
     temporarilyAssignInGlobalEnv(dbl)
-                                        # not working at moment as enclosing env of fun is getting messed up
+    ## not working at moment as enclosing env of fun is getting messed up
 
 
     ## two arguments to the nimbleFunction
@@ -100,7 +100,6 @@ test_that("User-supplied functions", {
     expect_identical(cm$out, (8),
                      info = "incorrect arg matching by name in C model")
 })
-
 
 ## User-supplied distributions
 
@@ -391,7 +390,56 @@ test_that("Test that user-defined distributions without 'r' function doesn't cau
 })
 
 
+test_that("Test that non-scalar integer in user-defined distributions is trapped", {
+    dfoo3 = nimbleFunction(run = function(x = integer(1), log=logical(0)) {
+        returnType(double(0))
+        return(0)
+    })
+    rfoo3 = nimbleFunction(run = function(n = integer()) {
+        returnType(integer(1))
+        return(rep(0,2))
+    })
+    temporarilyAssignInGlobalEnv(dfoo3)
+    temporarilyAssignInGlobalEnv(rfoo3)
+    
+    code =nimbleCode({
+        y[1:3] ~ dfoo3()
+    })
+    expect_error(m <- nimbleModel(code), "Non-scalar integer or logical found")
+    
+    dfoo4 = nimbleFunction(run = function(x = double(1), theta = integer(1), log=logical(0)) {
+        tmp <- sum(theta)
+        returnType(double(0))
+        return(0)
+    })
+    rfoo4 = nimbleFunction(run = function(n = integer(), theta = integer(1)) {
+        returnType(double(1))
+        return(rep(0,2))
+    })
+    temporarilyAssignInGlobalEnv(dfoo4)
+    temporarilyAssignInGlobalEnv(rfoo4)
 
+    code =nimbleCode({
+        y[1:3] ~ dfoo4(theta[1:3])
+    })
+    expect_error(m <- nimbleModel(code), "Non-scalar integer or logical found")
+
+    dfoo5 = nimbleFunction(run = function(x = integer(0), theta = integer(0), log=logical(0)) {
+        returnType(double(0))
+        return(0)
+    })
+    rfoo5 = nimbleFunction(run = function(n = integer(), theta = integer(0)) {
+        returnType(integer())
+        return(0)
+    })
+    temporarilyAssignInGlobalEnv(dfoo5)
+    temporarilyAssignInGlobalEnv(rfoo5)
+    
+    code =nimbleCode({
+        y  ~ dfoo5(theta)
+    })
+    m <- nimbleModel(code)
+})
 
 sink(NULL)
 

@@ -897,7 +897,8 @@ SEXP makeParsedVarList(SEXP Sx) {
   varAndIndicesClass varAndInds;
   for(size_t i = 0; i < x.size(); ++i) {
     parseVarAndInds(x[i], varAndInds);
-    SETCAR(t, makeAsNumeric_LANGSXP(varAndIndices_2_LANGSXP(varAndInds))); t = CDR(t);
+    SETCAR(t, makeAsNumeric_LANGSXP(PROTECT(varAndIndices_2_LANGSXP(varAndInds)))); t = CDR(t);
+    UNPROTECT(1);
   }
   UNPROTECT(1);
   return Sans;
@@ -906,11 +907,12 @@ SEXP makeParsedVarList(SEXP Sx) {
 SEXP makeNewNimbleList(SEXP S_listName) {
   SEXP SnimbleInternalFunctionsEnv;
   SEXP call;
-  PROTECT(SnimbleInternalFunctionsEnv =
-    Rf_eval(Rf_findVar(Rf_install("nimbleInternalFunctions"), R_GlobalEnv), R_GlobalEnv));
-  PROTECT(call = Rf_allocVector(LANGSXP, 2));
+  SnimbleInternalFunctionsEnv =
+    PROTECT(Rf_eval(PROTECT(Rf_findVar(Rf_install("nimbleInternalFunctions"), R_GlobalEnv)), R_GlobalEnv));
+  call = PROTECT(Rf_allocVector(LANGSXP, 2));
   SETCAR(call, Rf_install("makeNewNimListSEXPRESSIONFromC"));
   SETCADR(call, S_listName);
-  UNPROTECT(2);
-  return(Rf_eval(call, SnimbleInternalFunctionsEnv));
+  SEXP ans = PROTECT(Rf_eval(call, SnimbleInternalFunctionsEnv));
+  UNPROTECT(4);
+  return(ans);
 }

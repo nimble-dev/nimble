@@ -9,7 +9,7 @@ read_chunk(file.path('chunks', 'introExample_chunks.R'))  # one can put code chu
 ``` 
 
 
-# Lightning introduction {#cha:intro}
+# Lightning introduction {#cha:lightning-intro}
 
 ## A brief example {#sec:brief-example}
 
@@ -127,6 +127,9 @@ return samples, summary statistics, and WAIC values:
 
 See Section \@ref(sec:nimbleMCMC) or `help(nimbleMCMC)` for more
 details about using `nimbleMCMC`.
+
+Note that the WAIC value varies depending on what quantities are treated
+as parameters; see Section \@ref(sec:WAIC) for more details.
 
 ## Creating, compiling and running a basic MCMC configuration {#sec:creating-mcmc}
   

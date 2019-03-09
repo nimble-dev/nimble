@@ -10,6 +10,7 @@
 \alias{nimble-R-functions}
 \alias{rep}
 \alias{seq}
+\alias{seq_along}
 \alias{which}
 \title{NIMBLE language functions for R-like vector construction}
 \usage{
@@ -33,10 +34,10 @@ nimSeq(from, to, by, length.out)
 \item{length.out}{desired length of the sequence.}
 }
 \description{
-The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{length}, and \code{diag} can be used in nimbleFunctions and compiled using \code{compileNimble}.
+The functions \code{c}, \code{rep}, \code{seq}, \code{which}, \code{length}, \code{diag}, and \code{seq_along} can be used in nimbleFunctions and compiled using \code{compileNimble}.
 }
 \details{
-For \code{c}, \code{rep}, \code{seq}, these functions are NIMBLE's version of similar R functions, e.g., \code{nimRep} for \code{rep}.   In a \code{nimbleFunction}, either the R name (e.g., \code{rep}) or the NIMBLE name (e.g., \code{nimRep}) can be used.  If the R name is used, it will be converted to the NIMBLE name. For \code{which}, \code{length}, \code{diag}, simply use the standard name without \code{"nim"}. These functions largely mimic (see exceptions below) the behavior of their R counterparts, but they can be compiled in a \code{nimbleFunction} using \code{compileNimble}.
+For \code{c}, \code{rep}, \code{seq}, these functions are NIMBLE's version of similar R functions, e.g., \code{nimRep} for \code{rep}.   In a \code{nimbleFunction}, either the R name (e.g., \code{rep}) or the NIMBLE name (e.g., \code{nimRep}) can be used.  If the R name is used, it will be converted to the NIMBLE name. For \code{which}, \code{length}, \code{diag}, \code{seq_along} simply use the standard name without \code{"nim"}. These functions largely mimic (see exceptions below) the behavior of their R counterparts, but they can be compiled in a \code{nimbleFunction} using \code{compileNimble}.
 
 \code{nimC} is NIMBLE's version of \code{c} and behaves identically.
 
@@ -49,5 +50,7 @@ For \code{c}, \code{rep}, \code{seq}, these functions are NIMBLE's version of si
 \code{diag} behaves like the R version but without support for the \code{nrow} and \code{ncol} arguments.
 
 \code{length} behaves like the R version.
+
+\code{seq_along} behaves like the R version.
 }
 

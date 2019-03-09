@@ -211,7 +211,11 @@ myModel$calculate(nodes[2:i])
 myModel$calculate(nodes[ values(model, nodes) + 0.1 < x ])
 ``` 
 
-Note that one cannot create new vectors of nodes in run code.  They
+Note that in the last line of code, one must have that the length of `nodes` is
+equal to that of `values(model, nodes)`, which means that all the nodes in `nodes`
+must be scalar nodes.
+
+Also note that one cannot create new vectors of nodes in run code.  They
 can only be indexed within a call to `calculate`, `calculateDiff`,
 `simulate` or `getLogProb`.
 
@@ -688,6 +692,23 @@ myMicrobenchmark <- compileNimble(nimbleFunction(
 print(myMicroBenchmark(100000))
 ```
 
+## Clearing and unloading compiled objects
+
+Sometimes it is useful to clear all the compiled objects from a
+project and unload the shared library produced by your C++ compiler.
+To do so, you can use `nimble:::clearCompiled(obj)` where `obj` is a
+compiled object such as a compiled model or nimbleFunction (e.g., a
+compiled MCMC algorithm).  This will clear *all* compiled objects
+associated with your NIMBLE project.  For example, if `cModel` is a
+compiled model, `nimble:::clearCompiled(cModel)` will clear both the
+model and all associated nimbleFunctions such as compiled MCMCs that
+use that model.  Be careful, use of `nimble:::clearCompiled` can be
+dangerous.  There is some risk that if you have copies of the R
+objects that interfaced to compiled C++ objects that have been
+removed, and you attempt to use those R objects after clearing their
+compiled counterparts, you will crash R.  We have tried to
+minimize that risk, but we can't guarantee safe behavior.
+
 ## Reducing memory usage
 
 NIMBLE can create a lot of objects in its processing, and some of them
@@ -696,11 +717,13 @@ usage.  We have noticed that building large models can use lots of
 memory.  To help alleviate this, we provide two options, which can be
 controlled via `nimbleOptions`.
 
-As noted above, the option `buildInterfacesForCompiledNestedNimbleFunctions` 
-defaults to FALSE, which means NIMBLE will not build full interfaces to compiled
+As noted above, the option
+`buildInterfacesForCompiledNestedNimbleFunctions` defaults to FALSE,
+which means NIMBLE will not build full interfaces to compiled
 nimbleFunctions that ony appear within other nimbleFunctions.  If you
-want access to all such nimbleFunctions, use the option 
-`buildInterfacesForCompiledNestedNimbleFunctions = TRUE`.
+want access to all such nimbleFunctions, use the option
+`buildInterfacesForCompiledNestedNimbleFunctions = TRUE`.  This will
+use more memory but can be useful for debugging.
 
 The option `clearNimbleFunctionsAfterCompiling` is more drastic, and it is
 experimental, so 'buyer beware'.  This will clear much of the

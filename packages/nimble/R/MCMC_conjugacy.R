@@ -23,7 +23,7 @@ conjugacyRelationshipsInputList <- list(
 
     ## flat
     list(prior = 'dflat',
-         link = 'linear',
+         link = 'linear_plus_inprod',
          dependents = list(
              dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',         contribution_tau = 'coeff^2 * tau'),
              dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
@@ -62,10 +62,10 @@ conjugacyRelationshipsInputList <- list(
 
     ## halfflat - third possible conjugacy - we use this because it corresponds to the
     ## Gelman (2006) recommended uniform on sd scale prior for variance components
-    ## and current NIMBLE conjugacy system only allows one possible form of conjugacy
-    ## note that sd ~ U(0,Inf) equivalent to var ~ IG(-1/2, 0)
-    ## also note that if conj system could detect 'squared' dependency, then
-    ## we could allow dnorm with param = 'var'                                     
+    ## and current NIMBLE conjugacy system only allows one possible form of conjugacy.
+    ## Note that sd ~ U(0,Inf) equivalent to var ~ IG(-1/2, 0).
+    ## Also note that if conj system could detect 'squared' dependency, then
+    ## we could allow dnorm with param = 'var'.                                     
     list(prior = 'dhalfflat',
          link = 'multiplicative',
          dependents = list(
@@ -84,8 +84,8 @@ conjugacyRelationshipsInputList <- list(
              dgamma    = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
              dinvgamma = list(param = 'scale',  contribution_shape = 'shape', contribution_rate = 'coeff   / value'                 ),
              dexp      = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
-             dweib     = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           )),
-             ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
+             dweib     = list(param = 'lambda', contribution_shape = '1',     contribution_rate = 'coeff   * value^shape'           ),
+             ddexp     = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )),
              ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
          posterior = 'dgamma(shape = prior_shape + contribution_shape,
                              scale = 1 / (prior_rate + contribution_rate))'),
@@ -98,14 +98,14 @@ conjugacyRelationshipsInputList <- list(
              dlnorm    = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
              dgamma    = list(param = 'scale',  contribution_shape = 'shape', contribution_scale = 'value / coeff'                     ),
              dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'               ),
-             dexp      = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'value / coeff'                     )),
-             ## add ddexp
+             dexp      = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'value / coeff'                     ),
+             ddexp     = list(param = 'scale',  contribution_shape = '1',     contribution_scale = 'abs(value-location) / coeff'       )),
          posterior = 'dinvgamma(shape = prior_shape + contribution_shape,
                              rate = 1 / (prior_scale + contribution_scale))'),
     
     ## normal
     list(prior = 'dnorm',
-         link = 'linear',
+         link = 'linear_plus_inprod',
          dependents = list(
              dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',         contribution_tau = 'coeff^2 * tau'   ),
              dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
@@ -168,10 +168,7 @@ conjugacyRelationshipsInputList <- list(
          posterior = 'dinvwish_chol(cholesky    = chol(prior_S + contribution_S),
                                     df          = prior_df + contribution_df,
                                     scale_param = 1)')
-
-)
-
-
+    )
 
 
 ##############################################################################################
@@ -315,7 +312,7 @@ conjugacyClass <- setRefClass(
     fields = list(
         samplerType =         'ANY',   ## name of the sampler for this conjugacy class, e.g. 'conjugate_dnorm'
         prior =               'ANY',   ## name of the prior distribution, e.g. 'dnorm'
-        link =                'ANY',   ## the link ('linear', 'multiplicative', or 'identity')
+        link =                'ANY',   ## the link ('linear_plus_inprod', 'linear', 'multiplicative', or 'identity')
         dependents =          'ANY',   ## (named) list of dependentClass objects, each contains conjugacy information specific to a particular sampling distribution (name is sampling distribution name)
         dependentDistNames =  'ANY',   ## character vector of the names of all allowable dependent sampling distributions.  same as: names(dependents)
         posteriorObject =     'ANY',   ## an object of posteriorClass
@@ -464,7 +461,7 @@ conjugacyClass <- setRefClass(
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
                 if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link else currentLink <- link
-                if(currentLink %in% c('multiplicative', 'linear') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
+                if(currentLink %in% c('multiplicative', 'linear', 'linear_plus_inprod') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
                     functionBody$addCode({
                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
                         DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)                    ## assigning into member variable names using
@@ -620,7 +617,7 @@ conjugacyClass <- setRefClass(
                 distName <- names(dependentCounts)[iDepCount]
                 if(!is.null(dependents[[distName]]$link)) links[iDepCount] <- dependents[[distName]]$link # clau: extra ) deleted.
             }
-            if(any(links %in% c('multiplicative', 'linear')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
+            if(any(links %in% c('multiplicative', 'linear', 'linear_plus_inprod')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
@@ -1033,13 +1030,14 @@ cc_createStructureExpr <- function(model, exprText) {
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
-    if(!(link %in% c('identity', 'multiplicative', 'linear', 'stick_breaking')))    stop(paste0('unknown link: \'', link, '\''))
+    if(!(link %in% c('identity', 'multiplicative', 'linear', 'linear_plus_inprod', 'stick_breaking')))
+        stop(paste0('unknown link: \'', link, '\''))
     if(is.null(linearityCheck))    return(FALSE)
     offset <- linearityCheck$offset
     scale  <- linearityCheck$scale
     if(link == 'identity'       && offset == 0 && scale == 1)     return(TRUE)
     if(link == 'multiplicative' && offset == 0)                   return(TRUE)
-    if(link == 'linear')                                          return(TRUE)
+    if(link == 'linear' || link == 'linear_plus_inprod')          return(TRUE)
     return(FALSE)
 }
 
@@ -1067,7 +1065,7 @@ cc_nodeInExpr <- function(node, expr) { return(node %in% cc_getNodesInExpr(expr)
 cc_getNodesInExpr <- function(expr) {
     if(is.numeric(expr)) return(character(0))   ## expr is numeric
     if(is.logical(expr)) return(character(0))   ## expr is logical
-    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) return(deparse(expr))   ## expr is a node name
+    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) return(deparse(expr))   ## expr is a node name
     if(is.call(expr)) return(unlist(lapply(expr[-1], cc_getNodesInExpr)))   ## expr is some general call
     stop(paste0('something went wrong processing: ', deparse(expr)))
 }
@@ -1106,6 +1104,17 @@ cc_checkLinearity <- function(expr, targetNode) {
     if(expr[[1]] == '(')
         return(cc_checkLinearity(expr[[2]], targetNode))
 
+    if(expr[[1]] == '[')
+        return(cc_checkLinearity(expr[[2]], targetNode))
+
+    ## Look for individual nodes in vectorized use or other strange cases.
+    if(expr[[1]] == 'structureExpr') {
+        if(sum(targetNode == sapply(expr[2:length(expr)], deparse)) == 1 &&
+           sum(sapply(expr[2:length(expr)], function(x)
+                      cc_nodeInExpr(targetNode, x))) == 1)
+            return(list(offset = expr, scale = 1)) else return(NULL)
+    }
+
     ## we'll just have to skip over asRow() and asCol(), so they don't mess up the linearity check
     if(expr[[1]] == 'asRow' || expr[[1]] == 'asCol') {
         return(cc_checkLinearity(expr[[2]], targetNode))
@@ -1137,8 +1146,18 @@ cc_checkLinearity <- function(expr, targetNode) {
                     scale  = cc_combineExprsAddition(checkLinearityLHS$scale,  checkLinearityRHS$scale)))
     }
 
-    if(expr[[1]] == '*' || expr[[1]] == '%*%') {
-        isMatrixMult <- ifelse(expr[[1]] == '%*%', TRUE, FALSE)
+    if(expr[[1]] == '*' || expr[[1]] == '%*%' || expr[[1]] == 'inprod' || expr[[1]] == 'sum') {
+        ## X[,] %*% beta[] where beta[i] are nodes is not standard matrix multiplication, so there is offset and scale
+        isMatrixMult <- ifelse(expr[[1]] == '%*%' &&
+                               length(expr[[2]]) > 1 && expr[[2]][[1]] != 'structureExpr' &&
+                               length(expr[[3]]) > 1 && expr[[3]][[1]] != 'structureExpr',
+                               TRUE, FALSE)
+        if(expr[[1]] == 'sum' && length(expr[[2]]) == 3 && expr[[2]][[1]] == '*') {
+            tmpExpr <- quote(inprod(a, b))
+            tmpExpr[[2]] <- expr[[2]][[2]]
+            tmpExpr[[3]] <- expr[[2]][[3]]
+            expr <- tmpExpr
+        }
         if(cc_nodeInExpr(targetNode, expr[[2]]) && cc_nodeInExpr(targetNode, expr[[3]])) return(NULL)
         checkLinearityLHS <- cc_checkLinearity(expr[[2]], targetNode)
         checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)

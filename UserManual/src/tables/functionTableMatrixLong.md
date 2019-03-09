@@ -5,10 +5,11 @@ provided in NIMBLE.
   ----------------------- ------------------------------------------ -------------------------------- ------  
   `inverse(x)`            matrix inverse                             $x$ symmetric, positive def.     yes
   `chol(x)`               matrix Cholesky factorization              $x$ symmetric, positive def.     yes
+                                                                     returns upper triangular matrix
   `t(x)`                  matrix transpose                           $x^\top$                         yes
   `x%*%y`                 matrix multiply                            $xy$; $x$, $y$ conformant        yes
   `inprod(x, y)`          dot product                                $x^\top y$; $x$ and $y$ vectors  yes
-  `solve(x)`              solve system of equations                  $x^{-1} y$; $y$ matrix or vector yes
+  `solve(x,y)`            solve system of equations                  $x^{-1} y$; $y$ matrix or vector yes
   `forwardsolve(x, y)`    solve lower-triangular system of equations $x^{-1} y$; $x$ lower-triangular yes
   `backsolve(x, y)`       solve upper-triangular system of equations $x^{-1} y$; $x$ upper-triangular yes
   `logdet(x)`             log matrix determinant                     $\log|x|$                        yes

@@ -256,6 +256,8 @@ Rname2CppName <- function(rName, colonsOK = TRUE) {
     rName <- gsub('\\]', '_cB', rName)
     rName <- gsub('\\(', '_oP', rName)
     rName <- gsub('\\)', '_cP', rName)
+    rName <- gsub('\\{', '_oC', rName)
+    rName <- gsub('\\}', '_cC', rName)
     rName <- gsub("\\$", "_" , rName)
     rName <- gsub(">=", "_gte_", rName)
     rName <- gsub("<=", "_lte_", rName)
