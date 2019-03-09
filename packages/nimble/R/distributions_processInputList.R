@@ -770,8 +770,10 @@ getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
       params <- getParamNames(dist, includeValue = TRUE)
   }
   notFound <- which(! params %in% getParamNames(dist))
-  if(length(notFound))
+  if(length(notFound)) {
+    if('x' %in% params[notFound]) warning("getDimension: use 'value' instead of 'x'.")
     stop("getDimension: these parameter names not found: ", params[notFound])
+  }
   out <- sapply(params, function(p) distInfo$types[[p]]$nDim)
   return(out)
 }
@@ -796,8 +798,10 @@ getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
       params <- getParamNames(dist, includeValue = TRUE)
   }
   notFound <- which(! params %in% getParamNames(dist))
-  if(length(notFound))
+  if(length(notFound)) {
+    if('x' %in% params[notFound]) warning("getParamID: use 'value' instead of 'x'.")
     stop("getParamID: these parameter names not found: ", params[notFound])
+  }
   out <- distInfo$paramIDs[params]
   return(out)
 }
@@ -824,8 +828,10 @@ getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
       params <- getParamNames(dist, includeValue = TRUE)
   }
     notFound <- which(! params %in% getParamNames(dist))
-    if(length(notFound))
+    if(length(notFound)) {
+        if('x' %in% params[notFound]) warning("getParamID: use 'value' instead of 'x'.")
         stop("getType: these parameter names not found: ", params[notFound])
+    }
     out <- sapply(params, function(p) distInfo$types[[p]]$type)
     return(out)
 }
