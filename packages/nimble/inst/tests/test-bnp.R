@@ -2904,7 +2904,6 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     {muTilde[i] ~ dnorm(0,1)}
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
-  conf <- configureMCMC(m)
   expect_warning(conf <- configureMCMC(m), "missing cluster parameter")
   mcmc <- buildMCMC(conf)
   expect_warning(clusterNodeInfo <- nimble:::findClusterNodes(m, target), "missing cluster parameter")
@@ -3358,10 +3357,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
     }
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
-  conf <- configureMCMC(m)
-  expect_error(mcmc <- buildMCMC(conf), "CRP variable used multiple times in")
-  
-  
+  expect_error(conf <- configureMCMC(m), "CRP variable used multiple times in")
 })
 
 
