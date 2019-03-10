@@ -172,16 +172,20 @@ AC_SUBST(EIGEN_INC)
 AC_SUBST(NEED_MAKEVARS_FILE)
 AC_SUBST(R_PACKAGE_DIR)
 
+dnl As of staged installation (2019-03-01)
+dnl NIMBLE_DIR, NIMBLE_INC_DIR, NIMBLE_LIB_DIR, RPATH
+dnl are not being used for default Linux enable-lib=true configuration.
+dnl Instead they are being set at run-time via createMakevars().
+
 if test "${ENABLE_LIB}" != "false" ; then
- # NIMBLE_DIR=${R_PACKAGE_DIR}   # No longer used with staged installation.
- echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+ NIMBLE_DIR="__NIMBLE_DIR__"
 else
  NIMBLE_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
 fi
 AC_SUBST(NIMBLE_DIR)
 
 if test "${ENABLE_LIB}" != "false" ; then
- NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+ NIMBLE_INC_DIR="__NIMBLE_INC_DIR__"
 else
  NIMBLE_INC_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
 fi
@@ -194,7 +198,7 @@ elif test "${ENABLE_LIB}" = "no" ; then
 fi
 
 if test "${ENABLE_LIB}" != "false" ; then
- NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+ NIMBLE_LIB_DIR="__NIMBLE_LIB_DIR__"
 else
  NIMBLE_LIB_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
 fi
@@ -205,17 +209,17 @@ R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[[a-z]]" "[[A-Z]]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 AC_SUBST(R_ENABLE_LIB)
 
-## if ! test `uname` = "Darwin" ; then
-## RPATH="-Wl,-rpath=${NIMBLE_DIR}/CppCode"
-## fi
-## AC_SUBST(RPATH)
+if ! test `uname` = "Darwin" ; then
+RPATH="__RPATH__"   ## -Wl,-rpath=${NIMBLE_DIR}/CppCode"
+fi
+AC_SUBST(RPATH)
 
-## if test "${ENABLE_LIB}" != "false" ; then
-##  #XX
-##  PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
-## #  PKG_LIBS="-L. -lnimble $RPATH"
-## fi
-## AC_SUBST(PKG_LIBS)
+dnl if test "${ENABLE_LIB}" != "false" ; then
+dnl  #XX
+dnl  PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
+dnl #  PKG_LIBS="-L. -lnimble $RPATH"
+dnl fi
+dnl AC_SUBST(PKG_LIBS)
 
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
 AC_SUBST(USE_REGISTRATION)

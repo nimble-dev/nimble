@@ -13,18 +13,20 @@ ifndef EIGEN_INC
 EIGEN_INC=@EIGEN_INC@
 endif
 
-# Note that because of staged install as of 2019-03-01, NIMBLE_INC_DIR, NIMBLE_DIR and RPATH are now replaced via createMakevars at run-time, not by configure.
+# Note that as of staged installation (2019-03-01) these are
+# being temporarily replaced by configure with their __FOO__
+# counterparts, which are then replaced via createMakevars() at run-time.
 
 ifndef NIMBLE_INC_DIR
-NIMBLE_INC_DIR=__NIMBLE_INC_DIR__
+NIMBLE_INC_DIR=@NIMBLE_INC_DIR@
 endif
 
 ifndef NIMBLE_DIR
-NIMBLE_DIR=__NIMBLE_DIR__
+NIMBLE_DIR=@NIMBLE_DIR@
 endif
 
 ifndef RPATH
-RPATH=__RPATH__
+RPATH=@RPATH@
 endif
 
 PKG_CPPFLAGS= -DR_NO_REMAP $(EIGEN_INC) $(CPPAD_INC) -DEIGEN_MPL2_ONLY=1 -I"$(NIMBLE_INC_DIR)" -Wno-misleading-indentation -Wno-ignored-attributes -Wno-deprecated-declarations

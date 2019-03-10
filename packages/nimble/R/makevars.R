@@ -39,8 +39,16 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
 
      ## file.copy(.copyFrom, target)  # file.link won't work across file systems.
      contents <- readLines(.copyFrom)
+     NIMBLE_INC_DIR <- system.file("include", package = "nimble")
+     NIMBLE_LIB_DIR <- system.file("CppCode", package = "nimble")      
+     NIMBLE_DIR <- system.file(package = "nimble")
      RPATH <- sprintf("-Wl,-rpath %s", system.file("CppCode", package = "nimble"))
-     contents <- gsub("@RPATH@", RPATH, contents)
+     contents <- gsub("__NIMBLE_INC_DIR__", NIMBLE_INC_DIR, contents)
+     ## NIMBLE_LIB_DIR is being set relative to NIMBLE_DIR so this is not really necessary,
+     ## but keeping in case of unexpected corner case.
+     contents <- gsub("__NIMBLE_LIB_DIR__", NIMBLE_LIB_DIR, contents)
+     contents <- gsub("__NIMBLE_DIR__", NIMBLE_DIR, contents)
+     contents <- gsub("__RPATH__", RPATH, contents)
      cat(contents, file = target, sep = "\n")
      return(target)
   }
