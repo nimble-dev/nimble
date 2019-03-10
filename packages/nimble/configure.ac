@@ -173,9 +173,10 @@ AC_SUBST(NEED_MAKEVARS_FILE)
 AC_SUBST(R_PACKAGE_DIR)
 
 dnl As of staged installation (2019-03-01)
-dnl NIMBLE_DIR, NIMBLE_INC_DIR, NIMBLE_LIB_DIR, RPATH
-dnl are not being used for default Linux enable-lib=true configuration.
-dnl Instead they are being set at run-time via createMakevars().
+dnl NIMBLE_DIR, NIMBLE_INC_DIR, NIMBLE_LIB_DIR, RPATH for
+dnl default Linux enable-lib=true configuration are only
+dnl being set temporarily to template values (__FOO__)
+dnl at installation and then set at run-time via createMakevars().
 
 if test "${ENABLE_LIB}" != "false" ; then
  NIMBLE_DIR="__NIMBLE_DIR__"
@@ -209,6 +210,7 @@ R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[[a-z]]" "[[A-Z]]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 AC_SUBST(R_ENABLE_LIB)
 
+dnl Note RPATH only now used at run-time via make/Makevars*
 if ! test `uname` = "Darwin" ; then
 RPATH="__RPATH__"   ## -Wl,-rpath=${NIMBLE_DIR}/CppCode"
 fi
