@@ -622,7 +622,6 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 USE_REGISTRATION
-PKG_LIBS
 RPATH
 R_ENABLE_LIB
 NIMBLE_LIB_DIR
@@ -3069,16 +3068,16 @@ fi
 
 
 
+
 if test "${ENABLE_LIB}" != "false" ; then
- NIMBLE_DIR=${R_PACKAGE_DIR}
- echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+ NIMBLE_DIR="__NIMBLE_DIR__"
 else
  NIMBLE_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
 fi
 
 
 if test "${ENABLE_LIB}" != "false" ; then
- NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+ NIMBLE_INC_DIR="__NIMBLE_INC_DIR__"
 else
  NIMBLE_INC_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
 fi
@@ -3091,7 +3090,7 @@ elif test "${ENABLE_LIB}" = "no" ; then
 fi
 
 if test "${ENABLE_LIB}" != "false" ; then
- NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+ NIMBLE_LIB_DIR="__NIMBLE_LIB_DIR__"
 else
  NIMBLE_LIB_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
 fi
@@ -3103,15 +3102,9 @@ echo "ENABLE_LIB=${ENABLE_LIB}"
 
 
 if ! test `uname` = "Darwin" ; then
-RPATH="-Wl,-rpath=${NIMBLE_DIR}/CppCode"
+RPATH="__RPATH__"   ## -Wl,-rpath=${NIMBLE_DIR}/CppCode"
 fi
 
-
-if test "${ENABLE_LIB}" != "false" ; then
-  #XX
-  PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
-#  PKG_LIBS="-L. -lnimble $RPATH"
-fi
 
 
 USE_REGISTRATION=".NimbleUseRegistration = TRUE"
@@ -4283,17 +4276,17 @@ if test "${ENABLE_DEBUGGING}" != "yes"; then
   (cd inst/CppCode ; ${MAKE} -f GNUmakefile_customizeMakeconf localMakeconf)
 fi
 
+cp inst/CppCode/dists.cpp src
+cp inst/CppCode/RcppUtils.cpp src
+cp inst/CppCode/nimbleGraph.cpp src
+cp inst/CppCode/eigenUsingClasses.cpp src
+
 if test "${ENABLE_LIB}" != "false" ; then
- echo "Building libnimble"
-(cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile)
+  echo "Building libnimble"
+  (cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile)
 
 else
   echo "Building libnimble.a"
-  cp inst/CppCode/dists.cpp src
-  cp inst/CppCode/RcppUtils.cpp src
-  cp inst/CppCode/nimbleGraph.cpp src
-  cp inst/CppCode/eigenUsingClasses.cpp src
-
   (cd inst/CppCode ; ${MAKE} -f${GNUMAKEFILE_INCLUDE_MAKECONF} -fGNUmakefile libnimble.a)
 fi
 
