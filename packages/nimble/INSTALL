@@ -1,9 +1,9 @@
 You can install NIMBLE as an R package from CRAN in the usual way.
 
 You can install from the source file using
-   R CMD INSTALL nimble_0.7.0.tar.gz
+   R CMD INSTALL nimble_0.7.1.tar.gz
 or
-  install.packages("nimble_0.7.0.tar.gz", repos = NULL)
+  install.packages("nimble_0.7.1.tar.gz", repos = NULL)
 
 You can also install the package directly from the NIMBLE repository 
   install.packages("nimble", repos = "http://r-nimble.org")
@@ -21,7 +21,7 @@ i.e. not Windows.
     By default, we will use the Eigen distribution included with the package.
 
 We can specify any or all of these with
-  R CMD INSTALL nimble_0.7.0.tar.gz  --configure-args="--enable-dylib=true --with-eigen=/Users/duncan/local"
+  R CMD INSTALL nimble_0.7.1.tar.gz  --configure-args="--enable-dylib=true --with-eigen=/Users/duncan/local"
 or
   install.packages("nimble", configure.args = "--enable-dylib=true --with-eigen=/Users/duncan/local")
 
