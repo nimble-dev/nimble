@@ -16,7 +16,7 @@ BUG FIXES
 
 -- Fix bug in findClusterNodes for dCRP nodes that was not detecting certain cases of clustering of multiple parameters in a model code statement and thereby not properly handling MCMC configuration for such nodes. (PR #861)
 
--- Avoid protection stack overflow in working with large models, caused by fixing uses of PROTECT in C++ code in Version 0.7.0. (Issue #852)
+-- Avoid protection stack overflow in working with large models, a problem introduced in 0.7.0 due to modifications of how PROTECT is used C++ code in response to new CRAN checks. (Issue #852)
 
 -- Fix bug in corner case of model initialization. (Issue #857)
 
