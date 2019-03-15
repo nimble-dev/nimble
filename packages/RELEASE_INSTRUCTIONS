@@ -1,4 +1,5 @@
 make sure NEWS is updated with info on changes in latest release
+also may want to have NEWS lines be no longer than 80 characters
 
 update DESCRIPTION and INSTALL with current version number
 
@@ -30,6 +31,7 @@ Note that test-size results are simply showing warnings from model building that
 
 run tests on all OS ideally
 
+change version number in UserManual/src/{title.tex,_output.yml}
 rebuild manual as further test of package
 
 download .tar.gz for reverse dependencies (currently 'bcgam') and run R CMD check on it (having trouble with tools::tools::check_packages_in_dir, but should figure that out and add a Make task for this) (however note that currently the compilation in bcgam is failing upon testing)
@@ -44,6 +46,7 @@ before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it w
 and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
 and change to requireNamespace('rstan') from require('rstan')
 
+(note that given R CMD check now errors if this is not addressed, we've changed this so this change is now already in devel)
 before release to CRAN make sure we disable Eigen pragmas that suppress warnings that CRAN dislikes:
 line 102 of packages/nimble/inst/include/Eigen/src/Core/arch/SSE/Complex.h
 lines 44,51 of  packages/nimble/inst/include/Eigen/src/Core/util/DisableStupidWarnings.h
@@ -68,6 +71,7 @@ login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use 
 cd /web/R-nimble/wordpress/src/contrib
 
 for version on nimble website, avoid the FLIBS/stan/Eigen changes above
+(actually see above as it's simplest just to leave the Eigen changes in)
 
 cp new .tar.gz there
 
@@ -105,9 +109,6 @@ update version numbering on license and citation page
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers)
 (best to point with a hyperlink to the info on versions/news on webpage not to NEWS)
-
-for link to NEWS have:
-
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 
