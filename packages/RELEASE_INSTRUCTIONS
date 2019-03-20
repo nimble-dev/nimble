@@ -147,6 +147,10 @@ And here is the old one:
 Christopher Paciorek, perrydv, Daniel Turek, Nicholas Michaud, Fritz Obermeyer, Duncan Temple Lang, … David LeBauer. (2018, February 17). nimble-dev/nimble: v0.6-9 (Version v0.6-9). Zenodo. http://doi.org/10.5281/zenodo.1174525
 10.5281/zenodo.820704 is for all versions
 
+### running rchk to find memory protection errors
+
+Could try to run the ubuntu-rchk Docker container. While made for rhub, it is also available pre-made here at Docker Cloud which allows one to run the rchk.sh script in a local instance.
+
 ### building binaries
 
 make sure there is no libnimble.{a,dylib,so} in inst/CppCode or it will be copied over and interfere with the libnimble created during the build process
