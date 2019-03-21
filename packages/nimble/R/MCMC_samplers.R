@@ -1782,7 +1782,7 @@ CAR_scalar_conjugate <- nimbleFunction(
         ## numeric value generation
         if(!all(model$getDistribution(depStochNodes_dnorm) == 'dnorm')) stop('something went wrong')
         linearityCheckExprList <- lapply(depStochNodes_dnorm, function(node) model$getParamExpr(node, 'mean'))
-        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansions=TRUE))
+        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansions=FALSE))
         if(!all(sapply(linearityCheckExprList, function(expr) cc_nodeInExpr(targetScalar, expr)))) stop('something went wrong')
         linearityCheckResultList <- lapply(linearityCheckExprList, function(expr) cc_checkLinearity(expr, targetScalar))
         if(any(sapply(linearityCheckResultList, function(expr) is.null(expr)))) stop('something went wrong')

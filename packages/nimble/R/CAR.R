@@ -90,7 +90,7 @@ CAR_checkConjugacy <- function(model, target) {
         if(!model$getDistribution(depNode) == 'dnorm')   return(FALSE)
         if(model$isTruncated(depNode))   return(FALSE)
         linearityCheckExpr <- model$getParamExpr(depNode, 'mean')
-        linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, skipExpansions=TRUE)
+        linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, skipExpansions=FALSE)
         if(!cc_nodeInExpr(target, linearityCheckExpr))   return(FALSE)
         linearityCheck <- cc_checkLinearity(linearityCheckExpr, target)
         if(!cc_linkCheck(linearityCheck, 'linear'))   return(FALSE)
