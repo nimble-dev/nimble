@@ -27,10 +27,10 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      callSuper(...)
                                  },
                                  getDefs = function() {
-                                     list(.self,
-                                          if(!inherits(SEXPinterfaceFun, 'uninitializedField')) SEXPinterfaceFun,
-                                          if(!inherits(ADtemplateFun, 'uninitializedField')) ADtemplateFun
-                                          )
+                                     c(list(.self),
+                                       if(!inherits(SEXPinterfaceFun, 'uninitializedField')) list(SEXPinterfaceFun) else list(),
+                                       if(!inherits(ADtemplateFun, 'uninitializedField')) list(ADtemplateFun) else list()
+                                       )
                                  },
                                  getHincludes = function() {
                                      Hinc <- c(Hincludes,
@@ -96,7 +96,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      Hincludes <<- c(Hincludes, RCfunProc$RCfun$externalHincludes)
 
                                      ## to be wrapped in conditional
-                                     ADtemplateFun <<- makeTypeTemplateFunction(name, .self)
+                                     if(isTRUE(RCfunProc$RCfun$enableDerivs) & isTRUE(nimbleOptions('experimentalEnableDerivs')))
+                                         ADtemplateFun <<- makeTypeTemplateFunction(name, .self)
                                      
                                      invisible(NULL)
                                  },

@@ -56,14 +56,16 @@ nfMethodRC <- setRefClass(
         code       = 'ANY',
         neededRCfuns = 'ANY',		#list
         externalHincludes = 'ANY',
-        externalCPPincludes = 'ANY'
+        externalCPPincludes = 'ANY',
+        enableDerivs = 'ANY'
     ),
     methods = list(
         initialize = function(method,
                               name,
                               check = FALSE,
                               methodNames = NULL,
-                              setupVarNames = NULL) {
+                              setupVarNames = NULL,
+                              enableDerivs = FALSE) {
             ## uniqueName is only needed for a pure RC function.
             ## It is not needed for a nimbleFunction method.
             if(!missing(name)) uniqueName <<- name 
@@ -83,7 +85,8 @@ nfMethodRC <- setRefClass(
             removeAndSetReturnType(check = check)
             ## Includes for .h and .cpp files when making external calls:
             ## If needed, these will be populated by nimbleExternalCall
-            externalHincludes <<- externalCPPincludes <<- list() 
+            externalHincludes <<- externalCPPincludes <<- list()
+            enableDerivs <<- enableDerivs
         },
         generateArgs = function() {
             argsList <- nf_createAList(names(argInfo))

@@ -80,7 +80,7 @@ nimbleFunction <- function(setup         = NULL,
     if(is.null(setup)) {
         if(length(methods) > 0) stop('Cannot provide multiple methods if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
         if(!is.null(contains)) stop('Cannot provide a contains argument if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
-        return(RCfunction(run, name = name, check = check))
+        return(RCfunction(run, name = name, check = check, enableDerivs = isTRUE(enableDerivs)))
     }
 
     virtual <- FALSE
