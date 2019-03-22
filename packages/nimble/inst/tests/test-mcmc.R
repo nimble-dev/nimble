@@ -1609,6 +1609,31 @@ test_that('slice sampler bails out of loop', {
 })
 
 
+test_that('CAR conjugacy checking new skipExpansionsNode system', {
+    code <- nimbleCode({
+        S[1:N] ~ dcar_normal(adj[1:L], weights[1:L], numneighbours[1:N], 1)
+        for(i in 1:K) {
+            beta[i] ~ dnorm(0, 1)
+        }
+        for(i in 1:N){
+            eta[i] <- inprod(beta[1:K], x[1:K])
+            mu[i] <- S[i] + eta[i]
+            y[i] ~ dnorm(mu[i], 1)
+        }
+    })
+    N <- 3
+    L <- 4
+    K <- 7
+    constants <- list(N=N, L=L, K=K, adj=c(2,1,3,2), weights=rep(1,L), numneighbours=c(1,2,1))
+    data <- list(y = rep(0,N))
+    inits <- list(S = rep(0,N), beta = rep(0,K), x=1:K)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    conf <- configureMCMC(Rmodel)
+    Rmcmc <- buildMCMC(conf)
+    expect_true(class(Rmcmc) == 'MCMC')
+})
+
+
 sink(NULL)
 
 if(!generatingGoldFile) {
