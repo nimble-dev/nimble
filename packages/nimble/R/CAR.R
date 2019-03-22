@@ -84,17 +84,17 @@ as.carCM <- function(adj, weights, num) {
 
 
 ## specialized conjugacy-checking of the scalar component nodes of dcar_normal() AND dcar_proper() distributions
-CAR_checkConjugacy <- function(model, target) {
+CAR_checkConjugacy <- function(model, target, carNode) {
     depNodes <- model$getDependencies(target, stochOnly = TRUE, self = FALSE)
     for(depNode in depNodes) {
         if(!model$getDistribution(depNode) == 'dnorm')   return(FALSE)
         if(model$isTruncated(depNode))   return(FALSE)
-        linearityCheckExpr <- model$getParamExpr(depNode, 'mean')
-        linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, skipExpansions=FALSE)
+        linearityCheckExprRaw <- model$getParamExpr(depNode, 'mean')
+        linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, skipExpansionsNode=carNode)
         if(!cc_nodeInExpr(target, linearityCheckExpr))   return(FALSE)
         linearityCheck <- cc_checkLinearity(linearityCheckExpr, target)
         if(!cc_linkCheck(linearityCheck, 'linear'))   return(FALSE)
-        if(!cc_otherParamsCheck(model, depNode, target, skipExpansions=TRUE))   return(FALSE)
+        if(!cc_otherParamsCheck(model, depNode, target, skipExpansionsNode=carNode))   return(FALSE)
     }
     return(TRUE)
 }

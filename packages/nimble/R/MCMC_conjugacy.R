@@ -943,7 +943,7 @@ cc_makeRDistributionName     <- function(distName)     return(paste0('r', substr
 
 
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
-cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansions=FALSE) {
+cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansionsNode = NULL) {
     if(is.numeric(expr)) return(expr)     # return numeric
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) { # expr is a name, or an indexed name
         if(nimbleOptions()$allowDynamicIndexing) {
@@ -964,7 +964,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                         ## now check that target is not actually used in index expressions
                         newExpr <- as.call(c(cc_structureExprName, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
                         for(i in seq_along(newExpr)[-1])
-                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
+                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
                         if(cc_nodeInExpr(targetNode, newExpr))
                             return(as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x))))  # put 'expr' back in though shouldn't be needed downstream
                         ## otherwise continue with processing as in non-dynamic index case
@@ -976,7 +976,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                         ## sapply business gets rid of () at end of index expression
                         newExpr <- as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
                         for(i in seq_along(newExpr)[-1])
-                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
+                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
                         return(newExpr)
                     }
                 }  ## else continue with processing as in non-dynamic index case
@@ -984,36 +984,38 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         }
         exprText <- deparse(expr)
         expandedNodeNamesRaw <- model$expandNodeNames(exprText)
+        if(!is.null(skipExpansionsNode) && (exprText %in% model$expandNodeNames(skipExpansionsNode, returnScalarComponents=TRUE))) return(expr)
         ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
-        expandedNodeNames <- if((exprText %in% expandedNodeNamesRaw) || skipExpansions) exprText else expandedNodeNamesRaw
+        expandedNodeNames <- if(exprText %in% expandedNodeNamesRaw) exprText else expandedNodeNamesRaw
         if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
             ## expr is a single node in the model
             type <- model$getNodeType(exprText)
             if(length(type) > 1) {
                 ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
                 if(exprText %in% expandedNodeNamesRaw) type <- type[which(exprText == expandedNodeNamesRaw)]
-                else stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+                else stop('something went wrong with Daniel\'s understanding of newNimbleModel #1')
             }
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
                 newExpr <- model$getValueExpr(exprText)
-                return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansions))
+                return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansionsNode))
             }
             if(type == 'RHSonly') return(expr)
-            stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+            stop('something went wrong with Daniel\'s understanding of newNimbleModel #2')
         }
         newExpr <- cc_createStructureExpr(model, exprText)
         for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
+            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
         return(newExpr)
     }
     if(is.call(expr)) {
         for(i in seq_along(expr)[-1])
-            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansions)
+            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansionsNode)
         return(expr)
     }
     stop(paste0('something went wrong processing: ', deparse(expr)))
 }
+
 
 ## special name used to represent vectors / arrays defined in terms of other stoch/determ nodes
 cc_structureExprName <- quote(structureExpr)
@@ -1043,11 +1045,11 @@ cc_linkCheck <- function(linearityCheck, link) {
 
 ## checks the parameter expressions in the stochastic distribution of depNode
 ## returns FALSE if we find 'targetNode' in ***more than one*** of these expressions
-cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansions=FALSE) {
+cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansionsNode = NULL) {
     paramsList <- as.list(model$getValueExpr(depNode)[-1])       # extracts the list of all parameters, for the distribution of depNode
     timesFound <- 0   ## for success, we'll find targetNode in only *one* parameter expression
     for(i in seq_along(paramsList)) {
-        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansions)
+        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansionsNode)
         if(cc_vectorizedComponentCheck(targetNode, expr))   return(FALSE)
         if(cc_nodeInExpr(targetNode, expr))     { timesFound <- timesFound + 1 }    ## we found 'targetNode'
     }
