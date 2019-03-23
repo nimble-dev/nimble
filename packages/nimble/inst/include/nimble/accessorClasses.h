@@ -781,6 +781,7 @@ class NodeVectorClassNew_derivs : public NodeVectorClassNew {
   // 13. Finish taping
   // 14. Call tape->optimize() 
   ManyVariablesMapAccessor model_wrt_accessor;
+  ManyVariablesMapAccessor& get_model_wrt_accessor() {return model_wrt_accessor;}
   ManyVariablesMapAccessor model_AD_wrt_accessor;
   ManyVariablesMapAccessor model_extraInput_accessor;
   ManyVariablesMapAccessor model_AD_extraInput_accessor;

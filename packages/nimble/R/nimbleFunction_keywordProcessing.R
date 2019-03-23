@@ -254,30 +254,10 @@ getBound_keywordInfo <- keywordInfoClass(
 calculate_keywordInfo <- keywordInfoClass(
     keyword = 'calculate',
     processor = function(code, nfProc){
-        ## if(deparse(code[[1]]) == 'nimDerivs'){
-        ##   outerCode <- code
-        ##   code <- code[[2]]
-        ##   derivsFlag <- TRUE
-        ## }
-        ## else{
-        ##   derivsFlag <- FALSE
-        ## }
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
         errorContext <- deparse(code)
         
-        ## if(derivsFlag){
-        ##   if(is.list(outerCode$wrt) && is.null(outerCode$wrt[[1]])){
-        ##     stop("Derivatives of a call to 'calculate()' must have 'wrt' argument specified.")
-        ##   }
-        ##   nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, wrtNodes = outerCode$wrt,
-        ##                              includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
-        ## }
-        ## else{
-        ##     nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes,
-        ##                                includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
-        ## }
-
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, wrtNodes = code$wrt,
                                    includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
 
@@ -314,33 +294,15 @@ calculate_keywordInfo <- keywordInfoClass(
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
         addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
         if(!useNodeFunctionVectorByIndex){
-        ##   if(derivsFlag){
-        ##     newRunCode <- substitute(nimDerivs_calculate(nodeFxnVector = NODEFUNVEC_NAME, orderVector = ORDERVEC),
-        ##                              list(NODEFUNVEC_NAME = as.name(nodeFunName),
-        ##                                   ORDERVEC = outerCode$order))
-        ##   }
-        ##   else{
             newRunCode <- substitute(calculate(nodeFxnVector = NODEFUNVEC_NAME),
                                      list(NODEFUNVEC_NAME = as.name(nodeFunName)))
-        ##   }
         }
         else{
-          ## if(derivsFlag){
-          ##     newRunCode <- substitute(
-          ##         nimDerivs_calculate(nodeFxnVector = NODEFUNVEC_NAME,
-          ##                             nodeFunctionIndex = NODEFUNVECINDEX,
-          ##                             orderVector = ORDERVEC),
-          ##         list(NODEFUNVEC_NAME = as.name(nodeFunName),
-          ##              NODEFUNVECINDEX = nodesIndexExpr,
-          ##              orderVec = outerCode$order))
-          ## }
-          ## else{
-              newRunCode <- substitute(
-                  calculate(nodeFxnVector = NODEFUNVEC_NAME,
-                            nodeFunctionIndex = NODEFUNVECINDEX),
-                  list(NODEFUNVEC_NAME = as.name(nodeFunName),
-                       NODEFUNVECINDEX = nodesIndexExpr))
-            ## }
+            newRunCode <- substitute(
+                calculate(nodeFxnVector = NODEFUNVEC_NAME,
+                          nodeFunctionIndex = NODEFUNVECINDEX),
+                list(NODEFUNVEC_NAME = as.name(nodeFunName),
+                     NODEFUNVECINDEX = nodesIndexExpr))
         }
         return(newRunCode)
     }
@@ -814,6 +776,32 @@ length_char_keywordInfo <- keywordInfoClass(
         return(code)
     })
 
+nimOptim_model_keywordInfo <- keywordInfoClass(
+    keyword = "nimOptim_model",
+    processor = function(code, nfProc) {
+        nimOptim_model_keywordInfo_impl(code, nfProc)
+    }
+)
+
+nimOptim_model_keywordInfo_impl <- function(code, nfProc) {
+    wrt_arg <- code[['wrt']]
+    nodes_arg <- code[['nodes']]
+    model_arg <- code[['model']]
+
+    ## This will treat the line of code as if it is calculate(model, nodes, wrt),
+    ## which in turn sets up the nodeFxnVector with derivs info.
+    newCode <- calculate_keywordInfo$processor(code, nfProc)
+    ## new code has only calculate(nodeFxnVector), so we need to add other argument back in
+    newCode[[1]] <- as.name('nimOptim_model')
+    newCode$use.gr <- code[['use.gr']]
+    newCode$method <-code[['method']]
+    newCode$lower <-code[['lower']]
+    newCode$upper <-code[['upper']]
+    newCode$control <-code[['control']]
+    newCode$hessian <-code[['hessian']]
+    return(newCode)
+}
+
 nimDerivs_keywordInfo <- keywordInfoClass(
   keyword = 'nimDerivs',
   processor = function(code, nfProc) {
@@ -904,6 +892,7 @@ keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
 
 keywordList[['nimDerivs']] <- nimDerivs_keywordInfo 
+keywordList[['nimOptim_model']] <- nimOptim_model_keywordInfo 
 
 keywordListModelMemberFuns <- new.env()
 keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo
@@ -938,6 +927,7 @@ matchFunctions[['nimOptim']] <- nimOptim
 matchFunctions[['nimOptimDefaultControl']] <- nimOptimDefaultControl
 matchFunctions[['nimEigen']] <- function(squareMat, symmetric = FALSE, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
+matchFunctions[['nimOptim_model']] <- function(model, wrt, nodes, use.gr = TRUE, method = "CG", lower = -Inf, upper = Inf, control = nimOptimDefaultControl(), hessian = FALSE) {} ## Any changes here need to be reflected in the keyword processor, which has to re-insert arguments to a modified call.
 matchFunctions[['nimDerivs']] <- nimDerivs
 matchFunctions[['besselK']] <- function(x, nu, expon.scaled = FALSE){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}

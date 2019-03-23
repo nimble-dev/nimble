@@ -25,6 +25,7 @@
 #include <nimble/NimArr.h>
 #include <nimble/predefinedNimbleLists.h>
 #include <nimble/smartPtrs.h>
+#include <nimble/nimbleCppAD.h>
 #include <algorithm>
 #include <string>
 
@@ -162,10 +163,107 @@ class NimOptimProblem_Fun_Grad : public NimOptimProblem {
     Gr gr_;
 };
 
+class NimOptimProblem_model : public NimOptimProblem {
+ private:
+  int length_wrt;
+  bool use_gr;
+  NodeVectorClassNew_derivs &nodes;
+  NimArr<1, double> lastP;
+  double lastValue;
+  NimArr<1, double> lastGradient;
+  NimArr<1, double> derivOrders;
+  NimArr<1, double> get_wrt() {
+    NimArr<1, double > wrt;
+    wrt.setSize(length_wrt);
+    getValues(wrt, nodes.get_model_wrt_accessor());
+    return wrt;
+  }
+
+ public:
+  NimOptimProblem_model(
+			NodeVectorClassNew_derivs &nodes_,
+			bool use_gr_,
+			const std::string& method,
+			NimArr<1, double>& lower, NimArr<1, double>& upper,
+			nimSmartPtr<OptimControlNimbleList> control,
+			bool hessian
+			)
+    : NimOptimProblem(method, lower, upper, control, hessian),
+    use_gr(use_gr_),
+    nodes(nodes_) {
+      derivOrders.setSize(2);
+      derivOrders[0] = derivOrders[1] = 1;
+      length_wrt = nodes.get_model_wrt_accessor().getTotalLength();
+      lastP.setSize(length_wrt, false, false);
+      lastGradient.setSize(length_wrt, false, false);
+    }
+
+  nimSmartPtr<OptimResultNimbleList> solve() {
+    NimArr<1, double> initP = get_wrt();
+    return NimOptimProblem::solve(initP);
+  }
+  
+ private:
+  void run_calculations() {
+    setValues(par_, nodes.get_model_wrt_accessor());
+    nimSmartPtr<NIMBLE_ADCLASS> ADresult = nimDerivs_calculate(nodes, derivOrders);
+    if(par_.size() != length_wrt) {
+      std::cout<<"Error in C++: wrong length par_ in nimOptim_model"<<std::endl;
+    }
+    std::memcpy(lastP.getPtr(), par_.getPtr(), length_wrt * sizeof(double));
+    lastValue = ADresult->value[0];
+    if(ADresult->jacobian.dim()[0] != 1) {
+      std::cout<<"Error in C++: jacobian number of rows != 1 in nimOptim_model"<<std::endl;
+    } 
+    std::memcpy(lastGradient.getPtr(), ADresult->jacobian.getPtr(), length_wrt * sizeof(double));
+  }
+
+    
+ protected:
+  virtual double function() {
+    run_calculations();
+    return lastValue;
+  };
+  virtual void gradient() {
+    bool sameAsLastCall = true;
+    if(par_.size() != length_wrt) {
+      std::cout<<"Error in C++: wrong length par_ in nimOptim_model"<<std::endl;
+    }
+    for(size_t i = 0; i < length_wrt; ++i) {
+      if(lastP[i] != par_[i]) {
+	sameAsLastCall = false;
+	break;
+      }
+    }
+    if(!sameAsLastCall) run_calculations();
+    if(ans_.size() != length_wrt) {
+      std::cout<<"Error in C++: wrong length ans_ in nimOptim_model"<<std::endl;
+    }
+    std::memcpy(ans_.getPtr(), lastGradient.getPtr(), length_wrt * sizeof(double));
+  };
+};
+
 // ---------------------------------------------------------------------------
 // These nimOptim() and nimOptimDefaultControl() will appear in generated code
 
 nimSmartPtr<OptimControlNimbleList> nimOptimDefaultControl();
+
+inline nimSmartPtr<OptimResultNimbleList> nimOptim_model(
+							 NodeVectorClassNew_derivs &nodes,
+							 bool use_gr,
+							 const std::string& method,
+							 double lower,
+							 double upper,
+							 nimSmartPtr<OptimControlNimbleList> control,
+							 bool hessian = false
+							 ) {
+  NimArr<1, double> lower_vector;
+  lower_vector.initialize(lower, true, 1);
+  NimArr<1, double> upper_vector;
+  upper_vector.initialize(upper, true, 1);
+  control->fnscale = -1.;
+  return NimOptimProblem_model(nodes, use_gr, method, lower_vector, upper_vector, control, hessian ).solve( );
+}
 
 template <class Fn, class Gr>
 inline nimSmartPtr<OptimResultNimbleList> nimOptim(
