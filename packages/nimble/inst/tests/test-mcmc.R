@@ -1610,6 +1610,7 @@ test_that('slice sampler bails out of loop', {
 
 
 test_that('CAR conjugacy checking new skipExpansionsNode system', {
+    ##
     code <- nimbleCode({
         S[1:N] ~ dcar_normal(adj[1:L], weights[1:L], numneighbours[1:N], 1)
         for(i in 1:K) {
@@ -1621,16 +1622,36 @@ test_that('CAR conjugacy checking new skipExpansionsNode system', {
             y[i] ~ dnorm(mu[i], 1)
         }
     })
+    ##
     N <- 3
     L <- 4
     K <- 7
+    ##
     constants <- list(N=N, L=L, K=K, adj=c(2,1,3,2), weights=rep(1,L), numneighbours=c(1,2,1))
     data <- list(y = rep(0,N))
     inits <- list(S = rep(0,N), beta = rep(0,K), x=1:K)
+    ##
     Rmodel <- nimbleModel(code, constants, data, inits)
     conf <- configureMCMC(Rmodel)
     Rmcmc <- buildMCMC(conf)
+    ##
     expect_true(class(Rmcmc) == 'MCMC')
+    expect_true(conf$samplerConfs[[8]]$name == 'CAR_normal')
+    expect_true(class(Rmcmc$samplerFunctions$contentsList[[8]]$componentSamplerFunctions$contentsList[[1]]) == 'CAR_scalar_conjugate')
+    expect_true(class(Rmcmc$samplerFunctions$contentsList[[8]]$componentSamplerFunctions$contentsList[[2]]) == 'CAR_scalar_conjugate')
+    expect_true(class(Rmcmc$samplerFunctions$contentsList[[8]]$componentSamplerFunctions$contentsList[[3]]) == 'CAR_scalar_conjugate')
+    ##
+    compiledList <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+    Cmodel <- compiledList$model; Cmcmc <- compiledList$mcmc
+    ##
+    set.seed(0); Rsamples <- runMCMC(Rmcmc, 10)
+    set.seed(0); Csamples <- runMCMC(Cmcmc, 10)
+    ##
+    expectedSamples <- c(0.97357331, 0.07601302, 0.10439196, -0.37719856, 0.15912985, 0.03509085, -0.01162275, 0.17958068, -0.34811805, 0.10319592)
+    Rcolnames <- colnames(Rsamples)
+    ##
+    expect_true(all(round(as.numeric(Rsamples[10,Rcolnames]),8) == expectedSamples))
+    expect_true(all(round(as.numeric(Csamples[10,Rcolnames]),8) == expectedSamples))
 })
 
 
