@@ -94,7 +94,7 @@ CAR_checkConjugacy <- function(model, target, carNode) {
         if(!cc_nodeInExpr(target, linearityCheckExpr))   return(FALSE)
         linearityCheck <- cc_checkLinearity(linearityCheckExpr, target)
         if(!cc_linkCheck(linearityCheck, 'linear'))   return(FALSE)
-        if(!cc_otherParamsCheck(model, depNode, target, skipExpansionsNode=carNode))   return(FALSE)
+        if(!cc_otherParamsCheck(model, depNode, target, skipExpansionsNode=carNode, depNodeExprExpanded = linearityCheckExpr, depParamNodeName = 'mean'))   return(FALSE)
     }
     return(TRUE)
 }

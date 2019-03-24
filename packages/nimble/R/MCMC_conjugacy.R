@@ -358,13 +358,15 @@ conjugacyClass <- setRefClass(
                 if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
             } else currentLink = restrictLink
             if(currentLink != 'stick_breaking') {
-                linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
+                depNodeParamName <- dependentObj$param
+                linearityCheckExprRaw <- model$getParamExpr(depNode, depNodeParamName)   # extracts the expression for 'param' from 'depNode'
+                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = targetNode)
                 if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
                 if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
                 linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
-                if(!cc_linkCheck(linearityCheck, currentLink))                           return(NULL)
-                if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
+                if(!cc_linkCheck(linearityCheck, currentLink))   return(NULL)
+                ## ensure targetNode appears in only *one* depNode parameter expression
+                if(!cc_otherParamsCheck(model, depNode, targetNode, depNodeExprExpanded = linearityCheckExpr, depParamNodeName = depNodeParamName))   return(NULL)
             } else {
                 stickbreakingCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = targetNode)
@@ -1045,11 +1047,13 @@ cc_linkCheck <- function(linearityCheck, link) {
 
 ## checks the parameter expressions in the stochastic distribution of depNode
 ## returns FALSE if we find 'targetNode' in ***more than one*** of these expressions
-cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansionsNode = NULL) {
+cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansionsNode = NULL, depNodeExprExpanded, depParamNodeName) {
     paramsList <- as.list(model$getValueExpr(depNode)[-1])       # extracts the list of all parameters, for the distribution of depNode
     timesFound <- 0   ## for success, we'll find targetNode in only *one* parameter expression
     for(i in seq_along(paramsList)) {
-        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansionsNode)
+        if(!missing(depParamNodeName) && (names(paramsList)[i] == depParamNodeName)) {
+            expr <- depNodeExprExpanded
+        } else { expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansionsNode) }
         if(cc_vectorizedComponentCheck(targetNode, expr))   return(FALSE)
         if(cc_nodeInExpr(targetNode, expr))     { timesFound <- timesFound + 1 }    ## we found 'targetNode'
     }
