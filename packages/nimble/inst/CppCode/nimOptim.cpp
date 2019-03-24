@@ -108,6 +108,10 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
               control_->gamma, control_->trace, fncount, control_->maxit);
     } else if (method_ == "BFGS") {
         std::vector<int> mask(n, 1);
+	/* Shouldn't dpar be copied to X and X passed to the function? */
+	/* It looks like this method replaces X with the arg max result.*/
+	/* Oh, I see that instead, after vmmin, we have result->par = par,*/
+	/* This will place the last evaluated parameters in the result.*/
         vmmin(n, dpar, Fmin, NimOptimProblem::fn, NimOptimProblem::gr,
               control_->maxit, control_->trace, mask.data(), control_->abstol,
               control_->reltol, control_->REPORT, ex, fncount, grcount, fail);
@@ -140,7 +144,71 @@ nimSmartPtr<OptimResultNimbleList> NimOptimProblem::solve(
     // Compute Hessian.
     if (hessian_) {
         Rf_warning("Hessian computation is not implemented");  // TODO
+	NimOptimProblem::calc_hessian(result->par, result->hessian);
     }
-
     return result;
 }
+
+void NimOptimProblem::calc_hessian(NimArr<1, double> par,
+				   NimArr<2, double> &hessian) {
+  // Notice par is copied but hessian is by reference.
+  double ndeps = 0.001; //  This should be obtained from control list but is hard-wired for now.
+  double epsilon = ndeps;
+  int n = par.dimSize(0);
+  void *ex = this;
+  double* dpar = par.getPtr();
+  NimArr<1, double> ansUpper;
+  NimArr<1, double> ansLower;
+  ansUpper.setSize(n, false, false);
+  ansLower.setSize(n, false, false);
+  hessian.setSize(n, n, false, false);
+  int i, j;
+  for(i = 0; i < n; ++i) {
+    dpar[i] += epsilon;
+    gr(n, dpar, ansUpper.getPtr(), ex);
+    dpar[i] -= 2*epsilon;
+    gr(n, dpar, ansLower.getPtr(), ex);
+    for(j = 0; j < n; ++j) {
+      // Following R's optimhess, we want to multiply by fnscale here to return answer to original scale.
+      hessian(i, j) = control_->fnscale * (ansUpper[j] - ansLower[j]) / (2.*epsilon);
+    }
+    dpar[i] += epsilon;
+  }
+  // Follow the "symmetrize" step of R's optimhess in stats, i.e. average the two relevant elements.
+  for(i = 0; i < n; ++i) {
+    for(j = 0; j < i; ++j) {
+      double tmp = 0.5* (hessian(i,j) + hessian(j,i));
+      hessian(i, j) = hessian(j, i) = tmp;
+    }
+  }
+}
+
+/*
+Notes on R's implementation of Hessian.
+---------------------------------------
+Source code of optim (type "optim" in R) uses .External2(C_optim, ...) followed by .External2(C_optimhess, ...).
+What each of these calls can be seen by stats:::C_optim and stats:::C_optimhess.
+They call "optim" and "optimhess" respectively.  These are in base package stats.
+Within R source code, these files are in src/library/stats/src.
+
+The .External2 format passes the R call in a standard four arguments, of which the third is a list of actual arguments.
+
+(We see that parscale is applied internally, which means if we want to imitate it's behavior, we'll have to implement it directly.)
+
+The actual optimization algorithms such as nmmin and vmmin can be found in src/appl/optim.c.
+
+optimhess calculates the Hessian.  We see that it uses finite element method for the gradient at points p + eps and p - eps, where eps comes from the
+ control list argument ndeps, which acccording to help(optim) can be user supplied or defaults to 0.001.  
+
+The gradient is evaluated via fmingr, which either uses the supplied gradient function or uses finite element differences of +/- eps.
+
+  For the finite element case, this means in effect that the function (fminfn) is evaluated at p + 2*eps, p [twice, once in each call to fmingr], and p - 2*eps.
+
+The exception is for a case with bounds (L-BFGS-B), in which case, inside fmingr, the p + eps and p-eps are reduced to upper boundary or lower boundary, 
+respectively, and the corresponding epsilons are adjusted. 
+
+fminfn and fmingr are defined in the same file as optim and optimhess.  (Our gr function above mimics the behavior of fmingr.)
+
+These functions wrap calls to the R evaluator for the provided 
+objective and gradient functions, respectively.  Within these functions, parscale and fnscale are applied. (Our fn and gr use fnscale but not parscale.)
+*/

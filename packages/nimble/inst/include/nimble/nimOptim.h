@@ -74,7 +74,8 @@ class NimOptimProblem {
     // passed in as the final argument `void * ex`.
     static double fn(int, double*, void*);
     static void gr(int, double*, double*, void*);
-
+    void calc_hessian(NimArr<1, double> par,
+		      NimArr<2, double> &hessian);
    protected:
     // These are callbacks used internally by fn() and gr().
     virtual double function() = 0;
@@ -85,7 +86,7 @@ class NimOptimProblem {
     NimArr<1, double>& lower_;
     NimArr<1, double>& upper_;
     nimSmartPtr<OptimControlNimbleList> control_;
-    const bool hessian_;
+    bool hessian_;
 
     // Temporaries.
     NimArr<1, double> par_;  // Argument for fn() and gr().
@@ -192,7 +193,8 @@ class NimOptimProblem_model : public NimOptimProblem {
     use_gr(use_gr_),
     nodes(nodes_) {
       derivOrders.setSize(2);
-      derivOrders[0] = derivOrders[1] = 1;
+      derivOrders[0] = 0;
+      derivOrders[1] = 1;
       length_wrt = nodes.get_model_wrt_accessor().getTotalLength();
       lastP.setSize(length_wrt, false, false);
       lastGradient.setSize(length_wrt, false, false);
@@ -200,7 +202,25 @@ class NimOptimProblem_model : public NimOptimProblem {
 
   nimSmartPtr<OptimResultNimbleList> solve() {
     NimArr<1, double> initP = get_wrt();
-    return NimOptimProblem::solve(initP);
+    bool hessian = NimOptimProblem::hessian_;
+    NimOptimProblem::hessian_ = false;
+    nimSmartPtr<OptimResultNimbleList> result = NimOptimProblem::solve(initP);
+    NimOptimProblem::hessian_ = hessian;
+    if(hessian) {
+      /* TO-DO: We should be able to re-use last-run tape calculation */
+      /* and thereby not need to re-do 0-order forward (value) calculation, */
+      /* but for now we do re-do it.*/
+      derivOrders[1] = 2;
+      setValues(par_, nodes.get_model_wrt_accessor());
+      nimSmartPtr<NIMBLE_ADCLASS> ADresult = nimDerivs_calculate(nodes, derivOrders);
+      NimArr<2, double> hessianMap;
+      int n = initP.size();
+      // offset = 0; stride1 = 1; stride2 = n; size1 = n; size2 = n;
+      hessianMap.setMap(ADresult->hessian, 0, 1, n, n, n);
+      result->hessian = hessianMap;
+      derivOrders[1] = 1; // will probably never be used again, but just in case, reset this.
+    }
+    return result;
   }
   
  private:
