@@ -422,6 +422,7 @@ conjugacyClass <- setRefClass(
         },
 
         genSetupFunction = function(dependentCounts, doDependentScreen = FALSE) {
+            browser()
             functionBody <- codeBlockClass()
 
             functionBody$addCode({
@@ -923,7 +924,7 @@ posteriorClass <- setRefClass(
             posteriorVars <- all.vars(parsedTotalPosterior)
             neededPriorParams <<- gsub('^prior_', '', posteriorVars[grepl('^prior_', posteriorVars)])
             neededContributionNames <<- posteriorVars[grepl('^contribution_', posteriorVars)]
-            neededContributionDims <<- inferContributionTermDimensions(prior)
+            neededContributionDims <<- inferContributionTermDimensions(prior) 
         },
         inferContributionTermDimensions = function(prior) {
             nms <- getAllDistributionsInfo('namesVector')
@@ -1134,8 +1135,8 @@ cc_checkLinearity <- function(expr, targetNode, expon = FALSE) {
         return(cc_checkLinearity(expr[[2]], targetNode))
     }
 
-    if(expr[[1]] == 'exp')
-        return(cc_checkLinearity(expr[[2]], targetNode, expon = TRUE))
+    if(expr[[1]] == 'log' && length(expr[[2]]) == 2 && expr[[2]][[1]] == 'exp')
+        return(cc_checkLinearity(expr[[2]][[2]], targetNode, expon = TRUE))
 
     ## minus sign: change to a plus sign, and invert the sign of the RHS
     if(expr[[1]] == '-') {

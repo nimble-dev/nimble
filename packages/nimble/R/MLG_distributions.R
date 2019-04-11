@@ -72,15 +72,18 @@ rcMLG <- nimbleFunction(name = 'rcMLG',
             stop("rcMLG only handles n = 1 at the moment.\n")
         }
 
+        ## note this should handle case of prior_cholesky not being precision scale
+
         ## add 'd' stuff
         r <- dim(cholesky)[1]
         n <- length(data)
         
         w1 <- log(rgamma(n, data, rate = exp(offset)))
         w2 <- log(rgamma(r, prior_shape, rate = prior_rate))
-
+        # new rate should be prior_rate*exp(-(1/prior_sigma)*prior_cholesky %*% prior_mean
+        
         H1t <- t(coeff)
-        Htw <- c(H1t %*% w1, prior_cholesky %*% w2 / prior_sigma)
+        Htw <- H1t %*% w1 + prior_cholesky %*% w2 / prior_sigma
 
         H <- H1t %*% coeff + t(prior_cholesky) %*% prior_cholesky / (prior_sigma^2)
         cholesky <- chol(t(H) %*% H)
@@ -115,7 +118,7 @@ registerDistributions(list(
             discrete = TRUE,
             altParams = c('log_lambda = log(lambda)'),
             range = c(0, Inf),
-            types    = c('value = double(1)', 'lambda = double(1)')
+            types    = c('value = double(1)', 'lambda = double(1)', 'log_lambda = double(1)')
     ),
     ## not clear how to set identity, constraints; should 'c' be vector?
     ## set identity = TRUE if no cholesky? would need to check V is cholesky...
@@ -136,7 +139,7 @@ registerDistributions(list(
                                  posterior = 'dcMLG(contribution_value, contribution_offset, contribution_coeff, prior_cholesky, prior_sigma, prior_shape, prior_rate)')
          ),
     dcMLG = list(BUGSdist = 'dcMLG(data, offset, coeff, cholesky, sigma, shape, rate)',
-                 types    = c('data = double(1)', 'offset = double(1)', 'coeff = double(2)', 'cholesky = double(2)'))
+                 types    = c('value = double(1)', 'data = double(1)', 'offset = double(1)', 'coeff = double(2)', 'cholesky = double(2)'))
 ), verbose = FALSE)
 
 calc_dMLG_altParams <- function() {}
