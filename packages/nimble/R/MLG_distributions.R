@@ -59,6 +59,8 @@ dcMLG <- nimbleFunction(name = 'dcMLG',
                    prior_shape = double(0), prior_rate = double(0),
                    log = integer(0, default = 0)) {
         stop("dcMLG not functional; cMLG distribution only intended for conjugate sampling via 'rcMLG'.")
+        returnType(double(0))
+        return(0)
     }
 )
 
@@ -75,7 +77,7 @@ rcMLG <- nimbleFunction(name = 'rcMLG',
         ## note this should handle case of prior_cholesky not being precision scale
 
         ## add 'd' stuff
-        r <- dim(cholesky)[1]
+        r <- dim(prior_cholesky)[1]
         n <- length(data)
         
         w1 <- log(rgamma(n, data, rate = exp(offset)))
