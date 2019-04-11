@@ -445,7 +445,7 @@ CAR_calcEVs2 <- nimbleFunction(
     run = function(adj = double(1), num = double(1)) {
         C <- CAR_calcC(adj, num)
         Cmatrix <- CAR_calcCmatrix(C, adj, num)
-        evs <- eigen(Cmatrix)$values
+        evs <- eigen(Cmatrix, only.values = TRUE)$values
         returnType(double(1))
         return(evs)
     }
@@ -461,7 +461,7 @@ CAR_calcEVs3 <- nimbleFunction(
     name = 'CAR_calcEVs3',
     run = function(C = double(1), adj = double(1), num = double(1)) {
         Cmatrix <- CAR_calcCmatrix(C, adj, num)
-        evs <- eigen(Cmatrix)$values
+        evs <- eigen(Cmatrix, only.values = TRUE)$values
         returnType(double(1))
         return(evs)
     }
