@@ -85,7 +85,7 @@ rcMLG <- nimbleFunction(name = 'rcMLG',
         # new rate should be prior_rate*exp(-(1/prior_sigma)*prior_cholesky %*% prior_mean
         
         H1t <- t(coeff)
-        Htw <- H1t %*% w1 + prior_cholesky %*% w2 / prior_sigma
+        Htw <- (H1t %*% w1 + prior_cholesky %*% w2 / prior_sigma)[,1]
 
         H <- H1t %*% coeff + t(prior_cholesky) %*% prior_cholesky / (prior_sigma^2)
         cholesky <- chol(t(H) %*% H)
@@ -125,7 +125,8 @@ registerDistributions(list(
     ## not clear how to set identity, constraints; should 'c' be vector?
     ## set identity = TRUE if no cholesky? would need to check V is cholesky...
     dMLG = list(BUGSdist = 'dMLG(c, cholesky, shape, rate, sigma, Q, K, prec_param, identity, constraints)',
-                      Rdist    = c('dMLG_chol(c, cholesky, shape, rate, sigma = 1, prec_param = 1)',
+                Rdist    = c('dMLG_chol(c, cholesky, shape, rate, sigma, prec_param = 1)',
+                             'dMLG_chol(c, cholesky, shape, rate, sigma = 1, prec_param = 1)',
                                    'dMLG_chol(c, cholesky = chol(Q), shape, rate, sigma, prec_param = 1)',
                                    'dMLG_chol(c, cholesky = chol(Q), shape, rate, sigma = 1, prec_param = 1)',
                                    'dMLG_chol(c, cholesky = t(chol(K)), shape, rate, sigma, prec_param = 0)',
