@@ -1,6 +1,10 @@
 // Copyright (C) 2013-2015 Kasper Kristensen
 // License: GPL-2
 
+/* For nimble */
+/* AD was replaced with CppAD::AD */
+/* atomic:: was replaced with tmb_atomic:: */
+
 /* Flag to detect if any atomic functions have been created */
 TMB_EXTERN bool atomicFunctionGenerated CSKIP(= false;)
 
@@ -27,15 +31,15 @@ TMB_EXTERN bool atomicFunctionGenerated CSKIP(= false;)
   CppAD::vector<double> ATOMIC_NAME<double>(const CppAD::vector<double>& tx); \
   )                                                                           \
   template <class Type>                                                       \
-  void ATOMIC_NAME(const CppAD::vector<AD<Type> >& tx,                        \
-                   CppAD::vector<AD<Type> >& ty);                             \
+  void ATOMIC_NAME(const CppAD::vector<CppAD::AD<Type> >& tx,                        \
+                   CppAD::vector<CppAD::AD<Type> >& ty);                             \
   template <class Type>                                                       \
-  CppAD::vector<AD<Type> > ATOMIC_NAME(const CppAD::vector<AD<Type> >& tx);   \
+  CppAD::vector<CppAD::AD<Type> > ATOMIC_NAME(const CppAD::vector<CppAD::AD<Type> >& tx);   \
   template <class Type>                                                       \
   class atomic##ATOMIC_NAME : public CppAD::atomic_base<Type> {               \
    public:                                                                    \
     atomic##ATOMIC_NAME(const char* name) : CppAD::atomic_base<Type>(name) {  \
-      atomic::atomicFunctionGenerated = true;                                 \
+      tmb_atomic::atomicFunctionGenerated = true;                                 \
       if (config.trace.atomic)                                                \
         std::cout << "Constructing atomic " << #ATOMIC_NAME << "\n";          \
       this->option(CppAD::atomic_base<Type>::bool_sparsity_enum);             \
@@ -79,15 +83,15 @@ TMB_EXTERN bool atomicFunctionGenerated CSKIP(= false;)
     }                                                                         \
   };                                                                          \
   template <class Type>                                                       \
-  void ATOMIC_NAME(const CppAD::vector<AD<Type> >& tx,                        \
-                   CppAD::vector<AD<Type> >& ty) {                            \
+  void ATOMIC_NAME(const CppAD::vector<CppAD::AD<Type> >& tx,                        \
+                   CppAD::vector<CppAD::AD<Type> >& ty) {                            \
     static atomic##ATOMIC_NAME<Type> afun##ATOMIC_NAME(                       \
         "atomic_" #ATOMIC_NAME);                                              \
     afun##ATOMIC_NAME(tx, ty);                                                \
   }                                                                           \
   template <class Type>                                                       \
-  CppAD::vector<AD<Type> > ATOMIC_NAME(const CppAD::vector<AD<Type> >& tx) {  \
-    CppAD::vector<AD<Type> > ty(OUTPUT_DIM);                                  \
+  CppAD::vector<CppAD::AD<Type> > ATOMIC_NAME(const CppAD::vector<CppAD::AD<Type> >& tx) {  \
+    CppAD::vector<CppAD::AD<Type> > ty(OUTPUT_DIM);                                  \
     ATOMIC_NAME(tx, ty);                                                      \
     return ty;                                                                \
   }

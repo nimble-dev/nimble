@@ -1,6 +1,22 @@
 // Copyright (C) 2013-2015 Kasper Kristensen
 // License: GPL-2
 
+// Copyright (C) 2018 the NIMBLE authors 
+// License: GPL (>=2)
+
+/* 
+  Per GPL-2, the NIMBLE authors have adopted and modified TMB code.
+  To the extent possible, code in this file is unmodified, and access from nimble 
+  comes from functions in include/nimble/nimDerivs_TMB.h.
+  However, much of the code in this file is not needed in nimble and has been commented-out.
+  Preceding commented-out sections are additional comments attempting to explain what has been done.
+  In particular, none of TMB's VECTORIZE macros are needed by nimble.  Vectorized use of 
+  distributions in nimble is handled by Eigen nullaryOp classes.  As this is all templated,
+  it automatically works with CppAD as needed.
+
+  namespace atomic was replaced with tmb_atomic because C++11 introduced atomic as a C++ name.
+ */
+
 /**	\file
 	\brief Probability distribution functions.
 	*/
@@ -12,10 +28,11 @@ template<class Type>
 Type pnorm(Type q, Type mean = 0., Type sd = 1.){
   CppAD::vector<Type> tx(1);
   tx[0] = (q - mean) / sd;
-  return atomic::pnorm1(tx)[0];
+  return tmb_atomic::pnorm1(tx)[0];
 }
-VECTORIZE3_ttt(pnorm)
-VECTORIZE1_t(pnorm)
+/* Not needed for nimble */
+// VECTORIZE3_ttt(pnorm)
+// VECTORIZE1_t(pnorm)
 
 /** \brief Quantile function of the normal distribution (following R argument convention).
     \ingroup R_style_distribution
@@ -24,10 +41,11 @@ template<class Type>
 Type qnorm(Type p, Type mean = 0., Type sd = 1.){
   CppAD::vector<Type> tx(1);
   tx[0] = p;
-  return sd*atomic::qnorm1(tx)[0] + mean;
+  return sd*tmb_atomic::qnorm1(tx)[0] + mean;
 }
-VECTORIZE3_ttt(qnorm)
-VECTORIZE1_t(qnorm)
+/* Not needed for nimble */
+// VECTORIZE3_ttt(qnorm)
+// VECTORIZE1_t(qnorm)
 
 /** \brief Distribution function of the gamma distribution (following R argument convention).
     \ingroup R_style_distribution
@@ -39,9 +57,10 @@ Type pgamma(Type q, Type shape, Type scale = 1.){
   tx[1] = shape;
   tx[2] = Type(0);        // 0'order deriv
   tx[3] = -lgamma(shape); // normalize
-  return atomic::D_incpl_gamma_shape(tx)[0];
+  return tmb_atomic::D_incpl_gamma_shape(tx)[0];
 }
-VECTORIZE3_ttt(pgamma)
+/* Not needed for nimble: */
+// VECTORIZE3_ttt(pgamma)
 
 /** \brief Quantile function of the gamma distribution (following R argument convention).
     \ingroup R_style_distribution
@@ -52,9 +71,10 @@ Type qgamma(Type q, Type shape, Type scale = 1.){
   tx[0] = q;
   tx[1] = shape;
   tx[2] = -lgamma(shape); // normalize
-  return atomic::inv_incpl_gamma(tx)[0] * scale;
+  return tmb_atomic::inv_incpl_gamma(tx)[0] * scale;
 }
-VECTORIZE3_ttt(qgamma)
+/* Not needed for nimble: */
+// VECTORIZE3_ttt(qgamma)
 
 /** \brief Distribution function of the poisson distribution (following R argument convention).
     \ingroup R_style_distribution
@@ -64,9 +84,10 @@ Type ppois(Type q, Type lambda){
   CppAD::vector<Type> tx(2);
   tx[0] = q;
   tx[1] = lambda;
-  return atomic::ppois(tx)[0];
+  return tmb_atomic::ppois(tx)[0];
 }
-VECTORIZE2_tt(ppois)
+/* Not needed for nimble: */
+// VECTORIZE2_tt(ppois)
 
 /** 	@name Exponential distribution.
 	Functions relative to the exponential distribution.
@@ -83,7 +104,8 @@ Type pexp(Type x, Type rate)
 }
 
 // Vectorize pexp
-VECTORIZE2_tt(pexp)
+/* Not needed for nimble: */
+// VECTORIZE2_tt(pexp)
 
 /**	\brief Probability density function of the exponential distribution.
 	\ingroup R_style_distribution
@@ -100,7 +122,8 @@ Type dexp(Type x, Type rate, int give_log=0)
 }
 
 // Vectorize dexp
-VECTORIZE3_tti(dexp)
+/* Not needed for nimble */
+// VECTORIZE3_tti(dexp)
 
 /**	\brief Inverse cumulative distribution function of the exponential distribution.
 	\ingroup R_style_distribution
@@ -113,7 +136,8 @@ Type qexp(Type p, Type rate)
 }
 
 // Vectorize qexp.
-VECTORIZE2_tt(qexp)
+/* Not needed for nimble: */
+// VECTORIZE2_tt(qexp)
 /**@}*/
 
 
@@ -133,7 +157,8 @@ Type pweibull(Type x, Type shape, Type scale)
 }
 
 // Vectorize pweibull
-VECTORIZE3_ttt(pweibull)
+/* Not needed for nimble: */
+// VECTORIZE3_ttt(pweibull)
 
 /** 	\brief Probability density function of the Weibull distribution.
 	\ingroup R_style_distribution
@@ -151,7 +176,8 @@ Type dweibull(Type x, Type shape, Type scale, int give_log=0)
 }
 
 // Vectorize dweibull
-VECTORIZE4_ttti(dweibull)
+/* Not needed for nimble: */
+// VECTORIZE4_ttti(dweibull)
 
 /**	\brief Inverse cumulative distribution function of the Weibull distribution.
 	\ingroup R_style_distribution
@@ -169,7 +195,8 @@ Type qweibull(Type p, Type shape, Type scale)
 }
 
 // Vectorize qweibull
-VECTORIZE3_ttt(qweibull)
+/* Not needed for nimble: */
+// VECTORIZE3_ttt(qweibull)
 /**@}*/
 
 /**	\brief Probability mass function of the binomial distribution.
@@ -192,7 +219,8 @@ Type dbinom(Type k, Type size, Type prob, int give_log=0)
 }
 
 // Vectorize dbinom
-VECTORIZE4_ttti(dbinom)
+/* Not needed for nimble: */
+// VECTORIZE4_ttti(dbinom)
 
 /** \brief Density of binomial distribution parameterized via logit(prob)
 
@@ -209,13 +237,14 @@ Type dbinom_robust(Type k, Type size, Type logit_p, int give_log=0)
   tx[1] = size;
   tx[2] = logit_p;
   tx[3] = 0;
-  Type ans = atomic::log_dbinom_robust(tx)[0]; /* without norm. constant */
+  Type ans = tmb_atomic::log_dbinom_robust(tx)[0]; /* without norm. constant */
   if (size > 1) {
     ans += lgamma(size+1.) - lgamma(k+1.) - lgamma(size-k+1.);
   }
   return ( give_log ? ans : exp(ans) );
 }
-VECTORIZE4_ttti(dbinom_robust)
+/* Not needed for nimble: */
+// VECTORIZE4_ttti(dbinom_robust)
 
 /**	\brief Probability density function of the beta distribution.
 	\ingroup R_style_distribution
@@ -234,7 +263,8 @@ Type dbeta(Type x, Type shape1, Type shape2, int give_log)
 }
 
 // Vectorize dbeta
-VECTORIZE4_ttti(dbeta)
+/* Not needed for nimble: */
+// VECTORIZE4_ttti(dbeta)
 
 /**	\brief Probability density function of the Fisher distribution.
 	\ingroup R_style_distribution
@@ -251,7 +281,8 @@ Type df(Type x, Type df1, Type df2, int give_log)
 }
 
 //Vectorize df
-VECTORIZE4_ttti(df)
+/* Not needed for nimble: */
+// VECTORIZE4_ttti(df)
 
 /**	\brief Probability density function of the logistic distribution.
 	\ingroup R_style_distribution
@@ -268,7 +299,8 @@ Type dlogis(Type x, Type location, Type scale, int give_log)
 }
 
 // Vectorize dlogis
-VECTORIZE4_ttti(dlogis)
+/* Not needed for nimble: */
+// VECTORIZE4_ttti(dlogis)
 
 /**	\brief Probability density function of the skew-normal distribution.
 	\ingroup R_style_distribution
@@ -284,7 +316,8 @@ Type dsn(Type x, Type alpha, int give_log=0)
 }
 
 // Vectorize dsn
-VECTORIZE3_tti(dsn)
+/* Not needed for nimble: */
+// VECTORIZE3_tti(dsn)
 
 /** 	\brief Probability density function of the Student t-distribution.
 	\ingroup R_style_distribution
@@ -300,7 +333,7 @@ Type dt(Type x, Type df, int give_log)
 }
 
 // Vectorize dt
-// Not needed for nimble:
+/* Not needed for nimble: */
 // VECTORIZE3_tti(dt)
 
 /** 	\brief Probability mass function of the multinomial distribution.
@@ -351,7 +384,8 @@ Type dSHASHo(Type x, Type mu, Type sigma, Type nu, Type tau, int give_log = 0)
 }
 
 // Vectorize dSHASHo
-VECTORIZE6_ttttti(dSHASHo)
+/* Not needed for nimble: */
+// VECTORIZE6_ttttti(dSHASHo)
 
 /**	\brief Cumulative distribution function of the sinh-asinh distribution.
   	\ingroup R_style_distribution
@@ -437,7 +471,7 @@ Type pbeta(Type q, Type shape1, Type shape2){
   tx[1] = shape1;
   tx[2] = shape2;
   tx[3] = 0; // order
-  Type ans = atomic::pbeta(tx)[0];
+  Type ans = tmb_atomic::pbeta(tx)[0];
   return ans;
 }
 VECTORIZE3_ttt(pbeta)
@@ -453,7 +487,7 @@ Type qbeta(Type p, Type shape1, Type shape2){
   tx[0] = p;
   tx[1] = shape1;
   tx[2] = shape2;
-  Type ans = atomic::qbeta(tx)[0];
+  Type ans = tmb_atomic::qbeta(tx)[0];
   return ans;
 }
 VECTORIZE3_ttt(qbeta)
@@ -470,12 +504,12 @@ Type besselK(Type x, Type nu){
     tx[0] = x;
     tx[1] = nu;
     tx[2] = 0;
-    ans = atomic::bessel_k(tx)[0];
+    ans = tmb_atomic::bessel_k(tx)[0];
   } else {
     CppAD::vector<Type> tx(2);
     tx[0] = x;
     tx[1] = nu;
-    ans = atomic::bessel_k_10(tx)[0];
+    ans = tmb_atomic::bessel_k_10(tx)[0];
   }
   return ans;
 }
@@ -493,12 +527,12 @@ Type besselI(Type x, Type nu){
     tx[0] = x;
     tx[1] = nu;
     tx[2] = 0;
-    ans = atomic::bessel_i(tx)[0];
+    ans = tmb_atomic::bessel_i(tx)[0];
   } else {
     CppAD::vector<Type> tx(2);
     tx[0] = x;
     tx[1] = nu;
-    ans = atomic::bessel_i_10(tx)[0];
+    ans = tmb_atomic::bessel_i_10(tx)[0];
   }
   return ans;
 }
@@ -514,7 +548,7 @@ Type besselJ(Type x, Type nu){
   tx[0] = x;
   tx[1] = nu;
   tx[2] = 0;
-  Type ans = atomic::bessel_j(tx)[0];
+  Type ans = tmb_atomic::bessel_j(tx)[0];
   return ans;
 }
 VECTORIZE2_tt(besselJ)
@@ -529,7 +563,7 @@ Type besselY(Type x, Type nu){
   tx[0] = x;
   tx[1] = nu;
   tx[2] = 0;
-  Type ans = atomic::bessel_y(tx)[0];
+  Type ans = tmb_atomic::bessel_y(tx)[0];
   return ans;
 }
 VECTORIZE2_tt(besselY)
@@ -558,7 +592,7 @@ Type dtweedie(Type y, Type mu, Type phi, Type p, int give_log = 0) {
     tx[1] = phi;
     tx[2] = p;
     tx[3] = 0;
-    ans += atomic::tweedie_logW(tx)[0];
+    ans += tmb_atomic::tweedie_logW(tx)[0];
     ans += -y / (phi * p1 * pow(mu, p1)) - log(y);
   }
   return ( give_log ? ans : exp(ans) );
@@ -580,7 +614,7 @@ Type compois_calc_logZ(Type loglambda, Type nu) {
   tx[0] = loglambda;
   tx[1] = nu;
   tx[2] = 0;
-  return atomic::compois_calc_logZ(tx)[0];
+  return tmb_atomic::compois_calc_logZ(tx)[0];
 }
 VECTORIZE2_tt(compois_calc_logZ)
 
@@ -598,7 +632,7 @@ Type compois_calc_loglambda(Type logmean, Type nu) {
   tx[0] = logmean;
   tx[1] = nu;
   tx[2] = 0;
-  return atomic::compois_calc_loglambda(tx)[0];
+  return tmb_atomic::compois_calc_loglambda(tx)[0];
 }
 VECTORIZE2_tt(compois_calc_loglambda)
 
@@ -791,7 +825,7 @@ template<class Type>
 Type rcompois(Type mode, Type nu)
 {
   Type loglambda = nu * log(mode);
-  return atomic::compois_utils::simulate(asDouble(loglambda), asDouble(nu));
+  return tmb_atomic::compois_utils::simulate(asDouble(loglambda), asDouble(nu));
 }
 VECTORIZE2_tt(rcompois)
 VECTORIZE2_n(rcompois)
@@ -802,7 +836,7 @@ Type rcompois2(Type mean, Type nu)
 {
   Type logmean = log(mean);
   Type loglambda = compois_calc_loglambda(logmean, nu);
-  return atomic::compois_utils::simulate(asDouble(loglambda), asDouble(nu));
+  return tmb_atomic::compois_utils::simulate(asDouble(loglambda), asDouble(nu));
 }
 VECTORIZE2_tt(rcompois2)
 

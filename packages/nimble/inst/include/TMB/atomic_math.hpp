@@ -21,7 +21,13 @@
    Second option is to generate reverse mode derivatives automatically
    using the macro REGISTER_ATOMIC.
 */
-namespace atomic {
+
+/*
+  Changes for nimble:
+namespace atomic was changed to tmb_atomic
+ */
+
+namespace tmb_atomic {
 /**
    \internal \brief Namespace with double versions of some R special math
    functions
@@ -152,40 +158,41 @@ namespace Rmath {
 
 #include "atomic_macro.hpp"
 
-template<class Type>
-struct TypeDefs{
-  /* The following typedefs allow us to construct matrices based on
-     already allocated memory (pointers). 'MapMatrix' gives write access
-     to the pointers while 'ConstMapMatrix' is read-only.
-  */
-  typedef Eigen::Map<Eigen::Matrix<Type,Eigen::Dynamic,Eigen::Dynamic> > MapMatrix;
-  typedef Eigen::Map<const Eigen::Matrix<Type,Eigen::Dynamic,Eigen::Dynamic> > ConstMapMatrix;
-  typedef Eigen::LDLT<Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> > LDLT;
-};
+  /* For nimble: commenting-out the following matrix-related content */
+// template<class Type>
+// struct TypeDefs{
+//   /* The following typedefs allow us to construct matrices based on
+//      already allocated memory (pointers). 'MapMatrix' gives write access
+//      to the pointers while 'ConstMapMatrix' is read-only.
+//   */
+//   typedef Eigen::Map<Eigen::Matrix<Type,Eigen::Dynamic,Eigen::Dynamic> > MapMatrix;
+//   typedef Eigen::Map<const Eigen::Matrix<Type,Eigen::Dynamic,Eigen::Dynamic> > ConstMapMatrix;
+//   typedef Eigen::LDLT<Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic> > LDLT;
+// };
 
-/** \internal \brief Convert segment of CppAD::vector to Eigen::Matrix
-    \param x Input vector.
-    \param m Number of rows in result.
-    \param n Number of columns in result.
-    \param offset Segment offset.
-*/
-template<class Type>
-typename TypeDefs<Type>::ConstMapMatrix vec2mat(const CppAD::vector<Type> &x, int m, int n, int offset=0){
-  typedef typename TypeDefs<Type>::ConstMapMatrix ConstMapMatrix_t;
-  ConstMapMatrix_t res(&x[offset], m, n);
-  return res;
-}
+// /** \internal \brief Convert segment of CppAD::vector to Eigen::Matrix
+//     \param x Input vector.
+//     \param m Number of rows in result.
+//     \param n Number of columns in result.
+//     \param offset Segment offset.
+// */
+// template<class Type>
+// typename TypeDefs<Type>::ConstMapMatrix vec2mat(const CppAD::vector<Type> &x, int m, int n, int offset=0){
+//   typedef typename TypeDefs<Type>::ConstMapMatrix ConstMapMatrix_t;
+//   ConstMapMatrix_t res(&x[offset], m, n);
+//   return res;
+// }
 
-/** \internal \brief Convert Eigen::Matrix to CppAD::vector by stacking the matrix columns.
-    \param x Input matrix.
-*/
-template<class Type>
-CppAD::vector<Type> mat2vec(matrix<Type> x){
-  int n=x.size();
-  CppAD::vector<Type> res(n);
-  for(int i=0;i<n;i++)res[i]=x(i);
-  return res;
-}
+// /** \internal \brief Convert Eigen::Matrix to CppAD::vector by stacking the matrix columns.
+//     \param x Input matrix.
+// */
+// template<class Type>
+// CppAD::vector<Type> mat2vec(matrix<Type> x){
+//   int n=x.size();
+//   CppAD::vector<Type> res(n);
+//   for(int i=0;i<n;i++)res[i]=x(i);
+//   return res;
+// }
 
 /** \internal \brief Standard normal density function 'dnorm1'.
     Needed to define derivative of 'pnorm1'.
@@ -406,238 +413,242 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 			   px[1] = Type(0); /* Not implemented (!) */
 )
 
-/** \cond */
-template<class Type> /* Header of matmul interface */
-matrix<Type> matmul(matrix<Type> x, matrix<Type> y);
-template<>
-matrix<double> matmul(matrix<double> x, matrix<double> y)CSKIP({
-    return x*y;
-})
-/** \endcond */
 
-/** \brief Atomic version of matrix multiply.
-    Multiplies n1-by-n2 matrix with n2-by-n3 matrix.
-    \param x Input vector of length 2+n1*n2+n2*n3 containing the
-    output dimension (length=2), the first matrix (length=n1*n2) and
-    the second matrix (length=n2*n3).
-    \return Vector of length n1*n3 containing result of matrix
-    multiplication.
-*/
-TMB_ATOMIC_VECTOR_FUNCTION(
-			   // ATOMIC_NAME
-			   matmul
-			   ,
-			   // OUTPUT_DIM
-			   CppAD::Integer(tx[0]) * CppAD::Integer(tx[1])
-			   ,
-			   // ATOMIC_DOUBLE
-			   typedef TypeDefs<double>::MapMatrix MapMatrix_t;
-			   typedef TypeDefs<double>::ConstMapMatrix ConstMapMatrix_t;
-			   int n1 = CppAD::Integer(tx[0]);
-			   int n3 = CppAD::Integer(tx[1]);
-			   int n2 = (tx.size() - 2) / (n1 + n3);
-			   ConstMapMatrix_t X(&tx[2      ], n1, n2);
-			   ConstMapMatrix_t Y(&tx[2+n1*n2], n2, n3);
-			   MapMatrix_t      Z(&ty[0      ], n1, n3);
-			   Z = X * Y;
-			   ,
-			   // ATOMIC_REVERSE (W*Y^T, X^T*W)
-			   typedef typename TypeDefs<Type>::MapMatrix MapMatrix_t;
-			   int n1 = CppAD::Integer(tx[0]);
-			   int n3 = CppAD::Integer(tx[1]);
-			   int n2 = (tx.size() - 2) / (n1 + n3);
-			   matrix<Type> Xt = vec2mat(tx, n1, n2, 2).transpose();
-			   matrix<Type> Yt = vec2mat(tx, n2, n3, 2 + n1*n2).transpose();
-			   matrix<Type> W = vec2mat(py, n1, n3);
-			   MapMatrix_t res1(&px[2      ], n1, n2);
-			   MapMatrix_t res2(&px[2+n1*n2], n2, n3);
-			   res1 = matmul(W, Yt); // W*Y^T
-			   res2 = matmul(Xt, W); // X^T*W
-			   px[0] = 0; px[1] = 0;
-			   )
+/* For nimble: commenting-out all the matrix content that follows */
+// /** \cond */
+// template<class Type> /* Header of matmul interface */
+// matrix<Type> matmul(matrix<Type> x, matrix<Type> y);
+// template<>
+// matrix<double> matmul(matrix<double> x, matrix<double> y)CSKIP({
+//     return x*y;
+// })
+// /** \endcond */
 
-/** \brief Atomic version of matrix inversion.
-    Inverts n-by-n matrix by LU-decomposition.
-    \param x Input vector of length n*n.
-    \return Vector of length n*n.
-*/
-TMB_ATOMIC_VECTOR_FUNCTION(
-			   // ATOMIC_NAME
-			   matinv
-			   ,
-			   // OUTPUT_DIM
-			   tx.size()
-			   ,
-			   // ATOMIC_DOUBLE
-			   typedef TypeDefs<double>::MapMatrix MapMatrix_t;
-			   typedef TypeDefs<double>::ConstMapMatrix ConstMapMatrix_t;
-			   int n = sqrt((double)tx.size());
-			   ConstMapMatrix_t X(&tx[0], n, n);
-			   MapMatrix_t      Y(&ty[0], n, n);
-			   Y = X.inverse();   // Use Eigen matrix inverse (LU)
-			   ,
-			   // ATOMIC_REVERSE  (-f(X)^T*W*f(X)^T)
-			   typedef typename TypeDefs<Type>::MapMatrix MapMatrix_t;
-			   int n = sqrt((double)ty.size());
-			   MapMatrix_t res(&px[0], n, n);
-			   matrix<Type> W = vec2mat(py, n, n); // Range direction
-			   matrix<Type> Y = vec2mat(ty, n, n); // f(X)
-			   matrix<Type> Yt = Y.transpose();    // f(X)^T
-			   matrix<Type> tmp = matmul(W, Yt);   // W*f(X)^T
-			   res = -matmul(Yt, tmp);             // -f(X)^T*W*f(X)^T
-			   )
+// /** \brief Atomic version of matrix multiply.
+//     Multiplies n1-by-n2 matrix with n2-by-n3 matrix.
+//     \param x Input vector of length 2+n1*n2+n2*n3 containing the
+//     output dimension (length=2), the first matrix (length=n1*n2) and
+//     the second matrix (length=n2*n3).
+//     \return Vector of length n1*n3 containing result of matrix
+//     multiplication.
+// */
+// TMB_ATOMIC_VECTOR_FUNCTION(
+// 			   // ATOMIC_NAME
+// 			   matmul
+// 			   ,
+// 			   // OUTPUT_DIM
+// 			   CppAD::Integer(tx[0]) * CppAD::Integer(tx[1])
+// 			   ,
+// 			   // ATOMIC_DOUBLE
+// 			   typedef TypeDefs<double>::MapMatrix MapMatrix_t;
+// 			   typedef TypeDefs<double>::ConstMapMatrix ConstMapMatrix_t;
+// 			   int n1 = CppAD::Integer(tx[0]);
+// 			   int n3 = CppAD::Integer(tx[1]);
+// 			   int n2 = (tx.size() - 2) / (n1 + n3);
+// 			   ConstMapMatrix_t X(&tx[2      ], n1, n2);
+// 			   ConstMapMatrix_t Y(&tx[2+n1*n2], n2, n3);
+// 			   MapMatrix_t      Z(&ty[0      ], n1, n3);
+// 			   Z = X * Y;
+// 			   ,
+// 			   // ATOMIC_REVERSE (W*Y^T, X^T*W)
+// 			   typedef typename TypeDefs<Type>::MapMatrix MapMatrix_t;
+// 			   int n1 = CppAD::Integer(tx[0]);
+// 			   int n3 = CppAD::Integer(tx[1]);
+// 			   int n2 = (tx.size() - 2) / (n1 + n3);
+// 			   matrix<Type> Xt = vec2mat(tx, n1, n2, 2).transpose();
+// 			   matrix<Type> Yt = vec2mat(tx, n2, n3, 2 + n1*n2).transpose();
+// 			   matrix<Type> W = vec2mat(py, n1, n3);
+// 			   MapMatrix_t res1(&px[2      ], n1, n2);
+// 			   MapMatrix_t res2(&px[2+n1*n2], n2, n3);
+// 			   res1 = matmul(W, Yt); // W*Y^T
+// 			   res2 = matmul(Xt, W); // X^T*W
+// 			   px[0] = 0; px[1] = 0;
+// 			   )
 
-/** \brief Atomic version of log determinant of positive definite n-by-n matrix.
-    \param x Input vector of length n*n.
-    \return Vector of length 1.
-*/
-TMB_ATOMIC_VECTOR_FUNCTION(
-			   // ATOMIC_NAME
-			   logdet
-			   ,
-			   // OUTPUT_DIM
-			   1
-			   ,
-			   // ATOMIC_DOUBLE
-			   int n=sqrt((double)tx.size());
-			   matrix<double> X=vec2mat(tx,n,n);
-			   matrix<double> LU=X.lu().matrixLU();    // Use Eigen LU decomposition
-			   vector<double> LUdiag = LU.diagonal();
-			   double res=LUdiag.abs().log().sum();    // TODO: currently PD only - take care of sign.
-			   ty[0] = res;
-			   ,
-			   // ATOMIC_REVERSE  (X^-1*W[0])
-			   CppAD::vector<Type> invX = matinv(tx);
-			   for(size_t i=0; i<tx.size(); i++) px[i] = invX[i] * py[0];
-			   )
+// /** \brief Atomic version of matrix inversion.
+//     Inverts n-by-n matrix by LU-decomposition.
+//     \param x Input vector of length n*n.
+//     \return Vector of length n*n.
+// */
+// TMB_ATOMIC_VECTOR_FUNCTION(
+// 			   // ATOMIC_NAME
+// 			   matinv
+// 			   ,
+// 			   // OUTPUT_DIM
+// 			   tx.size()
+// 			   ,
+// 			   // ATOMIC_DOUBLE
+// 			   typedef TypeDefs<double>::MapMatrix MapMatrix_t;
+// 			   typedef TypeDefs<double>::ConstMapMatrix ConstMapMatrix_t;
+// 			   int n = sqrt((double)tx.size());
+// 			   ConstMapMatrix_t X(&tx[0], n, n);
+// 			   MapMatrix_t      Y(&ty[0], n, n);
+// 			   Y = X.inverse();   // Use Eigen matrix inverse (LU)
+// 			   ,
+// 			   // ATOMIC_REVERSE  (-f(X)^T*W*f(X)^T)
+// 			   typedef typename TypeDefs<Type>::MapMatrix MapMatrix_t;
+// 			   int n = sqrt((double)ty.size());
+// 			   MapMatrix_t res(&px[0], n, n);
+// 			   matrix<Type> W = vec2mat(py, n, n); // Range direction
+// 			   matrix<Type> Y = vec2mat(ty, n, n); // f(X)
+// 			   matrix<Type> Yt = Y.transpose();    // f(X)^T
+// 			   matrix<Type> tmp = matmul(W, Yt);   // W*f(X)^T
+// 			   res = -matmul(Yt, tmp);             // -f(X)^T*W*f(X)^T
+// 			   )
 
-/** \brief Atomic version of log determinant *and* inverse of positive definite n-by-n matrix.
-    Calculated by Cholesky decomposition.
-    \param x Input vector of length n*n.
-    \return Vector of length 1+n*n.
-*/
-TMB_ATOMIC_VECTOR_FUNCTION(
-			   // ATOMIC_NAME
-			   invpd
-			   ,
-			   // OUTPUT_DIM
-			   1 + tx.size()
-			   ,
-			   // ATOMIC_DOUBLE
-			   typedef TypeDefs<double>::LDLT LDLT_t;
-			   using namespace Eigen;
-			   int n=sqrt((double)tx.size());
-			   matrix<double> X=vec2mat(tx,n,n);
-			   matrix<double> I(X.rows(),X.cols());
-			   I.setIdentity();
-			   LDLT_t ldlt(X);
-			   matrix<double> iX = ldlt.solve(I);
-			   vector<double> D = ldlt.vectorD();
-			   double logdetX = D.log().sum();
-			   ty[0] = logdetX;
-			   for(int i=0;i<n*n;i++)ty[i+1]=iX(i);
-			   ,
-			   // ATOMIC_REVERSE  (f2(X)*W1[0] - f2(X)^T*W2*f2(X)^T)
-			   int n=sqrt((double)tx.size());
-			   Type W1=py[0];                     // Range direction
-			   matrix<Type> W2=vec2mat(py,n,n,1); // Range direction
-			   matrix<Type> Y=vec2mat(ty,n,n,1);  // f2(X)
-			   matrix<Type> Yt=Y.transpose();     // f2(X)^T
-			   matrix<Type> tmp=matmul(W2,Yt);    // W2*f2(X)^T
-			   matrix<Type> res=-matmul(Yt,tmp);  // -f2(X)^T*W2*f2(X)^T
-			   res = res + Y*W1;
-			   px=mat2vec(res);
-			   )
+// /** \brief Atomic version of log determinant of positive definite n-by-n matrix.
+//     \param x Input vector of length n*n.
+//     \return Vector of length 1.
+// */
+// TMB_ATOMIC_VECTOR_FUNCTION(
+// 			   // ATOMIC_NAME
+// 			   logdet
+// 			   ,
+// 			   // OUTPUT_DIM
+// 			   1
+// 			   ,
+// 			   // ATOMIC_DOUBLE
+// 			   int n=sqrt((double)tx.size());
+// 			   matrix<double> X=vec2mat(tx,n,n);
+// 			   matrix<double> LU=X.lu().matrixLU();    // Use Eigen LU decomposition
+// 			   vector<double> LUdiag = LU.diagonal();
+// 			   double res=LUdiag.abs().log().sum();    // TODO: currently PD only - take care of sign.
+// 			   ty[0] = res;
+// 			   ,
+// 			   // ATOMIC_REVERSE  (X^-1*W[0])
+// 			   CppAD::vector<Type> invX = matinv(tx);
+// 			   for(size_t i=0; i<tx.size(); i++) px[i] = invX[i] * py[0];
+// 			   )
 
-/* ================================== INTERFACES
-*/
+// /** \brief Atomic version of log determinant *and* inverse of positive definite n-by-n matrix.
+//     Calculated by Cholesky decomposition.
+//     \param x Input vector of length n*n.
+//     \return Vector of length 1+n*n.
+// */
+// TMB_ATOMIC_VECTOR_FUNCTION(
+// 			   // ATOMIC_NAME
+// 			   invpd
+// 			   ,
+// 			   // OUTPUT_DIM
+// 			   1 + tx.size()
+// 			   ,
+// 			   // ATOMIC_DOUBLE
+// 			   typedef TypeDefs<double>::LDLT LDLT_t;
+// 			   using namespace Eigen;
+// 			   int n=sqrt((double)tx.size());
+// 			   matrix<double> X=vec2mat(tx,n,n);
+// 			   matrix<double> I(X.rows(),X.cols());
+// 			   I.setIdentity();
+// 			   LDLT_t ldlt(X);
+// 			   matrix<double> iX = ldlt.solve(I);
+// 			   vector<double> D = ldlt.vectorD();
+// 			   double logdetX = D.log().sum();
+// 			   ty[0] = logdetX;
+// 			   for(int i=0;i<n*n;i++)ty[i+1]=iX(i);
+// 			   ,
+// 			   // ATOMIC_REVERSE  (f2(X)*W1[0] - f2(X)^T*W2*f2(X)^T)
+// 			   int n=sqrt((double)tx.size());
+// 			   Type W1=py[0];                     // Range direction
+// 			   matrix<Type> W2=vec2mat(py,n,n,1); // Range direction
+// 			   matrix<Type> Y=vec2mat(ty,n,n,1);  // f2(X)
+// 			   matrix<Type> Yt=Y.transpose();     // f2(X)^T
+// 			   matrix<Type> tmp=matmul(W2,Yt);    // W2*f2(X)^T
+// 			   matrix<Type> res=-matmul(Yt,tmp);  // -f2(X)^T*W2*f2(X)^T
+// 			   res = res + Y*W1;
+// 			   px=mat2vec(res);
+// 			   )
 
-/** \brief Matrix multiply
+/* For nimble: Commenting-out all that follows */
+// /* ================================== INTERFACES
+// */
 
-    Matrix multiplication of large dense matrices.
+// /** \brief Matrix multiply
 
-    \code
-    matrix<Type> x;
-    matrix<Type> y;
-    atomic::matmul(x, y);
-    \endcode
+//     Matrix multiplication of large dense matrices.
 
-    For small matrices use
+//     \code
+//     matrix<Type> x;
+//     matrix<Type> y;
+//     atomic::matmul(x, y);
+//     \endcode
 
-    \code
-    x * y;
-    \endcode
+//     For small matrices use
 
-    \ingroup matrix_functions
-*/
-template<class Type>
-matrix<Type> matmul(matrix<Type> x, matrix<Type> y){
-  CppAD::vector<Type> arg(2+x.size()+y.size());
-  arg[0] = x.rows(); arg[1] = y.cols();
-  for(int i=0;i<x.size();i++){arg[2+i]=x(i);}
-  for(int i=0;i<y.size();i++){arg[2+i+x.size()]=y(i);}
-  CppAD::vector<Type> res(x.rows()*y.cols());
-  matmul(arg,res);
-  return vec2mat(res,x.rows(),y.cols());
-}
+//     \code
+//     x * y;
+//     \endcode
 
-/** \brief Matrix inverse
+//     \ingroup matrix_functions
+// */
+// template<class Type>
+// matrix<Type> matmul(matrix<Type> x, matrix<Type> y){
+//   CppAD::vector<Type> arg(2+x.size()+y.size());
+//   arg[0] = x.rows(); arg[1] = y.cols();
+//   for(int i=0;i<x.size();i++){arg[2+i]=x(i);}
+//   for(int i=0;i<y.size();i++){arg[2+i+x.size()]=y(i);}
+//   CppAD::vector<Type> res(x.rows()*y.cols());
+//   matmul(arg,res);
+//   return vec2mat(res,x.rows(),y.cols());
+// }
 
-    Invert a matrix by LU-decomposition.
+// /** \brief Matrix inverse
 
-    \code
-    matrix<Type> x;
-    atomic::matinv(x);
-    \endcode
+//     Invert a matrix by LU-decomposition.
 
-    For small matrices use
+//     \code
+//     matrix<Type> x;
+//     atomic::matinv(x);
+//     \endcode
 
-    \code
-    x.inverse();
-    \endcode
+//     For small matrices use
 
-    \ingroup matrix_functions
-*/
-template<class Type>
-matrix<Type> matinv(matrix<Type> x){
-  int n=x.rows();
-  return vec2mat(matinv(mat2vec(x)),n,n);
-}
+//     \code
+//     x.inverse();
+//     \endcode
 
-/** \brief Matrix inverse and determinant
+//     \ingroup matrix_functions
+// */
+// template<class Type>
+// matrix<Type> matinv(matrix<Type> x){
+//   int n=x.rows();
+//   return vec2mat(matinv(mat2vec(x)),n,n);
+// }
 
-    Calculate matrix inverse *and* log-determinant of a positive
-    definite matrix.
+// /** \brief Matrix inverse and determinant
 
-    \ingroup matrix_functions
-*/
-template<class Type>
-matrix<Type> matinvpd(matrix<Type> x, Type &logdet){
-  int n=x.rows();
-  CppAD::vector<Type> res = invpd(mat2vec(x));
-  logdet = res[0];
-  return vec2mat(res,n,n,1);
-}
+//     Calculate matrix inverse *and* log-determinant of a positive
+//     definite matrix.
 
-/** \brief Log-determinant of positive definite matrix
-    \ingroup matrix_functions
-*/
-template<class Type>
-Type logdet(matrix<Type> x){
-  return logdet(mat2vec(x))[0];
-}
+//     \ingroup matrix_functions
+// */
+// template<class Type>
+// matrix<Type> matinvpd(matrix<Type> x, Type &logdet){
+//   int n=x.rows();
+//   CppAD::vector<Type> res = invpd(mat2vec(x));
+//   logdet = res[0];
+//   return vec2mat(res,n,n,1);
+// }
 
-/* Temporary test of dmvnorm implementation based on atomic symbols.
-   Should reduce tape size from O(n^3) to O(n^2).
-*/
-template<class Type>
-Type nldmvnorm(vector<Type> x, matrix<Type> Sigma){
-  matrix<Type> Q=matinv(Sigma);
-  Type logdetQ = -logdet(Sigma);
-  Type quadform = (x*(Q*x)).sum();
-  return -Type(.5)*logdetQ + Type(.5)*quadform + x.size()*Type(log(sqrt(2.0*M_PI)));
-}
+// /** \brief Log-determinant of positive definite matrix
+//     \ingroup matrix_functions
+// */
+// template<class Type>
+// Type logdet(matrix<Type> x){
+//   return logdet(mat2vec(x))[0];
+// }
 
-} /* End namespace atomic */
+// /* Temporary test of dmvnorm implementation based on atomic symbols.
+//    Should reduce tape size from O(n^3) to O(n^2).
+// */
+// template<class Type>
+// Type nldmvnorm(vector<Type> x, matrix<Type> Sigma){
+//   matrix<Type> Q=matinv(Sigma);
+//   Type logdetQ = -logdet(Sigma);
+//   Type quadform = (x*(Q*x)).sum();
+//   return -Type(.5)*logdetQ + Type(.5)*quadform + x.size()*Type(log(sqrt(2.0*M_PI)));
+// }
 
-#include "checkpoint_macro.hpp"
+// } /* End namespace atomic */
+
+/* Not needed for nimble: */
+// #include "checkpoint_macro.hpp"
