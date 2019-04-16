@@ -35,6 +35,7 @@ struct array:Map< Array<Type,Dynamic,1> >{
 
   Base vectorcopy; /* Array data */
 
+  /** \brief Sets dimension attribute and updates internal stride. **Must** be used when e.g. collapsing array dimensions. */
   void setdim(vector<int> dim_){
     dim=dim_;
     mult.resize(dim.size());
@@ -301,6 +302,9 @@ struct array:Map< Array<Type,Dynamic,1> >{
     ans.resize(this->rows(), ans.size() / this->rows() );
     return ans;
   }
+
+  /** \brief Convert TMB array to vector */
+  tmbutils::vector<Type> vec() { return *this; }
 
   /* Methods this class should *not* inherit (generate compile time error if used) */
   private:

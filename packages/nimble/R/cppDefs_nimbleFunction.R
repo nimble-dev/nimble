@@ -318,7 +318,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               addADclassContent = function() {
                                         # CPPincludes <<- c("<TMB/distributions_R.hpp>", CPPincludes)
                                                   Hincludes <<- c(nimbleIncludeFile("nimbleCppAD.h"),
-                                                                  "<TMB/distributions_R.hpp>", Hincludes)
+                                                                  nimbleIncludeFile("nimDerivs_TMB.h"), Hincludes)
                                                   addInheritance("nimbleFunctionCppADbase")
                                                   objectDefs$addSymbol(cppVarFull(baseType = 'vector',
                                                                                   templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun',
@@ -419,7 +419,7 @@ updateADproxyModelMethods <- function(.self) {
     ADproxyModel_functionNames <- functionNames[ grepl("_ADproxyModel", functionNames ) ]
     if(length(ADproxyModel_functionNames) > 0) {
         .self$Hincludes <- c(nimbleIncludeFile("nimbleCppAD.h"),
-                             "<TMB/distributions_R.hpp>", .self$Hincludes)
+                             nimbleIncludeFile("nimDerivs_TMB.h"), .self$Hincludes)
     }
     for(fn in ADproxyModel_functionNames) {
         thisDef <- .self$functionDefs[[fn]]

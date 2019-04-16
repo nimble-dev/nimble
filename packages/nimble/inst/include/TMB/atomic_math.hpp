@@ -1,9 +1,6 @@
 // Copyright (C) 2013-2015 Kasper Kristensen
 // License: GPL-2
 
-// Copyright (C) 2018 the NIMBLE authors 
-// License: GPL (>=2)
-
 /**
    \brief Namespace with special functions and derivatives
 
@@ -24,8 +21,6 @@
    Second option is to generate reverse mode derivatives automatically
    using the macro REGISTER_ATOMIC.
 */
-// #include <TMB/atomic_macro.hpp>
-
 namespace atomic {
 /**
    \internal \brief Namespace with double versions of some R special math
@@ -148,22 +143,14 @@ namespace Rmath {
   }
   /* n'th order derivative of log gamma function */
   double D_lgamma(double x, double n){
-	double ans;
-	if(n<.5) ans = Rf_lgammafn(x);
-	else ans = Rf_psigamma(x, n-1);
-	return(ans);
-    // if(n<.5)return Rf_lgammafn(x);
-    // else return Rf_psigamma(x,n-1.0);
+    if(n<.5)return Rf_lgammafn(x);
+    else return Rf_psigamma(x,n-1.0);
   }
 #endif // #ifdef WITH_LIBTMB
 
 }
 
-#include "TMB/atomic_macro.hpp"
-#include "TMB/tmbutils/tmbutils.hpp"
-//#include "TMB/tiny_ad/atomic.hpp"
-
-using namespace tmbutils;
+#include "atomic_macro.hpp"
 
 template<class Type>
 struct TypeDefs{
@@ -326,42 +313,15 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 			   1
 			   ,
 			   // ATOMIC_DOUBLE
-			   ty[0]=Rmath::D_lgamma(tx[0],Double(0.0));
-			   if(q == 1){
-				 ty[1]=Rmath::D_lgamma(tx[0],Double(1.0))*tx[1];
-				}
+			   ty[0]=Rmath::D_lgamma(tx[0],tx[1]);
 			   ,
 			   // ATOMIC_REVERSE
-			   size_t q1 = q + 1;
-			   px[0 * q1 + 0] = Type(0.0);
-			   px[0 * q1 + 1]  = Type(0.0);
-			   if(q1 == 2){
-				   px[0 * q1 + 0] += py[0 * q1 + 1] * Rmath::D_lgamma(tx[0],2.0) * tx[0 * q1 + 1];
-				   px[0 * q1 + 1] += py[0 * q1 + 1] * Rmath::D_lgamma(tx[0],1.0) ;
-			   }
-			   px[0 * q1 + 0] += Rmath::D_lgamma(tx[0],1.0) * py[0];
-			   px[1 * q1 + 0] = 0;
-			)
-			   
-TMB_ATOMIC_VECTOR_FUNCTION(
-			   // ATOMIC_NAME
-			   zero_NaNderiv
-			   ,
-			   // OUTPUT_DIM
-			   1
-			   ,
-			   // ATOMIC_DOUBLE
-			   ty[0]=0;
-			   if(q == 1){
-				 ty[1]=CppAD::numeric_limits<double>::quiet_NaN();
-				}
-			   ,
-			   // ATOMIC_REVERSE
-			   px[0] = CppAD::numeric_limits<double>::quiet_NaN();
-			   px[1] = CppAD::numeric_limits<double>::quiet_NaN();
+			   CppAD::vector<Type> tx_(2);
+			   tx_[0]=tx[0];
+			   tx_[1]=tx[1]+Type(1.0);
+			   px[0] = D_lgamma(tx_)[0] * py[0];
+			   px[1] = Type(0);
 			   )
-
-
 
 /** \brief Atomic version of poisson cdf \f$ppois(n,\lambda)\f$.
     Valid parameter range: \f$x =(n,\lambda) \in \mathbb{N}_0\times\mathbb{R}_+\f$.
@@ -670,14 +630,6 @@ Type logdet(matrix<Type> x){
 /* Temporary test of dmvnorm implementation based on atomic symbols.
    Should reduce tape size from O(n^3) to O(n^2).
 */
-
-
-// asVector
-
-// template<class Type>
-// Type dmnorm_chol(Type* x, double* mean, double* chol, int n, double prec_param, int give_log, int overwrite_inputs) {
-	
-
 template<class Type>
 Type nldmvnorm(vector<Type> x, matrix<Type> Sigma){
   matrix<Type> Q=matinv(Sigma);
@@ -687,3 +639,5 @@ Type nldmvnorm(vector<Type> x, matrix<Type> Sigma){
 }
 
 } /* End namespace atomic */
+
+#include "checkpoint_macro.hpp"

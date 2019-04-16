@@ -74,6 +74,8 @@ struct vector : Array<Type,Dynamic,1>
     this->resize(n);
     for(int i=0; i<n; i++) this->operator[](i) = Type(x[i]);
   }
+
+  vector<Type> vec() { return *this; }
 };
 
 /** \brief Matrix class used by TMB.
