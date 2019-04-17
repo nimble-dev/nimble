@@ -4,17 +4,24 @@
 // Some of the following is extracted from TMB.hpp.
 // We don't need all of what that includes, so we have
 // extracted pieces that allow the subset of TMB that we
-// use to work.
-#define TMB_EXTERN
+// need to work.
+
+// These macros follow the case that WITH_LIBTMB and TMB_PRECOMPILE are both undefined 
 #define CSKIP(x) x
+#define TMB_EXTERN
 #define IF_TMB_PRECOMPILE(x)
+
 #include <cppad/cppad.hpp>
-#include <cppad/utility/nan.hpp>
+#include <R.h>
+#include <Rinternals.h>
+//#include <cppad/utility/nan.hpp>
 #include <TMB/atomic_math.hpp>
 // #include <TMB/atomic_macro.hpp> // loaded by atomic_math
 #include <TMB/dnorm.hpp>
 #include <TMB/lgamma.hpp>
 #include <TMB/distributions_R.hpp>
+
+#include "NimArr.h" // This includes Rmath.h via Utils.h, so it must come after the TMB files.
 
 // Functions here connect from nimble-generated C++ to TMB code that uses CppAD.
 // TMB provides many nice distribution functions.

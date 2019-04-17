@@ -339,244 +339,253 @@ Type dt(Type x, Type df, int give_log)
 /* Not needed for nimble: */
 // VECTORIZE3_tti(dt)
 
-/** 	\brief Probability mass function of the multinomial distribution.
-	\ingroup R_style_distribution
-	\param x Vector of length K of integers.
-        \param p Vector of length K, specifying the probability for the K classes (note, unlike in R these must sum to 1).
-	\param give_log true if one wants the log-probability, false otherwise.
-	*/
-template <class Type>
-Type dmultinom(vector<Type> x, vector<Type> p, int give_log=0)
-{
-	vector<Type> xp1 = x+Type(1);
-	Type logres = lgamma(x.sum() + Type(1)) - lgamma(xp1).sum() + (x*log(p)).sum();
-	if(give_log) return logres;
-	else return exp(logres);
-}
+/* For nimble: Commenting out dmultinom because nimble handles
+   vectors differently. */
+// /** 	\brief Probability mass function of the multinomial distribution.
+// 	\ingroup R_style_distribution
+// 	\param x Vector of length K of integers.
+//         \param p Vector of length K, specifying the probability for the K classes (note, unlike in R these must sum to 1).
+// 	\param give_log true if one wants the log-probability, false otherwise.
+// 	*/
+// template <class Type>
+// Type dmultinom(vector<Type> x, vector<Type> p, int give_log=0)
+// {
+// 	vector<Type> xp1 = x+Type(1);
+// 	Type logres = lgamma(x.sum() + Type(1)) - lgamma(xp1).sum() + (x*log(p)).sum();
+// 	if(give_log) return logres;
+// 	else return exp(logres);
+// }
 
-/** 	@name Sinh-asinh distribution.
-  	Functions relative to the sinh-asinh distribution.
-		*/
-/**@{*/
-/**	\brief Probability density function of the sinh-asinh distribution.
-  	\ingroup R_style_distribution
-	\param mu Location.
-	\param sigma Scale.
-	\param nu Skewness.
-	\param tau Kurtosis.
-	\param give_log true if one wants the log-probability, false otherwise.
+/* For nimble: Commenting out sinh-asinh distribution */
+// /** 	@name Sinh-asinh distribution.
+//   	Functions relative to the sinh-asinh distribution.
+// 		*/
+// /**@{*/
+// /**	\brief Probability density function of the sinh-asinh distribution.
+//   	\ingroup R_style_distribution
+// 	\param mu Location.
+// 	\param sigma Scale.
+// 	\param nu Skewness.
+// 	\param tau Kurtosis.
+// 	\param give_log true if one wants the log-probability, false otherwise.
 					
-	Notation adopted from R package "gamlss.dist".
+// 	Notation adopted from R package "gamlss.dist".
 				
-	Probability density given in (2) in __Jones and Pewsey (2009) Biometrika (2009) 96 (4): 761-780__.
+// 	Probability density given in (2) in __Jones and Pewsey (2009) Biometrika (2009) 96 (4): 761-780__.
 								
-	It is not possible to call this function with nu a vector or tau a vector.
-*/
-template <class Type>
-Type dSHASHo(Type x, Type mu, Type sigma, Type nu, Type tau, int give_log = 0)
-{
-	// TODO : Replace log(x+sqrt(x^2+1)) by a better approximation for asinh(x).
+// 	It is not possible to call this function with nu a vector or tau a vector.
+// */
+// template <class Type>
+// Type dSHASHo(Type x, Type mu, Type sigma, Type nu, Type tau, int give_log = 0)
+// {
+// 	// TODO : Replace log(x+sqrt(x^2+1)) by a better approximation for asinh(x).
 		
-	Type z = (x-mu)/sigma;
-   	Type c = cosh(tau*log(z+sqrt(z*z+1))-nu);
-   	Type r = sinh(tau*log(z+sqrt(z*z+1))-nu);
-   	Type logres = -log(sigma) + log(tau) -0.5*log(2*M_PI) -0.5*log(1+(z*z)) +log(c) -0.5*(r*r);
+// 	Type z = (x-mu)/sigma;
+//    	Type c = cosh(tau*log(z+sqrt(z*z+1))-nu);
+//    	Type r = sinh(tau*log(z+sqrt(z*z+1))-nu);
+//    	Type logres = -log(sigma) + log(tau) -0.5*log(2*M_PI) -0.5*log(1+(z*z)) +log(c) -0.5*(r*r);
 					   	
-  	if(!give_log) return exp(logres);
-   	else return logres;
-}
+//   	if(!give_log) return exp(logres);
+//    	else return logres;
+// }
 
-// Vectorize dSHASHo
-/* Not needed for nimble: */
-// VECTORIZE6_ttttti(dSHASHo)
+// // Vectorize dSHASHo
+// /* Not needed for nimble: */
+// // VECTORIZE6_ttttti(dSHASHo)
 
-/**	\brief Cumulative distribution function of the sinh-asinh distribution.
-  	\ingroup R_style_distribution
-	\param mu Location.
-	\param sigma Scale.
-	\param nu Skewness.
-	\param tau Kurtosis.
-	\param give_log true if one wants the log-probability, false otherwise.
+// /**	\brief Cumulative distribution function of the sinh-asinh distribution.
+//   	\ingroup R_style_distribution
+// 	\param mu Location.
+// 	\param sigma Scale.
+// 	\param nu Skewness.
+// 	\param tau Kurtosis.
+// 	\param give_log true if one wants the log-probability, false otherwise.
 		
-	Notation adopted from R package "gamlss.dist".
+// 	Notation adopted from R package "gamlss.dist".
 	
-	It is not possible to call this function with nu a vector or tau a vector.
-*/
-template <class Type>
-Type pSHASHo(Type q,Type mu,Type sigma,Type nu,Type tau,int give_log=0)
-{
-	// TODO : Replace log(x+sqrt(x^2+1)) by a better approximation for asinh(x).
+// 	It is not possible to call this function with nu a vector or tau a vector.
+// */
+// template <class Type>
+// Type pSHASHo(Type q,Type mu,Type sigma,Type nu,Type tau,int give_log=0)
+// {
+// 	// TODO : Replace log(x+sqrt(x^2+1)) by a better approximation for asinh(x).
 
-	Type z = (q-mu)/sigma;
-	Type r = sinh(tau * log(z+sqrt(z*z+1)) - nu);
-	Type p = pnorm(r);
+// 	Type z = (q-mu)/sigma;
+// 	Type r = sinh(tau * log(z+sqrt(z*z+1)) - nu);
+// 	Type p = pnorm(r);
 				  	
-	if (!give_log) return p;
-	else return log(p);
-}
+// 	if (!give_log) return p;
+// 	else return log(p);
+// }
 
-// Vectorize pSHASHo
-/* Not needed for nimble: */
-// VECTORIZE6_ttttti(pSHASHo)
+// // Vectorize pSHASHo
+// /* Not needed for nimble: */
+// // VECTORIZE6_ttttti(pSHASHo)
 
-/**	\brief Quantile function of the sinh-asinh distribution.
-	\ingroup R_style_distribution
-	\param mu Location.
-	\param sigma Scale.
-	\param nu Skewness.
-	\param tau Kurtosis.
-	\param log_p true if p is log-probability, false otherwise.
+// /**	\brief Quantile function of the sinh-asinh distribution.
+// 	\ingroup R_style_distribution
+// 	\param mu Location.
+// 	\param sigma Scale.
+// 	\param nu Skewness.
+// 	\param tau Kurtosis.
+// 	\param log_p true if p is log-probability, false otherwise.
 	
-	Notation adopted from R package "gamlss.dist".
+// 	Notation adopted from R package "gamlss.dist".
 	
-	It is not possible to call this function with nu a vector or tau a vector.
-	*/
-template <class Type>
-Type qSHASHo(Type p, Type mu, Type sigma, Type nu, Type tau, int log_p = 0)
-{
-	// TODO : Replace log(x+sqrt(x^2+1)) by a better approximation for asinh(x).
+// 	It is not possible to call this function with nu a vector or tau a vector.
+// 	*/
+// template <class Type>
+// Type qSHASHo(Type p, Type mu, Type sigma, Type nu, Type tau, int log_p = 0)
+// {
+// 	// TODO : Replace log(x+sqrt(x^2+1)) by a better approximation for asinh(x).
 
-   	if(!log_p) return mu + sigma*sinh((1/tau)* log(qnorm(p)+sqrt(qnorm(p)*qnorm(p)+1)) + (nu/tau));
-   	else return mu + sigma*sinh((1/tau)*log(qnorm(exp(p))+sqrt(qnorm(exp(p))*qnorm(exp(p))+1))+(nu/tau));
-}
+//    	if(!log_p) return mu + sigma*sinh((1/tau)* log(qnorm(p)+sqrt(qnorm(p)*qnorm(p)+1)) + (nu/tau));
+//    	else return mu + sigma*sinh((1/tau)*log(qnorm(exp(p))+sqrt(qnorm(exp(p))*qnorm(exp(p))+1))+(nu/tau));
+// }
 
-// Vectorize qSHASHo
-/* Not needed for nimble: */
-// VECTORIZE6_ttttti(qSHASHo)
+// // Vectorize qSHASHo
+// /* Not needed for nimble: */
+// // VECTORIZE6_ttttti(qSHASHo)
 
-/**	\brief Transforms a normal variable into a sinh-asinh variable.
-	\param mu Location parameter of the result sinh-asinh distribution.
-	\param sigma Scale parameter of the result sinh-asinh distribution.
-	\param nu Skewness parameter of the result sinh-asinh distribution.
-	\param tau Kurtosis parameter of the result sinh-asinh distribution.
-	\param log_p true if p is log-probability, false otherwise.
+// /**	\brief Transforms a normal variable into a sinh-asinh variable.
+// 	\param mu Location parameter of the result sinh-asinh distribution.
+// 	\param sigma Scale parameter of the result sinh-asinh distribution.
+// 	\param nu Skewness parameter of the result sinh-asinh distribution.
+// 	\param tau Kurtosis parameter of the result sinh-asinh distribution.
+// 	\param log_p true if p is log-probability, false otherwise.
 	
-	It is not possible to call this function with nu a vector or tau a vector.
-	*/
-template <class Type>
-Type norm2SHASHo(Type x, Type mu, Type sigma, Type nu, Type tau, int log_p = 0)
-{
+// 	It is not possible to call this function with nu a vector or tau a vector.
+// 	*/
+// template <class Type>
+// Type norm2SHASHo(Type x, Type mu, Type sigma, Type nu, Type tau, int log_p = 0)
+// {
 
-	return qSHASHo(pnorm(x),mu,sigma,nu,tau,log_p);
-}
+// 	return qSHASHo(pnorm(x),mu,sigma,nu,tau,log_p);
+// }
 
-// Vectorize norm2SHASHo
-//VECTORIZE6_ttttti(norm2SHASHo)
+// // Vectorize norm2SHASHo
+// //VECTORIZE6_ttttti(norm2SHASHo)
 
-/** \brief Distribution function of the beta distribution (following R
-    argument convention).
-    \note Non-centrality parameter (ncp) not implemented.
-    \ingroup R_style_distribution
-*/
-template<class Type>
-Type pbeta(Type q, Type shape1, Type shape2){
-  CppAD::vector<Type> tx(4);
-  tx[0] = q;
-  tx[1] = shape1;
-  tx[2] = shape2;
-  tx[3] = 0; // order
-  Type ans = tmb_atomic::pbeta(tx)[0];
-  return ans;
-}
-/* Not needed for nimble */
-// VECTORIZE3_ttt(pbeta)
+/* For nimble: We comment-out pbeta and qbeta because they
+   require specialized computations that have more complicated 
+   compilation steps. */
+// /** \brief Distribution function of the beta distribution (following R
+//     argument convention).
+//     \note Non-centrality parameter (ncp) not implemented.
+//     \ingroup R_style_distribution
+// */
+// template<class Type>
+// Type pbeta(Type q, Type shape1, Type shape2){
+//   CppAD::vector<Type> tx(4);
+//   tx[0] = q;
+//   tx[1] = shape1;
+//   tx[2] = shape2;
+//   tx[3] = 0; // order
+//   Type ans = tmb_atomic::pbeta(tx)[0];
+//   return ans;
+// }
+// /* Not needed for nimble */
+// // VECTORIZE3_ttt(pbeta)
 
-/** \brief Quantile function of the beta distribution (following R
-    argument convention).
-    \note Non-centrality parameter (ncp) not implemented.
-    \ingroup R_style_distribution
-*/
-template<class Type>
-Type qbeta(Type p, Type shape1, Type shape2){
-  CppAD::vector<Type> tx(3);
-  tx[0] = p;
-  tx[1] = shape1;
-  tx[2] = shape2;
-  Type ans = tmb_atomic::qbeta(tx)[0];
-  return ans;
-}
-/* Not needed for nimble */
-// VECTORIZE3_ttt(qbeta)
+// /** \brief Quantile function of the beta distribution (following R
+//     argument convention).
+//     \note Non-centrality parameter (ncp) not implemented.
+//     \ingroup R_style_distribution
+// */
+// template<class Type>
+// Type qbeta(Type p, Type shape1, Type shape2){
+//   CppAD::vector<Type> tx(3);
+//   tx[0] = p;
+//   tx[1] = shape1;
+//   tx[2] = shape2;
+//   Type ans = tmb_atomic::qbeta(tx)[0];
+//   return ans;
+// }
+// /* Not needed for nimble */
+// // VECTORIZE3_ttt(qbeta)
 
-/** \brief besselK function (same as besselK from R).
-    \note Derivatives wrt. both arguments are implemented
-    \ingroup special_functions
-*/
-template<class Type>
-Type besselK(Type x, Type nu){
-  Type ans;
-  if(CppAD::Variable(nu)) {
-    CppAD::vector<Type> tx(3);
-    tx[0] = x;
-    tx[1] = nu;
-    tx[2] = 0;
-    ans = tmb_atomic::bessel_k(tx)[0];
-  } else {
-    CppAD::vector<Type> tx(2);
-    tx[0] = x;
-    tx[1] = nu;
-    ans = tmb_atomic::bessel_k_10(tx)[0];
-  }
-  return ans;
-}
-/* Not needed for nimble */
-// VECTORIZE2_tt(besselK)
+/* For nimble:  We comment-out bessel functions because they
+   require specialized computations that have more complicated 
+   compilation steps. */
+// /** \brief besselK function (same as besselK from R).
+//     \note Derivatives wrt. both arguments are implemented
+//     \ingroup special_functions
+// */
+// template<class Type>
+// Type besselK(Type x, Type nu){
+//   Type ans;
+//   if(CppAD::Variable(nu)) {
+//     CppAD::vector<Type> tx(3);
+//     tx[0] = x;
+//     tx[1] = nu;
+//     tx[2] = 0;
+//     ans = tmb_atomic::bessel_k(tx)[0];
+//   } else {
+//     CppAD::vector<Type> tx(2);
+//     tx[0] = x;
+//     tx[1] = nu;
+//     ans = tmb_atomic::bessel_k_10(tx)[0];
+//   }
+//   return ans;
+// }
+// /* Not needed for nimble */
+// // VECTORIZE2_tt(besselK)
 
-/** \brief besselI function (same as besselI from R).
-    \note Derivatives wrt. both arguments are implemented
-    \ingroup special_functions
-*/
-template<class Type>
-Type besselI(Type x, Type nu){
-  Type ans;
-  if(CppAD::Variable(nu)) {
-    CppAD::vector<Type> tx(3);
-    tx[0] = x;
-    tx[1] = nu;
-    tx[2] = 0;
-    ans = tmb_atomic::bessel_i(tx)[0];
-  } else {
-    CppAD::vector<Type> tx(2);
-    tx[0] = x;
-    tx[1] = nu;
-    ans = tmb_atomic::bessel_i_10(tx)[0];
-  }
-  return ans;
-}
-/* Not needed for nimble */
-// VECTORIZE2_tt(besselI)
+// /** \brief besselI function (same as besselI from R).
+//     \note Derivatives wrt. both arguments are implemented
+//     \ingroup special_functions
+// */
+// template<class Type>
+// Type besselI(Type x, Type nu){
+//   Type ans;
+//   if(CppAD::Variable(nu)) {
+//     CppAD::vector<Type> tx(3);
+//     tx[0] = x;
+//     tx[1] = nu;
+//     tx[2] = 0;
+//     ans = tmb_atomic::bessel_i(tx)[0];
+//   } else {
+//     CppAD::vector<Type> tx(2);
+//     tx[0] = x;
+//     tx[1] = nu;
+//     ans = tmb_atomic::bessel_i_10(tx)[0];
+//   }
+//   return ans;
+// }
+// /* Not needed for nimble */
+// // VECTORIZE2_tt(besselI)
 
-/** \brief besselJ function (same as besselJ from R).
-    \note Derivatives wrt. both arguments are implemented
-    \ingroup special_functions
-*/
-template<class Type>
-Type besselJ(Type x, Type nu){
-  CppAD::vector<Type> tx(3);
-  tx[0] = x;
-  tx[1] = nu;
-  tx[2] = 0;
-  Type ans = tmb_atomic::bessel_j(tx)[0];
-  return ans;
-}
-/* Not needed for nimble */
-// VECTORIZE2_tt(besselJ)
+// /** \brief besselJ function (same as besselJ from R).
+//     \note Derivatives wrt. both arguments are implemented
+//     \ingroup special_functions
+// */
+// template<class Type>
+// Type besselJ(Type x, Type nu){
+//   CppAD::vector<Type> tx(3);
+//   tx[0] = x;
+//   tx[1] = nu;
+//   tx[2] = 0;
+//   Type ans = tmb_atomic::bessel_j(tx)[0];
+//   return ans;
+// }
+// /* Not needed for nimble */
+// // VECTORIZE2_tt(besselJ)
 
-/** \brief besselY function (same as besselY from R).
-    \note Derivatives wrt. both arguments are implemented
-    \ingroup special_functions
-*/
-template<class Type>
-Type besselY(Type x, Type nu){
-  CppAD::vector<Type> tx(3);
-  tx[0] = x;
-  tx[1] = nu;
-  tx[2] = 0;
-  Type ans = tmb_atomic::bessel_y(tx)[0];
-  return ans;
-}
-/* Not needed for nimble */
-// VECTORIZE2_tt(besselY)
+// /** \brief besselY function (same as besselY from R).
+//     \note Derivatives wrt. both arguments are implemented
+//     \ingroup special_functions
+// */
+// template<class Type>
+// Type besselY(Type x, Type nu){
+//   CppAD::vector<Type> tx(3);
+//   tx[0] = x;
+//   tx[1] = nu;
+//   tx[2] = 0;
+//   Type ans = tmb_atomic::bessel_y(tx)[0];
+//   return ans;
+// }
+// /* Not needed for nimble */
+// // VECTORIZE2_tt(besselY)
 
 /* For nimble: commenting-out tweedie */
 // /** \brief dtweedie function (same as dtweedie.series from R package
