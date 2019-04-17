@@ -8,12 +8,13 @@
 #define TMB_EXTERN
 #define CSKIP(x) x
 #define IF_TMB_PRECOMPILE(x)
+#include <cppad/cppad.hpp>
+#include <cppad/utility/nan.hpp>
 #include <TMB/atomic_math.hpp>
 // #include <TMB/atomic_macro.hpp> // loaded by atomic_math
 #include <TMB/dnorm.hpp>
 #include <TMB/lgamma.hpp>
 #include <TMB/distributions_R.hpp>
-using tmbutils::array;
 
 // Functions here connect from nimble-generated C++ to TMB code that uses CppAD.
 // TMB provides many nice distribution functions.
@@ -247,7 +248,7 @@ Type nimDerivs_dweibull_logFixed(Type x, Type shape, Type scale, int give_log)
 /* Both cases are modified from TMB to avoid the use of CondExpGt to decide
    which terms to include.  We have observed CondExpGt to give slow performance,
    but we have not benchmarked these cases specifically.*/
-Template<class Type>
+template<class Type>
 Type nimDerivs_dbinom(Type k, Type size, Type prob, Type give_log)
 {
   Type res = lgamma(size+1)-lgamma(k+1)-lgamma(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
@@ -449,17 +450,17 @@ Type nimDerivs_pow(Type x, int y) {
 /* This is modified from TMB's qnorm, to avoid using the mean and sd arguments unnecessarily. */
 template<class T>
 T nimDerivs_probit(T p){
-  CppAD::vector<Type> tx(1);
+  CppAD::vector<T> tx(1);
   tx[0] = p;
-  return atomic::qnorm1(tx)[0];
+  return tmb_atomic::qnorm1(tx)[0];
 }
 
 /* iprobit */
 template<class T>
 T nimDerivs_iprobit(T q){
-  CppAD::vector<Type> tx(1);
+  CppAD::vector<T> tx(1);
   tx[0] = q;
-  return atomic::pnorm1(tx)[0];
+  return tmb_atomic::pnorm1(tx)[0];
 }
 
 /* lfactorial */
@@ -474,5 +475,4 @@ Type nimDerivs_factorial(Type x) {
   return exp(lfactorial<Type>(x));
 }
 
-
-#endif _NIMDERIVS_TMB__
+#endif

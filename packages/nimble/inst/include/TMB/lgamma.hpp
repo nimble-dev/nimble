@@ -1,6 +1,9 @@
 // Copyright (C) 2013-2015 Kasper Kristensen
 // License: GPL-2
 
+/* For nimble: */
+/* atomic:: is replaced with tmb_atomic::*/
+
 /** \file
     \brief Gamma function and gamma probability densities
 */
@@ -13,7 +16,7 @@ Type lgamma(Type x){
   CppAD::vector<Type> tx(2);
   tx[0] = x;
   tx[1] = Type(0);
-  return atomic::D_lgamma(tx)[0];
+  return tmb_atomic::D_lgamma(tx)[0];
 }
 /* Not needed for nimble: */
 // VECTORIZE1_t(lgamma)
@@ -26,7 +29,7 @@ Type lfactorial(Type x){
   CppAD::vector<Type> tx(2);
   tx[0] = x + Type(1);
   tx[1] = Type(0);
-  return atomic::D_lgamma(tx)[0];
+  return tmb_atomic::D_lgamma(tx)[0];
 }
 /* Not needed for nimble: */
 // VECTORIZE1_t(lfactorial)
@@ -96,27 +99,29 @@ inline Type dnbinom2(const Type &x, const Type &mu, const Type &var,
 /* Not needed for nimble: */
 // VECTORIZE4_ttti(dnbinom2)
 
-/** \brief Negative binomial probability function.
+/* For nimble: Commenting-out dnbinom_robust .
+   It is not clear where log_dnbinom_robust is defined. */
+// /** \brief Negative binomial probability function.
 
-    More robust parameterization through \f$log(\mu)\f$ and
-    \f$log(\sigma^2-\mu)\f$ parameters.
+//     More robust parameterization through \f$log(\mu)\f$ and
+//     \f$log(\sigma^2-\mu)\f$ parameters.
 
-    \ingroup R_style_distribution
-*/
-template<class Type>
-inline Type dnbinom_robust(const Type &x,
-                           const Type &log_mu,
-                           const Type &log_var_minus_mu,
-                           int give_log=0)
-{
-  CppAD::vector<Type> tx(4);
-  tx[0] = x;
-  tx[1] = log_mu;
-  tx[2] = log_var_minus_mu;
-  tx[3] = 0;
-  Type ans = atomic::log_dnbinom_robust(tx)[0];
-  return ( give_log ? ans : exp(ans) );
-}
+//     \ingroup R_style_distribution
+// */
+// template<class Type>
+// inline Type dnbinom_robust(const Type &x,
+//                            const Type &log_mu,
+//                            const Type &log_var_minus_mu,
+//                            int give_log=0)
+// {
+//   CppAD::vector<Type> tx(4);
+//   tx[0] = x;
+//   tx[1] = log_mu;
+//   tx[2] = log_var_minus_mu;
+//   tx[3] = 0;
+//   Type ans = tmb_atomic::log_dnbinom_robust(tx)[0];
+//   return ( give_log ? ans : exp(ans) );
+// }
 /* Not needed for nimble: */
 // VECTORIZE4_ttti(dnbinom_robust)
 
@@ -206,31 +211,32 @@ inline Type dzinbinom2(const Type &x, const Type &mu, const Type &var, const Typ
   return dzinbinom(x,n,p,zip,give_log);
 }
 
+/* Commenting-out simulation code for nimble */
 /********************************************************************/
 /* SIMULATON CODE                                                   */
 /********************************************************************/
 
-extern "C" {
-  double Rf_rnbinom(double n, double p);
-}
-/** \brief Simulate from a negative binomial distribution  */
-template<class Type>
-Type rnbinom(Type n, Type p)
-{
-  return Rf_rnbinom(asDouble(n), asDouble(p));
-}
-/* Not needed for nimble: */
-// VECTORIZE2_tt(rnbinom)
-// VECTORIZE2_n(rnbinom)
+// extern "C" {
+//   double Rf_rnbinom(double n, double p);
+// }
+// /** \brief Simulate from a negative binomial distribution  */
+// template<class Type>
+// Type rnbinom(Type n, Type p)
+// {
+//   return Rf_rnbinom(asDouble(n), asDouble(p));
+// }
+// /* Not needed for nimble: */
+// // VECTORIZE2_tt(rnbinom)
+// // VECTORIZE2_n(rnbinom)
 
-/** \brief Simulate from a negative binomial distribution  */
-template<class Type>
-Type rnbinom2(Type mu, Type var)
-{
-  Type p = mu / var;
-  Type n = mu * p / (Type(1) - p);
-  return Rf_rnbinom(asDouble(n), asDouble(p));
-}
-/* Not needed for nimble: */
-// VECTORIZE2_tt(rnbinom2)
-// VECTORIZE2_n(rnbinom2)
+// /** \brief Simulate from a negative binomial distribution  */
+// template<class Type>
+// Type rnbinom2(Type mu, Type var)
+// {
+//   Type p = mu / var;
+//   Type n = mu * p / (Type(1) - p);
+//   return Rf_rnbinom(asDouble(n), asDouble(p));
+// }
+// /* Not needed for nimble: */
+// // VECTORIZE2_tt(rnbinom2)
+// // VECTORIZE2_n(rnbinom2)

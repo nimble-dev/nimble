@@ -317,8 +317,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               },
                                               addADclassContent = function() {
                                         # CPPincludes <<- c("<TMB/distributions_R.hpp>", CPPincludes)
-                                                  Hincludes <<- c(nimbleIncludeFile("nimbleCppAD.h"),
-                                                                  nimbleIncludeFile("nimDerivs_TMB.h"), Hincludes)
+                                                  ## These are moved to CPPincludes so they are #included before Rmath.h
+                                                  CPPincludes <<- c(nimbleIncludeFile("nimbleCppAD.h"),
+                                                                  nimbleIncludeFile("nimDerivs_TMB.h"), CPPincludes)
                                                   addInheritance("nimbleFunctionCppADbase")
                                                   objectDefs$addSymbol(cppVarFull(baseType = 'vector',
                                                                                   templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun',
@@ -418,8 +419,11 @@ updateADproxyModelMethods <- function(.self) {
     functionNames <- names(.self$functionDefs)
     ADproxyModel_functionNames <- functionNames[ grepl("_ADproxyModel", functionNames ) ]
     if(length(ADproxyModel_functionNames) > 0) {
-        .self$Hincludes <- c(nimbleIncludeFile("nimbleCppAD.h"),
-                             nimbleIncludeFile("nimDerivs_TMB.h"), .self$Hincludes)
+        ## The following two headers were added to CPPincludes because nimDerives_TMB must
+        ## come before Rmath.h, so that functions like pbeta do not get re-defined Rf_pbeta,
+        ## which causes problems in TMB headers.
+        .self$CPPincludes <- c(nimbleIncludeFile("nimbleCppAD.h"),
+                               nimbleIncludeFile("nimDerivs_TMB.h"), .self$CPPincludes)
     }
     for(fn in ADproxyModel_functionNames) {
         thisDef <- .self$functionDefs[[fn]]

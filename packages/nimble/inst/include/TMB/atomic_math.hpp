@@ -648,7 +648,7 @@ TMB_ATOMIC_VECTOR_FUNCTION(
 //   return -Type(.5)*logdetQ + Type(.5)*quadform + x.size()*Type(log(sqrt(2.0*M_PI)));
 // }
 
-// } /* End namespace atomic */
+} /* End namespace atomic */
 
 /* Not needed for nimble: */
 // #include "checkpoint_macro.hpp"
