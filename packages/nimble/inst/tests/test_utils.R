@@ -383,6 +383,10 @@ wrap_if_matches <- function(pattern, string, wrapper, expr) {
     }
 }
 
+wrap_if_true <- function(test, wrapper, expr) {
+  if (!is.null(test) && test) wrapper(expr) else expr
+}
+
 ## This is a parametrized test, where `param` is a list with names:
 ##   param$name - A descriptive test name.
 ##   param$expr - A quoted expression `quote(out <- some_function_of(arg1, arg2, ...))`.
@@ -1527,4 +1531,133 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
     invisible(NULL)
 }
 
+makeOperatorParam <- function(op, argTypes, sizes = 3) {
+  if (length(argTypes) == 1) {
+    name <- paste(op, argTypes)
+    expr <- substitute(
+      out <- FOO(arg1), list(FOO = as.name(op))
+    )
+  } else if (length(argTypes) == 2) {
+    name <- paste(op, argTypes[1], argTypes[2])
+    expr <- substitute(
+      out <- FOO(arg1, arg2), list(FOO = as.name(op))
+    )
+  }  else {
+    stop("Cannot currently handle testing with more than 2 arguments.",
+         call. = FALSE)
+  }
 
+  argTypesList <- as.list(argTypes)
+  names(argTypesList) <- paste0('arg', 1:length(argTypes))
+  argTypesList <- lapply(argTypesList, function(arg) {
+    parse(text = arg)[[1]]
+  })
+
+  list(
+    name = name,
+    expr = expr,
+    args = argTypesList,
+    outputType = parse(text = returnTypeString(op, argTypes, sizes))[[1]]
+  )
+}
+
+returnTypeString <- function(op, argTypes, sizes = 3) {
+  ## Takes an operator and its input types as a character vector and
+  ## creates a string representing the returnType for the operation.
+  if (!is.character(argTypes))
+    stop('Argument `argTypes` must be a character vector.', call.=FALSE)
+  if (!length(argTypes) %in% c(1L, 2L))
+    stop('Can only `argTypes` of length 1 or 2.', call.=FALSE)
+
+  returnTypeCode <- nimble:::returnTypeHandling[[op]]
+
+  if (is.null(returnTypeCode)) return(argTypes[1])
+
+  arg1 <- nimble:::argType2symbol(parse(text = argTypes[1])[[1]])
+  if (length(argTypes) == 2)
+    arg2 <- nimble:::argType2symbol(parse(text = argTypes[2])[[1]])
+
+  scalarTypeString <- switch(
+    returnTypeCode,
+    'double', ## 1
+    'integer', ## 2
+    'logical'  ## 3
+  )
+
+  if (is.null(scalarTypeString)) ## returnTypeCode is 4 or 5
+    scalarTypeString <-
+      if (length(argTypes) == 1)
+        if (returnTypeCode == 5 && arg1$type == 'logical') 'integer'
+        else arg1$type
+      else {
+        aot <- nimble:::arithmeticOutputType(arg1$type, arg2$type)
+        if (returnTypeCode == 5 && aot == 'logical') 'integer'
+        else aot
+      }
+
+  reductionOperators <- c(
+    nimble:::reductionUnaryOperators,
+    nimble:::matrixSquareReductionOperators
+  )
+
+  nDim <- if (length(argTypes) == 1)
+            if (op %in% reductionOperators) 0
+            else arg1$nDim
+          else max(arg1$nDim, arg2$nDim)
+
+  sizes <- if (length(argTypes) == 1)
+             if (nDim == 0) 1 else arg1$size
+           else {
+             if (op %in% nimble:::matrixMultOperators)
+               c(arg1$size[1], arg2$size[2])
+             else if (nDim == arg1$nDim) arg1$size
+             else arg2$size
+           }
+
+  return(
+    paste0(
+      scalarTypeString,
+      '(', nDim, ', c(', paste(sizes, collapse = ', '), '))'
+    )
+  )
+}
+
+argType2input <- function(argType, dist = NULL) {
+  argSymbol <- nimble:::argType2symbol(argType)
+  type <- argSymbol$type
+  nDim <- argSymbol$nDim
+  size <- argSymbol$size
+  if (is.null(dist))
+    dist <- switch(
+      type,
+      "double" = rnorm,
+      "integer" = function(size) rgeom(size, 0.5),
+      "logical" = function(size) sample(c(TRUE, FALSE), size, replace = TRUE)
+    )
+  arg <- switch(
+    nDim + 1,
+    dist(1), ## nDim is 0
+    dist(size), ## nDim is 1
+    matrix(dist(prod(size)), nrow = size[1], ncol = size[2]), ## nDim is 2
+    array(dist(prod(size)), dim = size) ## nDim is 3
+  )
+  if (is.null(arg))
+    stop('Something went wrong while making test input.', call.=FALSE)
+  return(arg)
+}
+
+modifyOnMatch <- function(x, pattern, key, value, env = parent.frame(), ...) {
+  ## Modify any elements of a named list that match pattern.
+  ##
+  ## @param x A named list of lists.
+  ## @param pattern A regex pattern to compare with `names(x)`.
+  ## @param key The key to modify in any lists whose names match `pattern`.
+  ## @param value The new value for `key`.
+  ## @param env The environment in which to modify `x`.
+  ## @param ... Additional arguments for `grepl`.
+  for (name in names(x)) {
+    if (grepl(pattern, name, ...)) {
+      eval(substitute(x[[name]][[key]] <- value), env)
+    }
+  }
+}
