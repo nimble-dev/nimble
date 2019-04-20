@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/nimble-dev/nimble.svg?branch=devel)](https://travis-ci.org/nimble-dev/nimble)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/nimble-dev/nimble?branch=devel&svg=true)](https://ci.appveyor.com/project/nimble-dev/nimble)
 [![CRAN](http://www.r-pkg.org/badges/version/nimble)](https://cran.r-project.org/web/packages/nimble)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1211191.svg)](https://zenodo.org/record/1211191)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1211190.svg)](https://zenodo.org/record/1211190)
 [![Google Group](https://img.shields.io/badge/google-group-blue.svg)](https://groups.google.com/forum/#!forum/nimble-users)
 
 [Website](https://r-nimble.org/) |
@@ -58,7 +58,7 @@ install.packages("nimble")
 
 To install with extra functionality in `compareMCMCs` and `MCMCsuite`, install through the NIMBLE website:
 ```r
-install.packages("nimble", type = "source", repos = "http://r-nimble.org")
+install.packages("nimble", type = "source", repos = "https://r-nimble.org")
 ```
 
 ## Citation
@@ -72,10 +72,7 @@ NIMBLE. Journal of Computational and Graphical Statistics 26:403-413. [https://d
 
 To cite a version of the package, please cite:
 
-NIMBLE Development Team. 2018.
-NIMBLE: An R Package for Programming with BUGS models, Version 0.6-10.
-https://r-nimble.org,
-https://zenodo.org/record/1174525.
+NIMBLE Development Team. 2019. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190.. R package version 0.7.0, https://cran.r-project.org/package=nimble.
 
 ## Licenses
 

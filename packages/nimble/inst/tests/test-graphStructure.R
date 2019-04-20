@@ -7,13 +7,12 @@ options(warn = 1)
 nimbleVerboseSetting <- nimbleOptions('verbose')
 nimbleOptions(verbose = FALSE)
 
-correctOutputFilename <- 'graphStructureTestResults_Correct.Rout'
-## Use this to regenerate results in the test directory:
-## library(testthat)
-## library(nimble)
-## run code below, then:
-##writeOutput(cases, correctOutputFilename)
-testOutputFilename <- 'graphStructureTestResults.Rout'
+goldFileName <- 'graphStructureTestLog_Correct.Rout'
+tempFileName <- 'graphStructureTestLog.Rout'
+generatingGoldFile <- !is.null(nimbleOptions('generateGoldFileForGraphStructureTesting'))
+outputFile <- if(generatingGoldFile) file.path(nimbleOptions('generateGoldFileForGraphStructureTesting'), goldFileName) else tempFileName
+
+sink(outputFile)
 
 cases <- list()
 caseName <- 'graph structure tests case 1'
@@ -79,12 +78,27 @@ code <- nimbleCode({
     y[1] ~ dnorm(x[2], 1)
 })
 constants <- list(mu = rep(0,4), C = diag(4))
-Rmodel <- nimbleModel(code)
+Rmodel <- nimbleModel(code, constants = constants)
 cases[[caseName]] <- list(
     Rmodel$getDependencies('x'),
     Rmodel$getDependencies('x[1]'),
     Rmodel$getDependencies('x[2]'),
     Rmodel$getDependencies('x[3]')
+)
+
+##
+caseName <- 'split vector node, with dependencies through LHSinferred (from Issue #734)'
+code <- nimbleCode({
+    for(i in 1:3) mu[i] ~ dnorm(0, 1) ## How mu[1:3] is set up is not important to the bug
+    x[1:3] ~ dmnorm(mu[1:3], C[1:3,1:3])
+    y[1] ~ dnorm(x[2], 1)
+    z <- y[1] + 1
+})
+constants <- list(C = diag(3))
+## constants missing in test-graphstructure
+Rmodel <- nimbleModel(code, constants = constants)
+cases[[caseName]] <- list(
+    Rmodel$getDependencies('mu', downstream = TRUE)
 )
 
 ##
@@ -175,13 +189,11 @@ cases[[caseName]] <- list(
     nimble:::makeVertexNamesFromIndexArray2(indArr2, 1, 'x')
 )
 
-
-writeOutput(cases, testOutputFilename)
-trialResults <- readLines(testOutputFilename)
-##correctResults <- trialResults
-correctResults <- readLines(system.file(file.path('tests', correctOutputFilename), package = 'nimble'))
-
-compareFilesByLine(trialResults, correctResults)
+if(!generatingGoldFile) {
+    trialResults <- readLines(tempFileName)
+    correctResults <- readLines(system.file(file.path('tests', goldFileName), package = 'nimble'))
+    compareFilesByLine(trialResults, correctResults)
+}
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

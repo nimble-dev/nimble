@@ -56,14 +56,16 @@ nfMethodRC <- setRefClass(
         code       = 'ANY',
         neededRCfuns = 'ANY',		#list
         externalHincludes = 'ANY',
-        externalCPPincludes = 'ANY'
+        externalCPPincludes = 'ANY',
+        enableDerivs = 'ANY'
     ),
     methods = list(
         initialize = function(method,
                               name,
                               check = FALSE,
                               methodNames = NULL,
-                              setupVarNames = NULL) {
+                              setupVarNames = NULL,
+                              enableDerivs = FALSE) {
             ## uniqueName is only needed for a pure RC function.
             ## It is not needed for a nimbleFunction method.
             if(!missing(name)) uniqueName <<- name 
@@ -80,10 +82,11 @@ nfMethodRC <- setRefClass(
                 nf_checkDSLcode(code, methodNames, setupVarNames)
             generateArgs()
             generateTemplate() ## used for argument matching
-            removeAndSetReturnType()
+            removeAndSetReturnType(check = check)
             ## Includes for .h and .cpp files when making external calls:
             ## If needed, these will be populated by nimbleExternalCall
-            externalHincludes <<- externalCPPincludes <<- list() 
+            externalHincludes <<- externalCPPincludes <<- list()
+            enableDerivs <<- enableDerivs
         },
         generateArgs = function() {
             argsList <- nf_createAList(names(argInfo))
@@ -99,7 +102,8 @@ nfMethodRC <- setRefClass(
             functionAsList[[3]] <- quote({})
             template <<- eval(as.call(functionAsList))
         },
-        removeAndSetReturnType = function() {
+        removeAndSetReturnType = function(check = TRUE) {
+            ## check will be FALSE in the case of a virtualNimbleFunction method
             returnLineNum <- 0
             for(i in seq_along(code)) {
                 if(length(code[[i]]) > 1) {
@@ -112,7 +116,7 @@ nfMethodRC <- setRefClass(
                 }
             }
             if(sum(all.names(code) == 'returnType') > 1)
-                stop('multiple returnType() declarations in nimbleFunction method; only one allowed')
+                stop('multiple returnType() declarations in nimbleFunction method; only one allowed', call. = FALSE)
             if(returnLineNum == 0) {
                 ## no returnType() declaration was found;
                 ## create default behavior.
@@ -120,6 +124,14 @@ nfMethodRC <- setRefClass(
             } else {
                 ## returnType() declaration was found
                 returnTypeDeclaration <- code[[returnLineNum]][[2]]
+                ## Check that there is at least one return() statement
+                if(check) {
+                    if(!("return" %in% all.names(code))) {
+                        writeLines("Problem in this code:")
+                        writeLines(deparse(code))
+                        stop('returnType() declaration was provided but there is no return() statement.  At least one return() statement must be provided', call. = FALSE)
+                    }
+                }
                 code[returnLineNum] <<- NULL
             }
             ## a very patchy solution: switch nimInteger back to integer

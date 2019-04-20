@@ -2,32 +2,32 @@
 % Please edit documentation in R/MCMC_build.R
 \name{buildMCMC}
 \alias{buildMCMC}
-\title{Create an MCMC function, from an MCMCconf object}
+\title{Create an MCMC function from a NIMBLE model, or an MCMC configuration object}
 \usage{
-buildMCMC(conf, enableWAIC = FALSE, ...)
+buildMCMC(conf, ...)
 }
 \arguments{
-\item{conf}{An object of class MCMCconf that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCconf objects.  Alternatively, \code{MCMCconf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.}
-
-\item{enableWAIC}{Boolean specifying whether to enable WAIC calculations for this model and set of monitored nodes.  Defaults to the value of \code{nimbleOptions('enableWAIC')}, which in turn defaults to FALSE.  Setting \code{nimbleOptions('enableWAIC' = TRUE)} will ensure that WAIC is enabled for all calls to \code{buildMCMC()}.}
+\item{conf}{An MCMC configuration object of class \code{MCMCconf} that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMC configuration objects.  Alternatively, \code{conf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.}
 
 \item{...}{Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object}
 }
 \description{
-Accepts a single required argument, which may be of class MCMCconf, or inherit from class modelBaseClass (a NIMBLE model object).  Returns an MCMC function; see details section.
+First required argument, which may be of class \code{MCMCconf} (an MCMC configuration object), or inherit from class \code{modelBaseClass} (a NIMBLE model object).  Returns an uncompiled executable MCMC function.  See details.
 }
 \details{
-Calling buildMCMC(conf) will produce an uncompiled (R) R mcmc function object, say 'Rmcmc'.
-
-The uncompiled MCMC function will have arguments:
+Calling buildMCMC(conf) will produce an uncompiled MCMC function object.  The uncompiled MCMC function will have arguments:
 
 \code{niter}: The number of iterations to run the MCMC.
 
-\code{reset}: Boolean specifying whether to reset the internal MCMC sampling algorithms to their initial state (in terms of self-adapting tuning parameters), and begin recording posterior sample chains anew. Specifying \code{reset=FALSE} allows the MCMC algorithm to continue running from where it left off, appending additional posterior samples to the already existing sample chains. Generally, \code{reset=FALSE} should only be used when the MCMC has already been run (default = TRUE).
+\code{thin}: The thinning interval for the \code{monitors} that were specified in the MCMC configuration.  If this argument is provided at MCMC runtime, it will take precedence over the \code{thin} interval that was specified in the MCMC configuration.  If omitted, the \code{thin} interval from the MCMC configuration will be used.
 
-\code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes (default = FALSE).
+\code{thin2}: The thinning interval for the second set of monitors (\code{monitors2}) that were specified in the MCMC configuration.  If this argument is provided at MCMC runtime, it will take precedence over the \code{thin2} interval that was specified in the MCMC configuration.  If omitted, the \code{thin2} interval from the MCMC configuration will be used.
 
-\code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time=TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
+\code{reset}: Boolean specifying whether to reset the internal MCMC sampling algorithms to their initial state (in terms of self-adapting tuning parameters), and begin recording posterior sample chains anew. Specifying \code{reset = FALSE} allows the MCMC algorithm to continue running from where it left off, appending additional posterior samples to the already existing sample chains. Generally, \code{reset = FALSE} should only be used when the MCMC has already been run (default = TRUE).
+
+\code{nburnin}: Number of initial, pre-thinning, MCMC iterations to discard (default = 0).
+
+\code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time = TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
 
 \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
 
@@ -36,41 +36,40 @@ These may be accessed and converted into R matrix objects via:
 \code{as.matrix(mcmc$mvSamples)}
 \code{as.matrix(mcmc$mvSamples2)}
 
-The uncompiled (R) MCMC function may be compiled to a compiled MCMC object, taking care to compile in the same project as the R model object, using:
-\code{Cmcmc <- compileNimble(Rmcmc, project=Rmodel)}
+The uncompiled MCMC function may be compiled to a compiled MCMC object, taking care to compile in the same project as the R model object, using:
+\code{Cmcmc <- compileNimble(Rmcmc, project = Rmodel)}
 
 The compiled function will function identically to the uncompiled object, except acting on the compiled model object.
 }
 \section{Calculating WAIC}{
 
-After the MCMC has been run, calling the \code{calculateWAIC()} method of the
-MCMC object will return the WAIC for the model, calculated using the 
-posterior samples from the MCMC run.
 
-\code{calculateWAIC()} has a single arugment:
+After the MCMC has been run, calling the \code{calculateWAIC()} method of the MCMC object will return the WAIC for the model, calculated using the posterior samples from the MCMC run.
 
-\code{nburnin}: The number of iterations to subtract from the beginning of
-the posterior samples of the MCMC object for WAIC calculation.
-Defaults to 0.
+\code{calculateWAIC()} accepts a single arugment:
+
+\code{nburnin}: The number of pre-thinning MCMC samples to remove from the beginning of the posterior samples for WAIC calculation (default = 0).
 
 The \code{calculateWAIC} method can only be used if the \code{enableWAIC} 
-argument to \code{buildMCMC} is set to \code{TRUE}, or if the NIMBLE option
+argument to \code{configureMCMC} or to \code{buildMCMC} is set to \code{TRUE}, or if the NIMBLE option
 \code{enableWAIC} is set to \code{TRUE}.  If a user attempts
 to call \code{calculateWAIC} without having set \code{enableWAIC = TRUE}
-(either in the call to \code{buildMCMC} or as a NIMBLE option),
+(either in the call to \code{configureMCMC}, or \code{buildMCMC}, or as a NIMBLE option),
 an error will occur.  
 
 The \code{calculateWAIC} method calculates the WAIC of the model that the
 MCMC was performed on. The WAIC (Watanabe, 2010) is calculated from
-Equations 5, 12, and 13 in Gelman (2014) (i.e. using \emph{p}WAIC2).  The set
+Equations 5, 12, and 13 in Gelman et al. (2014) (i.e. using \emph{p}WAIC2).  The set
 of all stochastic nodes monitored by the MCMC object will be treated as
-\eqn{theta} for the purposes of e.g. Equation 5 from Gelman (2014). 
+\eqn{theta} for the purposes of Equation 5 from Gelman et al. (2014). 
 All non-monitored nodes downstream of the monitored nodes that are necessary
 to calculate \eqn{p(y|theta)} will be simulated from the posterior samples of 
 \eqn{theta}.  This allows customization of exactly what predictive 
 distribution \eqn{p(y|theta)} to use for calculations.  For more detail
-on the use of different predictive distributions, see Section 2.5 from Gelman
-(2014).  
+on the use of different predictive distributions, see Section 2.5 from Gelman et al.
+(2014). Note that by default only top-level stochastic nodes are monitored, but
+in many situations one would want to set monitors on all stochastic nodes so that
+all stochastic nodes are treated as \eqn{theta} for the WAIC calculation.
 
 Note that there exist sets of monitored parameters that do not lead to valid
 WAIC calculations.  Specifically, for a valid WAIC calculation, every 

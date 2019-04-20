@@ -34,6 +34,7 @@
 \alias{getNodeFunctionIndexedInfo}
 \alias{singleModelValuesAccess}
 \alias{getNimbleProject}
+\alias{cc_getNodesInExpr}
 \alias{nimbleInternalFunctions}
 \alias{nimbleUserNamespace}
 \description{

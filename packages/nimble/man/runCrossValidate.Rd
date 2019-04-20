@@ -58,7 +58,7 @@ an R list with four elements:
 }
 }
 \description{
-EXPERIMENTAL.  Takes a NIMBLE model MCMC configuration and conducts k-fold cross-validation of
+Takes a NIMBLE model MCMC configuration and conducts k-fold cross-validation of
 the MCMC fit, returning a measure of the model's predictive performance.
 }
 \details{

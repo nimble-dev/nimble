@@ -96,5 +96,49 @@ test_that("building of model with initial value issues in bounds", {
     test_getBound(m, cm, test, 'y6', 'upper', consts$y6u, "reversed constant upper truncation bound")
 })
 
+test_that('getBound, user-defined integer-valued', {
+    dtest <- nimbleFunction(
+        run = function(x = integer(0), thetaInt = integer(0), thetaDbl = double(0), log = integer(0, default = 0)) {
+            returnType(double(0))
+            return(0)
+        })
+    rtest <- nimbleFunction(
+        run = function(n = integer(0), thetaInt = integer(0), thetaDbl = double(0)) {
+            returnType(integer(0))
+            return(0)
+        })
+    ptest <- nimbleFunction(
+        run = function(q = double(0), thetaInt = integer(0), thetaDbl = double(0), lower.tail = integer(0, default = 1), log.p = integer(0, default = 0)) {
+            returnType(double(0))
+            return(0)
+        })
+    qtest <- nimbleFunction(
+        run = function(p = double(0), thetaInt = integer(0), thetaDbl = double(0), lower.tail = integer(0, default = 1), log.p = integer(0, default = 0)) {
+            returnType(double(0))
+            return(0)
+        })
+    
+    temporarilyAssignInGlobalEnv(dtest)
+    temporarilyAssignInGlobalEnv(rtest)
+    temporarilyAssignInGlobalEnv(qtest)
+    temporarilyAssignInGlobalEnv(ptest)
+
+    registerDistributions(list(
+        dtest = list(
+            BUGSdist = "dtest(thetaInt, thetaDbl)",
+            pqAvail = TRUE,
+            discrete = TRUE))
+        )
+    code <- nimbleCode({
+        y ~ T(dtest(1, 1.3), -1, 7)
+    })
+    m <- nimbleModel(code, data = list(y = 0))
+    cm <- compileNimble(m)
+    expect_identical(cm$getBound('y','lower'), m$getBound('y', 'lower'), 'issue with getBound with lower')
+    expect_identical(cm$getBound('y','lower'), -1, 'issue with getBound with lower')
+})
+
+
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

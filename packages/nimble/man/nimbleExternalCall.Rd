@@ -2,7 +2,7 @@
 % Please edit documentation in R/externalCalls.R
 \name{nimbleExternalCall}
 \alias{nimbleExternalCall}
-\title{EXPERIMENTAL Create a nimbleFunction that wraps a call to external compiled code}
+\title{Create a nimbleFunction that wraps a call to external compiled code}
 \usage{
 nimbleExternalCall(prototype, returnType, Cfun, headerFile, oFile)
 }
@@ -24,7 +24,7 @@ A \code{nimbleFunction} that takes the indicated input arguments, calls \code{Cf
 Given C header information, a function that takes scalars or pointers can be called from a compiled nimbleFunction.  If non-scalar return values are needed, an argument can be selected to behave as the return value in nimble.
 }
 \details{
-This is an experimental feature with limited functionality.  The only argument types allowed in Cfun are \code{double}, \code{int}, and \code{bool}, corresponding to \code{nimbleFunction} types \code{double}, \code{integer}, and \code{logical}, respectively.
+The only argument types allowed in Cfun are \code{double}, \code{int}, and \code{bool}, corresponding to \code{nimbleFunction} types \code{double}, \code{integer}, and \code{logical}, respectively.
 
 If the dimensionality is greater than zero, the arguments in \code{Cfun} should be pointers.  This means it will typically be necessary to pass additional integer arguments telling \code{Cfun} the size(s) of non-scalar arguments.
 

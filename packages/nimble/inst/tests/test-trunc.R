@@ -24,7 +24,7 @@ nimbleOptions(MCMCprogressBar = FALSE)
 models <- c('kidney', 'litters', 'mice')
 
 ### test basic model building
-sapply(models, testBUGSmodel, useInits = TRUE)
+out <- sapply(models, testBUGSmodel, useInits = TRUE)
 
 # we haven't updated conjugacy to deal with truncation
 # so litters is reporting conj post density as wrong since
@@ -42,7 +42,7 @@ testBUGSmodel('lsat', dir = "", model = file.path(tempdir(), "lsat.bug"), data =
 
 
 ### test MCMC
-sapply(models, test_mcmc, numItsC = 1000)
+out <- sapply(models, test_mcmc, numItsC = 1000)
 
 # this takes forever because of MCMC - rewrite to not do basic
 if(FALSE) {
@@ -131,11 +131,11 @@ test_that("Test that MCMC respects truncation bounds", {
     Cmcmc$run(5000)
     smp <- as.matrix(Cmcmc$mvSamples)
     expect_gt(min(smp), 0.2, label = "minimum in MCMC", expected.label = "lower bound")
-    expect_lt(min(smp), 2, label = "maximum in MCMC", expected.label = "upper bound")
+    expect_lt(max(smp), 2, label = "maximum in MCMC", expected.label = "upper bound")
 
     test_mcmc(model = code, data = c(data, constants), inits = inits,
               results = list(mean = list(mu = 1.5), sd = list(mu = .27 )),
-              resultsTolerance = list(mean = list(mu = 0.025), sd = list(mu = .025)),
+              resultsTolerance = list(mean = list(mu = 0.05), sd = list(mu = .05)),
               name = 'test of MCMC with truncation')
 })
 
@@ -182,8 +182,8 @@ test_that("Test that MCMC respects right-censoring bounds", {
               results = list(mean = list(mu = 44.5, 'y[1]' = 56.6), sd = list(mu = 2.3, 'y[1]' = 4.95)),
               resultsTolerance = list(mean = list(mu = 0.1, 'y[1]' = 1.5), sd = list(mu = .3, 'y[1]' = .7)), name = 'test of right censoring')
 })
-                                        # left censored
-test_that("Test that MCMC respects right-censoring bounds", {
+
+test_that("Test that MCMC respects left-censoring bounds", {
     set.seed(0)
     code <- nimbleCode({
         for(i in 1:n) {
@@ -222,8 +222,8 @@ test_that("Test that MCMC respects right-censoring bounds", {
     expect_gt(max(smp[ , 'bnd'] - smp[ , 'y[1]']), 0, label = "maximum inferred censored value in MCMC", expected.label = "bound")
 
     test_mcmc(model = code, data = c(data, constants), inits = inits,
-              results = list(mean = list(mu = 43.4, 'y[1]' = 33), sd = list(mu = 2.4, 'y[1]' = 5.3)),
-              resultsTolerance = list(mean = list(mu = .2, 'y[1]' = .4), sd = list(mu = .2, 'y[1]' = .1)), name = 'test of left censoring')
+              results = list(mean = list(mu = 43.4, 'y[1]' = 33), sd = list(mu = 2.4, 'y[1]' = 6.0)),
+              resultsTolerance = list(mean = list(mu = .2, 'y[1]' = .5), sd = list(mu = .2, 'y[1]' = .1)), name = 'test of left censoring')
 })
 
 # interval censored
@@ -265,7 +265,7 @@ test_that("Test that MCMC respects interval censoring", {
 
     test_mcmc(model = code, data = c(data, constants), inits = inits,
               results = list(mean = list(mu = 44.77, 'y[12]' = 56.3), sd = list(mu = 2.8, 'y[12]' = 5.3)),
-              resultsTolerance = list(mean = list(mu = 0.5, 'y[12]' = 1.5), sd = list(mu = .05, 'y[12]' = .4)), name = 'test of interval censoring')
+              resultsTolerance = list(mean = list(mu = 0.5, 'y[12]' = 0.5), sd = list(mu = .5, 'y[12]' = .5)), name = 'test of interval censoring')
 })
 
                                         # test of dconstraint

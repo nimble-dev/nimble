@@ -156,7 +156,7 @@ void nimbleFunctionCppADbase::getDerivs(nimbleCppADinfoClass &ADinfo,
     for(size_t inf_ind = 0; inf_ind < q; inf_ind++){
       if(((value_ans[inf_ind] == -std::numeric_limits<double>::infinity()) |
           (value_ans[inf_ind] == std::numeric_limits<double>::infinity())) | 
-	 (isnan(value_ans[inf_ind]))){
+	 (std::isnan(value_ans[inf_ind]))){
 	infIndicators[inf_ind] = true;
       }
     }

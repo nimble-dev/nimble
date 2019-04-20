@@ -19,26 +19,26 @@ distributionsInputList <- list(
     dbern   = list(BUGSdist = 'dbern(prob)',
                    Rdist    = 'dbinom(size = 1, prob)',
                    discrete = TRUE,
-                   range = c(0, 1),
-                   pqAvail = TRUE),
+                   range    = c(0, 1),
+                   pqAvail  = TRUE),
     
     dbin    = list(BUGSdist = 'dbin(prob, size)',
                    Rdist    = 'dbinom(size, prob)',
                    discrete = TRUE,
-                   range = c('lower = 0', 'upper = size'),
-                   pqAvail = TRUE,
-                   alias   = 'dbinom'),
+                   range    = c('lower = 0', 'upper = size'),
+                   pqAvail  = TRUE,
+                   alias    = 'dbinom'),
     
     dcat    = list(BUGSdist = 'dcat(prob)',
                    Rdist    = 'dcat(prob)',
-                   altParams = c('k = length(prob)'),
+                   altParams= c('k = length(prob)'),
                    types    = c('prob = double(1)'),
                    range    = c(1, Inf), 
                    discrete = TRUE),
     
     ## construct used to enforce constraints - 0/1 random variable depending on if cond is TRUE
     dconstraint = list(BUGSdist = 'dconstraint(cond)',
-                       range = c(0, 1),
+                       range    = c(0, 1),
                        discrete = TRUE),
 
     ## construct used to enforce censoring.
@@ -58,7 +58,7 @@ distributionsInputList <- list(
     dpois   = list(BUGSdist = 'dpois(lambda)',
                    discrete = TRUE,
                    range    = c(0, Inf),
-                   pqAvail = TRUE),
+                   pqAvail  = TRUE),
     
     
     ##############################################
@@ -78,21 +78,26 @@ distributionsInputList <- list(
                    pqAvail  = TRUE,
                    alias    = 'dchisqr'),
 
-    ## ddexp   = list('ddexp(location, scale, rate)'),   ## 'ddexp' function not implemented yet?  -DT
-    ## provide 'laplace' as alias
+    ddexp   = list(BUGSdist = 'ddexp(location, rate, scale, var)',
+                   Rdist    = c('ddexp(location, scale = 1/rate)',
+                                'ddexp(location, scale = sqrt(var/2))'),
+                   altParams= c('rate = 1/scale',
+                                'var = 2*scale^2'),
+                   pqAvail  = TRUE,
+                   alias    = 'dlaplace'),  
     
     dexp    = list(BUGSdist = 'dexp(rate, scale)',
                    Rdist    = 'dexp_nimble(rate = 1/scale)',
                    altParams= 'scale = 1/rate',
                    range    = c(0, Inf),
-                   pqAvail = TRUE),
+                   pqAvail  = TRUE),
 
     dflat   = list(BUGSdist = 'dflat()',
-                   pqAvail = FALSE),
+                   pqAvail  = FALSE),
     
     dhalfflat   = list(BUGSdist = 'dhalfflat()',
-                   range = c(0, Inf),
-                   pqAvail = FALSE),
+                       range    = c(0, Inf),
+                       pqAvail  = FALSE),
     
     dgamma  = list(BUGSdist = 'dgamma(shape, rate, scale, mean, sd)',
                    Rdist    = c('dgamma(shape, scale = 1/rate)',
@@ -101,25 +106,25 @@ distributionsInputList <- list(
                                 'mean = scale*shape',
                                 'sd = scale * sqrt(shape)'),
                    range    = c(0, Inf),
-                   pqAvail = TRUE),
+                   pqAvail  = TRUE),
 
     # (shape,scale) is BUGSdist as scale provides conjugacy
     # calculation of shape/scale from mean/sd not obvious
     # (solution to cubic polynomial) so not using as alternative param
     dinvgamma  = list(BUGSdist = 'dinvgamma(shape, scale, rate)',
-                   Rdist    = c('dinvgamma(shape, rate = 1/scale)'),
-                   altParams= c('scale = 1/rate',
-                                'mean = 1 / (rate * (max(shape,1)-1))',
-                                'sd = 1 / (rate * (max(shape,1)-1) * sqrt(max(shape,2)-2))'), # max ensures Inf moment when appropriate
-                   range    = c(0, Inf),
-                   pqAvail = TRUE),
-
+                      Rdist    = c('dinvgamma(shape, rate = 1/scale)'),
+                      altParams= c('scale = 1/rate',
+                                   'mean = 1 / (rate * (max(shape,1)-1))',
+                                   'sd = 1 / (rate * (max(shape,1)-1) * sqrt(max(shape,2)-2))'), # max ensures Inf moment when appropriate
+                      range    = c(0, Inf),
+                      pqAvail  = TRUE),
+    
     # intended solely for use in dhalfflat conjugacy                           
     dsqrtinvgamma  = list(BUGSdist = 'dsqrtinvgamma(shape, scale, rate)',
-                   Rdist    = c('dsqrtinvgamma(shape, rate = 1/scale)'),
-                   range    = c(0, Inf),
-                   pqAvail = FALSE),
-                               
+                          Rdist    = c('dsqrtinvgamma(shape, rate = 1/scale)'),
+                          range    = c(0, Inf),
+                          pqAvail  = FALSE),
+    
     ## gen.gamma = list(BUGSdist = 'gen.gamma(r, mu, beta)'),   ## not sure the state of this?  -DT
     
     dlnorm  = list(BUGSdist = 'dlnorm(meanlog, taulog, sdlog, varlog)',
@@ -128,42 +133,42 @@ distributionsInputList <- list(
                    altParams= c('taulog = sdlog^-2',
                                 'varlog = sdlog^2'),
                    range    = c(0, Inf),
-                   pqAvail = TRUE),
+                   pqAvail  = TRUE),
     
     dlogis  = list(BUGSdist = 'dlogis(location, rate, scale)',
                    Rdist    = 'dlogis(location, scale = 1/rate)',
-                   altParams = 'rate = 1/scale',
-                   pqAvail = TRUE),
+                   altParams= 'rate = 1/scale',
+                   pqAvail  = TRUE),
     
     dnorm   = list(BUGSdist = 'dnorm(mean, tau, sd, var)',
                    Rdist    = c('dnorm(mean, sd = 1/sqrt(tau))',
                                 'dnorm(mean, sd = sqrt(var))'),
                    altParams= c('tau = sd^-2',
                                 'var = sd*sd'),
-                   pqAvail = TRUE),
+                   pqAvail  = TRUE),
     
     dt      = list(BUGSdist = 'dt(mu, tau, df, sigma, sigma2)',
                    Rdist    = c('dt_nonstandard(df, mu, sigma = 1/sqrt(tau))',
                                 'dt_nonstandard(df, mu, sigma = sqrt(sigma2))'),
-                   altParams = c('tau = sigma^-2',
+                   altParams= c('tau = sigma^-2',
                                  'sigma2 = sigma^2'),
-                   pqAvail = TRUE),
+                   pqAvail  = TRUE),
     
     dunif   = list(BUGSdist = 'dunif(min, max, mean, sd)',
                    Rdist    = c('dunif(min = mean - sqrt(3)*sd, max = mean + sqrt(3)*sd)'),
-                   altParams = c('mean = (min + max)/2',
+                   altParams= c('mean = (min + max)/2',
                                  'sd = (max - min)/sqrt(12)'),
-                   range = c('lower = min', 'upper = max'),
-                   pqAvail = TRUE),
+                   range    = c('lower = min', 'upper = max'),
+                   pqAvail  = TRUE),
     
     dweib   = list(BUGSdist = 'dweib(shape, lambda, scale, rate)',
                    Rdist    = c('dweibull(shape, scale = lambda^(-1/shape))',
                                 'dweibull(shape, scale = 1/rate)'),
                    altParams= c('rate = 1/scale',
                                 'lambda = scale^(-shape)'),
-                   range   = c(0, Inf),
-                   pqAvail = TRUE,
-                   alias = 'dweibull'),
+                   range    = c(0, Inf),
+                   pqAvail  = TRUE,
+                   alias    = 'dweibull'),
     
     
     ####################################
@@ -223,20 +228,18 @@ distributionsInputList <- list(
                    Rdist    = c('dwish_chol(cholesky = chol(R), df, scale_param = 0)',
                                 'dwish_chol(cholesky = chol(S), df, scale_param = 1)',
                                 'dwish_chol(cholesky, df, scale_param)'),
-                   altParams = c('R = calc_dwishAltParams(cholesky, scale_param, 0)',
+                   altParams= c('R = calc_dwishAltParams(cholesky, scale_param, 0)',
                                  'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
                    alias    = 'dwishart',
                    types    = c('value = double(2)', 'R = double(2)', 'S = double(2)', 'cholesky = double(2)')),
 
     dinvwish   = list(BUGSdist = 'dinvwish(S, df, R, cholesky, scale_param)',
-                   Rdist    = c('dinvwish_chol(cholesky = chol(S), df, scale_param = 1)',
-                                'dinvwish_chol(cholesky = chol(R), df, scale_param = 0)'),
-                   altParams = c('R = calc_dwishAltParams(cholesky, scale_param, 0)',
-                                 'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
-                   alias    = 'dinvwishart',
-                   types    = c('value = double(2)', 'S = double(2)', 'R = double(2)', 'cholesky = double(2)'))
+                      Rdist    = c('dinvwish_chol(cholesky = chol(S), df, scale_param = 1)',
+                                   'dinvwish_chol(cholesky = chol(R), df, scale_param = 0)'),
+                      altParams= c('R = calc_dwishAltParams(cholesky, scale_param, 0)',
+                                    'S = calc_dwishAltParams(cholesky, scale_param, 1)'),
+                      alias    = 'dinvwishart',
+                      types    = c('value = double(2)', 'S = double(2)', 'R = double(2)', 'cholesky = double(2)'))
 )
 
-
         
-

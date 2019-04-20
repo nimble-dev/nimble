@@ -158,6 +158,9 @@ blockTests <- list(
     list(name = "3x3x1 chained to 2x2 block non-arg", expr = quote({temp <- arg1; out <- temp[2:4, 2:5, 2][2:3, 3:4] + 2}), args = list(arg1 = quote(double(3))),
          setArgVals = quote(arg1 <- array(as.numeric(1:120), dim = c(4, 5, 6))), outputType = quote(double(2)))
 
+## Following is not currently supported: 
+##    list(name = "5d nimArray map copy", expr = quote({temp <- arg1; out <- temp[2:4, 3:6, 2, 4, 1:3]}), args = list(arg1 = quote(double(5))),
+##         setArgVals = quote(arg1 <- array(as.numeric(1:(5^5)), dim = c(5, 5, 5, 5, 5))), outputType = quote(double(3)))
     ## tests to add:
     ## integer and logical types
     ## input passed non-trivially as map
@@ -782,6 +785,85 @@ test_that('unary_function( inprod(vector1, vector2) ) compiles and works', {
 }
 )
 
+simpleCopyTests <- list(
+    list(name = "1d copy",
+         expr = quote(out <- arg1),
+         args = list(arg1 = quote(double(1))),
+         setArgVals = quote(arg1 <- as.numeric(1:5)),
+         outputType = quote(double(1))),
+    list(name = "2d copy",
+         expr = quote(out <- arg1),
+         args = list(arg1 = quote(double(2))),
+         setArgVals = quote(arg1 <- matrix(as.numeric(1:20), nrow = 5)),
+         outputType = quote(double(2))),
+    list(name = "3d copy",
+         expr = quote(out <- arg1),
+         args = list(arg1 = quote(double(3))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(3*5*7)), dim = c(3, 5, 7))),
+         outputType = quote(double(3))),
+    list(name = "4d copy", ## bug fixed from Issue #834
+         expr = quote(out <- arg1),
+         args = list(arg1 = quote(double(4))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(3*5*7*9)), dim = c(3, 5, 7, 9))),
+         outputType = quote(double(4))),
+    list(name = "5d copy",
+         expr = quote(out <- arg1),
+         args = list(arg1 = quote(double(5))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(3*5*7*9*11)), dim = c(3, 5, 7, 9, 11))),
+         outputType = quote(double(5)))
+)
+
+higherDimBlockTests <- list(
+    list(name = "3x4x1x1 block",
+         expr = quote(out <- arg1[2:4, 3:6, 2, 4] + 2),
+         args = list(arg1 = quote(double(4))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(5*7*3*6)), dim = c(5, 7, 3, 6))),
+         outputType = quote(double(2))),
+    list(name = "1x4x1x3 block",
+         expr = quote(out <- arg1[2, 3:6, 5, 2:4] + 2),
+         args = list(arg1 = quote(double(4))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(5*7*9*6)), dim = c(5, 7, 9, 6))),
+         outputType = quote(double(2))),
+    list(name = "1x4x1x1 block",
+         expr = quote(out <- arg1[1, 3:6, 2, 4] + 2),
+         args = list(arg1 = quote(double(4))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(5*7*3*6)), dim = c(5, 7, 3, 6))),
+         outputType = quote(double(1))),
+    list(name = "3x4x1x1x1 block",
+         expr = quote(out <- arg1[2:4, 3:6, 2, 4, 5] + 2),
+         args = list(arg1 = quote(double(5))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(5*7*3*6*7)), dim = c(5, 7, 3, 6, 7))),
+         outputType = quote(double(2))),
+    list(name = "1x4x1x3x1 block",
+         expr = quote(out <- arg1[3, 3:6, 2, 4:6, 5] + 2),
+         args = list(arg1 = quote(double(5))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(5*7*3*8*7)), dim = c(5, 7, 3, 8, 7))),
+         outputType = quote(double(2))),
+   list(name = "1x1x1x3x1 block",
+         expr = quote(out <- arg1[3, 4, 2, 4:6, 5] + 2),
+         args = list(arg1 = quote(double(5))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(5*7*3*8*7)), dim = c(5, 7, 3, 8, 7))),
+         outputType = quote(double(1))),
+    list(name = "1x4x1x3x1 block from input ranges",
+         expr = quote(out <- arg1[3, arg2:arg3, 2, 4:6, 5] + 2),
+         args = list(arg1 = quote(double(5)),
+                     arg2 = quote(integer()),
+                     arg3 = quote(integer())),
+         setArgVals = quote(
+         {
+             arg1 <- array(as.numeric(1:(5*7*3*8*7)), dim = c(5, 7, 3, 8, 7))
+             arg2 <- 3
+             arg3 <- 6
+         }),
+         outputType = quote(double(2))),
+     list(name = "block chaining from 1x4x1x3x1",
+         expr = quote(out <- arg1[3, 3:6, 2, 4:7, 5][2:3, 2:4] + 2),
+         args = list(arg1 = quote(double(5))),
+         setArgVals = quote(arg1 <- array(as.numeric(1:(5*7*3*8*7)), dim = c(5, 7, 3, 8, 7))),
+         outputType = quote(double(2)))
+)
+
+
 cTestsResults <- test_coreRfeature_batch(cTests, 'cTests') ##lapply(cTests, test_coreRfeature)
 blockTestsResults <- test_coreRfeature_batch(blockTests, 'blockTests') ##lapply(blockTests, test_coreRfeature)
 repTestsResults <- test_coreRfeature_batch(repTests, 'repTests') ## lapply(repTests, test_coreRfeature)
@@ -793,7 +875,26 @@ nonSeqIndexTestsResults <- test_coreRfeature_batch(nonSeqIndexTests, 'nonSeqInde
 indexChainTestsResults <- test_coreRfeature_batch(indexChainTests, 'indexChainTests') ## lapply(indexChainTests, test_coreRfeature)
 logicalTestsResults <- test_coreRfeature_batch(logicalTests, 'logicalTests') ## lapply(logicalTests, test_coreRfeature)
 returnTestResults <- test_coreRfeature_batch(returnTests, 'returnTests') ## lapply(returnTests, test_coreRfeature)
+simpleCopyTestResults <- test_coreRfeature_batch(simpleCopyTests, 'simpleCopyTests') 
+higherDimBlockTestResults <- test_coreRfeature_batch(higherDimBlockTests, 'higherDimBlockTests') 
 
+
+
+## basic seq_along test
+
+test_that('seq_along works in nimbleFunctions', {
+    nf <- nimbleFunction(
+        run = function(x = double(1)) {
+            for(i in seq_along(x))
+                x[i] <- x[i]+1
+            returnType(double(1))
+            return(x)
+        })
+    cnf <- compileNimble(nf)
+    x <- rnorm(5)
+    expect_identical(nf(x), x+1, 'problem with uncompiled seq_along')
+    expect_identical(nf(x), cnf(x), 'problem with compiled seq_along')
+})
 
 ## Some tests of using coreR features in BUGS models
 
@@ -904,6 +1005,301 @@ test_that('diag(3) in BUGS works', {
     expect_identical(cm$b, diag(3))
 }
 )
+
+## Tests of slices of objects with nDim > 2 as arguments to other functions
+test_that('slice of 3d passed as 2d arg works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(2)) {
+            ans <- numeric(value = x, length = length(x))
+            return(ans)
+            returnType(double(1))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(3)) {
+            ans <- f1(x[3, 2:4, 3:6])
+            return(ans)
+            returnType(double(1))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*8)), dim = c(4, 6, 8))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+test_that('slice of 3d copy works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(3)) {
+            ans <- x
+            return(ans)
+            returnType(double(3))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(3)) {
+            ans <- f1(x[2:5, 2:4, 3:6])
+            return(ans)
+            returnType(double(3))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(7*6*8)), dim = c(7, 6, 8))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+
+test_that('slice of 3d passed as 2d arg works in %*%', {
+    f1 <- nimbleFunction(
+        run = function(x = double(2), b = double(1)) {
+            ans <- x %*% b
+            return(ans)
+            returnType(double(2))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(3), b = double(1)) {
+            ans <- f1(x[3, 2:4, 3:6], b)
+            return(ans)
+            returnType(double(2))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*8)), dim = c(4, 6, 8))
+    b <- 11:14
+    expect_equal(f2(x, b), c12$f2(x, b))
+})
+
+## 4D 4-dimensional slice tests
+
+test_that('slice of 4d passed as 2d arg works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(2)) {
+            ans <- numeric(value = x, length = length(x))
+            return(ans)
+            returnType(double(1))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(4)) {
+            ans <- f1(x[3, 2:4, 5, 3:6])
+            return(ans)
+            returnType(double(1))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*7*8)), dim = c(4, 6, 7, 8))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+test_that('slice of 4d passed as 3d arg works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(3)) {
+            ans <- numeric(value = x, length = length(x))
+            return(ans)
+            returnType(double(1))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(4)) {
+            ans <- f1(x[3, 2:4, 2:5, 3:6])
+            return(ans)
+            returnType(double(1))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*7*8)), dim = c(4, 6, 7, 8))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+test_that('slice of 4dcopy works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(4)) {
+            ans <- x
+            return(ans)
+            returnType(double(4))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(4)) {
+            ans <- f1(x[3:7, 2:4, 1:5, 3:6])
+            return(ans)
+            returnType(double(4))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(8*6*7*8)), dim = c(8, 6, 7, 8))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+## 5D 5-dimensional slice tests
+
+test_that('slice of 5d passed as 4d arg works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(4)) {
+            ans <- numeric(value = x, length = length(x))
+            return(ans)
+            returnType(double(1))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(5)) {
+            ans <- f1(x[3, 2:4, 2:5, 2:7, 3:6])
+            return(ans)
+            returnType(double(1))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*7*9*8)), dim = c(4, 6, 7, 9, 8))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+test_that('slice of 5d passed as 3d arg works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(3)) {
+            ans <- numeric(value = x, length = length(x))
+            return(ans)
+            returnType(double(1))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(5)) {
+            ans <- f1(x[3, 2:4, 2:5, 7, 3:6])
+            return(ans)
+            returnType(double(1))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*7*9*8)), dim = c(4, 6, 7, 9, 8))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+test_that('slice of 5d passed as 2d arg works with %*%', {
+    f1 <- nimbleFunction(
+        run = function(x = double(2), b = double(1)) {
+            ans <- x %*% b
+            return(ans)
+            returnType(double(2))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(5), b = double(1)) {
+            ans <- f1(x[3, 2:4, 4, 7, 3:6], b)
+            return(ans)
+            returnType(double(2))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*7*9*8)), dim = c(4, 6, 7, 9, 8))
+    b <- 11:14
+    expect_equal(f2(x, b), c12$f2(x, b))
+})
+
+test_that('slice of 5d copy works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(5)) {
+            ans <- x
+            return(ans)
+            returnType(double(5))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(5)) {
+            ans <- f1(x[3:7, 2:4, 1:5, 3:6, 4:8])
+            return(ans)
+            returnType(double(5))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(8*6*7*8*9)), dim = c(8, 6, 7, 8, 9))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+## 6D 6-dimensional slice tests
+test_that('slice of 6d passed as 5d arg works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(5)) {
+            ans <- numeric(value = x, length = length(x))
+            return(ans)
+            returnType(double(1))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(6)) {
+            ans <- f1(x[3, 2:4, 3:7, 2:5, 2:7, 3:6])
+            return(ans)
+            returnType(double(1))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*7*9*8*11)), dim = c(4, 6, 7, 9, 8, 11))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+test_that('slice of 6d passed as 4d arg works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(4)) {
+            ans <- numeric(value = x, length = length(x))
+            return(ans)
+            returnType(double(1))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(6)) {
+            ans <- f1(x[3, 2:4, 3, 2:5, 2:7, 3:6])
+            return(ans)
+            returnType(double(1))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*7*9*8*11)), dim = c(4, 6, 7, 9, 8, 11))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+test_that('slice of 6d passed as 3d arg works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(3)) {
+            ans <- numeric(value = x, length = length(x))
+            return(ans)
+            returnType(double(1))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(6)) {
+            ans <- f1(x[3, 2:4, 3, 2:5, 7, 3:6])
+            return(ans)
+            returnType(double(1))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*7*9*8*11)), dim = c(4, 6, 7, 9, 8, 11))
+    expect_equal(f2(x), c12$f2(x))
+})
+
+test_that('slice of 6d passed as 2d arg works with %*%', {
+    f1 <- nimbleFunction(
+        run = function(x = double(2), b = double(1)) {
+            ans <- x %*% b
+            return(ans)
+            returnType(double(2))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(6), b = double(1)) {
+            ans <- f1(x[3, 2:4, 3, 4, 7, 3:6], b)
+            return(ans)
+            returnType(double(2))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(4*6*7*9*8*11)), dim = c(4, 6, 7, 9, 8, 11))
+    b <- 11:14
+    expect_equal(f2(x, b), c12$f2(x, b))
+})
+
+test_that('slice of 6d copy works', {
+    f1 <- nimbleFunction(
+        run = function(x = double(6)) {
+            ans <- x
+            return(ans)
+            returnType(double(6))
+        })
+    temporarilyAssignInGlobalEnv(f1)
+    f2 <- nimbleFunction(
+        run = function(x = double(6)) {
+            ans <- f1(x[3:7, 2:4, 3:5, 1:5, 3:6, 4:8])
+            return(ans)
+            returnType(double(6))
+        })
+    c12 <- compileNimble(f1, f2)
+    x <- array(as.numeric(1:(8*6*7*8*9*11)), dim = c(8, 6, 7, 8, 9, 11))
+    expect_equal(f2(x), c12$f2(x))
+})
 
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

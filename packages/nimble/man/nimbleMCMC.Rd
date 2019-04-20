@@ -32,7 +32,7 @@ nimbleMCMC(code, constants = list(), data = list(), inits, model, monitors,
 
 \item{check}{Logical argument, specifying whether to check the model object for missing or invalid values.  Default value is \code{TRUE}.}
 
-\item{setSeed}{Logical argument.  If \code{TRUE}, then R's random number seed is set to a fixed value at the onset of each MCMC chain, which allows for reproducible results.  Default value is \code{FALSE}.}
+\item{setSeed}{Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.}
 
 \item{progressBar}{Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is \code{TRUE}.}
 
@@ -69,6 +69,8 @@ The \code{inits} argument can be one of three things:
 (3) a list of length \code{nchains}, each element being a named list of initial values.  The first element will be used to initialize the model object, and once element of the list will be used for each MCMC chain.
 
 The \code{inits} argument may also be omitted, in which case the model will not be provided with initial values.  This is not recommended.
+
+The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument specifies the number of pre-thinning MCMC samples to discard.  After discarding these burn-in samples, thinning of the remaining samples will take place.  The total number of posterior samples returned will be floor((niter-nburnin)/thin).
 }
 \examples{
 

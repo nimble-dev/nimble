@@ -331,6 +331,7 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
   int n = Comit.size();
   int i;
   vector<int> ans;
+  vector<int> tempAns; // This will store LHSinferred nodes, which need to be tracked during recursion but not returned
   // touch omit nodes
 #ifdef _DEBUG_GETDEPS
   int iDownstream = static_cast<int>(downstream);
@@ -376,10 +377,10 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
 	  int nodeFunctionNodeID = nodeFunctionNode->CgraphID;
 	  ans.push_back(nodeFunctionNodeID);
 	  nodeFunctionNode->touched = true;
-	  getDependenciesOneNode(ans, nodeFunctionNodeID, downstream, 1, false);
+	  getDependenciesOneNode(ans, tempAns, nodeFunctionNodeID, downstream, 1, false);
 	}
       }
-      getDependenciesOneNode(ans, thisGraphNodeID, downstream, 1);
+      getDependenciesOneNode(ans, tempAns, thisGraphNodeID, downstream, 1);
     } else {
 #ifdef _DEBUG_GETDEPS
       PRINTF("  Node %i was already touched.\n", thisGraphNodeID);
@@ -392,7 +393,7 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
 #ifdef _DEBUG_GETDEPS
       PRINTF("  But is stochastic and downstream is false, so we are recursing into its dependencies.\n");
 #endif
-	getDependenciesOneNode(ans, thisGraphNodeID, downstream, 1);
+      getDependenciesOneNode(ans, tempAns, thisGraphNodeID, downstream, 1);
       }
     }
   }
@@ -401,6 +402,11 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
   n = Comit.size();
   for(i = 0; i < n; i++) {
     graphNodeVec[ Comit[i] ]->touched = false;
+  }
+  /* The purpose of storing tempAns (LHSINFERRED IDs) was so the touched flags could be cleared here: */
+  n = tempAns.size();
+  for(i = 0; i < n; i++) {
+    graphNodeVec[ tempAns[i] ]->touched = false;
   }
   n = ans.size();
   for(i = 0; i < n; i++) {
@@ -411,7 +417,12 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
 }
 
 
-void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth, bool followLHSinferred) {
+void nimbleGraph::getDependenciesOneNode(vector<int> &deps,
+					 vector<int> &tempDeps, /* LHSinferred */
+					 int CgraphID,
+					 bool downstream,
+					 unsigned int recursionDepth,
+					 bool followLHSinferred) {
   if(recursionDepth > graphNodeVec.size()) {
     PRINTF("ERROR: getDependencies has recursed too far.  Something must be wrong.\n");
     return;
@@ -437,13 +448,16 @@ void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool d
 #ifdef _DEBUG_GETDEPS
     PRINTF("        Adding child node %i\n", thisChildCgraphID);
 #endif
-    deps.push_back(thisChildNode->CgraphID); /* LHSINFERRED nodes may be included here and will be stripped in R before final return - could be cleaner*/
+    if(thisChildNode->type == LHSINFERRED)
+      tempDeps.push_back(thisChildNode->CgraphID);
+    else
+      deps.push_back(thisChildNode->CgraphID); /* LHSINFERRED nodes used to be included here and stripped in R before final return, but there was a bug stripping "split" nodes that have %.s% notation, so now LHSINFERRED are not returned. */
     thisChildNode->touched = true;
     if(downstream | (thisChildNode->type != STOCH)) {
 #ifdef _DEBUG_GETDEPS
-    PRINTF("          Recursing into child node %i\n", thisChildCgraphID);
+      PRINTF("          Recursing into child node %i\n", thisChildCgraphID);
 #endif
-      getDependenciesOneNode(deps, thisChildCgraphID, downstream, recursionDepth + 1);
+      getDependenciesOneNode(deps, tempDeps, thisChildCgraphID, downstream, recursionDepth + 1);
     }
   }
 #ifdef _DEBUG_GETDEPS

@@ -75,7 +75,7 @@ symbolTable2templateTypeSymbolTable <- function(symTab, addRef = FALSE, clearRef
 ## This makes a Cpp function definition object wrapped in template<class TYPE_> and with
 ## doubles converted to TYPE_s (including in templated use if NimArr and Eigen).
 ## This is called from an existing version of the cppFunctionDef and returns a separate one
-makeTypeTemplateFunction = function(newName, .self) {
+makeTypeTemplateFunction <- function(newName, .self) {
     newCppFunDef <- RCfunctionDef$new(static = TRUE)
     ## use typedefs to change nimble's general typedefs for Eigen locally
     typeDefs <- symbolTable()

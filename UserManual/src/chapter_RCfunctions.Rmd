@@ -1,0 +1,601 @@
+
+# Writing simple nimbleFunctions {#cha:RCfunctions}
+
+
+
+```{r, echo=FALSE}
+require(nimble)
+``` 
+
+```{r, echo=FALSE}
+read_chunk(file.path('chunks', 'programmingWithModels_chunks.R'))  # one can put code chunks here if one wants
+``` 
+
+## Introduction to simple nimbleFunctions {#sec:RC-intro}
+
+*nimbleFunctions* are the heart of programming in NIMBLE.  In this
+chapter, we introduce simple nimbleFunctions that contain only one
+function to be executed, in either compiled or uncompiled form, but no
+setup function or additional methods.
+
+Defining a simple nimbleFunction is like defining an R function:
+`nimbleFunction` returns a function that can be executed, and it
+can also be compiled.  Simple nimbleFunctions are useful for doing math or the other
+kinds of processing available in NIMBLE when no model or modelValues
+is needed. These can be used for any purpose in R programming.  They
+can also be used as new functions and distributions in NIMBLE's
+extension of BUGS (Chapter \@ref(cha:user-defined)).
+
+
+  Here's a basic example implementing the textbook calculation of
+  least squares estimation of linear regression parameters^[Of course, in general, explicitly
+  calculating the inverse is not the recommended numerical recipe for
+  least squares.]:
+  
+```{r, nf-RCfun, message=FALSE}
+```  
+
+In this example, we fit a linear model for 100 random response values (`y`) to four columns of
+randomly generated explanatory variables (`X`).  We ran the
+nimbleFunction 
+`solveLeastSquares` uncompiled,
+natively in R, allowing testing and debugging (Section \@ref(sec:debugging)).  Then we compiled it and showed that the compiled version does the same thing,
+but faster^[On the machine this is
+  being written on, the compiled version runs a few times faster than
+  the uncompiled version.  However we refrain from formal speed
+  tests.].  NIMBLE's compiler creates C++ that uses the Eigen ([http://eigen.tuxfamily.org](http://eigen.tuxfamily.org))
+library for linear algebra.
+
+Notice that the actual NIMBLE code is written as an R function
+definition that is passed to `nimbleFunction` as the `run`
+argument.  Hence we call it the *run* code.  run code is
+written in the NIMBLE language.  This is similar to a narrow subset of
+R with some additional features.  Formally, we view it as a distinct language
+ that encompasses what can be compiled from a nimbleFunction.
+
+To write nimbleFunctions, you will need to learn:
+
+
+  - what R functions are supported for NIMBLE compilation and any
+  ways they differ from their regular R counterparts;
+  - how NIMBLE handles types of variables;
+  - how to declare types of `nimbleFunction` arguments and return values;
+  - that compiled nimbleFunctions always pass arguments to each
+  other by reference.
+<!---   1. how to use nimbleList data structures. -->
+
+
+The next sections cover each of these topics in turn.
+
+## R functions (or variants) implemented in NIMBLE {#sec:r-fiunctions-implemented}
+
+### Finding help for NIMBLE's versions of R functions
+
+Often, R help pages are available for NIMBLE's versions of R functions
+using the prefix 'nim' and capitalizing the next letter.  For
+example, help on NIMBLE's version of `numeric` can be found by `help(nimNumeric)`. In some cases help is found directly using the name of the function as it appears in R. 
+
+### Basic operations
+
+Basic R operations supported for NIMBLE compilation are listed in
+Table \@ref(tab:coreR).
+
+```{r, child = 'tables/coreRtableLong.md'}
+```
+
+
+Other R functions with numeric arguments and return value can be called during compiled execution by wrapping them as a `nimbleRcall` (see Section \@ref(sec:calling-R-code)).
+
+Next we cover some of these functions in more detail. 
+
+#### *numeric*, *integer*, *logical*, *matrix* and *array*
+
+`numeric`, `integer`, or `logical` will create a 1-dimensional vector of
+floating-point (or 'double' [precision]), integer, or logical values, respectively.  The `length` argument specifies the vector 
+length (default 0), and the `value` argument specifies the initial 
+ value either as a scalar (used for all vector elements, with default
+ 0) or a vector. If a vector and its length is not equal to `length`, the remaining values will be zero, but we plan to implement R-style recycling in the next version of NIMBLE. The `init` argument specifies 
+whether or not to initialize the elements in compiled code (default `TRUE`).  If
+first use of the variable does not rely on initial values,  using
+`init = FALSE` will yield slightly more efficient performance.
+
+`matrix` creates a 2-dimensional matrix object of either floating-point (if 
+`type = "double"`, the default), integer (if `type = "integer"`), or logical (if `type = "logical"`) values. 
+As in R, `nrow` and `ncol` arguments specify the number of rows and columns, respectively. 
+The `value` and `init` arguments are used in the same way as for
+`numeric`, `integer`, and `logical`.
+
+`array` creates a vector or higher-dimensional object, depending
+on the `dim` argument, which takes a vector of sizes for each
+dimension.  The `type`, `value` and `init` argument behave
+the same as for `matrix`.
+
+The best way to create an identity matrix is with `diag(n)`, which
+returns an $n \times n$ identity matrix.  NIMBLE also provides a deprecated
+nimbleFunction `identityMatrix` that does the same thing.
+
+Examples of these functions, and the related function $`setSize`$
+for changing the size of a numeric object, are given in Section \@ref(sec:chang-sizes-exist).
+
+#### *length* and *dim* {#sec:query-chang-sizes}
+
+`length` behaves like R's `length` function.  It
+  returns the *entire* length of X.  That means if `X` is
+  multivariate, `length(X)` returns the product of the sizes of
+  the dimensions.  NIMBLE's version of `dim`, which has synonym `nimDim`, behaves like R's
+  `dim` function for matrices or arrays and like R's
+  `length` function for vectors.  In other words, regardless of
+  whether the number of dimensions is 1 or more, it returns a vector
+  of the sizes. 
+
+#### Deprecated creation of non-scalar objects using *declare*
+
+Previous versions of NIMBLE provided a function `declare` for
+declaring variables.  The more R-like functions `numeric`,
+`integer`, `logical`, `matrix` and `array` are intended to replace
+`declare`, but `declare` is still supported for backward
+compatibility.  In a future version of NIMBLE, `declare` may be removed.
+
+### Math and linear algebra {#sec:basic-math-linear}
+
+Numeric scalar and matrix mathematical operations are listed in Tables \@ref{cha:RCfunctions}.2-\@ref{cha:RCfunctions}.3.
+
+<!---
+would need to do some sed manipulation to be able to automate this cross-ref
+\@ref(tab:functions) and \@ref(tab:functionsMatrix).
+-->
+
+As in R, many scalar operations in NIMBLE will work component-wise on vectors or
+higher dimensional objects.  For example if B and C are vectors, `A
+  = B + C` will add them and create vector C by component-wise
+addition of B and C.  In the current version of NIMBLE, component-wise operations
+generally only work for vectors and matrices, not arrays with more
+than two dimensions.  The only exception is assignment: `A = B` will
+work up to NIMBLE's current limit of four dimensions.
+
+```{r, child = 'tables/functionTableLong.md'}
+```
+```{r echo=FALSE, include=FALSE}
+system("cat tables/functionTableMatrixLong.md tables/eigenSvdTableMatrixAsNimList.md > tmp.md")
+```
+```{r, child = 'tmp.md'}
+```
+```{r echo=FALSE, include=FALSE}
+system("rm -rf tmp.md")
+```
+
+
+More information on the nimbleLists returned by the `eigen` and `svd` functions in NIMBLE can be found in Section \@ref(sec:eigen-nimFunctions).
+
+
+### Distribution functions {#sec:nimble-dist-funs}
+
+Distribution 'd', 'r', 'p', and 'q' functions can all be used
+from nimbleFunctions (and in BUGS model code), but care is needed in the syntax, as follows.
+
+  - Names of the distributions generally (but not always) match those of R, which
+  sometimes differ from BUGS.  See the list below.
+  - Supported parameterizations are also indicated in the list below. 
+  - For multivariate distributions (multivariate normal, Dirichlet, and Wishart),  'r' functions only return one random
+draw at a time, and the first argument must always be 1.
+  - R's recycling rule (re-use of an argument as needed to accommodate
+  longer values of other arguments) is generally followed, but the
+  returned object is always a scalar or a vector, not a matrix or
+  array.
+
+
+As in R (and nimbleFunctions), arguments are matched by order or by name
+(if given). Standard arguments to distribution functions in R
+(`log`, `log.p`, `lower.tail`) can be used and have the same
+defaults. User-defined distributions for BUGS (Chapter
+\@ref(cha:user-defined)) can also be used from
+nimbleFunctions. 
+
+For standard distributions, we rely on R's regular help pages
+(e.g., `help(dgamma)`.  For distributions unique to NIMBLE
+(e.g., `dexp_nimble`, `ddirch`), we provide help pages.
+
+Supported distributions, listed by their 'd' function, include:
+
+  - `dbinom(x, size, prob, log)`
+  - `dcat(x, prob, log)`
+  - `dmulti(x, size, prob, log)`
+  - `dnbinom(x, size, prob, log)`
+  - `dpois(x, lambda, log)`
+  - `dbeta(x, shape1, shape2, log)`
+  - `dchisq(x, df, log)`
+  - `ddexp(x, location, rate, log)`
+  - `ddexp(x, location, scale, log)`  
+  - `dexp(x, rate, log)`
+  - `dexp_nimble(x, rate, log)`
+  - `dexp_nimble(x, scale, log)`
+  - `dgamma(x, shape, rate, log)`
+  - `dgamma(x, shape, scale, log)`
+  - `dinvgamma(x, shape, rate, log)`
+  - `dinvgamma(x, shape, scale, log)`
+  - `dlnorm(x, meanlog, sdlog, log)`
+  - `dlogis(x, location, scale, log)`
+  - `dnorm(x, mean, sd, log)`
+  - `dt_nonstandard(x, df, mu, sigma, log)`
+  - `dt(x, df, log)`
+  - `dunif(x, min, max, log)`
+  - `dweibull(x, shape, scale, log)`
+  - `ddirch(x, alpha, log)`
+  - `dmnorm_chol(x, mean, cholesky, prec_param, log)`
+  - `dmvt_chol(x, mu, cholesky, df, prec_param, log)`
+  - `dwish_chol(x, cholesky, df, scale_param, log)`
+
+
+
+In the last three, `cholesky` stands for Cholesky decomposition of the relevant matrix; 
+`prec_param` is a logical indicating whether the Cholesky is of a
+precision matrix (TRUE) or covariance matrix (FALSE)^[For the multivariate t, these are more properly termed the 'inverse scale' and 'scale' matrices]; and `scale_param` is a logical indicating whether the Cholesky is of a scale matrix (TRUE) or an inverse scale matrix (FALSE).
+
+### Flow control: *if-then-else*, *for*,  *while*, and *stop* {#sec:basic-flow-control}
+
+These basic flow-control structures use the same syntax as in R.
+However, `for`-loops are limited to sequential integer
+indexing.  For example, `for(i in 2:5) {...}` works as it does
+in R.  Decreasing index sequences are not allowed.  Unlike in R,
+`if` is not itself a function that returns a value.
+
+We plan to include more flexible `for`-loops in the future, but for
+now we've included just one additional useful feature:  `for(i in seq_along(NFL))` will work as in R, where `NFL` is a
+`nimbleFunctionList`.  This is described in Section \@ref(sec:virt-nimbl-nimbl).
+
+`stop`, or equivalently `nimStop`, throws
+control to R's error-handling system and can take a character
+argument that will be displayed in an error message.
+
+### *print* and *cat* {#sec:print}
+
+`print`, or equivalently
+`nimPrint`, prints an arbitrary set of outputs in order and adds a
+newline character at the end.  `cat` or `nimCat` is identical,
+except without a newline at the end.  
+
+### Checking for user interrupts: *checkInterrupt* {#sec:check-user-interr}
+
+When you write algorithms that will run for a long time in C++, you
+may want to explicitly check whether a user has tried to interrupt the
+execution (i.e., by pressing Control-C).  Simply include
+`checkInterrupt` in run code at places where a check should
+be done.  If there has been an
+interrupt waiting to be handled, the process will stop and return control to R.
+
+### Optimization: *optim* and *nimOptim*
+
+NIMBLE provides a `nimOptim` function that partially implement's R's
+`optim` function with some minor differences.  `nimOptim` supports
+optimization methods 'Nelder-Mead', 'BFGS', 'CG', 'L-BFGS-B', but does
+not support methods 'SANN' and 'Brent'. NIMBLE's `nimOptim` supports
+gradients using user-provided functions if available or finite differences
+otherwise, but it does not currently support Hessian computations. Currently
+`nimOptim` does not support extra parameters to the function being optimized
+(via `\dots`), but a work-around is to create a new `nimbleFunction` that
+binds those fixed parameters. Finally, `nimOptim` requires a `nimbleList`
+datatype for the `control` parameter, whereas R's `optim` uses a simple R
+`list`. To define the `control` parameter, create a default value with
+the `nimOptimDefaultControl` function, and set any desired fields. For
+example usage, see the unit tests in
+[tests/test-optim.R](https://github.com/nimble-dev/nimble/blob/master/packages/nimble/inst/tests/test-optim.R).
+
+### 'nim' synonyms for some functions {#sec:altern-keyw-some}
+
+NIMBLE uses some keywords, such as `dim` and `print`, in ways
+similar but not identical to R. In addition, there are some keywords
+in NIMBLE that have the same names as R functions with quite different functionality.
+For example, `step` is part of the BUGS language, but it is also an
+R function for stepwise model selection.  And `equals` is part of
+the BUGS language but is also used in the `testthat` package, which
+we use in testing NIMBLE.
+
+NIMBLE tries to avoid conflicts by replacing
+some keywords immediately upon creating a nimbleFunction.  These
+replacements include
+
+  - `c` $\rightarrow$ `nimC`
+  - `copy` $\rightarrow$ `nimCopy`
+  - `dim`  $\rightarrow$ `nimDim`
+  - `print` $\rightarrow$ `nimPrint`
+  - `cat` $\rightarrow$ `nimCat`
+  - `step` $\rightarrow$ `nimStep`
+  - `equals` $\rightarrow$ `nimEquals`
+  - `rep` $\rightarrow$ `nimRep`
+  - `round` $\rightarrow$ `nimRound`
+  - `seq` $\rightarrow$ `nimSeq`
+  - `stop` $\rightarrow$ `nimStop`
+  - `switch` $\rightarrow$ `nimSwitch`
+  - `numeric, integer, logical` $\rightarrow$ `nimNumeric, nimInteger, nimLogical`
+  - `matrix, array` $\rightarrow$ `nimMatrix, nimArray`
+
+
+
+This system gives programmers the choice between using the keywords like
+`nimPrint` directly, to avoid confusion in their own code about
+which 'print' is being used, or to use the more intuitive keywords
+like `print` but remember that they are not the same as R's functions.
+
+## How NIMBLE handles types of variables {#sec:how-nimble-handles}
+
+Variables in the NIMBLE language are statically typed. Once a variable
+is used for one type, it can't subsequently be used for a different
+type.  This rule facilitates NIMBLE's compilation to C++.  The NIMBLE
+compiler often determines types automatically, but sometimes the
+programmer needs to explicitly provide them.
+
+The elemental types supported by NIMBLE include *double*
+(floating-point), *integer*, *logical*, and *character*.   The *type* of
+a numeric or logical object refers to the number
+of dimensions and the elemental type of the elements.  Hence if `x`
+is created as a double matrix, it can only be used subsequently for a double
+matrix.  The size of each dimension is not part of its type and thus
+can be changed.  Up to four
+dimensions are supported for double, integer, and logical.  Only
+vectors (one dimension) are supported for character.  Unlike R, NIMBLE supports true
+scalars, which have 0 dimensions.
+
+
+### nimbleList data structures {#sec:nimbleList-RCFuns}
+
+A `nimbleList` is a data structure that can contain arbitrary other NIMBLE objects, including other `nimbleList`s.
+Like other NIMBLE types, nimbleLists are strongly typed: each `nimbleList` is created from a configuration that
+declares what types of objects it will hold.  `nimbleList`s are covered in Chapter \@ref(sec:nimbleLists).
+
+### How numeric types work {#sec:how-types-work}
+
+R's dynamic types support easy programming because one type can sometimes
+be transformed to another type automatically when an expression is
+evaluated.  NIMBLE's static types makes it stricter than R.
+
+#### When NIMBLE can automatically set a numeric type {#sec:when-nimble-can}
+
+When a variable is first created by assignment, its type is determined
+automatically by that assignment. For example, if `x` has not appeared before, then
+```{r, eval=FALSE}
+x <- A %*% B # assume A and B are double matrices or vectors
+``` 
+
+will create `x` to be a double matrix of the correct size
+(determined during execution).
+
+##### Avoid changing types of a variable within a nimbleFunction
+
+Because NIMBLE is statically typed, you cannot use the same variable name for two objects of different types (including objects of different dimensions).
+
+Suppose we have (implicitly) created `x` as a double matrix. 
+If `x` is used subsequently, it can
+only be used as a double matrix. This is true even if it is assigned a
+new value, which will again set its size automatically but cannot
+change its type.
+
+```{r, eval=FALSE}
+x <- A %*% B # assume A and B are double matrices or vectors
+x <- nimMatrix(0, nrow = 5, ncol = 2)  # OK: 'x' is still a double matrix
+x <- rnorm(10)  # NOT OK: 'x' is a double vector
+``` 
+
+
+#### When a numeric object needs to be created before being used {#sec:when-numeric-object}
+
+If the contents of a variable are to be populated by assignment into
+some indices in steps, the variable must be created first.  Further,
+it must be large enough for its eventual contents; it will not be automatically
+resized if assignments are made beyond its current size.  For example,
+in the following code, `x` must be created before being filled with
+contents for specific indices.
+
+```{r, exampleDeclare, eval=FALSE}
+x <- numeric(10)
+
+for(i in 1:10) 
+   x[i] <- foo(y[i]) 
+```
+
+
+
+#### Changing the sizes of existing objects: *setSize* {#sec:chang-sizes-exist}
+
+`setSize` changes the size of an object, preserving its contents in
+column-major order.  
+
+```{r, exampleNumeric, eval=FALSE}
+# Example of creating and resizing a floating-point vector
+# myNumericVector will be of length 10, with all elements initialized to 2 
+myNumericVector <- numeric(10, value = 2) 
+# resize this numeric vector to be length 20; last 10 elements will be 0
+setSize(myNumericVector, 20)
+```
+
+```{r, exampleMatrix, eval=FALSE}
+# Example of creating a 1-by-10 matrix with values 1:10 and resizing it
+myMatrix <- matrix(1:10, nrow = 1, ncol = 10) 
+# resize this matrix to be a 10-by-10 matrix
+setSize(myMatrix, c(10, 10))
+# The first column will have the 1:10
+```
+
+
+#### Confusions between scalars and length-one vectors {#sec:conf-betw-scal}
+
+In R, there is no such thing is a true scalar; scalars can always be
+treated as vectors of length one.  NIMBLE allows true scalars, which
+can create confusions.  For example, consider the following code:
+
+```{r, eval=FALSE}
+myfun <- nimbleFunction(
+    run = function(i = integer()) { # i is an integer scalar
+        randomValues <- rnorm(10)   # double vector
+        a <- randomValues[i]        # double scalar
+        b <- randomValues[i:i]      # double vector
+        d <- a + b                  # double vector
+        f <- c(i)                   # integer vector
+    })
+``` 
+
+In the line that creates `b`, the index range `i:i` is not
+evaluated until run time.  Even though `i:i` will always evaluate
+to simpy `i`, the compiler does not determine that.  Since there is
+a vector index range provided, the result of `randomValues[i:i]` is
+determined to be a vector.  The following line then creates `d` as
+a vector, because a vector plus a scalar returns a vector.  Another
+way to create a vector from a scalar is to use `c`, as
+illustrated in the last line.
+
+#### Confusions between vectors and one-column or one-row matrices {#sec:conf-betw-scal2}
+
+Consider the following code:
+```{r, }
+myfun <- nimbleFunction(
+    run = function() { 
+        A <- matrix(value = rnorm(9), nrow = 3)
+        B <- rnorm(3)
+        Cmatrix <- A %*% B                # double matrix, one column
+        Cvector <- (A %*% B)[,1]          # double vector
+        Cmatrix <- (A %*% B)[,1]          # error, vector assigned to matrix
+        Cmatrix[,1] <- (A %*% B)[,1]      # ok, if Cmatrix is large enough
+    })
+``` 
+This creates a matrix `A`, a vector `B`, and matrix-multiplies
+them.  The vector `B` is automatically treated as a one-column
+matrix in matrix algebra computations.  The result of matrix multiplication is always a matrix, but
+a programmer may expect a vector, since they know the result will have
+one column.  To make it a vector, simply extract the first column.
+More information about such handling is provided in the next section.
+
+#### Understanding dimensions and sizes from linear algebra {#sec:manag-dimens-sizes}
+
+As much as possible, NIMBLE behaves like R when determining types and
+sizes returned from linear algebra expressions, but in some cases this
+is not possible because R uses run-time information while NIMBLE must
+determine dimensions at compile time. For example, when matrix
+multiplying a matrix by a vector, R treats the vector as a one-column
+matrix unless treating it as a one-row matrix is the only way to make
+the expression valid, as determined at run time.  NIMBLE usually must assume during compilation
+that it should be a one-column matrix, unless it can determine not
+just the number of dimensions but the actual sizes during
+compilation.  When needed `asRow` and `asCol` can control how a
+vector will be treated as a matrix.
+
+Here is a guide to such issues.  Suppose `v1` and `v2` are vectors, and `M1` is a matrix.  Then
+
+
+  -  `v1 + M1` generates a compilation error unless one dimension of
+`M1` is known at compile-time to be 1.  If so, then `v1` is promoted to a
+1-row or 1-column matrix to conform with `M1`, and the result is a
+matrix of the same sizes.  This behavior occurs for
+all component-wise binary functions.
+  - `v1 %*% M1` defaults to promoting `v1` to a 1-row matrix,
+  unless it is known at compile-time that `M1` has 1 row, in which case
+  `v1` is promoted to a 1-column matrix.
+  - `M1 %*% v1` defaults to promoting `v1` to a 1-column matrix,
+unless it is known at compile time that `M1` has 1 column, in which case
+`v1` is promoted to a 1-row matrix.
+  - `v1 %*% v2` promotes `v1` to a 1-row matrix and `v2` to a
+1-column matrix, so the returned values is a 1x1 matrix with the inner
+product of `v1` and `v2`.  If you want the inner product as a scalar, use
+`inprod(v1, v2)`. 
+  - `asRow(v1)` explicitly promotes `v1` to a 1-row matrix.
+  Therefore `v1 %*% asRow(v2)` gives the outer product of
+  `v1` and `v2`.
+  - `asCol(v1)` explicitly promotes `v1` to a 1-column matrix.  
+  - The default promotion for a vector is to a 1-column matrix.
+  Therefore, `v1 %*% t(v2)` is equivalent to `v1 %*% asRow(v2)` .
+  - When indexing, dimensions with scalar indices will be dropped.
+  For example, `M1[1,]` and `M1[,1]` are both vectors.  If you
+  do not want this behavior, use `drop=FALSE` just as in R.  For
+  example, `M1[1,,drop=FALSE]` is a matrix.
+  - The left-hand side of an assignment can use indexing, but if so
+  it must already be correctly sized for the result.  For example,
+  `Y[5:10, 20:30] <- x` will not work -- and could crash
+  your R session with a segmentation fault --  if Y is not
+  already at least 10x30 in size.  This can be done by `setSize(Y, c(10, 30))`.  See Section \@ref(sec:chang-sizes-exist) for more details.  Note that non-indexed assignment to `Y`, such as `Y <- x`, will automatically set `Y` to the necessary size. 
+  
+
+
+Here are some examples to illustrate the above points, assuming `M2` is
+a square matrix.
+
+
+  - `Y <- v1 + M2 %*% v2` will
+  return a 1-column matrix.  If Y is created by this statement, it
+  will be a 2-dimensional variable.  If Y already exists, it must
+  already be 2-dimesional, and it will be automatically re-sized for
+  the result.
+  - `Y <- v1 + (M2 %*% v2)[,1]` will return a vector.  Y
+  will either be created as a vector or must already exist as a vector
+  and will be re-sized for the result.
+
+
+#### Size warnings and the potential for crashes {#sec:size-warn-potent}
+
+For matrix algebra, NIMBLE cannot ensure perfect behavior because
+sizes are not known until run time.  Therefore, it is possible for you
+to write code that will crash your R session.  In Version `r nimbleVersion`, NIMBLE
+attempts to issue a warning if sizes are not compatible, but it does not
+halt execution.  Therefore, if you execute `A <- M1 %*% M2`, and `M1` and `M2` are not compatible for matrix multiplication,
+NIMBLE will output a warning that the number of rows of `M1` does not
+match the number of columns of `M2`.  After that warning the statement
+will be executed and may result in a crash.  Another easy way to write
+code that will crash is to do things like `Y[5:10, 20:30] <- x` without ensuring Y is at least 10x30.  In the future we hope to
+prevent crashes, but in Version `r nimbleVersion` we limit ourselves to trying to provide
+useful information.
+
+## Declaring argument and return types {#sec:decl-argum-return}
+
+NIMBLE requires that types of arguments and the type of the return value be
+explicitly declared.
+
+As illustrated in the example in Section \@ref(sec:RC-intro),  the
+syntax for a type declaration is:
+
+ `type(nDim, sizes)`
+ 
+where `type` is `double`, `integer`, `logical` or `character`. 
+(In more general nimbleFunction programming, a type can also be a
+nimbleList type, discussed in Section \@ref(sec:nimbleLists).)
+
+For example `run = function(x = double(1)) { ... `} sets the single argument of the run function to be a vector of numeric values of unknown size.
+
+For `type(nDim, sizes)`, `nDim` is the number of dimensions, with 0 indicating scalar and omission of `nDim` defaulting to a scalar.
+`sizes` is an optional vector of fixed, known sizes.  
+ For example, `double(2, c(4, 5))` declares a $4 \times 5$ matrix.  If sizes
+are omitted, they will be set either by assignment or by `setSize`.
+
+In the case of scalar arguments only, a default value can be
+provided.  For example, to provide 1.2 as a default:
+
+```{r, example-argtype, eval=FALSE}
+myfun <- nimbleFunction(
+    run = function(x = double(0, default = 1.2)) {
+})
+``` 
+
+Functions with return values must have their return type explicitly declared using `returnType`, which can occur anywhere in the run code. For example `returnType(integer(2))` declares the return type to be a matrix of integers. A return type of `void()` means there is
+no return value, which is the default if no `returnType` statement
+is included.  
+
+## Compiled nimbleFunctions pass arguments by reference {#sec:comp-nimbl-pass}
+
+Uncompiled nimbleFunctions pass arguments like R does, by copy.  If
+`x` is passed as an argument to function `foo`, and `foo`
+modifies `x` internally, it is modifying its copy of `x`, not
+the original `x` that was passed to it.  
+
+Compiled nimbleFunctions pass arguments to other compiled
+nimbleFunctions by reference (or pointer).  This is very different.
+Now if `foo` modifies `x` internally, it is modifying the same
+`x` that was passed to it.  This allows much faster execution but
+  is obviously a fundamentally different behavior.
+  
+  Uncompiled execution of nimbleFunctions is primarily intended for
+  debugging.  However, debugging of how nimbleFunctions interact via
+  arguments requires testing the compiled versions.
+  
+## Calling external compiled code {#sec:calling-external-code}
+
+If you have a function in your own compiled C or C++ code and an appropriate header file, you can generate a nimbleFunction that wraps access to that function, which can then be used in other nimbleFunctions.  See `help(nimbleExternalCall)` for an example.  This also contains an example of using an externally compiled function in the BUGS code of a model.
+
+## Calling uncompiled R functions from compiled nimbleFunctions {#sec:calling-R-code}
+
+Sometimes one may want to combine R functions with compiled nimbleFunctions.  Obviously a compiled nimbleFunction can be called from R.  An R function with numeric inputs and output can be called from compiled nimbleFunctions.  The call to the R function is wrapped in a nimbleFunction returned by `nimbleRcall`.  See `help(nimbleRcall)` for an example, including an example of using the resulting function in the BUGS code of a model.

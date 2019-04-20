@@ -1,0 +1,23 @@
+bookdown::gitbook:
+  css: style.css
+  config:
+    toc:
+      before: |
+        <img src="./nimble-icon.png"
+             width=100>
+        <li><a href="./">NIMBLE User Manual, Version 0.7.0</a></li>
+        <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
+        <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
+      after: |
+    toc_depth: 3
+    download: ["pdf", "epub"]
+bookdown::pdf_book:
+  latex_engine: xelatex
+  citation_package: natbib
+  keep_tex: yes
+  toc_depth: 3
+  includes:
+    before_body: title.tex
+bookdown::epub_book: default
+
+

@@ -1,4 +1,5 @@
-## These tests check building, compilation and calculation with dynamically-indexed models. Testing includes that errors are correctly emitted when invalid indexes are used via the 'invalidIndexes' element.
+## These tests check building, compilation and calculation with dynamically-indexed models. Testing includes that errors are correctly emitted when invalid indexes are used via the 'invalidIndexes' element. In a few cases with nested indexing, R calculation fails with error in condition of an if() and we don't catch that error, but compiled calculation fails gracefully.
+
 testsDynIndex <- list(
     list(
         case = 'basic dynamic index',
@@ -199,7 +200,7 @@ testsDynIndex <- list(
                             list(parent = 'mu', result = c(paste0('mu[', 1:5, ']'),
                                                            paste0('y[',1:4,']')))),
         validIndexes =list(list(var = c('k[8]','j[1]'), value = c(5,7))),
-        invalidIndexes = list(list(var = c('k[1]', 'j[1]'), value = c(1,-1)),
+        invalidIndexes = list(list(var = c('k[1]', 'j[1]'), value = c(1,8), expect_R_calc_error = TRUE),  ## mu[k[j[1]+1]] = mu[k[9]] = mu[NA] 
                               list(var = c('k[2]', 'j[1]'), value = c(6,1)))
     ),
     list(  
@@ -387,7 +388,7 @@ testsDynIndex <- list(
                             list(parent = 'mu', result = c(expandNames('mu', 1:2, 1:3),
                                                            expandNames('y', 1:4)))),
         validIndexes =list(list(var = c('j[1]','k[2,4]'), value = c(4, 3))),
-        invalidIndexes =list(list(var = c('j[1]','k[2,4]'), value = c(0,1)),
+        invalidIndexes =list(list(var = c('j[1]','k[2,4]'), value = c(0,1), expect_R_calc_error = TRUE),  ## mu[1, k[2, j[1]]] = mu[1, k[2, 0]] = mu[1, NA] 
                              list(var = c('j[1]','k[2,1]'), value = c(1,4)))
     ),
     list(  
@@ -518,6 +519,24 @@ testsDynIndex <- list(
                             list(parent = 'k[2]', result = c('k[2]', 'y[2]'))),
         validIndexes =list(list(var = 'k[4]', value = 4)),
         invalidIndexes =list(list(var = 'k[4]', value = 5))
+    ),
+    list(  
+        case = 'dynamic index multiple input functional, multiple indexing, with invalid nested index',
+        code = nimbleCode({
+            for(i in 1:4) {
+                y[i] ~ dnorm(mu[k[d[i]], 2, k[i]+j[i]], sd = 1)
+            }
+            ## k[i]+j[i] \in 1:8; d[i] \in 1:2; k[i] \in 1:5
+            for(ii in 1:5) 
+                for(jj in 1:3) 
+                    for(kk in 1:8)
+                        mu[ii,jj,kk] ~ dnorm(0, 1)
+            for(i in 1:4)
+                k[i] ~ dcat(p[1:5])
+        }), 
+        inits = list(mu = array(rnorm(120), c(5,3,8)), k = rep(1,4), j = rep(1, 4), d = rep(1,4), p = rep(1/5, 5)),
+        data = list(y = rnorm(4)),
+        invalidIndexes =list(list(var = c('d[1]', 'k[1]','j[1]'), value = c(5,4,4), expect_R_calc_error = TRUE))  ## mu[k[d[1]]] = mu[k[5]] = mu[NA]
     )
 )
 
@@ -581,26 +600,5 @@ testsInvalidDynIndex <- list(
 )
 
 
-## This case is one where NIMBLE correctly errors on invalid indexes, but there is a complication. 
-testsInvalidDynIndexValue <- list(
-    list(  # This correctly finds errors in nested index, but in R execution it fails non-gracefully.  (C execution fails gracefully because of how C++ handles k[d[0]].
-        case = 'dynamic index multiple input functional, multiple indexing, with invalid nested index',
-        code = nimbleCode({
-            for(i in 1:4) {
-                y[i] ~ dnorm(mu[k[d[i]], 2, k[i]+j[i]], sd = 1)
-            }
-            ## k[i]+j[i] \in 1:8; d[i] \in 1:2; k[i] \in 1:5
-            for(ii in 1:5) 
-                for(jj in 1:3) 
-                    for(kk in 1:8)
-                        mu[ii,jj,kk] ~ dnorm(0, 1)
-            for(i in 1:4)
-                k[i] ~ dcat(p[1:5])
-        }), 
-        inits = list(mu = array(rnorm(120), c(5,3,8)), k = rep(1,4), j = rep(1, 4), d = rep(1,4), p = rep(1/5, 5)),
-        data = list(y = rnorm(4)),
-        invalidIndexes =list(list(var = c('d[1]', 'k[1]','j[1]'), value = c(5,4,4)))
-    )
-)
 
 

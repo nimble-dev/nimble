@@ -856,6 +856,7 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll,
                             useCompiledCopyMethod = FALSE) {
     for(v in cppNames) {
         copyType <- cppCopyTypes[[v]]
+        if(is.null(copyType)) next
         if(copyType == 'modelVarAccess')
             processModelVarAccess(Robj, v)
         if(copyType == 'modelValuesAccess')

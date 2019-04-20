@@ -12,7 +12,7 @@ space model or a hidden Markov model}
 
 \item{nodes}{A character vector specifying the latent model nodes 
 over which the particle filter will stochastically integrate over to
-estimate the log-likelihood function}
+estimate the log-likelihood function.  All provided nodes must be stochastic, and must come from the same variable in the model.}
 
 \item{params}{A character vector specifying the top-level parameters to estimate the posterior distribution of. 
  If unspecified, parameter nodes are specified as all stochastic top level nodes which

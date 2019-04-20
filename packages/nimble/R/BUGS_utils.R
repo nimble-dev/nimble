@@ -45,7 +45,7 @@ determineNodeIndexSizes <- function(node) {
     return(sizes)
 }
 
-makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NULL, allSizeAndDimList = list()){
+makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NULL, allSizeAndDimList = list(), checkRagged = FALSE){
   if(is.call(code)){
     if(deparse(code[[1]]) == '[') {
       if(deparse(code[[2]]) %in% nodesToExtract){
@@ -68,10 +68,8 @@ makeSizeAndDimList <- function(code, nodesToExtract, unrolledIndicesMatrix = NUL
               codeEndInds <- unrolledIndicesMatrix[, deparse(code[[i+2]][[3]])]
             }
             thisCodeLength <- codeEndInds - codeStartInds + 1
-            if(!all(thisCodeLength == thisCodeLength[1])){
-              stop("Error: AD not currently supported for ragged arrays in model 
-                    code.  Set nimbleOptions(experimentalEnableDerivs = FALSE) 
-                    to build this model.")
+            if(checkRagged && !all(thisCodeLength == thisCodeLength[1])){
+              stop("Error: AD not currently supported for ragged arrays in model code", call. = FALSE)
             }
             codeLength <- c(codeLength, thisCodeLength[1])
           }
@@ -211,7 +209,7 @@ exprAsListDrop2 <- function(expr) {
     if(is.null(ans)) as.list(expr[-c(1,2)]) else ans
 }
 
-getCallText <- function(code)      as.character(code[[1]])
+getCallText <- function(code)      deparse(code[[1]])
 
 parseTreeSubstitute <- function(pt, pattern, replacement) {
     if(identical(pt, pattern))    return(replacement)
@@ -258,6 +256,8 @@ Rname2CppName <- function(rName, colonsOK = TRUE) {
     rName <- gsub('\\]', '_cB', rName)
     rName <- gsub('\\(', '_oP', rName)
     rName <- gsub('\\)', '_cP', rName)
+    rName <- gsub('\\{', '_oC', rName)
+    rName <- gsub('\\}', '_cC', rName)
     rName <- gsub("\\$", "_" , rName)
     rName <- gsub(">=", "_gte_", rName)
     rName <- gsub("<=", "_lte_", rName)

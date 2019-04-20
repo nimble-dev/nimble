@@ -127,9 +127,7 @@ indexNames <- function(x) {
 }
 
 test_coreRfeature_batch <- function(input_batch, info = '', verbose = nimbleOptions('verbose'), dirName = NULL) {
-    test_that(info, {
         test_coreRfeature_batch_internal(input_batch, verbose = verbose, dirName)
-    })
 }
 
 test_coreRfeature_batch_internal <- function(input_batch, verbose = nimbleOptions('verbose'), dirName = NULL) { ## a lot like test_math but a bit more flexible
@@ -478,7 +476,7 @@ test_math_internal <- function(param, info, verbose = nimbleOptions('verbose'), 
 
 ### Function for testing MCMC called from test_mcmc.R
 
-test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NULL, knownFailures = list(), expectWarnings = list()) {
+test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NULL, knownFailures = list(), expectWarnings = list(), avoidNestedTest = FALSE) {
     ## imitate processing test_mcmc_internal just to get a name for the test_that description
     if(is.null(name)) {
         if(!missing(example)) {
@@ -503,12 +501,19 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL, ..., name = NUL
         modelKnown <- !missing(model)
     }
 
-    test_that(name, {
+    if(avoidNestedTest) {  ## sometimes test_mcmc is called from within a test_that; this avoids report of empty test as of testthat v2.0.0
         expect_true(modelKnown, 'Neither BUGS example nor model code supplied.')
         Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = dir, useInits = TRUE,
                                 check = FALSE)
         test_mcmc_internal(Rmodel, ..., name = name, knownFailures = knownFailures, expectWarnings = expectWarnings)
-    })
+    } else {
+        test_that(name, {
+            expect_true(modelKnown, 'Neither BUGS example nor model code supplied.')
+            Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = dir, useInits = TRUE,
+                                    check = FALSE)
+            test_mcmc_internal(Rmodel, ..., name = name, knownFailures = knownFailures, expectWarnings = expectWarnings)
+        })
+    }
 }
 
 
@@ -755,249 +760,315 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
                         doubleCompare = FALSE, filterType2 = NULL,
                         doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL, dirName = NULL, 
                         knownFailures = list()) {
-  # There are two modes of testing:
-  # 1) basic = TRUE: compares R and C Particle Filter likelihoods and sampled states
-  # 2) if you pass 'results', it will compare Filter output to known latent state posterior summaries, top-level parameter posterior summaries,
-  #    and likelihoods within tolerance specified in resultsTolerance.  Results are compared for both weighted and unweighted samples.
-  # filterType determines which filter to use for the model.  Valid options are: "bootstrap", "auxiliary", "LiuWest", "ensembleKF"
-  # filterControl specifies options to filter function, such as saveAll = TRUE/FALSE.
+    ## There are two modes of testing:
+    ## 1) basic = TRUE: compares R and C Particle Filter likelihoods and sampled states
+    ## 2) if you pass 'results', it will compare Filter output to known latent state posterior summaries, top-level parameter posterior summaries,
+    ##    and likelihoods within tolerance specified in resultsTolerance.  Results are compared for both weighted and unweighted samples.
+    ## filterType determines which filter to use for the model.  Valid options are: "bootstrap", "auxiliary", "LiuWest", "ensembleKF"
+    ## filterControl specifies options to filter function, such as saveAll = TRUE/FALSE.
 
-  if(is.null(name)) {
+    if(is.null(name)) {
+        if(!missing(example)) {
+            name <- example
+        } else {
+            if(is.character(model)) {
+                name <- model
+            } else {
+                name <- 'unnamed case'
+            }
+        }
+    }
+
+    ## keep this outside of test_that as use of missing within test_that triggers error with "'missing' can
+    ## only be used for arguments"
     if(!missing(example)) {
-      name <- example
+        ## classic-bugs example specified by name
+        dir <- getBUGSexampleDir(example)
+        if(missing(model)) model <- example
     } else {
-      if(is.character(model)) {
-        name <- model
-      } else {
-        name <- 'unnamed case'
-      }
+        ## code, data and inits specified directly where 'model' contains the code
+        example = deparse(substitute(model))
+        if(missing(model)) stop("Neither BUGS example nor model code supplied.")
+        dir <- ""
     }
-  }
+    returnVal <- NULL
+    
+    cat("===== Starting Filter test for ", name, " using ", filterType, ". =====\n", sep = "")
 
-  cat("===== Starting Filter test for ", name, " using ", filterType, ". =====\n", sep = "")
-
-  if(!missing(example)) {
-    # classic-bugs example specified by name
-    dir = getBUGSexampleDir(example)
-    if(missing(model)) model <- example
-    Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE, check = FALSE)
-  } else {
-    # code, data and inits specified directly where 'model' contains the code
-    example = deparse(substitute(model))
-    if(missing(model)) stop("Neither BUGS example nor model code supplied.")
-    Rmodel <- readBUGSmodel(model, dir = "", data = data, inits = inits, useInits = TRUE, check = FALSE)
-  }
-  if(doCpp) {
-    Cmodel <- compileNimble(Rmodel, dirName = dirName)
-    if(verbose) cat('done compiling model\n')
-  }
-  if(verbose) cat("Building filter\n")
-  if(filterType == "bootstrap"){
-    if(!is.null(filterControl))  Rfilter <- buildBootstrapFilter(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildBootstrapFilter(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE, thresh = 0))
-  }
-  if(filterType == "auxiliary"){
-    if(!is.null(filterControl))  Rfilter <- buildAuxiliaryFilter(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildAuxiliaryFilter(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE))
-  }
-  if(filterType == "LiuWest"){
-    if(!is.null(filterControl))  Rfilter <- buildLiuWestFilter(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildLiuWestFilter(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE))
-  }
-  if(filterType == "ensembleKF"){
-    if(!is.null(filterControl))  Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE))
-  }
-
-  if(doCpp) {
-    Cfilter <- compileNimble(Rfilter, project = Rmodel, dirName = dirName)
-  }
-
-  if(basic) {
-    ## do short runs and compare R and C filter output
-    if(doR) {
-      set.seed(seed);
-      RfilterOut <- Rfilter$run(numItsR)
-      if(filterType == "ensembleKF"){
-          RmvSample  <- nfVar(Rfilter, 'mvSamples')
-          R_samples <- as.matrix(RmvSample)
-      }
-      else{
-          RmvSample  <- nfVar(Rfilter, 'mvWSamples')
-          RmvSample2 <- nfVar(Rfilter, 'mvEWSamples')
-          R_samples <- as.matrix(RmvSample)
-          R_samples2 <- as.matrix(RmvSample2)
-          if(filterType != 'LiuWest'){
-              R_ESS <- Rfilter$returnESS()
-          }
-      }
-    } 
-    if(doCpp) {
-      set.seed(seed)
-      CfilterOut <- Cfilter$run(numItsR)
-      if(filterType == "ensembleKF"){
-        CmvSample <- nfVar(Cfilter, 'mvSamples')
-        C_samples <- as.matrix(CmvSample)
-        C_subSamples <- C_samples[, attributes(R_samples)$dimnames[[2]], drop = FALSE]
-      }
-      else{
-        CmvSample <- nfVar(Cfilter, 'mvWSamples')
-        CmvSample2 <- nfVar(Cfilter, 'mvEWSamples')
-        C_samples <- as.matrix(CmvSample)
-        C_samples2 <- as.matrix(CmvSample2)
-        C_subSamples <- C_samples[, attributes(R_samples)$dimnames[[2]], drop = FALSE]
-        C_subSamples2 <- C_samples2[, attributes(R_samples2)$dimnames[[2]], drop = FALSE]
-        if(filterType != 'LiuWest'){
-          C_ESS <- Rfilter$returnESS()
-          for(i in seq_along(length(C_ESS))){
-            wrap_if_matches('C ESS >= 0', names(knownFailures), expect_failure, {
-                expect_gte(C_ESS[i], 0)
-            })
-            wrap_if_matches('C ESS <= numIts', names(knownFailures), expect_failure, {
-                expect_lte(C_ESS[i], numItsR)
-            })
-          }
+    test_that(name, {
+        Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE, check = FALSE)
+        if(doCpp) {
+            Cmodel <- compileNimble(Rmodel, dirName = dirName)
+            if(verbose) cat('done compiling model\n')
         }
-      }
-      ## for some reason columns in different order in CmvSample...
-    }
-    if(doR && doCpp && !is.null(R_samples)) {
-        ## context(paste0("testing ", example," ", filterType, " filter"))
-      if(filterType == "ensembleKF"){
-          test_that(paste0("test of equality of output from R and C versions of ", example," ", filterType, " filter"), {
-              expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
-          })
-      }
-      else{
-          test_that(paste0("test of equality of output from R and C versions of ", example," ", filterType, " filter"), {
-              expect_equal(R_samples, C_subSamples, info = paste("R and C weighted posterior samples are not equal"))
-              expect_equal(R_samples2, C_subSamples2, info = paste("R and C equally weighted posterior samples are not equal"))
-              expect_equal(RfilterOut, CfilterOut, info = paste("R and C log likelihood estimates are not equal"))
-          })
-        if(filterType != 'LiuWest'){
-          wrap_if_matches('R C ESS match', names(knownFailures), expect_failure, {
-              expect_equal(R_ESS, C_ESS, info = paste("R and C ESS are not equal"))
-          })
+        if(verbose) cat("Building filter\n")
+        if(filterType == "bootstrap"){
+            if(!is.null(filterControl))  Rfilter <- buildBootstrapFilter(Rmodel, nodes = latentNodes, control = filterControl)
+            else Rfilter <- buildBootstrapFilter(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE, thresh = 0))
         }
-      }
-    }
-
-    if(doCpp) {
-      if(!is.null(exactSample)) {
-        for(varName in names(exactSample))
-            test_that(paste("Test of filter result against known samples for", example, ":", varName), {
-                expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), round(exactSample[[varName]], 8)) })
-      }
-    }
-
-    summarize_posterior <- function(vals)
-      return(c(mean = mean(vals), sd = sd(vals), quantile(vals, .025), quantile(vals, .975)))
-
-    if(doCpp) {
-      # if(verbose) {
-      #   try(print(apply(C_samples[, , drop = FALSE], 2, summarize_posterior)))
-      # }
-    }
-  }
-
-  # assume doR and doCpp from here down
-  if(!is.null(results)) {
-    # do (potentially) longer run and compare results to inputs given
-    set.seed(seed)
-    Cll <- Cfilter$run(numItsC_results)
-    for(wMetric in c(TRUE, FALSE)){
-      weightedOutput <- 'unweighted'
-      if(filterType == "ensembleKF")
-        CfilterSample <- nfVar(Cfilter, 'mvSamples')
-      else{
-        if(wMetric){
-          CfilterSample <- nfVar(Cfilter, 'mvWSamples')
-          weightedOutput <-"weighted"
+        if(filterType == "auxiliary"){
+            if(!is.null(filterControl))  Rfilter <- buildAuxiliaryFilter(Rmodel, nodes = latentNodes, control = filterControl)
+            else Rfilter <- buildAuxiliaryFilter(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE))
         }
-        else
-          CfilterSample <- nfVar(Cfilter, 'mvEWSamples')
-      }
+        if(filterType == "LiuWest"){
+            if(!is.null(filterControl))  Rfilter <- buildLiuWestFilter(Rmodel, nodes = latentNodes, control = filterControl)
+            else Rfilter <- buildLiuWestFilter(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE))
+        }
+        if(filterType == "ensembleKF"){
+            if(!is.null(filterControl))  Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = filterControl)
+            else Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE))
+        }
 
-      C_samples <- as.matrix(CfilterSample)[, , drop = FALSE]
-      if(weightedOutput == "weighted"){
-        wtIndices <- grep("^wts\\[", dimnames(C_samples)[[2]])
-        C_weights <- as.matrix(C_samples[,wtIndices, drop = FALSE])
-        C_samples <- as.matrix(C_samples[,-wtIndices, drop = FALSE])
-      }
-      latentNames <- Rmodel$expandNodeNames(latentNodes, sort = TRUE, returnScalarComponents = TRUE)
-      if(weightedOutput == "weighted"){
-        samplesToWeightsMatch <- rep(dim(C_weights)[2], dim(C_samples)[2])
-        latentIndices <- match(latentNames, dimnames(C_samples)[[2]])
-        latentSampLength <- length(latentNames)
-        latentDim <- latentSampLength/dim(C_weights)[2]
-        samplesToWeightsMatch[latentIndices] <- rep(1:dim(C_weights)[2], each = latentDim )
-      }
-      for(metric in names(results)) {
-        if(!metric %in% c('mean', 'median', 'sd', 'var', 'cov', 'll'))
-          stop("Results input should be named list with the names indicating the summary metrics to be assessed, from amongst 'mean', 'median', 'sd', 'var', 'cov', and 'll'.")
-        if(!(metric %in% c('cov', 'll'))) {
-          if(weightedOutput == "weighted"){
-            postResult <- sapply(1:dim(C_samples)[2], weightedMetricFunc, metric = metric, weights = C_weights, samples = C_samples, samplesToWeightsMatch)
-          }
-          else
-            postResult <- apply(C_samples, 2, metric)
-          for(varName in names(results[[metric]])) {
-            samplesNames <- dimnames(C_samples)[[2]]
-            if(!grepl(varName, "[", fixed = TRUE))
-              samplesNames <- gsub("\\[.*\\]", "", samplesNames)
-            matched <- which(varName == samplesNames)
-            diff <- abs(postResult[matched] - results[[metric]][[varName]])
-            for(ind in seq_along(diff)) {
-              strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
-              test_that(paste("Test of ", filterType, " filter posterior result against known posterior for", example, ":", weightedOutput,  metric, "(", varName, strInfo, ")"), {
-                  expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
-                })
+        if(doCpp) {
+            Cfilter <- compileNimble(Rfilter, project = Rmodel, dirName = dirName)
+        }
+
+        if(basic) {
+            ## do short runs and compare R and C filter output
+            if(doR) {
+                set.seed(seed);
+                RfilterOut <- Rfilter$run(numItsR)
+                if(filterType == "ensembleKF"){
+                    RmvSample  <- nfVar(Rfilter, 'mvSamples')
+                    R_samples <- as.matrix(RmvSample)
+                }
+                else{
+                    RmvSample  <- nfVar(Rfilter, 'mvWSamples')
+                    RmvSample2 <- nfVar(Rfilter, 'mvEWSamples')
+                    R_samples <- as.matrix(RmvSample)
+                    R_samples2 <- as.matrix(RmvSample2)
+                    if(filterType != 'LiuWest'){
+                        R_ESS <- Rfilter$returnESS()
+                    }
+                }
+            } 
+            if(doCpp) {
+                set.seed(seed)
+                CfilterOut <- Cfilter$run(numItsR)
+                if(filterType == "ensembleKF"){
+                    CmvSample <- nfVar(Cfilter, 'mvSamples')
+                    C_samples <- as.matrix(CmvSample)
+                    C_subSamples <- C_samples[, attributes(R_samples)$dimnames[[2]], drop = FALSE]
+                }
+                else{
+                    CmvSample <- nfVar(Cfilter, 'mvWSamples')
+                    CmvSample2 <- nfVar(Cfilter, 'mvEWSamples')
+                    C_samples <- as.matrix(CmvSample)
+                    C_samples2 <- as.matrix(CmvSample2)
+                    C_subSamples <- C_samples[, attributes(R_samples)$dimnames[[2]], drop = FALSE]
+                    C_subSamples2 <- C_samples2[, attributes(R_samples2)$dimnames[[2]], drop = FALSE]
+                    if(filterType != 'LiuWest'){
+                        C_ESS <- Rfilter$returnESS()
+                        for(i in seq_along(length(C_ESS))){
+                            wrap_if_matches('C ESS >= 0', names(knownFailures), expect_failure, {
+                                expect_gte(C_ESS[i], 0)
+                            })
+                            wrap_if_matches('C ESS <= numIts', names(knownFailures), expect_failure, {
+                                expect_lte(C_ESS[i], numItsR)
+                            })
+                        }
+                    }
+                }
+                ## for some reason columns in different order in CmvSample...
             }
-          }
-        } else if (metric == 'cov' ) {
-          for(varName in names(results[[metric]])) {
-            matched <- grep(varName, dimnames(C_samples)[[2]], fixed = TRUE)
-            #             if(weightedOutput == "weighted")
-            #               postResult <- cov.wt(C_samples[, matched], wt = )  #weighted covariance not currently implemented
-            #             else
-            postResult <- cov(C_samples[ , matched])
-            # next bit is on vectorized form of matrix so a bit awkward
-            diff <- c(abs(postResult - results[[metric]][[varName]]))
-            for(ind in seq_along(diff)) {
-              strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
-              test_that(paste("Test of ", filterType, " filter posterior result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo), {
-                  expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
-              })
+            if(doR && doCpp && !is.null(R_samples)) {
+                ## context(paste0("testing ", example," ", filterType, " filter"))
+                if(filterType == "ensembleKF"){
+                    expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
+                }
+                else{
+                    expect_equal(R_samples, C_subSamples, info = paste("R and C weighted posterior samples are not equal"))
+                    expect_equal(R_samples2, C_subSamples2, info = paste("R and C equally weighted posterior samples are not equal"))
+                    expect_equal(RfilterOut, CfilterOut, info = paste("R and C log likelihood estimates are not equal"))
+                    if(filterType != 'LiuWest'){
+                        wrap_if_matches('R C ESS match', names(knownFailures), expect_failure, {
+                            expect_equal(R_ESS, C_ESS, info = paste("R and C ESS are not equal"))
+                        })
+                    }
+                }
             }
-          }
-        }
-        else{  # ll (log likelihood)
-          diff <- abs(Cll - results[[metric]][[1]][1])
-          test_that(paste("Test of ", filterType, " filter log-likelihood result against known log-likelihood for", example, ":",  metric), {
-              expect_lt(diff, resultsTolerance[[metric]][[1]][1])
-          })
-        }
-      }
-    }
-  }
-  try(print(apply(as.matrix(C_samples), 2, summarize_posterior)))  ## print summaries of equally weighted samples
-  if(returnSamples) {
-    if(exists('CmvSample'))
-      returnVal <- as.matrix(CmvSample)
-  } else returnVal <- NULL
 
+            if(doCpp) {
+                if(!is.null(exactSample)) {
+                    for(varName in names(exactSample))
+                        expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), round(exactSample[[varName]], 8), info = paste0("filter result does not match known samples for: ", varName))
+                }
+            }
 
-  cat("===== Finished ", filterType, " filter test for ", name, ". =====\n", sep = "")
+            summarize_posterior <- function(vals)
+                return(c(mean = mean(vals), sd = sd(vals), quantile(vals, .025), quantile(vals, .975)))
 
-    if(doCpp) {
-        if(.Platform$OS.type != 'windows') {
-            nimble:::clearCompiled(Rmodel)
-            ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rfilter have the same project so they are interchangeable in these lines.
-            ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
+            if(doCpp) {
+                ## if(verbose) {
+                ##   try(print(apply(C_samples[, , drop = FALSE], 2, summarize_posterior)))
+                ## }
+            }
         }
-    }
-  return(returnVal)
+
+        ## assume doR and doCpp from here down
+        if(!is.null(results)) {
+            ## do (potentially) longer run and compare results to inputs given
+            set.seed(seed)
+            Cll <- Cfilter$run(numItsC_results)
+            for(wMetric in c(TRUE, FALSE)){
+                weightedOutput <- 'unweighted'
+                if(filterType == "ensembleKF")
+                    CfilterSample <- nfVar(Cfilter, 'mvSamples')
+                else{
+                    if(wMetric){
+                        CfilterSample <- nfVar(Cfilter, 'mvWSamples')
+                        weightedOutput <-"weighted"
+                    }
+                    else
+                        CfilterSample <- nfVar(Cfilter, 'mvEWSamples')
+                }
+
+                C_samples <- as.matrix(CfilterSample)[, , drop = FALSE]
+                if(weightedOutput == "weighted"){
+                    wtIndices <- grep("^wts\\[", dimnames(C_samples)[[2]])
+                    C_weights <- as.matrix(C_samples[,wtIndices, drop = FALSE])
+                    C_samples <- as.matrix(C_samples[,-wtIndices, drop = FALSE])
+                }
+                latentNames <- Rmodel$expandNodeNames(latentNodes, sort = TRUE, returnScalarComponents = TRUE)
+                if(weightedOutput == "weighted"){
+                    samplesToWeightsMatch <- rep(dim(C_weights)[2], dim(C_samples)[2])
+                    latentIndices <- match(latentNames, dimnames(C_samples)[[2]])
+                    latentSampLength <- length(latentNames)
+                    latentDim <- latentSampLength/dim(C_weights)[2]
+                    samplesToWeightsMatch[latentIndices] <- rep(1:dim(C_weights)[2], each = latentDim )
+                }
+                for(metric in names(results)) {
+                    if(!metric %in% c('mean', 'median', 'sd', 'var', 'cov', 'll'))
+                        stop("Results input should be named list with the names indicating the summary metrics to be assessed, from amongst 'mean', 'median', 'sd', 'var', 'cov', and 'll'.")
+                    if(!(metric %in% c('cov', 'll'))) {
+                        if(weightedOutput == "weighted"){
+                            postResult <- sapply(1:dim(C_samples)[2], weightedMetricFunc, metric = metric, weights = C_weights, samples = C_samples, samplesToWeightsMatch)
+                        }
+                        else
+                            postResult <- apply(C_samples, 2, metric)
+                        for(varName in names(results[[metric]])) {
+                            samplesNames <- dimnames(C_samples)[[2]]
+                            if(!grepl(varName, "[", fixed = TRUE))
+                                samplesNames <- gsub("\\[.*\\]", "", samplesNames)
+                            matched <- which(varName == samplesNames)
+                            diff <- abs(postResult[matched] - results[[metric]][[varName]])
+                            for(ind in seq_along(diff)) {
+                                strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
+                                expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind],
+                                          label = paste0("filter posterior result against known posterior for:", weightedOutput,  metric, "(", varName, strInfo, ")"))
+                            }
+                        }
+                    } else if (metric == 'cov' ) {
+                        for(varName in names(results[[metric]])) {
+                            matched <- grep(varName, dimnames(C_samples)[[2]], fixed = TRUE)
+                            ##             if(weightedOutput == "weighted")
+                            ##               postResult <- cov.wt(C_samples[, matched], wt = )  #weighted covariance not currently implemented
+                            ##             else
+                            postResult <- cov(C_samples[ , matched])
+                            ## next bit is on vectorized form of matrix so a bit awkward
+                            diff <- c(abs(postResult - results[[metric]][[varName]]))
+                            for(ind in seq_along(diff)) {
+                                strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
+                                expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind],
+                                          label = paste0("filter posterior result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo))
+                            }
+                        }
+                    }
+                    else {  # ll (log likelihood)
+                        diff <- abs(Cll - results[[metric]][[1]][1])
+                        expect_lt(diff, resultsTolerance[[metric]][[1]][1], label = paste0("filter log-likelihood result against known log-likelihood for", example, ":",  metric))
+                    }
+                }
+            }
+        }
+        try(print(apply(as.matrix(C_samples), 2, summarize_posterior)))  ## print summaries of equally weighted samples
+        if(returnSamples) {
+            if(exists('CmvSample'))
+                returnVal <- as.matrix(CmvSample)
+        } 
+        if(doCpp) {
+            if(.Platform$OS.type != 'windows') 
+                nimble:::clearCompiled(Rmodel)
+        }
+
+    })
+    cat("===== Finished ", filterType, " filter test for ", name, ". =====\n", sep = "")
+    
+    return(returnVal)
 }
+
+## Testing for correct behavior of different resampling methods
+## used within PFs.
+##   samplerName - A string with the name of 
+##                 the resampling function to be tested.
+##   wtsList - A list, where each element is a vector of weights to use for 
+##             testing, given as input to the resampler functions.
+##   reps - An integer, the number of repetitions to conduct.
+##
+## For each provided set of weights in wtsList, the test will produce
+## 'reps' number of samples according to those weights.  For each set of
+## samples, the number of times each element was sampled is recorded.  These
+## recorded counts are averaged over the 'reps' number of samples, and then
+## the averages are compared to the expected count of each element 
+## (i.e. wts*length(wts)).
+
+test_resampler <- function(samplerName, wtsList, reps = 500, creps = reps){
+  n <- sapply(wtsList, function(x){return(length(x))})
+  output <- lapply(n, function(x){return(numeric(x))})
+  avgCounts <- output
+  samplerFunction <- getFromNamespace(samplerName, 'nimble')()
+  for(rep in 1:reps){
+    counts <- list()
+    for(i in 1:length(wtsList)){
+      output[[i]] <-    samplerFunction$run(wtsList[[i]])
+      counts[[i]] <- numeric(length(output[[i]]))
+      for(j in 1:n[i]){
+        counts[[i]][j] <- length(which(output[[i]] == j))
+      }
+      avgCounts[[i]] <- avgCounts[[i]] + counts[[i]]
+    }
+  }
+  expectedValue <- list(length(wtsList))
+  for(i in 1:length(wtsList)){
+    avgCounts[[i]] <- avgCounts[[i]]/reps
+    expectedValue[[i]] <- n[i]*(wtsList[[i]]/sum(wtsList[[i]]))
+    diffVec <- abs(expectedValue[[i]] - avgCounts[[i]])
+    for(j in 1:n[i]){
+      test_that(paste0("Test of accurate samples for uncompiled resampling
+                      method ", samplerName, ", weight set ", i,
+                       ", weight number ", j), 
+                expect_lt(diffVec[j], sqrt(expectedValue[[i]][j]) + .01))
+    }
+  }
+  avgCounts <- lapply(n, function(x){return(numeric(x))})
+  compiledSamplerFunction <-  compileNimble(samplerFunction)
+  for(rep in 1:reps){
+    counts <- list()
+    for(i in 1:length(wtsList)){
+      output[[i]] <-    compiledSamplerFunction$run(wtsList[[i]])
+      counts[[i]] <- numeric(length(output[[i]]))
+      for(j in 1:n[i]){
+        counts[[i]][j] <- length(which(output[[i]] == j))
+      }
+      avgCounts[[i]] <- avgCounts[[i]] + counts[[i]]
+    }
+  }
+  expectedValue <- list(length(wtsList))
+  for(i in 1:length(wtsList)){
+    avgCounts[[i]] <- avgCounts[[i]]/reps
+    expectedValue[[i]] <- n[i]*(wtsList[[i]]/sum(wtsList[[i]]))
+    diffVec <- abs(expectedValue[[i]] - avgCounts[[i]])
+    for(j in 1:n[i]){
+      test_that(paste0("Test of accurate samples for compiled resampling
+                       method ", samplerName, ", weight set ", i,
+                       ", weight number ", j), 
+                expect_lt(diffVec[j], sqrt(expectedValue[[i]][j]) + .01))
+    }
+  }
+}
+
+
+
 
 weightedMetricFunc <- function(index, samples, weights, metric, samplesToWeightsMatch){
   samples <- samples[,index]
@@ -1359,7 +1430,7 @@ test_dynamic_indexing_model_internal <- function(param) {
             expect_true(is.Cmodel(cm), info = "compiled model object improperly formed")
             expect_identical(calculate(m), calculate(cm), info = "problem with R vs. C calculate with initial indexes")
             for(i in seq_along(param$validIndexes)) {
-                for(j in seq_along(param$invalidIndexes[[i]]$var)) {
+                for(j in seq_along(param$validIndexes[[i]]$var)) {
                     m[[param$validIndexes[[i]]$var[j]]] <- param$validIndexes[[i]]$value[j]
                     cm[[param$validIndexes[[i]]$var[j]]] <- param$validIndexes[[i]]$value[j]
                 }
@@ -1379,11 +1450,25 @@ test_dynamic_indexing_model_internal <- function(param) {
                     
                     cm[[param$invalidIndexes[[i]]$var[j]]] <- param$invalidIndexes[[i]]$value[j]
                 }
-                expect_error(calculate(m), info = paste0("problem with lack of error in R calculate with invalid indexes, case: ", i))  ## When NA is given, R calculate fails with missing value and dynamic index error not flagged explicitly
-                expect_error(calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of error in C calculate with invalid indexes, case: ", i))
-                expect_error(calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of error in C calculateDiff with invalid indexes, case: ", i))
+                ## use expect_equal not expect_identical because in certain cases we get NA not NaN (having to do with other components of calc/sim output)
+                if(any(is.na(param$invalidIndexes[[i]]$value)) || (!is.null(param$invalidIndexes[[i]]$expect_R_calc_error) && param$invalidIndexes[[i]]$expect_R_calc_error)) {
+                    expect_error(calculate(m), "(missing value where|argument is of length zero)", info = paste0("problem with lack of error in R calculate with NA indexes, case: ", i))
+                    ## When NA is given, R calculate fails with missing value and dynamic index error not flagged explicitly
+                    ## When 0 is the nested index, R calculate fails with length zero argument and dynamic index error not flagged
+                } else {
+                    expect_output(out <- calculate(m), "dynamic index out of bounds", info = paste0("problem with lack of warning in R calculate with non-NA invalid indexes, case: ", i))
+                    expect_equal(out, NaN, info = paste0("problem with lack of NaN in R calculate with non-NA invalid indexes, case: ", i))
+                }
+                expect_output(out <- calculate(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculate with invalid indexes, case: ", i))
+                expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculate with invalid indexes, case: ", i))
+                expect_output(out <- calculateDiff(cm), "dynamic index out of bounds", info = paste0("problem with lack of warning in C calculateDiff with invalid indexes, case: ", i))
+                expect_equal(out, NaN, info = paste0("problem with lack of NaN in C calculateDiff with invalid indexes, case: ", i))
                 deps <- m$getDependencies(param$invalidIndexes[[i]]$var, self = FALSE)
-                expect_error(simulate(cm, deps, includeData = TRUE), "dynamic index out of bounds", info = paste0("problem with lack of error in C simulate with invalid indexes, case: ", i))
+                expect_output(simulate(cm, deps, includeData = TRUE), "dynamic index out of bounds", info = paste0("problem with lack of warning in C simulate with invalid indexes, case: ", i))
+                expect_true(sum(is.nan(values(cm, deps))) >= 1, info = paste0("problem with lack of NaN in C simulate with invalid indexes, case: ", i))
+            }
+            if(.Platform$OS.type != "windows") {
+                nimble:::clearCompiled(m)
             }
         }
     invisible(NULL)
@@ -1412,7 +1497,7 @@ stripTestPlacementWarning <- function(lines) {
     ## deal with Placing tests in `inst/tests/` is deprecated warning
     ## as it doesn't seem entirely predictable when/where it appears 
     coreLines <- grep("^Placing tests in", lines)
-    addedLines <- lines[coreLines-1] == "Warning message:"
+    addedLines <- lines[coreLines-1] == "In addition: Warning message:"
     totalLines <- c(coreLines-addedLines, coreLines)
     if(length(totalLines))
         return(lines[-totalLines]) else return(lines)
@@ -1421,7 +1506,7 @@ stripTestPlacementWarning <- function(lines) {
 
 compareFilesByLine <- function(trialResults, correctResults, main = "") {
     trialResults <- stripTestPlacementWarning(trialResults)
-    trialResults <- stripTestPlacementWarning(correctResults)
+    correctResults <- stripTestPlacementWarning(correctResults)
     test_that(paste0(main, ': same number of output lines'),
           expect_equal(length(trialResults), length(correctResults)))
     

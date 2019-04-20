@@ -9,15 +9,22 @@ addArg <- function(code, value, name) {
 }
 
 
-ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced) {
+ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
         ## error gracefully if dynamic index too small or large; we don't catch non-integers within the bounds though
+        if(is.null(nodeDim)) {
+            nanExpr <- NaN
+        } else nanExpr <- substitute(rep(NaN, LENGTH),
+                                     list(LENGTH = prod(nodeDim)))
         code <- substitute(if(CONDITION) LHS <<- RHS
-                           else stop(TEXT),
+                           else {
+                               LHS <<- NANEXPR
+                               print(TEXT) },  
                            list(LHS = LHS,
                                 RHS = RHS,
+                                NANEXPR = nanExpr,
                                 CONDITION = dynamicIndexLimitsExpr,
-                                TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+                                TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
     } else code <- substitute(LHS <<- RHS,
                               list(LHS = LHS,
                                    RHS = RHS))
@@ -25,7 +32,7 @@ ndf_createDetermSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRep
 }
 
 ## changes 'dnorm(mean=1, sd=2)' into 'rnorm(1, mean=1, sd=2)'
-ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced) {
+ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonReplaced, nodeDim) {
     BUGSdistName <- as.character(RHS[[1]])
     RHS[[1]] <- as.name(getDistributionInfo(BUGSdistName)$simulateName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
@@ -34,12 +41,19 @@ ndf_createStochSimulate <- function(LHS, RHS, dynamicIndexLimitsExpr, RHSnonRepl
         RHS <- ndf_createStochSimulateTrunc(RHS, discrete = getAllDistributionsInfo('discrete')[BUGSdistName])
     } 
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
+        if(is.null(nodeDim)) {
+            nanExpr <- NaN
+        } else nanExpr <- substitute(rep(NaN, LENGTH),
+                                     list(LENGTH = prod(nodeDim)))
         code <- substitute(if(CONDITION) LHS <<- RHS
-                           else stop(TEXT),
+                           else {
+                               LHS <<- NANEXPR
+                               print(TEXT) },  
                            list(LHS = LHS,
                                 RHS = RHS,
+                                NANEXPR = nanExpr,
                                 CONDITION = dynamicIndexLimitsExpr,
-                                TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+                                TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
     } else {
         code <- substitute(LHS <<- RHS,
                            list(LHS = LHS,
@@ -131,7 +145,8 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
         if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
             if(diff) {
                 code <- substitute(if(CONDITION) LocalNewLogProb <- STOCHCALC
-                                   else stop(TEXT), # LocalNewLogProb <- -Inf,
+                                   else {LocalNewLogProb <- NaN
+                                       print(TEXT)}, # LocalNewLogProb <- -Inf,
                                    list(STOCHCALC = RHS,
                                         CONDITION = dynamicIndexLimitsExpr,
                                         TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
@@ -145,11 +160,12 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE,
             } else {
 
                 code <- substitute(if(CONDITION) LOGPROB <<- STOCHCALC
-                                   else stop(TEXT), # LOGPROB <<- -Inf,
+                                   else {LOGPROB <<- NaN
+                                       print(TEXT)}, # LOGPROB <<- -Inf,
                                    list(LOGPROB = logProbNodeExpr,
                                         STOCHCALC = RHS,
                                         CONDITION = dynamicIndexLimitsExpr,
-                                        TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+                                        TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
             }
         } else {
             if(diff) {
@@ -215,10 +231,11 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
     RHS <- addArg(RHS, 1, logName)  # add log=1 now that pdist() created without 'log'
 
                 code <- substitute(if(CONDITION) LocalNewLogProb <- STOCHCALC
-                                   else stop(TEXT), # LocalNewLogProb <- -Inf,
+                                   else { LocalNewLogProb <- NaN
+                                       print(TEXT)}, # LocalNewLogProb <- -Inf,
                                    list(STOCHCALC = RHS,
                                         CONDITION = dynamicIndexLimitsExpr,
-                                        TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))))
+                                        TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))))
 
     
     if(nimbleOptions()$allowDynamicIndexing && !is.null(dynamicIndexLimitsExpr)) {
@@ -228,13 +245,19 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                        if(LOWER <= VALUE & VALUE <= UPPER)
                                            LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
                                        else LocalNewLogProb <- -Inf
-                                   } else stop(TEXT))
+                                   } else {
+                                       LocalNewLogProb <- NaN
+                                       cat(TEXT) }
+                                   )
             } else {
                 substCode <- quote(if(CONDITION) {
                                        if(LOWER <= VALUE & VALUE <= UPPER)
                                            LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
                                        else LocalNewLogProb <- -Inf
-                                       } else stop(TEXT))
+                                   } else {
+                                       LocalNewLogProb <- NaN
+                                       print(TEXT) }
+                                           )
             }
             code <- eval(substitute(substitute(e, 
                                                list(
@@ -246,7 +269,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                                    PDIST_UPPER = PDIST_UPPER,
                                                    DDIST_LOWER = DDIST_LOWER,
                                                    CONDITION = dynamicIndexLimitsExpr,
-                                                   TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))
+                                                   TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))
                                                )), list( e = substCode)))
         } else {
             if(discrete && lower != -Inf) {
@@ -254,13 +277,19 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                        if(LOWER <= VALUE & VALUE <= UPPER)
                                            LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
                                        else LOGPROB <<- -Inf
-                                       } else stop(TEXT))
+                                   } else {
+                                       LOGPROB <<- NaN
+                                       cat(TEXT) }
+                                   )
             } else {
                 substCode <- quote(if(CONDITION) {
                                        if(LOWER <= VALUE & VALUE <= UPPER)
                                          LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
                                    else LOGPROB <<- -Inf
-                                   } else stop(TEXT))
+                                   } else {
+                                       LOGPROB <<- NaN
+                                       print(TEXT) }
+                                   )
             }
             code <- eval(substitute(substitute(e, 
                                                list(
@@ -273,7 +302,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                                    PDIST_UPPER = PDIST_UPPER,
                                                    DDIST_LOWER = DDIST_LOWER,
                                                    CONDITION = dynamicIndexLimitsExpr,
-                                                   TEXT = paste0("dynamic index out of bounds: ", deparse(RHSnonReplaced))
+                                                   TEXT = paste0("Warning: dynamic index out of bounds: ", deparse(RHSnonReplaced))
                                                )), list(e = substCode)))
         }
     } else {
@@ -366,7 +395,7 @@ ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {
         }
     } else {
         # this deals with user-provided distributions
-        if(exists('distributions', nimbleUserNamespace)) {
+        if(exists('distributions', nimbleUserNamespace, inherits = FALSE)) {
             for(distName in getAllDistributionsInfo('namesVector', userOnly = TRUE))
                 defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistributionInfo(distName)$types)
         } else stop("ndf_createVirtualNodeFunctionDefinitionsList: no 'distributions' list in nimbleUserNamespace.")

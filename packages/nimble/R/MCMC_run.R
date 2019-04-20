@@ -9,17 +9,21 @@
 #'
 #' @param mcmc A NIMBLE MCMC algorithm.  See details.
 #'
-#' @param niter Number of iterations to run each MCMC chain (default = 10000).
+#' @param niter Number of iterations to run each MCMC chain.  Default value is 10000.
 #'
-#' @param nburnin Number of initial samples to discard from each MCMC chain (default = 0).
+#' @param nburnin Number of initial, pre-thinning, MCMC iterations to discard.  Default value is 0.
 #'
-#' @param nchains Number of MCMC chains to run (default = 1).
+#' @param thin Thinning interval for collecting MCMC samples, corresponding to \code{monitors}.  Thinning occurs after the initial nburnin samples are discarded. Default value is 1.
+#'
+#' @param thin2 Thinning interval for collecting MCMC samples, corresponding to the second, optional set of \code{monitors2}.  Thinning occurs after the initial nburnin samples are discarded. Default value is 1.
+#'
+#' @param nchains Number of MCMC chains to run.  Default value is 1.
 #'
 #' @param inits Optional argument to specify initial values for each chain.  See details.
 #'
-#' @param setSeed Logical argument.  If \code{TRUE}, then R's random number seed is set to \code{i} (using \code{set.seed(i)}) at the onset of each MCMC chain number \code{i} (default = \code{FALSE}).
+#' @param setSeed Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.
 #'
-#' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain (default = \code{TRUE}).
+#' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is \code{TRUE}.
 #'
 #' @param samples Logical argument.  If \code{TRUE}, then posterior samples are returned from each MCMC chain.  These samples are optionally returned as \code{coda} \code{mcmc} objects, depending on the \code{samplesAsCodaMCMC} argument.  Default value is \code{TRUE}.  See details.
 #'
@@ -29,7 +33,7 @@
 #'
 #' @param WAIC Logical argument.  When \code{TRUE}, the WAIC (Watanabe, 2010) of the model is calculated and returned.  Note that in order for the WAIC to be calculated, the \code{mcmc} object must have also been created with the argument `enableWAIC = TRUE`.  If multiple chains are run, then a single WAIC value is calculated using the posterior samples from all chains.  Default value is \code{FALSE}.  See details.
 #'
-#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless only one among samples, summary, and WAIC are requested, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
+#' @return A list is returned with named elements depending on the arguments passed to \code{nimbleMCMC}, unless this list contains only a single element, in which case only that element is returned.  These elements may include \code{samples}, \code{summary}, and \code{WAIC}, and when the MCMC is monitoring a second set of nodes using \code{monitors2}, also \code{samples2}.  When \code{nchains = 1}, posterior samples are returned as a single matrix, and summary statistics as a single matrix.  When \code{nchains > 1}, posterior samples are returned as a list of matrices, one matrix for each chain, and summary statistics are returned as a list containing \code{nchains+1} matrices: one matrix corresponding to each chain, and the final element providing a summary of all chains, combined.  If \code{samplesAsCodaMCMC} is \code{TRUE}, then posterior samples are provided as \code{coda} \code{mcmc} and \code{mcmc.list} objects.  When \code{WAIC} is \code{TRUE}, a single WAIC value is returned.
 #'
 #' @details
 #'
@@ -47,9 +51,9 @@
 #' 
 #' The \code{inits} argument may also be omitted, in which case the current values in the \code{model} object will be used as the initial values of the first chain, and subsequent chains will begin using starting values where the previous chain ended.
 #' 
-#' Other aspects of the MCMC algorithm, such as sampler assignments and thinning, must be specified in advance using the MCMC configuration object (created using \code{configureMCMC}), which is then used to build the MCMC algorithm (using \code{buildMCMC}) argument.
+#' Other aspects of the MCMC algorithm, such as the specific sampler assignments, must be specified in advance using the MCMC configuration object (created using \code{configureMCMC}), which is then used to build an MCMC algorithm (using \code{buildMCMC}) argument.
 #'
-#' The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument will remove post-thinning samples.
+#' The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument specifies the number of pre-thinning MCMC samples to discard.  After discarding these burn-in samples, thinning of the remaining samples will take place.  The total number of posterior samples returned will be floor((niter-nburnin)/thin).
 #'
 #' The MCMC option \code{mcmc$run(..., reset = FALSE)}, used to continue execution of an MCMC chain, is not available through \code{runMCMC()}.
 #' 
@@ -77,8 +81,14 @@
 #'
 #' @export
 runMCMC <- function(mcmc,
-                    niter = 10000, nburnin = 0, nchains = 1,
+                    niter = 10000,
+                    nburnin = 0,
+                    thin,
+                    thin2,
+                    nchains = 1,
                     inits,
+                    ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
+                    ##samplerExecutionOrder,
                     setSeed = FALSE,
                     progressBar = TRUE,
                     samples = TRUE,
@@ -94,14 +104,26 @@ runMCMC <- function(mcmc,
         if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
         if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
     }
-    if(WAIC == TRUE && mcmc$enableWAIC == FALSE) stop('mcmc argument must have been created with "enableWAIC = TRUE" in order to calculate WAIC.')
+    if(WAIC && !mcmc$enableWAIC) stop('mcmc argument must have been created with "enableWAIC = TRUE" in order to calculate WAIC.')
     model <- if(is.Cnf(mcmc)) mcmc$Robject$model$CobjectInterface else mcmc$model
     if(!is.model(model)) stop('something went wrong')
-    samplesList <- vector('list', nchains)
-    names(samplesList) <- paste0('chain', 1:nchains)
+    hasMonitors2 <- length(if(is.Cnf(mcmc)) mcmc$Robject$monitors2 else mcmc$monitors2) > 0
+    samplesList  <- vector('list', nchains); names(samplesList)  <- paste0('chain', 1:nchains)
+    samplesList2 <- vector('list', nchains); names(samplesList2) <- paste0('chain', 1:nchains)
+    thinToUseVec <- c(0, 0)
+    thinToUseVec[1] <- if(!missing(thin))  thin  else mcmc$thinFromConfVec[1]
+    thinToUseVec[2] <- if(!missing(thin2)) thin2 else mcmc$thinFromConfVec[2]
+    if(thinToUseVec[1] > 1 && nburnin > 0) message("runMCMC's handling of nburnin changed in nimble version 0.6-11. Previously, nburnin samples were discarded *post-thinning*.  Now nburnin samples are discarded *pre-thinning*.  The number of samples returned will be floor((niter-nburnin)/thin).")
+    ## reinstate samplerExecutionOrder as a runtime argument, once we support non-scalar default values for runtime arguments:
+    ##samplerExecutionOrderToUse <- if(!missing(samplerExecutionOrder)) samplerExecutionOrder else mcmc$samplerExecutionOrderFromConfPlusTwoZeros[mcmc$samplerExecutionOrderFromConfPlusTwoZeros>0]
     for(i in 1:nchains) {
         if(nimbleOptions('verbose')) message('running chain ', i, '...')
-        if(setSeed) set.seed(i)
+        ##if(setSeed) set.seed(i)
+        if(is.numeric(setSeed)) {
+            if(length(setSeed) == 1) {
+                set.seed(setSeed)
+            } else { if(length(setSeed) == nchains) set.seed(setSeed[i]) else stop('setSeed argument has different length from nchains') }
+        } else if(setSeed) set.seed(i)
         if(!missing(inits)) {
             if(is.function(inits)) {
                 theseInits <- inits()
@@ -110,11 +132,10 @@ runMCMC <- function(mcmc,
             } else theseInits <- inits
             model$setInits(theseInits)
         }
-        model$calculate()
-        mcmc$run(niter, progressBar = progressBar)
-        samplesMatrix <- as.matrix(mcmc$mvSamples)
-        if(nburnin > 0) samplesMatrix <- samplesMatrix[-(1:nburnin), , drop = FALSE]
-        samplesList[[i]] <- samplesMatrix
+        ##model$calculate()   # shouldn't be necessary, since mcmc$run() includes call to my_initializeModel$run()
+        mcmc$run(niter, nburnin = nburnin, thin = thinToUseVec[1], thin2 = thinToUseVec[2], progressBar = progressBar) #, samplerExecutionOrder = samplerExecutionOrderToUse)
+        samplesList[[i]] <- as.matrix(mcmc$mvSamples)
+        if(hasMonitors2)   samplesList2[[i]] <- as.matrix(mcmc$mvSamples2)
     }
     if(WAIC) {
         if(nchains > 1) {
@@ -128,22 +149,35 @@ runMCMC <- function(mcmc,
         }
         WAICvalue <- mcmc$calculateWAIC()
     }
-    if(samplesAsCodaMCMC) samplesList <- coda::as.mcmc.list(lapply(samplesList, as.mcmc))
-    if(nchains == 1) samplesList <- samplesList[[1]]  ## returns matrix when nchains = 1
+    if(samplesAsCodaMCMC) {
+        samplesList <- coda::as.mcmc.list(lapply(samplesList, as.mcmc))
+        if(hasMonitors2)   samplesList2 <- coda::as.mcmc.list(lapply(samplesList2, as.mcmc))
+    }
+    if(nchains == 1) {
+        samplesList <- samplesList[[1]]                       ## returns matrix when nchains = 1
+        if(hasMonitors2)   samplesList2 <- samplesList2[[1]]  ## returns matrix when nchains = 1
+    }
     if(summary) {
         if(nchains == 1) {
             summaryObject <- samplesSummary(samplesList)
+            if(hasMonitors2)   summaryObject <- rbind(summaryObject, samplesSummary(samplesList2))   ## combine summaries
         } else {
             summaryObject <- lapply(samplesList, samplesSummary)
             names(summaryObject) <- paste0('chain', 1:nchains)
             summaryObject$all.chains <- samplesSummary(do.call('rbind', samplesList))
+            if(hasMonitors2) {
+                summaryObject2 <- lapply(samplesList2, samplesSummary)
+                summaryObject2$all.chains <- samplesSummary(do.call('rbind', samplesList2))
+                summaryObject <- mapply(rbind, summaryObject, summaryObject2, SIMPLIFY = FALSE)      ## combine summaries
+            }
         }
     }
     retList <- list()
-    if(samples) retList$samples <- samplesList
-    if(summary) retList$summary <- summaryObject
-    if(WAIC)    retList$WAIC    <- WAICvalue
-    if(samples + summary + WAIC == 1) retList <- retList[[1]]
+    if(samples) { retList$samples <- samplesList
+                  if(hasMonitors2)   retList$samples2 <- samplesList2 }
+    if(summary)   retList$summary <- summaryObject
+    if(WAIC)      retList$WAIC    <- WAICvalue
+    if(length(retList) == 1) retList <- retList[[1]]
     return(retList)
 }
 
@@ -176,7 +210,7 @@ runMCMC <- function(mcmc,
 #' 
 #' @param check Logical argument, specifying whether to check the model object for missing or invalid values.  Default value is \code{TRUE}.
 #' 
-#' @param setSeed Logical argument.  If \code{TRUE}, then R's random number seed is set to a fixed value at the onset of each MCMC chain, which allows for reproducible results.  Default value is \code{FALSE}.
+#' @param setSeed Logical or numeric argument.  If a single numeric value is provided, R's random number seed will be set to this value at the onset of each MCMC chain.  If a numeric vector of length \code{nchains} is provided, then each element of this vector is provided as R's random number seed at the onset of the corresponding MCMC chain.  Otherwise, in the case of a logical value, if \code{TRUE}, then R's random number seed for the ith chain is set to be \code{i}, at the onset of each MCMC chain.  Note that specifying the argument \code{setSeed = 0} does not prevent setting the RNG seed, but rather sets the random number generation seed to \code{0} at the beginning of each MCMC chain.  Default value is \code{FALSE}.
 #'
 #' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain.  Default value is \code{TRUE}.
 #'
@@ -206,6 +240,8 @@ runMCMC <- function(mcmc,
 #' 
 #' The \code{inits} argument may also be omitted, in which case the model will not be provided with initial values.  This is not recommended.
 #'
+#' The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument specifies the number of pre-thinning MCMC samples to discard.  After discarding these burn-in samples, thinning of the remaining samples will take place.  The total number of posterior samples returned will be floor((niter-nburnin)/thin).
+#' 
 #' @examples
 #' 
 #' \dontrun{
@@ -229,10 +265,23 @@ runMCMC <- function(mcmc,
 #' @author Daniel Turek
 #' 
 #' @export
-nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
-                       monitors, thin = 1, niter = 10000, nburnin = 0, nchains = 1,
-                       check = TRUE, setSeed = FALSE, progressBar = TRUE,
-                       samples = TRUE, samplesAsCodaMCMC = FALSE, summary = FALSE, WAIC = FALSE) {
+nimbleMCMC <- function(code,
+                       constants = list(),
+                       data = list(),
+                       inits,
+                       model,
+                       monitors,
+                       thin = 1,
+                       niter = 10000,
+                       nburnin = 0,
+                       nchains = 1,
+                       check = TRUE,
+                       setSeed = FALSE,
+                       progressBar = TRUE,
+                       samples = TRUE,
+                       samplesAsCodaMCMC = FALSE,
+                       summary = FALSE,
+                       WAIC = FALSE) {
     #### process 'code' argument, to accept a filename, or a function
     ##if(is.character(code) || is.function(code)) {
     ##    if(is.function(code)) modelText <- mergeMultiLineStatements(deparse(body(code)))
@@ -245,12 +294,13 @@ nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
     ##}
     if(missing(code) && missing(model)) stop('must provide either code or model argument')
     if(!samples && !summary && !WAIC) stop('no output specified, use samples = TRUE, summary = TRUE, or WAIC = TRUE')
+    if(!missing(code) && inherits(code, 'modelBaseClass')) model <- code   ## let's handle it, if model object is provided as un-named first argument to nimbleMCMC
     if(missing(model)) {  ## model object not provided
         if(!missing(inits)) {
             if(!is.function(inits) && !is.list(inits)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
             if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]]) && (length(inits) != nchains)) stop('inits must be a function, a list of initial values, or a list (of length nchains) of lists of inital values')
             if(is.function(inits)) {
-                if(setSeed) set.seed(0)
+                if(is.numeric(setSeed) || setSeed) { if(is.numeric(setSeed)) set.seed(setSeed[1]) else set.seed(0) }
                 theseInits <- inits()
             } else if(is.list(inits) && (length(inits) > 0) && is.list(inits[[1]])) {
                 theseInits <- inits[[1]]
@@ -262,11 +312,10 @@ nimbleMCMC <- function(code, constants = list(), data = list(), inits, model,
         Rmodel <- if(is.Rmodel(model)) model else model$Rmodel
         if(!is.Rmodel(Rmodel)) stop('something went wrong')
     }
-    conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin)
-    Rmcmc <- buildMCMC(conf, enableWAIC = WAIC)
+    conf <- configureMCMC(Rmodel, monitors = monitors, thin = thin, enableWAIC = WAIC)
+    Rmcmc <- buildMCMC(conf)
     compiledList <- compileNimble(Rmodel, Rmcmc)    ## only one compileNimble() call
     Cmcmc <- compiledList$Rmcmc
-    nburnin <- ceiling(nburnin/thin)    ## accounts for thinning *first*, then dropping burnin
     runMCMC(Cmcmc, niter = niter, nburnin = nburnin, nchains = nchains, inits = inits,
             setSeed = setSeed, progressBar = progressBar, samples = samples,
             samplesAsCodaMCMC = samplesAsCodaMCMC, summary = summary, WAIC = WAIC)

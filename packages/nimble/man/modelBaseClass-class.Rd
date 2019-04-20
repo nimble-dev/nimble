@@ -45,7 +45,7 @@ See documentation for \code{nimbleModel} for details of creating an R model obje
 
 \item{\code{checkBasics()}}{Checks for size/dimension mismatches and for presence of NAs in model variables (the latter is not an error but a note of this is given to the user)}
 
-\item{\code{checkConjugacy(nodeVector)}}{Determines whether or not the input nodes appear in conjugate relationships
+\item{\code{checkConjugacy(nodeVector, restrictLink = NULL)}}{Determines whether or not the input nodes appear in conjugate relationships
 
 Arguments:
 

@@ -10,7 +10,7 @@
 #' @author Daniel Turek
 #' @export
 decide <- function(logMetropolisRatio) {
-  if(is.na(logMetropolisRatio))	return(FALSE)
+    if(is.na(logMetropolisRatio)) return(FALSE)
   if(logMetropolisRatio > 0) return(TRUE)
   if(runif(1,0,1) < exp(logMetropolisRatio)) return(TRUE)
   return(FALSE)
@@ -310,5 +310,53 @@ samplesSummary <- function(samples) {
         `95%CI_upp` = apply(samples, 2, function(x) quantile(x, 0.975)))
 }
 
+
+
+
+## weed out missing indices from the monitors
+mcmc_processMonitorNames <- function(model, nodes) {
+    isLogProbName <- grepl('logProb', nodes)
+    expandedNodeNames <- model$expandNodeNames(nodes[!isLogProbName])
+    origLogProbNames <- nodes[isLogProbName]
+    expandedLogProbNames <- character()
+    if(length(origLogProbNames) > 0) {
+        nodeName_fromLogProbName <- gsub('logProb_', '', origLogProbNames)
+        expandedLogProbNames <- model$modelDef$nodeName2LogProbName(nodeName_fromLogProbName)
+    }
+    return(c(expandedNodeNames, expandedLogProbNames))
+}
+
+
+
+
+mcmc_checkWAICmonitors <- function(model, monitors, dataNodes) {
+    monitoredDetermNodes <- model$expandNodeNames(monitors)[model$isDeterm(model$expandNodeNames(monitors))]
+    if(length(monitoredDetermNodes) > 0) {
+        monitors <- monitors[- which(monitors %in% model$getVarNames(nodes = monitoredDetermNodes))]
+    }
+    thisNodes <- model$getNodeNames(stochOnly = TRUE, topOnly = TRUE)
+    thisVars <- model$getVarNames(nodes = thisNodes)
+    thisVars <- thisVars[!(thisVars %in% monitors)]
+    while(length(thisVars) > 0) {
+        nextNodes <- model$getDependencies(thisVars, stochOnly = TRUE, omit = monitoredDetermNodes, self = FALSE, includeData = TRUE)
+        if(any(nextNodes %in% dataNodes)) {
+            badDataNodes <- dataNodes[dataNodes %in% nextNodes]
+            if(length(badDataNodes) > 10) {
+                badDataNodes <- c(badDataNodes[1:10], "...")
+            }
+            stop(paste0("In order for a valid WAIC calculation, all parameters of",
+                        " data nodes in the model must be monitored, or be", 
+                        " downstream from monitored nodes.", 
+                        " See help(buildMCMC) for more information on valid sets of",
+                        " monitored nodes for WAIC calculations.", "\n",
+                        " Currently, the following data nodes have un-monitored",
+                        " upstream parameters:", "\n ", 
+                        paste0(badDataNodes, collapse = ", ")))
+        }
+        thisVars <- model$getVarNames(nodes = nextNodes)
+        thisVars <- thisVars[!(thisVars %in% monitors)]
+    }
+    message('Monitored nodes are valid for WAIC')
+}
 
 

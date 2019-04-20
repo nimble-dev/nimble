@@ -51,5 +51,19 @@ test_that("Testing of error handling in SEXP_2_NimArr", {
   expect_error(compiledFun(wrong_shape2, y, z))
 })
 
+test_that("Testing of error handling in indexing of undefined array", {
+    mynf <- nimbleFunction(
+        run = function() {
+            x[1] <- 5
+        })
+    
+    expect_error(cnf <- compileNimble(mynf), info = "has 'x' been created")
+    mynf <- nimbleFunction(
+        run = function() {
+            x[1,2] <- 5
+        })
+    expect_error(cnf <- compileNimble(mynf), info = "has 'x' been created")
+})
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)

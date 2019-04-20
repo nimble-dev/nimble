@@ -153,7 +153,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, inits, 
     processBoundsAndTruncation()      ## puts bound expressions into declInfo, including transforming T(ddist(),lower,upper); need to do this before expandDistributions(), which is not set up to handle T() wrapping; need to save bound info for later use in reparameterizeDists() -- hence temporarily stored in boundExprs (can't put in code because it would be stripped out in expandDistributions, though alternative is to modify expandDistributions to add lower,upper back into code)
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
     if(getNimbleOption('disallow_multivariate_argument_expressions'))
-       checkMultivarExpr()               ## checks that multivariate params are not expressions
+        checkMultivarExpr()               ## checks that multivariate params are not expressions
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName; also processes bound info to evaluate in context of model
     replaceAllConstants()
@@ -197,7 +197,9 @@ codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
         if(code[[1]] == 'if') {
             constantsEnv <- as.environment(constants)
             parent.env(constantsEnv) <- envir
-            evaluatedCondition <- eval(code[[2]], constantsEnv)
+            evaluatedCondition <- try(eval(code[[2]], constantsEnv))
+            if(inherits(evaluatedCondition, "try-error")) 
+                stop("Cannot evaluate condition of 'if' statement: ", deparse(code[[2]]), ".\nCondition must be able to be evaluated based on values in 'constants'.")
             if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], constants, envir))
             else {
                 if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], constants, envir))
@@ -483,7 +485,7 @@ checkUserDefinedDistribution <- function(code, userEnv) {
     if(dist %in% c("T", "I")) 
         dist <- as.character(code[[3]][[2]][[1]])
     if(!dist %in% distributions$namesVector)
-        if(!exists('distributions', nimbleUserNamespace) || !dist %in% nimbleUserNamespace$distributions$namesVector) {
+        if(!exists('distributions', nimbleUserNamespace, inherits = FALSE) || !dist %in% nimbleUserNamespace$distributions$namesVector) {
             registerDistributions(dist, userEnv)
             cat("NIMBLE has registered ", dist, " as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.\n", sep = "") 
         }
@@ -507,7 +509,7 @@ replaceDistributionAliases <- function(code) {
 checkForDeterministicDorR <- function(code) {
     if(is.call(code[[3]])) {
         drFuns <- c(distribution_dFuns, distribution_rFuns)
-        if(exists("distributions", nimbleUserNamespace)) {
+        if(exists("distributions", nimbleUserNamespace, inherits = FALSE)) {
             dFunsUser <- get('namesVector', nimbleUserNamespace$distributions)
             drFuns <- c(drFuns, dFunsUser, paste0("r", stripPrefix(dFunsUser)))
         }
@@ -613,7 +615,7 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
         BUGSdecl <- declInfo[[i]]
 
         if(BUGSdecl$type != 'stoch') next
-        callName <- deparse(BUGSdecl$valueExpr[[1]])
+        callName <- BUGSdecl$distributionName ## replaces deparse(BUGSdecl$valueExpr[[1]])
         if(!(callName %in% c("T", "I"))) {
             truncated <- FALSE
             boundExprs <- getDistributionInfo(callName)$range
@@ -668,29 +670,49 @@ modelDefClass$methods(expandDistributions = function() {
 
 modelDefClass$methods(checkMultivarExpr = function() {
     checkForExpr <- function(expr) {
-        output <- FALSE
+        ##output <- FALSE
         if(length(expr) == 1 && class(expr) %in% c("name", "numeric")) return(FALSE)
-        if(!deparse(expr[[1]]) %in% c('[', ':')) return(TRUE)
-        for(i in 2:length(expr)) 
-            if(checkForExpr(expr[[i]])) output <- TRUE
-        return(output)
+        if(!deparse(expr[[1]]) == '[') return(TRUE)
+        ## recurse only on the first argument of the `[`
+        return(checkForExpr(expr[[2]]))
+        ## Previously we recursed more completely.  Now we stop because expressions
+        ## inside `[` are allowed.
+        ## if(!deparse(expr[[1]]) %in% c('[', ':')) return(TRUE)
+        ## for(i in 2:length(expr)) 
+        ##     if(checkForExpr(expr[[i]])) output <- TRUE
+        ## return(output)
     }
 
     for(i in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[i]]
         if(BUGSdecl$type != 'stoch') next
-        dist <- deparse(BUGSdecl$valueExpr[[1]])
-        types <- nimble:::distributionsInputList[[dist]]$types
+        ## dist <- deparse(BUGSdecl$valueExpr[[1]])
+        dist <- BUGSdecl$distributionName
+        ## The following line is a one-time insertion to break testing in any case
+        ## where the condition fails.
+        ## If the condition is always met, we can use BUGSdecl$distributionName in place of deparse(BUGSdecl$valueExpr[[1]])
+        ## if(dist != BUGSdecl$distributionName)
+        ##     stop(paste0("dist (", dist,") != BUGSdecl$distributionName (",BUGSdecl$distributionName,")"))
+        types <- nimble:::distributions[[dist]]$types
         if(is.null(types)) next
-        tmp <- strsplit(types, " = ")
-        nms <- sapply(tmp, `[[`, 1)
+        ## tmp <- strsplit(types, " = ")
+        ## nms <- sapply(tmp, `[[`, 1)
         # originally was only checking for expr in multivar dist:
         ## if('value' %in% nms) next
         ## distDim <- parse(text = tmp[[which(nms == 'value')]])[[2]][[2]]
         ## if(distDim < 1) next
-        for(k in 2:length(BUGSdecl$valueExpr))
-            if(checkForExpr(BUGSdecl$valueExpr[[k]]))
-                stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
+        if(length(BUGSdecl$valueExpr) > 1) {
+            for(k in 2:length(BUGSdecl$valueExpr)) {
+                paramName <- names(BUGSdecl$valueExpr)[k]
+                nDim <- types[[paramName]][['nDim']]
+                if(is.numeric(nDim))
+                    if(nDim == 0) next
+                if(checkForExpr(BUGSdecl$valueExpr[[k]])) {
+                    ## Draft gentler warning for possible future adoption: message("Warning about parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': This multivariate parameter is provided as an expression.  If this is a costly calculation, try making it a separate model declaration for it to improve efficiency.")
+                    stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
+                }
+            }
+        }
     }
 })
 
@@ -979,11 +1001,15 @@ modelDefClass$methods(liftExpressionArgs = function() {
         
         if(BUGSdecl$type == 'stoch') {
             params <- as.list(valueExpr[-1])   ## extract the original distribution parameters
+            paramNames <- names(valueExpr)[-1]
+            types <- nimble:::distributions[[BUGSdecl$distributionName]]$types
+            ## types may be NULL if all are scalar
             
             for(iParam in seq_along(params)) {
                 if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower_', 'upper_'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
                 paramExpr <- params[[iParam]]
-                if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
+                paramName <- paramNames[iParam]
+                if(!isExprLiftable(paramExpr, types[[paramName]]))    next     ## if this param isn't an expression, go ahead to next parameter
                 requireNewAndUniqueDecl <- any(contexts[[BUGSdecl$contextID]]$indexVarNames %in% all.vars(paramExpr))
                 uniquePiece <- if(requireNewAndUniqueDecl) paste0("_L", BUGSdecl$sourceLineNumber) else ""
                 newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE), uniquePiece))   ## create the name of the new node ##nameMashup
@@ -1007,8 +1033,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
                     nextNewDeclInfoIndex <- nextNewDeclInfoIndex + 1     ## update for lifting other nodes, and re-adding BUGSdecl at the end
                 }
             }    # closes loop over params
-        }
-        
+        }        
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
         
@@ -1018,20 +1043,25 @@ modelDefClass$methods(liftExpressionArgs = function() {
     }    # closes loop over declInfo
     declInfo <<- newDeclInfo
 })
-isExprLiftable <- function(paramExpr) {
+isExprLiftable <- function(paramExpr, type = NULL) {
     ## determines whether a parameter expression is worthy of lifiting up to a new node
     if(is.name(paramExpr))       return(FALSE)
     if(is.numeric(paramExpr))    return(FALSE)
     if(is.call(paramExpr)) {
-        if(paramExpr[[1]] == 'chol')        return(TRUE)    ## do lift calls to chol(...)
-        if(paramExpr[[1]] == 'inverse')     return(TRUE)    ## do lift calls to inverse(...)
-        if(paramExpr[[1]] == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
-        if(paramExpr[[1]] == 'CAR_calcC')   return(TRUE)    ## do lift calls to CAR_calcC(...)
-        if(paramExpr[[1]] == 'CAR_calcM'  ) return(TRUE)    ## do lift calls to CAR_calcM(...)
-        if(paramExpr[[1]] == 'CAR_calcEVs2')return(TRUE)    ## do lift calls to CAR_calcEVs2(...)
-        if(paramExpr[[1]] == 'CAR_calcEVs3')return(TRUE)    ## do lift calls to CAR_calcEVs3(...)
-        if(length(paramExpr) == 1)          return(FALSE)   ## don't generally lift function calls:   fun(...) ## this comment seems incorrect
-        if(getCallText(paramExpr) == '[')   return(FALSE)   ## don't lift simply indexed expressions:  x[...]
+        callText <- getCallText(paramExpr)
+        if(callText == 'chol')         return(TRUE)    ## do lift calls to chol(...)
+        if(callText == 'inverse')      return(TRUE)    ## do lift calls to inverse(...)
+        if(callText == 'CAR_calcNumIslands') return(TRUE)    ## do lift calls to CAR_calcNumIslands(...)
+        if(callText == 'CAR_calcC')    return(TRUE)    ## do lift calls to CAR_calcC(...)
+        if(callText == 'CAR_calcM'  )  return(TRUE)    ## do lift calls to CAR_calcM(...)
+        if(callText == 'CAR_calcEVs2') return(TRUE)    ## do lift calls to CAR_calcEVs2(...)
+        if(callText == 'CAR_calcEVs3') return(TRUE)    ## do lift calls to CAR_calcEVs3(...)
+        if(length(paramExpr) == 1)     return(FALSE)   ## don't lift function calls with no arguments
+        if(callText == '[')            return(FALSE)   ## don't lift simply indexed expressions:  x[...]
+        nDim <- type[['nDim']]
+        if(is.numeric(nDim))
+            if(nDim > 0)               return(FALSE)  ## beyond above cases, don't lift non-scalar arguments
+                                                       ## This case comes after '[' to avoid using '[' as regexp in grepl
         ## if(getCallText(paramExpr) == '[') { ## these lines are for future handling of foo()[]
         ##     if(is.name(paramExpr))          return(FALSE)   ## don't lift simply indexed expressions:  x[...]
         ##                                     return(TRUE)    ## do lift foo(x)[...]
@@ -1803,8 +1833,8 @@ modelDefClass$methods(findDynamicIndexParticipants = function() {
         for(iDI in seq_along(declInfo)) {
             if(declInfo[[iDI]]$type == "unknownIndex") next
             declInfo[[iDI]]$dynamicIndexInfo <<- list()
-            for(iSPN in seq_along(declInfo[[iDI]]$symbolicParentNodes)) {
-                symbolicParent <- declInfo[[iDI]]$symbolicParentNodes[[iSPN]]
+            for(iSPN in seq_along(declInfo[[iDI]]$symbolicParentNodesReplaced)) {
+                symbolicParent <- declInfo[[iDI]]$symbolicParentNodesReplaced[[iSPN]]
                 dynamicIndexes <- detectDynamicIndexes(symbolicParent)
                 ## We do not yet check bounds of inner indexes in nested indexing. To do so we need to
                 ## find dynamic indexing within a USED_IN_INDEX() and add to dynamicIndexInfo;
@@ -1912,6 +1942,13 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(BUGSdecl$numUnrolledNodes == 0) next
         lhsVar <- BUGSdecl$targetVarName
         nDim <- varInfo[[lhsVar]]$nDim
+        ## Check that LHS has all expected indexes based on context.
+        usedIndexes <- contexts[[BUGSdecl$contextID]]$indexVarNames %in%
+            unlist(all.vars(BUGSdecl$targetExpr))
+        if(BUGSdecl$type != "unknownIndex" && !all(usedIndexes) && !length(grep("^lifted", BUGSdecl$targetExpr)))
+            warning(paste0("Multiple definitions for the same node. Did you forget indexing with '",
+                          paste(contexts[[BUGSdecl$contextID]]$indexVarNames[!usedIndexes], collapse = ','),  
+                           "' on the left-hand side of '", deparse(BUGSdecl$code), "'?"))
         if(nDim > 0) {  ## pieces is a list of index text to construct node names, e.g. list("1", c("1:2", "1:3", "1:4"), c("3", "4", "5"))
             pieces <- vector('list', nDim)
             for(i in 1:nDim) {
@@ -2558,6 +2595,17 @@ modelDefClass$methods(genVarInfo3 = function() {
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }
 
+    ## check for maxs < mins; this would generally be from a BUGS syntax error,
+    ## e.g., for(i in 1:4) y[k] ~ dnorm(0,1);
+    ## in some cases these would be caught by the check for mins or maxs zero or less
+    ## but this error message is more informative
+    if(any(sapply(varInfo, function(x) length(x$mins) && length(x$maxs) &&
+                                       any(x$mins > x$maxs)))) {
+        problemVars <- which(sapply(varInfo, function(x) any(x$mins > x$maxs)))
+        stop("genVarInfo3: indexing error found for model variable(s): ",
+             paste(names(varInfo)[problemVars], "; please check that variables used for indexing are properly defined in the relevant for loop(s)", collapse = ' '))
+    }
+
     ## check for mins or maxs zero or less (these trigger various errors including R crashes)
     if(any(sapply(varInfo, function(x) length(x$mins) && min(x$mins) < 1)) ||
        any(sapply(varInfo, function(x) length(x$maxs) && min(x$maxs) < 1))) {
@@ -2857,7 +2905,7 @@ parseEvalNumericManyFindErrors <- function(x, env) {
 
 parseEvalNumericManyHandleError <- function(cond, x, env) {
     problems <- parseEvalNumericManyFindErrors(x, env)
-    if(length(problems)==0) message(paste0('There an unknown problem looking for variables ', paste0(x, collapse=','), ' in the model.\n'))
+    if(length(problems)==0) message(paste0('There is an unknown problem looking for variables ', paste0(x, collapse=','), ' in the model.\n'))
     else {
         message(paste0('One or more errors occurred looking for variables in a model (first 10 shown below).\n',
                        'These messages may be cryptic, but generally the variable or expression somewhere in each message was not valid in a model:\n',

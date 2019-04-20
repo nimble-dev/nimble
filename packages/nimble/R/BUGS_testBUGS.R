@@ -28,7 +28,6 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
   if(requireNamespace('testthat', quietly = TRUE)) {
     if(!is.null(example) && !is.character(example))
       stop("testBUGSmodel: 'example' argument should be a character vector referring to an existing BUGS example or NULL if provided via the 'model' argument")
-    if(verbose) testthat::context(paste0("testing for BUGS example: ", example))
 
     if(is.null(dir)) {
 
@@ -53,12 +52,12 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
       stop("testBUGSmodel: one of 'example' or 'model' must be provided")
 
     Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE, calculate = FALSE)
-    # setting check and calculate to FALSE because check() and calculate() in some cases (e.g., ice, kidney) causes initialization of values such that inits as passed in do not match values in R or C model and failure of test of whether initial values are maintained
+    ## setting check and calculate to FALSE because check() and calculate() in some cases (e.g., ice, kidney) causes initialization of values such that inits as passed in do not match values in R or C model and failure of test of whether initial values are maintained
 
     skip.file.path <- is.null(dir) || (!is.null(dir) && dir == "") ## previously we could have file.path(NULL, ...) and file.path("",...) cases.  Modifications from here down follow those in readBUGSmodel for Windows compatibility
 
     if(useInits) {
-                                        # kludgey as this code is in readBUGSmodel() but no nice way to get it out if I want readBUGSmodel to return the R model; one possibility is to have the inits be embedded in the R model...
+        ## kludgey as this code is in readBUGSmodel() but no nice way to get it out if I want readBUGSmodel to return the R model; one possibility is to have the inits be embedded in the R model...
       initsFile <- NULL
       if(is.character(inits)) {
         initsFile <- if(skip.file.path) inits else file.path(dir, inits)
@@ -88,17 +87,15 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     }
     if(useInits && is.null(inits))
       warning("testBUGSmodel: 'useInits' is TRUE but 'inits' is NULL and could not find file of initial values in directory provided; proceeding without initial values.")
-                                        # for C model
-##    Cmodel <- compileBUGSmodel(Rmodel)
+
     project <- nimbleProjectClass(NULL, name = 'foo')
     Cmodel <- compileNimble(Rmodel, project = project)
                                         # topo-sorted nodes
     nodeNames <- Rmodel$getNodeNames()
     detNodeNames <- Rmodel$getNodeNames(determOnly = TRUE)
-                                        #varNames <- Rmodel$getVarNames()
 
     set.seed(0)
-                                        # simulate/calculate in topological order
+    ## simulate/calculate in topological order
     for(nodeName in nodeNames) {
       varName <- gsub("\\[.*\\]", "", nodeName)
       if(!(varName %in% names(inits)) && !Rmodel$isData(nodeName))  # only if not initialized and not data node
@@ -115,8 +112,8 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
       if(!(nodeName %in% detNodeNames && varName %in% names(inits))) # don't overwrite det nodes that have init values
         calculate(Cmodel, nodeName)
     }
-                                        # test that vals are maintained at their initial values
-    if(!is.null(inits)) {
+    ## test that vals are maintained at their initial values
+    if(useInits && !is.null(inits)) {
       testthat::test_that(paste0(example, ": test of the test: are initial values maintained?"), {
         varNames <- names(inits)[names(inits) %in% Rmodel$getVarNames()]
         for(varName in varNames) {
@@ -124,18 +121,18 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
           Cvals <- Cmodel[[varName]][!Rmodel$isData(varName)]
           initsVals <- inits[[varName]][!Rmodel$isData(varName)]
           attributes(Rvals) <- attributes(Cvals) <- attributes(initsVals) <- NULL
-          testthat::expect_that(Rvals, testthat::equals(initsVals), info = paste0('Initial value not maintained in R model for variable ', varName))
-          testthat::expect_that(Cvals, testthat::equals(initsVals), info = paste0('Initial value not maintained in C model for variable ', varName))
+          testthat::expect_equal(Rvals, initsVals, info = paste0('Initial value not maintained in R model for variable ', varName))
+          testthat::expect_equal(Cvals, initsVals, info = paste0('Initial value not maintained in C model for variable ', varName))
         }
       })
     }
-                                        # test that vals and logprobs are equal
+    ## test that vals and logprobs are equal
     testthat::test_that(paste0(example, ": test of variable values"), {
       for(nodeName in nodeNames) {
           Rvals <- Rmodel[[nodeName]]
           Cvals <- Cmodel[[nodeName]]
           attributes(Rvals) <- attributes(Cvals) <- NULL
-        testthat::expect_that(Rvals, testthat::equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
+        testthat::expect_equal(Rvals, Cvals, info = paste0('Unexpected result for variable ', nodeName))
       }
     })
     testthat::test_that(paste0(example, ": test of logProbs"), {
@@ -143,14 +140,12 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
         Rvals <- getLogProb(Rmodel, nodeName)
         Cvals <- getLogProb(Cmodel, nodeName)
         attributes(Rvals) <- attributes(Cvals) <- NULL
-        testthat::expect_that(Rvals, testthat::equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
+        testthat::expect_equal(Rvals, Cvals, info = paste0('Unexpected result for variable ', nodeName))
       }
     })
 
     if(.Platform$OS.type != 'windows')
         clearCompiled(project)
-        ##dyn.unload(project$cppProjects[[1]]$getSOName())
-    # this works to avoid having too many DLLs, but gives segfault when one quits R afterwards
     if(debug) browser()
   } else warning("testBUGSmodel: testthat package is required.")
   invisible(NULL)

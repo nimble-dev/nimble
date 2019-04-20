@@ -28,7 +28,6 @@ nimbleOptions(MCMCprogressBar = FALSE)
 
 ans1 <- sapply(testsDynIndex, test_dynamic_indexing_model)
 ans2 <- sapply(testsInvalidDynIndex, test_dynamic_indexing_model)
-ans3 <- sapply(testsInvalidDynIndexValue, test_dynamic_indexing_model)
 
 ## check conjugacy detection
 
@@ -196,7 +195,10 @@ test_that("Testing multivariate normal-Wishart dependency conjugacy detection wi
                  info = "failed to detect dmnorm-dmnorm conjugacy in multivariate multi-conjugacy setting")
 })
 
-test_that("Expected failure: Testing multivariate normal-Wishart dependency conjugacy detection with dynamic indexing", {    
+test_that("Testing multivariate normal-Wishart dependency conjugacy detection with dynamic indexing", {
+    ## Note this is a strange model in terms of conjugacy as y depends on only
+    ## one element of mu[1:3,i], but our dynamic calculation of offset and coeff
+    ## should resolve that properly.
     code = nimbleCode({
         y[1:3] ~ dmnorm(mu[k, 1:3], pr[1:3,1:3])
         pr[1:3,1:3] ~ dwish(pr0[1:3,1:3], 5)
@@ -207,8 +209,8 @@ test_that("Expected failure: Testing multivariate normal-Wishart dependency conj
     m = nimbleModel(code, inits = list(k = 1, pr0 = diag(3), pr = diag(3),
                                        z = rep(1,3)))
     conf <- configureMCMC(m)
-    expect_failure(expect_match(conf$getSamplers()[[3]]$name, "conjugate_dmnorm_dmnorm",
-            info = "failed to detect dmnorm-dmnorm conjugacy  in multivariate crossed multi-conjugacy setting"))
+    expect_match(conf$getSamplers()[[3]]$name, "conjugate_dmnorm_dmnorm",
+            info = "failed to detect dmnorm-dmnorm conjugacy in multivariate crossed multi-conjugacy setting")
 })
 
 test_that("Testing normal-normal-IG multi-index multi-conjugacy detection with dynamic indexing", {    
@@ -288,11 +290,27 @@ test_that("Testing initialization of uninitialized dynamic indexes", {
     
 ## MCMC testing
 
+test_that("MCMC with invalid indexes produce warning, but runs", {
+    code <- nimbleCode({
+        y ~ dnorm(x[k-1], 1)
+        k ~ dcat(p[1:3])
+    })
+    m <- nimbleModel(code, data = list(y = 0), inits = list(k = 2, x = c(0,1), p = rep(1/3,3)))
+    cm <- compileNimble(m)
+    mcmc = buildMCMC(m)
+    cmcmc = compileNimble(mcmc ,project=m)
+    set.seed(1)
+    expect_output(cmcmc$run(10000), "dynamic index out of bounds")
+    out <- as.matrix(cmcmc$mvSamples)
+    expect_equal(sum(out == 2) / sum(out == 3), dnorm(0)/dnorm(1), tolerance = .02)
+})
+
+
 models <- c('hearts')
 
 ### test BUGS examples - models and MCMC
-sapply(models, testBUGSmodel, useInits = TRUE)
-sapply(models, test_mcmc, numItsC = 1000)
+out <- sapply(models, testBUGSmodel, useInits = TRUE)
+out <- sapply(models, test_mcmc, numItsC = 1000)
 
 ## beta0C is beta0 in inits file
 system.in.dir(paste("sed 's/beta0/beta0C/g' cervix-inits.R > ", file.path(tempdir(), "cervix-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
@@ -301,7 +319,7 @@ system.in.dir(paste("echo 'x <- c(rep(as.numeric(NA), 115), rep(1, 1929))' >> ",
 
 test_that('cervix model and MCMC test', {
     testBUGSmodel('cervix', dir = "", model = system.file('classic-bugs','vol2','cervix','cervix.bug', package = 'nimble'), data = system.file('classic-bugs','vol2','cervix','cervix-data.R', package = 'nimble'),  inits = file.path(tempdir(), "cervix-inits.R"),  useInits = TRUE)
-    test_mcmc(model = system.file('classic-bugs','vol2','cervix','cervix.bug', package = 'nimble'), name = 'cervix', inits = file.path(tempdir(), "cervix-inits.R"), data = system.file('classic-bugs', 'vol2', 'cervix','cervix-data.R', package = 'nimble'), numItsC = 1000)
+    test_mcmc(model = system.file('classic-bugs','vol2','cervix','cervix.bug', package = 'nimble'), name = 'cervix', inits = file.path(tempdir(), "cervix-inits.R"), data = system.file('classic-bugs', 'vol2', 'cervix','cervix-data.R', package = 'nimble'), numItsC = 1000, avoidNestedTest = TRUE)
 })
 
 ## There are some issues with using the model as provided in the BUGS example because of use of zeros
@@ -328,7 +346,7 @@ model {\n
     system.in.dir(paste("sed 's/true/truex/g' biops-inits.R > ", file.path(tempdir(), "biops-inits.R")), dir = system.file('classic-bugs','vol2','biops', package = 'nimble'))
 system.in.dir(paste("echo 'error <- matrix(c(1,0,0,0, .5, .5, 0, 0, 1/3,1/3,1/3,0,1/4,1/4,1/4,1/4), 4,4, byrow=T)'  >> ", file.path(tempdir(), "biops-inits.R")), dir = system.file('classic-bugs','vol2','cervix', package = 'nimble'))
     testBUGSmodel('biops', dir = "", model = file.path(tempdir(), "biops.bug"), data = system.file('classic-bugs','vol2','biops','biops-data.R', package = 'nimble'),  inits = file.path(tempdir(), "biops-inits.R"),  useInits = TRUE)
-    test_mcmc(model = file.path(tempdir(), "biops.bug"), name = 'biops', inits = file.path(tempdir(), "biops-inits.R"), data = system.file('classic-bugs', 'vol2', 'biops','biops-data.R', package = 'nimble'), numItsC = 1000)
+    test_mcmc(model = file.path(tempdir(), "biops.bug"), name = 'biops', inits = file.path(tempdir(), "biops-inits.R"), data = system.file('classic-bugs', 'vol2', 'biops','biops-data.R', package = 'nimble'), numItsC = 1000, avoidNestedTest = TRUE)
 })
 
 
@@ -337,8 +355,8 @@ test_that('basic mixture model with conjugacy', {
     d <- 4
     set.seed(2)
     mns <- c(-.9, .2, 1.6, -1.1)
-    p <- c(.45, .14, .05, .36)
-    sds <- c(.3, .5, .3, .1)
+    p <- c(.4, .14, .1, .36)
+    sds <- c(.2, .4, .2, .1)
     k <- sample(1:d, n, replace = TRUE, prob = p)
     y <- rnorm(n, mns[k], sds[k])
     code <- nimbleCode({
@@ -371,15 +389,15 @@ test_that('basic mixture model with conjugacy', {
                                          "p[2]" = p[3],
                                          "p[3]" = p[1],
                                          "p[4]" = p[2])),
-              resultsTolerance = list(mean = list("mu[1]" = .1,
-                                                  "mu[2]" = .5,
-                                                  "mu[3]" = .1,
-                                                  "mu[4]" = .3,
-                                                  "p[1]" = .02,
-                                                  "p[2]" = .07,
-                                                  "p[3]" = .05,
-                                                  "p[4]" = .02))
-              )
+              resultsTolerance = list(mean = list("mu[1]" = .05,
+                                                  "mu[2]" = .02,
+                                                  "mu[3]" = .05,
+                                                  "mu[4]" = .05,
+                                                  "p[1]" = .05,
+                                                  "p[2]" = .02,
+                                                  "p[3]" = .1,
+                                                  "p[4]" = .02)),
+              avoidNestedTest = TRUE)
 
 })
 
@@ -423,9 +441,49 @@ test_that('basic mixture model without conjugacy', {
                                                   "p[1]" = .03,
                                                   "p[2]" = .12,
                                                   "p[3]" = .12,
-                                                  "p[4]" = .05))
-              )
+                                                  "p[4]" = .05)),
+              avoidNestedTest=TRUE)
 })
+
+
+test_that('range checking with dynamic indexing', {
+    code <- nimbleCode({
+        for(i in 3:4) {
+            z[i-1] ~ dcat(alpha[z[i-2], 1:2])
+        }
+    }
+    )
+    
+    m <- nimbleModel(code, inits = list(alpha = matrix(c(0.9,.1,0.1,.9), 2),
+                                        z = c(1,2,1)), calculate = FALSE)
+    ## will give error if issue #790 is not fixed:
+    expect_silent(output <- m$calculate())
+
+    code <- nimbleCode({
+        for(i in 1:2) {
+            z[i+1] ~ dcat(alpha[z[i], 1:2])
+        }
+    }
+    )
+    
+    m <- nimbleModel(code, inits = list(alpha = matrix(c(0.9,.1,0.1,.9), 2),
+                                        z = c(1,2,1)), calculate = FALSE)
+    expect_silent(output <- m$calculate())
+    
+    code <- nimbleCode({
+        for(i in 2:3) {
+            z[i] ~ dcat(alpha[z[i-1], 1:2])
+        }
+    }
+    )
+    
+    
+    m <- nimbleModel(code, inits = list(alpha = matrix(c(0.9,.1,0.1,.9), 2),
+                                        z = c(1,2,1)), calculate = FALSE)
+    expect_silent(output <- m$calculate())
+    
+})
+
 
 if(FALSE) {
     ## Heisenbug here - running manually vs. via testthat causes different ordering of mixture components even though we are setting seed before each use of RNG; this test _does_ pass when run manually.
@@ -479,10 +537,11 @@ test_that('basic multivariate mixture model with conjugacy', {
                                          "p[3]" = .01,
                                          "p[4]" = .03,
                                          "myvars[1]" = .1,
-                                         "myvars[2]" = .1)),
-              )
+                                         "myvars[2]" = .1)), avoidNestedTest = TRUE)
 })
 }
+
+
 
 sink(NULL)
 

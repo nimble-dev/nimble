@@ -7,15 +7,14 @@ update LICENSE with current year
 check CRAN results page to see what issues CRAN testing has noted:
 https://cran.r-project.org/web/checks/check_results_nimble.html
 
-for version on nimble website, remove FLIBS from src/Makevars.in
-for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
-
 Make sure src/Makevars.win is present.
 
 # before running 'make man' (i.e., prep_pkg.R) make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
 
 run 'make man' (formerly ./prep_pkg.R)
 # this creates man pages and updates NAMESPACE
+
+git add any new .Rd files
 
 ## note that an error: "section title spans multiple lines" will occur in roxygenization if any "@section" line does not have a ":" at the end of the line
 
@@ -25,14 +24,7 @@ R CMD check --as-cran nimble_${VERSION}.tar.gz
 
 R CMD INSTALL nimble_${VERSION}.tar.gz
 
-run tests:
-(comments here superseded for the most part by the new goldfile system)
-in particular check exact results vs previous versions (ignore differences in compilation log info)
-doing this test by test because of DLL unloading issue
-types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists errors filtering getBound getDependencies getDistributionInfo getParam graphStructure math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList nimbleList_RCfun numericTypes setData size trunc types user"
-for type in $types; do
-Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
-done
+Run tests via ./run_tests.R
 
 Note that test-size results are simply showing warnings from model building that are labeled based on the test message - what is marked as a KNOWN PROBLEM is not _all_ of the tests that are KNOWN PROBLEMS, just those that happen to generate warnings. 
 
@@ -40,11 +32,13 @@ run tests on all OS ideally
 
 rebuild manual as further test of package
 
-download .tar.gz for reverse dependencies (currently 'bcgam') and run R CMD check on it (having trouble with tools::tools::check_packages_in_dir, but should figure that out and add a Make task for this)
+download .tar.gz for reverse dependencies (currently 'bcgam') and run R CMD check on it (having trouble with tools::tools::check_packages_in_dir, but should figure that out and add a Make task for this) (however note that currently the compilation in bcgam is failing upon testing)
 
-put new version of manual in inst/doc (perhaps - not sure if we want to add that much to the size of the tarball/package install)
+we could put new version of manual in inst/doc, but not doing that because we don't want to add to the size of the tarball/package install)
 
 make sure no calls to compileNimble are in any examples that are not wrapped in a \dontrun; these calls will cause installation failure on Solaris and big headaches with CRAN
+
+Now in a separate branch: vX.Y-Z-cran, do this:
 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
 and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
@@ -55,20 +49,25 @@ line 102 of packages/nimble/inst/include/Eigen/src/Core/arch/SSE/Complex.h
 lines 44,51 of  packages/nimble/inst/include/Eigen/src/Core/util/DisableStupidWarnings.h
 see also commit fedb31ee21fd892f782b97a4b2d71482b954a9fd
 
-
 test cross-machine on Macs and on Windows
 
 can test using rhub (from within packages/nimble):
 
-Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> rhub.out
+Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel'))" >> /tmp/rhub.out
+
+can test on Windows using win-builder
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
 Once CRAN package accepted:
 
+create new version with tarball and manual in Zenodo. Note that inst/CITATION uses the version-independent DOI so don't need to update DOI in CITATION or on badge on r-nimble.org.
+However we might revisit this as that means that users will cite the version independent DOI at the same time they refer to a specific NIMBLE version. Probably ok and means we don't have to mint the DOI just as we are about to submit to CRAN and then shunt aside the new Zenodo version if there is a CRAN problem.
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
+
+for version on nimble website, avoid the FLIBS/stan/Eigen changes above
 
 cp new .tar.gz there
 
@@ -76,9 +75,16 @@ chmod go+w nimble_${VERSION}.tar.gz
 
 ./writePackages
 
-put new user manual in /web/R-nimble/wordpress/manuals
+put new user manual PDF in /web/R-nimble/wordpress/manuals
 and change symlink to point to newest pdf
 and change to g+w for NimbleUserManual_$VERSION.pdf
+
+put new user manual HTML in /web/R-nimble/wordpress/html_manual
+from nimble/UserManual:
+tar -cvzf tmp.tgz *html libs search_index.json nimble-icon.png NimbleUserManual_files
+copy to /web/R-nimble/wordpress/html_manual
+on nature.b.e:
+tar -xvzf tmp.tgz; rm -rf tmp.tgz
 
 go to website: R-nimble.org/login and login 
 
@@ -98,6 +104,10 @@ add info on new release to release notes page
 update version numbering on license and citation page
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag (not just a 'category'!!!) if you want it picked up by R-bloggers)
+(best to point with a hyperlink to the info on versions/news on webpage not to NEWS)
+
+for link to NEWS have:
+
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 
@@ -107,8 +117,8 @@ send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (
 reactivate Google Analyticator by clicking on 'activate' on Plugins -> Installed Plugins 
 *****************
 
-make sure to merge devel into master branch and create a branch for the new version
-before doing so add final test-results-v$VERSION to repo to provide baseline for future releases
+make sure to merge devel into master branch
+
 git checkout master
 git merge devel
 git commit -am'merged new version onto master'
@@ -118,11 +128,13 @@ probably best at this point also to merge master onto devel
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote
 
+update version number in DESC in devel
+
 ### updating Github README
 
-Update version number in README.md and create a new release based on the new version tag
-This will autogenerate a zenodo page and DOI
-update the DOI tag at top of README and the DOI url in the citations in README
+Update version number in README.md.
+
+NOT DONE ANYMORE: create a new release on Github (see 'releases' tab) based on the new version tag, this  autogenerates a zenodo page and DOI; update the DOI tag at top of README and the DOI url in the citations in README
 
 Unfortunately in v0.6-10 zenodo integration was somehow turned off and in the process of trying to add it manually, Chris got an entirely different zenodo instnace.
 

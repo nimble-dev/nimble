@@ -3,6 +3,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                              fields = list(
                                  SEXPinterfaceFun = 'ANY',
                                  SEXPinterfaceCname = 'ANY',	## character
+                                 ADtemplateFun = 'ANY',
                                  RCfunProc = 'ANY'              ## RCfunProcessing object
                                  ), 
                              methods = list(
@@ -26,8 +27,10 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      callSuper(...)
                                  },
                                  getDefs = function() {
-                                     list(.self,
-                                          if(!inherits(SEXPinterfaceFun, 'uninitializedField')) SEXPinterfaceFun)
+                                     c(list(.self),
+                                       if(!inherits(SEXPinterfaceFun, 'uninitializedField')) list(SEXPinterfaceFun) else list(),
+                                       if(!inherits(ADtemplateFun, 'uninitializedField')) list(ADtemplateFun) else list()
+                                       )
                                  },
                                  getHincludes = function() {
                                      Hinc <- c(Hincludes,
@@ -91,6 +94,11 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      ## For external calls:
                                      CPPincludes <<- c(CPPincludes, RCfunProc$RCfun$externalCPPincludes)
                                      Hincludes <<- c(Hincludes, RCfunProc$RCfun$externalHincludes)
+
+                                     ## to be wrapped in conditional
+                                     if(isTRUE(RCfunProc$RCfun$enableDerivs) & isTRUE(nimbleOptions('experimentalEnableDerivs')))
+                                         ADtemplateFun <<- makeTypeTemplateFunction(name, .self)
+                                     
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {

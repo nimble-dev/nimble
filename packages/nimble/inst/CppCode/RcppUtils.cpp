@@ -806,6 +806,8 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
   if(iBracket == std::string::npos) {
     _nimble_global_output<<"problem in parseVarAndInds: there is no closing bracket\n";
     nimble_print_to_R(_nimble_global_output);
+    output.varName = input;
+    return;
   }
   while(!done) {
     iColon   = restOfInput.find_first_of(':');
@@ -864,15 +866,21 @@ SEXP varAndIndices_2_LANGSXP(const varAndIndicesClass &varAndInds) {
     SETCAR(t, R_BracketSymbol); t = CDR(t);
     SETCAR(t, Rf_install(varAndInds.varName.c_str())); t = CDR(t);
     for(size_t i = 0; i < varAndInds.indices.size(); ++i) {
-      if(varAndInds.indices[i].size() == 1) {
+      if(varAndInds.indices[i].size() == 0) { // blank
+	SETCAR(t, R_MissingArg); t = CDR(t);
+      } else if(varAndInds.indices[i].size() == 1) {
 	SETCAR(t, Rf_ScalarInteger(varAndInds.indices[i][0])); t = CDR(t);
-      } else {
+      } else if(varAndInds.indices[i].size() == 2) {
 	SEXP ScolonExpr = PROTECT(Rf_allocVector(LANGSXP, 3));
 	SETCAR(ScolonExpr, Rf_install(":"));
 	SETCADR(ScolonExpr, Rf_ScalarInteger(varAndInds.indices[i][0]));
 	SETCADDR(ScolonExpr, Rf_ScalarInteger(varAndInds.indices[i][1]));
 	SETCAR(t, ScolonExpr); t = CDR(t);
 	UNPROTECT(1);
+      } else {
+	_nimble_global_output<<"problem in varAndIndices_2_LANGSXP: there is badly formed input\n";
+	nimble_print_to_R(_nimble_global_output);
+	
       }
     }
   }
@@ -889,7 +897,8 @@ SEXP makeParsedVarList(SEXP Sx) {
   varAndIndicesClass varAndInds;
   for(size_t i = 0; i < x.size(); ++i) {
     parseVarAndInds(x[i], varAndInds);
-    SETCAR(t, makeAsNumeric_LANGSXP(varAndIndices_2_LANGSXP(varAndInds))); t = CDR(t);
+    SETCAR(t, makeAsNumeric_LANGSXP(PROTECT(varAndIndices_2_LANGSXP(varAndInds)))); t = CDR(t);
+    UNPROTECT(1);
   }
   UNPROTECT(1);
   return Sans;
@@ -898,11 +907,12 @@ SEXP makeParsedVarList(SEXP Sx) {
 SEXP makeNewNimbleList(SEXP S_listName) {
   SEXP SnimbleInternalFunctionsEnv;
   SEXP call;
-  PROTECT(SnimbleInternalFunctionsEnv =
-    Rf_eval(Rf_findVar(Rf_install("nimbleInternalFunctions"), R_GlobalEnv), R_GlobalEnv));
-  PROTECT(call = Rf_allocVector(LANGSXP, 2));
+  SnimbleInternalFunctionsEnv =
+    PROTECT(Rf_eval(PROTECT(Rf_findVar(Rf_install("nimbleInternalFunctions"), R_GlobalEnv)), R_GlobalEnv));
+  call = PROTECT(Rf_allocVector(LANGSXP, 2));
   SETCAR(call, Rf_install("makeNewNimListSEXPRESSIONFromC"));
   SETCADR(call, S_listName);
-  UNPROTECT(2);
-  return(Rf_eval(call, SnimbleInternalFunctionsEnv));
+  SEXP ans = PROTECT(Rf_eval(call, SnimbleInternalFunctionsEnv));
+  UNPROTECT(4);
+  return(ans);
 }

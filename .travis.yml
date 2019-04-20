@@ -1,6 +1,8 @@
 language: r
+r:
+    - 3.5    
 
-dist: trusty
+dist: bionic
 sudo: false
 
 cache:

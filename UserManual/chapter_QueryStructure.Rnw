@@ -1,7 +1,0 @@
-\Sexpr{set_parent('NimbleUserManual.Rnw')}
-
-<<echo=FALSE>>=
-require(nimble)
-@ 
-
-\chapter{Programming with models: querying model structure}

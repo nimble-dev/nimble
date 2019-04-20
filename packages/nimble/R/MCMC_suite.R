@@ -532,9 +532,14 @@ MCMCsuiteClass <- setRefClass(
                 } else                { CmcmcFunctionList                   <<- CmcmcFunctionList_temp }
             })
             addTimeResult('nimble_compile', timeResult)
-            
+
+            ## Record full set of model states
+            allInitialModelStates <- list()
+            allModelVars <- Cmodel$getVarNames(includeLogProb = TRUE)
+            for(var in allModelVars)   allInitialModelStates[[var]] <- Cmodel[[var]]
+                
             for(iMCMC in seq_along(nimbleMCMCs)) {
-                Cmodel$setInits(inits);     calculate(Cmodel)
+                for(var in allModelVars)   Cmodel[[var]] <<- allInitialModelStates[[var]]
                 mcmcTag <- nimbleMCMCs[iMCMC]
                 Cmcmc <- CmcmcFunctionList[[mcmcTag]]
                 if(setSeed) set.seed(0)

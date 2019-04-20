@@ -69,7 +69,7 @@ public:
   vector<int> anyStochParents();
   bool anyStochParentsOneNode(vector<int> &anyStochParents, int CgraphID);
   vector<int> getDependencies(const vector<int> &Cnodes, const vector<int> &Comit, bool downstream);
-  void getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth, bool followLHSinferred = true);
+  void getDependenciesOneNode(vector<int> &deps, vector<int> &tempDeps, int CgraphID, bool downstream, unsigned int recursionDepth, bool followLHSinferred = true);
   int getDependencyPathCountOneNode(const int Cnode);
   ~nimbleGraph();
 };
