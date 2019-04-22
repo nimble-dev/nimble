@@ -1532,23 +1532,20 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
 }
 
 makeOperatorParam <- function(op, argTypes, sizes = 3) {
-  if (length(argTypes) == 1) {
-    name <- paste(op, argTypes)
-    expr <- substitute(
-      out <- FOO(arg1), list(FOO = as.name(op))
+  name <- paste(op, paste(argTypes, collapse = ' '))
+  arg_names <- paste0('arg', 1:length(argTypes))
+  expr <- substitute(
+    out <- this_call,
+    list(
+      this_call = as.call(c(
+        substitute(FOO, list(FOO = as.name(op))),
+        lapply(arg_names, as.name)
+      ))
     )
-  } else if (length(argTypes) == 2) {
-    name <- paste(op, argTypes[1], argTypes[2])
-    expr <- substitute(
-      out <- FOO(arg1, arg2), list(FOO = as.name(op))
-    )
-  }  else {
-    stop("Cannot currently handle testing with more than 2 arguments.",
-         call. = FALSE)
-  }
+  )
 
   argTypesList <- as.list(argTypes)
-  names(argTypesList) <- paste0('arg', 1:length(argTypes))
+  names(argTypesList) <- arg_names
   argTypesList <- lapply(argTypesList, function(arg) {
     parse(text = arg)[[1]]
   })

@@ -286,8 +286,9 @@ test_AD <- function(param, size = 3,
         }
       )
     }
-    if (verbose) cat("### Test successful \n\n")
+    nimble:::clearCompiled(CnfInst)
   })
+  if (verbose) cat("### Test successful \n\n")
   invisible(NULL)
 }
 
@@ -296,20 +297,57 @@ test_AD <- function(param, size = 3,
 ## in test_AD. One of the components will always be the
 ## argument itself and the other will be a random element
 ## within the arg (if the arg is non-scalar).
-make_wrt <- function(argType, argname) {
-  argSymbol <- nimble:::argType2symbol(argType)
-  wrt <- argname
-  if (argSymbol$nDim == 2)
-    c(
-      wrt, paste0(
-             argname, '[',
-             sample(1:argSymbol$size[1], size = 1) , ',',
-             sample(1:argSymbol$size[2], size = 1),
-             ']'
-           )
-    )
-  else ## nDim is 0 or 1
-    c(wrt, paste0(argname, '[', sample(1:argSymbol$size, size = 1) , ']'))
+make_wrt <- function(argTypes, n_methods = 10) {
+
+  ## always include each arg on its own, and all combinations of the args
+  wrts <- as.list(names(argTypes))
+  if (length(argTypes) > 1)
+    for (m in 2:length(argTypes)) {
+      this_combn <- combn(names(argTypes), m)
+      wrts <- c(
+        wrts,
+        unlist(apply(this_combn, 2, list), recursive = FALSE)
+      )
+    }
+
+  while (n_methods > 0) {
+    n_methods  <- n_methods - 1
+    n <- sample(1:length(argTypes), 1) # how many of the args to use?
+    ## grab a random subset of the args of length n
+    args <- sample(argTypes, n)
+    ## may repeat an arg up to 2 times
+    reps <- sample(1:2, length(args), replace = TRUE)
+    argSymbols <- lapply(args, nimble:::argType2symbol)
+    this_wrt <- c()
+    for (i in 1:length(args)) {
+      while (reps[i] > 0) {
+        reps[i] <- reps[i] - 1
+        ## coin flip determines whether to subscript or not
+        if (sample(c(TRUE, FALSE), 1))
+          if (argSymbols[[i]]$nDim == 2)
+            this_wrt <- c(
+              this_wrt,
+              paste0(
+                names(args)[i], '[',
+                sample(1:argSymbols[[i]]$size[1], size = 1) , ',',
+                sample(1:argSymbols[[i]]$size[2], size = 1),
+                ']'
+              )
+            )
+          else ## nDim is 0 or 1
+            this_wrt <- c(
+              this_wrt,
+              paste0(
+                names(args)[i],
+                '[', sample(1:argSymbols[[i]]$size, size = 1) , ']'
+              )
+            )
+        else this_wrt <- c(this_wrt, names(args)[i])
+      }
+    }
+    wrts <- c(wrts, list(unique(this_wrt)))
+  }
+  wrts <- unique(wrts)
 }
 
 makeADtest <- function(op, argTypes) {
@@ -329,62 +367,41 @@ makeADtest <- function(op, argTypes) {
     returnType(ADNimbleList())
     return(outList)
   }
-  if (opType == 'unary')
-    formals(method) <- list(
-      arg1 = parse(text = argTypes[1])[[1]]
-    )
-  else if (opType == 'binary')
-    formals(method) <- list(
-      arg1 = parse(text = argTypes[1])[[1]],
-      arg2 = parse(text = argTypes[2])[[1]]
+  formals_list <- lapply(argTypes, function(argType) {
+    parse(text = argType)[[1]]
+  })
+  names(formals_list) <- paste0('arg', 1:length(formals_list))
+  formals(method) <- formals_list
+
+  body(method)[[2]] <-
+    substitute(
+      outList <- derivs(this_call),
+      list(
+        this_call = as.call(
+          c(quote(run), lapply(names(formals_list), as.name))
+        )
+      )
     )
 
   methods <- list()
-  wrts <- list()
 
-  wrt <- unlist(mapply(make_wrt, opParam$args, names(opParam$args)))
-  for (i in seq_along(wrt)) {
+  wrts <- make_wrt(opParam$args)
+  for (i in seq_along(wrts)) {
     method_i <- paste0('method', i)
     methods[[method_i]] <- method
-    wrts[[method_i]] <- paste0('wrt ', wrt[[i]])
-    body(methods[[method_i]])[[2]] <-
-      if (opType == 'unary')
-        substitute(
-          outList <- derivs(run(arg1), wrt = this_wrt),
-          list(this_wrt = wrt[[i]])
-        )
-      else
-        substitute(
-          outList <- derivs(run(arg1, arg2), wrt = this_wrt),
-          list(this_wrt = wrt[[i]])
-        )
+    body(methods[[method_i]])[[2]][[3]][['wrt']] <- wrts[[i]]
   }
 
-  method_no_wrt <- paste0('method', length(wrt) + 1)
-  wrts[[method_no_wrt]] <- 'no wrt'
+  method_no_wrt <- paste0('method', length(methods) + 1)
+  methods[[method_no_wrt]] <- method
 
-  method_all_wrt <- paste0('method', length(wrt) + 2)
-  wrts[[method_all_wrt]] <- paste0('wrt ', paste0(wrt, collapse = ', '))
-  
-  methods[[method_all_wrt]] <- methods[[method_no_wrt]] <-  method
+  wrts <- c(wrts, 'no wrt')
+  names(wrts) <- names(methods)
 
-  if (opType == 'unary') {
-    body(methods[[method_no_wrt]])[[2]] <- quote(
-      outList <- derivs(run(arg1))
-    )
-    body(methods[[method_all_wrt]])[[2]] <- substitute(
-      outList <- derivs(run(arg1), wrt = this_wrt),
-      list(this_wrt = wrt)
-    )
-  } else {
-    body(methods[[method_no_wrt]])[[2]] <- quote(
-      outList <- derivs(run(arg1, arg2))
-    )
-    body(methods[[method_all_wrt]])[[2]] <- substitute(
-      outList <- derivs(run(arg1, arg2), wrt = this_wrt),
-      list(this_wrt = wrt)
-    )
-  }
+  ## method_all_wrt <- paste0('method', length(wrt) + 2)
+  ## wrts[[method_all_wrt]] <- paste0('wrt ', paste0(wrt, collapse = ', '))
+  ## methods[[method_all_wrt]] <- methods[[method_no_wrt]] <-  method
+  ## body(methods[[method_all_wrt]])[[2]][[3]][['wrt']] <- wrt
 
   list(
     name = opParam$name,
@@ -436,7 +453,7 @@ modifyOnMatch(unaryOpTests, 'acosh .+', 'input_dist', function(x) abs(rnorm(x)) 
 
 ## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
 modifyOnMatch(unaryOpTests, 'ilogit .+', 'tol2', 0.1)
-modifyOnMatch(unaryOpTests, '(factorial|exp|log1p|tan|acos) .+', 'tol2', 0.001)
+modifyOnMatch(unaryOpTests, '(factorial|exp|log1p|tan|acos|cos) .+', 'tol2', 0.001)
 
 ## runtime failures
 ## abs fails on negative inputs
@@ -452,8 +469,8 @@ modifyOnMatch(
   unaryOpTests, '.+ double\\(0\\)', 'knownFailures',
   list(
     method4 = list(
-      jacobian = expect_error,
-      hessian = expect_error
+      jacobian = expect_failure,
+      hessian = expect_failure
     )
   )
 )
@@ -462,12 +479,12 @@ modifyOnMatch(
   'knownFailures',
   list(
     method2 = list(
-      jacobian = expect_error,
-      hessian = expect_error
+      jacobian = expect_failure,
+      hessian = expect_failure
     ),
     method4 = list(
-      jacobian = expect_error,
-      hessian = expect_error
+      jacobian = expect_failure,
+      hessian = expect_failure
     )
   )
 )
@@ -529,17 +546,157 @@ binaryOpTests <- unlist(
       mapply(
         makeADtest,
         argTypes = binaryArgs,
-        MoreArgs = list(op = x, opType = 'binary'),
+        MoreArgs = list(op = x),
         SIMPLIFY = FALSE
       )
     })
 )
+
 names(binaryOpTests) <- sapply(binaryOpTests, `[[`, 'name')
 
 ## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
-modifyOnMatch(binaryOpTests, '(\\+|-) double\\(0\\) double\\(1, 4\\)', 'tol2', 0.001)
-modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1, 4\\) double\\(0\\)', 'tol2', 0.001)
-modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1, 4\\) double\\(1, 4\\)', 'tol2', 0.001)
+##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(0\\) double\\(1, 4\\)', 'tol2', 0.001)
+##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1, 4\\) double\\(0\\)', 'tol2', 0.001)
+##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1, 4\\) double\\(1, 4\\)', 'tol2', 0.001)
+
+## runtime failures
+modifyOnMatch(
+  binaryOpTests,
+  '\\+ double\\(0\\) double\\(0\\)',
+  'knownFailures',
+  list(
+    method5 = list( ## no wrt
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method6 = list( ## wrt arg1, arg1[1], arg2, arg2[1]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    )
+  )
+)
+
+modifyOnMatch(
+  binaryOpTests,
+  '- double\\(0\\) double\\(0\\)',
+  'knownFailures',
+  list(
+    method3 = list( ## wrt arg2
+      jacobian = expect_failure
+    ),
+    method4 = list( ## wrt arg2[1]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method5 = list( ## no wrt
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method6 = list( ## wrt arg1, arg1[1], arg2, arg2[1]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    )
+  )
+)
+
+modifyOnMatch(
+  binaryOpTests,
+  '\\+ double\\(0\\) double\\(1, 4\\)',
+  'knownFailures',
+  list(
+    method3 = list( ## wrt arg2
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method4 = list( ## wrt arg2[*]
+      jacobian = expect_failure
+    ),
+    method5 = list( ## no wrt
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method6 = list( ## wrt arg1, arg1[1], arg2, arg2[*]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    )
+  )
+)
+
+modifyOnMatch(
+  binaryOpTests,
+  '\\+ double\\(1, 4\\) double\\(0\\)',
+  'knownFailures',
+  list(
+    method2 = list( ## wrt arg1[*]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method3 = list( ## wrt arg2
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method4 = list( ## wrt arg2[1]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method5 = list( ## no wrt
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method6 = list( ## wrt arg1, arg1[*], arg2, arg2[1]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    )
+  )
+)
+
+modifyOnMatch(
+  binaryOpTests,
+  '\\+ double\\(1, 4\\) double\\(1, 4\\)',
+  'knownFailures',
+  list(
+    method2 = list( ## wrt arg1[*]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method4 = list( ## wrt arg2[*]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method5 = list( ## no wrt
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method6 = list( ## wrt arg1, arg1[*], arg2, arg2[*]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    )
+  )
+)
+
+modifyOnMatch(
+  binaryOpTests,
+  '\\+ double\\(2, c\\(3, 4\\)\\) double\\(2, c\\(3, 4\\)\\)',
+  'knownFailures',
+  list(
+    method2 = list( ## wrt arg1[*]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method4 = list( ## wrt arg2[*]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method5 = list( ## no wrt
+      jacobian = expect_failure,
+      hessian = expect_failure
+    ),
+    method6 = list( ## wrt arg1, arg1[*], arg2, arg2[*]
+      jacobian = expect_failure,
+      hessian = expect_failure
+    )
+  )
+)
 
 ## compilation failures
 ops_regex <- paste0(
@@ -552,16 +709,16 @@ modifyOnMatch(
   paste0('\\+ (',
          'double\\(2, c\\(3, 4\\)\\) double\\(0\\)|',
          'double\\(0\\) double\\(2, c\\(3, 4\\)\\))'),
-  'knownFailure', '.*compiles'
+  'knownFailures', list(compilation = TRUE)
 )
 
 modifyOnMatch(
   binaryOpTests,
   '/ double\\(0\\) double\\(2, c\\(3, 4\\)\\)',
-  'knownFailure', '.*compiles'
+  'knownFailures', list(compilation = TRUE)
 )
 
-sapply(binaryOpTests, test_AD, info = 'binary')
+sapply(binaryOpTests, test_AD)
 
 ##########################
 ## unary square matrix ops
@@ -630,3 +787,7 @@ names(binaryMatrixOpTests) <- sapply(binaryMatrixOpTests, `[[`, 'name')
 modifyOnMatch(binaryMatrixOpTests, '%*% .+', 'tol2', 0.001)
 
 sapply(binaryMatrixOpTests, test_AD, info = 'binary matrix')
+
+#########################
+## distribution functions
+#########################
