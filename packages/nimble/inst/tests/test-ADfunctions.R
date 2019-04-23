@@ -195,8 +195,7 @@ test_that('Derivatives of matrix exponentiation function correctly.',
 ## one for exp(mat)
 ## get order to owrk without c()!
 
-test_AD <- function(param, size = 3,
-                    dir = file.path(tempdir(), "nimble_generatedCode"),
+test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
                     control = list(), verbose = nimbleOptions('verbose')) {
   if (!is.null(param$debug) && param$debug) browser()
   if (verbose) cat(paste0("### Testing ", param$name, "\n"))
@@ -266,7 +265,9 @@ test_AD <- function(param, size = 3,
     for (method_name in names(param$methods)) {
       if (verbose) {
         cat(paste0(
-          "## Testing ", method_name, ': ', param$wrts[[method_name]], '\n'
+          "## Testing ", method_name, ': ',
+          paste0(param$wrts[[method_name]], collapse = ', '),
+          '\n'
         ))
       }
       wrap_if_true(
@@ -366,8 +367,8 @@ make_wrt <- function(argTypes, n_methods = 10) {
   wrts <- unique(wrts)
 }
 
-makeADtest <- function(op, argTypes, wrt_args = NULL, arg_dists = NULL, size = 3) {
-  opParam <- makeOperatorParam(op, argTypes, size)
+makeADtest <- function(op, argTypes, wrt_args = NULL, arg_dists = NULL, more_args = NULL) {
+  opParam <- makeOperatorParam(op, argTypes, more_args)
 
   run <- gen_runFunCore(opParam)
   method <- function() {
@@ -395,7 +396,6 @@ makeADtest <- function(op, argTypes, wrt_args = NULL, arg_dists = NULL, size = 3
   methods <- list()
 
   if (is.null(wrt_args)) wrt_args <- rep(TRUE, length(argTypes))
-
   wrts <- make_wrt(opParam$args[wrt_args])
   for (i in seq_along(wrts)) {
     method_i <- paste0('method', i)
@@ -808,16 +808,24 @@ dist_params = list(
     ## name of dist_param entry should be abbreviated distribution name
     ## as used in distribution functions (e.g. dnorm -> norm)
     name = 'binom',
-    variants = c('d', 'p', 'q', 'r'), ## will be prepended to name
+    ## variants should create a valid distribution function name
+    ## when prepended to name
+    variants = c('d', 'p', 'q'),
     args = list(
-      support = list(
+      ## the support arg must be included
+      support = list( ## TODO: better naming convention
+        ## This arg is required and should generate a number on the support,
+        ## uniformly at random when possible.
         ## `size` here refers to the size parameter of the binomial distribution.
         ## Since the support depends on a parameter, return a function which
         ## test_AD will use with the realized value of the parameter `size`.
-        dist = function(n) function(size) sample(1:size, n),
+        dist = function(n) function(size) sample(1:size, n, replace = TRUE),
+        ## The type field is required for all args.
         type = c('double(0)', 'double(1, 5)')
       ),
       size = list(
+        ## For any arg (including support) dist is optional.
+        ## See argType2input() for default argument generation dists.
         dist = function(n) sample(1:100, n, replace = TRUE),
         type = c('double(0)', 'double(1, 3)')
       ),
@@ -826,7 +834,10 @@ dist_params = list(
         type = c('double(0)', 'double(1, 7)')
       )
     ),
-    wrt = c('prob')
+    ## wrt should be a character vector and can include arg names
+    ## and any distribution function first argument names among the
+    ## choices 'x', 'q', and 'p'.
+    wrt = c('prob', 'p')
   )##,
   ##list(
   ##  name = 'beta',
@@ -866,66 +877,79 @@ dist_params = list(
   ##)
 )
 
-## Takes an element of dist_params list
-## and returns
-## dist_param must have the following fields/subfields:
-##   - name
-##   - variants
-##   - args
-##     - support
-##       - dist
-##       - type
-## Additional args must also have dist and type
-makeADdistTest <- function(dist_param, size = 3) {
+## Takes an element of dist_params list and returns an AD test
+## parameterization which test_AD can use.
+##
+## dist_param: Probability distribution parameterization, which
+##             must have the following fields/subfields:
+##             - name
+##             - variants
+##             - args
+##               - support
+##                 - type
+##             Additional args must also have dist and type fields.
+## more_args:  Passed to makeOperatorParam().
+##
+makeADdistTest <- function(dist_param, more_args = NULL) {
   dist_name <- dist_param$name
   ops <- sapply(dist_param$variants, paste0, dist_name, simplify = FALSE)
-  argTypes <- unlist(
-    sapply(dist_param$variants, function(variant) {
-      op <- paste0(variant, dist_name)
-      support_type <- dist_param$args$support$type
-      first_argType <- switch(
-        variant,
-        d = support_type,
-        p = support_type,
-        q = c('double(0)', 'double(1, 4)'),
-        r = c('integer(0)', 'integer(1, 4)')
-      )
-      first_arg_name <- switch(variant, d = 'x', p = 'q', q = 'p', r = 'n')
-      grid <- eval(as.call(c(
-        expand.grid, list(first_argType),
-        lapply(dist_param$args, `[[`, 'type')[-1]
-      )))
-      argTypes <- as.list(data.frame(t(grid), stringsAsFactors=FALSE))
-      lapply(argTypes, function(v) {
-        names(v) <- c(first_arg_name, names(dist_param$args)[-1])
-        v
-      })
-    }, simplify = FALSE), recursive = FALSE
-  )
+  argTypes <- sapply(dist_param$variants, function(variant) {
+    op <- paste0(variant, dist_name)
+    support_type <- dist_param$args$support$type
+    first_argType <- switch(
+      variant,
+      d = support_type,
+      p = support_type,
+      q = c('double(0)', 'double(1, 4)')
+    )
+    first_arg_name <- switch(variant, d = 'x', p = 'q', q = 'p')
+    grid <- eval(as.call(c(
+      expand.grid, list(first_argType),
+      lapply(dist_param$args, `[[`, 'type')[-1]
+    )))
+    argTypes <- as.list(data.frame(t(grid), stringsAsFactors=FALSE))
+    lapply(argTypes, function(v) {
+      names(v) <- c(first_arg_name, names(dist_param$args)[-1])
+      v
+    })
+  }, simplify = FALSE)
   param_dists <- lapply(dist_param$args[-1], `[[`, 'dist')
   arg_dists <- sapply(dist_param$variants, function(variant) {
     arg1_dist <- switch(
       variant,
       d = list(x = dist_param$args$support$dist),
       p = list(q = dist_param$args$support$dist),
-      q = list(p = runif),
-      r = list(n = function(n) rep(size, n))
+      q = list(p = runif)
     )
     c(arg1_dist, param_dists)
   }, simplify = FALSE)
-  op_params <- mapply(
-    makeADtest, ops, argTypes, arg_dists,
-    MoreArgs = list(
-      wrt_args = dist_param$wrt,
-      size = size
-    ), SIMPLIFY = FALSE
+  op_params <- unlist(
+    lapply(
+      dist_param$variants, function(variant) {
+        lapply(
+          argTypes[[variant]],
+          function(these_argTypes) {
+            wrt_args = intersect(
+              dist_param$wrt, names(these_argTypes)
+            )
+            makeADtest(
+              ops[[variant]], these_argTypes,
+              wrt_args = wrt_args,
+              arg_dists = arg_dists[[variant]],
+              more_args = more_args
+            )
+          }
+        )
+      }
+    ), recursive = FALSE
   )
   names(op_params) <- sapply(op_params, `[[`, 'name')
   return(op_params)
 }
 
 dist_tests <- unlist(
-  lapply(dist_params, makeADdistTest),
+  lapply(dist_params, makeADdistTest, more_args = list(log = 1)),
   recursive = FALSE
 )
+
 lapply(dist_tests, test_AD)

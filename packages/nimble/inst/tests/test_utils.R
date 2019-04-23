@@ -1531,7 +1531,14 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
     invisible(NULL)
 }
 
-makeOperatorParam <- function(op, argTypes, size = 3) {
+## Create a nimbleFunction parametrization to be passed to gen_runFunCore().
+##
+## op:        An operator string.
+## argTypes:  A character vector of argTypes (e.g. "double(0)").
+## more_args: A named list, e.g. list(log = 1), that will be added
+##            as a formal to the output expr but not part of args.
+##
+makeOperatorParam <- function(op, argTypes, more_args = NULL) {
   name <- paste(op, paste(argTypes, collapse = ' '))
   arg_names <- names(argTypes)
   if (is.null(arg_names))
@@ -1541,7 +1548,8 @@ makeOperatorParam <- function(op, argTypes, size = 3) {
     list(
       this_call = as.call(c(
         substitute(FOO, list(FOO = as.name(op))),
-        lapply(arg_names, as.name)
+        lapply(arg_names, as.name),
+        more_args
       ))
     )
   )
@@ -1556,37 +1564,18 @@ makeOperatorParam <- function(op, argTypes, size = 3) {
     name = name,
     expr = expr,
     args = argTypesList,
-    outputType = parse(text = returnTypeString(op, argTypes, size))[[1]]
+    outputType = parse(text = returnTypeString(op, argTypes))[[1]]
   )
 }
 
-returnTypeString <- function(op, argTypes, size = 3) {
-  ## Takes an operator and its input types as a character vector and
-  ## creates a string representing the returnType for the operation.
-  rdist_funs <- c(
-    nimble:::scalar_distribution_rFuns,
-    'rt', 'rexp'
-  )
-
-  if (op %in% rdist_funs) {
-    arg1 <- nimble:::argType2symbol(parse(text = argTypes[1])[[1]])
-
-    if (arg1$nDim == 0)
-      ## assume input is equal to size
-      return(paste0('double(1, ', size, ')'))
-    else if (arg1$nDim == 1)
-      ## In random generation functions, if length(n) > 1,
-      ## the length is taken to be the number required.
-      return(argTypes[1])
-    else
-      stop(
-        'Random generation function cannot be called with argument of nDim > 1.',
-        call. = FALSE
-      )
-  }
-
+## Takes an operator and its input types as a character vector and
+## creates a string representing the returnType for the operation.
+##
+## op:       An operator string
+## argTypes: A character vector of argTypes (e.g. "double(0)".
+##
+returnTypeString <- function(op, argTypes) {
   dist_funs <- c(
-    rdist_funs,
     nimble:::scalar_distribution_dFuns,
     nimble:::scalar_distribution_pFuns,
     nimble:::scalar_distribution_qFuns,
