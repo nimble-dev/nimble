@@ -324,7 +324,8 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
             if (verbose) cat("## Checking log behavior for jacobians\n")
             expect_equal(
               Cderivs2[[method_name]]$jacobian,
-              Rderivs2[[method_name]]$jacobian
+              Rderivs2[[method_name]]$jacobian,
+              tolerance = tol1
             )
             expect_false(isTRUE(all.equal(
               Rderivs[[method_name]]$jacobian, Rderivs2[[method_name]]$jacobian
@@ -348,7 +349,8 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
            if (verbose) cat("## Checking log behavior for hessians\n")
             expect_equal(
               Cderivs2[[method_name]]$hessian,
-              Rderivs2[[method_name]]$hessian
+              Rderivs2[[method_name]]$hessian,
+              tolerance = tol2
             )
             expect_false(isTRUE(all.equal(
               Rderivs[[method_name]]$hessian, Rderivs2[[method_name]]$hessian
@@ -461,10 +463,12 @@ makeADtest <- function(op, argTypes, wrt_args = NULL,
     body(methods[[method_i]])[[2]][[3]][['wrt']] <- wrts[[i]]
   }
 
-  method_no_wrt <- paste0('method', length(methods) + 1)
-  methods[[method_no_wrt]] <- method
+  if (all(names(opParam$args) %in% wrt_args)) {
+    method_no_wrt <- paste0('method', length(methods) + 1)
+    methods[[method_no_wrt]] <- method
+    wrts <- c(wrts, 'no wrt')
+  }
 
-  wrts <- c(wrts, 'no wrt')
   names(wrts) <- names(methods)
 
   ## method_all_wrt <- paste0('method', length(wrt) + 2)
@@ -863,45 +867,70 @@ sapply(binaryMatrixOpTests, test_AD, info = 'binary matrix')
 
 dist_params = list(
   list(
+    ##
     ## name of dist_param entry should be abbreviated distribution name
     ## as used in distribution functions (e.g. dnorm -> norm)
+    ##
     name = 'binom',
+    ##
     ## variants should create a valid distribution function name
     ## when prepended to name
+    ##
     variants = c('d', 'p', 'q'),
     args = list(
+      ##
       ## the support arg must be included
+      ##
       support = list( ## TODO: better naming convention
+        ##
         ## This arg is required and should generate a number on the support,
         ## uniformly at random when possible.
         ## `size` here refers to the size parameter of the binomial distribution.
         ## Since the support depends on a parameter, return a function which
         ## test_AD will use with the realized value of the parameter `size`.
+        ##
         dist = function(n) function(size) sample(1:size, n, replace = TRUE),
+        ##
         ## The type field is required for all args.
-        type = c('double(0)', 'double(1, 5)')
+        ##
+        type = c('double(0)')##, 'double(1, 5)')
       ),
       size = list(
+        ##
         ## For any arg (including support) dist is optional.
         ## See argType2input() for default argument generation dists.
+        ##
         dist = function(n) sample(1:100, n, replace = TRUE),
-        type = c('double(0)', 'double(1, 3)')
+        type = c('double(0)')##, 'double(1, 3)')
       ),
       prob = list(
         dist = function(n) runif(n),
-        type = c('double(0)', 'double(1, 7)')
+        type = c('double(0)')##, 'double(1, 7)')
       )
       ## log is a special arg that will trigger a test to check that
       ## the _logFixed variant is not incorrectly used when included.
       ## See distributions_R.hpp.
+      ##
       ## log = list(
       ##   dist = function(n) sample(0:1, size = n, replace = TRUE),
       ##   type = 'double(0)'
       ## )
+      ##
     ),
+    ##
+    ## You may want to pass in more_args to distribution function expr,
+    ## but not as one of the nimbleFunction args, in which case they
+    ## can be included as follows:
+    ##
+    ## more_args = list(
+    ##   d = list(log = 1),
+    ##   p = list(log.p = 1)
+    ## ),
+    ##
     ## wrt should be a character vector and can include arg names
     ## and any distribution function first argument names among the
     ## choices 'x', 'q', and 'p'.
+    ##
     wrt = c('prob', 'p')
   )##,
   ##list(
@@ -955,7 +984,7 @@ dist_params = list(
 ##             Additional args must also have dist and type fields.
 ## more_args:  Passed to makeOperatorParam().
 ##
-makeADdistTest <- function(dist_param, more_args = NULL) {
+makeADdistTest <- function(dist_param) {
   dist_name <- dist_param$name
   ops <- sapply(dist_param$variants, paste0, dist_name, simplify = FALSE)
   argTypes <- sapply(dist_param$variants, function(variant) {
@@ -965,7 +994,7 @@ makeADdistTest <- function(dist_param, more_args = NULL) {
       variant,
       d = support_type,
       p = support_type,
-      q = c('double(0)', 'double(1, 4)')
+      q = c('double(0)')##, 'double(1, 4)')
     )
     first_arg_name <- switch(variant, d = 'x', p = 'q', q = 'p')
     grid <- eval(as.call(c(
@@ -1001,7 +1030,7 @@ makeADdistTest <- function(dist_param, more_args = NULL) {
               ops[[variant]], these_argTypes,
               wrt_args = wrt_args,
               arg_dists = arg_dists[[variant]],
-              more_args = more_args
+              more_args = dist_param$more_args[[variant]]
             )
           }
         )
@@ -1012,8 +1041,21 @@ makeADdistTest <- function(dist_param, more_args = NULL) {
   return(op_params)
 }
 
+## add more_args to include as part of distribution function expr
+dist_params_log_1 <- lapply(dist_params, function(param) {
+  more_args = lapply(
+    param$variants, switch,
+    d = list(log = 1),
+    p = list(log.p = 1),
+    q = list(log.p = 1)
+  )
+  names(more_args) <- param$variants
+  param$more_args = more_args
+  param
+})
+
 dist_tests <- unlist(
-  lapply(dist_params, makeADdistTest, more_args = list(log = 1)),
+  lapply(dist_params_log_1, makeADdistTest),
   recursive = FALSE
 )
 
