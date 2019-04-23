@@ -209,15 +209,21 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   nfInst <- nf()
 
   opParam <- param$opParam
-  if (is.null(param$arg_dists) || length(param$arg_dists) == 1)
-    input <- lapply(opParam$args, argType2input, param$arg_dists)
-  else {
-    if (length(param$arg_dists) != length(opParam$args))
+
+  if (is.null(param$arg_dists) || is.null(names(param$arg_dists)))
+    if (length(param$arg_dists) <= 1)
+      input <- lapply(opParam$args, argType2input, param$arg_dists)
+    else
       stop(
-        'arg_dists must be NULL, length 1, or the same length as the arguments',
+        'arg_dists of length greater than 1 must have names',
         call. = FALSE
       )
-    input <- mapply(argType2input, opParam$args, param$arg_dists)
+  else {
+    input <- sapply(
+      names(opParam$args),
+      function(name)
+        argType2input(opParam$args[[name]], param$arg_dists[[name]])
+    )
   }
 
   is_fun <- sapply(input, is.function)
@@ -260,6 +266,18 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         input
       )
     }, USE.NAMES = TRUE)
+    if ('log' %in% names(opParam$args)) {
+      input2 <- input
+      input2$log <- as.numeric(!input$log)
+      Rderivs2 <- try(
+        sapply(names(param$methods), function(method) {
+          do.call(nfInst[[method]], input2)
+        }, USE.NAMES = TRUE), silent = TRUE
+      )
+      Cderivs2 <- sapply(names(param$methods), function(method) {
+        do.call(CnfInst[[method]], input2)
+      }, USE.NAMES = TRUE)
+    }
     tol1 <- if (is.null(param$tol1)) 0.00001 else param$tol1
     tol2 <- if (is.null(param$tol2)) 0.0001 else param$tol2
     for (method_name in names(param$methods)) {
@@ -278,6 +296,19 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
             Cderivs[[method_name]]$value,
             Rderivs[[method_name]]$value
           )
+          if ('log' %in% names(opParam$args)) {
+            if (verbose) cat("## Checking log behavior for values\n")
+            expect_equal(
+              Cderivs2[[method_name]]$value,
+              Rderivs2[[method_name]]$value
+            )
+            expect_false(isTRUE(all.equal(
+              Rderivs[[method_name]]$value, Rderivs2[[method_name]]$value
+            )))
+            expect_false(isTRUE(all.equal(
+              Cderivs[[method_name]]$value, Cderivs2[[method_name]]$value
+            )))
+          }
         }
       )
       wrap_if_true(
@@ -289,6 +320,19 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
             Rderivs[[method_name]]$jacobian,
             tolerance = tol1
           )
+          if ('log' %in% names(opParam$args)) {
+            if (verbose) cat("## Checking log behavior for jacobians\n")
+            expect_equal(
+              Cderivs2[[method_name]]$jacobian,
+              Rderivs2[[method_name]]$jacobian
+            )
+            expect_false(isTRUE(all.equal(
+              Rderivs[[method_name]]$jacobian, Rderivs2[[method_name]]$jacobian
+            )))
+            expect_false(isTRUE(all.equal(
+              Cderivs[[method_name]]$jacobian, Cderivs2[[method_name]]$jacobian
+            )))
+          }
         }
       )
       wrap_if_true(
@@ -300,6 +344,19 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
             Rderivs[[method_name]]$hessian,
             tolerance = tol2
           )
+          if ('log' %in% names(opParam$args)) {
+           if (verbose) cat("## Checking log behavior for hessians\n")
+            expect_equal(
+              Cderivs2[[method_name]]$hessian,
+              Rderivs2[[method_name]]$hessian
+            )
+            expect_false(isTRUE(all.equal(
+              Rderivs[[method_name]]$hessian, Rderivs2[[method_name]]$hessian
+            )))
+            expect_false(isTRUE(all.equal(
+              Cderivs[[method_name]]$hessian, Cderivs2[[method_name]]$hessian
+            )))
+          }
         }
       )
     }
@@ -833,6 +890,13 @@ dist_params = list(
         dist = function(n) runif(n),
         type = c('double(0)', 'double(1, 7)')
       )
+      ## log is a special arg that will trigger a test to check that
+      ## the _logFixed variant is not incorrectly used when included.
+      ## See distributions_R.hpp.
+      ## log = list(
+      ##   dist = function(n) sample(0:1, size = n, replace = TRUE),
+      ##   type = 'double(0)'
+      ## )
     ),
     ## wrt should be a character vector and can include arg names
     ## and any distribution function first argument names among the
@@ -877,8 +941,8 @@ dist_params = list(
   ##)
 )
 
-## Takes an element of dist_params list and returns an AD test
-## parameterization which test_AD can use.
+## Takes an element of dist_params list and returns a list of AD test
+## parameterizations, each of which test_AD can use.
 ##
 ## dist_param: Probability distribution parameterization, which
 ##             must have the following fields/subfields:
@@ -953,3 +1017,23 @@ dist_tests <- unlist(
 )
 
 lapply(dist_tests, test_AD)
+
+#################################
+## distribution functions log arg
+#################################
+
+## add the arg 'log' to all the dist_params
+dist_params_with_log <- lapply(dist_params, function(param) {
+  param$args$log <- list(
+    dist = function(n) sample(0:1, size = n, replace = TRUE),
+    type = 'double(0)'
+  )
+  param
+})
+
+dist_with_log_tests <- unlist(
+  lapply(dist_params_with_log, makeADdistTest),
+  recursive = FALSE
+)
+
+lapply(dist_with_log_tests, test_AD)
