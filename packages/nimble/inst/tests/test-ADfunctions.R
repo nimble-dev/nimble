@@ -397,7 +397,7 @@ make_wrt <- function(argTypes, n_methods = 10) {
       while (reps[i] > 0) {
         reps[i] <- reps[i] - 1
         ## coin flip determines whether to subscript or not
-        if (sample(c(TRUE, FALSE), 1))
+        if (argSymbols[[i]]$nDim > 0 && sample(c(TRUE, FALSE), 1))
           if (argSymbols[[i]]$nDim == 2)
             this_wrt <- c(
               this_wrt,
@@ -408,7 +408,7 @@ make_wrt <- function(argTypes, n_methods = 10) {
                 ']'
               )
             )
-          else ## nDim is 0 or 1
+          else if (argSymbols[[i]]$nDim == 1)
             this_wrt <- c(
               this_wrt,
               paste0(
@@ -419,12 +419,13 @@ make_wrt <- function(argTypes, n_methods = 10) {
         else this_wrt <- c(this_wrt, names(args)[i])
       }
     }
-    wrts <- c(wrts, list(unique(this_wrt)))
+    if (!is.null(this_wrt)) wrts <- c(wrts, list(unique(this_wrt)))
   }
   wrts <- unique(wrts)
 }
 
-makeADtest <- function(op, argTypes, wrt_args = NULL, arg_dists = NULL, more_args = NULL) {
+makeADtest <- function(op, argTypes, wrt_args = NULL,
+                       arg_dists = NULL, more_args = NULL) {
   opParam <- makeOperatorParam(op, argTypes, more_args)
 
   run <- gen_runFunCore(opParam)
