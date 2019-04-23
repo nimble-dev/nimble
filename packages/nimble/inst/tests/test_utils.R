@@ -1531,9 +1531,11 @@ compareFilesUsingDiff <- function(trialFile, correctFile, main = "") {
     invisible(NULL)
 }
 
-makeOperatorParam <- function(op, argTypes, sizes = 3) {
+makeOperatorParam <- function(op, argTypes, size = 3) {
   name <- paste(op, paste(argTypes, collapse = ' '))
-  arg_names <- paste0('arg', 1:length(argTypes))
+  arg_names <- names(argTypes)
+  if (is.null(arg_names))
+    arg_names <- paste0('arg', 1:length(argTypes))
   expr <- substitute(
     out <- this_call,
     list(
@@ -1554,25 +1556,50 @@ makeOperatorParam <- function(op, argTypes, sizes = 3) {
     name = name,
     expr = expr,
     args = argTypesList,
-    outputType = parse(text = returnTypeString(op, argTypes, sizes))[[1]]
+    outputType = parse(text = returnTypeString(op, argTypes, size))[[1]]
   )
 }
 
-returnTypeString <- function(op, argTypes, sizes = 3) {
+returnTypeString <- function(op, argTypes, size = 3) {
   ## Takes an operator and its input types as a character vector and
   ## creates a string representing the returnType for the operation.
-  if (!is.character(argTypes))
-    stop('Argument `argTypes` must be a character vector.', call.=FALSE)
-  if (!length(argTypes) %in% c(1L, 2L))
-    stop('Can only `argTypes` of length 1 or 2.', call.=FALSE)
+  rdist_funs <- c(
+    nimble:::scalar_distribution_rFuns,
+    'rt', 'rexp'
+  )
+
+  if (op %in% rdist_funs) {
+    arg1 <- nimble:::argType2symbol(parse(text = argTypes[1])[[1]])
+
+    if (arg1$nDim == 0)
+      ## assume input is equal to size
+      return(paste0('double(1, ', size, ')'))
+    else if (arg1$nDim == 1)
+      ## In random generation functions, if length(n) > 1,
+      ## the length is taken to be the number required.
+      return(argTypes[1])
+    else
+      stop(
+        'Random generation function cannot be called with argument of nDim > 1.',
+        call. = FALSE
+      )
+  }
+
+  dist_funs <- c(
+    rdist_funs,
+    nimble:::scalar_distribution_dFuns,
+    nimble:::scalar_distribution_pFuns,
+    nimble:::scalar_distribution_qFuns,
+    paste0(c('d', 'q', 'p'), 't'),
+    paste0(c('d', 'q', 'p'), 'exp')
+  )
 
   returnTypeCode <- nimble:::returnTypeHandling[[op]]
 
-  if (is.null(returnTypeCode)) return(argTypes[1])
-
-  arg1 <- nimble:::argType2symbol(parse(text = argTypes[1])[[1]])
-  if (length(argTypes) == 2)
-    arg2 <- nimble:::argType2symbol(parse(text = argTypes[2])[[1]])
+  if (is.null(returnTypeCode))
+    if (!op %in% dist_funs)
+      return(argTypes[1])
+    else returnTypeCode <- 1
 
   scalarTypeString <- switch(
     returnTypeCode,
@@ -1581,13 +1608,18 @@ returnTypeString <- function(op, argTypes, sizes = 3) {
     'logical'  ## 3
   )
 
+  args <- lapply(
+    argTypes, function(argType)
+      nimble:::argType2symbol(parse(text = argType)[[1]])
+  )
+
   if (is.null(scalarTypeString)) ## returnTypeCode is 4 or 5
     scalarTypeString <-
       if (length(argTypes) == 1)
-        if (returnTypeCode == 5 && arg1$type == 'logical') 'integer'
-        else arg1$type
-      else {
-        aot <- nimble:::arithmeticOutputType(arg1$type, arg2$type)
+        if (returnTypeCode == 5 && args[[1]]$type == 'logical') 'integer'
+        else args[[1]]$type
+      else if (length(argTypes) == 2) {
+        aot <- nimble:::arithmeticOutputType(args[[1]]$type, args[[2]]$type)
         if (returnTypeCode == 5 && aot == 'logical') 'integer'
         else aot
       }
@@ -1599,16 +1631,35 @@ returnTypeString <- function(op, argTypes, sizes = 3) {
 
   nDim <- if (length(argTypes) == 1)
             if (op %in% reductionOperators) 0
-            else arg1$nDim
-          else max(arg1$nDim, arg2$nDim)
+            else args[[1]]$nDim
+          else max(sapply(args, `[[`, 'nDim'))
 
   sizes <- if (length(argTypes) == 1)
-             if (nDim == 0) 1 else arg1$size
+             if (nDim == 0) 1 else args[[1]]$size
            else {
-             if (op %in% nimble:::matrixMultOperators)
-               c(arg1$size[1], arg2$size[2])
-             else if (nDim == arg1$nDim) arg1$size
-             else arg2$size
+             if (op %in% nimble:::matrixMultOperators)  {
+               if (!length(argTypes) == 2)
+                 stop(
+                   paste0(
+                     'matrixMultOperators should only have 2 args but got ',
+                     length(argTypes)
+                   ), call. = FALSE
+                 )
+               c(args[[1]]$size[1], args[[2]]$size[2])
+             }
+             else {
+               has_right_nDim <- sapply(args, function(arg) arg$nDim == nDim)
+               if (nDim > 1)
+                 if (sum(has_right_nDim) > 1)
+                   stop(
+                     'Testing can only handle one argument with dimensions greater than 1.',
+                     call. = FALSE
+                   )
+                 else args[has_right_nDim][[1]]$size
+               else {
+                 max(sapply(args[has_right_nDim], `[[`, 'size'))
+               }
+             }
            }
 
   return(
