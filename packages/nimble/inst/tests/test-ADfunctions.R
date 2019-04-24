@@ -255,10 +255,14 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
 
   temporarilyAssignInGlobalEnv(nfInst)
 
-  wrap_if_true(param$knownFailures$compilation, expect_error, {
-    if (verbose) cat("## Compiling nimbleFunction \n")
-    if (!is.null(param$dir)) dir <- param$dir
-    CnfInst <- compileNimble(nfInst, dirName = dir)
+  if (verbose) cat("## Compiling nimbleFunction \n")
+  if (!is.null(param$dir)) dir <- param$dir
+  CnfInst <- wrap_if_true(param$knownFailures$compilation, expect_error, {
+    compileNimble(nfInst, dirName = dir)
+  })
+  if (is.null(CnfInst)) {
+    if (verbose) cat("## Compilation failed, as expected \n")
+  } else {
     Cderivs <- sapply(names(param$methods), function(method) {
       do.call(
         ## same issue as with Rderivs
@@ -346,7 +350,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
             tolerance = tol2
           )
           if ('log' %in% names(opParam$args)) {
-           if (verbose) cat("## Checking log behavior for hessians\n")
+            if (verbose) cat("## Checking log behavior for hessians\n")
             expect_equal(
               Cderivs2[[method_name]]$hessian,
               Rderivs2[[method_name]]$hessian,
@@ -363,7 +367,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
       )
     }
     nimble:::clearCompiled(CnfInst)
-  })
+  }
   if (verbose) cat("### Test successful \n\n")
   invisible(NULL)
 }
