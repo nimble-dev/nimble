@@ -1658,13 +1658,13 @@ returnTypeString <- function(op, argTypes) {
   )
 }
 
-argType2input <- function(argType, dist = NULL) {
+argType2input <- function(argType, distn = NULL) {
   argSymbol <- nimble:::argType2symbol(argType)
   type <- argSymbol$type
   nDim <- argSymbol$nDim
   size <- argSymbol$size
-  if (is.null(dist))
-    dist <- switch(
+  if (is.null(distn))
+    distn <- switch(
       type,
       "double"  = function(arg_size) rnorm(prod(arg_size)),
       "integer" = function(arg_size) rgeom(prod(arg_size), 0.5),
@@ -1673,10 +1673,10 @@ argType2input <- function(argType, dist = NULL) {
     )
   arg <- switch(
     nDim + 1,
-    dist(1), ## nDim is 0
-    dist(size), ## nDim is 1
-    matrix(dist(size), nrow = size[1], ncol = size[2]), ## nDim is 2
-    array(dist(size), dim = size) ## nDim is 3
+    distn(1), ## nDim is 0
+    distn(size), ## nDim is 1
+    matrix(distn(size), nrow = size[1], ncol = size[2]), ## nDim is 2
+    array(distn(size), dim = size) ## nDim is 3
   )
   if (is.null(arg))
     stop('Something went wrong while making test input.', call.=FALSE)

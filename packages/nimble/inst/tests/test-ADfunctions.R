@@ -210,19 +210,19 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
 
   opParam <- param$opParam
 
-  if (is.null(param$arg_dists) || is.null(names(param$arg_dists)))
-    if (length(param$arg_dists) <= 1)
-      input <- lapply(opParam$args, argType2input, param$arg_dists)
+  if (is.null(param$arg_distns) || is.null(names(param$arg_distns)))
+    if (length(param$arg_distns) <= 1)
+      input <- lapply(opParam$args, argType2input, param$arg_distns)
     else
       stop(
-        'arg_dists of length greater than 1 must have names',
+        'arg_distns of length greater than 1 must have names',
         call. = FALSE
       )
   else {
     input <- sapply(
       names(opParam$args),
       function(name)
-        argType2input(opParam$args[[name]], param$arg_dists[[name]])
+        argType2input(opParam$args[[name]], param$arg_distns[[name]])
     )
   }
 
@@ -431,7 +431,7 @@ make_wrt <- function(argTypes, n_methods = 10) {
 }
 
 makeADtest <- function(op, argTypes, wrt_args = NULL,
-                       arg_dists = NULL, more_args = NULL) {
+                       arg_distns = NULL, more_args = NULL) {
   opParam <- makeOperatorParam(op, argTypes, more_args)
 
   run <- gen_runFunCore(opParam)
@@ -488,7 +488,7 @@ makeADtest <- function(op, argTypes, wrt_args = NULL,
     methods = methods,
     enableDerivs = list('run'),
     wrts = wrts,
-    arg_dists = arg_dists
+    arg_distns = arg_distns
   )
 }
 
@@ -523,51 +523,20 @@ unaryOpTests <- unlist(
 names(unaryOpTests) <- sapply(unaryOpTests, `[[`, 'name')
 
 ## tranform args
-modifyOnMatch(unaryOpTests, '(log|sqrt) .+', 'arg_dists', function(x) abs(rnorm(x)))
-modifyOnMatch(unaryOpTests, 'log1p .+', 'arg_dists', function(x) abs(rnorm(x)) - 1)
-modifyOnMatch(unaryOpTests, '(logit|probit|cloglog) .+', 'arg_dists', runif)
-modifyOnMatch(unaryOpTests, '(acos|asin|atanh) .+', 'arg_dists', function(x) runif(x, -1, 1))
-modifyOnMatch(unaryOpTests, 'acosh .+', 'arg_dists', function(x) abs(rnorm(x)) + 1)
+modifyOnMatch(unaryOpTests, '(log|sqrt) .+', 'arg_distns', function(x) abs(rnorm(x)))
+modifyOnMatch(unaryOpTests, 'log1p .+', 'arg_distns', function(x) abs(rnorm(x)) - 1)
+modifyOnMatch(unaryOpTests, '(logit|probit|cloglog) .+', 'arg_distns', runif)
+modifyOnMatch(unaryOpTests, '(acos|asin|atanh) .+', 'arg_distns', function(x) runif(x, -1, 1))
+modifyOnMatch(unaryOpTests, 'acosh .+', 'arg_distns', function(x) abs(rnorm(x)) + 1)
 
-## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
-modifyOnMatch(unaryOpTests, 'ilogit .+', 'tol2', 0.1)
-modifyOnMatch(unaryOpTests, '(factorial|exp|log1p|tan|acos|cos) .+', 'tol2', 0.001)
-
-## runtime failures
 ## abs fails on negative inputs
-modifyOnMatch(unaryOpTests, 'abs .+', 'arg_dists', function(x) -abs(rnorm(x)))
-modifyOnMatch(
-  unaryOpTests,
-  'abs (double\\(1, 4\\)|double\\(2, c\\(3, 4\\)\\))',
-  'knownFailure', '.*runs'
-)
+modifyOnMatch(unaryOpTests, 'abs .+', 'arg_distns', function(x) -abs(rnorm(x)))
 
-## wrt failures
-modifyOnMatch(
-  unaryOpTests, '.+ double\\(0\\)', 'knownFailures',
-  list(
-    method4 = list(
-      jacobian = expect_failure,
-      hessian = expect_failure
-    )
-  )
-)
-modifyOnMatch(
-  unaryOpTests, '.+ (double\\(1, 4\\)|double\\(2, c\\(3, 4\\)\\))',
-  'knownFailures',
-  list(
-    method2 = list(
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method4 = list(
-      jacobian = expect_failure,
-      hessian = expect_failure
-    )
-  )
-)
+## e.g. of how to set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
+## modifyOnMatch(unaryOpTests, 'ilogit .+', 'tol2', 0.1)
 
 ## compilation failures
+
 modifyOnMatch(
   unaryOpTests,
   paste(
@@ -638,162 +607,22 @@ names(binaryOpTests) <- sapply(binaryOpTests, `[[`, 'name')
 ##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1, 4\\) double\\(1, 4\\)', 'tol2', 0.001)
 
 ## runtime failures
+
+## example of specifying when a particular method fails:
 modifyOnMatch(
   binaryOpTests,
   '\\+ double\\(0\\) double\\(0\\)',
   'knownFailures',
   list(
-    method5 = list( ## no wrt
+    method3 = list( ## arg1, arg2
       jacobian = expect_failure,
       hessian = expect_failure
     ),
-    method6 = list( ## wrt arg1, arg1[1], arg2, arg2[1]
+    method4 = list( ## no wrt
       jacobian = expect_failure,
       hessian = expect_failure
     )
   )
-)
-
-modifyOnMatch(
-  binaryOpTests,
-  '- double\\(0\\) double\\(0\\)',
-  'knownFailures',
-  list(
-    method3 = list( ## wrt arg2
-      jacobian = expect_failure
-    ),
-    method4 = list( ## wrt arg2[1]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method5 = list( ## no wrt
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method6 = list( ## wrt arg1, arg1[1], arg2, arg2[1]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    )
-  )
-)
-
-modifyOnMatch(
-  binaryOpTests,
-  '\\+ double\\(0\\) double\\(1, 4\\)',
-  'knownFailures',
-  list(
-    method3 = list( ## wrt arg2
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method4 = list( ## wrt arg2[*]
-      jacobian = expect_failure
-    ),
-    method5 = list( ## no wrt
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method6 = list( ## wrt arg1, arg1[1], arg2, arg2[*]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    )
-  )
-)
-
-modifyOnMatch(
-  binaryOpTests,
-  '\\+ double\\(1, 4\\) double\\(0\\)',
-  'knownFailures',
-  list(
-    method2 = list( ## wrt arg1[*]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method3 = list( ## wrt arg2
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method4 = list( ## wrt arg2[1]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method5 = list( ## no wrt
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method6 = list( ## wrt arg1, arg1[*], arg2, arg2[1]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    )
-  )
-)
-
-modifyOnMatch(
-  binaryOpTests,
-  '\\+ double\\(1, 4\\) double\\(1, 4\\)',
-  'knownFailures',
-  list(
-    method2 = list( ## wrt arg1[*]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method4 = list( ## wrt arg2[*]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method5 = list( ## no wrt
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method6 = list( ## wrt arg1, arg1[*], arg2, arg2[*]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    )
-  )
-)
-
-modifyOnMatch(
-  binaryOpTests,
-  '\\+ double\\(2, c\\(3, 4\\)\\) double\\(2, c\\(3, 4\\)\\)',
-  'knownFailures',
-  list(
-    method2 = list( ## wrt arg1[*]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method4 = list( ## wrt arg2[*]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method5 = list( ## no wrt
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method6 = list( ## wrt arg1, arg1[*], arg2, arg2[*]
-      jacobian = expect_failure,
-      hessian = expect_failure
-    )
-  )
-)
-
-## compilation failures
-ops_regex <- paste0(
-  c('\\+', '-'),
-  collapse = '|'
-)
-
-modifyOnMatch(
-  binaryOpTests,
-  paste0('\\+ (',
-         'double\\(2, c\\(3, 4\\)\\) double\\(0\\)|',
-         'double\\(0\\) double\\(2, c\\(3, 4\\)\\))'),
-  'knownFailures', list(compilation = TRUE)
-)
-
-modifyOnMatch(
-  binaryOpTests,
-  '/ double\\(0\\) double\\(2, c\\(3, 4\\)\\)',
-  'knownFailures', list(compilation = TRUE)
 )
 
 sapply(binaryOpTests, test_AD)
@@ -804,8 +633,8 @@ sapply(binaryOpTests, test_AD)
 
 squareMatrixArgs <- c('double(2, c(2, 2))', 'double(2, c(5, 5))')
 
-squareMatrixOps <- c(nimble:::matrixSquareReductionOperators,
-                     'inverse')
+squareMatrixOps <- c(nimble:::matrixSquareOperators,
+                     nimble:::matrixSquareReductionOperators)
 
 squareMatrixOpTests <- unlist(
   recursive = FALSE,
@@ -822,16 +651,22 @@ squareMatrixOpTests <- unlist(
 )
 names(squareMatrixOpTests) <- sapply(squareMatrixOpTests, `[[`, 'name')
 
-## compilation failures
-modifyOnMatch(squareMatrixOpTests, '(logdet|det) .+', 'knownFailure', '.*compiles')
-
-## runtime failures
 modifyOnMatch(
-  squareMatrixOpTests, 'inverse double\\(2, c\\(5, 5\\)\\)',
-  'knownFailure', '.*compiles'
+  squareMatrixOpTests, 'chol .+', 'arg_distns',
+  function(arg_size) {
+    mat <- diag(1:arg_size[1]) ## assumes matrix is square
+    mat[upper.tri(mat) | lower.tri(mat)] <- runif(1) ## chol only used upper tri
+    mat
+  }
 )
 
-sapply(squareMatrixOpTests, test_AD, info = 'unary square matrix')
+## compilation failures
+modifyOnMatch(
+  squareMatrixOpTests, '(logdet|det) .+',
+  'knownFailures', list(compilation = TRUE)
+)
+
+sapply(squareMatrixOpTests, test_AD)
 
 ####################
 ## binary matrix ops
@@ -864,16 +699,16 @@ names(binaryMatrixOpTests) <- sapply(binaryMatrixOpTests, `[[`, 'name')
 ## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
 modifyOnMatch(binaryMatrixOpTests, '%*% .+', 'tol2', 0.001)
 
-sapply(binaryMatrixOpTests, test_AD, info = 'binary matrix')
+sapply(binaryMatrixOpTests, test_AD)
 
 #########################
 ## distribution functions
 #########################
 
-dist_params = list(
+distn_params = list(
   list(
     ##
-    ## name of dist_param entry should be abbreviated distribution name
+    ## name of distn_param entry should be abbreviated distribution name
     ## as used in distribution functions (e.g. dnorm -> norm)
     ##
     name = 'binom',
@@ -881,7 +716,7 @@ dist_params = list(
     ## variants should create a valid distribution function name
     ## when prepended to name
     ##
-    variants = c('d', 'p', 'q'),
+    variants = c('d'),
     args = list(
       ##
       ## the support arg must be included
@@ -894,22 +729,22 @@ dist_params = list(
         ## Since the support depends on a parameter, return a function which
         ## test_AD will use with the realized value of the parameter `size`.
         ##
-        dist = function(n) function(size) sample(1:size, n, replace = TRUE),
+        distn = function(n) function(size) sample(1:size, n, replace = TRUE),
         ##
         ## The type field is required for all args.
         ##
-        type = c('double(0)')##, 'double(1, 5)')
+        type = c('double(0)', 'double(1, 5)')
       ),
       size = list(
         ##
-        ## For any arg (including support) dist is optional.
-        ## See argType2input() for default argument generation dists.
+        ## For any arg (including support) distn is optional.
+        ## See argType2input() for default argument generation distns.
         ##
-        dist = function(n) sample(1:100, n, replace = TRUE),
+        distn = function(n) sample(1:100, n, replace = TRUE),
         type = c('double(0)')##, 'double(1, 3)')
       ),
       prob = list(
-        dist = function(n) runif(n),
+        distn = function(n) runif(n),
         type = c('double(0)')##, 'double(1, 7)')
       )
       ## log is a special arg that will trigger a test to check that
@@ -917,7 +752,7 @@ dist_params = list(
       ## See distributions_R.hpp.
       ##
       ## log = list(
-      ##   dist = function(n) sample(0:1, size = n, replace = TRUE),
+      ##   distn = function(n) sample(0:1, size = n, replace = TRUE),
       ##   type = 'double(0)'
       ## )
       ##
@@ -937,64 +772,28 @@ dist_params = list(
     ## choices 'x', 'q', and 'p'.
     ##
     wrt = c('prob', 'p')
-  )##,
-  ##list(
-  ##  name = 'beta',
-  ##  variants = c('d', 'p', 'q', 'r'), ## prepended to name of this list
-  ##  support = c(-Inf, Inf),
-  ##  parameters = list(
-  ##    mean = c('double(0)', 'double(1, 4)'),
-  ##    sd = c('double(0)', 'double(1, 4)')
-  ##  )
-  ##),
-  ##list(
-  ##  name = 'chisq',
-  ##  variants = c('d', 'p', 'q', 'r'), ## prepended to name of this list
-  ##  support = c(-Inf, Inf),
-  ##  parameters = list(
-  ##    mean = c('double(0)', 'double(1, 4)'),
-  ##    sd = c('double(0)', 'double(1, 4)')
-  ##  )
-  ##),
-  ##list(
-  ##  name = 'dexp',
-  ##  variants = c('d', 'p', 'q', 'r'), ## prepended to name of this list
-  ##  support = c(-Inf, Inf),
-  ##  parameters = list(
-  ##    mean = c('double(0)', 'double(1, 4)'),
-  ##    sd = c('double(0)', 'double(1, 4)')
-  ##  )
-  ##),
-  ##list(
-  ##  name = 'norm',
-  ##  variants = c('d', 'p', 'q', 'r'), ## prepended to name of this list
-  ##  support = c(-Inf, Inf),
-  ##  parameters = list(
-  ##    mean = c('double(0)', 'double(1, 4)'),
-  ##    sd = c('double(0)', 'double(1, 4)')
-  ##  )
-  ##)
+  )
 )
 
-## Takes an element of dist_params list and returns a list of AD test
+## Takes an element of distn_params list and returns a list of AD test
 ## parameterizations, each of which test_AD can use.
 ##
-## dist_param: Probability distribution parameterization, which
-##             must have the following fields/subfields:
-##             - name
-##             - variants
-##             - args
-##               - support
-##                 - type
-##             Additional args must also have dist and type fields.
-## more_args:  Passed to makeOperatorParam().
+## distn_param: Probability distribution parameterization, which
+##              must have the following fields/subfields:
+##              - name
+##              - variants
+##              - args
+##                - support
+##                  - type
+##              Additional args must also have distn and type fields.
+## more_args:   Passed to makeOperatorParam().
 ##
-makeADdistTest <- function(dist_param) {
-  dist_name <- dist_param$name
-  ops <- sapply(dist_param$variants, paste0, dist_name, simplify = FALSE)
-  argTypes <- sapply(dist_param$variants, function(variant) {
-    op <- paste0(variant, dist_name)
-    support_type <- dist_param$args$support$type
+makeADdistnTest <- function(distn_param) {
+  distn_name <- distn_param$name
+  ops <- sapply(distn_param$variants, paste0, distn_name, simplify = FALSE)
+  argTypes <- sapply(distn_param$variants, function(variant) {
+    op <- paste0(variant, distn_name)
+    support_type <- distn_param$args$support$type
     first_argType <- switch(
       variant,
       d = support_type,
@@ -1004,38 +803,38 @@ makeADdistTest <- function(dist_param) {
     first_arg_name <- switch(variant, d = 'x', p = 'q', q = 'p')
     grid <- eval(as.call(c(
       expand.grid, list(first_argType),
-      lapply(dist_param$args, `[[`, 'type')[-1]
+      lapply(distn_param$args, `[[`, 'type')[-1]
     )))
     argTypes <- as.list(data.frame(t(grid), stringsAsFactors=FALSE))
     lapply(argTypes, function(v) {
-      names(v) <- c(first_arg_name, names(dist_param$args)[-1])
+      names(v) <- c(first_arg_name, names(distn_param$args)[-1])
       v
     })
   }, simplify = FALSE)
-  param_dists <- lapply(dist_param$args[-1], `[[`, 'dist')
-  arg_dists <- sapply(dist_param$variants, function(variant) {
-    arg1_dist <- switch(
+  param_distns <- lapply(distn_param$args[-1], `[[`, 'distn')
+  arg_distns <- sapply(distn_param$variants, function(variant) {
+    arg1_distn <- switch(
       variant,
-      d = list(x = dist_param$args$support$dist),
-      p = list(q = dist_param$args$support$dist),
+      d = list(x = distn_param$args$support$distn),
+      p = list(q = distn_param$args$support$distn),
       q = list(p = runif)
     )
-    c(arg1_dist, param_dists)
+    c(arg1_distn, param_distns)
   }, simplify = FALSE)
   op_params <- unlist(
     lapply(
-      dist_param$variants, function(variant) {
+      distn_param$variants, function(variant) {
         lapply(
           argTypes[[variant]],
           function(these_argTypes) {
             wrt_args = intersect(
-              dist_param$wrt, names(these_argTypes)
+              distn_param$wrt, names(these_argTypes)
             )
             makeADtest(
               ops[[variant]], these_argTypes,
               wrt_args = wrt_args,
-              arg_dists = arg_dists[[variant]],
-              more_args = dist_param$more_args[[variant]]
+              arg_distns = arg_distns[[variant]],
+              more_args = distn_param$more_args[[variant]]
             )
           }
         )
@@ -1047,7 +846,7 @@ makeADdistTest <- function(dist_param) {
 }
 
 ## add more_args to include as part of distribution function expr
-dist_params_log_1 <- lapply(dist_params, function(param) {
+distn_params_log_1 <- lapply(distn_params, function(param) {
   more_args = lapply(
     param$variants, switch,
     d = list(log = 1),
@@ -1059,29 +858,29 @@ dist_params_log_1 <- lapply(dist_params, function(param) {
   param
 })
 
-dist_tests <- unlist(
-  lapply(dist_params_log_1, makeADdistTest),
+distn_tests <- unlist(
+  lapply(distn_params_log_1, makeADdistnTest),
   recursive = FALSE
 )
 
-lapply(dist_tests, test_AD)
+lapply(distn_tests, test_AD)
 
 #################################
 ## distribution functions log arg
 #################################
 
-## add the arg 'log' to all the dist_params
-dist_params_with_log <- lapply(dist_params, function(param) {
+## add the arg 'log' to all the distn_params
+distn_params_with_log <- lapply(distn_params, function(param) {
   param$args$log <- list(
-    dist = function(n) sample(0:1, size = n, replace = TRUE),
+    distn = function(n) sample(0:1, size = n, replace = TRUE),
     type = 'double(0)'
   )
   param
 })
 
-dist_with_log_tests <- unlist(
-  lapply(dist_params_with_log, makeADdistTest),
+distn_with_log_tests <- unlist(
+  lapply(distn_params_with_log, makeADdistnTest),
   recursive = FALSE
 )
 
-lapply(dist_with_log_tests, test_AD)
+lapply(distn_with_log_tests, test_AD)
