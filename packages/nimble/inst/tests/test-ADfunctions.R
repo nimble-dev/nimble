@@ -455,15 +455,16 @@ makeADtest <- function(op, argTypes, wrt_args = NULL,
 
   methods <- list()
 
-  if (is.null(wrt_args)) wrt_args <- rep(TRUE, length(argTypes))
-  wrts <- make_wrt(opParam$args[wrt_args])
+  if (is.null(wrt_args)) wrt_args_filter <- rep(TRUE, length(argTypes))
+  else wrt_args_filter <- wrt_args
+  wrts <- make_wrt(opParam$args[wrt_args_filter])
   for (i in seq_along(wrts)) {
     method_i <- paste0('method', i)
     methods[[method_i]] <- method
     body(methods[[method_i]])[[2]][[3]][['wrt']] <- wrts[[i]]
   }
 
-  if (all(names(opParam$args) %in% wrt_args)) {
+  if (is.null(wrt_args) || all(names(opParam$args) %in% wrt_args)) {
     method_no_wrt <- paste0('method', length(methods) + 1)
     methods[[method_no_wrt]] <- method
     wrts <- c(wrts, 'no wrt')
