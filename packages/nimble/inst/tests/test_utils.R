@@ -1666,16 +1666,17 @@ argType2input <- function(argType, dist = NULL) {
   if (is.null(dist))
     dist <- switch(
       type,
-      "double" = rnorm,
-      "integer" = function(size) rgeom(size, 0.5),
-      "logical" = function(size) sample(c(TRUE, FALSE), size, replace = TRUE)
+      "double"  = function(arg_size) rnorm(prod(arg_size)),
+      "integer" = function(arg_size) rgeom(prod(arg_size), 0.5),
+      "logical" = function(arg_size)
+        sample(c(TRUE, FALSE), prod(arg_size), replace = TRUE)
     )
   arg <- switch(
     nDim + 1,
     dist(1), ## nDim is 0
     dist(size), ## nDim is 1
-    matrix(dist(prod(size)), nrow = size[1], ncol = size[2]), ## nDim is 2
-    array(dist(prod(size)), dim = size) ## nDim is 3
+    matrix(dist(size), nrow = size[1], ncol = size[2]), ## nDim is 2
+    array(dist(size), dim = size) ## nDim is 3
   )
   if (is.null(arg))
     stop('Something went wrong while making test input.', call.=FALSE)
