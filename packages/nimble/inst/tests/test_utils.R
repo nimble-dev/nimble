@@ -1638,16 +1638,15 @@ returnTypeString <- function(op, argTypes) {
              }
              else {
                has_right_nDim <- sapply(args, function(arg) arg$nDim == nDim)
-               if (nDim > 1)
-                 if (sum(has_right_nDim) > 1)
-                   stop(
-                     'Testing can only handle one argument with dimensions greater than 1.',
-                     call. = FALSE
-                   )
-                 else args[has_right_nDim][[1]]$size
-               else {
+               if (nDim > 1) {
+                 if (nDim > 2)
+                   stop('Testing does not currently support args with nDim > 2',
+                        call. = FALSE)
+                 ## one arg is a matrix but this is not a matrix multiplication
+                 ## so assume that the first arg with nDim > 1
+                 args[has_right_nDim][[1]]$size
+               } else
                  max(sapply(args[has_right_nDim], `[[`, 'size'))
-               }
              }
            }
 
