@@ -1347,7 +1347,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     ## 'vectorized' way.
     nData <- length(dataNodes)
     J <- nData / n # equal to one in standard CRP model
-    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE))
+    nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE)) / J
     dataNodes <- rep(targetElements[1], nData) ## this serves as dummy nodes that may be replaced below
     ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
     type <- 'indivCalcs'
@@ -1363,7 +1363,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
         detDeps <- model$getDependencies(targetElements[i], determOnly = TRUE)
         #if(length(stochDeps) != 1)  not for more general CRP model
         #  stop("sampler_CRP: NIMBLE cannot currently assign a sampler to a dCRP node unless each membership element is associated with a single component of the variable to be clustered.\n")  ## reason for this is that we do getLogProb(dataNodes[i]), which assumes a single stochastic dependent
-        if(length(detDeps) != nInterm) {
+        if(length(detDeps) / J != nInterm) {
           type <- 'allCalcs'  # give up again; should only occur in strange situations
         } else {
           for(j in 1:J) {
@@ -1371,9 +1371,9 @@ sampler_CRP_moreGeneral <- nimbleFunction(
             if(nInterm >= 1) 
               intermNodes[(i-1)*J + j] <- detDeps[j]
             if(nInterm >= 2)
-              intermNodes2[(i-1)*J + j] <- detDeps[j]
+              intermNodes2[(i-1)*J + j] <- detDeps[J+j]
             if(nInterm >= 3)
-              intermNodes3[(i-1)*J + j] <- detDeps[j] 
+              intermNodes3[(i-1)*J + j] <- detDeps[2*J+j] 
           }
         }
       }
