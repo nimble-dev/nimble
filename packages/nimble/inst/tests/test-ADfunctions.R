@@ -372,12 +372,13 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   invisible(NULL)
 }
 
-## Takes an argType call and returns up to two components
-## of the arg with respect to which to take derivatives
-## in test_AD. One of the components will always be the
-## argument itself and the other will be a random element
-## within the arg (if the arg is non-scalar).
-make_wrt <- function(argTypes, n_methods = 10) {
+## Takes a named list of `argTypes` and returns a list of character
+## vectors, each of which is valid as the `wrt` argument of `nimDerivs()`.
+## Each argument on its own and all combinations of the arguments will
+## always be included, and then make_wrt will try to create up to `n_random`
+## additional character vectors with random combinations of the arguments
+## and indexing of those arguments when possible (i.e. for non-scalar args).
+make_wrt <- function(argTypes, n_random = 10) {
 
   ## always include each arg on its own, and all combinations of the args
   wrts <- as.list(names(argTypes))
@@ -390,8 +391,8 @@ make_wrt <- function(argTypes, n_methods = 10) {
       )
     }
 
-  while (n_methods > 0) {
-    n_methods  <- n_methods - 1
+  while (n_random > 0) {
+    n_random  <- n_random - 1
     n <- sample(1:length(argTypes), 1) # how many of the args to use?
     ## grab a random subset of the args of length n
     args <- sample(argTypes, n)
