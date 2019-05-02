@@ -403,26 +403,33 @@ make_wrt <- function(argTypes, n_random = 10) {
     for (i in 1:length(args)) {
       while (reps[i] > 0) {
         reps[i] <- reps[i] - 1
-        ## coin flip determines whether to subscript or not
-        if (argSymbols[[i]]$nDim > 0 && sample(c(TRUE, FALSE), 1))
-          if (argSymbols[[i]]$nDim == 2)
-            this_wrt <- c(
-              this_wrt,
-              paste0(
-                names(args)[i], '[',
-                sample(1:argSymbols[[i]]$size[1], size = 1) , ',',
-                sample(1:argSymbols[[i]]$size[2], size = 1),
-                ']'
-              )
-            )
-          else if (argSymbols[[i]]$nDim == 1)
-            this_wrt <- c(
-              this_wrt,
-              paste0(
-                names(args)[i],
-                '[', sample(1:argSymbols[[i]]$size, size = 1) , ']'
-              )
-            )
+        ## coin flip determines whether to index vectors/matrices
+        use_indexing <- sample(c(TRUE, FALSE), 1)
+        if (use_indexing && argSymbols[[i]]$nDim > 0) {
+          rand_row <- sample(1:argSymbols[[i]]$size[1], size = 1)
+          ## another coin flip determines whether to use : in indexing or not
+          use_colon <- sample(c(TRUE, FALSE), 1)
+          if (use_colon && rand_row < argSymbols[[i]]$size[1]) {
+            end_row <- rand_row +
+              sample(1:(argSymbols[[i]]$size[1] - rand_row), size = 1)
+            rand_row <- paste0(rand_row, ':', end_row)
+          }
+          index <- rand_row
+          if (argSymbols[[i]]$nDim == 2) {
+            rand_col <- sample(1:argSymbols[[i]]$size[2], size = 1)
+            ## one more coin flip to subscript second dimension
+            use_colon_again <- sample(c(TRUE, FALSE), 1)
+            if (use_colon_again && rand_col < argSymbols[[i]]$size[2]) {
+              end_col <- rand_col +
+                sample(1:(argSymbols[[i]]$size[2] - rand_col), size = 1)
+              rand_col <- paste0(rand_col, ':', end_col)
+            }
+            index <- paste0(index, ',', rand_col)
+          }
+          this_wrt <- c(this_wrt, paste0(names(args)[i], '[', index, ']'))
+        }
+        ## if first coin flip was FALSE, just
+        ## use the arg name without indexing
         else this_wrt <- c(this_wrt, names(args)[i])
       }
     }
