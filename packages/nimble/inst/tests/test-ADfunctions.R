@@ -196,7 +196,8 @@ test_that('Derivatives of matrix exponentiation function correctly.',
 ## get order to owrk without c()!
 
 test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
-                    control = list(), verbose = nimbleOptions('verbose')) {
+                    control = list(), verbose = nimbleOptions('verbose'),
+                    catch_failures = FALSE) {
   if (!is.null(param$debug) && param$debug) browser()
   if (verbose) cat(paste0("### Testing ", param$name, "\n"))
 
@@ -259,8 +260,18 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   if (!is.null(param$dir)) dir <- param$dir
   CnfInst <- wrap_if_true(param$knownFailures$compilation, expect_error, {
     compileNimble(nfInst, dirName = dir)
-  })
-  if (is.null(CnfInst)) {
+  }, wrap_in_try = isTRUE(catch_failures))
+  if (isTRUE(catch_failures) && inherits(CnfInst, 'try-error')) {
+    warning(
+      paste0(
+        'The test of ', opParam$name,
+        ' failed to compile.\n', CnfInst[1]
+      ),
+      immediate. = TRUE
+    )
+    ## stop the test here because it didn't compile
+    return(invisible(NULL))
+  } else if (is.null(CnfInst)) { ## compilation failure was in knownFailures
     if (verbose) cat("## Compilation failed, as expected \n")
   } else {
     Cderivs <- sapply(names(param$methods), function(method) {
@@ -292,7 +303,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
           '\n'
         ))
       }
-      wrap_if_true(
+      value_test <- wrap_if_true(
         !is.null(param$knownFailures[[method_name]]$value),
         param$knownFailures[[method_name]]$value, {
           if (verbose) cat("## Checking values\n")
@@ -313,9 +324,20 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
               Cderivs[[method_name]]$value, Cderivs2[[method_name]]$value
             )))
           }
-        }
+        }, wrap_in_try = isTRUE(catch_failures)
       )
-      wrap_if_true(
+      if (isTRUE(catch_failures) && inherits(value_test, 'try-error')) {
+        warning(
+          paste0(
+            'There was something wrong with the values of ',
+            opParam$name, ' with wrt = c(',
+            paste0(param$wrts[[method_name]], collapse = ', '), ').\n',
+            value_test[1]
+          ),
+          immediate. = TRUE
+        )
+      }
+      jacobian_test <- wrap_if_true(
         !is.null(param$knownFailures[[method_name]]$jacobian),
         param$knownFailures[[method_name]]$jacobian, {
           if (verbose) cat("## Checking jacobians\n")
@@ -338,9 +360,20 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
               Cderivs[[method_name]]$jacobian, Cderivs2[[method_name]]$jacobian
             )))
           }
-        }
+        }, wrap_in_try = isTRUE(catch_failures)
       )
-      wrap_if_true(
+      if (isTRUE(catch_failures) && inherits(jacobian_test, 'try-error')) {
+        warning(
+          paste0(
+            'There was something wrong with the jacobian of ',
+            opParam$name, ' with wrt = c(',
+            paste0(param$wrts[[method_name]], collapse = ', '), ').\n',
+            jacobian_test[1]
+          ),
+          immediate. = TRUE
+        )
+      }
+      hessian_test <- wrap_if_true(
         !is.null(param$knownFailures[[method_name]]$hessian),
         param$knownFailures[[method_name]]$hessian, {
           if (verbose) cat("## Checking hessians\n")
@@ -363,8 +396,19 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
               Cderivs[[method_name]]$hessian, Cderivs2[[method_name]]$hessian
             )))
           }
-        }
+        }, wrap_in_try = isTRUE(catch_failures)
       )
+      if (isTRUE(catch_failures) && inherits(hessian_test, 'try-error')) {
+        warning(
+          paste0(
+            'There was something wrong with the hessian of ',
+            opParam$name, ' with wrt = c(',
+            paste0(param$wrts[[method_name]], collapse = ', '), ').\n',
+            hessian_test[1]
+          ),
+          immediate. = TRUE
+        )
+      }
     }
     nimble:::clearCompiled(CnfInst)
   }

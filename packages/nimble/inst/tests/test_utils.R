@@ -383,8 +383,11 @@ wrap_if_matches <- function(pattern, string, wrapper, expr) {
     }
 }
 
-wrap_if_true <- function(test, wrapper, expr) {
-  if (!is.null(test) && test) wrapper(expr) else expr
+wrap_if_true <- function(test, wrapper, expr, wrap_in_try = FALSE) {
+  wrap <- if (isTRUE(wrap_in_try))
+            function(x) try(x, silent = TRUE)
+          else identity
+  if (!is.null(test) && test) wrap(wrapper(expr)) else wrap(expr)
 }
 
 ## This is a parametrized test, where `param` is a list with names:
