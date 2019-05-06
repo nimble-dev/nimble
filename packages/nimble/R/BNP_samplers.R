@@ -1313,11 +1313,18 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     ## Check for one or more "observation" per random index to handle the 'Quinn' model.
     ## Note that cases like mu[xi[i],xi[j]] are being trapped in findClusterNodes().
     if(n > length(dataNodes))
-      stop("sampler_CRP: At least one variable has to be clustered for each cluster membershipID.")
+      stop("sampler_CRP: At least one variable has to be clustered for each cluster membershipID.\n")
     
     nTilde <- clusterVarInfo$nTilde
     if(length(unique(nTilde)) != 1)
       stop('sampler_CRP: In a model with multiple cluster parameters, the number of those parameters must all be the same.\n')
+    
+    nData <- length(dataNodes)
+    J <- nData / n # equal to one in standard CRP model
+    ## Check that the number of cluster variable rows (or columns) matches number of label variables. Cases in which this can fail include use of thetaTilde[xi[i] + 1, j]
+    if(nTilde/J != n)
+      stop("sampler_CRP: Number of cluster variables columns (rows) has to match length of cluster membership variable.\n")
+    
     
     #### End of checks of model structure. ####
     
@@ -1345,8 +1352,6 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     ## computation, to save us from computing for all observations when a single cluster membership is being proposed.
     ## At the moment, this is the only way we can easily handle dependencies for multiple node elements in a
     ## 'vectorized' way.
-    nData <- length(dataNodes)
-    J <- nData / n # equal to one in standard CRP model
     nInterm <- length(model$getDependencies(targetElements[1], determOnly = TRUE)) / J
     dataNodes <- rep(targetElements[1], nData) ## this serves as dummy nodes that may be replaced below
     ## needs to be legitimate nodes because run code sets up calculate even if if() would never cause it to be used
