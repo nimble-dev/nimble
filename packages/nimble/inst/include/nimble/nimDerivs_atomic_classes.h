@@ -20,6 +20,16 @@ private:
     return true;
   }
   
+  virtual bool rev_depend(
+			  const CppAD::vector<double>&          parameter_x ,
+			  const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
+			  CppAD::vector<bool>&                depend_x    ,
+			  const CppAD::vector<bool>&          depend_y
+			  ) {
+    depend_x[0] = depend_y[0];
+    return true;
+  }
+
   virtual bool forward(
       const CppAD::vector<double>&               parameter_x  ,
       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
