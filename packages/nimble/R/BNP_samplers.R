@@ -1,4 +1,3 @@
-## samples from measure G after initial MCMC is run on a CRP-based model
 ## Used when syntax xi[1:N] ~ dCRP(conc) is used in BUGS.
 
 ##-----------------------------------------
@@ -1323,7 +1322,7 @@ sampler_CRP_moreGeneral <- nimbleFunction(
     J <- nData / n # equal to one in standard CRP model
     ## Check that the number of cluster variable rows (or columns) matches number of label variables. Cases in which this can fail include use of thetaTilde[xi[i] + 1, j]
     if(nTilde/J != n)
-      stop("sampler_CRP: Number of cluster variables columns (rows) has to match length of cluster membership variable.\n")
+      stop("sampler_CRP: When having several observations per cluster variable, the number of cluster variables columns (rows) has to match length of cluster membership variable.\n")
     
     
     #### End of checks of model structure. ####
