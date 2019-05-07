@@ -112,9 +112,9 @@ eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRi
     makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dinvwish_chol', 'nimArr_dcar_normal', 'nimArr_dcar_proper', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam', 'getBound', 'getNodeFunctionIndexedInfo', 'concatenateTemp', 'MAKE_FIXED_VECTOR', 'hardCodedVectorInitializer'), 'eigenize_doNotRecurse'),
     list(coeffSetter = 'eigenize_coeffSetter',
          nfVar = 'eigenize_nfVar',
-         chainedCall = 'eigenize_chainedCall',
-         '<-' = 'eigenize_assign_before_recurse',
-         mvAccessRow = 'eigenize_nfVar') )
+         chainedCall = 'eigenize_chainedCall'),
+    makeCallList(c('<-', '<<-', '='), 'eigenize_assign_before_recurse'),
+    list(mvAccessRow = 'eigenize_nfVar') )
 
 eigenizeUseArgs <- c(
     list(
@@ -161,6 +161,8 @@ eigenizeTranslate <- list(abs = 'cwiseAbs',
                           'det' = 'eigDeterminant',
                           
                           '<-' = '<-',
+                          '<<-' = '<<-',
+                          '=' = '=',
                           '(' = '(',
                           eigenBlock = 'eigenBlock' ## always inserted by sizeIndexingBracket as 'eigenBlock'
                           )
