@@ -435,37 +435,41 @@ make_wrt <- function(argTypes, n_random = 10) {
       )
     }
 
+  argSymbols <- lapply(
+    argTypes, function(argType)
+      add_missing_size(nimble:::argType2symbol(argType))
+  )
+
   while (n_random > 0) {
     n_random  <- n_random - 1
     n <- sample(1:length(argTypes), 1) # how many of the args to use?
     ## grab a random subset of the args of length n
-    args <- sample(argTypes, n)
+    args <- sample(argSymbols, n)
     ## may repeat an arg up to 2 times
     reps <- sample(1:2, length(args), replace = TRUE)
-    argSymbols <- lapply(args, nimble:::argType2symbol)
     this_wrt <- c()
     for (i in 1:length(args)) {
       while (reps[i] > 0) {
         reps[i] <- reps[i] - 1
         ## coin flip determines whether to index vectors/matrices
         use_indexing <- sample(c(TRUE, FALSE), 1)
-        if (use_indexing && argSymbols[[i]]$nDim > 0) {
-          rand_row <- sample(1:argSymbols[[i]]$size[1], size = 1)
+        if (use_indexing && args[[i]]$nDim > 0) {
+          rand_row <- sample(1:args[[i]]$size[1], size = 1)
           ## another coin flip determines whether to use : in indexing or not
           use_colon <- sample(c(TRUE, FALSE), 1)
-          if (use_colon && rand_row < argSymbols[[i]]$size[1]) {
+          if (use_colon && rand_row < args[[i]]$size[1]) {
             end_row <- rand_row +
-              sample(1:(argSymbols[[i]]$size[1] - rand_row), size = 1)
+              sample(1:(args[[i]]$size[1] - rand_row), size = 1)
             rand_row <- paste0(rand_row, ':', end_row)
           }
           index <- rand_row
-          if (argSymbols[[i]]$nDim == 2) {
-            rand_col <- sample(1:argSymbols[[i]]$size[2], size = 1)
+          if (args[[i]]$nDim == 2) {
+            rand_col <- sample(1:args[[i]]$size[2], size = 1)
             ## one more coin flip to subscript second dimension
             use_colon_again <- sample(c(TRUE, FALSE), 1)
-            if (use_colon_again && rand_col < argSymbols[[i]]$size[2]) {
+            if (use_colon_again && rand_col < args[[i]]$size[2]) {
               end_col <- rand_col +
-                sample(1:(argSymbols[[i]]$size[2] - rand_col), size = 1)
+                sample(1:(args[[i]]$size[2] - rand_col), size = 1)
               rand_col <- paste0(rand_col, ':', end_col)
             }
             index <- paste0(index, ',', rand_col)
@@ -479,7 +483,7 @@ make_wrt <- function(argTypes, n_random = 10) {
     }
     if (!is.null(this_wrt)) wrts <- c(wrts, list(unique(this_wrt)))
   }
-  wrts <- unique(wrts)
+  unique(wrts)
 }
 
 makeADtest <- function(op, argTypes, wrt_args = NULL,
@@ -554,7 +558,7 @@ gammafn <- gamma
 lgammafn <- lgamma
 ceil <- ceiling
 
-unaryArgs <- c('double(0)', 'double(1, 4)', 'double(2, c(3, 4))')
+unaryArgs <- c('double(0)', 'double(1)', 'double(2)')
 unaryOps <- c('-', 'sum',
               nimble:::unaryDoubleOperators,
               nimble:::unaryPromoteNoLogicalOperators,
@@ -595,7 +599,7 @@ modifyOnMatch(
   unaryOpTests,
   paste(
     '(logit|log1p|lfactorial|factorial|cloglog|atan|cosh|sinh|tanh|acosh|asinh|atanh)',
-    '(double\\(1, 4\\)|double\\(2, c\\(3, 4\\)\\))'
+    '(double\\(1\\)|double\\(2\\))'
   ),
   'knownFailures',
   list(compilation = TRUE)
@@ -653,9 +657,9 @@ binaryOpTests <- unlist(
 names(binaryOpTests) <- sapply(binaryOpTests, `[[`, 'name')
 
 ## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
-##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(0\\) double\\(1, 4\\)', 'tol2', 0.001)
-##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1, 4\\) double\\(0\\)', 'tol2', 0.001)
-##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1, 4\\) double\\(1, 4\\)', 'tol2', 0.001)
+##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(0\\) double\\(1\\)', 'tol2', 0.001)
+##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1\\) double\\(0\\)', 'tol2', 0.001)
+##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1\\) double\\(1\\)', 'tol2', 0.001)
 
 ## runtime failures
 

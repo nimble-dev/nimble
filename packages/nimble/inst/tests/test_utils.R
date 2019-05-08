@@ -1661,8 +1661,21 @@ returnTypeString <- function(op, argTypes) {
   )
 }
 
+## Takes an argSymbol and if argSymbol$size is NA adds default sizes.
+add_missing_size <- function(argSymbol, vector_size = 3, matrix_size = c(3, 4)) {
+  if (any(is.na(argSymbol$size))) {
+    if (argSymbol$nDim == 1)
+      argSymbol$size <- vector_size
+    else if (argSymbol$nDim == 2)
+      argSymbol$size <- matrix_size
+  }
+  invisible(argSymbol)
+}
+
 argType2input <- function(argType, distn = NULL) {
-  argSymbol <- nimble:::argType2symbol(argType)
+  argSymbol <- add_missing_size(
+    nimble:::argType2symbol(argType)
+  )
   type <- argSymbol$type
   nDim <- argSymbol$nDim
   size <- argSymbol$size
