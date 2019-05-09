@@ -810,10 +810,16 @@ Arguments:
 
 inits: A named list.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.
 '
+                                      if(!is.list(inits)) stop('inits argument must be a list')
+                                      if(length(inits) > 0 && is.null(names(inits))) stop('inits argument must be a named list')
+
                                       origInits <<- inits
 
                                       for(i in seq_along(inits)) {
-                                          ##dataVals <- .self$isData(names(inits)[[i]])
+                                          if(names(inits)[i] == '') {
+                                              warning(paste0('element ', i, ' of inits list is not named; skipping this element'))
+                                              next
+                                          }
                                           dataVals <- .self$isDataEnv[[names(inits)[[i]] ]]
                                           if(any(dataVals)) {
                                               .self[[names(inits)[i]]][!dataVals] <- inits[[i]][!dataVals]
