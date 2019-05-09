@@ -54,83 +54,83 @@ makeSingleArgWrapper <- function(nf, wrt, fxnEnv) {
     flatteningInfo <- list()
     thisIndex <- 1
     for(i in seq_along(wrt)){
-    arg <- nf[[wrtArgIndices[i] + 1]]
-    indText <- ''
-    if(length(wrtNames[[i]]) > 1){
-      indText <-  paste0('[', wrtNames[[i]][[2]])
+        arg <- nf[[wrtArgIndices[i] + 1]]
+        indText <- ''
+        if(length(wrtNames[[i]]) > 1){
+            indText <-  paste0('[', wrtNames[[i]][[2]])
+        }
+        argSym <- parse(text = paste0(paste0(deparse(arg), collapse = ''),
+                                      indText))[[1]]
+        dimInfo <- dimOrLength(eval(argSym, envir = fxnEnv))
+        ##if(is.null(dimInfo)) dimInfo <- length(eval(argSym, envir = fxnEnv))
+        lineInds <- thisIndex:(thisIndex + prod(dimInfo) - 1)
+        argDimInfo <- dim(eval(nf[[wrtArgIndices[i] + 1]],envir = fxnEnv))
+        flatteningInfo[[i]] <- list()
+        flatteningInfo[[i]][[1]] <- argDimInfo
+        flatteningInfo[[i]][[2]] <- indText
+        flatteningInfo[[i]][[3]] <- lineInds
+        thisIndex <- thisIndex + prod(dimInfo)
     }
-    argSym <- parse(text = paste0(paste0(deparse(arg), collapse = ''),
-                                  indText))[[1]]
-    dimInfo <- dim(eval(argSym, envir = fxnEnv))
-    if(is.null(dimInfo)) dimInfo <- length(eval(argSym, envir = fxnEnv))
-    lineInds <- thisIndex:(thisIndex + prod(dimInfo) - 1)
-    argDimInfo <- dim(eval(nf[[wrtArgIndices[i] + 1]],envir = fxnEnv))
-    flatteningInfo[[i]] <- list()
-    flatteningInfo[[i]][[1]] <- argDimInfo
-    flatteningInfo[[i]][[2]] <- indText
-    flatteningInfo[[i]][[3]] <- lineInds
-    thisIndex <- thisIndex + prod(dimInfo)
-  }
-  ## The wrappedFun created below is a wrapper for a call to the nimFxn argument
-  ## to nimDerivs.  The wrapped version takes a single vector argument x, as 
-  ## required by the numDeriv package.  It then unpacks the elements of the 
-  ## vector x, using them as arguments to the nimFxn as appropriate.
+    ## The wrappedFun created below is a wrapper for a call to the nimFxn argument
+    ## to nimDerivs.  The wrapped version takes a single vector argument x, as 
+    ## required by the numDeriv package.  It then unpacks the elements of the 
+    ## vector x, using them as arguments to the nimFxn as appropriate.
     wrappedFun <- function(x) {
-    args <- list()
-    for(i in 1:(length(nf)-1)){
-      if(i %in% wrtArgIndices){
-        thisWrtIndex <- which(i == wrtArgIndices)
-        thisSize <- sum(sapply(flatteningInfo[thisWrtIndex],
-                               function(x){return(prod(x[[1]]))})) #total length
-        if(length(wrtNames[[thisWrtIndex[1]]]) > 1){
-            args[[i]] <-  eval(nf[[i+1]], envir = fxnEnv)
-            argBracketExpr <- parse(
-              text = paste0('args[[i]]', flatteningInfo[[thisWrtIndex[1]]][[2]],
-                            ' <- x[flatteningInfo[[thisWrtIndex[1]]][[3]]]')
-              )[[1]]
-            eval(argBracketExpr)
-            if(length(thisWrtIndex) > 1){
-              for(j in 2:length(wrtNames[thisWrtIndex])){
-                argBracketExpr <- parse(
-                  text = paste0('args[[i]]', 
-                                flatteningInfo[[thisWrtIndex[j]]][[2]],
-                                ' <- x[flatteningInfo[[thisWrtIndex[j]]][[3]]]')
-                  )[[1]]
-                eval(argBracketExpr)
-              }
+        args <- list()
+        for(i in 1:(length(nf)-1)){
+            if(i %in% wrtArgIndices){
+                thisWrtIndex <- which(i == wrtArgIndices)
+                thisSize <- sum(sapply(flatteningInfo[thisWrtIndex],
+                                       function(x){return(prod(x[[1]]))})) #total length
+                if(length(wrtNames[[thisWrtIndex[1]]]) > 1){
+                    args[[i]] <-  eval(nf[[i+1]], envir = fxnEnv)
+                    argBracketExpr <- parse(
+                        text = paste0('args[[i]]', flatteningInfo[[thisWrtIndex[1]]][[2]],
+                                      ' <- x[flatteningInfo[[thisWrtIndex[1]]][[3]]]')
+                    )[[1]]
+                    eval(argBracketExpr)
+                    if(length(thisWrtIndex) > 1){
+                        for(j in 2:length(wrtNames[thisWrtIndex])){
+                            argBracketExpr <- parse(
+                                text = paste0('args[[i]]', 
+                                              flatteningInfo[[thisWrtIndex[j]]][[2]],
+                                              ' <- x[flatteningInfo[[thisWrtIndex[j]]][[3]]]')
+                            )[[1]]
+                            eval(argBracketExpr)
+                        }
+                    }
+                }
+                else{
+                    args[[i]] <-  x[flatteningInfo[[thisWrtIndex[1]]][[3]]]
+                }
+                if(length( flatteningInfo[[thisWrtIndex[1]]][[1]]) > 1 )
+                    dim(  args[[i]]) <-  flatteningInfo[[thisWrtIndex[1]]][[1]]
             }
-          }
-          else{
-            args[[i]] <-  x[flatteningInfo[[thisWrtIndex[1]]][[3]]]
-          }
-          if(length( flatteningInfo[[thisWrtIndex[1]]][[1]]) > 1 )
-            dim(  args[[i]]) <-  flatteningInfo[[thisWrtIndex[1]]][[1]]
-      }
-      else{
-       args[[i]] <- nf[[i+1]] 
-      }
+            else{
+                args[[i]] <- nf[[i+1]] 
+            }
+        }
+        c(do.call(paste(nf[[1]]), args, envir = fxnEnv))
     }
-    c(do.call(paste(nf[[1]]), args, envir = fxnEnv))
-  }
-  ## The makeSingleArg function created below extracts the values of the 
-  ## variables specified in the wrt arguemnt to nimDerivs and concatenates them
-  ## into a single vector.
+    ## The makeSingleArg function created below extracts the values of the 
+    ## variables specified in the wrt arguemnt to nimDerivs and concatenates them
+    ## into a single vector.
     makeSingleArg <- function(){
-    singleArg <- c()
-    for(i in seq_along(wrtNames)){
-      if(length(wrtNames[[i]]) > 1){
-        arg <- eval(nf[[wrtArgIndices[i]+1]], envir = fxnEnv)
-        singleArg <- c(singleArg, c(
-          eval(parse(text =  paste0('arg', flatteningInfo[[i]][[2]]))[1])))
-      }
-      else{
-        singleArg <- c(singleArg, c(eval(nf[[wrtArgIndices[i]+1]],
-                                         envir = fxnEnv)))
-      }
+        singleArg <- c()
+        for(i in seq_along(wrtNames)){
+            if(length(wrtNames[[i]]) > 1){
+                arg <- eval(nf[[wrtArgIndices[i]+1]], envir = fxnEnv)
+                singleArg <- c(singleArg, c(
+                                              eval(parse(text =  paste0('arg', flatteningInfo[[i]][[2]]))[1])))
+            }
+            else{
+                singleArg <- c(singleArg, c(eval(nf[[wrtArgIndices[i]+1]],
+                                                 envir = fxnEnv)))
+            }
+        }
+        return(singleArg)
     }
-    return(singleArg)
-  }
-  return(list(wrappedFun, makeSingleArg))
+    return(list(wrappedFun, makeSingleArg))
 }
 
 
@@ -313,7 +313,18 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
     wrtArgs <- deparse(wrtArgs)
   }
   ## Get names of wrt args with indexing removed.
-  wrtArgNames <- sapply(wrtArgs, function(x){strsplit(x, '\\[')[[1]][1]})
+    ## wrtArgNames <- sapply(wrtArgs, function(x){strsplit(x, '\\[')[[1]][1]})
+    wrtArgParsed <- lapply(wrtArgs, function(x) {
+        pvl <- .Call(nimble:::makeParsedVarList, x)[[2]][[2]]
+        if(is.name(pvl))
+            list(argName = deparse(pvl),
+                 argIndices = NULL)
+        else
+            list(argName = deparse(pvl[[2]]),
+                 argIndices = as.list(pvl)[-c(1:2)])
+    }
+    )
+    wrtArgNames <- unlist(lapply(wrtArgParsed, `[[`, 'argName'))
   nimFxnArgNames <- names(nimFxnArgs)
   wrtMatchArgs <- which(nimFxnArgNames %in% wrtArgNames)
   argNameCheck <- wrtArgNames %in% nimFxnArgNames
@@ -324,7 +335,7 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
                               ' does not have arguments named: ',
                               paste(wrtArgNames[!argNameCheck], 
                                     collapse = ', ' ), '.')
-  ## Make sure all wrt args are not simply names.
+  ## Make sure all wrt args have type declarations (i.e., are not just names without types)
     nameCheck <- sapply(wrtMatchArgs, function(x){return(class(nimFxnArgs[[x]]))})
     if(any(nameCheck == 'name')) stop('Derivatives of ', fxnName, ' being taken 
                                     WRT an argument that does not have a valid type.')
@@ -381,12 +392,23 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
                               fxnArgsIndexVector[wrtArgNames[i]])
     }
     else if(fxnArgsDims[wrtArgNames[i]] == 1){
-      hasIndex <- grepl('^[a-z]*\\[', wrtArgs[i])
+      hasIndex <- !is.null(wrtArgParsed[[i]]$argIndices) #grepl('^[a-z]*\\[', wrtArgs[i])
       if(hasIndex){
-        argIndices <- eval(parse(text = sub('\\]', '', sub('^[a-z]*\\[',
-                                                           '', wrtArgs[i]))))
-        if(is.null(argIndices)) argIndices <- 1:fxnArgsTotalSizes[
-          wrtArgNames[i]]
+          if(length(wrtArgParsed[[i]]$argIndices) != 1)  stop(paste0('Incorrect indexing ',
+                                                          'provided for wrt ',
+                                                          'argument to ',
+                                                          'nimDerivs(): ',
+                                                          wrtArgs[i]))
+           ##argIndices <- eval(parse(text = sub('\\]', '', sub('^[a-z]*\\[',
+          ##'', wrtArgs[i]))))
+          if(nimble:::is.blank(wrtArgParsed[[i]]$argIndices[[1]]))
+              argIndices <- 1:fxnArgsTotalSizes[wrtArgNames[i]]
+          else {
+              argIndices <- eval(wrtArgParsed[[i]]$argIndices[[1]])
+              if(any(argIndices < 1 | argIndices > fxnArgsTotalSizes[wrtArgNames[i]]))
+                  stop(paste0('Index too large (or < 0) provided in wrt argument: ',
+                              wrtArgs[i], ' for derivatives of ', fxnName))
+          }
         wrtArgsIndexVector <- c(wrtArgsIndexVector, 
                                 fxnArgsIndexVector[wrtArgNames[i]] +
                                   argIndices - 1)
@@ -398,22 +420,35 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
       }
     }
     else if(fxnArgsDims[wrtArgNames[i]] == 2){
-      hasIndex <- grepl('^[a-z]*\\[', wrtArgs[i])
+      hasIndex <- !is.null(wrtArgParsed[[i]]$argIndices) #grepl('^[a-z]*\\[', wrtArgs[i])
       if(hasIndex){
-        argIndicesText <- strsplit(sub('\\]', '', sub('^[a-z]*\\[', '',
-                                                      wrtArgs[i])), ',',
-                                   fixed = TRUE)
-        if(length(argIndicesText[[1]]) != 2)  stop(paste0('Incorrect indexing
-                                                          provided for wrt
-                                                          argument to
-                                                          nimDerivs(): ',
+##        argIndicesText <- strsplit(sub('\\]', '', sub('^[a-z]*\\[', '',
+##                                                      wrtArgs[i])), ',',
+##                                   fixed = TRUE)
+        if(length(wrtArgParsed[[i]]$argIndices) != 2)  stop(paste0('Incorrect indexing ',
+                                                          'provided for wrt ',
+                                                          'argument to ',
+                                                          'nimDerivs(): ',
                                                           wrtArgs[i]))
-        argIndicesRows <- eval(parse(text = argIndicesText[[1]][1]))
-        argIndicesCols <- eval(parse(text = argIndicesText[[1]][2]))
-        if(is.null(argIndicesRows)) argIndicesRows <- 1:fxnArgsDimSizes[[
-          wrtArgNames[i]]][1]
-        if(is.null(argIndicesCols)) argIndicesCols <- 1:fxnArgsDimSizes[[
-          wrtArgNames[i]]][2]
+          if(nimble:::is.blank(wrtArgParsed[[i]]$argIndices[[1]]))
+              argIndicesRows <- 1:fxnArgsDimSizes[[wrtArgNames[i]]][1]
+          else {
+              argIndicesRows <- eval(wrtArgParsed[[i]]$argIndices[[1]])
+              if(any(argIndicesRows < 1 | argIndicesRows > fxnArgsDimSizes[[wrtArgNames[i]]][1]))
+                  stop(paste0('A row index that is too large (or < 0) ',
+                              ' was provided in wrt argument: ',
+                              wrtArgs[i], ' for derivatives of ', fxnName))
+          }
+          if(nimble:::is.blank(wrtArgParsed[[i]]$argIndices[[2]]))
+              argIndicesCols <- 1:fxnArgsDimSizes[[wrtArgNames[i]]][2]
+          else { 
+              argIndicesCols <- eval(wrtArgParsed[[i]]$argIndices[[2]])
+              if(any(argIndicesCols < 1 | argIndicesCols > fxnArgsDimSizes[[wrtArgNames[i]]][2]))
+                  stop(paste0('A column index that is too large (or < 0) ',
+                              ' was provided in wrt argument: ',
+                              wrtArgs[i], ' for derivatives of ', fxnName))
+          
+          }
         ## Column major ordering
         for(col in argIndicesCols){
           wrtArgsIndexVector <- c(wrtArgsIndexVector, 
