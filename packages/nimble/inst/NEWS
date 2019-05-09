@@ -3,6 +3,8 @@ BUG FIXES
 
 -- Fixed bug in conjugacy checking of CAR model structures
 
+-- model setInits method now checks for named list elements
+
                             CHANGES IN VERSION 0.7.1 (March 2019)
 
 USER LEVEL CHANGES
