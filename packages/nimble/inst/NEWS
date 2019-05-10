@@ -1,7 +1,41 @@
 
--- Added support for 6-dimensional arrays in model code and in nimbleFunctions.
+BUG FIXES
+
+-- Fixed bug in conjugacy checking of CAR model structures
+
+-- model setInits method now checks for named list elements
+
+                            CHANGES IN VERSION 0.7.1 (March 2019)
+
+USER LEVEL CHANGES
+
+-- Add support for 6-dimensional arrays in model code and in nimbleFunctions.
+
+-- Allow use of besselK in model code.
+
+-- Add normal-normal conjugacy detection in multivariate regression structures using inprod, sum, and matrix multiplication.
+
+-- Allow use of 'x' in addition to 'value' in 'types' argument to registerDistributions.
+
+BUG FIXES
+
+-- Fix bug in MCMC sampling of dCRP nodes in non-conjugate situations introduced in Version 0.7.0. (Issue #859)
+
+-- Fix bug in findClusterNodes for dCRP nodes that was not detecting certain cases of clustering of multiple parameters in a model code statement and thereby not properly handling MCMC configuration for such nodes. (PR #861)
+
+-- Avoid protection stack overflow in working with large models, a problem introduced in 0.7.0 due to modifications of how PROTECT is used C++ code in response to new CRAN checks. (Issue #852)
+
+-- Fix bug in corner case of model initialization. (Issue #857)
+
+DEVELOPER LEVEL CHANGES
+
+-- Per CRAN request, remove use of hard-coded paths. One case was linking to libnimble.so from nimble.so - everything is now compiled into nimble.so. Second case was determination of path to libnimble.so at install time; this is now done at run-time. (Issue #858)
 
                             CHANGES IN VERSION 0.7.0 (January 2019)
+
+(See also changes below in Version 0.6.13 as Version 0.6.13 existed only
+briefly on CRAN because we needed to fix a few minor packaging issues
+raised by CRAN.)
 
 USER LEVEL CHANGES
 
