@@ -454,7 +454,7 @@ convertWrtArgToIndices <- function(wrtArgs, nimFxnArgs, fxnName){
           wrtArgsIndexVector <- c(wrtArgsIndexVector, 
                                   fxnArgsIndexVector[wrtArgNames[i]] + 
                                     (col - 1)*
-                                    fxnArgsDimSizes[[wrtArgNames[i]]][2] +
+                                    fxnArgsDimSizes[[wrtArgNames[i]]][1] +
                                     argIndicesRows - 1)
         }
       }
