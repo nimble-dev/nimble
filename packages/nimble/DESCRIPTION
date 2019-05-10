@@ -5,9 +5,9 @@ Version: 0.8.0
 Date: 2019-03-12
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
 Authors@R: c(
-    person("de Valpine", "Perry", role = c("aut", "cre")),
-    person("Paciorek", "Christopher", "paciorek@stat.berkeley.edu", role = c("aut", "cre")),
-    person("Turek", "Daniel", role = c("aut", "cre")),
+    person("de Valpine", "Perry", role = "aut"),
+    person("Paciorek", "Christopher", , "paciorek@stat.berkeley.edu", role = c("aut", "cre")),
+    person("Turek", "Daniel", role = "aut"),
     person("Michaud", "Nick", role = "aut"),
     person("Anderson-Bergman", "Cliff", role = "aut"),
     person("Obermeyer", "Fritz", role = "aut"),
