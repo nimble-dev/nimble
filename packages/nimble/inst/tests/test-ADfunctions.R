@@ -422,7 +422,9 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
 ## always be included, and then make_wrt will try to create up to `n_random`
 ## additional character vectors with random combinations of the arguments
 ## and indexing of those arguments when possible (i.e. for non-scalar args).
-make_wrt <- function(argTypes, n_random = 10) {
+## n_arg_reps determines how many times an argument can be used in a given
+## wrt character vector. By default, any argument will appear only 1 time.
+make_wrt <- function(argTypes, n_random = 10, n_arg_reps = 1) {
 
   ## always include each arg on its own, and all combinations of the args
   wrts <- as.list(names(argTypes))
@@ -445,8 +447,8 @@ make_wrt <- function(argTypes, n_random = 10) {
     n <- sample(1:length(argTypes), 1) # how many of the args to use?
     ## grab a random subset of the args of length n
     args <- sample(argSymbols, n)
-    ## may repeat an arg up to 2 times
-    reps <- sample(1:2, length(args), replace = TRUE)
+    ## may repeat an arg up to n_arg_reps times
+    reps <- sample(1:n_arg_reps, length(args), replace = TRUE)
     this_wrt <- c()
     for (i in 1:length(args)) {
       while (reps[i] > 0) {
@@ -558,7 +560,7 @@ gammafn <- gamma
 lgammafn <- lgamma
 ceil <- ceiling
 
-unaryArgs <- c('double(0)', 'double(1)', 'double(2)')
+unaryArgs <- c('double(0)', 'double(1, 4)', 'double(2, c(3, 4))')
 unaryOps <- c('-', 'sum',
               nimble:::unaryDoubleOperators,
               nimble:::unaryPromoteNoLogicalOperators,
@@ -599,7 +601,7 @@ modifyOnMatch(
   unaryOpTests,
   paste(
     '(logit|log1p|lfactorial|factorial|cloglog|atan|cosh|sinh|tanh|acosh|asinh|atanh)',
-    '(double\\(1\\)|double\\(2\\))'
+    '(double\\(1, 4\\)|double\\(2, c\\(3, 4\\)\\))'
   ),
   'knownFailures',
   list(compilation = TRUE)
@@ -657,9 +659,9 @@ binaryOpTests <- unlist(
 names(binaryOpTests) <- sapply(binaryOpTests, `[[`, 'name')
 
 ## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
-##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(0\\) double\\(1\\)', 'tol2', 0.001)
-##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1\\) double\\(0\\)', 'tol2', 0.001)
-##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1\\) double\\(1\\)', 'tol2', 0.001)
+##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(0\\) double\\(1, 4\\)', 'tol2', 0.001)
+##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1, 4\\) double\\(0\\)', 'tol2', 0.001)
+##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(1, 4\\) double\\(1, 4\\)', 'tol2', 0.001)
 
 ## runtime failures
 
