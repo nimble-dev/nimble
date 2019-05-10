@@ -3,14 +3,17 @@
 
 // See end of this file for global object definitions and functions to call
 
-class atomic_lgamma_class : public CppAD::atomic_three<double> {
-  public:
-  // From atomic_three_get_started
-  atomic_lgamma_class(const std::string& name) : 
-    CppAD::atomic_three<double>(name)        
-    { }
-
-private:
+template<class T>
+class unary_atomic_class : public CppAD::atomic_three<T> {
+  // This layer in the class hierarchy simply provides the same for_type and rev_depend
+  // for all atomic classes representing unary functions below.
+ public:
+  unary_atomic_class() {};
+ private:
+   // for_type is essential.
+  // This determines which elements of y are constants, dynamic parameters, or variables
+  //   depending on types of x.
+  // If omitted, calls to forward (and possibly reverse) will not happen.
   virtual bool for_type(
       const CppAD::vector<double>&               parameter_x ,
       const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
@@ -19,7 +22,7 @@ private:
     type_y[0] = type_x[0];
     return true;
   }
-  
+  // rev_depend is used when the optimize() method is called for a tape (an ADFun).
   virtual bool rev_depend(
 			  const CppAD::vector<double>&          parameter_x ,
 			  const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
@@ -29,7 +32,16 @@ private:
     depend_x[0] = depend_y[0];
     return true;
   }
+}
 
+class atomic_lgamma_class : public unary_atomic_class<double>
+  public:
+  // From atomic_three_get_started
+  atomic_lgamma_class(const std::string& name) : 
+    CppAD::atomic_three<double>(name)        
+    { }
+
+private:
   virtual bool forward(
       const CppAD::vector<double>&               parameter_x  ,
       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
@@ -80,7 +92,7 @@ private:
 
 /******************************/
 
-class atomic_pnorm1_class : public CppAD::atomic_three<double> {
+class atomic_pnorm1_class :public unary_atomic_class<double> {
   public:
   // From atomic_three_get_started
   atomic_pnorm1_class(const std::string& name) : 
@@ -88,19 +100,7 @@ class atomic_pnorm1_class : public CppAD::atomic_three<double> {
     { }
 
 private:
-  // for_type is essential.
-  // This determines which elements of y are constants, dynamic parameters, or variables
-  //   depending on types of x.
-  // If omitted, calls to forward (and possibly reverse) will not happen.
-  virtual bool for_type(
-      const CppAD::vector<double>&               parameter_x ,
-      const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
-      CppAD::vector<CppAD::ad_type_enum>&        type_y      )
-  { 
-    type_y[0] = type_x[0];
-    return true;
-  }
-  virtual bool forward(
+   virtual bool forward(
       const CppAD::vector<double>&               parameter_x  ,
       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
       size_t                              need_y       ,
@@ -159,7 +159,7 @@ private:
 
 /*******************************************/
 
-class atomic_qnorm1_class : public CppAD::atomic_three<double> {
+class atomic_qnorm1_class : public unary_atomic_class<double> {
   public:
   // From atomic_three_get_started
   atomic_qnorm1_class(const std::string& name) : 
@@ -167,18 +167,6 @@ class atomic_qnorm1_class : public CppAD::atomic_three<double> {
     { }
 
 private:
-  // for_type is essential.
-  // This determines which elements of y are constants, dynamic parameters, or variables
-  //   depending on types of x.
-  // If omitted, calls to forward (and possibly reverse) will not happen.
-  virtual bool for_type(
-      const CppAD::vector<double>&               parameter_x ,
-      const CppAD::vector<CppAD::ad_type_enum>&  type_x      ,
-      CppAD::vector<CppAD::ad_type_enum>&        type_y      )
-  { 
-    type_y[0] = type_x[0];
-    return true;
-  }
   virtual bool forward(
       const CppAD::vector<double>&               parameter_x  ,
       const CppAD::vector<CppAD::ad_type_enum>&  type_x       ,
@@ -240,10 +228,6 @@ private:
 
 #endif
 
-atomic_lgamma_class global_atomic_lgamma("atomic_lgamma");
-atomic_pnorm1_class global_atomic_pnorm1("atomic_pnorm1");
-atomic_qnorm1_class global_atomic_qnorm1("atomic_qnorm1");
-
 template<class T>
 T atomic_lfactorial(T x) {
   return atomic_lgamma(x + 1);
@@ -251,27 +235,30 @@ T atomic_lfactorial(T x) {
 
 template<class T>
 T atomic_lgamma(T x) {
+  static atomic_lgamma_class static_atomic_lgamma("atomic_lgamma");
   CppAD::vector<T> in(1);
   CppAD::vector<T> out(1);
   in[0] = x;
-  global_atomic_lgamma(in, out);
+  static_atomic_lgamma(in, out);
   return out[0];
 }
 
 template<class T>
 T atomic_pnorm1(T x) {
+  atomic_pnorm1_class static_atomic_pnorm1("atomic_pnorm1");
   CppAD::vector<T> in(1);
   CppAD::vector<T> out(1);
   in[0] = x;
-  global_atomic_pnorm1(in, out);
+  static_atomic_pnorm1(in, out);
   return out[0];
 }
 
 template<class T>
 T atomic_qnorm1(T x) {
+  atomic_qnorm1_class static_atomic_qnorm1("atomic_qnorm1");
   CppAD::vector<T> in(1);
   CppAD::vector<T> out(1);
   in[0] = x;
-  global_atomic_qnorm1(in, out);
+  static_atomic_qnorm1(in, out);
   return out[0];
 }
