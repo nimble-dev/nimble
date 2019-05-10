@@ -1653,12 +1653,11 @@ returnTypeString <- function(op, argTypes) {
              }
            }
 
-  return(
-    paste0(
-      scalarTypeString,
-      '(', nDim, ', c(', paste(sizes, collapse = ', '), '))'
-    )
-  )
+  size_string <- if (nDim > 0)
+                   paste0(', c(', paste(sizes, collapse = ', '), ')')
+                 else ''
+
+  return(paste0(scalarTypeString, '(', nDim, size_string, ')'))
 }
 
 ## Takes an argSymbol and if argSymbol$size is NA adds default sizes.
