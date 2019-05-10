@@ -143,12 +143,12 @@ RCvirtualFunProcessing <- setRefClass(
     )
 )
 
-RCfunction <- function(f, name = NA, returnCallable = TRUE, check) {
+RCfunction <- function(f, name = NA, returnCallable = TRUE, check, where = NULL) {
     if(is.na(name))
-        name <- rcFunLabelMaker()
+        name <- rcFunLabelMaker(envName = environmentName(where))
     nfm <- nfMethodRC$new(f, name, check = check)
     if(returnCallable)
-        nfm$generateFunctionObject(keep.nfMethodRC = TRUE)
+        nfm$generateFunctionObject(keep.nfMethodRC = TRUE, where = where)
     else
         nfm
 }
