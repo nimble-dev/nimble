@@ -40,7 +40,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' create a nimbleFunction from a setup function, run function, possibly other methods, and possibly inheritance via \code{contains}
 #'
 #' @param setup An optional R function definition for setup processing.
-#' @param run An optional NIMBLE function definition the executes the primary job of the nimbleFunction
+#' @param run An optional NIMBLE function definition that executes the primary job of the nimbleFunction
 #' @param methods An optional named list of NIMBLE function definitions for other class methods.
 #' @param globalSetup For internal use only
 #' @param contains An optional object returned from \code{\link{nimbleFunctionVirtual}} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
