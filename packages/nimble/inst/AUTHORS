@@ -1,8 +1,0 @@
-nimble authors
---------------
-
-In addition to the authors listed in the DESCRIPTION file, other contributors include:
-
-Jagadish Babu   code for the compilation system for an early version of NIMBLE
-Lauren Ponisio  contributions to the cross-validation code
-Peter Sujan     multivariate t distribution code

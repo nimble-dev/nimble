@@ -1086,7 +1086,10 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 #####	SETUPCODE TEMPLATES
 
 wrtVector_setupCodeTemplate <- setupCodeTemplateClass(
-  makeName = function(argList){Rname2CppName(paste0('wrtVec_', deparse(argList$fxn), '_'))},
+    makeName = function(argList){Rname2CppName(paste0('wrtVec_',
+                                                      deparse(argList$fxn),
+                                                      paste(deparse(argList$wrt), sep='_'),
+                                                      '_'))},
   codeTemplate = quote(
   {
       WRTVEC <- nimble:::convertWrtArgToIndices(WRT, #code$wrt

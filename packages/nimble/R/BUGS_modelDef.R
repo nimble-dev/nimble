@@ -2764,7 +2764,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     }
     nonVarIndices <- !names(inits) %in% model$getVarNames()
     if(sum(nonVarIndices))
-        warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ','),
+        warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ', '),
                 " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
     model$setInits(inits[!nonVarIndices])
     ## basic size/dimension, NA checking

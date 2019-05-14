@@ -19,7 +19,7 @@ nimble_$(VERSION).tar.gz: nimble/configure FORCE
 build: nimble_$(VERSION).tar.gz
 
 install: nimble_$(VERSION).tar.gz
-	R CMD INSTALL nimble_$(VERSION).tar.gz
+	R CMD INSTALL ${NDIR} nimble_$(VERSION).tar.gz
 
 check: build FORCE
 	R CMD check --as-cran nimble_$(VERSION).tar.gz

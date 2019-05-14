@@ -2104,7 +2104,7 @@ CAR_scalar_conjugate <- nimbleFunction(
         ## numeric value generation
         if(!all(model$getDistribution(depStochNodes_dnorm) == 'dnorm')) stop('something went wrong')
         linearityCheckExprList <- lapply(depStochNodes_dnorm, function(node) model$getParamExpr(node, 'mean'))
-        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansions=TRUE))
+        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansionsNode=model$expandNodeNames(targetScalar)))
         if(!all(sapply(linearityCheckExprList, function(expr) cc_nodeInExpr(targetScalar, expr)))) stop('something went wrong')
         linearityCheckResultList <- lapply(linearityCheckExprList, function(expr) cc_checkLinearity(expr, targetScalar))
         if(any(sapply(linearityCheckResultList, function(expr) is.null(expr)))) stop('something went wrong')
@@ -2266,7 +2266,7 @@ sampler_CAR_normal <- nimbleFunction(
         for(i in seq_along(targetScalarComponents)) {
             targetScalar <- targetScalarComponents[i]
             nDependents <- length(model$getDependencies(targetScalar, self = FALSE, stochOnly = TRUE))
-            conjugate <- CAR_checkConjugacy(model, targetScalar)
+            conjugate <- CAR_checkConjugacy(model, targetScalar, carNode = target)
             neighborNodes <- neighborLists$neighborNodeList[[i]]
             neighborWeights <- neighborLists$neighborWeightList[[i]]
             ##if(length(neighborNodes)==0) cat(paste0('island node detected: ', targetScalar, '\n'))
@@ -2331,7 +2331,7 @@ sampler_CAR_proper <- nimbleFunction(
         for(i in seq_along(targetScalarComponents)) {
             targetScalar <- targetScalarComponents[i]
             nDependents <- length(model$getDependencies(targetScalar, self = FALSE, stochOnly = TRUE))
-            conjugate <- CAR_checkConjugacy(model, targetScalar)
+            conjugate <- CAR_checkConjugacy(model, targetScalar, carNode = target)
             neighborNodes <- neighborLists$neighborNodeList[[i]]
             neighborCs <- neighborLists$neighborCList[[i]]
             Mi <- M[i]
