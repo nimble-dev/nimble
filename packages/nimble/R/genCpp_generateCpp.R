@@ -363,7 +363,18 @@ cppOutputMemberFunctionGeneric <- function(code, symTab) { ##cppMemberFunction(m
 cppOutputEigExternalUnaryFunction <- function(code, symTab) {
     info <-  eigProxyTranslateExternalUnary[[code$name]]
     if(length(info) < 3) stop(paste0("Invalid information entry for outputting eigen version of ", code$name), call. = FALSE)
-    paste0( '(', nimGenerateCpp(code$args[[1]], symTab), ').unaryExpr(std::ptr_fun<',info[2],', ',info[3],'>(', info[1], '))')
+    info1 <- info[1]
+    info2 <- info[2]
+    info3 <- info[3]
+    if(identical(nimbleUserNamespace$cppADCode, 2L)) {
+      info1 <- paste0('nimDerivs_', info1)
+      info2 <- paste0('CppAD::AD<', info2, '>')
+      info3 <- paste0('CppAD::AD<', info3, '>')
+    }
+    paste0(
+      '(', nimGenerateCpp(code$args[[1]], symTab),
+      ').unaryExpr(std::ptr_fun<',info2,', ',info3,'>(', info1, '))'
+    )
 }
 
 ## like cppOutputCallAsIs but using eigProxyTranslate on the name
