@@ -281,6 +281,8 @@ print: A logical argument specifying whether to print the ordered list of defaul
                                 addSampler(target = node, type = 'CRP_cluster_wrapper',
                                            control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
                                                           dcrpNode = dcrpNode[[k]], clusterID = i))
+                                ## Note for more general clustering: will probably change to
+                                ## 'clusterID=clusterNodeInfo[[k]]$clusterID[i]'
                             }
                         }
                     }
