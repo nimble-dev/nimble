@@ -1847,7 +1847,7 @@ findClusterNodes <- function(model, target) {
   nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
   dists <- model$getDistribution(nodes)
   if(length(dists == 'dCRP') > 1) { 
-      dcrpNodes <- nodes[dists == 'dCRP' && nodes != target]
+      dcrpNodes <- nodes[dists == 'dCRP' & nodes != target]
       for(i in seq_along(dcrpNodes)) {
           dcrpElements <- model$expandNodeNames(dcrpNodes[i], returnScalarComponents = TRUE)
           dcrpVar <- model$getVarNames(nodes = dcrpNodes[i])
