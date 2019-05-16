@@ -590,38 +590,38 @@ modifyOnMatch(unaryOpTests, '(acos|asin|atanh) .+', 'arg_distns', function(x) ru
 modifyOnMatch(unaryOpTests, 'acosh .+', 'arg_distns', function(x) abs(rnorm(x)) + 1)
 
 ## abs fails on negative inputs
-modifyOnMatch(unaryOpTests, 'abs .+', 'arg_distns', function(x) -abs(rnorm(x)))
+## modifyOnMatch(unaryOpTests, 'abs .+', 'arg_distns', function(x) -abs(rnorm(x)))
 
 ## e.g. of how to set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
 ## modifyOnMatch(unaryOpTests, 'ilogit .+', 'tol2', 0.1)
 
 ## compilation failures
 
-modifyOnMatch(
-  unaryOpTests,
-  paste(
-    '(logit|log1p|lfactorial|factorial|cloglog|atan|cosh|sinh|tanh|acosh|asinh|atanh)',
-    '(double\\(1, 4\\)|double\\(2, c\\(3, 4\\)\\))'
-  ),
-  'knownFailures',
-  list(compilation = TRUE)
-)
+## modifyOnMatch(
+##   unaryOpTests,
+##   paste(
+##     '(logit|log1p|lfactorial|factorial|cloglog|atan|cosh|sinh|tanh|acosh|asinh|atanh)',
+##     '(double\\(1, 4\\)|double\\(2, c\\(3, 4\\)\\))'
+##   ),
+##   'knownFailures',
+##   list(compilation = TRUE)
+## )
 
-modifyOnMatch(
-  unaryOpTests, '(nimRound|ceil|floor|sd|var|probit|lgammafn|gammafn) .+',
-  'knownFailures', list(compilation = TRUE)
-)
+## modifyOnMatch(
+##   unaryOpTests, '(nimRound|ceil|floor|sd|var|probit|lgammafn|gammafn) .+',
+##   'knownFailures', list(compilation = TRUE)
+## )
 
-ops_regex <- paste0(
-  c('sum', nimble:::reductionUnaryDoubleOperatorsEither,
-    nimble:::reductionUnaryOperatorsArray),
-  collapse = '|'
-)
-modifyOnMatch(
-  unaryOpTests,
-  paste0('(', ops_regex, ') double\\(0\\)'),
-  'knownFailures', list(compilation = TRUE)
-)
+## ops_regex <- paste0(
+##   c('sum', nimble:::reductionUnaryDoubleOperatorsEither,
+##     nimble:::reductionUnaryOperatorsArray),
+##   collapse = '|'
+## )
+## modifyOnMatch(
+##   unaryOpTests,
+##   paste0('(', ops_regex, ') double\\(0\\)'),
+##   'knownFailures', list(compilation = TRUE)
+## )
 
 #############
 ## binary ops
@@ -666,21 +666,21 @@ names(binaryOpTests) <- sapply(binaryOpTests, `[[`, 'name')
 ## runtime failures
 
 ## example of specifying when a particular method fails:
-modifyOnMatch(
-  binaryOpTests,
-  '\\+ double\\(0\\) double\\(0\\)',
-  'knownFailures',
-  list(
-    method3 = list( ## arg1, arg2
-      jacobian = expect_failure,
-      hessian = expect_failure
-    ),
-    method4 = list( ## no wrt
-      jacobian = expect_failure,
-      hessian = expect_failure
-    )
-  )
-)
+## modifyOnMatch(
+##   binaryOpTests,
+##   '\\+ double\\(0\\) double\\(0\\)',
+##   'knownFailures',
+##   list(
+##     method3 = list( ## arg1, arg2
+##       jacobian = expect_failure,
+##       hessian = expect_failure
+##     ),
+##     method4 = list( ## no wrt
+##       jacobian = expect_failure,
+##       hessian = expect_failure
+##     )
+##   )
+## )
 
 ##########################
 ## unary square matrix ops
@@ -706,20 +706,20 @@ squareMatrixOpTests <- unlist(
 )
 names(squareMatrixOpTests) <- sapply(squareMatrixOpTests, `[[`, 'name')
 
-modifyOnMatch(
-  squareMatrixOpTests, 'chol .+', 'arg_distns',
-  function(arg_size) {
-    mat <- diag(1:arg_size[1]) ## assumes matrix is square
-    mat[upper.tri(mat) | lower.tri(mat)] <- runif(1) ## chol only uses upper tri
-    mat
-  }
-)
+## modifyOnMatch(
+##   squareMatrixOpTests, 'chol .+', 'arg_distns',
+##   function(arg_size) {
+##     mat <- diag(1:arg_size[1]) ## assumes matrix is square
+##     mat[upper.tri(mat) | lower.tri(mat)] <- runif(1) ## chol only uses upper tri
+##     mat
+##   }
+## )
 
-## compilation failures
-modifyOnMatch(
-  squareMatrixOpTests, '(logdet|det) .+',
-  'knownFailures', list(compilation = TRUE)
-)
+## ## compilation failures
+## modifyOnMatch(
+##   squareMatrixOpTests, '(logdet|det) .+',
+##   'knownFailures', list(compilation = TRUE)
+## )
 
 ####################
 ## binary matrix ops
@@ -750,7 +750,7 @@ binaryMatrixOpTests <- unlist(
 names(binaryMatrixOpTests) <- sapply(binaryMatrixOpTests, `[[`, 'name')
 
 ## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
-modifyOnMatch(binaryMatrixOpTests, '%*% .+', 'tol2', 0.001)
+## modifyOnMatch(binaryMatrixOpTests, '%*% .+', 'tol2', 0.001)
 
 #########################
 ## distribution functions
