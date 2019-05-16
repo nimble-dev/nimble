@@ -84,17 +84,17 @@ as.carCM <- function(adj, weights, num) {
 
 
 ## specialized conjugacy-checking of the scalar component nodes of dcar_normal() AND dcar_proper() distributions
-CAR_checkConjugacy <- function(model, target) {
+CAR_checkConjugacy <- function(model, target, carNode) {
     depNodes <- model$getDependencies(target, stochOnly = TRUE, self = FALSE)
     for(depNode in depNodes) {
         if(!model$getDistribution(depNode) == 'dnorm')   return(FALSE)
         if(model$isTruncated(depNode))   return(FALSE)
-        linearityCheckExpr <- model$getParamExpr(depNode, 'mean')
-        linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, skipExpansions=TRUE)
+        linearityCheckExprRaw <- model$getParamExpr(depNode, 'mean')
+        linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, skipExpansionsNode=carNode)
         if(!cc_nodeInExpr(target, linearityCheckExpr))   return(FALSE)
         linearityCheck <- cc_checkLinearity(linearityCheckExpr, target)
         if(!cc_linkCheck(linearityCheck, 'linear'))   return(FALSE)
-        if(!cc_otherParamsCheck(model, depNode, target, skipExpansions=TRUE))   return(FALSE)
+        if(!cc_otherParamsCheck(model, depNode, target, skipExpansionsNode=carNode, depNodeExprExpanded = linearityCheckExpr, depParamNodeName = 'mean'))   return(FALSE)
     }
     return(TRUE)
 }
@@ -445,7 +445,7 @@ CAR_calcEVs2 <- nimbleFunction(
     run = function(adj = double(1), num = double(1)) {
         C <- CAR_calcC(adj, num)
         Cmatrix <- CAR_calcCmatrix(C, adj, num)
-        evs <- eigen(Cmatrix)$values
+        evs <- eigen(Cmatrix, only.values = TRUE)$values
         returnType(double(1))
         return(evs)
     }
@@ -461,7 +461,7 @@ CAR_calcEVs3 <- nimbleFunction(
     name = 'CAR_calcEVs3',
     run = function(C = double(1), adj = double(1), num = double(1)) {
         Cmatrix <- CAR_calcCmatrix(C, adj, num)
-        evs <- eigen(Cmatrix)$values
+        evs <- eigen(Cmatrix, only.values = TRUE)$values
         returnType(double(1))
         return(evs)
     }

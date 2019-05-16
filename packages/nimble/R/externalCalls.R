@@ -197,7 +197,7 @@ nimbleRcall <- function(prototype, returnType, Rfun, envir = .GlobalEnv) {
         thisNdim <- thisSymbol$nDim
         SEXPargName <- paste0(argNames[i], '_SEXP_')
         replacedArgNames[i] <- SEXPargName
-        newConvertLine <- substitute( A <- NimArr_2_SEXP(B), list(A = as.name(SEXPargName), B = as.name(argNames[i]))) ## MakeSEXPcopyLineFrom almost does this but it is at cppDef level
+        newConvertLine <- substitute( A <- PROTECT(NimArr_2_SEXP(B)), list(A = as.name(SEXPargName), B = as.name(argNames[i]))) ## MakeSEXPcopyLineFrom almost does this but it is at cppDef level
         convertLines[[ length(convertLines) + 1]] <- newConvertLine
         SEXPsetupLines[[ length(SEXPsetupLines) + 1 ]] <- substitute(nimVerbatim(SET_TAG(SLANGpiece, Rf_install(ARGNAME))), list(ARGNAME = as.character(argNames[i])))
         SEXPsetupLines[[ length(SEXPsetupLines) + 1 ]] <- substitute(nimVerbatim(SET_NEXT_LANG_ARG(SLANGpiece, SEXPARGNAME)), list(SEXPARGNAME = as.name(SEXPargName)))
@@ -207,11 +207,11 @@ nimbleRcall <- function(prototype, returnType, Rfun, envir = .GlobalEnv) {
     else
         returnType <- returnTypeExpr
     returnSymbol <- argType2symbol(returnType)
-    externalCallLine <- quote(SANS <- Reval(SLANG, R_GlobalEnv))
+    externalCallLine <- quote(SANS <- PROTECT(Rf_eval(SLANG, R_GlobalEnv)))
     if(returnSymbol$type != 'void') {
         resultLines <- list(substitute(declare(ans, RT), list(RT = returnType)),
                             quote(nimVerbatim(SEXP_2_NimArr(SANS, ans))),
-                            quote(nimVerbatim(UNPROTECT(1))),
+                            substitute(nimVerbatim(UNPROTECT(2 + NARGS)), list(NARGS = length(args))),
                             quote(return(ans)),
                             substitute(returnType(RT), list(RT = returnType))
                             )

@@ -205,6 +205,10 @@ distClass <- setRefClass(
             if(is(parsedArgList, 'try-error'))
                 stop("init_types_makeArgList: problem with arguments ", paste(typeArgCharVector, collapse = ","), ". Perhaps you didn't define types for your user-defined distribution nimbleFunctions?")
             allNames <- unlist(lapply(parsedArgList, function(pa) as.character(pa[[2]])))
+            if('x' %in% allNames) {
+                warning("init_types_makeArgList: Found 'x' in 'types', changing to 'value'.")
+                allNames[which('x' == allNames)] <- 'value'
+            }
             declExprs <- lapply(parsedArgList, function(pa) pa[[3]])
             allTypes <- unlist(lapply(parsedArgList, function(pa) as.character(pa[[3]][[1]])))
             allDims <- unlist(lapply(parsedArgList, function(pa) if(length(pa[[3]]) == 1) 0 else as.numeric(pa[[3]][[2]])))
