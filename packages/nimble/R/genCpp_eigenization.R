@@ -112,9 +112,9 @@ eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRi
     makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dinvwish_chol', 'nimArr_dcar_normal', 'nimArr_dcar_proper', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam', 'getBound', 'getNodeFunctionIndexedInfo', 'concatenateTemp', 'MAKE_FIXED_VECTOR', 'hardCodedVectorInitializer'), 'eigenize_doNotRecurse'),
     list(coeffSetter = 'eigenize_coeffSetter',
          nfVar = 'eigenize_nfVar',
-         chainedCall = 'eigenize_chainedCall',
-         '<-' = 'eigenize_assign_before_recurse',
-         mvAccessRow = 'eigenize_nfVar') )
+         chainedCall = 'eigenize_chainedCall'),
+    makeCallList(c('<-', '<<-', '='), 'eigenize_assign_before_recurse'),
+    list(mvAccessRow = 'eigenize_nfVar') )
 
 eigenizeUseArgs <- c(
     list(
@@ -161,6 +161,8 @@ eigenizeTranslate <- list(abs = 'cwiseAbs',
                           'det' = 'eigDeterminant',
                           
                           '<-' = '<-',
+                          '<<-' = '<<-',
+                          '=' = '=',
                           '(' = '(',
                           eigenBlock = 'eigenBlock' ## always inserted by sizeIndexingBracket as 'eigenBlock'
                           )
@@ -245,7 +247,7 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
         }
 
         IsetAliasRisk <- FALSE
-        if(code$name %in% c('t', 'asRow')) {IsetAliasRisk <- workEnv[['aliasRisk']] <- TRUE}
+        if(code$name %in% c('nimCd', 'nimCi', 'nimCb', 'nimNonseqIndexedd','nimNonseqIndexedi', 'nimNonseqIndexedb', 'nimRepd', 'nimRepi', 'nimRepb', 't', 'asRow')) {IsetAliasRisk <- workEnv[['aliasRisk']] <- TRUE}
 
 
         iArgs <- seq_along(code$args)
@@ -813,9 +815,24 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     }
     if(targetSym$nDim == 0) return(NULL) ## it is a scalar
 
-    EigenName <- Rname2CppName(makeEigenName(code$name))
+    ## At this point there is a complication for a case like eigenBlock(x, 1:4).
+    ## We will be in eigenizeName for with code = x.
+    ## However, the EigenName is used later to determine if the block extent is exactly
+    ## identical on a LHS and RHS, in order to determine if .eval() is needed to avoid aliasing.
+    ## The problem would occur for x[2:3] <- x[1:2], vs x[1:2] <- 2* x[1:2].
+    ## The former needs eval(), but the latter doesn't.
+    ## In order to work well with the (earlier-developed) system below, we make the EigenName
+    ## include the index content.
+    if(code$caller$name == "eigenBlock") {
+        codeForNameCreation <- code$caller
+        while(codeForNameCreation$caller$name == "eigenBlock")  ## recurse up to the outer-most eigenBlock, in case they are nested
+            codeForNameCreation <- codeForNameCreation$caller
+        EigenName <- Rname2CppName(nimDeparse(codeForNameCreation))
+    } else {
+        EigenName <- Rname2CppName(makeEigenName(code$name))
+    }
     needStrides <- !is.null(typeEnv$passedArgumentNames[[code$name]])
-
+    
     if(needStrides) {
         newArgs <- list()
         newArgs[[1]] <- code$name
