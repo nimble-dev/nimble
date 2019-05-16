@@ -1843,9 +1843,23 @@ findClusterNodes <- function(model, target) {
   e <- list()
   idxExpr <- model$getDeclInfo(target)[[1]]$indexExpr[[1]]
   eval(substitute(`<-`(`[`(e$VAR, IDX), seq_along(targetElements)), list(VAR = targetVar, IDX = idxExpr)))
+  ## For cases of cross clustering (e.g., mu[xi[i],eta[j]]) we need the other dcrp node(s)
+  nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+  dists <- model$getDistribution(nodes)
+  if(length(dists == 'dCRP') > 1) { 
+      dcrpNodes <- nodes[dists == 'dCRP' && nodes != target]
+      for(i in seq_along(dcrpNodes)) {
+          dcrpElements <- model$expandNodeNames(dcrpNodes[i], returnScalarComponents = TRUE)
+          dcrpVar <- model$getVarNames(nodes = dcrpNodes[i])
+          idxExpr <- model$getDeclInfo(dcrpNodes[i])[[1]]$indexExpr[[1]]
+          eval(substitute(`<-`(`[`(e$VAR, IDX), seq_along(dcrpElements)), list(VAR = dcrpVar, IDX = idxExpr)))
+
+      }
+  }
   
-  clusterNodes <- indexExpr <- list()
-  clusterVars <- indexPosition <- numIndexes <- targetIsIndex <- targetIndexedByFunction <- NULL
+  clusterNodes <- indexExpr <- clusterIDs <- list()
+  clusterVars <- indexPosition <- numIndexes <- targetIsIndex <- targetIndexedByFunction <-
+      loopIndex <- NULL
   varIdx <- 0
 
   targetNonIndex <- NULL
@@ -1894,9 +1908,21 @@ findClusterNodes <- function(model, target) {
                                                     function(x) 
                                                         length(x) >= 3 && x[[1]] == '[' &&
                                                         x[[2]] == targetVar && length(x[[3]]) > 1))
+        loopIndex[varIdx] <- unlist(sapply(declInfo$symbolicParentNodes,
+                                    function(x) {
+                                        if(length(x) >= 3 && x[[1]] == '[' &&
+                                           x[[2]] == targetVar) return(deparse(x[[3]]))
+                                        else return(NULL) }))
         
         ## Determine all sets of index values so they can be evaluated in context of possible values of target element values.
         unrolledIndices <- declInfo$unrolledIndicesMatrix
+        ## Order so that loop over index of cluster ID in order of cluster ID so that
+        ## clusterNodes will be grouped in chunks of unique cluster IDs for correct
+        ## sampling of new clusters when have multiple obs per cluster.
+        ord <- order(unrolledIndices[ , loopIndex[varIdx]])
+        unrolledIndices <- unrolledIndices[ord, ]
+        clusterIDs[[varIdx]] <- unrolledIndices[ , loopIndex[varIdx]]
+        
         n <- nrow(unrolledIndices)
         if(n > 0) {  # catch cases like use of xi[2] rather than xi[i]
             clusterNodes[[varIdx]] <- rep(NA, n)
@@ -1953,6 +1979,7 @@ findClusterNodes <- function(model, target) {
     }
   }
   return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
+              clusterIDs = clusterIDs, loopIndex = loopIndex,
               targetIsIndex = targetIsIndex, indexPosition = indexPosition, indexExpr = indexExpr,
               numIndexes = numIndexes, targetIndexedByFunction = targetIndexedByFunction,
               targetNonIndex = targetNonIndex))
