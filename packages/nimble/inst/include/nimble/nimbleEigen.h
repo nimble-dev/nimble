@@ -136,6 +136,12 @@ struct nimble_eigen_coeff_impl<true, result_type, double, Index> {
 };
 
 template<typename result_type, typename Index>
+struct nimble_eigen_coeff_impl<true, result_type, CppAD::AD<double>, Index> {
+  static result_type getCoeff(const CppAD::AD<double> Arg, Index i) {return Arg;}
+  static result_type getDiagCoeff(const CppAD::AD<double> Arg, Index i) {return CppAD::AD<double>(1.0);}
+};
+
+template<typename result_type, typename Index>
 struct nimble_eigen_coeff_impl<true, result_type, int, Index> {
   static result_type getCoeff(const int Arg, Index i) {return Arg;}
   static result_type getDiagCoeff(const int Arg, Index i) {return 1;}
@@ -1383,6 +1389,7 @@ MAKE_RECYCLING_RULE_CLASS2_1scalar(dpois, double)
 MAKE_RECYCLING_RULE_CLASS2_1scalar(dchisq, double)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(dbeta, double)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(dnorm, double)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(nimDerivs_dnorm, CppAD::AD<double>)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(dgamma, double)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(dinvgamma, double)
 MAKE_RECYCLING_RULE_CLASS3_1scalar(ddexp, double)
