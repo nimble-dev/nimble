@@ -1,6 +1,6 @@
 import(methods)
 import(igraph)
-importFrom(coda, effectiveSize, as.mcmc, is.mcmc.list)
+importFrom(coda, effectiveSize, as.mcmc, as.mcmc.list, is.mcmc.list)
 importFrom(R6, R6Class)
 importFrom(grDevices, dev.off, jpeg)
 importFrom(graphics, lines, plot, text)
