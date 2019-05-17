@@ -256,12 +256,12 @@ Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){
 
 template<class T>
 T nimDerivs_probit(T x){
-  return(nimDerivs_qnorm(x, 0., 1., 1, 0));
+  return(nimDerivs_qnorm(x));
 }
 
 template<class T>
 T nimDerivs_iprobit(T x){
-  return(nimDerivs_pnorm(x, 0., 1., 1, 0));
+  return(nimDerivs_pnorm(x));
 }
 // VECTORIZE3_ttt(qnorm)
 // VECTORIZE1_t(qnorm)
