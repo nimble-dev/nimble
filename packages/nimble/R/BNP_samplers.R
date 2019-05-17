@@ -1908,14 +1908,17 @@ findClusterNodes <- function(model, target) {
                                                     function(x) 
                                                         length(x) >= 3 && x[[1]] == '[' &&
                                                         x[[2]] == targetVar && length(x[[3]]) > 1))
+        ## Determine all sets of index values so they can be evaluated in context of possible values of target element values.
+        unrolledIndices <- declInfo$unrolledIndicesMatrix
+
+        if(targetIndexedByFunction[varIdx] && ncol(unrolledIndices) > 1)  ## Now that we allow cluster parameters with multiple indexes, this is very hard to handle in terms of identifying what column of unrolledIndices to use for sorting clusterNodes.
+            stop("findClusterNodes: found a cluster parameter indexed by a function: NIMBLE's CRP sampling not designed for this case.")
         loopIndex[varIdx] <- unlist(sapply(declInfo$symbolicParentNodes,
                                     function(x) {
                                         if(length(x) >= 3 && x[[1]] == '[' &&
                                            x[[2]] == targetVar) return(deparse(x[[3]]))
                                         else return(NULL) }))
         
-        ## Determine all sets of index values so they can be evaluated in context of possible values of target element values.
-        unrolledIndices <- declInfo$unrolledIndicesMatrix
         ## Order so that loop over index of cluster ID in order of cluster ID so that
         ## clusterNodes will be grouped in chunks of unique cluster IDs for correct
         ## sampling of new clusters when have multiple obs per cluster.
@@ -1955,27 +1958,38 @@ findClusterNodes <- function(model, target) {
   nTilde <- sapply(clusterNodes, length)
   modelNodes <- model$getNodeNames()
   for(varIdx in seq_along(clusterVars)) {
-    if(nTilde[[varIdx]]) {
+    if(nTilde[varIdx]) {
         if(any(is.na(clusterNodes[[varIdx]])))  
             stop("findClusterNodes: fewer cluster IDs in ", target, " than elements being clustered.")
-        if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
-            cnt <- nTilde[varIdx]
-            while(cnt > 0) {
-                ## Try to find first nTilde nodes such that are all actual model nodes.
-                if(all(clusterNodes[[varIdx]][seq_len(cnt)] %in% modelNodes)) {
-                    nTilde[varIdx] <- cnt
-                    clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][seq_len(cnt)]
-                    break
-                }            
-                cnt <- cnt - 1
-            }
-            if(cnt == 0) {
-                warning("findClusterNodes: missing cluster parameter ", clusterNodes[[varIdx]][1], ".")
-                clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][clusterNodes[[varIdx]] %in% modelNodes]
-                if(!length(clusterNodes[[varIdx]]))
-                    stop("findClusterNodes: no cluster parameters for variable ", clusterVars[varIdx], ".")
-            }
+
+        ## Formerly we were checking that we had a contiguous set of cluster nodes
+        ## starting with the first one, but for clusterNodes with more than one index and
+        ## truncation this is hard to do, so just fall back to returning the clusterNodes
+        ## that are actually part of the model.
+        validNodes <- clusterNodes[[varIdx]] %in% modelNodes
+        if(!all(validNodes)) {  # i.e., truncated representation
+            clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][validNodes]
+            nTilde[varIdx] <- length(clusterNodes[[varIdx]])
+            clusterIDs[[varIdx]] <- clusterIDs[[varIdx]][validNodes]
         }
+        ## if(!all(clusterNodes[[varIdx]] %in% modelNodes)) {  # i.e., truncated representation
+        ##     cnt <- nTilde[varIdx]
+        ##     while(cnt > 0) {
+        ##         ## Try to find first nTilde nodes such that are all actual model nodes.
+        ##         if(all(clusterNodes[[varIdx]][seq_len(cnt)] %in% modelNodes)) {
+        ##             nTilde[varIdx] <- cnt
+        ##             clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][seq_len(cnt)]
+        ##             break
+        ##         }            
+        ##         cnt <- cnt - 1
+        ##     }
+        ##     if(cnt == 0) {
+        ##         warning("findClusterNodes: missing cluster parameter ", clusterNodes[[varIdx]][1], ".")
+        ##         clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][clusterNodes[[varIdx]] %in% modelNodes]
+        ##         if(!length(clusterNodes[[varIdx]]))
+        ##             stop("findClusterNodes: no cluster parameters for variable ", clusterVars[varIdx], ".")
+        ##     }
+        ## }
     }
   }
   return(list(clusterNodes = clusterNodes, clusterVars = clusterVars, nTilde = nTilde,
