@@ -271,6 +271,7 @@ print: A logical argument specifying whether to print the ordered list of defaul
                 }
 
                 ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
+                browser()
                 if(!is.null(clusterNodeInfo)) {
                     for(k in seq_along(clusterNodeInfo)) {
                         for(clusterNodes in clusterNodeInfo[[k]]$clusterNodes) {
@@ -282,7 +283,8 @@ print: A logical argument specifying whether to print the ordered list of defaul
                                            control = list(wrapped_type = samplers[[i]]$name, wrapped_conf = samplers[[i]],
                                                           dcrpNode = dcrpNode[[k]], clusterID = i))
                                 ## Note for more general clustering: will probably change to
-                                ## 'clusterID=clusterNodeInfo[[k]]$clusterID[i]'
+                                ## 'clusterID=clusterNodeInfo[[k]]$clusterIDs[[??]][i]'
+                                ## which means we probably need to change to for(clusterNodesIdx in seq_along(clusterNodeInfo[[k]]$clusterNodes))
                             }
                         }
                     }
