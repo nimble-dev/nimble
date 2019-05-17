@@ -37,7 +37,7 @@ benchmarkIters <- function(fun, minIters = 10L) {
     return(iters / elapsed)
 }
 
-## This makes DSL, C++, and possibly Tensorflow versions of a function.
+## This makes DSL and C++ versions of a function.
 ## We give each a distinct name so that profiling tools like callgrind can disambiguate function symbols.
 makeVersions <- function(name, run) {
     dirName <- NULL
@@ -50,14 +50,6 @@ makeVersions <- function(name, run) {
     versions$cpp <- compileNimble(
         nimbleFunction(run = run, name = paste0('cpp_', name)),
         projectName = 'cpp', dirName = dirName)
-    if (require('tensorflow')) {
-        versions$tf <- withTensorflowEnabled(
-            compileNimble(
-                nimbleFunction(run = run, name = paste0('tf_', name)),
-                projectName = 'tf', dirName = dirName))
-    } else {
-        versions$tf <- function(...) NA
-    }
     return(versions)
 }
 
@@ -80,16 +72,15 @@ test_that('Benchmarking matrix arithmetic', {
 
     cat('--------------------------------------------\n')
     cat('Benchmarking Matrix Arithmetic\n')
-    cat('   M    N DSL ops/sec C++ ops/sec TF ops/sec\n')
+    cat('   M    N DSL ops/sec C++ ops/sec\n')
     for (M in matrixSizes) {
         N <- M
         x <- matrix(rnorm(M * N), M, N)
         y <- matrix(rnorm(M * N), M, N)
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, y, iters))
         cPerSec <- benchmarkIters(function(iters) versions$cpp(x, y, iters))
-        tfPerSec <- benchmarkIters(function(iters) versions$tf(x, y, iters))
         cat(sprintf('%4d %4d %11.2g %11.2g %10.2g\n',
-                    M, N, nimPerSec, cPerSec, tfPerSec))
+                    M, N, nimPerSec, cPerSec))
     }
     cat('--------------------------------------------\n')
 })
@@ -109,7 +100,7 @@ test_that('Benchmarking matrix multiplication', {
 
     cat('-------------------------------------------------\n')
     cat('Benchmarking Matrix Multiplication\n')
-    cat('   K    M    N DSL ops/sec C++ ops/sec TF ops/sec\n')
+    cat('   K    M    N DSL ops/sec C++ ops/sec/sec\n')
     for (K in matrixSizes) {
         M <- K
         N <- K
@@ -117,9 +108,8 @@ test_that('Benchmarking matrix multiplication', {
         y <- matrix(rnorm(M * N), M, N)
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, y, iters))
         cPerSec <- benchmarkIters(function(iters) versions$cpp(x, y, iters))
-        tfPerSec <- benchmarkIters(function(iters) versions$tf(x, y, iters))
         cat(sprintf('%4d %4d %4d %11.2g %11.2g %10.2g\n',
-                    K, M, N, nimPerSec, cPerSec, tfPerSec))
+                    K, M, N, nimPerSec, cPerSec))
     }
     cat('-------------------------------------------------\n')
 })
@@ -139,14 +129,13 @@ test_that('Benchmarking vectorized special functions', {
 
     cat('-----------------------------------------\n')
     cat('Benchmarking Special Functions\n')
-    cat('     N DSL ops/sec C++ ops/sec TF ops/sec\n')
+    cat('     N DSL ops/sec C++ ops/sec\n')
     for (N in vectorSizes) {
         x <- exp(-rnorm(N))
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, iters))
         cPerSec <- benchmarkIters(function(iters) versions$cpp(x, iters))
-        tfPerSec <- benchmarkIters(function(iters) versions$tf(x, iters))
         cat(sprintf('%6d %11.1g %11.1g %10.1g\n',
-                    N, nimPerSec, cPerSec, tfPerSec))
+                    N, nimPerSec, cPerSec))
     }
     cat('-----------------------------------------\n')
 })

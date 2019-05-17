@@ -22,7 +22,7 @@ Depends:
 Imports:
     methods,igraph,coda,R6
 Suggests:
-    testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2,tensorflow,reticulate
+    testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2
 URL: https://r-nimble.org
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE | GPL (>= 2)
@@ -66,7 +66,6 @@ Collate:
     genCpp_maps.R
     genCpp_liftMaps.R
     genCpp_eigenization.R
-    genCpp_TFize.R
     genCpp_addDebugMarks.R
     genCpp_generateCpp.R
     RCfunction_core.R
