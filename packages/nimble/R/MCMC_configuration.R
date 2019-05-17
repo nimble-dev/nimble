@@ -271,7 +271,6 @@ print: A logical argument specifying whether to print the ordered list of defaul
                 }
 
                 ## For CRP-based models, wrap samplers for cluster parameters so not sampled if cluster is unoccupied.
-                browser()
                 if(!is.null(clusterNodeInfo)) {
                     for(k in seq_along(clusterNodeInfo)) {
                         for(clusterNodes in clusterNodeInfo[[k]]$clusterNodes) {
