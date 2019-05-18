@@ -57,6 +57,8 @@ calc_E_llk_gen = nimbleFunction(
         simulate(model, paramDepDetermNodes_latent)	#	Fills in the deterministic nodes
       }
       sample_LL = calculate(model, latentCalcNodes)
+      if(is.na(sample_LL) | is.nan(sample_LL) | sample_LL == -Inf | sample_LL == Inf)
+          stop("Non-finite log-likelihood occurred; the MCEM optimization cannot continue. Please check the state of the compiled model (accessible as 'name_of_model$CobjectInterface') and determine which parameter values are causing the invalid log-likelihood by calling 'calculate' with subsets of the model parameters. Note that if your model is maximizing over parameters whose bounds are not constant (depend on other parameters), this is one possible cause of such problems; in that case you might try running the MCEM without bounds, by setting 'forceNoConstraints = TRUE'.")
       mean_LL = mean_LL + sample_LL
       if(diff == 1){
         values(model, fixedNodes) <<- oldParamValues #now old params
@@ -67,6 +69,8 @@ calc_E_llk_gen = nimbleFunction(
           simulate(model, paramDepDetermNodes_latent)  #	Fills in the deterministic nodes
         }
         sample_LL = calculate(model, latentCalcNodes)
+        if(is.na(sample_LL) | is.nan(sample_LL) | sample_LL == -Inf | sample_LL == Inf)
+            stop("Non-finite log-likelihood occurred; the MCEM optimization cannot continue. Please check the state of the compiled model (accessible as 'name_of_model$CobjectInterface') and determine which parameter values are causing the invalid log-likelihood by calling 'calculate' with subsets of the model parameters (e.g., 'name_of_model$CobjectInterface$calculate(\"y[3]\")'). Note that if your model is maximizing over parameters whose bounds are not constant (depend on other parameters), this is one possible cause of such problems; in that case you might try running the MCEM without bounds, by setting 'forceNoConstraints = TRUE'.")
         mean_LL = mean_LL - sample_LL
       }
     }
@@ -84,14 +88,14 @@ calc_E_llk_gen = nimbleFunction(
 
 
 ## helper function to extract ranges of nodes to be maximized
-getMCEMRanges <- nimbleFunction(
-    name = 'getMCEMRanges',
-  setup = function(model, maxNodes, buffer){
+getMCEMRanges <- nimbleFunction(name = 'getMCEMRanges',
+ setup = function(model, maxNodes, buffer){
     low_limits = rep(-Inf, length(maxNodes) ) 
-    hi_limits  = rep(Inf,  length(maxNodes) ) 
-    for(i in 1:length(model$expandNodeNames(maxNodes))){
-      low_limits[i] = getBound(model, model$expandNodeNames(maxNodes)[i], 'lower') + abs(buffer)
-      hi_limits[i]  = getBound(model, model$expandNodeNames(maxNodes)[i], 'upper')  - abs(buffer)
+    hi_limits  = rep(Inf,  length(maxNodes) )
+    nodes <- model$expandNodeNames(maxNodes)
+    for(i in seq_along(nodes)) {
+      low_limits[i] = getBound(model, nodes[i], 'lower') + abs(buffer)
+      hi_limits[i]  = getBound(model, nodes[i], 'upper')  - abs(buffer)
     }
     return(list(low_limits, hi_limits))
   }, where = getLoadingNamespace()
@@ -115,7 +119,8 @@ getMCEMRanges <- nimbleFunction(
 #' @param beta    probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood.  Default is 0.25.
 #' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.05.
 #' @param C      determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged. Default is 0.001.
-#' @param numReps number of bootstrap samples to use for asymptotic variance calculation. 
+#' @param numReps number of bootstrap samples to use for asymptotic variance calculation.
+#' @param forceNoConstraints avoid any constraints even from parameter bounds implicit in the model structure (e.g., from dunif or dgamma distributions); setting this to TRUE might allow MCEM to run when the bounds of a parameter being maximized over depend on another parameter
 #' @param verbose logical indicating whether to print additional logging information
 #' 
 #' @author Clifford Anderson-Bergman and Nicholas Michaud
@@ -188,15 +193,15 @@ getMCEMRanges <- nimbleFunction(
 #' 
 buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adaptInterval = 100),
                       boxConstraints = list(), buffer = 10^-6, alpha = 0.25, beta = 0.25, 
-                      gamma = 0.05, C = 0.001, numReps = 300, verbose = TRUE) {
+                      gamma = 0.05, C = 0.001, numReps = 300, forceNoConstraints = FALSE, verbose = TRUE) {
   latentNodes = model$expandNodeNames(latentNodes)
   latentNodes <- intersect(latentNodes, model$getNodeNames(stochOnly = TRUE))
   dataNodes <- model$getNodeNames(dataOnly = TRUE)
   allStochNonDataNodes = model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
   if(buffer == 0)
-    cat("warning: buffer 0. Can cause problems if the likelihood function is degenerate on boundary")
+    warning("'buffer' is zero. This can cause problems if the likelihood function is degenerate on boundary")
   if(buffer < 0)
-    stop('buffer must be non-negative')
+    stop("'buffer' must be non-negative.")
   
   if(length(setdiff(latentNodes, allStochNonDataNodes) ) != 0 )
     stop('latentNodes provided not found in model')
@@ -231,7 +236,9 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   }
   if(any(low_limits>=hi_limits))
     stop('lower limits greater than or equal to upper limits!')
-  if(identical(low_limits, rep(-Inf, length(low_limits))) && identical(hi_limits, rep(Inf, length(hi_limits))))
+  if(forceNoConstraints ||
+     identical(low_limits, rep(-Inf, length(low_limits))) &&
+     identical(hi_limits, rep(Inf, length(hi_limits))))
     optimMethod = "BFGS"
   else 
     optimMethod = "L-BFGS-B"
@@ -314,16 +321,13 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
       thetaPrev <- theta  #store previous theta value
       itNum <- itNum + 1
       while(acceptCrit == 0){
-        if(optimMethod == "L-BFGS-B") {
-         optimOutput = try(optim(par = theta, fn = cCalc_E_llk$run, oldParamValues = thetaPrev,
-                              diff = 0, control = list(fnscale = -1), method = 'L-BFGS-B', 
-                              lower = low_limits, upper = hi_limits), silent = TRUE)
-        if(inherits(optimOutput, "try-error")) optimMethod = "BFGS"  ## if constraints prevent optim from running, remove constraints. 
-                                                                     ## this can happen if bounds are a function of other parameters in the model,
-        }
+        if(optimMethod == "L-BFGS-B") 
+            optimOutput = optim(par = theta, fn = cCalc_E_llk$run, oldParamValues = thetaPrev,
+                                diff = 0, control = list(fnscale = -1), method = 'L-BFGS-B', 
+                                lower = low_limits, upper = hi_limits)
         if(optimMethod == "BFGS")
-          optimOutput = optim(par = theta, fn = cCalc_E_llk$run, oldParamValues = thetaPrev,
-                              diff = 0, control = list(fnscale = -1), method = 'BFGS')
+            optimOutput = optim(par = theta, fn = cCalc_E_llk$run, oldParamValues = thetaPrev,
+                                diff = 0, control = list(fnscale = -1), method = 'BFGS')
         
         theta = optimOutput$par    
         sigSq <- cvarCalc$run(m, theta, thetaPrev) 
