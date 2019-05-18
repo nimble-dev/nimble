@@ -71,7 +71,7 @@ nimDerivs <- function(nimFxn = NA,
           nf <- eval(derivFxnCall[[1]][[2]], envir = fxnEnv)
           if(is(nf, "calcNodes_refClass")) {
               model <- eval(nf$Robject$model, envir = fxnEnv)
-              if(!exists('CobjectInterface', model)) { ## but, model should always be compiled because existence of calcNodes_refClass implies that.
+              if(!(exists('CobjectInterface', model) && !is(model$CobjectInterface, 'uninitializedField'))) { ## but, model should always be compiled because existence of calcNodes_refClass implies that.
                   cModel <- compileNimble(model)
               } else cModel <- eval(quote(model$CobjectInterface))
               model_calcNodes_case <- TRUE
@@ -255,9 +255,9 @@ nimDerivs_model <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFxnCal
     ## We do not want calcDerivs_internal to calculate the value,
     ## because we want to restore variables first.
     if(valueFlag) order <- order[ order != 0 ]
-    if(length(order) > 0)
+    if(length(order) > 0) {
         ans <- calcDerivs_internal(func, currentX, order, wrt_orig_indices)
-    
+    } else ans <- NULL
     for(i in varsToRestore)
         model[[i]] <- savedVars[[i]]
     
@@ -367,9 +367,9 @@ nimDerivs_calcNodes <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFx
     ## We do not want calcDerivs_internal to calculate the value,
     ## because we want to restore variables first.
     if(valueFlag) order <- order[ order != 0 ]
-    if(length(order) > 0)
+    if(length(order) > 0) {
         ans <- calcDerivs_internal(func, currentX, order, wrt_orig_indices)
-    
+    } else ans <- NULL
     for(i in varsToRestore)
         model[[i]] <- savedVars[[i]]
     
