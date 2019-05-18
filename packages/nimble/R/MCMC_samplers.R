@@ -1570,11 +1570,13 @@ sampler_RW_dirichlet <- nimbleFunction(
             currentValue <- thetaVec[i]
             propLogScale <- rnorm(1, mean = 0, sd = scaleVec[i])
             propValue <- currentValue * exp(propLogScale)
-            thetaVecProp <- thetaVec
-            thetaVecProp[i] <- propValue
-            values(model, target) <<- thetaVecProp / sum(thetaVecProp)
-            logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, depNodes)
-            jump <- decide(logMHR)
+            if(propValue != 0) {
+                thetaVecProp <- thetaVec
+                thetaVecProp[i] <- propValue
+                values(model, target) <<- thetaVecProp / sum(thetaVecProp)
+                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, depNodes)
+                jump <- decide(logMHR)
+            } else jump <- FALSE
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
             if(jump) { thetaVec <<- thetaVecProp
                        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
