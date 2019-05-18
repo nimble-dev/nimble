@@ -265,7 +265,7 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         if(!is.rcf(rcf)) {
             nofun <- TRUE
         } else if(environment(rcf)$nfMethodRCobject$returnType != quote(double()) &&
-                  environment(rcf)$nfMethodRCobject$returnType != quote(double()))
+                  environment(rcf)$nfMethodRCobject$returnType != quote(double(0)))
               stop(paste0("checkDistributionFunctions: density function for ", densityName,
                           " has invalid or missing returnType, which must be 'double(0)' (or equivalently 'double()')."))
     } else nofun <- TRUE
