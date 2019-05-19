@@ -1694,6 +1694,26 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
     return(ans) ## This is to be inserted in a list of asserts, even though it is really core code, not just an a test or assertion
 }
 
+nimbleAliasRiskFxns <- c("t")
+
+detectNimbleAliasRisk <- function(code, LHSname, insideRiskFxn = FALSE) {
+    if(!inherits(code, "exprClass")) return(FALSE)
+    if(!insideRiskFxn) {
+        if(code$name %in% nimbleAliasRiskFxns)
+            insideRiskFxn <- TRUE
+    }
+    if(insideRiskFxn)
+        if(code$name == LHSname)
+            return(TRUE)
+    if(length(code$args) > 0) {
+        for(i in seq_along(code$args)) {
+            if(detectNimbleAliasRisk(code$args[[i]], LHSname, insideRiskFxn))
+                return(TRUE)
+        }
+    }
+    FALSE
+}
+
 sizeAssign <- function(code, symTab, typeEnv) {
     typeEnv$.AllowUnknowns <- FALSE
     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, TRUE))
@@ -1704,6 +1724,15 @@ sizeAssign <- function(code, symTab, typeEnv) {
     else{
       asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useArgs = c(TRUE, FALSE)))
       typeEnv[['.ensureNimbleBlocks']] <- FALSE ## may have been true from RHS of rmnorm etc.
+      LHS <- code$args[[1]]
+      RHS <- code$args[[2]]
+      if(inherits(LHS, 'exprClass')) {
+          if(LHS$isName) {
+              if(detectNimbleAliasRisk(RHS, LHS$name)) {
+                  asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
+              }
+          }
+      }
       asserts <- c(asserts, sizeAssignAfterRecursing(code, symTab, typeEnv))
     }
     if(length(asserts) == 0) NULL else asserts
