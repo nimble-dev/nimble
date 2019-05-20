@@ -1,23 +1,20 @@
 ##################################################
 ## Reversible Jump sampler - covariate selection
 ##################################################
-
 ## Regression setting 
-## see [Ruth et al] Bayesian for population ecology [p.163]
-## option 1
 ## At iteration k
-## 1. select randomly one variable beta_r
+## cycle through each variable beta_r
 ## if(beta_r in current_model) propose to remove it
 ## else propose to add it
 
-## option 2 skip 1 and cycle through each variable
-
-## Practical purposes
-## sampler_RJ: does the jump proposal
-## toggled_sampler: reassign the default sampler to the variable when is in the model  
+## functions summary
+## sampler_RJ:           does the jump proposal for the variable of interest
+## sampler_RJ_indicator: does the jump proposal for an indicator variable
+## toggled_sampler:      reassign the default sampler to the variable when is in the model  
+## configure_RJ:         substitute manual removeSampler/addSampler for each variable for which one wants to perform selections
 
 ##################################################
-## RJ sampler - no indicator variable
+## RJ sampler - no indicator variable ############
 ##################################################
 
 sampler_RJ <- nimbleFunction(
@@ -42,6 +39,7 @@ sampler_RJ <- nimbleFunction(
     ## get all parameters related to the target
     calcNodes = model$getDependencies(target)
   },
+  
   run = function(){
     ## Reversible-jump move
     
@@ -92,9 +90,9 @@ sampler_RJ <- nimbleFunction(
   })
 )
 
-###-------------------------------###
-### RJ sampler - indicator variable
-###-------------------------------###
+####################################################################
+### RJ sampler - indicator variable ################################
+####################################################################
 
 sampler_RJ_indicator <- nimbleFunction(
   contains = sampler_BASE,
@@ -159,7 +157,9 @@ sampler_RJ_indicator <- nimbleFunction(
   methods = list(reset = function() {})
 )
 
-###-------------------------------###
+##-------------------------------##
+## herlper functions 
+##-------------------------------##
 ## Sample according to build sampler when the target is in the model 
 
 toggled_sampler <- nimbleFunction(
@@ -193,11 +193,10 @@ toggled_sampler <- nimbleFunction(
 
 ###-------------------------------###
 ## configureRJ
+###-------------------------------###
 ## This function substitute manual remove/addSampler for each variable for which one wants to perform selection
 
-
-
-
+## function to check node configuration (in case of multiple calls)
 node_configuration_check <- function(currentConf, node){
   if(length(currentConf) == 0) {
     warning(paste0("There are no samplers for ", node,". Skipping it."))
@@ -207,6 +206,7 @@ node_configuration_check <- function(currentConf, node){
     warning(paste0("There is more than one sampler for ", node,". Only the first will be toggled."))
 }
 
+## configuration function
 configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positiveProposal = NULL)) {
   ## control_RJ should have
   ## 1 - a element called fixedValue (default 0),
@@ -228,9 +228,9 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
   scale             <- if(length(scale) == 1L & nNodes > 1L) rep(scale, nNodes)                       else scale
   positiveProposal  <- if(length(positiveProposal) == 1L & nNodes > 1L) rep(positiveProposal, nNodes) else positiveProposal
   
-  ## 
-  indicatorFlag <- is.null(indicator)
-  priorFlag     <- is.null(prior)
+  ## flag for indicators and prior
+  indicatorFlag <- (!is.null(indicator))
+  priorFlag     <- (!is.null(prior))
   
   ## User must provide indicator OR prior
   if(indicatorFlag == priorFlag) {
@@ -249,7 +249,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
   ##---------------------------------------##
   ## No indicator
   ##---------------------------------------##
-  if(indicatorFlag){
+  if(priorFlag){
     
     ## Check that RJ control arguments match nodes lenght
     if(any(lengths(list(fixedValue, mean, scale, positiveProposal)) != nNodes)){
