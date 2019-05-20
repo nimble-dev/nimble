@@ -244,21 +244,21 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
     }, USE.NAMES = TRUE), silent = TRUE
   )
   if (inherits(Rderivs, 'try-error')) {
-    warning(
-      paste(
-        'Calling R version of test', opParam$name,
-        'resulted in an error:', Rderivs[1]
-      ),
-      immediate. = TRUE
+    msg <- paste(
+      'Calling R version of test', opParam$name,
+      'resulted in an error:\n', Rderivs[1]
     )
-    return(invisible(NULL))
+    if (isTRUE(catch_failures)) ## continue to compilation
+      warning(msg, call. = FALSE, immediate. = TRUE)
+    else
+      stop(msg, call. = FALSE) ## throw an error here
   }
 
   temporarilyAssignInGlobalEnv(nfInst)
 
   if (verbose) cat("## Compiling nimbleFunction \n")
   if (!is.null(param$dir)) dir <- param$dir
-  CnfInst <- wrap_if_true(param$knownFailures$compilation, expect_error, {
+  CnfInst <- wrap_if_true(isTRUE(param$knownFailures$compilation), expect_error, {
     compileNimble(nfInst, dirName = dir)
   }, wrap_in_try = isTRUE(catch_failures))
   if (isTRUE(catch_failures) && inherits(CnfInst, 'try-error')) {
@@ -267,6 +267,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         'The test of ', opParam$name,
         ' failed to compile.\n', CnfInst[1]
       ),
+      call. = FALSE,
       immediate. = TRUE
     )
     ## stop the test here because it didn't compile
@@ -334,6 +335,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
             paste0(param$wrts[[method_name]], collapse = ', '), ').\n',
             value_test[1]
           ),
+          call. = FALSE,
           immediate. = TRUE
         )
       }
@@ -370,6 +372,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
             paste0(param$wrts[[method_name]], collapse = ', '), ').\n',
             jacobian_test[1]
           ),
+          call. = FALSE,
           immediate. = TRUE
         )
       }
@@ -406,6 +409,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
             paste0(param$wrts[[method_name]], collapse = ', '), ').\n',
             hessian_test[1]
           ),
+          call. = FALSE,
           immediate. = TRUE
         )
       }
@@ -556,9 +560,12 @@ set.seed(0)
 ## unary ops
 ############
 
+## could instead use an inverted version of
+## nimble:::specificCallReplacements in test_AD
 gammafn <- gamma
 lgammafn <- lgamma
 ceil <- ceiling
+ftrunc <- trunc
 
 unaryArgs <- c('double(0)', 'double(1, 4)', 'double(2, c(3, 4))')
 unaryOps <- c('-', 'sum',
@@ -588,6 +595,29 @@ modifyOnMatch(unaryOpTests, 'log1p .+', 'arg_distns', function(x) abs(rnorm(x)) 
 modifyOnMatch(unaryOpTests, '(logit|probit|cloglog) .+', 'arg_distns', runif)
 modifyOnMatch(unaryOpTests, '(acos|asin|atanh) .+', 'arg_distns', function(x) runif(x, -1, 1))
 modifyOnMatch(unaryOpTests, 'acosh .+', 'arg_distns', function(x) abs(rnorm(x)) + 1)
+## see knownFailure below
+modifyOnMatch(unaryOpTests, 'gammafn .+', 'arg_distns', function(x) abs(rnorm(x)))
+
+## R implements lgamma as "the natural logarithm of _the absolute value of_ the
+## gamma function", and since we use exp(lgamma(x)) for gammafn(x) we get the
+## sign of the output flipped when gamma(x) < 0.
+modifyOnMatch(
+  unaryOpTests, 'gammafn double(0)', 'knownFailures',
+  list(
+    compilation = FALSE, ## no need to set this, but showing here by way of example
+    input = list( # currently doesn't do anything, just a reminder
+      cpp = -0.245, # any input x where gamma(x) < 0
+      R = NULL ## if the R version had errors too, we could say so here
+    )
+  )
+)
+
+modifyOnMatch(
+  unaryOpTests, '(nimRound|ftrunc|ceil|floor) .*', 'knownFailures',
+  list(
+    compilation = TRUE
+  )
+)
 
 ## abs fails on negative inputs
 ## modifyOnMatch(unaryOpTests, 'abs .+', 'arg_distns', function(x) -abs(rnorm(x)))
