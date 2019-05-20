@@ -379,7 +379,10 @@ cppOutputEigExternalUnaryFunction <- function(code, symTab) {
 
 ## like cppOutputCallAsIs but using eigProxyTranslate on the name
 cppOutputNonNativeEigen <- function(code, symTab) {
-    paste0(eigProxyTranslate[code$name], '(', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
+    ans <- paste0(eigProxyTranslate[code$name], '(', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
+    if(identical(nimbleUserNamespace$cppADCode, 2L))
+        ans <- paste0('nimDerivs_', ans)
+    ans
 }
 
 cppOutputEigMemberFunction <- function(code, symTab) {
