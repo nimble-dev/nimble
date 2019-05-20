@@ -1695,7 +1695,8 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
 }
 
 nimbleAliasRiskFxns <- c("t", "[", "eigenBlock", ## all "[" will be replaced by eigenBlock anyway
-                         names(nimble:::sizeCalls)[ grepl("RecyclingRule", unlist(nimble:::sizeCalls) ) ])
+                         names(nimble:::sizeCalls)[ grepl("RecyclingRule", unlist(nimble:::sizeCalls) ) ],
+                         "nimRep", "nimRepd", "nimRepi", "nimRedb", "nimC", "nimCd", "nimCi", "nimCb")
 
 detectNimbleAliasRisk <- function(code, LHSname, insideRiskFxn = FALSE) {
     if(!inherits(code, "exprClass")) return(FALSE)
