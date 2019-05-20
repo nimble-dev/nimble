@@ -237,6 +237,46 @@ T nimDerivs_inprod(T v1, T v2) {
   return(v1*v2);
 }
 
+template<class T>
+T nimDerivs_atan(T x) {
+  return(CppAD::atan(x));
+}
+
+template<class T>
+T nimDerivs_cosh(T x) {
+  return(CppAD::cosh(x));
+}
+
+template<class T>
+T nimDerivs_sinh(T x) {
+  return(CppAD::sinh(x));
+}
+
+template<class T>
+T nimDerivs_tanh(T x) {
+  return(CppAD::tanh(x));
+}
+
+template<class T>
+T nimDerivs_acosh(T x) {
+  return(CppAD::acosh(x));
+}
+
+template<class T>
+T nimDerivs_asinh(T x) {
+  return(CppAD::asinh(x));
+}
+
+template<class T>
+T nimDerivs_atanh(T x) {
+  return(CppAD::atanh(x));
+}
+
+template<class T>
+T nimDerivs_log1p(T x) {
+  return(CppAD::log1p(x));
+}
+
 inline double nimble_NaN() {
   return std::numeric_limits<double>::has_quiet_NaN
     ? std::numeric_limits<double>::quiet_NaN()

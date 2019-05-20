@@ -106,46 +106,6 @@ T nimDerivs_lgammafn(T x) {
   return(lgamma(x));
 }
 
-template<class T>
-T nimDerivs_atan(T x) {
-  return(CppAD::atan(x));
-}
-
-template<class T>
-T nimDerivs_cosh(T x) {
-  return(CppAD::cosh(x));
-}
-
-template<class T>
-T nimDerivs_sinh(T x) {
-  return(CppAD::sinh(x));
-}
-
-template<class T>
-T nimDerivs_tanh(T x) {
-  return(CppAD::tanh(x));
-}
-
-template<class T>
-T nimDerivs_acosh(T x) {
-  return(CppAD::acosh(x));
-}
-
-template<class T>
-T nimDerivs_asinh(T x) {
-  return(CppAD::asinh(x));
-}
-
-template<class T>
-T nimDerivs_atanh(T x) {
-  return(CppAD::atanh(x));
-}
-
-template<class T>
-T nimDerivs_log1p(T x) {
-  return(CppAD::log1p(x));
-}
-
 // template<class Type>
 // Type nimDerivs_nimArr_dwish_chol(NimArr<2, Type> &xNimArr, NimArr<2, Type> &cholNimArr,
 // 	 Type df, Type scale_param, Type give_log, Type overwrite_inputs){
