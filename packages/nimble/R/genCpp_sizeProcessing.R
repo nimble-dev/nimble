@@ -1694,7 +1694,8 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
     return(ans) ## This is to be inserted in a list of asserts, even though it is really core code, not just an a test or assertion
 }
 
-nimbleAliasRiskFxns <- c("t")
+nimbleAliasRiskFxns <- c("t", "[", "eigenBlock", ## all "[" will be replaced by eigenBlock anyway
+                         names(nimble:::sizeCalls)[ grepl("RecyclingRule", unlist(nimble:::sizeCalls) ) ])
 
 detectNimbleAliasRisk <- function(code, LHSname, insideRiskFxn = FALSE) {
     if(!inherits(code, "exprClass")) return(FALSE)
