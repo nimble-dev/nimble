@@ -89,6 +89,7 @@ sizeCalls <- c(
          PROTECT = 'sizePROTECT',
          NimArr_2_SEXP = 'sizePROTECT', 
          Reval = 'sizeReval',
+         Rf_eval = 'sizeReval',
          nimbleConvert = 'sizeNimbleConvert',
          nimbleUnconvert = 'sizeNimbleUnconvert',
          asReturnSymbol = 'sizeAsReturnSymbol'),
