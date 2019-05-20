@@ -197,9 +197,12 @@ test_that('Derivatives of matrix exponentiation function correctly.',
 
 test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
                     control = list(), verbose = nimbleOptions('verbose'),
-                    catch_failures = FALSE) {
+                    catch_failures = FALSE, seed = 0) {
   if (!is.null(param$debug) && param$debug) browser()
   if (verbose) cat(paste0("### Testing ", param$name, "\n"))
+
+  ## by default, reset the seed for every test
+  if (is.numeric(seed)) set.seed(seed)
 
   nf <- nimbleFunction(
     setup = function() {},
@@ -553,8 +556,6 @@ makeADtest <- function(op, argTypes, wrt_args = NULL,
     arg_distns = arg_distns
   )
 }
-
-set.seed(0)
 
 ############
 ## unary ops
