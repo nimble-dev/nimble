@@ -197,7 +197,8 @@ test_that('Derivatives of matrix exponentiation function correctly.',
 
 test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
                     control = list(), verbose = nimbleOptions('verbose'),
-                    catch_failures = FALSE, seed = 0) {
+                    catch_failures = FALSE, seed = 0,
+                    nimbleProject_name = '') {
   if (!is.null(param$debug) && param$debug) browser()
   if (verbose) cat(paste0("### Testing ", param$name, "\n"))
 
@@ -262,7 +263,7 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
   if (verbose) cat("## Compiling nimbleFunction \n")
   if (!is.null(param$dir)) dir <- param$dir
   CnfInst <- wrap_if_true(isTRUE(param$knownFailures$compilation), expect_error, {
-    compileNimble(nfInst, dirName = dir)
+    compileNimble(nfInst, dirName = dir, projectName = nimbleProject_name)
   }, wrap_in_try = isTRUE(catch_failures))
   if (isTRUE(catch_failures) && inherits(CnfInst, 'try-error')) {
     warning(
