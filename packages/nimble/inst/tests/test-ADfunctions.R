@@ -557,9 +557,9 @@ makeADtest <- function(op, argTypes, wrt_args = NULL,
   )
 }
 
-############
-## unary ops
-############
+##################
+## unary cwise ops
+##################
 
 ## could instead use an inverted version of
 ## nimble:::specificCallReplacements in test_AD
@@ -569,11 +569,10 @@ ceil <- ceiling
 ftrunc <- trunc
 
 unaryArgs <- c('double(0)', 'double(1, 4)', 'double(2, c(3, 4))')
-unaryOps <- c('-', 'sum',
-              nimble:::unaryDoubleOperators,
-              nimble:::unaryPromoteNoLogicalOperators,
-              nimble:::reductionUnaryDoubleOperatorsEither,
-              nimble:::reductionUnaryOperatorsArray)
+unaryOps <- c(
+  '-', nimble:::unaryDoubleOperators,
+  nimble:::unaryPromoteNoLogicalOperators
+)
 
 unaryOpTests <- unlist(
   recursive = FALSE,
@@ -653,6 +652,34 @@ modifyOnMatch(
 ##   paste0('(', ops_regex, ') double\\(0\\)'),
 ##   'knownFailures', list(compilation = TRUE)
 ## )
+
+######################
+## unary reduction ops
+######################
+
+squaredNorm <- function(x) sum(x^2)
+
+unaryReductionArgs <- c('double(1, 4)', 'double(2, c(3, 4))')
+
+unaryReductionOps <- c(
+  'sum', nimble:::reductionUnaryDoubleOperatorsEither,
+  nimble:::reductionUnaryOperatorsArray
+)
+
+unaryReductionOpTests <- unlist(
+  recursive = FALSE,
+  x = lapply(
+    unaryReductionOps,
+    function(x) {
+      mapply(
+        makeADtest,
+        argTypes = unaryReductionArgs,
+        MoreArgs = list(op = x),
+        SIMPLIFY = FALSE
+      )
+    })
+)
+names(unaryReductionOpTests) <- sapply(unaryReductionOpTests, `[[`, 'name')
 
 #############
 ## binary ops
@@ -1432,6 +1459,7 @@ distn_with_log_tests <- unlist(
 
 invisible({
   sapply(unaryOpTests, test_AD)
+  sapply(unaryReductionOpTests, test_AD)
   sapply(binaryOpTests, test_AD)
   sapply(squareMatrixOpTests, test_AD)
   sapply(binaryMatrixOpTests, test_AD)
