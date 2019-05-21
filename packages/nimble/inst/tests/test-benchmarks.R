@@ -79,7 +79,7 @@ test_that('Benchmarking matrix arithmetic', {
         y <- matrix(rnorm(M * N), M, N)
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, y, iters))
         cPerSec <- benchmarkIters(function(iters) versions$cpp(x, y, iters))
-        cat(sprintf('%4d %4d %11.2g %11.2g %10.2g\n',
+        cat(sprintf('%4d %4d %11.2g %11.2g\n',
                     M, N, nimPerSec, cPerSec))
     }
     cat('--------------------------------------------\n')
@@ -108,7 +108,7 @@ test_that('Benchmarking matrix multiplication', {
         y <- matrix(rnorm(M * N), M, N)
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, y, iters))
         cPerSec <- benchmarkIters(function(iters) versions$cpp(x, y, iters))
-        cat(sprintf('%4d %4d %4d %11.2g %11.2g %10.2g\n',
+        cat(sprintf('%4d %4d %4d %11.2g %11.2g\n',
                     K, M, N, nimPerSec, cPerSec))
     }
     cat('-------------------------------------------------\n')
@@ -134,7 +134,7 @@ test_that('Benchmarking vectorized special functions', {
         x <- exp(-rnorm(N))
         nimPerSec <- benchmarkIters(function(iters) versions$dsl(x, iters))
         cPerSec <- benchmarkIters(function(iters) versions$cpp(x, iters))
-        cat(sprintf('%6d %11.1g %11.1g %10.1g\n',
+        cat(sprintf('%6d %11.1g %11.1g\n',
                     N, nimPerSec, cPerSec))
     }
     cat('-----------------------------------------\n')
