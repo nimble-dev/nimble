@@ -8,7 +8,7 @@ class unary_atomic_class : public CppAD::atomic_three<T> {
   // This layer in the class hierarchy simply provides the same for_type and rev_depend
   // for all atomic classes representing unary functions below.
  public:
-  unary_atomic_class() {};
+ unary_atomic_class(const std::string& name) : CppAD::atomic_three<T>(name) {};
  private:
    // for_type is essential.
   // This determines which elements of y are constants, dynamic parameters, or variables
@@ -32,13 +32,13 @@ class unary_atomic_class : public CppAD::atomic_three<T> {
     depend_x[0] = depend_y[0];
     return true;
   }
-}
+};
 
-class atomic_lgamma_class : public unary_atomic_class<double>
+class atomic_lgamma_class : public unary_atomic_class<double> {
   public:
   // From atomic_three_get_started
   atomic_lgamma_class(const std::string& name) : 
-    CppAD::atomic_three<double>(name)        
+    unary_atomic_class<double>(name)
     { }
 
 private:
@@ -51,13 +51,17 @@ private:
       const CppAD::vector<double>&               taylor_x     ,
       CppAD::vector<double>&                     taylor_y     )
   {
+    //   std::cout<<"forward "<<order_low<<" "<<order_up<<" "<<taylor_x[0]<<std::endl;
     if(order_low <= 0 & order_up >= 0) {
       taylor_y[0] = Rf_lgammafn(taylor_x[0]);
+      //   std::cout<<"taylor_y[0] "<<taylor_y[0]<<std::endl;
     }
     double fprime;
-    if(order_low > 0) fprime = Rf_psigamma(taylor_x[0], 0);
+    if(order_low <= 2 & order_up >= 1)
+      fprime = Rf_psigamma(taylor_x[0], 0);
     if(order_low <= 1 & order_up >= 1) {
       taylor_y[1] = fprime * taylor_x[1];
+      //   std::cout<<"taylor_y[1] "<<taylor_y[1]<<std::endl;
       // f'(x) (x')
     }
     if(order_low <= 2 & order_up >= 2) {
@@ -77,13 +81,17 @@ private:
       CppAD::vector<double>&                     partial_x   ,
       const CppAD::vector<double>&               partial_y   )
   {
+    //  std::cout<<"reverse "<<order_up<<" "<<taylor_x[0]<<" "<<partial_y[0]<<std::endl;
     partial_x[0] = 0;
+    if(order_up >= 1) partial_x[1] = 0;
     double fprime = Rf_psigamma(taylor_x[0], 0);
     if(order_up >= 1) {
       partial_x[1] += partial_y[1] * fprime;
       partial_x[0] += partial_y[1] * Rf_psigamma(taylor_x[0], 1) * taylor_x[1];
+      //    std::cout<<partial_x[1]<<" ";
     }
     partial_x[0] += partial_y[0] * fprime;
+    //  std::cout<<partial_x[0]<<std::endl;
     // dG/dx = dG/dy  dy/dx 
     return true;
   }
@@ -96,7 +104,7 @@ class atomic_pnorm1_class :public unary_atomic_class<double> {
   public:
   // From atomic_three_get_started
   atomic_pnorm1_class(const std::string& name) : 
-    CppAD::atomic_three<double>(name)        
+    unary_atomic_class<double>(name)        
     { }
 
 private:
@@ -163,7 +171,7 @@ class atomic_qnorm1_class : public unary_atomic_class<double> {
   public:
   // From atomic_three_get_started
   atomic_qnorm1_class(const std::string& name) : 
-    CppAD::atomic_three<double>(name)        
+    unary_atomic_class<double>(name)        
     { }
 
 private:
@@ -229,13 +237,8 @@ private:
 #endif
 
 template<class T>
-T atomic_lfactorial(T x) {
-  return atomic_lgamma(x + 1);
-}
-
-template<class T>
-T atomic_lgamma(T x) {
-  static atomic_lgamma_class static_atomic_lgamma("atomic_lgamma");
+T nimDerivs_lgammafn(T x) {
+  static atomic_lgamma_class static_atomic_lgamma("nimDerivs_lgamma");
   CppAD::vector<T> in(1);
   CppAD::vector<T> out(1);
   in[0] = x;
@@ -244,8 +247,8 @@ T atomic_lgamma(T x) {
 }
 
 template<class T>
-T atomic_pnorm1(T x) {
-  atomic_pnorm1_class static_atomic_pnorm1("atomic_pnorm1");
+T nimDerivs_pnorm1(T x) {
+  atomic_pnorm1_class static_atomic_pnorm1("nimDerivs_pnorm1");
   CppAD::vector<T> in(1);
   CppAD::vector<T> out(1);
   in[0] = x;
@@ -254,11 +257,12 @@ T atomic_pnorm1(T x) {
 }
 
 template<class T>
-T atomic_qnorm1(T x) {
-  atomic_qnorm1_class static_atomic_qnorm1("atomic_qnorm1");
+T nimDerivs_qnorm1(T x) {
+  atomic_qnorm1_class static_atomic_qnorm1("nimDerivs_qnorm1");
   CppAD::vector<T> in(1);
   CppAD::vector<T> out(1);
   in[0] = x;
   static_atomic_qnorm1(in, out);
   return out[0];
 }
+

@@ -48,8 +48,7 @@ distributionArgsList[['dbeta']] <- list(
                     #      shape2 = -1),
                     list(x = .9,  ## okay
                          shape1 = 12,
-                         shape2 = .1,
-                         ordersToCheck = c(0, 1)),
+                         shape2 = .1),
                     list(x = .3,  ## okay
                          shape1 = 10,
                          shape2 = 1))

@@ -58,14 +58,14 @@ Type nimDerivs_dnorm_logFixed(Type x, Type mean, Type sd, int give_log)
 /* This wraps a call to TMB's pnorm. */ 
 template<class Type>
 Type nimDerivs_pnorm(Type q, Type mean = 0., Type sd = 1.){
-  return atomic_pnorm1<Type>((q-mean)/sd);
+  return nimDerivs_pnorm1<Type>((q-mean)/sd);
 }
 
 /* anorm: normal distribution */
 /* This wraps a call to TMB's qnorm. */ 
 template<class Type>
 Type nimDerivs_qnorm(Type p, Type mean = 0., Type sd = 1.){
-  return sd * atomic_qnorm1<Type>(p) + mean;
+  return sd * nimDerivs_qnorm1<Type>(p) + mean;
 }
 
 /* dmnorm: Multivariate normal distribution */
@@ -127,7 +127,7 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
 template <class Type>
 Type nimDerivs_dt(Type x, Type df, Type give_log)
 {
-  Type res = atomic_lgamma((df+1)/2) - Type(1)/2*log(df*M_PI) -atomic_lgamma(df/2) - (df+1)/2*log(1+x*x/df);
+  Type res = nimDerivs_lgammafn((df+1)/2) - Type(1)/2*log(df*M_PI) -nimDerivs_lgammafn(df/2) - (df+1)/2*log(1+x*x/df);
   res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
   return(res);
 }
@@ -136,7 +136,7 @@ Type nimDerivs_dt(Type x, Type df, Type give_log)
 template <class Type>
 Type nimDerivs_dt_logFixed(Type x, Type df, int give_log)
 {
-  Type res = atomic_lgamma((df+1)/2) - Type(1)/2*log(df*M_PI) -atomic_lgamma(df/2) - (df+1)/2*log(1+x*x/df);
+  Type res = nimDerivs_lgammafn((df+1)/2) - Type(1)/2*log(df*M_PI) -nimDerivs_lgammafn(df/2) - (df+1)/2*log(1+x*x/df);
   if(!give_log) res = exp(res);
   return res;
 }
@@ -162,6 +162,97 @@ Type nimDerivs_dt_nonstandard_logFixed(Type x, Type df, Type mu, Type sigma, int
   return(res);
 }
 
+/* dgamma: gamma distribution */
+/* Code modified from TMB. */
+template<class Type>
+Type nimDerivs_dgamma(Type y, Type shape, Type scale, Type give_log)
+{
+  Type res = -nimDerivs_lgammafn(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale);
+	res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+	return(res);
+}
+
+template<class Type>
+Type nimDerivs_dgamma_logFixed(Type y, Type shape, Type scale, int give_log)
+{
+  Type res = -nimDerivs_lgammafn(shape)+(shape-Type(1.0))*log(y)-y/scale-shape*log(scale);
+  if(!give_log){
+    res = exp(res);
+  }
+  return(res);
+}
+
+/* inverse gamma */
+/* Code modified from TMB. */
+template<class Type>
+Type nimDerivs_dinvgamma(Type x, Type shape, Type rate, Type give_log)
+{
+  Type xinv = Type(1.0)/x;
+  Type res = CppAD::CondExpEq(give_log, Type(1), nimDerivs_dgamma(xinv, shape, rate, give_log) - 2*log(x), nimDerivs_dgamma(xinv, shape, rate, give_log) * xinv * xinv);
+  return(res);
+}
+
+template<class Type>
+Type nimDerivs_dinvgamma_logFixed(Type x, Type shape, Type rate, int give_log)
+{
+  Type xinv = Type(1.0)/x;
+  Type res;
+  if(give_log){
+    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) - 2*log(x);
+  }
+  else{
+    res = nimDerivs_dgamma_logFixed(xinv, shape, rate, give_log) * xinv * xinv;
+  }
+  return(res);
+}
+
+/* Negative binomial */
+/* Code modified from TMB */
+template<class Type>
+inline Type nimDerivs_dnbinom(const Type &x, const Type &size, const Type &prob,
+		    Type give_log)
+{
+  Type n=size;
+  Type p=prob;
+  Type res = nimDerivs_lgammafn(x+n)-nimDerivs_lgammafn(n)-nimDerivs_lgammafn(x+Type(1))+
+    n*log(p)+x*log(Type(1)-p);
+	res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+	return(res);
+}
+
+template<class Type>
+inline Type nimDerivs_dnbinom_logFixed(const Type &x, const Type &size, const Type &prob,
+		    int give_log)
+{
+  Type n=size;
+  Type p=prob;
+  Type res = nimDerivs_lgammafn(x+n)-nimDerivs_lgammafn(n)-nimDerivs_lgammafn(x+Type(1))+
+    n*log(p)+x*log(Type(1)-p);
+  if(!give_log){
+    res = exp(res);
+  }
+	return(res);
+}
+
+/* Poisson */
+/* Code modified from TMB */
+template<class Type>
+inline Type nimDerivs_dpois(const Type &x, const Type &lambda, Type give_log)
+{
+  Type res = -lambda + x*log(lambda) - nimDerivs_lgammafn(x+Type(1));
+	res = CppAD::CondExpEq(give_log, Type(1), res, exp(res));
+	return(res);
+}
+
+template<class Type>
+inline Type nimDerivs_dpois_logFixed(const Type &x, const Type &lambda, int give_log)
+{
+  Type res = -lambda + x*log(lambda) - nimDerivs_lgammafn(x+Type(1));
+  if(!give_log){
+	  res = exp(res);
+  }
+	return(res);
+}
 
 /* dexp: exponential distribution */
 /* Parameterization available in nimble. Code modified from TMB*/
@@ -263,7 +354,7 @@ Type nimDerivs_dweibull_logFixed(Type x, Type shape, Type scale, int give_log)
 template<class Type>
 Type nimDerivs_dbinom(Type k, Type size, Type prob, Type give_log)
 {
-  Type res = atomic_lgamma(size+1)-atomic_lgamma(k+1)-atomic_lgamma(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
+  Type res = nimDerivs_lgammafn(size+1)-nimDerivs_lgammafn(k+1)-nimDerivs_lgammafn(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
   res = CondExpEq(give_log, Type(1), res, exp(res));
   return(res);
 }
@@ -271,7 +362,7 @@ Type nimDerivs_dbinom(Type k, Type size, Type prob, Type give_log)
 template<class Type>
 Type nimDerivs_dbinom_logFixed(Type k, Type size, Type prob, int give_log)
 {
-  Type res = atomic_lgamma(size+1)-atomic_lgamma(k+1)-atomic_lgamma(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
+  Type res = nimDerivs_lgammafn(size+1)-nimDerivs_lgammafn(k+1)-nimDerivs_lgammafn(size-k+1)+k*log(prob)+(size-k)*log(1-prob);
   if(!give_log){
 	res = exp(res);
   }
@@ -283,7 +374,7 @@ Type nimDerivs_dbinom_logFixed(Type k, Type size, Type prob, int give_log)
 template<class Type>
 Type nimDerivs_dchisq(Type x, Type df, Type give_log)
 {	
-  Type res = (df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - atomic_lgamma(df/Type(2.0));
+  Type res = (df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - nimDerivs_lgammafn(df/Type(2.0));
   res = CondExpEq(give_log, Type(0), exp(res), res);
   return(res);
 }
@@ -291,7 +382,7 @@ Type nimDerivs_dchisq(Type x, Type df, Type give_log)
 template<class Type>
 Type nimDerivs_dchisq_logFixed(Type x, Type df, int give_log)
 {	
-  Type res = (df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - atomic_lgamma(df/Type(2.0));
+  Type res = (df/Type(2.0) - Type(1.0))*log(x) - (x/Type(2.0)) - (df/Type(2.0))*log(Type(2.0)) - nimDerivs_lgammafn(df/Type(2.0));
   if(!give_log){
 	res = exp(res);
   }
@@ -304,9 +395,9 @@ template <class Type>
 Type nimDerivs_dbeta(Type x, Type shape1, Type shape2, Type give_log)
 {
   Type res = CondExpEq(give_log, Type(0), 
-		       exp(atomic_lgamma(shape1+shape2) - atomic_lgamma(shape1) - 
-			   atomic_lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1),
-		       atomic_lgamma(shape1+shape2) - atomic_lgamma(shape1) - atomic_lgamma(shape2) + 
+		       exp(nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - 
+			   nimDerivs_lgammafn(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1),
+		       nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - nimDerivs_lgammafn(shape2) + 
 		       (shape1-1)*log(x) + (shape2-1)*log(1-x));
   return(res);
 }
@@ -316,12 +407,12 @@ Type nimDerivs_dbeta_logFixed(Type x, Type shape1, Type shape2, int give_log)
 {
   Type res;
   if(give_log){
-    res = atomic_lgamma(shape1+shape2) - atomic_lgamma(shape1) - atomic_lgamma(shape2) + 
+    res = nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - nimDerivs_lgammafn(shape2) + 
       (shape1-1)*log(x) + (shape2-1)*log(1-x);
   }
   else{
-    res = exp(atomic_lgamma(shape1+shape2) - atomic_lgamma(shape1) - 
-	      atomic_lgamma(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1);
+    res = exp(nimDerivs_lgammafn(shape1+shape2) - nimDerivs_lgammafn(shape1) - 
+	      nimDerivs_lgammafn(shape2)) * pow(x,shape1-1) * pow(1-x,shape2-1);
   } 
   return(res);
 }
@@ -384,14 +475,14 @@ Type nimDerivs_nimArr_ddirch(NimArr<1, Type> &x, NimArr<1, Type> &alpha, Type gi
     logres += CppAD::CondExpGt(alpha[i], Type(0), Type(0),   Type(CppAD::numeric_limits<Type>::quiet_NaN()));
     logres += CppAD::CondExpGe(x[i], Type(0), Type(0), -Type(std::numeric_limits<double>::infinity()));
     logres += CppAD::CondExpLe(x[i], Type(1), Type(0), -Type(std::numeric_limits<double>::infinity()));
-    logres += (alpha[i]-Type(1)) * log(x[i]) - atomic_lgamma(alpha[i]) ;
+    logres += (alpha[i]-Type(1)) * log(x[i]) - nimDerivs_lgammafn(alpha[i]) ;
     sumAlpha += alpha[i];
     sumX += x[i];
   }
   logres += CppAD::CondExpLe(sumX, Type(1.0 + 100.0*numeric_limits<Type>::epsilon()), 
 			     CppAD::CondExpGe(sumX, Type(1.0 - 100.0*numeric_limits<Type>::epsilon()), Type(0), -Type(std::numeric_limits<double>::infinity())),
 			     -Type(std::numeric_limits<double>::infinity()));
-  logres += atomic_lgamma(sumAlpha);
+  logres += nimDerivs_lgammafn(sumAlpha);
   logres = CppAD::CondExpEq(give_log, Type(1), logres, exp(logres));
   return(logres);
 }
@@ -412,14 +503,14 @@ Type nimDerivs_nimArr_ddirch_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &alpha
     logres += CppAD::CondExpGt(alpha[i], Type(0), Type(0),   Type(CppAD::numeric_limits<Type>::quiet_NaN()));
     logres += CppAD::CondExpGe(x[i], Type(0), Type(0), -Type(std::numeric_limits<double>::infinity()));
     logres += CppAD::CondExpLe(x[i], Type(1), Type(0), -Type(std::numeric_limits<double>::infinity()));
-    logres += (alpha[i]-Type(1)) * log(x[i]) - atomic_lgamma(alpha[i]) ;
+    logres += (alpha[i]-Type(1)) * log(x[i]) - nimDerivs_lgammafn(alpha[i]) ;
     sumAlpha += alpha[i];
     sumX += x[i];
   }
   logres += CppAD::CondExpLe(sumX, Type(1.0 + 100.0*numeric_limits<Type>::epsilon()), 
 			     CppAD::CondExpGe(sumX, Type(1.0 - 100.0*numeric_limits<Type>::epsilon()), Type(0), -Type(std::numeric_limits<double>::infinity())),
 			     -Type(std::numeric_limits<double>::infinity()));
-  logres += atomic_lgamma(sumAlpha);
+  logres += nimDerivs_lgammafn(sumAlpha);
   if(!give_log){
     logres = exp(logres);
   }
@@ -472,25 +563,25 @@ Type nimDerivs_pow(Type x, int y) {
 /* This is modified from TMB's qnorm, to avoid using the mean and sd arguments unnecessarily. */
 template<class T>
 T nimDerivs_probit(T p){
-  return atomic_qnorm1<T>(p);
+  return nimDerivs_qnorm1<T>(p);
 }
 
 /* iprobit */
 template<class T>
 T nimDerivs_iprobit(T q){
-  return atomic_pnorm1<T>(q);
+  return nimDerivs_pnorm1<T>(q);
 }
 
 /* lfactorial */
-template<class Type> 
-Type nimDerivs_lfactorial(Type x) {
-  return atomic_lfactorial<Type>(x);
-} 
+template<class T>
+T nimDerivs_lfactorial(T x) {
+  return nimDerivs_lgammafn(x + 1);
+}
 
 /* factorial */
 template<class Type> 
 Type nimDerivs_factorial(Type x) {
-  return exp(atomic_lfactorial<Type>(x));
+  return exp(nimDerivs_lfactorial<Type>(x));
 }
 
 #endif
