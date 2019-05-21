@@ -419,24 +419,17 @@ RCfunProcessing <- setRefClass(
                 writeLines('***** READY FOR eigenize *****')
                 browser()
             }
-
-            if(nimbleOptions('experimentalUseTensorflow')) {
-                exprClasses_TFize(compileInfo$nimExpr,
-                                  compileInfo$newLocalSymTab,
-                                  compileInfo$typeEnv)
-            } else {
-                tryResult <- try(
-                    exprClasses_eigenize(compileInfo$nimExpr,
-                                         compileInfo$newLocalSymTab,
-                                         compileInfo$typeEnv))
-                if(inherits(tryResult, 'try-error')) {
-                    stop(
-                        paste('There is some problem at the Eigen processing step for this code:\n',
-                              paste(deparse(compileInfo$origRcode),
-                                    collapse = '\n'),
-                              collapse = '\n'),
-                        call. = FALSE)
-                }
+            tryResult <- try(
+                exprClasses_eigenize(compileInfo$nimExpr,
+                                     compileInfo$newLocalSymTab,
+                                     compileInfo$typeEnv))
+            if(inherits(tryResult, 'try-error')) {
+                stop(
+                    paste('There is some problem at the Eigen processing step for this code:\n',
+                          paste(deparse(compileInfo$origRcode),
+                                collapse = '\n'),
+                          collapse = '\n'),
+                    call. = FALSE)
             }
             if(debug) {
                 print('nimDeparse(compileInfo$nimExpr)')
