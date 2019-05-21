@@ -161,8 +161,11 @@ nimDerivs_model <- function( nimFxn, order = c(0, 1, 2), wrt = NULL, derivFxnCal
     
     if(deparse(derivFxnCall[[1]]) == 'calculate'){
         ## calculate(model, nodes) format
+        derivFxnCall <- match.call(nimble:::calculate, derivFxnCall)
         model <- eval(derivFxnCall[['model']], envir = fxnEnv)
         nodes <- eval(derivFxnCall[['nodes']], envir = fxnEnv)
+        if(is.null(nodes))
+            nodes <- model$getMaps('nodeNamesLHSall')
     } else {
         ## model$calculate(nodes) format, where nodes could be missing
         model <-  eval(derivFxnCall[[1]][[2]], envir = fxnEnv)
