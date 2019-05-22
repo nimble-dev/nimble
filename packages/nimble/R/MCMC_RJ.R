@@ -16,6 +16,16 @@
 ##################################################
 ## RJ sampler - no indicator variable ############
 ##################################################
+#' Reversible Jump sampler
+#'
+#' Same structure of MCMC sampling algorithms
+#'
+#' @param model (uncompiled) model on which the MCMC is to be run
+#' 
+#' @param mvSaved \code{modelValues} object to be used to store MCMC samples
+#' @param target node(s) on which the sampler will be used
+#' @param control named list that controls the precise behavior of the sampler.
+
 
 
 sampler_RJ <- nimbleFunction(
@@ -38,14 +48,14 @@ sampler_RJ <- nimbleFunction(
     logRatioProbFixedOverProbNotFixed <- log(control$prior) - log(1-control$prior)
     
     ## get all parameters related to the target
-    calcNodes = model$getDependencies(target)
+    calcNodes <- model$getDependencies(target)
   },
   
   run = function(){
     ## Reversible-jump move
     
     ## get current value of the parameter we are interested in
-    currentValue = model[[target]]
+    currentValue <- model[[target]]
     
     ## get current posterior log likelihood
     currentLogProb <- model$getLogProb(calcNodes)
@@ -94,6 +104,16 @@ sampler_RJ <- nimbleFunction(
 ####################################################################
 ### RJ sampler - indicator variable ################################
 ####################################################################
+#' Reversible Jump sampler
+#'
+#' Same structure of MCMC sampling algorithms
+#'
+#' @param model (uncompiled) model on which the MCMC is to be run
+#' 
+#' @param mvSaved \code{modelValues} object to be used to store MCMC samples
+#' @param target node(s) on which the sampler will be used
+#' @param control named list that controls the precise behavior of the sampler, with elements specific to \code{samplertype}.  The default values for control list are specified in the setup code of each sampling algorithm.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the \code{control} argument) appear below.
+#'
 
 sampler_RJ_indicator <- nimbleFunction(
   contains = sampler_BASE,
@@ -162,7 +182,7 @@ sampler_RJ_indicator <- nimbleFunction(
 ##-------------------------------##
 ## helper functions 
 ##-------------------------------##
-## Sample according to build sampler when the target is in the model 
+# Sample according to default assigned sampler when the target is in the model
 
 toggled_sampler <- nimbleFunction(
   ## This nimbleFunction generalizes the role of RW_sampler_nonzero from the web-site example
@@ -177,7 +197,7 @@ toggled_sampler <- nimbleFunction(
     
     ## List but only with one element 
     original_sampler <- nimbleFunctionList(sampler_BASE)
-    ## This function modifies the original sampler configuration 
+    ## This function gets the original sampler configuration 
     original_sampler[[1]] <- original_samplerConf$buildSampler(model=model, mvSaved=mvSaved)
   },
   run = function() {
@@ -196,9 +216,19 @@ toggled_sampler <- nimbleFunction(
 ###-------------------------------###
 ## configureRJ
 ###-------------------------------###
-## This function substitute manual remove/addSampler for each variable for which one wants to perform selection
+#' Configure reversible jump sampler
+#'
+#' Same structure of MCMC sampling algorithms
+#'
+#' @param mcmcConf 
+#' 
+#' @param nodes 
+#' @param indicator 
+#' @param prior 
+#' @param control_RJ named list that controls the precise behavior of the sampler, with elements specific to \code{samplertype}.  The default values for control list are specified in the setup code of each sampling algorithm.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the \code{control} argument) appear below.
+#'
 
-## function to check node configuration (in case of multiple calls)
+## helper function to check node configuration (in case of multiple calls)
 node_configuration_check <- function(currentConf, node){
   if(length(currentConf) == 0) {
     warning(paste0("There are no samplers for ", node,". Skipping it."))
@@ -208,6 +238,7 @@ node_configuration_check <- function(currentConf, node){
     warning(paste0("There is more than one sampler for ", node,". Only the first will be toggled."))
 }
 
+## This function substitute manual remove/addSampler for each variable for which one wants to perform selection
 ## configuration function
 configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positiveProposal = NULL)) {
   ## control_RJ should have
@@ -410,35 +441,4 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
   
   mcmcConf
 }
-######################################################### 
-# configure_RJ <- function(mcmcConf, nodes, control_RJ = list(fixedValue = 0, prior = 0.5, mean = 0, scale = 1)) {
-#   ## control_RJ should have
-#   ## 1 - a element called fixedValue (usually 0), 
-#   ## 2 - a prior prob of taking its fixedValue which corresponds to model prior probability
-#   ## 3 - a mean for jump proposal,
-#   ## 4 - a scale for jump proposal,
-#   
-#   nodes <- modelConf$model$expandNodeNames(nodes)
-#   
-#   for(node in nodes) {
-#     currentConf <- mcmcConf$getSamplers(node)
-#     if(length(currentConf) == 0) {
-#       warning(paste0("There are no samplers for ", node,". Skipping it."))
-#       next
-#     }
-#     if(length(currentConf) > 1)
-#       warning(paste0("There is more than one sampler for ", node,". Only the first will be toggled."))
-#     mcmcConf$removeSamplers(node)
-#     mcmcConf$addSampler(type = sampler_RJ,
-#                         target = node,
-#                         control = control_RJ)
-#     mcmcConf$addSampler(type = toggled_sampler,
-#                         target = node,
-#                         control = list(samplerConf = currentConf[[1]]))
-#     
-#   }
-#   
-#   ## The mcmcConf is a reference class object, so it doesn't need
-#   ## to be returned, but it is good form to do so.
-#   mcmcConf
-# }
+
