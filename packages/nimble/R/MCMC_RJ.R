@@ -17,6 +17,7 @@
 ## RJ sampler - no indicator variable ############
 ##################################################
 
+
 sampler_RJ <- nimbleFunction(
   ## every new sampler must contain sampler_BASE 
   contains = sampler_BASE, 
@@ -66,7 +67,7 @@ sampler_RJ <- nimbleFunction(
       ##----------------------##
       proposalValue <- rnorm(1, mean = proposalMean, sd = proposalScale)
       
-      ## take absolute value proposal can be only positive
+      ## take absolute value when proposal can be only positive
       if(positiveProposal){
         proposalValue <- abs(proposalValue)
       }
@@ -135,7 +136,8 @@ sampler_RJ_indicator <- nimbleFunction(
       currentLogProb <- model$getLogProb(calcNodesReduced)
       
       proposalCoef <- rnorm(1, mean = proposalMean, sd = proposalScale)
-      ## take absolute value proposal can be only positive
+      
+      ## take absolute value when proposal can be only positive
       if(positiveProposal){
         proposalCoef <- abs(proposalCoef)
       }
@@ -158,7 +160,7 @@ sampler_RJ_indicator <- nimbleFunction(
 )
 
 ##-------------------------------##
-## herlper functions 
+## helper functions 
 ##-------------------------------##
 ## Sample according to build sampler when the target is in the model 
 
@@ -222,17 +224,17 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
   scale             <- if(!is.null(control_RJ$scale))             control_RJ$scale            else 1
   positiveProposal  <- if(!is.null(control_RJ$positiveProposal))  control_RJ$positiveProposal else FALSE
   
-  ## if one value is provided for one element of the list is repeated if there are multiple nodes
-  fixedValue        <- if(length(fixedValue) == 1L & nNodes > 1L) rep(fixedValue, nNodes)             else fixedValue
-  mean              <- if(length(mean) == 1L & nNodes > 1L) rep(mean, nNodes)                         else mean
-  scale             <- if(length(scale) == 1L & nNodes > 1L) rep(scale, nNodes)                       else scale
+  ## if one value is provided for one element of the list, this value is repeated if there are multiple nodes
+  fixedValue        <- if(length(fixedValue) == 1L & nNodes > 1L)       rep(fixedValue, nNodes)       else fixedValue
+  mean              <- if(length(mean) == 1L & nNodes > 1L)             rep(mean, nNodes)             else mean
+  scale             <- if(length(scale) == 1L & nNodes > 1L)            rep(scale, nNodes)            else scale
   positiveProposal  <- if(length(positiveProposal) == 1L & nNodes > 1L) rep(positiveProposal, nNodes) else positiveProposal
   
   ## flag for indicators and prior
   indicatorFlag <- (!is.null(indicator))
   priorFlag     <- (!is.null(prior))
   
-  ## User must provide indicator OR prior
+  ## Check: user must provide indicator OR prior
   if(indicatorFlag == priorFlag) {
     stop("Provide indicator variables or prior probabilities")
   }
@@ -280,7 +282,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
         scale      = scale[i], 
         positiveProposal = positiveProposal[i]) 
       
-      ## if the node is not a scalar should iterate through each element
+      ## if the node is not a scalar iterate through each element
       
       if(length(nodeAsScalar) > 1) {
         ## assign RJ sampler to each element of the node
