@@ -70,7 +70,7 @@ void my_internal_function(double *p, double *ans, int n) {
     temporarilyAssignInGlobalEnv(add2p5)
     
     ## now create a nimbleFunction that interfaces to add2p5, not necessary when running uncompiled but necessary when running compiled
-    expect_silent(Radd2p5 <- nimbleRcall(function(x = double(1)){}, Rfun = 'add2p5', returnType = double(1), envir = .GlobalEnv))
+    expect_silent(Radd2p5 <- nimbleRcall(function(x = double(1)){}, Rfun = 'add2p5', returnType = double(1)))
     ## Similar to above.  The function prototype and the returnType represent a promise that add2p5 will always take and return these types.  Also an environment is needed and it defaults to R's global environment but I'm showing it explicitly.
     ## Again, ignore the more extensive warnings
     ##Radd2p5 ## this is also a nimbleFunction with more special sauce
@@ -147,8 +147,7 @@ test_that('external calls 3', {
                           nimbleType(name = 'x', type = 'double', dim = 1),
                           nimbleType(name = 'y', type = 'integer', dim = 1)),
                       Rfun = 'sumXY',
-                      returnType = nimbleType(name = 'UNUSED', type = 'double', dim = 0),
-                      envir = .GlobalEnv))
+                      returnType = nimbleType(name = 'UNUSED', type = 'double', dim = 0)))
     CsumXY <- compileNimble(RsumXY, dirName = '.')
     x <- rnorm(5)
     y <- as.integer(rbinom(5, size = 10, prob = .5))
