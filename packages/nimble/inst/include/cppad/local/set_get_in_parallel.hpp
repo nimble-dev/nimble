@@ -1,17 +1,16 @@
-// $Id$
 # ifndef CPPAD_LOCAL_SET_GET_IN_PARALLEL_HPP
 # define CPPAD_LOCAL_SET_GET_IN_PARALLEL_HPP
-
 /* --------------------------------------------------------------------------
 CppAD: C++ Algorithmic Differentiation: Copyright (C) 2003-16 Bradley M. Bell
 
-CppAD is distributed under multiple licenses. This distribution is under
-the terms of the
-                    GNU General Public License Version 3.
+CppAD is distributed under the terms of the
+             Eclipse Public License Version 2.0.
 
-A copy of this license is included in the COPYING file of this distribution.
-Please visit http://www.coin-or.org/CppAD/ for information on other licenses.
--------------------------------------------------------------------------- */
+This Source Code may also be made available under the following
+Secondary License when the conditions for such availability set forth
+in the Eclipse Public License, Version 2.0 are satisfied:
+      GNU General Public License, Version 2.0 or later.
+---------------------------------------------------------------------------- */
 
 # include <cassert>
 # include <cppad/configure.hpp>
@@ -43,23 +42,23 @@ recent setting for this set_get_in_parallel.
 In this case, it is assumed that we are currently in sequential execution mode.
 */
 static bool set_get_in_parallel(
-	bool (*in_parallel_new)(void) ,
-	bool set = false           )
-{	static bool (*in_parallel_user)(void) = CPPAD_NULL;
+    bool (*in_parallel_new)(void) ,
+    bool set = false           )
+{   static bool (*in_parallel_user)(void) = CPPAD_NULL;
 
-	if( set )
-	{	in_parallel_user = in_parallel_new;
-		// Doing a raw assert in this case because set_get_in_parallel is used
-		// by ErrorHandler and hence cannot use ErrorHandler.
-		// CPPAD_ASSERT_UNKNOWN( in_parallel_user() == false )
-		assert(in_parallel_user == CPPAD_NULL || in_parallel_user() == false);
-		return false;
-	}
-	//
-	if( in_parallel_user == CPPAD_NULL )
-		return false;
-	//
-	return in_parallel_user();
+    if( set )
+    {   in_parallel_user = in_parallel_new;
+        // Doing a raw assert in this case because set_get_in_parallel is used
+        // by ErrorHandler and hence cannot use ErrorHandler.
+        // CPPAD_ASSERT_UNKNOWN( in_parallel_user() == false )
+        assert(in_parallel_user == CPPAD_NULL || in_parallel_user() == false);
+        return false;
+    }
+    //
+    if( in_parallel_user == CPPAD_NULL )
+        return false;
+    //
+    return in_parallel_user();
 }
 
 } } // END_CPPAD_LOCAL_NAMESPACE
