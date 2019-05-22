@@ -338,3 +338,15 @@ nimDerivsPrependTypeOperators <- c("dnorm", "dpois", "dgamma", "dinvgamma", "dex
                                    "nimArr_ddirch", "nimArr_dmvt_chol", "nimArr_dmnorm_chol", "nimArr_dwish_chol",
                                    "nimStep", 'ilogit', 'icloglog', 'iprobit', 'probit', 'cloglog',
                                    "nimEquals", "lgammafn", "gammafn", "lfactorial", "factorial", "logit", "cube", "inprod")
+
+## reflects distribution funs that support AD
+recyclingRuleOperatorsAD <- c(
+  scalar_distribution_dFuns,
+  'pnorm', 'qnorm'
+)
+recyclingRuleOperatorsAD <- paste0(
+    recyclingRuleOperatorsAD,
+    '_RR_impl<MatrixXd>::',
+    recyclingRuleOperatorsAD,
+    '_RecyclingRule'
+)
