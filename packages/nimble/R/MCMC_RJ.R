@@ -42,7 +42,7 @@ sampler_RJ <- nimbleFunction(
     fixedValue <- control$fixedValue
     proposalScale <- control$scale
     proposalMean <- control$mean
-    positiveProposal <- control$positiveProposal
+    positive <- control$positive
     
     ## precompute ratio between prior probabilities
     logRatioProbFixedOverProbNotFixed <- log(control$prior) - log(1-control$prior)
@@ -78,7 +78,7 @@ sampler_RJ <- nimbleFunction(
       proposalValue <- rnorm(1, mean = proposalMean, sd = proposalScale)
       
       ## take absolute value when proposal can be only positive
-      if(positiveProposal){
+      if(positive){
         proposalValue <- abs(proposalValue)
       }
       
@@ -127,7 +127,7 @@ sampler_RJ_indicator <- nimbleFunction(
     coefNode <- control$coef
     proposalScale <- control$scale
     proposalMean <- control$mean
-    positiveProposal <- control$positiveProposal
+    positive <- control$positive
     
     ## model with coefficient included
     calcNodes <- model$getDependencies(c(coefNode, target))
@@ -158,7 +158,7 @@ sampler_RJ_indicator <- nimbleFunction(
       proposalCoef <- rnorm(1, mean = proposalMean, sd = proposalScale)
       
       ## take absolute value when proposal can be only positive
-      if(positiveProposal){
+      if(positive){
         proposalCoef <- abs(proposalCoef)
       }
       
@@ -240,7 +240,7 @@ node_configuration_check <- function(currentConf, node){
 
 ## This function substitute manual remove/addSampler for each variable for which one wants to perform selection
 ## configuration function
-configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positiveProposal = NULL)) {
+configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
   ## control_RJ should have
   ## 1 - a element called fixedValue (default 0),
   ## 2 - a mean for jump proposal,
@@ -253,13 +253,13 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
   fixedValue        <- if(!is.null(control_RJ$fixedValue))        control_RJ$fixedValue       else 0
   mean              <- if(!is.null(control_RJ$mean))              control_RJ$mean             else 0
   scale             <- if(!is.null(control_RJ$scale))             control_RJ$scale            else 1
-  positiveProposal  <- if(!is.null(control_RJ$positiveProposal))  control_RJ$positiveProposal else FALSE
+  positive  <- if(!is.null(control_RJ$positive))  control_RJ$positive else FALSE
   
   ## if one value is provided for one element of the list, this value is repeated if there are multiple nodes
   fixedValue        <- if(length(fixedValue) == 1L & nNodes > 1L)       rep(fixedValue, nNodes)       else fixedValue
   mean              <- if(length(mean) == 1L & nNodes > 1L)             rep(mean, nNodes)             else mean
   scale             <- if(length(scale) == 1L & nNodes > 1L)            rep(scale, nNodes)            else scale
-  positiveProposal  <- if(length(positiveProposal) == 1L & nNodes > 1L) rep(positiveProposal, nNodes) else positiveProposal
+  positive  <- if(length(positive) == 1L & nNodes > 1L) rep(positive, nNodes) else positive
   
   ## flag for indicators and prior
   indicatorFlag <- (!is.null(indicator))
@@ -276,7 +276,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
   #     fixedValue <- rep(fixedValue, nNodes)
   #     mean <- rep(mean, nNodes)
   #     scale <- rep(scale, nNodes)
-  #     positiveProposal <- rep(positiveProposal, nNodes)
+  #     positive <- rep(positive, nNodes)
   # }
   
   ##---------------------------------------##
@@ -285,7 +285,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
   if(priorFlag){
     
     ## Check that RJ control arguments match nodes lenght
-    if(any(lengths(list(fixedValue, mean, scale, positiveProposal)) != nNodes)){
+    if(any(lengths(list(fixedValue, mean, scale, positive)) != nNodes)){
       stop("Arguments in control_RJ list must be of length 1 or match nodes vector length")
     }
     
@@ -311,7 +311,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
         prior      = prior[i], 
         mean       = mean[i], 
         scale      = scale[i], 
-        positiveProposal = positiveProposal[i]) 
+        positive = positive[i]) 
       
       ## if the node is not a scalar iterate through each element
       
@@ -361,7 +361,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
     ##---------------------------##
 
     ## Check that RJ control arguments match nodes lenght
-    if(any(lengths(list(fixedValue, mean, scale, positiveProposal)) != nNodes)){
+    if(any(lengths(list(fixedValue, mean, scale, positive)) != nNodes)){
       stop("Arguments in control_RJ list must be of length 1 or match nodes vector length")
     }
     
@@ -385,7 +385,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
         prior      = prior[i], 
         mean       = mean[i], 
         scale      = scale[i], 
-        positiveProposal = positiveProposal[i]) 
+        positive = positive[i]) 
       
       
       if(length(nodeAsScalar) > 1) {
