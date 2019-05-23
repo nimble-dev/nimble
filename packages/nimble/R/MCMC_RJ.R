@@ -301,15 +301,19 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
     
 
     ## If one value for prior is given, it is used for each variable
-    if(length(prior) ==  1L & length(prior) != nNodes){ 
-      prior <- rep(prior, nNodes)
-    } 
-    
-    ## Check that prior vector match nodes lenght when there is more than one value
-    if(length(prior) >  1L &
-       length(prior) != nNodes){
-      stop("Length of prior vector must match nodes vector one")
+    if(length(prior) != nNodes) {
+      if(length(prior) == 1) prior <- rep(prior, nNodes) else stop('Length of prior vector must match nodes vector one')
     }
+    
+    # if(length(prior) ==  1L & length(prior) != nNodes){ 
+    #   prior <- rep(prior, nNodes)
+    # } 
+    # 
+    # ## Check that prior vector match nodes lenght when there is more than one value
+    # if(length(prior) >  1L &
+    #    length(prior) != nNodes){
+    #   stop("Length of prior vector must match nodes vector one")
+    # }
     
     for(i in 1:nNodes) {
       
