@@ -121,6 +121,73 @@ Type nimDerivs_nimArr_dmnorm_chol_logFixed(NimArr<1, Type> &x, NimArr<1, Type> &
   return(dens);
 }
 
+/* Multinomial */
+template<class Type>
+Type nimDerivs_nimArr_dmulti(const NimArr<1, Type> &x,
+			     const Type &size,
+			     const NimArr<1, Type> &prob,
+			     const Type &give_log) 
+{
+  Type sumProb = 0.0;
+  Type sumX = 0.0;
+  Type logSumProb;
+
+  Type logProb = nimDerivs_lgammafn(size + 1);
+  int K = x.dimSize(0);
+  for(int i = 0; i < K; i++) {
+    sumProb += prob[i];
+    sumX += x[i];
+  }
+  logSumProb = log(sumProb);
+
+  for(int i = 0; i < K; i++) {
+    logProb += CppAD::CondExpEq(x[i], Type(0.0),
+				Type(0.0),
+				x[i]*(log(prob[i]) - logSumProb) - nimDerivs_lgammafn(x[i] + Type(1.)));
+  }
+  logProb = CppAD::CondExpEq(sumX, size,
+			     logProb,
+			     -Type(std::numeric_limits<double>::infinity()));
+  Type ans = CppAD::CondExpEq(give_log, Type(1),
+			      logProb,
+			      exp(logProb));
+  return ans;
+}
+
+template<class Type>
+Type nimDerivs_nimArr_dmulti_logFixed(const NimArr<1, Type> &x,
+				      const Type &size,
+				      const NimArr<1, Type> &prob,
+				      int give_log) 
+{
+  Type sumProb(0.0);
+  Type sumX(0.0);
+  Type logSumProb;
+
+  Type logProb = nimDerivs_lgammafn(size + 1);
+  int K = x.size();
+  for(int i = 0; i < K; i++) {
+    sumProb += prob[i];
+    sumX += x[i];
+  }
+  logSumProb = log(sumProb);
+
+  for(int i = 0; i < K; i++) {
+    logProb += CppAD::CondExpEq(x[i], Type(0.0),
+				Type(0.0),
+				x[i]*(log(prob[i]) - logSumProb) - nimDerivs_lgammafn(x[i] + Type(1.)));
+  }
+  logProb = CppAD::CondExpEq(sumX, size,
+			     logProb,
+			     -Type(std::numeric_limits<double>::infinity()));
+  Type ans;
+  if(give_log) {
+    return logProb;
+  } else {
+    return exp(logProb);
+  }
+}
+
 /* dt: Student's t distribution */
 /* This case is modified from TMB code so that give_log can be different
    when the tape is used from when it is recorded. */
