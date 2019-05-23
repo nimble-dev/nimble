@@ -261,6 +261,7 @@ mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonS
             if(is.numeric(controlValue) || is.logical(controlValue))
                 if(length(controlValue) > 1)
                     controlValue <- ifelse(is.null(dim(controlValue)), 'custom vector', 'custom array')
+        if(class(controlValue) == 'samplerConf')   controlValue <- controlValue$name
         deparsedItem <- deparse(controlValue)
         if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
         ls2[[i]] <- paste0(controlName, ': ', deparsedItem)

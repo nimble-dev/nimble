@@ -150,8 +150,8 @@ runMCMC <- function(mcmc,
         WAICvalue <- mcmc$calculateWAIC()
     }
     if(samplesAsCodaMCMC) {
-        samplesList <- coda::as.mcmc.list(lapply(samplesList, as.mcmc))
-        if(hasMonitors2)   samplesList2 <- coda::as.mcmc.list(lapply(samplesList2, as.mcmc))
+        samplesList <- as.mcmc.list(lapply(samplesList, as.mcmc))
+        if(hasMonitors2)   samplesList2 <- as.mcmc.list(lapply(samplesList2, as.mcmc))
     }
     if(nchains == 1) {
         samplesList <- samplesList[[1]]                       ## returns matrix when nchains = 1

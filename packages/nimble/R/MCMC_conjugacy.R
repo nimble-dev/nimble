@@ -1104,7 +1104,7 @@ cc_checkLinearity <- function(expr, targetNode) {
     if(identical(targetNode, deparse(expr)))
         return(list(offset = 0, scale = 1))
 
-    if(!is.call(expr))   stop('expression is not a call object')
+    if(!is.call(expr))   stop('cc_checkLinearity: expression is not a call object')
 
     ## process the expression contents of the parentheses
     if(expr[[1]] == '(')
@@ -1141,7 +1141,7 @@ cc_checkLinearity <- function(expr, targetNode) {
             return(list(offset = cc_negateExpr(checkLin$offset),
                         scale  = cc_negateExpr(checkLin$scale)))
         }
-        stop('problem with negation expression')
+        stop('cc_checkLinearity: problem with negation expression')
     }
 
     if(expr[[1]] == '+') {
@@ -1158,24 +1158,28 @@ cc_checkLinearity <- function(expr, targetNode) {
                                length(expr[[2]]) > 1 && expr[[2]][[1]] != 'structureExpr' &&
                                length(expr[[3]]) > 1 && expr[[3]][[1]] != 'structureExpr',
                                TRUE, FALSE)
-        if(expr[[1]] == 'sum' && length(expr[[2]]) == 3 && expr[[2]][[1]] == '*') {
-            tmpExpr <- quote(inprod(a, b))
-            tmpExpr[[2]] <- expr[[2]][[2]]
-            tmpExpr[[3]] <- expr[[2]][[3]]
-            expr <- tmpExpr
-        }
+        if(expr[[1]] == 'sum') 
+            if(length(expr[[2]]) == 3 && expr[[2]][[1]] == '*') {
+                tmpExpr <- quote(inprod(a, b))
+                tmpExpr[[2]] <- expr[[2]][[2]]
+                tmpExpr[[3]] <- expr[[2]][[3]]
+                expr <- tmpExpr
+            } else {
+                return(NULL)  # cases such as sum(p[1:5]); there may be some unusual conjugacy cases here that we don't detect
+            }
+        if(length(expr) != 3) return(NULL)  # avoid error at next step for unexpected cases
         if(cc_nodeInExpr(targetNode, expr[[2]]) && cc_nodeInExpr(targetNode, expr[[3]])) return(NULL)
         checkLinearityLHS <- cc_checkLinearity(expr[[2]], targetNode)
         checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)
         if(is.null(checkLinearityLHS) || is.null(checkLinearityRHS)) return(NULL)
-        if((checkLinearityLHS$scale != 0) && (checkLinearityRHS$scale != 0)) stop('incompatible scales in * operation')
+        if((checkLinearityLHS$scale != 0) && (checkLinearityRHS$scale != 0)) stop('cc_checkLinearity: incompatible scales in * operation')
         if(checkLinearityLHS$scale != 0) {
             return(list(offset = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$offset, isMatrixMult),
                         scale  = cc_combineExprsMultiplication(checkLinearityLHS$scale,  checkLinearityRHS$offset, isMatrixMult))) }
         if(checkLinearityRHS$scale != 0) {
             return(list(offset = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$offset, isMatrixMult),
                         scale  = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$scale , isMatrixMult))) }
-        stop('something went wrong')
+        stop('cc_checkLinearity: something went wrong')
     }
 
     if(expr[[1]] == '/') {

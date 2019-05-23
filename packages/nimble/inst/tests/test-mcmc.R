@@ -109,7 +109,7 @@ test_that('ice example reworked', {
 })
 
 test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
-          data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE, avoidNestedTest = TRUE)
+          data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
                                         # getting warning; deterministic model node is NA or NaN in model initialization
                                         # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
 
