@@ -558,6 +558,31 @@ makeADtest <- function(op, argTypes, wrt_args = NULL,
   )
 }
 
+## ops: character vector of operator names
+## argTypes: list of character vectors of argTypes
+##           e.g. for a binary operator:
+##             list(
+##               c('double(1, 4)', 'double(0)'),
+##               c('double(1, 4)', 'double(1, 4)')
+##             )
+make_AD_test_batch <- function(ops, argTypes) {
+  opTests <- unlist(
+    recursive = FALSE,
+    x = lapply(
+      ops,
+      function(x) {
+        mapply(
+          makeADtest,
+          argTypes = argTypes,
+          MoreArgs = list(op = x),
+          SIMPLIFY = FALSE
+        )
+      })
+  )
+  names(opTests) <- sapply(opTests, `[[`, 'name')
+  invisible(opTests)
+}
+
 ##################
 ## unary cwise ops
 ##################
@@ -575,20 +600,9 @@ unaryOps <- c(
   nimble:::unaryPromoteNoLogicalOperators
 )
 
-unaryOpTests <- unlist(
-  recursive = FALSE,
-  x = lapply(
-    unaryOps,
-    function(x) {
-      mapply(
-        makeADtest,
-        argTypes = unaryArgs,
-        MoreArgs = list(op = x),
-        SIMPLIFY = FALSE
-      )
-    })
+unaryOpTests <- make_AD_test_batch(
+  unaryOps, unaryArgs
 )
-names(unaryOpTests) <- sapply(unaryOpTests, `[[`, 'name')
 
 ## tranform args
 modifyOnMatch(unaryOpTests, '(log|sqrt) .+', 'arg_distns', function(x) abs(rnorm(x)))
@@ -613,8 +627,10 @@ modifyOnMatch(
   )
 )
 
+## the following unaryExpr operators are not currently supported
 modifyOnMatch(
-  unaryOpTests, '(nimRound|ftrunc|ceil|floor) .*', 'knownFailures',
+  unaryOpTests, '(nimRound|ftrunc|ceil|floor) .*',
+  'knownFailures',
   list(
     compilation = TRUE
   )
@@ -625,34 +641,6 @@ modifyOnMatch(
 
 ## e.g. of how to set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
 ## modifyOnMatch(unaryOpTests, 'ilogit .+', 'tol2', 0.1)
-
-## compilation failures
-
-## modifyOnMatch(
-##   unaryOpTests,
-##   paste(
-##     '(logit|log1p|lfactorial|factorial|cloglog|atan|cosh|sinh|tanh|acosh|asinh|atanh)',
-##     '(double\\(1, 4\\)|double\\(2, c\\(3, 4\\)\\))'
-##   ),
-##   'knownFailures',
-##   list(compilation = TRUE)
-## )
-
-## modifyOnMatch(
-##   unaryOpTests, '(nimRound|ceil|floor|sd|var|probit|lgammafn|gammafn) .+',
-##   'knownFailures', list(compilation = TRUE)
-## )
-
-## ops_regex <- paste0(
-##   c('sum', nimble:::reductionUnaryDoubleOperatorsEither,
-##     nimble:::reductionUnaryOperatorsArray),
-##   collapse = '|'
-## )
-## modifyOnMatch(
-##   unaryOpTests,
-##   paste0('(', ops_regex, ') double\\(0\\)'),
-##   'knownFailures', list(compilation = TRUE)
-## )
 
 ######################
 ## unary reduction ops
@@ -667,25 +655,15 @@ unaryReductionOps <- c(
   nimble:::reductionUnaryOperatorsArray
 )
 
-unaryReductionOpTests <- unlist(
-  recursive = FALSE,
-  x = lapply(
-    unaryReductionOps,
-    function(x) {
-      mapply(
-        makeADtest,
-        argTypes = unaryReductionArgs,
-        MoreArgs = list(op = x),
-        SIMPLIFY = FALSE
-      )
-    })
+unaryReductionOpTests <- make_AD_test_batch(
+  unaryReductionOps, unaryReductionArgs
 )
-names(unaryReductionOpTests) <- sapply(unaryReductionOpTests, `[[`, 'name')
 
 #############
 ## binary ops
 #############
 
+## does not include combinations of vector and matrix
 binaryArgs <- as.list(
   cbind(
     data.frame(t(expand.grid(unaryArgs[1], unaryArgs)), stringsAsFactors=FALSE),
@@ -696,26 +674,22 @@ names(binaryArgs) <- NULL
 binaryArgs[[length(binaryArgs) + 1]] <- rep(unaryArgs[2], 2)
 binaryArgs[[length(binaryArgs) + 1]] <- rep(unaryArgs[3], 2)
 
-binaryOps <- c(nimble:::binaryOrUnaryOperators,
-               nimble:::binaryMidOperators,
-               nimble:::binaryLeftDoubleOperators,
-               nimble:::reductionBinaryOperatorsEither)
-
-binaryOpTests <- unlist(
-  recursive = FALSE,
-  x = lapply(
-    binaryOps,
-    function(x) {
-      mapply(
-        makeADtest,
-        argTypes = binaryArgs,
-        MoreArgs = list(op = x),
-        SIMPLIFY = FALSE
-      )
-    })
+binaryOps <- c(
+  nimble:::binaryOrUnaryOperators,
+  nimble:::binaryMidOperators
 )
 
-names(binaryOpTests) <- sapply(binaryOpTests, `[[`, 'name')
+binaryOpTests <- make_AD_test_batch(
+  binaryOps, binaryArgs
+)
+
+modifyOnMatch(
+  binaryOpTests, '%% .*',
+  'knownFailures',
+  list(
+    compilation = TRUE
+  )
+)
 
 ## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
 ##modifyOnMatch(binaryOpTests, '(\\+|-) double\\(0\\) double\\(1, 4\\)', 'tol2', 0.001)
@@ -741,29 +715,49 @@ names(binaryOpTests) <- sapply(binaryOpTests, `[[`, 'name')
 ##   )
 ## )
 
+###############
+## pow-like ops
+###############
+
+powArgs <- list(
+  c('double(0)', 'double(0)'),
+  c('double(1, 4)', 'double(0)')
+)
+
+powOps <- c(
+  'pow', '^'
+)
+
+powOpTests <- make_AD_test_batch(
+  powOps, powArgs
+)
+
+#######################
+## binary reduction ops
+#######################
+
+binaryReductionArgs <- list(
+  c('double(1, 4)', 'double(1, 4)')
+)
+
+binaryReductionOps <- nimble:::reductionBinaryOperatorsEither
+
+binaryReductionOpTests <- make_AD_test_batch(
+  binaryReductionOps, binaryReductionArgs
+)
+
 ##########################
 ## unary square matrix ops
 ##########################
 
-squareMatrixArgs <- c('double(2, c(2, 2))', 'double(2, c(5, 5))')
+squareMatrixArgs <- list('double(2, c(2, 2))', 'double(2, c(5, 5))')
 
 squareMatrixOps <- c(nimble:::matrixSquareOperators,
                      nimble:::matrixSquareReductionOperators)
 
-squareMatrixOpTests <- unlist(
-  recursive = FALSE,
-  x = lapply(
-    squareMatrixOps,
-    function(x) {
-      mapply(
-        makeADtest,
-        argTypes = squareMatrixArgs,
-        MoreArgs = list(op = x),
-        SIMPLIFY = FALSE
-      )
-    })
+squareMatrixOpTests <- make_AD_test_batch(
+  squareMatrixOps, squareMatrixArgs
 )
-names(squareMatrixOpTests) <- sapply(squareMatrixOpTests, `[[`, 'name')
 
 ## modifyOnMatch(
 ##   squareMatrixOpTests, 'chol .+', 'arg_distns',
@@ -793,20 +787,9 @@ binaryMatrixArgs <- as.list(
     stringsAsFactors=FALSE)
 )
 
-binaryMatrixOpTests <- unlist(
-  recursive = FALSE,
-  x = lapply(
-    binaryMatrixOps,
-    function(x) {
-      mapply(
-        makeADtest,
-        argTypes = binaryMatrixArgs,
-        MoreArgs = list(op = x),
-        SIMPLIFY = FALSE
-      )
-    })
+binaryMatrixOpTests <- make_AD_test_batch(
+  binaryMatrixOps, binaryMatrixArgs
 )
-names(binaryMatrixOpTests) <- sapply(binaryMatrixOpTests, `[[`, 'name')
 
 ## set tolerances (default is tol1 = 0.00001 and tol2 = 0.0001)
 ## modifyOnMatch(binaryMatrixOpTests, '%*% .+', 'tol2', 0.001)
@@ -1189,6 +1172,7 @@ distn_params[['logis_base']]$name <- 'logis'
 
 distn_params[['norm_base']] <- distn_base
 distn_params[['norm_base']]$name <- 'norm'
+distn_params[['norm_base']]$variants = c('d', 'p', 'q')
 distn_params[['norm_base']]$args <- list(
   support = list(
     distn = function(n) runif(n, min = -1000, max = 1000),
@@ -1331,7 +1315,7 @@ distn_params[['mvt_chol_base']]$args[['df']] <- list(
 distn_params[['mvt_chol_base']]$wrt <- c('mu', 'cholesky', 'x')
 
 ##
-## Wishart distriubtion
+## Wishart distribution
 ##
 
 distn_params[['wish_chol_base']] <- chol_base
@@ -1346,7 +1330,6 @@ distn_params[['wish_chol_base']]$args[['df']] <- list(
   type = c('double(0)')
 )
 distn_params[['wish_chol_base']]$wrt <- c('cholesky', 'x')
-
 
 ## Takes an element of distn_params list and returns a list of AD test
 ## parameterizations, each of which test_AD can use.
@@ -1431,14 +1414,18 @@ distn_params_log_1 <- lapply(distn_params, function(param) {
   param
 })
 
+########################################
+## distribution functions, fixed log arg
+########################################
+
 distn_tests <- unlist(
   lapply(distn_params_log_1, makeADdistnTest),
   recursive = FALSE
 )
 
-#################################
-## distribution functions log arg
-#################################
+###########################################
+## distribution functions, variable log arg
+###########################################
 
 ## add the arg 'log' to all the distn_params
 distn_params_with_log <- lapply(distn_params, function(param) {
@@ -1462,6 +1449,8 @@ invisible({
   sapply(unaryOpTests, test_AD)
   sapply(unaryReductionOpTests, test_AD)
   sapply(binaryOpTests, test_AD)
+  sapply(powOpTests, test_AD)
+  sapply(binaryReductionOpTests, test_AD)
   sapply(squareMatrixOpTests, test_AD)
   sapply(binaryMatrixOpTests, test_AD)
   sapply(distn_tests, test_AD)
