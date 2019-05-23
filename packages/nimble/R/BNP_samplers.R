@@ -1488,7 +1488,10 @@ findClusterNodes <- function(model, target) {
                 cnt <- cnt - 1
             }
             if(cnt == 0) {
-                warning("findClusterNodes: missing cluster parameter ", clusterNodes[[varIdx]][1], ".")
+                out <- try(model$expandNodeNames(clusterNodes[[varIdx]][1]))
+                if(!is(out, 'try-error') && length(out) > 1) {
+                    stop("findClusterNodes: cluster parameters such as '", clusterNodes[[varIdx]][1], "' must each be specified as a single multivariate node for the current implementation of NIMBLE's CRP MCMC sampling.")
+                } else warning("findClusterNodes: missing cluster parameter ", clusterNodes[[varIdx]][1], ".")
                 clusterNodes[[varIdx]] <- clusterNodes[[varIdx]][clusterNodes[[varIdx]] %in% modelNodes]
                 if(!length(clusterNodes[[varIdx]]))
                     stop("findClusterNodes: no cluster parameters for variable ", clusterVars[varIdx], ".")
