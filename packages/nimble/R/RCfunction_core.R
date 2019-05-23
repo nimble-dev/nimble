@@ -138,7 +138,7 @@ nfMethodRC <- setRefClass(
                 returnTypeDeclaration[[1]] <- as.name('logical')
             returnType <<- returnTypeDeclaration
         },
-        generateFunctionObject = function(keep.nfMethodRC = FALSE) {
+        generateFunctionObject = function(keep.nfMethodRC = FALSE, where = NULL) {
             functionAsList <- list(as.name('function'))
             functionAsList[2] <- list(NULL)
             if(!is.null(args)) functionAsList[[2]] <- arguments
@@ -146,7 +146,9 @@ nfMethodRC <- setRefClass(
             ans <- eval(
                 parse(text=deparse(as.call(functionAsList)),
                       keep.source = FALSE)[[1]])
-            environment(ans) <- new.env()
+            if(!is.null(where)) {
+                environment(ans) <- new.env(parent = where)
+            } else environment(ans) <- new.env()
             if(keep.nfMethodRC) {
                 environment(ans)$nfMethodRCobject <- .self
             }
