@@ -257,11 +257,33 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
   scale             <- if(!is.null(control_RJ$scale))             control_RJ$scale            else 1
   positive  <- if(!is.null(control_RJ$positive))  control_RJ$positive else FALSE
   
+  
   ## if one value is provided for one element of the list, this value is repeated if there are multiple nodes
-  fixedValue        <- if(length(fixedValue) == 1L & nNodes > 1L)       rep(fixedValue, nNodes)       else fixedValue
-  mean              <- if(length(mean) == 1L & nNodes > 1L)             rep(mean, nNodes)             else mean
-  scale             <- if(length(scale) == 1L & nNodes > 1L)            rep(scale, nNodes)            else scale
-  positive  <- if(length(positive) == 1L & nNodes > 1L) rep(positive, nNodes) else positive
+  # fixedValue        <- if(length(fixedValue) == 1L & nNodes > 1L)       rep(fixedValue, nNodes)       else fixedValue
+  # mean              <- if(length(mean) == 1L & nNodes > 1L)             rep(mean, nNodes)             else mean
+  # scale             <- if(length(scale) == 1L & nNodes > 1L)            rep(scale, nNodes)            else scale
+  # positive  <- if(length(positive) == 1L & nNodes > 1L) rep(positive, nNodes) else positive
+  # 
+  ## above set ot checks paired with this check
+  # ## Check that RJ control arguments match nodes lenght
+  # if(any(lengths(list(fixedValue, mean, scale, positive)) != nNodes)){
+  #   stop("Arguments in control_RJ list must be of length 1 or match nodes vector length")
+  # }
+  
+  ## DT more defensive version
+  if(length(fixedValue) != nNodes) {
+    if(length(fixedValue) == 1) fixedValue <- rep(fixedValue, nNodes) else stop('inconsistent length of fixedValue argument and specified number of RJ nodes')
+  }
+  if(length(mean) != nNodes) {
+    if(length(mean) == 1) mean <- rep(mean, nNodes) else stop('inconsistent length of mean argument and specified number of RJ nodes')
+  }
+  if(length(scale) != nNodes) {
+    if(length(scale) == 1) scale <- rep(scale, nNodes) else stop('inconsistent length of scale argument and specified number of RJ nodes')
+  }
+  if(length(positive) != nNodes) {
+    if(length(positive) == 1) positive <- rep(positive, nNodes) else stop('inconsistent length of positive argument and specified number of RJ nodes')
+  }
+  
   
   ## flag for indicators and prior
   indicatorFlag <- (!is.null(indicator))
@@ -272,35 +294,22 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
     stop("Provide indicator variables or prior probabilities")
   }
   
-  # 
-  # ## If user provide only one element for control_RJ parameters and there are more nodes repeat values
-  # if(unique(lengths(control_RJ)) == 1L & nNodes > 1L){ 
-  #     fixedValue <- rep(fixedValue, nNodes)
-  #     mean <- rep(mean, nNodes)
-  #     scale <- rep(scale, nNodes)
-  #     positive <- rep(positive, nNodes)
-  # }
-  
   ##---------------------------------------##
   ## No indicator
   ##---------------------------------------##
   if(priorFlag){
     
-    ## Check that RJ control arguments match nodes lenght
-    if(any(lengths(list(fixedValue, mean, scale, positive)) != nNodes)){
-      stop("Arguments in control_RJ list must be of length 1 or match nodes vector length")
-    }
 
     ## If one value for prior is given, it is used for each variable
     if(length(prior) ==  1L & length(prior) != nNodes){ 
       prior <- rep(prior, nNodes)
     } 
     
-    # ## Check that prior vector match nodes lenght when there is more than one value
-    # if(length(prior) >  1L & 
-    #    length(prior) != nNodes){ 
-    #   stop("Length of prior vector must match nodes vector one")
-    # }
+    ## Check that prior vector match nodes lenght when there is more than one value
+    if(length(prior) >  1L &
+       length(prior) != nNodes){
+      stop("Length of prior vector must match nodes vector one")
+    }
     
     for(i in 1:nNodes) {
       
@@ -363,14 +372,9 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
     ## indicator
     ##---------------------------##
 
-    ## Check that RJ control arguments match nodes lenght
-    if(any(lengths(list(fixedValue, mean, scale, positive)) != nNodes)){
-      stop("Arguments in control_RJ list must be of length 1 or match nodes vector length")
-    }
-    
     ## Check that indicator vector  match nodes lenght
     if(length(indicator) != nNodes){ 
-      stop("Length of indicator vector list must match nodes vector dimension")
+      stop("Length of indicators vector must match nodes vector dimension")
     }
     
     for(i in 1:nNodes) {
