@@ -1388,6 +1388,12 @@ findClusterNodes <- function(model, target) {
   idxExpr <- model$getDeclInfo(target)[[1]]$indexExpr[[1]]
   eval(substitute(`<-`(`[`(e$VAR, IDX), seq_along(targetElements)), list(VAR = targetVar, IDX = idxExpr)))
   
+  nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+  dists <- model$getDistribution(nodes)
+  if(length(dists == 'dCRP') > 1)
+      stop("findClusterNodes: multiple CRP variables used for indexing in '", deparse(model$getValueExpr(exampleDeps[1])),
+                         "'.\nNIMBLE's CRP MCMC sampling is not yet developed for this situation, but we will be making this available soon.")
+
   clusterNodes <- indexExpr <- list()
   clusterVars <- indexPosition <- numIndexes <- targetIsIndex <- targetIndexedByFunction <- NULL
   varIdx <- 0
