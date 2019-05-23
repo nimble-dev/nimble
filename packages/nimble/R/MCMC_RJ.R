@@ -290,19 +290,20 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
     if(any(lengths(list(fixedValue, mean, scale, positive)) != nNodes)){
       stop("Arguments in control_RJ list must be of length 1 or match nodes vector length")
     }
+
+    ## If one value for prior is given, it is used for each variable
+    if(length(prior) ==  1L & length(prior) != nNodes){ 
+      prior <- rep(prior, nNodes)
+    } 
+    
+    # ## Check that prior vector match nodes lenght when there is more than one value
+    # if(length(prior) >  1L & 
+    #    length(prior) != nNodes){ 
+    #   stop("Length of prior vector must match nodes vector one")
+    # }
     
     for(i in 1:nNodes) {
       
-      ## If one value for prior is given, it is used for each variable
-      if(length(prior) ==  1L & length(prior) != nNodes){ 
-        prior <- rep(prior, nNodes)
-      } 
-      
-      ## Check that prior vector match nodes lenght when there is more than one value
-      if(length(prior) >  1L & 
-         length(prior) != nNodes){ 
-        stop("Length of prior vector must match nodes vector one")
-      }
       
       ## Create node list
       nodeAsScalar <- mcmcConf$model$expandNodeNames(nodes[i], returnScalarComponents = TRUE)
