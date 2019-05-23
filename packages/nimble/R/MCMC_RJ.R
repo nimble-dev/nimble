@@ -10,7 +10,7 @@
 ## functions summary
 ## sampler_RJ:           does the jump proposal for the variable of interest
 ## sampler_RJ_indicator: does the jump proposal for an indicator variable
-## toggled_sampler:      reassign the default sampler to the variable when is in the model  
+## sampler_toggled:      reassign the default sampler to the variable when is in the model  
 ## configure_RJ:         substitute manual removeSampler/addSampler for each variable for which one wants to perform selections
 
 ##################################################
@@ -184,7 +184,7 @@ sampler_RJ_indicator <- nimbleFunction(
 ##-------------------------------##
 # Sample according to default assigned sampler when the target is in the model
 
-toggled_sampler <- nimbleFunction(
+sampler_toggled <- nimbleFunction(
   ## This nimbleFunction generalizes the role of RW_sampler_nonzero from the web-site example
   ## Sample according to build sampler when the target is in the model (here different from zero)
   contains = sampler_BASE,
@@ -330,7 +330,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
                               target = nodeAsScalar[j],
                               control = nodeControl)
           
-          mcmcConf$addSampler(type = toggled_sampler,
+          mcmcConf$addSampler(type = sampler_toggled,
                               target = nodeAsScalar[j],
                               control = list(samplerConf = currentConf[[1]], fixedValue = nodeControl$fixedValue))
         }  
@@ -348,7 +348,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
                             target = nodeAsScalar,
                             control = nodeControl)
         
-        mcmcConf$addSampler(type = toggled_sampler,
+        mcmcConf$addSampler(type = sampler_toggled,
                             target = nodeAsScalar,
                             control = list(samplerConf = currentConf[[1]], fixedValue = nodeControl$fixedValue))
         
@@ -408,7 +408,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
           ## Add sampler for the coefficient variable (when is in the model)
           mcmcConf$removeSamplers(nodeAsScalar[j])
           
-          mcmcConf$addSampler(type = toggled_sampler,
+          mcmcConf$addSampler(type = sampler_toggled,
                               target = nodeAsScalar[j],
                               control = list(samplerConf = currentConf[[1]], fixedValue = 0))
         }  
@@ -431,7 +431,7 @@ configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, contro
         ## Add sampler for the coefficient variable (when is in the model)
         mcmcConf$removeSamplers(nodeAsScalar)
         
-        mcmcConf$addSampler(type = toggled_sampler,
+        mcmcConf$addSampler(type = sampler_toggled,
                             target = nodeAsScalar,
                             control = list(samplerConf = currentConf[[1]], fixedValue = 0))
       }  
