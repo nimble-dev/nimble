@@ -255,7 +255,7 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
   fixedValue        <- if(!is.null(control_RJ$fixedValue))        control_RJ$fixedValue       else 0
   mean              <- if(!is.null(control_RJ$mean))              control_RJ$mean             else 0
   scale             <- if(!is.null(control_RJ$scale))             control_RJ$scale            else 1
-  positive  <- if(!is.null(control_RJ$positive))  control_RJ$positive else FALSE
+  positive          <- if(!is.null(control_RJ$positive))  control_RJ$positive else FALSE
   
   
   ## if one value is provided for one element of the list, this value is repeated if there are multiple nodes
@@ -331,8 +331,8 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
       
       ## if the node is not a scalar iterate through each element
       
-      if(length(nodeAsScalar) > 1) {
-        ## assign RJ sampler to each element of the node
+      # if(length(nodeAsScalar) > 1) {
+      #   ## assign RJ sampler to each element of the node
         
         for(j in 1:length(nodeAsScalar)){
           currentConf <- mcmcConf$getSamplers(nodeAsScalar[j])
@@ -351,24 +351,24 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
                               control = list(samplerConf = currentConf[[1]], fixedValue = nodeControl$fixedValue))
         }  
         
-        
-      } else {
-        currentConf <- mcmcConf$getSamplers(nodeAsScalar)
-        
-        ## check on node configuration
-        node_configuration_check(currentConf, nodeAsScalar)
-        
-        ## substitute node sampler
-        mcmcConf$removeSamplers(nodeAsScalar)
-        mcmcConf$addSampler(type = sampler_RJ,
-                            target = nodeAsScalar,
-                            control = nodeControl)
-        
-        mcmcConf$addSampler(type = sampler_toggled,
-                            target = nodeAsScalar,
-                            control = list(samplerConf = currentConf[[1]], fixedValue = nodeControl$fixedValue))
-        
-      }    
+      #   
+      # } else {
+      #   currentConf <- mcmcConf$getSamplers(nodeAsScalar)
+      #   
+      #   ## check on node configuration
+      #   node_configuration_check(currentConf, nodeAsScalar)
+      #   
+      #   ## substitute node sampler
+      #   mcmcConf$removeSamplers(nodeAsScalar)
+      #   mcmcConf$addSampler(type = sampler_RJ,
+      #                       target = nodeAsScalar,
+      #                       control = nodeControl)
+      #   
+      #   mcmcConf$addSampler(type = sampler_toggled,
+      #                       target = nodeAsScalar,
+      #                       control = list(samplerConf = currentConf[[1]], fixedValue = nodeControl$fixedValue))
+      #   
+      # }    
     }
   } else {
     
@@ -399,13 +399,16 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
         positive = positive[i]) 
       
       
-      if(length(nodeAsScalar) > 1) {
-        ## assign RJ sampler to each element of the node
+      # if(length(nodeAsScalar) > 1) {
+      #   ## assign RJ sampler to each element of the node
         
         for(j in 1:length(nodeAsScalar)){
           
           ## add coefficients to control
           nodeControl$coef <- nodeAsScalar[j]
+          
+          
+          currentConf <- mcmcConf$getSamplers(nodeAsScalar[j])
           
           ## check on node configuration
           node_configuration_check(currentConf, nodeAsScalar[j])
@@ -425,27 +428,27 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
         }  
         
         
-      } else {
-        nodeControl$coef <- nodeAsScalar
-        
-        currentConf <- mcmcConf$getSamplers(nodeAsScalar)
-        
-        ## check on node configuration
-        node_configuration_check(currentConf, nodeAsScalar)
-        
-        ## Add reversible jump sampler for the indicator variable
-        mcmcConf$removeSamplers(indicatorsAsScalar)
-        mcmcConf$addSampler(type = sampler_RJ_indicator,
-                            target = indicatorsAsScalar,
-                            control = nodeControl)
-        
-        ## Add sampler for the coefficient variable (when is in the model)
-        mcmcConf$removeSamplers(nodeAsScalar)
-        
-        mcmcConf$addSampler(type = sampler_toggled,
-                            target = nodeAsScalar,
-                            control = list(samplerConf = currentConf[[1]], fixedValue = 0))
-      }  
+      # } else {
+      #   nodeControl$coef <- nodeAsScalar
+      #   
+      #   currentConf <- mcmcConf$getSamplers(nodeAsScalar)
+      #   
+      #   ## check on node configuration
+      #   node_configuration_check(currentConf, nodeAsScalar)
+      #   
+      #   ## Add reversible jump sampler for the indicator variable
+      #   mcmcConf$removeSamplers(indicatorsAsScalar)
+      #   mcmcConf$addSampler(type = sampler_RJ_indicator,
+      #                       target = indicatorsAsScalar,
+      #                       control = nodeControl)
+      #   
+      #   ## Add sampler for the coefficient variable (when is in the model)
+      #   mcmcConf$removeSamplers(nodeAsScalar)
+      #   
+      #   mcmcConf$addSampler(type = sampler_toggled,
+      #                       target = nodeAsScalar,
+      #                       control = list(samplerConf = currentConf[[1]], fixedValue = 0))
+      # }  
       
     }
   }
