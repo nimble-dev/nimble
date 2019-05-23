@@ -497,7 +497,9 @@ make_wrt <- function(argTypes, n_random = 10, n_arg_reps = 1) {
 }
 
 makeADtest <- function(op, argTypes, wrt_args = NULL,
-                       arg_distns = NULL, more_args = NULL) {
+                       arg_distns = NULL, more_args = NULL, seed = 0) {
+  ## set the seed for make_wrt
+  if (is.numeric(seed)) set.seed(seed)
   opParam <- makeOperatorParam(op, argTypes, more_args)
 
   run <- gen_runFunCore(opParam)
@@ -565,7 +567,7 @@ makeADtest <- function(op, argTypes, wrt_args = NULL,
 ##               c('double(1, 4)', 'double(0)'),
 ##               c('double(1, 4)', 'double(1, 4)')
 ##             )
-make_AD_test_batch <- function(ops, argTypes) {
+make_AD_test_batch <- function(ops, argTypes, seed = 0) {
   opTests <- unlist(
     recursive = FALSE,
     x = lapply(
@@ -574,7 +576,7 @@ make_AD_test_batch <- function(ops, argTypes) {
         mapply(
           makeADtest,
           argTypes = argTypes,
-          MoreArgs = list(op = x),
+          MoreArgs = list(op = x, seed = seed),
           SIMPLIFY = FALSE
         )
       })
