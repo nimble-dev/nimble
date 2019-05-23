@@ -205,6 +205,10 @@ distClass <- setRefClass(
             if(is(parsedArgList, 'try-error'))
                 stop("init_types_makeArgList: problem with arguments ", paste(typeArgCharVector, collapse = ","), ". Perhaps you didn't define types for your user-defined distribution nimbleFunctions?")
             allNames <- unlist(lapply(parsedArgList, function(pa) as.character(pa[[2]])))
+            if('x' %in% allNames) {
+                warning("init_types_makeArgList: Found 'x' in 'types', changing to 'value'.")
+                allNames[which('x' == allNames)] <- 'value'
+            }
             declExprs <- lapply(parsedArgList, function(pa) pa[[3]])
             allTypes <- unlist(lapply(parsedArgList, function(pa) as.character(pa[[3]][[1]])))
             allDims <- unlist(lapply(parsedArgList, function(pa) if(length(pa[[3]]) == 1) 0 else as.numeric(pa[[3]][[2]])))
@@ -255,8 +259,17 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         densityName <- as.character(parse(text = inputString)[[1]][[1]])
     } else densityName <- distributionInput
     simulateName <- sub('^d', 'r', densityName)
-    if(!exists(densityName, where = userEnv) ||
-        !is.rcf(get(densityName, pos = userEnv)))
+    nofun <- FALSE
+    if(exists(densityName, where = userEnv)) {
+        rcf <- get(densityName, pos = userEnv)
+        if(!is.rcf(rcf)) {
+            nofun <- TRUE
+        } else if(environment(rcf)$nfMethodRCobject$returnType != quote(double()) &&
+                  environment(rcf)$nfMethodRCobject$returnType != quote(double(0)))
+              stop(paste0("checkDistributionFunctions: density function for ", densityName,
+                          " has invalid or missing returnType, which must be 'double(0)' (or equivalently 'double()')."))
+    } else nofun <- TRUE
+    if(nofun)
         stop(paste0("checkDistributionFunctions: density function for ", densityName,
                     " is not available.  It must be a nimbleFunction (with no setup code)."))
     if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {
@@ -770,8 +783,10 @@ getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
       params <- getParamNames(dist, includeValue = TRUE)
   }
   notFound <- which(! params %in% getParamNames(dist))
-  if(length(notFound))
+  if(length(notFound)) {
+    if('x' %in% params[notFound]) warning("getDimension: use 'value' instead of 'x'.")
     stop("getDimension: these parameter names not found: ", params[notFound])
+  }
   out <- sapply(params, function(p) distInfo$types[[p]]$nDim)
   return(out)
 }
@@ -796,8 +811,10 @@ getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
       params <- getParamNames(dist, includeValue = TRUE)
   }
   notFound <- which(! params %in% getParamNames(dist))
-  if(length(notFound))
+  if(length(notFound)) {
+    if('x' %in% params[notFound]) warning("getParamID: use 'value' instead of 'x'.")
     stop("getParamID: these parameter names not found: ", params[notFound])
+  }
   out <- distInfo$paramIDs[params]
   return(out)
 }
@@ -824,8 +841,10 @@ getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
       params <- getParamNames(dist, includeValue = TRUE)
   }
     notFound <- which(! params %in% getParamNames(dist))
-    if(length(notFound))
+    if(length(notFound)) {
+        if('x' %in% params[notFound]) warning("getParamID: use 'value' instead of 'x'.")
         stop("getType: these parameter names not found: ", params[notFound])
+    }
     out <- sapply(params, function(p) distInfo$types[[p]]$type)
     return(out)
 }

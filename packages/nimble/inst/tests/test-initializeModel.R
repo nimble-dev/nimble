@@ -126,6 +126,50 @@ test_that('initializeModel works correctly for state space models', {
 })
 
 
+
+test_that('initializeModel recalculates all deterministic nodes in topological order', {
+    set.seed(0)
+    code <- nimbleCode({
+        p <- ilogit(a)
+        x ~ dbern(p)
+    })
+    constants <- list()
+    data <- list()
+    inits <- list(a = 10)
+    Rmodel <- nimbleModel(code, constants, data, inits)
+    Cmodel <- compileNimble(Rmodel)
+    ##
+    expect_true(is.na(Rmodel$calculate()))
+    expect_true(is.na(Cmodel$calculate()))
+    ##
+    my_initializeModel <- initializeModel(Rmodel)
+    Cmy_initializeModel <- compileNimble(my_initializeModel, project = Rmodel)
+    ##
+    my_initializeModel$run()
+    Cmy_initializeModel$run()
+    ##
+    expect_equal(Rmodel$x, 1)
+    expect_equal(Cmodel$x, 1)
+    ##
+    expect_equal(Rmodel$getLogProb(), -0.0000453989, tol = 0.0000001)
+    expect_equal(Cmodel$getLogProb(), -0.0000453989, tol = 0.0000001)
+    ##
+    Rmodel$x <- NA
+    Cmodel$x <- NA
+    Rmodel$a <- -10
+    Cmodel$a <- -10
+    ##
+    my_initializeModel$run()
+    Cmy_initializeModel$run()
+    ##
+    expect_equal(Rmodel$x, 0)
+    expect_equal(Cmodel$x, 0)
+    expect_equal(Rmodel$getLogProb(), -0.0000453989, tol = 0.0000001)
+    expect_equal(Cmodel$getLogProb(), -0.0000453989, tol = 0.0000001)
+})
+
+
+
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 

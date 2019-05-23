@@ -72,7 +72,7 @@ NIMBLE. Journal of Computational and Graphical Statistics 26:403-413. [https://d
 
 To cite a version of the package, please cite:
 
-NIMBLE Development Team. 2019. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190.. R package version 0.7.0, https://cran.r-project.org/package=nimble.
+NIMBLE Development Team. 2019. NIMBLE: MCMC, Particle Filtering, and Programmable Hierarchical Modeling.  doi: 10.5281/zenodo.1211190.. R package version 0.7.1, https://cran.r-project.org/package=nimble.
 
 ## Licenses
 

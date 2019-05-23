@@ -878,7 +878,6 @@ sampler_CRP <- nimbleFunction(
   contains=sampler_BASE,
   
   setup=function(model, mvSaved, target, control){
-    calcNodes <- model$getDependencies(target)
     targetElements <- model$expandNodeNames(target, returnScalarComponents = TRUE)
     targetVar <- model$getVarNames(nodes = target)  
     n <- length(targetElements) 
@@ -1058,14 +1057,17 @@ sampler_CRP <- nimbleFunction(
         }
       }
       helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes1, marginalizedNodes2, dataNodes)
+      calcNodes <- model$getDependencies(c(target, marginalizedNodes1, marginalizedNodes2))
     } else {     ## p and nTilde only needed for non-conjugate currently.
         ## Note that the elements of tildeNodes will be in order such that the
         ## first element corresponds to the cluster obtained when xi[i] = 1,
         ## the second when xi[i] = 2, etc.
+        marginalizedNodes <- unlist(clusterVarInfo$clusterNodes)
+        calcNodes <- model$getDependencies(c(target, marginalizedNodes))
         if(sampler == "CRP_conjugate_dnorm_dnorm_nonidentity") {
             identityLink <- FALSE
-            helperFunctions[[1]] <- eval(as.name(sampler))(model, unlist(clusterVarInfo$clusterNodes), dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, min_nTilde)
-        } else helperFunctions[[1]] <- eval(as.name(sampler))(model, unlist(clusterVarInfo$clusterNodes), dataNodes, p, min_nTilde)
+            helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, intermNodes, intermNodes2, intermNodes3, nInterm, calcNodes, type, p, min_nTilde)
+        } else helperFunctions[[1]] <- eval(as.name(sampler))(model, marginalizedNodes, dataNodes, p, min_nTilde)
     }
       
     curLogProb <- numeric(n)
@@ -1264,7 +1266,7 @@ sampler_CRP <- nimbleFunction(
       }
     }
 
-    ## We have updated cluster variables but not all intermediate nodes or logProb values are up-to-date.  
+    ## We have updated cluster variables but not all logProb values are up-to-date.
     model$calculate(calcNodes)
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
@@ -1485,9 +1487,9 @@ findClusterNodes <- function(model, target) {
   
   for(idx in seq_along(exampleDeps)) {
     ## Pull out expressions, either as RHS of deterministic or parameters of stochastic
-    expr <- cc_getNodesInExpr(model$getValueExpr(exampleDeps[idx]))
-    for(j in seq_along(expr)) {
-      subExpr <- parse(text = expr[j])[[1]]  # individual parameter of stochastic or RHS of deterministic
+    fullExpr <- cc_getNodesInExpr(model$getValueExpr(exampleDeps[idx]))
+    for(j in seq_along(fullExpr)) {
+      subExpr <- parse(text = fullExpr[j])[[1]]  # individual parameter of stochastic or RHS of deterministic
       len <- length(subExpr)
       ## Look for target variable within expression, but only when used within index
       if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' &&

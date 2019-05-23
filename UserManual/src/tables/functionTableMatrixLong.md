@@ -5,6 +5,7 @@ provided in NIMBLE.
   ----------------------- ------------------------------------------ -------------------------------- ------  
   `inverse(x)`            matrix inverse                             $x$ symmetric, positive def.     yes
   `chol(x)`               matrix Cholesky factorization              $x$ symmetric, positive def.     yes
+                                                                     returns upper triang. matrix
   `t(x)`                  matrix transpose                           $x^\top$                         yes
   `x%*%y`                 matrix multiply                            $xy$; $x$, $y$ conformant        yes
   `inprod(x, y)`          dot product                                $x^\top y$; $x$ and $y$ vectors  yes

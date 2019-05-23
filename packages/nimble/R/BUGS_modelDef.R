@@ -2764,7 +2764,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     }
     nonVarIndices <- !names(inits) %in% model$getVarNames()
     if(sum(nonVarIndices))
-        warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ','),
+        warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ', '),
                 " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
     model$setInits(inits[!nonVarIndices])
     ## basic size/dimension, NA checking
@@ -2905,7 +2905,7 @@ parseEvalNumericManyFindErrors <- function(x, env) {
 
 parseEvalNumericManyHandleError <- function(cond, x, env) {
     problems <- parseEvalNumericManyFindErrors(x, env)
-    if(length(problems)==0) message(paste0('There an unknown problem looking for variables ', paste0(x, collapse=','), ' in the model.\n'))
+    if(length(problems)==0) message(paste0('There is an unknown problem looking for variables ', paste0(x, collapse=','), ' in the model.\n'))
     else {
         message(paste0('One or more errors occurred looking for variables in a model (first 10 shown below).\n',
                        'These messages may be cryptic, but generally the variable or expression somewhere in each message was not valid in a model:\n',

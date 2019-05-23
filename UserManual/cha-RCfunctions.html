@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.6.13</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.7.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -773,14 +773,14 @@ would need to do some sed manipulation to be able to automate this cross-ref
 <tr class="even">
 <td align="left"><code>besselK(k, nu,</code></td>
 <td align="left">modified bessel function</td>
-<td align="left"></td>
+<td align="left">returns vector even if</td>
 <td align="left">yes</td>
 <td align="left">yes</td>
 </tr>
 <tr class="odd">
 <td align="left"><code>...expon.scaled)</code></td>
 <td align="left">of the second kind</td>
-<td align="left"></td>
+<td align="left"><span class="math inline">\(k\)</span> a matrix/array</td>
 <td align="left"></td>
 <td align="left"></td>
 </tr>
@@ -887,132 +887,138 @@ would need to do some sed manipulation to be able to automate this cross-ref
 <td align="left">yes</td>
 </tr>
 <tr class="odd">
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">returns upper triangular matrix</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
 <td align="left"><code>t(x)</code></td>
 <td align="left">matrix transpose</td>
 <td align="left"><span class="math inline">\(x^\top\)</span></td>
 <td align="left">yes</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>x%*%y</code></td>
 <td align="left">matrix multiply</td>
 <td align="left"><span class="math inline">\(xy\)</span>; <span class="math inline">\(x\)</span>, <span class="math inline">\(y\)</span> conformant</td>
 <td align="left">yes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>inprod(x, y)</code></td>
 <td align="left">dot product</td>
 <td align="left"><span class="math inline">\(x^\top y\)</span>; <span class="math inline">\(x\)</span> and <span class="math inline">\(y\)</span> vectors</td>
 <td align="left">yes</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>solve(x,y)</code></td>
 <td align="left">solve system of equations</td>
 <td align="left"><span class="math inline">\(x^{-1} y\)</span>; <span class="math inline">\(y\)</span> matrix or vector</td>
 <td align="left">yes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>forwardsolve(x, y)</code></td>
 <td align="left">solve lower-triangular system of equations</td>
 <td align="left"><span class="math inline">\(x^{-1} y\)</span>; <span class="math inline">\(x\)</span> lower-triangular</td>
 <td align="left">yes</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>backsolve(x, y)</code></td>
 <td align="left">solve upper-triangular system of equations</td>
 <td align="left"><span class="math inline">\(x^{-1} y\)</span>; <span class="math inline">\(x\)</span> upper-triangular</td>
 <td align="left">yes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>logdet(x)</code></td>
 <td align="left">log matrix determinant</td>
 <td align="left"><span class="math inline">\(\log|x|\)</span></td>
 <td align="left">yes</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>asRow(x)</code></td>
 <td align="left">convert vector to 1-row matrix</td>
 <td align="left">sometimes automatic</td>
 <td align="left">yes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>asCol(x)</code></td>
 <td align="left">convert vector to 1-column matrix</td>
 <td align="left">sometimes automatic</td>
 <td align="left">yes</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>sum(x)</code></td>
 <td align="left">sum of elements of <code>x</code></td>
 <td align="left"></td>
 <td align="left">yes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>mean(x)</code></td>
 <td align="left">mean of elements of <code>x</code></td>
 <td align="left"></td>
 <td align="left">yes</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>sd(x)</code></td>
 <td align="left">standard deviation of elements of <code>x</code></td>
 <td align="left"></td>
 <td align="left">yes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>prod(x)</code></td>
 <td align="left">product of elements of <code>x</code></td>
 <td align="left"></td>
 <td align="left">yes</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>min(x), max(x)</code></td>
 <td align="left">min. (max.) of elements of <code>x</code></td>
 <td align="left"></td>
 <td align="left">yes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>pmin(x, y), pmax(x,y)</code></td>
 <td align="left">vector of mins (maxs) of elements of</td>
 <td align="left"></td>
 <td align="left">yes</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"></td>
 <td align="left"><code>x</code> and <code>y</code></td>
 <td align="left"></td>
 <td align="left"></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"><code>interp.lin(x, v1, v2)</code></td>
 <td align="left">linear interpolation</td>
 <td align="left"></td>
 <td align="left">no</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>eigen(x)</code></td>
 <td align="left">matrix eigendecomposition; returns a</td>
 <td align="left"><span class="math inline">\(x\)</span> symmetric</td>
 <td align="left">yes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"></td>
 <td align="left">nimbleList of type <code>eigenNimbleList</code></td>
 <td align="left"></td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"><code>svd(x)</code></td>
 <td align="left">matrix singular value decomposition;</td>
 <td align="left"></td>
 <td align="left">yes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left"></td>
 <td align="left">returns a nimbleList of type</td>
 <td align="left"></td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left"></td>
 <td align="left"><code>svdNimbleList</code></td>
 <td align="left"></td>
@@ -1205,7 +1211,7 @@ myMatrix &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span clas
 </div>
 <div id="sec:size-warn-potent" class="section level4">
 <h4><span class="header-section-number">11.3.2.7</span> Size warnings and the potential for crashes</h4>
-<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because sizes are not known until run time. Therefore, it is possible for you to write code that will crash your R session. In Version 0.7.0, NIMBLE attempts to issue a warning if sizes are not compatible, but it does not halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication, NIMBLE will output a warning that the number of rows of <code>M1</code> does not match the number of columns of <code>M2</code>. After that warning the statement will be executed and may result in a crash. Another easy way to write code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to prevent crashes, but in Version 0.7.0 we limit ourselves to trying to provide useful information.</p>
+<p>For matrix algebra, NIMBLE cannot ensure perfect behavior because sizes are not known until run time. Therefore, it is possible for you to write code that will crash your R session. In Version 0.7.1, NIMBLE attempts to issue a warning if sizes are not compatible, but it does not halt execution. Therefore, if you execute <code>A &lt;- M1 %*% M2</code>, and <code>M1</code> and <code>M2</code> are not compatible for matrix multiplication, NIMBLE will output a warning that the number of rows of <code>M1</code> does not match the number of columns of <code>M2</code>. After that warning the statement will be executed and may result in a crash. Another easy way to write code that will crash is to do things like <code>Y[5:10, 20:30] &lt;- x</code> without ensuring Y is at least 10x30. In the future we hope to prevent crashes, but in Version 0.7.1 we limit ourselves to trying to provide useful information.</p>
 </div>
 </div>
 </div>

@@ -108,9 +108,9 @@ class NimArrBase : public NimArrType {
   T** &getVptrRef() {return vPtr;}
   T **getVptr() const { return vPtr; }
   bool own_v;
-  int NAdims[5];
+  int NAdims[6];
   const int *dim() const { return NAdims; }
-  int NAstrides[5];
+  int NAstrides[6];
   // Everyone has a stride1, and the flat [] operator needs it, so it is here.
   int stride1, offset;
   int getOffset() const { return offset; }

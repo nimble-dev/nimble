@@ -2471,6 +2471,21 @@ test_that("Testing conjugacy detection with models using CRP", {
   mcmc=buildMCMC(conf)
   expect_equal(class(mcmc$samplerFunctions[[9]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
+  ## dnorm, dinvgamma, not conjugate
+  code = nimbleCode({
+    for(i in 1:4) {
+      sigma[i] ~ dinvgamma(1, 1)
+      mu[i] ~ dnorm(0,1)
+      y[i] ~ dnorm(mu[xi[i]], sd = sigma[xi[i]])
+    }
+    xi[1:4] ~ dCRP(conc=1, size=4)
+  })
+  m = nimbleModel(code, data = list(y = rnorm(4)),
+                  inits = list(xi = rep(1,4), mu = rnorm(4), sigma = rinvgamma(4, 1,1)))
+  conf <- configureMCMC(m)
+  mcmc=buildMCMC(conf)
+  expect_equal(class(mcmc$samplerFunctions[[9]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  
   ## dnorm_invgamma, conjugate; we detect conjugacy
   code = nimbleCode({
     for(i in 1:4) {
@@ -4477,6 +4492,7 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   
 })
 
+<<<<<<< HEAD
 test_that("Testing dnorm_dnorm non-identity conjugacy setting", { 
 
     ## Conjugacy detection and calculation of offset/coeff
@@ -4565,6 +4581,166 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting", {
     expect_identical(smp1, smp2, "sampling for identity and special case of non-identity not identical")
 })    
     
+=======
+test_that("Testing that cluster parameters are appropriately updated and mvSaved in good state", {
+    ## Should always reject new clusters
+    set.seed(1)
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            mu[i] ~ T(dnorm(50, 1), -200, 200)
+            y[i] ~ dnorm(mu[xi[i]], sd = 1)
+        }
+        
+    })
+    n <- 15
+    data <- list(y = rnorm(n))
+    inits <- list(xi = rep(1,n), mu = rep(0, n))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m, nodes = 'xi')
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project=m)
+    cmcmc$run(1)
+    expect_equal(cm$mu[2], 50, tolerance = 3, info = 'mu[2] not changed')
+    expect_identical(cm$mu[3], 0, info = 'mu[3] is changed')
+    expect_identical(cmcmc$mvSaved[['mu']], cm$mu)
+    expect_identical(cmcmc$mvSaved[['logProb_mu']], cm$logProb_mu)
+    expect_identical(sum(cm$logProb_mu), cm$calculate('mu'))
+    expect_identical(cmcmc$mvSaved[['xi']], cm$xi)
+    expect_identical(cmcmc$mvSaved[['logProb_xi']], cm$logProb_xi)
+    expect_identical(sum(cm$logProb_xi), cm$calculate('xi'))
+    expect_equal(sum(cmcmc$mvSaved[['logProb_mu']]) + sum(cmcmc$mvSaved[['logProb_xi']]) + sum(cmcmc$mvSaved[['logProb_y']]), cm$calculate())
+    
+    ## Should accept a cluster
+    set.seed(1)
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            mu[i] ~ T(dnorm(0, 1), -200, 200)
+            y[i] ~ dnorm(mu[xi[i]], sd = 1)
+        }
+        
+    })
+    n <- 15
+    data <- list(y = c(0, rnorm(n-1, 50, 1)))
+    inits <- list(xi = rep(1,n), mu = rep(50, n))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m, nodes = 'xi')
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project=m)
+    cmcmc$run(1)
+    expect_equal(cm$mu[2], 0, tolerance = 3, info = 'mu[2] is not changed')
+    expect_equal(cm$mu[3], 0, tolerance = 3, info = 'mu[3] is not changed')
+    expect_identical(cm$mu[4], 50, info = 'mu[4] is changed')
+    expect_identical(cmcmc$mvSaved[['mu']], cm$mu)
+    expect_identical(cmcmc$mvSaved[['logProb_mu']], cm$logProb_mu)
+    expect_identical(sum(cm$logProb_mu), cm$calculate('mu'))
+    expect_identical(cmcmc$mvSaved[['xi']], cm$xi)
+    expect_identical(cmcmc$mvSaved[['logProb_xi']], cm$logProb_xi)
+    expect_identical(sum(cm$logProb_xi), cm$calculate('xi'))
+    expect_equal(sum(cmcmc$mvSaved[['logProb_mu']]) + sum(cmcmc$mvSaved[['logProb_xi']]) + sum(cmcmc$mvSaved[['logProb_y']]), cm$calculate())
+
+    ## Should always reject new clusters
+    set.seed(1)
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            mu[i] ~ dnorm(50, 1)
+            y[i] ~ dnorm(mu[xi[i]], sd = 1)
+        }
+        
+    })
+    n <- 15
+    data <- list(y = rnorm(n))
+    inits <- list(xi = rep(1,n), mu = rep(0, n))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m, nodes = 'xi')
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project=m)
+    cmcmc$run(1)
+    expect_identical(cm$mu[2], 0, info = 'mu[2] is changed')
+    expect_identical(cm$mu[3], 0, info = 'mu[3] is changed')
+    expect_identical(cmcmc$mvSaved[['mu']], cm$mu)
+    expect_identical(cmcmc$mvSaved[['logProb_mu']], cm$logProb_mu)
+    expect_identical(sum(cm$logProb_mu), cm$calculate('mu'))
+    expect_identical(cmcmc$mvSaved[['xi']], cm$xi)
+    expect_identical(cmcmc$mvSaved[['logProb_xi']], cm$logProb_xi)
+    expect_identical(sum(cm$logProb_xi), cm$calculate('xi'))
+    expect_equal(sum(cmcmc$mvSaved[['logProb_mu']]) + sum(cmcmc$mvSaved[['logProb_xi']]) + sum(cmcmc$mvSaved[['logProb_y']]), cm$calculate())
+    
+    ## Should accept a cluster
+    set.seed(1)
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            mu[i] ~ dnorm(0, 1)
+            y[i] ~ dnorm(mu[xi[i]], sd = 1)
+        }
+        
+    })
+    n <- 15
+    data <- list(y = c(0, rnorm(n-1, 50, 1)))
+    inits <- list(xi = rep(1,n), mu = rep(50, n))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m, nodes = 'xi')
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project=m)
+    cmcmc$run(1)
+    expect_equal(cm$mu[2], 0, tolerance = 3, info = 'mu[2] is not changed')
+    expect_identical(cm$mu[3], 50, info = 'mu[3] is  changed')
+    expect_identical(cmcmc$mvSaved[['mu']], cm$mu)
+    expect_identical(cmcmc$mvSaved[['logProb_mu']], cm$logProb_mu)
+    expect_identical(sum(cm$logProb_mu), cm$calculate('mu'))
+    expect_identical(cmcmc$mvSaved[['xi']], cm$xi)
+    expect_identical(cmcmc$mvSaved[['logProb_xi']], cm$logProb_xi)
+    expect_identical(sum(cm$logProb_xi), cm$calculate('xi'))
+    expect_equal(sum(cmcmc$mvSaved[['logProb_mu']]) + sum(cmcmc$mvSaved[['logProb_xi']]) + sum(cmcmc$mvSaved[['logProb_y']]), cm$calculate())
+
+    set.seed(1)
+    code <- nimbleCode({
+        xi[1:n] ~ dCRP(conc=1, size=n)
+        for(i in 1:n) {
+            muTilde[i] ~ T(dnorm(0, 1), -200, 200)
+            sigmaTilde[i] ~ dinvgamma(a,b)
+            mu[i] <- muTilde[xi[i]]
+            y[i] ~ dnorm(mu[i], sd = sigmaTilde[xi[i]])
+        }
+        a ~ dgamma(1,1)
+        b ~ dgamma(1,1)
+        
+    })
+    n <- 15
+    data <- list(y = rnorm(n))
+    inits <- list(xi = rep(1,n), muTilde = rnorm(n), sigmaTilde = rinvgamma(n, 1, 1))
+    m <- nimbleModel(code, data=data, inits= inits, constants = list(n=n))
+    conf <- configureMCMC(m, nodes = 'xi')
+    cm <- compileNimble(m)
+    mcmc <- buildMCMC(conf)
+    cmcmc <- compileNimble(mcmc, project=m)
+    cmcmc$run(10)
+    expect_identical(cmcmc$mvSaved[['muTilde']], cm$muTilde)
+    expect_identical(cmcmc$mvSaved[['logProb_muTilde']], cm$logProb_muTilde)
+    expect_identical(cmcmc$mvSaved[['sigmaTilde']], cm$sigmaTilde)
+    expect_identical(cmcmc$mvSaved[['logProb_sigmaTilde']], cm$logProb_sigmaTilde)
+    expect_identical(cmcmc$mvSaved[['mu']], cm$mu)
+    expect_identical(cmcmc$mvSaved[['xi']], cm$xi)
+    expect_identical(cmcmc$mvSaved[['logProb_xi']], cm$logProb_xi)
+    expect_identical(cmcmc$mvSaved[['y']], cm$y)
+    expect_identical(cmcmc$mvSaved[['logProb_y']], cm$logProb_y)
+    expect_identical(cmcmc$mvSaved[['a']], cm$a)
+    expect_identical(cmcmc$mvSaved[['logProb_a']], cm$logProb_a)
+    expect_identical(cmcmc$mvSaved[['b']], cm$b)
+    expect_identical(cmcmc$mvSaved[['logProb_b']], cm$logProb_b)
+  
+})
+  
+
+
+>>>>>>> devel
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)

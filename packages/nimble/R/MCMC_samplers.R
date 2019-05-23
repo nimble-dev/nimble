@@ -1570,11 +1570,13 @@ sampler_RW_dirichlet <- nimbleFunction(
             currentValue <- thetaVec[i]
             propLogScale <- rnorm(1, mean = 0, sd = scaleVec[i])
             propValue <- currentValue * exp(propLogScale)
-            thetaVecProp <- thetaVec
-            thetaVecProp[i] <- propValue
-            values(model, target) <<- thetaVecProp / sum(thetaVecProp)
-            logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, depNodes)
-            jump <- decide(logMHR)
+            if(propValue != 0) {
+                thetaVecProp <- thetaVec
+                thetaVecProp[i] <- propValue
+                values(model, target) <<- thetaVecProp / sum(thetaVecProp)
+                logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, depNodes)
+                jump <- decide(logMHR)
+            } else jump <- FALSE
             if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
             if(jump) { thetaVec <<- thetaVecProp
                        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -1782,7 +1784,7 @@ CAR_scalar_conjugate <- nimbleFunction(
         ## numeric value generation
         if(!all(model$getDistribution(depStochNodes_dnorm) == 'dnorm')) stop('something went wrong')
         linearityCheckExprList <- lapply(depStochNodes_dnorm, function(node) model$getParamExpr(node, 'mean'))
-        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansions=TRUE))
+        linearityCheckExprList <- lapply(linearityCheckExprList, function(expr) cc_expandDetermNodesInExpr(model, expr, skipExpansionsNode=model$expandNodeNames(targetScalar)))
         if(!all(sapply(linearityCheckExprList, function(expr) cc_nodeInExpr(targetScalar, expr)))) stop('something went wrong')
         linearityCheckResultList <- lapply(linearityCheckExprList, function(expr) cc_checkLinearity(expr, targetScalar))
         if(any(sapply(linearityCheckResultList, function(expr) is.null(expr)))) stop('something went wrong')
@@ -1944,7 +1946,7 @@ sampler_CAR_normal <- nimbleFunction(
         for(i in seq_along(targetScalarComponents)) {
             targetScalar <- targetScalarComponents[i]
             nDependents <- length(model$getDependencies(targetScalar, self = FALSE, stochOnly = TRUE))
-            conjugate <- CAR_checkConjugacy(model, targetScalar)
+            conjugate <- CAR_checkConjugacy(model, targetScalar, carNode = target)
             neighborNodes <- neighborLists$neighborNodeList[[i]]
             neighborWeights <- neighborLists$neighborWeightList[[i]]
             ##if(length(neighborNodes)==0) cat(paste0('island node detected: ', targetScalar, '\n'))
@@ -2009,7 +2011,7 @@ sampler_CAR_proper <- nimbleFunction(
         for(i in seq_along(targetScalarComponents)) {
             targetScalar <- targetScalarComponents[i]
             nDependents <- length(model$getDependencies(targetScalar, self = FALSE, stochOnly = TRUE))
-            conjugate <- CAR_checkConjugacy(model, targetScalar)
+            conjugate <- CAR_checkConjugacy(model, targetScalar, carNode = target)
             neighborNodes <- neighborLists$neighborNodeList[[i]]
             neighborCs <- neighborLists$neighborCList[[i]]
             Mi <- M[i]
