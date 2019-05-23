@@ -198,7 +198,7 @@ test_that('Derivatives of matrix exponentiation function correctly.',
 test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
                     control = list(), verbose = nimbleOptions('verbose'),
                     catch_failures = FALSE, seed = 0,
-                    nimbleProject_name = '') {
+                    nimbleProject_name = '', return_compiled_nf = FALSE) {
   if (!is.null(param$debug) && param$debug) browser()
   if (verbose) cat(paste0("### Testing ", param$name, "\n"))
 
@@ -260,11 +260,14 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
 
   temporarilyAssignInGlobalEnv(nfInst)
 
-  if (verbose) cat("## Compiling nimbleFunction \n")
   if (!is.null(param$dir)) dir <- param$dir
-  CnfInst <- wrap_if_true(isTRUE(param$knownFailures$compilation), expect_error, {
-    compileNimble(nfInst, dirName = dir, projectName = nimbleProject_name)
-  }, wrap_in_try = isTRUE(catch_failures))
+  CnfInst <- param$CnfInst ## user provided compiled nimbleFunction?
+  if (is.null(CnfInst)) {
+    if (verbose) cat("## Compiling nimbleFunction \n")
+    CnfInst <- wrap_if_true(isTRUE(param$knownFailures$compilation), expect_error, {
+      compileNimble(nfInst, dirName = dir, projectName = nimbleProject_name)
+    }, wrap_in_try = isTRUE(catch_failures))
+  }
   if (isTRUE(catch_failures) && inherits(CnfInst, 'try-error')) {
     warning(
       paste0(
@@ -418,10 +421,14 @@ test_AD <- function(param, dir = file.path(tempdir(), "nimble_generatedCode"),
         )
       }
     }
-    nimble:::clearCompiled(CnfInst)
   }
   if (verbose) cat("### Test successful \n\n")
-  invisible(NULL)
+  if (return_compiled_nf)
+    invisible(list(CnfInst = CnfInst, input = input))
+  else {
+    nimble:::clearCompiled(CnfInst)
+    invisible(list(input = input))
+  }
 }
 
 ## Takes a named list of `argTypes` and returns a list of character
