@@ -103,128 +103,127 @@ test_that("User-supplied functions", {
 
 ## User-supplied distributions
 
-dmyexp <- nimbleFunction(
-    run = function(x = double(0), rate = double(0, default = 1), log = integer(0, default = 0)) {
-        returnType(double(0))
-        logProb <- log(rate) - x*rate
-        if(log) {
-            return(logProb)
-        } else {
-            return(exp(logProb))
-        }
-    })
-temporarilyAssignInGlobalEnv(dmyexp)
+test_that("Use of user-supplied distributions and registerDistributions", {
 
-
-rmyexp <- nimbleFunction(
-    run = function(n = integer(0), rate = double(0, default = 1)) {
-        returnType(double(0))
-        if(n != 1) nimPrint("rmyexp only allows n = 1; using n = 1.")
-        dev <- runif(1, 0, 1)
-        return(-log(1-dev) / rate)
-    }
-    )
-temporarilyAssignInGlobalEnv(rmyexp)
-
-pmyexp <- nimbleFunction(
-    run = function(q = double(0), rate = double(0, default = 1), lower.tail = integer(0, default = 1), log.p = integer(0, default = 0)) {
-        returnType(double(0))
-        if(!lower.tail) {
-            logp = -rate * q
-            if(log.p) {
-                return(logp)
+    dmyexp <- nimbleFunction(
+        run = function(x = double(0), rate = double(0, default = 1), log = integer(0, default = 0)) {
+            returnType(double(0))
+            logProb <- log(rate) - x*rate
+            if(log) {
+                return(logProb)
             } else {
-                return(exp(logp))
+                return(exp(logProb))
             }
-        } else {
-            p = 1 - exp(-rate * q)
-            if(!log.p) {
-                return(p)
+        })
+    temporarilyAssignInGlobalEnv(dmyexp)
+
+
+    rmyexp <- nimbleFunction(
+        run = function(n = integer(0), rate = double(0, default = 1)) {
+            returnType(double(0))
+            if(n != 1) nimPrint("rmyexp only allows n = 1; using n = 1.")
+            dev <- runif(1, 0, 1)
+            return(-log(1-dev) / rate)
+        }
+    )
+    temporarilyAssignInGlobalEnv(rmyexp)
+
+    pmyexp <- nimbleFunction(
+        run = function(q = double(0), rate = double(0, default = 1), lower.tail = integer(0, default = 1), log.p = integer(0, default = 0)) {
+            returnType(double(0))
+            if(!lower.tail) {
+                logp = -rate * q
+                if(log.p) {
+                    return(logp)
+                } else {
+                    return(exp(logp))
+                }
             } else {
-               return(log(p))
-           }
+                p = 1 - exp(-rate * q)
+                if(!log.p) {
+                    return(p)
+                } else {
+                    return(log(p))
+                }
+            }
         }
-    }
     )
-temporarilyAssignInGlobalEnv(pmyexp)
+    temporarilyAssignInGlobalEnv(pmyexp)
 
-qmyexp <- nimbleFunction(
-    run = function(p = double(0), rate = double(0, default = 1), lower.tail = integer(0, default = 1), log.p = integer(0, default = 0)) {
-        returnType(double(0))
-        if(log.p) {
-            p = exp(p)
+    qmyexp <- nimbleFunction(
+        run = function(p = double(0), rate = double(0, default = 1), lower.tail = integer(0, default = 1), log.p = integer(0, default = 0)) {
+            returnType(double(0))
+            if(log.p) {
+                p = exp(p)
+            }
+            if(!lower.tail) {
+                p = 1 - p
+            }
+            return(-log(1 - p) / rate)
         }
-        if(!lower.tail) {
-            p = 1 - p
-        }
-        return(-log(1 - p) / rate)
-    }
     )
-temporarilyAssignInGlobalEnv(qmyexp)
+    temporarilyAssignInGlobalEnv(qmyexp)
 
 
-ddirchmulti <- nimbleFunction(
-    run = function(x = double(1), alpha = double(1), size = double(0), log = integer(0)) {
-        returnType(double(0))
-        logProb <- lgamma(size) - sum(lgamma(x)) + lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
-        if(log) {
-            return(logProb)
-        } else {
-            return(exp(logProb))
+    ddirchmulti <- nimbleFunction(
+        run = function(x = double(1), alpha = double(1), size = double(0), log = integer(0)) {
+            returnType(double(0))
+            logProb <- lgamma(size) - sum(lgamma(x)) + lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
+            if(log) {
+                return(logProb)
+            } else {
+                return(exp(logProb))
+            }
+        })
+    temporarilyAssignInGlobalEnv(ddirchmulti)
+
+    rdirchmulti <- nimbleFunction(
+        run = function(n = integer(0), alpha = double(1), size = double(0)) {
+            returnType(double(1))
+            if(n != 1) nimPrint("rdirchmulti only allows n = 1; using n = 1.")
+            p <- rdirch(1, alpha)
+            return(rmulti(1, size = size, prob = p))
+        })
+    temporarilyAssignInGlobalEnv(rdirchmulti)
+
+    expect_warning(
+        registerDistributions(list(
+            dmyexp = list(
+                BUGSdist = "dmyexp(rate, scale)",
+                Rdist = "dmyexp(rate = 1/scale)",
+                altParams = "scale = 1/rate",
+                pqAvail = TRUE),
+            ddirchmulti = list(
+                BUGSdist = "ddirchmulti(alpha, size)",
+                types = c('x = double(1)', 'alpha = double(1)', 'size = double(0)'))
+        )), "Found 'x' in 'types'")
+
+    code1 <- nimbleCode({
+        for(i in 1:n1) {
+            y1[i] ~ dmyexp(rate = r1)
+            y2[i] ~ dmyexp(scale = s2)
+        }
+        r1 <- 1 / s1
+        s1 ~ dunif(0, 100)
+        s2 ~ dunif(0, 100)
+    })
+
+    code2 <- nimbleCode({
+        for(i in 1:n2) {
+            y3[i] ~ dpois(lambda)
+        }
+        lambda ~ T(dmyexp(scale = 5), 0, upper)
+    })
+
+    code3 <- nimbleCode({
+        for(i in 1:m) {
+            y[i, 1:P] ~ ddirchmulti(alpha[1:P], sz)
+        }
+        for(i in 1:P) {
+            alpha[i] ~ dunif(0, 1000) # dgamma(.001, .001);
         }
     })
-temporarilyAssignInGlobalEnv(ddirchmulti)
 
-rdirchmulti <- nimbleFunction(
-    run = function(n = integer(0), alpha = double(1), size = double(0)) {
-        returnType(double(1))
-        if(n != 1) nimPrint("rdirchmulti only allows n = 1; using n = 1.")
-        p <- rdirch(1, alpha)
-        return(rmulti(1, size = size, prob = p))
-    })
-temporarilyAssignInGlobalEnv(rdirchmulti)
-
-registerDistributions(list(
-    dmyexp = list(
-        BUGSdist = "dmyexp(rate, scale)",
-        Rdist = "dmyexp(rate = 1/scale)",
-        altParams = "scale = 1/rate",
-        pqAvail = TRUE),
-    ddirchmulti = list(
-        BUGSdist = "ddirchmulti(alpha, size)",
-        types = c('value = double(1)', 'alpha = double(1)', 'size = double(0)'))
-        )
-    )
-                      
-
-code1 <- nimbleCode({
-    for(i in 1:n1) {
-        y1[i] ~ dmyexp(rate = r1)
-        y2[i] ~ dmyexp(scale = s2)
-    }
-    r1 <- 1 / s1
-    s1 ~ dunif(0, 100)
-    s2 ~ dunif(0, 100)
-})
-
-code2 <- nimbleCode({
-    for(i in 1:n2) {
-        y3[i] ~ dpois(lambda)
-    }
-    lambda ~ T(dmyexp(scale = 5), 0, upper)
-})
-
-code3 <- nimbleCode({
-    for(i in 1:m) {
-        y[i, 1:P] ~ ddirchmulti(alpha[1:P], sz)
-    }
-    for(i in 1:P) {
-        alpha[i] ~ dunif(0, 1000) # dgamma(.001, .001);
-    }
-})
-
-
-test_that("Test that truncation works with nodeFunctions and MCMC for user-supplied distribution", {
     set.seed(0)
     mn = 3
     n1 <- 1000

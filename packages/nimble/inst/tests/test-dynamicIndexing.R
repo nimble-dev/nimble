@@ -195,7 +195,10 @@ test_that("Testing multivariate normal-Wishart dependency conjugacy detection wi
                  info = "failed to detect dmnorm-dmnorm conjugacy in multivariate multi-conjugacy setting")
 })
 
-test_that("Expected failure: Testing multivariate normal-Wishart dependency conjugacy detection with dynamic indexing", {    
+test_that("Testing multivariate normal-Wishart dependency conjugacy detection with dynamic indexing", {
+    ## Note this is a strange model in terms of conjugacy as y depends on only
+    ## one element of mu[1:3,i], but our dynamic calculation of offset and coeff
+    ## should resolve that properly.
     code = nimbleCode({
         y[1:3] ~ dmnorm(mu[k, 1:3], pr[1:3,1:3])
         pr[1:3,1:3] ~ dwish(pr0[1:3,1:3], 5)
@@ -206,8 +209,8 @@ test_that("Expected failure: Testing multivariate normal-Wishart dependency conj
     m = nimbleModel(code, inits = list(k = 1, pr0 = diag(3), pr = diag(3),
                                        z = rep(1,3)))
     conf <- configureMCMC(m)
-    expect_failure(expect_match(conf$getSamplers()[[3]]$name, "conjugate_dmnorm_dmnorm",
-            info = "failed to detect dmnorm-dmnorm conjugacy  in multivariate crossed multi-conjugacy setting"))
+    expect_match(conf$getSamplers()[[3]]$name, "conjugate_dmnorm_dmnorm",
+            info = "failed to detect dmnorm-dmnorm conjugacy in multivariate crossed multi-conjugacy setting")
 })
 
 test_that("Testing normal-normal-IG multi-index multi-conjugacy detection with dynamic indexing", {    

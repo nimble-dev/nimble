@@ -1195,7 +1195,7 @@ sampler_CRP <- nimbleFunction(
       }
     }
 
-    ## Need to update logProb values and make sure cluster IDs and parameters in mvSaved up-to-date.
+    ## We have updated cluster variables but not all logProb values are up-to-date.
     model$calculate(calcNodes)
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
@@ -1416,9 +1416,9 @@ findClusterNodes <- function(model, target) {
   
   for(idx in seq_along(exampleDeps)) {
     ## Pull out expressions, either as RHS of deterministic or parameters of stochastic
-    expr <- cc_getNodesInExpr(model$getValueExpr(exampleDeps[idx]))
-    for(j in seq_along(expr)) {
-      subExpr <- parse(text = expr[j])[[1]]  # individual parameter of stochastic or RHS of deterministic
+    fullExpr <- cc_getNodesInExpr(model$getValueExpr(exampleDeps[idx]))
+    for(j in seq_along(fullExpr)) {
+      subExpr <- parse(text = fullExpr[j])[[1]]  # individual parameter of stochastic or RHS of deterministic
       len <- length(subExpr)
       ## Look for target variable within expression, but only when used within index
       if(len >= 3 && is.call(subExpr) && subExpr[[1]] == '[' &&

@@ -100,7 +100,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul class="summary">
 <img src="./nimble-icon.png"
      width=100>
-<li><a href="./">NIMBLE User Manual, Version 0.6.13</a></li>
+<li><a href="./">NIMBLE User Manual, Version 0.7.1</a></li>
 <li><a href="https://github.com/nimble-dev/nimble">NIMBLE Development Team</a></li>
 <li><a href="https://R-nimble.org">https://R-nimble.org</a></li>
 
@@ -411,10 +411,8 @@ pump$<span class="kw">getNodeNames</span>()</code></pre></div>
 <p>Thanks to the plotting capabilities of the <code>igraph</code> package that NIMBLE uses to represent the directed acyclic graph, we can plot the model (Figure 2.1).</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pump$<span class="kw">plotGraph</span>()</code></pre></div>
 <div class="figure"><span id="fig:plotPump"></span>
-<img src="NimbleUserManual_files/figure-html/plotPump-1.png" alt="Directed Acyclic Graph plot of the pump model, thanks to the igraph package" width="720" />
-<p class="caption">
-Figure 2.1: Directed Acyclic Graph plot of the pump model, thanks to the igraph package
-</p>
+<embed src="NimbleUserManual_files/figure-latex/plotPump-1.pdf" />
+<p class="caption">Figure 2.1: Directed Acyclic Graph plot of the pump model, thanks to the igraph package</p>
 </div>
 <p>You are in control of the model. By default, <code>nimbleModel</code> does its best to initialize a model, but let’s say you want to re-initialize <code>theta</code>. To simulate from the prior for <code>theta</code> (overwriting the initial values previously in the model) we first need to be sure the parent nodes of all <code>theta[i]</code> nodes are fully initialized, including any non-stochastic nodes such as lifted nodes. We then use the <code>simulate</code> function to simulate from the distribution for <code>theta</code>. Finally we use the <code>calculate</code> function to calculate the dependencies of <code>theta</code>, namely <code>lambda</code> and the log probabilities of <code>x</code> to ensure all parts of the model are up to date. First we show how to use the model’s <code>getDependencies</code> method to query information about its graph. <!---  TODO: the logic here is a bit weird - we say we want to know all parents of theta are initialized by our code actually finds dependencies of alpha+beta not parents of theta --></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Show all dependencies of alpha and beta terminating in stochastic nodes</span>
@@ -560,10 +558,10 @@ samples &lt;-<span class="st"> </span><span class="kw">runMCMC</span>(CpumpMCMC,
      <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))
 <span class="kw">plot</span>(samples[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,
      <span class="dt">ylab =</span> <span class="kw">expression</span>(theta[<span class="dv">1</span>]))</code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump-1.png" width="672" /></p>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump-1.pdf" /><!-- --></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">acf</span>(samples[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span>
 <span class="kw">acf</span>(samples[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump-2.png" width="672" /></p>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump-2.pdf" /><!-- --></p>
 <p>Notice the posterior correlation between <code>alpha</code> and <code>beta</code>. A measure of the mixing for each is the autocorrelation for each parameter, shown by the <code>acf</code> plots.</p>
 </div>
 <div id="sec:customizing-mcmc" class="section level2">
@@ -592,10 +590,10 @@ CpumpNewMCMC$<span class="kw">run</span>(niter)</code></pre></div>
      <span class="dt">ylab =</span> <span class="kw">expression</span>(beta))
 <span class="kw">plot</span>(samplesNew[ , <span class="st">&quot;theta[1]&quot;</span>], <span class="dt">type =</span> <span class="st">&quot;l&quot;</span>, <span class="dt">xlab =</span> <span class="st">&quot;iteration&quot;</span>,
      <span class="dt">ylab =</span> <span class="kw">expression</span>(theta[<span class="dv">1</span>]))</code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump2-1.png" width="672" /></p>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump2-1.pdf" /><!-- --></p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">acf</span>(samplesNew[, <span class="st">&quot;alpha&quot;</span>]) <span class="co"># plot autocorrelation of alpha sample</span>
 <span class="kw">acf</span>(samplesNew[, <span class="st">&quot;beta&quot;</span>])  <span class="co"># plot autocorrelation of beta  sample</span></code></pre></div>
-<p><img src="NimbleUserManual_files/figure-html/mcmcPump2-2.png" width="672" /></p>
+<p><embed src="NimbleUserManual_files/figure-latex/mcmcPump2-2.pdf" /><!-- --></p>
 <p>We can see that the block sampler has decreased the autocorrelation for both <code>alpha</code> and <code>beta</code>. Of course these are just short runs, and what we are really interested in is the effective sample size of the MCMC per computation time, but that’s not the point of this example.</p>
 <p>Once you learn the MCMC system, you can write your own samplers and include them. The entire system is written in nimbleFunctions.</p>
 </div>

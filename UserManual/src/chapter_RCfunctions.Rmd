@@ -138,7 +138,7 @@ compatibility.  In a future version of NIMBLE, `declare` may be removed.
 
 ### Math and linear algebra {#sec:basic-math-linear}
 
-Numeric scalar and matrix mathematical operations are listed in Tables \@ref{cha:RCfunctions}.2-\@ref{cha:RCfunctions}.3.
+Numeric scalar and matrix mathematical operations are listed in Tables \@ref{tab:functions}-\@ref{tab:functionsMatrix}.
 
 <!---
 would need to do some sed manipulation to be able to automate this cross-ref

@@ -23,7 +23,7 @@ conjugacyRelationshipsInputList <- list(
 
     ## flat
     list(prior = 'dflat',
-         link = 'linear',
+         link = 'linear_plus_inprod',
          dependents = list(
              dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',         contribution_tau = 'coeff^2 * tau'),
              dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
@@ -105,7 +105,7 @@ conjugacyRelationshipsInputList <- list(
     
     ## normal
     list(prior = 'dnorm',
-         link = 'linear',
+         link = 'linear_plus_inprod',
          dependents = list(
              dnorm  = list(param = 'mean',    contribution_mean = 'coeff * (value-offset) * tau',         contribution_tau = 'coeff^2 * tau'   ),
              dlnorm = list(param = 'meanlog', contribution_mean = 'coeff * (log(value)-offset) * taulog', contribution_tau = 'coeff^2 * taulog')),
@@ -312,7 +312,7 @@ conjugacyClass <- setRefClass(
     fields = list(
         samplerType =         'ANY',   ## name of the sampler for this conjugacy class, e.g. 'conjugate_dnorm'
         prior =               'ANY',   ## name of the prior distribution, e.g. 'dnorm'
-        link =                'ANY',   ## the link ('linear', 'multiplicative', or 'identity')
+        link =                'ANY',   ## the link ('linear_plus_inprod', 'linear', 'multiplicative', or 'identity')
         dependents =          'ANY',   ## (named) list of dependentClass objects, each contains conjugacy information specific to a particular sampling distribution (name is sampling distribution name)
         dependentDistNames =  'ANY',   ## character vector of the names of all allowable dependent sampling distributions.  same as: names(dependents)
         posteriorObject =     'ANY',   ## an object of posteriorClass
@@ -358,13 +358,15 @@ conjugacyClass <- setRefClass(
                 if(!is.null(dependentObj$link)) currentLink <- dependentObj$link else currentLink <- link # handle multiple link case introduced for beta stickbreaking
             } else currentLink = restrictLink
             if(currentLink != 'stick_breaking') {
-                linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr, targetNode = targetNode)
+                depNodeParamName <- dependentObj$param
+                linearityCheckExprRaw <- model$getParamExpr(depNode, depNodeParamName)   # extracts the expression for 'param' from 'depNode'
+                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExprRaw, targetNode = targetNode)
                 if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
                 if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
                 linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
-                if(!cc_linkCheck(linearityCheck, currentLink))                           return(NULL)
-                if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
+                if(!cc_linkCheck(linearityCheck, currentLink))   return(NULL)
+                ## ensure targetNode appears in only *one* depNode parameter expression
+                if(!cc_otherParamsCheck(model, depNode, targetNode, depNodeExprExpanded = linearityCheckExpr, depParamNodeName = depNodeParamName))   return(NULL)
             } else {
                 stickbreakingCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 stickbreakingCheckExpr <- cc_expandDetermNodesInExpr(model, stickbreakingCheckExpr, targetNode = targetNode)
@@ -461,7 +463,7 @@ conjugacyClass <- setRefClass(
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
                 if(!is.null(dependents[[distName]]$link)) currentLink <- dependents[[distName]]$link else currentLink <- link
-                if(currentLink %in% c('multiplicative', 'linear') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
+                if(currentLink %in% c('multiplicative', 'linear', 'linear_plus_inprod') || (nimbleOptions()$allowDynamicIndexing && currentLink == 'identity' && doDependentScreen)) {
                     functionBody$addCode({
                         DEP_OFFSET_VAR2 <- array(0, dim = DECLARE_SIZE_OFFSET)                   ## the 2's here are *only* to prevent warnings about
                         DEP_COEFF_VAR2  <- array(0, dim = DECLARE_SIZE_COEFF)                    ## assigning into member variable names using
@@ -617,7 +619,7 @@ conjugacyClass <- setRefClass(
                 distName <- names(dependentCounts)[iDepCount]
                 if(!is.null(dependents[[distName]]$link)) links[iDepCount] <- dependents[[distName]]$link # clau: extra ) deleted.
             }
-            if(any(links %in% c('multiplicative', 'linear')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
+            if(any(links %in% c('multiplicative', 'linear', 'linear_plus_inprod')) || (nimbleOptions()$allowDynamicIndexing && any(links == 'identity') && doDependentScreen)) {
                 targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
@@ -943,7 +945,7 @@ cc_makeRDistributionName     <- function(distName)     return(paste0('r', substr
 
 
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
-cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansions=FALSE) {
+cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpansionsNode = NULL) {
     if(is.numeric(expr)) return(expr)     # return numeric
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) { # expr is a name, or an indexed name
         if(nimbleOptions()$allowDynamicIndexing) {
@@ -964,7 +966,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                         ## now check that target is not actually used in index expressions
                         newExpr <- as.call(c(cc_structureExprName, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
                         for(i in seq_along(newExpr)[-1])
-                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
+                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
                         if(cc_nodeInExpr(targetNode, newExpr))
                             return(as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x))))  # put 'expr' back in though shouldn't be needed downstream
                         ## otherwise continue with processing as in non-dynamic index case
@@ -976,7 +978,7 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
                         ## sapply business gets rid of () at end of index expression
                         newExpr <- as.call(c(cc_structureExprName, expr, sapply(indexExprs[!numericOrVectorIndices], function(x) x)))
                         for(i in seq_along(newExpr)[-1])
-                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
+                            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
                         return(newExpr)
                     }
                 }  ## else continue with processing as in non-dynamic index case
@@ -984,36 +986,38 @@ cc_expandDetermNodesInExpr <- function(model, expr, targetNode = NULL, skipExpan
         }
         exprText <- deparse(expr)
         expandedNodeNamesRaw <- model$expandNodeNames(exprText)
+        if(!is.null(skipExpansionsNode) && (exprText %in% model$expandNodeNames(skipExpansionsNode, returnScalarComponents=TRUE))) return(expr)
         ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
-        expandedNodeNames <- if((exprText %in% expandedNodeNamesRaw) || skipExpansions) exprText else expandedNodeNamesRaw
+        expandedNodeNames <- if(exprText %in% expandedNodeNamesRaw) exprText else expandedNodeNamesRaw
         if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
             ## expr is a single node in the model
             type <- model$getNodeType(exprText)
             if(length(type) > 1) {
                 ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
                 if(exprText %in% expandedNodeNamesRaw) type <- type[which(exprText == expandedNodeNamesRaw)]
-                else stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+                else stop('something went wrong with Daniel\'s understanding of newNimbleModel #1')
             }
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
                 newExpr <- model$getValueExpr(exprText)
-                return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansions))
+                return(cc_expandDetermNodesInExpr(model, newExpr, targetNode, skipExpansionsNode))
             }
             if(type == 'RHSonly') return(expr)
-            stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+            stop('something went wrong with Daniel\'s understanding of newNimbleModel #2')
         }
         newExpr <- cc_createStructureExpr(model, exprText)
         for(i in seq_along(newExpr)[-1])
-            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansions)
+            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]], targetNode, skipExpansionsNode)
         return(newExpr)
     }
     if(is.call(expr)) {
         for(i in seq_along(expr)[-1])
-            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansions)
+            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]], targetNode, skipExpansionsNode)
         return(expr)
     }
     stop(paste0('something went wrong processing: ', deparse(expr)))
 }
+
 
 ## special name used to represent vectors / arrays defined in terms of other stoch/determ nodes
 cc_structureExprName <- quote(structureExpr)
@@ -1030,23 +1034,26 @@ cc_createStructureExpr <- function(model, exprText) {
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
-    if(!(link %in% c('identity', 'multiplicative', 'linear', 'stick_breaking')))    stop(paste0('unknown link: \'', link, '\''))
+    if(!(link %in% c('identity', 'multiplicative', 'linear', 'linear_plus_inprod', 'stick_breaking')))
+        stop(paste0('unknown link: \'', link, '\''))
     if(is.null(linearityCheck))    return(FALSE)
     offset <- linearityCheck$offset
     scale  <- linearityCheck$scale
     if(link == 'identity'       && offset == 0 && scale == 1)     return(TRUE)
     if(link == 'multiplicative' && offset == 0)                   return(TRUE)
-    if(link == 'linear')                                          return(TRUE)
+    if(link == 'linear' || link == 'linear_plus_inprod')          return(TRUE)
     return(FALSE)
 }
 
 ## checks the parameter expressions in the stochastic distribution of depNode
 ## returns FALSE if we find 'targetNode' in ***more than one*** of these expressions
-cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansions=FALSE) {
+cc_otherParamsCheck <- function(model, depNode, targetNode, skipExpansionsNode = NULL, depNodeExprExpanded, depParamNodeName) {
     paramsList <- as.list(model$getValueExpr(depNode)[-1])       # extracts the list of all parameters, for the distribution of depNode
     timesFound <- 0   ## for success, we'll find targetNode in only *one* parameter expression
     for(i in seq_along(paramsList)) {
-        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansions)
+        if(!missing(depParamNodeName) && (names(paramsList)[i] == depParamNodeName)) {
+            expr <- depNodeExprExpanded
+        } else { expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]], targetNode, skipExpansionsNode) }
         if(cc_vectorizedComponentCheck(targetNode, expr))   return(FALSE)
         if(cc_nodeInExpr(targetNode, expr))     { timesFound <- timesFound + 1 }    ## we found 'targetNode'
     }
@@ -1064,7 +1071,7 @@ cc_nodeInExpr <- function(node, expr) { return(node %in% cc_getNodesInExpr(expr)
 cc_getNodesInExpr <- function(expr) {
     if(is.numeric(expr)) return(character(0))   ## expr is numeric
     if(is.logical(expr)) return(character(0))   ## expr is logical
-    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) return(deparse(expr))   ## expr is a node name
+    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '[') && is.name(expr[[2]]))) return(deparse(expr))   ## expr is a node name
     if(is.call(expr)) return(unlist(lapply(expr[-1], cc_getNodesInExpr)))   ## expr is some general call
     stop(paste0('something went wrong processing: ', deparse(expr)))
 }
@@ -1097,11 +1104,22 @@ cc_checkLinearity <- function(expr, targetNode) {
     if(identical(targetNode, deparse(expr)))
         return(list(offset = 0, scale = 1))
 
-    if(!is.call(expr))   stop('expression is not a call object')
+    if(!is.call(expr))   stop('cc_checkLinearity: expression is not a call object')
 
     ## process the expression contents of the parentheses
     if(expr[[1]] == '(')
         return(cc_checkLinearity(expr[[2]], targetNode))
+
+    if(expr[[1]] == '[')
+        return(cc_checkLinearity(expr[[2]], targetNode))
+
+    ## Look for individual nodes in vectorized use or other strange cases.
+    if(expr[[1]] == 'structureExpr') {
+        if(sum(targetNode == sapply(expr[2:length(expr)], deparse)) == 1 &&
+           sum(sapply(expr[2:length(expr)], function(x)
+                      cc_nodeInExpr(targetNode, x))) == 1)
+            return(list(offset = expr, scale = 1)) else return(NULL)
+    }
 
     ## we'll just have to skip over asRow() and asCol(), so they don't mess up the linearity check
     if(expr[[1]] == 'asRow' || expr[[1]] == 'asCol') {
@@ -1123,7 +1141,7 @@ cc_checkLinearity <- function(expr, targetNode) {
             return(list(offset = cc_negateExpr(checkLin$offset),
                         scale  = cc_negateExpr(checkLin$scale)))
         }
-        stop('problem with negation expression')
+        stop('cc_checkLinearity: problem with negation expression')
     }
 
     if(expr[[1]] == '+') {
@@ -1134,20 +1152,34 @@ cc_checkLinearity <- function(expr, targetNode) {
                     scale  = cc_combineExprsAddition(checkLinearityLHS$scale,  checkLinearityRHS$scale)))
     }
 
-    if(expr[[1]] == '*' || expr[[1]] == '%*%') {
-        isMatrixMult <- ifelse(expr[[1]] == '%*%', TRUE, FALSE)
+    if(expr[[1]] == '*' || expr[[1]] == '%*%' || expr[[1]] == 'inprod' || expr[[1]] == 'sum') {
+        ## X[,] %*% beta[] where beta[i] are nodes is not standard matrix multiplication, so there is offset and scale
+        isMatrixMult <- ifelse(expr[[1]] == '%*%' &&
+                               length(expr[[2]]) > 1 && expr[[2]][[1]] != 'structureExpr' &&
+                               length(expr[[3]]) > 1 && expr[[3]][[1]] != 'structureExpr',
+                               TRUE, FALSE)
+        if(expr[[1]] == 'sum') 
+            if(length(expr[[2]]) == 3 && expr[[2]][[1]] == '*') {
+                tmpExpr <- quote(inprod(a, b))
+                tmpExpr[[2]] <- expr[[2]][[2]]
+                tmpExpr[[3]] <- expr[[2]][[3]]
+                expr <- tmpExpr
+            } else {
+                return(NULL)  # cases such as sum(p[1:5]); there may be some unusual conjugacy cases here that we don't detect
+            }
+        if(length(expr) != 3) return(NULL)  # avoid error at next step for unexpected cases
         if(cc_nodeInExpr(targetNode, expr[[2]]) && cc_nodeInExpr(targetNode, expr[[3]])) return(NULL)
         checkLinearityLHS <- cc_checkLinearity(expr[[2]], targetNode)
         checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)
         if(is.null(checkLinearityLHS) || is.null(checkLinearityRHS)) return(NULL)
-        if((checkLinearityLHS$scale != 0) && (checkLinearityRHS$scale != 0)) stop('incompatible scales in * operation')
+        if((checkLinearityLHS$scale != 0) && (checkLinearityRHS$scale != 0)) stop('cc_checkLinearity: incompatible scales in * operation')
         if(checkLinearityLHS$scale != 0) {
             return(list(offset = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$offset, isMatrixMult),
                         scale  = cc_combineExprsMultiplication(checkLinearityLHS$scale,  checkLinearityRHS$offset, isMatrixMult))) }
         if(checkLinearityRHS$scale != 0) {
             return(list(offset = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$offset, isMatrixMult),
                         scale  = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$scale , isMatrixMult))) }
-        stop('something went wrong')
+        stop('cc_checkLinearity: something went wrong')
     }
 
     if(expr[[1]] == '/') {
