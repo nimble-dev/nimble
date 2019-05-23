@@ -94,8 +94,8 @@ MCMCconf <- setRefClass(
             useConjugacy = TRUE,
             onlyRW = FALSE,
             onlySlice = FALSE,
-            multivariateNodesAsScalars = FALSE,
-            enableWAIC = nimbleOptions('enableWAIC'),
+            multivariateNodesAsScalars = getNimbleOption('MCMCmultivariateNodesAsScalars'),
+            enableWAIC = getNimbleOption('enableWAIC'),
             warnNoSamplerAssigned = TRUE,
             print = FALSE, ...) {
             '

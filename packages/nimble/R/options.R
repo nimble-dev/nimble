@@ -58,7 +58,9 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         MCMCuseSamplerAssignmentRules = FALSE,
         saveMCMChistory = FALSE,
         MCMCdefaultSamplerAssignmentRules = NULL,
-        
+
+        MCMCmultivariateNodesAsScalars = FALSE,
+
         enableWAIC = FALSE
         ## default settings for MCMC samplers
         ## control list defaults for MCMC samplers are
