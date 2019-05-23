@@ -4492,7 +4492,6 @@ test_that("Testing sampler assignment and misspecification of priors for conc pa
   
 })
 
-<<<<<<< HEAD
 test_that("Testing dnorm_dnorm non-identity conjugacy setting", { 
 
     ## Conjugacy detection and calculation of offset/coeff
@@ -4581,7 +4580,6 @@ test_that("Testing dnorm_dnorm non-identity conjugacy setting", {
     expect_identical(smp1, smp2, "sampling for identity and special case of non-identity not identical")
 })    
     
-=======
 test_that("Testing that cluster parameters are appropriately updated and mvSaved in good state", {
     ## Should always reject new clusters
     set.seed(1)
@@ -4739,8 +4737,6 @@ test_that("Testing that cluster parameters are appropriately updated and mvSaved
 })
   
 
-
->>>>>>> devel
 options(warn = RwarnLevel)
 nimbleOptions(verbose = nimbleVerboseSetting)
 nimbleOptions(MCMCprogressBar = nimbleProgressBarSetting)
