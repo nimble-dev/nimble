@@ -11,7 +11,7 @@
 ## sampler_RJ:           does the jump proposal for the variable of interest
 ## sampler_RJ_indicator: does the jump proposal for an indicator variable
 ## sampler_toggled:      reassign the default sampler to the variable when is in the model  
-## configure_RJ:         substitute manual removeSampler/addSampler for each variable for which one wants to perform selections
+## configureRJ:         substitute manual removeSampler/addSampler for each variable for which one wants to perform selections
 
 ##################################################
 ## RJ sampler - no indicator variable ############
@@ -241,8 +241,8 @@ node_configuration_check <- function(currentConf, node){
 }
 
 ## This function substitute manual remove/addSampler for each variable for which one wants to perform selection
-## configuration function
-configure_RJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
+
+configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
   ## control_RJ should have
   ## 1 - a element called fixedValue (default 0),
   ## 2 - a mean for jump proposal,
