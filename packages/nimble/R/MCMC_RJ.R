@@ -305,7 +305,7 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
       }
       
       ## Create node list
-      nodeAsScalar <- modelConf$model$expandNodeNames(nodes[i], returnScalarComponents = TRUE)
+      nodeAsScalar <- mcmcConf$model$expandNodeNames(nodes[i], returnScalarComponents = TRUE)
       
       ## Create RJ control list for the node 
       nodeControl  = list(
@@ -375,8 +375,8 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
     for(i in 1:nNodes) {
       
       ## Create node and indicator list
-      nodeAsScalar <- modelConf$model$expandNodeNames(nodes[i], returnScalarComponents = TRUE)
-      indicatorsAsScalar <- modelConf$model$expandNodeNames(indicator[i], returnScalarComponents = TRUE)
+      nodeAsScalar <- mcmcConf$model$expandNodeNames(nodes[i], returnScalarComponents = TRUE)
+      indicatorsAsScalar <- mcmcConf$model$expandNodeNames(indicator[i], returnScalarComponents = TRUE)
       
       if(length(nodeAsScalar) != length(indicatorsAsScalar)) {
         stop(paste0("Indicator node ", indicator[i] ," does not match ", nodes[i], " size."))
@@ -402,7 +402,7 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
           node_configuration_check(currentConf, nodeAsScalar[j])
           
           ## Add reversible jump sampler for the indicator variable
-          modelConf$removeSamplers(indicatorsAsScalar[j])
+          mcmcConf$removeSamplers(indicatorsAsScalar[j])
           mcmcConf$addSampler(type = sampler_RJ_indicator,
                               target = indicatorsAsScalar[j],
                               control = nodeControl)
@@ -425,7 +425,7 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
         node_configuration_check(currentConf, nodeAsScalar)
         
         ## Add reversible jump sampler for the indicator variable
-        modelConf$removeSamplers(indicatorsAsScalar)
+        mcmcConf$removeSamplers(indicatorsAsScalar)
         mcmcConf$addSampler(type = sampler_RJ_indicator,
                             target = indicatorsAsScalar,
                             control = nodeControl)
