@@ -29,7 +29,7 @@
 
 
 sampler_RJ <- nimbleFunction(
-  ## every new sampler must contain sampler_BASE 
+  name = 'sampler_RJ',
   contains = sampler_BASE, 
   setup = function(mvSaved, model, target, control) {
     ## target should be a coefficient to be set to a fixed value (usually zero) or not
@@ -116,6 +116,7 @@ sampler_RJ <- nimbleFunction(
 #'
 
 sampler_RJ_indicator <- nimbleFunction(
+  name = 'sampler_RJ_indicator',
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control ) {
     ## target should be the name of the indicator node,
@@ -185,6 +186,7 @@ sampler_RJ_indicator <- nimbleFunction(
 # Sample according to default assigned sampler when the target is in the model
 
 sampler_toggled <- nimbleFunction(
+  name = 'sampler_toggled',
   ## This nimbleFunction generalizes the role of RW_sampler_nonzero from the web-site example
   ## Sample according to build sampler when the target is in the model (here different from zero)
   contains = sampler_BASE,
