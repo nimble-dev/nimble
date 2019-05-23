@@ -610,14 +610,15 @@ modifyOnMatch(unaryOpTests, 'log1p .+', 'arg_distns', function(x) abs(rnorm(x)) 
 modifyOnMatch(unaryOpTests, '(logit|probit|cloglog) .+', 'arg_distns', runif)
 modifyOnMatch(unaryOpTests, '(acos|asin|atanh) .+', 'arg_distns', function(x) runif(x, -1, 1))
 modifyOnMatch(unaryOpTests, 'acosh .+', 'arg_distns', function(x) abs(rnorm(x)) + 1)
+
 ## see knownFailure below
-modifyOnMatch(unaryOpTests, 'gammafn .+', 'arg_distns', function(x) abs(rnorm(x)))
+modifyOnMatch(unaryOpTests, '^(gammafn|factorial) .+', 'arg_distns', function(x) abs(rnorm(x)))
 
 ## R implements lgamma as "the natural logarithm of _the absolute value of_ the
 ## gamma function", and since we use exp(lgamma(x)) for gammafn(x) we get the
 ## sign of the output flipped when gamma(x) < 0.
 modifyOnMatch(
-  unaryOpTests, 'gammafn double(0)', 'knownFailures',
+  unaryOpTests, '^(gammafn|factorial) .*', 'knownFailures',
   list(
     compilation = FALSE, ## no need to set this, but showing here by way of example
     input = list( # currently doesn't do anything, just a reminder
