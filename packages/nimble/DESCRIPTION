@@ -5,17 +5,17 @@ Version: 0.8.0
 Date: 2019-03-12
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
 Authors@R: c(
-    person("de Valpine", "Perry", role = "aut"),
-    person("Paciorek", "Christopher", , "paciorek@stat.berkeley.edu", role = c("aut", "cre")),
-    person("Turek", "Daniel", role = "aut"),
-    person("Michaud", "Nick", role = "aut"),
-    person("Anderson-Bergman", "Cliff", role = "aut"),
-    person("Obermeyer", "Fritz", role = "aut"),
-    person("Wehrhahn Cortes", "Claudia", role = "aut", comment = "Bayesian nonparametrics system"),
-    person("Rodriguez", "Abel", role = "aut", comment = "Bayesian nonparametrics system"),
-    person("Babu", "Jagadish", role = "ctb", comment = "code for the compilation system for an early version of NIMBLE"),
-    person("Ponisio", "Lauren", role = "ctb", comment = "contributions to the cross-validation code"),
-    person("Sujan", "Peter", role = "ctb", comment = "multivariate t distribution code")
+    person("Perry", "de Valpine", role = "aut"),
+    person("Christopher", "Paciorek", , "paciorek@stat.berkeley.edu", role = c("aut", "cre")),
+    person("Daniel", "Turek", role = "aut"),
+    person("Nick", "Michaud", role = "aut"),
+    person("Cliff", "Anderson-Bergman", role = "aut"),
+    person("Fritz", "Obermeyer", role = "aut"),
+    person("Claudia", "Wehrhahn Cortes", role = "aut", comment = "Bayesian nonparametrics system"),
+    person("Abel", "Rodriguez", role = "aut", comment = "Bayesian nonparametrics system"),
+    person("Jagadish", "Babu", role = "ctb", comment = "code for the compilation system for an early version of NIMBLE"),
+    person("Lauren", "Ponisio", role = "ctb", comment = "contributions to the cross-validation code"),
+    person("Peter", "Sujan", role = "ctb", comment = "multivariate t distribution code")
     )               
 Depends:
     R (>= 3.1.2)
