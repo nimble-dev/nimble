@@ -584,4 +584,10 @@ Type nimDerivs_factorial(Type x) {
   return exp(nimDerivs_lfactorial<Type>(x));
 }
 
+/* gammafn */
+template<class Type>
+Type nimDerivs_gammafn(Type x) {
+  return exp(nimDerivs_lgammafn<Type>(x));
+}
+
 #endif
