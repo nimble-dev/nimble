@@ -1,10 +1,4 @@
-# source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-###################
-## To remove in nimble package
-library(testthat)
-library(nimble)
-source("~/github/nimble/packages/nimble/R/MCMC_RJ.R")
-###################
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 RwarnLevel <- options('warn')$warn
 options(warn = 1)
