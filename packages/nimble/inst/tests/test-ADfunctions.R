@@ -669,6 +669,15 @@ unaryReductionOpTests <- make_AD_test_batch(
   unaryReductionOps, unaryReductionArgs
 )
 
+## nimble doesn't support var of matrices, see sizeUnaryReduction
+modifyOnMatch(
+  unaryReductionOpTests, 'var double\\(2, c\\(3, 4\\)\\)',
+  'knownFailures',
+  list(
+    compilation = TRUE
+  )
+)
+
 #############
 ## binary ops
 #############
@@ -686,7 +695,7 @@ binaryArgs[[length(binaryArgs) + 1]] <- rep(unaryArgs[3], 2)
 
 binaryOps <- c(
   nimble:::binaryOrUnaryOperators,
-  nimble:::binaryMidOperators
+  '/', '*', '%%'
 )
 
 binaryOpTests <- make_AD_test_batch(

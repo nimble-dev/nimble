@@ -1618,12 +1618,11 @@ returnTypeString <- function(op, argTypes) {
 
   reductionOperators <- c(
     nimble:::reductionUnaryOperators,
-    nimble:::matrixSquareReductionOperators
+    nimble:::matrixSquareReductionOperators,
+    nimble:::reductionBinaryOperatorsEither
   )
 
-  nDim <- if (length(argTypes) == 1)
-            if (op %in% reductionOperators) 0
-            else args[[1]]$nDim
+  nDim <- if (op %in% reductionOperators) 0
           else max(sapply(args, `[[`, 'nDim'))
 
   sizes <- if (length(argTypes) == 1)
