@@ -194,10 +194,13 @@ test_that("Check sampler_RJ behaviour (no indicator)", {
   output <- runMCMC(cMCMC,  niter=1000, nburnin = 900, thin=1, 
                     inits = list(beta0 = 1, beta1 = 1, beta2 = 1, sigma = sd(Y)), setSeed = 1)
   
+  ##-------------------------------##
+  ## not sure if this is a valid test
+  ##-------------------------------##
   ## beta2 should be more likely to be 0
   expect_true(sum(output[, 'beta2'] == 0)/100 > 0.5)
+  # expect_true(mean(output[which(output[, 'beta2'] != 0), 'beta2']) - coef(lm(Y ~ x1 + x2))[3] < 0.05) ## should check that beta2 is small when in the model
   
-  # expect_true(mean(output[which(output[, 'beta2'] != 0), 'beta2']) - coef(lm(Y ~ x1 + x2))[3] < 0.05) ## would check that beta2 is small when in the model
   ## beta1 should be in the model
   expect_false(any(output[, 'beta1'] == 0))
   ## check beta1 estimate
@@ -249,6 +252,9 @@ test_that("Check sampler_RJ_indicator behaviour (with indicator)", {
   output <- runMCMC(cMCMC,  niter=1000, nburnin = 900, thin=1, 
                     inits = list(beta0 = 1, beta1 = 1, beta2 = 1, sigma = sd(Y)), setSeed = 1)
   
+  ##-------------------------------##
+  ## not sure if this is a valid test
+  ##-------------------------------##
   ## beta2 should be more likely to be 0
   expect_true(sum(output[, 'beta2'] == 0)/100 > 0.5)
   
