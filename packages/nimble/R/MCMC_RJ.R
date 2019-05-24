@@ -234,6 +234,10 @@ sampler_toggled <- nimbleFunction(
 #' \item postive. A logical argument specifying whether the proposal is strictly positive. (default = FALSE)
 #' }
 #'
+#'@details
+#'
+#'
+#'
 
 ## helper function to check node configuration (in case of multiple calls)
 node_configuration_check <- function(currentConf, node){
