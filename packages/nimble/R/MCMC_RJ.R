@@ -18,7 +18,7 @@
 ##################################################
 #' Reversible Jump sampler
 #'
-#' This sampler perform a Reversible Jump MCMC step for the nodes to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function.
+#' This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function, when the model code is written without using indicator variables. See Details in \code{\link{configureRJ}}. 
 #' 
 #' The RJ sampler accepts the following control list elements:
 #' \itemize{
@@ -115,7 +115,7 @@ sampler_RJ <- nimbleFunction(
 ####################################################################
 #' Reversible Jump sampler
 #'
-#' This sampler perform a Reversible Jump MCMC step for the nodes to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function.
+#' This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function, when the model code is written using indicator variables associated with the nodes of interest. See Details in \code{\link{configureRJ}}. 
 #' 
 #' The RJ sampler accepts the following control list elements:
 #' \itemize{
@@ -246,11 +246,10 @@ node_configuration_check <- function(currentConf, node){
     warning(paste0("There is more than one sampler for ", node,". Only the first will be toggled."))
 }
 
-
 ###-------------------------------###
 #' Configure reversible jump sampler
 #'
-#' Modifies the \code{MCMCconf} object of a specific model, to include a reversible jump mcmcm sampler for variable selection using an univariate normal proposal distribution. User can control which fixed value the variable can take (typically 0), the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different ways of writing the model. 
+#' Modifies the \code{MCMCconf} object of a specific model, to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. User can control which value the variable takes when not in the model (typically 0), the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different ways of writing the model. 
 #'
 #' @param mcmcConf a \code{MCMCconf} object.
 #' @param nodes a character vector, containing the names of the nodes for which the variable selection is performed.
@@ -264,9 +263,17 @@ node_configuration_check <- function(currentConf, node){
 #' \item positive. A logical argument specifying whether the proposal is strictly positive. (default = FALSE)
 #' }
 #'
-#' @details
+#' @details 
+#' 
+#' This functions modifies the sampler in \code{MCMCconf} for each of the nodes provided in the \code{nodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the build sampler that is used only when the target node is in the model. 
+#' 
+#' The specialized RJ sampler depends on whether the \code{prior} or \code{indicator} arguments are provided, according on how the model is written. When \code{prior} is provided, the specialized sampler \code{sampler_RJ} is assigned directly to the \code{nodes}. When \code{indicator} is provided, the specialized sampler \code{sampler_RJ_indicator} is assigned to nodes in \code{indicator}.
+#' 
 #' 
 #' @seealso \code{\link{sampler_BASE}} \code{\link{sampler_RJ}} \code{\link{configureRJ}}
+#' 
+#' @examples
+#' 
 #' 
 #' @references
 #' 
@@ -295,7 +302,7 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
   # scale             <- if(length(scale) == 1L & nNodes > 1L)            rep(scale, nNodes)            else scale
   # positive  <- if(length(positive) == 1L & nNodes > 1L) rep(positive, nNodes) else positive
   # 
-  ## above set ot checks paired with this check
+  ## above set of checks paired with this check
   # ## Check that RJ control arguments match nodes length
   # if(any(lengths(list(fixedValue, mean, scale, positive)) != nNodes)){
   #   stop("Arguments in control_RJ list must be of length 1 or match nodes vector length")
@@ -340,7 +347,7 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
     #   prior <- rep(prior, nNodes)
     # } 
     # 
-    # ## Check that prior vector match nodes lenght when there is more than one value
+    # ## Check that prior vector match nodes length when there is more than one value
     # if(length(prior) >  1L &
     #    length(prior) != nNodes){
     #   stop("Length of prior vector must match nodes vector one")
