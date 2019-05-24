@@ -769,14 +769,15 @@ squareMatrixOpTests <- make_AD_test_batch(
   squareMatrixOps, squareMatrixArgs
 )
 
-## modifyOnMatch(
-##   squareMatrixOpTests, 'chol .+', 'arg_distns',
-##   function(arg_size) {
-##     mat <- diag(1:arg_size[1]) ## assumes matrix is square
-##     mat[upper.tri(mat) | lower.tri(mat)] <- runif(1) ## chol only uses upper tri
-##     mat
-##   }
-## )
+modifyOnMatch(
+  squareMatrixOpTests, 'chol .+', 'arg_distns',
+  function(arg_size) {
+    m <- arg_size[1] ## assumes matrix argType is square
+    mat <- diag(1:m)
+    mat[lower.tri(mat)] <- runif(m*(m - 1)/2)
+    mat <- mat %*% t(mat)
+  }
+)
 
 ## ## compilation failures
 ## modifyOnMatch(
