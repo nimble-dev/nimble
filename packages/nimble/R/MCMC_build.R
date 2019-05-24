@@ -108,7 +108,7 @@ buildMCMC <- nimbleFunction(
     	if(inherits(conf, 'modelBaseClass'))   conf <- configureMCMC(conf, ...)
     	else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
         dotdotdotArgs <- list(...)
-        enableWAICargument <- if(!is.null(dotdotdotArgs$enableWAIC)) dotdotdotArgs$enableWAIC else nimbleOptions('enableWAIC')    ## accept enableWAIC argument regardless
+        enableWAICargument <- if(!is.null(dotdotdotArgs$enableWAIC)) dotdotdotArgs$enableWAIC else nimbleOptions('MCMCenableWAIC')    ## accept enableWAIC argument regardless
         model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
