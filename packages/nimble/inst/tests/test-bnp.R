@@ -2517,7 +2517,8 @@ test_that("Testing conjugacy detection with models using CRP", {
                   inits = list(xi = rep(1,4), mu = rnorm(4), sigma = rinvgamma(4, 1,1)))
   conf <- configureMCMC(m)
   mcmc=buildMCMC(conf)
-  expect_equal(class(mcmc$samplerFunctions[[9]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
+  crpIndex <- which(sapply(conf$getSamplers(), function(x) x[['name']]) == 'CRP')
+  expect_equal(class(mcmc$samplerFunctions[[crpIndex]]$helperFunctions$contentsList[[1]])[1], "CRP_nonconjugate")
   
   ## dnorm_invgamma, conjugate; we detect conjugacy
   code = nimbleCode({
@@ -2920,7 +2921,7 @@ test_that("Testing handling (including error detection) with non-standard CRP mo
   })
   m <- nimbleModel(code, data = data, constants = const, inits = inits)
   expect_warning(conf <- configureMCMC(m), "missing cluster parameter")
-  mcmc <- buildMCMC(conf)
+  expect_warning(mcmc <- buildMCMC(conf), "missing cluster parameter")
   expect_warning(clusterNodeInfo <- nimble:::findClusterNodes(m, target), "missing cluster parameter")
   expect_equal(clusterNodeInfo$clusterNodes[[1]], paste0("muTilde[", 2:(n-2), "]"))
   expect_equal(1, clusterNodeInfo$numIndexes)
