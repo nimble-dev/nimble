@@ -16,27 +16,12 @@
 ##################################################
 ## RJ sampler - no indicator variable ############
 ##################################################
-#' Reversible Jump sampler
-#'
-#' This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function, when the model code is written without using indicator variables. See Details in \code{\link{configureRJ}}. 
-#' 
-#' The RJ sampler accepts the following control list elements:
-#' \itemize{
-#' \item fixedValue. The value taken from the variable when out of the model. (default = 0)
-#' \item mean. The mean of the normal proposal distribution. (default = 0)
-#' \item scale. The standard deviation of the normal proposal distribution. (default  = 1)
-#' \item positive. A logical argument specifying whether the proposal is strictly positive. (default = FALSE)
-#' }
-#' 
-#' 
-#' @seealso \code{\link{sampler_BASE}} \code{\link{sampler_RJ_indicator}} \code{\link{configureRJ}}
-#' 
-#' 
-#' @references
-#' 
-#' Peter J. Green. (1995). Reversible jump markov chain monte carlo computation and bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
-#' 
+## Reversible Jump sampler
+##
+## This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function, when the model code is written without using indicator variables. See Details in \code{\link{configureRJ}}. 
 
+#' @rdname samplers
+#' @export
 sampler_RJ <- nimbleFunction(
   name = 'sampler_RJ',
   contains = sampler_BASE, 
@@ -113,27 +98,12 @@ sampler_RJ <- nimbleFunction(
 ####################################################################
 ### RJ sampler - indicator variable ################################
 ####################################################################
-#' Reversible Jump sampler
-#'
-#' This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function, when the model code is written using indicator variables associated with the nodes of interest. See Details in \code{\link{configureRJ}}. 
-#' 
-#' The RJ sampler accepts the following control list elements:
-#' \itemize{
-#' \item fixedValue. The value taken from the variable when out of the model. (default = 0)
-#' \item mean. The mean of the normal proposal distribution. (default = 0)
-#' \item scale. The standard deviation of the normal proposal distribution. (default  = 1)
-#' \item positive. A logical argument specifying whether the proposal is strictly positive. (default = FALSE)
-#' }
-#' 
-#' 
-#' @seealso \code{\link{sampler_BASE}} \code{\link{sampler_RJ}} \code{\link{configureRJ}}
-#' 
-#' 
-#' @references
-#' 
-#' Peter J. Green. (1995). Reversible jump markov chain monte carlo computation and bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
-#' 
+## Reversible Jump sampler
+##
+## This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function, when the model code is written using indicator variables associated with the nodes of interest. See Details in \code{\link{configureRJ}}. 
 
+#' @rdname samplers
+#' @export
 sampler_RJ_indicator <- nimbleFunction(
   name = 'sampler_RJ_indicator',
   contains = sampler_BASE,
@@ -204,6 +174,8 @@ sampler_RJ_indicator <- nimbleFunction(
 ##-------------------------------##
 # Sample according to default assigned sampler when the target is in the model
 
+#' @rdname samplers
+#' @export
 sampler_toggled <- nimbleFunction(
   name = 'sampler_toggled',
   ## This nimbleFunction generalizes the role of RW_sampler_nonzero from the web-site example
@@ -274,18 +246,12 @@ node_configuration_check <- function(currentConf, node){
 #' 
 #' @examples
 #' 
+#' @export
 #' 
 #' @references
 #' 
 #' Peter J. Green. (1995). Reversible jump markov chain monte carlo computation and bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
-
-## This function substitute manual remove/addSampler for each variable for which one wants to perform selections
 configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
-  ## control_RJ should have
-  ## 1 - a element called fixedValue (default 0),
-  ## 2 - a mean for jump proposal,
-  ## 3 - a scale for jump proposal
-  ## 4 - flag for positve proposal
 
   nNodes <- length(nodes)
   
