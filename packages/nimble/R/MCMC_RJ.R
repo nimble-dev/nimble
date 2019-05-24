@@ -214,9 +214,20 @@ sampler_toggled <- nimbleFunction(
 )
 
 
-
 ###-------------------------------###
 ## configureRJ
+###-------------------------------###
+## helper function to check node configuration (in case of multiple calls)
+node_configuration_check <- function(currentConf, node){
+  if(length(currentConf) == 0) {
+    warning(paste0("There are no samplers for ", node,". Skipping it."))
+    next
+  }
+  if(length(currentConf) > 1)
+    warning(paste0("There is more than one sampler for ", node,". Only the first will be toggled."))
+}
+
+
 ###-------------------------------###
 #' Configure reversible jump sampler
 #'
@@ -239,18 +250,7 @@ sampler_toggled <- nimbleFunction(
 #'
 #'
 
-## helper function to check node configuration (in case of multiple calls)
-node_configuration_check <- function(currentConf, node){
-  if(length(currentConf) == 0) {
-    warning(paste0("There are no samplers for ", node,". Skipping it."))
-    next
-  }
-  if(length(currentConf) > 1)
-    warning(paste0("There is more than one sampler for ", node,". Only the first will be toggled."))
-}
-
-## This function substitute manual remove/addSampler for each variable for which one wants to perform selection
-
+## This function substitute manual remove/addSampler for each variable for which one wants to perform selections
 configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
   ## control_RJ should have
   ## 1 - a element called fixedValue (default 0),
