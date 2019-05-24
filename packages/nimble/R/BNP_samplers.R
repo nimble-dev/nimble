@@ -1393,6 +1393,9 @@ findClusterNodes <- function(model, target) {
   varIdx <- 0
 
   targetNonIndex <- NULL
+
+  modelVars <- model$getVarNames()
+  modelVars <- modelVars[!modelVars == targetVar]
   
   for(idx in seq_along(exampleDeps)) {
     ## Pull out expressions, either as RHS of deterministic or parameters of stochastic
@@ -1419,6 +1422,10 @@ findClusterNodes <- function(model, target) {
                     whichIndex <- k
                 }
             }
+            ## We will need to relax this when allow crossed clustering.
+            if(sum(all.vars(subExpr[[k]]) %in% modelVars))  ## cases like mu[xi[i],eta[j]]
+                stop("findClusterNodes: multiple indexing variables in '", deparse(subExpr),
+                         "'. NIMBLE's CRP MCMC sampling not designed for this situation.")
             k <- k+1
         }
         if(!foundTarget) stop("findClusterNodes: conflicting information about presence of CRP variable in expression.")
