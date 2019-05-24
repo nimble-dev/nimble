@@ -220,14 +220,19 @@ sampler_toggled <- nimbleFunction(
 ###-------------------------------###
 #' Configure reversible jump sampler
 #'
-#' Same structure of MCMC sampling algorithms
+#' Modifies the \code{MCMCconf} object of a specific model, to include a reversible jump mcmcm sampler for variable selection usign an univariate normal proposal distribution. User can control which fixed value the variable can take (typically 0), the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different ways of writing the model. 
 #'
-#' @param mcmcConf 
-#' 
-#' @param nodes 
-#' @param indicator 
-#' @param prior 
-#' @param control_RJ named list that controls the precise behavior of the sampler, with elements specific to \code{samplertype}.  The default values for control list are specified in the setup code of each sampling algorithm.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the \code{control} argument) appear below.
+#' @param mcmcConf a \code{MCMCconf} object.
+#' @param nodes a character vector, containing the names of the nodes for which the variable selection is performed.
+#' @param indicator a character vector, containing the names of the indicator variables associated with \code{nodes} that are involved in the reversible jump step. (see details?)
+#' @param prior a vector of prior probabilities for each node to be equal to 0 (or another fixed value) or not. (see details?)
+#' @param control_RJ named list with arguments
+#' \itemize{
+#' \item fixedValue. The value taken from the variable when out of the model. (default = 0)
+#' \item mean. The mean of the normal proposal distribution. (default = 0)
+#' \item scale. The standard deviation of the normal proposal distribution. (default  = 1)
+#' \item postive. A logical argument specifying whether the proposal is strictly positive. (default = FALSE)
+#' }
 #'
 
 ## helper function to check node configuration (in case of multiple calls)
