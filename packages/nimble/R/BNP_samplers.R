@@ -1388,17 +1388,14 @@ findClusterNodes <- function(model, target) {
   idxExpr <- model$getDeclInfo(target)[[1]]$indexExpr[[1]]
   eval(substitute(`<-`(`[`(e$VAR, IDX), seq_along(targetElements)), list(VAR = targetVar, IDX = idxExpr)))
   
-  nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-  dists <- model$getDistribution(nodes)
-  if(length(dists == 'dCRP') > 1)
-      stop("findClusterNodes: multiple CRP variables used for indexing in '", deparse(model$getValueExpr(exampleDeps[1])),
-                         "'.\nNIMBLE's CRP MCMC sampling is not yet developed for this situation, but we will be making this available soon.")
-
   clusterNodes <- indexExpr <- list()
   clusterVars <- indexPosition <- numIndexes <- targetIsIndex <- targetIndexedByFunction <- NULL
   varIdx <- 0
 
   targetNonIndex <- NULL
+
+  modelVars <- model$getVarNames()
+  modelVars <- modelVars[!modelVars == targetVar]
   
   for(idx in seq_along(exampleDeps)) {
     ## Pull out expressions, either as RHS of deterministic or parameters of stochastic
@@ -1425,6 +1422,10 @@ findClusterNodes <- function(model, target) {
                     whichIndex <- k
                 }
             }
+            ## We will need to relax this when allow crossed clustering.
+            if(sum(all.vars(subExpr[[k]]) %in% modelVars))  ## cases like mu[xi[i],eta[j]]
+                stop("findClusterNodes: multiple indexing variables in '", deparse(subExpr),
+                         "'. NIMBLE's CRP MCMC sampling not designed for this situation.")
             k <- k+1
         }
         if(!foundTarget) stop("findClusterNodes: conflicting information about presence of CRP variable in expression.")
