@@ -9,12 +9,12 @@
 
 ## functions summary
 ## sampler_RJ:           does the jump proposal for the variable of interest
-## sampler_RJ_indicator: does the jump proposal for an indicator variable
+## sampler_RJ_indicator: does the jump proposal for an indicator variables
 ## sampler_toggled:      reassign the default sampler to the variable when is in the model  
 ## configureRJ:         substitute manual removeSampler/addSampler for each variable for which one wants to perform selections
 
 ##################################################
-## RJ sampler - no indicator variable ############
+## RJ sampler - no indicatorNodes variable ############
 ##################################################
 ## Reversible Jump sampler
 ##
@@ -96,20 +96,21 @@ sampler_RJ <- nimbleFunction(
 )
 
 ####################################################################
-### RJ sampler - indicator variable ################################
+### RJ sampler - indicatorNodes variable ################################
 ####################################################################
 ## Reversible Jump sampler
 ##
-## This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function, when the model code is written using indicator variables associated with the nodes of interest. See Details in \code{\link{configureRJ}}. 
+## This sampler perform a Reversible Jump MCMC step for the node to which is assigned, using an univariate normal proposal distribution. This is a specialized sampler used by \code{\link{configureRJ}} function, when the model code is written using indicator variables associated with the targetNodes of interest. See Details in \code{\link{configureRJ}}. 
 
 #' @rdname samplers
 #' @export
+#' 
 sampler_RJ_indicator <- nimbleFunction(
   name = 'sampler_RJ_indicator',
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control ) {
-    ## target should be the name of the indicator node,
-    ## control should have an 
+    ## target should be the name of the indicator variables,
+    ## control should have 
     ## 1 - element called coef for the name of the corresponding coefficient 
     ## 2 - mean of proposal jump distribution  (default 0)
     ## 3 - sd of proposal jump distribution  (default 1)
@@ -224,8 +225,8 @@ node_configuration_check <- function(currentConf, node){
 #' Modifies the \code{MCMCconf} object of a specific model, to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. User can control which value the variable takes when not in the model (typically 0), the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different ways of writing the model. 
 #'
 #' @param mcmcConf a \code{MCMCconf} object.
-#' @param nodes a character vector, containing the names of the nodes for which the variable selection is performed.
-#' @param indicator a character vector, containing the names of the indicator variables associated with \code{nodes} that are involved in the reversible jump step. (see details?)
+#' @param targetNodes a character vector, containing the names of the nodes for which the variable selection is performed.
+#' @param indicatorNodes a character vector, containing the names of the indicator variables associated with \code{targetNodes} that are involved in the reversible jump step. (see details?)
 #' @param prior a vector of prior probabilities for each node to be equal to 0 (or another fixed value) or not. (see details?)
 #' @param control_RJ named list with arguments
 #' \itemize{
@@ -237,9 +238,9 @@ node_configuration_check <- function(currentConf, node){
 #'
 #' @details 
 #' 
-#' This functions modifies the sampler in \code{MCMCconf} for each of the nodes provided in the \code{nodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the build sampler that is used only when the target node is in the model. 
+#' This functions modifies the sampler in \code{MCMCconf} for each of the nodes provided in the \code{targetNodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the build sampler that is used only when the target node is in the model. 
 #' 
-#' The specialized RJ sampler depends on whether the \code{prior} or \code{indicator} arguments are provided, according on how the model is written. When \code{prior} is provided, the specialized sampler \code{sampler_RJ} is assigned directly to the \code{nodes}. When \code{indicator} is provided, the specialized sampler \code{sampler_RJ_indicator} is assigned to nodes in \code{indicator}.
+#' The specialized RJ sampler depends on whether the \code{prior} or \code{indicatorNodes} arguments are provided, according on how the model is written. When \code{prior} is provided, the specialized sampler \code{sampler_RJ} is assigned directly to the \code{targetNodes}. When \code{indicatorNodes} is provided, the specialized sampler \code{sampler_RJ_indicator} is assigned to nodes in \code{indicatorNodes}.
 #' 
 #' 
 #' @seealso \code{\link{sampler_BASE}} \code{\link{sampler_RJ}} \code{\link{configureRJ}}
@@ -251,9 +252,9 @@ node_configuration_check <- function(currentConf, node){
 #' @references
 #' 
 #' Peter J. Green. (1995). Reversible jump markov chain monte carlo computation and bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
-configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
+configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
 
-  nNodes <- length(nodes)
+  nNodes <- length(targetNodes)
   
   ## control list extraction
   fixedValue        <- if(!is.null(control_RJ$fixedValue))        control_RJ$fixedValue       else 0
@@ -269,33 +270,33 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
   # positive  <- if(length(positive) == 1L & nNodes > 1L) rep(positive, nNodes) else positive
   # 
   ## above set of checks paired with this check
-  # ## Check that RJ control arguments match nodes length
+  # ## Check that RJ control arguments match targetNodes length
   # if(any(lengths(list(fixedValue, mean, scale, positive)) != nNodes)){
-  #   stop("Arguments in control_RJ list must be of length 1 or match nodes vector length")
+  #   stop("Arguments in control_RJ list must be of length 1 or match targetNodes vector length")
   # }
   
   ## DT more defensive version
   if(length(fixedValue) != nNodes) {
-    if(length(fixedValue) == 1) fixedValue <- rep(fixedValue, nNodes) else stop('inconsistent length of fixedValue argument and specified number of RJ nodes')
+    if(length(fixedValue) == 1) fixedValue <- rep(fixedValue, nNodes) else stop('inconsistent length of fixedValue argument and specified number of RJ targetNodes')
   }
   if(length(mean) != nNodes) {
-    if(length(mean) == 1) mean <- rep(mean, nNodes) else stop('inconsistent length of mean argument and specified number of RJ nodes')
+    if(length(mean) == 1) mean <- rep(mean, nNodes) else stop('inconsistent length of mean argument and specified number of RJ targetNodes')
   }
   if(length(scale) != nNodes) {
-    if(length(scale) == 1) scale <- rep(scale, nNodes) else stop('inconsistent length of scale argument and specified number of RJ nodes')
+    if(length(scale) == 1) scale <- rep(scale, nNodes) else stop('inconsistent length of scale argument and specified number of RJ targetNodes')
   }
   if(length(positive) != nNodes) {
-    if(length(positive) == 1) positive <- rep(positive, nNodes) else stop('inconsistent length of positive argument and specified number of RJ nodes')
+    if(length(positive) == 1) positive <- rep(positive, nNodes) else stop('inconsistent length of positive argument and specified number of RJ targetNodes')
   }
   
   
   ## flag for indicators and prior
-  indicatorFlag <- (!is.null(indicator))
+  indicatorFlag <- (!is.null(indicatorNodes))
   priorFlag     <- (!is.null(prior))
   
-  ## Check: user must provide indicator OR prior
+  ## Check: user must provide indicatorNodes OR prior
   if(indicatorFlag == priorFlag) {
-    stop("Provide indicator variables or prior probabilities")
+    stop("Provide indicatorNodes variables or prior probabilities")
   }
   
   ##---------------------------------------##
@@ -306,24 +307,24 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
 
     ## If one value for prior is given, it is used for each variable
     if(length(prior) != nNodes) {
-      if(length(prior) == 1) prior <- rep(prior, nNodes) else stop('Length of prior vector must match nodes vector one')
+      if(length(prior) == 1) prior <- rep(prior, nNodes) else stop('Length of prior vector must match targetNodes vector one')
     }
     
     # if(length(prior) ==  1L & length(prior) != nNodes){ 
     #   prior <- rep(prior, nNodes)
     # } 
     # 
-    # ## Check that prior vector match nodes length when there is more than one value
+    # ## Check that prior vector match targetNodes length when there is more than one value
     # if(length(prior) >  1L &
     #    length(prior) != nNodes){
-    #   stop("Length of prior vector must match nodes vector one")
+    #   stop("Length of prior vector must match targetNodes vector one")
     # }
     
     for(i in 1:nNodes) {
       
       
       ## Create node list
-      nodeAsScalar <- mcmcConf$model$expandNodeNames(nodes[i], returnScalarComponents = TRUE)
+      nodeAsScalar <- mcmcConf$model$expandNodeNames(targetNodes[i], returnScalarComponents = TRUE)
       
       ## Create RJ control list for the node 
       nodeControl  = list(
@@ -359,19 +360,19 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
     ## indicator
     ##---------------------------##
 
-    ## Check that indicator vector  match nodes lenght
-    if(length(indicator) != nNodes){ 
-      stop("Length of indicators vector must match nodes vector dimension")
+    ## Check that indicatorNodes vector  match targetNodes lenght
+    if(length(indicatorNodes) != nNodes){ 
+      stop("Length of indicators vector must match targetNodes vector dimension")
     }
     
     for(i in 1:nNodes) {
       
-      ## Create node and indicator list
-      nodeAsScalar <- mcmcConf$model$expandNodeNames(nodes[i], returnScalarComponents = TRUE)
-      indicatorsAsScalar <- mcmcConf$model$expandNodeNames(indicator[i], returnScalarComponents = TRUE)
+      ## Create node and indicatorNodes list
+      nodeAsScalar <- mcmcConf$model$expandNodeNames(targetNodes[i], returnScalarComponents = TRUE)
+      indicatorsAsScalar <- mcmcConf$model$expandNodeNames(indicatorNodes[i], returnScalarComponents = TRUE)
       
       if(length(nodeAsScalar) != length(indicatorsAsScalar)) {
-        stop(paste0("Indicator node ", indicator[i] ," does not match ", nodes[i], " size."))
+        stop(paste0("indicatorNodes node ", indicatorNodes[i] ," does not match ", targetNodes[i], " size."))
       }
       
       nodeControl  = list(
@@ -393,7 +394,7 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
         ## check on node configuration
         node_configuration_check(currentConf, nodeAsScalar[j])
         
-        ## Add reversible jump sampler for the indicator variable
+        ## Add reversible jump sampler for the indicatorNodes variable
         mcmcConf$removeSamplers(indicatorsAsScalar[j])
         mcmcConf$addSampler(type = sampler_RJ_indicator,
                             target = indicatorsAsScalar[j],
@@ -404,7 +405,7 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
         
         mcmcConf$addSampler(type = sampler_toggled,
                             target = nodeAsScalar[j],
-                            control = list(samplerConf = currentConf[[1]], fixedValue = 0)) ## fixedValue is referred to indicator, no need here actually
+                            control = list(samplerConf = currentConf[[1]], fixedValue = 0)) ## fixedValue is actually not needed but passed because of how toggled_sampler is written
       }  
         
     }
