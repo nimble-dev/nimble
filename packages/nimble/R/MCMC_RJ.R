@@ -404,7 +404,7 @@ configureRJ <- function(mcmcConf, nodes, indicator = NULL, prior = NULL, control
         
         mcmcConf$addSampler(type = sampler_toggled,
                             target = nodeAsScalar[j],
-                            control = list(samplerConf = currentConf[[1]], fixedValue = 0))
+                            control = list(samplerConf = currentConf[[1]], fixedValue = 0)) ## fixedValue is referred to indicator, no need here actually
       }  
         
     }
