@@ -24,7 +24,7 @@ graphNode <- setRefClass(
 #'
 #' Class for NIMBLE model definition that is not usually needed directly by a user.
 #'
-#' @details See \code{?modelBaseClass} for information about creating NIMBLE BUGS models.
+#' @details See \code{\link{modelBaseClass}} for information about creating NIMBLE BUGS models.
 modelDefClass <- setRefClass('modelDefClass',
                              fields = list(
                                  ## set in the call modelDefClass$new(name)
