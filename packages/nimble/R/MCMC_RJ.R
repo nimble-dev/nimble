@@ -158,7 +158,7 @@ sampler_RJ_indicator <- nimbleFunction(
       ## jumping density
       logProbForwardProposal <- dnorm(proposalCoef, mean = proposalMean, sd = proposalScale, log = TRUE)
       proposalLogProb <- model$calculate(calcNodes)
-      log_accept_prob <- proposalLogProb - currentLogProb - logProbForwardProposal
+      logAcceptanceProb <- proposalLogProb - currentLogProb - logProbForwardProposal
     }
     accept <- decide(log_accept_prob)
     if(accept) {
@@ -210,10 +210,9 @@ sampler_toggled <- nimbleFunction(
 ## configureRJ
 ###-------------------------------###
 ## helper function to check node configuration (in case of multiple calls)
-node_configuration_check <- function(currentConf, node){
+nodeConfigurationCheck <- function(currentConf, node){
   if(length(currentConf) == 0) {
     warning(paste0("There are no samplers for ", node,". Skipping it."))
-    next
   }
   if(length(currentConf) > 1)
     warning(paste0("There is more than one sampler for ", node,". Only the first will be toggled."))
@@ -320,7 +319,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
       ## Create RJ control list for the node 
       nodeControl  = list(
         fixedValue = fixedValue[i], 
-        priorProb      = priorProb[i], 
+        priorProb  = priorProb[i], 
         mean       = mean[i], 
         scale      = scale[i], 
         positive   = positive[i]) 

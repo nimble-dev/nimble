@@ -124,31 +124,31 @@ test_that("Test configureRJ with indicator variables", {
   nodes <-  c("beta2")
   expect_error(configureRJ(mConf, nodes), 
                'Provide indicatorNodes or priorProb vector')
-  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2")), 
+  expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2")), 
                'Length of indicatorNodes vector must match targetNodes length')
   
   ## One node, multiple parameters
-  expect_error(configureRJ(mConf, nodes, indicator = "z1", control = list(fixedValue = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, indicatorNodes = "z1", control = list(fixedValue = c(0,1))), 
                'inconsistent length of fixedValue argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = "z1", control = list(mean = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, indicatorNodes = "z1", control = list(mean = c(0,1))), 
                'inconsistent length of mean argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = "z1", control = list(scale = c(2,1))), 
+  expect_error(configureRJ(mConf, nodes, indicatorNodes = "z1", control = list(scale = c(2,1))), 
                'inconsistent length of scale argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = "z1", control = list(positive = c(FALSE, FALSE))), 
+  expect_error(configureRJ(mConf, nodes, indicatorNodes = "z1", control = list(positive = c(FALSE, FALSE))), 
                'inconsistent length of positive argument and specified number of RJ targetNodes')
   
   ## Multiple nodes, less paramters
   nodes <-  c("beta0", "beta1", "beta2")
-  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2")), 
+  expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2")), 
                'Length of indicatorNodes vector must match targetNodes length')
 
-  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control = list(fixedValue = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2"), control = list(fixedValue = c(0,1))), 
                'inconsistent length of fixedValue argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control = list(mean = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2"), control = list(mean = c(0,1))), 
                'inconsistent length of mean argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control = list(scale = c(2,1))), 
+  expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2"), control = list(scale = c(2,1))), 
                'inconsistent length of scale argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control = list(positive = c(FALSE, FALSE))), 
+  expect_error(configureRJ(mConf, nodes, indicatorNodes = c("z1", "z2"), control = list(positive = c(FALSE, FALSE))), 
                'inconsistent length of positive argument and specified number of RJ targetNodes')
   
 
