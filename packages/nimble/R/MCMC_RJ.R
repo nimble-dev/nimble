@@ -70,6 +70,7 @@ sampler_RJ <- nimbleFunction(
       ## add proposal
       ##----------------------##
       proposalValue <- rnorm(1, mean = proposalMean, sd = proposalScale)
+      logProbForwardProposal <- dnorm(proposalValue, mean =  proposalMean, sd = proposalScale, log = TRUE)
       
       ## take absolute value when proposal can be only positive
       if(positive){
@@ -78,7 +79,6 @@ sampler_RJ <- nimbleFunction(
       
       model[[target]] <<- proposalValue
       
-      logProbForwardProposal <- dnorm(proposalValue, mean =  proposalMean, sd = proposalScale, log = TRUE)
       proposalLogProb <- model$calculate(calcNodes)
       log_accept_prob <- proposalLogProb - currentLogProb + logRatioProbFixedOverProbNotFixed - logProbForwardProposal  
     }
@@ -224,8 +224,9 @@ nodeConfigurationCheck <- function(currentConf, node){
 #' Modifies the \code{MCMCconf} object of a specific model, to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. User can control which value the variable takes when not in the model (typically 0), the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different ways of writing the model. 
 #'
 #' @param mcmcConf A \code{MCMCconf} object.
-#' @param targetNodes A character vector, specifying the nodes and/or variables interested in the variable selection. Nodes may be specified in their indexed form, ‘y[1, 3]’. Alternatively, nodes specified without indexing will be expanded fully, e.g., ‘x’ will be expanded to ‘x[1]’, ‘x[2]’, etc.  
-#' @param indicatorNodes An optional character vector, specifying the indicator nodes and/or variables paired with \code{targetNodes}. Nodes may be specified in their indexed form, ‘y[1, 3]’. Alternatively, nodes specified without indexing will be expanded fully, e.g., ‘x’ will be expanded to ‘x[1]’, ‘x[2]’, etc. Nodes must be provided consistently with \code{targetNodes} vector. (see details?)
+#'
+#' @param targetNodes A character vector, specifying the nodes and/or variables interested in the variable selection. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc.  
+#' @param indicatorNodes An optional character vector, specifying the indicator nodes and/or variables paired with \code{targetNodes}. Nodes may be specified in their indexed form, \code{y[1, 3]}. Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]]}, \code{x[2]}, etc. Nodes must be provided consistently with \code{targetNodes} vector. (see details?)
 #' @param priorProb An optional numeric vector of prior probabilities for each node to be in the model. (see details?)
 #' @param control An optional list of control arguments to the Reversible Jump function.
 #' \itemize{
