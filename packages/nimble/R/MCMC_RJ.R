@@ -39,7 +39,7 @@ sampler_RJ <- nimbleFunction(
     positive <- control$positive
     
     ## precompute ratio between prior probabilities
-    logRatioProbFixedOverProbNotFixed <- log(control$prior) - log(1-control$prior)
+    logRatioProbFixedOverProbNotFixed <- log(control$priorProb) - log(1-control$priorProb)
     
     ## get all parameters related to the target
     calcNodes <- model$getDependencies(target)
@@ -227,7 +227,7 @@ node_configuration_check <- function(currentConf, node){
 #' @param mcmcConf a \code{MCMCconf} object.
 #' @param targetNodes a character vector, containing the names of the nodes for which the variable selection is performed.
 #' @param indicatorNodes a character vector, containing the names of the indicator variables associated with \code{targetNodes} that are involved in the reversible jump step. (see details?)
-#' @param prior a vector of prior probabilities for each node to be equal to 0 (or another fixed value) or not. (see details?)
+#' @param priorProb a vector of prior probabilities for each node to be equal to 0 (or another fixed value) or not. (see details?)
 #' @param control_RJ named list with arguments
 #' \itemize{
 #' \item fixedValue. The value taken from the variable when out of the model. (default = 0)
@@ -252,7 +252,7 @@ node_configuration_check <- function(currentConf, node){
 #' @references
 #' 
 #' Peter J. Green. (1995). Reversible jump markov chain monte carlo computation and bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
-configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, prior = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
+configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
 
   nNodes <- length(targetNodes)
   
@@ -260,7 +260,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, prior = NU
   fixedValue        <- if(!is.null(control_RJ$fixedValue))        control_RJ$fixedValue       else 0
   mean              <- if(!is.null(control_RJ$mean))              control_RJ$mean             else 0
   scale             <- if(!is.null(control_RJ$scale))             control_RJ$scale            else 1
-  positive          <- if(!is.null(control_RJ$positive))  control_RJ$positive else FALSE
+  positive          <- if(!is.null(control_RJ$positive))          control_RJ$positive else FALSE
   
   
   ## if one value is provided for one element of the list, this value is repeated if there are multiple nodes
@@ -292,11 +292,11 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, prior = NU
   
   ## flag for indicators and prior
   indicatorFlag <- (!is.null(indicatorNodes))
-  priorFlag     <- (!is.null(prior))
+  priorFlag     <- (!is.null(priorProb))
   
-  ## Check: user must provide indicatorNodes OR prior
+  ## Check: user must provide indicatorNodes OR 
   if(indicatorFlag == priorFlag) {
-    stop("Provide indicatorNodes variables or prior probabilities")
+    stop("Provide indicatorNodes or priorProb")
   }
   
   ##---------------------------------------##
@@ -306,20 +306,11 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, prior = NU
     
 
     ## If one value for prior is given, it is used for each variable
-    if(length(prior) != nNodes) {
-      if(length(prior) == 1) prior <- rep(prior, nNodes) else stop('Length of prior vector must match targetNodes vector one')
+    if(length(priorProb) != nNodes) {
+      if(length(priorProb) == 1) priorProb <- rep(priorProb, nNodes) else stop('Length of priorProb vector must match targetNodes vector one')
     }
     
-    # if(length(prior) ==  1L & length(prior) != nNodes){ 
-    #   prior <- rep(prior, nNodes)
-    # } 
-    # 
-    # ## Check that prior vector match targetNodes length when there is more than one value
-    # if(length(prior) >  1L &
-    #    length(prior) != nNodes){
-    #   stop("Length of prior vector must match targetNodes vector one")
-    # }
-    
+
     for(i in 1:nNodes) {
       
       
@@ -329,10 +320,10 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, prior = NU
       ## Create RJ control list for the node 
       nodeControl  = list(
         fixedValue = fixedValue[i], 
-        prior      = prior[i], 
+        priorProb      = priorProb[i], 
         mean       = mean[i], 
         scale      = scale[i], 
-        positive = positive[i]) 
+        positive   = positive[i]) 
       
       ## if the node is not a scalar iterate through each element
       
@@ -377,11 +368,9 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, prior = NU
       
       nodeControl  = list(
         fixedValue = fixedValue[i], 
-        prior      = prior[i], 
         mean       = mean[i], 
         scale      = scale[i], 
         positive = positive[i]) 
-
       
       for(j in 1:length(nodeAsScalar)){
           
@@ -410,7 +399,6 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, prior = NU
         
     }
   }
-  
   mcmcConf
 }
 
