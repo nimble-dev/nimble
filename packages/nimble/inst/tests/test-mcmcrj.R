@@ -125,7 +125,7 @@ test_that("Test configureRJ with indicator variables", {
   expect_error(configureRJ(mConf, nodes), 
                'Provide indicatorNodes or priorProb vector')
   expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2")), 
-               'Length of indicatorNodes vector must match targetNodes vector one')
+               'Length of indicatorNodes vector must match targetNodes lenght')
   
   ## One node, multiple parameters
   expect_error(configureRJ(mConf, nodes, indicator = "z1", control_RJ = list(fixedValue = c(0,1))), 
