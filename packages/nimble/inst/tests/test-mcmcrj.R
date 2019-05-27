@@ -43,13 +43,13 @@ test_that("Test configureRJ with no indicator variables", {
                'Provide indicatorNodes or priorProb vector')
   
   ## One node, multiple parameters
-  expect_error(configureRJ(mConf, nodes, prior = 0.5, control_RJ = list(fixedValue = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(fixedValue = c(0,1))), 
                'inconsistent length of fixedValue argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, prior = 0.5, control_RJ = list(mean = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(mean = c(0,1))), 
                'inconsistent length of mean argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, prior = 0.5, control_RJ = list(scale = c(2,1))), 
+  expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(scale = c(2,1))), 
                'inconsistent length of scale argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, prior = 0.5, control_RJ = list(positive = c(FALSE, FALSE))), 
+  expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(positive = c(FALSE, FALSE))), 
                'inconsistent length of positive argument and specified number of RJ targetNodes')
   
   ## Multiple nodes, less paramters
@@ -57,13 +57,13 @@ test_that("Test configureRJ with no indicator variables", {
   expect_error(configureRJ(mConf, nodes, prior = c(0.5, 0.5)), 
                'Length of priorProb vector must match targetNodes length')
   
-  expect_error(configureRJ(mConf, nodes, prior = 0.5, control_RJ = list(fixedValue = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(fixedValue = c(0,1))), 
                'inconsistent length of fixedValue argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, prior = 0.5, control_RJ = list(mean = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(mean = c(0,1))), 
                'inconsistent length of mean argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, prior = 0.5, control_RJ = list(scale = c(2,1))), 
+  expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(scale = c(2,1))), 
                'inconsistent length of scale argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, prior = 0.5, control_RJ = list(positive = c(FALSE, FALSE))), 
+  expect_error(configureRJ(mConf, nodes, prior = 0.5, control = list(positive = c(FALSE, FALSE))), 
                'inconsistent length of positive argument and specified number of RJ targetNodes')
   
 
@@ -128,13 +128,13 @@ test_that("Test configureRJ with indicator variables", {
                'Length of indicatorNodes vector must match targetNodes length')
   
   ## One node, multiple parameters
-  expect_error(configureRJ(mConf, nodes, indicator = "z1", control_RJ = list(fixedValue = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, indicator = "z1", control = list(fixedValue = c(0,1))), 
                'inconsistent length of fixedValue argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = "z1", control_RJ = list(mean = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, indicator = "z1", control = list(mean = c(0,1))), 
                'inconsistent length of mean argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = "z1", control_RJ = list(scale = c(2,1))), 
+  expect_error(configureRJ(mConf, nodes, indicator = "z1", control = list(scale = c(2,1))), 
                'inconsistent length of scale argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = "z1", control_RJ = list(positive = c(FALSE, FALSE))), 
+  expect_error(configureRJ(mConf, nodes, indicator = "z1", control = list(positive = c(FALSE, FALSE))), 
                'inconsistent length of positive argument and specified number of RJ targetNodes')
   
   ## Multiple nodes, less paramters
@@ -142,13 +142,13 @@ test_that("Test configureRJ with indicator variables", {
   expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2")), 
                'Length of indicatorNodes vector must match targetNodes length')
 
-  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control_RJ = list(fixedValue = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control = list(fixedValue = c(0,1))), 
                'inconsistent length of fixedValue argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control_RJ = list(mean = c(0,1))), 
+  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control = list(mean = c(0,1))), 
                'inconsistent length of mean argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control_RJ = list(scale = c(2,1))), 
+  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control = list(scale = c(2,1))), 
                'inconsistent length of scale argument and specified number of RJ targetNodes')
-  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control_RJ = list(positive = c(FALSE, FALSE))), 
+  expect_error(configureRJ(mConf, nodes, indicator = c("z1", "z2"), control = list(positive = c(FALSE, FALSE))), 
                'inconsistent length of positive argument and specified number of RJ targetNodes')
   
 
@@ -210,7 +210,7 @@ test_that("Check sampler_RJ behaviour (no indicator)", {
 #   m <- nimbleModel(code, data=data)
 #   cm <- compileNimble(m)
 #   mConf <- configureMCMC(m, monitors = c('beta1', 'beta2'))
-#   configureRJ(mConf, c('beta1', 'beta2'), prior = 0.5, control_RJ = list(fixedValue = c(2, 0)))
+#   configureRJ(mConf, c('beta1', 'beta2'), prior = 0.5, control = list(fixedValue = c(2, 0)))
 })
 
 test_that("Check sampler_RJ_indicator behaviour (with indicator)", {

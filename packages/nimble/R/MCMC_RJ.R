@@ -228,7 +228,7 @@ node_configuration_check <- function(currentConf, node){
 #' @param targetNodes a character vector, containing the names of the nodes for which the variable selection is performed.
 #' @param indicatorNodes a character vector, containing the names of the indicator variables associated with \code{targetNodes} that are involved in the reversible jump step. (see details?)
 #' @param priorProb a vector of prior probabilities for each node to be equal to 0 (or another fixed value) or not. (see details?)
-#' @param control_RJ named list with arguments
+#' @param control named list with arguments
 #' \itemize{
 #' \item fixedValue. The value taken from the variable when out of the model. (default = 0)
 #' \item mean. The mean of the normal proposal distribution. (default = 0)
@@ -252,15 +252,15 @@ node_configuration_check <- function(currentConf, node){
 #' @references
 #' 
 #' Peter J. Green. (1995). Reversible jump markov chain monte carlo computation and bayesian model determination. \emph{Biometrika}, 82(4), 711-732.
-configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL, control_RJ = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
+configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb = NULL, control = list(fixedValue = NULL, mean = NULL, scale = NULL, positive = NULL)) {
 
   nNodes <- length(targetNodes)
   
   ## control list extraction
-  fixedValue        <- if(!is.null(control_RJ$fixedValue))        control_RJ$fixedValue       else 0
-  mean              <- if(!is.null(control_RJ$mean))              control_RJ$mean             else 0
-  scale             <- if(!is.null(control_RJ$scale))             control_RJ$scale            else 1
-  positive          <- if(!is.null(control_RJ$positive))          control_RJ$positive else FALSE
+  fixedValue        <- if(!is.null(control$fixedValue))        control$fixedValue       else 0
+  mean              <- if(!is.null(control$mean))              control$mean             else 0
+  scale             <- if(!is.null(control$scale))             control$scale            else 1
+  positive          <- if(!is.null(control$positive))          control$positive else FALSE
   
   
   ## if one value is provided for one element of the list, this value is repeated if there are multiple nodes
@@ -272,7 +272,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   ## above set of checks paired with this check
   # ## Check that RJ control arguments match targetNodes length
   # if(any(lengths(list(fixedValue, mean, scale, positive)) != nNodes)){
-  #   stop("Arguments in control_RJ list must be of length 1 or match targetNodes vector length")
+  #   stop("Arguments in control list must be of length 1 or match targetNodes vector length")
   # }
   
   ## DT more defensive version
