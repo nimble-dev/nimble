@@ -219,15 +219,15 @@ nodeConfigurationCheck <- function(currentConf, node){
 }
 
 ###-------------------------------###
-#' Configure reversible jump sampler
+#' Configure Reversible Jump sampler
 #'
 #' Modifies the \code{MCMCconf} object of a specific model, to include a Reversible Jump MCMC sampler for variable selection using an univariate normal proposal distribution. User can control which value the variable takes when not in the model (typically 0), the mean and scale of the proposal, and whether or not the proposal is strictly positive. This function supports two different ways of writing the model. 
 #'
-#' @param mcmcConf a \code{MCMCconf} object.
-#' @param targetNodes a character vector, containing the names of the nodes for which the variable selection is performed.
-#' @param indicatorNodes a character vector, containing the names of the indicator variables associated with \code{targetNodes} that are involved in the reversible jump step. (see details?)
-#' @param priorProb a vector of prior probabilities for each node to be equal to 0 (or another fixed value) or not. (see details?)
-#' @param control named list with arguments
+#' @param mcmcConf A \code{MCMCconf} object.
+#' @param targetNodes A character vector, specifying the nodes and/or variables interested in the variable selection. Nodes may be specified in their indexed form, ‘y[1, 3]’. Alternatively, nodes specified without indexing will be expanded fully, e.g., ‘x’ will be expanded to ‘x[1]’, ‘x[2]’, etc.  
+#' @param indicatorNodes An optional character vector, specifying the indicator nodes and/or variables paired with \code{targetNodes}. Nodes may be specified in their indexed form, ‘y[1, 3]’. Alternatively, nodes specified without indexing will be expanded fully, e.g., ‘x’ will be expanded to ‘x[1]’, ‘x[2]’, etc. Nodes must be provided consistently with \code{targetNodes} vector. (see details?)
+#' @param priorProb An optional numeric vector of prior probabilities for each node to be in the model. (see details?)
+#' @param control An optional list of control arguments to the Reversible Jump function.
 #' \itemize{
 #' \item fixedValue. The value taken from the variable when out of the model. (default = 0)
 #' \item mean. The mean of the normal proposal distribution. (default = 0)
@@ -237,7 +237,7 @@ nodeConfigurationCheck <- function(currentConf, node){
 #'
 #' @details 
 #' 
-#' This functions modifies the sampler in \code{MCMCconf} for each of the nodes provided in the \code{targetNodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the build sampler that is used only when the target node is in the model. 
+#' This functions modifies the samplers in \code{MCMCconf} for each of the nodes provided in the \code{targetNodes} argument. To these elements two samplers are assigned: a specialized Reversible Jump sampler and a modified version of the build sampler that is used only when the target node is in the model. 
 #' 
 #' The specialized RJ sampler depends on whether the \code{prior} or \code{indicatorNodes} arguments are provided, according on how the model is written. When \code{prior} is provided, the specialized sampler \code{sampler_RJ} is assigned directly to the \code{targetNodes}. When \code{indicatorNodes} is provided, the specialized sampler \code{sampler_RJ_indicator} is assigned to nodes in \code{indicatorNodes}.
 #' 
@@ -259,7 +259,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   fixedValue        <- if(!is.null(control$fixedValue))        control$fixedValue       else 0
   mean              <- if(!is.null(control$mean))              control$mean             else 0
   scale             <- if(!is.null(control$scale))             control$scale            else 1
-  positive          <- if(!is.null(control$positive))          control$positive else FALSE
+  positive          <- if(!is.null(control$positive))          control$positive         else FALSE
   
   
   ## if one value is provided for one element of the list, this value is repeated if there are multiple nodes
@@ -274,7 +274,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   #   stop("Arguments in control list must be of length 1 or match targetNodes vector length")
   # }
   
-  ## DT more defensive version
+  ## more defensive version
   if(length(fixedValue) != nNodes) {
     if(length(fixedValue) == 1) fixedValue <- rep(fixedValue, nNodes) else stop('inconsistent length of fixedValue argument and specified number of RJ targetNodes')
   }
