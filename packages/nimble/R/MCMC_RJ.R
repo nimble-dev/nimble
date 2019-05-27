@@ -296,7 +296,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
   
   ## Check: user must provide indicatorNodes OR 
   if(indicatorFlag == priorFlag) {
-    stop("Provide indicatorNodes or priorProb")
+    stop("Provide indicatorNodes or priorProb vector")
   }
   
   ##---------------------------------------##
@@ -307,7 +307,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
 
     ## If one value for prior is given, it is used for each variable
     if(length(priorProb) != nNodes) {
-      if(length(priorProb) == 1) priorProb <- rep(priorProb, nNodes) else stop('Length of priorProb vector must match targetNodes vector one')
+      if(length(priorProb) == 1) priorProb <- rep(priorProb, nNodes) else stop('Length of priorProb vector must match targetNodes length')
     }
     
 
@@ -353,7 +353,7 @@ configureRJ <- function(mcmcConf, targetNodes, indicatorNodes = NULL, priorProb 
 
     ## Check that indicatorNodes vector  match targetNodes lenght
     if(length(indicatorNodes) != nNodes){ 
-      stop("Length of indicators vector must match targetNodes vector dimension")
+      stop("Length of indicatorNodes vector must match targetNodes length")
     }
     
     for(i in 1:nNodes) {
